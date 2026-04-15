@@ -32,10 +32,11 @@ pub struct ProveArgs {
     pub why3find_arg: Vec<String>,
     /// Print the Why3find command without running it.
     #[clap(long)]
-    pub dry_run: bool,
+    pub dry_run_why3find: bool,
+    #[clap(long)]
     /// Run why3find on files that match one of the patterns.
     /// Examples: `name`, `name::*`, `m/*/f`, or whole paths `verif/a/b.coma`.
-    pub patterns: Vec<String>,
+    pub prove: Vec<String>,
 }
 
 // Although these two options look similar, they are implemented quite differently.
@@ -97,7 +98,7 @@ fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> Result
     why3find.env("PATH", path);
     why3find.env("DUNE_DIR_LOCATIONS", format!("why3find:lib:{}", paths.why3find_libs().display()));
     why3find.env("WHY3CONFIG", &paths.why3_conf());
-    if args.dry_run {
+    if args.dry_run_why3find {
         println!("{:?}", why3find);
         Ok(())
     } else {
@@ -116,7 +117,7 @@ pub fn why3find_prove(args: ProveArgs, root: &Path, targets: Vec<String>) -> Res
     check_why3find_json_exists(root)?;
     // why3find likes relative paths. For that we move back to the root.
     std::env::set_current_dir(root)?;
-    let files = if args.patterns.is_empty() {
+    let files = if args.prove.is_empty() {
         let verif = PathBuf::from("verif");
         targets
             .iter()
@@ -127,7 +128,7 @@ pub fn why3find_prove(args: ProveArgs, root: &Path, targets: Vec<String>) -> Res
             .collect()
     } else {
         let patterns =
-            args.patterns.iter().map(|s| Pattern::parse(root, s)).collect::<Result<Patterns>>()?;
+            args.prove.iter().map(|s| Pattern::parse(root, s)).collect::<Result<Patterns>>()?;
         let files = match_patterns(&patterns)?;
         files
     };
@@ -139,7 +140,7 @@ pub fn why3find_prove(args: ProveArgs, root: &Path, targets: Vec<String>) -> Res
     }
     let coma = if args.ide.ide_always {
         // Validate `--ide-always`: it only works with a single Coma file.
-        if args.patterns.is_empty() {
+        if args.prove.is_empty() {
             bail!("--ide-always requires an explicit file or pattern argument")
         } else if files.len() == 1 && files[0].extension() == Some(OsStr::new("coma")) {
             Some(files[0].clone())

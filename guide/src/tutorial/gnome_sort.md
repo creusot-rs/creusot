@@ -36,7 +36,7 @@ There are two postconditions to formalize:
 1. The final slice `^v` contains elements in increasing order.
 2. The final slice `^v` contains the same elements as the initial slice `v`.
 
-After having written your specification, you should be able to compile the project (with the command `cargo creusot`). But of course the proof attempt will fail (with the command `cargo creusot prove`).
+After having written your specification, you should be able to compile the project (with the command `cargo creusot --only=coma`). But of course the proof attempt will fail (with the command `cargo creusot`).
 
 > [!TIP]
 >
@@ -83,7 +83,7 @@ and one `*` for `&mut`).
 
 **Annotate the `while` loop with its invariant(s), using the `#[invariant]` attribute.**
 
-With this, the command `cargo creusot prove` should succeed.
+With this, the command `cargo creusot` should succeed.
 You have formally verified the functional correctness of a sorting function.
 
 <details>

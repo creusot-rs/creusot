@@ -137,7 +137,6 @@ if [ "$TEST_BUILD_NEW" ] || [ "$TEST_ALL" ] ; then
   cargo fmt --check
   cargo build
   cargo creusot
-  cargo creusot prove
   popd
 fi
 if [ "$TEST_BUILD_NO_STD" ] || [ "$TEST_ALL" ] ; then
@@ -156,7 +155,7 @@ if [ "$TEST_BUILD_NO_STD" ] || [ "$TEST_ALL" ] ; then
   cargo fmt --check
   cargo build
   cargo build --target thumbv7em-none-eabi -Zbuild-std=core,alloc
-  cargo creusot prove
-  cargo creusot prove -- --target thumbv7em-none-eabi -Zbuild-std=core,alloc
+  cargo creusot
+  cargo creusot -- --target thumbv7em-none-eabi -Zbuild-std=core,alloc
   popd
 fi

@@ -3,7 +3,6 @@
 ## List of commands
 
 - [`cargo creusot`](#creusot)
-- [`cargo creusot prove`](#prove)
 - [`cargo creusot doc`](#doc)
 - [`cargo creusot clean`](#clean)
 - [`cargo creusot why3 ide`](#why3-ide)
@@ -17,19 +16,18 @@
 ### `creusot`
 
 ```
-cargo creusot [--erasure-check] [-p <PACKAGE>]
+cargo creusot
+  [-p <PACKAGE>] [--only=(coma|prove)]
+  [--erasure-check]
+  [--prove <PATTERN>]* [-i|--ide-on-fail|--ide-always]
+  [--replay] [--why3session] [--why3find-arg <ARG>] [--dry-run-why3find]
+  [-- <CARGO_OPTIONS>]
 ```
 
-Run the Creusot compiler.
-
-Output Coma code in the `verif/` directory.
+Run Creusot: compile to Coma (into the `verif/` directory)
+and run provers on verification conditions (using Why3find).
 
 #### Creusot options
-
-- `--erasure-check`: Report `#[erasure]` check failures as errors; see [Erasure check](erasure.html).
-
-    + `--erasure-check=no`: Disable `#[erasure]` checks.
-    + `--erasure-check=warn` (default): Report `#[erasure]` check failures as warnings.
 
 - `-p <PACKAGE>`: Only build `<PACKAGE>` (in multi-package workspaces).
     By default, all *default members* of a workspace are built, determined by one of the
@@ -57,6 +55,27 @@ Output Coma code in the `verif/` directory.
     Tests, examples, and benches are currently unsupported.
     (Please reach out if you need this feature!)
 
+- `--erasure-check`: Report `#[erasure]` check failures as errors; see [Erasure check](erasure.html).
+
+    + `--erasure-check=no`: Disable `#[erasure]` checks.
+    + `--erasure-check=warn` (default): Report `#[erasure]` check failures as warnings.
+
+- `--only=coma`: Only typecheck and compile to Coma, no provers.
+- `--only=prove`: Only run provers without compiling to Coma (your Coma files may be out of date!).
+
+#### Prover-specific options
+
+- `--prove <PATTERN>`: Select Coma files that match one of the patterns.
+  If no patterns are provided, prove all files in selected packages (`-p`).
+  Example patterns: `name`, `name::*`, `m/*/f`. Separators can be written as `::` or `/`.
+- `-i`, `--ide-on-fail`: Open the Why3 IDE on an unproved file to inspect its proof context.
+- `--ide-always`: Open the Why3 IDE on a single Coma file regardless of whether the proof succeeded.
+  The command fails if `--prove <PATTERN>` does not match exactly one file.
+- `--replay`: Don't generate new proofs, only check if the existing proofs are valid.
+- `--why3session`: Generate `why3session.xml` files (implied by `-i` and `--ide-always`).
+- `--why3find-arg <ARG>`: pass `<ARG>` directly as an extra argument to `why3find prove`. Repeat this to pass multiple arguments.
+- `--dry-run-why3find`: Print the `why3find` command without running it.
+
 [cargo-default-members]: https://doc.rust-lang.org/cargo/reference/workspaces.html#the-default-members-field
 
 #### Cargo options
@@ -64,33 +83,6 @@ Output Coma code in the `verif/` directory.
 All options after `--` are forwarded to `cargo`. Here is a selection of useful ones for Creusot users:
 
 - `-Zbuild-std`: Recompile crates `core`, `std`, `alloc`, `proc-macro`. (Useful for `--erasure-check`.)
-
-### `prove`
-
-```
-cargo creusot [-p <PACKAGE>] prove [<PATTERNS>] [-i|--ide-on-fail|--ide-always]
-    [--replay] [--why3session] [--why3find-arg <ARG>] [--dry-run]
-```
-
-Verify contracts.
-
-This first runs `cargo creusot` to be sure that the compiled code is up-to-date.
-Then `why3find` verifies the compiled Coma code: it generates verification conditions
-and tries to prove them.
-
-#### Options
-
-- `<PATTERNS>`: Select Coma files that match one of the patterns.
-  If no patterns are provided, prove all files.
-  Example patterns: `name`, `name::*`, `m/*/f`. Separators can be written as `::` or `/`.
-- `-i`, `--ide-on-fail`: Open the Why3 IDE on an unproved file to inspect its proof context.
-- `--ide-always`: Open the Why3 IDE on a single Coma file regardless of whether the proof succeeded.
-  The command fails if `<PATTERN>` does not match exactly one file.
-- `--replay`: Don't generate new proofs, only check if the existing proofs are valid.
-- `--why3session`: Generate `why3session.xml` files (implied by `-i` and `--ide-always`).
-- `-p <PACKAGE>`: See [`cargo creusot`](#creusot) above.
-- `--why3find-arg <ARG>`: pass `<ARG>` directly as an extra argument to `why3find prove`. Repeat this to pass multiple arguments.
-- `--dry-run`: Print the `why3find` command without running it.
 
 ### `doc`
 
@@ -101,7 +93,6 @@ cargo creusot doc
 Build documentation.
 
 This is a variant of `cargo doc` that also renders contracts (`requires` and `ensures`) and logic functions.
-
 
 ### `clean`
 
@@ -132,7 +123,7 @@ This commands simply invokes `why3 ide` with the
 required options to load Coma files produced by Creusot.
 
 This is a command for experts and for troubleshooting.
-In normal usage, prefer `cargo creusot prove` with `-i` or `--ide-always`,
+In normal usage, prefer `cargo creusot` with `-i` or `--ide-always`,
 which ensures that the Coma artifacts are always up to date.
 
 ## Create and maintain package

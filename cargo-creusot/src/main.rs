@@ -6,10 +6,8 @@ use creusot_setup as setup;
 use serde::Deserialize;
 use std::{
     env,
-    ffi::OsString,
     io::{IsTerminal as _, Write},
-    os::unix::ffi::OsStringExt as _,
-    path::{Display, PathBuf},
+    path::{Display, Path, PathBuf},
     process::{Command, exit},
 };
 
@@ -22,15 +20,9 @@ use new::*;
 
 fn main() -> Result<()> {
     let cargs = CargoCreusotCmds::parse_from(std::env::args().skip(1));
-
     match cargs.subcommand {
-        None => creusot(None, cargs.args, &workspace_root()?).map(|_| ()),
-        Some(Creusot(subcmd)) => creusot(Some(subcmd), cargs.args, &workspace_root()?).map(|_| ()),
-        Some(Prove(args)) => {
-            let root = workspace_root()?;
-            let targets = creusot(None, cargs.args, &root)?;
-            why3find_prove(args, &root, targets)
-        }
+        None => creusot(cargs),
+        Some(Doc) => doc(cargs),
         Some(New(args)) => new(args),
         Some(Init(args)) => init(args),
         Some(Clean(args)) => clean(args),
@@ -40,52 +32,99 @@ fn main() -> Result<()> {
     }
 }
 
-fn creusot(subcmd: Option<Doc>, args: CargoCreusotArgs, root: &PathBuf) -> Result<Vec<String>> {
-    let metadata = cargo_metadata::MetadataCommand::new().exec()?;
-    if !args.no_check_version {
-        check_contracts_version(&metadata)?;
+fn creusot(cargs: CargoCreusotCmds) -> Result<()> {
+    let coma = matches!(cargs.args.only, None | Some(Stage::Coma));
+    let prove = matches!(cargs.args.only, None | Some(Stage::Prove));
+    let runner = Runner::new()?;
+    let packages = runner.resolve_packages(&cargs.args.package)?;
+    if coma {
+        runner.compile(Build::Coma, cargs.args, &packages)?;
     }
-    let mut creusot_args = args.creusot_args;
-    if !creusot_args.erasure_check.is_no() && creusot_args.erasure_check_dir.is_none() {
-        creusot_args.erasure_check_dir = Some(root.join("_creusot_erasure"));
-    }
-    let packages = if args.package.is_empty() {
-        creusot_default_members(&metadata)?
-    } else {
-        get_packages_by_name(&metadata, args.package)?
-    };
-    invoke_cargo(subcmd, creusot_args, args.creusot_rustc, &packages, args.cargo_flags, root);
     warn_if_dangling()?;
-    let targets = packages
-        .into_iter()
-        .flat_map(|package| {
-            package.targets.iter().flat_map(|target| {
-                target.kind.iter().filter_map(|kind| {
-                    let ty = match kind {
-                        TargetKind::Lib | TargetKind::RLib => "rlib",
-                        TargetKind::Bin => "bin",
-                        _ => return None, // Other types are unsupported at the moment
-                    };
-                    Some(format!("{}_{}", target.name.replace('-', "_"), ty))
+    if prove {
+        runner.prove(&packages, cargs.prove_args)?;
+    }
+    Ok(())
+}
+
+fn doc(cargs: CargoCreusotCmds) -> Result<()> {
+    let runner = Runner::new()?;
+    let packages = runner.resolve_packages(&cargs.args.package)?;
+    runner.compile(Build::Doc, cargs.args, &packages)
+}
+
+struct Runner {
+    metadata: Metadata,
+}
+
+impl Runner {
+    fn new() -> Result<Self> {
+        let metadata = cargo_metadata::MetadataCommand::new().exec()?;
+        Ok(Self { metadata })
+    }
+
+    fn root(&self) -> &Path {
+        self.metadata.workspace_root.as_path().as_std_path()
+    }
+
+    fn resolve_packages(&self, packages: &[String]) -> Result<Vec<&Package>> {
+        if packages.is_empty() {
+            creusot_default_members(&self.metadata)
+        } else {
+            get_packages_by_name(&self.metadata, packages)
+        }
+    }
+
+    fn compile(&self, build: Build, args: CargoCreusotArgs, packages: &[&Package]) -> Result<()> {
+        if !args.no_check_version {
+            check_contracts_version(&self.metadata)?;
+        }
+        let mut creusot_args = args.creusot_args;
+        if !creusot_args.erasure_check.is_no() && creusot_args.erasure_check_dir.is_none() {
+            creusot_args.erasure_check_dir =
+                Some(self.root().to_path_buf().join("_creusot_erasure"));
+        }
+        invoke_cargo(
+            build,
+            creusot_args,
+            args.creusot_rustc,
+            packages,
+            args.cargo_flags,
+            self.root(),
+        )
+    }
+
+    fn prove(&self, packages: &[&Package], prove_args: ProveArgs) -> Result<()> {
+        let targets = packages
+            .into_iter()
+            .flat_map(|package| {
+                package.targets.iter().flat_map(|target| {
+                    target.kind.iter().filter_map(|kind| {
+                        let ty = match kind {
+                            TargetKind::Lib | TargetKind::RLib => "rlib",
+                            TargetKind::Bin => "bin",
+                            _ => return None, // Other types are unsupported at the moment
+                        };
+                        Some(format!("{}_{}", target.name.replace('-', "_"), ty))
+                    })
                 })
             })
-        })
-        .collect();
-    Ok(targets)
+            .collect();
+        why3find_prove(prove_args, self.root(), targets)
+    }
 }
 
 fn invoke_cargo(
-    doc: Option<Doc>,
+    build: Build,
     args: CreusotArgs,
     creusot_rustc: Option<PathBuf>,
     packages: &[&Package],
     cargo_flags: Vec<String>,
-    root: &PathBuf,
-) {
-    let cargo_path = env::var("CARGO_PATH").unwrap_or_else(|_| "cargo".to_string());
-    let cargo_cmd = match &doc {
-        Some(Doc::Doc) => "doc",
-        _ => {
+    root: &Path,
+) -> Result<()> {
+    let cargo_cmd = match build {
+        Build::Doc => "doc",
+        Build::Coma => {
             if std::env::var_os("CREUSOT_CONTINUE").is_some() {
                 "build"
             } else {
@@ -93,6 +132,7 @@ fn invoke_cargo(
             }
         }
     };
+    let cargo_path = env::var("CARGO_PATH").unwrap_or_else(|_| "cargo".to_string());
     let toolchain = setup::toolchain_channel();
     let creusot_rustc_path = match creusot_rustc {
         Some(path) => path,
@@ -129,7 +169,7 @@ fn invoke_cargo(
     }
     cmd.env("CREUSOT_ARGS", serde_json::to_string(&args).unwrap());
 
-    if matches!(doc, Some(Doc::Doc)) {
+    if matches!(build, Build::Doc) {
         let mut rustdocflags = std::env::var("RUSTDOCFLAGS").unwrap_or_else(|_| String::new());
         for &arg in CREUSOT_RUSTC_ARGS {
             if arg == "-Znext-solver=globally" {
@@ -141,20 +181,11 @@ fn invoke_cargo(
         cmd.env("RUSTDOCFLAGS", rustdocflags);
     }
 
-    let exit_status = cmd.status().expect("could not run cargo");
+    let exit_status = cmd.status().context("could not run cargo")?;
     if !exit_status.success() {
-        exit(exit_status.code().unwrap_or(-1));
+        bail!("Compilation failed")
     }
-}
-
-fn workspace_root() -> Result<PathBuf> {
-    let mut cargo = Command::new("cargo");
-    cargo.args(["locate-project", "--workspace", "--message-format=plain"]);
-    let mut path = PathBuf::from(OsString::from_vec(
-        cargo.output().context("could not find Cargo.toml")?.stdout,
-    ));
-    path.pop();
-    Ok(path)
+    Ok(())
 }
 
 /// Get default members to build:
@@ -176,7 +207,7 @@ fn get_explicit_default_members(metadata: &Metadata) -> Result<Option<Vec<&Packa
     check_workspace_metadata(creusot);
     let Some(members) = creusot.get("default-members") else { return Ok(None) };
     let members = <Vec<String>>::deserialize(members)?;
-    get_packages_by_name(metadata, members).map(|packages| Some(packages))
+    get_packages_by_name(metadata, &members).map(|packages| Some(packages))
 }
 
 fn check_workspace_metadata(value: &serde_json::Value) {
@@ -200,7 +231,7 @@ fn check_workspace_metadata(value: &serde_json::Value) {
     }
 }
 
-fn get_packages_by_name(metadata: &Metadata, names: Vec<String>) -> Result<Vec<&Package>> {
+fn get_packages_by_name<'a>(metadata: &'a Metadata, names: &[String]) -> Result<Vec<&'a Package>> {
     names
         .into_iter()
         .map(|member| {
@@ -220,6 +251,8 @@ pub struct CargoCreusotCmds {
     pub subcommand: Option<CargoCreusotSubCommand>,
     #[clap(flatten)]
     pub args: CargoCreusotArgs,
+    #[clap(flatten)]
+    pub prove_args: ProveArgs,
 }
 
 #[derive(Debug, Parser)]
@@ -235,17 +268,26 @@ pub struct CargoCreusotArgs {
     pub creusot_rustc: Option<PathBuf>,
     #[clap(long, short = 'p', value_name = "PACKAGE")]
     pub package: Vec<String>,
+    /// Only run one stage
+    #[clap(long)]
+    pub only: Option<Stage>,
     /// Additional flags to pass to the underlying cargo invocation.
     #[clap(last = true, global = true)]
     pub cargo_flags: Vec<String>,
 }
 
+#[derive(Clone, Copy, Debug, ValueEnum)]
+pub enum Stage {
+    /// Compile to Coma
+    Coma,
+    /// Run provers
+    Prove,
+}
+
 #[derive(Debug, Subcommand)]
 pub enum CargoCreusotSubCommand {
-    #[command(flatten)]
-    Creusot(Doc),
-    /// Run prover on translated files
-    Prove(ProveArgs),
+    /// Generate the documentation, including specs, logical functions, etc.
+    Doc,
     /// Create new project in a sub-directory
     New(NewArgs),
     /// Create new project in current directory
@@ -261,9 +303,9 @@ pub enum CargoCreusotSubCommand {
 }
 use CargoCreusotSubCommand::*;
 
-#[derive(Debug, Subcommand)]
-pub enum Doc {
-    /// Generates the documentation, including specs, logical functions, etc.
+#[derive(Clone, Copy)]
+pub enum Build {
+    Coma,
     Doc,
 }
 

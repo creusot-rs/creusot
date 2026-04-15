@@ -255,6 +255,7 @@ fn build_creusot_std(
         build.arg("--span-mode=off");
     }
     build.args([
+        "--only=coma",
         "--package",
         "creusot-std",
         "--no-check-version",
