@@ -1,5 +1,4 @@
 #![feature(rustc_private)]
-extern crate lazy_static;
 extern crate rustc_driver;
 extern crate rustc_errors;
 extern crate rustc_interface;
