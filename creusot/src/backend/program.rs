@@ -590,10 +590,14 @@ impl<'tcx> RValue<'tcx> {
                         // so we need to import the prelude for the right operand
                         let qname = match r_ty.kind() {
                             TyKind::Int(ity) => {
-                                lower.names.in_pre(ity_to_prelude(lower.ctx.tcx, *ity), "to_int")
+                                let conv =
+                                    if lower.names.bitwise_mode() { "to_BV256" } else { "to_int" };
+                                lower.names.in_pre(ity_to_prelude(lower.ctx.tcx, *ity), conv)
                             }
                             TyKind::Uint(uty) => {
-                                lower.names.in_pre(uty_to_prelude(lower.ctx.tcx, *uty), "t'int")
+                                let conv =
+                                    if lower.names.bitwise_mode() { "to_BV256" } else { "t'int" };
+                                lower.names.in_pre(uty_to_prelude(lower.ctx.tcx, *uty), conv)
                             }
                             _ => unreachable!(
                                 "right operand, non-integer type for binary operation {op:?} {ty:?}"
