@@ -515,8 +515,9 @@ end
 module M_poke_8bit_array
   use creusot.int.UInt64
   use creusot.prelude.Opaque
-  use creusot.slice.Slice64
+  use creusot.slice.Slice64Ops
   use creusot.int.UInt8
+  use creusot.slice.Slice64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use seq.Seq
@@ -591,19 +592,23 @@ module M_poke_8bit_array
       | s5 = UInt64.rem {left} {(8: UInt64.t)} (fun (_x: UInt64.t) -> [ &k <- _x ] s6)
       | s6 = [ &_17 <- i ] s7
       | s7 = Opaque.fresh_ptr
-          (fun (_ptr: Opaque.ptr) -> -{Slice64.slice_ptr_len _ptr = Slice64.length addr.current}- [ &_18 <- _ptr ] s8)
-      | s8 = [ &_19 <- Slice64.slice_ptr_len _18 ] s9
+          (fun (_ptr: Opaque.ptr) ->
+            -{Slice64Ops.slice_ptr_len _ptr = Slice64Ops.length addr.current}-
+            [ &_18 <- _ptr ] s8)
+      | s8 = [ &_19 <- Slice64Ops.slice_ptr_len _18 ] s9
       | s9 = [ &_20 <- UInt64.lt _17 _19 ] s10
       | s10 = {[@expl:index in bounds] _20} s11
-      | s11 = Slice64.get <UInt8.t> {addr.current} {_17} (fun (r: UInt8.t) -> [ &_16 <- r ] s12)
+      | s11 = Slice64Ops.get <UInt8.t> {addr.current} {_17} (fun (r: UInt8.t) -> [ &_16 <- r ] s12)
       | s12 = poke_8bit {_16} {k} {flag} (fun (_x: UInt8.t) -> [ &_15 <- _x ] s13)
       | s13 = [ &_23 <- i ] s14
       | s14 = Opaque.fresh_ptr
-          (fun (_ptr: Opaque.ptr) -> -{Slice64.slice_ptr_len _ptr = Slice64.length addr.current}- [ &_24 <- _ptr ] s15)
-      | s15 = [ &_25 <- Slice64.slice_ptr_len _24 ] s16
+          (fun (_ptr: Opaque.ptr) ->
+            -{Slice64Ops.slice_ptr_len _ptr = Slice64Ops.length addr.current}-
+            [ &_24 <- _ptr ] s15)
+      | s15 = [ &_25 <- Slice64Ops.slice_ptr_len _24 ] s16
       | s16 = [ &_26 <- UInt64.lt _23 _25 ] s17
       | s17 = {[@expl:index in bounds] _26} s18
-      | s18 = Slice64.set <UInt8.t> {addr.current} {_23} {_15}
+      | s18 = Slice64Ops.set <UInt8.t> {addr.current} {_23} {_15}
           (fun (r: Slice64.slice UInt8.t) -> [ &addr <- { addr with current = r } ] s19)
       | s19 = -{resolve_refmut_slice_u8 addr}- s20
       | s20 = return {_ret} ] ]

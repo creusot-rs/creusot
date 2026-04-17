@@ -860,7 +860,7 @@ impl<'tcx> RValue<'tcx> {
                 istmts.push(IntermediateStmt::call_span(
                     res_ident,
                     lower.ty(ty),
-                    Name::Global(lower.names.in_pre(PreMod::Slice, "create")),
+                    Name::Global(lower.names.in_pre(PreMod::SliceOps, "create")),
                     args,
                     span,
                 ));
@@ -875,11 +875,11 @@ impl<'tcx> RValue<'tcx> {
                         if mu.is_mut() {
                             op = op.field(Name::Global(name::current()))
                         }
-                        Exp::qvar(lower.names.in_pre(PreMod::Slice, "length")).app([op])
+                        Exp::qvar(lower.names.in_pre(PreMod::SliceOps, "length")).app([op])
                     }
                     TyKind::RawPtr(ty, _) => {
                         assert!(ty.is_slice());
-                        Exp::qvar(lower.names.in_pre(PreMod::Slice, "slice_ptr_len"))
+                        Exp::qvar(lower.names.in_pre(PreMod::SliceOps, "slice_ptr_len"))
                             .app([op.into_why(lower, istmts, span)])
                     }
                     _ => unreachable!(),
@@ -895,9 +895,9 @@ impl<'tcx> RValue<'tcx> {
                 ));
 
                 if pl.ty(lower.ctx.tcx, lower.locals).is_slice() {
-                    let lhs = Exp::qvar(lower.names.in_pre(PreMod::Slice, "slice_ptr_len"))
+                    let lhs = Exp::qvar(lower.names.in_pre(PreMod::SliceOps, "slice_ptr_len"))
                         .app([Exp::var(ptr_ident)]); // TODO This was not caught by the test suite
-                    let rhs = Exp::qvar(lower.names.in_pre(PreMod::Slice, "length"))
+                    let rhs = Exp::qvar(lower.names.in_pre(PreMod::SliceOps, "length"))
                         .app([lower.rplace_to_expr(&pl, istmts, span)]);
                     istmts.push(IntermediateStmt::Assume(lhs.eq(rhs)));
                 }

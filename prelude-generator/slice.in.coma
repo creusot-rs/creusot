@@ -12,29 +12,75 @@ module Slice$bits_count$
 
   type array 'a = slice 'a
 
-  function length (s : slice 'a) : UInt$bits_count$.t
-  axiom spec : forall s : slice 'a . (UInt$bits_count$.t'int (length s)) = Seq.length s.elts
+  function view (s : slice 'a) : seq 'a = s.elts
+end
 
-  let get < 'a > (s : slice 'a) (ix : UInt$bits_count$.t) (ret (res : 'a)) =
+module Slice$bits_count$Ops
+  use seq.Seq
+  use creusot.int.UInt$bits_count$
+  use int.Int
+  use creusot.prelude.Opaque
+  use Slice$bits_count$
+
+  type slice 'a = Slice$bits_count$.slice 'a
+
+  type array 'a = Slice$bits_count$.array 'a
+
+  function length (s : Slice$bits_count$.slice 'a) : UInt$bits_count$.t
+  axiom spec : forall s : Slice$bits_count$.slice 'a . (UInt$bits_count$.t'int (length s)) = Seq.length s.elts
+ 
+  let get < 'a > (s : Slice$bits_count$.slice 'a) (ix : UInt$bits_count$.t) (ret (res : 'a)) =
     { [@expl:bounds check slice get] UInt$bits_count$.t'int ix < Seq.length s.elts }
     ret {Seq.get s.elts (UInt$bits_count$.t'int ix)}
 
-  let set < 'a > (s : slice 'a) (ix : UInt$bits_count$.t) (v : 'a)
+  let set < 'a > (s : Slice$bits_count$.slice 'a) (ix : UInt$bits_count$.t) (v : 'a)
     { [@expl:bounds check slice set] UInt$bits_count$.t'int ix < Seq.length s.elts }
-    (ret (result : slice 'a)
+    (ret (result : Slice$bits_count$.slice 'a)
       { Seq.length result.elts = Seq.length s.elts }
       { result.elts[UInt$bits_count$.t'int ix] = v }
       { forall j. 0 <= j < Seq.length s.elts /\ j <> UInt$bits_count$.t'int ix -> result.elts[j] = s.elts[j] }
     ) = any
 
-
   let create < 'a > (len : UInt$bits_count$.t) (f : int -> 'a)
-    (ret (result : slice 'a )
+    (ret (result : Slice$bits_count$.slice 'a )
       { Seq.length result.elts = UInt$bits_count$.t'int len }
       { forall i . 0 <= i < UInt$bits_count$.t'int len -> result.elts[i] = f i }
     ) = any
 
-  function view (s : slice 'a) : seq 'a = s.elts
-
   function slice_ptr_len (p: Opaque.ptr) : UInt$bits_count$.t
+end
+
+module Slice$bits_count$OpsBW
+  use seq.Seq
+  use creusot.int.UInt$bits_count$BW
+  use int.Int
+  use creusot.prelude.Opaque
+  use Slice$bits_count$
+
+  type slice 'a = Slice$bits_count$.slice 'a
+
+  type array 'a = Slice$bits_count$.array 'a
+
+  function length (s : Slice$bits_count$.slice 'a) : UInt$bits_count$BW.t
+  axiom spec : forall s : Slice$bits_count$.slice 'a . (UInt$bits_count$BW.t'int (length s)) = Seq.length s.elts
+
+  let get < 'a > (s : Slice$bits_count$.slice 'a) (ix : UInt$bits_count$BW.t) (ret (res : 'a)) =
+    { [@expl:bounds check slice get] UInt$bits_count$BW.t'int ix < Seq.length s.elts }
+    ret {Seq.get s.elts (UInt$bits_count$BW.t'int ix)}
+
+  let set < 'a > (s : Slice$bits_count$.slice 'a) (ix : UInt$bits_count$BW.t) (v : 'a)
+    { [@expl:bounds check slice set] UInt$bits_count$BW.t'int ix < Seq.length s.elts }
+    (ret (result : slice 'a)
+      { Seq.length result.elts = Seq.length s.elts }
+      { result.elts[UInt$bits_count$BW.t'int ix] = v }
+      { forall j. 0 <= j < Seq.length s.elts /\ j <> UInt$bits_count$BW.t'int ix -> result.elts[j] = s.elts[j] }
+    ) = any
+
+  let create < 'a > (len : UInt$bits_count$BW.t) (f : int -> 'a)
+    (ret (result : Slice$bits_count$.slice 'a )
+      { Seq.length result.elts = UInt$bits_count$BW.t'int len }
+      { forall i . 0 <= i < UInt$bits_count$BW.t'int len -> result.elts[i] = f i }
+    ) = any
+
+  function slice_ptr_len (p: Opaque.ptr) : UInt$bits_count$BW.t
 end
