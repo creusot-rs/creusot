@@ -61,25 +61,24 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
             }
             &TermKind::Constructor { variant, .. } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, term.ty);
-                let Some(adt) = ty.ty_adt_def() else { return };
-                if !self.is_visible_enough(adt.did()) {
-                    self.error(adt.did(), term.span);
-                    return;
-                }
-                for fld in &adt.variant(variant).fields {
-                    if !self.is_visible_enough(fld.did) {
-                        self.error(fld.did, term.span);
-                        return;
+                if let Some(adt) = ty.ty_adt_def() {
+                    if !self.is_visible_enough(adt.did()) {
+                        self.error(adt.did(), term.span);
+                    }
+                    for fld in &adt.variant(variant).fields {
+                        if !self.is_visible_enough(fld.did) {
+                            self.error(fld.did, term.span);
+                        }
                     }
                 }
             }
             &TermKind::Projection { idx, ref lhs } => {
                 let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
-                let Some(adt) = ty.ty_adt_def() else { return };
-                let fdid = adt.non_enum_variant().fields[idx].did;
-                if !self.is_visible_enough(fdid) {
-                    self.error(fdid, term.span);
-                    return;
+                if let Some(adt) = ty.ty_adt_def() {
+                    let fdid = adt.non_enum_variant().fields[idx].did;
+                    if !self.is_visible_enough(fdid) {
+                        self.error(fdid, term.span);
+                    }
                 }
             }
             &TermKind::Reborrow { ref projections, ref inner } => {
@@ -90,14 +89,13 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                 {
                     match elem {
                         ProjectionElem::Field(field_idx, _) => {
-                            let Some(adt) = place_ty.ty.ty_adt_def() else { return };
-                            if !adt.is_struct() {
-                                return;
-                            }
-                            let fdid = adt.non_enum_variant().fields[*field_idx].did;
-                            if !self.is_visible_enough(fdid) {
-                                self.error(fdid, term.span);
-                                return;
+                            if let Some(adt) = place_ty.ty.ty_adt_def()
+                                && adt.is_struct()
+                            {
+                                let fdid = adt.non_enum_variant().fields[*field_idx].did;
+                                if !self.is_visible_enough(fdid) {
+                                    self.error(fdid, term.span);
+                                }
                             }
                         }
                         ProjectionElem::Deref | ProjectionElem::Index(_) => (),
@@ -105,7 +103,7 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                     }
                 }
             }
-            &TermKind::Assert { .. } => return,
+            &TermKind::Assert { .. } => return, /* Body of proof_assert is not visible from outside */
             _ => (),
         }
         super_visit_term(term, self);
@@ -120,7 +118,6 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                     let fdid = fields_def[*fld].did;
                     if !self.is_visible_enough(fdid) {
                         self.error(fdid, pat.span);
-                        return;
                     }
                 }
             }
