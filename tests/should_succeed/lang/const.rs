@@ -87,7 +87,7 @@ pub const fn nat_i2<T: Nat>() -> usize {
     const { <I2<T> as Nat>::VALUE }
 }
 
-const TUP: (usize, i32) = (42, 24);
+pub const TUP: (usize, i32) = (42, 24);
 
 #[requires(TUP.0 == 42usize)]
 #[ensures(TUP.1 == 24i32)]
