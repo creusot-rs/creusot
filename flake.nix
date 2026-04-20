@@ -23,17 +23,7 @@
         inherit pins pkgs;
       }));
 
-      overlays = [
-        rust-overlay.overlays.default
-        (super: self: {
-          ocamlPackages = self.ocamlPackages.overrideScope (
-            final: _: {
-              ocplib-simplex_0_4 = final.callPackage ./nix/pkgs/ocplib-simplex.nix {};
-            }
-          );
-          alt-ergo-free = self.callPackage ./nix/pkgs/alt-ergo-free.nix {};
-        })
-      ];
+      overlays = [rust-overlay.overlays.default];
       pkgs = import nixpkgs {inherit overlays system;};
 
       pins = {
@@ -103,9 +93,11 @@
 
         envBuilder = rust.lib.overrideToolchain rust.toolchain.build;
       };
+
       mkWhy3Framework = {isFree ? false}: let
-        free-solvers = with lib.pkgs; [cvc4 cvc5 why3 why3find z3];
-        solvers =
+        solvers = let
+          free-solvers = with lib.pkgs; [cvc4 cvc5 why3 why3find z3];
+        in
           if isFree
           then [lib.pkgs.alt-ergo-free] ++ free-solvers
           else [lib.pkgs.alt-ergo] ++ free-solvers;
@@ -126,22 +118,6 @@
               value = drv;
             })
             solvers);
-        };
-      mkShell = {
-        creusot,
-        isFree ? false,
-      }: let
-        why3Framework = mkWhy3Framework {inherit isFree;};
-      in
-        pkgs.mkShell {
-          inputsFrom = [creusot];
-          packages = [why3Framework rust.toolchain.dev];
-
-          CREUSOT_DATA_HOME = why3Framework;
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
-          DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
-
-          passthru = rust.toolchain.dev.passthru.availableComponents;
         };
     in rec {
       inherit lib;
@@ -240,7 +216,24 @@
         };
       };
 
-      devShells = {
+      devShells = let
+        mkShell = {
+          creusot,
+          isFree ? false,
+        }: let
+          why3Framework = mkWhy3Framework {inherit isFree;};
+        in
+          pkgs.mkShell {
+            inputsFrom = [creusot];
+            packages = [why3Framework rust.toolchain.dev];
+
+            CREUSOT_DATA_HOME = why3Framework;
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
+            DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
+
+            passthru = rust.toolchain.dev.passthru.availableComponents;
+          };
+      in {
         default = mkShell {creusot = packages.creusot;};
         free = mkShell {
           creusot = packages.creusot;
