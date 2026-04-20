@@ -1574,6 +1574,7 @@ end
 module M_index_mut_slice
   use creusot.int.UInt64
   use creusot.prelude.Opaque
+  use creusot.slice.Slice64Ops
   use creusot.slice.Slice64
   use creusot.prelude.MutBorrow
   use seq.Seq
@@ -1647,16 +1648,16 @@ module M_index_mut_slice
     [ bb0 = s0
       [ s0 = [ &_8 <- (12: UInt64.t) ] s1
       | s1 = Opaque.fresh_ptr
-          (fun (_ptr: Opaque.ptr) -> -{Slice64.slice_ptr_len _ptr = Slice64.length v.current}- [ &_9 <- _ptr ] s2)
-      | s2 = [ &_10 <- Slice64.slice_ptr_len _9 ] s3
+          (fun (_ptr: Opaque.ptr) -> -{Slice64Ops.slice_ptr_len _ptr = Slice64Ops.length v.current}- [ &_9 <- _ptr ] s2)
+      | s2 = [ &_10 <- Slice64Ops.slice_ptr_len _9 ] s3
       | s3 = [ &_11 <- UInt64.lt _8 _10 ] s4
       | s4 = {[@expl:index in bounds] _11} s5
-      | s5 = Slice64.get <t_T> {v.current} {_8}
+      | s5 = Slice64Ops.get <t_T> {v.current} {_8}
           (fun (r: t_T) ->
             MutBorrow.borrow_final <t_T> {r} {MutBorrow.inherit_id (MutBorrow.get_id v) (UInt64.t'int _8)}
               (fun (_bor: MutBorrow.t t_T) ->
                 [ &_7 <- _bor ] -{inv_T _bor.final}-
-                Slice64.set <t_T> {v.current} {_8} {_bor.final}
+                Slice64Ops.set <t_T> {v.current} {_8} {_bor.final}
                   (fun (r'0: Slice64.slice t_T) -> [ &v <- { v with current = r'0 } ] s6))
             [ _ck -> (! {[@expl:type invariant] inv_T r} any) ])
       | s6 = MutBorrow.borrow_final <t_T> {_7.current} {MutBorrow.get_id _7}
@@ -1692,6 +1693,7 @@ end
 module M_index_mut_array
   use creusot.int.UInt64
   use creusot.slice.Slice64
+  use creusot.slice.Slice64Ops
   use creusot.prelude.MutBorrow
   use seq.Seq
   use creusot.prelude.Any
@@ -1767,12 +1769,12 @@ module M_index_mut_array
       [ s0 = [ &_6 <- (12: UInt64.t) ] s1
       | s1 = [ &_7 <- UInt64.lt _6 (31: UInt64.t) ] s2
       | s2 = {[@expl:index in bounds] _7} s3
-      | s3 = Slice64.get <t_T> {v.current} {_6}
+      | s3 = Slice64Ops.get <t_T> {v.current} {_6}
           (fun (r: t_T) ->
             MutBorrow.borrow_final <t_T> {r} {MutBorrow.inherit_id (MutBorrow.get_id v) (UInt64.t'int _6)}
               (fun (_bor: MutBorrow.t t_T) ->
                 [ &_5 <- _bor ] -{inv_T _bor.final}-
-                Slice64.set <t_T> {v.current} {_6} {_bor.final}
+                Slice64Ops.set <t_T> {v.current} {_6} {_bor.final}
                   (fun (r'0: Slice64.array t_T) -> [ &v <- { v with current = r'0 } ] s4))
             [ _ck -> (! {[@expl:type invariant] inv_T r} any) ])
       | s4 = MutBorrow.borrow_final <t_T> {_5.current} {MutBorrow.get_id _5}

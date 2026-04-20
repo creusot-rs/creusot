@@ -1,7 +1,8 @@
 module M_index_slice
   use creusot.int.UInt64
-  use creusot.slice.Slice64
+  use creusot.slice.Slice64Ops
   use creusot.int.UInt32
+  use creusot.slice.Slice64
   use creusot.prelude.Any
   use seq.Seq
   use int.Int
@@ -15,10 +16,10 @@ module M_index_slice
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- (10: UInt64.t) ] s1
-      | s1 = [ &_5 <- Slice64.length a ] s2
+      | s1 = [ &_5 <- Slice64Ops.length a ] s2
       | s2 = [ &_6 <- UInt64.lt _4 _5 ] s3
       | s3 = {[@expl:index in bounds] _6} s4
-      | s4 = Slice64.get <UInt32.t> {a} {_4} (fun (r: UInt32.t) -> [ &_ret <- r ] s5)
+      | s4 = Slice64Ops.get <UInt32.t> {a} {_4} (fun (r: UInt32.t) -> [ &_ret <- r ] s5)
       | s5 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l ()
     | & a: Slice64.slice UInt32.t = a
@@ -29,8 +30,9 @@ end
 module M_index_mut_slice
   use creusot.int.UInt64
   use creusot.prelude.Opaque
-  use creusot.slice.Slice64
+  use creusot.slice.Slice64Ops
   use creusot.int.UInt32
+  use creusot.slice.Slice64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use seq.Seq
@@ -55,11 +57,11 @@ module M_index_mut_slice
     [ bb0 = s0
       [ s0 = [ &_6 <- (2: UInt64.t) ] s1
       | s1 = Opaque.fresh_ptr
-          (fun (_ptr: Opaque.ptr) -> -{Slice64.slice_ptr_len _ptr = Slice64.length a.current}- [ &_7 <- _ptr ] s2)
-      | s2 = [ &_8 <- Slice64.slice_ptr_len _7 ] s3
+          (fun (_ptr: Opaque.ptr) -> -{Slice64Ops.slice_ptr_len _ptr = Slice64Ops.length a.current}- [ &_7 <- _ptr ] s2)
+      | s2 = [ &_8 <- Slice64Ops.slice_ptr_len _7 ] s3
       | s3 = [ &_9 <- UInt64.lt _6 _8 ] s4
       | s4 = {[@expl:index in bounds] _9} s5
-      | s5 = Slice64.set <UInt32.t> {a.current} {_6} {(3: UInt32.t)}
+      | s5 = Slice64Ops.set <UInt32.t> {a.current} {_6} {(3: UInt32.t)}
           (fun (r: Slice64.slice UInt32.t) -> [ &a <- { a with current = r } ] s6)
       | s6 = -{resolve_refmut_slice_u32 a}- s7
       | s7 = return {_ret} ] ]
@@ -77,6 +79,7 @@ module M_slice_first
   use creusot.slice.Slice64
   use creusot.int.UInt64
   use seq.Seq
+  use creusot.slice.Slice64Ops
   use creusot.prelude.Any
   use int.Int
   
@@ -149,10 +152,10 @@ module M_slice_first
       | s2 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb2) ] ]
     | bb2 = s0
       [ s0 = [ &_9 <- (0: UInt64.t) ] s1
-      | s1 = [ &_10 <- Slice64.length a ] s2
+      | s1 = [ &_10 <- Slice64Ops.length a ] s2
       | s2 = [ &_11 <- UInt64.lt _9 _10 ] s3
       | s3 = {[@expl:index in bounds] _11} s4
-      | s4 = Slice64.get <t_T> {a} {_9} (fun (r: t_T) -> [ &_8 <- r ] s5)
+      | s4 = Slice64Ops.get <t_T> {a} {_9} (fun (r: t_T) -> [ &_8 <- r ] s5)
       | s5 = [ &_ret <- Some _8 ] s6
       | s6 = return {_ret} ]
     | bb4 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = return {_ret} ] ]

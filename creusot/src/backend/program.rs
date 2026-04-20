@@ -590,10 +590,14 @@ impl<'tcx> RValue<'tcx> {
                         // so we need to import the prelude for the right operand
                         let qname = match r_ty.kind() {
                             TyKind::Int(ity) => {
-                                lower.names.in_pre(ity_to_prelude(lower.ctx.tcx, *ity), "to_int")
+                                let conv =
+                                    if lower.names.bitwise_mode() { "to_BV256" } else { "to_int" };
+                                lower.names.in_pre(ity_to_prelude(lower.ctx.tcx, *ity), conv)
                             }
                             TyKind::Uint(uty) => {
-                                lower.names.in_pre(uty_to_prelude(lower.ctx.tcx, *uty), "t'int")
+                                let conv =
+                                    if lower.names.bitwise_mode() { "to_BV256" } else { "t'int" };
+                                lower.names.in_pre(uty_to_prelude(lower.ctx.tcx, *uty), conv)
                             }
                             _ => unreachable!(
                                 "right operand, non-integer type for binary operation {op:?} {ty:?}"
@@ -860,7 +864,7 @@ impl<'tcx> RValue<'tcx> {
                 istmts.push(IntermediateStmt::call_span(
                     res_ident,
                     lower.ty(ty),
-                    Name::Global(lower.names.in_pre(PreMod::Slice, "create")),
+                    Name::Global(lower.names.in_pre(PreMod::SliceOps, "create")),
                     args,
                     span,
                 ));
@@ -875,11 +879,11 @@ impl<'tcx> RValue<'tcx> {
                         if mu.is_mut() {
                             op = op.field(Name::Global(name::current()))
                         }
-                        Exp::qvar(lower.names.in_pre(PreMod::Slice, "length")).app([op])
+                        Exp::qvar(lower.names.in_pre(PreMod::SliceOps, "length")).app([op])
                     }
                     TyKind::RawPtr(ty, _) => {
                         assert!(ty.is_slice());
-                        Exp::qvar(lower.names.in_pre(PreMod::Slice, "slice_ptr_len"))
+                        Exp::qvar(lower.names.in_pre(PreMod::SliceOps, "slice_ptr_len"))
                             .app([op.into_why(lower, istmts, span)])
                     }
                     _ => unreachable!(),
@@ -895,9 +899,9 @@ impl<'tcx> RValue<'tcx> {
                 ));
 
                 if pl.ty(lower.ctx.tcx, lower.locals).is_slice() {
-                    let lhs = Exp::qvar(lower.names.in_pre(PreMod::Slice, "slice_ptr_len"))
+                    let lhs = Exp::qvar(lower.names.in_pre(PreMod::SliceOps, "slice_ptr_len"))
                         .app([Exp::var(ptr_ident)]); // TODO This was not caught by the test suite
-                    let rhs = Exp::qvar(lower.names.in_pre(PreMod::Slice, "length"))
+                    let rhs = Exp::qvar(lower.names.in_pre(PreMod::SliceOps, "length"))
                         .app([lower.rplace_to_expr(&pl, istmts, span)]);
                     istmts.push(IntermediateStmt::Assume(lhs.eq(rhs)));
                 }
