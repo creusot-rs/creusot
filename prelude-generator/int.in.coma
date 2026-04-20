@@ -134,11 +134,11 @@ module UInt$bits_count$BW
     (ret (result: t) { t'int result = mod (t'int a) (t'int b) } { result = urem a b })
     = any
   let shl (a:t) (b:BV256.t)
-    { [@expl:out-of-bounds shifting] (BV256.t'int b) >= 0 /\ (BV256.t'int b) <= size  }
+    { [@expl:out-of-bounds shifting] (BV256.uge b (0 : BV256.t) /\ BV256.ule b (BV256.of_int size)) \/ ((BV256.t'int b) >= 0 /\ (BV256.t'int b) <= size)  }
     (ret (result :t) { result = shl a (of_BV256 b) })
     = any
   let shr (a:t) (b:BV256.t)
-    { [@expl:out-of-bounds shifting] (BV256.t'int b) >= 0 /\ (BV256.t'int b) <= size }
+    { [@expl:out-of-bounds shifting] (BV256.uge b (0 : BV256.t) /\ BV256.ule b (BV256.of_int size)) \/ ((BV256.t'int b) >= 0 /\ (BV256.t'int b) <= size) }
     (ret (result :t) { result = shr a (of_BV256 b) })
     = any
 end
@@ -293,11 +293,11 @@ module Int$bits_count$BW
     (ret (result: t) { to_int result = mod (to_int a) (to_int b) } { result = srem a b })
     = any
   let shl (a:t) (b:BV256.t)
-    { [@expl:out-of-bounds shifting] (BV256.t'int b) >= 0 /\ (BV256.t'int b) < size  }
+    { [@expl:out-of-bounds shifting] (BV256.sge b (0 : BV256.t) /\ BV256.sle b (BV256.of_int size)) \/ ((BV256.t'int b) >= 0 /\ (BV256.t'int b) < size)  }
     (ret (result :t) { result = shl a (of_BV256 b) })
     = any
   let shr (a:t) (b:BV256.t)
-    { [@expl:out-of-bounds shifting] (BV256.t'int b) >= 0 /\ (BV256.t'int b) < size }
+    { [@expl:out-of-bounds shifting] (BV256.sge b (0 : BV256.t) /\ BV256.sle b (BV256.of_int size)) \/ ((BV256.t'int b) >= 0 /\ (BV256.t'int b) < size) }
     (ret (result :t) { result = shr a (of_BV256 b) })
     = any
 end
