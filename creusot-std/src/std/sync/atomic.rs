@@ -83,6 +83,7 @@ macro_rules! impl_atomic {
         impl $(< $T >)? $atomic_type $(< $T >)? {
             #[ensures(*result.1.val() == FMap::singleton(result.0.get_timestamp(^sync_view), (val, **sync_view)))]
             #[ensures(*result.1.ward() == result.0)]
+            #[inline(always)]
             #[trusted]
             #[check(terminates)]
             #[allow(unused_variables)]
@@ -198,6 +199,7 @@ macro_rules! impl_atomic {
             #[ensures(exists<c: &Committer<Self, $type, Load, Ordering::None>>
                 !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
             )]
+            #[inline(always)]
             #[trusted]
             #[allow(unused_variables)]
             pub fn load<F, Load: Ordering::Ordering>(&self, f: Ghost<F>) -> $type
@@ -222,6 +224,7 @@ macro_rules! impl_atomic {
                 !c.shot_store() && c.ward() == *self && c.val_store() == val &&
                 f.postcondition_once((c,), ())
             )]
+            #[inline(always)]
             #[trusted]
             #[allow(unused_variables)]
             pub fn store<F, Store: Ordering::Ordering>(&self, val: $type, f: Ghost<F>)
