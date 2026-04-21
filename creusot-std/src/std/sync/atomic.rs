@@ -21,23 +21,31 @@ pub mod Ordering {
 
     pub trait Ordering {
         const ORDERING: atomic::Ordering;
+
+        type Load: Ordering;
+        type Store: Ordering;
     }
 
     pub struct None;
 
-    macro_rules! impl_orders {
-        ($( $order:ident ),+) => { $(
-
+    macro_rules! impl_ordering {
+        ( $order:ident, load = $load:ident, store = $store:ident ) => {
             pub struct $order;
 
             impl Ordering for $order {
                 const ORDERING: atomic::Ordering = atomic::Ordering::$order;
-            }
 
-        )* };
+                type Load = $load;
+                type Store = $store;
+            }
+        };
     }
 
-    impl_orders!(Relaxed, Release, Acquire, AcqRel, SeqCst);
+    impl_ordering!(Relaxed, load = Relaxed, store = Relaxed);
+    impl_ordering!(Acquire, load = Acquire, store = Relaxed);
+    impl_ordering!(Release, load = Relaxed, store = Release);
+    impl_ordering!(AcqRel, load = Acquire, store = Release);
+    impl_ordering!(SeqCst, load = SeqCst, store = SeqCst);
 }
 
 use Ordering::Ordering as _;
@@ -138,9 +146,9 @@ macro_rules! impl_atomic {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange_weak`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
-            #[requires(Success::ORDERING != Ordering::SeqCst::ORDERING)]
+            #[requires(Success::ORDERING != Ordering::SeqCst::ORDERING)] // TODO: [VL] Shouldn't it be enforce by a sc-drf flag instead?
             #[requires(Failure::ORDERING == Ordering::Acquire::ORDERING || Failure::ORDERING == Ordering::Relaxed::ORDERING)]
-            #[requires(forall<c: &mut Committer<Self, $type, _, _>>
+            #[requires(forall<c: &mut Committer<Self, $type, _, _>> // TODO: [VL] Wrong permission here (Success == Ordering::RelAcq)
                 !c.shot_store() ==> c.ward() == *self ==>
                 c.val_load().deep_model() == current.deep_model() ==>
                 c.val_store() == new ==>
@@ -196,6 +204,7 @@ macro_rules! impl_atomic {
             where
                 F: FnGhost + FnOnce(&Committer<Self, $type, Load, Ordering::None>),
             {
+                // TODO: [VL] Do this check inside the macro_rules
                 self.0.load(if cfg!(feature = "sc-drf") {
                     Ordering::SeqCst::ORDERING
                 } else {
@@ -238,7 +247,25 @@ macro_rules! impl_atomic_int {
 
         impl_atomic!(($int_type, $atomic_type));
 
-        // Nothing yet.
+        impl $atomic_type {
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::fetch_add`].")]
+            #[requires(forall<c: &mut Committer<Self, $int_type, Ord::Load, Ord::Store>>
+                !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val + c.val_load() ==>
+                f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
+            )]
+            #[ensures(exists<c: &mut Committer<Self, $int_type, Ord::Load, Ord::Store>>
+                !c.shot_store() && c.ward() == *self && c.val_store() == val + c.val_load() &&
+                c.val_load() == result && f.postcondition_once((c,), ())
+            )]
+            #[trusted]
+            #[allow(unused_variables)]
+            pub fn fetch_add<F, Ord: Ordering::Ordering>(&self, val: $int_type, f: Ghost<F>) -> $int_type
+            where
+                F: FnGhost + FnOnce(&mut Committer<Self, $int_type, Ord::Load, Ord::Store>),
+            {
+                self.0.fetch_add(val, Ordering::SeqCst::ORDERING)
+            }
+        }
 
     )* };
 }
