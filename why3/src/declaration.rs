@@ -136,8 +136,11 @@ impl Contract {
     }
 
     pub fn requires_implies(&self, conclusion: Exp) -> Exp {
-        let requires = self.requires.iter().map(|cond| cond.exp.clone());
-        requires.rfold(conclusion, |acc, arg| arg.implies(acc))
+        self.requires().rfold(conclusion, |acc, arg| arg.implies(acc))
+    }
+
+    pub fn requires(&self) -> impl DoubleEndedIterator<Item = Exp> {
+        self.requires.iter().map(|cond| cond.exp.clone())
     }
 
     pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {

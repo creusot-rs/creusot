@@ -3855,24 +3855,24 @@ module M_impl_Hash_for_Node__hash__refines (* <Node<'arena> as hashmap::Hash> *)
   use int.ComputerDivision
   use int.Int
   
-  type t_NodeLog = False' | True' | If UInt64.t UInt64.t UInt64.t
+  type t_Bdd = { f0: t_Node; f1: UInt64.t }
+  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  
+  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   function hash_log_Node (x: t_NodeLog) : int = match x with
-      | False' -> 1
-      | True' -> 2
-      | If v childt childf -> ComputerDivision.mod (UInt64.t'int v + UInt64.t'int childt * 5
+      | False''0 -> 1
+      | True''0 -> 2
+      | If'0 v childt childf -> ComputerDivision.mod (UInt64.t'int v + UInt64.t'int childt * 5
       + UInt64.t'int childf * 7) (UInt64.t'int const_MAX + 1)
       end
   
-  type t_Bdd = { f0: t_Node; f1: UInt64.t }
-  with t_Node = False''0 | True''0 | If'0 UInt64.t t_Bdd t_Bdd
-  
   function deep_model_Node (self: t_Node) : t_NodeLog = match self with
-      | False''0 -> False'
-      | True''0 -> True'
-      | If'0 v childt childf -> If v (childt.f1) (childf.f1)
+      | False' -> False''0
+      | True' -> True''0
+      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
       end
   
   function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
@@ -3893,12 +3893,12 @@ end
 module M_impl_Hash_for_Bdd__hash__refines (* <Bdd<'arena> as hashmap::Hash> *)
   use creusot.int.UInt64
   
+  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  with t_Bdd = { f0: t_Node; f1: UInt64.t }
+  
   function hash_log_Bdd [@inline:trivial] (x: UInt64.t) : int = UInt64.t'int x
   
   meta "rewrite_def" function hash_log_Bdd
-  
-  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  with t_Bdd = { f0: t_Node; f1: UInt64.t }
   
   function deep_model_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = self.f1
   
@@ -3941,9 +3941,9 @@ module M_impl_PartialEq_for_Node__eq__refines (* <Node<'arena> as std::cmp::Part
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: t_Node. forall rhs: t_Node. forall result: bool. result
-            = (deep_model_ref_Node self_ = deep_model_ref_Node rhs)
-          -> result = (deep_model_ref_Node self_ = deep_model_ref_Node rhs)
+  goal refines: forall self_: t_Node, rhs: t_Node. forall result: bool. result
+          = (deep_model_ref_Node self_ = deep_model_ref_Node rhs)
+        -> result = (deep_model_ref_Node self_ = deep_model_ref_Node rhs)
 end
 module M_impl_PartialEq_for_Bdd__eq__refines (* <Bdd<'arena> as std::cmp::PartialEq> *)
   use creusot.int.UInt64
@@ -3967,6 +3967,6 @@ module M_impl_PartialEq_for_Bdd__eq__refines (* <Bdd<'arena> as std::cmp::Partia
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: t_Bdd. forall rhs: t_Bdd. forall result: bool. result = (view_Bdd self_ = view_Bdd rhs)
-          -> result = (deep_model_ref_Bdd self_ = deep_model_ref_Bdd rhs)
+  goal refines: forall self_: t_Bdd, rhs: t_Bdd. forall result: bool. result = (view_Bdd self_ = view_Bdd rhs)
+        -> result = (deep_model_ref_Bdd self_ = deep_model_ref_Bdd rhs)
 end

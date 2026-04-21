@@ -4,6 +4,7 @@ use crate::{
     contracts_items::{is_law, is_pearlite, is_sealed, is_spec},
     ctx::*,
     naming::name,
+    translation::pearlite::PIdent,
     util::erased_identity_for_item,
     very_stable_hash::get_very_stable_hash,
 };
@@ -35,7 +36,16 @@ use std::{collections::HashMap, iter};
 #[derive(Clone)]
 pub(crate) struct Refinement<'tcx> {
     pub(crate) impl_item: DefId,
-    pub(crate) refn: Term<'tcx>,
+    pub(crate) refn: Refn<'tcx>,
+}
+
+/// `PRE1 ==> ... ==> PREn ==> POST`
+/// We keep `PRE` and `POST` separate to allow inserting const setters.
+#[derive(Debug, Clone)]
+pub(crate) struct Refn<'tcx> {
+    pub(crate) args: Vec<(PIdent, Ty<'tcx>, Span)>,
+    pub(crate) pre: Vec<Term<'tcx>>,
+    pub(crate) post: Term<'tcx>,
 }
 
 impl<'tcx> TranslationCtx<'tcx> {
@@ -122,7 +132,7 @@ fn logic_refinement_term<'tcx>(
     impl_item_id: DefId,
     trait_item_id: DefId,
     refn_subst: GenericArgsRef<'tcx>,
-) -> Term<'tcx> {
+) -> Refn<'tcx> {
     let typing_env = TypingEnv::non_body_analysis(ctx.tcx, impl_item_id);
 
     // Get the contract of the trait version
@@ -140,14 +150,14 @@ fn logic_refinement_term<'tcx>(
     let span = ctx.tcx.def_span(impl_item_id);
     let mut args = Vec::new();
     let mut subst = HashMap::new();
-    for (&(id, _, _), (id2, _, ty)) in trait_sig.inputs.iter().zip(impl_sig.inputs.iter()) {
-        args.push((id, *ty));
+    for (&(id, span, _), (id2, _, ty)) in trait_sig.inputs.iter().zip(impl_sig.inputs.iter()) {
+        args.push((id, *ty, span));
         subst.insert(id2.0, TermKind::Var(id));
     }
 
     let mut impl_precond = impl_sig.contract.requires_conj(ctx.tcx);
     impl_precond.subst(&subst);
-    let trait_precond = trait_sig.contract.requires_conj(ctx.tcx);
+    let trait_precond = trait_sig.contract.requires();
 
     let mut impl_postcond = impl_sig.contract.ensures_conj(ctx.tcx);
     impl_postcond.subst(&subst);
@@ -158,10 +168,9 @@ fn logic_refinement_term<'tcx>(
     let post_refn =
         impl_postcond.implies(trait_postcond).forall((name::result().into(), retty)).span(span);
 
-    let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
-    refn = args.into_iter().rfold(refn, |acc, r| acc.forall(r).span(span));
+    // refn = args.into_iter().rfold(refn, |acc, r| acc.forall(r).span(span));
 
-    refn
+    Refn { args, pre: trait_precond, post: impl_precond.conj(post_refn) }
 }
 
 pub(crate) fn evaluate_additional_predicates<'tcx>(

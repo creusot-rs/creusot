@@ -101,13 +101,13 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
         name::result(),
         postcondition.clone(),
     );
-    let goal = sig.why_sig.contract.requires_implies(wp);
     let vc_ident = sig.why_sig.name.refresh_with(|s| format!("vc_{s}"));
 
     let (mut decls, setters) = names.provide_deps(ctx);
     decls.extend(common_meta_decls());
     decls.extend(body_decls);
-    decls.push(setters.mk_goal(vc_ident, goal));
+    let requires = sig.why_sig.contract.requires();
+    decls.push(setters.mk_goal(vc_ident, vec![], requires, wp));
 
     if ctx.used_namespaces.get() {
         decls.splice(0..0, ctx.generate_namespace_type(namespace_ty));

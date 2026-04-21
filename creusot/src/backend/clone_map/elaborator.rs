@@ -125,8 +125,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         if ctx.def_kind(def_id) == DefKind::Closure {
             // Inline the body of closures
-            let mut decls =
-                vec![Decl::Coma(program::to_why(ctx, &names, name, def_id.expect_local()))];
+            let mut decls = vec![Decl::Coma(program::to_why(ctx, &names, name, def_id))];
             if !pre_sig.contract.has_user_contract {
                 decls.extend(["'pre", "'post'return"].map(|s| {
                     Decl::Meta(Meta {
@@ -365,8 +364,8 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         assert_matches!(
             trait_resol,
             TraitResolved::NotATraitItem
-            | TraitResolved::Instance { .. } // The default impl is known to be the final instance
-            | TraitResolved::UnknownFound // Unresolved trait method
+            | TraitResolved::Instance { .. } // The impl is known to be the final instance
+            | TraitResolved::UnknownFound // Unresolved trait const
         );
         let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
             || ctx.def_kind(def_id) == DefKind::ConstParam
@@ -392,7 +391,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 is_inline(ctx.tcx, def_id),
             )
         } else {
-            // Generate a constant setter. The constant `(def_id, subst)` is expected to have a body.
+            // Generate a constant setter.
             let value_name = Ident::fresh_local("_const");
             let setter =
                 Ident::fresh_local(crate::naming::ascii_item_name("set_", ctx.tcx, def_id));
@@ -400,6 +399,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             names.register_constant_setter(setter);
             let mut decls = val(sig.why_sig, DeclKind::Constant);
 
+            let (def_id, subst) = trait_resol.to_opt(def_id, subst).unwrap();
             let body = program::why_body(
                 ctx,
                 &mut names,

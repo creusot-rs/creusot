@@ -106,12 +106,14 @@ impl<T: Nat> Nat for I3<T> {
     const VALUE: usize = const { T::VALUE + T::VALUE };
 }
 
+#[requires(T::VALUE@ + T::VALUE@ <= usize::MAX@)]
 pub const fn nat_i3<T: Nat>() {
     proof_assert! { <I3<T> as Nat>::VALUE@ == T::VALUE@ + T::VALUE@ };
 }
 
 // Check that const setters are called by logic VCs
 #[logic]
+#[requires(T::VALUE@ + T::VALUE@ <= usize::MAX@)]
 #[ensures(<I3<T> as Nat>::VALUE@ == T::VALUE@ + T::VALUE@)]
 pub fn nat_i3_logic<T: Nat>() {}
 

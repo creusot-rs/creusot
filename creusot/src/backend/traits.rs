@@ -1,7 +1,7 @@
 use crate::{
     backend::{
         Why3Generator, clone_map::Dependencies, common_meta_decls, is_trusted_item,
-        term::lower_pure,
+        term::lower_pure, ty::translate_ty,
     },
     ctx::FileModule,
 };
@@ -20,14 +20,21 @@ pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<
 
         let names = Dependencies::new(ctx, impl_did);
         let namespace_ty = names.namespace_ty();
-        let goal = lower_pure(ctx, &names, &refn.refn);
-        if goal.is_true() {
+        let args: Vec<_> = refn
+            .refn
+            .args
+            .iter()
+            .map(|&(ident, ty, span)| (ident.0, translate_ty(ctx, &names, span, ty)))
+            .collect();
+        let pre = refn.refn.pre.iter().map(|t| lower_pure(ctx, &names, t)).collect::<Vec<_>>();
+        let post = lower_pure(ctx, &names, &refn.refn.post);
+        if pre.iter().any(|t| t.is_false()) || post.is_true() {
             continue;
         }
         let (mut decls, setters) = names.provide_deps(ctx);
         decls.extend(common_meta_decls());
         let name = Ident::fresh(ctx.crate_name(), "refines");
-        decls.push(setters.mk_goal(name, goal));
+        decls.push(setters.mk_goal(name, args, pre.into_iter(), post));
 
         if ctx.used_namespaces.get() {
             let mut new_decls = ctx.generate_namespace_type(namespace_ty);
