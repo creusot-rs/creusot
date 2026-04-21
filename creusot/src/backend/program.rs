@@ -150,17 +150,12 @@ pub(crate) fn to_why_body<'tcx>(
     let mut body =
         why_body(ctx, names, body_id, None, &args, name::return_(), &mut recursive_calls);
     let (mut sig, variant) = {
-        let typing_env = names.typing_env();
-        let mut pre_sig = sig.clone().normalize(ctx, typing_env);
-        let variant = pre_sig.contract.variant.clone();
-        sig_add_type_invariant_spec(
-            ctx,
-            names.typing_env(),
-            names.source_id(),
-            &mut pre_sig,
-            def_id,
-        );
-        (lower_program_sig(ctx, names, name, pre_sig, def_id, name::return_()), variant)
+        let mut sig = sig.clone();
+        // normalize any RPITs away
+        sig.output = names.normalize(sig.output);
+        let variant = sig.contract.variant.clone();
+        sig_add_type_invariant_spec(ctx, names.typing_env(), names.source_id(), &mut sig, def_id);
+        (lower_program_sig(ctx, names, name, sig, def_id, name::return_()), variant)
     };
 
     let fmir_body = ctx.fmir_body(body_id).clone();
@@ -303,7 +298,10 @@ pub fn why_body<'tcx>(
 ) -> Expr {
     let mut body = ctx.fmir_body(body_id).clone();
     body = if let Some(subst) = subst {
-        ty::EarlyBinder::bind(body).instantiate(ctx.tcx, subst)
+        ctx.tcx.normalize_erasing_regions(
+            names.typing_env(),
+            ty::EarlyBinder::bind(body).instantiate(ctx.tcx, subst),
+        )
     } else {
         body
     };
@@ -1077,13 +1075,8 @@ fn mk_adt_switch<'tcx>(
                 .iter_enumerated()
                 .map(|(ix, field)| {
                     let id: Ident = Ident::fresh_local(format!("x{}", ix.as_usize()));
-                    (
-                        Param::Term(
-                            id,
-                            translate_ty(ctx, names, DUMMY_SP, field.ty(ctx.tcx, subst)),
-                        ),
-                        Exp::var(id),
-                    )
+                    let ty = lower.names.normalize(field.ty(ctx.tcx, subst));
+                    (Param::Term(id, translate_ty(ctx, names, DUMMY_SP, ty)), Exp::var(id))
                 })
                 .unzip();
 

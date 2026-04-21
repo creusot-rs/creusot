@@ -20,7 +20,7 @@ use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
     mir::{self, BasicBlock, Body, Local, Location, Operand, Place, traversal::reverse_postorder},
-    ty::{Ty, TyCtxt, TyKind, TypingEnv},
+    ty::{Ty, TyCtxt, TyKind, TypingEnv, Unnormalized},
 };
 use rustc_span::{DUMMY_SP, Span};
 use std::{assert_matches, collections::HashMap, ops::FnOnce};
@@ -266,7 +266,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     /// These types cannot contain mutable borrows and thus do not need to be resolved.
     fn skip_resolve_type(&self, ty: Ty<'tcx>) -> bool {
-        let ty = self.ctx.normalize_erasing_regions(self.typing_env(), ty);
+        let ty = self.ctx.normalize_erasing_regions(self.typing_env(), Unnormalized::new(ty));
         self.tcx().type_is_copy_modulo_regions(self.typing_env(), ty)
         // The following is unsound because it does not take into account aliases.
         // It can be made technically sound, but anyway seems much less predictable than "we resolve

@@ -31,7 +31,7 @@ use rustc_middle::ty::{
     self, AliasTyKind, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypingEnv,
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};
-use rustc_type_ir::{ClosureKind, ConstKind, EarlyBinder};
+use rustc_type_ir::{AliasTy, ClosureKind, ConstKind, EarlyBinder};
 use std::{
     assert_matches,
     cell::RefCell,
@@ -119,9 +119,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         let name = names.dependency(dep).ident();
 
-        let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
-            .instantiate(ctx.tcx, subst)
-            .normalize(ctx, typing_env);
+        let mut pre_sig = ctx.sig(def_id).clone().instantiate_and_normalize(ctx, subst, typing_env);
 
         if ctx.def_kind(def_id) == DefKind::Closure {
             // Inline the body of closures
@@ -221,9 +219,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         }
 
         let typing_env = self.typing_env;
-        let pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
-            .instantiate(ctx.tcx, subst)
-            .normalize(ctx, typing_env);
+        let pre_sig = ctx.sig(def_id).clone().instantiate_and_normalize(ctx, subst, typing_env);
 
         let bound: Box<[Ident]> = pre_sig.inputs.iter().map(|(ident, _, _)| ident.0).collect();
         let trait_resol = TraitResolved::resolve_item(self.tcx(), typing_env, def_id, subst);
@@ -265,8 +261,9 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 let args_tup = Term::var(args_id, subst.type_at(0));
 
                 let res_id = Ident::fresh_local("res").into();
-                let res_ty = ctx.instantiate_bound_regions_with_erased(
-                    ctx.fn_sig(did_f).instantiate(ctx.tcx, subst_f).output(),
+                let res_ty = ctx.normalize_erasing_late_bound_regions(
+                    names.typing_env(),
+                    ctx.fn_sig(did_f).instantiate(ctx.tcx, subst_f).skip_normalization().output(),
                 );
                 let res = Term::var(res_id, res_ty);
 
@@ -330,7 +327,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             .tcx()
             .layout_of(ty::PseudoCanonicalInput { typing_env: self.typing_env, value: ty })
             .is_err();
-        if size_unknown && self.ctx.is_nonzero_sized(ty) {
+        if size_unknown && self.ctx.is_nonzero_sized(self.typing_env, ty) {
             Some(Decl::Axiom(Axiom {
                 name: Ident::fresh_local(format!("nonzero_{}", name.name().to_string())),
                 rewrite: false,
@@ -373,9 +370,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         let mut names = self.namer(dep);
         let name = names.dependency(dep).ident();
-        let mut pre_sig = EarlyBinder::bind(ctx.sig(def_id).clone())
-            .instantiate(ctx.tcx, subst)
-            .normalize(ctx, typing_env);
+        let mut pre_sig = ctx.sig(def_id).clone().instantiate_and_normalize(ctx, subst, typing_env);
         sig_add_type_invariant_spec(ctx, typing_env, names.source_id(), &mut pre_sig, def_id);
         let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
 
@@ -466,10 +461,13 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 ty_name: names.ty(ty).to_ident(),
                 ty_params: Box::new([]),
             })],
-            TyKind::Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
-                let (def_id, subst) = dep.did().unwrap();
+            &TyKind::Alias(AliasTy {
+                kind: AliasTyKind::Opaque { def_id } | AliasTyKind::Projection { def_id },
+                args,
+                ..
+            }) => {
                 vec![Decl::TyDecl(TyDecl::Opaque {
-                    ty_name: names.def_ty(def_id, subst).to_ident(),
+                    ty_name: names.def_ty(def_id, args).to_ident(),
                     ty_params: Box::new([]),
                 })]
             }
@@ -959,10 +957,7 @@ fn post_fndef<'tcx>(
     if is_logic(ctx.tcx, did) {
         return None;
     }
-
-    let mut sig = EarlyBinder::bind(ctx.sig(did).clone())
-        .instantiate(ctx.tcx, subst)
-        .normalize(ctx, names.typing_env());
+    let mut sig = ctx.sig(did).clone().instantiate_and_normalize(ctx, subst, names.typing_env());
     sig_add_type_invariant_spec(ctx, names.typing_env(), names.source_id(), &mut sig, did);
     let mut post = sig.contract.ensures_conj(ctx.tcx);
     post.subst(&HashMap::from([(name::result(), res.kind)]));
@@ -1044,9 +1039,7 @@ fn pre_fndef<'tcx>(
         // precondition if called in a program via a generic.
         return None;
     }
-    let mut sig = EarlyBinder::bind(ctx.sig(did).clone())
-        .instantiate(ctx.tcx, subst)
-        .normalize(ctx, names.typing_env());
+    let mut sig = ctx.sig(did).clone().instantiate_and_normalize(ctx, subst, names.typing_env());
     sig_add_type_invariant_spec(ctx, names.typing_env(), names.source_id(), &mut sig, did);
     let pre = sig.contract.requires_conj(ctx.tcx);
     let pattern = Pattern::tuple(
@@ -1286,7 +1279,7 @@ fn term<'tcx>(
         Intrinsic::MetadataMatches => metadata_matches_term(ctx, names, subst, bound),
         _ => {
             let term = EarlyBinder::bind(ctx.term(def_id).unwrap().rename(bound));
-            Some(normalize(ctx, typing_env, term.instantiate(ctx.tcx, subst)))
+            Some(normalize(ctx, typing_env, term.instantiate(ctx.tcx, subst).skip_normalization()))
         }
     }
 }

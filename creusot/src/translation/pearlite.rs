@@ -7,7 +7,7 @@ use rustc_middle::{
     mir::{Mutability::*, ProjectionElem},
     ty::{
         Const, GenericArgsRef, ParamConst, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
-        TypingEnv,
+        TypingEnv, Unnormalized,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -508,7 +508,7 @@ impl<'tcx> Term<'tcx> {
         subst: GenericArgsRef<'tcx>,
         args: impl IntoIterator<Item = Term<'tcx>>,
     ) -> Self {
-        let ty = tcx.type_of(def_id).instantiate(tcx, subst);
+        let ty = tcx.type_of(def_id).instantiate(tcx, subst).skip_normalization();
         let result = tcx.instantiate_bound_regions_with_erased(ty.fn_sig(tcx).output());
         let args = args.into_iter().collect();
         Term { ty: result, span: DUMMY_SP, kind: TermKind::Call { id: def_id, subst, args } }
@@ -522,7 +522,7 @@ impl<'tcx> Term<'tcx> {
         args: impl IntoIterator<Item = Term<'tcx>>,
     ) -> Self {
         let mut res = Self::call_no_normalize(tcx, def_id, subst, args);
-        res.ty = tcx.normalize_erasing_regions(typing_env, res.ty);
+        res.ty = tcx.normalize_erasing_regions(typing_env, Unnormalized::new(res.ty));
         res
     }
 

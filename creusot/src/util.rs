@@ -138,8 +138,6 @@ fn hashed_symbol(data: DefPathData) -> Option<Symbol> {
         | AnonConst
         | OpaqueTy
         | SyntheticCoroutineBody
-        | LateAnonConst
-        | DesugaredAnonymousLifetime
         | NestedStatic => None,
     }
 }

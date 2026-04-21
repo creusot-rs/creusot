@@ -70,8 +70,6 @@ impl<'a, 'mir, 'tcx> Borrows<'a, 'mir, 'tcx> {
 
     /// Kill any borrows that conflict with `place`.
     fn kill_borrows_on_place(&self, trans: &mut impl GenKill<BorrowIndex>, place: Place<'tcx>) {
-        debug!("kill_borrows_on_place: place={:?}", place);
-
         let other_borrows_of_local = self
             .borrow_set
             .local_map()

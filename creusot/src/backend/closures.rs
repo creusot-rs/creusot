@@ -25,7 +25,9 @@ fn closure_captures<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: LocalDefId,
 ) -> impl Iterator<Item = (FieldIdx, &'tcx CapturedPlace<'tcx>, Ty<'tcx>)> {
-    let TyKind::Closure(_, subst) = tcx.type_of(def_id).instantiate_identity().kind() else {
+    let TyKind::Closure(_, subst) =
+        tcx.type_of(def_id).instantiate_identity().skip_normalization().kind()
+    else {
         unreachable!()
     };
     tcx.closure_captures(def_id)
@@ -41,7 +43,9 @@ pub(crate) fn closure_hist_inv<'tcx>(
     self_: Term<'tcx>,
     future: Term<'tcx>,
 ) -> Term<'tcx> {
-    let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
+    let TyKind::Closure(_, subst) =
+        ctx.type_of(def_id).instantiate_identity().skip_normalization().kind()
+    else {
         unreachable!()
     };
     let closure_kind = subst.as_closure().kind();
@@ -82,7 +86,9 @@ pub(crate) fn closure_pre<'tcx>(
     args: Term<'tcx>,
 ) -> Term<'tcx> {
     let typing_env = ctx.typing_env(def_id.into());
-    let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
+    let TyKind::Closure(_, subst) =
+        ctx.type_of(def_id).instantiate_identity().skip_normalization().kind()
+    else {
         unreachable!()
     };
     let closure_kind = subst.as_closure().kind();
@@ -145,7 +151,9 @@ pub(crate) fn closure_post<'tcx>(
     args: Term<'tcx>,
     result_state: Option<Term<'tcx>>,
 ) -> Term<'tcx> {
-    let TyKind::Closure(_, subst) = ctx.type_of(def_id).instantiate_identity().kind() else {
+    let TyKind::Closure(_, subst) =
+        ctx.type_of(def_id).instantiate_identity().skip_normalization().kind()
+    else {
         unreachable!()
     };
     let closure_kind = subst.as_closure().kind();

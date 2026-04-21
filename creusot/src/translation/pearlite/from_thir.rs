@@ -17,7 +17,7 @@ use rustc_middle::{
         self, AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, LocalVarId, Pat, PatKind,
         StmtId, StmtKind, Thir,
     },
-    ty::{CapturedPlace, Ty, TyKind, TypingEnv, adjustment::PointerCoercion},
+    ty::{CapturedPlace, Ty, TyKind, adjustment::PointerCoercion},
 };
 use rustc_span::{ErrorGuaranteed, Symbol, sym};
 use std::{
@@ -108,10 +108,7 @@ fn from_thir_with_triggers<'tcx>(
                 PatternKind::Binder(var, _) => var,
                 _ => Ident::fresh_local(format!("__{}", idx)).into(),
             };
-            (
-                ident,
-                ctx.normalize_erasing_regions(TypingEnv::non_body_analysis(ctx.tcx, did), pat.ty),
-            )
+            (ident, pat.ty)
         })
         .collect();
     let body = patterns.into_iter().zip(bound.iter().cloned()).rev().fold(

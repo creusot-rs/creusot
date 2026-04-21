@@ -3,7 +3,7 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{GenericArgKind, GenericArgsRef, List, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
-use rustc_type_ir::AliasTyKind;
+use rustc_type_ir::{AliasTy, AliasTyKind};
 
 use crate::{
     contracts_items::Intrinsic,
@@ -38,9 +38,11 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::Type(t) => match t.kind() {
                 TyKind::Adt(def, substs) => Some((def.did(), substs)),
                 TyKind::Closure(id, substs) => Some((*id, substs)),
-                TyKind::Alias(AliasTyKind::Opaque | AliasTyKind::Projection, aty) => {
-                    Some((aty.def_id, aty.args))
-                }
+                &TyKind::Alias(AliasTy {
+                    kind: AliasTyKind::Opaque { def_id } | AliasTyKind::Projection { def_id },
+                    args,
+                    ..
+                }) => Some((def_id, args)),
                 _ => None,
             },
             _ => None,
@@ -76,7 +78,7 @@ impl<'tcx> Dependency<'tcx> {
                 _ if Intrinsic::SizeOfLogic.is(ctx, did) => {
                     Some(Symbol::intern(&type_string(ctx.tcx, "size_of".into(), subst.type_at(0))))
                 }
-                DefKind::Const | DefKind::AssocConst | DefKind::ConstParam => ctx
+                DefKind::Const { .. } | DefKind::AssocConst { .. } | DefKind::ConstParam => ctx
                     .opt_item_name(did)
                     .map(|name| Symbol::intern(&lowercase_prefix("const_", name.as_str()))),
                 _ => {
@@ -88,7 +90,10 @@ impl<'tcx> Dependency<'tcx> {
                         && let Some(trait_ref) = ctx.impl_opt_trait_ref(parent)
                     {
                         // AssocFn in a trait impl: get the instantiated Self type
-                        first_ty_arg(trait_ref.instantiate(ctx.tcx, subst).args)
+                        // Skip normalization: we are generating names so it doesn't really matter
+                        first_ty_arg(
+                            trait_ref.instantiate(ctx.tcx, subst).skip_normalization().args,
+                        )
                     } else {
                         // AssocFn in a trait or in an inherent impl: Self is the first argument in `subst`
                         // And for plain fn, also display the first type argument in its name.

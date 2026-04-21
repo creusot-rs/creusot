@@ -45,7 +45,7 @@ impl<'tcx> Place<'tcx> {
             ty = projection_ty(ty, tcx, p);
         }
 
-        ty.ty
+        tcx.erase_and_anonymize_regions(ty.ty)
     }
 
     pub(crate) fn as_symbol(&self) -> Option<Ident> {
@@ -291,6 +291,7 @@ pub enum LocalKind {
 pub struct LocalDecl<'tcx> {
     // Original MIR local
     pub(crate) span: Span,
+    /// This type must be normalized and erased
     pub(crate) ty: Ty<'tcx>,
     #[type_visitable(ignore)]
     #[type_foldable(identity)]

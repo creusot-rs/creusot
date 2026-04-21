@@ -47,38 +47,30 @@
 #![cfg_attr(feature = "nightly", allow(incomplete_features, internal_features))]
 #![cfg_attr(
     feature = "nightly",
+    feature(step_trait, allocator_api, unboxed_closures, tuple_trait, edition_panic)
+)]
+#![cfg_attr(
+    creusot,
     feature(
         core_intrinsics,
         const_destruct,
         fn_traits,
-        fmt_internals,
         fmt_arguments_from_str,
         fmt_helpers_for_derive,
-        step_trait,
         try_trait_v2,
-        allocator_api,
-        unboxed_closures,
-        tuple_trait,
         panic_internals,
-        never_type,
         ptr_metadata,
         hint_must_use,
         pointer_is_aligned_to,
-        edition_panic,
-        new_range_api,
         range_bounds_is_empty,
         bound_copied,
-        decl_macro,
         auto_traits,
+        new_range_api_legacy,
         negative_impls,
-        clone_from_ref,
     )
 )]
 #![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]
-#![cfg_attr(
-    all(feature = "nightly", feature = "std"),
-    feature(print_internals, libstd_sys_internals, rt,)
-)]
+#![cfg_attr(all(creusot, feature = "std"), feature(print_internals, libstd_sys_internals, rt,))]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;

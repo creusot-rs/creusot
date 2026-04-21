@@ -60,7 +60,7 @@ use rustc_hir::{
     def_id::{DefId, LocalDefId},
 };
 use rustc_index::bit_set::DenseBitSet;
-use rustc_infer::{infer::TyCtxtInferExt as _, traits::ObligationCause};
+use rustc_infer::infer::TyCtxtInferExt as _;
 use rustc_middle::{
     thir::{self, visit::Visitor},
     ty::{
@@ -68,9 +68,7 @@ use rustc_middle::{
     },
 };
 use rustc_span::Span;
-use rustc_trait_selection::traits::{
-    normalize_param_env_or_error, specialization_graph, translate_args,
-};
+use rustc_trait_selection::traits::{specialization_graph, translate_args};
 use std::{collections::HashMap, iter::repeat};
 
 pub(crate) type RecursiveCalls = IndexMap<DefId, IndexSet<DefId>>;
@@ -326,12 +324,14 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 self.visit_specialized_default_function(ctx, impl_ldid, called_id);
             bounds = EarlyBinder::bind(bnds)
                 .instantiate(ctx.tcx, def.1.rebase_onto(ctx.tcx, ctx.parent(def.0), impl_args))
+                .skip_normalization()
         } else {
             let subst_r;
             (called_id, subst_r) = res.to_opt(called_id, subst).unwrap();
             called_node = self.insert_function(GraphNode::Function(called_id));
             bounds = EarlyBinder::bind(ctx.param_env(called_id).caller_bounds())
                 .instantiate(ctx.tcx, subst_r)
+                .skip_normalization()
         }
         self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
 
@@ -426,17 +426,19 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         // Before instantiating the bounds, keep only those that are not inherited from the defining
         // impl. After instantiation, they will be implied by the bounds of the inheriting
         // impl.
+        let typing_env_for_bounds = TypingEnv::new(impl_param_env, TypingMode::non_body_analysis());
         let bounds = impl_param_env.caller_bounds().iter().chain(
-            item_bounds
-                .iter()
-                .filter(|b| !defimpl_bounds.contains(b))
-                .map(|b| EarlyBinder::bind(b).instantiate(ctx.tcx, func_impl_args)),
+            item_bounds.iter().filter(|b| !defimpl_bounds.contains(b)).map(|b| {
+                ctx.tcx.normalize_erasing_regions(
+                    typing_env_for_bounds,
+                    EarlyBinder::bind(b).instantiate(ctx.tcx, func_impl_args),
+                )
+            }),
         );
 
         // data for when we call this function
         let param_env = ParamEnv::new(ctx.mk_clauses_from_iter(bounds));
-        let param_env = normalize_param_env_or_error(ctx.tcx, param_env, ObligationCause::dummy());
-        let typing_env = TypingEnv { param_env, ..ctx.typing_env(item_id) };
+        let typing_env = ctx.typing_env_with(item_id, param_env);
 
         let bounds = param_env.caller_bounds();
         self.default_functions_bounds.insert(node, bounds);
@@ -445,8 +447,9 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         visitor.visit_term(&ctx.term(item_id).unwrap().1);
         for (called_id, generic_args, call_span) in visitor.results {
             // Instantiate the args for the call with the context we just built up.
-            let actual_args = EarlyBinder::bind(generic_args).instantiate(ctx.tcx, func_impl_args);
-
+            let actual_args = EarlyBinder::bind(generic_args)
+                .instantiate(ctx.tcx, func_impl_args)
+                .skip_normalization();
             self.function_call(ctx, node, typing_env, called_id, actual_args, call_span);
         }
         (node, bounds)
@@ -473,10 +476,11 @@ impl CallGraph {
                 continue;
             }
 
-            if !is_pearlite(ctx.tcx, def_id) && !ctx.sig(def_id).contract.check_terminates {
+            let contract = &ctx.sig(def_id).contract;
+            if !is_pearlite(ctx.tcx, def_id) && !contract.check_terminates {
                 // Only consider functions marked with `terminates`: we already ensured
                 // that a `terminates` functions only calls other `terminates` functions.
-                if let Some(variant) = &ctx.sig(def_id).contract.variant {
+                if let Some(variant) = &contract.variant {
                     ctx.dcx().struct_span_warn(variant.span, "variant will be ignored")
                         .with_span_note(ctx.def_span(def_id), "This function is not a logical function, and is not marked with `#[terminates]`.")
                         .emit();

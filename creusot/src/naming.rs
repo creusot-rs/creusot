@@ -1,6 +1,6 @@
 use rustc_ast::Mutability;
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_middle::ty::{self, Ty, TyCtxt};
+use rustc_middle::ty::{self, AliasTy, AliasTyKind, Ty, TyCtxt};
 use rustc_span::Symbol;
 use std::{collections::HashMap, path::PathBuf};
 
@@ -263,7 +263,14 @@ fn type_string_walk(tcx: TyCtxt, prefix: &mut String, ty: Ty) {
                 type_string_walk(tcx, prefix, ty)
             }
         }
-        Alias(_, t) => match tcx.def_key(t.def_id).get_opt_name() {
+        &Alias(AliasTy {
+            kind:
+                AliasTyKind::Projection { def_id }
+                | AliasTyKind::Inherent { def_id }
+                | AliasTyKind::Free { def_id }
+                | AliasTyKind::Opaque { def_id },
+            ..
+        }) => match tcx.def_key(def_id).get_opt_name() {
             None => push_(prefix, "opaque"),
             Some(name) => push_(prefix, &to_alphanumeric(name.as_str())),
         },

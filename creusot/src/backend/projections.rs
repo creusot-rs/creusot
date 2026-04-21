@@ -119,9 +119,10 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                         .fields
                         .iter()
                         .map(|f| {
+                            let ty = names.normalize(f.ty(names.tcx(), subst));
                             Param::Term(
                                 Ident::fresh_local(format!("r{}", f.name)),
-                                translate_ty(ctx, names, span, f.ty(names.tcx(), subst)),
+                                translate_ty(ctx, names, span, ty),
                             )
                         })
                         .collect();
@@ -404,8 +405,9 @@ pub(crate) fn projections_term<'tcx, 'a, V: Debug>(
     }
 
     let subjty = subject.ty;
-    match state {
+    let term = match state {
         Pat(pat, t) => subject.match_([(pat, t), (Pattern::wildcard(subjty), default.unwrap())]),
         Trm(trm) => trm(subject),
-    }
+    };
+    ctx.erase_and_anonymize_regions(term)
 }

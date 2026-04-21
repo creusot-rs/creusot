@@ -17,10 +17,7 @@ use rustc_hir::{
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     thir::{self, Expr, ExprKind, Thir, visit::Visitor},
-    ty::{
-        Clause, EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, Ty, TyCtxt, TyKind,
-        TypingEnv,
-    },
+    ty::{EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, Ty, TyCtxt, TyKind, TypingEnv},
 };
 use rustc_span::Span;
 use rustc_type_ir::ConstKind;
@@ -42,7 +39,10 @@ impl<'tcx> ExternSpec<'tcx> {
         tcx: TyCtxt<'tcx>,
         sub: GenericArgsRef<'tcx>,
     ) -> Vec<Predicate<'tcx>> {
-        EarlyBinder::bind(self.additional_predicates.clone()).instantiate(tcx, sub)
+        // skip normalization: the instantiation should just be a renaming
+        EarlyBinder::bind(self.additional_predicates.clone())
+            .instantiate(tcx, sub)
+            .skip_normalization()
     }
 }
 
@@ -148,7 +148,8 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .instantiate(ctx.tcx, subst)
         .predicates
         .into_iter()
-        .map(Clause::as_predicate)
+        // skip normalization: the instantiation was only renaming
+        .map(|clause| clause.skip_normalization().as_predicate())
         .collect();
 
     let (inputs, output) = inputs_and_output_from_thir(ctx, def_id, thir);

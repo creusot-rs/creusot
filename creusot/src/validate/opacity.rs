@@ -2,7 +2,7 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{PlaceTy, ProjectionElem},
     thir::{self, Thir, visit::Visitor},
-    ty::{self, TyKind, TypingEnv},
+    ty::{self, TyKind},
 };
 use rustc_span::Span;
 
@@ -20,7 +20,6 @@ struct OpacityVisitor<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     opacity: Opacity,
     item: DefId,
-    typing_env: TypingEnv<'tcx>,
 }
 
 impl OpacityVisitor<'_, '_> {
@@ -60,8 +59,7 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                 }
             }
             &TermKind::Constructor { variant, .. } => {
-                let ty = self.ctx.normalize_erasing_regions(self.typing_env, term.ty);
-                if let Some(adt) = ty.ty_adt_def() {
+                if let Some(adt) = term.ty.ty_adt_def() {
                     if !self.is_visible_enough(adt.did()) {
                         self.error(adt.did(), term.span);
                     }
@@ -73,8 +71,7 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                 }
             }
             &TermKind::Projection { idx, ref lhs } => {
-                let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
-                if let Some(adt) = ty.ty_adt_def() {
+                if let Some(adt) = lhs.ty.ty_adt_def() {
                     let fdid = adt.non_enum_variant().fields[idx].did;
                     if !self.is_visible_enough(fdid) {
                         self.error(fdid, term.span);
@@ -82,8 +79,7 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                 }
             }
             &TermKind::Reborrow { ref projections, ref inner } => {
-                let ty = self.ctx.normalize_erasing_regions(self.typing_env, inner.ty);
-                let ty = ty.builtin_deref(false).unwrap();
+                let ty = inner.ty.builtin_deref(false).unwrap();
                 for (elem, place_ty) in
                     iter_projections_ty(self.ctx, projections, &mut PlaceTy::from_ty(ty))
                 {
@@ -112,8 +108,7 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
     fn visit_pattern(&mut self, pat: &Pattern<'tcx>) {
         match &pat.kind {
             PatternKind::Constructor(variant_idx, patterns) => {
-                let ty = self.ctx.normalize_erasing_regions(self.typing_env, pat.ty);
-                let fields_def = &ty.ty_adt_def().unwrap().variants()[*variant_idx].fields;
+                let fields_def = &pat.ty.ty_adt_def().unwrap().variants()[*variant_idx].fields;
                 for (fld, _) in patterns {
                     let fdid = fields_def[*fld].did;
                     if !self.is_visible_enough(fdid) {
@@ -186,7 +181,6 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for NoOpaqueTypeAccess<'thir, 'tcx> {
 
 /// Validates that a private function is not made visible in a public one which is open.
 pub(crate) fn validate_opacity<'tcx>(ctx: &TranslationCtx<'tcx>, item: DefId) {
-    let typing_env = ctx.typing_env(item);
     let is_logic = is_logic(ctx.tcx, item);
     // Forbid use of opaque type constructors and fields, except in trusted program functions
     if is_logic || !is_trusted(ctx.tcx, item) {
@@ -196,12 +190,12 @@ pub(crate) fn validate_opacity<'tcx>(ctx: &TranslationCtx<'tcx>, item: DefId) {
     }
     if is_logic && !is_opaque(ctx.tcx, item) {
         let Some(ScopedTerm(_, term)) = ctx.term(item) else { return };
-        OpacityVisitor { opacity: *ctx.opacity(item), ctx, item, typing_env }.visit_term(term);
+        OpacityVisitor { opacity: *ctx.opacity(item), ctx, item }.visit_term(term);
     }
     let contract = &ctx.sig(item).contract;
     // We consider variants as private, because we don't support mutual recursion for now
     for term in contract.requires.iter().chain(contract.ensures.iter()).map(|cond| &cond.term) {
         let opacity = Opacity::Transparent(ctx.visibility(item));
-        OpacityVisitor { opacity, ctx, item, typing_env }.visit_term(term);
+        OpacityVisitor { opacity, ctx, item }.visit_term(term);
     }
 }

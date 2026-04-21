@@ -54,6 +54,7 @@ pub(crate) fn after_analysis<'tcx>(
     params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
+    silence_unused_features_warnings(tcx);
     let mut ctx = TranslationCtx::new(tcx, opts.clone(), params_open_inv);
     ctx.load_extern_specs();
     ctx.load_erasures();
@@ -105,6 +106,12 @@ pub(crate) fn after_analysis<'tcx>(
     debug!("after_analysis_dump: {:?}", start.elapsed());
 
     Ok(())
+}
+
+fn silence_unused_features_warnings(tcx: TyCtxt) {
+    let feature = tcx.features();
+    feature.stmt_expr_attributes();
+    feature.proc_macro_hygiene();
 }
 
 pub enum OutputHandle {

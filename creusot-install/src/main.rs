@@ -1,4 +1,3 @@
-#![feature(exit_status_error, try_blocks)]
 use anyhow::{Context as _, anyhow, bail};
 use clap::*;
 use creusot_setup::{self as setup, Binary, CreusotPaths, tools_versions_urls::*};

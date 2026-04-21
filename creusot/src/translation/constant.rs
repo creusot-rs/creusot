@@ -20,15 +20,17 @@ pub(crate) fn mirconst_to_operand<'tcx>(
     caller_id: DefId,
 ) -> Operand<'tcx> {
     use mir::Const::*;
-    match c.const_ {
+    match ctx.erase_and_anonymize_regions(c.const_) {
         Ty(ty, tyconst) => Operand::term(Term::const_(tyconst, ty, c.span)),
-        Unevaluated(u, ty) if let Some(promoted) = u.promoted => {
-            Operand::promoted(caller_id, promoted, ty)
+        Unevaluated(u, ty) => {
+            if let Some(promoted) = u.promoted {
+                Operand::promoted(caller_id, promoted, ty)
+            } else if matches!(ctx.def_kind(u.def), DefKind::InlineConst) {
+                Operand::inline_const(u.def, u.args, ty)
+            } else {
+                Operand::term(Term::item(u.def, u.args, ty).span(c.span))
+            }
         }
-        Unevaluated(u, ty) if matches!(ctx.def_kind(u.def), DefKind::InlineConst) => {
-            Operand::inline_const(u.def, u.args, ty)
-        }
-        Unevaluated(u, ty) => Operand::term(Term::item(u.def, u.args, ty).span(c.span)),
         Val(const_value, ty) => Operand::term(value_to_term(const_value, ty, ctx, env, c.span)),
     }
 }
@@ -197,7 +199,7 @@ fn try_const_synonym<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
 ) -> Option<Term<'tcx>> {
-    if !matches!(ctx.def_kind(def_id), rustc_hir::def::DefKind::AssocConst) {
+    if !matches!(ctx.def_kind(def_id), rustc_hir::def::DefKind::AssocConst { .. }) {
         return None;
     }
     let ty::Instance { def, args } =
@@ -210,9 +212,15 @@ fn try_const_synonym<'tcx>(
             Some(Term::const_(c, ty, span))
         }
         ConstKind::Unevaluated(u)
-            if matches!(ctx.def_kind(u.def), DefKind::Const | DefKind::AssocConst) =>
+            if matches!(
+                ctx.def_kind(u.def),
+                DefKind::Const { .. } | DefKind::AssocConst { .. }
+            ) =>
         {
-            let (u, ty) = ty::EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args);
+            let (u, ty) = ctx.tcx.normalize_erasing_regions(
+                typing_env,
+                ty::EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args),
+            );
             Some(Term::item(u.def, u.args, ty).span(span))
         }
         _ => None,

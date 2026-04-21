@@ -70,7 +70,7 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
         let implementors = ctx.impl_item_implementor_ids(impl_id.to_def_id());
 
         let implementors =
-            ctx.with_stable_hashing_context(|hcx| implementors.to_sorted(&hcx, true));
+            ctx.with_stable_hashing_context(|mut hcx| implementors.to_sorted(&mut hcx, true));
         for (&trait_item, &impl_item) in implementors {
             if !ctx.def_kind(trait_item).is_fn_like() {
                 continue;
