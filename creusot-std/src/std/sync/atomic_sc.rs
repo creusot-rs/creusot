@@ -1,5 +1,8 @@
 use crate::{
-    ghost::{Container, FnGhost, perm::Perm},
+    ghost::{
+        Container, FnGhost,
+        perm::{Perm, SendPerm, SyncPerm},
+    },
     prelude::*,
     std::sync::{
         atomic::{Ordering, Ordering::Ordering as _},
@@ -14,17 +17,12 @@ macro_rules! impl_atomic {
         #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
         pub struct $atomic_type $(< $T >)?(::std::sync::atomic::$atomic_type $(< $T >)?);
 
-        unsafe impl $(< $T >)? Send for Perm<$atomic_type $(< $T >)?> {}
-        unsafe impl $(< $T >)? Sync for Perm<$atomic_type $(< $T >)?> {}
-
         impl $(< $T >)? Container for $atomic_type $(< $T >)? {
             type Value = $type;
-
-            #[logic(open, inline)]
-            fn is_disjoint(&self, _: &Self::Value, other: &Self, _: &Self::Value) -> bool {
-                self != other
-            }
         }
+
+        impl $(< $T >)? SendPerm for $atomic_type $(< $T >)? {}
+        impl $(< $T >)? SyncPerm for $atomic_type $(< $T >)? {}
 
         impl $(< $T >)? $atomic_type $(< $T >)? {
             #[ensures(*result.1.val() == val)]
@@ -67,7 +65,7 @@ macro_rules! impl_atomic {
             #[doc = "The store is always sequentially consistent."]
             #[requires(forall<c: &mut Committer<Self, $type, Ordering::None, Ordering::SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
-                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot_store()
+                f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
             )]
             #[ensures(exists<c: &mut Committer<Self, $type, Ordering::None, Ordering::SeqCst>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val &&
@@ -97,7 +95,7 @@ macro_rules! impl_atomic_int {
             #[doc = "The load and the store are always sequentially consistent."]
             #[requires(forall<c: &mut Committer<Self, $int_type, Ordering::SeqCst, Ordering::SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val + c.val_load() ==>
-                f.precondition((c,)) && f.postcondition_once((c,), ()) ==> (^c).shot_store()
+                f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
             )]
             #[ensures(exists<c: &mut Committer<Self, $int_type, Ordering::SeqCst, Ordering::SeqCst>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val + c.val_load() &&

@@ -250,6 +250,7 @@ fn main() {
             why3find.env("WHY3CONFIG", paths.why3_conf());
             why3find.env("DUNE_DIR_LOCATIONS", &format!("why3find:lib:{}", library.display()));
             why3find.arg("prove").arg(file.canonicalize().unwrap());
+            why3find.arg("--no-autodetect-provers");
             if let Some(tactic) = tactic_re.captures_iter(&header_line).next() {
                 why3find.args(["--tactic", tactic.get(1).unwrap().as_str()]);
             }

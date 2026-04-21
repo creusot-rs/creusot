@@ -116,7 +116,7 @@ fn invoke_cargo(
         .env("CARGO_CREUSOT", "1");
 
     for package in packages {
-        cmd.args(["-p", &package.name]);
+        cmd.args(["-p", &package.id.to_string()]);
     }
 
     // Incremental compilation causes Creusot to not see all of a crate's code

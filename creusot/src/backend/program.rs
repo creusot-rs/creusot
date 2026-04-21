@@ -499,7 +499,12 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
         istmts.push(IntermediateStmt::Assign(lhs.local, rhs));
     }
 
-    fn rplace_to_expr(&self, pl: &Place<'tcx>, istmts: &mut Vec<IntermediateStmt>) -> Exp {
+    fn rplace_to_expr(
+        &self,
+        pl: &Place<'tcx>,
+        istmts: &mut Vec<IntermediateStmt>,
+        span: Span,
+    ) -> Exp {
         let (rhs, _) = projections_to_expr(
             self.ctx,
             self.names,
@@ -508,7 +513,7 @@ impl<'tcx, N: Namer<'tcx>> LoweringState<'_, 'tcx, N> {
             Focus::new(|_| Exp::var(pl.local)),
             Box::new(|_, _| unreachable!()),
             &pl.projection,
-            self.ctx.tcx.def_span(self.def_id),
+            span,
         );
         rhs.call(istmts)
     }
@@ -519,10 +524,11 @@ impl<'tcx> Operand<'tcx> {
         self,
         lower: &LoweringState<'_, 'tcx, impl Namer<'tcx>>,
         istmts: &mut Vec<IntermediateStmt>,
+        span: Span,
     ) -> Exp {
         match self {
-            Operand::Place(pl) => lower.rplace_to_expr(&pl, istmts),
-            Operand::ShrBorrow(op) => op.into_why(lower, istmts),
+            Operand::Place(pl) => lower.rplace_to_expr(&pl, istmts, span),
+            Operand::ShrBorrow(op) => op.into_why(lower, istmts, span),
             Operand::Term(c, _) => lower_pure(lower.ctx, lower.names, &c.spanned()),
             Operand::InlineConst(def_id, promoted, subst, ty) => {
                 let ret = Ident::fresh_local("_const_ret");
@@ -555,17 +561,19 @@ impl<'tcx> RValue<'tcx> {
         istmts: &mut Vec<IntermediateStmt>,
     ) -> Exp {
         match self {
-            RValue::Operand(op) => op.into_why(lower, istmts),
+            RValue::Operand(op) => op.into_why(lower, istmts, span),
             RValue::BinOp(op, l, r) => {
                 let l_ty = l.ty(lower.ctx.tcx, lower.locals);
 
                 match (op, l_ty.kind()) {
                     (_, TyKind::Float(_)) => (),
                     (BinOp::Eq, _) => {
-                        return l.into_why(lower, istmts).eq(r.into_why(lower, istmts));
+                        return l.into_why(lower, istmts, span).eq(r.into_why(lower, istmts, span));
                     }
                     (BinOp::Ne, _) => {
-                        return l.into_why(lower, istmts).neq(r.into_why(lower, istmts));
+                        return l
+                            .into_why(lower, istmts, span)
+                            .neq(r.into_why(lower, istmts, span));
                     }
                     _ => (),
                 }
@@ -582,10 +590,14 @@ impl<'tcx> RValue<'tcx> {
                         // so we need to import the prelude for the right operand
                         let qname = match r_ty.kind() {
                             TyKind::Int(ity) => {
-                                lower.names.in_pre(ity_to_prelude(lower.ctx.tcx, *ity), "to_int")
+                                let conv =
+                                    if lower.names.bitwise_mode() { "to_BV256" } else { "to_int" };
+                                lower.names.in_pre(ity_to_prelude(lower.ctx.tcx, *ity), conv)
                             }
                             TyKind::Uint(uty) => {
-                                lower.names.in_pre(uty_to_prelude(lower.ctx.tcx, *uty), "t'int")
+                                let conv =
+                                    if lower.names.bitwise_mode() { "to_BV256" } else { "t'int" };
+                                lower.names.in_pre(uty_to_prelude(lower.ctx.tcx, *uty), conv)
                             }
                             _ => unreachable!(
                                 "right operand, non-integer type for binary operation {op:?} {ty:?}"
@@ -593,9 +605,9 @@ impl<'tcx> RValue<'tcx> {
                         };
 
                         // build the expression for this convertion
-                        Exp::qvar(qname).app([r.into_why(lower, istmts)])
+                        Exp::qvar(qname).app([r.into_why(lower, istmts, span)])
                     }
-                    _ => r.into_why(lower, istmts),
+                    _ => r.into_why(lower, istmts, span),
                 };
 
                 enum OpKind {
@@ -633,7 +645,7 @@ impl<'tcx> RValue<'tcx> {
                 };
 
                 let fname = lower.names.in_pre(prelude, opname);
-                let args = [l.into_why(lower, istmts), r];
+                let args = [l.into_why(lower, istmts, span), r];
 
                 match opkind {
                     Logic => Exp::qvar(fname).app(args),
@@ -675,7 +687,7 @@ impl<'tcx> RValue<'tcx> {
             RValue::UnaryOp(UnOp::Not, arg) => {
                 let a_ty = arg.ty(lower.ctx.tcx, lower.locals);
                 match a_ty.kind() {
-                    TyKind::Bool => arg.into_why(lower, istmts).not(),
+                    TyKind::Bool => arg.into_why(lower, istmts, span).not(),
                     TyKind::Int(_) | TyKind::Uint(_) => {
                         let prelude: PreMod = match a_ty.kind() {
                             TyKind::Int(ity) => ity_to_prelude(lower.ctx.tcx, *ity),
@@ -684,7 +696,7 @@ impl<'tcx> RValue<'tcx> {
                         };
 
                         Exp::qvar(lower.names.in_pre(prelude, "bw_not"))
-                            .app([arg.into_why(lower, istmts)])
+                            .app([arg.into_why(lower, istmts, span)])
                     }
                     _ => unreachable!("the not operator is not supported for {ty:?}"),
                 }
@@ -698,7 +710,7 @@ impl<'tcx> RValue<'tcx> {
 
                 let neg = lower.names.in_pre(prelude, "neg");
                 let ret_ident = Ident::fresh_local("_x");
-                let arg = Arg::Term(arg.into_why(lower, istmts));
+                let arg = Arg::Term(arg.into_why(lower, istmts, span));
                 istmts.push(IntermediateStmt::call(
                     ret_ident,
                     lower.ty(ty),
@@ -711,12 +723,12 @@ impl<'tcx> RValue<'tcx> {
                 if lower.ctx.def_kind(id) == DefKind::Closure {
                     lower.names.dependency(Dependency::Item(id, subst));
                 }
-                let args = args.into_iter().map(|a| a.into_why(lower, istmts)).collect();
+                let args = args.into_iter().map(|a| a.into_why(lower, istmts, span)).collect();
                 constructor(lower.names, args, id, subst)
             }
             RValue::Tuple(flds) if flds.is_empty() => Exp::unit(),
             RValue::Tuple(flds) if flds.len() == 1 => {
-                flds.into_iter().next().unwrap().into_why(lower, istmts)
+                flds.into_iter().next().unwrap().into_why(lower, istmts, span)
             }
             RValue::Tuple(flds) => {
                 let TyKind::Tuple(tys) = ty.kind() else { unreachable!() };
@@ -727,7 +739,7 @@ impl<'tcx> RValue<'tcx> {
                         .map(|(ix, f)| {
                             (
                                 Name::local(lower.names.tuple_field(tys, ix.into())),
-                                f.into_why(lower, istmts),
+                                f.into_why(lower, istmts, span),
                             )
                         })
                         .collect(),
@@ -739,10 +751,10 @@ impl<'tcx> RValue<'tcx> {
                     && let TyKind::Dynamic(_, _) = target.kind() =>
             {
                 let cast = lower.names.dyn_cast(source, target);
-                Exp::var(cast).app([e.into_why(lower, istmts)])
+                Exp::var(cast).app([e.into_why(lower, istmts, span)])
             }
             RValue::Cast(e, source, target) => {
-                let arg = e.into_why(lower, istmts);
+                let arg = e.into_why(lower, istmts, span);
                 match source.kind() {
                     TyKind::Bool => {
                         let prelude = match target.kind() {
@@ -827,7 +839,7 @@ impl<'tcx> RValue<'tcx> {
                     .map(|(ix, f)| {
                         Exp::qvar(name::seq_get())
                             .app([arr_elts.clone(), Exp::Const(Constant::Int(ix as i128, None))])
-                            .eq(f.into_why(lower, istmts))
+                            .eq(f.into_why(lower, istmts, span))
                     })
                     .chain([Exp::qvar(name::seq_length())
                         .app([arr_elts.clone()])
@@ -842,18 +854,19 @@ impl<'tcx> RValue<'tcx> {
             RValue::Repeat(e, len) => {
                 let args = [
                     Arg::Ty(lower.ty(e.ty(lower.ctx.tcx, lower.locals))),
-                    Arg::Term(len.into_why(lower, istmts)),
+                    Arg::Term(len.into_why(lower, istmts, span)),
                     Arg::Term(Exp::Lam(
                         [Binder::wild(int(lower.ctx, lower.names))].into(),
-                        e.into_why(lower, istmts).boxed(),
+                        e.into_why(lower, istmts, span).boxed(),
                     )),
                 ];
                 let res_ident = Ident::fresh_local("_res");
-                istmts.push(IntermediateStmt::call(
+                istmts.push(IntermediateStmt::call_span(
                     res_ident,
                     lower.ty(ty),
-                    Name::Global(lower.names.in_pre(PreMod::Slice, "create")),
+                    Name::Global(lower.names.in_pre(PreMod::SliceOps, "create")),
                     args,
+                    span,
                 ));
 
                 Exp::var(res_ident)
@@ -862,16 +875,16 @@ impl<'tcx> RValue<'tcx> {
                 match op.ty(lower.ctx.tcx, lower.locals).kind() {
                     TyKind::Ref(_, ty, mu) => {
                         assert!(ty.is_slice());
-                        let mut op = op.into_why(lower, istmts);
+                        let mut op = op.into_why(lower, istmts, span);
                         if mu.is_mut() {
                             op = op.field(Name::Global(name::current()))
                         }
-                        Exp::qvar(lower.names.in_pre(PreMod::Slice, "length")).app([op])
+                        Exp::qvar(lower.names.in_pre(PreMod::SliceOps, "length")).app([op])
                     }
                     TyKind::RawPtr(ty, _) => {
                         assert!(ty.is_slice());
-                        Exp::qvar(lower.names.in_pre(PreMod::Slice, "slice_ptr_len"))
-                            .app([op.into_why(lower, istmts)])
+                        Exp::qvar(lower.names.in_pre(PreMod::SliceOps, "slice_ptr_len"))
+                            .app([op.into_why(lower, istmts, span)])
                     }
                     _ => unreachable!(),
                 }
@@ -886,10 +899,10 @@ impl<'tcx> RValue<'tcx> {
                 ));
 
                 if pl.ty(lower.ctx.tcx, lower.locals).is_slice() {
-                    let lhs = Exp::qvar(lower.names.in_pre(PreMod::Slice, "slice_ptr_len"))
+                    let lhs = Exp::qvar(lower.names.in_pre(PreMod::SliceOps, "slice_ptr_len"))
                         .app([Exp::var(ptr_ident)]); // TODO This was not caught by the test suite
-                    let rhs = Exp::qvar(lower.names.in_pre(PreMod::Slice, "length"))
-                        .app([lower.rplace_to_expr(&pl, istmts)]);
+                    let rhs = Exp::qvar(lower.names.in_pre(PreMod::SliceOps, "length"))
+                        .app([lower.rplace_to_expr(&pl, istmts, span)]);
                     istmts.push(IntermediateStmt::Assume(lhs.eq(rhs)));
                 }
 
@@ -907,9 +920,9 @@ impl<'tcx> Terminator<'tcx> {
         let mut istmts = vec![];
         let exp = match self {
             Terminator::Goto(bb) => Expr::var(*lower.block_idents.get(&bb).unwrap()),
-            Terminator::Switch(switch, branches) => {
+            Terminator::Switch(switch, span, branches) => {
                 let ty = switch.ty(lower.ctx.tcx, lower.locals);
-                let discr = switch.into_why(lower, &mut istmts);
+                let discr = switch.into_why(lower, &mut istmts, span);
                 branches.into_why(lower, discr, &ty)
             }
             Terminator::Return => {
@@ -1375,13 +1388,14 @@ fn func_call_to_why3<'tcx>(
 ) -> (Name, Box<[Arg]>) {
     // TODO: Perform this simplification earlier
     // Eliminate "rust-call" ABI
+    let span = lower.ctx.def_span(id);
     let args: Box<[_]> = if lower.ctx.is_closure_like(id) {
         assert!(args.len() == 2, "closures should only have two arguments (env, args)");
         let [arg, Operand::Place(pl)] = *args.into_array().unwrap() else { panic!() };
 
         let real_sig = lower.ctx.signature_unclosure(subst.as_closure().sig(), Safety::Safe);
 
-        once(Arg::Term(arg.into_why(lower, istmts)))
+        once(Arg::Term(arg.into_why(lower, istmts, span)))
             .chain(real_sig.inputs().iter().enumerate().map(|(ix, inp)| {
                 let inp = lower.ctx.instantiate_bound_regions_with_erased(inp.map_bound(|&x| x));
                 let projection = pl
@@ -1390,11 +1404,11 @@ fn func_call_to_why3<'tcx>(
                     .copied()
                     .chain([ProjectionElem::Field(ix.into(), inp)])
                     .collect();
-                Arg::Term(Operand::Place(Place { projection, ..pl }).into_why(lower, istmts))
+                Arg::Term(Operand::Place(Place { projection, ..pl }).into_why(lower, istmts, span))
             }))
             .collect()
     } else {
-        args.into_iter().map(|a| a.into_why(lower, istmts)).map(Arg::Term).collect()
+        args.into_iter().map(|a| a.into_why(lower, istmts, span)).map(Arg::Term).collect()
     };
 
     (lower.names.item(id, subst), args)

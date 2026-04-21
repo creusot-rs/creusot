@@ -251,13 +251,22 @@ impl<T> Plain for *mut T {
     }
 }
 
-/// An assertion whose meaning is independent of this thread's view.
-///
-/// Since `Objective` refers to ghost objects whose memory is objective, Rust's
-/// `Unique<T>` (and therefore `Box<T>`, `Vec<T>`, ...) are therefore objective.
+// Avoid a warning about unstable `auto trait` syntax using a
+// pre-expansion feature gate https://github.com/rust-lang/rust/issues/154045
 #[cfg(creusot)]
-#[trusted]
-pub auto trait Objective {}
+macro_rules! define_objective {
+    () => {
+        /// An assertion whose meaning is independent of this thread's view.
+        ///
+        /// Since `Objective` refers to ghost objects whose memory is objective, Rust's
+        /// `Unique<T>` (and therefore `Box<T>`, `Vec<T>`, ...) are therefore objective.
+        #[trusted]
+        pub auto trait Objective {}
+    };
+}
+
+#[cfg(creusot)]
+define_objective! {}
 
 /// A guard for potentially subjective types
 ///

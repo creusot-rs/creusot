@@ -12,7 +12,7 @@ with ocamlPackages;
     pname = "why3find";
 
     src = pkgs.fetchurl {
-      url = "https://git.frama-c.com/pub/why3find/-/archive/${version}/why3find-${version}.tar.gz";
+      url = "https://github.com/creusot-rs/why3find/archive/${version}.tar.gz";
       hash = sha256;
     };
 

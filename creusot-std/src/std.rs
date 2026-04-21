@@ -1,5 +1,6 @@
 //! Specifications for the `std` crate
 mod array;
+mod bool;
 mod borrow;
 mod boxed;
 pub mod cell;

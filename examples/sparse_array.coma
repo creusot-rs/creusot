@@ -171,6 +171,7 @@ end
 module M_impl_Sparse_T__get (* Sparse<T, SIZE> *)
   use creusot.int.UInt64
   use creusot.slice.Slice64
+  use creusot.slice.Slice64Ops
   use creusot.prelude.Any
   use seq.Seq
   use int.Int
@@ -287,21 +288,21 @@ module M_impl_Sparse_T__get (* Sparse<T, SIZE> *)
       [ s0 = [ &_12 <- i ] s1
       | s1 = [ &_13 <- UInt64.lt _12 const_SIZE ] s2
       | s2 = {[@expl:index in bounds] _13} s3
-      | s3 = Slice64.get <UInt64.t> {self.idx} {_12} (fun (r: UInt64.t) -> [ &index <- r ] s4)
+      | s3 = Slice64Ops.get <UInt64.t> {self.idx} {_12} (fun (r: UInt64.t) -> [ &index <- r ] s4)
       | s4 = [ &_14 <- UInt64.lt index self.n ] s5
       | s5 = any [ br0 -> {_14 = false} (! bb8) | br1 -> {_14} (! bb2) ] ]
     | bb2 = s0
       [ s0 = [ &_19 <- index ] s1
       | s1 = [ &_20 <- UInt64.lt _19 const_SIZE ] s2
       | s2 = {[@expl:index in bounds] _20} s3
-      | s3 = Slice64.get <UInt64.t> {self.back} {_19} (fun (r: UInt64.t) -> [ &_18 <- r ] s4)
+      | s3 = Slice64Ops.get <UInt64.t> {self.back} {_19} (fun (r: UInt64.t) -> [ &_18 <- r ] s4)
       | s4 = [ &_17 <- _18 = i ] s5
       | s5 = any [ br0 -> {_17 = false} (! bb8) | br1 -> {_17} (! bb4) ] ]
     | bb4 = s0
       [ s0 = [ &_24 <- i ] s1
       | s1 = [ &_25 <- UInt64.lt _24 const_SIZE ] s2
       | s2 = {[@expl:index in bounds] _25} s3
-      | s3 = Slice64.get <t_T> {self.values} {_24} (fun (r: t_T) -> [ &_23 <- r ] s4)
+      | s3 = Slice64Ops.get <t_T> {self.values} {_24} (fun (r: t_T) -> [ &_23 <- r ] s4)
       | s4 = [ &_ret <- Some _23 ] s5
       | s5 = return {_ret} ]
     | bb8 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = return {_ret} ] ]
@@ -702,6 +703,7 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
   use creusot.slice.Slice64
   use seq.Seq
   use creusot.prelude.MutBorrow
+  use creusot.slice.Slice64Ops
   use set.Fset
   use creusot.prelude.Any
   use int.Int
@@ -894,19 +896,19 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
       | s2 = {[@expl:index in bounds] _15} s3
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_T (index_array_T_n self.current.values _14)} any) ]
       | s4 = -{resolve_T (index_array_T_n self.current.values _14)}- s5
-      | s5 = Slice64.set <t_T> {self.current.values} {_14} {v}
+      | s5 = Slice64Ops.set <t_T> {self.current.values} {_14} {v}
           (fun (r: Slice64.array t_T) -> [ &self <- { self with current = { self.current with values = r } } ] s6)
       | s6 = [ &_17 <- i ] s7
       | s7 = [ &_18 <- UInt64.lt _17 const_SIZE ] s8
       | s8 = {[@expl:index in bounds] _18} s9
-      | s9 = Slice64.get <UInt64.t> {self.current.idx} {_17} (fun (r: UInt64.t) -> [ &index <- r ] s10)
+      | s9 = Slice64Ops.get <UInt64.t> {self.current.idx} {_17} (fun (r: UInt64.t) -> [ &index <- r ] s10)
       | s10 = [ &_19 <- UInt64.lt index self.current.n ] s11
       | s11 = any [ br0 -> {_19 = false} (! bb11) | br1 -> {_19} (! bb6) ] ]
     | bb6 = s0
       [ s0 = [ &_24 <- index ] s1
       | s1 = [ &_25 <- UInt64.lt _24 const_SIZE ] s2
       | s2 = {[@expl:index in bounds] _25} s3
-      | s3 = Slice64.get <UInt64.t> {self.current.back} {_24} (fun (r: UInt64.t) -> [ &_23 <- r ] s4)
+      | s3 = Slice64Ops.get <UInt64.t> {self.current.back} {_24} (fun (r: UInt64.t) -> [ &_23 <- r ] s4)
       | s4 = [ &_22 <- _23 = i ] s5
       | s5 = any [ br0 -> {_22 = false} (! bb11) | br1 -> {_22} (! bb8) ] ]
     | bb8 = s0
@@ -919,12 +921,12 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
       | s2 = [ &_33 <- i ] s3
       | s3 = [ &_34 <- UInt64.lt _33 const_SIZE ] s4
       | s4 = {[@expl:index in bounds] _34} s5
-      | s5 = Slice64.set <UInt64.t> {self.current.idx} {_33} {self.current.n}
+      | s5 = Slice64Ops.set <UInt64.t> {self.current.idx} {_33} {self.current.n}
           (fun (r: Slice64.array UInt64.t) -> [ &self <- { self with current = { self.current with idx = r } } ] s6)
       | s6 = [ &_36 <- self.current.n ] s7
       | s7 = [ &_37 <- UInt64.lt _36 const_SIZE ] s8
       | s8 = {[@expl:index in bounds] _37} s9
-      | s9 = Slice64.set <UInt64.t> {self.current.back} {_36} {i}
+      | s9 = Slice64Ops.set <UInt64.t> {self.current.back} {_36} {i}
           (fun (r: Slice64.array UInt64.t) -> [ &self <- { self with current = { self.current with back = r } } ] s10)
       | s10 = UInt64.add {self.current.n} {(1: UInt64.t)}
           (fun (_x: UInt64.t) -> [ &self <- { self with current = { self.current with n = _x } } ] s11)
@@ -960,6 +962,7 @@ end
 module M_create
   use creusot.int.UInt64
   use creusot.slice.Slice64
+  use creusot.slice.Slice64Ops
   use creusot.prelude.Any
   use seq.Seq
   use int.Int
@@ -1054,11 +1057,11 @@ module M_create
     {[@stop_split] [@expl:create 'dummy' type invariant] inv_T dummy}
     (! bb0
     [ bb0 = s0
-      [ s0 = Slice64.create <t_T> {const_SIZE} {fun (_: int) -> dummy}
+      [ s0 = Slice64Ops.create <t_T> {const_SIZE} {fun (_: int) -> dummy}
           (fun (_res: Slice64.array t_T) -> [ &_3 <- _res ] s1)
-      | s1 = Slice64.create <UInt64.t> {const_SIZE} {fun (_: int) -> (0: UInt64.t)}
+      | s1 = Slice64Ops.create <UInt64.t> {const_SIZE} {fun (_: int) -> (0: UInt64.t)}
           (fun (_res: Slice64.array UInt64.t) -> [ &_5 <- _res ] s2)
-      | s2 = Slice64.create <UInt64.t> {const_SIZE} {fun (_: int) -> (0: UInt64.t)}
+      | s2 = Slice64Ops.create <UInt64.t> {const_SIZE} {fun (_: int) -> (0: UInt64.t)}
           (fun (_res: Slice64.array UInt64.t) -> [ &_6 <- _res ] s3)
       | s3 = [ &_ret <- { n = (0: UInt64.t); values = _3; idx = _5; back = _6 } ] s4
       | s4 = return {_ret} ] ]
