@@ -125,15 +125,17 @@ module M_impl_Iterator_for_Empty_T__produces_trans__refines (* <Empty<T> as comm
   meta "select_lsinst" "all"
   
   goal refines:
-    forall a: t_Empty_T. forall ab: Seq.seq t_T. forall b: t_Empty_T. forall bc: Seq.seq t_T. forall c: t_Empty_T. produces_Empty_T a ab b
-                /\ produces_Empty_T b bc c
-              -> produces_Empty_T a ab b
-              /\ produces_Empty_T b bc c
-              /\ (forall result: (). produces_Empty_T a (Seq.(++) ab bc) c -> produces_Empty_T a (Seq.(++) ab bc) c)
+    forall a: t_Empty_T, ab: Seq.seq t_T, b: t_Empty_T, bc: Seq.seq t_T, c: t_Empty_T. produces_Empty_T a ab b
+      -> produces_Empty_T b bc c
+      -> produces_Empty_T a ab b
+      /\ produces_Empty_T b bc c
+      /\ (forall result: (). produces_Empty_T a (Seq.(++) ab bc) c -> produces_Empty_T a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Empty_T__next__refines (* <Empty<T> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
+  
+  type t_Empty_T = { f0: () }
   
   type t_T
   
@@ -146,10 +148,8 @@ module M_impl_Iterator_for_Empty_T__next__refines (* <Empty<T> as common::Iterat
   axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
       = match x with
         | None -> true
-        | Some f0 -> inv_T f0
+        | Some f0'0 -> inv_T f0'0
         end
-  
-  type t_Empty_T = { f0: () }
   
   predicate resolve_refmut_Empty_T [@inline:trivial] (_1: MutBorrow.t t_Empty_T) = _1.final = _1.current
   

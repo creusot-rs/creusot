@@ -17,7 +17,7 @@ use crate::{
         is_trusted_item,
         optimization::optimizations,
         projections::{Focus, borrow_generated_id, projections_to_expr},
-        signature::lower_program_sig,
+        signature::{ProgramSignature, lower_program_sig},
         term::{lower_pure, unsupported_cast},
         ty::{
             constructor, floatty_to_prelude, int, ity_to_prelude, sign_extend, translate_ty,
@@ -42,11 +42,7 @@ use crate::{
 use indexmap::IndexMap;
 use petgraph::graphmap::DiGraphMap;
 use rustc_abi::VariantIdx;
-use rustc_hir::{
-    Safety,
-    def::DefKind,
-    def_id::{DefId, LocalDefId},
-};
+use rustc_hir::{Safety, def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{BasicBlock, BinOp, PlaceTy, ProjectionElem, START_BLOCK, UnOp},
     ty::{self, AdtDef, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind},
@@ -67,18 +63,18 @@ pub(crate) fn translate_function<'tcx>(
     def_id: DefId,
 ) -> Option<FileModule> {
     let names = Dependencies::new(ctx, def_id);
+    let namespace_ty = names.namespace_ty();
 
     if !def_id.is_local() || !ctx.has_body(def_id) || is_trusted_item(ctx.tcx, def_id) {
         return None;
     }
 
     let name = names.source_ident();
-    let mut defn = to_why(ctx, &names, name, def_id.expect_local());
-
-    let namespace_ty = names.namespace_ty();
+    let (body, sig) = to_why_body(ctx, &names, name, def_id);
 
     let (mut decls, setters) = names.provide_deps(ctx);
-    defn.body = setters.call_setters(defn.body);
+    let body = setters.call_setters(body);
+    let defn = to_why_defn(ctx, name, def_id, body, sig);
     decls.extend(common_meta_decls());
     decls.push(Decl::Coma(defn));
 
@@ -129,10 +125,18 @@ pub(crate) fn to_why<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     name: Ident,
-    body_id: LocalDefId,
+    def_id: DefId,
 ) -> Defn {
-    let def_id = body_id.to_def_id();
+    let (body, sig) = to_why_body(ctx, names, name, def_id);
+    to_why_defn(ctx, name, def_id, body, sig)
+}
 
+pub(crate) fn to_why_body<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    names: &impl Namer<'tcx>,
+    name: Ident,
+    def_id: DefId,
+) -> (Expr, ProgramSignature) {
     // The function receives name::return_ as an argument handler and
     // redefines it in an handler that wraps it with the postcondition:
     //
@@ -141,7 +145,7 @@ pub(crate) fn to_why<'tcx>(
     //   [ return x -> {postcondition} (! return x ) ]
     let sig = ctx.sig(def_id);
     let args = sig.inputs.iter().map(|(name, _, _)| name.0).collect::<Box<[_]>>();
-    let body_id = BodyId::local(body_id);
+    let body_id = BodyId::local(def_id.expect_local());
     let mut recursive_calls = RecursiveCalls::new();
     let mut body =
         why_body(ctx, names, body_id, None, &args, name::return_(), &mut recursive_calls);
@@ -240,10 +244,20 @@ pub(crate) fn to_why<'tcx>(
         ctx.dcx().span_bug(ctx.def_span(body_id.def_id), "missing variant for function");
     }
 
-    if let Some((exp, ty)) = sig.variant {
+    if let Some((exp, ty)) = std::mem::take(&mut sig.variant) {
         body = body.let_(std::iter::once(Var(variant_name.0, ty, exp, IsRef::NotRef)))
     }
 
+    (body, sig)
+}
+
+pub(crate) fn to_why_defn<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    name: Ident,
+    def_id: DefId,
+    mut body: Expr,
+    mut sig: ProgramSignature,
+) -> Defn {
     let mut ret = Expr::var(name::return_()).app([Arg::Term(Exp::var(name::result()))]);
 
     // We remove the barrier around the definition of closures without contracts

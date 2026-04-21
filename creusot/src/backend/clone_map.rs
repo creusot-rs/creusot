@@ -26,6 +26,7 @@ use why3::{
     Exp, Ident, Name, QName, Symbol,
     coma::{Defn, Expr, Param, Prototype},
     declaration::{Attribute, Decl, Goal, Span as WSpan, TyDecl, Use},
+    ty::Type,
 };
 
 mod elaborator;
@@ -650,17 +651,38 @@ impl Setters {
         body
     }
 
-    pub fn mk_goal(self, name: Ident, goal: Exp) -> Decl {
+    pub fn mk_goal(
+        self,
+        name: Ident,
+        args: Vec<(Ident, Type)>,
+        requires: impl DoubleEndedIterator<Item = Exp>,
+        ensures: Exp,
+    ) -> Decl {
         if self.is_empty() {
+            let goal = Exp::forall(
+                args,
+                requires.into_iter().rfold(ensures, |post, pre| pre.implies(post)),
+            );
             Decl::Goal(Goal { name, goal })
         } else {
+            let ret = Ident::fresh_local("ret");
             let prototype = Prototype {
                 name,
                 attrs: vec![],
                 params: [Param::Cont(name::return_(), [].into(), [].into())].into(),
             };
-            let body =
-                self.call_setters(Expr::Assert(goal.boxed(), Expr::var(name::return_()).boxed()));
+            let body = self.call_setters(Expr::var(ret)).black_box();
+            let body = requires
+                .into_iter()
+                .rfold(body, |body, pre| Expr::Assert(pre.boxed(), body.boxed()));
+            let ret_defn = Defn {
+                prototype: Prototype::new(
+                    ret,
+                    args.into_iter().map(|(arg, ty)| Param::Term(arg, ty)).collect::<Box<[_]>>(),
+                ),
+                body: Expr::Assert(ensures.boxed(), Expr::var(name::return_()).black_box().boxed()),
+            };
+            let body = Expr::Defn(body.boxed(), false, [ret_defn].into());
             Decl::Coma(Defn { prototype, body })
         }
     }

@@ -69,9 +69,9 @@ module M_array
   
   meta "select_lsinst" "all"
   
-  let rec array (return (x: UInt64.t)) = set_Y
+  let rec array (return (x: UInt64.t)) = (! set_Y
       (set_X
-        ((! bb0
+        (bb0
         [ bb0 = s0
           [ s0 = bb0'0
             [ bb0'0 = s0'0 [ s0'0 = [ &_ret'0 <- const_X ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
@@ -89,9 +89,8 @@ module M_array
         | & _2: UInt64.t = Any.any_l ()
         | & _6: UInt64.t = Any.any_l ()
         | & _10: Slice64.array Int32.t = Any.any_l ()
-        | & _11: Slice64.array Int32.t = Any.any_l () ])
-        [ return (result: UInt64.t) -> {[@stop_split] [@expl:array ensures] result = (52: UInt64.t)}
-          (! return {result}) ]))
+        | & _11: Slice64.array Int32.t = Any.any_l () ])))
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:array ensures] result = (52: UInt64.t)} (! return {result}) ]
 end
 module M_array_param
   use creusot.int.UInt32
@@ -419,15 +418,20 @@ module M_nat_i3
       | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () ]
     [ return (_const: UInt64.t) -> -{const_VALUE'0 = _const}- return ]
   
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec nat_i3_T (return (x: ())) = set_VALUE
-      ((! bb0
+  let rec nat_i3_T (return (x: ())) = {[@stop_split] [@expl:nat_i3 requires] UInt64.t'int const_VALUE
+      + UInt64.t'int const_VALUE
+    <= UInt64.t'int const_MAX}
+    (! set_VALUE
+      (bb0
       [ bb0 = s0
         [ s0 = {[@expl:assertion] UInt64.t'int const_VALUE'0 = UInt64.t'int const_VALUE + UInt64.t'int const_VALUE} s1
-        | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ])
+        | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () ])) [ return (result: ()) -> (! return {result}) ]
 end
 module M_nat_i3_logic
   use creusot.int.UInt64
@@ -435,6 +439,8 @@ module M_nat_i3_logic
   use int.Int
   
   constant const_VALUE : UInt64.t
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   type tup2_usize_bool = { f0: UInt64.t; f1: bool }
   
@@ -459,10 +465,11 @@ module M_nat_i3_logic
   
   function nat_i3_T : ()
   
-  let rec vc_nat_i3_T (return) = set_VALUE
-      ({[@stop_split] [@expl:nat_i3_logic ensures] UInt64.t'int const_VALUE'0
+  let rec vc_nat_i3_T (return) = {UInt64.t'int const_VALUE + UInt64.t'int const_VALUE <= UInt64.t'int const_MAX}
+    (! set_VALUE (ret))
+    [ ret -> {[@stop_split] [@expl:nat_i3_logic ensures] UInt64.t'int const_VALUE'0
       = UInt64.t'int const_VALUE + UInt64.t'int const_VALUE}
-      return)
+      (! return) ]
 end
 module M_impl_Clone_for_Peano__clone (* <Peano as std::clone::Clone> *)
   use creusot.prelude.Any
@@ -613,8 +620,8 @@ module M_zero
   
   meta "select_lsinst" "all"
   
-  let rec zero (return (x: t_Peano)) = set_PEANOS
-      ((! bb0
+  let rec zero (return (x: t_Peano)) = (! set_PEANOS
+      (bb0
       [ bb0 = s0
         [ s0 = [ &_2 <- const_PEANOS ] s1
         | s1 = [ &_3 <- (0: UInt64.t) ] s2
@@ -625,8 +632,8 @@ module M_zero
       [ & _ret: t_Peano = Any.any_l ()
       | & _2: Slice64.array t_Peano = Any.any_l ()
       | & _3: UInt64.t = Any.any_l ()
-      | & _4: bool = Any.any_l () ])
-      [ return (result: t_Peano) -> {[@stop_split] [@expl:zero ensures] result = Z} (! return {result}) ])
+      | & _4: bool = Any.any_l () ]))
+    [ return (result: t_Peano) -> {[@stop_split] [@expl:zero ensures] result = Z} (! return {result}) ]
 end
 module M_str
   use creusot.prelude.Any
@@ -641,20 +648,29 @@ module M_str
   
   meta "select_lsinst" "all"
   
-  let rec str (return (x: string)) = set_STR
-      ((! bb0
-      [ bb0 = s0 [ s0 = [ &_ret <- const_STR ] s1 | s1 = return {_ret} ] ] [ & _ret: string = Any.any_l () ])
-      [ return (result: string) -> {[@stop_split] [@expl:str ensures] result = const_STR} (! return {result}) ])
+  let rec str (return (x: string)) = (! set_STR
+      (bb0
+      [ bb0 = s0 [ s0 = [ &_ret <- const_STR ] s1 | s1 = return {_ret} ] ] [ & _ret: string = Any.any_l () ]))
+    [ return (result: string) -> {[@stop_split] [@expl:str ensures] result = const_STR} (! return {result}) ]
 end
 module M_is_zst
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use int.Int
+  
+  constant size_of_T : int
+  
+  axiom size_of_T_spec: 0 <= size_of_T
+  
+  let rec size_of_T'0 (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:size_of ensures] UInt64.t'int result = size_of_T}
+      (! return {result}) ]
   
   constant const_SIZE : UInt64.t
   
   let rec set_SIZE (return) = bb0
-    [ bb0 = {false} any ] [ & _ret: UInt64.t = Any.any_l () ]
-    [ return (_const: UInt64.t) -> -{const_SIZE = _const}- return ]
+    [ bb0 = s0 [ s0 = size_of_T'0 (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () ] [ return (_const: UInt64.t) -> -{const_SIZE = _const}- return ]
   
   constant const_IS_ZST : bool
   
@@ -666,15 +682,15 @@ module M_is_zst
   
   meta "select_lsinst" "all"
   
-  let rec is_zst_T (return (x: bool)) = set_SIZE
+  let rec is_zst_T (return (x: bool)) = (! set_SIZE
       (set_IS_ZST
-        ((! bb0
+        (bb0
         [ bb0 = s0
           [ s0 = bb0'0
             [ bb0'0 = s0'0 [ s0'0 = [ &_ret'0 <- const_IS_ZST ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
             [ & _ret'0: bool = Any.any_l () ] [ _const_ret (_const: bool) -> [ &_ret <- _const ] s1 ]
-          | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])
-        [ return (result: bool) -> {[@stop_split] [@expl:is_zst ensures] result = const_IS_ZST} (! return {result}) ]))
+          | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])))
+    [ return (result: bool) -> {[@stop_split] [@expl:is_zst ensures] result = const_IS_ZST} (! return {result}) ]
 end
 module M_is_zst_z
   use creusot.prelude.Any

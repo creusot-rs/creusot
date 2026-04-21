@@ -77,6 +77,10 @@ impl<'tcx> PreContract<'tcx> {
             Term::conj(precond, cond.term.clone().spanned_nontrivial())
         })
     }
+
+    pub(crate) fn requires(&self) -> Vec<Term<'tcx>> {
+        self.requires.iter().map(|cond| cond.term.clone().spanned_nontrivial()).collect()
+    }
 }
 
 /// [ContractClauses] is the most "raw" form of contract we have in Creusot,
