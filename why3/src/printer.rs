@@ -1,8 +1,8 @@
 use crate::{
     Exp, Ident, Name, QName, Symbol,
     declaration::{
-        self, AdtDecl, Attribute, Axiom, ConstructorDecl, Contract, Decl, DeclKind, FieldDecl,
-        Goal, LogicDecl, LogicDefn, Meta, MetaArg, MetaIdent, Module, Predicate, Signature, Span,
+        self, AdtDecl, Attribute, Axiom, ConstructorDecl, Decl, DeclKind, FieldDecl, Goal,
+        LogicDecl, LogicDefn, Meta, MetaArg, MetaIdent, Module, Predicate, Signature, Span,
         SumRecord, TyDecl, Use,
     },
     exp::{AssocDir, BinOp, Binder, Constant, Pattern, Precedence, Quant, Trigger, UnOp},
@@ -513,11 +513,6 @@ impl Print for Signature {
                     |t| alloc.text(" : ").append(t.pretty(alloc, scope)),
                 ),
             )
-            .append(if self.contract.is_empty() {
-                alloc.nil()
-            } else {
-                alloc.line().append(self.contract.pretty(alloc, scope))
-            })
             .nest(2)
             .group()
     }
@@ -657,45 +652,6 @@ impl Print for LogicDecl {
         scope.open();
         let doc = doc.append(self.sig.pretty(alloc, scope));
         scope.close();
-        doc
-    }
-}
-
-impl Print for Contract {
-    fn pretty<'a, A: DocAllocator<'a>>(
-        &'a self,
-        alloc: &'a A,
-        scope: &mut Why3Scope,
-    ) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        let mut doc = alloc.nil();
-
-        for req in &self.requires {
-            doc = doc.append(
-                alloc
-                    .text("requires ")
-                    .append(req.exp.pretty(alloc, scope).braces())
-                    .append(alloc.hardline()),
-            )
-        }
-
-        for req in &self.ensures {
-            doc = doc.append(
-                alloc
-                    .text("ensures ")
-                    .append(
-                        alloc
-                            .space()
-                            .append(req.exp.pretty(alloc, scope))
-                            .append(alloc.space())
-                            .braces(),
-                    )
-                    .append(alloc.hardline()),
-            )
-        }
-
         doc
     }
 }

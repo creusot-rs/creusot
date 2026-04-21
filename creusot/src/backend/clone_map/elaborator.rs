@@ -7,7 +7,7 @@ use crate::{
         logic::{lower_logical_defn, spec_axioms},
         program,
         resolve::{ResolveDef, elaborate_resolve_def, structural_resolve},
-        signature::{lower_logic_sig, lower_program_sig},
+        signature::{LogicSignature, lower_logic_sig, lower_program_sig},
         term::{lower_pure, lower_pure_weakdep},
         ty::{
             eliminator, translate_adtdecl, translate_closure_ty, translate_tuple_ty, translate_ty,
@@ -245,7 +245,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         let mut decls = if !opaque && let Some(term) = term(ctx, &names, &bound, def_id, subst) {
             lower_logical_defn(ctx, &names, sig, kind, term, is_inline(ctx.tcx, def_id))
         } else {
-            let mut decls = val(sig.why_sig, kind);
+            let mut decls = val(sig, kind);
 
             if matches!(
                 ctx.intrinsic(def_id),
@@ -375,7 +375,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
 
         if opaque {
-            val(sig.why_sig, DeclKind::Constant)
+            val(sig, DeclKind::Constant)
         } else if let Some(term) = try_const_to_term(def_id, subst, ctx, typing_env) {
             lower_logical_defn(
                 ctx,
@@ -392,7 +392,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 Ident::fresh_local(crate::naming::ascii_item_name("set_", ctx.tcx, def_id));
 
             names.register_constant_setter(setter);
-            let mut decls = val(sig.why_sig, DeclKind::Constant);
+            let mut decls = val(sig, DeclKind::Constant);
 
             let (def_id, subst) = trait_resol.to_opt(def_id, subst).unwrap();
             let body = program::why_body(
@@ -534,7 +534,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             attrs: vec![],
             retty: Some(translate_ty(ctx, &names, DUMMY_SP, target)),
             args: [(Ident::fresh_local("x"), translate_ty(ctx, &names, DUMMY_SP, source))].into(),
-            contract: Default::default(),
         };
         vec![Decl::LogicDecl(LogicDecl { kind: Some(DeclKind::Function), sig })]
     }
@@ -637,7 +636,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                         Ident::fresh_local("x"),
                         Type::TConstructor(Name::local(namer.private_fields(def_id, subst))),
                     )]),
-                    contract: Default::default(),
                 };
                 vec![Decl::predicate(sig, None)]
             }
@@ -699,15 +697,14 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     }
 }
 
-fn val(mut sig: Signature, kind: DeclKind) -> Vec<Decl> {
-    if let None = sig.retty
+fn val(mut sig: LogicSignature, kind: DeclKind) -> Vec<Decl> {
+    if let None = sig.why_sig.retty
         && let DeclKind::Constant = kind
     {
-        sig.retty = Some(backend::ty::bool());
+        sig.why_sig.retty = Some(backend::ty::bool());
     }
     let mut d = spec_axioms(&sig).collect::<Vec<_>>();
-    sig.contract = Default::default();
-    d.insert(0, Decl::LogicDecl(LogicDecl { kind: Some(kind), sig }));
+    d.insert(0, Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: sig.why_sig }));
     d
 }
 

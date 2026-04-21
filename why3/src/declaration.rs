@@ -1,6 +1,4 @@
 use crate::{coma::Defn, exp::Exp, ty::Type, *};
-use indexmap::IndexSet;
-use std::collections::HashMap;
 
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
@@ -83,86 +81,6 @@ impl Condition {
     }
 }
 
-// Don't add `stop_split` if there's already one.
-fn extra_attrs(exp: Exp, name: &str, kind: &str) -> Exp {
-    if let Exp::Attr(..) = &exp {
-        exp
-    } else {
-        exp.with_attr(Attribute::Attr(format!("expl:{name} {kind}")))
-            .with_attr(Attribute::Attr("stop_split".into()))
-    }
-}
-
-#[derive(Debug, Default, Clone)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct Contract {
-    pub requires: Box<[Condition]>,
-    pub ensures: Box<[Condition]>,
-    // Note that we never generate why3 variants
-}
-
-impl Contract {
-    pub fn is_empty(&self) -> bool {
-        self.requires.is_empty() && self.ensures.is_empty()
-    }
-
-    pub fn ensures_conj(&self, name: &str) -> Exp {
-        let mut ensures = self.ensures.iter().cloned().map(Condition::labelled_exp);
-        let Some(mut postcond) = ensures.next() else { return Exp::mk_true() };
-        postcond = ensures.fold(postcond, Exp::log_and);
-        postcond.reassociate();
-        extra_attrs(postcond, name, "ensures")
-    }
-
-    pub fn ensures_conj_plain(&self) -> Exp {
-        let mut ensures = self.ensures.iter().cloned().map(Condition::plain_exp);
-        let Some(mut postcond) = ensures.next() else { return Exp::mk_true() };
-        postcond = ensures.fold(postcond, Exp::log_and);
-        postcond.reassociate();
-        postcond
-    }
-
-    pub fn requires_conj(&self, name: &str) -> Exp {
-        let mut requires = self.requires.iter().cloned().map(Condition::labelled_exp);
-        let Some(mut postcond) = requires.next() else { return Exp::mk_true() };
-        postcond = requires.fold(postcond, Exp::log_and);
-        postcond.reassociate();
-        extra_attrs(postcond, name, "requires")
-    }
-
-    pub fn requires_implies(&self, conclusion: Exp) -> Exp {
-        self.requires().rfold(conclusion, |acc, arg| arg.implies(acc))
-    }
-
-    pub fn requires(&self) -> impl DoubleEndedIterator<Item = Exp> {
-        self.requires.iter().map(|cond| cond.exp.clone())
-    }
-
-    pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
-        for req in self.requires.iter_mut() {
-            req.exp.subst(subst);
-        }
-
-        for ens in self.ensures.iter_mut() {
-            ens.exp.subst(subst);
-        }
-    }
-
-    pub fn qfvs(&self) -> IndexSet<QName> {
-        let mut qfvs = IndexSet::new();
-
-        for req in &self.requires {
-            qfvs.extend(req.exp.qfvs());
-        }
-
-        for ens in &self.ensures {
-            qfvs.extend(ens.exp.qfvs());
-        }
-
-        qfvs
-    }
-}
-
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Attribute {
@@ -178,7 +96,6 @@ pub struct Signature {
     pub attrs: Vec<Attribute>,
     pub retty: Option<Type>,
     pub args: Box<[(Ident, Type)]>,
-    pub contract: Contract,
 }
 
 #[derive(Debug, Clone)]

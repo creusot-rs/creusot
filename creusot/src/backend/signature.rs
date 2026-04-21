@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     backend::{
         DefKind, Why3Generator,
@@ -10,10 +12,61 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use why3::{
-    Ident,
+    Exp, Ident,
     coma::{Param, Prototype},
-    declaration::{Contract, Signature},
+    declaration::{Attribute, Condition, Signature},
 };
+
+#[derive(Debug, Clone)]
+pub(crate) struct Contract {
+    pub(crate) requires: Box<[Condition]>,
+    pub(crate) ensures: Box<[Condition]>,
+}
+
+impl Contract {
+    // Don't add `stop_split` if there's already one.
+    fn add_stop_split(exp: Exp, name: &str, kind: &str) -> Exp {
+        if let Exp::Attr(Attribute::Attr(a1), box Exp::Attr(Attribute::Attr(a2), _)) = &exp
+            && a1 == "stop_split"
+            && a2.starts_with("expl:")
+        {
+            exp
+        } else {
+            exp.with_attr(Attribute::Attr(format!("expl:{name} {kind}")))
+                .with_attr(Attribute::Attr("stop_split".into()))
+        }
+    }
+
+    pub fn ensures_conj(&self, name: &str) -> Exp {
+        let mut ensures = self.ensures.iter().cloned().map(Condition::labelled_exp);
+        let Some(mut postcond) = ensures.next() else { return Exp::mk_true() };
+        postcond = ensures.fold(postcond, Exp::log_and);
+        postcond.reassociate();
+        Contract::add_stop_split(postcond, name, "ensures")
+    }
+
+    pub fn requires_conj(&self, name: &str) -> Exp {
+        let mut requires = self.requires.iter().cloned().map(Condition::labelled_exp);
+        let Some(mut postcond) = requires.next() else { return Exp::mk_true() };
+        postcond = requires.fold(postcond, Exp::log_and);
+        postcond.reassociate();
+        Contract::add_stop_split(postcond, name, "requires")
+    }
+
+    pub fn requires_implies(&self, conclusion: Exp) -> Exp {
+        self.requires.iter().rfold(conclusion, |acc, arg| arg.exp.clone().implies(acc))
+    }
+
+    pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
+        for req in self.requires.iter_mut() {
+            req.exp.subst(subst);
+        }
+
+        for ens in self.ensures.iter_mut() {
+            ens.exp.subst(subst);
+        }
+    }
+}
 
 /// The signature of a program function
 #[derive(Debug, Clone)]
@@ -72,6 +125,7 @@ pub(crate) fn lower_program_sig<'tcx>(
 #[derive(Debug, Clone)]
 pub(crate) struct LogicSignature {
     pub(crate) why_sig: Signature,
+    pub(crate) contract: Contract,
     pub(crate) variant: Option<why3::Exp>,
 }
 
@@ -115,7 +169,7 @@ pub(crate) fn lower_logic_sig<'tcx>(
         pre_sig.contract.variant.take().map(|term| lower_pure(ctx, names, &term.spanned()));
     let contract = lower_contract(ctx, names, pre_sig.contract);
 
-    LogicSignature { why_sig: Signature { name, attrs, retty, args, contract }, variant }
+    LogicSignature { why_sig: Signature { name, attrs, retty, args }, contract, variant }
 }
 
 pub(crate) fn lower_contract<'tcx>(

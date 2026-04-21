@@ -60,7 +60,6 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
                     attrs: vec![],
                     retty: Some(translate_ty(ctx, &names, span, ty)),
                     args: Box::new([]),
-                    contract: Default::default(),
                 },
             });
             (decl, name)
@@ -69,8 +68,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     body_decls.extend(param_decls);
 
     let val_decl = {
-        let mut sig = sig.why_sig.clone();
-        sig.contract = Default::default();
+        let sig = sig.why_sig.clone();
         match ctx.item_type(def_id) {
             ItemType::Logic { .. } => {
                 let kind = if sig.retty == None {
@@ -87,7 +85,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     };
     body_decls.push(Decl::LogicDecl(val_decl));
 
-    let postcondition = sig.why_sig.contract.ensures_conj(&name.name().to_string());
+    let postcondition = sig.contract.ensures_conj(&name.name().to_string());
 
     let term = ctx.ctx.term(def_id).unwrap().rename(&bound);
     let wp = wp(
@@ -105,7 +103,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     let (mut decls, setters) = names.provide_deps(ctx);
     decls.extend(common_meta_decls());
     decls.extend(body_decls);
-    let requires = sig.why_sig.contract.requires();
+    let requires = sig.contract.requires.into_iter().map(|cond| cond.exp);
     decls.push(setters.mk_goal(vc_ident, vec![], requires, wp));
 
     if ctx.used_namespaces.get() {
@@ -136,8 +134,6 @@ pub(crate) fn lower_logical_defn<'tcx>(
 
     if sig.variant.is_none() {
         let mut sig = sig.why_sig.clone();
-        sig.contract = Default::default();
-
         let mut meta_decl = None;
         if inline {
             sig.attrs.push(Attribute::Attr("inline:trivial".into()));
@@ -166,31 +162,15 @@ pub(crate) fn lower_logical_defn<'tcx>(
         decls.push(decl);
         decls.extend(meta_decl);
     } else {
-        let mut decl_sig = sig.why_sig.clone();
-        decl_sig.contract = Default::default();
-
-        decls.push(Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: decl_sig }));
-        decls.push(Decl::Axiom(definition_axiom(&sig.why_sig, body, "def", inline)));
+        decls.push(Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: sig.why_sig.clone() }));
+        decls.push(Decl::Axiom(definition_axiom(&sig, body, "def", inline)));
     }
 
-    if !sig.why_sig.contract.ensures.is_empty() {
-        decls.extend(spec_axioms(&sig.why_sig));
+    if !sig.contract.ensures.is_empty() {
+        decls.extend(spec_axioms(&sig));
     }
 
     decls
-}
-
-pub(crate) fn spec_axioms(sig: &Signature) -> impl Iterator<Item = Decl> {
-    let call = function_call(sig);
-    sig.contract.ensures.iter().map(move |post| {
-        let mut condition = sig.contract.requires_implies(post.exp.clone());
-        let trigger =
-            condition.fvs().contains(&name::result()).then_some(Trigger::single(call.clone()));
-        condition.subst(&[(name::result(), call.clone())].into_iter().collect());
-        let axiom = Exp::forall_trig(sig.args.clone(), trigger, condition);
-        let name = sig.name.refresh_with(|s| format!("{s}_spec"));
-        Decl::Axiom(Axiom { name, rewrite: false, axiom })
-    })
 }
 
 pub fn function_call(sig: &Signature) -> Exp {
@@ -198,11 +178,24 @@ pub fn function_call(sig: &Signature) -> Exp {
     Exp::var(sig.name).app(args)
 }
 
-fn definition_axiom(sig: &Signature, body: Exp, suffix: &str, rewrite: bool) -> Axiom {
-    let call = function_call(sig);
+pub(crate) fn spec_axioms(sig: &LogicSignature) -> impl Iterator<Item = Decl> {
+    let call = function_call(&sig.why_sig);
+    sig.contract.ensures.iter().map(move |post| {
+        let mut condition = sig.contract.requires_implies(post.exp.clone());
+        let trigger =
+            condition.fvs().contains(&name::result()).then_some(Trigger::single(call.clone()));
+        condition.subst(&[(name::result(), call.clone())].into_iter().collect());
+        let axiom = Exp::forall_trig(sig.why_sig.args.clone(), trigger, condition);
+        let name = sig.why_sig.name.refresh_with(|s| format!("{s}_spec"));
+        Decl::Axiom(Axiom { name, rewrite: false, axiom })
+    })
+}
+
+fn definition_axiom(sig: &LogicSignature, body: Exp, suffix: &str, rewrite: bool) -> Axiom {
+    let call = function_call(&sig.why_sig);
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
-    let axiom = Exp::forall_trig(sig.args.clone(), [Trigger::single(call)], condition);
-    let name = sig.name.refresh_with(|s| format!("{s}_{suffix}"));
+    let axiom = Exp::forall_trig(sig.why_sig.args.clone(), [Trigger::single(call)], condition);
+    let name = sig.why_sig.name.refresh_with(|s| format!("{s}_{suffix}"));
     Axiom { name, rewrite, axiom }
 }
