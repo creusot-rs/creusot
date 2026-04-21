@@ -42,6 +42,11 @@
           sha256 = "sha256-OeLJEop9HonzMuMaJxbzWfO54akl/oHxH6SnSbXSTYI=";
         };
 
+        alt-ergo-free = {
+          version = "2.4.3";
+          sha256 = "sha256-ksVP9HH9pY+T6Es/wgC9pGd805AGw1e1vgfVlNGCXG8=";
+        };
+
         cvc4 = {
           version = "1.8";
           sha256 = "sha256-V6KShPLW6kFBJaNgqy98rjOxULmf5c8AmDwo9fclGuY=";
@@ -88,6 +93,32 @@
 
         envBuilder = rust.lib.overrideToolchain rust.toolchain.build;
       };
+
+      mkWhy3Framework = {isFree ? false}: let
+        solvers = let
+          free-solvers = with lib.pkgs; [cvc4 cvc5 why3 why3find z3];
+        in
+          if isFree
+          then [lib.pkgs.alt-ergo-free] ++ free-solvers
+          else [lib.pkgs.alt-ergo] ++ free-solvers;
+
+        why3json = pkgs.writeTextFile {
+          destination = "/why3find.json";
+          name = "why3find.json";
+          text = builtins.readFile ./why3find.json;
+        };
+      in
+        pkgs.symlinkJoin {
+          name = "creusot-why3";
+          paths = solvers ++ [why3json];
+          postBuild = "ln -s $out $out/creusot";
+
+          passthru = builtins.listToAttrs (map (drv: {
+              name = drv.pname;
+              value = drv;
+            })
+            solvers);
+        };
     in rec {
       inherit lib;
 
@@ -105,29 +136,7 @@
             || (builtins.match ".*/*.stderr" path != null);
         };
       in {
-        why3Framework = let
-          licence = {
-            gpl = with lib.pkgs; [cvc4 cvc5 why3 why3find z3];
-            unfree = licence.gpl ++ (with lib.pkgs; [alt-ergo]);
-          };
-
-          why3json = pkgs.writeTextFile {
-            destination = "/why3find.json";
-            name = "why3find.json";
-            text = builtins.readFile ./why3find.json;
-          };
-        in
-          pkgs.symlinkJoin {
-            name = "creusot-why3";
-            paths = licence.unfree ++ [why3json];
-            postBuild = "ln -s $out $out/creusot";
-
-            passthru = builtins.listToAttrs (map (drv: {
-                name = drv.pname;
-                value = drv;
-              })
-              licence.unfree);
-          };
+        why3Framework = mkWhy3Framework {};
 
         prelude = let
           inherit (pins.creusot) meta version;
@@ -207,15 +216,29 @@
         };
       };
 
-      devShells.default = pkgs.mkShell {
-        inputsFrom = [packages.creusot];
-        packages = [packages.why3Framework rust.toolchain.dev];
+      devShells = let
+        mkShell = {
+          creusot,
+          isFree ? false,
+        }: let
+          why3Framework = mkWhy3Framework {inherit isFree;};
+        in
+          pkgs.mkShell {
+            inputsFrom = [creusot];
+            packages = [why3Framework rust.toolchain.dev];
 
-        CREUSOT_DATA_HOME = packages.why3Framework;
-        LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
-        DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
+            CREUSOT_DATA_HOME = why3Framework;
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
+            DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
 
-        passthru = rust.toolchain.dev.passthru.availableComponents;
+            passthru = rust.toolchain.dev.passthru.availableComponents;
+          };
+      in {
+        default = mkShell {creusot = packages.creusot;};
+        free = mkShell {
+          creusot = packages.creusot;
+          isFree = true;
+        };
       };
 
       formatter = pkgs.alejandra;
