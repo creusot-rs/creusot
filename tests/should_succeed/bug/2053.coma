@@ -1,0 +1,50 @@
+module M_f
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_Option_T = None | Some t_T
+  
+  type t_Option_Option_T = None'0 | Some'0 t_Option_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_T f0
+        end
+  
+  predicate inv_Option_Option_T (_1: t_Option_Option_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Option_T [inv_Option_Option_T x]. inv_Option_Option_T x
+      = match x with
+        | None'0 -> true
+        | Some'0 f0 -> inv_Option_T f0
+        end
+  
+  constant const_W : t_Option_Option_T
+  
+  axiom const_W_spec: inv_Option_Option_T const_W
+  
+  let rec set_W (return) = bb0
+    [ bb0 = s0
+      [ s0 = bb0'0
+        [ bb0'0 = s0'0 [ s0'0 = [ &_ret'0 <- None'0 ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: t_Option_Option_T = Any.any_l () ]
+        [ _const_ret (_const: t_Option_Option_T) -> [ &_ret <- _const ] s1 ]
+      | s1 = return {_ret} ] ] [ & _ret: t_Option_Option_T = Any.any_l () ]
+    [ return (_const: t_Option_Option_T) -> -{const_W = _const}- return ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec f_T (return (x: t_Option_Option_T)) = set_W
+      ((! bb0
+      [ bb0 = s0 [ s0 = [ &_ret <- const_W ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Option_Option_T = Any.any_l () ])
+      [ return (result: t_Option_Option_T) -> {[@stop_split] [@expl:f result type invariant] inv_Option_Option_T result}
+        (! return {result}) ])
+end

@@ -410,7 +410,12 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 &mut Default::default(),
             );
 
-            let ty = translate_ty(ctx, &mut names, ctx.def_span(def_id), ctx.sig(def_id).output);
+            let output = ctx.instantiate_and_normalize_erasing_regions(
+                subst,
+                typing_env,
+                EarlyBinder::bind(ctx.sig(def_id).output),
+            );
+            let ty = translate_ty(ctx, &mut names, ctx.def_span(def_id), output);
             let inner_def = Defn {
                 prototype: Prototype::new(name::return_(), [Param::Term(value_name, ty)]),
                 body: Expr::Assume(
