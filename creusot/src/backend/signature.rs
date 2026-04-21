@@ -2,11 +2,10 @@ use crate::{
     backend::{
         DefKind, Why3Generator,
         clone_map::Namer,
-        logic::function_call,
         term::{lower_condition, lower_pure},
         ty::translate_ty,
     },
-    contracts_items::{should_replace_trigger, why3_attrs},
+    contracts_items::why3_attrs,
     translation::specification::{PreContract, PreSignature},
 };
 use rustc_hir::def_id::DefId;
@@ -14,7 +13,6 @@ use why3::{
     Ident,
     coma::{Param, Prototype},
     declaration::{Contract, Signature},
-    exp::Trigger,
 };
 
 /// The signature of a program function
@@ -117,13 +115,7 @@ pub(crate) fn lower_logic_sig<'tcx>(
         pre_sig.contract.variant.take().map(|term| lower_pure(ctx, names, &term.spanned()));
     let contract = lower_contract(ctx, names, pre_sig.contract);
 
-    let mut sig = Signature { name, trigger: None, attrs, retty, args, contract };
-    if ctx.opts.simple_triggers
-        && (ctx.def_kind(def_id) == DefKind::ConstParam || should_replace_trigger(ctx.tcx, def_id))
-    {
-        sig.trigger = Some(Trigger::single(function_call(&sig)))
-    };
-    LogicSignature { why_sig: sig, variant }
+    LogicSignature { why_sig: Signature { name, attrs, retty, args, contract }, variant }
 }
 
 pub(crate) fn lower_contract<'tcx>(

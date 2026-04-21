@@ -88,10 +88,11 @@ module M_slice_iter
   
   function to_ref_seq_slice_T (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_slice_T_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq_slice_T self)
+  axiom to_ref_seq_slice_T_spec:
+    forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. Seq.length (to_ref_seq_slice_T self)
       = Seq.length (Slice64.view self)
   
-  axiom to_ref_seq_slice_T_spec'0: forall self: Slice64.slice t_T. forall i: int. 0 <= i
+  axiom to_ref_seq_slice_T_spec'0: forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. forall i: int. 0 <= i
           /\ i < Seq.length (to_ref_seq_slice_T self) -> Seq.get (to_ref_seq_slice_T self) i = index_slice_T self i
   
   predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (tl: t_Iter_T) =
@@ -247,8 +248,8 @@ module M_vec_iter
   
   function view_Vec_T_Global (self: t_Vec_T_Global) : Seq.seq t_T
   
-  axiom view_Vec_T_Global_spec: forall self: t_Vec_T_Global. Seq.length (view_Vec_T_Global self)
-      <= UInt64.t'int const_MAX
+  axiom view_Vec_T_Global_spec:
+    forall self: t_Vec_T_Global [view_Vec_T_Global self]. Seq.length (view_Vec_T_Global self) <= UInt64.t'int const_MAX
   
   predicate invariant_Vec_T_Global (self: t_Vec_T_Global) = inv_Seq_T (view_Vec_T_Global self)
   
@@ -301,10 +302,11 @@ module M_vec_iter
   
   function to_ref_seq_slice_T (self: Slice64.slice t_T) : Seq.seq t_T
   
-  axiom to_ref_seq_slice_T_spec: forall self: Slice64.slice t_T. Seq.length (to_ref_seq_slice_T self)
+  axiom to_ref_seq_slice_T_spec:
+    forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. Seq.length (to_ref_seq_slice_T self)
       = Seq.length (Slice64.view self)
   
-  axiom to_ref_seq_slice_T_spec'0: forall self: Slice64.slice t_T. forall i: int. 0 <= i
+  axiom to_ref_seq_slice_T_spec'0: forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. forall i: int. 0 <= i
           /\ i < Seq.length (to_ref_seq_slice_T self) -> Seq.get (to_ref_seq_slice_T self) i = index_slice_T self i
   
   predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (tl: t_Iter_T) =
@@ -435,7 +437,8 @@ module M_all_zero
   
   function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
   
-  axiom view_Vec_usize_Global_spec: forall self: t_Vec_usize_Global. Seq.length (view_Vec_usize_Global self)
+  axiom view_Vec_usize_Global_spec:
+    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
       <= UInt64.t'int const_MAX
   
   let rec deref_mut_Vec_usize_Global (self_: MutBorrow.t t_Vec_usize_Global)
@@ -454,7 +457,8 @@ module M_all_zero
   
   function view_IterMut_usize (self: t_IterMut_usize) : MutBorrow.t (Slice64.slice UInt64.t)
   
-  axiom view_IterMut_usize_spec: forall self: t_IterMut_usize. Seq.length (Slice64.view (view_IterMut_usize self).final)
+  axiom view_IterMut_usize_spec:
+    forall self: t_IterMut_usize [view_IterMut_usize self]. Seq.length (Slice64.view (view_IterMut_usize self).final)
       = Seq.length (Slice64.view (view_IterMut_usize self).current)
   
   let rec iter_mut_usize (self_: MutBorrow.t (Slice64.slice UInt64.t)) (return (x: t_IterMut_usize)) = any
@@ -496,10 +500,11 @@ module M_all_zero
   function to_mut_seq_slice_usize (self: MutBorrow.t (Slice64.slice UInt64.t)) : Seq.seq (MutBorrow.t UInt64.t)
   
   axiom to_mut_seq_slice_usize_spec:
-    forall self: MutBorrow.t (Slice64.slice UInt64.t). Seq.length (to_mut_seq_slice_usize self)
+    forall self: MutBorrow.t (Slice64.slice UInt64.t) [to_mut_seq_slice_usize self]. Seq.length (to_mut_seq_slice_usize self)
       = Seq.length (Slice64.view self.current)
   
-  axiom to_mut_seq_slice_usize_spec'0: forall self: MutBorrow.t (Slice64.slice UInt64.t). forall i: int. 0 <= i
+  axiom to_mut_seq_slice_usize_spec'0:
+    forall self: MutBorrow.t (Slice64.slice UInt64.t) [to_mut_seq_slice_usize self]. forall i: int. 0 <= i
           /\ i < Seq.length (to_mut_seq_slice_usize self)
         -> Seq.get (to_mut_seq_slice_usize self) i
         = MutBorrow.borrow_logic (index_slice_usize self.current i) (index_slice_usize self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
@@ -788,7 +793,7 @@ module M_skip_take
   
   function iter_mut_Take_I (self: MutBorrow.t t_Take_I) : MutBorrow.t t_I
   
-  axiom iter_mut_Take_I_spec: forall self: MutBorrow.t t_Take_I. iter_Take_I self.current
+  axiom iter_mut_Take_I_spec: forall self: MutBorrow.t t_Take_I [iter_mut_Take_I self]. iter_Take_I self.current
         = (iter_mut_Take_I self).current
       /\ iter_Take_I self.final = (iter_mut_Take_I self).final
   
@@ -887,7 +892,8 @@ module M_counter
   
   function view_Vec_u32_Global (self: t_Vec_u32_Global) : Seq.seq UInt32.t
   
-  axiom view_Vec_u32_Global_spec: forall self: t_Vec_u32_Global. Seq.length (view_Vec_u32_Global self)
+  axiom view_Vec_u32_Global_spec:
+    forall self: t_Vec_u32_Global [view_Vec_u32_Global self]. Seq.length (view_Vec_u32_Global self)
       <= UInt64.t'int const_MAX
   
   let rec deref_Vec_u32_Global (self_: t_Vec_u32_Global) (return (x: Slice64.slice UInt32.t)) = any
@@ -992,10 +998,12 @@ module M_counter
   
   function to_ref_seq_slice_u32 (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t
   
-  axiom to_ref_seq_slice_u32_spec: forall self: Slice64.slice UInt32.t. Seq.length (to_ref_seq_slice_u32 self)
+  axiom to_ref_seq_slice_u32_spec:
+    forall self: Slice64.slice UInt32.t [to_ref_seq_slice_u32 self]. Seq.length (to_ref_seq_slice_u32 self)
       = Seq.length (Slice64.view self)
   
-  axiom to_ref_seq_slice_u32_spec'0: forall self: Slice64.slice UInt32.t. forall i: int. 0 <= i
+  axiom to_ref_seq_slice_u32_spec'0: forall self: Slice64.slice UInt32.t [to_ref_seq_slice_u32 self]. forall i: int. 0
+            <= i
           /\ i < Seq.length (to_ref_seq_slice_u32 self)
         -> Seq.get (to_ref_seq_slice_u32 self) i = index_slice_u32 self i
   
@@ -1077,7 +1085,7 @@ module M_counter
   predicate preservation_inv_Iter_u32 (iter'0: t_Iter_u32) (func'0: closure0) (produced'0: Seq.seq UInt32.t)
   
   axiom preservation_inv_Iter_u32_spec:
-    forall iter'0: t_Iter_u32, func'0: closure0, produced'0: Seq.seq UInt32.t. produced'0
+    forall iter'0: t_Iter_u32, func'0: closure0, produced'0: Seq.seq UInt32.t [preservation_inv_Iter_u32 iter'0 func'0 produced'0]. produced'0
         = (Seq.empty: Seq.seq UInt32.t)
       -> preservation_inv_Iter_u32 iter'0 func'0 produced'0 = preservation_Iter_u32 iter'0 func'0
   
@@ -1391,7 +1399,8 @@ module M_enumerate_range
   
   predicate invariant_Enumerate_Range_usize (self: t_Enumerate_Range_usize)
   
-  axiom invariant_Enumerate_Range_usize_spec: forall self: t_Enumerate_Range_usize. invariant_Enumerate_Range_usize self
+  axiom invariant_Enumerate_Range_usize_spec:
+    forall self: t_Enumerate_Range_usize [invariant_Enumerate_Range_usize self]. invariant_Enumerate_Range_usize self
       -> inv_Range_usize (iter_Enumerate_Range_usize self)
   
   predicate inv_Enumerate_Range_usize (_1: t_Enumerate_Range_usize)

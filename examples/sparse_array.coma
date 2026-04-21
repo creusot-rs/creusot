@@ -152,7 +152,8 @@ module M_impl_Resolve_for_Sparse_T__resolve_coherence (* <Sparse<T, SIZE> as cre
       None
     )
   
-  axiom view_Sparse_T_spec: forall self: t_Sparse_T. Seq.length (view_Sparse_T self) = UInt64.t'int const_SIZE
+  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. Seq.length (view_Sparse_T self)
+      = UInt64.t'int const_SIZE
   
   predicate resolve_Sparse_T (self: t_Sparse_T) =
     forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE -> resolve_Option_T (Seq.get (view_Sparse_T self) i)
@@ -274,7 +275,8 @@ module M_impl_Sparse_T__get (* Sparse<T, SIZE> *)
       None'0
     )
   
-  axiom view_Sparse_T_spec: forall self: t_Sparse_T. Seq.length (view_Sparse_T self) = UInt64.t'int const_SIZE
+  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. Seq.length (view_Sparse_T self)
+      = UInt64.t'int const_SIZE
   
   meta "compute_max_steps" 1000000
   
@@ -416,8 +418,8 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
   
   function bounded_fset_len_T (s: Fset.fset int) (bnd: int) : ()
   
-  axiom bounded_fset_len_T_def: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int s x
-          -> 0 <= x /\ x < bnd)
+  axiom bounded_fset_len_T_def:
+    forall s: Fset.fset int, bnd: int [bounded_fset_len_T s bnd]. (forall x: int. contains_Int s x -> 0 <= x /\ x < bnd)
       -> bnd >= 0
       -> bounded_fset_len_T s bnd = (if bnd > 0 then bounded_fset_len_T (remove_Int s (bnd - 1)) (bnd - 1) else ())
   
@@ -430,7 +432,8 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
   
   function lemma_permutation_aux_T (self: t_Sparse_T) (seen: Fset.fset int) (i: int) (cur: int) : int
   
-  axiom lemma_permutation_aux_T_def: forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int. inv_Sparse_T self
+  axiom lemma_permutation_aux_T_def:
+    forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int [lemma_permutation_aux_T self seen i cur]. inv_Sparse_T self
       -> self.n = const_SIZE
       -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
       -> (forall k: int. contains_Int seen k
@@ -446,7 +449,8 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
         let _ = bounded_fset_len_T seen (UInt64.t'int const_SIZE) in lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
       )
   
-  axiom lemma_permutation_aux_T_spec: forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int. inv_Sparse_T self
+  axiom lemma_permutation_aux_T_spec:
+    forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int [lemma_permutation_aux_T self seen i cur]. inv_Sparse_T self
       -> self.n = const_SIZE
       -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
       -> (forall k: int. contains_Int seen k
@@ -459,7 +463,7 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
       /\ lemma_permutation_aux_T self seen i cur < UInt64.t'int const_SIZE
   
   axiom lemma_permutation_aux_T_spec'0:
-    forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int. inv_Sparse_T self
+    forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int [lemma_permutation_aux_T self seen i cur]. inv_Sparse_T self
       -> self.n = const_SIZE
       -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
       -> (forall k: int. contains_Int seen k
@@ -581,8 +585,8 @@ module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
   
   function bounded_fset_len_T (s: Fset.fset int) (bnd: int) : ()
   
-  axiom bounded_fset_len_T_def: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int s x
-          -> 0 <= x /\ x < bnd)
+  axiom bounded_fset_len_T_def:
+    forall s: Fset.fset int, bnd: int [bounded_fset_len_T s bnd]. (forall x: int. contains_Int s x -> 0 <= x /\ x < bnd)
       -> bnd >= 0
       -> bounded_fset_len_T s bnd = (if bnd > 0 then bounded_fset_len_T (remove_Int s (bnd - 1)) (bnd - 1) else ())
   
@@ -805,8 +809,8 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
   
   function bounded_fset_len_T (s: Fset.fset int) (bnd: int) : ()
   
-  axiom bounded_fset_len_T_def: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int s x
-          -> 0 <= x /\ x < bnd)
+  axiom bounded_fset_len_T_def:
+    forall s: Fset.fset int, bnd: int [bounded_fset_len_T s bnd]. (forall x: int. contains_Int s x -> 0 <= x /\ x < bnd)
       -> bnd >= 0
       -> bounded_fset_len_T s bnd = (if bnd > 0 then bounded_fset_len_T (remove_Int s (bnd - 1)) (bnd - 1) else ())
   
@@ -819,7 +823,8 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
   
   function lemma_permutation_aux_T (self: t_Sparse_T) (seen: Fset.fset int) (i: int) (cur: int) : int
   
-  axiom lemma_permutation_aux_T_def: forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int. inv_Sparse_T self
+  axiom lemma_permutation_aux_T_def:
+    forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int [lemma_permutation_aux_T self seen i cur]. inv_Sparse_T self
       -> self.n = const_SIZE
       -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
       -> (forall k: int. contains_Int seen k
@@ -835,7 +840,8 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
         let _ = bounded_fset_len_T seen (UInt64.t'int const_SIZE) in lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
       )
   
-  axiom lemma_permutation_aux_T_spec: forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int. inv_Sparse_T self
+  axiom lemma_permutation_aux_T_spec:
+    forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int [lemma_permutation_aux_T self seen i cur]. inv_Sparse_T self
       -> self.n = const_SIZE
       -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
       -> (forall k: int. contains_Int seen k
@@ -848,7 +854,7 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
       /\ lemma_permutation_aux_T self seen i cur < UInt64.t'int const_SIZE
   
   axiom lemma_permutation_aux_T_spec'0:
-    forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int. inv_Sparse_T self
+    forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int [lemma_permutation_aux_T self seen i cur]. inv_Sparse_T self
       -> self.n = const_SIZE
       -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
       -> (forall k: int. contains_Int seen k
@@ -879,7 +885,8 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
       None
     )
   
-  axiom view_Sparse_T_spec: forall self: t_Sparse_T. Seq.length (view_Sparse_T self) = UInt64.t'int const_SIZE
+  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. Seq.length (view_Sparse_T self)
+      = UInt64.t'int const_SIZE
   
   meta "compute_max_steps" 1000000
   
@@ -1047,7 +1054,8 @@ module M_create
       None
     )
   
-  axiom view_Sparse_T_spec: forall self: t_Sparse_T. Seq.length (view_Sparse_T self) = UInt64.t'int const_SIZE
+  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. Seq.length (view_Sparse_T self)
+      = UInt64.t'int const_SIZE
   
   meta "compute_max_steps" 1000000
   
@@ -1148,7 +1156,8 @@ module M_f
       None
     )
   
-  axiom view_Sparse_i32_spec: forall self: t_Sparse_i32. Seq.length (view_Sparse_i32 self) = UInt64.t'int (10: UInt64.t)
+  axiom view_Sparse_i32_spec: forall self: t_Sparse_i32 [view_Sparse_i32 self]. Seq.length (view_Sparse_i32 self)
+      = UInt64.t'int (10: UInt64.t)
   
   let rec create_i32 (dummy: Int32.t) (return (x: t_Sparse_i32)) = any
     [ return (result: t_Sparse_i32) ->
@@ -1211,7 +1220,8 @@ module M_f
       None
     )
   
-  axiom view_Sparse_i32_spec'0: forall self: t_Sparse_i32'0. Seq.length (view_Sparse_i32'0 self)
+  axiom view_Sparse_i32_spec'0:
+    forall self: t_Sparse_i32'0 [view_Sparse_i32'0 self]. Seq.length (view_Sparse_i32'0 self)
       = UInt64.t'int (20: UInt64.t)
   
   let rec create_i32'0 (dummy: Int32.t) (return (x: t_Sparse_i32'0)) = any
@@ -1512,7 +1522,8 @@ module M_impl_Resolve_for_Sparse_T__resolve_coherence__refines (* <Sparse<T, SIZ
       None
     )
   
-  axiom view_Sparse_T_spec: forall self: t_Sparse_T. Seq.length (view_Sparse_T self) = UInt64.t'int const_SIZE
+  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. Seq.length (view_Sparse_T self)
+      = UInt64.t'int const_SIZE
   
   predicate resolve_Sparse_T (self: t_Sparse_T) =
     forall i: int. 0 <= i /\ i < UInt64.t'int const_SIZE -> resolve_Option_T (Seq.get (view_Sparse_T self) i)

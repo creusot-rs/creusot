@@ -1061,7 +1061,7 @@ module M_impl_Context__discr_valuation (* Context<'arena> *)
       | {f0 = If _ childt childf; f1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
       end
   
-  axiom size_spec: forall self: t_Bdd. size self >= 0
+  axiom size_spec: forall self: t_Bdd [size self]. size self >= 0
   
   type t_Option_Bdd = None | Some t_Bdd
   
@@ -1470,11 +1470,11 @@ module M_impl_Context__bdd_canonical (* Context<'arena> *)
       | {f0 = If _ childt childf; f1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
       end
   
-  axiom size_spec: forall self: t_Bdd. size self >= 0
+  axiom size_spec: forall self: t_Bdd [size self]. size self >= 0
   
   function discr_valuation (self: t_Context) (a: t_Bdd) (b: t_Bdd) : Map.map UInt64.t bool
   
-  axiom discr_valuation_def: forall self: t_Context, a: t_Bdd, b: t_Bdd. inv_Context self
+  axiom discr_valuation_def: forall self: t_Context, a: t_Bdd, b: t_Bdd [discr_valuation self a b]. inv_Context self
       -> is_valid_bdd self a
       -> is_valid_bdd self b
       -> a <> b
@@ -1513,7 +1513,7 @@ module M_impl_Context__bdd_canonical (* Context<'arena> *)
       
       )
   
-  axiom discr_valuation_spec: forall self: t_Context, a: t_Bdd, b: t_Bdd. inv_Context self
+  axiom discr_valuation_spec: forall self: t_Context, a: t_Bdd, b: t_Bdd [discr_valuation self a b]. inv_Context self
       -> is_valid_bdd self a
       -> is_valid_bdd self b -> a <> b -> interp a (discr_valuation self a b) <> interp b (discr_valuation self a b)
   
@@ -1532,7 +1532,18 @@ module M_impl_Context__bdd_canonical (* Context<'arena> *)
   goal vc_bdd_canonical: inv_Context self
     -> is_valid_bdd self a
     -> is_valid_bdd self b
-    -> (forall v: Map.map UInt64.t bool. interp a v = interp b v) -> ([@stop_split] [@expl:bdd_canonical ensures] a = b)
+    -> (forall v: Map.map UInt64.t bool. interp a v = interp b v)
+    -> (if a <> b then
+      ([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+        /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self a)
+        /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self b)
+        /\ ([@stop_split] [@expl:discr_valuation requires #3] a <> b))
+      /\ (([@stop_split] [@expl:discr_valuation ensures] interp a (discr_valuation self a b)
+        <> interp b (discr_valuation self a b))
+      -> (let _ = discr_valuation self a b in [@stop_split] [@expl:bdd_canonical ensures] a = b))
+    else
+      [@stop_split] [@expl:bdd_canonical ensures] a = b
+    )
 end
 module M_impl_Context_0__new (* Context<'arena> *)
   use creusot.int.UInt64
@@ -3179,7 +3190,7 @@ module M_impl_Context_0__not (* Context<'arena> *)
       | {f0 = If _ childt childf; f1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
       end
   
-  axiom size_spec: forall self: t_Bdd. size self >= 0
+  axiom size_spec: forall self: t_Bdd [size self]. size self >= 0
   
   predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   
@@ -3595,7 +3606,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
       | {f0 = If _ childt childf; f1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
       end
   
-  axiom size_spec: forall self: t_Bdd. size self >= 0
+  axiom size_spec: forall self: t_Bdd [size self]. size self >= 0
   
   predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
   

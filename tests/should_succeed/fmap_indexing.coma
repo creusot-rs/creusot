@@ -8,7 +8,7 @@ module M_foo
   
   function len_Int (self: t_FMap_Int_Int) : int
   
-  axiom len_Int_spec: forall self: t_FMap_Int_Int. len_Int self >= 0
+  axiom len_Int_spec: forall self: t_FMap_Int_Int [len_Int self]. len_Int self >= 0
   
   type t_Option_Int = None | Some int
   
@@ -30,10 +30,12 @@ module M_foo
   
   function insert_Int (self: t_FMap_Int_Int) (k: int) (v: int) : t_FMap_Int_Int
   
-  axiom insert_Int_spec: forall self: t_FMap_Int_Int, k: int, v: int. to_mapping_Int (insert_Int self k v)
+  axiom insert_Int_spec:
+    forall self: t_FMap_Int_Int, k: int, v: int [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
       = Map.set (to_mapping_Int self) k (Some v)
   
-  axiom insert_Int_spec'0: forall self: t_FMap_Int_Int, k: int, v: int. len_Int (insert_Int self k v)
+  axiom insert_Int_spec'0:
+    forall self: t_FMap_Int_Int, k: int, v: int [insert_Int self k v]. len_Int (insert_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
@@ -42,7 +44,7 @@ module M_foo
   
   function such_that_Int (p: Map.map int bool) : int
   
-  axiom such_that_Int_spec: forall p: Map.map int bool. (exists x: int. index_Mapping_Int_bool p x)
+  axiom such_that_Int_spec: forall p: Map.map int bool [such_that_Int p]. (exists x: int. index_Mapping_Int_bool p x)
       -> index_Mapping_Int_bool p (such_that_Int p)
   
   function unwrap_Option_Int (self: t_Option_Int) : int = match self with

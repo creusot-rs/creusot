@@ -531,7 +531,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         let names = self.namer(dep);
         let sig = Signature {
             name: names.dependency(dep).ident(),
-            trigger: None,
             attrs: vec![],
             retty: Some(translate_ty(ctx, &names, DUMMY_SP, target)),
             args: [(Ident::fresh_local("x"), translate_ty(ctx, &names, DUMMY_SP, source))].into(),
@@ -632,7 +631,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 let namer = self.namer(dep);
                 let sig = Signature {
                     name: namer.dependency(dep).ident(),
-                    trigger: None,
                     attrs: vec![],
                     retty: None,
                     args: Box::new([(

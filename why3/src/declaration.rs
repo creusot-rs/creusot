@@ -1,9 +1,4 @@
-use crate::{
-    coma::Defn,
-    exp::{Exp, Trigger},
-    ty::Type,
-    *,
-};
+use crate::{coma::Defn, exp::Exp, ty::Type, *};
 use indexmap::IndexSet;
 use std::collections::HashMap;
 
@@ -180,17 +175,10 @@ pub enum Attribute {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Signature {
     pub name: Ident,
-    pub trigger: Option<Trigger>, // None means we should use the "simple_trigger"
     pub attrs: Vec<Attribute>,
     pub retty: Option<Type>,
     pub args: Box<[(Ident, Type)]>,
     pub contract: Contract,
-}
-
-impl Signature {
-    pub fn uses_simple_triggers(&self) -> bool {
-        self.trigger.is_some()
-    }
 }
 
 #[derive(Debug, Clone)]

@@ -57,7 +57,6 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
                 kind: Some(DeclKind::Constant),
                 sig: Signature {
                     name,
-                    trigger: None,
                     attrs: vec![],
                     retty: Some(translate_ty(ctx, &names, span, ty)),
                     args: Box::new([]),
@@ -130,7 +129,6 @@ pub(crate) fn lower_logical_defn<'tcx>(
     inline: bool,
 ) -> Vec<Decl> {
     let mut decls = vec![];
-    let mut lim_name = None;
 
     // We don't pull dependencies for FnDef items, because it may be more private than
     // the definition is transparent
@@ -172,75 +170,24 @@ pub(crate) fn lower_logical_defn<'tcx>(
         decl_sig.contract = Default::default();
 
         decls.push(Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: decl_sig }));
-
-        if sig.why_sig.uses_simple_triggers() {
-            lim_name = Some(sig.why_sig.name.refresh_with(|s| format!("{s}_lim")));
-            limited_function_encode(
-                &mut decls,
-                &sig.why_sig,
-                lim_name.unwrap(),
-                body,
-                kind,
-                inline,
-            );
-        } else {
-            decls.push(Decl::Axiom(definition_axiom(&sig.why_sig, body, "def", inline)));
-        }
+        decls.push(Decl::Axiom(definition_axiom(&sig.why_sig, body, "def", inline)));
     }
 
     if !sig.why_sig.contract.ensures.is_empty() {
-        if let Some(lim_name) = lim_name
-            && sig.variant.is_some()
-        {
-            let mut lim_sig = sig.why_sig;
-            lim_sig.name = lim_name;
-            lim_sig.trigger = Some(Trigger::single(function_call(&lim_sig)));
-            lim_sig.attrs = vec![];
-
-            decls.extend(spec_axioms(&lim_sig))
-        } else {
-            decls.extend(spec_axioms(&sig.why_sig));
-        }
+        decls.extend(spec_axioms(&sig.why_sig));
     }
 
     decls
 }
 
-// Use the limited function encoding from https://pm.inf.ethz.ch/publications/HeuleKassiosMuellerSummers12.pdf
-// Originally introduced in https://dl.acm.org/doi/10.1145/1529282.1529411
-
-// This prevents recursive functions from being unfolded more than once which makes the definition
-// axiom weaker but avoids having it cause a matching loop. This is useful since it can help the
-// solve return "unknown" instead of relying on a timeout, and give it a chance to apply map
-// extensionality axioms.
-fn limited_function_encode(
-    decls: &mut Vec<Decl>,
-    sig: &Signature,
-    lim_name: Ident,
-    body: Exp,
-    kind: DeclKind,
-    inline: bool,
-) {
-    let mut lim_sig = Signature {
-        name: lim_name,
-        trigger: None,
-        attrs: vec![],
-        retty: sig.retty.clone(),
-        args: sig.args.clone(),
-        contract: Default::default(),
-    };
-    let lim_call = function_call(&lim_sig);
-    lim_sig.trigger = Some(Trigger::single(lim_call.clone()));
-    decls.push(Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: lim_sig }));
-    decls.push(Decl::Axiom(definition_axiom(sig, body, "def", inline)));
-    decls.push(Decl::Axiom(definition_axiom(sig, lim_call, "def_lim", inline)));
-}
-
 pub(crate) fn spec_axioms(sig: &Signature) -> impl Iterator<Item = Decl> {
-    sig.contract.ensures.iter().map(|post| {
+    let call = function_call(sig);
+    sig.contract.ensures.iter().map(move |post| {
         let mut condition = sig.contract.requires_implies(post.exp.clone());
-        condition.subst(&[(name::result(), function_call(sig).clone())].into_iter().collect());
-        let axiom = Exp::forall_trig(sig.args.clone(), sig.trigger.clone(), condition);
+        let trigger =
+            condition.fvs().contains(&name::result()).then_some(Trigger::single(call.clone()));
+        condition.subst(&[(name::result(), call.clone())].into_iter().collect());
+        let axiom = Exp::forall_trig(sig.args.clone(), trigger, condition);
         let name = sig.name.refresh_with(|s| format!("{s}_spec"));
         Decl::Axiom(Axiom { name, rewrite: false, axiom })
     })
@@ -253,12 +200,9 @@ pub fn function_call(sig: &Signature) -> Exp {
 
 fn definition_axiom(sig: &Signature, body: Exp, suffix: &str, rewrite: bool) -> Axiom {
     let call = function_call(sig);
-    let trigger = sig.trigger.clone();
-
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
-    let axiom = Exp::forall_trig(sig.args.clone(), trigger, condition);
-
+    let axiom = Exp::forall_trig(sig.args.clone(), [Trigger::single(call)], condition);
     let name = sig.name.refresh_with(|s| format!("{s}_{suffix}"));
     Axiom { name, rewrite, axiom }
 }
