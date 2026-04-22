@@ -3,7 +3,6 @@ use crate::{
     backend::projections::projections_term,
     contracts_items::Intrinsic,
     ctx::{HasTyCtxt as _, TranslationCtx},
-    lints::{CONTRACTLESS_EXTERNAL_FUNCTION, Diagnostics},
     translation::{
         fmir::{self, *},
         pearlite::{Term, TermKind, UnOp},
@@ -100,20 +99,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         let known = !matches!(tr_res, TraitResolved::UnknownFound);
                         let (fun_def_id, subst) =
                             tr_res.to_opt(fun_def_id, subst).expect("could not find instance");
-                        let sig = self.ctx.sig(fun_def_id);
-                        if sig.contract.extern_no_spec
-                            && let Some(lint_root) =
-                                self.body.source_info(loc).scope.lint_root(&self.body.source_scopes)
-                        {
-                            let name = self.ctx.tcx.item_name(fun_def_id);
-                            self.ctx.emit_node_span_lint(
-                                CONTRACTLESS_EXTERNAL_FUNCTION,
-                                lint_root,
-                                span,
-                                Diagnostics::ContractlessExternalFunction { name, span },
-                            );
-                        }
-                        if sig.contract.is_requires_false()
+                        if self.ctx.sig(fun_def_id).contract.is_requires_false()
                             && !matches!(
                                 self.ctx.intrinsic(fun_def_id),
                                 Intrinsic::GhostDerefMut | Intrinsic::GhostDeref,
@@ -121,19 +107,18 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             && known
                         {
                             target = None
-                        } else {
-                            let subst = self.ctx.erase_and_anonymize_regions(subst);
-                            self.emit_statement(Statement {
-                                kind: fmir::StatementKind::Call(
-                                    self.translate_place(destination, span),
-                                    fun_def_id,
-                                    subst,
-                                    func_args,
-                                    span,
-                                ),
-                                span: span.source_callsite(),
-                            });
                         }
+                        let subst = self.ctx.erase_and_anonymize_regions(subst);
+                        self.emit_statement(Statement {
+                            kind: fmir::StatementKind::Call(
+                                self.translate_place(destination, span),
+                                fun_def_id,
+                                subst,
+                                func_args,
+                                span,
+                            ),
+                            span: span.source_callsite(),
+                        });
                     }
                 }
 
