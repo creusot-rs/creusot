@@ -551,4 +551,22 @@ impl<T: Protocol> NonAtomicInvariant<T> {
     pub fn open_const<'a>(&'a self, tokens: &'a Tokens) -> &'a T {
         panic!("Should not be called outside ghost code")
     }
+
+    /// Open the invariant to get the data stored inside.
+    ///
+    /// See [`Self::open`].
+    ///
+    /// This requires a mutable borrow on the invariant, but in exchange, you
+    /// are allowed to change the public part of the invariant.
+    #[trusted]
+    #[check(ghost)]
+    #[requires(forall<t: Ghost<&mut T>> t.protocol() && t.public() == this.public() && inv(t) ==>
+        f.precondition((t,)) &&
+        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).protocol()))]
+    #[ensures(exists<t: Ghost<&mut T>> t.protocol() && t.public() == this.public() && inv(t) &&
+        f.postcondition_once((t,), result) && (^this).public() == (^t).public())]
+    #[ensures(this.namespace() == (^this).namespace())]
+    pub fn open_mut<'a, A>(this: Ghost<&'a mut Self>, f: impl FnOnce(Ghost<&'a mut T>) -> A) -> A {
+        unreachable!("ghost code only")
+    }
 }
