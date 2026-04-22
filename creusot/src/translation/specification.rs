@@ -11,7 +11,10 @@ use rustc_hir::{AttrArgs, HirId, Safety, def::DefKind, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     thir::{BodyTy, Pat, PatKind, Thir},
-    ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv, Unnormalized},
+    ty::{
+        EarlyBinder, GenericArg, GenericArgsRef, Predicate, Ty, TyCtxt, TyKind, TypingEnv,
+        Unnormalized,
+    },
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::ClosureKind;
@@ -35,6 +38,9 @@ pub struct PreContract<'tcx> {
     pub(crate) check_ghost: bool,
     pub(crate) check_terminates: bool,
     pub(crate) extern_no_spec: bool,
+    /// Additional predicates for extern spec to type check
+    /// You must check these before trying to normalize the contract
+    extern_predicates: Option<Vec<Predicate<'tcx>>>,
     /// Are any of the contract clauses here user provided? or merely Creusot inferred / provided?
     pub(crate) has_user_contract: bool,
 }
@@ -175,7 +181,9 @@ impl ContractClauses {
             ensures,
             check_ghost: self.check_ghost,
             check_terminates: self.check_terminates,
+            // temporary defaults: extern specs are added later
             extern_no_spec: false,
+            extern_predicates: None,
             has_user_contract,
         })
     }
@@ -260,14 +268,22 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         .skip_normalization();
 
     if let Some(spec) = ctx.extern_spec(def_id).cloned() {
+        if !(contract.requires.is_empty()
+            && contract.ensures.is_empty()
+            && contract.variant.is_none())
+        {
+            // FIXME: span of extern_spec
+            ctx.crash_and_error(ctx.def_span(def_id), "Duplicate specs found for this function")
+        }
         // We do NOT normalize the contract here. See below.
         let bound = spec.inputs.iter().map(|(ident, _, _)| ident.0);
-        let contract = spec
+        let mut contract = spec
             .contract
             .get_pre(ctx, fn_name, bound)
             .instantiate(ctx.tcx, spec.subst)
             .skip_normalization();
         contract.check_ensures_no_trigger(ctx);
+        contract.extern_predicates = Some(spec.additional_predicates);
         PreSignature {
             inputs: EarlyBinder::bind(spec.inputs)
                 .instantiate(ctx.tcx, spec.subst)
@@ -359,6 +375,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             check_ghost: true,
             check_terminates: true,
             extern_no_spec: false,
+            extern_predicates: None,
             has_user_contract: false,
         };
         let output = ctx.type_of(def_id).no_bound_vars().unwrap();
