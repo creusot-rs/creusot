@@ -428,6 +428,8 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     }
 
     fn expand_ty_inv_axiom(&mut self, ty: Ty<'tcx>) -> Vec<Decl> {
+        use crate::backend::ty_inv::resolve_user_inv;
+
         let root_span = self.root_span;
         let ctx = self.ctx;
         let names = self.namer(Dependency::TyInvAxiom(ty));
@@ -436,7 +438,13 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             return vec![];
         };
         let name = names.dependency(Dependency::TyInvAxiom(ty)).ident();
-        vec![Decl::Axiom(Axiom { name, rewrite, axiom: lower_pure_weakdep(ctx, &names, &axiom) })]
+        // Use the span of the Invariant impl if available, otherwise root_span
+        let span = match resolve_user_inv(ctx, ty, names.typing_env()) {
+            TraitResolved::Instance { def, .. } => ctx.def_span(def.0),
+            _ => root_span,
+        };
+        let axiom = lower_pure_weakdep(ctx, &names, &axiom.span(span).spanned());
+        vec![Decl::Axiom(Axiom { name, rewrite, axiom })]
     }
 
     fn expand_resolve_axiom(&mut self, ty: Ty<'tcx>) -> Vec<Decl> {

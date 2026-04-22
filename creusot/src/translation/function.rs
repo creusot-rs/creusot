@@ -359,6 +359,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             |id| Term::var(*id, self.ctx.types.usize),
             span,
         );
+        let cond = cond.span(span);
         if !res_triv {
             dest.push(fmir::Statement {
                 kind: fmir::StatementKind::Assertion {

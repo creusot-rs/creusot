@@ -1313,11 +1313,13 @@ impl<'tcx> Statement<'tcx> {
                     let inv_did = Intrinsic::Inv.get(lower.ctx);
                     let subst = lower.ctx.tcx.mk_args(&[ty::GenericArg::from(rhs_ty)]);
                     let inv = Exp::var(lower.names.item_ident(inv_did, subst));
-                    istmts.push(IntermediateStmt::Check(
-                        inv.clone()
-                            .app([rhs_rplace.clone()])
-                            .with_attr(Attribute::Attr(format!("expl:type invariant"))),
-                    ));
+                    let mut check_exp = inv.clone()
+                        .app([rhs_rplace.clone()])
+                        .with_attr(Attribute::Attr(format!("expl:type invariant")));
+                    if let Some(attr) = lower.names.span_attr(self.span) {
+                        check_exp = check_exp.with_attr(attr);
+                    }
+                    istmts.push(IntermediateStmt::Check(check_exp));
                     inv_assume = Some(IntermediateStmt::Assume(inv.app([reassign.clone()])))
                 } else {
                     inv_assume = None

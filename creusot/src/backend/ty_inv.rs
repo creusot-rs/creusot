@@ -340,7 +340,10 @@ pub(crate) fn sig_add_type_invariant_spec<'tcx>(
     });
     pre_sig.contract.requires.splice(0..0, new_requires);
 
-    let ret_ty_span: Option<Span> = try { ctx.hir_get_fn_output(def_id.as_local()?)?.span() };
+    let ret_ty_span: Option<Span> = try { ctx.hir_get_fn_output(def_id.as_local()?)?.span() }
+    .or_else(|| try { ctx.hir_get_fn_output(scope_id.as_local()?)?.span() })
+    .or_else(|| scope_id.as_local().map(|d| ctx.def_span(d)));
+    let ret_ty_span = Some(ret_ty_span.unwrap());
     if (ctx.def_kind(def_id) == DefKind::ConstParam || !is_open_inv_result(ctx.tcx, def_id))
         && let Some(term) =
             inv_call(ctx, typing_env, scope_id, Term::var(name::result(), pre_sig.output))
