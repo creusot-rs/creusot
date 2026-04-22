@@ -26,7 +26,6 @@ macro_rules! contracts_items {
                 .iter_local_def_id()
                 .filter_map(|did| {
                     let mut did = did.to_def_id();
-                    let intrinsic = get_intrinsic(tcx, did)?;
                     match tcx.def_kind(did) {
                         DefKind::Ctor(..) => did = tcx.parent(did),
                         // Some definitions are not associated to HirIds and cannot have attributes
@@ -43,7 +42,7 @@ macro_rules! contracts_items {
                         _ => return None
                     }
 
-                    Some((intrinsic, did))
+                    Some((get_intrinsic(tcx, did)?, did))
                 })
                 .collect();
             let mut int2did = HashMap::new();

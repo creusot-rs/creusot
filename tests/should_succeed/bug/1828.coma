@@ -1,0 +1,33 @@
+module M_foo
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  let rec closure0 [@coma:extspec] (self: ()) (return (x: UInt64.t)) = bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- (0: UInt64.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () ]
+    [ return (result: UInt64.t) -> return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  type t_S
+  
+  predicate inv_S (_1: t_S)
+  
+  predicate invariant_ref_S [@inline:trivial] (self: t_S) = inv_S self
+  
+  meta "rewrite_def" predicate invariant_ref_S
+  
+  predicate inv_ref_S [@inline:trivial] (_1: t_S) = invariant_ref_S _1
+  
+  meta "rewrite_def" predicate inv_ref_S
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec foo_S (_1: t_S) (return (x: ())) = {[@stop_split] [@expl:foo '_1' type invariant] inv_ref_S _1}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- () ] s1 | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end
