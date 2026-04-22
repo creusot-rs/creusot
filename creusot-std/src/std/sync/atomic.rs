@@ -91,7 +91,41 @@ macro_rules! impl_atomic {
                 (Self(std::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
             }
 
-            // TODO: [VL] into_inner
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::into_inner`].")]
+            #[requires(self == *own.ward())]
+            #[ensures(match own.val().get(*result.1) { Some((v, _)) => result.0 == v, None => false })]
+            #[ensures(self.get_timestamp(^sync_view) == *result.1)]
+            #[ensures(forall<t> match own.val().get(t) {
+                Some((_, view)) => t <= *result.1 && view <= ^sync_view,
+                None => true
+            })]
+            #[inline(always)]
+            #[trusted]
+            #[allow(unused_variables)]
+            pub fn into_inner(self, own: Ghost<Box<Perm<$atomic_type $(< $T >)?>>>, sync_view: Ghost<&mut SyncView>) -> ($type, Ghost<Timestamp>) {
+                (self.0.into_inner(), Ghost::conjure())
+            }
+
+
+            #[doc = "Clear the old unusable history, thanks to the full ownership of the atomic."]
+            #[requires(*self == *own.ward())]
+            #[ensures(match (*own).val().get(*result) {
+                Some((v, _)) => *(^own).val() == FMap::singleton(*result, (v, **sync_view)),
+                None => false
+            })]
+            #[ensures(self.get_timestamp(^sync_view) == *result)]
+            #[ensures(forall<t> match own.val().get(t) {
+                Some((_, view)) => t <= *result && view <= ^sync_view ,
+                None => true
+            })]
+            #[ensures(*self == ^self)]
+            #[inline(always)]
+            #[trusted]
+            #[check(terminates)]
+            #[allow(unused_variables)]
+            pub fn refresh(&mut self, own: Ghost<&mut Perm<$atomic_type $(< $T >)?>>, sync_view: Ghost<&mut SyncView>) -> Ghost<Timestamp> {
+                 Ghost::conjure()
+            }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange`].")]
             #[doc = ""]
