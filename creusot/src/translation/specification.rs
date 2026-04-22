@@ -11,7 +11,7 @@ use rustc_hir::{AttrArgs, HirId, Safety, def::DefKind, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     thir::{BodyTy, Pat, PatKind, Thir},
-    ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv},
+    ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv, Unnormalized},
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::ClosureKind;
@@ -221,7 +221,7 @@ pub(crate) fn inherited_extern_spec<'tcx>(
         if ctx.extern_spec(id).is_none() {
             return None;
         }
-        (id, trait_ref.instantiate(ctx.tcx, subst).args)
+        (id, trait_ref.instantiate(ctx.tcx, subst).skip_normalization().args)
     }
 }
 
@@ -232,7 +232,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         None => "closure",
     };
 
-    let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
+    let (inputs, output) = inputs_and_output(ctx, def_id);
     // TODO: handle the "self" argument better
     let raw_inputs =
         if !inputs.is_empty() && inputs[0].0.0 == name::self_() { &inputs[1..] } else { &inputs };
@@ -241,15 +241,24 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
     let mut contract = contract_clauses_of(ctx, def_id)
         .unwrap()
         .get_pre(ctx, fn_name, bound)
-        .instantiate(ctx.tcx, subst);
+        .instantiate(ctx.tcx, subst)
+        .skip_normalization();
 
     if let Some(spec) = ctx.extern_spec(def_id).cloned() {
         // We do NOT normalize the contract here. See below.
         let bound = spec.inputs.iter().map(|(ident, _, _)| ident.0);
-        let contract = spec.contract.get_pre(ctx, fn_name, bound).instantiate(ctx.tcx, spec.subst);
+        let contract = spec
+            .contract
+            .get_pre(ctx, fn_name, bound)
+            .instantiate(ctx.tcx, spec.subst)
+            .skip_normalization();
         PreSignature {
-            inputs: EarlyBinder::bind(spec.inputs).instantiate(ctx.tcx, spec.subst),
-            output: EarlyBinder::bind(spec.output).instantiate(ctx.tcx, spec.subst),
+            inputs: EarlyBinder::bind(spec.inputs)
+                .instantiate(ctx.tcx, spec.subst)
+                .skip_normalization(),
+            output: EarlyBinder::bind(spec.output)
+                .instantiate(ctx.tcx, spec.subst)
+                .skip_normalization(),
             contract,
         }
     } else if contract.is_empty()
@@ -261,10 +270,14 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         // env for doing this. This is still valid because this contract is going to be substituted
         // and normalized in the caller context (such extern specs are only evaluated in the context
         // of a specific call).
-        let contract = spec.contract.get_pre(ctx, fn_name, bound).instantiate(ctx.tcx, subst);
+        let contract = spec
+            .contract
+            .get_pre(ctx, fn_name, bound)
+            .instantiate(ctx.tcx, subst)
+            .skip_normalization();
         PreSignature {
-            inputs: EarlyBinder::bind(spec.inputs).instantiate(ctx.tcx, subst),
-            output: EarlyBinder::bind(spec.output).instantiate(ctx.tcx, subst),
+            inputs: EarlyBinder::bind(spec.inputs).instantiate(ctx.tcx, subst).skip_normalization(),
+            output: EarlyBinder::bind(spec.output).instantiate(ctx.tcx, subst).skip_normalization(),
             contract,
         }
     } else {
@@ -293,13 +306,27 @@ pub(crate) struct PreSignature<'tcx> {
 }
 
 impl<'tcx> PreSignature<'tcx> {
-    pub(crate) fn normalize(
+    pub(crate) fn normalize_contract(
         mut self,
         ctx: &TranslationCtx<'tcx>,
         typing_env: TypingEnv<'tcx>,
     ) -> Self {
         self.contract = self.contract.normalize(ctx, typing_env);
         self
+    }
+
+    pub(crate) fn instantiate_and_normalize(
+        self,
+        ctx: &TranslationCtx<'tcx>,
+        subst: GenericArgsRef<'tcx>,
+        typing_env: TypingEnv<'tcx>,
+    ) -> Self {
+        let mut sig = EarlyBinder::bind(self).instantiate(ctx.tcx, subst).skip_normalization();
+        sig.contract = sig.contract.normalize(ctx, typing_env);
+        (sig.inputs, sig.output) = ctx
+            .tcx
+            .normalize_erasing_regions(typing_env, Unnormalized::new((sig.inputs, sig.output)));
+        sig
     }
 }
 
@@ -321,7 +348,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     let mut presig = contract_of(ctx, def_id);
 
     if ctx.def_kind(def_id) == DefKind::Closure {
-        let fn_ty = ctx.type_of(def_id).instantiate_identity();
+        let fn_ty = ctx.type_of(def_id).instantiate_identity().skip_normalization();
         let TyKind::Closure(_, subst) = fn_ty.kind() else { unreachable!() };
 
         let kind = subst.as_closure().kind();
@@ -397,7 +424,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         }
     }
 
-    presig
+    ctx.erase_and_anonymize_regions(presig)
 }
 
 pub fn inputs_and_output_from_thir<'tcx>(
@@ -424,11 +451,7 @@ pub fn inputs_and_output_from_thir<'tcx>(
                     None => (Ident::fresh_local(format!("_{ix}")).into(), DUMMY_SP, param.ty),
                 })
                 .collect();
-            let output = ctx.normalize_erasing_regions(
-                rustc_middle::ty::TypingEnv::non_body_analysis(ctx.tcx, def_id),
-                fn_sig.output(),
-            );
-            (inputs, output)
+            (inputs, fn_sig.output())
         }
         BodyTy::GlobalAsm(_) => {
             ctx.crash_and_error(ctx.def_span(def_id), "Inline assembly is not supported")
@@ -438,14 +461,20 @@ pub fn inputs_and_output_from_thir<'tcx>(
 
 /// Normally this information is easier to extract from THIR (using `inputs_and_output_from_thir` above)
 /// but sometimes there is no THIR available (e.g., trait method sigs). Closures also go through this for some reason.
-pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(PIdent, Span, Ty)]>, Ty) {
-    let ty = tcx.type_of(def_id).instantiate_identity();
+pub fn inputs_and_output<'tcx>(
+    tcx: &TranslationCtx<'tcx>,
+    def_id: DefId,
+) -> (Box<[(PIdent, Span, Ty<'tcx>)]>, Ty<'tcx>) {
+    let ty = tcx.type_of(def_id).instantiate_identity().skip_normalization();
     match ty.kind() {
         TyKind::FnDef(..) => {
-            let gen_sig = tcx
-                .instantiate_bound_regions_with_erased(tcx.fn_sig(def_id).instantiate_identity());
-            let sig =
-                tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), gen_sig);
+            // Use this typing_env to avoid normalizing RPITs
+            let typing_env = TypingEnv::non_body_analysis(tcx.tcx, def_id);
+            // `fn_sig` does not return normalized types
+            let sig = tcx.normalize_erasing_late_bound_regions(
+                typing_env,
+                tcx.fn_sig(def_id).instantiate_identity().skip_normalization(),
+            );
             let inputs = tcx
                 .fn_arg_idents(def_id)
                 .iter()
@@ -471,7 +500,6 @@ pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(PIdent, Span, Ty)
             let sig = tcx.instantiate_bound_regions_with_erased(
                 tcx.signature_unclosure(subst.as_closure().sig(), Safety::Safe),
             );
-            let sig = tcx.normalize_erasing_regions(TypingEnv::non_body_analysis(tcx, def_id), sig);
             let env_ty = tcx.closure_env_ty(ty, subst.as_closure().kind(), tcx.lifetimes.re_erased);
             let closure_env = (name::self_().into(), tcx.def_span(def_id), env_ty);
             let names = tcx.fn_arg_idents(def_id).iter().cloned();
@@ -493,6 +521,6 @@ pub fn inputs_and_output(tcx: TyCtxt, def_id: DefId) -> (Box<[(PIdent, Span, Ty)
                 .collect();
             (inputs, sig.output())
         }
-        _ => ([].into(), tcx.type_of(def_id).instantiate_identity()),
+        _ => ([].into(), tcx.type_of(def_id).instantiate_identity().skip_normalization()),
     }
 }

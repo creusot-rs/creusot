@@ -108,7 +108,7 @@ pub(crate) fn lower_logic_sig<'tcx>(
         attrs.push(attr)
     }
 
-    let retty = if names.normalize(pre_sig.output).is_bool() {
+    let retty = if pre_sig.output.is_bool() {
         None
     } else {
         Some(translate_ty(ctx, names, span, pre_sig.output))

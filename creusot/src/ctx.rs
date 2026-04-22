@@ -204,7 +204,7 @@ pub(crate) fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, DenseBitSet<
     struct VisitFns<'tcx, 'a>(
         TyCtxt<'tcx>,
         HashMap<DefId, DenseBitSet<usize>>,
-        &'a ResolverAstLowering,
+        &'a ResolverAstLowering<'tcx>,
     );
     impl<'a> Visitor<'a> for VisitFns<'_, 'a> {
         fn visit_fn(&mut self, fk: FnKind<'a>, _: &AttrVec, _: Span, node: NodeId) {
@@ -476,14 +476,22 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn typing_env(&self, def_id: DefId) -> TypingEnv<'tcx> {
-        // FIXME: is it correct to pretend we are doing a non-body analysis?
         let param_env = self.param_env(def_id);
+        self.typing_env_with(def_id, param_env)
+    }
+
+    pub(crate) fn typing_env_with(
+        &self,
+        def_id: DefId,
+        param_env: ParamEnv<'tcx>,
+    ) -> TypingEnv<'tcx> {
+        // FIXME: is it correct to pretend we are doing a non-body analysis?
         let mode = if self.is_mir_available(def_id) && def_id.is_local() {
             TypingMode::post_borrowck_analysis(self.tcx, def_id.as_local().unwrap())
         } else {
             TypingMode::non_body_analysis()
         };
-        TypingEnv { typing_mode: mode, param_env }
+        TypingEnv::new(param_env, mode)
     }
 
     pub(crate) fn has_body(&self, def_id: DefId) -> bool {
@@ -605,9 +613,10 @@ impl<'tcx> TranslationCtx<'tcx> {
                     ItemType::Program
                 }
             }
-            DefKind::AssocConst | DefKind::Const | DefKind::InlineConst | DefKind::ConstParam => {
-                ItemType::Constant
-            }
+            DefKind::AssocConst { .. }
+            | DefKind::Const { .. }
+            | DefKind::InlineConst
+            | DefKind::ConstParam => ItemType::Constant,
             DefKind::Closure => ItemType::Closure,
             DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,
             DefKind::AssocTy => ItemType::AssocTy,
@@ -643,9 +652,10 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     /// If `true`, the type is definitely non-zero sized. This is a best-effort underapproximation.
-    pub fn is_nonzero_sized(&self, ty: Ty<'tcx>) -> bool {
+    pub fn is_nonzero_sized(&self, typing_env: TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
         is_nonzero_sized(
             self.tcx,
+            typing_env,
             &mut self.nonzero_sized_ty.borrow_mut(),
             &mut self.inhabited_ty.borrow_mut(),
             ty,
@@ -675,6 +685,7 @@ pub struct Erasure<'tcx> {
 /// If `true`, the type is definitely non-zero sized. This is a best-effort underapproximation.
 fn is_nonzero_sized<'tcx>(
     tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     nonzero_sized_cache: &mut HashMap<Ty<'tcx>, bool>,
     inhabited_cache: &mut HashMap<Ty<'tcx>, bool>,
     ty: Ty<'tcx>,
@@ -687,15 +698,23 @@ fn is_nonzero_sized<'tcx>(
         Bool | Char | Int(_) | Uint(_) | Float(_) | Ref(_, _, _) | RawPtr(_, _) => true,
         Adt(def, args) => {
             def.is_box()
-                || is_nonzero_sized_adt(tcx, nonzero_sized_cache, inhabited_cache, def, args)
+                || is_nonzero_sized_adt(
+                    tcx,
+                    typing_env,
+                    nonzero_sized_cache,
+                    inhabited_cache,
+                    def,
+                    args,
+                )
         }
         Tuple(tys) => {
-            tys.iter().any(|ty| is_nonzero_sized(tcx, nonzero_sized_cache, inhabited_cache, ty))
-                && tys.iter().all(|ty| is_inhabited(tcx, inhabited_cache, ty))
+            tys.iter().any(|ty| {
+                is_nonzero_sized(tcx, typing_env, nonzero_sized_cache, inhabited_cache, ty)
+            }) && tys.iter().all(|ty| is_inhabited(tcx, typing_env, inhabited_cache, ty))
         }
         Array(ty, len) => {
             is_nonzero_const(tcx, *len)
-                && is_nonzero_sized(tcx, nonzero_sized_cache, inhabited_cache, *ty)
+                && is_nonzero_sized(tcx, typing_env, nonzero_sized_cache, inhabited_cache, *ty)
         }
         _ => false,
     };
@@ -722,6 +741,7 @@ fn is_nonzero_const<'tcx>(tcx: TyCtxt<'tcx>, len: ty::Const<'tcx>) -> bool {
 /// - there is one inhabited constructor with at least one non-zero sized field.
 fn is_nonzero_sized_adt<'tcx>(
     tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     nonzero_sized_cache: &mut HashMap<Ty<'tcx>, bool>,
     inhabited_cache: &mut HashMap<Ty<'tcx>, bool>,
     def: &ty::AdtDef<'tcx>,
@@ -736,8 +756,12 @@ fn is_nonzero_sized_adt<'tcx>(
                 variant.fields.iter().all(|field| {
                     is_inhabited(
                         tcx,
+                        typing_env,
                         inhabited_cache,
-                        tcx.type_of(field.did).instantiate(tcx, args),
+                        tcx.normalize_erasing_regions(
+                            typing_env,
+                            tcx.type_of(field.did).instantiate(tcx, args),
+                        ),
                     )
                 })
             })
@@ -747,16 +771,26 @@ fn is_nonzero_sized_adt<'tcx>(
                 variant.fields.iter().any(|field| {
                     is_nonzero_sized(
                         tcx,
+                        typing_env,
                         nonzero_sized_cache,
                         inhabited_cache,
-                        tcx.type_of(field.did).instantiate(tcx, args),
+                        tcx.normalize_erasing_regions(
+                            typing_env,
+                            tcx.type_of(field.did).instantiate(tcx, args),
+                        ),
                     )
                 })
             })
     } else if def.is_union() {
-        def.all_field_tys(tcx)
-            .iter_instantiated(tcx, args)
-            .any(|ty| is_nonzero_sized(tcx, nonzero_sized_cache, inhabited_cache, ty))
+        def.all_field_tys(tcx).iter_instantiated(tcx, args).any(|ty| {
+            is_nonzero_sized(
+                tcx,
+                typing_env,
+                nonzero_sized_cache,
+                inhabited_cache,
+                tcx.normalize_erasing_regions(typing_env, ty),
+            )
+        })
     } else {
         false
     }
@@ -765,13 +799,14 @@ fn is_nonzero_sized_adt<'tcx>(
 /// If `true`, the type is definitely inhabited. This is a best-effort underapproximation.
 fn is_inhabited<'tcx>(
     tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     inhabited_cache: &mut HashMap<Ty<'tcx>, bool>,
     ty: Ty<'tcx>,
 ) -> bool {
     if let Some(&b) = inhabited_cache.get(&ty) {
         return b;
     }
-    let b = is_inhabited_(tcx, inhabited_cache, &mut Vec::new(), ty);
+    let b = is_inhabited_(tcx, typing_env, inhabited_cache, &mut Vec::new(), ty);
     inhabited_cache.insert(ty, b);
     b
 }
@@ -779,6 +814,7 @@ fn is_inhabited<'tcx>(
 // See `is_inhabited_adt` for the handling of recursive types with `visited`.
 fn is_inhabited_<'tcx>(
     tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     inhabited_cache: &HashMap<Ty<'tcx>, bool>,
     visited: &mut Vec<ty::AdtDef<'tcx>>,
     ty: Ty<'tcx>,
@@ -786,14 +822,16 @@ fn is_inhabited_<'tcx>(
     use rustc_type_ir::TyKind::*;
     match ty.kind() {
         Bool | Char | Int(_) | Uint(_) | Float(_) | RawPtr(_, _) | Str | Slice(_) => true,
-        Ref(_, ty, _) => is_inhabited_(tcx, inhabited_cache, visited, *ty),
+        Ref(_, ty, _) => is_inhabited_(tcx, typing_env, inhabited_cache, visited, *ty),
         Adt(def, args) if def.is_box() => {
-            is_inhabited_(tcx, inhabited_cache, visited, args.type_at(0))
+            is_inhabited_(tcx, typing_env, inhabited_cache, visited, args.type_at(0))
         }
-        Adt(def, args) => is_inhabited_adt(tcx, inhabited_cache, visited, *def, args),
-        Tuple(tys) => tys.iter().all(|ty| is_inhabited_(tcx, inhabited_cache, visited, ty)),
+        Adt(def, args) => is_inhabited_adt(tcx, typing_env, inhabited_cache, visited, *def, args),
+        Tuple(tys) => {
+            tys.iter().all(|ty| is_inhabited_(tcx, typing_env, inhabited_cache, visited, ty))
+        }
         // [T; 0] is also inhabited but who needs to know that? Make a PR if you do!
-        Array(ty, _) => is_inhabited_(tcx, inhabited_cache, visited, *ty),
+        Array(ty, _) => is_inhabited_(tcx, typing_env, inhabited_cache, visited, *ty),
         _ => false,
     }
 }
@@ -802,6 +840,7 @@ fn is_inhabited_<'tcx>(
 // Since we may return `false` for types which end up being inhabited, we do not modify the cache during this process.
 fn is_inhabited_adt<'tcx>(
     tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
     inhabited_cache: &HashMap<Ty<'tcx>, bool>,
     visited: &mut Vec<ty::AdtDef<'tcx>>,
     def: ty::AdtDef<'tcx>,
@@ -816,17 +855,27 @@ fn is_inhabited_adt<'tcx>(
             variant.fields.iter().all(|field| {
                 is_inhabited_(
                     tcx,
+                    typing_env,
                     inhabited_cache,
                     visited,
-                    tcx.type_of(field.did).instantiate(tcx, args),
+                    tcx.normalize_erasing_regions(
+                        typing_env,
+                        tcx.type_of(field.did).instantiate(tcx, args),
+                    ),
                 )
             })
         })
     } else if def.is_union() {
         use rustc_type_ir::inherent::AdtDef as _;
-        def.all_field_tys(tcx)
-            .iter_instantiated(tcx, args)
-            .any(|ty| is_inhabited_(tcx, inhabited_cache, visited, ty))
+        def.all_field_tys(tcx).iter_instantiated(tcx, args).any(|ty| {
+            is_inhabited_(
+                tcx,
+                typing_env,
+                inhabited_cache,
+                visited,
+                tcx.normalize_erasing_regions(typing_env, ty),
+            )
+        })
     } else {
         false
     };

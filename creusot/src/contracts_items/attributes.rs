@@ -96,8 +96,8 @@ pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
         tcx.def_kind(def_id),
         DefKind::Fn
             | DefKind::AssocFn
-            | DefKind::AssocConst
-            | DefKind::Const
+            | DefKind::AssocConst { .. }
+            | DefKind::Const { .. }
             | DefKind::Struct
             | DefKind::Enum
             | DefKind::Union

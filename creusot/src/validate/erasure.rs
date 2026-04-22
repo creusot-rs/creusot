@@ -91,6 +91,7 @@ fn check_erasure<'tcx>(
         ctx.error(left_span, "#[erasure] function must have a body").emit();
         return Err(None);
     }
+    let typing_env = ctx.typing_env(left);
     let left_thir = ctx.thir_body(left_local);
     let left = a_normal_form_or_error(ctx, left_local, left_thir).ok_or_else(|| {
         debug!("{:#?}", left_thir);
@@ -129,8 +130,11 @@ fn check_erasure<'tcx>(
             Cow::Owned(anf)
         }
     };
-    let right = &ty::EarlyBinder::bind(right_anf.into_owned()).instantiate(ctx.tcx, right.def.1);
-    Ok(equate_anf(ctx, left_local, &left, right, level).map_err(|_| None)?)
+    let right = ctx.tcx.normalize_erasing_regions(
+        typing_env,
+        ty::EarlyBinder::bind(right_anf.into_owned()).instantiate(ctx.tcx, right.def.1),
+    );
+    Ok(equate_anf(ctx, left_local, &left, &right, level).map_err(|_| None)?)
 }
 
 /// Equate two ANF bodies.
@@ -862,12 +866,15 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                             });
                     let mut erasure_info = None;
                     if let Some(ctx) = self.ctx {
-                        subst = erase_types(ctx, subst);
+                        subst = erase_types(ctx, self.typing_env, subst);
                         if let Some(erasure) = ctx.erasure(fun_id) {
                             if let Some(erasure) = erasure {
                                 fun_id = erasure.def.0;
-                                subst = ty::EarlyBinder::bind(erasure.def.1)
-                                    .instantiate(self.tcx, subst);
+                                subst = self.tcx.normalize_erasing_regions(
+                                    self.typing_env,
+                                    ty::EarlyBinder::bind(erasure.def.1)
+                                        .instantiate(self.tcx, subst),
+                                );
                                 erasure_info =
                                     Some(ErasureInfo::EraseArgs(erasure.erase_args.clone()));
                             } else {
@@ -1336,24 +1343,34 @@ fn is_erasable(tcx: TyCtxt, thir: &Thir, expr: ExprId) -> bool {
 
 /// Replace function types with their erasure when it exists
 /// (This is very simplistic and experimental)
-fn erase_types<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(ctx: &TranslationCtx<'tcx>, t: T) -> T {
-    struct Eraser<'a, 'tcx>(&'a TranslationCtx<'tcx>);
+fn erase_types<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
+    ctx: &TranslationCtx<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    t: T,
+) -> T {
+    struct Eraser<'a, 'tcx> {
+        ctx: &'a TranslationCtx<'tcx>,
+        typing_env: ty::TypingEnv<'tcx>,
+    }
 
     impl<'tcx> ty::TypeFolder<TyCtxt<'tcx>> for Eraser<'_, 'tcx> {
         fn cx(&self) -> TyCtxt<'tcx> {
-            self.0.tcx()
+            self.ctx.tcx()
         }
 
         fn fold_ty(&mut self, t: ty::Ty<'tcx>) -> ty::Ty<'tcx> {
             match t.kind() {
                 &ty::TyKind::FnDef(fun_id, args)
-                    if let Some(Some(erasure)) = self.0.erasure(fun_id) =>
+                    if let Some(Some(erasure)) = self.ctx.erasure(fun_id) =>
                 {
                     let tcx = self.cx();
                     ty::Ty::new_fn_def(
                         tcx,
                         erasure.def.0,
-                        ty::EarlyBinder::bind(erasure.def.1).instantiate(tcx, args),
+                        self.cx().normalize_erasing_regions(
+                            self.typing_env,
+                            ty::EarlyBinder::bind(erasure.def.1).instantiate(tcx, args),
+                        ),
                     )
                 }
                 _ => t,
@@ -1362,7 +1379,7 @@ fn erase_types<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(ctx: &TranslationCtx<'tcx>, 
         }
     }
 
-    t.fold_with(&mut Eraser(ctx))
+    t.fold_with(&mut Eraser { ctx, typing_env })
 }
 
 ////////////////////////////////////////////////////////////////

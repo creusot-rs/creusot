@@ -19,7 +19,7 @@ use rustc_infer::{
 use rustc_middle::ty::{
     self, Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst, ParamEnv, ParamEnvAnd,
     ParamTy, Predicate, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv,
-    TypingMode,
+    TypingMode, Unnormalized,
 };
 use rustc_span::{DUMMY_SP, ErrorGuaranteed, Span};
 use rustc_trait_selection::{
@@ -60,13 +60,13 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn translate_impl(&self, impl_id: DefId) -> Vec<Refinement<'tcx>> {
         assert!(self.impl_opt_trait_id(impl_id).is_some(), "{impl_id:?} is not a trait impl");
-        let trait_ref = self.impl_trait_ref(impl_id).instantiate_identity();
+        let trait_ref = self.impl_trait_ref(impl_id).instantiate_identity().skip_normalization();
 
         let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
 
         let mut refinements = Vec::new();
         let mut implementor_map =
-            self.with_stable_hashing_context(|hcx| implementor_map.to_sorted(&hcx, true));
+            self.with_stable_hashing_context(|mut hcx| implementor_map.to_sorted(&mut hcx, true));
         implementor_map.sort_by_cached_key(|(trait_item, impl_item)| {
             get_very_stable_hash(&[**trait_item, **impl_item] as &[_], &self.tcx)
         });
@@ -138,7 +138,8 @@ fn logic_refinement_term<'tcx>(
     // Get the contract of the trait version
     let mut trait_sig = EarlyBinder::bind(ctx.sig(trait_item_id).clone())
         .instantiate(ctx.tcx, refn_subst)
-        .normalize(ctx, typing_env);
+        .skip_normalization()
+        .normalize_contract(ctx, typing_env);
 
     let mut impl_sig = ctx.sig(impl_item_id).clone();
 
@@ -241,7 +242,7 @@ impl<'tcx> TraitResolved<'tcx> {
         } else {
             return TraitResolved::NotATraitItem;
         };
-        let trait_ref = tcx.normalize_erasing_regions(typing_env, trait_ref);
+        let trait_ref = tcx.normalize_erasing_regions(typing_env, Unnormalized::new(trait_ref));
 
         let source = tcx.codegen_select_candidate(typing_env.as_query_input(trait_ref));
         if let Err(err) = source {
@@ -506,7 +507,8 @@ impl<'tcx> GraphTraversal<'tcx> {
         Box::new(candidates.filter(|&child| {
             let infcx = self.infcx.fork();
             let args = infcx.fresh_args_for_item(DUMMY_SP, child);
-            let trait_ref_child = self.tcx.impl_trait_ref(child).instantiate(self.tcx, args);
+            let trait_ref_child =
+                self.tcx.impl_trait_ref(child).instantiate(self.tcx, args).skip_normalization();
             infcx
                 .at(&ObligationCause::dummy(), self.param_env)
                 .eq(DefineOpaqueTypes::Yes, trait_ref_child, self.trait_ref)

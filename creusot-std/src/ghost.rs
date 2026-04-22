@@ -262,6 +262,9 @@ macro_rules! define_objective {
         /// `Unique<T>` (and therefore `Box<T>`, `Vec<T>`, ...) are therefore objective.
         #[trusted]
         pub auto trait Objective {}
+
+        #[trusted]
+        impl !Objective for NotObjective {}
     };
 }
 
@@ -276,7 +279,3 @@ define_objective! {}
 /// This negative implementation primarily targets `Perm<PermCell<T>>` and
 /// `Perm<*const T>`.
 pub(crate) struct NotObjective {}
-
-#[cfg(creusot)]
-#[trusted]
-impl !Objective for NotObjective {}

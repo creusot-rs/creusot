@@ -21,7 +21,7 @@ use rustc_index::{Idx as _, bit_set::MixedBitSet};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     mir::{self, BasicBlock, Local, Location, Place, traversal},
-    ty::{self, TyCtxt, TypingEnv},
+    ty::{self, TyCtxt, TypingEnv, Unnormalized},
 };
 use rustc_mir_dataflow::{
     Analysis as _, ResultsCursor,
@@ -275,7 +275,7 @@ impl<'a, 'tcx> HasMoveData<'tcx> for Analysis<'a, 'tcx> {
 fn local_typing_env(tcx: TyCtxt<'_>, def_id: DefId) -> TypingEnv<'_> {
     let param_env = tcx.param_env(def_id);
     let typing_mode = ty::TypingMode::post_borrowck_analysis(tcx, def_id.as_local().unwrap());
-    TypingEnv { typing_mode, param_env }
+    TypingEnv::new(param_env, typing_mode)
 }
 
 impl<'a, 'tcx> Analysis<'a, 'tcx> {
@@ -446,7 +446,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 continue;
             }
             let ty = pl.ty(&self.body().local_decls, self.tcx());
-            let ty = self.tcx().normalize_erasing_regions(self.typing_env, ty);
+            let ty = self.tcx().normalize_erasing_regions(self.typing_env, Unnormalized::new(ty));
             use TyKind::*;
             match ty.ty.kind() {
                 Adt(adt_def, subst) => {
@@ -517,7 +517,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 | Foreign(_)
                 | Str
                 | RawPtr(_, _)
-                | Alias(_, _)
+                | Alias(_)
                 | Param(_)
                 | Bound(_, _)
                 | Placeholder(_)
@@ -915,7 +915,7 @@ pub(crate) fn run_with_specs<'tcx>(
     let tree = fmir::ScopeTree::build(&body.body, &body_locals.locals);
     let clos_subst = tcx.is_closure_like(def_id).then(|| {
         let loc = body_locals.vars.get_index(1).unwrap();
-        let ty_env = tcx.type_of(def_id).instantiate_identity();
+        let ty_env = tcx.type_of(def_id).instantiate_identity().skip_normalization();
         let TyKind::Closure(_, subst) = ty_env.kind() else { unreachable!() };
         let self_ = Term::var(*loc.0, loc.1.ty);
         let self_ = match subst.as_closure().kind() {
@@ -996,10 +996,8 @@ impl<'tcx> BodyLocals<'tcx> {
                 } else {
                     (Ident::fresh(ctx.crate_name(), &format!("_{}", idx)), LocalKind::Temp)
                 };
-                (
-                    (ident, fmir::LocalDecl { span: d.source_info.span, ty: d.ty, kind }),
-                    (loc, ident),
-                )
+                let ty = ctx.erase_and_anonymize_regions(d.ty);
+                ((ident, fmir::LocalDecl { span: d.source_info.span, ty, kind }), (loc, ident))
             })
             .unzip();
         BodyLocals { vars, locals }

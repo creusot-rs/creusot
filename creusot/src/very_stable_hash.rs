@@ -135,8 +135,6 @@ impl<CTX> VeryStableHash<CTX> for DefPathData {
             | AnonConst
             | OpaqueTy
             | SyntheticCoroutineBody
-            | LateAnonConst
-            | DesugaredAnonymousLifetime
             | NestedStatic => {}
             TypeNs(symbol)
             | ValueNs(symbol)

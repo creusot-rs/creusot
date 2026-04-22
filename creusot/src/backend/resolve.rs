@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use rustc_ast::Mutability;
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{GenericArg, Ty, TypingEnv};
+use rustc_middle::ty::{GenericArg, Ty, TypingEnv, Unnormalized};
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::TyKind;
 
@@ -60,14 +60,18 @@ pub fn is_resolve_trivial<'tcx>(
                     return false;
                 }
                 AdtKind::Box(ty) | AdtKind::Ghost(ty) => stack.push(ty),
-                AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => stack.extend(
-                    def.all_fields()
-                        .map(|f| ctx.normalize_erasing_regions(typing_env, f.ty(ctx.tcx, subst))),
-                ),
+                AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => {
+                    stack.extend(def.all_fields().map(|f| {
+                        ctx.normalize_erasing_regions(
+                            typing_env,
+                            Unnormalized::new(f.ty(ctx.tcx, subst)),
+                        )
+                    }))
+                }
             },
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
             TyKind::Param(_)
-            | TyKind::Alias(_, _)
+            | TyKind::Alias(_)
             | TyKind::Dynamic(..)
             | TyKind::Ref(_, _, Mutability::Mut) => return false,
             TyKind::Bool

@@ -82,7 +82,6 @@ pub(crate) fn translate_ty<'tcx>(
     span: Span,
     ty: Ty<'tcx>,
 ) -> MlT {
-    let ty = names.normalize(ty);
     match ty.kind() {
         Bool => bool(),
         Char => MlT::qconstructor(names.in_pre(PreMod::Char, "t")),
@@ -133,11 +132,10 @@ pub(crate) fn translate_ty<'tcx>(
         FnPtr(..) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "ptr")),
         Foreign(_) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "foreign")),
         Error(_) => MlT::unit(),
-        Closure(..)
-        | Tuple(_)
-        | Param(_)
-        | Dynamic(_, _)
-        | Alias(AliasTyKind::Opaque | AliasTyKind::Projection, _) => {
+        Closure(..) | Tuple(_) | Param(_) | Dynamic(_, _) => MlT::TConstructor(names.ty(ty)),
+        Alias(t)
+            if matches!(t.kind, AliasTyKind::Opaque { .. } | AliasTyKind::Projection { .. }) =>
+        {
             MlT::TConstructor(names.ty(ty))
         }
         _ => ctx.crash_and_error(span, format!("unsupported type {:?}", ty)),
@@ -249,10 +247,7 @@ pub(crate) fn translate_adtdecl<'tcx>(
                             .fields
                             .iter()
                             .map(|f| {
-                                let ty = ctx.normalize_erasing_regions(
-                                    names.typing_env(),
-                                    f.ty(ctx.tcx, subst),
-                                );
+                                let ty = names.normalize(f.ty(ctx.tcx, subst));
                                 translate_ty(ctx, names, ctx.def_span(f.did), ty)
                             })
                             .collect(),
@@ -272,8 +267,7 @@ pub(crate) fn translate_adtdecl<'tcx>(
                 .iter_enumerated()
                 .filter(|f| f.1.vis.is_accessible_from(names.source_id(), ctx.tcx))
                 .map(|(ix, f)| {
-                    let ty =
-                        ctx.normalize_erasing_regions(names.typing_env(), f.ty(ctx.tcx, subst));
+                    let ty = names.normalize(f.ty(ctx.tcx, subst));
                     FieldDecl {
                         name: names.field(def.did(), subst, ix),
                         ty: translate_ty(ctx, names, ctx.def_span(f.did), ty),

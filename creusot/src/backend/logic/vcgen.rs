@@ -174,7 +174,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 }
                 // We pull (id, subst) as a dependency, because it may be useful for the proof
                 let item_name = self.names.item(id, subst);
-                if let TyKind::FnDef(_, _) = self.ctx.type_of(id).instantiate_identity().kind() {
+                if let TyKind::FnDef(_, _) = self.ctx.type_of(id).instantiate_identity().skip_normalization().kind() {
                     k(Exp::unit())
                 } else {
                     k(Exp::Var(item_name))
@@ -195,18 +195,17 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // VC(f As, Q) = VC(A0, |a0| ... VC(An, |an|
             //  pre(f)(a0..an) /\ variant(f)(a0..an) /\ (post(f)(a0..an, F(a0..an)) -> Q(F a0..an))
             // ))
-            TermKind::Call { id, subst, args } => self.build_wp_slice(args, &|args| {
-                let pre_sig = EarlyBinder::bind(self.ctx.sig(*id).clone())
+            &TermKind::Call { id, subst, ref args } => self.build_wp_slice(args, &|args| {
+                let pre_sig = EarlyBinder::bind(self.ctx.sig(id).clone())
                     .instantiate(self.ctx.tcx, subst)
-                    .normalize(self.ctx, self.typing_env);
+                    .skip_normalization().normalize_contract(self.ctx, self.typing_env);
 
-                let variant = if self.ctx.should_check_variant_decreases(self.self_id, *id) {
-                    let subst = self.ctx.normalize_erasing_regions(self.typing_env, *subst);
-                    let subst_id = erased_identity_for_item(self.ctx.tcx, *id);
+                let variant = if self.ctx.should_check_variant_decreases(self.self_id, id) {
+                    let subst_id = erased_identity_for_item(self.ctx.tcx, id);
                     if subst != subst_id {
                         self.ctx.crash_and_error(t.span, "polymorphic recursion is not supported.")
                     }
-                    if self.self_id != *id {
+                    if self.self_id != id {
                         self.ctx
                             .dcx()
                             .struct_span_fatal(
@@ -215,7 +214,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                             )
                             .with_note(format!(
                                 "calling {} from {}",
-                                self.ctx.def_path_str(*id),
+                                self.ctx.def_path_str(id),
                                 self.ctx.def_path_str(self.self_id)
                             ))
                             .emit();
@@ -234,8 +233,8 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     Exp::mk_true()
                 };
 
-                let mut call = Exp::Var(self.names.item(*id, subst)).app(args.clone());
-                if is_builtin_ascription(self.ctx.tcx, *id) {
+                let mut call = Exp::Var(self.names.item(id, subst)).app(args.clone());
+                if is_builtin_ascription(self.ctx.tcx, id) {
                     call = call.ascribe(self.ty(t.ty, t.span))
                 }
                 let call_subst = pre_sig
@@ -248,7 +247,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 let mut contract = lower_contract(self.ctx, self.names, pre_sig.contract);
                 contract.subst(&call_subst);
 
-                let name = self.ctx.item_name(*id);
+                let name = self.ctx.item_name(id);
                 let name = name.as_str();
                 contract
                     .requires_conj(name)
@@ -305,8 +304,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
             TermKind::Tuple { fields } => {
-                let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.ty);
-                let TyKind::Tuple(args) = ty.kind() else { unreachable!() };
+                let TyKind::Tuple(args) = t.ty.kind() else { unreachable!() };
                 self.build_wp_slice(fields, &|flds| match flds.len() {
                     0 => k(Exp::unit()),
                     1 => k(flds.into_iter().next().unwrap()),
@@ -323,8 +321,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             }
             // Same as for tuples
             TermKind::Constructor { variant, fields, .. } => {
-                let ty = self.ctx.normalize_erasing_regions(self.typing_env, t.ty);
-                let TyKind::Adt(adt, subst) = ty.kind() else { unreachable!() };
+                let TyKind::Adt(adt, subst) = t.ty.kind() else { unreachable!() };
                 self.build_wp_slice(fields, &|fields| {
                     let ctor = constructor(self.names, fields, adt.variant(*variant).def_id, subst);
                     k(ctor)
@@ -377,8 +374,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, idx } => {
-                let ty = self.ctx.normalize_erasing_regions(self.typing_env, lhs.ty);
-                let field = match ty.kind() {
+                let field = match lhs.ty.kind() {
                     TyKind::Closure(did, substs) => self.names.field(*did, substs, *idx),
                     TyKind::Adt(def, subst) => self.names.field(def.did(), subst, *idx),
                     TyKind::Tuple(tys) if tys.len() == 1 => return self.build_wp(lhs, k),
@@ -391,7 +387,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // VC(&mut (*A).f, Q) = VC(A, |a| Q(&mut (*a).f))
             TermKind::Reborrow { inner, projections } => {
                 // FIXME: this does not generate VCs for bounds of indices in ProjectionElem::Index
-                let ty = self.ctx.normalize_erasing_regions(self.typing_env, inner.ty);
+                let ty = inner.ty;
                 self.build_wp(inner, &|inner| {
                     self.build_wp_projections(projections, &|projs| {
                         let borrow_id = borrow_generated_id(
