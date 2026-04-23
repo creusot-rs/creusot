@@ -19,7 +19,7 @@ use crate::{
     naming::name,
     translation::{
         constant::try_const_to_term,
-        pearlite::{BinOp, Pattern, QuantKind, SmallRenaming, Term, Trigger, normalize},
+        pearlite::{BinOp, Pattern, QuantKind, SmallRenaming, Substable, Term, Trigger, normalize},
         specification::Condition,
         traits::TraitResolved,
     },
@@ -173,7 +173,8 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             ];
             let post = Term::call(ctx.tcx, typing_env, post_did, pre_post_subst, post_args);
             let expl_post = format!("expl:{} ensures", fn_name);
-            pre_sig.contract.ensures = vec![Condition { term: post, expl: expl_post }]
+            pre_sig.contract.ensures =
+                vec![(Box::new([]), Condition { term: post, expl: expl_post })]
         } else {
             sig_add_type_invariant_spec(ctx, typing_env, names.source_id(), &mut pre_sig, def_id)
         }

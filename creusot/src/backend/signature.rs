@@ -4,7 +4,7 @@ use crate::{
     backend::{
         DefKind, Why3Generator,
         clone_map::Namer,
-        term::{lower_condition, lower_pure},
+        term::{lower_condition, lower_pure, lower_trigger},
         ty::translate_ty,
     },
     contracts_items::why3_attrs,
@@ -15,12 +15,13 @@ use why3::{
     Exp, Ident,
     coma::{Param, Prototype},
     declaration::{Attribute, Condition, Signature},
+    exp::Trigger,
 };
 
 #[derive(Debug, Clone)]
 pub(crate) struct Contract {
     pub(crate) requires: Box<[Condition]>,
-    pub(crate) ensures: Box<[Condition]>,
+    pub(crate) ensures: Box<[(Box<[Trigger]>, Condition)]>,
 }
 
 impl Contract {
@@ -38,7 +39,7 @@ impl Contract {
     }
 
     pub fn ensures_conj(&self, name: &str) -> Exp {
-        let mut ensures = self.ensures.iter().cloned().map(Condition::labelled_exp);
+        let mut ensures = self.ensures.iter().cloned().map(|(_, cond)| cond.labelled_exp());
         let Some(mut postcond) = ensures.next() else { return Exp::mk_true() };
         postcond = ensures.fold(postcond, Exp::log_and);
         postcond.reassociate();
@@ -63,7 +64,10 @@ impl Contract {
         }
 
         for ens in self.ensures.iter_mut() {
-            ens.exp.subst(subst);
+            ens.1.exp.subst(subst);
+            for t in ens.0.iter_mut().flat_map(|t| &mut t.0) {
+                t.subst(subst);
+            }
         }
     }
 }
@@ -179,7 +183,15 @@ pub(crate) fn lower_contract<'tcx>(
 ) -> Contract {
     let requires =
         contract.requires.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
-    let ensures =
-        contract.ensures.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
+    let ensures = contract
+        .ensures
+        .into_iter()
+        .map(|(trig, cond)| {
+            (
+                trig.into_iter().map(|t| lower_trigger(ctx, names, t)).collect(),
+                lower_condition(ctx, names, cond),
+            )
+        })
+        .collect();
     Contract { requires, ensures }
 }

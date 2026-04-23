@@ -4,7 +4,7 @@ use crate::{
     contracts_items::{is_law, is_pearlite, is_sealed, is_spec},
     ctx::*,
     naming::name,
-    translation::pearlite::PIdent,
+    translation::pearlite::{PIdent, Substable},
     util::erased_identity_for_item,
     very_stable_hash::get_very_stable_hash,
 };

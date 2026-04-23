@@ -46,7 +46,7 @@ use crate::{
     translation::{
         fmir::{self, BorrowKind, LocalKind},
         function::{Assertion, discriminator_for_switch},
-        pearlite::{Term, TermKind},
+        pearlite::{Substable, Term, TermKind},
     },
     util::Orphan,
 };

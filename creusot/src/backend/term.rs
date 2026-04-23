@@ -72,6 +72,14 @@ pub(crate) fn lower_condition<'tcx>(
     WCondition { exp: lower_pure(ctx, names, &cond.term.spanned()), expl: cond.expl }
 }
 
+pub(crate) fn lower_trigger<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    names: &impl Namer<'tcx>,
+    trig: Trigger<'tcx>,
+) -> WTrigger {
+    WTrigger(trig.0.iter().map(|t| lower_pure(ctx, names, t)).collect())
+}
+
 pub(crate) fn lower_pat<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
@@ -278,13 +286,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     e
                 }
             }
-            TermKind::Quant { kind, binder, box body, trigger } => {
+            TermKind::Quant { kind, binder, body } => {
                 let bound = binder.iter().map(|(s, t)| (s.0, self.lower_ty(*t)));
-                let body = self.lower_term(body);
-                let trigger = self.lower_trigger(trigger);
+                let lbody = self.lower_term(&body.term);
+                let trigger = self.lower_trigger(&body.triggers);
                 match kind {
-                    QuantKind::Forall => Exp::forall_trig(bound, trigger, body),
-                    QuantKind::Exists => Exp::exists_trig(bound, trigger, body),
+                    QuantKind::Forall => Exp::forall_trig(bound, trigger, lbody),
+                    QuantKind::Exists => Exp::exists_trig(bound, trigger, lbody),
                 }
             }
             TermKind::Constructor { variant, fields, .. } => {
@@ -510,7 +518,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
         translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty)
     }
 
-    fn lower_trigger(&self, triggers: &[Trigger<'tcx>]) -> Box<[WTrigger]> {
+    pub(crate) fn lower_trigger(&self, triggers: &[Trigger<'tcx>]) -> Box<[WTrigger]> {
         triggers
             .iter()
             .map(|x| WTrigger(x.0.iter().map(|x| self.lower_term(x)).collect()))

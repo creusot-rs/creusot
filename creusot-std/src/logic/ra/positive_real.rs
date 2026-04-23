@@ -24,7 +24,7 @@ impl RA for PositiveReal {
     }
 
     #[logic(open, inline)]
-    #[ensures(result == (self == other))]
+    #[ensures(#[trigger(self == other)] result == (self == other))]
     fn eq(self, other: Self) -> bool {
         self.ext_eq(other)
     }

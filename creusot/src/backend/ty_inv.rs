@@ -348,10 +348,13 @@ pub(crate) fn sig_add_type_invariant_spec<'tcx>(
         let expl = format!("expl:{} result type invariant", fn_name);
         pre_sig.contract.ensures.insert(
             0,
-            Condition {
-                term: term.span(ret_ty_span.unwrap_or_else(|| ctx.def_span(def_id))),
-                expl,
-            },
+            (
+                Box::new([]),
+                Condition {
+                    term: term.span(ret_ty_span.unwrap_or_else(|| ctx.def_span(def_id))),
+                    expl,
+                },
+            ),
         );
     }
 }

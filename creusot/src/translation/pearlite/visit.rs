@@ -25,9 +25,9 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visitor.visit_term(rhs);
         }
         TermKind::Unary { op: _, arg } => visitor.visit_term(arg),
-        TermKind::Quant { body, trigger, .. } => {
-            trigger.iter().flat_map(|x| &x.0).for_each(|x| visitor.visit_term(x));
-            visitor.visit_term(body)
+        TermKind::Quant { body, .. } => {
+            body.triggers.iter().flat_map(|x| &x.0).for_each(|x| visitor.visit_term(x));
+            visitor.visit_term(&body.term)
         }
         TermKind::Call { id: _, subst: _, args } => args.iter().for_each(|a| visitor.visit_term(a)),
         TermKind::Constructor { variant: _, fields } => {
@@ -103,9 +103,9 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visitor.visit_mut_term(rhs);
         }
         TermKind::Unary { arg, .. } => visitor.visit_mut_term(arg),
-        TermKind::Quant { body, trigger, .. } => {
-            trigger.iter_mut().flat_map(|x| &mut x.0).for_each(|x| visitor.visit_mut_term(x));
-            visitor.visit_mut_term(body)
+        TermKind::Quant { body, .. } => {
+            body.triggers.iter_mut().flat_map(|x| &mut x.0).for_each(|x| visitor.visit_mut_term(x));
+            visitor.visit_mut_term(&mut body.term)
         }
         TermKind::Call { args, .. } => args.iter_mut().for_each(|a| visitor.visit_mut_term(a)),
         TermKind::Constructor { fields, .. } => {

@@ -7,7 +7,7 @@ use crate::{
         pretyping,
     },
 };
-use pearlite_syn::{Term, TermPath};
+use pearlite_syn::{EnsuresTerm, Term, TermPath};
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
@@ -25,7 +25,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     let documentation = document_spec("requires", doc::LogicBody::term(REQUIRES_LEN, attr.clone()));
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
-    let term = parse_macro_input!(attr as Term);
+    let req_body = pretyping::encode_term(&parse_macro_input!(attr as Term));
     item.mark_unused();
 
     let req_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
@@ -37,7 +37,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             sig.ident = req_name.clone();
             sig.output = parse_quote! { -> bool };
 
-            let requires_tokens = sig_spec_item(req_name, sig, term);
+            let requires_tokens = sig_spec_item(req_name, sig, req_body);
             TS1::from(quote! {
               #requires_tokens
               #[creusot::clause::requires=#name_tag]
@@ -48,7 +48,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
         }
         ContractSubject::FnOrMethod(mut f) => {
             let attrs = std::mem::take(&mut f.attrs);
-            let requires_tokens = fn_spec_item(req_name, FnSpecResultKind::NoResult, term);
+            let requires_tokens = fn_spec_item(req_name, FnSpecResultKind::NoResult, req_body);
 
             if let Some(b) = f.body.as_mut() {
                 b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)))
@@ -61,7 +61,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             })
         }
         ContractSubject::Closure(mut clos) => {
-            let requires_tokens = fn_spec_item(req_name, FnSpecResultKind::NoResult, term);
+            let requires_tokens = fn_spec_item(req_name, FnSpecResultKind::NoResult, req_body);
             let body = &clos.body;
             *clos.body = parse_quote!({let res = #body; #requires_tokens res});
             TS1::from(quote! {
@@ -77,29 +77,13 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     let documentation = document_spec("ensures", doc::LogicBody::term(ENSURES_LEN, attr.clone()));
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
-    let term = parse_macro_input!(attr as Term);
-    let (result, term) = match term {
-        Term::Closure(closure) => {
-            if closure.inputs.len() != 1 {
-                let span = if closure.inputs.len() == 0 {
-                    closure
-                        .or1_token
-                        .span()
-                        .join(closure.or2_token.span())
-                        .unwrap_or_else(|| Span::call_site())
-                } else {
-                    closure.inputs.span()
-                };
-                return quote::quote_spanned! { span=>
-                    compile_error!{"`#[ensures]` clause expects only one result parameter"}
-                }
-                .into();
-            }
-            (closure.inputs.into_iter().next().unwrap(), *closure.body)
+    let (result, ens_body) = match parse_macro_input!(attr as EnsuresTerm) {
+        EnsuresTerm::EnsuresClosure(closure) => {
+            (closure.result, pretyping::encode_term_with_triggers(&closure.body))
         }
-        _ => {
+        EnsuresTerm::TermWithTriggers(term) => {
             let result = ident_to_pat(Ident::new("result", Span::call_site()));
-            (result, term)
+            (result, pretyping::encode_term_with_triggers(&term))
         }
     };
     item.mark_unused();
@@ -118,7 +102,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             sig.ident = ens_name.clone();
             sig.inputs.push(result);
             sig.output = parse_quote! { -> bool };
-            let ensures_tokens = sig_spec_item(ens_name, sig, term);
+            let ensures_tokens = sig_spec_item(ens_name, sig, ens_body);
             TS1::from(quote! {
               #ensures_tokens
               #[creusot::clause::ensures=#name_tag]
@@ -134,7 +118,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                 ReturnType::Type(_, ref ty) => (**ty).clone(),
             };
             let ensures_tokens =
-                fn_spec_item(ens_name, FnSpecResultKind::Typed(result, ty_result), term);
+                fn_spec_item(ens_name, FnSpecResultKind::Typed(result, ty_result), ens_body);
             if let Some(b) = f.body.as_mut() {
                 b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)))
             }
@@ -148,7 +132,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
         ContractSubject::Closure(mut clos) => {
             let res_id = Ident::new("res", Span::mixed_site());
             let ensures_tokens =
-                fn_spec_item(ens_name, FnSpecResultKind::Unified(result, res_id.clone()), term);
+                fn_spec_item(ens_name, FnSpecResultKind::Unified(result, res_id.clone()), ens_body);
 
             let body = &clos.body;
             *clos.body = parse_quote!({
@@ -270,8 +254,7 @@ enum FnSpecResultKind {
 
 // Generate a token stream for the item representing a specific
 // `requires` or `ensures`
-fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, p: Term) -> TokenStream {
-    let fn_spec_body = pretyping::encode_term(&p);
+fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, fn_spec_body: TokenStream) -> TokenStream {
     let attrs = spec_attrs(tag);
 
     let unify_ty_result = if let FnSpecResultKind::Unified(result, res) = &reskind {
@@ -296,8 +279,7 @@ fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, p: Term) -> TokenStream {
     }
 }
 
-fn sig_spec_item(tag: Ident, sig: Signature, p: Term) -> TokenStream {
-    let fn_spec_body = pretyping::encode_term(&p);
+fn sig_spec_item(tag: Ident, sig: Signature, fn_spec_body: TokenStream) -> TokenStream {
     let attrs = spec_attrs(tag);
 
     quote! {

@@ -165,7 +165,7 @@ impl<K, V> FMap<K, V> {
     ///
     /// This is in fact equivalent with normal equality.
     #[logic(open)]
-    #[ensures(result == (self == other))]
+    #[ensures(#[trigger(self == other)] result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
             let _ = Self::to_mapping_inj;

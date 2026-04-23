@@ -152,7 +152,7 @@ impl PositiveReal {
     }
 
     #[logic(open)]
-    #[ensures(result == (self == other))]
+    #[ensures(#[trigger(self == other)] result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
         let _ = Subset::<PositiveRealInner>::inner_inj;
         self.to_real() == other.to_real()

@@ -111,6 +111,13 @@ pub fn encode_term(term: &Term) -> TokenStream {
     }
 }
 
+pub fn encode_term_with_triggers(term: &TermWithTriggers) -> TokenStream {
+    match encode_term_with_triggers_(term, &mut Locals::new()) {
+        Ok(r) => add_use(r, term.span()),
+        Err(e) => e.into_tokens(),
+    }
+}
+
 // Pearlite terms can refer to function parameters of unsized types. However, pearlite terms often
 // appear in closures, which can only capture sized values. Hence, we wrap any reference to a variable x
 // with (*&x). In order to support partial captures, we try to do this wrapping at the place level
@@ -442,7 +449,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
             }
             .into())
         }
-        Term::Quant(TermQuant { quant_token, args, trigger, term, .. }) => {
+        Term::Quant(TermQuant { quant_token, args, term, .. }) => {
             locals.open();
             let args_ref = args
                 .iter()
@@ -454,8 +461,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                     }
                 })
                 .collect::<Vec<_>>();
-            let mut ts = encode_term_(term, locals)?.toks();
-            ts = encode_trigger_(trigger, ts, locals)?;
+            let ts = encode_term_with_triggers_(term, locals)?;
             locals.close();
             Ok(quote_spanned! {sp=>
                 ::creusot_std::__stubs::#quant_token(
@@ -581,6 +587,14 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
         }
         Term::__Nonexhaustive => todo!(),
     }
+}
+
+fn encode_term_with_triggers_(
+    term: &TermWithTriggers,
+    locals: &mut Locals,
+) -> Result<TokenStream, EncodeError> {
+    let ts = encode_term_(&term.term, locals)?.toks();
+    encode_trigger_(&term.trigger, ts, locals)
 }
 
 fn encode_trigger_(

@@ -180,11 +180,21 @@ pub fn function_call(sig: &Signature) -> Exp {
 
 pub(crate) fn spec_axioms(sig: &LogicSignature) -> impl Iterator<Item = Decl> {
     let call = function_call(&sig.why_sig);
-    sig.contract.ensures.iter().map(move |post| {
+    sig.contract.ensures.iter().map(move |(trig, post)| {
         let mut condition = sig.contract.requires_implies(post.exp.clone());
-        let trigger =
-            condition.fvs().contains(&name::result()).then_some(Trigger::single(call.clone()));
+        let mut trigger: Box<[Trigger]> = if trig.is_empty() {
+            if condition.fvs().contains(&name::result()) {
+                Box::new([Trigger::single(Exp::var(name::result()))])
+            } else {
+                Box::new([])
+            }
+        } else {
+            trig.clone()
+        };
         condition.subst(&[(name::result(), call.clone())].into_iter().collect());
+        trigger
+            .iter_mut()
+            .for_each(|t| t.subst(&[(name::result(), call.clone())].into_iter().collect()));
         let axiom = Exp::forall_trig(sig.why_sig.args.clone(), trigger, condition);
         let name = sig.why_sig.name.refresh_with(|s| format!("{s}_spec"));
         Decl::Axiom(Axiom { name, rewrite: false, axiom })

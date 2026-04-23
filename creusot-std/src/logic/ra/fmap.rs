@@ -47,7 +47,7 @@ impl<K, V: RA> RA for FMap<K, V> {
     }
 
     #[logic(open, inline)]
-    #[ensures(result == (self == other))]
+    #[ensures(#[trigger(self == other)] result == (self == other))]
     fn eq(self, other: Self) -> bool {
         pearlite! {
             let _ = Self::ext_eq;

@@ -94,6 +94,10 @@ impl Trigger {
     pub fn single(exp: Exp) -> Self {
         Trigger(Box::new([exp]))
     }
+
+    pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
+        BoundSubst { subst, bound: HashMap::new() }.visit_trigger_mut(self);
+    }
 }
 
 // TODO: Should we introduce an 'ExprKind' struct which wraps `Exp` with attributes?
@@ -779,7 +783,7 @@ impl Exp {
         qfvs.qfvs
     }
 
-    /// Substituate free variables of `self` by their value in `subst`.
+    /// Substitute free variables of `self` by their value in `subst`.
     pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
         BoundSubst { subst, bound: HashMap::new() }.visit_mut(self);
     }

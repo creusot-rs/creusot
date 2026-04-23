@@ -2,8 +2,8 @@ use crate::{
     contracts_items::{Intrinsic, is_assertion, is_logic_closure, is_spec},
     ctx::TranslationCtx,
     translation::pearlite::{
-        BinOp, Ident, Literal, PIdent, Pattern, PatternKind, QuantKind, Term, TermKind, Trigger,
-        UnOp,
+        BinOp, Ident, Literal, PIdent, Pattern, PatternKind, QuantKind, Term, TermKind,
+        TermWithTriggers, Trigger, UnOp,
     },
 };
 use rustc_abi::{FieldIdx, VariantIdx};
@@ -37,18 +37,21 @@ pub(crate) fn from_thir<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
 ) -> Result<(BoundVars<'tcx>, Term<'tcx>), ErrorGuaranteed> {
-    let (bound, triggers, term) = from_thir_with_triggers(ctx, id)?;
-    if !triggers.is_empty() {
-        Err(ctx.dcx().span_err(ctx.def_span(id), "Triggers can only be used inside quantifiers"))
+    let (bound, term) = from_thir_with_triggers(ctx, id)?;
+    if !term.triggers.is_empty() {
+        Err(ctx.dcx().span_err(
+            ctx.def_span(id),
+            "Triggers can only be used inside quantifiers and ensures clauses of logic functions.",
+        ))
     } else {
-        Ok((bound, term))
+        Ok((bound, *term.term))
     }
 }
 
-fn from_thir_with_triggers<'tcx>(
+pub(crate) fn from_thir_with_triggers<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
-) -> Result<(BoundVars<'tcx>, Triggers<'tcx>, Term<'tcx>), ErrorGuaranteed> {
+) -> Result<(BoundVars<'tcx>, TermWithTriggers<'tcx>), ErrorGuaranteed> {
     let did = id.into();
     let (thir, expr) = ctx.thir_body(id);
     let thir = &thir.borrow();
@@ -111,7 +114,7 @@ fn from_thir_with_triggers<'tcx>(
             (ident, pat.ty)
         })
         .collect();
-    let body = patterns.into_iter().zip(bound.iter().cloned()).rev().fold(
+    let term = Box::new(patterns.into_iter().zip(bound.iter().cloned()).rev().fold(
         body,
         |body: Term<'tcx>, (pattern, (ident, ty))| match pattern.kind {
             PatternKind::Binder(_, box Pattern { kind: PatternKind::Wildcard, .. })
@@ -121,8 +124,8 @@ fn from_thir_with_triggers<'tcx>(
                 Term::let_(pattern, Term::var(ident, ty), body).span(span)
             }
         },
-    );
-    Ok((bound, triggers, body))
+    ));
+    Ok((bound, TermWithTriggers { term, triggers }))
 }
 
 struct ThirTerm<'a, 'tcx> {
@@ -337,8 +340,8 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         } else {
                             QuantKind::Exists
                         };
-                        let (binder, trigger, body) = self.quant_term(args[0])?;
-                        Ok(body.quant(kind, binder, trigger).span(span))
+                        let (binder, body) = self.quant_term(args[0])?;
+                        Ok(body.term.quant(kind, binder, body.triggers).span(span))
                     }
                     Intrinsic::Implication => {
                         let lhs = self.expr_term(args[0])?;
@@ -719,7 +722,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     fn quant_term(
         &self,
         body: ExprId,
-    ) -> Result<(BoundVars<'tcx>, Triggers<'tcx>, Term<'tcx>), ErrorGuaranteed> {
+    ) -> Result<(BoundVars<'tcx>, TermWithTriggers<'tcx>), ErrorGuaranteed> {
         let e = self.head(body);
         trace!("{:?}", e.kind);
         match e.kind {

@@ -42,7 +42,7 @@ use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{
         pearlite::{
-            Ident, PIdent, Pattern, ScopedTerm, Term, TermKind,
+            Ident, PIdent, Pattern, Scoped, Term, TermKind,
             visit::{TermVisitor, super_visit_term},
         },
         traits::{ImplSource_, TraitResolved},
@@ -759,7 +759,7 @@ fn is_structurally_recursive<'tcx>(ctx: &TranslationCtx<'tcx>, self_id: DefId) -
         }
     }
 
-    let ScopedTerm(args, term) = &ctx.term(self_id).unwrap();
+    let Scoped(args, term) = &ctx.term(self_id).unwrap();
 
     let mut s = StructuralRecursion {
         self_id,
