@@ -743,29 +743,33 @@ module M_parallel_add
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  type tup2_AtomicI32_Id = { f0'6: t_AtomicI32; f1'6: t_Id }
-  
   type t_AtomicInvariantSC_ParallelAddAtomicInv
   
-  predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) (data: tup2_AtomicI32_Id) =
-    data = { f0'6 = ward_AtomicI32 self.own; f1'6 = id_Option_tup2_PositiveReal_Int self.auth }
-    /\ (exists k: int. view_Authority_Option_tup2_PositiveReal_Int self.auth
-      = Some { f0'1 = from_int 1; f1'1 = k * Pow2int.pow2 32 + Int32.to_int (val_AtomicI32 self.own) })
+  predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) =
+    exists k: int. view_Authority_Option_tup2_PositiveReal_Int self.auth
+      = Some { f0'1 = from_int 1; f1'1 = k * Pow2int.pow2 32 + Int32.to_int (val_AtomicI32 self.own) }
   
   meta "rewrite_def" predicate protocol_ParallelAddAtomicInv
   
+  type tup2_AtomicI32_Id = { f0'6: t_AtomicI32; f1'6: t_Id }
+  
   function public_ParallelAddAtomicInv (self: t_AtomicInvariantSC_ParallelAddAtomicInv) : tup2_AtomicI32_Id
+  
+  function public_ParallelAddAtomicInv'0 [@inline:trivial] (self: t_ParallelAddAtomicInv) : tup2_AtomicI32_Id =
+    { f0'6 = ward_AtomicI32 self.own; f1'6 = id_Option_tup2_PositiveReal_Int self.auth }
+  
+  meta "rewrite_def" function public_ParallelAddAtomicInv'0
   
   function namespace_ParallelAddAtomicInv (self: t_AtomicInvariantSC_ParallelAddAtomicInv) : t_Namespace
   
-  let rec new_ParallelAddAtomicInv'0 (value: t_ParallelAddAtomicInv) (public: tup2_AtomicI32_Id)
-    (namespace: t_Namespace) (return (x: t_AtomicInvariantSC_ParallelAddAtomicInv)) =
+  let rec new_ParallelAddAtomicInv'0 (value: t_ParallelAddAtomicInv) (namespace: t_Namespace)
+    (return (x: t_AtomicInvariantSC_ParallelAddAtomicInv)) =
     {[@stop_split] [@expl:new_ParallelAddAtomicInv requires] ([@stop_split] [@expl:new 'value' type invariant] inv_Ghost_ParallelAddAtomicInv value)
-    /\ ([@stop_split] [@expl:new requires] protocol_ParallelAddAtomicInv value public)}
+    /\ ([@stop_split] [@expl:new requires] protocol_ParallelAddAtomicInv value)}
     any
     [ return (result: t_AtomicInvariantSC_ParallelAddAtomicInv) ->
     {[@stop_split] [@expl:new_ParallelAddAtomicInv ensures] ([@stop_split] [@expl:new ensures #0] public_ParallelAddAtomicInv result
-        = public)
+        = public_ParallelAddAtomicInv'0 value)
       /\ ([@stop_split] [@expl:new ensures #1] namespace_ParallelAddAtomicInv result = namespace)}
       (! return {result}) ]
   
@@ -1325,16 +1329,19 @@ module M_parallel_add
   let rec open_ParallelAddAtomicInv (self: t_AtomicInvariantSC_ParallelAddAtomicInv) (tokens: t_Tokens)
     (f: t_FnGhostWrapper_closure0) (return (x: ())) =
     {[@stop_split] [@expl:open_ParallelAddAtomicInv requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_ParallelAddAtomicInv self))
-    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_ParallelAddAtomicInv. protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
-        /\ inv_refmut_ParallelAddAtomicInv t
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_ParallelAddAtomicInv. public_ParallelAddAtomicInv'0 t.current
+          = public_ParallelAddAtomicInv self
+        /\ protocol_ParallelAddAtomicInv t.current /\ inv_refmut_ParallelAddAtomicInv t
       -> precondition_FnGhostWrapper_closure0 f t
       /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res
-        -> protocol_ParallelAddAtomicInv t.final (public_ParallelAddAtomicInv self)))}
+        -> public_ParallelAddAtomicInv'0 t.final = public_ParallelAddAtomicInv self
+        /\ protocol_ParallelAddAtomicInv t.final))}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_ParallelAddAtomicInv. inv_refmut_ParallelAddAtomicInv t
-        /\ protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
-        /\ postcondition_once_FnGhostWrapper_closure0 f t result}
+    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_ParallelAddAtomicInv. public_ParallelAddAtomicInv'0 t.current
+          = public_ParallelAddAtomicInv self
+        /\ protocol_ParallelAddAtomicInv t.current
+        /\ inv_refmut_ParallelAddAtomicInv t /\ postcondition_once_FnGhostWrapper_closure0 f t result}
       (! return {result}) ]
   
   let rec closure0'0 [@coma:extspec] (self: closure0'1) (c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst)
@@ -1921,7 +1928,9 @@ module M_parallel_add
     (return (x: t_ParallelAddAtomicInv)) = any
     [ return (result: t_ParallelAddAtomicInv) ->
     {[@stop_split] [@expl:into_inner_ParallelAddAtomicInv ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_ParallelAddAtomicInv result)
-      /\ ([@stop_split] [@expl:into_inner ensures] protocol_ParallelAddAtomicInv result (public_ParallelAddAtomicInv self))}
+      /\ ([@stop_split] [@expl:into_inner ensures] public_ParallelAddAtomicInv'0 result
+        = public_ParallelAddAtomicInv self
+      /\ protocol_ParallelAddAtomicInv result)}
       (! return {result}) ]
   
   predicate index_Mapping_tup2_PositiveReal_Int_bool [@inline:trivial] (self: Map.map tup2_PositiveReal_Int bool) (a: tup2_PositiveReal_Int) =
@@ -2037,16 +2046,16 @@ module M_parallel_add
           (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &_33 <- _x ] s24)
       | s24 = [ &_30 <- { own = _31; auth = _33 } ] s25
       | s25 = new_ParallelAddAtomicInv {_30} (fun (_x: t_ParallelAddAtomicInv) -> [ &_29 <- _x ] s26)
-      | s26 = new_ParallelAddAtomicInv'0 {_29} {{ f0'6 = atomic; f1'6 = id_Option_tup2_PositiveReal_Int'0 frag }}
-          {Namespace_PARALLEL_ADD 0} (fun (_x: t_AtomicInvariantSC_ParallelAddAtomicInv) -> [ &inv <- _x ] s27)
+      | s26 = new_ParallelAddAtomicInv'0 {_29} {Namespace_PARALLEL_ADD 0}
+          (fun (_x: t_AtomicInvariantSC_ParallelAddAtomicInv) -> [ &inv <- _x ] s27)
       | s27 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {frag}
           (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
-            [ &_46 <- _bor ] [ &frag <- _bor.final ] s28)
-      | s28 = [ &_42 <- { c0 = inv; c1 = atomic; c2 = n; c3 = _46 } ] s29
-      | s29 = scope_closure0 {_42} (fun (_x: ()) -> [ &_41 <- _x ] s30)
+            [ &_42 <- _bor ] [ &frag <- _bor.final ] s28)
+      | s28 = [ &_38 <- { c0 = inv; c1 = atomic; c2 = n; c3 = _42 } ] s29
+      | s29 = scope_closure0 {_38} (fun (_x: ()) -> [ &_37 <- _x ] s30)
       | s30 = into_inner_AtomicInvariantSC_ParallelAddAtomicInv {inv}
-          (fun (_x: t_AtomicInvariantSC_ParallelAddAtomicInv) -> [ &_50 <- _x ] s31)
-      | s31 = into_inner_ParallelAddAtomicInv {_50} (fun (_x: t_ParallelAddAtomicInv) -> [ &inv'0 <- _x ] s32)
+          (fun (_x: t_AtomicInvariantSC_ParallelAddAtomicInv) -> [ &_46 <- _x ] s31)
+      | s31 = into_inner_ParallelAddAtomicInv {_46} (fun (_x: t_ParallelAddAtomicInv) -> [ &inv'0 <- _x ] s32)
       | s32 =
         {[@expl:assertion] (unwrap_Option_tup2_PositiveReal_Int (view_Authority_Option_tup2_PositiveReal_Int inv'0.auth)).f0'1
         = from_int 1}
@@ -2054,10 +2063,10 @@ module M_parallel_add
       | s33 = s34 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_tup2_PositiveReal_Int inv'0.auth} any) ]
       | s34 = -{resolve_Authority_Option_tup2_PositiveReal_Int inv'0.auth}- s35
       | s35 = -{resolve_Ghost_Fragment_Option_tup2_PositiveReal_Int frag}- s36
-      | s36 = [ &_60 <- frag ] s37
-      | s37 = deref_Ghost_Fragment_Option_tup2_PositiveReal_Int {_60}
-          (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_58 <- _x ] s38)
-      | s38 = frag_lemma_Option_tup2_PositiveReal_Int {inv'0.auth} {_58} (fun (_x: ()) -> [ &_55 <- _x ] s39)
+      | s36 = [ &_56 <- frag ] s37
+      | s37 = deref_Ghost_Fragment_Option_tup2_PositiveReal_Int {_56}
+          (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_54 <- _x ] s38)
+      | s38 = frag_lemma_Option_tup2_PositiveReal_Int {inv'0.auth} {_54} (fun (_x: ()) -> [ &_51 <- _x ] s39)
       | s39 = new_Box_Perm_AtomicI32_Global {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s40)
       | s40 = into_inner {atomic} {own'1} (fun (_x: Int32.t) -> [ &x <- _x ] s41)
       | s41 = {[@expl:assertion] n = x} s42
@@ -2088,14 +2097,14 @@ module M_parallel_add
     | & _30: t_ParallelAddAtomicInv = Any.any_l ()
     | & _31: t_Perm_AtomicI32 = Any.any_l ()
     | & _33: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _41: () = Any.any_l ()
-    | & _42: closure0 = Any.any_l ()
-    | & _46: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _37: () = Any.any_l ()
+    | & _38: closure0 = Any.any_l ()
+    | & _42: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & own'1: t_Perm_AtomicI32 = Any.any_l ()
     | & inv'0: t_ParallelAddAtomicInv = Any.any_l ()
-    | & _50: t_AtomicInvariantSC_ParallelAddAtomicInv = Any.any_l ()
-    | & _55: () = Any.any_l ()
-    | & _58: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _60: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _46: t_AtomicInvariantSC_ParallelAddAtomicInv = Any.any_l ()
+    | & _51: () = Any.any_l ()
+    | & _54: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _56: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & x: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

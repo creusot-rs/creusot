@@ -398,31 +398,32 @@ module M_parallel_add
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  type tup3_AtomicI32_Id_Id = { f0'4: t_AtomicI32; f1'4: t_Id; f2'4: t_Id }
-  
   type t_AtomicInvariantSC_ParallelAddAtomicInv
   
-  predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) (data: tup3_AtomicI32_Id_Id) =
-    data
-      = { f0'4 = ward_AtomicI32 self.own; f1'4 = id_Option_Excl_bool self.auth1; f2'4 = id_Option_Excl_bool self.auth2 }
-    /\ Int32.to_int (val_AtomicI32 self.own)
+  predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) =
+    Int32.to_int (val_AtomicI32 self.own)
     = (if view_Authority_Option_Excl_bool self.auth1 = Some { f0'0 = true } then 2 else 0)
     + (if view_Authority_Option_Excl_bool self.auth2 = Some { f0'0 = true } then 2 else 0)
   
   meta "rewrite_def" predicate protocol_ParallelAddAtomicInv
   
+  type tup3_AtomicI32_Id_Id = { f0'4: t_AtomicI32; f1'4: t_Id; f2'4: t_Id }
+  
   function public_ParallelAddAtomicInv (self: t_AtomicInvariantSC_ParallelAddAtomicInv) : tup3_AtomicI32_Id_Id
+  
+  function public_ParallelAddAtomicInv'0 (self: t_ParallelAddAtomicInv) : tup3_AtomicI32_Id_Id =
+    { f0'4 = ward_AtomicI32 self.own; f1'4 = id_Option_Excl_bool self.auth1; f2'4 = id_Option_Excl_bool self.auth2 }
   
   function namespace_ParallelAddAtomicInv (self: t_AtomicInvariantSC_ParallelAddAtomicInv) : t_Namespace
   
-  let rec new_ParallelAddAtomicInv'0 (value: t_ParallelAddAtomicInv) (public: tup3_AtomicI32_Id_Id)
-    (namespace: t_Namespace) (return (x: t_AtomicInvariantSC_ParallelAddAtomicInv)) =
+  let rec new_ParallelAddAtomicInv'0 (value: t_ParallelAddAtomicInv) (namespace: t_Namespace)
+    (return (x: t_AtomicInvariantSC_ParallelAddAtomicInv)) =
     {[@stop_split] [@expl:new_ParallelAddAtomicInv requires] ([@stop_split] [@expl:new 'value' type invariant] inv_Ghost_ParallelAddAtomicInv value)
-    /\ ([@stop_split] [@expl:new requires] protocol_ParallelAddAtomicInv value public)}
+    /\ ([@stop_split] [@expl:new requires] protocol_ParallelAddAtomicInv value)}
     any
     [ return (result: t_AtomicInvariantSC_ParallelAddAtomicInv) ->
     {[@stop_split] [@expl:new_ParallelAddAtomicInv ensures] ([@stop_split] [@expl:new ensures #0] public_ParallelAddAtomicInv result
-        = public)
+        = public_ParallelAddAtomicInv'0 value)
       /\ ([@stop_split] [@expl:new ensures #1] namespace_ParallelAddAtomicInv result = namespace)}
       (! return {result}) ]
   
@@ -689,16 +690,19 @@ module M_parallel_add
   let rec open_ParallelAddAtomicInv (self: t_AtomicInvariantSC_ParallelAddAtomicInv) (tokens: t_Tokens)
     (f: t_FnGhostWrapper_closure0) (return (x: ())) =
     {[@stop_split] [@expl:open_ParallelAddAtomicInv requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_ParallelAddAtomicInv self))
-    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_ParallelAddAtomicInv. protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
-        /\ inv_refmut_ParallelAddAtomicInv t
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_ParallelAddAtomicInv. public_ParallelAddAtomicInv'0 t.current
+          = public_ParallelAddAtomicInv self
+        /\ protocol_ParallelAddAtomicInv t.current /\ inv_refmut_ParallelAddAtomicInv t
       -> precondition_FnGhostWrapper_closure0 f t
       /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res
-        -> protocol_ParallelAddAtomicInv t.final (public_ParallelAddAtomicInv self)))}
+        -> public_ParallelAddAtomicInv'0 t.final = public_ParallelAddAtomicInv self
+        /\ protocol_ParallelAddAtomicInv t.final))}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_ParallelAddAtomicInv. inv_refmut_ParallelAddAtomicInv t
-        /\ protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
-        /\ postcondition_once_FnGhostWrapper_closure0 f t result}
+    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_ParallelAddAtomicInv. public_ParallelAddAtomicInv'0 t.current
+          = public_ParallelAddAtomicInv self
+        /\ protocol_ParallelAddAtomicInv t.current
+        /\ inv_refmut_ParallelAddAtomicInv t /\ postcondition_once_FnGhostWrapper_closure0 f t result}
       (! return {result}) ]
   
   let rec closure0'0 [@coma:extspec] (self: closure0'1) (c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst)
@@ -1034,16 +1038,19 @@ module M_parallel_add
   let rec open_ParallelAddAtomicInv'0 (self: t_AtomicInvariantSC_ParallelAddAtomicInv) (tokens: t_Tokens)
     (f: t_FnGhostWrapper_closure0'1) (return (x: ())) =
     {[@stop_split] [@expl:open_ParallelAddAtomicInv requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_ParallelAddAtomicInv self))
-    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_ParallelAddAtomicInv. protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
-        /\ inv_refmut_ParallelAddAtomicInv t
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_ParallelAddAtomicInv. public_ParallelAddAtomicInv'0 t.current
+          = public_ParallelAddAtomicInv self
+        /\ protocol_ParallelAddAtomicInv t.current /\ inv_refmut_ParallelAddAtomicInv t
       -> precondition_FnGhostWrapper_closure0'1 f t
       /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0'1 f t res
-        -> protocol_ParallelAddAtomicInv t.final (public_ParallelAddAtomicInv self)))}
+        -> public_ParallelAddAtomicInv'0 t.final = public_ParallelAddAtomicInv self
+        /\ protocol_ParallelAddAtomicInv t.final))}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_ParallelAddAtomicInv. inv_refmut_ParallelAddAtomicInv t
-        /\ protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
-        /\ postcondition_once_FnGhostWrapper_closure0'1 f t result}
+    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_ParallelAddAtomicInv. public_ParallelAddAtomicInv'0 t.current
+          = public_ParallelAddAtomicInv self
+        /\ protocol_ParallelAddAtomicInv t.current
+        /\ inv_refmut_ParallelAddAtomicInv t /\ postcondition_once_FnGhostWrapper_closure0'1 f t result}
       (! return {result}) ]
   
   let rec closure0'3 [@coma:extspec] (self: closure0'3) (c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst)
@@ -1304,7 +1311,9 @@ module M_parallel_add
     (return (x: t_ParallelAddAtomicInv)) = any
     [ return (result: t_ParallelAddAtomicInv) ->
     {[@stop_split] [@expl:into_inner_ParallelAddAtomicInv ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_ParallelAddAtomicInv result)
-      /\ ([@stop_split] [@expl:into_inner ensures] protocol_ParallelAddAtomicInv result (public_ParallelAddAtomicInv self))}
+      /\ ([@stop_split] [@expl:into_inner ensures] public_ParallelAddAtomicInv'0 result
+        = public_ParallelAddAtomicInv self
+      /\ protocol_ParallelAddAtomicInv result)}
       (! return {result}) ]
   
   predicate resolve_Resource_View_AuthViewRel_Option_Excl_bool (_1: t_Resource_View_AuthViewRel_Option_Excl_bool)
@@ -1431,31 +1440,29 @@ module M_parallel_add
           (fun (_x: t_Authority_Option_Excl_bool) -> [ &_47 <- _x ] s41)
       | s41 = [ &_42 <- { own = _43; auth1 = _45; auth2 = _47 } ] s42
       | s42 = new_ParallelAddAtomicInv {_42} (fun (_x: t_ParallelAddAtomicInv) -> [ &_41 <- _x ] s43)
-      | s43 = new_ParallelAddAtomicInv'0 {_41} {{ f0'4 = atomic;
-                                                  f1'4 = id_Option_Excl_bool'0 frag1;
-                                                  f2'4 = id_Option_Excl_bool'0 frag2 }} {Namespace_PARALLEL_ADD 0}
+      | s43 = new_ParallelAddAtomicInv'0 {_41} {Namespace_PARALLEL_ADD 0}
           (fun (_x: t_AtomicInvariantSC_ParallelAddAtomicInv) -> [ &inv <- _x ] s44)
       | s44 = MutBorrow.borrow_mut <t_Fragment_Option_Excl_bool> {frag1}
-          (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_58 <- _bor ] [ &frag1 <- _bor.final ] s45)
+          (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_53 <- _bor ] [ &frag1 <- _bor.final ] s45)
       | s45 = MutBorrow.borrow_mut <t_Fragment_Option_Excl_bool> {frag2}
-          (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_59 <- _bor ] [ &frag2 <- _bor.final ] s46)
-      | s46 = [ &_57 <- { c0 = _58; c1 = _59; c2 = inv; c3 = atomic } ] s47
-      | s47 = scope_closure0 {_57} (fun (_x: ()) -> [ &_56 <- _x ] s48)
+          (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) -> [ &_54 <- _bor ] [ &frag2 <- _bor.final ] s46)
+      | s46 = [ &_52 <- { c0 = _53; c1 = _54; c2 = inv; c3 = atomic } ] s47
+      | s47 = scope_closure0 {_52} (fun (_x: ()) -> [ &_51 <- _x ] s48)
       | s48 = into_inner_AtomicInvariantSC_ParallelAddAtomicInv {inv}
-          (fun (_x: t_AtomicInvariantSC_ParallelAddAtomicInv) -> [ &_65 <- _x ] s49)
-      | s49 = into_inner_ParallelAddAtomicInv {_65} (fun (_x: t_ParallelAddAtomicInv) -> [ &inv'0 <- _x ] s50)
+          (fun (_x: t_AtomicInvariantSC_ParallelAddAtomicInv) -> [ &_60 <- _x ] s49)
+      | s49 = into_inner_ParallelAddAtomicInv {_60} (fun (_x: t_ParallelAddAtomicInv) -> [ &inv'0 <- _x ] s50)
       | s50 = -{resolve_Ghost_Fragment_Option_Excl_bool frag1}- s51
-      | s51 = [ &_72 <- frag1 ] s52
-      | s52 = deref_Ghost_Fragment_Option_Excl_bool {_72} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_70 <- _x ] s53)
-      | s53 = frag_lemma_Option_Excl_bool {inv'0.auth1} {_70} (fun (_x: ()) -> [ &_67 <- _x ] s54)
+      | s51 = [ &_67 <- frag1 ] s52
+      | s52 = deref_Ghost_Fragment_Option_Excl_bool {_67} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_65 <- _x ] s53)
+      | s53 = frag_lemma_Option_Excl_bool {inv'0.auth1} {_65} (fun (_x: ()) -> [ &_62 <- _x ] s54)
       | s54 = s55 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool inv'0.auth2} any) ]
       | s55 = -{resolve_Authority_Option_Excl_bool inv'0.auth2}- s56
       | s56 = s57 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool inv'0.auth1} any) ]
       | s57 = -{resolve_Authority_Option_Excl_bool inv'0.auth1}- s58
       | s58 = -{resolve_Ghost_Fragment_Option_Excl_bool frag2}- s59
-      | s59 = [ &_78 <- frag2 ] s60
-      | s60 = deref_Ghost_Fragment_Option_Excl_bool {_78} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_76 <- _x ] s61)
-      | s61 = frag_lemma_Option_Excl_bool {inv'0.auth2} {_76} (fun (_x: ()) -> [ &_73 <- _x ] s62)
+      | s59 = [ &_73 <- frag2 ] s60
+      | s60 = deref_Ghost_Fragment_Option_Excl_bool {_73} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_71 <- _x ] s61)
+      | s61 = frag_lemma_Option_Excl_bool {inv'0.auth2} {_71} (fun (_x: ()) -> [ &_68 <- _x ] s62)
       | s62 = new_Box_Perm_AtomicI32_Global {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s63)
       | s63 = into_inner {atomic} {own'1} (fun (_x: Int32.t) -> [ &n <- _x ] s64)
       | s64 = {[@expl:assertion] n = (4: Int32.t)} s65
@@ -1498,18 +1505,18 @@ module M_parallel_add
     | & _43: t_Perm_AtomicI32 = Any.any_l ()
     | & _45: t_Authority_Option_Excl_bool = Any.any_l ()
     | & _47: t_Authority_Option_Excl_bool = Any.any_l ()
-    | & _56: () = Any.any_l ()
-    | & _57: closure0 = Any.any_l ()
-    | & _58: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _59: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _51: () = Any.any_l ()
+    | & _52: closure0 = Any.any_l ()
+    | & _53: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _54: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
     | & own'1: t_Perm_AtomicI32 = Any.any_l ()
     | & inv'0: t_ParallelAddAtomicInv = Any.any_l ()
-    | & _65: t_AtomicInvariantSC_ParallelAddAtomicInv = Any.any_l ()
-    | & _67: () = Any.any_l ()
-    | & _70: t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _72: t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _73: () = Any.any_l ()
-    | & _76: t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _78: t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _60: t_AtomicInvariantSC_ParallelAddAtomicInv = Any.any_l ()
+    | & _62: () = Any.any_l ()
+    | & _65: t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _67: t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _68: () = Any.any_l ()
+    | & _71: t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _73: t_Fragment_Option_Excl_bool = Any.any_l ()
     | & n: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

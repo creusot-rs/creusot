@@ -1226,9 +1226,8 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   
   meta "rewrite_def" function index_Mapping_PermCell_Inner_T_Int
   
-  predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) (id: t_Id) =
-    id_FMap_PermCell_Inner_T_Ag_Seq_T self.auth = id
-    /\ (forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
+  predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) =
+    forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
         /\ contains_Snapshot_PermCell_Inner_T self.perms pc
       -> ward_PermCell_Inner_T (index_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global self.perms pc)
         = pc
@@ -1242,12 +1241,12 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
           < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0
         /\ (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0
         = Seq.set (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
-        end)
+        end
   
   meta "rewrite_def" predicate partial_invariant_T
   
-  predicate protocol_PA_T [@inline:trivial] (self: t_PA_T) (id: t_Id) =
-    partial_invariant_T self id
+  predicate protocol_PA_T [@inline:trivial] (self: t_PA_T) =
+    partial_invariant_T self
     /\ (forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
       = contains_Snapshot_PermCell_Inner_T self.perms pc)
   
@@ -1255,14 +1254,17 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   
   function public_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Id
   
+  function public_PA_T'0 (self: t_PA_T) : t_Id = id_FMap_PermCell_Inner_T_Ag_Seq_T self.auth
+  
   function namespace_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Namespace
   
-  let rec new_PA_T'0 (value: t_PA_T) (public: t_Id) (namespace: t_Namespace) (return (x: t_NonAtomicInvariant_PA_T)) =
+  let rec new_PA_T'0 (value: t_PA_T) (namespace: t_Namespace) (return (x: t_NonAtomicInvariant_PA_T)) =
     {[@stop_split] [@expl:new_PA_T requires] ([@stop_split] [@expl:new 'value' type invariant] inv_Ghost_PA_T value)
-    /\ ([@stop_split] [@expl:new requires] protocol_PA_T value public)}
+    /\ ([@stop_split] [@expl:new requires] protocol_PA_T value)}
     any
     [ return (result: t_NonAtomicInvariant_PA_T) ->
-    {[@stop_split] [@expl:new_PA_T ensures] ([@stop_split] [@expl:new ensures #0] public_PA_T result = public)
+    {[@stop_split] [@expl:new_PA_T ensures] ([@stop_split] [@expl:new ensures #0] public_PA_T result
+        = public_PA_T'0 value)
       /\ ([@stop_split] [@expl:new ensures #1] namespace_PA_T result = namespace)}
       (! return {result}) ]
   
@@ -1408,14 +1410,13 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
           (fun (_x: t_Authority_FMap_PermCell_Inner_T_Ag_Seq_T) -> [ &_50 <- _x ] s34)
       | s34 = [ &_47 <- { perms = _48; auth = _50; depth = fun (__0: t_PermCell_Inner_T) -> 0 } ] s35
       | s35 = new_PA_T {_47} (fun (_x: t_PA_T) -> [ &_46 <- _x ] s36)
-      | s36 = new_PA_T'0 {_46} {id_FMap_PermCell_Inner_T_Ag_Seq_T'0 frag'0} {Namespace_PARRAY 0}
-          (fun (_x: t_NonAtomicInvariant_PA_T) -> [ &na_inv <- _x ] s37)
-      | s37 = into_inner_NonAtomicInvariant_PA_T {na_inv} (fun (_x: t_NonAtomicInvariant_PA_T) -> [ &_59 <- _x ] s38)
-      | s38 = new_NonAtomicInvariant_PA_T {_59} (fun (_x: t_Rc_NonAtomicInvariant_PA_T_Global) -> [ &_34 <- _x ] s39)
+      | s36 = new_PA_T'0 {_46} {Namespace_PARRAY 0} (fun (_x: t_NonAtomicInvariant_PA_T) -> [ &na_inv <- _x ] s37)
+      | s37 = into_inner_NonAtomicInvariant_PA_T {na_inv} (fun (_x: t_NonAtomicInvariant_PA_T) -> [ &_56 <- _x ] s38)
+      | s38 = new_NonAtomicInvariant_PA_T {_56} (fun (_x: t_Rc_NonAtomicInvariant_PA_T_Global) -> [ &_34 <- _x ] s39)
       | s39 = new_Rc_NonAtomicInvariant_PA_T_Global {_34}
           (fun (_x: t_Rc_NonAtomicInvariant_PA_T_Global) -> [ &inv'0 <- _x ] s40)
-      | s40 = new_PermCell_Inner_T {permcell'0} (fun (_x: t_Rc_PermCell_Inner_T_Global) -> [ &_61 <- _x ] s41)
-      | s41 = [ &_ret <- { permcell = _61; frag = frag'0; inv = inv'0 } ] s42
+      | s40 = new_PermCell_Inner_T {permcell'0} (fun (_x: t_Rc_PermCell_Inner_T_Global) -> [ &_58 <- _x ] s41)
+      | s41 = [ &_ret <- { permcell = _58; frag = frag'0; inv = inv'0 } ] s42
       | s42 = return {_ret} ] ]
     [ & _ret: t_PersistentArray_T = Any.any_l ()
     | & v: t_Vec_T_Global = v
@@ -1452,8 +1453,8 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
     | & _47: t_PA_T = Any.any_l ()
     | & _48: t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
     | & _50: t_Authority_FMap_PermCell_Inner_T_Ag_Seq_T = Any.any_l ()
-    | & _59: t_NonAtomicInvariant_PA_T = Any.any_l ()
-    | & _61: t_Rc_PermCell_Inner_T_Global = Any.any_l () ])
+    | & _56: t_NonAtomicInvariant_PA_T = Any.any_l ()
+    | & _58: t_Rc_PermCell_Inner_T_Global = Any.any_l () ])
     [ return (result: t_PersistentArray_T) ->
     {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_PersistentArray_T result)
       /\ ([@stop_split] [@expl:new ensures] view_PersistentArray_T result = view_Vec_T_Global v)}
@@ -2553,6 +2554,8 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
   
+  function public_PA_T'0 (self: t_PA_T) : t_Id = id_FMap_PermCell_Inner_T_Ag_Seq_T self.auth
+  
   function lookup_PermCell_Inner_T [@inline:trivial] (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (k: t_PermCell_Inner_T) : t_Ag_Seq_T
    = unwrap_Option_Ag_Seq_T (get_PermCell_Inner_T self k)
   
@@ -2563,9 +2566,8 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   meta "rewrite_def" function index_FMap_PermCell_Inner_T_Ag_Seq_T
   
-  predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) (id: t_Id) =
-    id_FMap_PermCell_Inner_T_Ag_Seq_T self.auth = id
-    /\ (forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
+  predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) =
+    forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
         /\ contains_Snapshot_PermCell_Inner_T self.perms pc
       -> ward_PermCell_Inner_T (index_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global self.perms pc)
         = pc
@@ -2579,12 +2581,12 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
           < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0'0
         /\ (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0'0
         = Seq.set (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0'0 (UInt64.t'int index) value
-        end)
+        end
   
   meta "rewrite_def" predicate partial_invariant_T
   
-  predicate protocol_PA_T [@inline:trivial] (self: t_PA_T) (id: t_Id) =
-    partial_invariant_T self id
+  predicate protocol_PA_T [@inline:trivial] (self: t_PA_T) =
+    partial_invariant_T self
     /\ (forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
       = contains_Snapshot_PermCell_Inner_T self.perms pc)
   
@@ -2607,10 +2609,11 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   predicate precondition_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) =
     let {f0'7 = self'0; f1'7 = tokens; f2'7 = f} = args in inv_closure0 f
     /\ contains tokens (namespace_PA_T self'0)
-    /\ (forall t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0) /\ inv_Ghost_refmut_PA_T t
+    /\ (forall t: MutBorrow.t t_PA_T. public_PA_T'0 t.current = public_PA_T self'0
+        /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t
       -> precondition_closure0 f t
       /\ (forall res: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T. postcondition_once_closure0 f t res
-        -> protocol_PA_T (fin_Ghost_refmut_PA_T t) (public_PA_T self'0)))
+        -> public_PA_T'0 (fin_Ghost_refmut_PA_T t) = public_PA_T self'0 /\ protocol_PA_T (fin_Ghost_refmut_PA_T t)))
   
   meta "rewrite_def" predicate precondition_open
   
@@ -2640,20 +2643,21 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
     (return (x: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T)) =
     {[@stop_split] [@expl:open_Ghost_ref_NonAtomicInvariant_PA_T requires] ([@stop_split] [@expl:open 'f' type invariant] inv_closure0 f)
     /\ ([@stop_split] [@expl:open requires #0] contains tokens (namespace_PA_T self))
-    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self)
-        /\ inv_Ghost_refmut_PA_T t
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_PA_T. public_PA_T'0 t.current = public_PA_T self
+        /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t
       -> precondition_closure0 f t
       /\ (forall res: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T. postcondition_once_closure0 f t res
-        -> protocol_PA_T (fin_Ghost_refmut_PA_T t) (public_PA_T self)))}
+        -> public_PA_T'0 (fin_Ghost_refmut_PA_T t) = public_PA_T self /\ protocol_PA_T (fin_Ghost_refmut_PA_T t)))}
     any
     [ return (result: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T) ->
-    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self)
-        /\ postcondition_once_closure0 f t result}
+    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_PA_T. public_PA_T'0 t.current = public_PA_T self
+        /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t /\ postcondition_once_closure0 f t result}
       (! return {result}) ]
   
   predicate postcondition_once_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) (result: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    let {f0'7 = self'0; f1'7 = tokens; f2'7 = f} = args in exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-      /\ postcondition_once_closure0 f t result
+    let {f0'7 = self'0; f1'7 = tokens; f2'7 = f} = args in exists t: MutBorrow.t t_PA_T. public_PA_T'0 t.current
+        = public_PA_T self'0
+      /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t /\ postcondition_once_closure0 f t result
   
   meta "rewrite_def" predicate postcondition_once_open
   
@@ -2662,8 +2666,9 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   meta "rewrite_def" predicate resolve_open
   
   predicate postcondition_mut_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) (result_state: ()) (result: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    let {f0'7 = self'0; f1'7 = tokens; f2'7 = f} = args in exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-      /\ postcondition_once_closure0 f t result
+    let {f0'7 = self'0; f1'7 = tokens; f2'7 = f} = args in exists t: MutBorrow.t t_PA_T. public_PA_T'0 t.current
+        = public_PA_T self'0
+      /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t /\ postcondition_once_closure0 f t result
   
   meta "rewrite_def" predicate postcondition_mut_open
   
@@ -2697,8 +2702,9 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   axiom fn_hist_inv_open_spec: forall self: (), res_state: (). hist_inv_open self res_state = (self = res_state)
   
   predicate postcondition_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) (result: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    let {f0'7 = self'0; f1'7 = tokens; f2'7 = f} = args in exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-      /\ postcondition_once_closure0 f t result
+    let {f0'7 = self'0; f1'7 = tokens; f2'7 = f} = args in exists t: MutBorrow.t t_PA_T. public_PA_T'0 t.current
+        = public_PA_T self'0
+      /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t /\ postcondition_once_closure0 f t result
   
   meta "rewrite_def" predicate postcondition_open
   
@@ -3028,6 +3034,10 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   
   function id_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_Authority_FMap_PermCell_Inner_T_Ag_Seq_T) : t_Id
   
+  function public_PA_T (self: t_PA_T) : t_Id = id_FMap_PermCell_Inner_T_Ag_Seq_T self.auth
+  
+  function public_PA_T'0 (self: t_NonAtomicInvariant_PA_T) : t_Id
+  
   type t_FMap_PermCell_Inner_T_Ag_Seq_T
   
   type t_T
@@ -3141,9 +3151,8 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   
   meta "rewrite_def" function index_Mapping_PermCell_Inner_T_Int
   
-  predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) (id: t_Id) =
-    id_FMap_PermCell_Inner_T_Ag_Seq_T self.auth = id
-    /\ (forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
+  predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) =
+    forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
         /\ contains_Snapshot_PermCell_Inner_T self.perms pc
       -> ward_PermCell_Inner_T (index_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global self.perms pc)
         = pc
@@ -3157,25 +3166,23 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
           < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0'0
         /\ (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0'0
         = Seq.set (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0'0 (UInt64.t'int index) value
-        end)
+        end
   
   meta "rewrite_def" predicate partial_invariant_T
   
-  predicate protocol_PA_T [@inline:trivial] (self: t_PA_T) (id: t_Id) =
-    partial_invariant_T self id
+  predicate protocol_PA_T [@inline:trivial] (self: t_PA_T) =
+    partial_invariant_T self
     /\ (forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
       = contains_Snapshot_PermCell_Inner_T self.perms pc)
   
   meta "rewrite_def" predicate protocol_PA_T
-  
-  function public_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Id
   
   let rec open_const_PA_T (self: t_NonAtomicInvariant_PA_T) (tokens: t_Tokens) (return (x: t_PA_T)) =
     {[@stop_split] [@expl:open_const requires] contains tokens (namespace_PA_T self)}
     any
     [ return (result: t_PA_T) ->
     {[@stop_split] [@expl:open_const_PA_T ensures] ([@stop_split] [@expl:open_const result type invariant] inv_ref_PA_T result)
-      /\ ([@stop_split] [@expl:open_const ensures] protocol_PA_T result (public_PA_T self))}
+      /\ ([@stop_split] [@expl:open_const ensures] public_PA_T result = public_PA_T'0 self /\ protocol_PA_T result)}
       (! return {result}) ]
   
   predicate invariant_Ghost_ref_PA_T [@inline:trivial] (self: t_PA_T) = inv_ref_PA_T self
@@ -3505,7 +3512,7 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   let rec get_inner_immut_T (inner: t_Rc_PermCell_Inner_T_Global) (i: UInt64.t) (pa: t_PA_T) (return (x: t_T)) =
     {[@stop_split] [@expl:get_inner_immut_T requires] ([@stop_split] [@expl:get_inner_immut 'inner' type invariant] inv_ref_Rc_PermCell_Inner_T_Global inner)
     /\ ([@stop_split] [@expl:get_inner_immut 'pa' type invariant] inv_Ghost_ref_PA_T pa)
-    /\ ([@stop_split] [@expl:get_inner_immut requires #0] exists p: t_Id. protocol_PA_T pa p)
+    /\ ([@stop_split] [@expl:get_inner_immut requires #0] protocol_PA_T pa)
     /\ ([@stop_split] [@expl:get_inner_immut requires #1] contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PermCell_Inner_T_Global inner))
     /\ ([@stop_split] [@expl:get_inner_immut requires #2] UInt64.t'int i
     < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PermCell_Inner_T_Global inner)).f0'0)}
@@ -3517,7 +3524,7 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
       (! return {result}) ]
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
-    id_FMap_PermCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T (view_Rc_NonAtomicInvariant_PA_T_Global self.inv)
+    id_FMap_PermCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T'0 (view_Rc_NonAtomicInvariant_PA_T_Global self.inv)
     /\ get_PermCell_Inner_T (view_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PermCell_Inner_T_Global self.permcell)
       <> None
     /\ namespace_PA_T (view_Rc_NonAtomicInvariant_PA_T_Global self.inv) = Namespace_PARRAY 0
@@ -3834,10 +3841,6 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
       /\ ([@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_T_Global self_) result)}
       (! return {result}) ]
   
-  type t_Id
-  
-  function id_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_Authority_FMap_PermCell_Inner_T_Ag_Seq_T) : t_Id
-  
   type t_FMap_PermCell_Inner_T_Ag_Seq_T
   
   type t_Ag_Seq_T = { f0: Seq.seq t_T }
@@ -3921,9 +3924,8 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
   
   meta "rewrite_def" function index_Mapping_PermCell_Inner_T_Int
   
-  predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) (id: t_Id) =
-    id_FMap_PermCell_Inner_T_Ag_Seq_T self.auth = id
-    /\ (forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
+  predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) =
+    forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
         /\ contains_Snapshot_PermCell_Inner_T self.perms pc
       -> ward_PermCell_Inner_T (index_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global self.perms pc)
         = pc
@@ -3937,12 +3939,12 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
           < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0
         /\ (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0
         = Seq.set (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
-        end)
+        end
   
   meta "rewrite_def" predicate partial_invariant_T
   
-  predicate protocol_PA_T [@inline:trivial] (self: t_PA_T) (id: t_Id) =
-    partial_invariant_T self id
+  predicate protocol_PA_T [@inline:trivial] (self: t_PA_T) =
+    partial_invariant_T self
     /\ (forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
       = contains_Snapshot_PermCell_Inner_T self.perms pc)
   
@@ -3955,7 +3957,7 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
   let rec get_inner_immut_T (inner: t_Rc_PermCell_Inner_T_Global) (i: UInt64.t) (pa: t_PA_T) (return (x: t_T)) =
     {[@stop_split] [@expl:get_inner_immut_T requires] ([@stop_split] [@expl:get_inner_immut 'inner' type invariant] inv_ref_Rc_PermCell_Inner_T_Global inner)
     /\ ([@stop_split] [@expl:get_inner_immut 'pa' type invariant] inv_Ghost_ref_PA_T pa)
-    /\ ([@stop_split] [@expl:get_inner_immut requires #0] exists p: t_Id. protocol_PA_T pa p)
+    /\ ([@stop_split] [@expl:get_inner_immut requires #0] protocol_PA_T pa)
     /\ ([@stop_split] [@expl:get_inner_immut requires #1] contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PermCell_Inner_T_Global inner))
     /\ ([@stop_split] [@expl:get_inner_immut requires #2] UInt64.t'int i
     < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PermCell_Inner_T_Global inner)).f0)}
@@ -4038,27 +4040,6 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   use set.Set
   use int.Int
   
-  type t_NonAtomicInvariant_PA_T
-  
-  type t_Id
-  
-  function public_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Id
-  
-  type t_Rc_NonAtomicInvariant_PA_T_Global
-  
-  function view_Rc_NonAtomicInvariant_PA_T_Global (self: t_Rc_NonAtomicInvariant_PA_T_Global) : t_NonAtomicInvariant_PA_T
-  
-  type t_Rc_PermCell_Inner_T_Global
-  
-  type t_Resource_View_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T
-  
-  type t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T = { f0: t_Resource_View_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T }
-  
-  type t_PersistentArray_T = {
-    permcell: t_Rc_PermCell_Inner_T_Global;
-    frag: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T;
-    inv: t_Rc_NonAtomicInvariant_PA_T_Global }
-  
   type t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global
   
   type t_Authority_FMap_PermCell_Inner_T_Ag_Seq_T
@@ -4124,7 +4105,20 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       /\ ([@stop_split] [@expl:deref ensures] result = self)}
       (! return {result}) ]
   
-  type closure0 = { c0: t_PersistentArray_T; c1: t_Id; c2: UInt64.t }
+  type t_Rc_PermCell_Inner_T_Global
+  
+  type t_Resource_View_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T
+  
+  type t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T = { f0: t_Resource_View_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T }
+  
+  type t_Rc_NonAtomicInvariant_PA_T_Global
+  
+  type t_PersistentArray_T = {
+    permcell: t_Rc_PermCell_Inner_T_Global;
+    frag: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T;
+    inv: t_Rc_NonAtomicInvariant_PA_T_Global }
+  
+  type closure0 = { c0: t_PersistentArray_T; c1: UInt64.t }
   
   let rec deref_Ghost_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T)
     (return (x: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T)) = any
@@ -4140,6 +4134,8 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     invariant_ref_Authority_FMap_PermCell_Inner_T_Ag_Seq_T _1
   
   meta "rewrite_def" predicate inv_ref_Authority_FMap_PermCell_Inner_T_Ag_Seq_T
+  
+  type t_Id
   
   function id_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_Authority_FMap_PermCell_Inner_T_Ag_Seq_T) : t_Id
   
@@ -4559,9 +4555,8 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   meta "rewrite_def" function index_Mapping_PermCell_Inner_T_Int
   
-  predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) (id: t_Id) =
-    id_FMap_PermCell_Inner_T_Ag_Seq_T self.auth = id
-    /\ (forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
+  predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) =
+    forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
         /\ contains_Snapshot_PermCell_Inner_T self.perms pc
       -> ward_PermCell_Inner_T (index_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global self.perms pc)
         = pc
@@ -4575,7 +4570,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
           < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0'0
         /\ (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0'0
         = Seq.set (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0'0 (UInt64.t'int index) value
-        end)
+        end
   
   meta "rewrite_def" predicate partial_invariant_T
   
@@ -4583,10 +4578,10 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   meta "rewrite_def" function fin_Ghost_refmut_PA_T
   
-  let rec reroot_T (cur: t_Rc_PermCell_Inner_T_Global) (auth_id: t_Id) (pa: MutBorrow.t t_PA_T) (return (x: ())) =
+  let rec reroot_T (cur: t_Rc_PermCell_Inner_T_Global) (pa: MutBorrow.t t_PA_T) (return (x: ())) =
     {[@stop_split] [@expl:reroot_T requires] ([@stop_split] [@expl:reroot 'cur' type invariant] inv_ref_Rc_PermCell_Inner_T_Global cur)
     /\ ([@stop_split] [@expl:reroot 'pa' type invariant] inv_Ghost_refmut_PA_T pa)
-    /\ ([@stop_split] [@expl:reroot requires #0] partial_invariant_T pa.current auth_id)
+    /\ ([@stop_split] [@expl:reroot requires #0] partial_invariant_T pa.current)
     /\ ([@stop_split] [@expl:reroot requires #1] contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T pa.current.auth) (view_Rc_PermCell_Inner_T_Global cur))
     /\ ([@stop_split] [@expl:reroot requires #2] forall id: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T pa.current.auth) id
         /\ index_Mapping_PermCell_Inner_T_Int pa.current.depth id
@@ -4594,7 +4589,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       -> contains_Snapshot_PermCell_Inner_T pa.current.perms id)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa) auth_id)
+    {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa))
       /\ ([@stop_split] [@expl:reroot ensures #1] (fin_Ghost_refmut_PA_T pa).auth = pa.current.auth)
       /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PermCell_Inner_T. index_Mapping_PermCell_Inner_T_Int pa.current.depth id
             > index_Mapping_PermCell_Inner_T_Int pa.current.depth (view_Rc_PermCell_Inner_T_Global cur)
@@ -4758,6 +4753,12 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       /\ ([@stop_split] [@expl:get_unchecked ensures] has_value_usize ix (Slice64.view self_) result)}
       (! return {result}) ]
   
+  type t_NonAtomicInvariant_PA_T
+  
+  function public_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Id
+  
+  function view_Rc_NonAtomicInvariant_PA_T_Global (self: t_Rc_NonAtomicInvariant_PA_T_Global) : t_NonAtomicInvariant_PA_T
+  
   function namespace_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Namespace
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
@@ -4792,8 +4793,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   meta "rewrite_def" predicate inv_ref_PersistentArray_T
   
-  predicate inv_closure0 [@inline:trivial] (_1: closure0) =
-    let {c0 = x0; c1 = x1; c2 = x2} = _1 in inv_ref_PersistentArray_T x0
+  predicate inv_closure0 [@inline:trivial] (_1: closure0) = let {c0 = x0; c1 = x1} = _1 in inv_ref_PersistentArray_T x0
   
   meta "rewrite_def" predicate inv_closure0
   
@@ -4811,58 +4811,58 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       | s5 = [ &_14 <- self.c0.permcell ] s6
       | s6 = MutBorrow.borrow_mut <MutBorrow.t t_PA_T> {pa}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_PA_T)) ->
-            [ &_22 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
+            [ &_21 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
             [ &pa <- _bor.final ] s7) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
-      | s7 = deref_mut_Ghost_refmut_PA_T {_22} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_21 <- _x ] s8)
-      | s8 = MutBorrow.borrow_final <MutBorrow.t t_PA_T> {_21.current} {MutBorrow.get_id _21}
+      | s7 = deref_mut_Ghost_refmut_PA_T {_21} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_20 <- _x ] s8)
+      | s8 = MutBorrow.borrow_final <MutBorrow.t t_PA_T> {_20.current} {MutBorrow.get_id _20}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_PA_T)) ->
-            [ &_20 <- _bor ] -{inv_refmut_PA_T _bor.final}-
-            [ &_21 <- { _21 with current = _bor.final } ] s9)
-        [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _21.current} any) ]
-      | s9 = MutBorrow.borrow_mut <t_PA_T> {_20.current.current}
-          (fun (_bor: MutBorrow.t t_PA_T) ->
-            [ &_19 <- _bor ] -{inv_PA_T _bor.final}-
-            [ &_20 <- { _20 with current = { _20.current with current = _bor.final } } ] s10)
-        [ _ck -> (! {[@expl:type invariant] inv_PA_T _20.current.current} any) ]
-      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _21} any) ]
-      | s11 = -{resolve_refmut_refmut_PA_T _21}- s12
-      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _20} any) ]
-      | s13 = -{resolve_refmut_refmut_PA_T _20}- s14
-      | s14 = MutBorrow.borrow_final <t_PA_T> {_19.current} {MutBorrow.get_id _19}
+            [ &_19 <- _bor ] -{inv_refmut_PA_T _bor.final}-
+            [ &_20 <- { _20 with current = _bor.final } ] s9)
+        [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _20.current} any) ]
+      | s9 = MutBorrow.borrow_mut <t_PA_T> {_19.current.current}
           (fun (_bor: MutBorrow.t t_PA_T) ->
             [ &_18 <- _bor ] -{inv_PA_T _bor.final}-
-            [ &_19 <- { _19 with current = _bor.final } ] s15)
-        [ _ck -> (! {[@expl:type invariant] inv_PA_T _19.current} any) ]
-      | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _19} any) ]
-      | s16 = -{resolve_refmut_PA_T _19}- s17
-      | s17 = MutBorrow.borrow_final <t_PA_T> {_18.current} {MutBorrow.get_id _18}
+            [ &_19 <- { _19 with current = { _19.current with current = _bor.final } } ] s10)
+        [ _ck -> (! {[@expl:type invariant] inv_PA_T _19.current.current} any) ]
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _20} any) ]
+      | s11 = -{resolve_refmut_refmut_PA_T _20}- s12
+      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _19} any) ]
+      | s13 = -{resolve_refmut_refmut_PA_T _19}- s14
+      | s14 = MutBorrow.borrow_final <t_PA_T> {_18.current} {MutBorrow.get_id _18}
           (fun (_bor: MutBorrow.t t_PA_T) ->
             [ &_17 <- _bor ] -{inv_PA_T _bor.final}-
-            [ &_18 <- { _18 with current = _bor.final } ] s18)
+            [ &_18 <- { _18 with current = _bor.final } ] s15)
         [ _ck -> (! {[@expl:type invariant] inv_PA_T _18.current} any) ]
-      | s18 = new_refmut_PA_T {_17} (fun (_x: MutBorrow.t t_PA_T) -> [ &_16 <- _x ] s19)
-      | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _18} any) ]
-      | s20 = -{resolve_refmut_PA_T _18}- s21
-      | s21 = reroot_T {_14} {self.c1} {_16} (fun (_x: ()) -> [ &_12 <- _x ] s22)
-      | s22 = into_inner_refmut_PA_T {pa} (fun (_x: MutBorrow.t t_PA_T) -> [ &_28 <- _x ] s23)
-      | s23 = s24 [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _28} any) ]
-      | s24 = -{resolve_refmut_PA_T _28}- s25
-      | s25 = [ &_31 <- view_Rc_PermCell_Inner_T_Global self.c0.permcell ] s26
-      | s26 = get_ghost_Snapshot_PermCell_Inner_T {_28.current.perms} {_31}
-          (fun (_x: t_Option_ref_Box_Perm_PermCell_Inner_T_Global) -> [ &_26 <- _x ] s27)
-      | s27 = unwrap_ref_Box_Perm_PermCell_Inner_T_Global {_26}
-          (fun (_x: t_Perm_PermCell_Inner_T) -> [ &_25 <- _x ] s28)
-      | s28 = new_ref_Perm_PermCell_Inner_T {_25} (fun (_x: t_Perm_PermCell_Inner_T) -> [ &perm <- _x ] s29)
-      | s29 = deref_Rc_PermCell_Inner_T_Global {self.c0.permcell} (fun (_x: t_PermCell_Inner_T) -> [ &_39 <- _x ] s30)
-      | s30 = borrow_Inner_T {_39} {perm} (fun (_x: t_Inner_T) -> [ &_37 <- _x ] s31)
+      | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _18} any) ]
+      | s16 = -{resolve_refmut_PA_T _18}- s17
+      | s17 = MutBorrow.borrow_final <t_PA_T> {_17.current} {MutBorrow.get_id _17}
+          (fun (_bor: MutBorrow.t t_PA_T) ->
+            [ &_16 <- _bor ] -{inv_PA_T _bor.final}-
+            [ &_17 <- { _17 with current = _bor.final } ] s18)
+        [ _ck -> (! {[@expl:type invariant] inv_PA_T _17.current} any) ]
+      | s18 = new_refmut_PA_T {_16} (fun (_x: MutBorrow.t t_PA_T) -> [ &_15 <- _x ] s19)
+      | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _17} any) ]
+      | s20 = -{resolve_refmut_PA_T _17}- s21
+      | s21 = reroot_T {_14} {_15} (fun (_x: ()) -> [ &_12 <- _x ] s22)
+      | s22 = into_inner_refmut_PA_T {pa} (fun (_x: MutBorrow.t t_PA_T) -> [ &_27 <- _x ] s23)
+      | s23 = s24 [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _27} any) ]
+      | s24 = -{resolve_refmut_PA_T _27}- s25
+      | s25 = [ &_30 <- view_Rc_PermCell_Inner_T_Global self.c0.permcell ] s26
+      | s26 = get_ghost_Snapshot_PermCell_Inner_T {_27.current.perms} {_30}
+          (fun (_x: t_Option_ref_Box_Perm_PermCell_Inner_T_Global) -> [ &_25 <- _x ] s27)
+      | s27 = unwrap_ref_Box_Perm_PermCell_Inner_T_Global {_25}
+          (fun (_x: t_Perm_PermCell_Inner_T) -> [ &_24 <- _x ] s28)
+      | s28 = new_ref_Perm_PermCell_Inner_T {_24} (fun (_x: t_Perm_PermCell_Inner_T) -> [ &perm <- _x ] s29)
+      | s29 = deref_Rc_PermCell_Inner_T_Global {self.c0.permcell} (fun (_x: t_PermCell_Inner_T) -> [ &_38 <- _x ] s30)
+      | s30 = borrow_Inner_T {_38} {perm} (fun (_x: t_Inner_T) -> [ &_36 <- _x ] s31)
       | s31 = any
-        [ br0 (x0: t_Vec_T_Global) -> {_37 = Direct x0} (! bb16)
-        | br1 (x0: UInt64.t) (x1: t_T) (x2: t_Rc_PermCell_Inner_T_Global) -> {_37 = Link x0 x1 x2} (! bb17) ] ]
+        [ br0 (x0: t_Vec_T_Global) -> {_36 = Direct x0} (! bb16)
+        | br1 (x0: UInt64.t) (x1: t_T) (x2: t_Rc_PermCell_Inner_T_Global) -> {_36 = Link x0 x1 x2} (! bb17) ] ]
     | bb17 = {false} any
     | bb16 = s0
-      [ s0 = elim_Direct {_37} (fun (r0: t_Vec_T_Global) -> [ &arr <- r0 ] s1)
-      | s1 = deref_Vec_T_Global {arr} (fun (_x: Slice64.slice t_T) -> [ &_44 <- _x ] s2)
-      | s2 = get_unchecked_T {_44} {self.c2} (fun (_x: t_T) -> [ &_ret <- _x ] s3)
+      [ s0 = elim_Direct {_36} (fun (r0: t_Vec_T_Global) -> [ &arr <- r0 ] s1)
+      | s1 = deref_Vec_T_Global {arr} (fun (_x: Slice64.slice t_T) -> [ &_43 <- _x ] s2)
+      | s2 = get_unchecked_T {_43} {self.c1} (fun (_x: t_T) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & self: closure0 = self
@@ -4874,22 +4874,22 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     | & _11: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T = Any.any_l ()
     | & _12: () = Any.any_l ()
     | & _14: t_Rc_PermCell_Inner_T_Global = Any.any_l ()
+    | & _15: MutBorrow.t t_PA_T = Any.any_l ()
     | & _16: MutBorrow.t t_PA_T = Any.any_l ()
     | & _17: MutBorrow.t t_PA_T = Any.any_l ()
     | & _18: MutBorrow.t t_PA_T = Any.any_l ()
-    | & _19: MutBorrow.t t_PA_T = Any.any_l ()
+    | & _19: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
     | & _20: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
     | & _21: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
-    | & _22: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
     | & perm: t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _25: t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _26: t_Option_ref_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
-    | & _28: MutBorrow.t t_PA_T = Any.any_l ()
-    | & _31: t_PermCell_Inner_T = Any.any_l ()
+    | & _24: t_Perm_PermCell_Inner_T = Any.any_l ()
+    | & _25: t_Option_ref_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
+    | & _27: MutBorrow.t t_PA_T = Any.any_l ()
+    | & _30: t_PermCell_Inner_T = Any.any_l ()
     | & arr: t_Vec_T_Global = Any.any_l ()
-    | & _37: t_Inner_T = Any.any_l ()
-    | & _39: t_PermCell_Inner_T = Any.any_l ()
-    | & _44: Slice64.slice t_T = Any.any_l () ]
+    | & _36: t_Inner_T = Any.any_l ()
+    | & _38: t_PermCell_Inner_T = Any.any_l ()
+    | & _43: Slice64.slice t_T = Any.any_l () ]
     [ return (result: t_T) -> {[@stop_split] [@expl:closure result type invariant] inv_ref_T result} return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
@@ -5011,8 +5011,10 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
   
-  predicate protocol_PA_T [@inline:trivial] (self: t_PA_T) (id: t_Id) =
-    partial_invariant_T self id
+  function public_PA_T'0 (self: t_PA_T) : t_Id = id_FMap_PermCell_Inner_T_Ag_Seq_T self.auth
+  
+  predicate protocol_PA_T [@inline:trivial] (self: t_PA_T) =
+    partial_invariant_T self
     /\ (forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
       = contains_Snapshot_PermCell_Inner_T self.perms pc)
   
@@ -5031,10 +5033,11 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   predicate precondition_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) =
     let {f0'4 = self'0; f1'4 = tokens; f2'4 = f} = args in inv_closure0 f
     /\ contains tokens (namespace_PA_T self'0)
-    /\ (forall t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0) /\ inv_Ghost_refmut_PA_T t
+    /\ (forall t: MutBorrow.t t_PA_T. public_PA_T'0 t.current = public_PA_T self'0
+        /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t
       -> precondition_closure0 f t
       /\ (forall res: t_T. postcondition_once_closure0 f t res
-        -> protocol_PA_T (fin_Ghost_refmut_PA_T t) (public_PA_T self'0)))
+        -> public_PA_T'0 (fin_Ghost_refmut_PA_T t) = public_PA_T self'0 /\ protocol_PA_T (fin_Ghost_refmut_PA_T t)))
   
   meta "rewrite_def" predicate precondition_open
   
@@ -5064,22 +5067,22 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     (return (x: t_T)) =
     {[@stop_split] [@expl:open_Ghost_ref_NonAtomicInvariant_PA_T requires] ([@stop_split] [@expl:open 'f' type invariant] inv_closure0 f)
     /\ ([@stop_split] [@expl:open requires #0] contains tokens (namespace_PA_T self))
-    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self)
-        /\ inv_Ghost_refmut_PA_T t
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_PA_T. public_PA_T'0 t.current = public_PA_T self
+        /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t
       -> precondition_closure0 f t
       /\ (forall res: t_T. postcondition_once_closure0 f t res
-        -> protocol_PA_T (fin_Ghost_refmut_PA_T t) (public_PA_T self)))}
+        -> public_PA_T'0 (fin_Ghost_refmut_PA_T t) = public_PA_T self /\ protocol_PA_T (fin_Ghost_refmut_PA_T t)))}
     any
     [ return (result: t_T) ->
     {[@stop_split] [@expl:open_Ghost_ref_NonAtomicInvariant_PA_T ensures] ([@stop_split] [@expl:open result type invariant] inv_ref_T result)
-      /\ ([@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self)
-        /\ postcondition_once_closure0 f t result)}
+      /\ ([@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_PA_T. public_PA_T'0 t.current = public_PA_T self
+        /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t /\ postcondition_once_closure0 f t result)}
       (! return {result}) ]
   
   predicate postcondition_once_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) (result: t_T) =
     let {f0'4 = self'0; f1'4 = tokens; f2'4 = f} = args in inv_ref_T result
-    /\ (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-      /\ postcondition_once_closure0 f t result)
+    /\ (exists t: MutBorrow.t t_PA_T. public_PA_T'0 t.current = public_PA_T self'0
+      /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t /\ postcondition_once_closure0 f t result)
   
   meta "rewrite_def" predicate postcondition_once_open
   
@@ -5089,8 +5092,8 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   predicate postcondition_mut_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) (result_state: ()) (result: t_T) =
     let {f0'4 = self'0; f1'4 = tokens; f2'4 = f} = args in inv_ref_T result
-    /\ (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-      /\ postcondition_once_closure0 f t result)
+    /\ (exists t: MutBorrow.t t_PA_T. public_PA_T'0 t.current = public_PA_T self'0
+      /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t /\ postcondition_once_closure0 f t result)
   
   meta "rewrite_def" predicate postcondition_mut_open
   
@@ -5125,8 +5128,8 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   predicate postcondition_open [@inline:trivial] (self: ()) (args: tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) (result: t_T) =
     let {f0'4 = self'0; f1'4 = tokens; f2'4 = f} = args in inv_ref_T result
-    /\ (exists t: MutBorrow.t t_PA_T. protocol_PA_T t.current (public_PA_T self'0)
-      /\ postcondition_once_closure0 f t result)
+    /\ (exists t: MutBorrow.t t_PA_T. public_PA_T'0 t.current = public_PA_T self'0
+      /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t /\ postcondition_once_closure0 f t result)
   
   meta "rewrite_def" predicate postcondition_open
   
@@ -5258,19 +5261,17 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     /\ ([@stop_split] [@expl:get requires #1] UInt64.t'int index < Seq.length (view_PersistentArray_T self))}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &auth_id <- public_PA_T (view_Rc_NonAtomicInvariant_PA_T_Global self.inv) ] s1
-      | s1 = [ &_18 <- { c0 = self; c1 = auth_id; c2 = index } ] s2
-      | s2 = open_ref_Ghost_Rc_NonAtomicInvariant_PA_T_Global {self.inv} {tokens} {_18}
-          (fun (_x: t_T) -> [ &_15 <- _x ] s3)
-      | s3 = [ &_ret <- _15 ] s4
-      | s4 = return {_ret} ] ]
+      [ s0 = [ &_15 <- { c0 = self; c1 = index } ] s1
+      | s1 = open_ref_Ghost_Rc_NonAtomicInvariant_PA_T_Global {self.inv} {tokens} {_15}
+          (fun (_x: t_T) -> [ &_12 <- _x ] s2)
+      | s2 = [ &_ret <- _12 ] s3
+      | s3 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & self: t_PersistentArray_T = self
     | & index: UInt64.t = index
     | & tokens: t_Tokens = tokens
-    | & auth_id: t_Id = Any.any_l ()
-    | & _15: t_T = Any.any_l ()
-    | & _18: closure0 = Any.any_l () ])
+    | & _12: t_T = Any.any_l ()
+    | & _15: closure0 = Any.any_l () ])
     [ return (result: t_T) ->
     {[@stop_split] [@expl:get_T ensures] ([@stop_split] [@expl:get result type invariant] inv_ref_T result)
       /\ ([@stop_split] [@expl:get ensures] result = Seq.get (view_PersistentArray_T self) (UInt64.t'int index))}
@@ -5644,8 +5645,6 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  type t_Id
-  
   let rec clone_Rc_PermCell_Inner_T_Global (self_: t_Rc_PermCell_Inner_T_Global)
     (return (x: t_Rc_PermCell_Inner_T_Global)) =
     {[@stop_split] [@expl:clone 'self_' type invariant] inv_ref_Rc_PermCell_Inner_T_Global self_}
@@ -5825,8 +5824,6 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
   let rec new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  function id_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_Authority_FMap_PermCell_Inner_T_Ag_Seq_T) : t_Id
-  
   type t_FMap_PermCell_Inner_T_Ag_Seq_T
   
   type t_Ag_Seq_T = { f0: Seq.seq t_T }
@@ -5878,9 +5875,8 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
   
   meta "rewrite_def" function index_Mapping_PermCell_Inner_T_Int
   
-  predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) (id: t_Id) =
-    id_FMap_PermCell_Inner_T_Ag_Seq_T self.auth = id
-    /\ (forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
+  predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) =
+    forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
         /\ contains_Snapshot_PermCell_Inner_T self.perms pc
       -> ward_PermCell_Inner_T (index_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global self.perms pc)
         = pc
@@ -5894,7 +5890,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
           < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0
         /\ (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0
         = Seq.set (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
-        end)
+        end
   
   meta "rewrite_def" predicate partial_invariant_T
   
@@ -5906,10 +5902,10 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
   
   meta "select_lsinst" "all"
   
-  let rec reroot_T (cur: t_Rc_PermCell_Inner_T_Global) (auth_id: t_Id) (pa: MutBorrow.t t_PA_T) (return (x: ())) =
+  let rec reroot_T (cur: t_Rc_PermCell_Inner_T_Global) (pa: MutBorrow.t t_PA_T) (return (x: ())) =
     {[@stop_split] [@expl:reroot_T requires] ([@stop_split] [@expl:reroot 'cur' type invariant] inv_ref_Rc_PermCell_Inner_T_Global cur)
     /\ ([@stop_split] [@expl:reroot 'pa' type invariant] inv_Ghost_refmut_PA_T pa)
-    /\ ([@stop_split] [@expl:reroot requires #0] partial_invariant_T pa.current auth_id)
+    /\ ([@stop_split] [@expl:reroot requires #0] partial_invariant_T pa.current)
     /\ ([@stop_split] [@expl:reroot requires #1] contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T pa.current.auth) (view_Rc_PermCell_Inner_T_Global cur))
     /\ ([@stop_split] [@expl:reroot requires #2] forall id: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T pa.current.auth) id
         /\ index_Mapping_PermCell_Inner_T_Int pa.current.depth id
@@ -5919,53 +5915,53 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <MutBorrow.t t_PA_T> {pa}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_PA_T)) ->
-            [ &_31 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
+            [ &_28 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
             [ &pa <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
-      | s1 = deref_mut_Ghost_refmut_PA_T {_31} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_30 <- _x ] s2)
-      | s2 = [ &_33 <- view_Rc_PermCell_Inner_T_Global cur ] s3
+      | s1 = deref_mut_Ghost_refmut_PA_T {_28} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_27 <- _x ] s2)
+      | s2 = [ &_30 <- view_Rc_PermCell_Inner_T_Global cur ] s3
       | s3 = MutBorrow.borrow_mut <t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global>
-          {_30.current.current.perms}
+          {_27.current.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global) ->
-            [ &_29 <- _bor ]
-            [ &_30 <- { _30 with current = { _30.current with current = { _30.current.current with perms = _bor.final } } } ]
+            [ &_26 <- _bor ]
+            [ &_27 <- { _27 with current = { _27.current with current = { _27.current.current with perms = _bor.final } } } ]
             s4)
-      | s4 = remove_ghost_Snapshot_PermCell_Inner_T {_29} {_33}
-          (fun (_x: t_Option_Box_Perm_PermCell_Inner_T_Global) -> [ &_28 <- _x ] s5)
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _30} any) ]
-      | s6 = -{resolve_refmut_refmut_PA_T _30}- s7
-      | s7 = unwrap_Box_Perm_PermCell_Inner_T_Global {_28} (fun (_x: t_Perm_PermCell_Inner_T) -> [ &_27 <- _x ] s8)
-      | s8 = new_Box_Perm_PermCell_Inner_T_Global {_27} (fun (_x: t_Perm_PermCell_Inner_T) -> [ &perm_cur <- _x ] s9)
-      | s9 = deref_Rc_PermCell_Inner_T_Global {cur} (fun (_x: t_PermCell_Inner_T) -> [ &_40 <- _x ] s10)
+      | s4 = remove_ghost_Snapshot_PermCell_Inner_T {_26} {_30}
+          (fun (_x: t_Option_Box_Perm_PermCell_Inner_T_Global) -> [ &_25 <- _x ] s5)
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _27} any) ]
+      | s6 = -{resolve_refmut_refmut_PA_T _27}- s7
+      | s7 = unwrap_Box_Perm_PermCell_Inner_T_Global {_25} (fun (_x: t_Perm_PermCell_Inner_T) -> [ &_24 <- _x ] s8)
+      | s8 = new_Box_Perm_PermCell_Inner_T_Global {_24} (fun (_x: t_Perm_PermCell_Inner_T) -> [ &perm_cur <- _x ] s9)
+      | s9 = deref_Rc_PermCell_Inner_T_Global {cur} (fun (_x: t_PermCell_Inner_T) -> [ &_37 <- _x ] s10)
       | s10 = MutBorrow.borrow_mut <t_Perm_PermCell_Inner_T> {perm_cur}
-          (fun (_bor: MutBorrow.t t_Perm_PermCell_Inner_T) -> [ &_48 <- _bor ] [ &perm_cur <- _bor.final ] s11)
-      | s11 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_48.current} {MutBorrow.get_id _48}
+          (fun (_bor: MutBorrow.t t_Perm_PermCell_Inner_T) -> [ &_45 <- _bor ] [ &perm_cur <- _bor.final ] s11)
+      | s11 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_45.current} {MutBorrow.get_id _45}
           (fun (_bor: MutBorrow.t t_Perm_PermCell_Inner_T) ->
-            [ &_47 <- _bor ] [ &_48 <- { _48 with current = _bor.final } ] s12)
-      | s12 = deref_mut_Ghost_Box_Perm_PermCell_Inner_T_Global {_47}
-          (fun (_x: MutBorrow.t t_Perm_PermCell_Inner_T) -> [ &_46 <- _x ] s13)
-      | s13 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_46.current} {MutBorrow.get_id _46}
+            [ &_44 <- _bor ] [ &_45 <- { _45 with current = _bor.final } ] s12)
+      | s12 = deref_mut_Ghost_Box_Perm_PermCell_Inner_T_Global {_44}
+          (fun (_x: MutBorrow.t t_Perm_PermCell_Inner_T) -> [ &_43 <- _x ] s13)
+      | s13 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_43.current} {MutBorrow.get_id _43}
           (fun (_bor: MutBorrow.t t_Perm_PermCell_Inner_T) ->
-            [ &_45 <- _bor ] [ &_46 <- { _46 with current = _bor.final } ] s14)
-      | s14 = -{resolve_refmut_Ghost_Box_Perm_PermCell_Inner_T_Global _48}- s15
-      | s15 = -{resolve_refmut_Box_Perm_PermCell_Inner_T_Global _46}- s16
-      | s16 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_45.current} {MutBorrow.get_id _45}
+            [ &_42 <- _bor ] [ &_43 <- { _43 with current = _bor.final } ] s14)
+      | s14 = -{resolve_refmut_Ghost_Box_Perm_PermCell_Inner_T_Global _45}- s15
+      | s15 = -{resolve_refmut_Box_Perm_PermCell_Inner_T_Global _43}- s16
+      | s16 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_42.current} {MutBorrow.get_id _42}
           (fun (_bor: MutBorrow.t t_Perm_PermCell_Inner_T) ->
-            [ &_44 <- _bor ] [ &_45 <- { _45 with current = _bor.final } ] s17)
-      | s17 = -{resolve_refmut_Perm_PermCell_Inner_T _45}- s18
-      | s18 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_44.current} {MutBorrow.get_id _44}
+            [ &_41 <- _bor ] [ &_42 <- { _42 with current = _bor.final } ] s17)
+      | s17 = -{resolve_refmut_Perm_PermCell_Inner_T _42}- s18
+      | s18 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_41.current} {MutBorrow.get_id _41}
           (fun (_bor: MutBorrow.t t_Perm_PermCell_Inner_T) ->
-            [ &_43 <- _bor ] [ &_44 <- { _44 with current = _bor.final } ] s19)
-      | s19 = new_refmut_Perm_PermCell_Inner_T {_43}
-          (fun (_x: MutBorrow.t t_Perm_PermCell_Inner_T) -> [ &_42 <- _x ] s20)
-      | s20 = -{resolve_refmut_Perm_PermCell_Inner_T _44}- s21
-      | s21 = borrow_mut_Inner_T {_40} {_42} (fun (_x: MutBorrow.t t_Inner_T) -> [ &_38 <- _x ] s22)
-      | s22 = MutBorrow.borrow_final <t_Inner_T> {_38.current} {MutBorrow.get_id _38}
+            [ &_40 <- _bor ] [ &_41 <- { _41 with current = _bor.final } ] s19)
+      | s19 = new_refmut_Perm_PermCell_Inner_T {_40}
+          (fun (_x: MutBorrow.t t_Perm_PermCell_Inner_T) -> [ &_39 <- _x ] s20)
+      | s20 = -{resolve_refmut_Perm_PermCell_Inner_T _41}- s21
+      | s21 = borrow_mut_Inner_T {_37} {_39} (fun (_x: MutBorrow.t t_Inner_T) -> [ &_35 <- _x ] s22)
+      | s22 = MutBorrow.borrow_final <t_Inner_T> {_35.current} {MutBorrow.get_id _35}
           (fun (_bor: MutBorrow.t t_Inner_T) ->
             [ &bor_cur <- _bor ] -{inv_Inner_T _bor.final}-
-            [ &_38 <- { _38 with current = _bor.final } ] s23)
-        [ _ck -> (! {[@expl:type invariant] inv_Inner_T _38.current} any) ]
-      | s23 = s24 [ _ck -> (! {[@expl:type invariant] inv_refmut_Inner_T _38} any) ]
-      | s24 = -{resolve_refmut_Inner_T _38}- s25
+            [ &_35 <- { _35 with current = _bor.final } ] s23)
+        [ _ck -> (! {[@expl:type invariant] inv_Inner_T _35.current} any) ]
+      | s23 = s24 [ _ck -> (! {[@expl:type invariant] inv_refmut_Inner_T _35} any) ]
+      | s24 = -{resolve_refmut_Inner_T _35}- s25
       | s25 = any
         [ br0 (x0: t_Vec_T_Global) -> {bor_cur.current = Direct x0} (! bb10)
         | br1 (x0: UInt64.t) (x1: t_T) (x2: t_Rc_PermCell_Inner_T_Global) -> {bor_cur.current = Link x0 x1 x2}
@@ -5975,26 +5971,26 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
       | s1 = -{resolve_refmut_Inner_T bor_cur}- s2
       | s2 = MutBorrow.borrow_mut <MutBorrow.t t_PA_T> {pa}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_PA_T)) ->
-            [ &_54 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
+            [ &_51 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
             [ &pa <- _bor.final ] s3) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
-      | s3 = deref_mut_Ghost_refmut_PA_T {_54} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_53 <- _x ] s4)
+      | s3 = deref_mut_Ghost_refmut_PA_T {_51} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_50 <- _x ] s4)
       | s4 = into_inner_Box_Perm_PermCell_Inner_T_Global {perm_cur}
-          (fun (_x: t_Perm_PermCell_Inner_T) -> [ &_58 <- _x ] s5)
+          (fun (_x: t_Perm_PermCell_Inner_T) -> [ &_55 <- _x ] s5)
       | s5 = MutBorrow.borrow_mut <t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global>
-          {_53.current.current.perms}
+          {_50.current.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global) ->
-            [ &_52 <- _bor ]
-            [ &_53 <- { _53 with current = { _53.current with current = { _53.current.current with perms = _bor.final } } } ]
+            [ &_49 <- _bor ]
+            [ &_50 <- { _50 with current = { _50.current with current = { _50.current.current with perms = _bor.final } } } ]
             s6)
-      | s6 = insert_ghost_Snapshot_PermCell_Inner_T {_52} {view_Rc_PermCell_Inner_T_Global cur} {_58}
-          (fun (_x: t_Option_Box_Perm_PermCell_Inner_T_Global) -> [ &_51 <- _x ] s7)
-      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _53} any) ]
-      | s8 = -{resolve_refmut_refmut_PA_T _53}- s9
+      | s6 = insert_ghost_Snapshot_PermCell_Inner_T {_49} {view_Rc_PermCell_Inner_T_Global cur} {_55}
+          (fun (_x: t_Option_Box_Perm_PermCell_Inner_T_Global) -> [ &_48 <- _x ] s7)
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _50} any) ]
+      | s8 = -{resolve_refmut_refmut_PA_T _50}- s9
       | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
       | s10 = -{resolve_Ghost_refmut_PA_T pa}- s11
-      | s11 = new_Option_Box_Perm_PermCell_Inner_T_Global {_51}
-          (fun (_x: t_Option_Box_Perm_PermCell_Inner_T_Global) -> [ &_50 <- _x ] s12)
-      | s12 = -{resolve_Ghost_Option_Box_Perm_PermCell_Inner_T_Global _50}- s13
+      | s11 = new_Option_Box_Perm_PermCell_Inner_T_Global {_48}
+          (fun (_x: t_Option_Box_Perm_PermCell_Inner_T_Global) -> [ &_47 <- _x ] s12)
+      | s12 = -{resolve_Ghost_Option_Box_Perm_PermCell_Inner_T_Global _47}- s13
       | s13 = return {_ret} ]
     | bb17 = s0
       [ s0 = elim_Link {bor_cur.current}
@@ -6016,95 +6012,95 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
             MutBorrow.borrow_mut <UInt64.t> {rindex}
               (fun (_bor: MutBorrow.t UInt64.t) ->
                 [ &index <- _bor ] [ &bor_cur <- { bor_cur with current = Link _bor.final rvalue rnext } ] s3))
-      | s3 = [ &_66 <- next ] s4
+      | s3 = [ &_63 <- next ] s4
       | s4 = MutBorrow.borrow_mut <MutBorrow.t t_PA_T> {pa}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_PA_T)) ->
-            [ &_74 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
+            [ &_70 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
             [ &pa <- _bor.final ] s5) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
-      | s5 = deref_mut_Ghost_refmut_PA_T {_74} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_73 <- _x ] s6)
-      | s6 = MutBorrow.borrow_final <MutBorrow.t t_PA_T> {_73.current} {MutBorrow.get_id _73}
+      | s5 = deref_mut_Ghost_refmut_PA_T {_70} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_69 <- _x ] s6)
+      | s6 = MutBorrow.borrow_final <MutBorrow.t t_PA_T> {_69.current} {MutBorrow.get_id _69}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_PA_T)) ->
-            [ &_72 <- _bor ] -{inv_refmut_PA_T _bor.final}-
-            [ &_73 <- { _73 with current = _bor.final } ] s7)
-        [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _73.current} any) ]
-      | s7 = MutBorrow.borrow_mut <t_PA_T> {_72.current.current}
+            [ &_68 <- _bor ] -{inv_refmut_PA_T _bor.final}-
+            [ &_69 <- { _69 with current = _bor.final } ] s7)
+        [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _69.current} any) ]
+      | s7 = MutBorrow.borrow_mut <t_PA_T> {_68.current.current}
           (fun (_bor: MutBorrow.t t_PA_T) ->
-            [ &_71 <- _bor ] -{inv_PA_T _bor.final}-
-            [ &_72 <- { _72 with current = { _72.current with current = _bor.final } } ] s8)
-        [ _ck -> (! {[@expl:type invariant] inv_PA_T _72.current.current} any) ]
-      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _73} any) ]
-      | s9 = -{resolve_refmut_refmut_PA_T _73}- s10
-      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _72} any) ]
-      | s11 = -{resolve_refmut_refmut_PA_T _72}- s12
-      | s12 = MutBorrow.borrow_final <t_PA_T> {_71.current} {MutBorrow.get_id _71}
+            [ &_67 <- _bor ] -{inv_PA_T _bor.final}-
+            [ &_68 <- { _68 with current = { _68.current with current = _bor.final } } ] s8)
+        [ _ck -> (! {[@expl:type invariant] inv_PA_T _68.current.current} any) ]
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _69} any) ]
+      | s9 = -{resolve_refmut_refmut_PA_T _69}- s10
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _68} any) ]
+      | s11 = -{resolve_refmut_refmut_PA_T _68}- s12
+      | s12 = MutBorrow.borrow_final <t_PA_T> {_67.current} {MutBorrow.get_id _67}
           (fun (_bor: MutBorrow.t t_PA_T) ->
-            [ &_70 <- _bor ] -{inv_PA_T _bor.final}-
-            [ &_71 <- { _71 with current = _bor.final } ] s13)
-        [ _ck -> (! {[@expl:type invariant] inv_PA_T _71.current} any) ]
-      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _71} any) ]
-      | s14 = -{resolve_refmut_PA_T _71}- s15
-      | s15 = MutBorrow.borrow_final <t_PA_T> {_70.current} {MutBorrow.get_id _70}
+            [ &_66 <- _bor ] -{inv_PA_T _bor.final}-
+            [ &_67 <- { _67 with current = _bor.final } ] s13)
+        [ _ck -> (! {[@expl:type invariant] inv_PA_T _67.current} any) ]
+      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _67} any) ]
+      | s14 = -{resolve_refmut_PA_T _67}- s15
+      | s15 = MutBorrow.borrow_final <t_PA_T> {_66.current} {MutBorrow.get_id _66}
           (fun (_bor: MutBorrow.t t_PA_T) ->
-            [ &_69 <- _bor ] -{inv_PA_T _bor.final}-
-            [ &_70 <- { _70 with current = _bor.final } ] s16)
-        [ _ck -> (! {[@expl:type invariant] inv_PA_T _70.current} any) ]
-      | s16 = new_refmut_PA_T {_69} (fun (_x: MutBorrow.t t_PA_T) -> [ &_68 <- _x ] s17)
-      | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _70} any) ]
-      | s18 = -{resolve_refmut_PA_T _70}- s19
-      | s19 = reroot_T {_66.current} {auth_id} {_68} (fun (_x: ()) -> [ &_64 <- _x ] s20)
-      | s20 = clone_Rc_PermCell_Inner_T_Global {cur} (fun (_x: t_Rc_PermCell_Inner_T_Global) -> [ &_77 <- _x ] s21)
+            [ &_65 <- _bor ] -{inv_PA_T _bor.final}-
+            [ &_66 <- { _66 with current = _bor.final } ] s16)
+        [ _ck -> (! {[@expl:type invariant] inv_PA_T _66.current} any) ]
+      | s16 = new_refmut_PA_T {_65} (fun (_x: MutBorrow.t t_PA_T) -> [ &_64 <- _x ] s17)
+      | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _66} any) ]
+      | s18 = -{resolve_refmut_PA_T _66}- s19
+      | s19 = reroot_T {_63.current} {_64} (fun (_x: ()) -> [ &_61 <- _x ] s20)
+      | s20 = clone_Rc_PermCell_Inner_T_Global {cur} (fun (_x: t_Rc_PermCell_Inner_T_Global) -> [ &_73 <- _x ] s21)
       | s21 = MutBorrow.borrow_final <t_Rc_PermCell_Inner_T_Global> {next.current} {MutBorrow.get_id next}
           (fun (_bor: MutBorrow.t t_Rc_PermCell_Inner_T_Global) ->
-            [ &_76 <- _bor ] -{inv_Rc_PermCell_Inner_T_Global _bor.final}-
+            [ &_72 <- _bor ] -{inv_Rc_PermCell_Inner_T_Global _bor.final}-
             [ &next <- { next with current = _bor.final } ] s22)
         [ _ck -> (! {[@expl:type invariant] inv_Rc_PermCell_Inner_T_Global next.current} any) ]
-      | s22 = replace_Rc_PermCell_Inner_T_Global {_76} {_77}
+      | s22 = replace_Rc_PermCell_Inner_T_Global {_72} {_73}
           (fun (_x: t_Rc_PermCell_Inner_T_Global) -> [ &next'0 <- _x ] s23)
       | s23 = s24 [ _ck -> (! {[@expl:type invariant] inv_refmut_Rc_PermCell_Inner_T_Global next} any) ]
       | s24 = -{resolve_refmut_Rc_PermCell_Inner_T_Global next}- s25
       | s25 = MutBorrow.borrow_mut <MutBorrow.t t_PA_T> {pa}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_PA_T)) ->
-            [ &_87 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
+            [ &_83 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
             [ &pa <- _bor.final ] s26) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
-      | s26 = deref_mut_Ghost_refmut_PA_T {_87} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_86 <- _x ] s27)
-      | s27 = [ &_89 <- view_Rc_PermCell_Inner_T_Global next'0 ] s28
+      | s26 = deref_mut_Ghost_refmut_PA_T {_83} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_82 <- _x ] s27)
+      | s27 = [ &_85 <- view_Rc_PermCell_Inner_T_Global next'0 ] s28
       | s28 = MutBorrow.borrow_mut <t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global>
-          {_86.current.current.perms}
+          {_82.current.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global) ->
-            [ &_85 <- _bor ]
-            [ &_86 <- { _86 with current = { _86.current with current = { _86.current.current with perms = _bor.final } } } ]
+            [ &_81 <- _bor ]
+            [ &_82 <- { _82 with current = { _82.current with current = { _82.current.current with perms = _bor.final } } } ]
             s29)
-      | s29 = get_mut_ghost_Snapshot_PermCell_Inner_T {_85} {_89}
-          (fun (_x: t_Option_refmut_Box_Perm_PermCell_Inner_T_Global) -> [ &_84 <- _x ] s30)
-      | s30 = unwrap_refmut_Box_Perm_PermCell_Inner_T_Global {_84}
-          (fun (_x: MutBorrow.t t_Perm_PermCell_Inner_T) -> [ &_83 <- _x ] s31)
-      | s31 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_83.current} {MutBorrow.get_id _83}
+      | s29 = get_mut_ghost_Snapshot_PermCell_Inner_T {_81} {_85}
+          (fun (_x: t_Option_refmut_Box_Perm_PermCell_Inner_T_Global) -> [ &_80 <- _x ] s30)
+      | s30 = unwrap_refmut_Box_Perm_PermCell_Inner_T_Global {_80}
+          (fun (_x: MutBorrow.t t_Perm_PermCell_Inner_T) -> [ &_79 <- _x ] s31)
+      | s31 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_79.current} {MutBorrow.get_id _79}
           (fun (_bor: MutBorrow.t t_Perm_PermCell_Inner_T) ->
-            [ &_82 <- _bor ] [ &_83 <- { _83 with current = _bor.final } ] s32)
-      | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _86} any) ]
-      | s33 = -{resolve_refmut_refmut_PA_T _86}- s34
-      | s34 = -{resolve_refmut_Box_Perm_PermCell_Inner_T_Global _83}- s35
-      | s35 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_82.current} {MutBorrow.get_id _82}
+            [ &_78 <- _bor ] [ &_79 <- { _79 with current = _bor.final } ] s32)
+      | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _82} any) ]
+      | s33 = -{resolve_refmut_refmut_PA_T _82}- s34
+      | s34 = -{resolve_refmut_Box_Perm_PermCell_Inner_T_Global _79}- s35
+      | s35 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_78.current} {MutBorrow.get_id _78}
           (fun (_bor: MutBorrow.t t_Perm_PermCell_Inner_T) ->
-            [ &_81 <- _bor ] [ &_82 <- { _82 with current = _bor.final } ] s36)
-      | s36 = -{resolve_refmut_Perm_PermCell_Inner_T _82}- s37
-      | s37 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_81.current} {MutBorrow.get_id _81}
+            [ &_77 <- _bor ] [ &_78 <- { _78 with current = _bor.final } ] s36)
+      | s36 = -{resolve_refmut_Perm_PermCell_Inner_T _78}- s37
+      | s37 = MutBorrow.borrow_final <t_Perm_PermCell_Inner_T> {_77.current} {MutBorrow.get_id _77}
           (fun (_bor: MutBorrow.t t_Perm_PermCell_Inner_T) ->
-            [ &_80 <- _bor ] [ &_81 <- { _81 with current = _bor.final } ] s38)
-      | s38 = new_refmut_Perm_PermCell_Inner_T {_80}
+            [ &_76 <- _bor ] [ &_77 <- { _77 with current = _bor.final } ] s38)
+      | s38 = new_refmut_Perm_PermCell_Inner_T {_76}
           (fun (_x: MutBorrow.t t_Perm_PermCell_Inner_T) -> [ &perm_next <- _x ] s39)
-      | s39 = -{resolve_refmut_Perm_PermCell_Inner_T _81}- s40
+      | s39 = -{resolve_refmut_Perm_PermCell_Inner_T _77}- s40
       | s40 = s41 [ _ck -> (! {[@expl:type invariant] inv_Rc_PermCell_Inner_T_Global next'0} any) ]
       | s41 = -{resolve_Rc_PermCell_Inner_T_Global next'0}- s42
-      | s42 = deref_Rc_PermCell_Inner_T_Global {next'0} (fun (_x: t_PermCell_Inner_T) -> [ &_96 <- _x ] s43)
-      | s43 = borrow_mut_Inner_T {_96} {perm_next} (fun (_x: MutBorrow.t t_Inner_T) -> [ &_94 <- _x ] s44)
-      | s44 = MutBorrow.borrow_final <t_Inner_T> {_94.current} {MutBorrow.get_id _94}
+      | s42 = deref_Rc_PermCell_Inner_T_Global {next'0} (fun (_x: t_PermCell_Inner_T) -> [ &_92 <- _x ] s43)
+      | s43 = borrow_mut_Inner_T {_92} {perm_next} (fun (_x: MutBorrow.t t_Inner_T) -> [ &_90 <- _x ] s44)
+      | s44 = MutBorrow.borrow_final <t_Inner_T> {_90.current} {MutBorrow.get_id _90}
           (fun (_bor: MutBorrow.t t_Inner_T) ->
             [ &bor_next <- _bor ] -{inv_Inner_T _bor.final}-
-            [ &_94 <- { _94 with current = _bor.final } ] s45)
-        [ _ck -> (! {[@expl:type invariant] inv_Inner_T _94.current} any) ]
-      | s45 = s46 [ _ck -> (! {[@expl:type invariant] inv_refmut_Inner_T _94} any) ]
-      | s46 = -{resolve_refmut_Inner_T _94}- s47
+            [ &_90 <- { _90 with current = _bor.final } ] s45)
+        [ _ck -> (! {[@expl:type invariant] inv_Inner_T _90.current} any) ]
+      | s45 = s46 [ _ck -> (! {[@expl:type invariant] inv_refmut_Inner_T _90} any) ]
+      | s46 = -{resolve_refmut_Inner_T _90}- s47
       | s47 = any
         [ br0 (x0: t_Vec_T_Global) -> {bor_next.current = Direct x0} (! bb32)
         | br1 (x0: UInt64.t) (x1: t_T) (x2: t_Rc_PermCell_Inner_T_Global) -> {bor_next.current = Link x0 x1 x2}
@@ -6126,164 +6122,163 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
             [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global r0} any) ])
       | s1 = MutBorrow.borrow_final <t_Vec_T_Global> {arr.current} {MutBorrow.get_id arr}
           (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
-            [ &_106 <- _bor ] -{inv_Vec_T_Global _bor.final}-
+            [ &_102 <- _bor ] -{inv_Vec_T_Global _bor.final}-
             [ &arr <- { arr with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global arr.current} any) ]
       | s2 = -{resolve_refmut_usize index}- s3
-      | s3 = index_mut_Vec_T_Global {_106} {index.current} (fun (_x: MutBorrow.t t_T) -> [ &_105 <- _x ] s4)
-      | s4 = MutBorrow.borrow_final <t_T> {_105.current} {MutBorrow.get_id _105}
+      | s3 = index_mut_Vec_T_Global {_102} {index.current} (fun (_x: MutBorrow.t t_T) -> [ &_101 <- _x ] s4)
+      | s4 = MutBorrow.borrow_final <t_T> {_101.current} {MutBorrow.get_id _101}
           (fun (_bor: MutBorrow.t t_T) ->
-            [ &_104 <- _bor ] -{inv_T _bor.final}-
-            [ &_105 <- { _105 with current = _bor.final } ] s5)
-        [ _ck -> (! {[@expl:type invariant] inv_T _105.current} any) ]
-      | s5 = MutBorrow.borrow_final <t_T> {_104.current} {MutBorrow.get_id _104}
+            [ &_100 <- _bor ] -{inv_T _bor.final}-
+            [ &_101 <- { _101 with current = _bor.final } ] s5)
+        [ _ck -> (! {[@expl:type invariant] inv_T _101.current} any) ]
+      | s5 = MutBorrow.borrow_final <t_T> {_100.current} {MutBorrow.get_id _100}
           (fun (_bor: MutBorrow.t t_T) ->
-            [ &_103 <- _bor ] -{inv_T _bor.final}-
-            [ &_104 <- { _104 with current = _bor.final } ] s6)
-        [ _ck -> (! {[@expl:type invariant] inv_T _104.current} any) ]
+            [ &_99 <- _bor ] -{inv_T _bor.final}-
+            [ &_100 <- { _100 with current = _bor.final } ] s6)
+        [ _ck -> (! {[@expl:type invariant] inv_T _100.current} any) ]
       | s6 = MutBorrow.borrow_final <t_T> {value.current} {MutBorrow.get_id value}
           (fun (_bor: MutBorrow.t t_T) ->
-            [ &_108 <- _bor ] -{inv_T _bor.final}-
+            [ &_104 <- _bor ] -{inv_T _bor.final}-
             [ &value <- { value with current = _bor.final } ] s7)
         [ _ck -> (! {[@expl:type invariant] inv_T value.current} any) ]
-      | s7 = swap_T {_103} {_108} (fun (_x: ()) -> [ &_102 <- _x ] s8)
-      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _105} any) ]
-      | s9 = -{resolve_refmut_T _105}- s10
-      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _104} any) ]
-      | s11 = -{resolve_refmut_T _104}- s12
+      | s7 = swap_T {_99} {_104} (fun (_x: ()) -> [ &_98 <- _x ] s8)
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _101} any) ]
+      | s9 = -{resolve_refmut_T _101}- s10
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _100} any) ]
+      | s11 = -{resolve_refmut_T _100}- s12
       | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T_Global arr} any) ]
       | s13 = -{resolve_refmut_Vec_T_Global arr}- s14
       | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_refmut_T value} any) ]
       | s15 = -{resolve_refmut_T value}- s16
       | s16 = MutBorrow.borrow_final <t_Inner_T> {bor_next.current} {MutBorrow.get_id bor_next}
           (fun (_bor: MutBorrow.t t_Inner_T) ->
-            [ &_110 <- _bor ] -{inv_Inner_T _bor.final}-
+            [ &_106 <- _bor ] -{inv_Inner_T _bor.final}-
             [ &bor_next <- { bor_next with current = _bor.final } ] s17)
         [ _ck -> (! {[@expl:type invariant] inv_Inner_T bor_next.current} any) ]
       | s17 = MutBorrow.borrow_final <t_Inner_T> {bor_cur.current} {MutBorrow.get_id bor_cur}
           (fun (_bor: MutBorrow.t t_Inner_T) ->
-            [ &_111 <- _bor ] -{inv_Inner_T _bor.final}-
+            [ &_107 <- _bor ] -{inv_Inner_T _bor.final}-
             [ &bor_cur <- { bor_cur with current = _bor.final } ] s18)
         [ _ck -> (! {[@expl:type invariant] inv_Inner_T bor_cur.current} any) ]
-      | s18 = swap_Inner_T {_110} {_111} (fun (_x: ()) -> [ &_109 <- _x ] s19)
+      | s18 = swap_Inner_T {_106} {_107} (fun (_x: ()) -> [ &_105 <- _x ] s19)
       | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_refmut_Inner_T bor_next} any) ]
       | s20 = -{resolve_refmut_Inner_T bor_next}- s21
       | s21 = s22 [ _ck -> (! {[@expl:type invariant] inv_refmut_Inner_T bor_cur} any) ]
       | s22 = -{resolve_refmut_Inner_T bor_cur}- s23
       | s23 = MutBorrow.borrow_mut <MutBorrow.t t_PA_T> {pa}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_PA_T)) ->
-            [ &_117 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
+            [ &_113 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
             [ &pa <- _bor.final ] s24) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
-      | s24 = deref_mut_Ghost_refmut_PA_T {_117} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_116 <- _x ] s25)
+      | s24 = deref_mut_Ghost_refmut_PA_T {_113} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_112 <- _x ] s25)
       | s25 = into_inner_Box_Perm_PermCell_Inner_T_Global {perm_cur}
-          (fun (_x: t_Perm_PermCell_Inner_T) -> [ &_121 <- _x ] s26)
+          (fun (_x: t_Perm_PermCell_Inner_T) -> [ &_117 <- _x ] s26)
       | s26 = MutBorrow.borrow_mut <t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global>
-          {_116.current.current.perms}
+          {_112.current.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global) ->
-            [ &_115 <- _bor ]
-            [ &_116 <- { _116 with current = { _116.current with current = { _116.current.current with perms = _bor.final } } } ]
+            [ &_111 <- _bor ]
+            [ &_112 <- { _112 with current = { _112.current with current = { _112.current.current with perms = _bor.final } } } ]
             s27)
-      | s27 = insert_ghost_Snapshot_PermCell_Inner_T {_115} {view_Rc_PermCell_Inner_T_Global cur} {_121}
-          (fun (_x: t_Option_Box_Perm_PermCell_Inner_T_Global) -> [ &_114 <- _x ] s28)
-      | s28 = -{resolve_Option_Box_Perm_PermCell_Inner_T_Global _114}- s29
-      | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _116} any) ]
-      | s30 = -{resolve_refmut_refmut_PA_T _116}- s31
+      | s27 = insert_ghost_Snapshot_PermCell_Inner_T {_111} {view_Rc_PermCell_Inner_T_Global cur} {_117}
+          (fun (_x: t_Option_Box_Perm_PermCell_Inner_T_Global) -> [ &_110 <- _x ] s28)
+      | s28 = -{resolve_Option_Box_Perm_PermCell_Inner_T_Global _110}- s29
+      | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _112} any) ]
+      | s30 = -{resolve_refmut_refmut_PA_T _112}- s31
       | s31 =
         [ &new_d <- MinMax.min (Map.get pa.current.depth (view_Rc_PermCell_Inner_T_Global cur)) (Map.get pa.current.depth (view_Rc_PermCell_Inner_T_Global next'0)
         - 1) ] s32
-      | s32 = [ &_128 <- Map.set pa.current.depth (view_Rc_PermCell_Inner_T_Global cur) new_d ] s33
+      | s32 = [ &_124 <- Map.set pa.current.depth (view_Rc_PermCell_Inner_T_Global cur) new_d ] s33
       | s33 = MutBorrow.borrow_mut <MutBorrow.t t_PA_T> {pa}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_PA_T)) ->
-            [ &_134 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
+            [ &_130 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
             [ &pa <- _bor.final ] s34) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
-      | s34 = deref_mut_Ghost_refmut_PA_T {_134} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_133 <- _x ] s35)
+      | s34 = deref_mut_Ghost_refmut_PA_T {_130} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_129 <- _x ] s35)
       | s35 =
-        [ &_133 <- { _133 with current = { _133.current with current = { _133.current.current with depth = _128 } } } ]
+        [ &_129 <- { _129 with current = { _129.current with current = { _129.current.current with depth = _124 } } } ]
         s36
-      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _133} any) ]
-      | s37 = -{resolve_refmut_refmut_PA_T _133}- s38
+      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _129} any) ]
+      | s37 = -{resolve_refmut_refmut_PA_T _129}- s38
       | s38 = s39 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
       | s39 = -{resolve_Ghost_refmut_PA_T pa}- s40
-      | s40 = new_unit {_113} (fun (_x: ()) -> [ &_112 <- _x ] s41)
+      | s40 = new_unit {_109} (fun (_x: ()) -> [ &_108 <- _x ] s41)
       | s41 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & cur: t_Rc_PermCell_Inner_T_Global = cur
-    | & auth_id: t_Id = auth_id
     | & pa: MutBorrow.t t_PA_T = pa
     | & perm_cur: t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _27: t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _28: t_Option_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
-    | & _29: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
-    | & _30: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
-    | & _31: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
-    | & _33: t_PermCell_Inner_T = Any.any_l ()
+    | & _24: t_Perm_PermCell_Inner_T = Any.any_l ()
+    | & _25: t_Option_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
+    | & _26: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
+    | & _27: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
+    | & _28: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
+    | & _30: t_PermCell_Inner_T = Any.any_l ()
     | & bor_cur: MutBorrow.t t_Inner_T = Any.any_l ()
-    | & _38: MutBorrow.t t_Inner_T = Any.any_l ()
-    | & _40: t_PermCell_Inner_T = Any.any_l ()
+    | & _35: MutBorrow.t t_Inner_T = Any.any_l ()
+    | & _37: t_PermCell_Inner_T = Any.any_l ()
+    | & _39: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
+    | & _40: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
+    | & _41: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
     | & _42: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
     | & _43: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
     | & _44: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
     | & _45: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _46: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _47: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _48: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _50: t_Option_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
-    | & _51: t_Option_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
-    | & _52: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
-    | & _53: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
-    | & _54: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
-    | & _58: t_Perm_PermCell_Inner_T = Any.any_l ()
+    | & _47: t_Option_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
+    | & _48: t_Option_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
+    | & _49: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
+    | & _50: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
+    | & _51: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
+    | & _55: t_Perm_PermCell_Inner_T = Any.any_l ()
     | & next: MutBorrow.t t_Rc_PermCell_Inner_T_Global = Any.any_l ()
     | & value: MutBorrow.t t_T = Any.any_l ()
     | & index: MutBorrow.t UInt64.t = Any.any_l ()
-    | & _64: () = Any.any_l ()
-    | & _66: MutBorrow.t t_Rc_PermCell_Inner_T_Global = Any.any_l ()
-    | & _68: MutBorrow.t t_PA_T = Any.any_l ()
-    | & _69: MutBorrow.t t_PA_T = Any.any_l ()
-    | & _70: MutBorrow.t t_PA_T = Any.any_l ()
-    | & _71: MutBorrow.t t_PA_T = Any.any_l ()
-    | & _72: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
-    | & _73: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
-    | & _74: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
+    | & _61: () = Any.any_l ()
+    | & _63: MutBorrow.t t_Rc_PermCell_Inner_T_Global = Any.any_l ()
+    | & _64: MutBorrow.t t_PA_T = Any.any_l ()
+    | & _65: MutBorrow.t t_PA_T = Any.any_l ()
+    | & _66: MutBorrow.t t_PA_T = Any.any_l ()
+    | & _67: MutBorrow.t t_PA_T = Any.any_l ()
+    | & _68: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
+    | & _69: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
+    | & _70: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
     | & next'0: t_Rc_PermCell_Inner_T_Global = Any.any_l ()
-    | & _76: MutBorrow.t t_Rc_PermCell_Inner_T_Global = Any.any_l ()
-    | & _77: t_Rc_PermCell_Inner_T_Global = Any.any_l ()
+    | & _72: MutBorrow.t t_Rc_PermCell_Inner_T_Global = Any.any_l ()
+    | & _73: t_Rc_PermCell_Inner_T_Global = Any.any_l ()
     | & perm_next: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _80: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _81: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _82: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _83: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
-    | & _84: t_Option_refmut_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
-    | & _85: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
-    | & _86: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
-    | & _87: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
-    | & _89: t_PermCell_Inner_T = Any.any_l ()
+    | & _76: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
+    | & _77: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
+    | & _78: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
+    | & _79: MutBorrow.t t_Perm_PermCell_Inner_T = Any.any_l ()
+    | & _80: t_Option_refmut_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
+    | & _81: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
+    | & _82: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
+    | & _83: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
+    | & _85: t_PermCell_Inner_T = Any.any_l ()
     | & bor_next: MutBorrow.t t_Inner_T = Any.any_l ()
-    | & _94: MutBorrow.t t_Inner_T = Any.any_l ()
-    | & _96: t_PermCell_Inner_T = Any.any_l ()
+    | & _90: MutBorrow.t t_Inner_T = Any.any_l ()
+    | & _92: t_PermCell_Inner_T = Any.any_l ()
     | & arr: MutBorrow.t t_Vec_T_Global = Any.any_l ()
-    | & _102: () = Any.any_l ()
-    | & _103: MutBorrow.t t_T = Any.any_l ()
+    | & _98: () = Any.any_l ()
+    | & _99: MutBorrow.t t_T = Any.any_l ()
+    | & _100: MutBorrow.t t_T = Any.any_l ()
+    | & _101: MutBorrow.t t_T = Any.any_l ()
+    | & _102: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & _104: MutBorrow.t t_T = Any.any_l ()
-    | & _105: MutBorrow.t t_T = Any.any_l ()
-    | & _106: MutBorrow.t t_Vec_T_Global = Any.any_l ()
-    | & _108: MutBorrow.t t_T = Any.any_l ()
+    | & _105: () = Any.any_l ()
+    | & _106: MutBorrow.t t_Inner_T = Any.any_l ()
+    | & _107: MutBorrow.t t_Inner_T = Any.any_l ()
+    | & _108: () = Any.any_l ()
     | & _109: () = Any.any_l ()
-    | & _110: MutBorrow.t t_Inner_T = Any.any_l ()
-    | & _111: MutBorrow.t t_Inner_T = Any.any_l ()
-    | & _112: () = Any.any_l ()
-    | & _113: () = Any.any_l ()
-    | & _114: t_Option_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
-    | & _115: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
-    | & _116: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
-    | & _117: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
-    | & _121: t_Perm_PermCell_Inner_T = Any.any_l ()
+    | & _110: t_Option_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
+    | & _111: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Box_Perm_PermCell_Inner_T_Global = Any.any_l ()
+    | & _112: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
+    | & _113: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
+    | & _117: t_Perm_PermCell_Inner_T = Any.any_l ()
     | & new_d: int = Any.any_l ()
-    | & _128: Map.map t_PermCell_Inner_T int = Any.any_l ()
-    | & _133: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
-    | & _134: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l () ])
+    | & _124: Map.map t_PermCell_Inner_T int = Any.any_l ()
+    | & _129: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l ()
+    | & _130: MutBorrow.t (MutBorrow.t t_PA_T) = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa) auth_id)
+    {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa))
       /\ ([@stop_split] [@expl:reroot ensures #1] (fin_Ghost_refmut_PA_T pa).auth = pa.current.auth)
       /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PermCell_Inner_T. index_Mapping_PermCell_Inner_T_Int pa.current.depth id
             > index_Mapping_PermCell_Inner_T_Int pa.current.depth (view_Rc_PermCell_Inner_T_Global cur)
