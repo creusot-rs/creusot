@@ -1,8 +1,10 @@
+// DEPTH 10
+
 extern crate creusot_std;
 
 use creusot_std::{
     ghost::{
-        invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
+        invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
         perm::Perm,
         resource::{Authority, Fragment},
     },
@@ -79,7 +81,7 @@ pub fn parallel_add(n: i32) {
     let timestamp = snapshot!(such_that(|t| own.val().contains(t)));
 
     // Initialize our invariant
-    let inv = AtomicInvariantSC::new(
+    let inv = AtomicInvariant::new(
         ghost!(ParallelAddAtomicInv {
             own: own.into_inner(),
             auth: auth.into_inner(),
@@ -137,20 +139,26 @@ pub fn parallel_add(n: i32) {
         }
     });
 
-    let t_last;
+    final_read(atomic, inv, n, frag);
+}
+
+#[requires(inv.public() == (atomic, frag.id()))]
+#[requires(frag@ == Some((PR::from_int(1), n@)))]
+fn final_read(
+    atomic: AtomicI32,
+    inv: Ghost<AtomicInvariant<ParallelAddAtomicInv>>,
+    n: i32,
+    frag: Ghost<Fragment<Option<(PR, Int)>>>,
+) {
     let own = ghost! {
         // Destroy the invariant, get back the ownership of the atomic
         let inv = inv.into_inner().into_inner();
-        proof_assert!(inv.auth@.unwrap_logic().0 == PR::from_int(1));
         inv.auth.frag_lemma(&frag);
-        t_last = Ghost::new(inv.t_last);
         inv.own
     };
 
     let mut view = SyncView::new();
-    let (x, t) = atomic.into_inner(own, ghost!(&mut *view)); // Non-atomically read the atomic
+    let (x, _) = atomic.into_inner(own, ghost!(&mut *view)); // Non-atomically read the atomic
 
-    proof_assert!(*t == *t_last);
     proof_assert!(n == x);
-    // revert H2
 }
