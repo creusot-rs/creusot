@@ -15,6 +15,8 @@ for i in "$@"; do
       echo "                 (default is .coma files with changes from origin/master)"
       echo "    [STRING]     Only run tests for files containing this string (tests: ui, why3)"
       echo "    --debug      Print commands as they are run"
+      echo "    --installed  Run tests using installed Creusot (tests: build-new, build-no-std)"
+      echo "    --tmp=DIR    Directory where to run tests (tests: build-new, build-no-std)"
       exit 0
       ;;
     all)
@@ -67,6 +69,14 @@ for i in "$@"; do
       WHY3_DIFF_FROM=0
       shift
       ;;
+    --installed)
+      INSTALLED=1
+      shift
+      ;;
+    --tmp=*)
+      TMP=${i#--tmp=}
+      shift
+      ;;
     -*)
       echo "Unrecognized option $i"
       exit 1
@@ -98,11 +108,15 @@ fi
 if [ "$DEBUG" ] ; then
     set -x
 fi
+if [ -z "$TMP"] ; then
+    TMP=/tmp
+fi
 BOLD=$'\e[1m'
 GREEN=$'\e[0;32m'
 YELLOW=$'\e[0;33m'
 STYLE_OFF=$'\e[0m'
 cd "$(dirname "${BASH_SOURCE[0]}")"
+CREUSOT_DIR=`pwd`
 if [ "$TEST_FMT" ] || [ "$TEST_ALL" ] ; then
   if [ "$FMT_CHECK" ] ; then
     echo ">>> ${BOLD}Check fmt${YELLOW}"
@@ -126,17 +140,31 @@ if [ "$TEST_ERASURE_CHECK" ] || [ "$TEST_ALL" ] ; then
   rustup component add rust-src
   cargo test --test ui -- --erasure-check
 fi
+build_creusot() {
+  if [ ! "$INSTALLED" ] ; then
+    echo "Building creusot..."
+    cargo build -p creusot-rustc -p cargo-creusot
+  fi
+}
+cargo_creusot() {
+  if [ "$INSTALLED" ] ; then
+    cargo creusot "$@"
+  else
+    CREUSOT_RUSTC=$CREUSOT_DIR/target/debug/creusot-rustc $CREUSOT_DIR/target/debug/cargo-creusot creusot "$@"
+  fi
+}
 if [ "$TEST_BUILD_NEW" ] || [ "$TEST_ALL" ] ; then
   echo ">>> ${BOLD}Test build-new${STYLE_OFF}"
   export RUSTFLAGS="-D warnings"
-  pushd ..
+  build_creusot
+  pushd $TMP
   DIR=creusot-test-please-ignore
   rm -rf $DIR
-  cargo creusot new $DIR --main --creusot-std ../creusot/creusot-std
+  cargo_creusot new $DIR --main --creusot-std $CREUSOT_DIR/creusot-std
   cd $DIR
   cargo fmt --check
   cargo build
-  cargo creusot
+  cargo_creusot
   popd
 fi
 if [ "$TEST_BUILD_NO_STD" ] || [ "$TEST_ALL" ] ; then
@@ -146,16 +174,17 @@ if [ "$TEST_BUILD_NO_STD" ] || [ "$TEST_ALL" ] ; then
   rustup component add --toolchain "$TLC" rustfmt
   rustup component add --toolchain "$TLC" rust-src
   rustup target add thumbv7em-none-eabi
+  build_creusot
+  pushd $TMP
   DIR=creusot-test-please-ignore
-  pushd ..
   rm -rf $DIR
-  cargo creusot new $DIR --no-std --creusot-std ../creusot/creusot-std
+  cargo_creusot new $DIR --no-std --creusot-std $CREUSOT_DIR/creusot-std
   cd $DIR
   echo "$TLC" > rust-toolchain
   cargo fmt --check
   cargo build
   cargo build --target thumbv7em-none-eabi -Zbuild-std=core,alloc
-  cargo creusot
-  cargo creusot -- --target thumbv7em-none-eabi -Zbuild-std=core,alloc
+  cargo_creusot
+  cargo_creusot -- --target thumbv7em-none-eabi -Zbuild-std=core,alloc
   popd
 fi
