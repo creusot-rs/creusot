@@ -46,9 +46,13 @@ impl Protocol for ParallelAddAtomicInv {
     type Public = (AtomicI32, Id);
 
     #[logic(inline)]
-    fn protocol(self, data: (AtomicI32, Id)) -> bool {
+    fn public(self) -> Self::Public {
+        (*self.own.ward(), self.auth.id())
+    }
+
+    #[logic(inline)]
+    fn protocol(self) -> bool {
         pearlite! {
-            data == (*self.own.ward(), self.auth.id()) &&
             exists<k: Int>
               self.auth@ == Some((PR::from_int(1), k * Int::pow2(32) + self.own.val()@))
         }
@@ -70,7 +74,6 @@ pub fn parallel_add(n: i32) {
     // Initialize our invariant
     let inv = AtomicInvariantSC::new(
         ghost!(ParallelAddAtomicInv { own: own.into_inner(), auth: auth.into_inner() }),
-        snapshot!((atomic, frag.id())),
         snapshot!(PARALLEL_ADD()),
     );
 

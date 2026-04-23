@@ -28,23 +28,27 @@ struct MessagePassingAtomicInv {
     at_view: Option<AtView<Box<Perm<PermCell<i32>>>>>,
     tok_write: Resource<Option<Excl<()>>>,
     tok_read: Resource<Option<Excl<()>>>,
+    data: Snapshot<PermCell<i32>>,
 }
 
 impl Protocol for MessagePassingAtomicInv {
     type Public = (AtomicBool, PermCell<i32>, Id, Id);
 
     #[logic(inline)]
-    fn protocol(self, data: Self::Public) -> bool {
+    fn public(self) -> Self::Public {
+        (*self.atomic_own.ward(), *self.data, self.tok_write.id(), self.tok_read.id())
+    }
+
+    #[logic(inline)]
+    fn protocol(self) -> bool {
         pearlite! {
-            let (atomic, perm, excl_write, excl_read) = data;
-            atomic == *self.atomic_own.ward() && excl_write == self.tok_write.id() && excl_read == self.tok_read.id() &&
             forall<t> match self.atomic_own.val().get(t) {
                 Some((b, view)) =>
                     !b ||
                     b &&
                     self.tok_write.val() == Some(Excl(())) &&
                         match self.at_view {
-                            Some(at_view) => perm == *at_view.val().ward() && at_view.val().val()@ == 1 && at_view.view_logic() <= view,
+                            Some(at_view) => *self.data == *at_view.val().ward() && at_view.val().val()@ == 1 && at_view.view_logic() <= view,
                             None => self.tok_read.val() == Some(Excl(()))
                         },
                 None => true
@@ -64,9 +68,9 @@ pub fn message_passing() {
             atomic_own: atomic_own.into_inner(),
             at_view: None,
             tok_write: Resource::new_unit(excl_write.id_ghost()),
-            tok_read: Resource::new_unit(excl_read.id_ghost())
+            tok_read: Resource::new_unit(excl_read.id_ghost()),
+            data: snapshot!(data),
         }),
-        snapshot!((atomic, data, excl_write.id(), excl_read.id())),
         snapshot!(MESSAGE_PASSING()),
     );
 

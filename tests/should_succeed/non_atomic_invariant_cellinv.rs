@@ -29,8 +29,13 @@ impl<T> Protocol for PermCellNAInv<T> {
     type Public = PermCell<T>;
 
     #[logic]
-    fn protocol(self, pc: PermCell<T>) -> bool {
-        *self.0.ward() == pc
+    fn public(self) -> Self::Public {
+        *self.0.ward()
+    }
+
+    #[logic]
+    fn protocol(self) -> bool {
+        true
     }
 }
 

@@ -26,6 +26,7 @@ declare_namespace! { MESSAGE_PASSING }
 struct MessagePassingAtomicInv {
     atomic_own: Box<Perm<AtomicBool>>,
     state: State,
+    public_data: Snapshot<(PermCell<i32>, Id, Id)>,
 }
 
 enum State {
@@ -39,10 +40,15 @@ impl Protocol for MessagePassingAtomicInv {
     type Public = (AtomicBool, PermCell<i32>, Id, Id);
 
     #[logic(inline)]
-    fn protocol(self, data: Self::Public) -> bool {
+    fn public(self) -> Self::Public {
+        let (p, i1, i2) = *self.public_data;
+        (*self.atomic_own.ward(), p, i1, i2)
+    }
+
+    #[logic(inline)]
+    fn protocol(self) -> bool {
         pearlite! {
-            let (atomic, perm, excl_write, excl_read) = data;
-            atomic == *self.atomic_own.ward() &&
+            let (perm, excl_write, excl_read) = *self.public_data;
             match self.state {
                 State::NotWrittenYet => forall<t> match self.atomic_own.val().get(t) {
                     Some((b, _)) => !b,
@@ -69,8 +75,8 @@ pub fn message_passing() {
         ghost!(MessagePassingAtomicInv {
             atomic_own: atomic_own.into_inner(),
             state: State::NotWrittenYet,
+            public_data: snapshot!((data, excl_write.id(), excl_read.id()))
         }),
-        snapshot!((atomic, data, excl_write.id(), excl_read.id())),
         snapshot!(MESSAGE_PASSING()),
     );
 

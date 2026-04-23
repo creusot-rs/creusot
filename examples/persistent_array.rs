@@ -97,10 +97,15 @@ pub mod implementation {
     impl<T> Protocol for PA<T> {
         type Public = Id;
 
+        #[logic]
+        fn public(self) -> Id {
+            self.auth.id()
+        }
+
         #[logic(inline)]
-        fn protocol(self, id: Id) -> bool {
+        fn protocol(self) -> bool {
             pearlite! {
-                self.partial_invariant(id) &&
+                self.partial_invariant() &&
                 forall<pc> self.auth@.contains(pc) == self.perms.contains(Snapshot::new(pc))
             }
         }
@@ -108,9 +113,8 @@ pub mod implementation {
 
     impl<T> PA<T> {
         #[logic(inline)]
-        fn partial_invariant(self, id: Id) -> bool {
+        fn partial_invariant(self) -> bool {
             pearlite! {
-                self.auth.id() == id &&
                 forall<pc: Snapshot<_>> self.auth@.contains(*pc) && self.perms.contains(pc) ==>
                     *self.perms[pc].ward() == *pc &&
                     match self.perms[pc].val() {
@@ -146,7 +150,6 @@ pub mod implementation {
                         auth: auth.into_inner(),
                         depth: snapshot!(|_| 0),
                     }),
-                    snapshot!(frag.id()),
                     snapshot!(PARRAY()),
                 );
                 Rc::new(na_inv.into_inner())
@@ -207,7 +210,7 @@ pub mod implementation {
             unsafe { Self::get_inner_immut(&self.permcell, index, pa) }
         }
 
-        #[requires(exists<p> pa.protocol(p))]
+        #[requires(pa.protocol())]
         #[requires(pa.auth@.contains(*inner@))]
         #[requires(i@ < pa.auth@[*inner@].0.len())]
         #[ensures(*result == pa.auth@[*inner@].0[i@])]
@@ -235,11 +238,10 @@ pub mod implementation {
         #[requires(index@ < self@.len())]
         #[ensures(*result == self@[index@])]
         pub unsafe fn get<'a>(&'a self, index: usize, tokens: Ghost<Tokens<'a>>) -> &'a T {
-            let auth_id = snapshot!(self.inv@.public());
             self.inv.open(tokens, |mut pa| {
                 // prove that self is contained in the map by validity
                 ghost! { pa.auth.frag_lemma(&self.frag) };
-                Self::reroot(&self.permcell, auth_id, ghost!(&mut *pa));
+                Self::reroot(&self.permcell, ghost!(&mut *pa));
                 let perm = ghost!(
                     &**pa.into_inner().perms.get_ghost(&snapshot!(*self.permcell@)).unwrap()
                 );
@@ -252,12 +254,12 @@ pub mod implementation {
 
         /// Reroot the array: at the end of this function, `inner` will point directly
         /// to the underlying array.
-        #[requires(pa.partial_invariant(*auth_id))]
+        #[requires(pa.partial_invariant())]
         #[requires(pa.auth@.contains(*cur@))]
         #[requires(forall<id> pa.auth@.contains(id) && pa.depth[id] <= pa.depth[*cur@]
             ==> pa.perms.contains(Snapshot::new(id))
         )]
-        #[ensures((^pa).partial_invariant(*auth_id))]
+        #[ensures((^pa).partial_invariant())]
         #[ensures((^pa).auth == pa.auth)]
         #[ensures(forall<id: Snapshot<_>> pa.depth[*id] > pa.depth[*cur@] ==>
             pa.perms.get(id) == (^pa).perms.get(id) && pa.depth[*id] == (^pa).depth[*id])]
@@ -266,7 +268,7 @@ pub mod implementation {
             Inner::Direct(_) => true,
             Inner::Link { .. } => false,
         })]
-        fn reroot(cur: &Rc<PermCell<Inner<T>>>, auth_id: Snapshot<Id>, mut pa: Ghost<&mut PA<T>>) {
+        fn reroot(cur: &Rc<PermCell<Inner<T>>>, mut pa: Ghost<&mut PA<T>>) {
             // We take ownership of cur
             let mut perm_cur = ghost!(pa.perms.remove_ghost(&snapshot!(*cur@)).unwrap());
             let bor_cur = unsafe { cur.borrow_mut(ghost!(&mut perm_cur)) };
@@ -278,7 +280,7 @@ pub mod implementation {
             };
 
             // Recursively reroot the next node
-            Self::reroot(&next, auth_id, ghost!(&mut *pa));
+            Self::reroot(&next, ghost!(&mut *pa));
 
             // Change the next field
             let next = std::mem::replace(next, cur.clone());

@@ -78,41 +78,47 @@ module M_message_passing
   
   type t_State = NotWrittenYet | Synchronisation t_Perm_PermCell_i32 | Readable t_Resource_Excl_unit
   
-  type t_MessagePassingAtomicInv = { atomic_own: t_Perm_AtomicBool; state: t_State }
+  type t_Id
+  
+  type tup2_PermCell_i32_Id = { f0'2: t_PermCell_i32; f1'2: t_Id }
+  
+  function id_Excl_unit (self: t_Resource_Excl_unit) : t_Id
+  
+  type t_MessagePassingAtomicInv = { atomic_own: t_Perm_AtomicBool; state: t_State; public_data: tup2_PermCell_i32_Id }
   
   let rec new_MessagePassingAtomicInv (x: t_MessagePassingAtomicInv) (return (x'0: t_MessagePassingAtomicInv)) = any
     [ return (result: t_MessagePassingAtomicInv) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  type t_Id
-  
-  type tup3_AtomicBool_PermCell_i32_Id = { f0'2: t_AtomicBool; f1'2: t_PermCell_i32; f2'2: t_Id }
-  
-  function id_Excl_unit (self: t_Resource_Excl_unit) : t_Id
-  
   type t_AtomicInvariantSC_MessagePassingAtomicInv
   
-  predicate protocol_MessagePassingAtomicInv [@inline:trivial] (self: t_MessagePassingAtomicInv) (data: tup3_AtomicBool_PermCell_i32_Id) =
-    data.f0'2 = ward_AtomicBool self.atomic_own
-    /\ match self.state with
+  predicate protocol_MessagePassingAtomicInv [@inline:trivial] (self: t_MessagePassingAtomicInv) =
+    match self.state with
       | NotWrittenYet -> not val_AtomicBool self.atomic_own
-      | Synchronisation data_own -> data.f1'2 = ward_PermCell_i32 data_own
+      | Synchronisation data_own -> self.public_data.f0'2 = ward_PermCell_i32 data_own
       /\ val_AtomicBool self.atomic_own /\ Int32.to_int (val_PermCell_i32 data_own) = 1
-      | Readable tok -> data.f2'2 = id_Excl_unit tok
+      | Readable tok -> self.public_data.f1'2 = id_Excl_unit tok
       end
   
   meta "rewrite_def" predicate protocol_MessagePassingAtomicInv
   
+  type tup3_AtomicBool_PermCell_i32_Id = { f0'3: t_AtomicBool; f1'3: t_PermCell_i32; f2'3: t_Id }
+  
   function public_MessagePassingAtomicInv (self: t_AtomicInvariantSC_MessagePassingAtomicInv) : tup3_AtomicBool_PermCell_i32_Id
+  
+  function public_MessagePassingAtomicInv'0 [@inline:trivial] (self: t_MessagePassingAtomicInv) : tup3_AtomicBool_PermCell_i32_Id
+   = let {f0'2 = p; f1'2 = id} = self.public_data in { f0'3 = ward_AtomicBool self.atomic_own; f1'3 = p; f2'3 = id }
+  
+  meta "rewrite_def" function public_MessagePassingAtomicInv'0
   
   function namespace_MessagePassingAtomicInv (self: t_AtomicInvariantSC_MessagePassingAtomicInv) : t_Namespace
   
-  let rec new_MessagePassingAtomicInv'0 (value: t_MessagePassingAtomicInv) (public: tup3_AtomicBool_PermCell_i32_Id)
-    (namespace: t_Namespace) (return (x: t_AtomicInvariantSC_MessagePassingAtomicInv)) =
-    {[@stop_split] [@expl:new requires] protocol_MessagePassingAtomicInv value public}
+  let rec new_MessagePassingAtomicInv'0 (value: t_MessagePassingAtomicInv) (namespace: t_Namespace)
+    (return (x: t_AtomicInvariantSC_MessagePassingAtomicInv)) =
+    {[@stop_split] [@expl:new requires] protocol_MessagePassingAtomicInv value}
     any
     [ return (result: t_AtomicInvariantSC_MessagePassingAtomicInv) ->
     {[@stop_split] [@expl:new_MessagePassingAtomicInv ensures] ([@stop_split] [@expl:new ensures #0] public_MessagePassingAtomicInv result
-        = public)
+        = public_MessagePassingAtomicInv'0 value)
       /\ ([@stop_split] [@expl:new ensures #1] namespace_MessagePassingAtomicInv result = namespace)}
       (! return {result}) ]
   
@@ -319,10 +325,10 @@ module M_message_passing
   
   meta "rewrite_def" predicate closure0'post'return
   
-  type t_FnGhostWrapper_closure0 = { f0'3: closure0'2 }
+  type t_FnGhostWrapper_closure0 = { f0'4: closure0'2 }
   
   let rec __new_closure0 (f: closure0'2) (return (x: t_FnGhostWrapper_closure0)) = any
-    [ return (result: t_FnGhostWrapper_closure0) -> {[@stop_split] [@expl:__new ensures] result.f0'3 = f}
+    [ return (result: t_FnGhostWrapper_closure0) -> {[@stop_split] [@expl:__new ensures] result.f0'4 = f}
       (! return {result}) ]
   
   predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
@@ -343,7 +349,7 @@ module M_message_passing
   meta "rewrite_def" predicate precondition_closure0
   
   predicate precondition_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_MessagePassingAtomicInv) =
-    precondition_closure0 self.f0'3 args
+    precondition_closure0 self.f0'4 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0
   
@@ -353,23 +359,26 @@ module M_message_passing
   meta "rewrite_def" predicate postcondition_once_closure0
   
   predicate postcondition_once_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
-    postcondition_once_closure0 self.f0'3 args result
+    postcondition_once_closure0 self.f0'4 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0
   
   let rec open_MessagePassingAtomicInv (self: t_AtomicInvariantSC_MessagePassingAtomicInv) (tokens: t_Tokens)
     (f: t_FnGhostWrapper_closure0) (return (x: ())) =
     {[@stop_split] [@expl:open_MessagePassingAtomicInv requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_MessagePassingAtomicInv self))
-    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_MessagePassingAtomicInv. protocol_MessagePassingAtomicInv t.current (public_MessagePassingAtomicInv self)
-        /\ inv_refmut_MessagePassingAtomicInv t
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_MessagePassingAtomicInv. public_MessagePassingAtomicInv'0 t.current
+          = public_MessagePassingAtomicInv self
+        /\ protocol_MessagePassingAtomicInv t.current /\ inv_refmut_MessagePassingAtomicInv t
       -> precondition_FnGhostWrapper_closure0 f t
       /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res
-        -> protocol_MessagePassingAtomicInv t.final (public_MessagePassingAtomicInv self)))}
+        -> public_MessagePassingAtomicInv'0 t.final = public_MessagePassingAtomicInv self
+        /\ protocol_MessagePassingAtomicInv t.final))}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_MessagePassingAtomicInv. inv_refmut_MessagePassingAtomicInv t
-        /\ protocol_MessagePassingAtomicInv t.current (public_MessagePassingAtomicInv self)
-        /\ postcondition_once_FnGhostWrapper_closure0 f t result}
+    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_MessagePassingAtomicInv. public_MessagePassingAtomicInv'0 t.current
+          = public_MessagePassingAtomicInv self
+        /\ protocol_MessagePassingAtomicInv t.current
+        /\ inv_refmut_MessagePassingAtomicInv t /\ postcondition_once_FnGhostWrapper_closure0 f t result}
       (! return {result}) ]
   
   let rec closure0'0 [@coma:extspec] (self: closure0'1) (c: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst)
@@ -400,10 +409,10 @@ module M_message_passing
   
   meta "rewrite_def" predicate closure0'0'post'return
   
-  type t_FnGhostWrapper_closure0'0 = { f0'4: closure0'1 }
+  type t_FnGhostWrapper_closure0'0 = { f0'5: closure0'1 }
   
   let rec __new_closure0'0 (f: closure0'1) (return (x: t_FnGhostWrapper_closure0'0)) = any
-    [ return (result: t_FnGhostWrapper_closure0'0) -> {[@stop_split] [@expl:__new ensures] result.f0'4 = f}
+    [ return (result: t_FnGhostWrapper_closure0'0) -> {[@stop_split] [@expl:__new ensures] result.f0'5 = f}
       (! return {result}) ]
   
   let rec new_FnGhostWrapper_closure0 (x: t_FnGhostWrapper_closure0'0) (return (x'0: t_FnGhostWrapper_closure0'0)) = any
@@ -424,7 +433,7 @@ module M_message_passing
   meta "rewrite_def" predicate precondition_closure0'0
   
   predicate precondition_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) =
-    precondition_closure0'0 self.f0'4 args
+    precondition_closure0'0 self.f0'5 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'0
   
@@ -434,7 +443,7 @@ module M_message_passing
   meta "rewrite_def" predicate postcondition_once_closure0'0
   
   predicate postcondition_once_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) (result: ()) =
-    postcondition_once_closure0'0 self.f0'4 args result
+    postcondition_once_closure0'0 self.f0'5 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'0
   
@@ -609,8 +618,8 @@ module M_message_passing
   let rec deref_Ghost_bool (self: bool) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
-  let rec elim_Readable (_x: t_State) (return (f0'5: t_Resource_Excl_unit)) = any
-    [ _k (f0'5: t_Resource_Excl_unit) -> {Readable f0'5 = _x} (! return {f0'5})
+  let rec elim_Readable (_x: t_State) (return (f0'6: t_Resource_Excl_unit)) = any
+    [ _k (f0'6: t_Resource_Excl_unit) -> {Readable f0'6 = _x} (! return {f0'6})
     | _chk -> (! {[@expl:elim Readable] match _x with
         | Readable _ -> true
         | _ -> false
@@ -707,8 +716,8 @@ module M_message_passing
   
   meta "rewrite_def" predicate resolve_refmut_closure0
   
-  let rec elim_Synchronisation (_x: t_State) (return (f0'5: t_Perm_PermCell_i32)) = any
-    [ _k (f0'5: t_Perm_PermCell_i32) -> {Synchronisation f0'5 = _x} (! return {f0'5})
+  let rec elim_Synchronisation (_x: t_State) (return (f0'6: t_Perm_PermCell_i32)) = any
+    [ _k (f0'6: t_Perm_PermCell_i32) -> {Synchronisation f0'6 = _x} (! return {f0'6})
     | _chk -> (! {[@expl:elim Synchronisation] match _x with
         | Synchronisation _ -> true
         | _ -> false
@@ -910,10 +919,10 @@ module M_message_passing
     forall self: closure0'3, args: MutBorrow.t t_MessagePassingAtomicInv, res_state: closure0'3, res: (). postcondition_mut_closure0 self args res_state res
       -> hist_inv_closure0 self res_state
   
-  type t_FnGhostWrapper_closure0'1 = { f0'5: closure0'3 }
+  type t_FnGhostWrapper_closure0'1 = { f0'6: closure0'3 }
   
   let rec __new_closure0'1 (f: closure0'3) (return (x: t_FnGhostWrapper_closure0'1)) = any
-    [ return (result: t_FnGhostWrapper_closure0'1) -> {[@stop_split] [@expl:__new ensures] result.f0'5 = f}
+    [ return (result: t_FnGhostWrapper_closure0'1) -> {[@stop_split] [@expl:__new ensures] result.f0'6 = f}
       (! return {result}) ]
   
   predicate precondition_closure0'2 [@inline:trivial] (self: closure0'3) (args: MutBorrow.t t_MessagePassingAtomicInv) =
@@ -922,28 +931,31 @@ module M_message_passing
   meta "rewrite_def" predicate precondition_closure0'2
   
   predicate precondition_FnGhostWrapper_closure0'1 [@inline:trivial] (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_MessagePassingAtomicInv) =
-    precondition_closure0'2 self.f0'5 args
+    precondition_closure0'2 self.f0'6 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'1
   
   predicate postcondition_once_FnGhostWrapper_closure0'1 [@inline:trivial] (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
-    postcondition_once_closure0'2 self.f0'5 args result
+    postcondition_once_closure0'2 self.f0'6 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'1
   
   let rec open_MessagePassingAtomicInv'0 (self: t_AtomicInvariantSC_MessagePassingAtomicInv) (tokens: t_Tokens)
     (f: t_FnGhostWrapper_closure0'1) (return (x: ())) =
     {[@stop_split] [@expl:open_MessagePassingAtomicInv requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_MessagePassingAtomicInv self))
-    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_MessagePassingAtomicInv. protocol_MessagePassingAtomicInv t.current (public_MessagePassingAtomicInv self)
-        /\ inv_refmut_MessagePassingAtomicInv t
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_MessagePassingAtomicInv. public_MessagePassingAtomicInv'0 t.current
+          = public_MessagePassingAtomicInv self
+        /\ protocol_MessagePassingAtomicInv t.current /\ inv_refmut_MessagePassingAtomicInv t
       -> precondition_FnGhostWrapper_closure0'1 f t
       /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0'1 f t res
-        -> protocol_MessagePassingAtomicInv t.final (public_MessagePassingAtomicInv self)))}
+        -> public_MessagePassingAtomicInv'0 t.final = public_MessagePassingAtomicInv self
+        /\ protocol_MessagePassingAtomicInv t.final))}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_MessagePassingAtomicInv. inv_refmut_MessagePassingAtomicInv t
-        /\ protocol_MessagePassingAtomicInv t.current (public_MessagePassingAtomicInv self)
-        /\ postcondition_once_FnGhostWrapper_closure0'1 f t result}
+    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_MessagePassingAtomicInv. public_MessagePassingAtomicInv'0 t.current
+          = public_MessagePassingAtomicInv self
+        /\ protocol_MessagePassingAtomicInv t.current
+        /\ inv_refmut_MessagePassingAtomicInv t /\ postcondition_once_FnGhostWrapper_closure0'1 f t result}
       (! return {result}) ]
   
   predicate resolve_refmut_Tokens [@inline:trivial] (_1: MutBorrow.t t_Tokens) = _1.final = _1.current
@@ -1054,10 +1066,10 @@ module M_message_passing
     forall self: closure4, args: t_Committer_AtomicBool_bool_SeqCst_None, res_state: closure4, res: (). postcondition_mut_closure4 self args res_state res
       -> hist_inv_closure4 self res_state
   
-  type t_FnGhostWrapper_closure4 = { f0'6: closure4 }
+  type t_FnGhostWrapper_closure4 = { f0'7: closure4 }
   
   let rec __new_closure4 (f: closure4) (return (x: t_FnGhostWrapper_closure4)) = any
-    [ return (result: t_FnGhostWrapper_closure4) -> {[@stop_split] [@expl:__new ensures] result.f0'6 = f}
+    [ return (result: t_FnGhostWrapper_closure4) -> {[@stop_split] [@expl:__new ensures] result.f0'7 = f}
       (! return {result}) ]
   
   let rec new_FnGhostWrapper_closure4 (x: t_FnGhostWrapper_closure4) (return (x'0: t_FnGhostWrapper_closure4)) = any
@@ -1069,12 +1081,12 @@ module M_message_passing
   meta "rewrite_def" predicate precondition_closure4
   
   predicate precondition_FnGhostWrapper_closure4 [@inline:trivial] (self: t_FnGhostWrapper_closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) =
-    precondition_closure4 self.f0'6 args
+    precondition_closure4 self.f0'7 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure4
   
   predicate postcondition_once_FnGhostWrapper_closure4 [@inline:trivial] (self: t_FnGhostWrapper_closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) (result: ()) =
-    postcondition_once_closure4 self.f0'6 args result
+    postcondition_once_closure4 self.f0'7 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure4
   
@@ -1330,16 +1342,16 @@ module M_message_passing
       | s6 = alloc_Excl_unit {{ f0'1 = () }} (fun (_x: t_Resource_Excl_unit) -> [ &excl <- _x ] s7)
       | s7 = into_inner_Box_Perm_AtomicBool_Global {atomic_own'0} (fun (_x: t_Perm_AtomicBool) -> [ &_13 <- _x ] s8)
       | s8 = [ &_15 <- NotWrittenYet ] s9
-      | s9 = [ &_12 <- { atomic_own = _13; state = _15 } ] s10
+      | s9 = [ &_12 <- { atomic_own = _13; state = _15; public_data = { f0'2 = data; f1'2 = id_Excl_unit excl } } ] s10
       | s10 = new_MessagePassingAtomicInv {_12} (fun (_x: t_MessagePassingAtomicInv) -> [ &_11 <- _x ] s11)
-      | s11 = new_MessagePassingAtomicInv'0 {_11} {{ f0'2 = atomic; f1'2 = data; f2'2 = id_Excl_unit excl }}
-          {Namespace_MESSAGE_PASSING 0} (fun (_x: t_AtomicInvariantSC_MessagePassingAtomicInv) -> [ &inv <- _x ] s12)
+      | s11 = new_MessagePassingAtomicInv'0 {_11} {Namespace_MESSAGE_PASSING 0}
+          (fun (_x: t_AtomicInvariantSC_MessagePassingAtomicInv) -> [ &inv <- _x ] s12)
       | s12 = -{resolve_Ghost_AtomicInvariantSC_MessagePassingAtomicInv inv}- s13
       | s13 = -{resolve_PermCell_i32 data}- s14
       | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_AtomicBool atomic} any) ]
       | s15 = -{resolve_AtomicBool atomic}- s16
-      | s16 = [ &_24 <- { c0 = inv; c1 = data; c2 = atomic; c3 = data_own; c4 = excl } ] s17
-      | s17 = scope_closure0 {_24} (fun (_x: ()) -> [ &_23 <- _x ] s18)
+      | s16 = [ &_23 <- { c0 = inv; c1 = data; c2 = atomic; c3 = data_own; c4 = excl } ] s17
+      | s17 = scope_closure0 {_23} (fun (_x: ()) -> [ &_22 <- _x ] s18)
       | s18 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & atomic: t_AtomicBool = Any.any_l ()
@@ -1354,6 +1366,6 @@ module M_message_passing
     | & _12: t_MessagePassingAtomicInv = Any.any_l ()
     | & _13: t_Perm_AtomicBool = Any.any_l ()
     | & _15: t_State = Any.any_l ()
-    | & _23: () = Any.any_l ()
-    | & _24: closure0 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _22: () = Any.any_l ()
+    | & _23: closure0 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

@@ -20,6 +20,7 @@ declare_namespace! { MESSAGE_PASSING }
 struct MessagePassingAtomicInv {
     atomic_own: Box<Perm<AtomicBool>>,
     data_own: Option<Box<Perm<PermCell<i32>>>>,
+    data: Snapshot<PermCell<i32>>,
     tok: Resource<Option<Excl<()>>>,
 }
 
@@ -27,14 +28,18 @@ impl Protocol for MessagePassingAtomicInv {
     type Public = (AtomicBool, PermCell<i32>, Id);
 
     #[logic(inline)]
-    fn protocol(self, data: Self::Public) -> bool {
+    fn public(self) -> Self::Public {
+        (*self.atomic_own.ward(), *self.data, self.tok.id())
+    }
+
+    #[logic(inline)]
+    fn protocol(self) -> bool {
         pearlite! {
-            data.0 == *self.atomic_own.ward() && data.2 == self.tok.id() &&
-            (!*self.atomic_own.val() ||
+            !*self.atomic_own.val() ||
              match self.data_own {
-                Some(data_own) => data.1 == *data_own.ward() && *self.atomic_own.val() && data_own.val()@ == 1,
+                Some(data_own) => *self.data == *data_own.ward() && *self.atomic_own.val() && data_own.val()@ == 1,
                 None => self.tok.val() == Some(Excl(())),
-            })
+            }
         }
     }
 }
@@ -48,9 +53,9 @@ pub fn message_passing() {
         ghost!(MessagePassingAtomicInv {
             atomic_own: atomic_own.into_inner(),
             data_own: None,
+            data: snapshot!(data),
             tok: Resource::new_unit(excl.id_ghost())
         }),
-        snapshot!((atomic, data, excl.id())),
         snapshot!(MESSAGE_PASSING()),
     );
 
