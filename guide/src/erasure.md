@@ -134,7 +134,7 @@ The required definitions are stored as binary blobs in the folder `_creusot_eras
 when removing `target/creusot` to force a rebuild.
 
 ```
-cargo creusot
+cargo creusot --only=coma
 rm -r target/creusot # Force rebuilding from scratch
 cargo creusot --erasure-check
 ```

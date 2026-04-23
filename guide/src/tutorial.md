@@ -78,7 +78,7 @@ must be equal to `x@ + 1`. Note that arithmetic operations are only defined on `
 ### Verifying the contract
 
 ```
-cargo creusot prove
+cargo creusot
 ```
 
 First, the Rust code is compiled to Coma, an intermediate verification language in the Why3 platform.
@@ -146,8 +146,8 @@ pub fn sum_up_to(n: u64) -> u64 {
 ```
 </details>
 
-Run `cargo creusot` to make sure that the postcondition is well-formed.
-Of course, `cargo creusot prove` will fail. The contract is still too naive at this point.
+Run `cargo creusot --only=coma` to make sure that the postcondition is well-formed.
+Of course, `cargo creusot` will fail. The contract is still too naive at this point.
 
 What if the sum overflows? Feel free to try different approaches to handle this problem.
 Here is a non-exhaustive list of possibilities.
@@ -207,7 +207,7 @@ pub fn sum_up_to(n: u64) -> u128 {
 </details>
 
 At this point, you may have a contract that is satisfied by the function,
-but `cargo creusot prove` still can't verify it. This function contains a loop,
+but `cargo creusot` still can't verify it. This function contains a loop,
 and loops must be annotated with *loop invariants*: assertions which must be true
 at every iteration of the loop.
 
@@ -232,11 +232,11 @@ when the function returns. We could have written this invariant as `i <= n`, wit
 
 The invariant is still incomplete.
 To investigate what's missing, we can inspect proofs in progress with Why3 IDE.
-The command `cargo creusot prove` with the `-i` option launches Why3 IDE, showing
+The command `cargo creusot` with the `-i` option launches Why3 IDE, showing
 the proof state for an as yet unverified function.
 
 ```
-cargo creusot prove -i
+cargo creusot -i
 ```
 
 If there are many functions to verify, we can pick a specific one on the command line
@@ -245,7 +245,7 @@ and their path consists of the crate name (`creusot_tutorial_rlib` for the libra
 followed by the fully qualified function name (`creusot_tutorial::sum_up_to` becomes `creusot_tutorial/sum_up_to.coma`).
 
 ```
-cargo creusot prove -i verif/creusot_tutorial_rlib/creusot_tutorial/sum_up_to.coma
+cargo creusot -i --prove verif/creusot_tutorial_rlib/creusot_tutorial/sum_up_to.coma
 ```
 
 Why3 IDE is a GUI that looks like this:
@@ -338,7 +338,7 @@ Completed invariant
 ```
 </details>
 
-With that, `cargo creusot prove` succeeds. We have proved that the function `sum_up_to` satisfies its contract.
+With that, `cargo creusot` succeeds. We have proved that the function `sum_up_to` satisfies its contract.
 
 <details>
 <summary>
