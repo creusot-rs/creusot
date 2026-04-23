@@ -15,18 +15,20 @@
 //! There are restrictions on the values that can enter/exit a `ghost!` block: see
 //! [`Ghost`] and [`ghost!`] for more details.
 
+mod fn_ghost;
+pub mod invariant;
+pub mod lifetime_logic;
+pub mod perm;
+pub mod resource;
+
+pub use fn_ghost::{FnGhost, FnGhostWrapper};
+pub use perm::Container;
+
 use crate::{logic::ops::Fin, prelude::*};
 use core::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
-
-mod fn_ghost;
-pub mod invariant;
-pub mod resource;
-pub use fn_ghost::{FnGhost, FnGhostWrapper};
-pub mod perm;
-pub use perm::Container;
 
 /// A type that can be used in [`ghost!`] context.
 ///
