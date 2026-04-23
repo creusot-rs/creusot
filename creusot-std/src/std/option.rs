@@ -1,6 +1,6 @@
 #[cfg(creusot)]
 use crate::logic::{Mapping, such_that};
-use crate::{logic::ord::ord_laws_impl, prelude::*};
+use crate::{ghost::Plain, logic::ord::ord_laws_impl, prelude::*};
 use core::option::*;
 #[cfg(creusot)]
 use core::{cmp::Ordering, marker::Destruct};
@@ -725,6 +725,23 @@ impl<'a, T> View for IterMut<'a, T> {
     #[logic(opaque)]
     fn view(self) -> Option<&'a mut T> {
         dead
+    }
+}
+
+impl<T: Plain> Plain for Option<T> {
+    #[ensures(*result == *snap)]
+    #[check(ghost)]
+    #[allow(unused_variables)]
+    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+        ghost! {
+            let c: Snapshot<bool> = snapshot!(*snap == None);
+            if *c.into_ghost() {
+                None
+            } else {
+                let t: Snapshot<T> = snapshot!(snap.unwrap_logic());
+                Some(*t.into_ghost())
+            }
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{ghost::Plain, prelude::*};
 
 impl DeepModel for () {
     type DeepModelTy = ();
@@ -24,6 +24,20 @@ macro_rules! tuple_impls {
             impl<$($name: Default),+> Default for ($($name,)+) {
                 #[ensures($($name::default.postcondition((), result.$idx))&&+)]
                 fn default() -> ($($name,)+);
+            }
+        }
+
+        impl<$($name: Plain),+> Plain for ($($name,)+) {
+            #[ensures(*result == *snap)]
+            #[check(ghost)]
+            #[allow(unused_variables)]
+            fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+                ghost! {
+                    ($({
+                        let x: Snapshot<$name> = snapshot!(snap.$idx);
+                        *x.into_ghost()
+                    },)+)
+                }
             }
         }
     };
