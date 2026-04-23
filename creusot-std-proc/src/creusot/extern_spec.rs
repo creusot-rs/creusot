@@ -581,16 +581,13 @@ fn escape_self_in_term(t: &mut Term, replacer: &mut SelfTypeEscaper) {
             escape_self_in_term(hyp, replacer);
             escape_self_in_term(cons, replacer)
         }
-        Term::Quant(TermQuant { args, trigger, term, .. }) => {
+        Term::Quant(TermQuant { args, term, .. }) => {
             for arg in args.iter_mut() {
                 if let Some((_, box ty)) = &mut arg.ty {
                     replacer.visit_type_mut(ty)
                 }
             }
-            for t in trigger.iter_mut().flat_map(|tr| tr.terms.iter_mut()) {
-                escape_self_in_term(t, replacer)
-            }
-            escape_self_in_term(term, replacer)
+            escape_self_in_term_with_triggers(term, replacer)
         }
         Term::Dead(TermDead { .. }) => {}
         Term::Pearlite(TermPearlite { block, .. }) => escape_self_in_tblock(block, replacer),
@@ -609,6 +606,13 @@ fn escape_self_in_term(t: &mut Term, replacer: &mut SelfTypeEscaper) {
         }
         Term::__Nonexhaustive => {}
     }
+}
+
+fn escape_self_in_term_with_triggers(t: &mut TermWithTriggers, replacer: &mut SelfTypeEscaper) {
+    for t in t.trigger.iter_mut().flat_map(|tr| tr.terms.iter_mut()) {
+        escape_self_in_term(t, replacer)
+    }
+    escape_self_in_term(&mut t.term, replacer)
 }
 
 fn escape_self_in_tblock(t: &mut TBlock, replacer: &mut SelfTypeEscaper) {

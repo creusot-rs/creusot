@@ -11,7 +11,7 @@ use crate::{
     contracts_items::{is_logic, is_opaque, is_trusted},
     ctx::{HasTyCtxt, Opacity, TranslationCtx},
     translation::pearlite::{
-        Pattern, PatternKind, ScopedTerm, Term, TermKind,
+        Pattern, PatternKind, Scoped, Term, TermKind,
         visit::{TermVisitor, super_visit_pattern, super_visit_term},
     },
 };
@@ -189,12 +189,17 @@ pub(crate) fn validate_opacity<'tcx>(ctx: &TranslationCtx<'tcx>, item: DefId) {
         NoOpaqueTypeAccess { ctx, thir }.visit_expr(&thir[expr]);
     }
     if is_logic && !is_opaque(ctx.tcx, item) {
-        let Some(ScopedTerm(_, term)) = ctx.term(item) else { return };
+        let Some(Scoped(_, term)) = ctx.term(item) else { return };
         OpacityVisitor { opacity: *ctx.opacity(item), ctx, item }.visit_term(term);
     }
     let contract = &ctx.sig(item).contract;
     // We consider variants as private, because we don't support mutual recursion for now
-    for term in contract.requires.iter().chain(contract.ensures.iter()).map(|cond| &cond.term) {
+    for term in contract.requires.iter().map(|cond| &cond.term).chain(
+        contract
+            .ensures
+            .iter()
+            .flat_map(|req| std::iter::once(&req.1.term).chain(req.0.iter().flat_map(|t| &t.0))),
+    ) {
         let opacity = Opacity::Transparent(ctx.visibility(item));
         OpacityVisitor { opacity, ctx, item }.visit_term(term);
     }

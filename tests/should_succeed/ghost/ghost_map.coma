@@ -20,11 +20,12 @@ module M_ghost_map
   predicate ext_eq_i32 (self: t_FMap_i32_i32) (other: t_FMap_i32_i32) =
     forall k: Int32.t. get_i32 self k = get_i32 other k
   
-  axiom ext_eq_i32_spec: forall self: t_FMap_i32_i32, other: t_FMap_i32_i32. ext_eq_i32 self other = (self = other)
+  axiom ext_eq_i32_spec: forall self: t_FMap_i32_i32, other: t_FMap_i32_i32 [self = other]. ext_eq_i32 self other
+      = (self = other)
   
   function len_i32 (self: t_FMap_i32_i32) : int
   
-  axiom len_i32_spec: forall self: t_FMap_i32_i32. len_i32 self >= 0
+  axiom len_i32_spec: forall self: t_FMap_i32_i32 [len_i32 self]. len_i32 self >= 0
   
   constant empty_i32 : t_FMap_i32_i32
   
@@ -47,10 +48,12 @@ module M_ghost_map
   
   function insert_i32 (self: t_FMap_i32_i32) (k: Int32.t) (v: Int32.t) : t_FMap_i32_i32
   
-  axiom insert_i32_spec: forall self: t_FMap_i32_i32, k: Int32.t, v: Int32.t. to_mapping_i32 (insert_i32 self k v)
+  axiom insert_i32_spec:
+    forall self: t_FMap_i32_i32, k: Int32.t, v: Int32.t [insert_i32 self k v]. to_mapping_i32 (insert_i32 self k v)
       = Map.set (to_mapping_i32 self) k (Some v)
   
-  axiom insert_i32_spec'0: forall self: t_FMap_i32_i32, k: Int32.t, v: Int32.t. len_i32 (insert_i32 self k v)
+  axiom insert_i32_spec'0:
+    forall self: t_FMap_i32_i32, k: Int32.t, v: Int32.t [insert_i32 self k v]. len_i32 (insert_i32 self k v)
       = (if contains_i32 self k then len_i32 self else len_i32 self + 1)
   
   let rec insert_ghost_i32 (self: MutBorrow.t t_FMap_i32_i32) (key: Int32.t) (value: Int32.t)
@@ -77,7 +80,8 @@ module M_ghost_map
   
   function such_that_i32 (p: Map.map Int32.t bool) : Int32.t
   
-  axiom such_that_i32_spec: forall p: Map.map Int32.t bool. (exists x: Int32.t. index_Mapping_i32_bool p x)
+  axiom such_that_i32_spec:
+    forall p: Map.map Int32.t bool [such_that_i32 p]. (exists x: Int32.t. index_Mapping_i32_bool p x)
       -> index_Mapping_i32_bool p (such_that_i32 p)
   
   function unwrap_Option_i32 (self: t_Option_i32) : Int32.t = match self with
@@ -128,10 +132,10 @@ module M_ghost_map
   
   function remove_i32 (self: t_FMap_i32_i32) (k: Int32.t) : t_FMap_i32_i32
   
-  axiom remove_i32_spec: forall self: t_FMap_i32_i32, k: Int32.t. to_mapping_i32 (remove_i32 self k)
+  axiom remove_i32_spec: forall self: t_FMap_i32_i32, k: Int32.t [remove_i32 self k]. to_mapping_i32 (remove_i32 self k)
       = Map.set (to_mapping_i32 self) k (None)
   
-  axiom remove_i32_spec'0: forall self: t_FMap_i32_i32, k: Int32.t. len_i32 (remove_i32 self k)
+  axiom remove_i32_spec'0: forall self: t_FMap_i32_i32, k: Int32.t [remove_i32 self k]. len_i32 (remove_i32 self k)
       = (if contains_i32 self k then len_i32 self - 1 else len_i32 self)
   
   let rec split_mut_ghost_i32 (self: MutBorrow.t t_FMap_i32_i32) (key: Int32.t)

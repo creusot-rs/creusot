@@ -414,7 +414,9 @@ impl<'arena> Context<'arena> {
     #[ensures(a == b)]
     #[allow(path_statements)]
     pub fn bdd_canonical(self, a: Bdd<'arena>, b: Bdd<'arena>) {
-        let _ = Self::discr_valuation;
+        if a != b {
+            let _ = self.discr_valuation(a, b);
+        }
     }
 }
 

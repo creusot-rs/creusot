@@ -1,21 +1,76 @@
+use std::collections::HashMap;
+
 use crate::{
     backend::{
         DefKind, Why3Generator,
         clone_map::Namer,
-        logic::function_call,
-        term::{lower_condition, lower_pure},
+        term::{lower_condition, lower_pure, lower_trigger},
         ty::translate_ty,
     },
-    contracts_items::{should_replace_trigger, why3_attrs},
+    contracts_items::why3_attrs,
     translation::specification::{PreContract, PreSignature},
 };
 use rustc_hir::def_id::DefId;
 use why3::{
-    Ident,
+    Exp, Ident,
     coma::{Param, Prototype},
-    declaration::{Contract, Signature},
+    declaration::{Attribute, Condition, Signature},
     exp::Trigger,
 };
+
+#[derive(Debug, Clone)]
+pub(crate) struct Contract {
+    pub(crate) requires: Box<[Condition]>,
+    pub(crate) ensures: Box<[(Box<[Trigger]>, Condition)]>,
+}
+
+impl Contract {
+    // Don't add `stop_split` if there's already one.
+    fn add_stop_split(exp: Exp, name: &str, kind: &str) -> Exp {
+        if let Exp::Attr(Attribute::Attr(a1), box Exp::Attr(Attribute::Attr(a2), _)) = &exp
+            && a1 == "stop_split"
+            && a2.starts_with("expl:")
+        {
+            exp
+        } else {
+            exp.with_attr(Attribute::Attr(format!("expl:{name} {kind}")))
+                .with_attr(Attribute::Attr("stop_split".into()))
+        }
+    }
+
+    pub fn ensures_conj(&self, name: &str) -> Exp {
+        let mut ensures = self.ensures.iter().cloned().map(|(_, cond)| cond.labelled_exp());
+        let Some(mut postcond) = ensures.next() else { return Exp::mk_true() };
+        postcond = ensures.fold(postcond, Exp::log_and);
+        postcond.reassociate();
+        Contract::add_stop_split(postcond, name, "ensures")
+    }
+
+    pub fn requires_conj(&self, name: &str) -> Exp {
+        let mut requires = self.requires.iter().cloned().map(Condition::labelled_exp);
+        let Some(mut postcond) = requires.next() else { return Exp::mk_true() };
+        postcond = requires.fold(postcond, Exp::log_and);
+        postcond.reassociate();
+        Contract::add_stop_split(postcond, name, "requires")
+    }
+
+    pub fn requires_implies(&self, conclusion: Exp) -> Exp {
+        self.requires.iter().rfold(conclusion, |acc, arg| arg.exp.clone().implies(acc))
+    }
+
+    pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
+        for req in self.requires.iter_mut() {
+            req.exp.subst(subst);
+        }
+
+        for ens in self.ensures.iter_mut() {
+            ens.1.exp.subst(subst);
+            for t in ens.0.iter_mut().flat_map(|t| &mut t.0) {
+                t.subst(subst);
+            }
+        }
+    }
+}
 
 /// The signature of a program function
 #[derive(Debug, Clone)]
@@ -74,6 +129,7 @@ pub(crate) fn lower_program_sig<'tcx>(
 #[derive(Debug, Clone)]
 pub(crate) struct LogicSignature {
     pub(crate) why_sig: Signature,
+    pub(crate) contract: Contract,
     pub(crate) variant: Option<why3::Exp>,
 }
 
@@ -117,13 +173,7 @@ pub(crate) fn lower_logic_sig<'tcx>(
         pre_sig.contract.variant.take().map(|term| lower_pure(ctx, names, &term.spanned()));
     let contract = lower_contract(ctx, names, pre_sig.contract);
 
-    let mut sig = Signature { name, trigger: None, attrs, retty, args, contract };
-    if ctx.opts.simple_triggers
-        && (ctx.def_kind(def_id) == DefKind::ConstParam || should_replace_trigger(ctx.tcx, def_id))
-    {
-        sig.trigger = Some(Trigger::single(function_call(&sig)))
-    };
-    LogicSignature { why_sig: sig, variant }
+    LogicSignature { why_sig: Signature { name, attrs, retty, args }, contract, variant }
 }
 
 pub(crate) fn lower_contract<'tcx>(
@@ -133,7 +183,15 @@ pub(crate) fn lower_contract<'tcx>(
 ) -> Contract {
     let requires =
         contract.requires.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
-    let ensures =
-        contract.ensures.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
+    let ensures = contract
+        .ensures
+        .into_iter()
+        .map(|(trig, cond)| {
+            (
+                trig.into_iter().map(|t| lower_trigger(ctx, names, t)).collect(),
+                lower_condition(ctx, names, cond),
+            )
+        })
+        .collect();
     Contract { requires, ensures }
 }

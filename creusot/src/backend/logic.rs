@@ -57,11 +57,9 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
                 kind: Some(DeclKind::Constant),
                 sig: Signature {
                     name,
-                    trigger: None,
                     attrs: vec![],
                     retty: Some(translate_ty(ctx, &names, span, ty)),
                     args: Box::new([]),
-                    contract: Default::default(),
                 },
             });
             (decl, name)
@@ -70,8 +68,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     body_decls.extend(param_decls);
 
     let val_decl = {
-        let mut sig = sig.why_sig.clone();
-        sig.contract = Default::default();
+        let sig = sig.why_sig.clone();
         match ctx.item_type(def_id) {
             ItemType::Logic { .. } => {
                 let kind = if sig.retty == None {
@@ -88,7 +85,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     };
     body_decls.push(Decl::LogicDecl(val_decl));
 
-    let postcondition = sig.why_sig.contract.ensures_conj(&name.name().to_string());
+    let postcondition = sig.contract.ensures_conj(&name.name().to_string());
 
     let term = ctx.ctx.term(def_id).unwrap().rename(&bound);
     let wp = wp(
@@ -106,7 +103,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     let (mut decls, setters) = names.provide_deps(ctx);
     decls.extend(common_meta_decls());
     decls.extend(body_decls);
-    let requires = sig.why_sig.contract.requires();
+    let requires = sig.contract.requires.into_iter().map(|cond| cond.exp);
     decls.push(setters.mk_goal(vc_ident, vec![], requires, wp));
 
     if ctx.used_namespaces.get() {
@@ -130,7 +127,6 @@ pub(crate) fn lower_logical_defn<'tcx>(
     inline: bool,
 ) -> Vec<Decl> {
     let mut decls = vec![];
-    let mut lim_name = None;
 
     // We don't pull dependencies for FnDef items, because it may be more private than
     // the definition is transparent
@@ -138,8 +134,6 @@ pub(crate) fn lower_logical_defn<'tcx>(
 
     if sig.variant.is_none() {
         let mut sig = sig.why_sig.clone();
-        sig.contract = Default::default();
-
         let mut meta_decl = None;
         if inline {
             sig.attrs.push(Attribute::Attr("inline:trivial".into()));
@@ -168,82 +162,15 @@ pub(crate) fn lower_logical_defn<'tcx>(
         decls.push(decl);
         decls.extend(meta_decl);
     } else {
-        let mut decl_sig = sig.why_sig.clone();
-        decl_sig.contract = Default::default();
-
-        decls.push(Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: decl_sig }));
-
-        if sig.why_sig.uses_simple_triggers() {
-            lim_name = Some(sig.why_sig.name.refresh_with(|s| format!("{s}_lim")));
-            limited_function_encode(
-                &mut decls,
-                &sig.why_sig,
-                lim_name.unwrap(),
-                body,
-                kind,
-                inline,
-            );
-        } else {
-            decls.push(Decl::Axiom(definition_axiom(&sig.why_sig, body, "def", inline)));
-        }
+        decls.push(Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: sig.why_sig.clone() }));
+        decls.push(Decl::Axiom(definition_axiom(&sig, body, "def", inline)));
     }
 
-    if !sig.why_sig.contract.ensures.is_empty() {
-        if let Some(lim_name) = lim_name
-            && sig.variant.is_some()
-        {
-            let mut lim_sig = sig.why_sig;
-            lim_sig.name = lim_name;
-            lim_sig.trigger = Some(Trigger::single(function_call(&lim_sig)));
-            lim_sig.attrs = vec![];
-
-            decls.extend(spec_axioms(&lim_sig))
-        } else {
-            decls.extend(spec_axioms(&sig.why_sig));
-        }
+    if !sig.contract.ensures.is_empty() {
+        decls.extend(spec_axioms(&sig));
     }
 
     decls
-}
-
-// Use the limited function encoding from https://pm.inf.ethz.ch/publications/HeuleKassiosMuellerSummers12.pdf
-// Originally introduced in https://dl.acm.org/doi/10.1145/1529282.1529411
-
-// This prevents recursive functions from being unfolded more than once which makes the definition
-// axiom weaker but avoids having it cause a matching loop. This is useful since it can help the
-// solve return "unknown" instead of relying on a timeout, and give it a chance to apply map
-// extensionality axioms.
-fn limited_function_encode(
-    decls: &mut Vec<Decl>,
-    sig: &Signature,
-    lim_name: Ident,
-    body: Exp,
-    kind: DeclKind,
-    inline: bool,
-) {
-    let mut lim_sig = Signature {
-        name: lim_name,
-        trigger: None,
-        attrs: vec![],
-        retty: sig.retty.clone(),
-        args: sig.args.clone(),
-        contract: Default::default(),
-    };
-    let lim_call = function_call(&lim_sig);
-    lim_sig.trigger = Some(Trigger::single(lim_call.clone()));
-    decls.push(Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: lim_sig }));
-    decls.push(Decl::Axiom(definition_axiom(sig, body, "def", inline)));
-    decls.push(Decl::Axiom(definition_axiom(sig, lim_call, "def_lim", inline)));
-}
-
-pub(crate) fn spec_axioms(sig: &Signature) -> impl Iterator<Item = Decl> {
-    sig.contract.ensures.iter().map(|post| {
-        let mut condition = sig.contract.requires_implies(post.exp.clone());
-        condition.subst(&[(name::result(), function_call(sig).clone())].into_iter().collect());
-        let axiom = Exp::forall_trig(sig.args.clone(), sig.trigger.clone(), condition);
-        let name = sig.name.refresh_with(|s| format!("{s}_spec"));
-        Decl::Axiom(Axiom { name, rewrite: false, axiom })
-    })
 }
 
 pub fn function_call(sig: &Signature) -> Exp {
@@ -251,14 +178,34 @@ pub fn function_call(sig: &Signature) -> Exp {
     Exp::var(sig.name).app(args)
 }
 
-fn definition_axiom(sig: &Signature, body: Exp, suffix: &str, rewrite: bool) -> Axiom {
-    let call = function_call(sig);
-    let trigger = sig.trigger.clone();
+pub(crate) fn spec_axioms(sig: &LogicSignature) -> impl Iterator<Item = Decl> {
+    let call = function_call(&sig.why_sig);
+    sig.contract.ensures.iter().map(move |(trig, post)| {
+        let mut condition = sig.contract.requires_implies(post.exp.clone());
+        let mut trigger: Box<[Trigger]> = if trig.is_empty() {
+            if condition.fvs().contains(&name::result()) {
+                Box::new([Trigger::single(Exp::var(name::result()))])
+            } else {
+                Box::new([])
+            }
+        } else {
+            trig.clone()
+        };
+        condition.subst(&[(name::result(), call.clone())].into_iter().collect());
+        trigger
+            .iter_mut()
+            .for_each(|t| t.subst(&[(name::result(), call.clone())].into_iter().collect()));
+        let axiom = Exp::forall_trig(sig.why_sig.args.clone(), trigger, condition);
+        let name = sig.why_sig.name.refresh_with(|s| format!("{s}_spec"));
+        Decl::Axiom(Axiom { name, rewrite: false, axiom })
+    })
+}
 
+fn definition_axiom(sig: &LogicSignature, body: Exp, suffix: &str, rewrite: bool) -> Axiom {
+    let call = function_call(&sig.why_sig);
     let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
-    let axiom = Exp::forall_trig(sig.args.clone(), trigger, condition);
-
-    let name = sig.name.refresh_with(|s| format!("{s}_{suffix}"));
+    let axiom = Exp::forall_trig(sig.why_sig.args.clone(), [Trigger::single(call)], condition);
+    let name = sig.why_sig.name.refresh_with(|s| format!("{s}_{suffix}"));
     Axiom { name, rewrite, axiom }
 }

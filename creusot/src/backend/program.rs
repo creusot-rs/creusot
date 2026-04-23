@@ -17,7 +17,7 @@ use crate::{
         is_trusted_item,
         optimization::optimizations,
         projections::{Focus, borrow_generated_id, projections_to_expr},
-        signature::{ProgramSignature, lower_program_sig},
+        signature::{Contract, ProgramSignature, lower_program_sig},
         term::{lower_pure, unsupported_cast},
         ty::{
             constructor, floatty_to_prelude, int, ity_to_prelude, sign_extend, translate_ty,
@@ -53,7 +53,7 @@ use std::{collections::HashMap, fmt::Debug, iter::once};
 use why3::{
     Ident, Name,
     coma::{Arg, Defn, Expr, IsRef, Param, Prototype, Var},
-    declaration::{Attribute, Contract, Decl, Module},
+    declaration::{Attribute, Decl, Module},
     exp::{Binder, Constant, Exp},
     ty::Type,
 };

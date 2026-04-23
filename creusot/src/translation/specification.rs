@@ -4,7 +4,7 @@ use crate::{
     ctx::*,
     lints::{Diagnostics, RESULT_PARAM},
     naming::{lowercase_prefix, name},
-    translation::pearlite::{Ident, PIdent, Term, normalize},
+    translation::pearlite::{Ident, PIdent, Term, TermWithTriggers, Trigger, normalize},
     util::erased_identity_for_item,
 };
 use rustc_hir::{AttrArgs, HirId, Safety, def::DefKind, def_id::DefId};
@@ -31,7 +31,7 @@ pub struct Condition<'tcx> {
 pub struct PreContract<'tcx> {
     pub(crate) variant: Option<Term<'tcx>>,
     pub(crate) requires: Vec<Condition<'tcx>>,
-    pub(crate) ensures: Vec<Condition<'tcx>>,
+    pub(crate) ensures: Vec<(Box<[Trigger<'tcx>]>, Condition<'tcx>)>,
     pub(crate) check_ghost: bool,
     pub(crate) check_terminates: bool,
     pub(crate) extern_no_spec: bool,
@@ -48,8 +48,10 @@ impl<'tcx> PreContract<'tcx> {
         for term in self
             .requires
             .iter_mut()
-            .chain(self.ensures.iter_mut())
             .map(|cond| &mut cond.term)
+            .chain(self.ensures.iter_mut().flat_map(|(triggers, cond)| {
+                std::iter::once(&mut cond.term).chain(triggers.iter_mut().flat_map(|t| &mut t.0))
+            }))
             .chain(self.variant.iter_mut())
         {
             *term =
@@ -67,7 +69,7 @@ impl<'tcx> PreContract<'tcx> {
     }
 
     pub(crate) fn ensures_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
-        self.ensures.iter().fold(Term::true_(tcx), |postcond, cond| {
+        self.ensures.iter().fold(Term::true_(tcx), |postcond, (_, cond)| {
             Term::conj(postcond, cond.term.clone().spanned_nontrivial())
         })
     }
@@ -80,6 +82,18 @@ impl<'tcx> PreContract<'tcx> {
 
     pub(crate) fn requires(&self) -> Vec<Term<'tcx>> {
         self.requires.iter().map(|cond| cond.term.clone().spanned_nontrivial()).collect()
+    }
+
+    pub(crate) fn check_ensures_no_trigger(&self, ctx: &TranslationCtx<'tcx>) {
+        for (triggers, _) in &self.ensures {
+            if let Some(t) = triggers.first() {
+                ctx.error(
+                    t.0[0].span,
+                    "Triggers in ensures clauses are limited to logic functions.",
+                )
+                .emit();
+            }
+        }
     }
 }
 
@@ -143,7 +157,9 @@ impl ContractClauses {
                 if n_ensures > 1 {
                     expl.push_str(&format!(" #{i}"))
                 }
-                Condition { term: ctx.term(ens_id).unwrap().rename(bound_with_result), expl }
+                let TermWithTriggers { triggers, box term } =
+                    ctx.term_with_triggers(ens_id).unwrap().rename(bound_with_result);
+                (triggers, Condition { term, expl })
             })
             .collect();
 
@@ -209,20 +225,19 @@ pub(crate) fn inherited_extern_spec<'tcx>(
     def_id: DefId,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
     let subst = erased_identity_for_item(ctx.tcx, def_id);
-    try {
-        if def_id.is_local() || ctx.extern_spec(def_id).is_some() {
-            return None;
-        }
 
-        let assoc = ctx.opt_associated_item(def_id)?;
-        let trait_ref = ctx.impl_opt_trait_ref(assoc.impl_container(ctx.tcx)?)?;
-        let id = assoc.trait_item_def_id()?;
-
-        if ctx.extern_spec(id).is_none() {
-            return None;
-        }
-        (id, trait_ref.instantiate(ctx.tcx, subst).skip_normalization().args)
+    if def_id.is_local() || ctx.extern_spec(def_id).is_some() {
+        return None;
     }
+
+    let assoc = ctx.opt_associated_item(def_id)?;
+    let trait_ref = ctx.impl_opt_trait_ref(assoc.impl_container(ctx.tcx)?)?;
+    let id = assoc.trait_item_def_id()?;
+
+    if ctx.extern_spec(id).is_none() {
+        return None;
+    }
+    Some((id, trait_ref.instantiate(ctx.tcx, subst).skip_normalization().args))
 }
 
 pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
@@ -252,6 +267,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
             .get_pre(ctx, fn_name, bound)
             .instantiate(ctx.tcx, spec.subst)
             .skip_normalization();
+        contract.check_ensures_no_trigger(ctx);
         PreSignature {
             inputs: EarlyBinder::bind(spec.inputs)
                 .instantiate(ctx.tcx, spec.subst)
@@ -275,6 +291,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
             .get_pre(ctx, fn_name, bound)
             .instantiate(ctx.tcx, subst)
             .skip_normalization();
+        contract.check_ensures_no_trigger(ctx);
         PreSignature {
             inputs: EarlyBinder::bind(spec.inputs).instantiate(ctx.tcx, subst).skip_normalization(),
             output: EarlyBinder::bind(spec.output).instantiate(ctx.tcx, subst).skip_normalization(),
@@ -291,6 +308,9 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
                 term: Term::false_(ctx.tcx),
                 expl: format!("expl:{} requires false", fn_name),
             });
+        }
+        if !matches!(ctx.item_type(def_id), ItemType::Logic { .. }) {
+            contract.check_ensures_no_trigger(ctx);
         }
         let contract = contract.normalize(ctx, ctx.typing_env(def_id));
         PreSignature { inputs, output, contract }
@@ -385,7 +405,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             ),
         };
         for post in &mut presig.contract.ensures {
-            post_subst.subst(ctx.tcx, &mut post.term);
+            post_subst.subst(ctx.tcx, &mut post.1.term);
         }
 
         if kind == ClosureKind::FnMut {
@@ -400,7 +420,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
                 [self_.clone().cur(), self_.fin()],
             );
             let expl = "expl:closure hist_inv post".to_string();
-            presig.contract.ensures.push(Condition { term, expl });
+            presig.contract.ensures.push((Box::new([]), Condition { term, expl }));
         };
 
         assert!(presig.contract.variant.is_none());

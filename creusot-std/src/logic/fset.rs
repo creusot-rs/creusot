@@ -170,7 +170,7 @@ impl<T> FSet<T> {
     ///
     /// This is in fact equivalent with normal equality.
     #[logic(open)]
-    #[ensures(result == (self == other))]
+    #[ensures(#[trigger(self == other)] result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
             forall <e: T> self.contains(e) == other.contains(e)
@@ -291,6 +291,8 @@ impl<T> FSet<T> {
         proof_assert!(forall<x: T, xs: Seq<T>, ys: Seq<T>> xs.push_front(x).concat(ys) == xs.concat(ys).push_front(x));
         proof_assert!(forall<x: T, ys: Seq<T>> ys.push_front(x).tail() == ys);
         proof_assert!(forall<ys: Seq<T>> 0 < ys.len() ==> ys == ys.tail().push_front(ys[0]));
+        proof_assert!(forall<xs> FSet::concat(FSet::cons(self, t), u).contains(xs) ==
+                                 FSet::cons(self, FSet::concat(t, u)).contains(xs));
     }
 
     /// Distributivity of `replicate` over `union`.

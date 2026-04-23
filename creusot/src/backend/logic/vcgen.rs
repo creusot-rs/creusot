@@ -298,7 +298,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // VC(forall<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(forall<x>P(x))
             // VC(exists<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(exists<x>P(x))
             TermKind::Quant { binder, body, .. } => {
-                let body = self.build_wp(body, &|_| Exp::mk_true());
+                let body = self.build_wp(&body.term, &|_| Exp::mk_true());
                 Exp::forall(binder.iter().map(|(s, ty)| (s.0, self.ty(*ty, t.span))), body)
                     .log_and(k(self.lower_pure(t)))
             }

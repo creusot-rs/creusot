@@ -65,7 +65,6 @@ attribute_functions! {
     [creusot::decl::opaque]                     => is_opaque
     [creusot::decl::trusted]                    => is_trusted
     [creusot::decl::new_namespace]              => is_new_namespace
-    not [creusot::decl::no_trigger]             => should_replace_trigger
     [creusot::decl::open_inv_result]            => is_open_inv_result
     [creusot::extern_spec]                      => is_extern_spec
     [creusot::trusted_trivial_if_param_trivial] => is_trivial_if_param_trivial

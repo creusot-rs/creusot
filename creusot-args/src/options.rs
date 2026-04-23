@@ -38,9 +38,7 @@ pub struct CreusotArgs {
     /// Specify locations of metadata for external crates. The format is the same as rustc's `--extern` flag.
     #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, PathBuf>, required=false)]
     pub extern_paths: Vec<(String, PathBuf)>,
-    /// Use `result` as the trigger of definition and specification axioms of logic/ghost functions
-    #[clap(long, default_value_t = false, action = clap::ArgAction::Set)]
-    pub simple_triggers: bool,
+
     /// Enable `#[erasure]` checking across crates.
     #[clap(long, num_args = 0..=1, default_value_t = ErasureCheck::Warn, default_missing_value = "error")]
     pub erasure_check: ErasureCheck,
@@ -130,7 +128,6 @@ pub struct Options {
     pub prefix: Vec<String>,
     pub in_cargo: bool,
     pub span_mode: SpanMode,
-    pub simple_triggers: bool,
     pub erasure_check: ErasureCheck,
     pub erasure_check_dir: Option<PathBuf>,
 }
@@ -184,7 +181,6 @@ impl CreusotArgs {
             span_mode,
             monolithic: self.monolithic,
             prefix: Vec::new(), // to be set in callbacks::ToWhy::set_output_dir
-            simple_triggers: self.simple_triggers,
             erasure_check: self.erasure_check,
             erasure_check_dir: self.erasure_check_dir,
         })

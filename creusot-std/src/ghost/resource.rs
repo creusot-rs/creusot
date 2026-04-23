@@ -264,7 +264,7 @@ mod m {
             proof_assert!(target_s.contains(upd.update(*v, such_that(|_| true))));
             proof_assert!(
                 forall<f: R> v.op(f) != None ==>
-                    exists<ch: U::Choice> upd.update(*v, ch).op(f) != None
+                    upd.update(*v, upd.frame_preserving(*v, f)).op(f) != None
             );
             let _ = snapshot!(U::frame_preserving);
             let r = self.update_raw(target_s);

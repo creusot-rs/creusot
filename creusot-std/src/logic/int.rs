@@ -494,7 +494,7 @@ impl Nat {
     }
 
     #[logic(open)]
-    #[ensures(result == (self == other))]
+    #[ensures(#[trigger(self == other)] result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
         let _ = Subset::<NatInner>::inner_inj;
         self.to_int() == other.to_int()
@@ -601,7 +601,7 @@ impl Positive {
     }
 
     #[logic(open)]
-    #[ensures(result == (self == other))]
+    #[ensures(#[trigger(self == other)] result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
         let _ = Subset::<PositiveInner>::inner_inj;
         self.to_int() == other.to_int()

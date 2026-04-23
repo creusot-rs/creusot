@@ -137,6 +137,22 @@ ast_enum_of_structs! {
     }
 }
 
+ast_enum_of_structs! {
+    pub enum EnsuresTerm {
+        TermWithTriggers(TermWithTriggers),
+        EnsuresClosure(EnsuresClosure),
+    }
+}
+
+ast_struct! {
+    pub struct EnsuresClosure {
+        pub or1_token: Token![|],
+        pub result: Pat,
+        pub or2_token: Token![|],
+        pub body: Box<TermWithTriggers>,
+    }
+}
+
 ast_struct! {
     /// A braced block containing Pearlite statements.
     pub struct TBlock {
@@ -432,6 +448,12 @@ ast_struct! {
         pub lt_token: Token![<],
         pub args: Punctuated<QuantArg, Token![,]>,
         pub gt_token: Token![>],
+        pub term: TermWithTriggers
+    }
+}
+
+ast_struct! {
+    pub struct TermWithTriggers {
         pub trigger: Vec<Trigger>,
         pub term: Box<Term>
     }
@@ -1466,6 +1488,14 @@ pub(crate) mod parsing {
 
             let gt_token: Token![>] = input.parse()?;
 
+            let term = input.parse()?;
+
+            Ok(TermQuant { quant_token, lt_token, args, gt_token, term })
+        }
+    }
+
+    impl Parse for TermWithTriggers {
+        fn parse(input: ParseStream) -> Result<Self> {
             let mut trigger = vec![];
 
             while input.peek(Token![#]) {
@@ -1473,8 +1503,28 @@ pub(crate) mod parsing {
             }
 
             let term = input.parse()?;
+            Ok(TermWithTriggers { trigger, term })
+        }
+    }
 
-            Ok(TermQuant { quant_token, lt_token, args, gt_token, trigger, term })
+    impl Parse for EnsuresClosure {
+        fn parse(input: ParseStream) -> Result<Self> {
+            Ok(EnsuresClosure {
+                or1_token: input.parse()?,
+                result: Pat::parse_single(input)?,
+                or2_token: input.parse()?,
+                body: input.parse()?,
+            })
+        }
+    }
+
+    impl Parse for EnsuresTerm {
+        fn parse(input: ParseStream) -> Result<Self> {
+            if input.peek(Token![|]) {
+                Ok(EnsuresTerm::EnsuresClosure(input.parse()?))
+            } else {
+                Ok(EnsuresTerm::TermWithTriggers(input.parse()?))
+            }
         }
     }
 
@@ -1507,7 +1557,7 @@ pub(crate) mod parsing {
                 bracket_token: bracketed!(content in input),
                 trigger_token: content.parse()?,
                 paren_token: parenthesized!(content in content),
-                terms: Punctuated::parse_terminated(&content)?,
+                terms: Punctuated::parse_separated_nonempty(&content)?,
             })
         }
     }
@@ -1797,9 +1847,9 @@ pub(crate) mod parsing {
                 Pat::Struct(pat) => pat.attrs = attrs,
                 Pat::Tuple(pat) => pat.attrs = attrs,
                 Pat::TupleStruct(pat) => pat.attrs = attrs,
+                Pat::Wild(pat) => pat.attrs = attrs,
                 Pat::Type(_) => unreachable!(),
                 Pat::Verbatim(_) => {}
-                Pat::Wild(pat) => pat.attrs = attrs,
                 _ => unimplemented!(),
             }
             Ok(pat)
@@ -2000,10 +2050,25 @@ pub(crate) mod printing {
                 input.to_tokens(tokens);
             }
             self.gt_token.to_tokens(tokens);
+            self.term.to_tokens(tokens);
+        }
+    }
+
+    impl ToTokens for TermWithTriggers {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
             for trigger in self.trigger.iter() {
                 trigger.to_tokens(tokens);
             }
             self.term.to_tokens(tokens);
+        }
+    }
+
+    impl ToTokens for EnsuresClosure {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            self.or1_token.to_tokens(tokens);
+            self.result.to_tokens(tokens);
+            self.or2_token.to_tokens(tokens);
+            self.body.to_tokens(tokens);
         }
     }
 

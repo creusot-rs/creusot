@@ -22,7 +22,7 @@ mod from_thir;
 mod normalize;
 pub mod visit;
 
-pub(crate) use from_thir::from_thir;
+pub(crate) use from_thir::{from_thir, from_thir_with_triggers};
 pub(crate) use normalize::normalize;
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
@@ -163,8 +163,7 @@ pub enum TermKind<'tcx> {
     Quant {
         kind: QuantKind,
         binder: QuantBinder<'tcx>,
-        trigger: Box<[Trigger<'tcx>]>,
-        body: Box<Term<'tcx>>,
+        body: TermWithTriggers<'tcx>,
     },
     // TODO: Get rid of (id, subst).
     Call {
@@ -240,6 +239,12 @@ pub enum TermKind<'tcx> {
     /// This allows keeping track of sub-expressions that come directly from the Rust source,
     /// notably in trait refinement goals.
     Spanned(Box<Term<'tcx>>),
+}
+
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
+pub struct TermWithTriggers<'tcx> {
+    pub triggers: Box<[Trigger<'tcx>]>,
+    pub term: Box<Term<'tcx>>,
 }
 
 impl<I: Interner> TypeFoldable<I> for Literal<'_> {
@@ -630,7 +635,11 @@ impl<'tcx> Term<'tcx> {
             Term {
                 ty: self.ty,
                 span: self.span,
-                kind: TermKind::Quant { kind: quant_kind, binder, body: Box::new(self), trigger },
+                kind: TermKind::Quant {
+                    kind: quant_kind,
+                    binder,
+                    body: TermWithTriggers { triggers: trigger, term: Box::new(self) },
+                },
             }
         }
     }
@@ -687,18 +696,6 @@ impl<'tcx> Term<'tcx> {
         if self.is_true() || self.is_false() { self } else { self.spanned() }
     }
 
-    /// For each `(var, term)` in `inv_subst`, replace `var` by `term` in `self` (as
-    /// long as `var` is not bound).
-    ///
-    /// # Example
-    ///
-    /// If `inv_subst` containts `("x", 5)`:
-    /// - If `self` is `x == 1`, `self.subst(inv_subst)` is `5 + 1`
-    /// - If `self` is `forall<x> x == 1`, `self.subst(inv_subst)` is still `forall<x> x == 1`
-    pub(crate) fn subst(&mut self, subst: &impl Subst<'tcx>) {
-        self.subst_(&HashMap::new(), subst)
-    }
-
     fn subst_(&mut self, bound: &HashMap<Ident, Ident>, subst: &impl Subst<'tcx>) {
         match &mut self.kind {
             TermKind::Var(v) => match bound.get(&v.0) {
@@ -716,14 +713,13 @@ impl<'tcx> Term<'tcx> {
                 rhs.subst_(bound, subst)
             }
             TermKind::Unary { arg, .. } => arg.subst_(bound, subst),
-            TermKind::Quant { binder, trigger, body, kind: _ } => {
+            TermKind::Quant { binder, body, kind: _ } => {
                 let mut bound = bound.clone();
                 for (ident, _) in binder {
                     let new_ident = ident.0.refresh();
                     bound.insert(ident.0, new_ident);
                     ident.0 = new_ident;
                 }
-                trigger.iter_mut().flat_map(|ts| &mut ts.0).for_each(|t| t.subst_(&bound, subst));
                 body.subst_(&bound, subst);
             }
             TermKind::Call { args, .. } => args.iter_mut().for_each(|f| f.subst_(bound, subst)),
@@ -810,7 +806,10 @@ impl<'tcx> Term<'tcx> {
                     bound.insert(ident.0);
                 }
 
-                body.free_vars_inner(&bound, free);
+                for t in body.triggers.iter().flat_map(|trig| &trig.0) {
+                    t.free_vars_inner(&bound, free);
+                }
+                body.term.free_vars_inner(&bound, free);
             }
             TermKind::Call { args, .. } => {
                 for arg in args {
@@ -872,6 +871,39 @@ impl<'tcx> Term<'tcx> {
     }
 }
 
+impl<'tcx> TermWithTriggers<'tcx> {
+    fn subst_(&mut self, bound: &HashMap<Ident, Ident>, subst: &impl Subst<'tcx>) {
+        for t in self.triggers.iter_mut().flat_map(|trig| &mut trig.0) {
+            t.subst_(bound, subst);
+        }
+        self.term.subst_(bound, subst);
+    }
+}
+
+pub(crate) trait Substable<'tcx> {
+    /// For each `(var, term)` in `inv_subst`, replace `var` by `term` in `self` (as
+    /// long as `var` is not bound).
+    ///
+    /// # Example
+    ///
+    /// If `inv_subst` containts `("x", 5)`:
+    /// - If `self` is `x == 1`, `self.subst(inv_subst)` is `5 + 1`
+    /// - If `self` is `forall<x> x == 1`, `self.subst(inv_subst)` is still `forall<x> x == 1`
+    fn subst(&mut self, subst: &impl Subst<'tcx>);
+}
+
+impl<'tcx> Substable<'tcx> for Term<'tcx> {
+    fn subst(&mut self, subst: &impl Subst<'tcx>) {
+        self.subst_(&HashMap::new(), subst)
+    }
+}
+
+impl<'tcx> Substable<'tcx> for TermWithTriggers<'tcx> {
+    fn subst(&mut self, subst: &impl Subst<'tcx>) {
+        self.subst_(&HashMap::new(), subst)
+    }
+}
+
 pub(crate) trait Subst<'tcx> {
     fn subst(&self, id: Ident) -> Option<TermKind<'tcx>>;
 }
@@ -910,11 +942,11 @@ impl<'tcx, F: Fn(Ident) -> Option<TermKind<'tcx>>> Subst<'tcx> for F {
 /// necessary in theory, but the current architecture of Creusot doesn't make this situation easy
 /// to untangle.
 #[derive(Debug, Clone, TyDecodable, TyEncodable)]
-pub struct ScopedTerm<'tcx>(pub Box<[PIdent]>, pub Term<'tcx>);
+pub struct Scoped<T>(pub Box<[PIdent]>, pub T);
 
-impl<'tcx> ScopedTerm<'tcx> {
+impl<'tcx, T: Clone + Substable<'tcx>> Scoped<T> {
     /// `idents` must be as long as the slice in `self`.
-    pub fn rename(&self, idents: &[Ident]) -> Term<'tcx> {
+    pub fn rename(&self, idents: &[Ident]) -> T {
         assert_eq!(idents.len(), self.0.len(), "{:?}.len() != {:?}.len()", idents, self.0);
         let subst: HashMap<_, _> = self
             .0

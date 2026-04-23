@@ -144,7 +144,7 @@ impl<R: ViewRel> RA for View<R> {
     }
 
     #[logic(open, inline)]
-    #[ensures(result == (self == other))]
+    #[ensures(#[trigger(self == other)] result == (self == other))]
     fn eq(self, other: Self) -> bool {
         let _ = Subset::<ViewInner<R>>::inner_inj;
         self.auth() == other.auth() && self.frag() == other.frag()

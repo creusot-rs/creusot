@@ -41,7 +41,7 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
     }
 
     #[logic(open, inline)]
-    #[ensures(result == (self == other))]
+    #[ensures(#[trigger(self == other)] result == (self == other))]
     fn eq(self, other: Self) -> bool {
         match (self, other) {
             (Sum::Left(s), Sum::Left(o)) => s.eq(o),

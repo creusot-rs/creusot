@@ -14,7 +14,7 @@ use crate::{
             extract_extern_specs_from_item,
         },
         fmir,
-        pearlite::{self, ScopedTerm, Term},
+        pearlite::{self, Scoped, Term, TermWithTriggers},
         specification::{ContractClauses, PreSignature, inherited_extern_spec, pre_sig_of},
         traits::Refinement,
     },
@@ -181,7 +181,8 @@ pub struct TranslationCtx<'tcx> {
     params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
     laws: OnceMap<DefId, Vec<DefId>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
-    terms: OnceMap<DefId, Box<Option<ScopedTerm<'tcx>>>>,
+    terms: OnceMap<DefId, Box<Option<Scoped<Term<'tcx>>>>>,
+    terms_with_triggers: OnceMap<DefId, Box<Option<Scoped<TermWithTriggers<'tcx>>>>>,
     trait_impl: OnceMap<DefId, Vec<Refinement<'tcx>>>,
     sig: OnceMap<DefId, Box<PreSignature<'tcx>>>,
     opacity: OnceMap<DefId, Box<Opacity>>,
@@ -258,6 +259,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             laws: Default::default(),
             externs,
             terms: Default::default(),
+            terms_with_triggers: Default::default(),
             creusot_items,
             variant_calls: RefCell::new(IndexMap::new()),
             opts,
@@ -316,7 +318,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// # Returns
     /// - `None` if `def_id` does not have a body
     /// - `Some(term)` if `def_id` has a body, in this crate or in a dependency.
-    pub(crate) fn term<'a>(&'a self, def_id: DefId) -> Option<&'a ScopedTerm<'tcx>> {
+    pub(crate) fn term<'a>(&'a self, def_id: DefId) -> Option<&'a Scoped<Term<'tcx>>> {
         let Some(local_id) = def_id.as_local() else {
             return self.externs.term(def_id);
         };
@@ -329,10 +331,45 @@ impl<'tcx> TranslationCtx<'tcx> {
                         Err(err) => err.raise_fatal(),
                     };
                     let bound = bound.iter().map(|b| b.0).collect();
-                    Box::new(Some(ScopedTerm(
+                    Box::new(Some(Scoped(
                         bound,
                         pearlite::normalize(self, self.typing_env(def_id), term),
                     )))
+                } else {
+                    Box::new(None)
+                }
+            })
+            .as_ref()
+    }
+
+    pub(crate) fn term_with_triggers<'a>(
+        &'a self,
+        def_id: DefId,
+    ) -> Option<&'a Scoped<TermWithTriggers<'tcx>>> {
+        let Some(local_id) = def_id.as_local() else {
+            return self.externs.term_with_triggers(def_id);
+        };
+
+        self.terms_with_triggers
+            .insert(def_id, |_| {
+                if self.tcx.hir_maybe_body_owned_by(local_id).is_some() {
+                    let (bound, mut term) = match pearlite::from_thir_with_triggers(self, local_id)
+                    {
+                        Ok(t) => t,
+                        Err(err) => err.raise_fatal(),
+                    };
+                    let bound = bound.iter().map(|b| b.0).collect();
+                    for t in std::iter::once(&mut *term.term)
+                        .chain(term.triggers.iter_mut().flat_map(|t| &mut t.0))
+                    {
+                        *t = pearlite::normalize(
+                            self,
+                            self.typing_env(def_id),
+                            std::mem::replace(t, /* dummy */ Term::true_(self.tcx)),
+                        );
+                    }
+
+                    Box::new(Some(Scoped(bound, term)))
                 } else {
                     Box::new(None)
                 }
@@ -446,6 +483,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         let erased_thir = self.exported_erased_thir();
         BinaryMetadata::from_parts(
             self.terms,
+            self.terms_with_triggers,
             self.creusot_items,
             self.raw_intrinsics,
             self.extern_specs,

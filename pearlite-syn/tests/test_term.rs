@@ -77,7 +77,7 @@ fn test_model() {
 
 #[test]
 fn test_forall() {
-    snapshot!(quote!(forall<x: u32> true) as Term, @r###"
+    snapshot!(quote!(forall<x: u32> true) as Term, @"
     TermQuant {
         quant_token: Keyword [forall],
         lt_token: Lt,
@@ -108,19 +108,21 @@ fn test_forall() {
             },
         ],
         gt_token: Gt,
-        trigger: [],
-        term: TermLit {
-            lit: Lit::Bool {
-                value: true,
+        term: TermWithTriggers {
+            trigger: [],
+            term: TermLit {
+                lit: Lit::Bool {
+                    value: true,
+                },
             },
         },
     }
-    "###);
+    ");
 }
 
 #[test]
 fn test_exists() {
-    snapshot!(quote!(exists<x: u32> true) as Term, @r###"
+    snapshot!(quote!(exists<x: u32> true) as Term, @"
     TermQuant {
         quant_token: Keyword [exists],
         lt_token: Lt,
@@ -151,19 +153,21 @@ fn test_exists() {
             },
         ],
         gt_token: Gt,
-        trigger: [],
-        term: TermLit {
-            lit: Lit::Bool {
-                value: true,
+        term: TermWithTriggers {
+            trigger: [],
+            term: TermLit {
+                lit: Lit::Bool {
+                    value: true,
+                },
             },
         },
     }
-    "###);
+    ");
 }
 
 #[test]
 fn test_trigger() {
-    snapshot!(quote!(forall<x: u32, y: u32> #[trigger(f(x, y))] #[trigger(g(x), g(y))] true) as Term, @r###"
+    snapshot!(quote!(forall<x: u32, y: u32> #[trigger(f(x, y))] #[trigger(g(x), g(y))] true) as Term, @"
     TermQuant {
         quant_token: Keyword [forall],
         lt_token: Lt,
@@ -219,99 +223,81 @@ fn test_trigger() {
             },
         ],
         gt_token: Gt,
-        trigger: [
-            Trigger {
-                pound_token: Pound,
-                bracket_token: Bracket,
-                trigger_token: Keyword [trigger],
-                paren_token: Paren,
-                terms: [
-                    TermCall {
-                        func: TermPath {
-                            inner: ExprPath {
-                                attrs: [],
-                                qself: None,
-                                path: Path {
-                                    leading_colon: None,
-                                    segments: [
-                                        PathSegment {
-                                            ident: Ident {
-                                                sym: f,
+        term: TermWithTriggers {
+            trigger: [
+                Trigger {
+                    pound_token: Pound,
+                    bracket_token: Bracket,
+                    trigger_token: Keyword [trigger],
+                    paren_token: Paren,
+                    terms: [
+                        TermCall {
+                            func: TermPath {
+                                inner: ExprPath {
+                                    attrs: [],
+                                    qself: None,
+                                    path: Path {
+                                        leading_colon: None,
+                                        segments: [
+                                            PathSegment {
+                                                ident: Ident {
+                                                    sym: f,
+                                                },
+                                                arguments: PathArguments::None,
                                             },
-                                            arguments: PathArguments::None,
+                                        ],
+                                    },
+                                },
+                            },
+                            paren_token: Paren,
+                            args: [
+                                TermPath {
+                                    inner: ExprPath {
+                                        attrs: [],
+                                        qself: None,
+                                        path: Path {
+                                            leading_colon: None,
+                                            segments: [
+                                                PathSegment {
+                                                    ident: Ident {
+                                                        sym: x,
+                                                    },
+                                                    arguments: PathArguments::None,
+                                                },
+                                            ],
                                         },
-                                    ],
-                                },
-                            },
-                        },
-                        paren_token: Paren,
-                        args: [
-                            TermPath {
-                                inner: ExprPath {
-                                    attrs: [],
-                                    qself: None,
-                                    path: Path {
-                                        leading_colon: None,
-                                        segments: [
-                                            PathSegment {
-                                                ident: Ident {
-                                                    sym: x,
-                                                },
-                                                arguments: PathArguments::None,
-                                            },
-                                        ],
                                     },
                                 },
-                            },
-                            Comma,
-                            TermPath {
-                                inner: ExprPath {
-                                    attrs: [],
-                                    qself: None,
-                                    path: Path {
-                                        leading_colon: None,
-                                        segments: [
-                                            PathSegment {
-                                                ident: Ident {
-                                                    sym: y,
+                                Comma,
+                                TermPath {
+                                    inner: ExprPath {
+                                        attrs: [],
+                                        qself: None,
+                                        path: Path {
+                                            leading_colon: None,
+                                            segments: [
+                                                PathSegment {
+                                                    ident: Ident {
+                                                        sym: y,
+                                                    },
+                                                    arguments: PathArguments::None,
                                                 },
-                                                arguments: PathArguments::None,
-                                            },
-                                        ],
-                                    },
-                                },
-                            },
-                        ],
-                    },
-                ],
-            },
-            Trigger {
-                pound_token: Pound,
-                bracket_token: Bracket,
-                trigger_token: Keyword [trigger],
-                paren_token: Paren,
-                terms: [
-                    TermCall {
-                        func: TermPath {
-                            inner: ExprPath {
-                                attrs: [],
-                                qself: None,
-                                path: Path {
-                                    leading_colon: None,
-                                    segments: [
-                                        PathSegment {
-                                            ident: Ident {
-                                                sym: g,
-                                            },
-                                            arguments: PathArguments::None,
+                                            ],
                                         },
-                                    ],
+                                    },
                                 },
-                            },
+                            ],
                         },
-                        paren_token: Paren,
-                        args: [
-                            TermPath {
+                    ],
+                },
+                Trigger {
+                    pound_token: Pound,
+                    bracket_token: Bracket,
+                    trigger_token: Keyword [trigger],
+                    paren_token: Paren,
+                    terms: [
+                        TermCall {
+                            func: TermPath {
                                 inner: ExprPath {
                                     attrs: [],
                                     qself: None,
@@ -320,7 +306,7 @@ fn test_trigger() {
                                         segments: [
                                             PathSegment {
                                                 ident: Ident {
-                                                    sym: x,
+                                                    sym: g,
                                                 },
                                                 arguments: PathArguments::None,
                                             },
@@ -328,30 +314,30 @@ fn test_trigger() {
                                     },
                                 },
                             },
-                        ],
-                    },
-                    Comma,
-                    TermCall {
-                        func: TermPath {
-                            inner: ExprPath {
-                                attrs: [],
-                                qself: None,
-                                path: Path {
-                                    leading_colon: None,
-                                    segments: [
-                                        PathSegment {
-                                            ident: Ident {
-                                                sym: g,
-                                            },
-                                            arguments: PathArguments::None,
+                            paren_token: Paren,
+                            args: [
+                                TermPath {
+                                    inner: ExprPath {
+                                        attrs: [],
+                                        qself: None,
+                                        path: Path {
+                                            leading_colon: None,
+                                            segments: [
+                                                PathSegment {
+                                                    ident: Ident {
+                                                        sym: x,
+                                                    },
+                                                    arguments: PathArguments::None,
+                                                },
+                                            ],
                                         },
-                                    ],
+                                    },
                                 },
-                            },
+                            ],
                         },
-                        paren_token: Paren,
-                        args: [
-                            TermPath {
+                        Comma,
+                        TermCall {
+                            func: TermPath {
                                 inner: ExprPath {
                                     attrs: [],
                                     qself: None,
@@ -360,7 +346,7 @@ fn test_trigger() {
                                         segments: [
                                             PathSegment {
                                                 ident: Ident {
-                                                    sym: y,
+                                                    sym: g,
                                                 },
                                                 arguments: PathArguments::None,
                                             },
@@ -368,18 +354,38 @@ fn test_trigger() {
                                     },
                                 },
                             },
-                        ],
-                    },
-                ],
-            },
-        ],
-        term: TermLit {
-            lit: Lit::Bool {
-                value: true,
+                            paren_token: Paren,
+                            args: [
+                                TermPath {
+                                    inner: ExprPath {
+                                        attrs: [],
+                                        qself: None,
+                                        path: Path {
+                                            leading_colon: None,
+                                            segments: [
+                                                PathSegment {
+                                                    ident: Ident {
+                                                        sym: y,
+                                                    },
+                                                    arguments: PathArguments::None,
+                                                },
+                                            ],
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+            term: TermLit {
+                lit: Lit::Bool {
+                    value: true,
+                },
             },
         },
     }
-    "###);
+    ");
 }
 
 #[test]
