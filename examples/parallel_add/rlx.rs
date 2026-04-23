@@ -2,7 +2,7 @@ extern crate creusot_std;
 
 use creusot_std::{
     ghost::{
-        invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
+        invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
         perm::Perm,
         resource::{Authority, Fragment},
     },
@@ -62,7 +62,7 @@ pub fn parallel_add() {
     let timestamp = snapshot!(such_that(|t| own.val().contains(t)));
 
     // Initialize our invariant
-    let inv = AtomicInvariantSC::new(
+    let inv = AtomicInvariant::new(
         ghost!(ParallelAddAtomicInv {
             own: own.into_inner(),
             auth1: auth1.into_inner(),
