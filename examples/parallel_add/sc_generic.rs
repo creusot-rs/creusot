@@ -1,5 +1,3 @@
-// TIME 3
-
 extern crate creusot_std;
 
 use creusot_std::{
