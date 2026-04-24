@@ -1,3 +1,5 @@
+// TIME 2
+
 extern crate creusot_std;
 
 use creusot_std::{
@@ -30,18 +32,21 @@ struct ParallelAddAtomicInv {
 impl Protocol for ParallelAddAtomicInv {
     type Public = (AtomicI32, Id, Id);
 
+    #[logic]
+    fn public(self) -> (AtomicI32, Id, Id) {
+        (*self.own.ward(), self.auth1.id(), self.auth2.id())
+    }
+
     #[logic(inline)]
-    fn protocol(self, data: (AtomicI32, Id, Id)) -> bool {
+    fn protocol(self) -> bool {
         pearlite! {
-            data == (*self.own.ward(), self.auth1.id(), self.auth2.id()) &&
-            (forall<t> self.own.val().contains(t) ==> t == self.t_last || self.own.val().contains(t + 1)) && (
-                match self.own.val().get(self.t_last) {
-                    Some((v, _)) =>
-                        v@ == if self.auth1@ == Some(Excl(true)) { 2 } else { 0 } +
-                        if self.auth2@ == Some(Excl(true)) { 2 } else { 0 },
-                    None => false,
-                }
-            )
+            (forall<t> self.own.val().contains(t) ==> t == self.t_last || self.own.val().contains(t + 1)) &&
+            match self.own.val().get(self.t_last) {
+                Some((v, _)) =>
+                    v@ == if self.auth1@ == Some(Excl(true)) { 2 } else { 0 } +
+                    if self.auth2@ == Some(Excl(true)) { 2 } else { 0 },
+                None => false,
+            }
         }
     }
 }
@@ -69,7 +74,6 @@ pub fn parallel_add() {
             auth2: auth2.into_inner(),
             t_last: *timestamp.into_ghost()
         }),
-        snapshot!((atomic, frag1.id(), frag2.id())),
         snapshot!(PARALLEL_ADD()),
     );
 

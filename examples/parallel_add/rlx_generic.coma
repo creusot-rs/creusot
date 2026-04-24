@@ -52,16 +52,17 @@ module M_fraction_1
   
   function to_real (self: t_PositiveReal) : Real.real
   
-  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
   
   function div_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
   
-  axiom div_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (div_PositiveReal self other)
+  axiom div_PositiveReal_spec:
+    forall self: t_PositiveReal, other: t_PositiveReal [div_PositiveReal self other]. to_real (div_PositiveReal self other)
       = Real.(/) (to_real self) (to_real other)
   
   function new (n: Real.real) : t_PositiveReal
   
-  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  axiom new_spec: forall n: Real.real [new n]. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
   
   function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
   
@@ -71,7 +72,8 @@ module M_fraction_1
   
   predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
   
-  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal. ext_eq self other = (self = other)
+  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal [self = other]. ext_eq self other
+      = (self = other)
   
   meta "compute_max_steps" 1000000
   
@@ -137,21 +139,23 @@ module M_fraction_add
   
   function to_real (self: t_PositiveReal) : Real.real
   
-  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
   
   function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
   
-  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+  axiom add_PositiveReal_spec:
+    forall self: t_PositiveReal, other: t_PositiveReal [add_PositiveReal self other]. to_real (add_PositiveReal self other)
       = Real.(+) (to_real self) (to_real other)
   
   function div_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
   
-  axiom div_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (div_PositiveReal self other)
+  axiom div_PositiveReal_spec:
+    forall self: t_PositiveReal, other: t_PositiveReal [div_PositiveReal self other]. to_real (div_PositiveReal self other)
       = Real.(/) (to_real self) (to_real other)
   
   function new (n: Real.real) : t_PositiveReal
   
-  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  axiom new_spec: forall n: Real.real [new n]. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
   
   function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
   
@@ -161,7 +165,8 @@ module M_fraction_add
   
   predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
   
-  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal. ext_eq self other = (self = other)
+  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal [self = other]. ext_eq self other
+      = (self = other)
   
   meta "compute_max_steps" 1000000
   
@@ -230,7 +235,7 @@ module M_parallel_add
   
   function len_Int (self: t_FMap_Int_tup2_i32_SyncView) : int
   
-  axiom len_Int_spec: forall self: t_FMap_Int_tup2_i32_SyncView. len_Int self >= 0
+  axiom len_Int_spec: forall self: t_FMap_Int_tup2_i32_SyncView [len_Int self]. len_Int self >= 0
   
   function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_i32_SyncView) (k: int) : t_Option_tup2_i32_SyncView =
     Map.get (to_mapping_Int self) k
@@ -244,11 +249,11 @@ module M_parallel_add
   function insert_Int (self: t_FMap_Int_tup2_i32_SyncView) (k: int) (v: tup2_i32_SyncView) : t_FMap_Int_tup2_i32_SyncView
   
   axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_i32_SyncView, k: int, v: tup2_i32_SyncView. to_mapping_Int (insert_Int self k v)
+    forall self: t_FMap_Int_tup2_i32_SyncView, k: int, v: tup2_i32_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
       = Map.set (to_mapping_Int self) k (Some v)
   
   axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_i32_SyncView, k: int, v: tup2_i32_SyncView. len_Int (insert_Int self k v)
+    forall self: t_FMap_Int_tup2_i32_SyncView, k: int, v: tup2_i32_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_tup2_i32_SyncView
@@ -387,16 +392,17 @@ module M_parallel_add
   
   function to_real (self: t_PositiveReal) : Real.real
   
-  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
   
   function div_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
   
-  axiom div_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (div_PositiveReal self other)
+  axiom div_PositiveReal_spec:
+    forall self: t_PositiveReal, other: t_PositiveReal [div_PositiveReal self other]. to_real (div_PositiveReal self other)
       = Real.(/) (to_real self) (to_real other)
   
   function new'1 (n: Real.real) : t_PositiveReal
   
-  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new'1 n) = n
+  axiom new_spec: forall n: Real.real [new'1 n]. Real.(>) n (FromInt.from_int 0) -> to_real (new'1 n) = n
   
   function from_int [@inline:trivial] (i: int) : t_PositiveReal = new'1 (FromInt.from_int i)
   
@@ -410,7 +416,8 @@ module M_parallel_add
   
   function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
   
-  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+  axiom add_PositiveReal_spec:
+    forall self: t_PositiveReal, other: t_PositiveReal [add_PositiveReal self other]. to_real (add_PositiveReal self other)
       = Real.(+) (to_real self) (to_real other)
   
   function fraction_add (a: int) (b: int) (n: int) : () = ()
@@ -573,7 +580,7 @@ module M_parallel_add
   meta "rewrite_def" function factor_PositiveReal
   
   axiom factor_PositiveReal_spec:
-    forall self: t_PositiveReal, factor: t_PositiveReal. match factor_PositiveReal self factor with
+    forall self: t_PositiveReal, factor: t_PositiveReal [factor_PositiveReal self factor]. match factor_PositiveReal self factor with
         | Some'2 c -> op_PositiveReal factor c = Some'2 self
         | None'2 -> forall c: t_PositiveReal. op_PositiveReal factor c <> Some'2 self
         end
@@ -582,7 +589,7 @@ module M_parallel_add
   
   meta "rewrite_def" function factor_Int
   
-  axiom factor_Int_spec: forall self: int, factor: int. match factor_Int self factor with
+  axiom factor_Int_spec: forall self: int, factor: int [factor_Int self factor]. match factor_Int self factor with
         | Some'3 c -> op_Int factor c = Some'3 self
         | None'3 -> false
         end
@@ -594,7 +601,7 @@ module M_parallel_add
       end
   
   axiom factor_tup2_PositiveReal_Int_spec:
-    forall self: tup2_PositiveReal_Int, factor: tup2_PositiveReal_Int. match factor_tup2_PositiveReal_Int self factor with
+    forall self: tup2_PositiveReal_Int, factor: tup2_PositiveReal_Int [factor_tup2_PositiveReal_Int self factor]. match factor_tup2_PositiveReal_Int self factor with
         | Some'0 c -> op_tup2_PositiveReal_Int factor c = Some'0 self
         | None'0 -> forall c: tup2_PositiveReal_Int. op_tup2_PositiveReal_Int factor c <> Some'0 self
         end
@@ -610,7 +617,7 @@ module M_parallel_add
       end
   
   axiom factor_Option_tup2_PositiveReal_Int_spec:
-    forall self: t_Option_tup2_PositiveReal_Int, factor: t_Option_tup2_PositiveReal_Int. match factor_Option_tup2_PositiveReal_Int self factor with
+    forall self: t_Option_tup2_PositiveReal_Int, factor: t_Option_tup2_PositiveReal_Int [factor_Option_tup2_PositiveReal_Int self factor]. match factor_Option_tup2_PositiveReal_Int self factor with
         | Some'1 c -> op_Option_tup2_PositiveReal_Int factor c = Some'1 self
         | None'1 -> forall c: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int factor c <> Some'1 self
         end
@@ -671,7 +678,7 @@ module M_parallel_add
   function frag_AuthViewRel_Option_tup2_PositiveReal_Int (self: t_View_AuthViewRel_Option_tup2_PositiveReal_Int) : t_Option_tup2_PositiveReal_Int
   
   axiom frag_AuthViewRel_Option_tup2_PositiveReal_Int_spec:
-    forall self: t_View_AuthViewRel_Option_tup2_PositiveReal_Int. rel_AuthViewRel_Option_tup2_PositiveReal_Int (auth_AuthViewRel_Option_tup2_PositiveReal_Int self) (frag_AuthViewRel_Option_tup2_PositiveReal_Int self)
+    forall self: t_View_AuthViewRel_Option_tup2_PositiveReal_Int [frag_AuthViewRel_Option_tup2_PositiveReal_Int self]. rel_AuthViewRel_Option_tup2_PositiveReal_Int (auth_AuthViewRel_Option_tup2_PositiveReal_Int self) (frag_AuthViewRel_Option_tup2_PositiveReal_Int self)
   
   function val_View_AuthViewRel_Option_tup2_PositiveReal_Int (self: t_Resource_View_AuthViewRel_Option_tup2_PositiveReal_Int) : t_View_AuthViewRel_Option_tup2_PositiveReal_Int
   
@@ -819,7 +826,7 @@ module M_parallel_add
   
   function such_that_Int (p: Map.map int bool) : int
   
-  axiom such_that_Int_spec: forall p: Map.map int bool. (exists x: int. index_Mapping_Int_bool p x)
+  axiom such_that_Int_spec: forall p: Map.map int bool [such_that_Int p]. (exists x: int. index_Mapping_Int_bool p x)
       -> index_Mapping_Int_bool p (such_that_Int p)
   
   let rec into_inner_Box_Perm_AtomicI32_Global (self: t_Perm_AtomicI32) (return (x: t_Perm_AtomicI32)) = any
@@ -867,13 +874,10 @@ module M_parallel_add
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  type tup2_AtomicI32_Id = { f0'7: t_AtomicI32; f1'7: t_Id }
-  
   type t_AtomicInvariant_ParallelAddAtomicInv
   
-  predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) (data: tup2_AtomicI32_Id) =
-    data = { f0'7 = ward_AtomicI32 self.own; f1'7 = id_Option_tup2_PositiveReal_Int self.auth }
-    /\ (forall t: int. contains_Int (val_AtomicI32 self.own) t
+  predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) =
+    (forall t: int. contains_Int (val_AtomicI32 self.own) t
         -> t = self.t_last \/ contains_Int (val_AtomicI32 self.own) (t + 1))
     /\ match get_Int (val_AtomicI32 self.own) self.t_last with
       | Some {f0'0 = v} -> exists k: int. view_Authority_Option_tup2_PositiveReal_Int self.auth
@@ -883,18 +887,23 @@ module M_parallel_add
   
   meta "rewrite_def" predicate protocol_ParallelAddAtomicInv
   
+  type tup2_AtomicI32_Id = { f0'7: t_AtomicI32; f1'7: t_Id }
+  
   function public_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv) : tup2_AtomicI32_Id
+  
+  function public_ParallelAddAtomicInv'0 (self: t_ParallelAddAtomicInv) : tup2_AtomicI32_Id =
+    { f0'7 = ward_AtomicI32 self.own; f1'7 = id_Option_tup2_PositiveReal_Int self.auth }
   
   function namespace_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv) : t_Namespace
   
-  let rec new_ParallelAddAtomicInv'0 (value: t_ParallelAddAtomicInv) (public: tup2_AtomicI32_Id)
-    (namespace: t_Namespace) (return (x: t_AtomicInvariant_ParallelAddAtomicInv)) =
+  let rec new_ParallelAddAtomicInv'0 (value: t_ParallelAddAtomicInv) (namespace: t_Namespace)
+    (return (x: t_AtomicInvariant_ParallelAddAtomicInv)) =
     {[@stop_split] [@expl:new_ParallelAddAtomicInv requires] ([@stop_split] [@expl:new 'value' type invariant] inv_Ghost_ParallelAddAtomicInv value)
-    /\ ([@stop_split] [@expl:new requires] protocol_ParallelAddAtomicInv value public)}
+    /\ ([@stop_split] [@expl:new requires] protocol_ParallelAddAtomicInv value)}
     any
     [ return (result: t_AtomicInvariant_ParallelAddAtomicInv) ->
     {[@stop_split] [@expl:new_ParallelAddAtomicInv ensures] ([@stop_split] [@expl:new ensures #0] public_ParallelAddAtomicInv result
-        = public)
+        = public_ParallelAddAtomicInv'0 value)
       /\ ([@stop_split] [@expl:new ensures #1] namespace_ParallelAddAtomicInv result = namespace)}
       (! return {result}) ]
   
@@ -941,7 +950,7 @@ module M_parallel_add
   function view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (self: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) : Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
   
   axiom view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global_spec:
-    forall self: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global. Seq.length (view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self)
+    forall self: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global [view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self]. Seq.length (view_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self)
       <= UInt64.t'int const_MAX
   
   predicate invariant_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (self: t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
@@ -1047,14 +1056,15 @@ module M_parallel_add
   
   predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
   
-  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal. ext_eq self other = (self = other)
+  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal [self = other]. ext_eq self other
+      = (self = other)
   
   predicate eq_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) = ext_eq self other
   
   meta "rewrite_def" predicate eq_PositiveReal
   
-  axiom eq_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. eq_PositiveReal self other
-      = (self = other)
+  axiom eq_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal [self
+      = other]. eq_PositiveReal self other = (self = other)
   
   predicate incl_Int (self: int) (other: int) = factor_Int other self <> None'3
   
@@ -1080,16 +1090,15 @@ module M_parallel_add
   
   meta "rewrite_def" predicate eq_Int
   
-  axiom eq_Int_spec: forall self: int, other: int. eq_Int self other = (self = other)
+  axiom eq_Int_spec: forall self: int, other: int [eq_Int self other]. eq_Int self other = (self = other)
   
   predicate eq_tup2_PositiveReal_Int [@inline:trivial] (self: tup2_PositiveReal_Int) (other: tup2_PositiveReal_Int) =
     eq_PositiveReal self.f0'2 other.f0'2 /\ eq_Int self.f1'2 other.f1'2
   
   meta "rewrite_def" predicate eq_tup2_PositiveReal_Int
   
-  axiom eq_tup2_PositiveReal_Int_spec:
-    forall self: tup2_PositiveReal_Int, other: tup2_PositiveReal_Int. eq_tup2_PositiveReal_Int self other
-      = (self = other)
+  axiom eq_tup2_PositiveReal_Int_spec: forall self: tup2_PositiveReal_Int, other: tup2_PositiveReal_Int [self
+      = other]. eq_tup2_PositiveReal_Int self other = (self = other)
   
   predicate eq_Option_tup2_PositiveReal_Int [@inline:trivial] (self: t_Option_tup2_PositiveReal_Int) (other: t_Option_tup2_PositiveReal_Int) =
     match { f0'3 = self; f1'3 = other } with
@@ -1101,8 +1110,8 @@ module M_parallel_add
   meta "rewrite_def" predicate eq_Option_tup2_PositiveReal_Int
   
   axiom eq_Option_tup2_PositiveReal_Int_spec:
-    forall self: t_Option_tup2_PositiveReal_Int, other: t_Option_tup2_PositiveReal_Int. eq_Option_tup2_PositiveReal_Int self other
-      = (self = other)
+    forall self: t_Option_tup2_PositiveReal_Int, other: t_Option_tup2_PositiveReal_Int [self
+      = other]. eq_Option_tup2_PositiveReal_Int self other = (self = other)
   
   predicate incl_eq_Option_tup2_PositiveReal_Int (self: t_Option_tup2_PositiveReal_Int) (other: t_Option_tup2_PositiveReal_Int) =
     eq_Option_tup2_PositiveReal_Int self other \/ incl_Option_tup2_PositiveReal_Int self other
@@ -1544,16 +1553,19 @@ module M_parallel_add
   let rec open_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv) (tokens: t_Tokens)
     (f: t_FnGhostWrapper_closure0) (return (x: ())) =
     {[@stop_split] [@expl:open_ParallelAddAtomicInv requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_ParallelAddAtomicInv self))
-    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_ParallelAddAtomicInv. protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
-        /\ inv_refmut_ParallelAddAtomicInv t
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_ParallelAddAtomicInv. public_ParallelAddAtomicInv'0 t.current
+          = public_ParallelAddAtomicInv self
+        /\ protocol_ParallelAddAtomicInv t.current /\ inv_refmut_ParallelAddAtomicInv t
       -> precondition_FnGhostWrapper_closure0 f t
       /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res
-        -> protocol_ParallelAddAtomicInv t.final (public_ParallelAddAtomicInv self)))}
+        -> public_ParallelAddAtomicInv'0 t.final = public_ParallelAddAtomicInv self
+        /\ protocol_ParallelAddAtomicInv t.final))}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_ParallelAddAtomicInv. inv_refmut_ParallelAddAtomicInv t
-        /\ protocol_ParallelAddAtomicInv t.current (public_ParallelAddAtomicInv self)
-        /\ postcondition_once_FnGhostWrapper_closure0 f t result}
+    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_ParallelAddAtomicInv. public_ParallelAddAtomicInv'0 t.current
+          = public_ParallelAddAtomicInv self
+        /\ protocol_ParallelAddAtomicInv t.current
+        /\ inv_refmut_ParallelAddAtomicInv t /\ postcondition_once_FnGhostWrapper_closure0 f t result}
       (! return {result}) ]
   
   let rec closure0'0 [@coma:extspec] (self: closure0'1) (c: MutBorrow.t t_Committer_AtomicI32_i32_Relaxed_Relaxed)
@@ -2202,14 +2214,14 @@ module M_parallel_add
       | s29 = deref_Ghost_Int {_44} (fun (_x: int) -> [ &_42 <- _x ] s30)
       | s30 = [ &_36 <- { own = _37; auth = _39; t_last = _42 } ] s31
       | s31 = new_ParallelAddAtomicInv {_36} (fun (_x: t_ParallelAddAtomicInv) -> [ &_35 <- _x ] s32)
-      | s32 = new_ParallelAddAtomicInv'0 {_35} {{ f0'7 = atomic; f1'7 = id_Option_tup2_PositiveReal_Int'0 frag }}
-          {Namespace_PARALLEL_ADD 0} (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &inv <- _x ] s33)
+      | s32 = new_ParallelAddAtomicInv'0 {_35} {Namespace_PARALLEL_ADD 0}
+          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &inv <- _x ] s33)
       | s33 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {frag}
           (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
-            [ &_57 <- _bor ] [ &frag <- _bor.final ] s34)
-      | s34 = [ &_53 <- { c0 = inv; c1 = atomic; c2 = n; c3 = _57 } ] s35
-      | s35 = scope_closure0 {_53} (fun (_x: ()) -> [ &_52 <- _x ] s36)
-      | s36 = final_read {atomic} {inv} {n} {frag} (fun (_x: ()) -> [ &_58 <- _x ] s37)
+            [ &_53 <- _bor ] [ &frag <- _bor.final ] s34)
+      | s34 = [ &_49 <- { c0 = inv; c1 = atomic; c2 = n; c3 = _53 } ] s35
+      | s35 = scope_closure0 {_49} (fun (_x: ()) -> [ &_48 <- _x ] s36)
+      | s36 = final_read {atomic} {inv} {n} {frag} (fun (_x: ()) -> [ &_54 <- _x ] s37)
       | s37 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & n: Int32.t = n
@@ -2243,10 +2255,10 @@ module M_parallel_add
     | & _39: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & _42: int = Any.any_l ()
     | & _44: int = Any.any_l ()
-    | & _52: () = Any.any_l ()
-    | & _53: closure0 = Any.any_l ()
-    | & _57: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _58: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _48: () = Any.any_l ()
+    | & _49: closure0 = Any.any_l ()
+    | & _53: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _54: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_final_read
   type namespace_other
@@ -2299,6 +2311,11 @@ module M_final_read
   function ward_AtomicI32 (self: t_Perm_AtomicI32) : t_AtomicI32
   
   function id_Option_tup2_PositiveReal_Int (self: t_Authority_Option_tup2_PositiveReal_Int) : t_Id
+  
+  function public_ParallelAddAtomicInv (self: t_ParallelAddAtomicInv) : tup2_AtomicI32_Id =
+    { f0 = ward_AtomicI32 self.own; f1 = id_Option_tup2_PositiveReal_Int self.auth }
+  
+  function public_ParallelAddAtomicInv'0 (self: t_AtomicInvariant_ParallelAddAtomicInv) : tup2_AtomicI32_Id
   
   type t_FMap_Int_tup2_i32_SyncView
   
@@ -2376,19 +2393,18 @@ module M_final_read
   
   function to_real (self: t_PositiveReal) : Real.real
   
-  axiom to_real_spec: forall self: t_PositiveReal. Real.(>) (to_real self) (FromInt.from_int 0)
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
   
   function new (n: Real.real) : t_PositiveReal
   
-  axiom new_spec: forall n: Real.real. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  axiom new_spec: forall n: Real.real [new n]. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
   
   function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
   
   meta "rewrite_def" function from_int
   
-  predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) (data: tup2_AtomicI32_Id) =
-    data = { f0 = ward_AtomicI32 self.own; f1 = id_Option_tup2_PositiveReal_Int self.auth }
-    /\ (forall t: int. contains_Int (val_AtomicI32 self.own) t
+  predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) =
+    (forall t: int. contains_Int (val_AtomicI32 self.own) t
         -> t = self.t_last \/ contains_Int (val_AtomicI32 self.own) (t + 1))
     /\ match get_Int (val_AtomicI32 self.own) self.t_last with
       | Some {f0'0 = v} -> exists k: int. view_Authority_Option_tup2_PositiveReal_Int self.auth
@@ -2398,13 +2414,13 @@ module M_final_read
   
   meta "rewrite_def" predicate protocol_ParallelAddAtomicInv
   
-  function public_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv) : tup2_AtomicI32_Id
-  
   let rec into_inner_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv)
     (return (x: t_ParallelAddAtomicInv)) = any
     [ return (result: t_ParallelAddAtomicInv) ->
     {[@stop_split] [@expl:into_inner_ParallelAddAtomicInv ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_ParallelAddAtomicInv result)
-      /\ ([@stop_split] [@expl:into_inner ensures] protocol_ParallelAddAtomicInv result (public_ParallelAddAtomicInv self))}
+      /\ ([@stop_split] [@expl:into_inner ensures] public_ParallelAddAtomicInv result
+        = public_ParallelAddAtomicInv'0 self
+      /\ protocol_ParallelAddAtomicInv result)}
       (! return {result}) ]
   
   predicate resolve_Authority_Option_tup2_PositiveReal_Int (_1: t_Authority_Option_tup2_PositiveReal_Int)
@@ -2466,7 +2482,8 @@ module M_final_read
   
   function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
   
-  axiom add_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal. to_real (add_PositiveReal self other)
+  axiom add_PositiveReal_spec:
+    forall self: t_PositiveReal, other: t_PositiveReal [add_PositiveReal self other]. to_real (add_PositiveReal self other)
       = Real.(+) (to_real self) (to_real other)
   
   function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
@@ -2522,7 +2539,7 @@ module M_final_read
   meta "rewrite_def" function factor_PositiveReal
   
   axiom factor_PositiveReal_spec:
-    forall self: t_PositiveReal, factor: t_PositiveReal. match factor_PositiveReal self factor with
+    forall self: t_PositiveReal, factor: t_PositiveReal [factor_PositiveReal self factor]. match factor_PositiveReal self factor with
         | Some'2 c -> op_PositiveReal factor c = Some'2 self
         | None'2 -> forall c: t_PositiveReal. op_PositiveReal factor c <> Some'2 self
         end
@@ -2531,7 +2548,7 @@ module M_final_read
   
   meta "rewrite_def" function factor_Int
   
-  axiom factor_Int_spec: forall self: int, factor: int. match factor_Int self factor with
+  axiom factor_Int_spec: forall self: int, factor: int [factor_Int self factor]. match factor_Int self factor with
         | Some'3 c -> op_Int factor c = Some'3 self
         | None'3 -> false
         end
@@ -2543,7 +2560,7 @@ module M_final_read
       end
   
   axiom factor_tup2_PositiveReal_Int_spec:
-    forall self: tup2_PositiveReal_Int, factor: tup2_PositiveReal_Int. match factor_tup2_PositiveReal_Int self factor with
+    forall self: tup2_PositiveReal_Int, factor: tup2_PositiveReal_Int [factor_tup2_PositiveReal_Int self factor]. match factor_tup2_PositiveReal_Int self factor with
         | Some'0 c -> op_tup2_PositiveReal_Int factor c = Some'0 self
         | None'0 -> forall c: tup2_PositiveReal_Int. op_tup2_PositiveReal_Int factor c <> Some'0 self
         end
@@ -2559,7 +2576,7 @@ module M_final_read
       end
   
   axiom factor_Option_tup2_PositiveReal_Int_spec:
-    forall self: t_Option_tup2_PositiveReal_Int, factor: t_Option_tup2_PositiveReal_Int. match factor_Option_tup2_PositiveReal_Int self factor with
+    forall self: t_Option_tup2_PositiveReal_Int, factor: t_Option_tup2_PositiveReal_Int [factor_Option_tup2_PositiveReal_Int self factor]. match factor_Option_tup2_PositiveReal_Int self factor with
         | Some'1 c -> op_Option_tup2_PositiveReal_Int factor c = Some'1 self
         | None'1 -> forall c: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int factor c <> Some'1 self
         end
@@ -2628,7 +2645,7 @@ module M_final_read
   function frag_AuthViewRel_Option_tup2_PositiveReal_Int (self: t_View_AuthViewRel_Option_tup2_PositiveReal_Int) : t_Option_tup2_PositiveReal_Int
   
   axiom frag_AuthViewRel_Option_tup2_PositiveReal_Int_spec:
-    forall self: t_View_AuthViewRel_Option_tup2_PositiveReal_Int. rel_AuthViewRel_Option_tup2_PositiveReal_Int (auth_AuthViewRel_Option_tup2_PositiveReal_Int self) (frag_AuthViewRel_Option_tup2_PositiveReal_Int self)
+    forall self: t_View_AuthViewRel_Option_tup2_PositiveReal_Int [frag_AuthViewRel_Option_tup2_PositiveReal_Int self]. rel_AuthViewRel_Option_tup2_PositiveReal_Int (auth_AuthViewRel_Option_tup2_PositiveReal_Int self) (frag_AuthViewRel_Option_tup2_PositiveReal_Int self)
   
   function val_View_AuthViewRel_Option_tup2_PositiveReal_Int (self: t_Resource_View_AuthViewRel_Option_tup2_PositiveReal_Int) : t_View_AuthViewRel_Option_tup2_PositiveReal_Int
   
@@ -2761,7 +2778,7 @@ module M_final_read
   let rec final_read (atomic: t_AtomicI32) (inv: t_AtomicInvariant_ParallelAddAtomicInv) (n: Int32.t)
     (frag: t_Fragment_Option_tup2_PositiveReal_Int) (return (x: ())) =
     {[@stop_split] [@expl:final_read requires] ([@stop_split] [@expl:final_read 'atomic' type invariant] inv_AtomicI32 atomic)
-    /\ ([@stop_split] [@expl:final_read requires #0] public_ParallelAddAtomicInv inv
+    /\ ([@stop_split] [@expl:final_read requires #0] public_ParallelAddAtomicInv'0 inv
       = { f0 = atomic; f1 = id_Option_tup2_PositiveReal_Int'0 frag })
     /\ ([@stop_split] [@expl:final_read requires #1] view_Fragment_Option_tup2_PositiveReal_Int frag
     = Some'0 { f0'1 = from_int 1; f1'1 = Int32.to_int n })}

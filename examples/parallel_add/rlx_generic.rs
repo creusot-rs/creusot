@@ -50,18 +50,21 @@ struct ParallelAddAtomicInv {
 impl Protocol for ParallelAddAtomicInv {
     type Public = (AtomicI32, Id);
 
+    #[logic]
+    fn public(self) -> (AtomicI32, Id) {
+        (*self.own.ward(), self.auth.id())
+    }
+
     #[logic(inline)]
-    fn protocol(self, data: (AtomicI32, Id)) -> bool {
+    fn protocol(self) -> bool {
         pearlite! {
-            data == (*self.own.ward(), self.auth.id()) &&
-            (forall<t> self.own.val().contains(t) ==> t == self.t_last || self.own.val().contains(t + 1)) && (
-                match self.own.val().get(self.t_last) {
-                    Some((v, _)) =>
-                      exists<k: Int>
-                        self.auth@ == Some((PR::from_int(1), k * Int::pow2(32) + v@)),
-                    None => false,
-                }
-            )
+            (forall<t> self.own.val().contains(t) ==> t == self.t_last || self.own.val().contains(t + 1)) &&
+            match self.own.val().get(self.t_last) {
+                Some((v, _)) =>
+                  exists<k: Int>
+                    self.auth@ == Some((PR::from_int(1), k * Int::pow2(32) + v@)),
+                None => false,
+            }
         }
     }
 }
@@ -87,7 +90,6 @@ pub fn parallel_add(n: i32) {
             auth: auth.into_inner(),
             t_last: *timestamp.into_ghost()
         }),
-        snapshot!((atomic, frag.id())),
         snapshot!(PARALLEL_ADD()),
     );
 
