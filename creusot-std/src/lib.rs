@@ -72,6 +72,7 @@
 #![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]
 #![cfg_attr(all(creusot, feature = "std"), feature(print_internals, libstd_sys_internals, rt,))]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![recursion_limit = "512"]
 
 extern crate alloc;
 

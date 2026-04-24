@@ -279,6 +279,7 @@ impl<T> FullBorrow<T> {
     /// This is similar to [`std::cell::RefMut::map`].
     #[trusted]
     #[check(ghost)]
+    #[requires(self.lft() == token.lft())]
     #[requires(forall<b: &mut T> *b == self.cur() && ^b == ^self ==>
         f.precondition((b,)))]
     #[ensures(exists<b: &mut T, res: &mut U>
@@ -287,7 +288,7 @@ impl<T> FullBorrow<T> {
     )]
     #[ensures(result.lft() == self.lft())]
     #[allow(unused_variables)]
-    pub fn map<U, F>(self, f: F) -> FullBorrow<U>
+    pub fn map<U, F>(self, f: F, token: &LifetimeToken) -> FullBorrow<U>
     where
         F: for<'a> FnOnce(&'a mut T) -> &'a mut U,
     {
@@ -295,16 +296,58 @@ impl<T> FullBorrow<T> {
     }
 }
 
-impl<T, U> FullBorrow<(T, U)> {
-    // FIXME: docs
-    #[trusted]
-    #[ensures(result.0.lft() == self.lft() && result.1.lft() == self.lft())]
-    #[ensures(result.0.cur() == self.cur().0 && ^result.0 == (^self).0)]
-    #[ensures(result.1.cur() == self.cur().1 && ^result.1 == (^self).1)]
-    pub fn split(self) -> (FullBorrow<T>, FullBorrow<U>) {
-        unreachable!("ghost code only")
-    }
+macro_rules! tuple_split {
+    ( $map_split:ident $( ($name:ident, $idx:tt) )+ ) => {
+        impl<$($name),+> FullBorrow<($($name,)+)> {
+            // FIXME: docs
+            #[trusted]
+            #[check(ghost)]
+            $(
+                #[ensures(result.$idx.lft() == self.lft())]
+                #[ensures(result.$idx.cur() == self.cur().$idx && ^result.$idx == (^self).$idx)]
+            )+
+            pub fn split(self) -> ($(FullBorrow<$name>,)+){
+                unreachable!("ghost code only")
+            }
+        }
+
+        impl<T0> FullBorrow<T0> {
+            #[trusted]
+            #[check(ghost)]
+            #[requires(self.lft() == token.lft())]
+            #[requires(forall<b: &mut T0> *b == self.cur() && ^b == ^self ==>
+                f.precondition((b,)))]
+            #[ensures(exists<b: &mut T0, res: ($(&mut $name,)+)>
+                *b == self.cur() && ^b == ^self &&
+                $(*res.$idx == result.$idx.cur() && ^res.$idx == ^result.$idx &&)+
+                f.postcondition_once((b,), res)
+            )]
+            $(
+                #[ensures(result.$idx.lft() == self.lft())]
+            )+
+            #[allow(unused_variables)]
+            pub fn $map_split<$($name,)+ F>(self, f: F, token: &LifetimeToken) -> ($(FullBorrow<$name>,)+)
+            where
+                F: for<'a> FnOnce(&'a mut T0) -> ($(&'a mut $name,)+),
+            {
+                unreachable!("ghost code only")
+            }
+        }
+    };
 }
+
+tuple_split! { map_split_1  (T,0) }
+tuple_split! { map_split_2  (U,0) (T,1) }
+tuple_split! { map_split_3  (V,0) (U,1) (T,2) }
+tuple_split! { map_split_4  (W,0) (V,1) (U,2) (T,3) }
+tuple_split! { map_split_5  (X,0) (W,1) (V,2) (U,3) (T,4) }
+tuple_split! { map_split_6  (Y,0) (X,1) (W,2) (V,3) (U,4) (T,5) }
+tuple_split! { map_split_7  (Z,0) (Y,1) (X,2) (W,3) (V,4) (U,5) (T,6) }
+tuple_split! { map_split_8  (A,0) (Z,1) (Y,2) (X,3) (W,4) (V,5) (U,6) (T,7) }
+tuple_split! { map_split_9  (B,0) (A,1) (Z,2) (Y,3) (X,4) (W,5) (V,6) (U,7) (T,8) }
+tuple_split! { map_split_10 (C,0) (B,1) (A,2) (Z,3) (Y,4) (X,5) (W,6) (V,7) (U,8) (T,9) }
+tuple_split! { map_split_11 (D,0) (C,1) (B,2) (A,3) (Z,4) (Y,5) (X,6) (W,7) (V,8) (U,9) (T,10) }
+tuple_split! { map_split_12 (E,0) (D,1) (C,2) (B,3) (A,4) (Z,5) (Y,6) (X,7) (W,8) (V,9) (U,10) (T,11) }
 
 impl<T> creusot_std::logic::ops::Fin for EndBorrow<T> {
     type Target = T;
