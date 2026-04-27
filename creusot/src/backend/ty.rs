@@ -26,7 +26,7 @@ pub enum AdtKind<'tcx> {
     Unit,                              // Adt with only one element
     Empty,                             // Empty Adt
     Snapshot(Ty<'tcx>),                // Snapshot<T>
-    Ghost(Ty<'tcx>),                   // Ghost<T>
+    Identity(Ty<'tcx>),                // A type annotated with #[builtin("identity")]
     Namespace,                         // Namespace
     Box(Ty<'tcx>),                     // Box<T>
     Builtin(Box<[Ty<'tcx>]>),          // A type directly defined in Why3
@@ -40,7 +40,6 @@ pub(crate) fn classify_adt<'tcx>(
 ) -> AdtKind<'tcx> {
     match ctx.intrinsic(def.did()) {
         Intrinsic::Snapshot => return AdtKind::Snapshot(subst[0].expect_ty()),
-        Intrinsic::Ghost => return AdtKind::Ghost(subst[0].expect_ty()),
         Intrinsic::Namespace => return AdtKind::Namespace,
         _ => (),
     }
@@ -48,8 +47,13 @@ pub(crate) fn classify_adt<'tcx>(
         AdtKind::Opaque { always: true }
     } else if def.is_box() {
         AdtKind::Box(subst[0].expect_ty())
-    } else if get_builtin(ctx.tcx, def.did()).is_some() {
-        AdtKind::Builtin(subst.types().collect())
+    } else if let Some(sym) = get_builtin(ctx.tcx, def.did()) {
+        if sym.as_str() == "identity" {
+            assert_eq!(subst.len(), 1);
+            AdtKind::Identity(subst[0].expect_ty())
+        } else {
+            AdtKind::Builtin(subst.types().collect())
+        }
     } else if is_opaque(ctx.tcx, def.did()) {
         AdtKind::Opaque { always: true }
     } else if def.is_enum() && def.variants().is_empty() {
@@ -96,7 +100,7 @@ pub(crate) fn translate_ty<'tcx>(
             | AdtKind::Struct { .. }
             | AdtKind::Namespace => MlT::TConstructor(names.ty(ty)),
             AdtKind::Unit | AdtKind::Empty => MlT::unit(),
-            AdtKind::Ghost(ty) | AdtKind::Box(ty) => translate_ty(ctx, names, span, ty),
+            AdtKind::Identity(ty) | AdtKind::Box(ty) => translate_ty(ctx, names, span, ty),
             AdtKind::Snapshot(ty_inner) => {
                 // Make sure we create a cycle of dependency if we create a type which is recursive through Snapshot
                 // See test should_fail/bug/436_2.rs, and #436
@@ -287,7 +291,7 @@ pub(crate) fn translate_adtdecl<'tcx>(
                 }]),
             })]
         }
-        AdtKind::Unit | AdtKind::Empty | AdtKind::Box(_) | AdtKind::Ghost(_) => {
+        AdtKind::Unit | AdtKind::Empty | AdtKind::Box(_) | AdtKind::Identity(_) => {
             unreachable!("{ty:?}")
         }
     }

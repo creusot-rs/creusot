@@ -340,10 +340,6 @@ module M_impl_Expr__simplify_helper (* Expr *)
   
   type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
   
-  type t_BTreeMap_usize_bool
-  
-  predicate resolve_BTreeMap_usize_bool (_1: t_BTreeMap_usize_bool)
-  
   let rec elim_Var (_x: t_Expr) (return (v: UInt64.t)) = any
     [ _k (v: UInt64.t) -> {Var v = _x} (! return {v})
     | _chk -> (! {[@expl:elim Var] match _x with
@@ -351,6 +347,8 @@ module M_impl_Expr__simplify_helper (* Expr *)
         | _ -> false
         end}
       any) ]
+  
+  type t_BTreeMap_usize_bool
   
   type t_Option_ref_bool = None | Some bool
   
@@ -443,17 +441,12 @@ module M_impl_Expr__simplify_helper (* Expr *)
       | br1 (x0: UInt64.t) -> {self = Var x0} (! bb4)
       | br2 -> {self = True'} (! bb1)
       | br3 -> {self = False'} (! bb1) ]
-    | bb1 = s0
-      [ s0 = -{resolve_BTreeMap_usize_bool state}- s1
-      | s1 = [ &c'1 <- self ] s2
-      | s2 = [ &_ret <- c'1 ] s3
-      | s3 = return {_ret} ]
+    | bb1 = s0 [ s0 = [ &c'1 <- self ] s1 | s1 = [ &_ret <- c'1 ] s2 | s2 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Var {self} (fun (rv: UInt64.t) -> [ &v'0 <- rv ] s1)
-      | s1 = -{resolve_BTreeMap_usize_bool state}- s2
-      | s2 = [ &_53 <- v'0 ] s3
-      | s3 = get_usize {state} {_53} (fun (_x: t_Option_ref_bool) -> [ &_50 <- _x ] s4)
-      | s4 = any [ br0 -> {_50 = None} (! bb46) | br1 (x0: bool) -> {_50 = Some x0} (! bb42) ] ]
+      | s1 = [ &_53 <- v'0 ] s2
+      | s2 = get_usize {state} {_53} (fun (_x: t_Option_ref_bool) -> [ &_50 <- _x ] s3)
+      | s3 = any [ br0 -> {_50 = None} (! bb46) | br1 (x0: bool) -> {_50 = Some x0} (! bb42) ] ]
     | bb46 = s0 [ s0 = [ &_ret <- Var v'0 ] s1 | s1 = return {_ret} ]
     | bb42 = s0
       [ s0 = elim_Some {_50} (fun (r0: bool) -> [ &b'0 <- r0 ] s1)
@@ -484,14 +477,13 @@ module M_impl_Expr__simplify_helper (* Expr *)
           (fun (_bor: MutBorrow.t t_BTreeMap_usize_bool) -> [ &_28 <- _bor ] [ &state_t <- _bor.final ] s2)
       | s2 = insert_usize {_28} {v} {true} (fun (_x: t_Option_bool) -> [ &_27 <- _x ] s3)
       | s3 = simplify_helper {t} {state_t} (fun (_x: t_Expr) -> [ &tp <- _x ] s4)
-      | s4 = -{resolve_BTreeMap_usize_bool state}- s5
-      | s5 = clone_BTreeMap_usize_bool {state} (fun (_x: t_BTreeMap_usize_bool) -> [ &state_e <- _x ] s6)
-      | s6 = MutBorrow.borrow_mut <t_BTreeMap_usize_bool> {state_e}
-          (fun (_bor: MutBorrow.t t_BTreeMap_usize_bool) -> [ &_36 <- _bor ] [ &state_e <- _bor.final ] s7)
-      | s7 = insert_usize {_36} {v} {false} (fun (_x: t_Option_bool) -> [ &_35 <- _x ] s8)
-      | s8 = simplify_helper {e} {state_e} (fun (_x: t_Expr) -> [ &ep <- _x ] s9)
-      | s9 = [ &_ret <- IfThenElse c tp ep ] s10
-      | s10 = return {_ret} ]
+      | s4 = clone_BTreeMap_usize_bool {state} (fun (_x: t_BTreeMap_usize_bool) -> [ &state_e <- _x ] s5)
+      | s5 = MutBorrow.borrow_mut <t_BTreeMap_usize_bool> {state_e}
+          (fun (_bor: MutBorrow.t t_BTreeMap_usize_bool) -> [ &_36 <- _bor ] [ &state_e <- _bor.final ] s6)
+      | s6 = insert_usize {_36} {v} {false} (fun (_x: t_Option_bool) -> [ &_35 <- _x ] s7)
+      | s7 = simplify_helper {e} {state_e} (fun (_x: t_Expr) -> [ &ep <- _x ] s8)
+      | s8 = [ &_ret <- IfThenElse c tp ep ] s9
+      | s9 = return {_ret} ]
     | bb11 = s0
       [ s0 = elim_Some {_14} (fun (r0: bool) -> [ &b <- r0 ] s1)
       | s1 = any [ br0 -> {b = false} (! bb14) | br1 -> {b} (! bb12) ] ]

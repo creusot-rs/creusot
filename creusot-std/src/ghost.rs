@@ -24,7 +24,10 @@ pub mod resource;
 pub use fn_ghost::{FnGhost, FnGhostWrapper};
 pub use perm::Container;
 
+#[cfg(creusot)]
+use crate::resolve::{resolve, structural_resolve};
 use crate::{logic::ops::Fin, prelude::*};
+
 use core::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
@@ -48,9 +51,8 @@ use core::{
 /// }
 /// let value: i32 = b.into_inner(); // compile error !
 /// ```
-#[opaque]
 #[intrinsic("ghost")]
-
+#[builtin("identity")]
 pub struct Ghost<T: ?Sized>(PhantomData<T>);
 
 impl<T: Copy> Copy for Ghost<T> {}
@@ -105,6 +107,20 @@ impl<T: ?Sized> Invariant for Ghost<T> {
     fn invariant(self) -> bool {
         inv(*self)
     }
+}
+
+impl<'a, T: ?Sized> Resolve for Ghost<T> {
+    #[logic(open, inline, prophetic)]
+    #[creusot::trusted_trivial_if_param_trivial]
+    fn resolve(self) -> bool {
+        resolve(*self)
+    }
+
+    #[trusted]
+    #[logic]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
 }
 
 impl<T: ?Sized> Ghost<T> {
