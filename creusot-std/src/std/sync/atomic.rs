@@ -56,7 +56,9 @@ macro_rules! impl_atomic {
         #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
         pub struct $atomic_type $(< $T >)?(::std::sync::atomic::$atomic_type $(< $T >)?);
 
+        #[trusted]
         impl $(< $T >)? SendPerm for $atomic_type $(< $T >)? {}
+        #[trusted]
         impl $(< $T >)? SyncPerm for $atomic_type $(< $T >)? {}
 
         #[cfg(creusot)]

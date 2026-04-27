@@ -21,7 +21,9 @@ macro_rules! impl_atomic {
             type Value = $type;
         }
 
+        #[trusted]
         impl $(< $T >)? SendPerm for $atomic_type $(< $T >)? {}
+        #[trusted]
         impl $(< $T >)? SyncPerm for $atomic_type $(< $T >)? {}
 
         impl $(< $T >)? $atomic_type $(< $T >)? {
