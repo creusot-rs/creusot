@@ -88,9 +88,13 @@ module M_bar
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
-  predicate resolve_Ghost_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve_refmut_i32 _1
+  predicate resolve_Ghost_refmut_i32 [@inline:trivial] (self: MutBorrow.t Int32.t) = resolve_refmut_i32 self
   
   meta "rewrite_def" predicate resolve_Ghost_refmut_i32
+  
+  predicate resolve_Ghost_refmut_i32'0 [@inline:trivial] (_1: MutBorrow.t Int32.t) = resolve_Ghost_refmut_i32 _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_i32'0
   
   let rec new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
@@ -106,7 +110,7 @@ module M_bar
       | s1 = deref_mut_Ghost_refmut_i32 {_7} (fun (_x: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_6 <- _x ] s2)
       | s2 = [ &_6 <- { _6 with current = { _6.current with current = (1: Int32.t) } } ] s3
       | s3 = -{resolve_refmut_refmut_i32 _6}- s4
-      | s4 = -{resolve_Ghost_refmut_i32 g2}- s5
+      | s4 = -{resolve_Ghost_refmut_i32'0 g2}- s5
       | s5 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s6)
       | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

@@ -1262,7 +1262,8 @@ fn term<'tcx>(
             names,
             Term::var(ctx.sig(def_id).inputs[0].0.0, subst.type_at(0)),
             ctx.def_span(names.source_id()),
-        ),
+        )
+        .ok(),
         Intrinsic::PostconditionOnce => postcondition_once_term(ctx, names, subst, bound),
         Intrinsic::PostconditionMut => postcondition_mut_term(ctx, names, subst, bound),
         Intrinsic::Postcondition => postcondition_term(ctx, names, subst, bound),

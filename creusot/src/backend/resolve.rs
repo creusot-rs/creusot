@@ -55,11 +55,13 @@ pub fn is_resolve_trivial<'tcx>(
                 | AdtKind::Snapshot(_)
                 | AdtKind::Unit
                 | AdtKind::Builtin(_)
-                | AdtKind::Empty => (),
-                AdtKind::Struct { partially_opaque: true } | AdtKind::Opaque { .. } => {
+                | AdtKind::Empty
+                | AdtKind::Opaque { always: true }
+                | AdtKind::Identity(_) => (),
+                AdtKind::Struct { partially_opaque: true } | AdtKind::Opaque { always: false } => {
                     return false;
                 }
-                AdtKind::Box(ty) | AdtKind::Ghost(ty) => stack.push(ty),
+                AdtKind::Box(ty) => stack.push(ty),
                 AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => {
                     stack.extend(def.all_fields().map(|f| {
                         ctx.normalize_erasing_regions(
@@ -92,24 +94,32 @@ pub fn is_resolve_trivial<'tcx>(
     true
 }
 
-pub fn structural_resolve<'tcx>(
+pub(crate) enum StructuralResolveErr {
+    None,
+    Unknown,
+}
+
+pub(crate) fn structural_resolve<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     subject: Term<'tcx>,
     span: Span,
-) -> Option<Term<'tcx>> {
+) -> Result<Term<'tcx>, StructuralResolveErr> {
     let ty = subject.ty;
 
     if is_resolve_trivial(ctx, names.source_id(), names.typing_env(), ty, span) {
-        return Some(Term::true_(ctx.tcx));
+        return Ok(Term::true_(ctx.tcx));
     }
 
     match ty.kind() {
         TyKind::Adt(adt, subst) => match classify_adt(ctx, names.source_id(), *adt, subst) {
-            AdtKind::Box(ty) | AdtKind::Ghost(ty) => {
-                Some(ctx.resolve(names.source_id(), names.typing_env(), subject.coerce(ty)))
+            AdtKind::Box(ty) => {
+                Ok(ctx.resolve(names.source_id(), names.typing_env(), subject.coerce(ty)))
             }
-            AdtKind::Opaque { .. } | AdtKind::Builtin(_) => None,
+            AdtKind::Opaque { always: false } => Err(StructuralResolveErr::Unknown),
+            AdtKind::Opaque { always: true } | AdtKind::Builtin(_) | AdtKind::Identity(_) => {
+                Err(StructuralResolveErr::None)
+            }
             AdtKind::Enum => {
                 let arms = adt.variants().iter_enumerated().map(|(varidx, var)| {
                     let mut exp = Some(Term::true_(ctx.tcx));
@@ -125,7 +135,7 @@ pub fn structural_resolve<'tcx>(
                     });
                     (Pattern::constructor(varidx, fields, ty), exp.unwrap())
                 });
-                Some(subject.match_(arms))
+                Ok(subject.match_(arms))
             }
             AdtKind::Struct { partially_opaque } => {
                 let mut exp = Term::true_(ctx.tcx);
@@ -146,10 +156,10 @@ pub fn structural_resolve<'tcx>(
                         span: DUMMY_SP,
                     })
                 }
-                Some(exp)
+                Ok(exp)
             }
             AdtKind::Unit | AdtKind::Empty | AdtKind::Snapshot(_) | AdtKind::Namespace => {
-                Some(Term::true_(ctx.tcx))
+                Ok(Term::true_(ctx.tcx))
             }
         },
         TyKind::Tuple(tys) => {
@@ -161,11 +171,9 @@ pub fn structural_resolve<'tcx>(
                     subject.clone().proj(i.into(), ty),
                 ))
             }
-            Some(exp)
+            Ok(exp)
         }
-        TyKind::Ref(_, _, Mutability::Mut) => {
-            Some(subject.clone().fin().eq(ctx.tcx, subject.cur()))
-        }
+        TyKind::Ref(_, _, Mutability::Mut) => Ok(subject.clone().fin().eq(ctx.tcx, subject.cur())),
         TyKind::Closure(_, subst) => {
             let mut exp = Term::true_(ctx.tcx);
             let csubst = subst.as_closure();
@@ -178,9 +186,10 @@ pub fn structural_resolve<'tcx>(
                     )
                     .conj(exp)
             }
-            Some(exp)
+            Ok(exp)
         }
-        TyKind::Alias(..) | TyKind::Param(_) | TyKind::Array(..) | TyKind::Slice(..) => None,
+        TyKind::Alias(..) | TyKind::Param(_) => Err(StructuralResolveErr::Unknown),
+        TyKind::Array(..) | TyKind::Slice(..) => Err(StructuralResolveErr::None),
         ty => unreachable!("{ty:?}"),
     }
 }
@@ -231,10 +240,13 @@ pub(crate) fn elaborate_resolve_def<'tcx>(
         TraitResolved::NoInstance(info) => use_impl = info.trait_ref_is_specializable(),
     }
 
-    if let Some(sres) = structural_resolve(ctx, names, subject.clone(), span) {
-        rhs = rhs.conj(sres)
-    } else {
-        use_impl = true
+    match structural_resolve(ctx, names, subject.clone(), span) {
+        Ok(sres) => rhs = rhs.conj(sres),
+        Err(StructuralResolveErr::Unknown) => use_impl = true,
+        Err(StructuralResolveErr::None) => {
+            // For opaque types, structural resolve is useless. We do not include it.
+            ()
+        }
     }
 
     if use_impl && rhs.is_true() {

@@ -64,7 +64,8 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                 | AdtKind::Snapshot(_)
                 | AdtKind::Opaque { always: true }
                 | AdtKind::Unit
-                | AdtKind::Builtin(_) => continue,
+                | AdtKind::Builtin(_)
+                | AdtKind::Identity(_) => continue,
                 AdtKind::Struct { partially_opaque: true }
                 | AdtKind::Opaque { always: false }
                 | AdtKind::Empty => return false,
@@ -76,7 +77,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                         )
                     }))
                 }
-                AdtKind::Ghost(_) | AdtKind::Box(_) => unreachable!(),
+                AdtKind::Box(_) => unreachable!(),
             },
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
             TyKind::Param(_) | TyKind::Alias(_) | TyKind::Never => return false,
@@ -189,7 +190,7 @@ fn structural_invariant<'tcx>(
             | AdtKind::Snapshot(_)
             | AdtKind::Namespace
             | AdtKind::Builtin(_)
-            | AdtKind::Ghost(_)
+            | AdtKind::Identity(_)
             | AdtKind::Box(_) => Some(Term::true_(ctx.tcx)),
             AdtKind::Opaque { always: false } => None,
             AdtKind::Enum => {

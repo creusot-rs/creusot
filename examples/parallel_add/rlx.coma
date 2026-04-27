@@ -1040,13 +1040,18 @@ module M_parallel_add
   
   meta "rewrite_def" predicate inv_closure0
   
-  predicate resolve_Ghost_refmut_Fragment_Option_Excl_bool [@inline:trivial] (_1: MutBorrow.t t_Fragment_Option_Excl_bool) =
-    resolve_refmut_Fragment_Option_Excl_bool _1
+  predicate resolve_Ghost_refmut_Fragment_Option_Excl_bool [@inline:trivial] (self: MutBorrow.t t_Fragment_Option_Excl_bool) =
+    resolve_refmut_Fragment_Option_Excl_bool self
   
   meta "rewrite_def" predicate resolve_Ghost_refmut_Fragment_Option_Excl_bool
   
+  predicate resolve_Ghost_refmut_Fragment_Option_Excl_bool'0 [@inline:trivial] (_1: MutBorrow.t t_Fragment_Option_Excl_bool) =
+    resolve_Ghost_refmut_Fragment_Option_Excl_bool _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_Fragment_Option_Excl_bool'0
+  
   predicate resolve_closure0'0 [@inline:trivial] (_1: closure0'0) =
-    resolve_Ghost_refmut_Fragment_Option_Excl_bool _1.c2'0
+    resolve_Ghost_refmut_Fragment_Option_Excl_bool'0 _1.c2'0
   
   meta "rewrite_def" predicate resolve_closure0'0
   
@@ -1427,7 +1432,7 @@ module M_parallel_add
   
   meta "rewrite_def" predicate inv_closure1
   
-  predicate resolve_closure1 [@inline:trivial] (_1: closure1) = resolve_Ghost_refmut_Fragment_Option_Excl_bool _1.c2'3
+  predicate resolve_closure1 [@inline:trivial] (_1: closure1) = resolve_Ghost_refmut_Fragment_Option_Excl_bool'0 _1.c2'3
   
   meta "rewrite_def" predicate resolve_closure1
   
@@ -1600,19 +1605,6 @@ module M_parallel_add
       /\ protocol_ParallelAddAtomicInv result)}
       (! return {result}) ]
   
-  predicate resolve_Resource_View_AuthViewRel_Option_Excl_bool (_1: t_Resource_View_AuthViewRel_Option_Excl_bool)
-  
-  predicate resolve_Fragment_Option_Excl_bool (_1: t_Fragment_Option_Excl_bool)
-  
-  axiom resolve_axiom [@rewrite]:
-    forall x: t_Fragment_Option_Excl_bool [resolve_Fragment_Option_Excl_bool x]. resolve_Fragment_Option_Excl_bool x
-      = resolve_Resource_View_AuthViewRel_Option_Excl_bool x.f0'3
-  
-  predicate resolve_Ghost_Fragment_Option_Excl_bool [@inline:trivial] (_1: t_Fragment_Option_Excl_bool) =
-    resolve_Fragment_Option_Excl_bool _1
-  
-  meta "rewrite_def" predicate resolve_Ghost_Fragment_Option_Excl_bool
-  
   let rec deref_Ghost_Fragment_Option_Excl_bool (self: t_Fragment_Option_Excl_bool)
     (return (x: t_Fragment_Option_Excl_bool)) = any
     [ return (result: t_Fragment_Option_Excl_bool) -> {[@stop_split] [@expl:deref ensures] result = self}
@@ -1758,40 +1750,38 @@ module M_parallel_add
       | s54 = into_inner_AtomicInvariant_ParallelAddAtomicInv {inv}
           (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &_71 <- _x ] s55)
       | s55 = into_inner_ParallelAddAtomicInv {_71} (fun (_x: t_ParallelAddAtomicInv) -> [ &inv'0 <- _x ] s56)
-      | s56 = -{resolve_Ghost_Fragment_Option_Excl_bool frag1}- s57
-      | s57 = [ &_78 <- frag1 ] s58
-      | s58 = deref_Ghost_Fragment_Option_Excl_bool {_78} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_76 <- _x ] s59)
-      | s59 = frag_lemma_Option_Excl_bool {inv'0.auth1} {_76} (fun (_x: ()) -> [ &_73 <- _x ] s60)
-      | s60 = s61 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool inv'0.auth2} any) ]
-      | s61 = -{resolve_Authority_Option_Excl_bool inv'0.auth2}- s62
-      | s62 = s63 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool inv'0.auth1} any) ]
-      | s63 = -{resolve_Authority_Option_Excl_bool inv'0.auth1}- s64
-      | s64 = -{resolve_Ghost_Fragment_Option_Excl_bool frag2}- s65
-      | s65 = [ &_84 <- frag2 ] s66
-      | s66 = deref_Ghost_Fragment_Option_Excl_bool {_84} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_82 <- _x ] s67)
-      | s67 = frag_lemma_Option_Excl_bool {inv'0.auth2} {_82} (fun (_x: ()) -> [ &_79 <- _x ] s68)
-      | s68 = new_Box_Perm_AtomicI32_Global {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s69)
-      | s69 = new (fun (_x: t_SyncView) -> [ &view <- _x ] s70)
-      | s70 = MutBorrow.borrow_mut <t_SyncView> {view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_96 <- _bor ] [ &view <- _bor.final ] s71)
-      | s71 = deref_mut_Ghost_SyncView {_96} (fun (_x: MutBorrow.t t_SyncView) -> [ &_95 <- _x ] s72)
-      | s72 = MutBorrow.borrow_final <t_SyncView> {_95.current} {MutBorrow.get_id _95}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_94 <- _bor ] [ &_95 <- { _95 with current = _bor.final } ] s73)
-      | s73 = MutBorrow.borrow_final <t_SyncView> {_94.current} {MutBorrow.get_id _94}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_93 <- _bor ] [ &_94 <- { _94 with current = _bor.final } ] s74)
-      | s74 = -{resolve_refmut_SyncView _95}- s75
-      | s75 = -{resolve_refmut_SyncView _94}- s76
-      | s76 = MutBorrow.borrow_final <t_SyncView> {_93.current} {MutBorrow.get_id _93}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_92 <- _bor ] [ &_93 <- { _93 with current = _bor.final } ] s77)
-      | s77 = -{resolve_refmut_SyncView _93}- s78
-      | s78 = MutBorrow.borrow_final <t_SyncView> {_92.current} {MutBorrow.get_id _92}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_91 <- _bor ] [ &_92 <- { _92 with current = _bor.final } ] s79)
-      | s79 = new_refmut_SyncView {_91} (fun (_x: MutBorrow.t t_SyncView) -> [ &_90 <- _x ] s80)
-      | s80 = -{resolve_refmut_SyncView _92}- s81
-      | s81 = into_inner {atomic} {own'1} {_90} (fun (_x: tup2_i32_Ghost_Int) -> [ &_87 <- _x ] s82)
-      | s82 = [ &n <- _87.f0'10 ] s83
-      | s83 = {[@expl:assertion] n = (4: Int32.t)} s84
-      | s84 = return {_ret} ] ]
+      | s56 = [ &_78 <- frag1 ] s57
+      | s57 = deref_Ghost_Fragment_Option_Excl_bool {_78} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_76 <- _x ] s58)
+      | s58 = frag_lemma_Option_Excl_bool {inv'0.auth1} {_76} (fun (_x: ()) -> [ &_73 <- _x ] s59)
+      | s59 = s60 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool inv'0.auth2} any) ]
+      | s60 = -{resolve_Authority_Option_Excl_bool inv'0.auth2}- s61
+      | s61 = s62 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_Excl_bool inv'0.auth1} any) ]
+      | s62 = -{resolve_Authority_Option_Excl_bool inv'0.auth1}- s63
+      | s63 = [ &_84 <- frag2 ] s64
+      | s64 = deref_Ghost_Fragment_Option_Excl_bool {_84} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_82 <- _x ] s65)
+      | s65 = frag_lemma_Option_Excl_bool {inv'0.auth2} {_82} (fun (_x: ()) -> [ &_79 <- _x ] s66)
+      | s66 = new_Box_Perm_AtomicI32_Global {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s67)
+      | s67 = new (fun (_x: t_SyncView) -> [ &view <- _x ] s68)
+      | s68 = MutBorrow.borrow_mut <t_SyncView> {view}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_96 <- _bor ] [ &view <- _bor.final ] s69)
+      | s69 = deref_mut_Ghost_SyncView {_96} (fun (_x: MutBorrow.t t_SyncView) -> [ &_95 <- _x ] s70)
+      | s70 = MutBorrow.borrow_final <t_SyncView> {_95.current} {MutBorrow.get_id _95}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_94 <- _bor ] [ &_95 <- { _95 with current = _bor.final } ] s71)
+      | s71 = MutBorrow.borrow_final <t_SyncView> {_94.current} {MutBorrow.get_id _94}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_93 <- _bor ] [ &_94 <- { _94 with current = _bor.final } ] s72)
+      | s72 = -{resolve_refmut_SyncView _95}- s73
+      | s73 = -{resolve_refmut_SyncView _94}- s74
+      | s74 = MutBorrow.borrow_final <t_SyncView> {_93.current} {MutBorrow.get_id _93}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_92 <- _bor ] [ &_93 <- { _93 with current = _bor.final } ] s75)
+      | s75 = -{resolve_refmut_SyncView _93}- s76
+      | s76 = MutBorrow.borrow_final <t_SyncView> {_92.current} {MutBorrow.get_id _92}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_91 <- _bor ] [ &_92 <- { _92 with current = _bor.final } ] s77)
+      | s77 = new_refmut_SyncView {_91} (fun (_x: MutBorrow.t t_SyncView) -> [ &_90 <- _x ] s78)
+      | s78 = -{resolve_refmut_SyncView _92}- s79
+      | s79 = into_inner {atomic} {own'1} {_90} (fun (_x: tup2_i32_Ghost_Int) -> [ &_87 <- _x ] s80)
+      | s80 = [ &n <- _87.f0'10 ] s81
+      | s81 = {[@expl:assertion] n = (4: Int32.t)} s82
+      | s82 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & atomic: t_AtomicI32 = Any.any_l ()
     | & own'0: t_Perm_AtomicI32 = Any.any_l ()
