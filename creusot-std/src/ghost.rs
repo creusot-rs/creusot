@@ -20,9 +20,13 @@ pub mod invariant;
 pub mod lifetime_logic;
 pub mod perm;
 pub mod resource;
+mod shared;
 
-pub use fn_ghost::{FnGhost, FnGhostWrapper};
-pub use perm::Container;
+pub use self::{
+    fn_ghost::{FnGhost, FnGhostWrapper},
+    perm::Container,
+    shared::GhostShared,
+};
 
 #[cfg(creusot)]
 use crate::resolve::{resolve, structural_resolve};
