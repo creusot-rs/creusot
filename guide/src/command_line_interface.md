@@ -19,7 +19,7 @@
 cargo creusot
   [-p <PACKAGE>] [--only=(coma|prove)]
   [--erasure-check]
-  [--prove <PATTERN>]* [-i|--ide-on-fail|--ide-always]
+  <PATTERN>* [-i|--ide-on-fail|--ide-always]
   [--replay] [--why3session] [--why3find-arg <ARG>] [--dry-run-why3find]
   [-- <CARGO_OPTIONS>]
 ```
@@ -65,12 +65,12 @@ and run provers on verification conditions (using Why3find).
 
 #### Prover-specific options
 
-- `--prove <PATTERN>`: Select Coma files that match one of the patterns.
+- `<PATTERN>`: Select Coma files that match one of the patterns.
   If no patterns are provided, prove all files in selected packages (`-p`).
   Example patterns: `name`, `name::*`, `m/*/f`. Separators can be written as `::` or `/`.
 - `-i`, `--ide-on-fail`: Open the Why3 IDE on an unproved file to inspect its proof context.
 - `--ide-always`: Open the Why3 IDE on a single Coma file regardless of whether the proof succeeded.
-  The command fails if `--prove <PATTERN>` does not match exactly one file.
+  The command fails if `<PATTERN>` does not match exactly one file.
 - `--replay`: Don't generate new proofs, only check if the existing proofs are valid.
 - `--why3session`: Generate `why3session.xml` files (implied by `-i` and `--ide-always`).
 - `--why3find-arg <ARG>`: pass `<ARG>` directly as an extra argument to `why3find prove`. Repeat this to pass multiple arguments.

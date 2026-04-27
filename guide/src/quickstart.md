@@ -63,7 +63,7 @@ The command `cargo creusot` does two things: compile your Rust crate to Coma, th
 3. Run Why3find's proof search only on a specific Coma file (by default, Why3find is run on all Coma files under the `verif`):
 
     ```sh
-    cargo creusot [--only=prove] --prove verif/[COMA_FILE]
+    cargo creusot [--only=prove] verif/[COMA_FILE]
     ```
 
     Multiple files can also be specified in a single command.
@@ -71,21 +71,21 @@ The command `cargo creusot` does two things: compile your Rust crate to Coma, th
 When the proof fails, you can add the `-i` option to open the Coma file in Why3 IDE.
 
 ```sh
-cargo creusot --prove verif/[COMA_FILE] -i
+cargo creusot verif/[COMA_FILE] -i
 ```
 
 The `-i` option only launches the Why3 IDE if the proof fails.
 You can also use `--ide-always`
 
 ```sh
-cargo creusot --prove verif/[COMA_FILE] --ide-always
+cargo creusot verif/[COMA_FILE] --ide-always
 ```
 
 When you know that the proof is going to fail, it can be slow to update every time you modify your code.
 To skip proof search and just reuse the existing `proof.json` as is, add the option `--replay`.
 
 ```sh
-cargo creusot --prove verif/[COMA_FILE] --ide-always --replay
+cargo creusot verif/[COMA_FILE] --ide-always --replay
 ```
 
 The documentation for the Why3 IDE can be found [here](https://www.why3.org/doc/starting.html#getting-started-with-the-gui).
