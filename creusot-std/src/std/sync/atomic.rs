@@ -172,7 +172,7 @@ macro_rules! impl_atomic {
             pub fn compare_exchange<F, Success: Ordering::Ordering, Failure: Ordering::Ordering>(&self, current: $type, new: $type, f: Ghost<F>) -> Result<$type, $type>
             where
                 F: FnGhost + FnOnce(Result<
-                    &mut Committer<Self, $type, Success, Success>,
+                    &mut Committer<Self, $type, Success::Load, Success::Store>,
                     &Committer<Self, $type, Failure, Ordering::None>
                 >,
             )
@@ -219,7 +219,7 @@ macro_rules! impl_atomic {
             pub fn compare_exchange_weak<F, Success: Ordering::Ordering, Failure: Ordering::Ordering>(&self, current: $type, new: $type, f: Ghost<F>) -> Result<$type, $type>
             where
                 F: FnGhost + FnOnce(Result<
-                    &mut Committer<Self, $type, Success, Success>,
+                    &mut Committer<Self, $type, Success::Load, Success::Store>,
                     &Committer<Self, $type, Failure, Ordering::None>
                 >,
             )

@@ -1,4 +1,4 @@
-// DEPTH 8
+// DEPTH 10 TIME 5
 
 extern crate creusot_std;
 
