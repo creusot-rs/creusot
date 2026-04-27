@@ -1,4 +1,4 @@
-// TIME 2
+// TIME 5
 
 extern crate creusot_std;
 

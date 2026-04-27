@@ -58,6 +58,7 @@ impl<C: Container<Value: Sized>, T, Load, Store> Committer<C, T, Load, Store> {
         self.ward() == other.ward()
             && self.val_load() == other.val_load()
             && self.val_store() == other.val_store()
+            && self.timestamp() == other.timestamp()
     }
 }
 
