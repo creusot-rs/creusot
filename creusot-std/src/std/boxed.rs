@@ -7,6 +7,9 @@ use core::alloc::Allocator;
 #[cfg(not(feature = "std"))]
 use alloc::boxed::Box;
 
+#[cfg(creusot)]
+use core::ops::{Deref, DerefMut};
+
 #[cfg(feature = "nightly")]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     type DeepModelTy = Box<T::DeepModelTy>;
@@ -83,12 +86,27 @@ extern_spec! {
         where
             A: 'a;
     }
-}
 
-extern_spec! {
     impl<T: Clone, A: Allocator + Clone> Clone for Box<T, A> {
         #[ensures(T::clone.postcondition((&**self,), *result))]
         fn clone(&self) -> Box<T, A>;
+    }
+
+    impl<T, A: Allocator> Deref for Box<T, A> {
+        #[check(ghost)]
+        #[ensures(*result == **self)]
+        fn deref(&self) -> &T {
+            &**self
+        }
+    }
+
+    impl<T, A: Allocator> DerefMut for Box<T, A> {
+        #[check(ghost)]
+        #[ensures(*result == **self)]
+        #[ensures(^result == *^self)]
+        fn deref_mut(&mut self) -> &mut T {
+            &mut **self
+        }
     }
 }
 

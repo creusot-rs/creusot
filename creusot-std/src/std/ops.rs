@@ -205,6 +205,32 @@ extern_spec! {
             }
         }
     }
+
+    impl<'a, T> Deref for &'a T {
+        #[check(ghost)]
+        #[ensures(*result == **self)]
+        fn deref<'b>(&'b self) -> &'b T {
+            *self
+        }
+    }
+
+    impl<'a, T> Deref for &'a mut T {
+        #[check(ghost)]
+        #[ensures(*result == **self)]
+        fn deref<'b>(&'b self) -> &'b T {
+            *self
+        }
+    }
+
+    impl<'a, T> DerefMut for &'a mut T {
+        #[check(ghost)]
+        #[ensures(*result == **self)]
+        #[ensures(^result == *^self)]
+        #[ensures(^*self == ^^self)]
+        fn deref_mut<'b>(&'b mut self) -> &'b mut T {
+            *self
+        }
+    }
 }
 
 impl<T: DeepModel> DeepModel for Bound<T> {
