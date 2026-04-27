@@ -1,6 +1,5 @@
 use assert_cmd::prelude::*;
 use clap::Parser;
-use git2::Repository;
 use regex::Regex;
 use std::{
     env,
@@ -67,8 +66,7 @@ fn main() {
         panic!("prelude-generator failed");
     };
 
-    let changed =
-        if let Some(diff) = args.diff_from { Some(changed_comas(&diff).unwrap()) } else { None };
+    let changed = if let Some(diff) = args.diff_from { Some(changed_comas(&diff)) } else { None };
 
     let mut success = true;
     let mut obsolete = false;
@@ -346,21 +344,22 @@ fn main() {
     }
 }
 
-fn changed_comas(from: &str) -> Result<Vec<PathBuf>, git2::Error> {
-    let repo = Repository::open(".")?;
-    let rev = repo.revparse_single(from)?.id();
-    let commit = repo.find_commit(rev)?;
-    let diff = repo.diff_tree_to_workdir_with_index(Some(&commit.tree()?), None)?;
-
-    let mut paths = Vec::new();
-    for d in diff.deltas() {
-        if let Some(path) = d.new_file().path() {
-            if path.extension().map(|e| e == "coma").unwrap_or(false) {
-                paths.push(path.to_owned());
-            }
-        }
+fn changed_comas(from: &str) -> Vec<PathBuf> {
+    let output = Command::new("git")
+        .args(["diff", "--name-only", from, "tests", "examples"])
+        .output()
+        .unwrap();
+    if !output.status.success() {
+        panic!("git diff failed")
     }
-    Ok(paths)
+    output
+        .stdout
+        .lines()
+        .filter_map(|line| {
+            let path = PathBuf::from(line.unwrap());
+            if path.extension().is_some_and(|e| e == "coma") { Some(path) } else { None }
+        })
+        .collect()
 }
 
 enum Obsolete {
