@@ -245,7 +245,7 @@ and their path consists of the crate name (`creusot_tutorial_rlib` for the libra
 followed by the fully qualified function name (`creusot_tutorial::sum_up_to` becomes `creusot_tutorial/sum_up_to.coma`).
 
 ```
-cargo creusot -i --prove verif/creusot_tutorial_rlib/creusot_tutorial/sum_up_to.coma
+cargo creusot -i verif/creusot_tutorial_rlib/creusot_tutorial/sum_up_to.coma
 ```
 
 Why3 IDE is a GUI that looks like this:

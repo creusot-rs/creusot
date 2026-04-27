@@ -67,6 +67,7 @@ impl Runner {
         self.metadata.workspace_root.as_path().as_std_path()
     }
 
+    // You probably want to merge this into `new` but the result borrows from `self.metadata`.
     fn resolve_packages(&self, packages: &[String]) -> Result<Vec<&Package>> {
         if packages.is_empty() {
             creusot_default_members(&self.metadata)
@@ -250,9 +251,9 @@ pub struct CargoCreusotCmds {
     #[command(subcommand)]
     pub subcommand: Option<CargoCreusotSubCommand>,
     #[clap(flatten)]
-    pub args: CargoCreusotArgs,
-    #[clap(flatten)]
     pub prove_args: ProveArgs,
+    #[clap(flatten)]
+    pub args: CargoCreusotArgs,
 }
 
 #[derive(Debug, Parser)]
