@@ -3,6 +3,7 @@ use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
 };
 use rustc_hir::def::DefKind;
+use rustc_span::sym;
 
 /// Validate that laws have no additional generic parameters.
 ///
@@ -51,8 +52,11 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
         use rustc_middle::ty::print::PrintTraitRefExt;
         let trait_ref = ctx.impl_trait_ref(*impl_id).skip_binder();
 
-        if is_trusted(ctx.tcx, trait_ref.def_id) != is_trusted(ctx.tcx, impl_id.to_def_id()) {
-            let msg = if is_trusted(ctx.tcx, trait_ref.def_id) {
+        let trusted_trait = is_trusted(ctx.tcx, trait_ref.def_id)
+            || ctx.is_diagnostic_item(sym::Send, trait_ref.def_id)
+            || ctx.is_diagnostic_item(sym::Sync, trait_ref.def_id);
+        if trusted_trait != is_trusted(ctx.tcx, impl_id.to_def_id()) {
+            let msg = if trusted_trait {
                 format!(
                     "Expected implementation of trait `{}` for `{}` to be marked as `#[trusted]`",
                     trait_ref.print_only_trait_path(),

@@ -30,11 +30,15 @@ impl<T: Sized> Container for PermCell<T> {
     type Value = T;
 }
 
+#[trusted]
 unsafe impl<T> Send for PermCell<T> {}
+#[trusted]
 unsafe impl<T> Sync for PermCell<T> {}
 
-impl<T> SendPerm for PermCell<T> {}
-impl<T> SyncPerm for PermCell<T> {}
+#[trusted]
+impl<T: Send> SendPerm for PermCell<T> {}
+#[trusted]
+impl<T: Sync> SyncPerm for PermCell<T> {}
 
 impl<T: Sized> Invariant for Perm<PermCell<T>> {
     #[logic(open, prophetic, inline)]

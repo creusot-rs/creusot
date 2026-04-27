@@ -47,7 +47,10 @@ mod m {
     #[opaque]
     pub struct Resource<R>(PhantomData<R>);
 
+    #[trusted]
     unsafe impl<R> Send for Resource<R> {}
+    #[trusted]
+    unsafe impl<R> Sync for Resource<R> {}
 
     impl<R: RA> View for Resource<R> {
         type ViewTy = R;

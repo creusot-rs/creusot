@@ -266,7 +266,10 @@ pub trait Protocol {
 #[opaque]
 pub struct AtomicInvariantSC<T>(PhantomData<*mut T>);
 
+#[trusted]
 unsafe impl<T: Send> Sync for AtomicInvariantSC<T> {}
+#[trusted]
+unsafe impl<T: Send> Send for AtomicInvariantSC<T> {}
 
 impl<T: Protocol> AtomicInvariantSC<T> {
     /// Construct a `AtomicInvariantSC`, aka a sequentially consistent atomic invariant.
@@ -338,10 +341,13 @@ pub struct AtomicInvariant<T>(PhantomData<*mut T>);
 
 // TODO: Find a real hack to achieve this.
 #[cfg(creusot)]
+#[trusted]
 unsafe impl<T: Send + Objective> Sync for AtomicInvariant<T> {}
-
 #[cfg(not(creusot))]
 unsafe impl<T: Send> Sync for AtomicInvariant<T> {}
+
+#[trusted]
+unsafe impl<T: Send> Send for AtomicInvariant<T> {}
 
 impl<T: Protocol> AtomicInvariant<T> {
     /// Construct a `AtomicInvariant`
@@ -415,6 +421,7 @@ impl<T: Protocol> AtomicInvariant<T> {
 #[opaque]
 pub struct NonAtomicInvariant<T: Protocol>(PhantomData<*mut T>);
 
+#[trusted]
 unsafe impl<T: Protocol> Send for NonAtomicInvariant<T> {}
 
 /// Define method call syntax for [`NonAtomicInvariant::open`].

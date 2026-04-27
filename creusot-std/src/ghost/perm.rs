@@ -15,7 +15,9 @@ pub trait Container {
     }
 }
 
+#[trusted]
 pub trait SendPerm: Container {}
+#[trusted]
 pub trait SyncPerm: Container {}
 
 /// Token that represents the ownership of the contents of a container object. The container is
@@ -70,7 +72,9 @@ pub struct Perm<C: ?Sized + Container>(
     #[allow(unused)] [PhantomData<C::Value>],
 );
 
+#[trusted]
 unsafe impl<C: ?Sized + SendPerm> Send for Perm<C> {}
+#[trusted]
 unsafe impl<C: ?Sized + SyncPerm> Sync for Perm<C> {}
 
 impl<C: ?Sized + Container> Perm<C> {
