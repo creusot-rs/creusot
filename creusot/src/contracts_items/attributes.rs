@@ -74,6 +74,7 @@ attribute_functions! {
     [creusot::clause::check_ghost::trusted]     => is_check_ghost_trusted
     [creusot::bitwise]                          => is_bitwise
     [creusot::builtin_ascription]               => is_builtin_ascription
+    [creusot::no_simp]                          => is_no_simp
 }
 
 pub(crate) fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {

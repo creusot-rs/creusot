@@ -29,6 +29,8 @@ pub(crate) enum Dependency<'tcx> {
     PrivateFields(DefId, GenericArgsRef<'tcx>),
     PrivateResolve(DefId, GenericArgsRef<'tcx>),
     PrivateTyInv(DefId, GenericArgsRef<'tcx>),
+    /// An opaque constant from trying to use a non-visible constructor.
+    OpaqueConst(Symbol, Ty<'tcx>),
 }
 
 impl<'tcx> Dependency<'tcx> {
@@ -120,6 +122,7 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::PreMod(_) => None,
             Dependency::PrivateResolve(..) => Some(Symbol::intern("resolve__private")),
             Dependency::PrivateTyInv(..) => Some(Symbol::intern("inv__private")),
+            Dependency::OpaqueConst(name, _) => Some(name),
         }
     }
 }

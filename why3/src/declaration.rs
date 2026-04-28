@@ -98,6 +98,12 @@ pub struct Signature {
     pub args: Box<[(Ident, Type)]>,
 }
 
+impl Signature {
+    pub fn constant(name: Ident, ty: Type) -> Self {
+        Self { name, attrs: vec![], retty: Some(ty), args: [].into() }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct LogicDefn {

@@ -23,6 +23,12 @@ struct OpacityVisitor<'a, 'tcx> {
 }
 
 impl OpacityVisitor<'_, '_> {
+    fn assert_visible_enough(&self, id: DefId, span: Span) {
+        if !self.is_visible_enough(id) {
+            self.error(id, span)
+        }
+    }
+
     fn is_visible_enough(&self, id: DefId) -> bool {
         let Opacity::Transparent(op) = self.opacity else { return true };
         self.ctx.visibility(id).is_at_least(op, self.ctx.tcx)
@@ -49,33 +55,23 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                 if matches!(self.ctx.def_kind(id), DefKind::ConstParam) {
                     return;
                 }
-                if !self.is_visible_enough(id) {
-                    self.error(id, term.span)
-                }
+                self.assert_visible_enough(id, term.span);
             }
             &TermKind::Call { id, .. } => {
-                if !self.is_visible_enough(id) {
-                    self.error(id, term.span)
-                }
+                self.assert_visible_enough(id, term.span);
             }
             &TermKind::Constructor { variant, .. } => {
                 if let Some(adt) = term.ty.ty_adt_def() {
-                    if !self.is_visible_enough(adt.did()) {
-                        self.error(adt.did(), term.span);
-                    }
+                    self.assert_visible_enough(adt.did(), term.span);
                     for fld in &adt.variant(variant).fields {
-                        if !self.is_visible_enough(fld.did) {
-                            self.error(fld.did, term.span);
-                        }
+                        self.assert_visible_enough(fld.did, term.span);
                     }
                 }
             }
             &TermKind::Projection { idx, ref lhs } => {
                 if let Some(adt) = lhs.ty.ty_adt_def() {
                     let fdid = adt.non_enum_variant().fields[idx].did;
-                    if !self.is_visible_enough(fdid) {
-                        self.error(fdid, term.span);
-                    }
+                    self.assert_visible_enough(fdid, term.span);
                 }
             }
             &TermKind::Reborrow { ref projections, ref inner } => {
@@ -89,9 +85,7 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                                 && adt.is_struct()
                             {
                                 let fdid = adt.non_enum_variant().fields[*field_idx].did;
-                                if !self.is_visible_enough(fdid) {
-                                    self.error(fdid, term.span);
-                                }
+                                self.assert_visible_enough(fdid, term.span);
                             }
                         }
                         ProjectionElem::Deref | ProjectionElem::Index(_) => (),
@@ -111,9 +105,7 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
                 let fields_def = &pat.ty.ty_adt_def().unwrap().variants()[*variant_idx].fields;
                 for (fld, _) in patterns {
                     let fdid = fields_def[*fld].did;
-                    if !self.is_visible_enough(fdid) {
-                        self.error(fdid, pat.span);
-                    }
+                    self.assert_visible_enough(fdid, pat.span);
                 }
             }
             _ => (),
@@ -122,8 +114,10 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
     }
 }
 
-/// Forbid use of opaque type constructors and fields
-struct NoOpaqueTypeAccess<'a, 'tcx> {
+/// Opacity check in THIR. Check two things:
+/// 1. Forbid use of opaque type constructors and fields (in logic and non-trusted program definitions)
+/// 2. In consts, forbid use of less visible functions, constructors, and fields.
+struct ThirOpacityVisitor<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     thir: &'a Thir<'tcx>,
 }
@@ -147,7 +141,7 @@ impl TranslationCtx<'_> {
     }
 }
 
-impl<'thir, 'tcx> Visitor<'thir, 'tcx> for NoOpaqueTypeAccess<'thir, 'tcx> {
+impl<'thir, 'tcx> Visitor<'thir, 'tcx> for ThirOpacityVisitor<'thir, 'tcx> {
     fn thir(&self) -> &'thir Thir<'tcx> {
         self.thir
     }
@@ -186,7 +180,7 @@ pub(crate) fn validate_opacity<'tcx>(ctx: &TranslationCtx<'tcx>, item: DefId) {
     if is_logic || !is_trusted(ctx.tcx, item) {
         let (thir, expr) = ctx.thir_body(item.expect_local());
         let thir = &thir.borrow();
-        NoOpaqueTypeAccess { ctx, thir }.visit_expr(&thir[expr]);
+        ThirOpacityVisitor { ctx, thir }.visit_expr(&thir[expr]);
     }
     if is_logic && !is_opaque(ctx.tcx, item) {
         let Some(Scoped(_, term)) = ctx.term(item) else { return };

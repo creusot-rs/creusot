@@ -640,6 +640,14 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 };
                 vec![Decl::predicate(sig, None)]
             }
+            Dependency::OpaqueConst(_, ty) => {
+                let name = self.namer.dependency(dep).ident();
+                let ty = translate_ty(ctx, self.namer, self.root_span, ty);
+                vec![Decl::LogicDecl(LogicDecl {
+                    kind: Some(DeclKind::Constant),
+                    sig: Signature::constant(name, ty),
+                })]
+            }
         };
 
         self.dep_bodies.insert(dep, decls);

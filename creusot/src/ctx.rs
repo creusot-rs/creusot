@@ -147,6 +147,10 @@ pub trait HasTyCtxt<'tcx> {
         self.tcx().dcx().span_warn(span, msg)
     }
 
+    fn struct_warn(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx, ()> {
+        self.tcx().dcx().struct_span_warn(span, msg)
+    }
+
     fn span_bug(&self, span: Span, msg: impl Into<String>) -> ! {
         self.tcx().dcx().span_bug(span, msg.into())
     }
@@ -424,7 +428,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// set as their *visibility*.
     fn mk_opacity(&self, item: DefId) -> Opacity {
         match self.item_type(item) {
-            ItemType::Constant => Opacity::Transparent(Visibility::Public),
+            ItemType::Constant => Opacity::Transparent(self.visibility(item)),
             ItemType::Logic { .. } if is_opaque(self.tcx, item) => Opacity::Opaque,
             ItemType::Logic { .. } => {
                 let vis = opacity_witness_name(self.tcx, item).map_or_else(
