@@ -130,6 +130,16 @@ fn try_scalar_to_literal<'tcx>(
 /// Translate constant with a simple body: it can be reduced to a value expressible in
 /// the logical fragment of Why3, or its body is just a variable.
 /// `None` if it does not match these cases.
+///
+/// We try to normalize consts by default because there are really silly
+/// definitions out there that are best hidden from users:
+///
+/// ```
+/// const MAX: usize = !0;
+///
+/// const MIN: isize = !isize::MAX
+/// const MAX: isize = (usize::MAX >> 1) as isize;
+/// ```
 pub fn try_const_to_term<'tcx>(
     def_id: DefId,
     subst: ty::GenericArgsRef<'tcx>,
