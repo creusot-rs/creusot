@@ -4,11 +4,14 @@
 //! a mutable borrow whose lifetime is tracked by Creusot rather than by the
 //! compiler. This lifetime is represented by a `LifetimeToken` object.
 
-use creusot_std::{
-    ghost::{Plain, resource::Resource},
-    logic::{Id, real::PositiveReal},
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
+use crate::{
+    ghost::{FnGhost, Plain, resource::Resource},
+    logic::{Id, ops::Fin, real::PositiveReal},
     prelude::*,
 };
+use core::marker::PhantomData;
 
 /// Abstract representation of a lifetime.
 ///
@@ -45,6 +48,7 @@ impl Plain for Lifetime {
 /// at this lifetime.
 ///
 /// This type is purely ghost, and all operations on its values compile to no-ops.
+// FIXME: do not wrap this in `Ghost`
 pub struct LifetimeToken(Ghost<Resource<PositiveReal>>);
 
 impl LifetimeToken {
@@ -165,18 +169,16 @@ impl LifetimeDead {
 /// the contracts of the associated functions.
 ///
 /// Objects of this type may only be [constructed in ghost](FullBorrow::new).
-pub struct FullBorrow<T> {
-    ptr: *mut T,
-}
+pub struct FullBorrow<T>(PhantomData<T>);
 
 /// Container for the final value of a [`FullBorrow`].
 ///
 /// Can be used to get back the original value once the lifetime of the borrow
 /// is finished, by using [`EndBorrow::get`].
 #[opaque]
-pub struct EndBorrow<T>(::core::marker::PhantomData<*mut T>);
+pub struct EndBorrow<T>(PhantomData<T>);
 
-impl<T> creusot_std::logic::ops::Fin for FullBorrow<T> {
+impl<T> Fin for FullBorrow<T> {
     type Target = T;
 
     #[logic(opaque, prophetic)]
@@ -194,9 +196,17 @@ impl<T> Resolve for FullBorrow<T> {
     #[trusted]
     #[logic(prophetic)]
     #[requires(inv(self))]
-    #[requires(creusot_std::resolve::structural_resolve(self))]
+    #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
+}
+
+impl<T> Invariant for FullBorrow<T> {
+    #[logic(open, prophetic, inline)]
+    #[creusot::trusted_trivial_if_param_trivial]
+    fn invariant(self) -> bool {
+        pearlite! { inv(self.cur()) && inv(^self) }
+    }
 }
 
 impl<T> FullBorrow<T> {
@@ -249,7 +259,7 @@ impl<T> FullBorrow<T> {
     #[ensures(*result == self.cur())]
     #[allow(unused_variables)]
     pub fn borrow<'a>(&'a self, token: &'a LifetimeToken) -> &'a T {
-        unsafe { &*self.ptr }
+        unreachable!("ghost code only")
     }
 
     /// Get a mutable borrow to write into the value.
@@ -271,7 +281,7 @@ impl<T> FullBorrow<T> {
     #[ensures((*self).cur() == *result && (^self).cur() == ^result)]
     #[allow(unused_variables)]
     pub fn borrow_mut<'a>(&'a mut self, token: &'a LifetimeToken) -> &'a mut T {
-        unsafe { &mut *self.ptr }
+        unreachable!("ghost code only")
     }
 
     /// Change the type of a full borrow.
@@ -290,9 +300,9 @@ impl<T> FullBorrow<T> {
     #[allow(unused_variables)]
     pub fn map<U, F>(self, f: F, token: &LifetimeToken) -> FullBorrow<U>
     where
-        F: for<'a> FnOnce(&'a mut T) -> &'a mut U,
+        F: for<'a> FnOnce(&'a mut T) -> &'a mut U + FnGhost,
     {
-        FullBorrow { ptr: self.ptr.cast() }
+        unreachable!("ghost code only")
     }
 }
 
@@ -328,7 +338,7 @@ macro_rules! tuple_split {
             #[allow(unused_variables)]
             pub fn $map_split<$($name,)+ F>(self, f: F, token: &LifetimeToken) -> ($(FullBorrow<$name>,)+)
             where
-                F: for<'a> FnOnce(&'a mut T0) -> ($(&'a mut $name,)+),
+                F: for<'a> FnOnce(&'a mut T0) -> ($(&'a mut $name,)+) + FnGhost,
             {
                 unreachable!("ghost code only")
             }
@@ -349,7 +359,7 @@ tuple_split! { map_split_10 (C,0) (B,1) (A,2) (Z,3) (Y,4) (X,5) (W,6) (V,7) (U,8
 tuple_split! { map_split_11 (D,0) (C,1) (B,2) (A,3) (Z,4) (Y,5) (X,6) (W,7) (V,8) (U,9) (T,10) }
 tuple_split! { map_split_12 (E,0) (D,1) (C,2) (B,3) (A,4) (Z,5) (Y,6) (X,7) (W,8) (V,9) (U,10) (T,11) }
 
-impl<T> creusot_std::logic::ops::Fin for EndBorrow<T> {
+impl<T> Fin for EndBorrow<T> {
     type Target = T;
     #[logic(opaque, prophetic)]
     fn fin<'a>(self) -> &'a T {

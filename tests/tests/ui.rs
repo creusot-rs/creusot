@@ -8,7 +8,7 @@ use std::{
     process::{Command, Output},
     sync::{
         Mutex,
-        atomic::{self, AtomicUsize},
+        atomic::{AtomicUsize, Ordering::SeqCst},
     },
     thread,
 };
@@ -407,7 +407,7 @@ where
                 let Some(entry) = entries.lock().unwrap().next() else {
                     return;
                 };
-                test_count.fetch_add(1, atomic::Ordering::SeqCst);
+                test_count.fetch_add(1, SeqCst);
                 let entry = entry.unwrap();
 
                 if let Some(ref filter) = args.filter {
@@ -486,7 +486,7 @@ where
                         erase_in_flight(out);
                         write!(out, "{}: ", entry.display()).unwrap();
                         writeln_color!(out, Color::Red, "failure");
-                        test_failures.fetch_add(1, atomic::Ordering::SeqCst);
+                        test_failures.fetch_add(1, SeqCst);
                     };
                     out.flush().unwrap();
 
@@ -507,8 +507,8 @@ where
         }
     });
 
-    let test_count = test_count.load(atomic::Ordering::SeqCst);
-    let test_failures = test_failures.load(atomic::Ordering::SeqCst);
+    let test_count = test_count.load(SeqCst);
+    let test_failures = test_failures.load(SeqCst);
 
     (test_failures, test_count)
 }
