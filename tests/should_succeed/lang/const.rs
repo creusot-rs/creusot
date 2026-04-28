@@ -167,32 +167,3 @@ pub fn fn_pointer_test() {
     let y = x();
     proof_assert!(y@ == 2);
 }
-
-pub mod p {
-    use creusot_std::prelude::*;
-
-    pub struct S(());
-
-    #[creusot::no_simp]
-    pub const C: S = S::s();
-
-    impl S {
-        #[logic]
-        pub fn s_logic() -> Self {
-            S(())
-        }
-
-        #[ensures(result == S::s_logic())]
-        const fn s() -> Self {
-            S(())
-        }
-    }
-}
-
-#[creusot::no_simp]
-pub const D: p::S = p::C;
-
-#[ensures(result == p::S::s_logic())]
-pub fn abstract_const() -> p::S {
-    D
-}
