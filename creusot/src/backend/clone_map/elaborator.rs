@@ -15,7 +15,7 @@ use crate::{
         ty_inv::{TyInvDef, elaborate_tyinv_def, sig_add_type_invariant_spec},
     },
     contracts_items::{Intrinsic, get_builtin, is_inline, is_logic, why3_metas},
-    ctx::{BodyId, HasTyCtxt, ItemType},
+    ctx::{BodyId, HasTyCtxt, ItemType, TranslationCtx},
     naming::name,
     translation::{
         constant::try_const_to_term,
@@ -476,7 +476,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             TyKind::Adt(_, _) => translate_adtdecl(ctx, &names, ty),
             TyKind::Tuple(_) => translate_tuple_ty(ctx, &names, ty),
             TyKind::Dynamic(traits, _) => {
-                if is_logically_dyn_compatible(ctx.tcx(), traits.iter()) {
+                if is_logically_dyn_compatible(&ctx.ctx, traits.iter()) {
                     vec![Decl::TyDecl(TyDecl::Opaque {
                         ty_name: names.ty(ty).to_ident(),
                         ty_params: Box::new([]),
@@ -494,20 +494,22 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 /// (Rust already has a notion of "dyn-compatibility", this is a refinement of that
 /// which we thus call "logical dyn-compatibility".)
 fn is_logically_dyn_compatible<'tcx>(
-    tcx: ty::TyCtxt<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     traits: impl IntoIterator<Item = ty::Binder<'tcx, ty::ExistentialPredicate<'tcx>>>,
 ) -> bool {
-    traits.into_iter().any(|b| match b.skip_binder() {
-        ty::ExistentialPredicate::Trait(tr) => is_logically_dyn_compatible_trait(tcx, tr.def_id),
-        _ => false,
+    traits.into_iter().all(|b| match b.skip_binder() {
+        ty::ExistentialPredicate::Trait(tr) => is_logically_dyn_compatible_trait(ctx, tr.def_id),
+        _ => true, // auto traits are here
     })
 }
 
 /// Base trait for which `dyn` is supported by Creusot
-fn is_logically_dyn_compatible_trait<'tcx>(tcx: ty::TyCtxt<'tcx>, tr: DefId) -> bool {
-    // TODO: support more traits
-    let Some(path) = def_path(tcx, tr) else { return false };
-    [["core", "fmt", "Debug"], ["core", "fmt", "Write"]].iter().any(|p| equal_path(&*path, &*p))
+fn is_logically_dyn_compatible_trait(ctx: &TranslationCtx, tr: DefId) -> bool {
+    ctx.tcx.is_fn_trait(tr) || !trait_has_extern_spec(ctx, tr)
+}
+
+fn trait_has_extern_spec(ctx: &TranslationCtx, tr: DefId) -> bool {
+    ctx.get_extern_spec(tr).is_some() || 
 }
 
 fn equal_path(a: &[Symbol], b: &[&str]) -> bool {
