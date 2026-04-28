@@ -50,6 +50,15 @@ macro_rules! mach_int {
                     *self
                 }
             }
+
+            #[simp]
+            const $t::MIN;
+
+            #[simp]
+            const $t::MAX;
+
+            #[simp]
+            const $t::BITS;
         }
 
         impl AddLogic for $t {
