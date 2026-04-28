@@ -1,4 +1,5 @@
 use crate::{
+    contracts_items::is_no_simp,
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{fmir::Operand, pearlite::Literal, traits::TraitResolved},
 };
@@ -149,14 +150,16 @@ pub fn try_const_to_term<'tcx>(
     if ctx.def_kind(def_id) == DefKind::ConstParam {
         return None;
     }
-    let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
-    let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
-    let span = ctx.def_span(def_id);
-    let uneval = ty::UnevaluatedConst::new(def_id, subst);
-    match ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
-        Ok(Ok(val)) => valtree_to_term(val, ctx, ty, typing_env, span),
-        _ => try_const_synonym(def_id, subst, ctx, typing_env),
+    if !is_no_simp(ctx.tcx, def_id) {
+        let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
+        let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
+        let span = ctx.def_span(def_id);
+        let uneval = ty::UnevaluatedConst::new(def_id, subst);
+        if let Ok(Ok(val)) = ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
+            return valtree_to_term(val, ctx, ty, typing_env, span);
+        }
     }
+    try_const_synonym(def_id, subst, ctx, typing_env)
 }
 
 pub(crate) fn valtree_to_term<'tcx>(
