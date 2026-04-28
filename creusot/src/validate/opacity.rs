@@ -114,8 +114,10 @@ impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
     }
 }
 
-/// Forbid use of opaque type constructors and fields
-struct NoOpaqueTypeAccess<'a, 'tcx> {
+/// Opacity check in THIR. Check two things:
+/// 1. Forbid use of opaque type constructors and fields (in logic and non-trusted program definitions)
+/// 2. In consts, forbid use of less visible functions, constructors, and fields.
+struct ThirOpacityVisitor<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     thir: &'a Thir<'tcx>,
 }
@@ -139,7 +141,7 @@ impl TranslationCtx<'_> {
     }
 }
 
-impl<'thir, 'tcx> Visitor<'thir, 'tcx> for NoOpaqueTypeAccess<'thir, 'tcx> {
+impl<'thir, 'tcx> Visitor<'thir, 'tcx> for ThirOpacityVisitor<'thir, 'tcx> {
     fn thir(&self) -> &'thir Thir<'tcx> {
         self.thir
     }
@@ -178,7 +180,7 @@ pub(crate) fn validate_opacity<'tcx>(ctx: &TranslationCtx<'tcx>, item: DefId) {
     if is_logic || !is_trusted(ctx.tcx, item) {
         let (thir, expr) = ctx.thir_body(item.expect_local());
         let thir = &thir.borrow();
-        NoOpaqueTypeAccess { ctx, thir }.visit_expr(&thir[expr]);
+        ThirOpacityVisitor { ctx, thir }.visit_expr(&thir[expr]);
     }
     if is_logic && !is_opaque(ctx.tcx, item) {
         let Some(Scoped(_, term)) = ctx.term(item) else { return };

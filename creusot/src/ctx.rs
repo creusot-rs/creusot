@@ -428,7 +428,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// set as their *visibility*.
     fn mk_opacity(&self, item: DefId) -> Opacity {
         match self.item_type(item) {
-            ItemType::Constant => Opacity::Transparent(Visibility::Public),
+            ItemType::Constant => Opacity::Transparent(self.visibility(item)),
             ItemType::Logic { .. } if is_opaque(self.tcx, item) => Opacity::Opaque,
             ItemType::Logic { .. } => {
                 let vis = opacity_witness_name(self.tcx, item).map_or_else(
