@@ -147,6 +147,10 @@ pub trait HasTyCtxt<'tcx> {
         self.tcx().dcx().span_warn(span, msg)
     }
 
+    fn struct_warn(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx, ()> {
+        self.tcx().dcx().struct_span_warn(span, msg)
+    }
+
     fn span_bug(&self, span: Span, msg: impl Into<String>) -> ! {
         self.tcx().dcx().span_bug(span, msg.into())
     }

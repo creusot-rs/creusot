@@ -4,8 +4,8 @@ use crate::{
         program::{PtrCastKind, ptr_cast_kind},
         projections::{borrow_generated_id, projections_term},
         ty::{
-            constructor, floatty_to_prelude, ity_to_prelude, translate_ty, ty_to_prelude,
-            uty_to_prelude,
+            classify_adt, constructor, floatty_to_prelude, ity_to_prelude, translate_ty,
+            ty_to_prelude, uty_to_prelude,
         },
     },
     contracts_items::{is_builtin_ascription, is_new_namespace},
@@ -297,6 +297,27 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Constructor { variant, fields, .. } => {
                 let TyKind::Adt(adt, subst) = term.ty.kind() else { unreachable!() };
+                use crate::backend::ty::AdtKind::*;
+                if let Opaque { .. } | Struct { partially_opaque: true } =
+                    classify_adt(self.ctx, self.names.source_id(), *adt, subst)
+                {
+                    self.ctx
+                        .struct_warn(
+                            term.span,
+                            format!(
+                                "encountered non-visible constructor {}",
+                                self.tcx().def_path_str(adt.did())
+                            ),
+                        )
+                        .with_span_note(
+                            self.tcx().def_span(self.names.source_id()),
+                            "during the translation of this function",
+                        )
+                        .emit();
+                    let name = format!("opaque_{}", self.tcx().item_name(adt.did()));
+                    let ident = self.names.opaque_const(&name, term.ty);
+                    return Exp::var(ident);
+                }
                 let fields = fields.into_iter().map(|f| self.lower_term(f)).collect();
                 constructor(self.names, fields, adt.variant(*variant).def_id, subst)
             }

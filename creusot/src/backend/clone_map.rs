@@ -132,6 +132,10 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::PrivateResolve(struct_id, subst)).ident()
     }
 
+    fn opaque_const(&self, name: &str, ty: Ty<'tcx>) -> Ident {
+        self.dependency(Dependency::OpaqueConst(rustc_span::Symbol::intern(name), ty)).ident()
+    }
+
     /// Ideally we'd like to avoid caring about normalization in the backend,
     /// but we still need this for normalizing field types after instantiation.
     /// Also for normalizing RPITs but that seems easier to get rid of if we ever care to.
@@ -624,6 +628,9 @@ fn display_cycle_<'tcx>(
             }
             &PrivateTyInv(def_id, _args) => {
                 write!(f, "private ty inv {}", tcx.def_path_str(def_id))
+            }
+            &OpaqueConst(name, ty) => {
+                write!(f, "opaque const {name} {ty}")
             }
         }?;
         f.write_str(";")?;
