@@ -80,7 +80,7 @@ impl<'tcx> Why3Generator<'tcx> {
                 let proof_modl = logic::translate_logic(self, def_id);
                 TranslatedItem::Logic { proof_modl }
             }
-            ItemType::Program => {
+            ItemType::Program | ItemType::Constant => {
                 let modl = program::translate_function(self, def_id);
                 TranslatedItem::Program { modl }
             }
@@ -93,8 +93,7 @@ impl<'tcx> Why3Generator<'tcx> {
             | ItemType::Trait
             | ItemType::Type
             | ItemType::AssocTy
-            | ItemType::Impl
-            | ItemType::Constant => return,
+            | ItemType::Impl => return,
         };
         self.functions.push(translated_item);
     }
