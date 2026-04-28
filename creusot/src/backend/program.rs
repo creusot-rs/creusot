@@ -60,11 +60,27 @@ pub(crate) fn translate_function<'tcx>(
     ctx: &Why3Generator<'tcx>,
     def_id: DefId,
 ) -> Option<FileModule> {
+    if !ctx.has_body(def_id) {
+        return None;
+    }
+
     let names = Dependencies::new(ctx, def_id);
     let namespace_ty = names.namespace_ty();
 
-    if !ctx.has_body(def_id) {
-        return None;
+    use DefKind::*;
+    match ctx.tcx().def_kind(def_id) {
+        AssocConst { .. } | Const { .. } => {
+            // Translate const only if there is a non-trivial invariant or postcondition
+            let sig = ctx.sig(def_id);
+            let span = ctx.tcx().def_span(def_id);
+            if is_tyinv_trivial(&ctx.ctx, def_id, names.typing_env(), sig.output, span)
+                && !sig.contract.has_user_contract
+            {
+                return None;
+            }
+        }
+        InlineConst { .. } => return None,
+        _ => {}
     }
 
     let name = Ident::fresh_local(names.source_item().base_ident(&ctx.ctx).unwrap().as_str());
