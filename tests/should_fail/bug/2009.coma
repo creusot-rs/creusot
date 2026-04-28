@@ -1,0 +1,73 @@
+module M_p__C
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_S = { f0: UInt64.t }
+  
+  predicate invariant_S (self: t_S) = UInt64.t'int self.f0 <> 0
+  
+  predicate inv_S (_1: t_S)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_S [inv_S x]. inv_S x = invariant_S x
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec const_C (return (x: t_S)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = (0: UInt64.t) } ] s1 | s1 = return {_ret} ] ] [ & _ret: t_S = Any.any_l () ])
+    [ return (result: t_S) -> {[@stop_split] [@expl:C result type invariant] inv_S result} (! return {result}) ]
+end
+module M_D
+  use creusot.prelude.Any
+  
+  type t_S
+  
+  predicate invariant_S (self: t_S)
+  
+  predicate inv_S (_1: t_S)
+  
+  axiom inv_axiom: forall x: t_S [inv_S x]. inv_S x -> invariant_S x
+  
+  constant opaque_S : t_S
+  
+  constant const_C: t_S = opaque_S
+  
+  axiom const_C_spec: inv_S const_C
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec const_D (return (x: t_S)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- const_C ] s1 | s1 = return {_ret} ] ] [ & _ret: t_S = Any.any_l () ])
+    [ return (result: t_S) -> {[@stop_split] [@expl:D result type invariant] inv_S result} (! return {result}) ]
+end
+module M_f
+  use creusot.prelude.Any
+  
+  type t_S
+  
+  predicate invariant_S (self: t_S)
+  
+  predicate inv_S (_1: t_S)
+  
+  axiom inv_axiom: forall x: t_S [inv_S x]. inv_S x -> invariant_S x
+  
+  constant opaque_S : t_S
+  
+  constant const_D: t_S = opaque_S
+  
+  axiom const_D_spec: inv_S const_D
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec f (return (x: t_S)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- const_D ] s1 | s1 = return {_ret} ] ] [ & _ret: t_S = Any.any_l () ])
+    [ return (result: t_S) ->
+    {[@stop_split] [@expl:f ensures] ([@stop_split] [@expl:f result type invariant] inv_S result)
+      /\ ([@stop_split] [@expl:f ensures] result = const_D)}
+      (! return {result}) ]
+end
