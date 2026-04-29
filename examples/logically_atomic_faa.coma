@@ -1,0 +1,512 @@
+module M_fetch_add
+  use creusot.prelude.Any
+  use creusot.int.Int32
+  use creusot.prelude.MutBorrow
+  
+  type t_Committer_AtomicI32_i32_SeqCst_None
+  
+  let rec closure2 [@coma:extspec] (self: ()) (_0: t_Committer_AtomicI32_i32_SeqCst_None) (return (x: ())) = bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ] [ return (result: ()) -> return {result} ]
+  
+  meta "rewrite_def" predicate closure2'pre
+  
+  meta "rewrite_def" predicate closure2'post'return
+  
+  type t_FnGhostWrapper_closure2 = { f0: () }
+  
+  let rec __new_closure2 (f: ()) (return (x: t_FnGhostWrapper_closure2)) = any
+    [ return (result: t_FnGhostWrapper_closure2) -> {[@stop_split] [@expl:__new ensures] result.f0 = f}
+      (! return {result}) ]
+  
+  let rec new_FnGhostWrapper_closure2 (x: t_FnGhostWrapper_closure2) (return (x'0: t_FnGhostWrapper_closure2)) = any
+    [ return (result: t_FnGhostWrapper_closure2) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  type t_AtomicI32
+  
+  predicate inv_AtomicI32 (_1: t_AtomicI32)
+  
+  predicate invariant_ref_AtomicI32 [@inline:trivial] (self: t_AtomicI32) = inv_AtomicI32 self
+  
+  meta "rewrite_def" predicate invariant_ref_AtomicI32
+  
+  predicate inv_ref_AtomicI32 [@inline:trivial] (_1: t_AtomicI32) = invariant_ref_AtomicI32 _1
+  
+  meta "rewrite_def" predicate inv_ref_AtomicI32
+  
+  predicate shot_store_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_None)
+  
+  function ward_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_None) : t_AtomicI32
+  
+  predicate precondition_closure2 [@inline:trivial] (self: ()) (args: t_Committer_AtomicI32_i32_SeqCst_None) =
+    let _0 = args in closure2'pre self _0
+  
+  meta "rewrite_def" predicate precondition_closure2
+  
+  predicate precondition_FnGhostWrapper_closure2 [@inline:trivial] (self: t_FnGhostWrapper_closure2) (args: t_Committer_AtomicI32_i32_SeqCst_None) =
+    precondition_closure2 self.f0 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure2
+  
+  function val_load_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_None) : Int32.t
+  
+  predicate postcondition_once_closure2 [@inline:trivial] (self: ()) (args: t_Committer_AtomicI32_i32_SeqCst_None) (result: ()) =
+    let _0 = args in closure2'post'return self _0 result
+  
+  meta "rewrite_def" predicate postcondition_once_closure2
+  
+  predicate postcondition_once_FnGhostWrapper_closure2 [@inline:trivial] (self: t_FnGhostWrapper_closure2) (args: t_Committer_AtomicI32_i32_SeqCst_None) (result: ()) =
+    postcondition_once_closure2 self.f0 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure2
+  
+  let rec load_FnGhostWrapper_closure2 (self: t_AtomicI32) (f: t_FnGhostWrapper_closure2) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:load_FnGhostWrapper_closure2 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicI32 self)
+    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicI32_i32_SeqCst_None. not shot_store_AtomicI32 c
+      -> ward_AtomicI32 c = self -> precondition_FnGhostWrapper_closure2 f c)}
+    any
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicI32_i32_SeqCst_None. not shot_store_AtomicI32 c
+        /\ ward_AtomicI32 c = self
+        /\ val_load_AtomicI32 c = result /\ postcondition_once_FnGhostWrapper_closure2 f c ()}
+      (! return {result}) ]
+  
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate invariant_Ghost_F [@inline:trivial] (self: t_F) = inv_F self
+  
+  meta "rewrite_def" predicate invariant_Ghost_F
+  
+  predicate inv_Ghost_F [@inline:trivial] (_1: t_F) = invariant_Ghost_F _1
+  
+  meta "rewrite_def" predicate inv_Ghost_F
+  
+  let rec into_inner_F (self: t_F) (return (x: t_F)) =
+    {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_F self}
+    any
+    [ return (result: t_F) ->
+    {[@stop_split] [@expl:into_inner_F ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_F result)
+      /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
+  
+  type t_Option_F = None | Some t_F
+  
+  predicate inv_Option_F (_1: t_Option_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_F [inv_Option_F x]. inv_Option_F x
+      = match x with
+        | None -> true
+        | Some f0'0 -> inv_F f0'0
+        end
+  
+  predicate invariant_Ghost_Option_F [@inline:trivial] (self: t_Option_F) = inv_Option_F self
+  
+  meta "rewrite_def" predicate invariant_Ghost_Option_F
+  
+  predicate inv_Ghost_Option_F [@inline:trivial] (_1: t_Option_F) = invariant_Ghost_Option_F _1
+  
+  meta "rewrite_def" predicate inv_Ghost_Option_F
+  
+  let rec new_Option_F (x: t_Option_F) (return (x'0: t_Option_F)) =
+    {[@stop_split] [@expl:new 'x' type invariant] inv_Option_F x}
+    any
+    [ return (result: t_Option_F) ->
+    {[@stop_split] [@expl:new_Option_F ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Option_F result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
+  let rec wrapping_add (self_: Int32.t) (rhs: Int32.t) (return (x: Int32.t)) = any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int32.add self_ rhs}
+      (! return {result}) ]
+  
+  type t_Committer_AtomicI32_i32_SeqCst_SeqCst
+  
+  type t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None =
+    | Ok (MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst)
+    | Err t_Committer_AtomicI32_i32_SeqCst_None
+  
+  predicate resolve_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst
+  
+  type closure6 = { c0: MutBorrow.t t_Option_F }
+  
+  predicate invariant_refmut_Ghost_Option_F [@inline:trivial] (self: MutBorrow.t t_Option_F) =
+    inv_Ghost_Option_F self.current /\ inv_Ghost_Option_F self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Ghost_Option_F
+  
+  predicate inv_refmut_Ghost_Option_F [@inline:trivial] (_1: MutBorrow.t t_Option_F) =
+    invariant_refmut_Ghost_Option_F _1
+  
+  meta "rewrite_def" predicate inv_refmut_Ghost_Option_F
+  
+  predicate inv_closure6 [@inline:trivial] (_1: closure6) = let {c0 = x0} = _1 in inv_refmut_Ghost_Option_F x0
+  
+  meta "rewrite_def" predicate inv_closure6
+  
+  predicate invariant_refmut_closure6 [@inline:trivial] (self: MutBorrow.t closure6) =
+    inv_closure6 self.current /\ inv_closure6 self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_closure6
+  
+  predicate inv_refmut_closure6 [@inline:trivial] (_1: MutBorrow.t closure6) = invariant_refmut_closure6 _1
+  
+  meta "rewrite_def" predicate inv_refmut_closure6
+  
+  predicate resolve_refmut_closure6 [@inline:trivial] (_1: MutBorrow.t closure6) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure6
+  
+  let rec elim_Ok (_x: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None)
+    (return (f0'0: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst)) = any
+    [ _k (f0'0: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) -> {Ok f0'0 = _x} (! return {f0'0})
+    | _chk -> (! {[@expl:elim Ok] match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate invariant_refmut_Option_F [@inline:trivial] (self: MutBorrow.t t_Option_F) =
+    inv_Option_F self.current /\ inv_Option_F self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Option_F
+  
+  predicate inv_refmut_Option_F [@inline:trivial] (_1: MutBorrow.t t_Option_F) = invariant_refmut_Option_F _1
+  
+  meta "rewrite_def" predicate inv_refmut_Option_F
+  
+  let rec deref_mut_Ghost_Option_F (self: MutBorrow.t t_Option_F) (return (x: MutBorrow.t t_Option_F)) =
+    {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Option_F self}
+    any
+    [ return (result: MutBorrow.t t_Option_F) ->
+    {[@stop_split] [@expl:deref_mut_Ghost_Option_F ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_Option_F result)
+      /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
+      (! return {result}) ]
+  
+  let rec take_F (self_: MutBorrow.t t_Option_F) (return (x: t_Option_F)) =
+    {[@stop_split] [@expl:take 'self_' type invariant] inv_refmut_Option_F self_}
+    any
+    [ return (result: t_Option_F) ->
+    {[@stop_split] [@expl:take_F ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_F result)
+      /\ ([@stop_split] [@expl:take ensures] result = self_.current /\ self_.final = None)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Option_F [@inline:trivial] (_1: MutBorrow.t t_Option_F) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Option_F
+  
+  let rec unwrap_F (self_: t_Option_F) (return (x: t_F)) =
+    {[@stop_split] [@expl:unwrap_F requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_F self_)
+    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
+    any
+    [ return (result: t_F) ->
+    {[@stop_split] [@expl:unwrap_F ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_F result)
+      /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
+      (! return {result}) ]
+  
+  predicate precondition_F (self: t_F) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst)
+  
+  predicate postcondition_once_F (self: t_F) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (result: ())
+  
+  let rec call_once_F (self_: t_F) (arg: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (return (x: ())) =
+    {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Ghost_Option_F [@inline:trivial] (_1: MutBorrow.t t_Option_F) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_Option_F
+  
+  predicate resolve_closure6 [@inline:trivial] (_1: closure6) = resolve_refmut_Ghost_Option_F _1.c0
+  
+  meta "rewrite_def" predicate resolve_closure6
+  
+  predicate hist_inv_closure6 [@inline:trivial] (self: closure6) (result_state: closure6) =
+    result_state.c0.final = self.c0.final
+  
+  meta "rewrite_def" predicate hist_inv_closure6
+  
+  let rec closure6 [@coma:extspec] (self: MutBorrow.t closure6)
+    (c: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None)
+    (return (x: ())) = {[@stop_split] [@expl:closure 'self' type invariant] inv_refmut_closure6 self}
+    bb0
+    [ bb0 = any
+      [ br0 (x0: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) -> {c = Ok x0} (! bb2)
+      | br1 (x0: t_Committer_AtomicI32_i32_SeqCst_None) -> {c = Err x0} (! bb7) ]
+    | bb7 = s0
+      [ s0 = -{match c with
+          | Ok x -> resolve_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst x
+          | _ -> true
+          end}-
+        s1
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure6 self} any) ]
+      | s2 = -{resolve_refmut_closure6 self}- s3
+      | s3 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = elim_Ok {c} (fun (r0: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) -> [ &c'0 <- r0 ] s1)
+      | s1 = MutBorrow.borrow_mut <t_Option_F> {self.current.c0.current}
+          (fun (_bor: MutBorrow.t t_Option_F) ->
+            [ &_9 <- _bor ] -{inv_Ghost_Option_F _bor.final}-
+            [ &self <- { self with current = { c0 = { self.current.c0 with current = _bor.final } } } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F self.current.c0.current} any) ]
+      | s2 = deref_mut_Ghost_Option_F {_9} (fun (_x: MutBorrow.t t_Option_F) -> [ &_8 <- _x ] s3)
+      | s3 = MutBorrow.borrow_final <t_Option_F> {_8.current} {MutBorrow.get_id _8}
+          (fun (_bor: MutBorrow.t t_Option_F) ->
+            [ &_7 <- _bor ] -{inv_Option_F _bor.final}-
+            [ &_8 <- { _8 with current = _bor.final } ] s4)
+        [ _ck -> (! {[@expl:type invariant] inv_Option_F _8.current} any) ]
+      | s4 = take_F {_7} (fun (_x: t_Option_F) -> [ &_6 <- _x ] s5)
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_F _8} any) ]
+      | s6 = -{resolve_refmut_Option_F _8}- s7
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure6 self} any) ]
+      | s8 = -{resolve_refmut_closure6 self}- s9
+      | s9 = unwrap_F {_6} (fun (_x: t_F) -> [ &_5 <- _x ] s10)
+      | s10 = MutBorrow.borrow_final <t_Committer_AtomicI32_i32_SeqCst_SeqCst> {c'0.current} {MutBorrow.get_id c'0}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) ->
+            [ &_11 <- _bor ] [ &c'0 <- { c'0 with current = _bor.final } ] s11)
+      | s11 = [ &_10 <- _11 ] s12
+      | s12 = call_once_F {_5} {_10} (fun (_x: ()) -> [ &_ret <- _x ] s13)
+      | s13 = -{resolve_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst c'0}- s14
+      | s14 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t closure6 = self
+    | & c: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None = c
+    | & c'0: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst = Any.any_l ()
+    | & _5: t_F = Any.any_l ()
+    | & _6: t_Option_F = Any.any_l ()
+    | & _7: MutBorrow.t t_Option_F = Any.any_l ()
+    | & _8: MutBorrow.t t_Option_F = Any.any_l ()
+    | & _9: MutBorrow.t t_Option_F = Any.any_l ()
+    | & _10: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst = Any.any_l ()
+    | & _11: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst = Any.any_l () ]
+    [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure6 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure6'pre
+  
+  meta "rewrite_def" predicate closure6'post'return
+  
+  predicate postcondition_once_closure6 [@inline:trivial] (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (result: ()) =
+    let c = args in exists e: closure6. (exists bor_self: MutBorrow.t closure6. bor_self.current = self
+          /\ bor_self.final = e /\ closure6'post'return bor_self c result /\ hist_inv_closure6 self e)
+      /\ resolve_closure6 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure6
+  
+  predicate postcondition_mut_closure6 [@inline:trivial] (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (result_state: closure6) (result: ()) =
+    let c = args in exists bor_self: MutBorrow.t closure6. bor_self.current = self
+      /\ bor_self.final = result_state /\ closure6'post'return bor_self c result /\ hist_inv_closure6 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure6
+  
+  function fn_mut_once_closure6 (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (res: ()) : ()
+  
+  axiom fn_mut_once_closure6_spec:
+    forall self: closure6, args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None, res: (). postcondition_once_closure6 self args res
+      = (exists res_state: closure6. postcondition_mut_closure6 self args res_state res /\ resolve_closure6 res_state)
+  
+  function hist_inv_trans_closure6 (self: closure6) (b: closure6) (c: closure6) : ()
+  
+  axiom hist_inv_trans_closure6_spec: forall self: closure6, b: closure6, c: closure6. hist_inv_closure6 self b
+      -> hist_inv_closure6 b c -> hist_inv_closure6 self c
+  
+  function hist_inv_refl_closure6 (self: closure6) : ()
+  
+  axiom hist_inv_refl_closure6_spec: forall self: closure6. hist_inv_closure6 self self
+  
+  function postcondition_mut_hist_inv_closure6 (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (res_state: closure6) (res: ()) : ()
+  
+  axiom postcondition_mut_hist_inv_closure6_spec:
+    forall self: closure6, args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None, res_state: closure6, res: (). postcondition_mut_closure6 self args res_state res
+      -> hist_inv_closure6 self res_state
+  
+  type t_FnGhostWrapper_closure6 = { f0'0: closure6 }
+  
+  predicate inv_FnGhostWrapper_closure6 (_1: t_FnGhostWrapper_closure6)
+  
+  axiom inv_axiom'0 [@rewrite]:
+    forall x: t_FnGhostWrapper_closure6 [inv_FnGhostWrapper_closure6 x]. inv_FnGhostWrapper_closure6 x
+      = inv_closure6 x.f0'0
+  
+  let rec __new_closure6 (f: closure6) (return (x: t_FnGhostWrapper_closure6)) =
+    {[@stop_split] [@expl:__new 'f' type invariant] inv_closure6 f}
+    any
+    [ return (result: t_FnGhostWrapper_closure6) ->
+    {[@stop_split] [@expl:__new_closure6 ensures] ([@stop_split] [@expl:__new result type invariant] inv_FnGhostWrapper_closure6 result)
+      /\ ([@stop_split] [@expl:__new ensures] result.f0'0 = f)}
+      (! return {result}) ]
+  
+  predicate invariant_Ghost_FnGhostWrapper_closure6 [@inline:trivial] (self: t_FnGhostWrapper_closure6) =
+    inv_FnGhostWrapper_closure6 self
+  
+  meta "rewrite_def" predicate invariant_Ghost_FnGhostWrapper_closure6
+  
+  predicate inv_Ghost_FnGhostWrapper_closure6 [@inline:trivial] (_1: t_FnGhostWrapper_closure6) =
+    invariant_Ghost_FnGhostWrapper_closure6 _1
+  
+  meta "rewrite_def" predicate inv_Ghost_FnGhostWrapper_closure6
+  
+  let rec new_FnGhostWrapper_closure6 (x: t_FnGhostWrapper_closure6) (return (x'0: t_FnGhostWrapper_closure6)) =
+    {[@stop_split] [@expl:new 'x' type invariant] inv_FnGhostWrapper_closure6 x}
+    any
+    [ return (result: t_FnGhostWrapper_closure6) ->
+    {[@stop_split] [@expl:new_FnGhostWrapper_closure6 ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_FnGhostWrapper_closure6 result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
+  type t_Result_i32_i32 = Ok'0 Int32.t | Err'0 Int32.t
+  
+  predicate shot_store_AtomicI32'0 (self: t_Committer_AtomicI32_i32_SeqCst_SeqCst)
+  
+  function ward_AtomicI32'0 (self: t_Committer_AtomicI32_i32_SeqCst_SeqCst) : t_AtomicI32
+  
+  function deep_model_i32 [@inline:trivial] (self: Int32.t) : int = Int32.to_int self
+  
+  meta "rewrite_def" function deep_model_i32
+  
+  function val_load_AtomicI32'0 (self: t_Committer_AtomicI32_i32_SeqCst_SeqCst) : Int32.t
+  
+  function val_store_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_SeqCst) : Int32.t
+  
+  predicate precondition_closure6 [@inline:trivial] (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) =
+    let c = args in forall bor_self: MutBorrow.t closure6. bor_self.current = self /\ inv_closure6 bor_self.final
+      -> closure6'pre bor_self c
+  
+  meta "rewrite_def" predicate precondition_closure6
+  
+  predicate precondition_FnGhostWrapper_closure6 [@inline:trivial] (self: t_FnGhostWrapper_closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) =
+    precondition_closure6 self.f0'0 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure6
+  
+  predicate postcondition_once_FnGhostWrapper_closure6 [@inline:trivial] (self: t_FnGhostWrapper_closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (result: ()) =
+    postcondition_once_closure6 self.f0'0 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure6
+  
+  let rec compare_exchange_weak_FnGhostWrapper_closure6 (self: t_AtomicI32) (current': Int32.t) (new: Int32.t)
+    (f: t_FnGhostWrapper_closure6) (return (x: t_Result_i32_i32)) =
+    {[@stop_split] [@expl:compare_exchange_weak_FnGhostWrapper_closure6 requires] ([@stop_split] [@expl:compare_exchange_weak 'self' type invariant] inv_ref_AtomicI32 self)
+    /\ ([@stop_split] [@expl:compare_exchange_weak 'f' type invariant] inv_Ghost_FnGhostWrapper_closure6 f)
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #0] forall c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32'0 c.current
+        -> ward_AtomicI32'0 c.current = self
+        -> deep_model_i32 (val_load_AtomicI32'0 c.current) = deep_model_i32 current'
+        -> val_store_AtomicI32 c.current = new
+        -> precondition_FnGhostWrapper_closure6 f (Ok c)
+        /\ (postcondition_once_FnGhostWrapper_closure6 f (Ok c) () -> shot_store_AtomicI32'0 c.final))
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicI32_i32_SeqCst_None. not shot_store_AtomicI32 c
+      -> ward_AtomicI32 c = self -> precondition_FnGhostWrapper_closure6 f (Err c))}
+    any
+    [ return (result: t_Result_i32_i32) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
+        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32'0 c.current
+          /\ ward_AtomicI32'0 c.current = self
+          /\ deep_model_i32 (val_load_AtomicI32'0 c.current) = deep_model_i32 current'
+          /\ val_store_AtomicI32 c.current = new
+          /\ result'0 = val_load_AtomicI32'0 c.current /\ postcondition_once_FnGhostWrapper_closure6 f (Ok c) ()
+        | Err'0 result'0 -> exists c: t_Committer_AtomicI32_i32_SeqCst_None. not shot_store_AtomicI32 c
+          /\ ward_AtomicI32 c = self
+          /\ result'0 = val_load_AtomicI32 c /\ postcondition_once_FnGhostWrapper_closure6 f (Err c) ()
+        end}
+      (! return {result}) ]
+  
+  let rec elim_Err (_x: t_Result_i32_i32) (return (f0'1: Int32.t)) = any
+    [ _k (f0'1: Int32.t) -> {Err'0 f0'1 = _x} (! return {f0'1})
+    | _chk -> (! {[@expl:elim Err] match _x with
+        | Err'0 _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate resolve_F (_1: t_F)
+  
+  predicate resolve_Option_F (_1: t_Option_F)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Option_F [resolve_Option_F x]. resolve_Option_F x
+      = match x with
+        | None -> true
+        | Some x0 -> resolve_F x0
+        end
+  
+  predicate resolve_Ghost_Option_F [@inline:trivial] (self: t_Option_F) = resolve_Option_F self
+  
+  meta "rewrite_def" predicate resolve_Ghost_Option_F
+  
+  predicate resolve_Ghost_Option_F'0 [@inline:trivial] (_1: t_Option_F) = resolve_Ghost_Option_F _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_Option_F'0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec fetch_add_F (at': t_AtomicI32) (val': Int32.t) (f: t_F) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:fetch_add_F requires] ([@stop_split] [@expl:fetch_add 'at' type invariant] inv_ref_AtomicI32 at')
+    /\ ([@stop_split] [@expl:fetch_add 'f' type invariant] inv_Ghost_F f)
+    /\ ([@stop_split] [@expl:fetch_add requires] forall c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32'0 c.current
+      -> ward_AtomicI32'0 c.current = at'
+      -> val_store_AtomicI32 c.current = Int32.add val' (val_load_AtomicI32'0 c.current)
+      -> precondition_F f c /\ (postcondition_once_F f c () -> shot_store_AtomicI32'0 c.final))}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_16 <- () ] s1
+      | s1 = __new_closure2 {_16} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_15 <- _x ] s2)
+      | s2 = new_FnGhostWrapper_closure2 {_15} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_14 <- _x ] s3)
+      | s3 = load_FnGhostWrapper_closure2 {at'} {_14} (fun (_x: Int32.t) -> [ &old' <- _x ] s4)
+      | s4 = [ &old_f <- f ] s5
+      | s5 = into_inner_F {f} (fun (_x: t_F) -> [ &_22 <- _x ] s6)
+      | s6 = [ &_21 <- Some _22 ] s7
+      | s7 = new_Option_F {_21} (fun (_x: t_Option_F) -> [ &f'0 <- _x ] s8)
+      | s8 = bb8 ]
+    | bb8 = bb8
+      [ bb8 = {[@expl:inferred invariant: type invariant] inv_Ghost_Option_F f'0}
+        {[@expl:loop invariant] f'0 = Some old_f}
+        (! s0)
+        [ s0 = wrapping_add {old'} {val'} (fun (_x: Int32.t) -> [ &_33 <- _x ] s1)
+        | s1 = MutBorrow.borrow_mut <t_Option_F> {f'0}
+            (fun (_bor: MutBorrow.t t_Option_F) ->
+              [ &_39 <- _bor ] -{inv_Ghost_Option_F _bor.final}-
+              [ &f'0 <- _bor.final ] s2) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
+        | s2 = [ &_38 <- { c0 = _39 } ] s3
+        | s3 = __new_closure6 {_38} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_37 <- _x ] s4)
+        | s4 = new_FnGhostWrapper_closure6 {_37} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_36 <- _x ] s5)
+        | s5 = compare_exchange_weak_FnGhostWrapper_closure6 {at'} {old'} {_33} {_36}
+            (fun (_x: t_Result_i32_i32) -> [ &_30 <- _x ] s6)
+        | s6 = any [ br0 (x0: Int32.t) -> {_30 = Ok'0 x0} (! bb16) | br1 (x0: Int32.t) -> {_30 = Err'0 x0} (! bb15) ] ]
+        [ bb15 = s0
+          [ s0 = elim_Err {_30} (fun (r0: Int32.t) -> [ &o <- r0 ] s1) | s1 = [ &old' <- o ] s2 | s2 = bb8 ] ] ]
+    | bb16 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
+      | s1 = -{resolve_Ghost_Option_F'0 f'0}- s2
+      | s2 = [ &_ret <- old' ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l ()
+    | & at': t_AtomicI32 = at'
+    | & val': Int32.t = val'
+    | & f: t_F = f
+    | & old': Int32.t = Any.any_l ()
+    | & _14: t_FnGhostWrapper_closure2 = Any.any_l ()
+    | & _15: t_FnGhostWrapper_closure2 = Any.any_l ()
+    | & _16: () = Any.any_l ()
+    | & old_f: t_F = Any.any_l ()
+    | & f'0: t_Option_F = Any.any_l ()
+    | & _21: t_Option_F = Any.any_l ()
+    | & _22: t_F = Any.any_l ()
+    | & _30: t_Result_i32_i32 = Any.any_l ()
+    | & _33: Int32.t = Any.any_l ()
+    | & _36: t_FnGhostWrapper_closure6 = Any.any_l ()
+    | & _37: t_FnGhostWrapper_closure6 = Any.any_l ()
+    | & _38: closure6 = Any.any_l ()
+    | & _39: MutBorrow.t t_Option_F = Any.any_l ()
+    | & o: Int32.t = Any.any_l () ])
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:fetch_add ensures] exists c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32'0 c.current
+        /\ ward_AtomicI32'0 c.current = at'
+        /\ val_store_AtomicI32 c.current = Int32.add val' (val_load_AtomicI32'0 c.current)
+        /\ val_load_AtomicI32'0 c.current = result /\ postcondition_once_F f c ()}
+      (! return {result}) ]
+end
