@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Context as _, Result, anyhow, bail};
 use clap::*;
 use creusot_setup::{CreusotPaths, creusot_paths};
 use std::{
@@ -116,6 +116,12 @@ pub fn why3find_prove(args: ProveArgs, root: &Path, targets: Vec<String>) -> Res
     check_why3find_json_exists(root)?;
     // why3find likes relative paths. For that we move back to the root.
     std::env::set_current_dir(root)?;
+    // FIXME: Remove this warning after the 0.12 release
+    if args.patterns.iter().any(|p| p == "prove") {
+        eprintln!(
+            "Warning: found 'prove' pattern; it is no longer a 'cargo creusot' command. Just run 'cargo creusot'."
+        )
+    }
     let files = if args.patterns.is_empty() {
         let verif = PathBuf::from("verif");
         targets
@@ -320,23 +326,30 @@ fn strip_coma_str(name: &str) -> Option<&str> {
 /// If no patterns, return `"verif/"`.
 /// Otherwise, list files under `verif/` that match at least one pattern.
 fn match_patterns(patterns: &Patterns) -> Result<Vec<PathBuf>> {
+    let dir = PathBuf::from(OUTPUT_PREFIX);
     if patterns.is_empty() {
-        Ok(vec![OUTPUT_PREFIX.into()])
+        Ok(vec![dir])
+    } else if !std::fs::exists(&dir)
+        .context(format!("failed to check directory '{}'", dir.display()))?
+    {
+        return Ok(vec![]);
     } else {
         let mut dest = vec![];
-        match_patterns_from(patterns, OUTPUT_PREFIX.into(), &mut dest)?;
+        match_patterns_from(patterns, &dir, &mut dest)?;
         Ok(dest)
     }
 }
 
 /// Recurse into `dir` and look for file names whose `strip_coma` value matches `patterns`.
-fn match_patterns_from(patterns: &Patterns, dir: PathBuf, dest: &mut Vec<PathBuf>) -> Result<()> {
-    for entry in std::fs::read_dir(dir)? {
+fn match_patterns_from(patterns: &Patterns, dir: &Path, dest: &mut Vec<PathBuf>) -> Result<()> {
+    for entry in
+        std::fs::read_dir(dir).context(format!("failed to read directory '{}'", dir.display()))?
+    {
         let entry = entry?;
         let file_type = entry.file_type()?;
         let path = entry.path();
         if file_type.is_dir() {
-            match_patterns_from(patterns, path, dest)?
+            match_patterns_from(patterns, &path, dest)?
         } else if file_type.is_file() {
             if patterns.matches(&path) {
                 dest.push(path)
