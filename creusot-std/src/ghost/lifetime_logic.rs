@@ -5,9 +5,9 @@
 //! compiler. This lifetime is represented by a `LifetimeToken` object.
 
 #[cfg(creusot)]
-use crate::resolve::structural_resolve;
+use crate::{ghost::Objective, resolve::structural_resolve};
 use crate::{
-    ghost::{FnGhost, Plain, resource::Resource},
+    ghost::{FnGhost, NotObjective, Plain, resource::Resource},
     logic::{Id, ops::Fin, real::PositiveReal},
     prelude::*,
 };
@@ -169,14 +169,33 @@ impl LifetimeDead {
 /// the contracts of the associated functions.
 ///
 /// Objects of this type may only be [constructed in ghost](FullBorrow::new).
-pub struct FullBorrow<T>(PhantomData<T>);
+#[opaque]
+pub struct FullBorrow<T>(PhantomData<(*mut T, NotObjective)>);
+
+#[trusted]
+unsafe impl<T: Send> Send for FullBorrow<T> {}
+#[trusted]
+unsafe impl<T: Sync> Sync for FullBorrow<T> {}
+
+#[cfg(creusot)]
+#[trusted]
+impl<T: Objective> Objective for FullBorrow<T> {}
 
 /// Container for the final value of a [`FullBorrow`].
 ///
 /// Can be used to get back the original value once the lifetime of the borrow
 /// is finished, by using [`EndBorrow::get`].
 #[opaque]
-pub struct EndBorrow<T>(PhantomData<T>);
+pub struct EndBorrow<T>(PhantomData<(*mut T, NotObjective)>);
+
+#[trusted]
+unsafe impl<T: Send> Send for EndBorrow<T> {}
+#[trusted]
+unsafe impl<T: Sync> Sync for EndBorrow<T> {}
+
+#[cfg(creusot)]
+#[trusted]
+impl<T: Objective> Objective for EndBorrow<T> {}
 
 impl<T> Fin for FullBorrow<T> {
     type Target = T;
