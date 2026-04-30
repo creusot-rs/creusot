@@ -1,7 +1,8 @@
 use crate::{
+    backend::is_trusted_item,
     contracts_items::{
         Intrinsic, is_check_ghost_trusted, is_erasure, is_logic, is_prophetic, is_snapshot_closure,
-        is_spec, is_trusted,
+        is_spec,
     },
     ctx::{HasTyCtxt, TranslationCtx},
     translation::traits::TraitResolved,
@@ -87,7 +88,7 @@ pub(crate) fn validate_purity<'tcx>(
     if ctx.tcx.is_closure_like(def_id) || is_check_ghost_trusted(ctx.tcx, def_id) {
         return;
     }
-    let is_trusted = is_trusted(ctx.tcx, def_id);
+    let is_trusted = is_trusted_item(ctx.tcx, def_id);
     let typing_env = ctx.typing_env(def_id);
     PurityVisitor { ctx, thir, context: Purity::of_def_id(ctx, def_id), typing_env, is_trusted }
         .visit_expr(&thir[expr]);

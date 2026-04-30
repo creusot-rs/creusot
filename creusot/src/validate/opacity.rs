@@ -7,8 +7,8 @@ use rustc_middle::{
 use rustc_span::Span;
 
 use crate::{
-    backend::projections::iter_projections_ty,
-    contracts_items::{is_logic, is_opaque, is_trusted},
+    backend::{is_trusted_item, projections::iter_projections_ty},
+    contracts_items::{is_logic, is_opaque},
     ctx::{HasTyCtxt, Opacity, TranslationCtx},
     translation::pearlite::{
         Pattern, PatternKind, Scoped, Term, TermKind,
@@ -183,7 +183,7 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for NoOpaqueTypeAccess<'thir, 'tcx> {
 pub(crate) fn validate_opacity<'tcx>(ctx: &TranslationCtx<'tcx>, item: DefId) {
     let is_logic = is_logic(ctx.tcx, item);
     // Forbid use of opaque type constructors and fields, except in trusted program functions
-    if is_logic || !is_trusted(ctx.tcx, item) {
+    if is_logic || !is_trusted_item(ctx.tcx, item) {
         let (thir, expr) = ctx.thir_body(item.expect_local());
         let thir = &thir.borrow();
         NoOpaqueTypeAccess { ctx, thir }.visit_expr(&thir[expr]);
