@@ -1,10 +1,10 @@
 use crate::{
     contracts_items::{
-        Intrinsic, is_check_ghost_trusted, is_erasure, is_logic, is_prophetic, is_snapshot_closure,
-        is_spec, is_trusted,
+        Intrinsic, is_check_ghost, is_check_terminates, is_erasure, is_logic, is_prophetic,
+        is_snapshot_closure, is_spec, is_trusted, is_trusted_ghost, is_trusted_terminates,
     },
     ctx::{HasTyCtxt, TranslationCtx},
-    translation::traits::TraitResolved,
+    translation::{specification::ProgramPurity, traits::TraitResolved},
 };
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::infer::TyCtxtInferExt;
@@ -17,62 +17,101 @@ use rustc_trait_selection::infer::InferCtxtExt;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Purity {
-    /// Same as `Program { terminates: true, ghost: true }`, but can also call the few
+    /// The context of ghost blocks.
+    /// Similar to `Program { purity: Ghost }`, but can also call the few
     /// ghost-only functions (e.g. `Ghost::new`).
     Ghost,
     Program {
-        terminates: bool,
-        ghost: bool,
+        purity: ProgramPurity,
     },
     Logic {
         prophetic: bool,
     },
 }
 
-impl Purity {
+// Purity of the function being checked
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum LocalPurity {
+    Purity(Purity),
+    TrustedTerminates,
+    TrustedGhost,
+}
+
+impl LocalPurity {
     pub(crate) fn of_def_id<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Self {
+        use self::Purity::*;
+        use LocalPurity::*;
         if is_logic(ctx.tcx, def_id) {
-            Purity::Logic { prophetic: is_prophetic(ctx.tcx, def_id) }
+            Self::logic(is_prophetic(ctx.tcx, def_id))
         } else if is_spec(ctx.tcx, def_id) {
-            Purity::Logic { prophetic: !is_snapshot_closure(ctx.tcx, def_id) }
+            Self::logic(!is_snapshot_closure(ctx.tcx, def_id))
+        } else if is_trusted_ghost(ctx.tcx, def_id)
+            || is_check_ghost(ctx.tcx, def_id) && is_trusted(ctx.tcx, def_id)
+        {
+            TrustedGhost
+        } else if is_trusted_terminates(ctx.tcx, def_id)
+            || is_check_terminates(ctx.tcx, def_id) && is_trusted(ctx.tcx, def_id)
+        {
+            TrustedTerminates
         } else {
-            let contract = &ctx.sig(def_id).contract;
-            Purity::Program { terminates: contract.check_terminates, ghost: contract.check_ghost }
+            Purity(Program { purity: ctx.sig(def_id).contract.purity })
         }
     }
 
-    /// If `logic_only` is `true`, this only checks for `Purity::Logic` VS `Purity::Program`.
-    fn can_call(self, other: Purity, logic_only: bool) -> bool {
+    fn can_call(self, other: Purity) -> bool {
+        use self::Purity::*;
+        use LocalPurity::*;
         match (self, other) {
-            (Purity::Ghost | Purity::Program { .. }, Purity::Ghost | Purity::Program { .. })
-                if logic_only =>
-            {
-                true
-            }
-            (Purity::Logic { prophetic }, Purity::Logic { prophetic: prophetic2 }) => {
+            (Purity(Logic { prophetic }), Logic { prophetic: prophetic2 }) => {
                 prophetic || !prophetic2
             }
-            (
-                Purity::Program { ghost, terminates },
-                Purity::Program { ghost: ghost2, terminates: terminates2 },
-            ) => ghost <= ghost2 && terminates <= terminates2,
-            (Purity::Ghost, Purity::Ghost | Purity::Program { ghost: true, terminates: true }) => {
-                true
-            }
+            (Purity(Program { purity }), Program { purity: purity2 }) => purity <= purity2,
+            (Purity(Ghost), Ghost | Program { purity: ProgramPurity::Ghost }) => true,
+            (TrustedTerminates, Program { .. }) => true,
+            (TrustedGhost, Ghost | Program { .. }) => true,
             (_, _) => false,
         }
     }
 
-    fn as_str(&self) -> &'static str {
+    fn logic(prophetic: bool) -> Self {
+        LocalPurity::Purity(Purity::Logic { prophetic })
+    }
+
+    fn ghost() -> Self {
+        LocalPurity::Purity(Purity::Ghost)
+    }
+
+    fn is_logic(self) -> bool {
+        matches!(self, LocalPurity::Purity(Purity::Logic { .. }))
+    }
+
+    fn is_program(self) -> bool {
+        use LocalPurity::*;
+        matches!(self, Purity(self::Purity::Program { .. }) | TrustedTerminates | TrustedGhost)
+    }
+
+    fn as_str(self) -> &'static str {
+        use LocalPurity::*;
         match self {
-            Purity::Ghost => "ghost",
-            Purity::Program { terminates, ghost } => match (*terminates, *ghost) {
-                (_, true) => "program (ghost)",
-                (true, false) => "program (terminates)",
-                (false, false) => "program",
+            Purity(purity) => purity.as_str(),
+            TrustedTerminates => "program (terminates)",
+            TrustedGhost => "program (ghost)",
+        }
+    }
+}
+
+impl Purity {
+    fn as_str(&self) -> &'static str {
+        use Purity::*;
+        match self {
+            Ghost => "ghost",
+            Program { purity } => match purity {
+                ProgramPurity::Ghost => "program (ghost)",
+                ProgramPurity::Terminates => "program (terminates)",
+                ProgramPurity::Impure => "program",
             },
-            Purity::Logic { prophetic: false } => "logic",
-            Purity::Logic { prophetic: true } => "prophetic logic",
+            Logic { prophetic: false } => "logic",
+            Logic { prophetic: true } => "prophetic logic",
         }
     }
 }
@@ -84,25 +123,34 @@ pub(crate) fn validate_purity<'tcx>(
 ) {
     // Only start traversing from top-level definitions. Closures will be visited during the traversal
     // of their parents so that they can inherit the context from their parent.
-    if ctx.tcx.is_closure_like(def_id) || is_check_ghost_trusted(ctx.tcx, def_id) {
+    if ctx.tcx.is_closure_like(def_id) {
         return;
     }
-    let is_trusted = is_trusted(ctx.tcx, def_id);
+    let is_trusted_ghost = is_trusted_ghost(ctx.tcx, def_id);
+    let is_trusted_terminates = is_trusted_ghost || is_trusted_terminates(ctx.tcx, def_id);
+    if is_trusted_terminates && (is_logic(ctx.tcx, def_id) || is_spec(ctx.tcx, def_id)) {
+        ctx.error(
+            ctx.def_span(def_id),
+            if is_trusted_ghost {
+                "Logic functions can't be `#[trusted(ghost)]`"
+            } else {
+                "Logic functions can't be `#[trusted(terminates)]`"
+            },
+        )
+        .emit();
+        return;
+    }
     let typing_env = ctx.typing_env(def_id);
-    PurityVisitor { ctx, thir, context: Purity::of_def_id(ctx, def_id), typing_env, is_trusted }
+    PurityVisitor { ctx, thir, context: LocalPurity::of_def_id(ctx, def_id), typing_env }
         .visit_expr(&thir[expr]);
 }
 
 struct PurityVisitor<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     thir: &'a Thir<'tcx>,
-    context: Purity,
+    context: LocalPurity,
     /// Typing environment of the caller function
     typing_env: TypingEnv<'tcx>,
-    /// The caller function is `#[trusted]`.
-    ///
-    /// This mean we should only check `logic`/program calls, NOT the `check(...)`.
-    is_trusted: bool,
 }
 
 enum ClosureKind {
@@ -121,11 +169,12 @@ impl PurityVisitor<'_, '_> {
         {
             Purity::Ghost
         } else {
-            let contract = &self.ctx.sig(func_did).contract;
-            let is_ghost = self.implements_fn_ghost(func_did, args);
-            let terminates = contract.check_terminates || is_ghost;
-            let ghost = contract.check_ghost || is_ghost;
-            Purity::Program { terminates, ghost }
+            let purity = if self.implements_fn_ghost(func_did, args) {
+                ProgramPurity::Ghost
+            } else {
+                self.ctx.sig(func_did).contract.purity
+            };
+            Purity::Program { purity }
         }
     }
 
@@ -172,7 +221,7 @@ impl PurityVisitor<'_, '_> {
     fn validate_spec_purity(&mut self, closure_id: LocalDefId, prophetic: bool) {
         let (thir, expr) = self.ctx.thir_body(closure_id);
         let thir = &thir.borrow();
-        PurityVisitor { thir, context: Purity::Logic { prophetic }, ..*self }
+        PurityVisitor { thir, context: LocalPurity::logic(prophetic), ..*self }
             .visit_expr(&thir[expr]);
     }
 
@@ -220,7 +269,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             .unwrap();
 
                     let fn_purity = self.purity(func_did, args);
-                    if matches!(self.context, Purity::Logic { .. })
+                    if self.context.is_logic()
                         && (
                             // These methods are allowed to cheat the purity restrictions
                             self.ctx.is_diagnostic_item(sym::box_new, func_did)
@@ -230,11 +279,9 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 )
                         )
                     {
-                    } else if !self.context.can_call(fn_purity, self.is_trusted) {
+                    } else if !self.context.can_call(fn_purity) {
                         // Emit a nicer error specifically for calls of ghost functions.
-                        if fn_purity == Purity::Ghost
-                            && matches!(self.context, Purity::Program { .. })
-                        {
+                        if fn_purity == Purity::Ghost && self.context.is_program() {
                             match self.ctx.intrinsic(func_did) {
                                 Intrinsic::GhostIntoInner => self
                                     .error(expr.span, "trying to access the contents of a ghost variable in program context").emit(),
@@ -263,13 +310,17 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             };
                         } else {
                             let (caller, callee) = match (self.context, fn_purity) {
-                                (Purity::Program { .. } | Purity::Ghost, Purity::Logic { .. }) => {
-                                    ("program", "logic")
+                                (
+                                    LocalPurity::Purity(Purity::Program { .. } | Purity::Ghost),
+                                    Purity::Logic { .. },
+                                ) => ("program", "logic"),
+                                (LocalPurity::Purity(Purity::Ghost), Purity::Program { .. }) => {
+                                    ("ghost", "non-ghost")
                                 }
-                                (Purity::Ghost, Purity::Program { .. }) => ("ghost", "non-ghost"),
-                                (Purity::Logic { .. }, Purity::Program { .. } | Purity::Ghost) => {
-                                    ("logic", "program")
-                                }
+                                (
+                                    LocalPurity::Purity(Purity::Logic { .. }),
+                                    Purity::Program { .. } | Purity::Ghost,
+                                ) => ("logic", "program"),
                                 _ => (self.context.as_str(), fn_purity.as_str()),
                             };
                             let msg = format!(
@@ -292,7 +343,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                         self.validate_spec_purity(closure_id, false);
                         return;
                     }
-                } else if matches!(self.context, Purity::Logic { .. }) {
+                } else if self.context.is_logic() {
                     // TODO Add a "code" back in
                     self.ctx.dcx().span_fatal(expr.span, "non function call in logical context")
                 }
@@ -310,7 +361,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
             }
             ExprKind::Scope { region_scope: _, hir_id, value: _ } => {
                 if super::is_ghost_block(self.ctx.tcx, hir_id) {
-                    let old_context = std::mem::replace(&mut self.context, Purity::Ghost);
+                    let old_context = std::mem::replace(&mut self.context, LocalPurity::ghost());
                     thir::visit::walk_expr(self, expr);
                     self.context = old_context;
                     return;

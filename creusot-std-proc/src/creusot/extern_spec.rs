@@ -17,24 +17,35 @@ use syn::{
 /// The `extern_spec!` macro.
 pub fn extern_spec(tokens: TS1) -> TS1 {
     let externs: ExternSpecs = parse_macro_input!(tokens);
-
-    let mut specs = Vec::new();
-    let externs = match externs.flatten() {
-        Ok(externs) => externs,
-        Err(err) => return TS1::from(err.to_compile_error()),
-    };
-
-    for spec in externs {
-        specs.push(spec.into_tokens());
+    match extern_spec_(externs) {
+        Ok(specs) => TS1::from(quote! { #(#specs)* }),
+        Err(err) => err.to_compile_error().into(),
     }
+}
 
-    TS1::from(quote! {
-        #(#specs)*
-    })
+fn extern_spec_(externs: ExternSpecs) -> Result<Vec<TokenStream>> {
+    let mut specs = Vec::new();
+    for item in externs.0 {
+        match item {
+            ExternSpecItem::Fun(f) => {
+                for spec in f.flatten()? {
+                    specs.push(spec.into_tokens())
+                }
+            }
+            ExternSpecItem::Type(ty) => specs.push(ty.to_token_stream()),
+        }
+    }
+    Ok(specs)
 }
 
 #[derive(Debug)]
-struct ExternSpecs(Vec<ExternSpec>);
+struct ExternSpecs(Vec<ExternSpecItem>);
+
+#[derive(Debug)]
+enum ExternSpecItem {
+    Fun(ExternSpec),
+    Type(ExternType),
+}
 
 /// An extern spec is either:
 /// - A module of extern specs
@@ -116,23 +127,20 @@ struct FlatSpec {
     body: Option<Block>,
 }
 
-impl ExternSpecs {
+impl ExternSpec {
     fn flatten(self) -> Result<Vec<FlatSpec>> {
         let mut specs = Vec::new();
-
-        for spec in self.0 {
-            flatten(
-                spec,
-                ExprPath {
-                    attrs: Vec::new(),
-                    qself: None,
-                    path: Path { leading_colon: None, segments: Punctuated::new() },
-                },
-                DocItemName(String::from("extern_spec")),
-                None,
-                &mut specs,
-            )?
-        }
+        flatten(
+            self,
+            ExprPath {
+                attrs: Vec::new(),
+                qself: None,
+                path: Path { leading_colon: None, segments: Punctuated::new() },
+            },
+            DocItemName(String::from("extern_spec")),
+            None,
+            &mut specs,
+        )?;
         Ok(specs)
     }
 }
@@ -778,6 +786,25 @@ impl Parse for ExternSpecs {
     }
 }
 
+impl Parse for ExternSpecItem {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let attrs = input.call(Attribute::parse_outer)?;
+
+        let lookahead = input.lookahead1();
+        if lookahead.peek(Token![type]) {
+            let mut ty = input.call(ExternType::parse)?;
+            ty.attrs = attrs;
+            Ok(ExternSpecItem::Type(ty))
+        } else {
+            let mut e = input.call(ExternSpec::parse)?;
+            if let ExternSpec::Fn(ref mut f) = e {
+                f.attrs = attrs
+            }
+            Ok(ExternSpecItem::Fun(e))
+        }
+    }
+}
+
 impl Parse for ExternSpec {
     fn parse(input: parse::ParseStream) -> Result<Self> {
         let attrs = input.call(Attribute::parse_outer)?;
@@ -793,7 +820,7 @@ impl Parse for ExternSpec {
             || (lookahead.peek(Token![unsafe]) && input.peek2(Token![fn]))
         {
             let mut f: ExternMethod = input.parse()?;
-            f.attrs.extend(attrs);
+            f.attrs = attrs;
             Ok(ExternSpec::Fn(f))
         } else {
             Err(lookahead.error())
@@ -961,5 +988,41 @@ impl Parse for ExternMethod {
             if let Ok(semi) = input.parse::<Token![;]>() { Err(semi) } else { Ok(input.parse()?) };
 
         Ok(ExternMethod { span, attrs, sig, body })
+    }
+}
+
+#[derive(Debug)]
+struct ExternType {
+    attrs: Vec<Attribute>,
+    path: Path,
+}
+
+impl Parse for ExternType {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let attrs = input.call(Attribute::parse_outer)?;
+        input.parse::<Token![type]>()?;
+        let path = input.parse()?;
+        input.parse::<Token![;]>()?;
+        Ok(Self { attrs, path })
+    }
+}
+
+impl ToTokens for ExternType {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let span = self.path.span();
+        let ident = crate::creusot::generate_unique_ident("extern_type", span);
+        let attrs = &self.attrs;
+        let path = &self.path;
+        let generics = match self.path.segments.last().unwrap().arguments {
+            syn::PathArguments::AngleBracketed(ref generics) => Some(generics),
+            _ => None,
+        };
+        tokens.extend(quote_spanned! { span=>
+            #[allow(dead_code, non_camel_case_types)]
+            #[creusot::extern_type]
+            #[doc(hidden)]
+            #(#attrs)*
+            struct #ident #generics (#path);
+        })
     }
 }

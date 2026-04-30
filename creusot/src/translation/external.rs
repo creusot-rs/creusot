@@ -1,6 +1,6 @@
 use super::specification::inputs_and_output_from_thir;
 use crate::{
-    contracts_items::{ErasureKind, get_erasure, is_trusted},
+    contracts_items::{ErasureKind, get_erasure, get_trusted_positive, is_trusted},
     ctx::*,
     translation::{
         pearlite::PIdent,
@@ -14,13 +14,17 @@ use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
 };
+use rustc_index::bit_set::DenseBitSet;
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     thir::{self, Expr, ExprKind, Thir, visit::Visitor},
-    ty::{EarlyBinder, GenericArgKind, GenericArgsRef, Predicate, Ty, TyCtxt, TyKind, TypingEnv},
+    ty::{
+        self, EarlyBinder, GenericArgKind, GenericArgs, GenericArgsRef, Predicate, Ty, TyCtxt,
+        TyKind, TypingEnv,
+    },
 };
-use rustc_span::Span;
-use rustc_type_ir::ConstKind;
+use rustc_span::{Span, Symbol};
+use rustc_type_ir::{ConstKind, inherent::AdtDef as _};
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub(crate) struct ExternSpec<'tcx> {
@@ -380,4 +384,54 @@ fn eq_erased_ty<'tcx>(tcx: TyCtxt<'tcx>, ty1: Ty<'tcx>, ty2: Ty<'tcx>) -> bool {
         }
         _ => false,
     }
+}
+
+#[derive(Clone, Debug, TyEncodable, TyDecodable)]
+pub(crate) struct TrustedPositivity {
+    pub(crate) positivity: DenseBitSet<usize>,
+}
+
+pub(crate) fn extract_extern_trusted_positivity(
+    tcx: TyCtxt,
+    def_id: DefId,
+) -> (DefId, TrustedPositivity) {
+    let Some(positive_params) = get_trusted_positive(tcx, def_id) else {
+        tcx.crash_and_error(
+            tcx.def_span(def_id),
+            "No `#[trusted_positive(...)]` attribute found on extern type spec",
+        )
+    };
+    let bad_extern_spec = || tcx.span_bug(tcx.def_span(def_id), "Badly formed extern type spec");
+    let adt = tcx.adt_def(def_id);
+    let Some(ty) = adt.all_field_tys(tcx).skip_binder().into_iter().next() else {
+        bad_extern_spec()
+    };
+    let ty::TyKind::Adt(adt, args) = ty.kind() else { bad_extern_spec() };
+    (adt.did(), mk_trusted_positivity(positive_params, args))
+}
+
+pub(crate) fn extract_trusted_positivity(tcx: TyCtxt, def_id: DefId) -> Option<TrustedPositivity> {
+    let positive_params = get_trusted_positive(tcx, def_id)?;
+    let args = GenericArgs::identity_for_item(tcx, def_id);
+    Some(mk_trusted_positivity(positive_params, args))
+}
+
+fn mk_trusted_positivity<'tcx>(
+    positive_params: Vec<Symbol>,
+    args: GenericArgsRef<'tcx>,
+) -> TrustedPositivity {
+    let arity = args.len();
+    let mut positivity = DenseBitSet::new_empty(arity);
+    for (i, arg) in args.iter().enumerate() {
+        let Some(arg) = arg.as_type() else {
+            continue;
+        };
+        match arg.kind() {
+            ty::TyKind::Param(param) if positive_params.contains(&param.name) => {
+                positivity.insert(i);
+            }
+            _ => {}
+        }
+    }
+    TrustedPositivity { positivity }
 }

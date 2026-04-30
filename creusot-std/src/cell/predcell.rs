@@ -7,6 +7,7 @@ use crate::{logic::Mapping, prelude::*};
 /// Cell over predicates
 ///
 /// A wrapper around `std::cell::Cell` that allows predicates to be used to specify the contents of the cell.
+#[trusted(positive(T))]
 #[opaque]
 #[repr(transparent)]
 pub struct PredCell<T: ?Sized>(core::cell::Cell<T>);

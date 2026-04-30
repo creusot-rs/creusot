@@ -191,6 +191,155 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
     if !errors.is_empty() { Err(errors) } else { Ok(()) }
 }
 
+pub enum ImplSelection<'tcx> {
+    Found(&'tcx ImplSource<'tcx, ()>),
+    UnknownFound,
+    None,
+}
+
+pub fn select_trait_impl<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    trait_ref: TraitRef<'tcx>,
+) -> ImplSelection<'tcx> {
+    use ImplSelection::*;
+    let trait_ref = tcx.normalize_erasing_regions(typing_env, Unnormalized::new(trait_ref));
+
+    let source = tcx.codegen_select_candidate(typing_env.as_query_input(trait_ref));
+    match source {
+        // FIXME: if there are several instances available, `codegen_select_candidate`
+        // returns an error, while we would like it to return any of the instances.
+        // We need to find another entry point of the trait solver.
+        // In the meantime, pretend that we have an instance that we do not know
+        Err(CodegenObligationError::Ambiguity) => return UnknownFound,
+        Err(_) => return None,
+        Ok(source) => Found(source),
+    }
+}
+
+pub fn select_method<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    trait_ref: TraitRef<'tcx>,
+    trait_item_def_id: DefId,
+    substs: GenericArgsRef<'tcx>,
+    source: &'tcx ImplSource<'tcx, ()>,
+) -> TraitResolved<'tcx> {
+    match source {
+        ImplSource::UserDefined(impl_data) => {
+            // Find the id of the actual associated method we will be running
+            let leaf_def = tcx
+                .trait_def(trait_ref.def_id)
+                .ancestors(tcx, impl_data.impl_def_id)
+                .unwrap()
+                .leaf_def(tcx, trait_item_def_id)
+                .unwrap_or_else(|| {
+                    panic!("{:?} not found in {:?}", trait_item_def_id, impl_data.impl_def_id);
+                });
+
+            if !(leaf_def.is_final() || is_sealed(tcx, leaf_def.item.def_id)) {
+                // The instance we found is not final nor sealed. There might be a speciallized
+                // matching instance.
+                // We have found a user-defined instance, so we know for sure that there is no
+                // matching instance in a future crate. Hence we explore the descendents of the
+                // current node to make sure that there is no specialized matching instances.
+
+                let Ok(gt) = GraphTraversal::new(tcx, typing_env.param_env, trait_ref) else {
+                    // Cannot find graph because of an error. Return a dummy value.
+                    return TraitResolved::UnknownFound;
+                };
+
+                let r = gt.traverse_descendants(impl_data.impl_def_id, |node| {
+                    if tcx.impl_item_implementor_ids(node).get(&trait_item_def_id).is_some() {
+                        // This is a matching instance
+                        GraphTraversalAction::Interrupt
+                    } else if tcx.defaultness(node).is_final() {
+                        // This is a final instance without a matching implementation
+                        // We know that a specializing impl cannot have an implementation
+                        // for our method
+                        GraphTraversalAction::Skip
+                    } else {
+                        GraphTraversalAction::Traverse
+                    }
+                });
+                if !r {
+                    return TraitResolved::UnknownFound;
+                }
+            }
+
+            // Translate the original substitution into one on the selected impl method
+            let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
+            let args = rustc_trait_selection::traits::translate_args(
+                &infcx,
+                typing_env.param_env,
+                impl_data.impl_def_id,
+                impl_data.args,
+                leaf_def.defining_node,
+            );
+            let substs = substs.rebase_onto(tcx, trait_ref.def_id, args);
+
+            let leaf_substs = tcx.erase_and_anonymize_regions(substs);
+
+            TraitResolved::Instance {
+                def: (leaf_def.item.def_id, leaf_substs),
+                impl_: ImplSource_::Impl(impl_data.impl_def_id, impl_data.args),
+            }
+        }
+        ImplSource::Param(_) => {
+            // Check whether the default impl from the trait def is sealed
+            if is_sealed(tcx, trait_item_def_id) {
+                return TraitResolved::Instance {
+                    def: (trait_item_def_id, substs),
+                    impl_: ImplSource_::Param,
+                };
+            }
+
+            // TODO: we could try to explore the graph to determine if we can be sure
+            // that another impl is guaranteed to be the one we are seaching for
+
+            TraitResolved::UnknownFound
+        }
+        ImplSource::Builtin(_, _) => {
+            if matches!(substs.type_at(0).kind(), rustc_middle::ty::Dynamic(_, _)) {
+                // These types are not supported, but we want to display a proper error message because
+                // they are rather common in real Rust code, and this is not the right place to emit
+                // such an error message.
+                return TraitResolved::UnknownFound;
+            }
+
+            if [
+                tcx.lang_items().fn_trait(),
+                tcx.lang_items().fn_mut_trait(),
+                tcx.lang_items().fn_once_trait(),
+            ]
+            .contains(&Some(trait_ref.def_id))
+            {
+                match *substs.type_at(0).kind() {
+                    TyKind::Closure(closure_def_id, closure_substs) => {
+                        return TraitResolved::Instance {
+                            def: (closure_def_id, closure_substs),
+                            impl_: ImplSource_::Fn,
+                        };
+                    }
+                    TyKind::FnDef(did, subst) => {
+                        return TraitResolved::Instance {
+                            def: (did, subst),
+                            impl_: ImplSource_::Fn,
+                        };
+                    }
+                    _ => (),
+                }
+            }
+
+            unimplemented!(
+                "Cannot handle builtin implementation of `{}` for `{}`",
+                tcx.def_path_str(trait_ref.def_id),
+                substs.type_at(0)
+            )
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum ImplSource_<'tcx> {
     /// The id and substitution of the impl block, if any.
@@ -244,132 +393,15 @@ impl<'tcx> TraitResolved<'tcx> {
         };
         let trait_ref = tcx.normalize_erasing_regions(typing_env, Unnormalized::new(trait_ref));
 
-        let source = tcx.codegen_select_candidate(typing_env.as_query_input(trait_ref));
-        if let Err(err) = source {
-            if let CodegenObligationError::Ambiguity = err {
-                // FIXME: if there are several instances available, `codegen_select_candidate`
-                // returns an error, while we would like it to return any of the instances.
-                // We need to find another entry point of the trait solver.
-                // In the meantime, pretend that we have an instance that we do not know
-                return TraitResolved::UnknownFound;
+        let source = match select_trait_impl(tcx, typing_env, trait_ref) {
+            ImplSelection::Found(source) => source,
+            ImplSelection::UnknownFound => return Self::UnknownFound,
+            ImplSelection::None => {
+                return Self::NoInstance(NoInstance { tcx, typing_env, trait_ref });
             }
-            return TraitResolved::NoInstance(NoInstance { tcx, typing_env, trait_ref });
         };
         trace!("TraitResolved::resolve {source:?}",);
-
-        match source.unwrap() {
-            ImplSource::UserDefined(impl_data) => {
-                // Find the id of the actual associated method we will be running
-                let leaf_def = tcx
-                    .trait_def(trait_ref.def_id)
-                    .ancestors(tcx, impl_data.impl_def_id)
-                    .unwrap()
-                    .leaf_def(tcx, trait_item_def_id)
-                    .unwrap_or_else(|| {
-                        panic!("{:?} not found in {:?}", trait_item_def_id, impl_data.impl_def_id);
-                    });
-
-                if !(leaf_def.is_final() || is_sealed(tcx, leaf_def.item.def_id)) {
-                    // The instance we found is not final nor sealed. There might be a speciallized
-                    // matching instance.
-                    // We have found a user-defined instance, so we know for sure that there is no
-                    // matching instance in a future crate. Hence we explore the descendents of the
-                    // current node to make sure that there is no specialized matching instances.
-
-                    let Ok(gt) = GraphTraversal::new(tcx, typing_env.param_env, trait_ref) else {
-                        // Cannot find graph because of an error. Return a dummy value.
-                        return TraitResolved::UnknownFound;
-                    };
-
-                    let r = gt.traverse_descendants(impl_data.impl_def_id, |node| {
-                        if tcx.impl_item_implementor_ids(node).get(&trait_item_def_id).is_some() {
-                            // This is a matching instance
-                            GraphTraversalAction::Interrupt
-                        } else if tcx.defaultness(node).is_final() {
-                            // This is a final instance without a matching implementation
-                            // We know that a specializing impl cannot have an implementation
-                            // for our method
-                            GraphTraversalAction::Skip
-                        } else {
-                            GraphTraversalAction::Traverse
-                        }
-                    });
-                    if !r {
-                        return TraitResolved::UnknownFound;
-                    }
-                }
-
-                // Translate the original substitution into one on the selected impl method
-                let infcx = tcx.infer_ctxt().build(TypingMode::non_body_analysis());
-                let args = rustc_trait_selection::traits::translate_args(
-                    &infcx,
-                    typing_env.param_env,
-                    impl_data.impl_def_id,
-                    impl_data.args,
-                    leaf_def.defining_node,
-                );
-                let substs = substs.rebase_onto(tcx, trait_ref.def_id, args);
-
-                let leaf_substs = tcx.erase_and_anonymize_regions(substs);
-
-                TraitResolved::Instance {
-                    def: (leaf_def.item.def_id, leaf_substs),
-                    impl_: ImplSource_::Impl(impl_data.impl_def_id, impl_data.args),
-                }
-            }
-            ImplSource::Param(_) => {
-                // Check whether the default impl from the trait def is sealed
-                if is_sealed(tcx, trait_item_def_id) {
-                    return TraitResolved::Instance {
-                        def: (trait_item_def_id, substs),
-                        impl_: ImplSource_::Param,
-                    };
-                }
-
-                // TODO: we could try to explore the graph to determine if we can be sure
-                // that another impl is guaranteed to be the one we are seaching for
-
-                TraitResolved::UnknownFound
-            }
-            ImplSource::Builtin(_, _) => {
-                if matches!(substs.type_at(0).kind(), rustc_middle::ty::Dynamic(_, _)) {
-                    // These types are not supported, but we want to display a proper error message because
-                    // they are rather common in real Rust code, and this is not the right place to emit
-                    // such an error message.
-                    return TraitResolved::UnknownFound;
-                }
-
-                if [
-                    tcx.lang_items().fn_trait(),
-                    tcx.lang_items().fn_mut_trait(),
-                    tcx.lang_items().fn_once_trait(),
-                ]
-                .contains(&Some(trait_ref.def_id))
-                {
-                    match *substs.type_at(0).kind() {
-                        TyKind::Closure(closure_def_id, closure_substs) => {
-                            return TraitResolved::Instance {
-                                def: (closure_def_id, closure_substs),
-                                impl_: ImplSource_::Fn,
-                            };
-                        }
-                        TyKind::FnDef(did, subst) => {
-                            return TraitResolved::Instance {
-                                def: (did, subst),
-                                impl_: ImplSource_::Fn,
-                            };
-                        }
-                        _ => (),
-                    }
-                }
-
-                unimplemented!(
-                    "Cannot handle builtin implementation of `{}` for `{}`",
-                    tcx.def_path_str(trait_ref.def_id),
-                    substs.type_at(0)
-                )
-            }
-        }
+        select_method(tcx, typing_env, trait_ref, trait_item_def_id, substs, source)
     }
 
     pub(crate) fn to_opt(

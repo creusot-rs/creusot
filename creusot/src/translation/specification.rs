@@ -1,6 +1,9 @@
 use crate::{
     backend::closures::ClosSubst,
-    contracts_items::{Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates},
+    contracts_items::{
+        Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates, is_trusted_ghost,
+        is_trusted_terminates,
+    },
     ctx::*,
     lints::{Diagnostics, RESULT_PARAM},
     naming::{lowercase_prefix, name},
@@ -17,6 +20,49 @@ use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::ClosureKind;
 use std::iter::repeat;
 
+#[derive(
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Clone,
+    Copy,
+    Debug,
+    TypeFoldable,
+    TypeVisitable,
+    TyEncodable,
+    TyDecodable,
+)]
+pub enum ProgramPurity {
+    /// Default purity
+    Impure,
+    /// Terminates (but might panic, e.g., `Vec` overflow)
+    Terminates,
+    /// Callable in ghost context (must terminate successfully)
+    Ghost,
+}
+
+impl ProgramPurity {
+    pub fn is_ghost(self) -> bool {
+        self == ProgramPurity::Ghost
+    }
+
+    pub fn is_terminates(self) -> bool {
+        self >= ProgramPurity::Terminates
+    }
+}
+
+impl std::fmt::Display for ProgramPurity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use ProgramPurity::*;
+        match self {
+            Impure => write!(f, "impure"),
+            Terminates => write!(f, "terminates"),
+            Ghost => write!(f, "ghost"),
+        }
+    }
+}
+
 /// A term with an "expl:" label (includes the "expl:" prefix)
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
 pub struct Condition<'tcx> {
@@ -32,8 +78,8 @@ pub struct PreContract<'tcx> {
     pub(crate) variant: Option<Term<'tcx>>,
     pub(crate) requires: Vec<Condition<'tcx>>,
     pub(crate) ensures: Vec<(Box<[Trigger<'tcx>]>, Condition<'tcx>)>,
-    pub(crate) check_ghost: bool,
-    pub(crate) check_terminates: bool,
+    /// Ignored for logic functions
+    pub(crate) purity: ProgramPurity,
     pub(crate) extern_no_spec: bool,
     /// Are any of the contract clauses here user provided? or merely Creusot inferred / provided?
     pub(crate) has_user_contract: bool,
@@ -105,8 +151,7 @@ pub struct ContractClauses {
     variant: Option<DefId>,
     requires: Vec<DefId>,
     ensures: Vec<DefId>,
-    pub(crate) check_ghost: bool,
-    pub(crate) check_terminates: bool,
+    pub(crate) purity: ProgramPurity,
 }
 
 impl ContractClauses {
@@ -115,8 +160,7 @@ impl ContractClauses {
             variant: None,
             requires: Vec::new(),
             ensures: Vec::new(),
-            check_ghost: false,
-            check_terminates: false,
+            purity: ProgramPurity::Impure,
         }
     }
 
@@ -167,14 +211,12 @@ impl ContractClauses {
             log::trace!("variant clause {:?}", var_id);
             ctx.term(var_id).unwrap().rename(bound)
         });
-        log::trace!("ghost: {}", self.check_ghost);
-        log::trace!("terminates: {}", self.check_terminates);
+        log::trace!("purity: {}", self.purity);
         EarlyBinder::bind(PreContract {
             variant,
             requires,
             ensures,
-            check_ghost: self.check_ghost,
-            check_terminates: self.check_terminates,
+            purity: self.purity,
             extern_no_spec: false,
             has_user_contract,
         })
@@ -214,10 +256,15 @@ pub(crate) fn contract_clauses_of(
     if it_variant.next().transpose()?.is_some() {
         return Err(MultipleVariant { id: def_id });
     }
-    let check_terminates = is_check_terminates(ctx.tcx, def_id);
-    let check_ghost = is_check_ghost(ctx.tcx, def_id);
+    let purity = if is_check_ghost(ctx.tcx, def_id) || is_trusted_ghost(ctx.tcx, def_id) {
+        ProgramPurity::Ghost
+    } else if is_check_terminates(ctx.tcx, def_id) || is_trusted_terminates(ctx.tcx, def_id) {
+        ProgramPurity::Terminates
+    } else {
+        ProgramPurity::Impure
+    };
 
-    Ok(ContractClauses { requires, ensures, variant, check_terminates, check_ghost })
+    Ok(ContractClauses { requires, ensures, variant, purity })
 }
 
 pub(crate) fn inherited_extern_spec<'tcx>(
@@ -356,8 +403,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             variant: None,
             requires: vec![],
             ensures: vec![],
-            check_ghost: true,
-            check_terminates: true,
+            purity: ProgramPurity::Ghost,
             extern_no_spec: false,
             has_user_contract: false,
         };
