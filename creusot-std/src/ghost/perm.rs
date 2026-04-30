@@ -21,7 +21,7 @@ pub trait SendPerm: Container {}
 pub trait SyncPerm: Container {}
 
 /// Token that represents the ownership of the contents of a container object. The container is
-/// either an interrior mutable type (e.g., `Perm` or atomic types) or a raw pointer.
+/// either an interior mutable type (e.g., `Perm` or atomic types) or a raw pointer.
 ///
 /// A `Perm` only exists in the ghost world, and it must be used in conjunction with its container
 /// in order to read or write the value.
