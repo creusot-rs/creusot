@@ -1,4 +1,5 @@
 use crate::{
+    backend::is_trusted_item,
     contracts_items::{Intrinsic, is_law, is_open_inv_result, is_trusted},
     ctx::{HasTyCtxt as _, TranslationCtx},
 };
@@ -55,7 +56,7 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
         let trusted_trait = is_trusted(ctx.tcx, trait_ref.def_id)
             || ctx.is_diagnostic_item(sym::Send, trait_ref.def_id)
             || ctx.is_diagnostic_item(sym::Sync, trait_ref.def_id);
-        if trusted_trait != is_trusted(ctx.tcx, impl_id.to_def_id()) {
+        if trusted_trait != is_trusted_item(ctx.tcx, impl_id.to_def_id()) {
             let msg = if trusted_trait {
                 format!(
                     "Expected implementation of trait `{}` for `{}` to be marked as `#[trusted]`",
