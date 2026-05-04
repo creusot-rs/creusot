@@ -1,6 +1,6 @@
 use crate::{
     backend::{
-        Why3Generator, common_meta_decls, is_trusted_item,
+        Why3Generator, common_meta_decls,
         logic::vcgen::wp,
         signature::{LogicSignature, lower_logic_sig},
         term::lower_pure_weakdep,
@@ -38,7 +38,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
         );
     }
 
-    if !def_id.is_local() || is_trusted_item(ctx.tcx, def_id) || !ctx.has_body(def_id) {
+    if !ctx.has_body(def_id) {
         return None;
     }
 
