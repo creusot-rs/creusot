@@ -1,8 +1,5 @@
 use crate::{
-    ghost::{
-        Container, FnGhost,
-        perm::{Perm, SendPerm, SyncPerm},
-    },
+    ghost::{FnGhost, PermTarget, perm::Perm},
     prelude::*,
     std::sync::{
         atomic::{Ordering, Ordering::Ordering as _},
@@ -17,14 +14,10 @@ macro_rules! impl_atomic {
         #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
         pub struct $atomic_type $(< $T >)?(::std::sync::atomic::$atomic_type $(< $T >)?);
 
-        impl $(< $T >)? Container for $atomic_type $(< $T >)? {
+        impl $(< $T >)? PermTarget for $atomic_type $(< $T >)? {
             type Value = $type;
+            type PermPayload = ();
         }
-
-        #[trusted]
-        impl $(< $T >)? SendPerm for $atomic_type $(< $T >)? {}
-        #[trusted]
-        impl $(< $T >)? SyncPerm for $atomic_type $(< $T >)? {}
 
         impl $(< $T >)? $atomic_type $(< $T >)? {
             #[ensures(*result.1.val() == val)]
@@ -32,7 +25,7 @@ macro_rules! impl_atomic {
             #[inline(always)]
             #[trusted]
             #[check(terminates)]
-            pub fn new(val: $type) -> (Self, Ghost<Box<Perm<$atomic_type $(< $T >)?>>>) {
+            pub fn new(val: $type) -> (Self, Ghost<Perm<$atomic_type $(< $T >)?>>) {
                 (Self(::std::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
             }
 
@@ -42,7 +35,7 @@ macro_rules! impl_atomic {
             #[inline(always)]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn into_inner(self, own: Ghost<Box<Perm<$atomic_type $(< $T >)?>>>) -> $type {
+            pub fn into_inner(self, own: Ghost<Perm<$atomic_type $(< $T >)?>>) -> $type {
                 self.0.into_inner()
             }
 

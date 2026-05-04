@@ -2,7 +2,6 @@
 mod array;
 mod bool;
 mod borrow;
-mod boxed;
 pub mod cell;
 pub mod char;
 pub mod clone;
@@ -20,13 +19,11 @@ pub mod option;
 pub mod panicking;
 pub mod ptr;
 pub mod range;
-pub mod rc;
 pub mod result;
 pub mod slice;
 pub mod string;
 pub mod time;
 mod tuples;
-pub mod vec;
 
 // Every std-dependent part of the Creusot Standard Library must be disabled when
 // compiling with [no_std].
@@ -36,15 +33,17 @@ pub mod collections {
     pub mod hash_map;
     pub mod hash_set;
 }
-
+#[cfg(feature = "std")]
+mod boxed;
 #[cfg(feature = "std")]
 pub mod deque;
-
 #[cfg(feature = "std")]
 pub mod io;
-
+#[cfg(feature = "std")]
+pub mod rc;
 #[cfg(feature = "std")]
 pub mod sync;
-
 #[cfg(feature = "std")]
 pub mod thread;
+#[cfg(feature = "std")]
+pub mod vec;

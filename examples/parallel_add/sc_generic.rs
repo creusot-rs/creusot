@@ -38,7 +38,7 @@ fn fraction_add(a: Int, b: Int, n: Int) {
 }
 
 struct ParallelAddAtomicInv {
-    own: Box<Perm<AtomicI32>>,
+    own: Perm<AtomicI32>,
     auth: Authority<Option<(PR, Int)>>,
 }
 

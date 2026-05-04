@@ -1,13 +1,11 @@
 #[cfg(creusot)]
 use crate::{invariant::inv, resolve::structural_resolve, std::slice::SliceIndexSpec};
 use crate::{logic::ops::IndexLogic, prelude::*};
-#[cfg(all(creusot, not(feature = "std")))]
-use alloc::boxed::Box;
-use alloc::vec::*;
 #[cfg(feature = "nightly")]
-use core::alloc::Allocator;
+use std::alloc::Allocator;
 #[cfg(creusot)]
-use core::ops::{Deref, DerefMut, Index, IndexMut};
+use std::ops::{Deref, DerefMut, Index, IndexMut};
+use std::vec::*;
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> View for Vec<T, A> {

@@ -24,14 +24,14 @@ module M_parallel_add
   
   type t_Perm_AtomicI32
   
-  type tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global = { f0: t_AtomicI32; f1: t_Perm_AtomicI32 }
+  type tup2_AtomicI32_Ghost_Perm_AtomicI32 = { f0: t_AtomicI32; f1: t_Perm_AtomicI32 }
   
   predicate inv_AtomicI32 (_1: t_AtomicI32)
   
-  predicate inv_tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global [@inline:trivial] (_1: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global) =
+  predicate inv_tup2_AtomicI32_Ghost_Perm_AtomicI32 [@inline:trivial] (_1: tup2_AtomicI32_Ghost_Perm_AtomicI32) =
     inv_AtomicI32 _1.f0
   
-  meta "rewrite_def" predicate inv_tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global
+  meta "rewrite_def" predicate inv_tup2_AtomicI32_Ghost_Perm_AtomicI32
   
   type t_FMap_Int_tup2_i32_SyncView
   
@@ -143,10 +143,10 @@ module M_parallel_add
   
   function ward_AtomicI32 (self: t_Perm_AtomicI32) : t_AtomicI32
   
-  let rec new'0 (val': Int32.t) (sync_view: MutBorrow.t t_SyncView)
-    (return (x: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global)) = any
-    [ return (result: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global) ->
-    {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new result type invariant] inv_tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global result)
+  let rec new'0 (val': Int32.t) (sync_view: MutBorrow.t t_SyncView) (return (x: tup2_AtomicI32_Ghost_Perm_AtomicI32)) =
+    any
+    [ return (result: tup2_AtomicI32_Ghost_Perm_AtomicI32) ->
+    {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new result type invariant] inv_tup2_AtomicI32_Ghost_Perm_AtomicI32 result)
       /\ ([@stop_split] [@expl:new ensures #0] val_AtomicI32 result.f1
         = singleton_Int (get_timestamp_AtomicI32 result.f0 (fin_Ghost_refmut_SyncView sync_view)) { f0'0 = val';
                                                                                                     f1'0 = sync_view.current })
@@ -484,7 +484,7 @@ module M_parallel_add
   axiom such_that_Int_spec: forall p: Map.map int bool [such_that_Int p]. (exists x: int. index_Mapping_Int_bool p x)
       -> index_Mapping_Int_bool p (such_that_Int p)
   
-  let rec into_inner_Box_Perm_AtomicI32_Global (self: t_Perm_AtomicI32) (return (x: t_Perm_AtomicI32)) = any
+  let rec into_inner_Perm_AtomicI32 (self: t_Perm_AtomicI32) (return (x: t_Perm_AtomicI32)) = any
     [ return (result: t_Perm_AtomicI32) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
@@ -697,10 +697,9 @@ module M_parallel_add
       + 1) { f0'0 = val_store_AtomicI32 self.current; f1'0 = view_ReleaseSyncView rel_view })}
       (! return {result}) ]
   
-  predicate resolve_refmut_Box_Perm_AtomicI32_Global [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicI32) =
-    _1.final = _1.current
+  predicate resolve_refmut_Perm_AtomicI32 [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicI32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_Box_Perm_AtomicI32_Global
+  meta "rewrite_def" predicate resolve_refmut_Perm_AtomicI32
   
   predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0'2) = _1.final = _1.current
   
@@ -813,7 +812,7 @@ module M_parallel_add
       | s25 = shoot_store_AtomicI32 {_20} {_21} {_23} {_29} (fun (_x: ()) -> [ &_19 <- _x ] s26)
       | s26 = -{resolve_refmut_SyncView _25}- s27
       | s27 = -{resolve_refmut_SyncView _24}- s28
-      | s28 = -{resolve_refmut_Box_Perm_AtomicI32_Global _22}- s29
+      | s28 = -{resolve_refmut_Perm_AtomicI32 _22}- s29
       | s29 = -{resolve_refmut_closure0 self}- s30
       | s30 = new'2 {(1: Int128.t)} (fun (_x: int) -> [ &_35 <- _x ] s31)
       | s31 = into_inner_Int {_35} (fun (_x: int) -> [ &_34 <- _x ] s32)
@@ -1218,7 +1217,7 @@ module M_parallel_add
       | s25 = shoot_store_AtomicI32 {_20} {_21} {_23} {_29} (fun (_x: ()) -> [ &_19 <- _x ] s26)
       | s26 = -{resolve_refmut_SyncView _25}- s27
       | s27 = -{resolve_refmut_SyncView _24}- s28
-      | s28 = -{resolve_refmut_Box_Perm_AtomicI32_Global _22}- s29
+      | s28 = -{resolve_refmut_Perm_AtomicI32 _22}- s29
       | s29 = -{resolve_refmut_closure0'0 self}- s30
       | s30 = new'2 {(1: Int128.t)} (fun (_x: int) -> [ &_35 <- _x ] s31)
       | s31 = into_inner_Int {_35} (fun (_x: int) -> [ &_34 <- _x ] s32)
@@ -1621,7 +1620,7 @@ module M_parallel_add
   
   predicate resolve_Authority_Option_Excl_bool (_1: t_Authority_Option_Excl_bool)
   
-  let rec new_Box_Perm_AtomicI32_Global (x: t_Perm_AtomicI32) (return (x'0: t_Perm_AtomicI32)) = any
+  let rec new_Perm_AtomicI32 (x: t_Perm_AtomicI32) (return (x'0: t_Perm_AtomicI32)) = any
     [ return (result: t_Perm_AtomicI32) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   let rec new_refmut_SyncView (x: MutBorrow.t t_SyncView) (return (x'0: MutBorrow.t t_SyncView)) = any
@@ -1657,7 +1656,7 @@ module M_parallel_add
       | s1 = MutBorrow.borrow_mut <t_SyncView> {_6}
           (fun (_bor: MutBorrow.t t_SyncView) -> [ &_5 <- _bor ] [ &_6 <- _bor.final ] s2)
       | s2 = borrow_mut_SyncView {_5} (fun (_x: MutBorrow.t t_SyncView) -> [ &_4 <- _x ] s3)
-      | s3 = new'0 {(0: Int32.t)} {_4} (fun (_x: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global) -> [ &_3 <- _x ] s4)
+      | s3 = new'0 {(0: Int32.t)} {_4} (fun (_x: tup2_AtomicI32_Ghost_Perm_AtomicI32) -> [ &_3 <- _x ] s4)
       | s4 = [ &atomic <- _3.f0 ] s5
       | s5 = [ &own'0 <- _3.f1 ] s6
       | s6 = alloc_Option_Excl_bool (fun (_x: t_Authority_Option_Excl_bool) -> [ &auth1'0 <- _x ] s7)
@@ -1730,7 +1729,7 @@ module M_parallel_add
       | s39 = -{resolve_refmut_Authority_Option_Excl_bool _35}- s40
       | s40 = new_unit {_22} (fun (_x: ()) -> [ &_21 <- _x ] s41)
       | s41 = [ &timestamp <- such_that_Int (fun (t: int) -> contains_Int (val_AtomicI32 own'0) t) ] s42
-      | s42 = into_inner_Box_Perm_AtomicI32_Global {own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_49 <- _x ] s43)
+      | s42 = into_inner_Perm_AtomicI32 {own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_49 <- _x ] s43)
       | s43 = into_inner_Authority_Option_Excl_bool {auth1'0}
           (fun (_x: t_Authority_Option_Excl_bool) -> [ &_51 <- _x ] s44)
       | s44 = into_inner_Authority_Option_Excl_bool {auth2'0}
@@ -1760,7 +1759,7 @@ module M_parallel_add
       | s63 = [ &_84 <- frag2 ] s64
       | s64 = deref_Ghost_Fragment_Option_Excl_bool {_84} (fun (_x: t_Fragment_Option_Excl_bool) -> [ &_82 <- _x ] s65)
       | s65 = frag_lemma_Option_Excl_bool {inv'0.auth2} {_82} (fun (_x: ()) -> [ &_79 <- _x ] s66)
-      | s66 = new_Box_Perm_AtomicI32_Global {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s67)
+      | s66 = new_Perm_AtomicI32 {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s67)
       | s67 = new (fun (_x: t_SyncView) -> [ &view <- _x ] s68)
       | s68 = MutBorrow.borrow_mut <t_SyncView> {view}
           (fun (_bor: MutBorrow.t t_SyncView) -> [ &_96 <- _bor ] [ &view <- _bor.final ] s69)
@@ -1785,7 +1784,7 @@ module M_parallel_add
     [ & _ret: () = Any.any_l ()
     | & atomic: t_AtomicI32 = Any.any_l ()
     | & own'0: t_Perm_AtomicI32 = Any.any_l ()
-    | & _3: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global = Any.any_l ()
+    | & _3: tup2_AtomicI32_Ghost_Perm_AtomicI32 = Any.any_l ()
     | & _4: MutBorrow.t t_SyncView = Any.any_l ()
     | & _5: MutBorrow.t t_SyncView = Any.any_l ()
     | & _6: t_SyncView = Any.any_l ()

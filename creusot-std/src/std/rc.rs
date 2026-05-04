@@ -1,11 +1,11 @@
 use crate::prelude::*;
 #[cfg(creusot)]
 use crate::std::ptr::PointerExt as _;
-use alloc::rc::Rc;
-#[cfg(feature = "nightly")]
-use alloc::{alloc::Allocator, boxed::Box};
 #[cfg(creusot)]
-use core::ops::Deref;
+use std::ops::Deref;
+use std::rc::Rc;
+#[cfg(feature = "nightly")]
+use std::{alloc::Allocator, boxed::Box};
 
 /// Extension trait for [`Rc`].
 pub trait RcExt {

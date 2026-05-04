@@ -24,7 +24,7 @@ impl<T> Invariant for CellInv<T> {
     }
 }
 
-struct PermCellNAInv<T>(Box<Perm<PermCell<T>>>);
+struct PermCellNAInv<T>(Perm<PermCell<T>>);
 impl<T> Protocol for PermCellNAInv<T> {
     type Public = PermCell<T>;
 

@@ -5,7 +5,7 @@ use crate::prelude::*;
 use crate::{invariant::inv, resolve::structural_resolve};
 
 #[cfg(feature = "nightly")]
-use core::alloc::Allocator;
+use std::alloc::Allocator;
 #[cfg(feature = "nightly")]
 use std::collections::VecDeque;
 use std::collections::vec_deque::Iter;

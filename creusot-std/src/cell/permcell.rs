@@ -4,13 +4,13 @@
 //! track of the logical value.
 
 use crate::{
-    ghost::perm::{Container, Perm, SendPerm, SyncPerm},
+    ghost::{
+        NotObjective,
+        perm::{Perm, PermTarget},
+    },
     prelude::*,
 };
-use core::cell::UnsafeCell;
-
-#[cfg(not(feature = "std"))]
-use alloc::boxed::Box;
+use core::{cell::UnsafeCell, marker::PhantomData};
 
 /// Cell with ghost permissions
 ///
@@ -26,19 +26,15 @@ use alloc::boxed::Box;
 #[opaque]
 pub struct PermCell<T: ?Sized>(UnsafeCell<T>);
 
-impl<T: Sized> Container for PermCell<T> {
+impl<T: Sized> PermTarget for PermCell<T> {
     type Value = T;
+    type PermPayload = (NotObjective, PhantomData<T>);
 }
 
 #[trusted]
 unsafe impl<T> Send for PermCell<T> {}
 #[trusted]
 unsafe impl<T> Sync for PermCell<T> {}
-
-#[trusted]
-impl<T: Send> SendPerm for PermCell<T> {}
-#[trusted]
-impl<T: Sync> SyncPerm for PermCell<T> {}
 
 impl<T: Sized> Invariant for Perm<PermCell<T>> {
     #[logic(open, prophetic, inline)]
@@ -54,7 +50,7 @@ impl<T> PermCell<T> {
     #[check(terminates)]
     #[ensures(result.0 == *result.1.ward())]
     #[ensures((*result.1)@ == value)]
-    pub fn new(value: T) -> (Self, Ghost<Box<Perm<PermCell<T>>>>) {
+    pub fn new(value: T) -> (Self, Ghost<Perm<PermCell<T>>>) {
         let this = Self(UnsafeCell::new(value));
         let perm = Ghost::conjure();
         (this, perm)
@@ -107,7 +103,7 @@ impl<T> PermCell<T> {
     #[check(terminates)]
     #[requires(self == *perm.ward())]
     #[ensures(result == perm@)]
-    pub fn into_inner(self, perm: Ghost<Box<Perm<PermCell<T>>>>) -> T {
+    pub fn into_inner(self, perm: Ghost<Perm<PermCell<T>>>) -> T {
         let _ = perm;
         self.0.into_inner()
     }

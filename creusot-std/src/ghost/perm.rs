@@ -1,24 +1,19 @@
 //! Generic permissions for accessing memory pointed to by pointers or within an interior mutable
 //! type.
 
+use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{ghost::NotObjective, prelude::*};
-use core::marker::PhantomData;
 
-pub trait Container {
+pub trait PermTarget {
     type Value: ?Sized;
+    type PermPayload: ?Sized;
 
     #[logic(open, inline)]
     fn is_disjoint(&self, _self_val: &Self::Value, other: &Self, _other_val: &Self::Value) -> bool {
         self != other
     }
 }
-
-#[trusted]
-pub trait SendPerm: Container {}
-#[trusted]
-pub trait SyncPerm: Container {}
 
 /// Token that represents the ownership of the contents of a container object. The container is
 /// either an interior mutable type (e.g., `Perm` or atomic types) or a raw pointer.
@@ -66,18 +61,9 @@ pub trait SyncPerm: Container {}
 /// Certain facts about the layout and alignment of pointers can be made available
 /// through the type invariant of [`crate::std::ptr::PtrLive`] by calling [`Perm::live`].
 #[opaque]
-pub struct Perm<C: ?Sized + Container>(
-    NotObjective,
-    #[allow(unused)] *mut (),
-    #[allow(unused)] [PhantomData<C::Value>],
-);
+pub struct Perm<C: ?Sized + PermTarget>(#[allow(unused)] C::PermPayload);
 
-#[trusted]
-unsafe impl<C: ?Sized + SendPerm> Send for Perm<C> {}
-#[trusted]
-unsafe impl<C: ?Sized + SyncPerm> Sync for Perm<C> {}
-
-impl<C: ?Sized + Container> Perm<C> {
+impl<C: ?Sized + PermTarget> Perm<C> {
     /// Returns the underlying container that is managed by this permission.
     #[logic(opaque)]
     pub fn ward<'a>(self) -> &'a C {
@@ -99,7 +85,7 @@ impl<C: ?Sized + Container> Perm<C> {
     pub fn disjoint_lemma(&mut self, other: &Self) {}
 }
 
-impl<C: ?Sized + Container> Resolve for Perm<C> {
+impl<C: ?Sized + PermTarget> Resolve for Perm<C> {
     #[logic(open, prophetic, inline)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
@@ -114,7 +100,7 @@ impl<C: ?Sized + Container> Resolve for Perm<C> {
     fn resolve_coherence(self) {}
 }
 
-impl<C: ?Sized + Container<Value: Sized>> View for Perm<C> {
+impl<C: ?Sized + PermTarget<Value: Sized>> View for Perm<C> {
     type ViewTy = C::Value;
 
     #[logic(open, inline)]

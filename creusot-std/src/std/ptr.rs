@@ -4,15 +4,15 @@ pub use self::nonnull::NonNullExt;
 #[cfg(creusot)]
 use crate::std::mem::{align_of_logic, size_of_logic, size_of_val_logic};
 use crate::{
-    ghost::perm::{Container, Perm},
+    ghost::{
+        NotObjective,
+        perm::{Perm, PermTarget},
+    },
     prelude::*,
 };
 use core::marker::PhantomData;
 #[cfg(creusot)]
 use core::ptr::Pointee;
-
-#[cfg(not(feature = "std"))]
-use alloc::boxed::Box;
 
 /// Metadata of a pointer in logic.
 ///
@@ -519,8 +519,9 @@ extern_spec! {
     }
 }
 
-impl<T: ?Sized> Container for *const T {
+impl<T: ?Sized> PermTarget for *const T {
     type Value = T;
+    type PermPayload = (NotObjective, PhantomData<T>, [bool]);
 
     #[logic(open, inline)]
     fn is_disjoint(&self, self_val: &T, other: &Self, other_val: &T) -> bool {
@@ -547,6 +548,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// cell initialized with `v`.
     #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(*result.1.ward() == result.0 && *result.1.val() == v)]
+    #[cfg(feature = "std")]
     pub fn new(v: T) -> (*mut T, Ghost<Box<Perm<*const T>>>)
     where
         T: Sized,
@@ -559,6 +561,7 @@ impl<T: ?Sized> Perm<*const T> {
     #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(*result.1.ward() == result.0 && *result.1.val() == *val)]
     #[erasure(Box::into_raw)]
+    #[cfg(feature = "std")]
     pub fn from_box(val: Box<T>) -> (*mut T, Ghost<Box<Perm<*const T>>>) {
         (Box::into_raw(val), Ghost::conjure())
     }
@@ -676,6 +679,7 @@ impl<T: ?Sized> Perm<*const T> {
     #[ensures(*result == *own.val())]
     #[allow(unused_variables)]
     #[erasure(Box::from_raw)]
+    #[cfg(feature = "std")]
     pub unsafe fn to_box(ptr: *mut T, own: Ghost<Box<Perm<*const T>>>) -> Box<T> {
         unsafe { Box::from_raw(ptr) }
     }
@@ -690,6 +694,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// [type documentation](Perm).
     #[check(terminates)]
     #[requires(ptr as *const T == *own.ward())]
+    #[cfg(feature = "std")]
     pub unsafe fn drop(ptr: *mut T, own: Ghost<Box<Perm<*const T>>>) {
         let _ = unsafe { Self::to_box(ptr, own) };
     }
