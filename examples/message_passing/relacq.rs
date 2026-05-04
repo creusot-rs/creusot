@@ -24,14 +24,14 @@ use creusot_std::{
 declare_namespace! { MESSAGE_PASSING }
 
 struct MessagePassingAtomicInv {
-    atomic_own: Box<Perm<AtomicBool>>,
+    atomic_own: Perm<AtomicBool>,
     state: State,
     public_data: Snapshot<(PermCell<i32>, Id, Id)>,
 }
 
 enum State {
     NotWrittenYet,
-    Synchronisation(AtView<Box<Perm<PermCell<i32>>>>, Resource<Excl<()>>),
+    Synchronisation(AtView<Perm<PermCell<i32>>>, Resource<Excl<()>>),
     Readable(Resource<Excl<()>>, Resource<Excl<()>>),
     Invalid,
 }
@@ -88,7 +88,7 @@ pub fn message_passing() {
         let t1 = s.spawn(move |tokens: Ghost<Tokens>| {
             let mut excl = ghost!(excl_write.into_inner());
 
-            unsafe { *data.borrow_mut(ghost!(&mut **data_own)) = 1 }
+            unsafe { *data.borrow_mut(ghost!(&mut *data_own)) = 1 }
 
             atomic.store(
                 true,

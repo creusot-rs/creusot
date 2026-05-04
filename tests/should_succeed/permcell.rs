@@ -5,13 +5,13 @@ use creusot_std::{cell::PermCell, prelude::*};
 pub fn foo() -> i32 {
     let (p, mut own) = PermCell::new(1i32);
 
-    assert!(unsafe { *p.borrow(ghost!(&**own)) } == 1);
+    assert!(unsafe { *p.borrow(ghost!(&*own)) } == 1);
 
     unsafe {
-        *p.borrow_mut(ghost!(&mut **own)) = 2;
+        *p.borrow_mut(ghost!(&mut *own)) = 2;
     }
-    assert!(unsafe { *p.borrow(ghost!(&**own)) } == 2);
+    assert!(unsafe { *p.borrow(ghost!(&*own)) } == 2);
 
-    assert!(unsafe { p.replace(ghost!(&mut **own), 3) } == 2);
+    assert!(unsafe { p.replace(ghost!(&mut *own), 3) } == 2);
     p.into_inner(own)
 }

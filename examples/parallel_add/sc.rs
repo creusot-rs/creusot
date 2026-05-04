@@ -18,7 +18,7 @@ use creusot_std::{
 declare_namespace! { PARALLEL_ADD }
 
 struct ParallelAddAtomicInv {
-    own: Box<Perm<AtomicI32>>,
+    own: Perm<AtomicI32>,
     auth1: Authority<Option<Excl<bool>>>,
     auth2: Authority<Option<Excl<bool>>>,
 }

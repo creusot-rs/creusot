@@ -1,10 +1,7 @@
-#[cfg(creusot)]
-use crate::ghost::Objective;
-
 use crate::{
     ghost::{
-        Container, FnGhost,
-        perm::{Perm, SendPerm, SyncPerm},
+        FnGhost,
+        perm::{Perm, PermTarget},
     },
     logic::FMap,
     prelude::*,
@@ -56,17 +53,9 @@ macro_rules! impl_atomic {
         #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
         pub struct $atomic_type $(< $T >)?(::std::sync::atomic::$atomic_type $(< $T >)?);
 
-        #[trusted]
-        impl $(< $T >)? SendPerm for $atomic_type $(< $T >)? {}
-        #[trusted]
-        impl $(< $T >)? SyncPerm for $atomic_type $(< $T >)? {}
-
-        #[cfg(creusot)]
-        #[trusted]
-        impl $(< $T >)? Objective for Perm<$atomic_type $(< $T >)?> {}
-
-        impl $(< $T >)? Container for $atomic_type $(< $T >)? {
+        impl $(< $T >)? PermTarget for $atomic_type $(< $T >)? {
             type Value = FMap<Timestamp, ($type, SyncView)>;
+            type PermPayload = ();
         }
 
         impl $(< $T >)? HasTimestamp for $atomic_type $(< $T >)? {
@@ -89,7 +78,7 @@ macro_rules! impl_atomic {
             #[trusted]
             #[check(terminates)]
             #[allow(unused_variables)]
-            pub fn new(val: $type, sync_view: Ghost<&mut SyncView>) -> (Self, Ghost<Box<Perm<$atomic_type $(< $T >)?>>>) {
+            pub fn new(val: $type, sync_view: Ghost<&mut SyncView>) -> (Self, Ghost<Perm<$atomic_type $(< $T >)?>>) {
                 (Self(std::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
             }
 
@@ -104,7 +93,7 @@ macro_rules! impl_atomic {
             #[inline(always)]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn into_inner(self, own: Ghost<Box<Perm<$atomic_type $(< $T >)?>>>, sync_view: Ghost<&mut SyncView>) -> ($type, Ghost<Timestamp>) {
+            pub fn into_inner(self, own: Ghost<Perm<$atomic_type $(< $T >)?>>, sync_view: Ghost<&mut SyncView>) -> ($type, Ghost<Timestamp>) {
                 (self.0.into_inner(), Ghost::conjure())
             }
 

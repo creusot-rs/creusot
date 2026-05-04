@@ -5,10 +5,10 @@ use std::sync::Arc;
 use crate::std::ptr::PointerExt as _;
 
 #[cfg(creusot)]
-use core::ops::Deref;
+use std::ops::Deref;
 
 #[cfg(feature = "nightly")]
-use core::alloc::Allocator;
+use std::alloc::Allocator;
 
 pub mod atomic;
 #[cfg(feature = "sc-drf")]
@@ -28,6 +28,7 @@ pub trait ArcExt {
     #[logic]
     fn as_ptr_logic(self) -> *const Self::Pointee;
 }
+
 #[cfg(feature = "nightly")]
 impl<T: ?Sized, A: Allocator> ArcExt for Arc<T, A> {
     type Pointee = T;

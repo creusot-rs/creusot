@@ -205,22 +205,22 @@ module M_parallel_add
   
   type t_Perm_AtomicI32
   
-  type tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global = { f0: t_AtomicI32; f1: t_Perm_AtomicI32 }
+  type tup2_AtomicI32_Ghost_Perm_AtomicI32 = { f0: t_AtomicI32; f1: t_Perm_AtomicI32 }
   
   predicate inv_AtomicI32 (_1: t_AtomicI32)
   
-  predicate inv_tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global [@inline:trivial] (_1: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global) =
+  predicate inv_tup2_AtomicI32_Ghost_Perm_AtomicI32 [@inline:trivial] (_1: tup2_AtomicI32_Ghost_Perm_AtomicI32) =
     inv_AtomicI32 _1.f0
   
-  meta "rewrite_def" predicate inv_tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global
+  meta "rewrite_def" predicate inv_tup2_AtomicI32_Ghost_Perm_AtomicI32
   
   function val_AtomicI32 (self: t_Perm_AtomicI32) : Int32.t
   
   function ward_AtomicI32 (self: t_Perm_AtomicI32) : t_AtomicI32
   
-  let rec new (val': Int32.t) (return (x: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global)) = any
-    [ return (result: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global) ->
-    {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new result type invariant] inv_tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global result)
+  let rec new (val': Int32.t) (return (x: tup2_AtomicI32_Ghost_Perm_AtomicI32)) = any
+    [ return (result: tup2_AtomicI32_Ghost_Perm_AtomicI32) ->
+    {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new result type invariant] inv_tup2_AtomicI32_Ghost_Perm_AtomicI32 result)
       /\ ([@stop_split] [@expl:new ensures #0] val_AtomicI32 result.f1 = val')
       /\ ([@stop_split] [@expl:new ensures #1] ward_AtomicI32 result.f1 = result.f0)}
       (! return {result}) ]
@@ -704,7 +704,7 @@ module M_parallel_add
   let rec new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  let rec into_inner_Box_Perm_AtomicI32_Global (self: t_Perm_AtomicI32) (return (x: t_Perm_AtomicI32)) = any
+  let rec into_inner_Perm_AtomicI32 (self: t_Perm_AtomicI32) (return (x: t_Perm_AtomicI32)) = any
     [ return (result: t_Perm_AtomicI32) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
@@ -1148,10 +1148,9 @@ module M_parallel_add
       /\ ([@stop_split] [@expl:shoot_store ensures #3] val_AtomicI32 own'0.final = val_store_AtomicI32 self.current)}
       (! return {result}) ]
   
-  predicate resolve_refmut_Box_Perm_AtomicI32_Global [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicI32) =
-    _1.final = _1.current
+  predicate resolve_refmut_Perm_AtomicI32 [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicI32) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_Box_Perm_AtomicI32_Global
+  meta "rewrite_def" predicate resolve_refmut_Perm_AtomicI32
   
   predicate invariant_refmut_ParallelAddAtomicInv [@inline:trivial] (self: MutBorrow.t t_ParallelAddAtomicInv) =
     inv_ParallelAddAtomicInv self.current /\ inv_ParallelAddAtomicInv self.final
@@ -1233,7 +1232,7 @@ module M_parallel_add
           (fun (_bor: MutBorrow.t t_Perm_AtomicI32) ->
             [ &_20 <- _bor ] [ &_21 <- { _21 with current = _bor.final } ] s17)
       | s17 = shoot_store_AtomicI32 {_19} {_20} (fun (_x: ()) -> [ &_18 <- _x ] s18)
-      | s18 = -{resolve_refmut_Box_Perm_AtomicI32_Global _21}- s19
+      | s18 = -{resolve_refmut_Perm_AtomicI32 _21}- s19
       | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_refmut_ParallelAddAtomicInv inv} any) ]
       | s20 = -{resolve_refmut_ParallelAddAtomicInv inv}- s21
       | s21 = -{resolve_refmut_closure0 self}- s22
@@ -1970,7 +1969,7 @@ module M_parallel_add
     {[@stop_split] [@expl:frag_lemma ensures] incl_Option_tup2_PositiveReal_Int (view_Fragment_Option_tup2_PositiveReal_Int frag) (view_Authority_Option_tup2_PositiveReal_Int self)}
       (! return {result}) ]
   
-  let rec new_Box_Perm_AtomicI32_Global (x: t_Perm_AtomicI32) (return (x'0: t_Perm_AtomicI32)) = any
+  let rec new_Perm_AtomicI32 (x: t_Perm_AtomicI32) (return (x'0: t_Perm_AtomicI32)) = any
     [ return (result: t_Perm_AtomicI32) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   let rec into_inner (self: t_AtomicI32) (own'0: t_Perm_AtomicI32) (return (x: Int32.t)) =
@@ -1987,7 +1986,7 @@ module M_parallel_add
   let rec parallel_add (n: Int32.t) (return (x: ())) = {[@stop_split] [@expl:parallel_add requires] Int32.to_int n >= 0}
     (! bb0
     [ bb0 = s0
-      [ s0 = new {(0: Int32.t)} (fun (_x: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global) -> [ &_6 <- _x ] s1)
+      [ s0 = new {(0: Int32.t)} (fun (_x: tup2_AtomicI32_Ghost_Perm_AtomicI32) -> [ &_6 <- _x ] s1)
       | s1 = [ &atomic <- _6.f0 ] s2
       | s2 = [ &own'0 <- _6.f1 ] s3
       | s3 = [ &_7 <- { f0'0 = (); f1'0 = () } ] s4
@@ -2031,7 +2030,7 @@ module M_parallel_add
       | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Option_tup2_PositiveReal_Int _20} any) ]
       | s20 = -{resolve_refmut_Authority_Option_tup2_PositiveReal_Int _20}- s21
       | s21 = new_unit {_17} (fun (_x: ()) -> [ &_16 <- _x ] s22)
-      | s22 = into_inner_Box_Perm_AtomicI32_Global {own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_31 <- _x ] s23)
+      | s22 = into_inner_Perm_AtomicI32 {own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_31 <- _x ] s23)
       | s23 = into_inner_Authority_Option_tup2_PositiveReal_Int {auth'0}
           (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &_33 <- _x ] s24)
       | s24 = [ &_30 <- { own = _31; auth = _33 } ] s25
@@ -2056,7 +2055,7 @@ module M_parallel_add
       | s36 = deref_Ghost_Fragment_Option_tup2_PositiveReal_Int {_56}
           (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_54 <- _x ] s37)
       | s37 = frag_lemma_Option_tup2_PositiveReal_Int {inv'0.auth} {_54} (fun (_x: ()) -> [ &_51 <- _x ] s38)
-      | s38 = new_Box_Perm_AtomicI32_Global {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s39)
+      | s38 = new_Perm_AtomicI32 {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s39)
       | s39 = into_inner {atomic} {own'1} (fun (_x: Int32.t) -> [ &x <- _x ] s40)
       | s40 = {[@expl:assertion] n = x} s41
       | s41 = return {_ret} ] ]
@@ -2064,7 +2063,7 @@ module M_parallel_add
     | & n: Int32.t = n
     | & atomic: t_AtomicI32 = Any.any_l ()
     | & own'0: t_Perm_AtomicI32 = Any.any_l ()
-    | & _6: tup2_AtomicI32_Ghost_Box_Perm_AtomicI32_Global = Any.any_l ()
+    | & _6: tup2_AtomicI32_Ghost_Perm_AtomicI32 = Any.any_l ()
     | & _7: tup2_fraction_1_fraction_add = Any.any_l ()
     | & auth'0: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & frag: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()

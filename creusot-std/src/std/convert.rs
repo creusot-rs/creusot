@@ -1,8 +1,6 @@
 use crate::prelude::*;
 #[cfg(all(creusot, feature = "std"))]
-use alloc::alloc::Allocator;
-#[cfg(all(creusot, not(feature = "std")))]
-use alloc::boxed::Box;
+use std::alloc::Allocator;
 
 extern_spec! {
     mod core {
@@ -37,7 +35,10 @@ extern_spec! {
         #[ensures(result == Some(x))]
         fn from(x: T) -> Self;
     }
+}
 
+#[cfg(feature = "std")]
+extern_spec! {
     impl<T> From<T> for Box<T> {
         #[check(ghost)]
         #[ensures(*result == x)]
@@ -71,10 +72,7 @@ extern_spec! {
             Box::new(s)
         }
     }
-}
 
-#[cfg(feature = "std")]
-extern_spec! {
     impl<T: Clone> From<&[T]> for Vec<T>
     {
         // FIXME: inherit ghost/terminates from clone

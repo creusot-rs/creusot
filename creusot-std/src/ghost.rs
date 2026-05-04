@@ -24,7 +24,7 @@ mod shared;
 
 pub use self::{
     fn_ghost::{FnGhost, FnGhostWrapper},
-    perm::Container,
+    perm::PermTarget,
     shared::GhostShared,
 };
 
@@ -300,4 +300,4 @@ define_objective! {}
 ///
 /// This negative implementation primarily targets `Perm<PermCell<T>>` and
 /// `Perm<*const T>`.
-pub(crate) struct NotObjective {}
+pub struct NotObjective {}

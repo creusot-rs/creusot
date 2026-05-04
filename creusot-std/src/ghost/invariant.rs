@@ -40,7 +40,7 @@
 //!     }
 //! }
 //!
-//! struct PermCellNAInv<T>(Box<Perm<PermCell<T>>>);
+//! struct PermCellNAInv<T>(Perm<PermCell<T>>);
 //! impl<T: Invariant> Protocol for PermCellNAInv<T> {
 //!     type Public = Id;
 //!
