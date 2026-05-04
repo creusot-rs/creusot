@@ -335,6 +335,10 @@ impl<T> Seq<T> {
         dead
     }
 
+    #[logic]
+    #[ensures(Self::empty().reverse() == Self::empty())]
+    pub fn reverse_empty() {}
+
     /// Returns a new sequence, which is `self` with the element at the given `index` removed.
     ///
     /// See also the program function [`Seq::remove`].
@@ -413,6 +417,19 @@ impl<T> Seq<T> {
     #[ensures(forall<a: Seq<T>, b: Seq<T>, x>
         a.concat(b).contains(x) == a.contains(x) || b.contains(x))]
     pub fn concat_contains() {}
+
+    #[logic]
+    #[ensures(self.concat(other1).concat(other2) == self.concat(other1.concat(other2)))]
+    pub fn concat_assoc(self, other1: Self, other2: Self) {}
+
+    #[logic]
+    #[ensures(self.concat(Seq::empty()) == self)]
+    #[ensures(Seq::empty().concat(self) == self)]
+    pub fn concat_empty(self) {}
+
+    #[logic]
+    #[ensures(self.concat(other).reverse() == other.reverse().concat(self.reverse()))]
+    pub fn reverse_concat(self, other: Self) {}
 }
 
 impl<T> Seq<Seq<T>> {

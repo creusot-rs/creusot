@@ -232,11 +232,11 @@ impl<I: IteratorSpec + ?Sized> IteratorSpec for &mut I {
         pearlite! { (*self).completed() && ^*self == ^^self }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

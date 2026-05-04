@@ -108,11 +108,11 @@ impl<T: DeepModel> IteratorSpec for IntoIter<T> {
         pearlite! { (self@).is_empty() }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -141,11 +141,11 @@ impl<'a, T: DeepModel> IteratorSpec for Iter<'a, T> {
         pearlite! { (self@).is_empty() }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -192,11 +192,11 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Intersection
         pearlite! { resolve(self) && (self@).is_empty() }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -216,11 +216,11 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Difference<'
         pearlite! { resolve(self) && (self@).is_empty() }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

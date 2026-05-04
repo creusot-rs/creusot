@@ -281,15 +281,45 @@ impl<T, A: Allocator> IteratorSpec for IntoIter<T, A> {
         }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
-    fn produces_refl(self) {}
+    fn produces_refl(self) {
+        let _ = Seq::<T>::concat_empty;
+    }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
+    fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {
+        let _ = Seq::<T>::concat_assoc;
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<T, A: Allocator> DoubleEndedIteratorSpec for IntoIter<T, A> {
+    #[logic(open)]
+    fn produces_back(self, visited: Seq<T>, rhs: Self) -> bool {
+        pearlite! {
+            self@ == rhs@.concat(visited.reverse())
+        }
+    }
+
+    #[logic(law)]
+    #[ensures(self.produces_back(Seq::empty(), self))]
+    fn produces_back_refl(self) {
+        let _ = Seq::<T>::reverse_empty();
+        let _ = Seq::<T>::concat_empty;
+    }
+
+    #[logic(law)]
+    #[requires(a.produces_back(ab, b))]
+    #[requires(b.produces_back(bc, c))]
+    #[ensures(a.produces_back(ab.concat(bc), c))]
+    fn produces_back_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {
+        let _ = ab.reverse_concat(bc);
+        let _ = Seq::<T>::concat_assoc;
+    }
 }
 
 impl<T> FromIteratorSpec<T> for Vec<T> {
