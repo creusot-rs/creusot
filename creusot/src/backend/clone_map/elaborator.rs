@@ -683,13 +683,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             return;
         }
 
-        // TODO: Push out of graph expansion
-        // If the function we are cloning into is `#[trusted]` there is no need for laws.
-        // Similarily, if it has no body, there will be no proofs.
-        if is_trusted_item(self.tcx(), self_did) || !self.ctx.has_body(self_did) {
-            return;
-        }
-
         for law in self.ctx.laws(item_container) {
             let law_dep = self.namer(dep).resolve_dependency(Dependency::Item(*law, item_subst));
             // We add a weak dep from `dep` to make sure it appears close to the triggering item
