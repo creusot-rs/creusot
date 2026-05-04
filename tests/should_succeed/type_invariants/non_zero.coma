@@ -1,27 +1,3 @@
-module M_impl_NonZeroU32__new (* NonZeroU32 *)
-  use creusot.int.UInt32
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_NonZeroU32 = { f0: UInt32.t }
-  
-  predicate invariant_NonZeroU32 (self: t_NonZeroU32) = UInt32.t'int self.f0 > 0
-  
-  predicate inv_NonZeroU32 (_1: t_NonZeroU32)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_NonZeroU32 [inv_NonZeroU32 x]. inv_NonZeroU32 x = invariant_NonZeroU32 x
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec new (n: UInt32.t) (return (x: t_NonZeroU32)) = {[@stop_split] [@expl:new requires] UInt32.t'int n > 0}
-    (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = n } ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: t_NonZeroU32 = Any.any_l () | & n: UInt32.t = n ])
-    [ return (result: t_NonZeroU32) -> {[@stop_split] [@expl:new result type invariant] inv_NonZeroU32 result}
-      (! return {result}) ]
-end
 module M_impl_NonZeroU32__add (* NonZeroU32 *)
   use creusot.int.UInt32
   use creusot.prelude.Any
@@ -59,27 +35,29 @@ module M_impl_NonZeroU32__add (* NonZeroU32 *)
     [ return (result: t_NonZeroU32) -> {[@stop_split] [@expl:add result type invariant] inv_NonZeroU32 result}
       (! return {result}) ]
 end
-module M_impl_NonZeroU32__sub_pre_trans (* NonZeroU32 *)
+module M_impl_NonZeroU32__new (* NonZeroU32 *)
   use creusot.int.UInt32
+  use creusot.prelude.Any
   use int.Int
   
   type t_NonZeroU32 = { f0: UInt32.t }
   
-  predicate sub_pre (self: t_NonZeroU32) (rhs: t_NonZeroU32) = UInt32.t'int self.f0 > UInt32.t'int rhs.f0
+  predicate invariant_NonZeroU32 (self: t_NonZeroU32) = UInt32.t'int self.f0 > 0
+  
+  predicate inv_NonZeroU32 (_1: t_NonZeroU32)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_NonZeroU32 [inv_NonZeroU32 x]. inv_NonZeroU32 x = invariant_NonZeroU32 x
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant a : t_NonZeroU32
-  
-  constant b : t_NonZeroU32
-  
-  constant c : t_NonZeroU32
-  
-  function sub_pre_trans (a: t_NonZeroU32) (b: t_NonZeroU32) (c: t_NonZeroU32) : ()
-  
-  goal vc_sub_pre_trans: sub_pre a b -> sub_pre b c -> ([@stop_split] [@expl:sub_pre_trans ensures] sub_pre a c)
+  let rec new (n: UInt32.t) (return (x: t_NonZeroU32)) = {[@stop_split] [@expl:new requires] UInt32.t'int n > 0}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = n } ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_NonZeroU32 = Any.any_l () | & n: UInt32.t = n ])
+    [ return (result: t_NonZeroU32) -> {[@stop_split] [@expl:new result type invariant] inv_NonZeroU32 result}
+      (! return {result}) ]
 end
 module M_impl_NonZeroU32__sub (* NonZeroU32 *)
   use creusot.int.UInt32
@@ -117,4 +95,26 @@ module M_impl_NonZeroU32__sub (* NonZeroU32 *)
     | & _6: UInt32.t = Any.any_l () ])
     [ return (result: t_NonZeroU32) -> {[@stop_split] [@expl:sub result type invariant] inv_NonZeroU32 result}
       (! return {result}) ]
+end
+module M_impl_NonZeroU32__sub_pre_trans (* NonZeroU32 *)
+  use creusot.int.UInt32
+  use int.Int
+  
+  type t_NonZeroU32 = { f0: UInt32.t }
+  
+  predicate sub_pre (self: t_NonZeroU32) (rhs: t_NonZeroU32) = UInt32.t'int self.f0 > UInt32.t'int rhs.f0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : t_NonZeroU32
+  
+  constant b : t_NonZeroU32
+  
+  constant c : t_NonZeroU32
+  
+  function sub_pre_trans (a: t_NonZeroU32) (b: t_NonZeroU32) (c: t_NonZeroU32) : ()
+  
+  goal vc_sub_pre_trans: sub_pre a b -> sub_pre b c -> ([@stop_split] [@expl:sub_pre_trans ensures] sub_pre a c)
 end

@@ -1,3 +1,149 @@
+module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use seq.Seq
+  use int.Int
+  
+  type t_A
+  
+  type t_Repeat_A = { element: t_A }
+  
+  predicate inv_A (_1: t_A)
+  
+  predicate inv_Repeat_A (_1: t_Repeat_A)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Repeat_A [inv_Repeat_A x]. inv_Repeat_A x = inv_A x.element
+  
+  predicate invariant_refmut_Repeat_A [@inline:trivial] (self: MutBorrow.t t_Repeat_A) =
+    inv_Repeat_A self.current /\ inv_Repeat_A self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Repeat_A
+  
+  predicate inv_refmut_Repeat_A [@inline:trivial] (_1: MutBorrow.t t_Repeat_A) = invariant_refmut_Repeat_A _1
+  
+  meta "rewrite_def" predicate inv_refmut_Repeat_A
+  
+  predicate resolve_refmut_Repeat_A [@inline:trivial] (_1: MutBorrow.t t_Repeat_A) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Repeat_A
+  
+  predicate invariant_ref_A [@inline:trivial] (self: t_A) = inv_A self
+  
+  meta "rewrite_def" predicate invariant_ref_A
+  
+  predicate inv_ref_A [@inline:trivial] (_1: t_A) = invariant_ref_A _1
+  
+  meta "rewrite_def" predicate inv_ref_A
+  
+  predicate precondition_clone (self: ()) (args: t_A)
+  
+  axiom precondition_fndef: forall args: t_A [precondition_clone () args]. (let self_ = args in inv_ref_A self_)
+      -> precondition_clone () args
+  
+  predicate postcondition_once_clone (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef:
+    forall args: t_A, res: t_A [postcondition_once_clone () args res]. postcondition_once_clone () args res
+      -> (let self_ = args in inv_A res)
+  
+  let rec clone_A (self_: t_A) (return (x: t_A)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+    any
+    [ return (result: t_A) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+      (! return {result}) ]
+  
+  type t_Option_A = None | Some t_A
+  
+  predicate inv_Option_A (_1: t_Option_A)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_A [inv_Option_A x]. inv_Option_A x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_A f0
+        end
+  
+  predicate completed_Repeat_A (self: MutBorrow.t t_Repeat_A) = false
+  
+  predicate resolve_clone [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_clone
+  
+  predicate postcondition_mut_clone (self: ()) (args: t_A) (result_state: ()) (result: t_A)
+  
+  axiom postcondition_fndef'0:
+    forall args: t_A, res: t_A [postcondition_mut_clone () args () res]. postcondition_mut_clone () args () res
+      -> (let self_ = args in inv_A res)
+  
+  function fn_mut_once_clone (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_mut_once_clone_spec: forall self: (), args: t_A, res: t_A. postcondition_once_clone self args res
+      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
+  
+  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_clone
+  
+  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
+      -> hist_inv_clone b c -> hist_inv_clone self c
+  
+  function hist_inv_refl_clone (self: ()) : ()
+  
+  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
+  
+  function postcondition_mut_hist_inv_clone (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom postcondition_mut_hist_inv_clone_spec:
+    forall self: (), args: t_A, res_state: (), res: t_A. postcondition_mut_clone self args res_state res
+      -> hist_inv_clone self res_state
+  
+  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
+  
+  predicate postcondition_clone (self: ()) (args: t_A) (result: t_A)
+  
+  axiom postcondition_fndef'1:
+    forall args: t_A, res: t_A [postcondition_clone () args res]. postcondition_clone () args res
+      -> (let self_ = args in inv_A res)
+  
+  function fn_once_clone (self: ()) (args: t_A) (res: t_A) : ()
+  
+  axiom fn_once_clone_spec: forall self: (), args: t_A, res: t_A. postcondition_once_clone self args res
+      = (postcondition_clone self args res /\ resolve_clone self)
+  
+  function fn_mut_clone (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
+  
+  axiom fn_mut_clone_spec:
+    forall self: (), args: t_A, res_state: (), res: t_A. postcondition_mut_clone self args res_state res
+      = (postcondition_clone self args res /\ self = res_state)
+  
+  predicate produces_Repeat_A (self: t_Repeat_A) (visited: Seq.seq t_A) (o: t_Repeat_A) =
+    self = o
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> postcondition_clone () self.element (Seq.get visited i))
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec next_Repeat_A (self: MutBorrow.t t_Repeat_A) (return (x: t_Option_A)) =
+    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Repeat_A self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Repeat_A self} any) ]
+      | s1 = -{resolve_refmut_Repeat_A self}- s2
+      | s2 = clone_A {self.current.element} (fun (_x: t_A) -> [ &_4 <- _x ] s3)
+      | s3 = [ &_ret <- Some _4 ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_Option_A = Any.any_l () | & self: MutBorrow.t t_Repeat_A = self | & _4: t_A = Any.any_l () ])
+    [ return (result: t_Option_A) ->
+    {[@stop_split] [@expl:next_Repeat_A ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_A result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
+        | None -> completed_Repeat_A self
+        | Some v -> produces_Repeat_A self.current (Seq.singleton v) self.final
+        end)}
+      (! return {result}) ]
+end
 module M_impl_Iterator_for_Repeat_A__produces_refl (* <Repeat<A> as common::Iterator> *)
   use seq.Seq
   use int.Int
@@ -177,152 +323,6 @@ module M_impl_Iterator_for_Repeat_A__produces_trans (* <Repeat<A> as common::Ite
   
   goal vc_produces_trans_Repeat_A: produces_Repeat_A a ab b
     -> produces_Repeat_A b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Repeat_A a (Seq.(++) ab bc) c)
-end
-module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
-  use creusot.prelude.MutBorrow
-  use creusot.prelude.Any
-  use seq.Seq
-  use int.Int
-  
-  type t_A
-  
-  type t_Repeat_A = { element: t_A }
-  
-  predicate inv_A (_1: t_A)
-  
-  predicate inv_Repeat_A (_1: t_Repeat_A)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Repeat_A [inv_Repeat_A x]. inv_Repeat_A x = inv_A x.element
-  
-  predicate invariant_refmut_Repeat_A [@inline:trivial] (self: MutBorrow.t t_Repeat_A) =
-    inv_Repeat_A self.current /\ inv_Repeat_A self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Repeat_A
-  
-  predicate inv_refmut_Repeat_A [@inline:trivial] (_1: MutBorrow.t t_Repeat_A) = invariant_refmut_Repeat_A _1
-  
-  meta "rewrite_def" predicate inv_refmut_Repeat_A
-  
-  predicate resolve_refmut_Repeat_A [@inline:trivial] (_1: MutBorrow.t t_Repeat_A) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Repeat_A
-  
-  predicate invariant_ref_A [@inline:trivial] (self: t_A) = inv_A self
-  
-  meta "rewrite_def" predicate invariant_ref_A
-  
-  predicate inv_ref_A [@inline:trivial] (_1: t_A) = invariant_ref_A _1
-  
-  meta "rewrite_def" predicate inv_ref_A
-  
-  predicate precondition_clone (self: ()) (args: t_A)
-  
-  axiom precondition_fndef: forall args: t_A [precondition_clone () args]. (let self_ = args in inv_ref_A self_)
-      -> precondition_clone () args
-  
-  predicate postcondition_once_clone (self: ()) (args: t_A) (result: t_A)
-  
-  axiom postcondition_fndef:
-    forall args: t_A, res: t_A [postcondition_once_clone () args res]. postcondition_once_clone () args res
-      -> (let self_ = args in inv_A res)
-  
-  let rec clone_A (self_: t_A) (return (x: t_A)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
-    any
-    [ return (result: t_A) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
-      (! return {result}) ]
-  
-  type t_Option_A = None | Some t_A
-  
-  predicate inv_Option_A (_1: t_Option_A)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_A [inv_Option_A x]. inv_Option_A x
-      = match x with
-        | None -> true
-        | Some f0 -> inv_A f0
-        end
-  
-  predicate completed_Repeat_A (self: MutBorrow.t t_Repeat_A) = false
-  
-  predicate resolve_clone [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_clone
-  
-  predicate postcondition_mut_clone (self: ()) (args: t_A) (result_state: ()) (result: t_A)
-  
-  axiom postcondition_fndef'0:
-    forall args: t_A, res: t_A [postcondition_mut_clone () args () res]. postcondition_mut_clone () args () res
-      -> (let self_ = args in inv_A res)
-  
-  function fn_mut_once_clone (self: ()) (args: t_A) (res: t_A) : ()
-  
-  axiom fn_mut_once_clone_spec: forall self: (), args: t_A, res: t_A. postcondition_once_clone self args res
-      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
-  
-  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_clone
-  
-  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
-      -> hist_inv_clone b c -> hist_inv_clone self c
-  
-  function hist_inv_refl_clone (self: ()) : ()
-  
-  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
-  
-  function postcondition_mut_hist_inv_clone (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
-  
-  axiom postcondition_mut_hist_inv_clone_spec:
-    forall self: (), args: t_A, res_state: (), res: t_A. postcondition_mut_clone self args res_state res
-      -> hist_inv_clone self res_state
-  
-  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
-  
-  predicate postcondition_clone (self: ()) (args: t_A) (result: t_A)
-  
-  axiom postcondition_fndef'1:
-    forall args: t_A, res: t_A [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_A res)
-  
-  function fn_once_clone (self: ()) (args: t_A) (res: t_A) : ()
-  
-  axiom fn_once_clone_spec: forall self: (), args: t_A, res: t_A. postcondition_once_clone self args res
-      = (postcondition_clone self args res /\ resolve_clone self)
-  
-  function fn_mut_clone (self: ()) (args: t_A) (res_state: ()) (res: t_A) : ()
-  
-  axiom fn_mut_clone_spec:
-    forall self: (), args: t_A, res_state: (), res: t_A. postcondition_mut_clone self args res_state res
-      = (postcondition_clone self args res /\ self = res_state)
-  
-  predicate produces_Repeat_A (self: t_Repeat_A) (visited: Seq.seq t_A) (o: t_Repeat_A) =
-    self = o
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> postcondition_clone () self.element (Seq.get visited i))
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec next_Repeat_A (self: MutBorrow.t t_Repeat_A) (return (x: t_Option_A)) =
-    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Repeat_A self}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Repeat_A self} any) ]
-      | s1 = -{resolve_refmut_Repeat_A self}- s2
-      | s2 = clone_A {self.current.element} (fun (_x: t_A) -> [ &_4 <- _x ] s3)
-      | s3 = [ &_ret <- Some _4 ] s4
-      | s4 = return {_ret} ] ]
-    [ & _ret: t_Option_A = Any.any_l () | & self: MutBorrow.t t_Repeat_A = self | & _4: t_A = Any.any_l () ])
-    [ return (result: t_Option_A) ->
-    {[@stop_split] [@expl:next_Repeat_A ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_A result)
-      /\ ([@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Repeat_A self
-        | Some v -> produces_Repeat_A self.current (Seq.singleton v) self.final
-        end)}
-      (! return {result}) ]
 end
 module M_impl_Iterator_for_Repeat_A__produces_refl__refines (* <Repeat<A> as common::Iterator> *)
   use seq.Seq

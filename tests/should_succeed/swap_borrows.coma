@@ -1,29 +1,3 @@
-module M_swap
-  use creusot.prelude.Any
-  
-  type t_T
-  
-  type tup2_T_T = { f0: t_T; f1: t_T }
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_tup2_T_T [@inline:trivial] (_1: tup2_T_T) = inv_T _1.f0 /\ inv_T _1.f1
-  
-  meta "rewrite_def" predicate inv_tup2_T_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec swap_T (x: tup2_T_T) (return (x'0: tup2_T_T)) = {[@stop_split] [@expl:swap 'x' type invariant] inv_tup2_T_T x}
-    (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = x.f1; f1 = x.f0 } ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: tup2_T_T = Any.any_l () | & x: tup2_T_T = x ])
-    [ return (result: tup2_T_T) ->
-    {[@stop_split] [@expl:swap_T ensures] ([@stop_split] [@expl:swap result type invariant] inv_tup2_T_T result)
-      /\ ([@stop_split] [@expl:swap ensures] result = { f0 = x.f1; f1 = x.f0 })}
-      (! return {result}) ]
-end
 module M_f
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
@@ -75,4 +49,30 @@ module M_f
     | & _6: MutBorrow.t UInt32.t = Any.any_l ()
     | & _7: MutBorrow.t UInt32.t = Any.any_l ()
     | & _8: MutBorrow.t UInt32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_swap
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type tup2_T_T = { f0: t_T; f1: t_T }
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_tup2_T_T [@inline:trivial] (_1: tup2_T_T) = inv_T _1.f0 /\ inv_T _1.f1
+  
+  meta "rewrite_def" predicate inv_tup2_T_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec swap_T (x: tup2_T_T) (return (x'0: tup2_T_T)) = {[@stop_split] [@expl:swap 'x' type invariant] inv_tup2_T_T x}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- { f0 = x.f1; f1 = x.f0 } ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: tup2_T_T = Any.any_l () | & x: tup2_T_T = x ])
+    [ return (result: tup2_T_T) ->
+    {[@stop_split] [@expl:swap_T ensures] ([@stop_split] [@expl:swap result type invariant] inv_tup2_T_T result)
+      /\ ([@stop_split] [@expl:swap ensures] result = { f0 = x.f1; f1 = x.f0 })}
+      (! return {result}) ]
 end

@@ -638,6 +638,107 @@ module M_impl_Resolve_for_Tree_K_V__resolve_coherence (* <Tree<K, V> as creusot_
   goal vc_resolve_coherence_Tree_K_V: structural_resolve_Tree_K_V self
     -> ([@stop_split] [@expl:resolve_coherence ensures] resolve_Tree_K_V self)
 end
+module M_impl_Resolve_for_Tree_K_V__resolve_coherence__refines (* <Tree<K, V> as creusot_std::resolve::Resolve> *)
+  type t_Color = Red | Black
+  
+  type t_K
+  
+  type t_V
+  
+  type t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
+  with t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
+  with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
+  
+  predicate inv_K (_1: t_K)
+  
+  predicate inv_V (_1: t_V)
+  
+  predicate inv_Node_K_V (_1: t_Node_K_V)
+  
+  predicate inv_Tree_K_V (_1: t_Tree_K_V)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Node_K_V [inv_Node_K_V x]. inv_Node_K_V x
+      = (inv_Tree_K_V x.left /\ inv_K x.key /\ inv_V x.val' /\ inv_Tree_K_V x.right)
+  
+  predicate invariant_Box_Node_K_V_Global (self: t_Node_K_V) = inv_Node_K_V self
+  
+  predicate inv_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = invariant_Box_Node_K_V_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_Node_K_V_Global
+  
+  predicate inv_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
+  
+  axiom inv_axiom'0 [@rewrite]:
+    forall x: t_Option_Box_Node_K_V_Global [inv_Option_Box_Node_K_V_Global x]. inv_Option_Box_Node_K_V_Global x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_Box_Node_K_V_Global f0
+        end
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree_K_V [inv_Tree_K_V x]. inv_Tree_K_V x
+      = inv_Option_Box_Node_K_V_Global x.node
+  
+  type t_DeepModelTy
+  
+  function deep_model_K (self: t_K) : t_DeepModelTy
+  
+  predicate has_mapping_K (self: t_Tree_K_V) (k: t_DeepModelTy) (v: t_V) =
+    match self with
+      | {node = None} -> false
+      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> has_mapping_K left'0 k v
+      \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
+      end
+  
+  predicate has_mapping_K'0 (self: t_Node_K_V) (k: t_DeepModelTy) (v: t_V) =
+    has_mapping_K self.left k v \/ has_mapping_K self.right k v \/ k = deep_model_K self.key /\ v = self.val'
+  
+  axiom has_mapping_K_spec:
+    forall self: t_Node_K_V, k: t_DeepModelTy, v: t_V [has_mapping_K'0 self k v]. forall node'0: t_Node_K_V. self
+          = node'0 -> has_mapping_K'0 self k v = has_mapping_K { node = Some node'0 } k v
+  
+  predicate resolve_V (_1: t_V)
+  
+  predicate resolve_Node_K_V (self: t_Node_K_V) =
+    forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v -> resolve_V v
+  
+  predicate resolve_Tree_K_V (self: t_Tree_K_V) = forall k: t_DeepModelTy, v: t_V. has_mapping_K self k v -> resolve_V v
+  
+  predicate resolve_K (_1: t_K)
+  
+  predicate resolve_Tree_K_V'0 (_1: t_Tree_K_V)
+  
+  predicate resolve_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Tree_K_V [resolve_Tree_K_V'0 x]. resolve_Tree_K_V'0 x
+      = (resolve_Tree_K_V x /\ resolve_Option_Box_Node_K_V_Global x.node)
+  
+  predicate resolve_Node_K_V'0 (_1: t_Node_K_V)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Node_K_V [resolve_Node_K_V'0 x]. resolve_Node_K_V'0 x
+      = (resolve_Node_K_V x
+      /\ resolve_Tree_K_V'0 x.left /\ resolve_K x.key /\ resolve_V x.val' /\ resolve_Tree_K_V'0 x.right)
+  
+  predicate resolve_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = resolve_Node_K_V'0 _1
+  
+  meta "rewrite_def" predicate resolve_Box_Node_K_V_Global
+  
+  axiom resolve_axiom'1 [@rewrite]:
+    forall x: t_Option_Box_Node_K_V_Global [resolve_Option_Box_Node_K_V_Global x]. resolve_Option_Box_Node_K_V_Global x
+      = match x with
+        | None -> true
+        | Some x0 -> resolve_Box_Node_K_V_Global x0
+        end
+  
+  predicate structural_resolve_Tree_K_V (_1: t_Tree_K_V) = resolve_Option_Box_Node_K_V_Global _1.node
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Tree_K_V. inv_Tree_K_V self
+      -> structural_resolve_Tree_K_V self
+      -> structural_resolve_Tree_K_V self /\ (forall result: (). resolve_Tree_K_V self -> resolve_Tree_K_V self)
+end
 module M_impl_Resolve_for_Node_K_V__resolve_coherence (* <Node<K, V> as creusot_std::resolve::Resolve> *)
   type t_Color = Red | Black
   
@@ -713,6 +814,108 @@ module M_impl_Resolve_for_Node_K_V__resolve_coherence (* <Node<K, V> as creusot_
   
   goal vc_resolve_coherence_Node_K_V: structural_resolve_Node_K_V self
     -> ([@stop_split] [@expl:resolve_coherence ensures] resolve_Node_K_V self)
+end
+module M_impl_Resolve_for_Node_K_V__resolve_coherence__refines (* <Node<K, V> as creusot_std::resolve::Resolve> *)
+  type t_Color = Red | Black
+  
+  type t_K
+  
+  type t_V
+  
+  type t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
+  with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
+  with t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
+  
+  predicate inv_K (_1: t_K)
+  
+  predicate inv_V (_1: t_V)
+  
+  predicate inv_Node_K_V (_1: t_Node_K_V)
+  
+  predicate invariant_Box_Node_K_V_Global (self: t_Node_K_V) = inv_Node_K_V self
+  
+  predicate inv_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = invariant_Box_Node_K_V_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_Node_K_V_Global
+  
+  predicate inv_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
+  
+  axiom inv_axiom [@rewrite]:
+    forall x: t_Option_Box_Node_K_V_Global [inv_Option_Box_Node_K_V_Global x]. inv_Option_Box_Node_K_V_Global x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_Box_Node_K_V_Global f0
+        end
+  
+  predicate inv_Tree_K_V (_1: t_Tree_K_V)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Tree_K_V [inv_Tree_K_V x]. inv_Tree_K_V x
+      = inv_Option_Box_Node_K_V_Global x.node
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node_K_V [inv_Node_K_V x]. inv_Node_K_V x
+      = (inv_Tree_K_V x.left /\ inv_K x.key /\ inv_V x.val' /\ inv_Tree_K_V x.right)
+  
+  type t_DeepModelTy
+  
+  function deep_model_K (self: t_K) : t_DeepModelTy
+  
+  predicate has_mapping_K (self: t_Tree_K_V) (k: t_DeepModelTy) (v: t_V) =
+    match self with
+      | {node = None} -> false
+      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> has_mapping_K left'0 k v
+      \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
+      end
+  
+  predicate resolve_V (_1: t_V)
+  
+  predicate resolve_Tree_K_V (self: t_Tree_K_V) = forall k: t_DeepModelTy, v: t_V. has_mapping_K self k v -> resolve_V v
+  
+  predicate has_mapping_K'0 (self: t_Node_K_V) (k: t_DeepModelTy) (v: t_V) =
+    has_mapping_K self.left k v \/ has_mapping_K self.right k v \/ k = deep_model_K self.key /\ v = self.val'
+  
+  axiom has_mapping_K_spec:
+    forall self: t_Node_K_V, k: t_DeepModelTy, v: t_V [has_mapping_K'0 self k v]. forall node'0: t_Node_K_V. self
+          = node'0 -> has_mapping_K'0 self k v = has_mapping_K { node = Some node'0 } k v
+  
+  predicate resolve_Node_K_V (self: t_Node_K_V) =
+    forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v -> resolve_V v
+  
+  predicate resolve_K (_1: t_K)
+  
+  predicate resolve_Node_K_V'0 (_1: t_Node_K_V)
+  
+  predicate resolve_Tree_K_V'0 (_1: t_Tree_K_V)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node_K_V [resolve_Node_K_V'0 x]. resolve_Node_K_V'0 x
+      = (resolve_Node_K_V x
+      /\ resolve_Tree_K_V'0 x.left /\ resolve_K x.key /\ resolve_V x.val' /\ resolve_Tree_K_V'0 x.right)
+  
+  predicate resolve_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = resolve_Node_K_V'0 _1
+  
+  meta "rewrite_def" predicate resolve_Box_Node_K_V_Global
+  
+  predicate resolve_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
+  
+  axiom resolve_axiom'0 [@rewrite]:
+    forall x: t_Option_Box_Node_K_V_Global [resolve_Option_Box_Node_K_V_Global x]. resolve_Option_Box_Node_K_V_Global x
+      = match x with
+        | None -> true
+        | Some x0 -> resolve_Box_Node_K_V_Global x0
+        end
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree_K_V [resolve_Tree_K_V'0 x]. resolve_Tree_K_V'0 x
+      = (resolve_Tree_K_V x /\ resolve_Option_Box_Node_K_V_Global x.node)
+  
+  predicate structural_resolve_Node_K_V (_1: t_Node_K_V) =
+    resolve_Tree_K_V'0 _1.left /\ resolve_K _1.key /\ resolve_V _1.val' /\ resolve_Tree_K_V'0 _1.right
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Node_K_V. inv_Node_K_V self
+      -> structural_resolve_Node_K_V self
+      -> structural_resolve_Node_K_V self /\ (forall result: (). resolve_Node_K_V self -> resolve_Node_K_V self)
 end
 module M_impl_Tree_K_V_3__height (* Tree<K, V> *)
   use int.Int
@@ -858,504 +1061,6 @@ module M_impl_Tree_K_V_5__is_red (* Tree<K, V> *)
     | bb4 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & self: t_Tree_K_V = self ])
     [ return (result: bool) -> {[@stop_split] [@expl:is_red ensures] result = (color_K self = Red)}
-      (! return {result}) ]
-end
-module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
-  use creusot.prelude.MutBorrow
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Color = Red | Black
-  
-  type t_K
-  
-  type t_V
-  
-  type t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
-  with t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
-  with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
-  
-  predicate inv_K (_1: t_K)
-  
-  predicate inv_V (_1: t_V)
-  
-  predicate inv_Tree_K_V (_1: t_Tree_K_V)
-  
-  predicate inv_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Tree_K_V [inv_Tree_K_V x]. inv_Tree_K_V x
-      = inv_Option_Box_Node_K_V_Global x.node
-  
-  predicate inv_Node_K_V (_1: t_Node_K_V)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node_K_V [inv_Node_K_V x]. inv_Node_K_V x
-      = (inv_Tree_K_V x.left /\ inv_K x.key /\ inv_V x.val' /\ inv_Tree_K_V x.right)
-  
-  predicate invariant_Box_Node_K_V_Global (self: t_Node_K_V) = inv_Node_K_V self
-  
-  predicate inv_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = invariant_Box_Node_K_V_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_Node_K_V_Global
-  
-  axiom inv_axiom'1 [@rewrite]:
-    forall x: t_Option_Box_Node_K_V_Global [inv_Option_Box_Node_K_V_Global x]. inv_Option_Box_Node_K_V_Global x
-      = match x with
-        | None -> true
-        | Some f0 -> inv_Box_Node_K_V_Global f0
-        end
-  
-  predicate invariant_refmut_Option_Box_Node_K_V_Global [@inline:trivial] (self: MutBorrow.t t_Option_Box_Node_K_V_Global) =
-    inv_Option_Box_Node_K_V_Global self.current /\ inv_Option_Box_Node_K_V_Global self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Option_Box_Node_K_V_Global
-  
-  predicate inv_refmut_Option_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Option_Box_Node_K_V_Global) =
-    invariant_refmut_Option_Box_Node_K_V_Global _1
-  
-  meta "rewrite_def" predicate inv_refmut_Option_Box_Node_K_V_Global
-  
-  predicate postcondition_once_default [@inline:trivial] (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_once_default
-  
-  predicate resolve_default [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_default
-  
-  predicate postcondition_mut_default [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_mut_default
-  
-  function fn_mut_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_mut_once_default_spec:
-    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global. postcondition_once_default self args res
-      = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
-  
-  predicate hist_inv_default [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_default
-  
-  function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_default_spec: forall self: (), b: (), c: (). hist_inv_default self b
-      -> hist_inv_default b c -> hist_inv_default self c
-  
-  function hist_inv_refl_default (self: ()) : ()
-  
-  axiom hist_inv_refl_default_spec: forall self: (). hist_inv_default self self
-  
-  function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_default_spec:
-    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global. postcondition_mut_default self args res_state res
-      -> hist_inv_default self res_state
-  
-  function fn_hist_inv_default (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_default_spec: forall self: (), res_state: (). hist_inv_default self res_state = (self = res_state)
-  
-  predicate postcondition_default [@inline:trivial] (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_default
-  
-  function fn_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_once_default_spec:
-    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global. postcondition_once_default self args res
-      = (postcondition_default self args res /\ resolve_default self)
-  
-  function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_mut_default_spec:
-    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global. postcondition_mut_default self args res_state res
-      = (postcondition_default self args res /\ self = res_state)
-  
-  let rec default_Option_Box_Node_K_V_Global (return (x: t_Option_Box_Node_K_V_Global)) = any
-    [ return (result: t_Option_Box_Node_K_V_Global) ->
-    {[@stop_split] [@expl:default_Option_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:default result type invariant] inv_Option_Box_Node_K_V_Global result)
-      /\ ([@stop_split] [@expl:default ensures] result = None)}
-      (! return {result}) ]
-  
-  let rec take_Option_Box_Node_K_V_Global (dest: MutBorrow.t t_Option_Box_Node_K_V_Global)
-    (return (x: t_Option_Box_Node_K_V_Global)) =
-    {[@stop_split] [@expl:take 'dest' type invariant] inv_refmut_Option_Box_Node_K_V_Global dest}
-    any
-    [ return (result: t_Option_Box_Node_K_V_Global) ->
-    {[@stop_split] [@expl:take_Option_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_Box_Node_K_V_Global result)
-      /\ ([@stop_split] [@expl:take ensures #0] result = dest.current)
-      /\ ([@stop_split] [@expl:take ensures #1] postcondition_default () () dest.final)}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_Option_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Option_Box_Node_K_V_Global) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Option_Box_Node_K_V_Global
-  
-  let rec unwrap_Box_Node_K_V_Global (self_: t_Option_Box_Node_K_V_Global) (return (x: t_Node_K_V)) =
-    {[@stop_split] [@expl:unwrap_Box_Node_K_V_Global requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_Box_Node_K_V_Global self_)
-    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
-    any
-    [ return (result: t_Node_K_V) ->
-    {[@stop_split] [@expl:unwrap_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_Box_Node_K_V_Global result)
-      /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
-      (! return {result}) ]
-  
-  predicate invariant_refmut_Tree_K_V [@inline:trivial] (self: MutBorrow.t t_Tree_K_V) =
-    inv_Tree_K_V self.current /\ inv_Tree_K_V self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Tree_K_V
-  
-  predicate inv_refmut_Tree_K_V [@inline:trivial] (_1: MutBorrow.t t_Tree_K_V) = invariant_refmut_Tree_K_V _1
-  
-  meta "rewrite_def" predicate inv_refmut_Tree_K_V
-  
-  let rec swap_Tree_K_V (x: MutBorrow.t t_Tree_K_V) (y: MutBorrow.t t_Tree_K_V) (return (x'0: ())) =
-    {[@stop_split] [@expl:swap_Tree_K_V requires] ([@stop_split] [@expl:swap 'x' type invariant] inv_refmut_Tree_K_V x)
-    /\ ([@stop_split] [@expl:swap 'y' type invariant] inv_refmut_Tree_K_V y)}
-    any
-    [ return (result: ()) -> {[@stop_split] [@expl:swap_Tree_K_V ensures] ([@stop_split] [@expl:swap ensures #0] x.final
-        = y.current)
-      /\ ([@stop_split] [@expl:swap ensures #1] y.final = x.current)}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_Tree_K_V [@inline:trivial] (_1: MutBorrow.t t_Tree_K_V) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Tree_K_V
-  
-  predicate invariant_refmut_Node_K_V [@inline:trivial] (self: MutBorrow.t t_Node_K_V) =
-    inv_Node_K_V self.current /\ inv_Node_K_V self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Node_K_V
-  
-  predicate inv_refmut_Node_K_V [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = invariant_refmut_Node_K_V _1
-  
-  meta "rewrite_def" predicate inv_refmut_Node_K_V
-  
-  let rec swap_Node_K_V (x: MutBorrow.t t_Node_K_V) (y: MutBorrow.t t_Node_K_V) (return (x'0: ())) =
-    {[@stop_split] [@expl:swap_Node_K_V requires] ([@stop_split] [@expl:swap 'x' type invariant] inv_refmut_Node_K_V x)
-    /\ ([@stop_split] [@expl:swap 'y' type invariant] inv_refmut_Node_K_V y)}
-    any
-    [ return (result: ()) -> {[@stop_split] [@expl:swap_Node_K_V ensures] ([@stop_split] [@expl:swap ensures #0] x.final
-        = y.current)
-      /\ ([@stop_split] [@expl:swap ensures #1] y.final = x.current)}
-      (! return {result}) ]
-  
-  predicate invariant_refmut_Box_Node_K_V_Global [@inline:trivial] (self: MutBorrow.t t_Node_K_V) =
-    inv_Box_Node_K_V_Global self.current /\ inv_Box_Node_K_V_Global self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Box_Node_K_V_Global
-  
-  predicate inv_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) =
-    invariant_refmut_Box_Node_K_V_Global _1
-  
-  meta "rewrite_def" predicate inv_refmut_Box_Node_K_V_Global
-  
-  predicate resolve_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Box_Node_K_V_Global
-  
-  let rec swap_Color (x: MutBorrow.t t_Color) (y: MutBorrow.t t_Color) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:swap_Color ensures] ([@stop_split] [@expl:swap ensures #0] x.final
-        = y.current)
-      /\ ([@stop_split] [@expl:swap ensures #1] y.final = x.current)}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_Color [@inline:trivial] (_1: MutBorrow.t t_Color) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Color
-  
-  type t_DeepModelTy
-  
-  function deep_model_K (self: t_K) : t_DeepModelTy
-  
-  predicate has_mapping_K (self: t_Tree_K_V) (k: t_DeepModelTy) (v: t_V) =
-    match self with
-      | {node = None} -> false
-      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> has_mapping_K left'0 k v
-      \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
-      end
-  
-  predicate resolve_V (_1: t_V)
-  
-  predicate resolve_Tree_K_V (self: t_Tree_K_V) = forall k: t_DeepModelTy, v: t_V. has_mapping_K self k v -> resolve_V v
-  
-  predicate has_mapping_K'0 (self: t_Node_K_V) (k: t_DeepModelTy) (v: t_V) =
-    has_mapping_K self.left k v \/ has_mapping_K self.right k v \/ k = deep_model_K self.key /\ v = self.val'
-  
-  axiom has_mapping_K_spec:
-    forall self: t_Node_K_V, k: t_DeepModelTy, v: t_V [has_mapping_K'0 self k v]. forall node'0: t_Node_K_V. self
-          = node'0 -> has_mapping_K'0 self k v = has_mapping_K { node = Some node'0 } k v
-  
-  predicate resolve_Node_K_V (self: t_Node_K_V) =
-    forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v -> resolve_V v
-  
-  predicate resolve_K (_1: t_K)
-  
-  predicate resolve_Node_K_V'0 (_1: t_Node_K_V)
-  
-  predicate resolve_Tree_K_V'0 (_1: t_Tree_K_V)
-  
-  axiom resolve_axiom [@rewrite]: forall x: t_Node_K_V [resolve_Node_K_V'0 x]. resolve_Node_K_V'0 x
-      = (resolve_Node_K_V x
-      /\ resolve_Tree_K_V'0 x.left /\ resolve_K x.key /\ resolve_V x.val' /\ resolve_Tree_K_V'0 x.right)
-  
-  predicate resolve_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = resolve_Node_K_V'0 _1
-  
-  meta "rewrite_def" predicate resolve_Box_Node_K_V_Global
-  
-  predicate resolve_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
-  
-  axiom resolve_axiom'0 [@rewrite]:
-    forall x: t_Option_Box_Node_K_V_Global [resolve_Option_Box_Node_K_V_Global x]. resolve_Option_Box_Node_K_V_Global x
-      = match x with
-        | None -> true
-        | Some x0 -> resolve_Box_Node_K_V_Global x0
-        end
-  
-  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree_K_V [resolve_Tree_K_V'0 x]. resolve_Tree_K_V'0 x
-      = (resolve_Tree_K_V x /\ resolve_Option_Box_Node_K_V_Global x.node)
-  
-  predicate resolve_refmut_Node_K_V [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Node_K_V
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
-  
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
-  
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
-  
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
-  
-  predicate bst_invariant_here_K (self: t_Node_K_V) =
-    (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
-    /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.right k v -> lt_log_DeepModelTy (deep_model_K self.key) k)
-  
-  predicate bst_invariant_K (self: t_Tree_K_V) =
-    match self with
-      | {node = None} -> true
-      | {node = Some ({left = left'0; right = right'0} as node'0)} -> bst_invariant_here_K node'0
-      /\ bst_invariant_K left'0 /\ bst_invariant_K right'0
-      end
-  
-  predicate bst_invariant_K'0 (self: t_Node_K_V) =
-    bst_invariant_here_K self /\ bst_invariant_K self.left /\ bst_invariant_K self.right
-  
-  function height_K (self: t_Tree_K_V) : int = match self with
-      | {node = None} -> 0
-      | {node = Some {left = left'0; color = Red}} -> height_K left'0
-      | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
-      end
-  
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
-  
-  predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
-  
-  predicate height_invariant_K (self: t_Tree_K_V) =
-    match self with
-      | {node = None} -> true
-      | {node = Some ({left = left'0; right = right'0} as node'0)} -> height_invariant_here_K node'0
-      /\ height_invariant_K left'0 /\ height_invariant_K right'0
-      end
-  
-  predicate height_invariant_K'0 (self: t_Node_K_V) =
-    height_invariant_here_K self /\ height_invariant_K self.left /\ height_invariant_K self.right
-  
-  predicate internal_invariant_K (self: t_Node_K_V) = bst_invariant_K'0 self /\ height_invariant_K'0 self
-  
-  function color_K (self: t_Tree_K_V) : t_Color = match self.node with
-      | Some {color = color'0} -> color'0
-      | _ -> Black
-      end
-  
-  predicate same_mappings_K (self: t_Node_K_V) (o: t_Node_K_V) =
-    forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v = has_mapping_K'0 o k v
-  
-  function height_K'0 (self: t_Node_K_V) : int = match self.color with
-      | Red -> height_K self.left
-      | Black -> height_K self.left + 1
-      end
-  
-  axiom height_K_spec'0: forall self: t_Node_K_V [height_K'0 self]. forall node'0: t_Node_K_V. self = node'0
-        -> height_K'0 self = height_K { node = Some node'0 }
-  
-  type tup3_Tree_K_V_Tree_K_V_Tree_K_V = { f0: t_Tree_K_V; f1: t_Tree_K_V; f2: t_Tree_K_V }
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec rotate_right_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
-    {[@stop_split] [@expl:rotate_right_K requires] ([@stop_split] [@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self)
-    /\ ([@stop_split] [@expl:rotate_right requires #0] internal_invariant_K self.current)
-    /\ ([@stop_split] [@expl:rotate_right requires #1] color_K self.current.left = Red)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &old_self <- self ] s1
-      | s1 = MutBorrow.borrow_mut <t_Option_Box_Node_K_V_Global> {self.current.left.node}
-          (fun (_bor: MutBorrow.t t_Option_Box_Node_K_V_Global) ->
-            [ &_26 <- _bor ] -{inv_Option_Box_Node_K_V_Global _bor.final}-
-            [ &self <- { self with current = { self.current with left = { node = _bor.final } } } ] s2)
-        [ _ck -> (! {[@expl:type invariant] inv_Option_Box_Node_K_V_Global self.current.left.node} any) ]
-      | s2 = MutBorrow.borrow_final <t_Option_Box_Node_K_V_Global> {_26.current} {MutBorrow.get_id _26}
-          (fun (_bor: MutBorrow.t t_Option_Box_Node_K_V_Global) ->
-            [ &_25 <- _bor ] -{inv_Option_Box_Node_K_V_Global _bor.final}-
-            [ &_26 <- { _26 with current = _bor.final } ] s3)
-        [ _ck -> (! {[@expl:type invariant] inv_Option_Box_Node_K_V_Global _26.current} any) ]
-      | s3 = take_Option_Box_Node_K_V_Global {_25} (fun (_x: t_Option_Box_Node_K_V_Global) -> [ &_24 <- _x ] s4)
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_Box_Node_K_V_Global _26} any) ]
-      | s5 = -{resolve_refmut_Option_Box_Node_K_V_Global _26}- s6
-      | s6 = unwrap_Box_Node_K_V_Global {_24} (fun (_x: t_Node_K_V) -> [ &x <- _x ] s7)
-      | s7 = MutBorrow.borrow_mut <t_Tree_K_V> {self.current.left}
-          (fun (_bor: MutBorrow.t t_Tree_K_V) ->
-            [ &_29 <- _bor ] -{inv_Tree_K_V _bor.final}-
-            [ &self <- { self with current = { self.current with left = _bor.final } } ] s8)
-        [ _ck -> (! {[@expl:type invariant] inv_Tree_K_V self.current.left} any) ]
-      | s8 = MutBorrow.borrow_mut <t_Tree_K_V> {x.right}
-          (fun (_bor: MutBorrow.t t_Tree_K_V) ->
-            [ &_31 <- _bor ] -{inv_Tree_K_V _bor.final}-
-            [ &x <- { x with right = _bor.final } ] s9) [ _ck -> (! {[@expl:type invariant] inv_Tree_K_V x.right} any) ]
-      | s9 = MutBorrow.borrow_final <t_Tree_K_V> {_29.current} {MutBorrow.get_id _29}
-          (fun (_bor: MutBorrow.t t_Tree_K_V) ->
-            [ &_28 <- _bor ] -{inv_Tree_K_V _bor.final}-
-            [ &_29 <- { _29 with current = _bor.final } ] s10)
-        [ _ck -> (! {[@expl:type invariant] inv_Tree_K_V _29.current} any) ]
-      | s10 = MutBorrow.borrow_final <t_Tree_K_V> {_31.current} {MutBorrow.get_id _31}
-          (fun (_bor: MutBorrow.t t_Tree_K_V) ->
-            [ &_30 <- _bor ] -{inv_Tree_K_V _bor.final}-
-            [ &_31 <- { _31 with current = _bor.final } ] s11)
-        [ _ck -> (! {[@expl:type invariant] inv_Tree_K_V _31.current} any) ]
-      | s11 = swap_Tree_K_V {_28} {_30} (fun (_x: ()) -> [ &_27 <- _x ] s12)
-      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_Tree_K_V _31} any) ]
-      | s13 = -{resolve_refmut_Tree_K_V _31}- s14
-      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_refmut_Tree_K_V _29} any) ]
-      | s15 = -{resolve_refmut_Tree_K_V _29}- s16
-      | s16 = MutBorrow.borrow_mut <t_Node_K_V> {x}
-          (fun (_bor: MutBorrow.t t_Node_K_V) ->
-            [ &_35 <- _bor ] -{inv_Box_Node_K_V_Global _bor.final}-
-            [ &x <- _bor.final ] s17) [ _ck -> (! {[@expl:type invariant] inv_Box_Node_K_V_Global x} any) ]
-      | s17 = MutBorrow.borrow_mut <t_Node_K_V> {self.current}
-          (fun (_bor: MutBorrow.t t_Node_K_V) ->
-            [ &_33 <- _bor ] -{inv_Node_K_V _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s18)
-        [ _ck -> (! {[@expl:type invariant] inv_Node_K_V self.current} any) ]
-      | s18 = MutBorrow.borrow_final <t_Node_K_V> {_35.current} {MutBorrow.get_id _35}
-          (fun (_bor: MutBorrow.t t_Node_K_V) ->
-            [ &_34 <- _bor ] -{inv_Node_K_V _bor.final}-
-            [ &_35 <- { _35 with current = _bor.final } ] s19)
-        [ _ck -> (! {[@expl:type invariant] inv_Node_K_V _35.current} any) ]
-      | s19 = swap_Node_K_V {_33} {_34} (fun (_x: ()) -> [ &_32 <- _x ] s20)
-      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_Node_K_V_Global _35} any) ]
-      | s21 = -{resolve_refmut_Box_Node_K_V_Global _35}- s22
-      | s22 = MutBorrow.borrow_final <t_Color> {self.current.color} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-          (fun (_bor: MutBorrow.t t_Color) ->
-            [ &_38 <- _bor ] [ &self <- { self with current = { self.current with color = _bor.final } } ] s23)
-      | s23 = MutBorrow.borrow_mut <t_Color> {x.color}
-          (fun (_bor: MutBorrow.t t_Color) -> [ &_40 <- _bor ] [ &x <- { x with color = _bor.final } ] s24)
-      | s24 = MutBorrow.borrow_final <t_Color> {_38.current} {MutBorrow.get_id _38}
-          (fun (_bor: MutBorrow.t t_Color) -> [ &_37 <- _bor ] [ &_38 <- { _38 with current = _bor.final } ] s25)
-      | s25 = MutBorrow.borrow_final <t_Color> {_40.current} {MutBorrow.get_id _40}
-          (fun (_bor: MutBorrow.t t_Color) -> [ &_39 <- _bor ] [ &_40 <- { _40 with current = _bor.final } ] s26)
-      | s26 = swap_Color {_37} {_39} (fun (_x: ()) -> [ &_36 <- _x ] s27)
-      | s27 = -{resolve_refmut_Color _40}- s28
-      | s28 = -{resolve_refmut_Color _38}- s29
-      | s29 = {[@expl:assertion] has_mapping_K old_self.current.left (deep_model_K self.current.key) self.current.val'}
-        s30
-      | s30 = [ &_47 <- Some x ] s31
-      | s31 = [ &_46 <- { node = _47 } ] s32
-      | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_Tree_K_V self.current.right} any) ]
-      | s33 = -{resolve_Tree_K_V'0 self.current.right}- s34
-      | s34 = [ &self <- { self with current = { self.current with right = _46 } } ] s35
-      | s35 = s36 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_K_V self} any) ]
-      | s36 = -{resolve_refmut_Node_K_V self}- s37
-      | s37 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & self: MutBorrow.t t_Node_K_V = self
-    | & old_self: MutBorrow.t t_Node_K_V = Any.any_l ()
-    | & x: t_Node_K_V = Any.any_l ()
-    | & _24: t_Option_Box_Node_K_V_Global = Any.any_l ()
-    | & _25: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l ()
-    | & _26: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l ()
-    | & _27: () = Any.any_l ()
-    | & _28: MutBorrow.t t_Tree_K_V = Any.any_l ()
-    | & _29: MutBorrow.t t_Tree_K_V = Any.any_l ()
-    | & _30: MutBorrow.t t_Tree_K_V = Any.any_l ()
-    | & _31: MutBorrow.t t_Tree_K_V = Any.any_l ()
-    | & _32: () = Any.any_l ()
-    | & _33: MutBorrow.t t_Node_K_V = Any.any_l ()
-    | & _34: MutBorrow.t t_Node_K_V = Any.any_l ()
-    | & _35: MutBorrow.t t_Node_K_V = Any.any_l ()
-    | & _36: () = Any.any_l ()
-    | & _37: MutBorrow.t t_Color = Any.any_l ()
-    | & _38: MutBorrow.t t_Color = Any.any_l ()
-    | & _39: MutBorrow.t t_Color = Any.any_l ()
-    | & _40: MutBorrow.t t_Color = Any.any_l ()
-    | & _46: t_Tree_K_V = Any.any_l ()
-    | & _47: t_Option_Box_Node_K_V_Global = Any.any_l () ])
-    [ return (result: ()) ->
-    {[@stop_split] [@expl:rotate_right_K ensures] ([@stop_split] [@expl:rotate_right ensures #0] same_mappings_K self.current self.final)
-      /\ ([@stop_split] [@expl:rotate_right ensures #1] internal_invariant_K self.final)
-      /\ ([@stop_split] [@expl:rotate_right ensures #2] height_K'0 self.current = height_K'0 self.final)
-      /\ ([@stop_split] [@expl:rotate_right ensures #3] lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key))
-      /\ ([@stop_split] [@expl:rotate_right ensures #4] color_K self.final.right = Red)
-      /\ ([@stop_split] [@expl:rotate_right ensures #5] self.final.color = self.current.color)
-      /\ ([@stop_split] [@expl:rotate_right ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node
-          = Some l
-        /\ self.final.right.node = Some r
-        /\ { f0 = self.final.left; f1 = r.left; f2 = r.right } = { f0 = l.left; f1 = l.right; f2 = self.current.right }
-        /\ r.key = self.current.key)}
       (! return {result}) ]
 end
 module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
@@ -1854,6 +1559,504 @@ module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
         /\ self.final.left.node = Some l
         /\ { f0 = l.left; f1 = l.right; f2 = self.final.right } = { f0 = self.current.left; f1 = r.left; f2 = r.right }
         /\ l.key = self.current.key)}
+      (! return {result}) ]
+end
+module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Color = Red | Black
+  
+  type t_K
+  
+  type t_V
+  
+  type t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
+  with t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
+  with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
+  
+  predicate inv_K (_1: t_K)
+  
+  predicate inv_V (_1: t_V)
+  
+  predicate inv_Tree_K_V (_1: t_Tree_K_V)
+  
+  predicate inv_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Tree_K_V [inv_Tree_K_V x]. inv_Tree_K_V x
+      = inv_Option_Box_Node_K_V_Global x.node
+  
+  predicate inv_Node_K_V (_1: t_Node_K_V)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Node_K_V [inv_Node_K_V x]. inv_Node_K_V x
+      = (inv_Tree_K_V x.left /\ inv_K x.key /\ inv_V x.val' /\ inv_Tree_K_V x.right)
+  
+  predicate invariant_Box_Node_K_V_Global (self: t_Node_K_V) = inv_Node_K_V self
+  
+  predicate inv_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = invariant_Box_Node_K_V_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_Node_K_V_Global
+  
+  axiom inv_axiom'1 [@rewrite]:
+    forall x: t_Option_Box_Node_K_V_Global [inv_Option_Box_Node_K_V_Global x]. inv_Option_Box_Node_K_V_Global x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_Box_Node_K_V_Global f0
+        end
+  
+  predicate invariant_refmut_Option_Box_Node_K_V_Global [@inline:trivial] (self: MutBorrow.t t_Option_Box_Node_K_V_Global) =
+    inv_Option_Box_Node_K_V_Global self.current /\ inv_Option_Box_Node_K_V_Global self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Option_Box_Node_K_V_Global
+  
+  predicate inv_refmut_Option_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Option_Box_Node_K_V_Global) =
+    invariant_refmut_Option_Box_Node_K_V_Global _1
+  
+  meta "rewrite_def" predicate inv_refmut_Option_Box_Node_K_V_Global
+  
+  predicate postcondition_once_default [@inline:trivial] (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
+    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
+  
+  meta "rewrite_def" predicate postcondition_once_default
+  
+  predicate resolve_default [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_default
+  
+  predicate postcondition_mut_default [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: t_Option_Box_Node_K_V_Global) =
+    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
+  
+  meta "rewrite_def" predicate postcondition_mut_default
+  
+  function fn_mut_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
+  
+  axiom fn_mut_once_default_spec:
+    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global. postcondition_once_default self args res
+      = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
+  
+  predicate hist_inv_default [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_default
+  
+  function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_default_spec: forall self: (), b: (), c: (). hist_inv_default self b
+      -> hist_inv_default b c -> hist_inv_default self c
+  
+  function hist_inv_refl_default (self: ()) : ()
+  
+  axiom hist_inv_refl_default_spec: forall self: (). hist_inv_default self self
+  
+  function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
+  
+  axiom postcondition_mut_hist_inv_default_spec:
+    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global. postcondition_mut_default self args res_state res
+      -> hist_inv_default self res_state
+  
+  function fn_hist_inv_default (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_default_spec: forall self: (), res_state: (). hist_inv_default self res_state = (self = res_state)
+  
+  predicate postcondition_default [@inline:trivial] (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
+    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
+  
+  meta "rewrite_def" predicate postcondition_default
+  
+  function fn_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
+  
+  axiom fn_once_default_spec:
+    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global. postcondition_once_default self args res
+      = (postcondition_default self args res /\ resolve_default self)
+  
+  function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
+  
+  axiom fn_mut_default_spec:
+    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global. postcondition_mut_default self args res_state res
+      = (postcondition_default self args res /\ self = res_state)
+  
+  let rec default_Option_Box_Node_K_V_Global (return (x: t_Option_Box_Node_K_V_Global)) = any
+    [ return (result: t_Option_Box_Node_K_V_Global) ->
+    {[@stop_split] [@expl:default_Option_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:default result type invariant] inv_Option_Box_Node_K_V_Global result)
+      /\ ([@stop_split] [@expl:default ensures] result = None)}
+      (! return {result}) ]
+  
+  let rec take_Option_Box_Node_K_V_Global (dest: MutBorrow.t t_Option_Box_Node_K_V_Global)
+    (return (x: t_Option_Box_Node_K_V_Global)) =
+    {[@stop_split] [@expl:take 'dest' type invariant] inv_refmut_Option_Box_Node_K_V_Global dest}
+    any
+    [ return (result: t_Option_Box_Node_K_V_Global) ->
+    {[@stop_split] [@expl:take_Option_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_Box_Node_K_V_Global result)
+      /\ ([@stop_split] [@expl:take ensures #0] result = dest.current)
+      /\ ([@stop_split] [@expl:take ensures #1] postcondition_default () () dest.final)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Option_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Option_Box_Node_K_V_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Option_Box_Node_K_V_Global
+  
+  let rec unwrap_Box_Node_K_V_Global (self_: t_Option_Box_Node_K_V_Global) (return (x: t_Node_K_V)) =
+    {[@stop_split] [@expl:unwrap_Box_Node_K_V_Global requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_Box_Node_K_V_Global self_)
+    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
+    any
+    [ return (result: t_Node_K_V) ->
+    {[@stop_split] [@expl:unwrap_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_Box_Node_K_V_Global result)
+      /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
+      (! return {result}) ]
+  
+  predicate invariant_refmut_Tree_K_V [@inline:trivial] (self: MutBorrow.t t_Tree_K_V) =
+    inv_Tree_K_V self.current /\ inv_Tree_K_V self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Tree_K_V
+  
+  predicate inv_refmut_Tree_K_V [@inline:trivial] (_1: MutBorrow.t t_Tree_K_V) = invariant_refmut_Tree_K_V _1
+  
+  meta "rewrite_def" predicate inv_refmut_Tree_K_V
+  
+  let rec swap_Tree_K_V (x: MutBorrow.t t_Tree_K_V) (y: MutBorrow.t t_Tree_K_V) (return (x'0: ())) =
+    {[@stop_split] [@expl:swap_Tree_K_V requires] ([@stop_split] [@expl:swap 'x' type invariant] inv_refmut_Tree_K_V x)
+    /\ ([@stop_split] [@expl:swap 'y' type invariant] inv_refmut_Tree_K_V y)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:swap_Tree_K_V ensures] ([@stop_split] [@expl:swap ensures #0] x.final
+        = y.current)
+      /\ ([@stop_split] [@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Tree_K_V [@inline:trivial] (_1: MutBorrow.t t_Tree_K_V) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Tree_K_V
+  
+  predicate invariant_refmut_Node_K_V [@inline:trivial] (self: MutBorrow.t t_Node_K_V) =
+    inv_Node_K_V self.current /\ inv_Node_K_V self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Node_K_V
+  
+  predicate inv_refmut_Node_K_V [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = invariant_refmut_Node_K_V _1
+  
+  meta "rewrite_def" predicate inv_refmut_Node_K_V
+  
+  let rec swap_Node_K_V (x: MutBorrow.t t_Node_K_V) (y: MutBorrow.t t_Node_K_V) (return (x'0: ())) =
+    {[@stop_split] [@expl:swap_Node_K_V requires] ([@stop_split] [@expl:swap 'x' type invariant] inv_refmut_Node_K_V x)
+    /\ ([@stop_split] [@expl:swap 'y' type invariant] inv_refmut_Node_K_V y)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:swap_Node_K_V ensures] ([@stop_split] [@expl:swap ensures #0] x.final
+        = y.current)
+      /\ ([@stop_split] [@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
+  
+  predicate invariant_refmut_Box_Node_K_V_Global [@inline:trivial] (self: MutBorrow.t t_Node_K_V) =
+    inv_Box_Node_K_V_Global self.current /\ inv_Box_Node_K_V_Global self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Box_Node_K_V_Global
+  
+  predicate inv_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) =
+    invariant_refmut_Box_Node_K_V_Global _1
+  
+  meta "rewrite_def" predicate inv_refmut_Box_Node_K_V_Global
+  
+  predicate resolve_refmut_Box_Node_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Box_Node_K_V_Global
+  
+  let rec swap_Color (x: MutBorrow.t t_Color) (y: MutBorrow.t t_Color) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:swap_Color ensures] ([@stop_split] [@expl:swap ensures #0] x.final
+        = y.current)
+      /\ ([@stop_split] [@expl:swap ensures #1] y.final = x.current)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Color [@inline:trivial] (_1: MutBorrow.t t_Color) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Color
+  
+  type t_DeepModelTy
+  
+  function deep_model_K (self: t_K) : t_DeepModelTy
+  
+  predicate has_mapping_K (self: t_Tree_K_V) (k: t_DeepModelTy) (v: t_V) =
+    match self with
+      | {node = None} -> false
+      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> has_mapping_K left'0 k v
+      \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
+      end
+  
+  predicate resolve_V (_1: t_V)
+  
+  predicate resolve_Tree_K_V (self: t_Tree_K_V) = forall k: t_DeepModelTy, v: t_V. has_mapping_K self k v -> resolve_V v
+  
+  predicate has_mapping_K'0 (self: t_Node_K_V) (k: t_DeepModelTy) (v: t_V) =
+    has_mapping_K self.left k v \/ has_mapping_K self.right k v \/ k = deep_model_K self.key /\ v = self.val'
+  
+  axiom has_mapping_K_spec:
+    forall self: t_Node_K_V, k: t_DeepModelTy, v: t_V [has_mapping_K'0 self k v]. forall node'0: t_Node_K_V. self
+          = node'0 -> has_mapping_K'0 self k v = has_mapping_K { node = Some node'0 } k v
+  
+  predicate resolve_Node_K_V (self: t_Node_K_V) =
+    forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v -> resolve_V v
+  
+  predicate resolve_K (_1: t_K)
+  
+  predicate resolve_Node_K_V'0 (_1: t_Node_K_V)
+  
+  predicate resolve_Tree_K_V'0 (_1: t_Tree_K_V)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node_K_V [resolve_Node_K_V'0 x]. resolve_Node_K_V'0 x
+      = (resolve_Node_K_V x
+      /\ resolve_Tree_K_V'0 x.left /\ resolve_K x.key /\ resolve_V x.val' /\ resolve_Tree_K_V'0 x.right)
+  
+  predicate resolve_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = resolve_Node_K_V'0 _1
+  
+  meta "rewrite_def" predicate resolve_Box_Node_K_V_Global
+  
+  predicate resolve_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
+  
+  axiom resolve_axiom'0 [@rewrite]:
+    forall x: t_Option_Box_Node_K_V_Global [resolve_Option_Box_Node_K_V_Global x]. resolve_Option_Box_Node_K_V_Global x
+      = match x with
+        | None -> true
+        | Some x0 -> resolve_Box_Node_K_V_Global x0
+        end
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree_K_V [resolve_Tree_K_V'0 x]. resolve_Tree_K_V'0 x
+      = (resolve_Tree_K_V x /\ resolve_Option_Box_Node_K_V_Global x.node)
+  
+  predicate resolve_refmut_Node_K_V [@inline:trivial] (_1: MutBorrow.t t_Node_K_V) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Node_K_V
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  
+  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  
+  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
+      -> cmp_log_DeepModelTy y x = Less
+  
+  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
+      -> cmp_log_DeepModelTy y x = Greater
+  
+  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
+  
+  axiom trans_DeepModelTy_spec:
+    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
+      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
+  
+  function refl_DeepModelTy (x: t_DeepModelTy) : ()
+  
+  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
+  
+  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y = Greater)
+  
+  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y <> Less)
+  
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y = Less)
+  
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y <> Greater)
+  
+  predicate bst_invariant_here_K (self: t_Node_K_V) =
+    (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
+    /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.right k v -> lt_log_DeepModelTy (deep_model_K self.key) k)
+  
+  predicate bst_invariant_K (self: t_Tree_K_V) =
+    match self with
+      | {node = None} -> true
+      | {node = Some ({left = left'0; right = right'0} as node'0)} -> bst_invariant_here_K node'0
+      /\ bst_invariant_K left'0 /\ bst_invariant_K right'0
+      end
+  
+  predicate bst_invariant_K'0 (self: t_Node_K_V) =
+    bst_invariant_here_K self /\ bst_invariant_K self.left /\ bst_invariant_K self.right
+  
+  function height_K (self: t_Tree_K_V) : int = match self with
+      | {node = None} -> 0
+      | {node = Some {left = left'0; color = Red}} -> height_K left'0
+      | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
+      end
+  
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  
+  predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
+  
+  predicate height_invariant_K (self: t_Tree_K_V) =
+    match self with
+      | {node = None} -> true
+      | {node = Some ({left = left'0; right = right'0} as node'0)} -> height_invariant_here_K node'0
+      /\ height_invariant_K left'0 /\ height_invariant_K right'0
+      end
+  
+  predicate height_invariant_K'0 (self: t_Node_K_V) =
+    height_invariant_here_K self /\ height_invariant_K self.left /\ height_invariant_K self.right
+  
+  predicate internal_invariant_K (self: t_Node_K_V) = bst_invariant_K'0 self /\ height_invariant_K'0 self
+  
+  function color_K (self: t_Tree_K_V) : t_Color = match self.node with
+      | Some {color = color'0} -> color'0
+      | _ -> Black
+      end
+  
+  predicate same_mappings_K (self: t_Node_K_V) (o: t_Node_K_V) =
+    forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v = has_mapping_K'0 o k v
+  
+  function height_K'0 (self: t_Node_K_V) : int = match self.color with
+      | Red -> height_K self.left
+      | Black -> height_K self.left + 1
+      end
+  
+  axiom height_K_spec'0: forall self: t_Node_K_V [height_K'0 self]. forall node'0: t_Node_K_V. self = node'0
+        -> height_K'0 self = height_K { node = Some node'0 }
+  
+  type tup3_Tree_K_V_Tree_K_V_Tree_K_V = { f0: t_Tree_K_V; f1: t_Tree_K_V; f2: t_Tree_K_V }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec rotate_right_K (self: MutBorrow.t t_Node_K_V) (return (x: ())) =
+    {[@stop_split] [@expl:rotate_right_K requires] ([@stop_split] [@expl:rotate_right 'self' type invariant] inv_refmut_Node_K_V self)
+    /\ ([@stop_split] [@expl:rotate_right requires #0] internal_invariant_K self.current)
+    /\ ([@stop_split] [@expl:rotate_right requires #1] color_K self.current.left = Red)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &old_self <- self ] s1
+      | s1 = MutBorrow.borrow_mut <t_Option_Box_Node_K_V_Global> {self.current.left.node}
+          (fun (_bor: MutBorrow.t t_Option_Box_Node_K_V_Global) ->
+            [ &_26 <- _bor ] -{inv_Option_Box_Node_K_V_Global _bor.final}-
+            [ &self <- { self with current = { self.current with left = { node = _bor.final } } } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Option_Box_Node_K_V_Global self.current.left.node} any) ]
+      | s2 = MutBorrow.borrow_final <t_Option_Box_Node_K_V_Global> {_26.current} {MutBorrow.get_id _26}
+          (fun (_bor: MutBorrow.t t_Option_Box_Node_K_V_Global) ->
+            [ &_25 <- _bor ] -{inv_Option_Box_Node_K_V_Global _bor.final}-
+            [ &_26 <- { _26 with current = _bor.final } ] s3)
+        [ _ck -> (! {[@expl:type invariant] inv_Option_Box_Node_K_V_Global _26.current} any) ]
+      | s3 = take_Option_Box_Node_K_V_Global {_25} (fun (_x: t_Option_Box_Node_K_V_Global) -> [ &_24 <- _x ] s4)
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_Box_Node_K_V_Global _26} any) ]
+      | s5 = -{resolve_refmut_Option_Box_Node_K_V_Global _26}- s6
+      | s6 = unwrap_Box_Node_K_V_Global {_24} (fun (_x: t_Node_K_V) -> [ &x <- _x ] s7)
+      | s7 = MutBorrow.borrow_mut <t_Tree_K_V> {self.current.left}
+          (fun (_bor: MutBorrow.t t_Tree_K_V) ->
+            [ &_29 <- _bor ] -{inv_Tree_K_V _bor.final}-
+            [ &self <- { self with current = { self.current with left = _bor.final } } ] s8)
+        [ _ck -> (! {[@expl:type invariant] inv_Tree_K_V self.current.left} any) ]
+      | s8 = MutBorrow.borrow_mut <t_Tree_K_V> {x.right}
+          (fun (_bor: MutBorrow.t t_Tree_K_V) ->
+            [ &_31 <- _bor ] -{inv_Tree_K_V _bor.final}-
+            [ &x <- { x with right = _bor.final } ] s9) [ _ck -> (! {[@expl:type invariant] inv_Tree_K_V x.right} any) ]
+      | s9 = MutBorrow.borrow_final <t_Tree_K_V> {_29.current} {MutBorrow.get_id _29}
+          (fun (_bor: MutBorrow.t t_Tree_K_V) ->
+            [ &_28 <- _bor ] -{inv_Tree_K_V _bor.final}-
+            [ &_29 <- { _29 with current = _bor.final } ] s10)
+        [ _ck -> (! {[@expl:type invariant] inv_Tree_K_V _29.current} any) ]
+      | s10 = MutBorrow.borrow_final <t_Tree_K_V> {_31.current} {MutBorrow.get_id _31}
+          (fun (_bor: MutBorrow.t t_Tree_K_V) ->
+            [ &_30 <- _bor ] -{inv_Tree_K_V _bor.final}-
+            [ &_31 <- { _31 with current = _bor.final } ] s11)
+        [ _ck -> (! {[@expl:type invariant] inv_Tree_K_V _31.current} any) ]
+      | s11 = swap_Tree_K_V {_28} {_30} (fun (_x: ()) -> [ &_27 <- _x ] s12)
+      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_Tree_K_V _31} any) ]
+      | s13 = -{resolve_refmut_Tree_K_V _31}- s14
+      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_refmut_Tree_K_V _29} any) ]
+      | s15 = -{resolve_refmut_Tree_K_V _29}- s16
+      | s16 = MutBorrow.borrow_mut <t_Node_K_V> {x}
+          (fun (_bor: MutBorrow.t t_Node_K_V) ->
+            [ &_35 <- _bor ] -{inv_Box_Node_K_V_Global _bor.final}-
+            [ &x <- _bor.final ] s17) [ _ck -> (! {[@expl:type invariant] inv_Box_Node_K_V_Global x} any) ]
+      | s17 = MutBorrow.borrow_mut <t_Node_K_V> {self.current}
+          (fun (_bor: MutBorrow.t t_Node_K_V) ->
+            [ &_33 <- _bor ] -{inv_Node_K_V _bor.final}-
+            [ &self <- { self with current = _bor.final } ] s18)
+        [ _ck -> (! {[@expl:type invariant] inv_Node_K_V self.current} any) ]
+      | s18 = MutBorrow.borrow_final <t_Node_K_V> {_35.current} {MutBorrow.get_id _35}
+          (fun (_bor: MutBorrow.t t_Node_K_V) ->
+            [ &_34 <- _bor ] -{inv_Node_K_V _bor.final}-
+            [ &_35 <- { _35 with current = _bor.final } ] s19)
+        [ _ck -> (! {[@expl:type invariant] inv_Node_K_V _35.current} any) ]
+      | s19 = swap_Node_K_V {_33} {_34} (fun (_x: ()) -> [ &_32 <- _x ] s20)
+      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_Node_K_V_Global _35} any) ]
+      | s21 = -{resolve_refmut_Box_Node_K_V_Global _35}- s22
+      | s22 = MutBorrow.borrow_final <t_Color> {self.current.color} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+          (fun (_bor: MutBorrow.t t_Color) ->
+            [ &_38 <- _bor ] [ &self <- { self with current = { self.current with color = _bor.final } } ] s23)
+      | s23 = MutBorrow.borrow_mut <t_Color> {x.color}
+          (fun (_bor: MutBorrow.t t_Color) -> [ &_40 <- _bor ] [ &x <- { x with color = _bor.final } ] s24)
+      | s24 = MutBorrow.borrow_final <t_Color> {_38.current} {MutBorrow.get_id _38}
+          (fun (_bor: MutBorrow.t t_Color) -> [ &_37 <- _bor ] [ &_38 <- { _38 with current = _bor.final } ] s25)
+      | s25 = MutBorrow.borrow_final <t_Color> {_40.current} {MutBorrow.get_id _40}
+          (fun (_bor: MutBorrow.t t_Color) -> [ &_39 <- _bor ] [ &_40 <- { _40 with current = _bor.final } ] s26)
+      | s26 = swap_Color {_37} {_39} (fun (_x: ()) -> [ &_36 <- _x ] s27)
+      | s27 = -{resolve_refmut_Color _40}- s28
+      | s28 = -{resolve_refmut_Color _38}- s29
+      | s29 = {[@expl:assertion] has_mapping_K old_self.current.left (deep_model_K self.current.key) self.current.val'}
+        s30
+      | s30 = [ &_47 <- Some x ] s31
+      | s31 = [ &_46 <- { node = _47 } ] s32
+      | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_Tree_K_V self.current.right} any) ]
+      | s33 = -{resolve_Tree_K_V'0 self.current.right}- s34
+      | s34 = [ &self <- { self with current = { self.current with right = _46 } } ] s35
+      | s35 = s36 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_K_V self} any) ]
+      | s36 = -{resolve_refmut_Node_K_V self}- s37
+      | s37 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t t_Node_K_V = self
+    | & old_self: MutBorrow.t t_Node_K_V = Any.any_l ()
+    | & x: t_Node_K_V = Any.any_l ()
+    | & _24: t_Option_Box_Node_K_V_Global = Any.any_l ()
+    | & _25: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l ()
+    | & _26: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l ()
+    | & _27: () = Any.any_l ()
+    | & _28: MutBorrow.t t_Tree_K_V = Any.any_l ()
+    | & _29: MutBorrow.t t_Tree_K_V = Any.any_l ()
+    | & _30: MutBorrow.t t_Tree_K_V = Any.any_l ()
+    | & _31: MutBorrow.t t_Tree_K_V = Any.any_l ()
+    | & _32: () = Any.any_l ()
+    | & _33: MutBorrow.t t_Node_K_V = Any.any_l ()
+    | & _34: MutBorrow.t t_Node_K_V = Any.any_l ()
+    | & _35: MutBorrow.t t_Node_K_V = Any.any_l ()
+    | & _36: () = Any.any_l ()
+    | & _37: MutBorrow.t t_Color = Any.any_l ()
+    | & _38: MutBorrow.t t_Color = Any.any_l ()
+    | & _39: MutBorrow.t t_Color = Any.any_l ()
+    | & _40: MutBorrow.t t_Color = Any.any_l ()
+    | & _46: t_Tree_K_V = Any.any_l ()
+    | & _47: t_Option_Box_Node_K_V_Global = Any.any_l () ])
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:rotate_right_K ensures] ([@stop_split] [@expl:rotate_right ensures #0] same_mappings_K self.current self.final)
+      /\ ([@stop_split] [@expl:rotate_right ensures #1] internal_invariant_K self.final)
+      /\ ([@stop_split] [@expl:rotate_right ensures #2] height_K'0 self.current = height_K'0 self.final)
+      /\ ([@stop_split] [@expl:rotate_right ensures #3] lt_log_DeepModelTy (deep_model_K self.final.key) (deep_model_K self.current.key))
+      /\ ([@stop_split] [@expl:rotate_right ensures #4] color_K self.final.right = Red)
+      /\ ([@stop_split] [@expl:rotate_right ensures #5] self.final.color = self.current.color)
+      /\ ([@stop_split] [@expl:rotate_right ensures #6] exists l: t_Node_K_V, r: t_Node_K_V. self.current.left.node
+          = Some l
+        /\ self.final.right.node = Some r
+        /\ { f0 = self.final.left; f1 = r.left; f2 = r.right } = { f0 = l.left; f1 = l.right; f2 = self.current.right }
+        /\ r.key = self.current.key)}
       (! return {result}) ]
 end
 module M_impl_Node_K_V_4__flip_colors (* Node<K, V> *)
@@ -6671,6 +6874,245 @@ module M_impl_Resolve_for_Map_K_V__resolve_coherence (* <Map<K, V> as creusot_st
   goal vc_resolve_coherence_Map_K_V: structural_resolve_Map_K_V self
     -> ([@stop_split] [@expl:resolve_coherence ensures] resolve_Map_K_V self)
 end
+module M_impl_Resolve_for_Map_K_V__resolve_coherence__refines (* <Map<K, V> as creusot_std::resolve::Resolve> *)
+  use map.Map
+  use map.Const
+  use int.Int
+  
+  type t_Color = Red | Black
+  
+  type t_K
+  
+  type t_V
+  
+  type t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
+  with t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
+  with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
+  
+  type t_Map_K_V = { f0: t_Tree_K_V }
+  
+  type t_DeepModelTy
+  
+  function deep_model_K (self: t_K) : t_DeepModelTy
+  
+  predicate has_mapping_K (self: t_Tree_K_V) (k: t_DeepModelTy) (v: t_V) =
+    match self with
+      | {node = None} -> false
+      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> has_mapping_K left'0 k v
+      \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
+      end
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  
+  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  
+  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
+      -> cmp_log_DeepModelTy y x = Less
+  
+  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
+      -> cmp_log_DeepModelTy y x = Greater
+  
+  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
+  
+  axiom trans_DeepModelTy_spec:
+    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
+      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
+  
+  function refl_DeepModelTy (x: t_DeepModelTy) : ()
+  
+  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
+  
+  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y = Greater)
+  
+  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y <> Less)
+  
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y = Less)
+  
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y <> Greater)
+  
+  predicate bst_invariant_here_K (self: t_Node_K_V) =
+    (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
+    /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.right k v -> lt_log_DeepModelTy (deep_model_K self.key) k)
+  
+  predicate bst_invariant_K (self: t_Tree_K_V) =
+    match self with
+      | {node = None} -> true
+      | {node = Some ({left = left'0; right = right'0} as node'0)} -> bst_invariant_here_K node'0
+      /\ bst_invariant_K left'0 /\ bst_invariant_K right'0
+      end
+  
+  function height_K (self: t_Tree_K_V) : int = match self with
+      | {node = None} -> 0
+      | {node = Some {left = left'0; color = Red}} -> height_K left'0
+      | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
+      end
+  
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  
+  predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
+  
+  predicate height_invariant_K (self: t_Tree_K_V) =
+    match self with
+      | {node = None} -> true
+      | {node = Some ({left = left'0; right = right'0} as node'0)} -> height_invariant_here_K node'0
+      /\ height_invariant_K left'0 /\ height_invariant_K right'0
+      end
+  
+  predicate internal_invariant_K (self: t_Tree_K_V) = bst_invariant_K self /\ height_invariant_K self
+  
+  function color_K (self: t_Tree_K_V) : t_Color = match self.node with
+      | Some {color = color'0} -> color'0
+      | _ -> Black
+      end
+  
+  predicate color_invariant_here_K (self: t_Node_K_V) =
+    color_K self.right = Black /\ (self.color = Black \/ color_K self.left = Black)
+  
+  predicate color_invariant_K (self: t_Tree_K_V) =
+    match self with
+      | {node = None} -> true
+      | {node = Some ({left = left'0; right = right'0} as node'0)} -> color_invariant_here_K node'0
+      /\ color_invariant_K left'0 /\ color_invariant_K right'0
+      end
+  
+  predicate invariant_Map_K_V (self: t_Map_K_V) =
+    internal_invariant_K self.f0 /\ color_invariant_K self.f0 /\ color_K self.f0 = Black
+  
+  predicate inv_K (_1: t_K)
+  
+  predicate inv_V (_1: t_V)
+  
+  predicate inv_Node_K_V (_1: t_Node_K_V)
+  
+  predicate inv_Tree_K_V (_1: t_Tree_K_V)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Node_K_V [inv_Node_K_V x]. inv_Node_K_V x
+      = (inv_Tree_K_V x.left /\ inv_K x.key /\ inv_V x.val' /\ inv_Tree_K_V x.right)
+  
+  predicate invariant_Box_Node_K_V_Global (self: t_Node_K_V) = inv_Node_K_V self
+  
+  predicate inv_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = invariant_Box_Node_K_V_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_Node_K_V_Global
+  
+  predicate inv_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
+  
+  axiom inv_axiom'0 [@rewrite]:
+    forall x: t_Option_Box_Node_K_V_Global [inv_Option_Box_Node_K_V_Global x]. inv_Option_Box_Node_K_V_Global x
+      = match x with
+        | None -> true
+        | Some f0'0 -> inv_Box_Node_K_V_Global f0'0
+        end
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree_K_V [inv_Tree_K_V x]. inv_Tree_K_V x
+      = inv_Option_Box_Node_K_V_Global x.node
+  
+  predicate inv_Map_K_V (_1: t_Map_K_V)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Map_K_V [inv_Map_K_V x]. inv_Map_K_V x
+      = (invariant_Map_K_V x /\ inv_Tree_K_V x.f0)
+  
+  predicate resolve_V (_1: t_V)
+  
+  predicate resolve_Tree_K_V (self: t_Tree_K_V) = forall k: t_DeepModelTy, v: t_V. has_mapping_K self k v -> resolve_V v
+  
+  predicate has_mapping_K'0 (self: t_Node_K_V) (k: t_DeepModelTy) (v: t_V) =
+    has_mapping_K self.left k v \/ has_mapping_K self.right k v \/ k = deep_model_K self.key /\ v = self.val'
+  
+  axiom has_mapping_K_spec:
+    forall self: t_Node_K_V, k: t_DeepModelTy, v: t_V [has_mapping_K'0 self k v]. forall node'0: t_Node_K_V. self
+          = node'0 -> has_mapping_K'0 self k v = has_mapping_K { node = Some node'0 } k v
+  
+  predicate resolve_Node_K_V (self: t_Node_K_V) =
+    forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v -> resolve_V v
+  
+  predicate resolve_K (_1: t_K)
+  
+  predicate resolve_Node_K_V'0 (_1: t_Node_K_V)
+  
+  predicate resolve_Tree_K_V'0 (_1: t_Tree_K_V)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Node_K_V [resolve_Node_K_V'0 x]. resolve_Node_K_V'0 x
+      = (resolve_Node_K_V x
+      /\ resolve_Tree_K_V'0 x.left /\ resolve_K x.key /\ resolve_V x.val' /\ resolve_Tree_K_V'0 x.right)
+  
+  predicate resolve_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = resolve_Node_K_V'0 _1
+  
+  meta "rewrite_def" predicate resolve_Box_Node_K_V_Global
+  
+  predicate resolve_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
+  
+  axiom resolve_axiom'0 [@rewrite]:
+    forall x: t_Option_Box_Node_K_V_Global [resolve_Option_Box_Node_K_V_Global x]. resolve_Option_Box_Node_K_V_Global x
+      = match x with
+        | None -> true
+        | Some x0 -> resolve_Box_Node_K_V_Global x0
+        end
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree_K_V [resolve_Tree_K_V'0 x]. resolve_Tree_K_V'0 x
+      = (resolve_Tree_K_V x /\ resolve_Option_Box_Node_K_V_Global x.node)
+  
+  predicate structural_resolve_Map_K_V (_1: t_Map_K_V) = resolve_Tree_K_V'0 _1.f0
+  
+  type t_Option_V = None'0 | Some'0 t_V
+  
+  predicate resolve_Option_V (_1: t_Option_V)
+  
+  axiom resolve_axiom'2 [@rewrite]: forall x: t_Option_V [resolve_Option_V x]. resolve_Option_V x
+      = match x with
+        | None'0 -> true
+        | Some'0 x0 -> resolve_V x0
+        end
+  
+  function model_acc_K (self: t_Tree_K_V) (accu: Map.map t_DeepModelTy t_Option_V) : Map.map t_DeepModelTy t_Option_V =
+    match self with
+      | {node = None} -> accu
+      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> let accu1 = model_acc_K left'0 accu in let accu2 = Map.set accu1 (deep_model_K key'0) (Some'0 val''0) in model_acc_K right'0 accu2
+      end
+  
+  function view_Tree_K_V (self: t_Tree_K_V) : Map.map t_DeepModelTy t_Option_V = model_acc_K self (Const.const (None'0))
+  
+  function view_Map_K_V (self: t_Map_K_V) : Map.map t_DeepModelTy t_Option_V = view_Tree_K_V self.f0
+  
+  predicate resolve_Map_K_V (self: t_Map_K_V) =
+    forall k: t_DeepModelTy. resolve_Option_V (Map.get (view_Map_K_V self) k)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Map_K_V. inv_Map_K_V self
+      -> structural_resolve_Map_K_V self
+      -> structural_resolve_Map_K_V self /\ (forall result: (). resolve_Map_K_V self -> resolve_Map_K_V self)
+end
 module M_impl_Map_K_V__new (* Map<K, V> *)
   use creusot.prelude.Any
   use map.Map
@@ -6866,6 +7308,334 @@ module M_impl_Map_K_V__new (* Map<K, V> *)
     [ return (result: t_Map_K_V) ->
     {[@stop_split] [@expl:new_K ensures] ([@stop_split] [@expl:new result type invariant] inv_Map_K_V result)
       /\ ([@stop_split] [@expl:new ensures] view_Map_K_V result = Const.const (None'0))}
+      (! return {result}) ]
+end
+module M_impl_Map_K_V__get (* Map<K, V> *)
+  use map.Map
+  use map.Const
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Color = Red | Black
+  
+  type t_K
+  
+  type t_V
+  
+  type t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
+  with t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
+  with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
+  
+  type t_DeepModelTy
+  
+  function deep_model_K (self: t_K) : t_DeepModelTy
+  
+  predicate has_mapping_K (self: t_Tree_K_V) (k: t_DeepModelTy) (v: t_V) =
+    match self with
+      | {node = None} -> false
+      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> has_mapping_K left'0 k v
+      \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
+      end
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  
+  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  
+  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
+      -> cmp_log_DeepModelTy y x = Less
+  
+  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
+      -> cmp_log_DeepModelTy y x = Greater
+  
+  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
+  
+  axiom trans_DeepModelTy_spec:
+    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
+      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
+  
+  function refl_DeepModelTy (x: t_DeepModelTy) : ()
+  
+  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
+  
+  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y = Greater)
+  
+  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y <> Less)
+  
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y = Less)
+  
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y <> Greater)
+  
+  predicate bst_invariant_here_K (self: t_Node_K_V) =
+    (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
+    /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.right k v -> lt_log_DeepModelTy (deep_model_K self.key) k)
+  
+  predicate bst_invariant_K (self: t_Tree_K_V) =
+    match self with
+      | {node = None} -> true
+      | {node = Some ({left = left'0; right = right'0} as node'0)} -> bst_invariant_here_K node'0
+      /\ bst_invariant_K left'0 /\ bst_invariant_K right'0
+      end
+  
+  type t_Option_V = None'0 | Some'0 t_V
+  
+  function model_acc_K (self: t_Tree_K_V) (accu: Map.map t_DeepModelTy t_Option_V) : Map.map t_DeepModelTy t_Option_V =
+    match self with
+      | {node = None} -> accu
+      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> let accu1 = model_acc_K left'0 accu in let accu2 = Map.set accu1 (deep_model_K key'0) (Some'0 val''0) in model_acc_K right'0 accu2
+      end
+  
+  function view_Tree_K_V (self: t_Tree_K_V) : Map.map t_DeepModelTy t_Option_V = model_acc_K self (Const.const (None'0))
+  
+  function model_acc_has_mapping_K (self: t_Tree_K_V) (accu: Map.map t_DeepModelTy t_Option_V) (k: t_DeepModelTy) : () =
+    match self with
+      | {node = None} -> ()
+      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> let _ = model_acc_has_mapping_K left'0 accu k in let accu1 = model_acc_K left'0 accu in let accu2 = Map.set accu1 (deep_model_K key'0) (Some'0 val''0) in model_acc_has_mapping_K right'0 accu2 k
+      end
+  
+  axiom model_acc_has_mapping_K_spec:
+    forall self: t_Tree_K_V, accu: Map.map t_DeepModelTy t_Option_V, k: t_DeepModelTy. Map.get (model_acc_K self accu) k
+        = Map.get accu k
+      \/ (exists v: t_V. Map.get (model_acc_K self accu) k = Some'0 v /\ has_mapping_K self k v)
+  
+  function has_mapping_model_acc_K (self: t_Tree_K_V) (accu: Map.map t_DeepModelTy t_Option_V) (k: t_DeepModelTy) : () =
+    match self with
+      | {node = None} -> ()
+      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> let _ = has_mapping_model_acc_K left'0 accu k in let accu1 = model_acc_K left'0 accu in let accu2 = Map.set accu1 (deep_model_K key'0) (Some'0 val''0) in let _ = has_mapping_model_acc_K right'0 accu2 k in model_acc_has_mapping_K right'0 accu2 k
+      end
+  
+  axiom has_mapping_model_acc_K_spec:
+    forall self: t_Tree_K_V, accu: Map.map t_DeepModelTy t_Option_V, k: t_DeepModelTy. bst_invariant_K self
+      -> (forall v: t_V. has_mapping_K self k v -> Map.get (model_acc_K self accu) k = Some'0 v)
+  
+  function has_mapping_model_K (self: t_Tree_K_V) (k: t_DeepModelTy) : () =
+    let _ = model_acc_has_mapping_K self (Const.const (None'0)) k in has_mapping_model_acc_K self (Const.const (None'0)) k
+  
+  axiom has_mapping_model_K_spec: forall self: t_Tree_K_V, k: t_DeepModelTy. bst_invariant_K self
+      -> (forall v: t_V. has_mapping_K self k v = (Map.get (view_Tree_K_V self) k = Some'0 v))
+  
+  type t_Map_K_V = { f0: t_Tree_K_V }
+  
+  function deep_model_ref_K [@inline:trivial] (self: t_K) : t_DeepModelTy = deep_model_K self
+  
+  meta "rewrite_def" function deep_model_ref_K
+  
+  predicate inv_K (_1: t_K)
+  
+  predicate inv_V (_1: t_V)
+  
+  predicate inv_Node_K_V (_1: t_Node_K_V)
+  
+  predicate inv_Tree_K_V (_1: t_Tree_K_V)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Node_K_V [inv_Node_K_V x]. inv_Node_K_V x
+      = (inv_Tree_K_V x.left /\ inv_K x.key /\ inv_V x.val' /\ inv_Tree_K_V x.right)
+  
+  predicate invariant_Box_Node_K_V_Global (self: t_Node_K_V) = inv_Node_K_V self
+  
+  predicate inv_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = invariant_Box_Node_K_V_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_Node_K_V_Global
+  
+  predicate inv_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
+  
+  axiom inv_axiom'0 [@rewrite]:
+    forall x: t_Option_Box_Node_K_V_Global [inv_Option_Box_Node_K_V_Global x]. inv_Option_Box_Node_K_V_Global x
+      = match x with
+        | None -> true
+        | Some f0'0 -> inv_Box_Node_K_V_Global f0'0
+        end
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree_K_V [inv_Tree_K_V x]. inv_Tree_K_V x
+      = inv_Option_Box_Node_K_V_Global x.node
+  
+  predicate invariant_ref_Tree_K_V [@inline:trivial] (self: t_Tree_K_V) = inv_Tree_K_V self
+  
+  meta "rewrite_def" predicate invariant_ref_Tree_K_V
+  
+  predicate inv_ref_Tree_K_V [@inline:trivial] (_1: t_Tree_K_V) = invariant_ref_Tree_K_V _1
+  
+  meta "rewrite_def" predicate inv_ref_Tree_K_V
+  
+  let rec elim_Some (_x: t_Option_Box_Node_K_V_Global) (return (f0'0: t_Node_K_V)) = any
+    [ _k (f0'0: t_Node_K_V) -> {Some f0'0 = _x} (! return {f0'0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  type tup2_ref_K_ref_K = { f0'0: t_K; f1'0: t_K }
+  
+  predicate invariant_ref_K [@inline:trivial] (self: t_K) = inv_K self
+  
+  meta "rewrite_def" predicate invariant_ref_K
+  
+  predicate inv_ref_K [@inline:trivial] (_1: t_K) = invariant_ref_K _1
+  
+  meta "rewrite_def" predicate inv_ref_K
+  
+  predicate precondition_cmp (self: ()) (args: tup2_ref_K_ref_K)
+  
+  axiom precondition_fndef:
+    forall args: tup2_ref_K_ref_K [precondition_cmp () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K self_
+        /\ inv_ref_K rhs) -> precondition_cmp () args
+  
+  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
+  
+  axiom postcondition_fndef:
+    forall args: tup2_ref_K_ref_K, res: t_Ordering [postcondition_once_cmp () args res]. postcondition_once_cmp () args res
+      -> (let {f0'0 = self_; f1'0 = rhs} = args in res = cmp_log_DeepModelTy (deep_model_K self_) (deep_model_K rhs))
+  
+  let rec cmp_K (self_: t_K) (rhs: t_K) (return (x: t_Ordering)) =
+    {[@stop_split] [@expl:cmp requires] precondition_cmp () { f0'0 = self_; f1'0 = rhs }}
+    any
+    [ return (result: t_Ordering) -> {[@stop_split] [@expl:cmp ensures] postcondition_once_cmp () { f0'0 = self_;
+                                                                                                    f1'0 = rhs } result}
+      (! return {result}) ]
+  
+  type t_Option_ref_V = None'1 | Some'1 t_V
+  
+  function height_K (self: t_Tree_K_V) : int = match self with
+      | {node = None} -> 0
+      | {node = Some {left = left'0; color = Red}} -> height_K left'0
+      | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
+      end
+  
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  
+  predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
+  
+  predicate height_invariant_K (self: t_Tree_K_V) =
+    match self with
+      | {node = None} -> true
+      | {node = Some ({left = left'0; right = right'0} as node'0)} -> height_invariant_here_K node'0
+      /\ height_invariant_K left'0 /\ height_invariant_K right'0
+      end
+  
+  predicate internal_invariant_K (self: t_Tree_K_V) = bst_invariant_K self /\ height_invariant_K self
+  
+  function color_K (self: t_Tree_K_V) : t_Color = match self.node with
+      | Some {color = color'0} -> color'0
+      | _ -> Black
+      end
+  
+  predicate color_invariant_here_K (self: t_Node_K_V) =
+    color_K self.right = Black /\ (self.color = Black \/ color_K self.left = Black)
+  
+  predicate color_invariant_K (self: t_Tree_K_V) =
+    match self with
+      | {node = None} -> true
+      | {node = Some ({left = left'0; right = right'0} as node'0)} -> color_invariant_here_K node'0
+      /\ color_invariant_K left'0 /\ color_invariant_K right'0
+      end
+  
+  predicate invariant_Map_K_V (self: t_Map_K_V) =
+    internal_invariant_K self.f0 /\ color_invariant_K self.f0 /\ color_K self.f0 = Black
+  
+  predicate inv_Map_K_V (_1: t_Map_K_V)
+  
+  axiom inv_axiom'2 [@rewrite]: forall x: t_Map_K_V [inv_Map_K_V x]. inv_Map_K_V x
+      = (invariant_Map_K_V x /\ inv_Tree_K_V x.f0)
+  
+  predicate invariant_ref_Map_K_V [@inline:trivial] (self: t_Map_K_V) = inv_Map_K_V self
+  
+  meta "rewrite_def" predicate invariant_ref_Map_K_V
+  
+  predicate inv_ref_Map_K_V [@inline:trivial] (_1: t_Map_K_V) = invariant_ref_Map_K_V _1
+  
+  meta "rewrite_def" predicate inv_ref_Map_K_V
+  
+  predicate invariant_ref_V [@inline:trivial] (self: t_V) = inv_V self
+  
+  meta "rewrite_def" predicate invariant_ref_V
+  
+  predicate inv_ref_V [@inline:trivial] (_1: t_V) = invariant_ref_V _1
+  
+  meta "rewrite_def" predicate inv_ref_V
+  
+  predicate inv_Option_ref_V (_1: t_Option_ref_V)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option_ref_V [inv_Option_ref_V x]. inv_Option_ref_V x
+      = match x with
+        | None'1 -> true
+        | Some'1 f0'1 -> inv_ref_V f0'1
+        end
+  
+  function view_Map_K_V (self: t_Map_K_V) : Map.map t_DeepModelTy t_Option_V = view_Tree_K_V self.f0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec get_K (self: t_Map_K_V) (key'0: t_K) (return (x: t_Option_ref_V)) =
+    {[@stop_split] [@expl:get_K requires] ([@stop_split] [@expl:get 'self' type invariant] inv_ref_Map_K_V self)
+    /\ ([@stop_split] [@expl:get 'key' type invariant] inv_ref_K key'0)}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_7 <- () ] s1 | s1 = [ &tree <- self.f0 ] s2 | s2 = bb2 ]
+    | bb2 = bb2
+      [ bb2 = {[@expl:inferred invariant: type invariant] inv_ref_Tree_K_V tree}
+        {[@expl:loop invariant #0] bst_invariant_K tree}
+        {[@expl:loop invariant #1] forall v: t_V. has_mapping_K self.f0 (deep_model_ref_K key'0) v
+          = has_mapping_K tree (deep_model_ref_K key'0) v}
+        (! s0)
+        [ s0 = [ &_19 <- tree.node ] s1
+        | s1 = any [ br0 -> {_19 = None} (! bb14) | br1 (x0: t_Node_K_V) -> {_19 = Some x0} (! bb5) ] ]
+        [ bb5 = s0
+          [ s0 = elim_Some {_19} (fun (r0: t_Node_K_V) -> [ &node'0 <- r0 ] s1)
+          | s1 = [ &_25 <- node'0.key ] s2
+          | s2 = cmp_K {key'0} {_25} (fun (_x: t_Ordering) -> [ &_22 <- _x ] s3)
+          | s3 = any
+            [ br0 -> {_22 = Less} (! bb12) | br1 -> {_22 = Equal} (! bb11) | br2 -> {_22 = Greater} (! bb10) ] ]
+        | bb10 = s0 [ s0 = [ &_33 <- node'0.right ] s1 | s1 = [ &tree <- _33 ] s2 | s2 = bb2 ]
+        | bb12 = s0 [ s0 = [ &_28 <- node'0.left ] s1 | s1 = [ &tree <- _28 ] s2 | s2 = bb2 ] ] ]
+    | bb14 = s0 [ s0 = [ &_ret <- None'1 ] s1 | s1 = return {_ret} ]
+    | bb11 = s0 [ s0 = [ &_31 <- node'0.val' ] s1 | s1 = [ &_ret <- Some'1 _31 ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_Option_ref_V = Any.any_l ()
+    | & self: t_Map_K_V = self
+    | & key'0: t_K = key'0
+    | & _7: () = Any.any_l ()
+    | & tree: t_Tree_K_V = Any.any_l ()
+    | & _19: t_Option_Box_Node_K_V_Global = Any.any_l ()
+    | & node'0: t_Node_K_V = Any.any_l ()
+    | & _22: t_Ordering = Any.any_l ()
+    | & _25: t_K = Any.any_l ()
+    | & _28: t_Tree_K_V = Any.any_l ()
+    | & _31: t_V = Any.any_l ()
+    | & _33: t_Tree_K_V = Any.any_l () ])
+    [ return (result: t_Option_ref_V) ->
+    {[@stop_split] [@expl:get_K ensures] ([@stop_split] [@expl:get result type invariant] inv_Option_ref_V result)
+      /\ ([@stop_split] [@expl:get ensures] match result with
+        | Some'1 v -> Map.get (view_Map_K_V self) (deep_model_ref_K key'0) = Some'0 v
+        | None'1 -> Map.get (view_Map_K_V self) (deep_model_ref_K key'0) = None'0
+        end)}
       (! return {result}) ]
 end
 module M_impl_Map_K_V__insert (* Map<K, V> *)
@@ -8797,334 +9567,6 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
       = Map.set (view_Map_K_V self.current) (deep_model_ref_K key'0) (None'0))}
       (! return {result}) ]
 end
-module M_impl_Map_K_V__get (* Map<K, V> *)
-  use map.Map
-  use map.Const
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Color = Red | Black
-  
-  type t_K
-  
-  type t_V
-  
-  type t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
-  with t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
-  with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
-  
-  type t_DeepModelTy
-  
-  function deep_model_K (self: t_K) : t_DeepModelTy
-  
-  predicate has_mapping_K (self: t_Tree_K_V) (k: t_DeepModelTy) (v: t_V) =
-    match self with
-      | {node = None} -> false
-      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> has_mapping_K left'0 k v
-      \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
-      end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
-  
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
-  
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
-  
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
-  
-  predicate bst_invariant_here_K (self: t_Node_K_V) =
-    (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
-    /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.right k v -> lt_log_DeepModelTy (deep_model_K self.key) k)
-  
-  predicate bst_invariant_K (self: t_Tree_K_V) =
-    match self with
-      | {node = None} -> true
-      | {node = Some ({left = left'0; right = right'0} as node'0)} -> bst_invariant_here_K node'0
-      /\ bst_invariant_K left'0 /\ bst_invariant_K right'0
-      end
-  
-  type t_Option_V = None'0 | Some'0 t_V
-  
-  function model_acc_K (self: t_Tree_K_V) (accu: Map.map t_DeepModelTy t_Option_V) : Map.map t_DeepModelTy t_Option_V =
-    match self with
-      | {node = None} -> accu
-      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> let accu1 = model_acc_K left'0 accu in let accu2 = Map.set accu1 (deep_model_K key'0) (Some'0 val''0) in model_acc_K right'0 accu2
-      end
-  
-  function view_Tree_K_V (self: t_Tree_K_V) : Map.map t_DeepModelTy t_Option_V = model_acc_K self (Const.const (None'0))
-  
-  function model_acc_has_mapping_K (self: t_Tree_K_V) (accu: Map.map t_DeepModelTy t_Option_V) (k: t_DeepModelTy) : () =
-    match self with
-      | {node = None} -> ()
-      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> let _ = model_acc_has_mapping_K left'0 accu k in let accu1 = model_acc_K left'0 accu in let accu2 = Map.set accu1 (deep_model_K key'0) (Some'0 val''0) in model_acc_has_mapping_K right'0 accu2 k
-      end
-  
-  axiom model_acc_has_mapping_K_spec:
-    forall self: t_Tree_K_V, accu: Map.map t_DeepModelTy t_Option_V, k: t_DeepModelTy. Map.get (model_acc_K self accu) k
-        = Map.get accu k
-      \/ (exists v: t_V. Map.get (model_acc_K self accu) k = Some'0 v /\ has_mapping_K self k v)
-  
-  function has_mapping_model_acc_K (self: t_Tree_K_V) (accu: Map.map t_DeepModelTy t_Option_V) (k: t_DeepModelTy) : () =
-    match self with
-      | {node = None} -> ()
-      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> let _ = has_mapping_model_acc_K left'0 accu k in let accu1 = model_acc_K left'0 accu in let accu2 = Map.set accu1 (deep_model_K key'0) (Some'0 val''0) in let _ = has_mapping_model_acc_K right'0 accu2 k in model_acc_has_mapping_K right'0 accu2 k
-      end
-  
-  axiom has_mapping_model_acc_K_spec:
-    forall self: t_Tree_K_V, accu: Map.map t_DeepModelTy t_Option_V, k: t_DeepModelTy. bst_invariant_K self
-      -> (forall v: t_V. has_mapping_K self k v -> Map.get (model_acc_K self accu) k = Some'0 v)
-  
-  function has_mapping_model_K (self: t_Tree_K_V) (k: t_DeepModelTy) : () =
-    let _ = model_acc_has_mapping_K self (Const.const (None'0)) k in has_mapping_model_acc_K self (Const.const (None'0)) k
-  
-  axiom has_mapping_model_K_spec: forall self: t_Tree_K_V, k: t_DeepModelTy. bst_invariant_K self
-      -> (forall v: t_V. has_mapping_K self k v = (Map.get (view_Tree_K_V self) k = Some'0 v))
-  
-  type t_Map_K_V = { f0: t_Tree_K_V }
-  
-  function deep_model_ref_K [@inline:trivial] (self: t_K) : t_DeepModelTy = deep_model_K self
-  
-  meta "rewrite_def" function deep_model_ref_K
-  
-  predicate inv_K (_1: t_K)
-  
-  predicate inv_V (_1: t_V)
-  
-  predicate inv_Node_K_V (_1: t_Node_K_V)
-  
-  predicate inv_Tree_K_V (_1: t_Tree_K_V)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Node_K_V [inv_Node_K_V x]. inv_Node_K_V x
-      = (inv_Tree_K_V x.left /\ inv_K x.key /\ inv_V x.val' /\ inv_Tree_K_V x.right)
-  
-  predicate invariant_Box_Node_K_V_Global (self: t_Node_K_V) = inv_Node_K_V self
-  
-  predicate inv_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = invariant_Box_Node_K_V_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_Node_K_V_Global
-  
-  predicate inv_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
-  
-  axiom inv_axiom'0 [@rewrite]:
-    forall x: t_Option_Box_Node_K_V_Global [inv_Option_Box_Node_K_V_Global x]. inv_Option_Box_Node_K_V_Global x
-      = match x with
-        | None -> true
-        | Some f0'0 -> inv_Box_Node_K_V_Global f0'0
-        end
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree_K_V [inv_Tree_K_V x]. inv_Tree_K_V x
-      = inv_Option_Box_Node_K_V_Global x.node
-  
-  predicate invariant_ref_Tree_K_V [@inline:trivial] (self: t_Tree_K_V) = inv_Tree_K_V self
-  
-  meta "rewrite_def" predicate invariant_ref_Tree_K_V
-  
-  predicate inv_ref_Tree_K_V [@inline:trivial] (_1: t_Tree_K_V) = invariant_ref_Tree_K_V _1
-  
-  meta "rewrite_def" predicate inv_ref_Tree_K_V
-  
-  let rec elim_Some (_x: t_Option_Box_Node_K_V_Global) (return (f0'0: t_Node_K_V)) = any
-    [ _k (f0'0: t_Node_K_V) -> {Some f0'0 = _x} (! return {f0'0})
-    | _chk -> (! {[@expl:elim Some] match _x with
-        | Some _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  type tup2_ref_K_ref_K = { f0'0: t_K; f1'0: t_K }
-  
-  predicate invariant_ref_K [@inline:trivial] (self: t_K) = inv_K self
-  
-  meta "rewrite_def" predicate invariant_ref_K
-  
-  predicate inv_ref_K [@inline:trivial] (_1: t_K) = invariant_ref_K _1
-  
-  meta "rewrite_def" predicate inv_ref_K
-  
-  predicate precondition_cmp (self: ()) (args: tup2_ref_K_ref_K)
-  
-  axiom precondition_fndef:
-    forall args: tup2_ref_K_ref_K [precondition_cmp () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K self_
-        /\ inv_ref_K rhs) -> precondition_cmp () args
-  
-  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
-  
-  axiom postcondition_fndef:
-    forall args: tup2_ref_K_ref_K, res: t_Ordering [postcondition_once_cmp () args res]. postcondition_once_cmp () args res
-      -> (let {f0'0 = self_; f1'0 = rhs} = args in res = cmp_log_DeepModelTy (deep_model_K self_) (deep_model_K rhs))
-  
-  let rec cmp_K (self_: t_K) (rhs: t_K) (return (x: t_Ordering)) =
-    {[@stop_split] [@expl:cmp requires] precondition_cmp () { f0'0 = self_; f1'0 = rhs }}
-    any
-    [ return (result: t_Ordering) -> {[@stop_split] [@expl:cmp ensures] postcondition_once_cmp () { f0'0 = self_;
-                                                                                                    f1'0 = rhs } result}
-      (! return {result}) ]
-  
-  type t_Option_ref_V = None'1 | Some'1 t_V
-  
-  function height_K (self: t_Tree_K_V) : int = match self with
-      | {node = None} -> 0
-      | {node = Some {left = left'0; color = Red}} -> height_K left'0
-      | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
-      end
-  
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
-  
-  predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
-  
-  predicate height_invariant_K (self: t_Tree_K_V) =
-    match self with
-      | {node = None} -> true
-      | {node = Some ({left = left'0; right = right'0} as node'0)} -> height_invariant_here_K node'0
-      /\ height_invariant_K left'0 /\ height_invariant_K right'0
-      end
-  
-  predicate internal_invariant_K (self: t_Tree_K_V) = bst_invariant_K self /\ height_invariant_K self
-  
-  function color_K (self: t_Tree_K_V) : t_Color = match self.node with
-      | Some {color = color'0} -> color'0
-      | _ -> Black
-      end
-  
-  predicate color_invariant_here_K (self: t_Node_K_V) =
-    color_K self.right = Black /\ (self.color = Black \/ color_K self.left = Black)
-  
-  predicate color_invariant_K (self: t_Tree_K_V) =
-    match self with
-      | {node = None} -> true
-      | {node = Some ({left = left'0; right = right'0} as node'0)} -> color_invariant_here_K node'0
-      /\ color_invariant_K left'0 /\ color_invariant_K right'0
-      end
-  
-  predicate invariant_Map_K_V (self: t_Map_K_V) =
-    internal_invariant_K self.f0 /\ color_invariant_K self.f0 /\ color_K self.f0 = Black
-  
-  predicate inv_Map_K_V (_1: t_Map_K_V)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Map_K_V [inv_Map_K_V x]. inv_Map_K_V x
-      = (invariant_Map_K_V x /\ inv_Tree_K_V x.f0)
-  
-  predicate invariant_ref_Map_K_V [@inline:trivial] (self: t_Map_K_V) = inv_Map_K_V self
-  
-  meta "rewrite_def" predicate invariant_ref_Map_K_V
-  
-  predicate inv_ref_Map_K_V [@inline:trivial] (_1: t_Map_K_V) = invariant_ref_Map_K_V _1
-  
-  meta "rewrite_def" predicate inv_ref_Map_K_V
-  
-  predicate invariant_ref_V [@inline:trivial] (self: t_V) = inv_V self
-  
-  meta "rewrite_def" predicate invariant_ref_V
-  
-  predicate inv_ref_V [@inline:trivial] (_1: t_V) = invariant_ref_V _1
-  
-  meta "rewrite_def" predicate inv_ref_V
-  
-  predicate inv_Option_ref_V (_1: t_Option_ref_V)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option_ref_V [inv_Option_ref_V x]. inv_Option_ref_V x
-      = match x with
-        | None'1 -> true
-        | Some'1 f0'1 -> inv_ref_V f0'1
-        end
-  
-  function view_Map_K_V (self: t_Map_K_V) : Map.map t_DeepModelTy t_Option_V = view_Tree_K_V self.f0
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec get_K (self: t_Map_K_V) (key'0: t_K) (return (x: t_Option_ref_V)) =
-    {[@stop_split] [@expl:get_K requires] ([@stop_split] [@expl:get 'self' type invariant] inv_ref_Map_K_V self)
-    /\ ([@stop_split] [@expl:get 'key' type invariant] inv_ref_K key'0)}
-    (! bb0
-    [ bb0 = s0 [ s0 = [ &_7 <- () ] s1 | s1 = [ &tree <- self.f0 ] s2 | s2 = bb2 ]
-    | bb2 = bb2
-      [ bb2 = {[@expl:inferred invariant: type invariant] inv_ref_Tree_K_V tree}
-        {[@expl:loop invariant #0] bst_invariant_K tree}
-        {[@expl:loop invariant #1] forall v: t_V. has_mapping_K self.f0 (deep_model_ref_K key'0) v
-          = has_mapping_K tree (deep_model_ref_K key'0) v}
-        (! s0)
-        [ s0 = [ &_19 <- tree.node ] s1
-        | s1 = any [ br0 -> {_19 = None} (! bb14) | br1 (x0: t_Node_K_V) -> {_19 = Some x0} (! bb5) ] ]
-        [ bb5 = s0
-          [ s0 = elim_Some {_19} (fun (r0: t_Node_K_V) -> [ &node'0 <- r0 ] s1)
-          | s1 = [ &_25 <- node'0.key ] s2
-          | s2 = cmp_K {key'0} {_25} (fun (_x: t_Ordering) -> [ &_22 <- _x ] s3)
-          | s3 = any
-            [ br0 -> {_22 = Less} (! bb12) | br1 -> {_22 = Equal} (! bb11) | br2 -> {_22 = Greater} (! bb10) ] ]
-        | bb10 = s0 [ s0 = [ &_33 <- node'0.right ] s1 | s1 = [ &tree <- _33 ] s2 | s2 = bb2 ]
-        | bb12 = s0 [ s0 = [ &_28 <- node'0.left ] s1 | s1 = [ &tree <- _28 ] s2 | s2 = bb2 ] ] ]
-    | bb14 = s0 [ s0 = [ &_ret <- None'1 ] s1 | s1 = return {_ret} ]
-    | bb11 = s0 [ s0 = [ &_31 <- node'0.val' ] s1 | s1 = [ &_ret <- Some'1 _31 ] s2 | s2 = return {_ret} ] ]
-    [ & _ret: t_Option_ref_V = Any.any_l ()
-    | & self: t_Map_K_V = self
-    | & key'0: t_K = key'0
-    | & _7: () = Any.any_l ()
-    | & tree: t_Tree_K_V = Any.any_l ()
-    | & _19: t_Option_Box_Node_K_V_Global = Any.any_l ()
-    | & node'0: t_Node_K_V = Any.any_l ()
-    | & _22: t_Ordering = Any.any_l ()
-    | & _25: t_K = Any.any_l ()
-    | & _28: t_Tree_K_V = Any.any_l ()
-    | & _31: t_V = Any.any_l ()
-    | & _33: t_Tree_K_V = Any.any_l () ])
-    [ return (result: t_Option_ref_V) ->
-    {[@stop_split] [@expl:get_K ensures] ([@stop_split] [@expl:get result type invariant] inv_Option_ref_V result)
-      /\ ([@stop_split] [@expl:get ensures] match result with
-        | Some'1 v -> Map.get (view_Map_K_V self) (deep_model_ref_K key'0) = Some'0 v
-        | None'1 -> Map.get (view_Map_K_V self) (deep_model_ref_K key'0) = None'0
-        end)}
-      (! return {result}) ]
-end
 module M_impl_Map_K_V__get_mut (* Map<K, V> *)
   use map.Map
   use map.Const
@@ -9613,446 +10055,4 @@ module M_impl_Map_K_V__get_mut (* Map<K, V> *)
         /\ view_Map_K_V self.final = view_Map_K_V self.current
         end)}
       (! return {result}) ]
-end
-module M_impl_Resolve_for_Tree_K_V__resolve_coherence__refines (* <Tree<K, V> as creusot_std::resolve::Resolve> *)
-  type t_Color = Red | Black
-  
-  type t_K
-  
-  type t_V
-  
-  type t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
-  with t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
-  with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
-  
-  predicate inv_K (_1: t_K)
-  
-  predicate inv_V (_1: t_V)
-  
-  predicate inv_Node_K_V (_1: t_Node_K_V)
-  
-  predicate inv_Tree_K_V (_1: t_Tree_K_V)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Node_K_V [inv_Node_K_V x]. inv_Node_K_V x
-      = (inv_Tree_K_V x.left /\ inv_K x.key /\ inv_V x.val' /\ inv_Tree_K_V x.right)
-  
-  predicate invariant_Box_Node_K_V_Global (self: t_Node_K_V) = inv_Node_K_V self
-  
-  predicate inv_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = invariant_Box_Node_K_V_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_Node_K_V_Global
-  
-  predicate inv_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
-  
-  axiom inv_axiom'0 [@rewrite]:
-    forall x: t_Option_Box_Node_K_V_Global [inv_Option_Box_Node_K_V_Global x]. inv_Option_Box_Node_K_V_Global x
-      = match x with
-        | None -> true
-        | Some f0 -> inv_Box_Node_K_V_Global f0
-        end
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree_K_V [inv_Tree_K_V x]. inv_Tree_K_V x
-      = inv_Option_Box_Node_K_V_Global x.node
-  
-  type t_DeepModelTy
-  
-  function deep_model_K (self: t_K) : t_DeepModelTy
-  
-  predicate has_mapping_K (self: t_Tree_K_V) (k: t_DeepModelTy) (v: t_V) =
-    match self with
-      | {node = None} -> false
-      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> has_mapping_K left'0 k v
-      \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
-      end
-  
-  predicate has_mapping_K'0 (self: t_Node_K_V) (k: t_DeepModelTy) (v: t_V) =
-    has_mapping_K self.left k v \/ has_mapping_K self.right k v \/ k = deep_model_K self.key /\ v = self.val'
-  
-  axiom has_mapping_K_spec:
-    forall self: t_Node_K_V, k: t_DeepModelTy, v: t_V [has_mapping_K'0 self k v]. forall node'0: t_Node_K_V. self
-          = node'0 -> has_mapping_K'0 self k v = has_mapping_K { node = Some node'0 } k v
-  
-  predicate resolve_V (_1: t_V)
-  
-  predicate resolve_Node_K_V (self: t_Node_K_V) =
-    forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v -> resolve_V v
-  
-  predicate resolve_Tree_K_V (self: t_Tree_K_V) = forall k: t_DeepModelTy, v: t_V. has_mapping_K self k v -> resolve_V v
-  
-  predicate resolve_K (_1: t_K)
-  
-  predicate resolve_Tree_K_V'0 (_1: t_Tree_K_V)
-  
-  predicate resolve_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
-  
-  axiom resolve_axiom [@rewrite]: forall x: t_Tree_K_V [resolve_Tree_K_V'0 x]. resolve_Tree_K_V'0 x
-      = (resolve_Tree_K_V x /\ resolve_Option_Box_Node_K_V_Global x.node)
-  
-  predicate resolve_Node_K_V'0 (_1: t_Node_K_V)
-  
-  axiom resolve_axiom'0 [@rewrite]: forall x: t_Node_K_V [resolve_Node_K_V'0 x]. resolve_Node_K_V'0 x
-      = (resolve_Node_K_V x
-      /\ resolve_Tree_K_V'0 x.left /\ resolve_K x.key /\ resolve_V x.val' /\ resolve_Tree_K_V'0 x.right)
-  
-  predicate resolve_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = resolve_Node_K_V'0 _1
-  
-  meta "rewrite_def" predicate resolve_Box_Node_K_V_Global
-  
-  axiom resolve_axiom'1 [@rewrite]:
-    forall x: t_Option_Box_Node_K_V_Global [resolve_Option_Box_Node_K_V_Global x]. resolve_Option_Box_Node_K_V_Global x
-      = match x with
-        | None -> true
-        | Some x0 -> resolve_Box_Node_K_V_Global x0
-        end
-  
-  predicate structural_resolve_Tree_K_V (_1: t_Tree_K_V) = resolve_Option_Box_Node_K_V_Global _1.node
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Tree_K_V. inv_Tree_K_V self
-      -> structural_resolve_Tree_K_V self
-      -> structural_resolve_Tree_K_V self /\ (forall result: (). resolve_Tree_K_V self -> resolve_Tree_K_V self)
-end
-module M_impl_Resolve_for_Node_K_V__resolve_coherence__refines (* <Node<K, V> as creusot_std::resolve::Resolve> *)
-  type t_Color = Red | Black
-  
-  type t_K
-  
-  type t_V
-  
-  type t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
-  with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
-  with t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
-  
-  predicate inv_K (_1: t_K)
-  
-  predicate inv_V (_1: t_V)
-  
-  predicate inv_Node_K_V (_1: t_Node_K_V)
-  
-  predicate invariant_Box_Node_K_V_Global (self: t_Node_K_V) = inv_Node_K_V self
-  
-  predicate inv_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = invariant_Box_Node_K_V_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_Node_K_V_Global
-  
-  predicate inv_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
-  
-  axiom inv_axiom [@rewrite]:
-    forall x: t_Option_Box_Node_K_V_Global [inv_Option_Box_Node_K_V_Global x]. inv_Option_Box_Node_K_V_Global x
-      = match x with
-        | None -> true
-        | Some f0 -> inv_Box_Node_K_V_Global f0
-        end
-  
-  predicate inv_Tree_K_V (_1: t_Tree_K_V)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Tree_K_V [inv_Tree_K_V x]. inv_Tree_K_V x
-      = inv_Option_Box_Node_K_V_Global x.node
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node_K_V [inv_Node_K_V x]. inv_Node_K_V x
-      = (inv_Tree_K_V x.left /\ inv_K x.key /\ inv_V x.val' /\ inv_Tree_K_V x.right)
-  
-  type t_DeepModelTy
-  
-  function deep_model_K (self: t_K) : t_DeepModelTy
-  
-  predicate has_mapping_K (self: t_Tree_K_V) (k: t_DeepModelTy) (v: t_V) =
-    match self with
-      | {node = None} -> false
-      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> has_mapping_K left'0 k v
-      \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
-      end
-  
-  predicate resolve_V (_1: t_V)
-  
-  predicate resolve_Tree_K_V (self: t_Tree_K_V) = forall k: t_DeepModelTy, v: t_V. has_mapping_K self k v -> resolve_V v
-  
-  predicate has_mapping_K'0 (self: t_Node_K_V) (k: t_DeepModelTy) (v: t_V) =
-    has_mapping_K self.left k v \/ has_mapping_K self.right k v \/ k = deep_model_K self.key /\ v = self.val'
-  
-  axiom has_mapping_K_spec:
-    forall self: t_Node_K_V, k: t_DeepModelTy, v: t_V [has_mapping_K'0 self k v]. forall node'0: t_Node_K_V. self
-          = node'0 -> has_mapping_K'0 self k v = has_mapping_K { node = Some node'0 } k v
-  
-  predicate resolve_Node_K_V (self: t_Node_K_V) =
-    forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v -> resolve_V v
-  
-  predicate resolve_K (_1: t_K)
-  
-  predicate resolve_Node_K_V'0 (_1: t_Node_K_V)
-  
-  predicate resolve_Tree_K_V'0 (_1: t_Tree_K_V)
-  
-  axiom resolve_axiom [@rewrite]: forall x: t_Node_K_V [resolve_Node_K_V'0 x]. resolve_Node_K_V'0 x
-      = (resolve_Node_K_V x
-      /\ resolve_Tree_K_V'0 x.left /\ resolve_K x.key /\ resolve_V x.val' /\ resolve_Tree_K_V'0 x.right)
-  
-  predicate resolve_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = resolve_Node_K_V'0 _1
-  
-  meta "rewrite_def" predicate resolve_Box_Node_K_V_Global
-  
-  predicate resolve_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
-  
-  axiom resolve_axiom'0 [@rewrite]:
-    forall x: t_Option_Box_Node_K_V_Global [resolve_Option_Box_Node_K_V_Global x]. resolve_Option_Box_Node_K_V_Global x
-      = match x with
-        | None -> true
-        | Some x0 -> resolve_Box_Node_K_V_Global x0
-        end
-  
-  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree_K_V [resolve_Tree_K_V'0 x]. resolve_Tree_K_V'0 x
-      = (resolve_Tree_K_V x /\ resolve_Option_Box_Node_K_V_Global x.node)
-  
-  predicate structural_resolve_Node_K_V (_1: t_Node_K_V) =
-    resolve_Tree_K_V'0 _1.left /\ resolve_K _1.key /\ resolve_V _1.val' /\ resolve_Tree_K_V'0 _1.right
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Node_K_V. inv_Node_K_V self
-      -> structural_resolve_Node_K_V self
-      -> structural_resolve_Node_K_V self /\ (forall result: (). resolve_Node_K_V self -> resolve_Node_K_V self)
-end
-module M_impl_Resolve_for_Map_K_V__resolve_coherence__refines (* <Map<K, V> as creusot_std::resolve::Resolve> *)
-  use map.Map
-  use map.Const
-  use int.Int
-  
-  type t_Color = Red | Black
-  
-  type t_K
-  
-  type t_V
-  
-  type t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
-  with t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
-  with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
-  
-  type t_Map_K_V = { f0: t_Tree_K_V }
-  
-  type t_DeepModelTy
-  
-  function deep_model_K (self: t_K) : t_DeepModelTy
-  
-  predicate has_mapping_K (self: t_Tree_K_V) (k: t_DeepModelTy) (v: t_V) =
-    match self with
-      | {node = None} -> false
-      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> has_mapping_K left'0 k v
-      \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
-      end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
-  
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
-  
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
-  
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
-  
-  predicate bst_invariant_here_K (self: t_Node_K_V) =
-    (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
-    /\ (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.right k v -> lt_log_DeepModelTy (deep_model_K self.key) k)
-  
-  predicate bst_invariant_K (self: t_Tree_K_V) =
-    match self with
-      | {node = None} -> true
-      | {node = Some ({left = left'0; right = right'0} as node'0)} -> bst_invariant_here_K node'0
-      /\ bst_invariant_K left'0 /\ bst_invariant_K right'0
-      end
-  
-  function height_K (self: t_Tree_K_V) : int = match self with
-      | {node = None} -> 0
-      | {node = Some {left = left'0; color = Red}} -> height_K left'0
-      | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
-      end
-  
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
-  
-  predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
-  
-  predicate height_invariant_K (self: t_Tree_K_V) =
-    match self with
-      | {node = None} -> true
-      | {node = Some ({left = left'0; right = right'0} as node'0)} -> height_invariant_here_K node'0
-      /\ height_invariant_K left'0 /\ height_invariant_K right'0
-      end
-  
-  predicate internal_invariant_K (self: t_Tree_K_V) = bst_invariant_K self /\ height_invariant_K self
-  
-  function color_K (self: t_Tree_K_V) : t_Color = match self.node with
-      | Some {color = color'0} -> color'0
-      | _ -> Black
-      end
-  
-  predicate color_invariant_here_K (self: t_Node_K_V) =
-    color_K self.right = Black /\ (self.color = Black \/ color_K self.left = Black)
-  
-  predicate color_invariant_K (self: t_Tree_K_V) =
-    match self with
-      | {node = None} -> true
-      | {node = Some ({left = left'0; right = right'0} as node'0)} -> color_invariant_here_K node'0
-      /\ color_invariant_K left'0 /\ color_invariant_K right'0
-      end
-  
-  predicate invariant_Map_K_V (self: t_Map_K_V) =
-    internal_invariant_K self.f0 /\ color_invariant_K self.f0 /\ color_K self.f0 = Black
-  
-  predicate inv_K (_1: t_K)
-  
-  predicate inv_V (_1: t_V)
-  
-  predicate inv_Node_K_V (_1: t_Node_K_V)
-  
-  predicate inv_Tree_K_V (_1: t_Tree_K_V)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Node_K_V [inv_Node_K_V x]. inv_Node_K_V x
-      = (inv_Tree_K_V x.left /\ inv_K x.key /\ inv_V x.val' /\ inv_Tree_K_V x.right)
-  
-  predicate invariant_Box_Node_K_V_Global (self: t_Node_K_V) = inv_Node_K_V self
-  
-  predicate inv_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = invariant_Box_Node_K_V_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_Node_K_V_Global
-  
-  predicate inv_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
-  
-  axiom inv_axiom'0 [@rewrite]:
-    forall x: t_Option_Box_Node_K_V_Global [inv_Option_Box_Node_K_V_Global x]. inv_Option_Box_Node_K_V_Global x
-      = match x with
-        | None -> true
-        | Some f0'0 -> inv_Box_Node_K_V_Global f0'0
-        end
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Tree_K_V [inv_Tree_K_V x]. inv_Tree_K_V x
-      = inv_Option_Box_Node_K_V_Global x.node
-  
-  predicate inv_Map_K_V (_1: t_Map_K_V)
-  
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Map_K_V [inv_Map_K_V x]. inv_Map_K_V x
-      = (invariant_Map_K_V x /\ inv_Tree_K_V x.f0)
-  
-  predicate resolve_V (_1: t_V)
-  
-  predicate resolve_Tree_K_V (self: t_Tree_K_V) = forall k: t_DeepModelTy, v: t_V. has_mapping_K self k v -> resolve_V v
-  
-  predicate has_mapping_K'0 (self: t_Node_K_V) (k: t_DeepModelTy) (v: t_V) =
-    has_mapping_K self.left k v \/ has_mapping_K self.right k v \/ k = deep_model_K self.key /\ v = self.val'
-  
-  axiom has_mapping_K_spec:
-    forall self: t_Node_K_V, k: t_DeepModelTy, v: t_V [has_mapping_K'0 self k v]. forall node'0: t_Node_K_V. self
-          = node'0 -> has_mapping_K'0 self k v = has_mapping_K { node = Some node'0 } k v
-  
-  predicate resolve_Node_K_V (self: t_Node_K_V) =
-    forall k: t_DeepModelTy, v: t_V. has_mapping_K'0 self k v -> resolve_V v
-  
-  predicate resolve_K (_1: t_K)
-  
-  predicate resolve_Node_K_V'0 (_1: t_Node_K_V)
-  
-  predicate resolve_Tree_K_V'0 (_1: t_Tree_K_V)
-  
-  axiom resolve_axiom [@rewrite]: forall x: t_Node_K_V [resolve_Node_K_V'0 x]. resolve_Node_K_V'0 x
-      = (resolve_Node_K_V x
-      /\ resolve_Tree_K_V'0 x.left /\ resolve_K x.key /\ resolve_V x.val' /\ resolve_Tree_K_V'0 x.right)
-  
-  predicate resolve_Box_Node_K_V_Global [@inline:trivial] (_1: t_Node_K_V) = resolve_Node_K_V'0 _1
-  
-  meta "rewrite_def" predicate resolve_Box_Node_K_V_Global
-  
-  predicate resolve_Option_Box_Node_K_V_Global (_1: t_Option_Box_Node_K_V_Global)
-  
-  axiom resolve_axiom'0 [@rewrite]:
-    forall x: t_Option_Box_Node_K_V_Global [resolve_Option_Box_Node_K_V_Global x]. resolve_Option_Box_Node_K_V_Global x
-      = match x with
-        | None -> true
-        | Some x0 -> resolve_Box_Node_K_V_Global x0
-        end
-  
-  axiom resolve_axiom'1 [@rewrite]: forall x: t_Tree_K_V [resolve_Tree_K_V'0 x]. resolve_Tree_K_V'0 x
-      = (resolve_Tree_K_V x /\ resolve_Option_Box_Node_K_V_Global x.node)
-  
-  predicate structural_resolve_Map_K_V (_1: t_Map_K_V) = resolve_Tree_K_V'0 _1.f0
-  
-  type t_Option_V = None'0 | Some'0 t_V
-  
-  predicate resolve_Option_V (_1: t_Option_V)
-  
-  axiom resolve_axiom'2 [@rewrite]: forall x: t_Option_V [resolve_Option_V x]. resolve_Option_V x
-      = match x with
-        | None'0 -> true
-        | Some'0 x0 -> resolve_V x0
-        end
-  
-  function model_acc_K (self: t_Tree_K_V) (accu: Map.map t_DeepModelTy t_Option_V) : Map.map t_DeepModelTy t_Option_V =
-    match self with
-      | {node = None} -> accu
-      | {node = Some {left = left'0; key = key'0; val' = val''0; right = right'0}} -> let accu1 = model_acc_K left'0 accu in let accu2 = Map.set accu1 (deep_model_K key'0) (Some'0 val''0) in model_acc_K right'0 accu2
-      end
-  
-  function view_Tree_K_V (self: t_Tree_K_V) : Map.map t_DeepModelTy t_Option_V = model_acc_K self (Const.const (None'0))
-  
-  function view_Map_K_V (self: t_Map_K_V) : Map.map t_DeepModelTy t_Option_V = view_Tree_K_V self.f0
-  
-  predicate resolve_Map_K_V (self: t_Map_K_V) =
-    forall k: t_DeepModelTy. resolve_Option_V (Map.get (view_Map_K_V self) k)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Map_K_V. inv_Map_K_V self
-      -> structural_resolve_Map_K_V self
-      -> structural_resolve_Map_K_V self /\ (forall result: (). resolve_Map_K_V self -> resolve_Map_K_V self)
 end

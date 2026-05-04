@@ -316,71 +316,6 @@ module M_impl_Iterator_for_Fuse_I__produces_trans (* <Fuse<I> as common::Iterato
   goal vc_produces_trans_Fuse_I: produces_Fuse_I a ab b
     -> produces_Fuse_I b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Fuse_I a (Seq.(++) ab bc) c)
 end
-module M_impl_FusedIterator_for_Fuse_I__is_fused (* <Fuse<I> as FusedIterator> *)
-  use creusot.prelude.MutBorrow
-  use seq.Seq
-  
-  type t_I
-  
-  type t_Option_I = None | Some t_I
-  
-  type t_Fuse_I = { iter: t_Option_I }
-  
-  type t_Item
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate produces_Fuse_I (self: t_Fuse_I) (prod: Seq.seq t_Item) (other: t_Fuse_I) =
-    match self.iter with
-      | None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.iter = self.iter
-      | Some i -> match other.iter with
-        | Some i2 -> produces_I i prod i2
-        | None -> false
-        end
-      end
-  
-  function produces_trans_Fuse_I (a: t_Fuse_I) (ab: Seq.seq t_Item) (b: t_Fuse_I) (bc: Seq.seq t_Item) (c: t_Fuse_I) : ()
-   = ()
-  
-  axiom produces_trans_Fuse_I_spec:
-    forall a: t_Fuse_I, ab: Seq.seq t_Item, b: t_Fuse_I, bc: Seq.seq t_Item, c: t_Fuse_I. produces_Fuse_I a ab b
-      -> produces_Fuse_I b bc c -> produces_Fuse_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_Fuse_I (self: t_Fuse_I) : () = ()
-  
-  axiom produces_refl_Fuse_I_spec: forall self: t_Fuse_I. produces_Fuse_I self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate completed_I (self: MutBorrow.t t_I)
-  
-  predicate completed_Fuse_I (self: MutBorrow.t t_Fuse_I) =
-    (self.current.iter = None \/ (exists it: MutBorrow.t t_I. completed_I it /\ self.current.iter = Some (it.current)))
-    /\ self.final.iter = None
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : MutBorrow.t t_Fuse_I
-  
-  constant steps : Seq.seq t_Item
-  
-  constant next : t_Fuse_I
-  
-  function is_fused_Fuse_I (self: MutBorrow.t t_Fuse_I) (steps: Seq.seq t_Item) (next: t_Fuse_I) : ()
-  
-  goal vc_is_fused_Fuse_I: completed_Fuse_I self
-    -> produces_Fuse_I self.final steps next
-    -> ([@stop_split] [@expl:is_fused ensures] steps = (Seq.empty: Seq.seq t_Item))
-end
 module M_impl_Iterator_for_Fuse_I__produces_trans__refines (* <Fuse<I> as common::Iterator> *)
   use seq.Seq
   
@@ -550,6 +485,71 @@ module M_impl_Iterator_for_Fuse_I__next__refines (* <Fuse<I> as common::Iterator
           | None'0 -> completed_Fuse_I self
           | Some'0 v -> produces_Fuse_I self.current (Seq.singleton v) self.final
           end)
+end
+module M_impl_FusedIterator_for_Fuse_I__is_fused (* <Fuse<I> as FusedIterator> *)
+  use creusot.prelude.MutBorrow
+  use seq.Seq
+  
+  type t_I
+  
+  type t_Option_I = None | Some t_I
+  
+  type t_Fuse_I = { iter: t_Option_I }
+  
+  type t_Item
+  
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_I (self: t_I) : ()
+  
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+  
+  predicate produces_Fuse_I (self: t_Fuse_I) (prod: Seq.seq t_Item) (other: t_Fuse_I) =
+    match self.iter with
+      | None -> prod = (Seq.empty: Seq.seq t_Item) /\ other.iter = self.iter
+      | Some i -> match other.iter with
+        | Some i2 -> produces_I i prod i2
+        | None -> false
+        end
+      end
+  
+  function produces_trans_Fuse_I (a: t_Fuse_I) (ab: Seq.seq t_Item) (b: t_Fuse_I) (bc: Seq.seq t_Item) (c: t_Fuse_I) : ()
+   = ()
+  
+  axiom produces_trans_Fuse_I_spec:
+    forall a: t_Fuse_I, ab: Seq.seq t_Item, b: t_Fuse_I, bc: Seq.seq t_Item, c: t_Fuse_I. produces_Fuse_I a ab b
+      -> produces_Fuse_I b bc c -> produces_Fuse_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_Fuse_I (self: t_Fuse_I) : () = ()
+  
+  axiom produces_refl_Fuse_I_spec: forall self: t_Fuse_I. produces_Fuse_I self (Seq.empty: Seq.seq t_Item) self
+  
+  predicate completed_I (self: MutBorrow.t t_I)
+  
+  predicate completed_Fuse_I (self: MutBorrow.t t_Fuse_I) =
+    (self.current.iter = None \/ (exists it: MutBorrow.t t_I. completed_I it /\ self.current.iter = Some (it.current)))
+    /\ self.final.iter = None
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : MutBorrow.t t_Fuse_I
+  
+  constant steps : Seq.seq t_Item
+  
+  constant next : t_Fuse_I
+  
+  function is_fused_Fuse_I (self: MutBorrow.t t_Fuse_I) (steps: Seq.seq t_Item) (next: t_Fuse_I) : ()
+  
+  goal vc_is_fused_Fuse_I: completed_Fuse_I self
+    -> produces_Fuse_I self.final steps next
+    -> ([@stop_split] [@expl:is_fused ensures] steps = (Seq.empty: Seq.seq t_Item))
 end
 module M_impl_FusedIterator_for_Fuse_I__is_fused__refines (* <Fuse<I> as FusedIterator> *)
   use creusot.prelude.MutBorrow

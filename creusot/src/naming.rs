@@ -60,7 +60,7 @@ pub(crate) fn ascii_item_name(prefix: &str, tcx: TyCtxt, id: DefId) -> String {
 
 /// Common representation of module name from which we can generate both
 /// a Why3 module name (`M_krate__modl__f`) and a file name (`krate/modl/M_f.coma`).
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ModulePath {
     path: Vec<Symbol>,
 }

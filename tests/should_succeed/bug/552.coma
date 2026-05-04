@@ -26,6 +26,19 @@ module M_impl_MachineTrait_for_Machine__step (* <Machine as MachineTrait> *)
     [ & _ret: bool = Any.any_l () | & self: MutBorrow.t () = self | & _6: () = Any.any_l () ])
     [ return (result: bool) -> {[@stop_split] [@expl:step ensures] invariants_Machine self.final} (! return {result}) ]
 end
+module M_impl_MachineTrait_for_Machine__step__refines (* <Machine as MachineTrait> *)
+  use creusot.prelude.MutBorrow
+  
+  predicate invariants_Machine (self: ()) = true
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: MutBorrow.t (). invariants_Machine self.current
+      -> invariants_Machine self.current
+      /\ (forall result: bool. invariants_Machine self.final -> invariants_Machine self.final)
+end
 module M_impl_Machine__transition (* Machine *)
   use creusot.prelude.Any
   
@@ -39,17 +52,4 @@ module M_impl_Machine__transition (* Machine *)
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- () ] s1 | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
-end
-module M_impl_MachineTrait_for_Machine__step__refines (* <Machine as MachineTrait> *)
-  use creusot.prelude.MutBorrow
-  
-  predicate invariants_Machine (self: ()) = true
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: MutBorrow.t (). invariants_Machine self.current
-      -> invariants_Machine self.current
-      /\ (forall result: bool. invariants_Machine self.final -> invariants_Machine self.final)
 end

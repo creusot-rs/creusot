@@ -318,6 +318,159 @@ module M_impl_Default_for_Named_T__default (* <Named<T> as std::default::Default
       /\ postcondition_default () () result.x /\ postcondition_default'0 () () result.y)}
       (! return {result}) ]
 end
+module M_impl_Default_for_Named_T__default__refines (* <Named<T> as std::default::Default> *)
+  use creusot.int.Int32
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  type t_Named_T = { x: Int32.t; y: t_T }
+  
+  predicate inv_Named_T (_1: t_Named_T)
+  
+  axiom inv_axiom [@rewrite]: forall x'0: t_Named_T [inv_Named_T x'0]. inv_Named_T x'0 = inv_T x'0.y
+  
+  predicate postcondition_once_default [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
+    let () = args in result = (0: Int32.t)
+  
+  meta "rewrite_def" predicate postcondition_once_default
+  
+  predicate resolve_default [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_default
+  
+  predicate postcondition_mut_default [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: Int32.t) =
+    let () = args in result = (0: Int32.t)
+  
+  meta "rewrite_def" predicate postcondition_mut_default
+  
+  function fn_mut_once_default (self: ()) (args: ()) (res: Int32.t) : ()
+  
+  axiom fn_mut_once_default_spec: forall self: (), args: (), res: Int32.t. postcondition_once_default self args res
+      = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
+  
+  predicate hist_inv_default [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_default
+  
+  function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_default_spec: forall self: (), b: (), c: (). hist_inv_default self b
+      -> hist_inv_default b c -> hist_inv_default self c
+  
+  function hist_inv_refl_default (self: ()) : ()
+  
+  axiom hist_inv_refl_default_spec: forall self: (). hist_inv_default self self
+  
+  function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_default_spec:
+    forall self: (), args: (), res_state: (), res: Int32.t. postcondition_mut_default self args res_state res
+      -> hist_inv_default self res_state
+  
+  function fn_hist_inv_default (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_default_spec: forall self: (), res_state: (). hist_inv_default self res_state = (self = res_state)
+  
+  predicate postcondition_default [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
+    let () = args in result = (0: Int32.t)
+  
+  meta "rewrite_def" predicate postcondition_default
+  
+  function fn_once_default (self: ()) (args: ()) (res: Int32.t) : ()
+  
+  axiom fn_once_default_spec: forall self: (), args: (), res: Int32.t. postcondition_once_default self args res
+      = (postcondition_default self args res /\ resolve_default self)
+  
+  function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: Int32.t) : ()
+  
+  axiom fn_mut_default_spec:
+    forall self: (), args: (), res_state: (), res: Int32.t. postcondition_mut_default self args res_state res
+      = (postcondition_default self args res /\ self = res_state)
+  
+  let rec default_i32 (return (x'0: Int32.t)) = any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
+  
+  predicate postcondition_once_default'0 (self: ()) (args: ()) (result: t_T)
+  
+  axiom postcondition_fndef:
+    forall args: (), res: t_T [postcondition_once_default'0 () args res]. postcondition_once_default'0 () args res
+      -> (let () = args in inv_T res)
+  
+  predicate resolve_default'0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_default'0
+  
+  predicate postcondition_mut_default'0 (self: ()) (args: ()) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'0:
+    forall args: (), res: t_T [postcondition_mut_default'0 () args () res]. postcondition_mut_default'0 () args () res
+      -> (let () = args in inv_T res)
+  
+  function fn_mut_once_default'0 (self: ()) (args: ()) (res: t_T) : ()
+  
+  axiom fn_mut_once_default_spec'0: forall self: (), args: (), res: t_T. postcondition_once_default'0 self args res
+      = (exists res_state: (). postcondition_mut_default'0 self args res_state res /\ resolve_default'0 res_state)
+  
+  predicate hist_inv_default'0 [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_default'0
+  
+  function hist_inv_trans_default'0 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_default_spec'0: forall self: (), b: (), c: (). hist_inv_default'0 self b
+      -> hist_inv_default'0 b c -> hist_inv_default'0 self c
+  
+  function hist_inv_refl_default'0 (self: ()) : ()
+  
+  axiom hist_inv_refl_default_spec'0: forall self: (). hist_inv_default'0 self self
+  
+  function postcondition_mut_hist_inv_default'0 (self: ()) (args: ()) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_default_spec'0:
+    forall self: (), args: (), res_state: (), res: t_T. postcondition_mut_default'0 self args res_state res
+      -> hist_inv_default'0 self res_state
+  
+  function fn_hist_inv_default'0 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_default_spec'0: forall self: (), res_state: (). hist_inv_default'0 self res_state
+      = (self = res_state)
+  
+  predicate postcondition_default'0 (self: ()) (args: ()) (result: t_T)
+  
+  axiom postcondition_fndef'1:
+    forall args: (), res: t_T [postcondition_default'0 () args res]. postcondition_default'0 () args res
+      -> (let () = args in inv_T res)
+  
+  function fn_once_default'0 (self: ()) (args: ()) (res: t_T) : ()
+  
+  axiom fn_once_default_spec'0: forall self: (), args: (), res: t_T. postcondition_once_default'0 self args res
+      = (postcondition_default'0 self args res /\ resolve_default'0 self)
+  
+  function fn_mut_default'0 (self: ()) (args: ()) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_default_spec'0:
+    forall self: (), args: (), res_state: (), res: t_T. postcondition_mut_default'0 self args res_state res
+      = (postcondition_default'0 self args res /\ self = res_state)
+  
+  predicate precondition_default (self: ()) (args: ())
+  
+  axiom precondition_fndef: forall args: () [precondition_default () args]. (let () = args in true)
+      -> precondition_default () args
+  
+  let rec default_T (return (x'0: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
+    any
+    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default'0 () () result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall result: t_Named_T. inv_Named_T result
+        /\ true /\ postcondition_default () () result.x /\ postcondition_default'0 () () result.y -> inv_Named_T result
+end
 module M_impl_Default_for_EUnit__default (* <EUnit as std::default::Default> *)
   use creusot.prelude.Any
   
@@ -603,159 +756,6 @@ module M_impl_Default_for_ENamed_T_U__default (* <ENamed<T, U> as std::default::
         | _ -> false
         end)}
       (! return {result}) ]
-end
-module M_impl_Default_for_Named_T__default__refines (* <Named<T> as std::default::Default> *)
-  use creusot.int.Int32
-  
-  type t_T
-  
-  predicate inv_T (_1: t_T)
-  
-  type t_Named_T = { x: Int32.t; y: t_T }
-  
-  predicate inv_Named_T (_1: t_Named_T)
-  
-  axiom inv_axiom [@rewrite]: forall x'0: t_Named_T [inv_Named_T x'0]. inv_Named_T x'0 = inv_T x'0.y
-  
-  predicate postcondition_once_default [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
-    let () = args in result = (0: Int32.t)
-  
-  meta "rewrite_def" predicate postcondition_once_default
-  
-  predicate resolve_default [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_default
-  
-  predicate postcondition_mut_default [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: Int32.t) =
-    let () = args in result = (0: Int32.t)
-  
-  meta "rewrite_def" predicate postcondition_mut_default
-  
-  function fn_mut_once_default (self: ()) (args: ()) (res: Int32.t) : ()
-  
-  axiom fn_mut_once_default_spec: forall self: (), args: (), res: Int32.t. postcondition_once_default self args res
-      = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
-  
-  predicate hist_inv_default [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_default
-  
-  function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_default_spec: forall self: (), b: (), c: (). hist_inv_default self b
-      -> hist_inv_default b c -> hist_inv_default self c
-  
-  function hist_inv_refl_default (self: ()) : ()
-  
-  axiom hist_inv_refl_default_spec: forall self: (). hist_inv_default self self
-  
-  function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_default_spec:
-    forall self: (), args: (), res_state: (), res: Int32.t. postcondition_mut_default self args res_state res
-      -> hist_inv_default self res_state
-  
-  function fn_hist_inv_default (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_default_spec: forall self: (), res_state: (). hist_inv_default self res_state = (self = res_state)
-  
-  predicate postcondition_default [@inline:trivial] (self: ()) (args: ()) (result: Int32.t) =
-    let () = args in result = (0: Int32.t)
-  
-  meta "rewrite_def" predicate postcondition_default
-  
-  function fn_once_default (self: ()) (args: ()) (res: Int32.t) : ()
-  
-  axiom fn_once_default_spec: forall self: (), args: (), res: Int32.t. postcondition_once_default self args res
-      = (postcondition_default self args res /\ resolve_default self)
-  
-  function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: Int32.t) : ()
-  
-  axiom fn_mut_default_spec:
-    forall self: (), args: (), res_state: (), res: Int32.t. postcondition_mut_default self args res_state res
-      = (postcondition_default self args res /\ self = res_state)
-  
-  let rec default_i32 (return (x'0: Int32.t)) = any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
-  
-  predicate postcondition_once_default'0 (self: ()) (args: ()) (result: t_T)
-  
-  axiom postcondition_fndef:
-    forall args: (), res: t_T [postcondition_once_default'0 () args res]. postcondition_once_default'0 () args res
-      -> (let () = args in inv_T res)
-  
-  predicate resolve_default'0 [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_default'0
-  
-  predicate postcondition_mut_default'0 (self: ()) (args: ()) (result_state: ()) (result: t_T)
-  
-  axiom postcondition_fndef'0:
-    forall args: (), res: t_T [postcondition_mut_default'0 () args () res]. postcondition_mut_default'0 () args () res
-      -> (let () = args in inv_T res)
-  
-  function fn_mut_once_default'0 (self: ()) (args: ()) (res: t_T) : ()
-  
-  axiom fn_mut_once_default_spec'0: forall self: (), args: (), res: t_T. postcondition_once_default'0 self args res
-      = (exists res_state: (). postcondition_mut_default'0 self args res_state res /\ resolve_default'0 res_state)
-  
-  predicate hist_inv_default'0 [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_default'0
-  
-  function hist_inv_trans_default'0 (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_default_spec'0: forall self: (), b: (), c: (). hist_inv_default'0 self b
-      -> hist_inv_default'0 b c -> hist_inv_default'0 self c
-  
-  function hist_inv_refl_default'0 (self: ()) : ()
-  
-  axiom hist_inv_refl_default_spec'0: forall self: (). hist_inv_default'0 self self
-  
-  function postcondition_mut_hist_inv_default'0 (self: ()) (args: ()) (res_state: ()) (res: t_T) : ()
-  
-  axiom postcondition_mut_hist_inv_default_spec'0:
-    forall self: (), args: (), res_state: (), res: t_T. postcondition_mut_default'0 self args res_state res
-      -> hist_inv_default'0 self res_state
-  
-  function fn_hist_inv_default'0 (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_default_spec'0: forall self: (), res_state: (). hist_inv_default'0 self res_state
-      = (self = res_state)
-  
-  predicate postcondition_default'0 (self: ()) (args: ()) (result: t_T)
-  
-  axiom postcondition_fndef'1:
-    forall args: (), res: t_T [postcondition_default'0 () args res]. postcondition_default'0 () args res
-      -> (let () = args in inv_T res)
-  
-  function fn_once_default'0 (self: ()) (args: ()) (res: t_T) : ()
-  
-  axiom fn_once_default_spec'0: forall self: (), args: (), res: t_T. postcondition_once_default'0 self args res
-      = (postcondition_default'0 self args res /\ resolve_default'0 self)
-  
-  function fn_mut_default'0 (self: ()) (args: ()) (res_state: ()) (res: t_T) : ()
-  
-  axiom fn_mut_default_spec'0:
-    forall self: (), args: (), res_state: (), res: t_T. postcondition_mut_default'0 self args res_state res
-      = (postcondition_default'0 self args res /\ self = res_state)
-  
-  predicate precondition_default (self: ()) (args: ())
-  
-  axiom precondition_fndef: forall args: () [precondition_default () args]. (let () = args in true)
-      -> precondition_default () args
-  
-  let rec default_T (return (x'0: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
-    any
-    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default'0 () () result}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall result: t_Named_T. inv_Named_T result
-        /\ true /\ postcondition_default () () result.x /\ postcondition_default'0 () () result.y -> inv_Named_T result
 end
 module M_impl_Default_for_ENamed_T_U__default__refines (* <ENamed<T, U> as std::default::Default> *)
   type t_T

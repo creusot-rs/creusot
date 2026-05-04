@@ -1,17 +1,3 @@
-module M_foo
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  
-  constant const_FOO: UInt64.t = (42: UInt64.t)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec foo (return (x: UInt64.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- const_FOO ] s1 | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () ])
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:foo ensures] result = (42: UInt64.t)} (! return {result}) ]
-end
 module M_array
   use creusot.slice.Slice64
   use creusot.int.Int32
@@ -91,6 +77,57 @@ module M_array
         | & _10: Slice64.array Int32.t = Any.any_l ()
         | & _11: Slice64.array Int32.t = Any.any_l () ])))
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:array ensures] result = (52: UInt64.t)} (! return {result}) ]
+end
+module M_str
+  use creusot.prelude.Any
+  
+  constant const_STR : string
+  
+  let rec set_STR (return) = bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- "Hello" ] s1 | s1 = return {_ret} ] ] [ & _ret: string = Any.any_l () ]
+    [ return (_const: string) -> -{const_STR = _const}- return ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec str (return (x: string)) = (! set_STR
+      (bb0
+      [ bb0 = s0 [ s0 = [ &_ret <- const_STR ] s1 | s1 = return {_ret} ] ] [ & _ret: string = Any.any_l () ]))
+    [ return (result: string) -> {[@stop_split] [@expl:str ensures] result = const_STR} (! return {result}) ]
+end
+module M_tuple
+  use creusot.int.UInt64
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type tup2_usize_i32 = { f0: UInt64.t; f1: Int32.t }
+  
+  constant const_TUP: tup2_usize_i32 = { f0 = (42: UInt64.t); f1 = (24: Int32.t) }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec tuple (return (x: tup2_usize_i32)) = {[@stop_split] [@expl:tuple requires] const_TUP.f0 = (42: UInt64.t)}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- const_TUP ] s1 | s1 = return {_ret} ] ] [ & _ret: tup2_usize_i32 = Any.any_l () ])
+    [ return (result: tup2_usize_i32) -> {[@stop_split] [@expl:tuple ensures] const_TUP.f1 = (24: Int32.t)}
+      (! return {result}) ]
+end
+module M_foo
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  constant const_FOO: UInt64.t = (42: UInt64.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec foo (return (x: UInt64.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- const_FOO ] s1 | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:foo ensures] result = (42: UInt64.t)} (! return {result}) ]
 end
 module M_array_param
   use creusot.int.UInt32
@@ -290,28 +327,6 @@ module M_nat
       | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:nat ensures] result = const_VALUE} (! return {result}) ]
 end
-module M_trait_Parent__child
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  use int.Int
-  
-  constant const_M : UInt64.t
-  
-  constant const_N : UInt64.t
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec child_Self (return (x: UInt64.t)) = {[@stop_split] [@expl:child requires] UInt64.t'int const_N
-      + UInt64.t'int const_M
-    <= UInt64.t'int const_MAX}
-    (! bb0
-    [ bb0 = s0 [ s0 = UInt64.add {const_N} {const_M} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: UInt64.t = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
-end
 module M_nat_i
   use creusot.int.UInt64
   use creusot.prelude.Any
@@ -355,25 +370,6 @@ module M_nat_i2
         [ & _ret'0: UInt64.t = Any.any_l () ] [ _const_ret (_const: UInt64.t) -> [ &_ret <- _const ] s1 ]
       | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:nat_i2 ensures] result = const_VALUE} (! return {result}) ]
-end
-module M_tuple
-  use creusot.int.UInt64
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  type tup2_usize_i32 = { f0: UInt64.t; f1: Int32.t }
-  
-  constant const_TUP: tup2_usize_i32 = { f0 = (42: UInt64.t); f1 = (24: Int32.t) }
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec tuple (return (x: tup2_usize_i32)) = {[@stop_split] [@expl:tuple requires] const_TUP.f0 = (42: UInt64.t)}
-    (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- const_TUP ] s1 | s1 = return {_ret} ] ] [ & _ret: tup2_usize_i32 = Any.any_l () ])
-    [ return (result: tup2_usize_i32) -> {[@stop_split] [@expl:tuple ensures] const_TUP.f1 = (24: Int32.t)}
-      (! return {result}) ]
 end
 module M_inline_tuple
   use creusot.int.UInt64
@@ -471,107 +467,6 @@ module M_nat_i3_logic
       = UInt64.t'int const_VALUE + UInt64.t'int const_VALUE}
       (! return) ]
 end
-module M_impl_Clone_for_Peano__clone (* <Peano as std::clone::Clone> *)
-  use creusot.prelude.Any
-  
-  type t_Peano = Z | S t_Peano
-  
-  let rec elim_S (_x: t_Peano) (return (f0: t_Peano)) = any
-    [ _k (f0: t_Peano) -> {S f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim S] match _x with
-        | S _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  let rec clone_ref_Peano (self_: t_Peano) (return (x: t_Peano)) = any
-    [ return (result: t_Peano) -> {[@stop_split] [@expl:clone ensures] result = self_} (! return {result}) ]
-  
-  type tup2_Peano_Peano = { f0: t_Peano; f1: t_Peano }
-  
-  predicate postcondition_once_clone [@inline:trivial] (self: ()) (args: t_Peano) (result: t_Peano) =
-    let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_clone
-  
-  predicate resolve_clone [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_clone
-  
-  predicate postcondition_mut_clone [@inline:trivial] (self: ()) (args: t_Peano) (result_state: ()) (result: t_Peano) =
-    let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_clone
-  
-  function fn_mut_once_clone (self: ()) (args: t_Peano) (res: t_Peano) : ()
-  
-  axiom fn_mut_once_clone_spec: forall self: (), args: t_Peano, res: t_Peano. postcondition_once_clone self args res
-      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
-  
-  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_clone
-  
-  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
-      -> hist_inv_clone b c -> hist_inv_clone self c
-  
-  function hist_inv_refl_clone (self: ()) : ()
-  
-  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
-  
-  function postcondition_mut_hist_inv_clone (self: ()) (args: t_Peano) (res_state: ()) (res: t_Peano) : ()
-  
-  axiom postcondition_mut_hist_inv_clone_spec:
-    forall self: (), args: t_Peano, res_state: (), res: t_Peano. postcondition_mut_clone self args res_state res
-      -> hist_inv_clone self res_state
-  
-  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
-  
-  predicate postcondition_clone [@inline:trivial] (self: ()) (args: t_Peano) (result: t_Peano) =
-    let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_clone
-  
-  function fn_once_clone (self: ()) (args: t_Peano) (res: t_Peano) : ()
-  
-  axiom fn_once_clone_spec: forall self: (), args: t_Peano, res: t_Peano. postcondition_once_clone self args res
-      = (postcondition_clone self args res /\ resolve_clone self)
-  
-  function fn_mut_clone (self: ()) (args: t_Peano) (res_state: ()) (res: t_Peano) : ()
-  
-  axiom fn_mut_clone_spec:
-    forall self: (), args: t_Peano, res_state: (), res: t_Peano. postcondition_mut_clone self args res_state res
-      = (postcondition_clone self args res /\ self = res_state)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec clone_Peano (self: t_Peano) (return (x: t_Peano)) = (! bb0
-    [ bb0 = any [ br0 -> {self = Z} (! bb4) | br1 (x0: t_Peano) -> {self = S x0} (! bb3) ]
-    | bb3 = s0
-      [ s0 = elim_S {self} (fun (r0: t_Peano) -> [ &v0_1 <- r0 ] s1)
-      | s1 = [ &_9 <- v0_1 ] s2
-      | s2 = clone_ref_Peano {_9} (fun (_x: t_Peano) -> [ &_7 <- _x ] s3)
-      | s3 = [ &_ret <- S _7 ] s4
-      | s4 = return {_ret} ]
-    | bb4 = s0 [ s0 = [ &_ret <- Z ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: t_Peano = Any.any_l ()
-    | & self: t_Peano = self
-    | & v0_1: t_Peano = Any.any_l ()
-    | & _7: t_Peano = Any.any_l ()
-    | & _9: t_Peano = Any.any_l () ])
-    [ return (result: t_Peano) -> {[@stop_split] [@expl:clone ensures] match { f0 = self; f1 = result } with
-        | {f0 = Z; f1 = Z} -> true
-        | {f0 = S v0_1; f1 = S v0_r} -> postcondition_clone () v0_1 v0_r
-        | _ -> false
-        end}
-      (! return {result}) ]
-end
 module M_zero
   use creusot.slice.Slice64
   use seq.Seq
@@ -634,24 +529,6 @@ module M_zero
       | & _3: UInt64.t = Any.any_l ()
       | & _4: bool = Any.any_l () ]))
     [ return (result: t_Peano) -> {[@stop_split] [@expl:zero ensures] result = Z} (! return {result}) ]
-end
-module M_str
-  use creusot.prelude.Any
-  
-  constant const_STR : string
-  
-  let rec set_STR (return) = bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- "Hello" ] s1 | s1 = return {_ret} ] ] [ & _ret: string = Any.any_l () ]
-    [ return (_const: string) -> -{const_STR = _const}- return ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec str (return (x: string)) = (! set_STR
-      (bb0
-      [ bb0 = s0 [ s0 = [ &_ret <- const_STR ] s1 | s1 = return {_ret} ] ] [ & _ret: string = Any.any_l () ]))
-    [ return (result: string) -> {[@stop_split] [@expl:str ensures] result = const_STR} (! return {result}) ]
 end
 module M_is_zst
   use creusot.int.UInt64
@@ -763,4 +640,127 @@ module M_fn_pointer_test
       | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & x: () = Any.any_l () | & y: Int32.t = Any.any_l () | & _8: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
+end
+module M_trait_Parent__child
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.Int
+  
+  constant const_M : UInt64.t
+  
+  constant const_N : UInt64.t
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec child_Self (return (x: UInt64.t)) = {[@stop_split] [@expl:child requires] UInt64.t'int const_N
+      + UInt64.t'int const_M
+    <= UInt64.t'int const_MAX}
+    (! bb0
+    [ bb0 = s0 [ s0 = UInt64.add {const_N} {const_M} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
+end
+module M_impl_Clone_for_Peano__clone (* <Peano as std::clone::Clone> *)
+  use creusot.prelude.Any
+  
+  type t_Peano = Z | S t_Peano
+  
+  let rec elim_S (_x: t_Peano) (return (f0: t_Peano)) = any
+    [ _k (f0: t_Peano) -> {S f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim S] match _x with
+        | S _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  let rec clone_ref_Peano (self_: t_Peano) (return (x: t_Peano)) = any
+    [ return (result: t_Peano) -> {[@stop_split] [@expl:clone ensures] result = self_} (! return {result}) ]
+  
+  type tup2_Peano_Peano = { f0: t_Peano; f1: t_Peano }
+  
+  predicate postcondition_once_clone [@inline:trivial] (self: ()) (args: t_Peano) (result: t_Peano) =
+    let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_once_clone
+  
+  predicate resolve_clone [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_clone
+  
+  predicate postcondition_mut_clone [@inline:trivial] (self: ()) (args: t_Peano) (result_state: ()) (result: t_Peano) =
+    let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_mut_clone
+  
+  function fn_mut_once_clone (self: ()) (args: t_Peano) (res: t_Peano) : ()
+  
+  axiom fn_mut_once_clone_spec: forall self: (), args: t_Peano, res: t_Peano. postcondition_once_clone self args res
+      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
+  
+  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_clone
+  
+  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
+      -> hist_inv_clone b c -> hist_inv_clone self c
+  
+  function hist_inv_refl_clone (self: ()) : ()
+  
+  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
+  
+  function postcondition_mut_hist_inv_clone (self: ()) (args: t_Peano) (res_state: ()) (res: t_Peano) : ()
+  
+  axiom postcondition_mut_hist_inv_clone_spec:
+    forall self: (), args: t_Peano, res_state: (), res: t_Peano. postcondition_mut_clone self args res_state res
+      -> hist_inv_clone self res_state
+  
+  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
+  
+  predicate postcondition_clone [@inline:trivial] (self: ()) (args: t_Peano) (result: t_Peano) =
+    let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_clone
+  
+  function fn_once_clone (self: ()) (args: t_Peano) (res: t_Peano) : ()
+  
+  axiom fn_once_clone_spec: forall self: (), args: t_Peano, res: t_Peano. postcondition_once_clone self args res
+      = (postcondition_clone self args res /\ resolve_clone self)
+  
+  function fn_mut_clone (self: ()) (args: t_Peano) (res_state: ()) (res: t_Peano) : ()
+  
+  axiom fn_mut_clone_spec:
+    forall self: (), args: t_Peano, res_state: (), res: t_Peano. postcondition_mut_clone self args res_state res
+      = (postcondition_clone self args res /\ self = res_state)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec clone_Peano (self: t_Peano) (return (x: t_Peano)) = (! bb0
+    [ bb0 = any [ br0 -> {self = Z} (! bb4) | br1 (x0: t_Peano) -> {self = S x0} (! bb3) ]
+    | bb3 = s0
+      [ s0 = elim_S {self} (fun (r0: t_Peano) -> [ &v0_1 <- r0 ] s1)
+      | s1 = [ &_9 <- v0_1 ] s2
+      | s2 = clone_ref_Peano {_9} (fun (_x: t_Peano) -> [ &_7 <- _x ] s3)
+      | s3 = [ &_ret <- S _7 ] s4
+      | s4 = return {_ret} ]
+    | bb4 = s0 [ s0 = [ &_ret <- Z ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Peano = Any.any_l ()
+    | & self: t_Peano = self
+    | & v0_1: t_Peano = Any.any_l ()
+    | & _7: t_Peano = Any.any_l ()
+    | & _9: t_Peano = Any.any_l () ])
+    [ return (result: t_Peano) -> {[@stop_split] [@expl:clone ensures] match { f0 = self; f1 = result } with
+        | {f0 = Z; f1 = Z} -> true
+        | {f0 = S v0_1; f1 = S v0_r} -> postcondition_clone () v0_1 v0_r
+        | _ -> false
+        end}
+      (! return {result}) ]
 end

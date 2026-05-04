@@ -1,3 +1,494 @@
+module M_impl_OwnResult_T_E__and (* OwnResult<T, E> *)
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_E
+  
+  type t_OwnResult_T_E = Ok t_T | Err t_E
+  
+  type t_U
+  
+  type t_OwnResult_U_E = Ok'0 t_U | Err'0 t_E
+  
+  predicate inv_U (_1: t_U)
+  
+  predicate inv_E (_1: t_E)
+  
+  predicate inv_OwnResult_U_E (_1: t_OwnResult_U_E)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_U_E [inv_OwnResult_U_E x]. inv_OwnResult_U_E x
+      = match x with
+        | Ok'0 f0 -> inv_U f0
+        | Err'0 f0 -> inv_E f0
+        end
+  
+  predicate resolve_U (_1: t_U)
+  
+  predicate resolve_E (_1: t_E)
+  
+  predicate resolve_OwnResult_U_E (_1: t_OwnResult_U_E)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_OwnResult_U_E [resolve_OwnResult_U_E x]. resolve_OwnResult_U_E x
+      = match x with
+        | Ok'0 x0 -> resolve_U x0
+        | Err'0 x0 -> resolve_E x0
+        end
+  
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Err] match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Ok] match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate resolve_T (_1: t_T)
+  
+  predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult_T_E [inv_OwnResult_T_E x]. inv_OwnResult_T_E x
+      = match x with
+        | Ok f0 -> inv_T f0
+        | Err f0 -> inv_E f0
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec and_T (self: t_OwnResult_T_E) (res: t_OwnResult_U_E) (return (x: t_OwnResult_U_E)) =
+    {[@stop_split] [@expl:and_T requires] ([@stop_split] [@expl:and 'self' type invariant] inv_OwnResult_T_E self)
+    /\ ([@stop_split] [@expl:and 'res' type invariant] inv_OwnResult_U_E res)}
+    (! bb0
+    [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
+    | bb3 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_OwnResult_U_E res} any) ]
+      | s1 = -{resolve_OwnResult_U_E res}- s2
+      | s2 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s3)
+      | s3 = [ &_ret <- Err'0 e ] s4
+      | s4 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1)
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_T x} any) ]
+      | s2 = -{resolve_T x}- s3
+      | s3 = [ &_ret <- res ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_OwnResult_U_E = Any.any_l ()
+    | & self: t_OwnResult_T_E = self
+    | & res: t_OwnResult_U_E = res
+    | & x: t_T = Any.any_l ()
+    | & e: t_E = Any.any_l () ])
+    [ return (result: t_OwnResult_U_E) ->
+    {[@stop_split] [@expl:and_T ensures] ([@stop_split] [@expl:and result type invariant] inv_OwnResult_U_E result)
+      /\ ([@stop_split] [@expl:and ensures #0] (exists t: t_T. self = Ok t) -> result = res)
+      /\ ([@stop_split] [@expl:and ensures #1] forall e: t_E. self = Err e -> result = Err'0 e)}
+      (! return {result}) ]
+end
+module M_impl_OwnResult_T_E__as_ref (* OwnResult<T, E> *)
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_E
+  
+  type t_OwnResult_T_E = Ok t_T | Err t_E
+  
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Err] match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  type t_OwnResult_ref_T_ref_E = Ok'0 t_T | Err'0 t_E
+  
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Ok] match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_E (_1: t_E)
+  
+  predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_T_E [inv_OwnResult_T_E x]. inv_OwnResult_T_E x
+      = match x with
+        | Ok f0 -> inv_T f0
+        | Err f0 -> inv_E f0
+        end
+  
+  predicate invariant_ref_OwnResult_T_E [@inline:trivial] (self: t_OwnResult_T_E) = inv_OwnResult_T_E self
+  
+  meta "rewrite_def" predicate invariant_ref_OwnResult_T_E
+  
+  predicate inv_ref_OwnResult_T_E [@inline:trivial] (_1: t_OwnResult_T_E) = invariant_ref_OwnResult_T_E _1
+  
+  meta "rewrite_def" predicate inv_ref_OwnResult_T_E
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_ref_E [@inline:trivial] (self: t_E) = inv_E self
+  
+  meta "rewrite_def" predicate invariant_ref_E
+  
+  predicate inv_ref_E [@inline:trivial] (_1: t_E) = invariant_ref_E _1
+  
+  meta "rewrite_def" predicate inv_ref_E
+  
+  predicate inv_OwnResult_ref_T_ref_E (_1: t_OwnResult_ref_T_ref_E)
+  
+  axiom inv_axiom'0 [@rewrite]:
+    forall x: t_OwnResult_ref_T_ref_E [inv_OwnResult_ref_T_ref_E x]. inv_OwnResult_ref_T_ref_E x
+      = match x with
+        | Ok'0 f0 -> inv_ref_T f0
+        | Err'0 f0 -> inv_ref_E f0
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec as_ref_T (self: t_OwnResult_T_E) (return (x: t_OwnResult_ref_T_ref_E)) =
+    {[@stop_split] [@expl:as_ref 'self' type invariant] inv_ref_OwnResult_T_E self}
+    (! bb0
+    [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
+    | bb3 = s0
+      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1)
+      | s1 = [ &_ret <- Err'0 x'0 ] s2
+      | s2 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_ret <- Ok'0 x ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_OwnResult_ref_T_ref_E = Any.any_l ()
+    | & self: t_OwnResult_T_E = self
+    | & x: t_T = Any.any_l ()
+    | & x'0: t_E = Any.any_l () ])
+    [ return (result: t_OwnResult_ref_T_ref_E) ->
+    {[@stop_split] [@expl:as_ref_T ensures] ([@stop_split] [@expl:as_ref result type invariant] inv_OwnResult_ref_T_ref_E result)
+      /\ ([@stop_split] [@expl:as_ref ensures #0] forall t: t_T. self = Ok t -> result = Ok'0 t)
+      /\ ([@stop_split] [@expl:as_ref ensures #1] forall e: t_E. self = Err e -> result = Err'0 e)}
+      (! return {result}) ]
+end
+module M_impl_OwnResult_T_E__expect (* OwnResult<T, E> *)
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_E
+  
+  type t_OwnResult_T_E = Ok t_T | Err t_E
+  
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Err] match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate inv_E (_1: t_E)
+  
+  predicate resolve_E (_1: t_E)
+  
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Ok] match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_T_E [inv_OwnResult_T_E x]. inv_OwnResult_T_E x
+      = match x with
+        | Ok f0 -> inv_T f0
+        | Err f0 -> inv_E f0
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec expect_T (self: t_OwnResult_T_E) (msg: string) (return (x: t_T)) =
+    {[@stop_split] [@expl:expect_T requires] ([@stop_split] [@expl:expect 'self' type invariant] inv_OwnResult_T_E self)
+    /\ ([@stop_split] [@expl:expect requires] exists t: t_T. self = Ok t)}
+    (! bb0
+    [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
+    | bb3 = s0
+      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &_e <- r0 ] s1)
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E _e} any) ]
+      | s2 = -{resolve_E _e}- s3
+      | s3 = {false} any ]
+    | bb4 = s0
+      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l ()
+    | & self: t_OwnResult_T_E = self
+    | & t: t_T = Any.any_l ()
+    | & _e: t_E = Any.any_l () ])
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:expect_T ensures] ([@stop_split] [@expl:expect result type invariant] inv_T result)
+      /\ ([@stop_split] [@expl:expect ensures] Ok result = self)}
+      (! return {result}) ]
+end
+module M_impl_OwnResult_T_E__or (* OwnResult<T, E> *)
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_E
+  
+  type t_OwnResult_T_E = Ok t_T | Err t_E
+  
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Err] match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate inv_E (_1: t_E)
+  
+  predicate resolve_E (_1: t_E)
+  
+  type t_F
+  
+  type t_OwnResult_T_F = Ok'0 t_T | Err'0 t_F
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate inv_OwnResult_T_F (_1: t_OwnResult_T_F)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_T_F [inv_OwnResult_T_F x]. inv_OwnResult_T_F x
+      = match x with
+        | Ok'0 f0 -> inv_T f0
+        | Err'0 f0 -> inv_F f0
+        end
+  
+  predicate resolve_T (_1: t_T)
+  
+  predicate resolve_F (_1: t_F)
+  
+  predicate resolve_OwnResult_T_F (_1: t_OwnResult_T_F)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_OwnResult_T_F [resolve_OwnResult_T_F x]. resolve_OwnResult_T_F x
+      = match x with
+        | Ok'0 x0 -> resolve_T x0
+        | Err'0 x0 -> resolve_F x0
+        end
+  
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Ok] match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult_T_E [inv_OwnResult_T_E x]. inv_OwnResult_T_E x
+      = match x with
+        | Ok f0 -> inv_T f0
+        | Err f0 -> inv_E f0
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec or_T (self: t_OwnResult_T_E) (res: t_OwnResult_T_F) (return (x: t_OwnResult_T_F)) =
+    {[@stop_split] [@expl:or_T requires] ([@stop_split] [@expl:or 'self' type invariant] inv_OwnResult_T_E self)
+    /\ ([@stop_split] [@expl:or 'res' type invariant] inv_OwnResult_T_F res)}
+    (! bb0
+    [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb2) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
+    | bb3 = s0
+      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1)
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E e} any) ]
+      | s2 = -{resolve_E e}- s3
+      | s3 = [ &_ret <- res ] s4
+      | s4 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_OwnResult_T_F res} any) ]
+      | s1 = -{resolve_OwnResult_T_F res}- s2
+      | s2 = elim_Ok {self} (fun (r0: t_T) -> [ &v <- r0 ] s3)
+      | s3 = [ &_ret <- Ok'0 v ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_OwnResult_T_F = Any.any_l ()
+    | & self: t_OwnResult_T_E = self
+    | & res: t_OwnResult_T_F = res
+    | & v: t_T = Any.any_l ()
+    | & e: t_E = Any.any_l () ])
+    [ return (result: t_OwnResult_T_F) ->
+    {[@stop_split] [@expl:or_T ensures] ([@stop_split] [@expl:or result type invariant] inv_OwnResult_T_F result)
+      /\ ([@stop_split] [@expl:or ensures #0] forall t: t_T. self = Ok t -> result = Ok'0 t)
+      /\ ([@stop_split] [@expl:or ensures #1] (exists e: t_E. self = Err e) -> result = res)}
+      (! return {result}) ]
+end
+module M_impl_OwnResult_T_E__unwrap (* OwnResult<T, E> *)
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_E
+  
+  type t_OwnResult_T_E = Ok t_T | Err t_E
+  
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Err] match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate inv_E (_1: t_E)
+  
+  predicate resolve_E (_1: t_E)
+  
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Ok] match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_T_E [inv_OwnResult_T_E x]. inv_OwnResult_T_E x
+      = match x with
+        | Ok f0 -> inv_T f0
+        | Err f0 -> inv_E f0
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec unwrap_T (self: t_OwnResult_T_E) (return (x: t_T)) =
+    {[@stop_split] [@expl:unwrap_T requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_OwnResult_T_E self)
+    /\ ([@stop_split] [@expl:unwrap requires] exists t: t_T. self = Ok t)}
+    (! bb0
+    [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
+    | bb3 = s0
+      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &_e <- r0 ] s1)
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E _e} any) ]
+      | s2 = -{resolve_E _e}- s3
+      | s3 = {false} any ]
+    | bb4 = s0
+      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l ()
+    | & self: t_OwnResult_T_E = self
+    | & t: t_T = Any.any_l ()
+    | & _e: t_E = Any.any_l () ])
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:unwrap_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_T result)
+      /\ ([@stop_split] [@expl:unwrap ensures] Ok result = self)}
+      (! return {result}) ]
+end
+module M_impl_OwnResult_T_E__unwrap_or (* OwnResult<T, E> *)
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_E
+  
+  type t_OwnResult_T_E = Ok t_T | Err t_E
+  
+  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
+    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Err] match _x with
+        | Err _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate inv_E (_1: t_E)
+  
+  predicate resolve_E (_1: t_E)
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate resolve_T (_1: t_T)
+  
+  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Ok] match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_T_E [inv_OwnResult_T_E x]. inv_OwnResult_T_E x
+      = match x with
+        | Ok f0 -> inv_T f0
+        | Err f0 -> inv_E f0
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec unwrap_or_T (self: t_OwnResult_T_E) (default: t_T) (return (x: t_T)) =
+    {[@stop_split] [@expl:unwrap_or_T requires] ([@stop_split] [@expl:unwrap_or 'self' type invariant] inv_OwnResult_T_E self)
+    /\ ([@stop_split] [@expl:unwrap_or 'default' type invariant] inv_T default)}
+    (! bb0
+    [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb2) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
+    | bb3 = s0
+      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1)
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E e} any) ]
+      | s2 = -{resolve_E e}- s3
+      | s3 = [ &_ret <- default ] s4
+      | s4 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_T default} any) ]
+      | s1 = -{resolve_T default}- s2
+      | s2 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s3)
+      | s3 = [ &_ret <- t ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l ()
+    | & self: t_OwnResult_T_E = self
+    | & default: t_T = default
+    | & t: t_T = Any.any_l ()
+    | & e: t_E = Any.any_l () ])
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:unwrap_or_T ensures] ([@stop_split] [@expl:unwrap_or result type invariant] inv_T result)
+      /\ ([@stop_split] [@expl:unwrap_or ensures #0] forall t: t_T. self = Ok t -> result = t)
+      /\ ([@stop_split] [@expl:unwrap_or ensures #1] (exists e: t_E. self = Err e) -> result = default)}
+      (! return {result}) ]
+end
 module M_impl_OwnResult_T_E__is_ok (* OwnResult<T, E> *)
   use creusot.prelude.Any
   
@@ -239,102 +730,6 @@ module M_impl_OwnResult_T_E__err (* OwnResult<T, E> *)
       /\ ([@stop_split] [@expl:err ensures #1] forall e: t_E. self = Err e -> result = Some e)}
       (! return {result}) ]
 end
-module M_impl_OwnResult_T_E__as_ref (* OwnResult<T, E> *)
-  use creusot.prelude.Any
-  
-  type t_T
-  
-  type t_E
-  
-  type t_OwnResult_T_E = Ok t_T | Err t_E
-  
-  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
-    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Err] match _x with
-        | Err _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  type t_OwnResult_ref_T_ref_E = Ok'0 t_T | Err'0 t_E
-  
-  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
-    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Ok] match _x with
-        | Ok _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_E (_1: t_E)
-  
-  predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_T_E [inv_OwnResult_T_E x]. inv_OwnResult_T_E x
-      = match x with
-        | Ok f0 -> inv_T f0
-        | Err f0 -> inv_E f0
-        end
-  
-  predicate invariant_ref_OwnResult_T_E [@inline:trivial] (self: t_OwnResult_T_E) = inv_OwnResult_T_E self
-  
-  meta "rewrite_def" predicate invariant_ref_OwnResult_T_E
-  
-  predicate inv_ref_OwnResult_T_E [@inline:trivial] (_1: t_OwnResult_T_E) = invariant_ref_OwnResult_T_E _1
-  
-  meta "rewrite_def" predicate inv_ref_OwnResult_T_E
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_ref_E [@inline:trivial] (self: t_E) = inv_E self
-  
-  meta "rewrite_def" predicate invariant_ref_E
-  
-  predicate inv_ref_E [@inline:trivial] (_1: t_E) = invariant_ref_E _1
-  
-  meta "rewrite_def" predicate inv_ref_E
-  
-  predicate inv_OwnResult_ref_T_ref_E (_1: t_OwnResult_ref_T_ref_E)
-  
-  axiom inv_axiom'0 [@rewrite]:
-    forall x: t_OwnResult_ref_T_ref_E [inv_OwnResult_ref_T_ref_E x]. inv_OwnResult_ref_T_ref_E x
-      = match x with
-        | Ok'0 f0 -> inv_ref_T f0
-        | Err'0 f0 -> inv_ref_E f0
-        end
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec as_ref_T (self: t_OwnResult_T_E) (return (x: t_OwnResult_ref_T_ref_E)) =
-    {[@stop_split] [@expl:as_ref 'self' type invariant] inv_ref_OwnResult_T_E self}
-    (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0
-      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &x'0 <- r0 ] s1)
-      | s1 = [ &_ret <- Err'0 x'0 ] s2
-      | s2 = return {_ret} ]
-    | bb4 = s0
-      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_ret <- Ok'0 x ] s2 | s2 = return {_ret} ] ]
-    [ & _ret: t_OwnResult_ref_T_ref_E = Any.any_l ()
-    | & self: t_OwnResult_T_E = self
-    | & x: t_T = Any.any_l ()
-    | & x'0: t_E = Any.any_l () ])
-    [ return (result: t_OwnResult_ref_T_ref_E) ->
-    {[@stop_split] [@expl:as_ref_T ensures] ([@stop_split] [@expl:as_ref result type invariant] inv_OwnResult_ref_T_ref_E result)
-      /\ ([@stop_split] [@expl:as_ref ensures #0] forall t: t_T. self = Ok t -> result = Ok'0 t)
-      /\ ([@stop_split] [@expl:as_ref ensures #1] forall e: t_E. self = Err e -> result = Err'0 e)}
-      (! return {result}) ]
-end
 module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -481,134 +876,6 @@ module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
           /\ self.final = Err (e.final) /\ result = Err'0 e))}
       (! return {result}) ]
 end
-module M_impl_OwnResult_T_E__unwrap (* OwnResult<T, E> *)
-  use creusot.prelude.Any
-  
-  type t_T
-  
-  type t_E
-  
-  type t_OwnResult_T_E = Ok t_T | Err t_E
-  
-  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
-    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Err] match _x with
-        | Err _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate inv_E (_1: t_E)
-  
-  predicate resolve_E (_1: t_E)
-  
-  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
-    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Ok] match _x with
-        | Ok _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_T_E [inv_OwnResult_T_E x]. inv_OwnResult_T_E x
-      = match x with
-        | Ok f0 -> inv_T f0
-        | Err f0 -> inv_E f0
-        end
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec unwrap_T (self: t_OwnResult_T_E) (return (x: t_T)) =
-    {[@stop_split] [@expl:unwrap_T requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_OwnResult_T_E self)
-    /\ ([@stop_split] [@expl:unwrap requires] exists t: t_T. self = Ok t)}
-    (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0
-      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &_e <- r0 ] s1)
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E _e} any) ]
-      | s2 = -{resolve_E _e}- s3
-      | s3 = {false} any ]
-    | bb4 = s0
-      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ] ]
-    [ & _ret: t_T = Any.any_l ()
-    | & self: t_OwnResult_T_E = self
-    | & t: t_T = Any.any_l ()
-    | & _e: t_E = Any.any_l () ])
-    [ return (result: t_T) ->
-    {[@stop_split] [@expl:unwrap_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_T result)
-      /\ ([@stop_split] [@expl:unwrap ensures] Ok result = self)}
-      (! return {result}) ]
-end
-module M_impl_OwnResult_T_E__expect (* OwnResult<T, E> *)
-  use creusot.prelude.Any
-  
-  type t_T
-  
-  type t_E
-  
-  type t_OwnResult_T_E = Ok t_T | Err t_E
-  
-  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
-    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Err] match _x with
-        | Err _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate inv_E (_1: t_E)
-  
-  predicate resolve_E (_1: t_E)
-  
-  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
-    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Ok] match _x with
-        | Ok _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_T_E [inv_OwnResult_T_E x]. inv_OwnResult_T_E x
-      = match x with
-        | Ok f0 -> inv_T f0
-        | Err f0 -> inv_E f0
-        end
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec expect_T (self: t_OwnResult_T_E) (msg: string) (return (x: t_T)) =
-    {[@stop_split] [@expl:expect_T requires] ([@stop_split] [@expl:expect 'self' type invariant] inv_OwnResult_T_E self)
-    /\ ([@stop_split] [@expl:expect requires] exists t: t_T. self = Ok t)}
-    (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0
-      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &_e <- r0 ] s1)
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E _e} any) ]
-      | s2 = -{resolve_E _e}- s3
-      | s3 = {false} any ]
-    | bb4 = s0
-      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ] ]
-    [ & _ret: t_T = Any.any_l ()
-    | & self: t_OwnResult_T_E = self
-    | & t: t_T = Any.any_l ()
-    | & _e: t_E = Any.any_l () ])
-    [ return (result: t_T) ->
-    {[@stop_split] [@expl:expect_T ensures] ([@stop_split] [@expl:expect result type invariant] inv_T result)
-      /\ ([@stop_split] [@expl:expect ensures] Ok result = self)}
-      (! return {result}) ]
-end
 module M_impl_OwnResult_T_E__unwrap_err (* OwnResult<T, E> *)
   use creusot.prelude.Any
   
@@ -670,79 +937,6 @@ module M_impl_OwnResult_T_E__unwrap_err (* OwnResult<T, E> *)
     [ return (result: t_E) ->
     {[@stop_split] [@expl:unwrap_err_T ensures] ([@stop_split] [@expl:unwrap_err result type invariant] inv_E result)
       /\ ([@stop_split] [@expl:unwrap_err ensures] Err result = self)}
-      (! return {result}) ]
-end
-module M_impl_OwnResult_T_E__unwrap_or (* OwnResult<T, E> *)
-  use creusot.prelude.Any
-  
-  type t_T
-  
-  type t_E
-  
-  type t_OwnResult_T_E = Ok t_T | Err t_E
-  
-  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
-    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Err] match _x with
-        | Err _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate inv_E (_1: t_E)
-  
-  predicate resolve_E (_1: t_E)
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate resolve_T (_1: t_T)
-  
-  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
-    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Ok] match _x with
-        | Ok _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_T_E [inv_OwnResult_T_E x]. inv_OwnResult_T_E x
-      = match x with
-        | Ok f0 -> inv_T f0
-        | Err f0 -> inv_E f0
-        end
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec unwrap_or_T (self: t_OwnResult_T_E) (default: t_T) (return (x: t_T)) =
-    {[@stop_split] [@expl:unwrap_or_T requires] ([@stop_split] [@expl:unwrap_or 'self' type invariant] inv_OwnResult_T_E self)
-    /\ ([@stop_split] [@expl:unwrap_or 'default' type invariant] inv_T default)}
-    (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb2) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0
-      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1)
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E e} any) ]
-      | s2 = -{resolve_E e}- s3
-      | s3 = [ &_ret <- default ] s4
-      | s4 = return {_ret} ]
-    | bb2 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_T default} any) ]
-      | s1 = -{resolve_T default}- s2
-      | s2 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s3)
-      | s3 = [ &_ret <- t ] s4
-      | s4 = return {_ret} ] ]
-    [ & _ret: t_T = Any.any_l ()
-    | & self: t_OwnResult_T_E = self
-    | & default: t_T = default
-    | & t: t_T = Any.any_l ()
-    | & e: t_E = Any.any_l () ])
-    [ return (result: t_T) ->
-    {[@stop_split] [@expl:unwrap_or_T ensures] ([@stop_split] [@expl:unwrap_or result type invariant] inv_T result)
-      /\ ([@stop_split] [@expl:unwrap_or ensures #0] forall t: t_T. self = Ok t -> result = t)
-      /\ ([@stop_split] [@expl:unwrap_or ensures #1] (exists e: t_E. self = Err e) -> result = default)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
@@ -878,200 +1072,6 @@ module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
       /\ ([@stop_split] [@expl:unwrap_or_default ensures #0] forall t: t_T. self = Ok t -> result = t)
       /\ ([@stop_split] [@expl:unwrap_or_default ensures #1] (exists e: t_E. self = Err e)
       -> postcondition_default () () result)}
-      (! return {result}) ]
-end
-module M_impl_OwnResult_T_E__and (* OwnResult<T, E> *)
-  use creusot.prelude.Any
-  
-  type t_T
-  
-  type t_E
-  
-  type t_OwnResult_T_E = Ok t_T | Err t_E
-  
-  type t_U
-  
-  type t_OwnResult_U_E = Ok'0 t_U | Err'0 t_E
-  
-  predicate inv_U (_1: t_U)
-  
-  predicate inv_E (_1: t_E)
-  
-  predicate inv_OwnResult_U_E (_1: t_OwnResult_U_E)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_U_E [inv_OwnResult_U_E x]. inv_OwnResult_U_E x
-      = match x with
-        | Ok'0 f0 -> inv_U f0
-        | Err'0 f0 -> inv_E f0
-        end
-  
-  predicate resolve_U (_1: t_U)
-  
-  predicate resolve_E (_1: t_E)
-  
-  predicate resolve_OwnResult_U_E (_1: t_OwnResult_U_E)
-  
-  axiom resolve_axiom [@rewrite]: forall x: t_OwnResult_U_E [resolve_OwnResult_U_E x]. resolve_OwnResult_U_E x
-      = match x with
-        | Ok'0 x0 -> resolve_U x0
-        | Err'0 x0 -> resolve_E x0
-        end
-  
-  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
-    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Err] match _x with
-        | Err _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
-    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Ok] match _x with
-        | Ok _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate resolve_T (_1: t_T)
-  
-  predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult_T_E [inv_OwnResult_T_E x]. inv_OwnResult_T_E x
-      = match x with
-        | Ok f0 -> inv_T f0
-        | Err f0 -> inv_E f0
-        end
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec and_T (self: t_OwnResult_T_E) (res: t_OwnResult_U_E) (return (x: t_OwnResult_U_E)) =
-    {[@stop_split] [@expl:and_T requires] ([@stop_split] [@expl:and 'self' type invariant] inv_OwnResult_T_E self)
-    /\ ([@stop_split] [@expl:and 'res' type invariant] inv_OwnResult_U_E res)}
-    (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_OwnResult_U_E res} any) ]
-      | s1 = -{resolve_OwnResult_U_E res}- s2
-      | s2 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s3)
-      | s3 = [ &_ret <- Err'0 e ] s4
-      | s4 = return {_ret} ]
-    | bb4 = s0
-      [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1)
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_T x} any) ]
-      | s2 = -{resolve_T x}- s3
-      | s3 = [ &_ret <- res ] s4
-      | s4 = return {_ret} ] ]
-    [ & _ret: t_OwnResult_U_E = Any.any_l ()
-    | & self: t_OwnResult_T_E = self
-    | & res: t_OwnResult_U_E = res
-    | & x: t_T = Any.any_l ()
-    | & e: t_E = Any.any_l () ])
-    [ return (result: t_OwnResult_U_E) ->
-    {[@stop_split] [@expl:and_T ensures] ([@stop_split] [@expl:and result type invariant] inv_OwnResult_U_E result)
-      /\ ([@stop_split] [@expl:and ensures #0] (exists t: t_T. self = Ok t) -> result = res)
-      /\ ([@stop_split] [@expl:and ensures #1] forall e: t_E. self = Err e -> result = Err'0 e)}
-      (! return {result}) ]
-end
-module M_impl_OwnResult_T_E__or (* OwnResult<T, E> *)
-  use creusot.prelude.Any
-  
-  type t_T
-  
-  type t_E
-  
-  type t_OwnResult_T_E = Ok t_T | Err t_E
-  
-  let rec elim_Err (_x: t_OwnResult_T_E) (return (f0: t_E)) = any
-    [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Err] match _x with
-        | Err _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate inv_E (_1: t_E)
-  
-  predicate resolve_E (_1: t_E)
-  
-  type t_F
-  
-  type t_OwnResult_T_F = Ok'0 t_T | Err'0 t_F
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_F (_1: t_F)
-  
-  predicate inv_OwnResult_T_F (_1: t_OwnResult_T_F)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_OwnResult_T_F [inv_OwnResult_T_F x]. inv_OwnResult_T_F x
-      = match x with
-        | Ok'0 f0 -> inv_T f0
-        | Err'0 f0 -> inv_F f0
-        end
-  
-  predicate resolve_T (_1: t_T)
-  
-  predicate resolve_F (_1: t_F)
-  
-  predicate resolve_OwnResult_T_F (_1: t_OwnResult_T_F)
-  
-  axiom resolve_axiom [@rewrite]: forall x: t_OwnResult_T_F [resolve_OwnResult_T_F x]. resolve_OwnResult_T_F x
-      = match x with
-        | Ok'0 x0 -> resolve_T x0
-        | Err'0 x0 -> resolve_F x0
-        end
-  
-  let rec elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
-    [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Ok] match _x with
-        | Ok _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_OwnResult_T_E [inv_OwnResult_T_E x]. inv_OwnResult_T_E x
-      = match x with
-        | Ok f0 -> inv_T f0
-        | Err f0 -> inv_E f0
-        end
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec or_T (self: t_OwnResult_T_E) (res: t_OwnResult_T_F) (return (x: t_OwnResult_T_F)) =
-    {[@stop_split] [@expl:or_T requires] ([@stop_split] [@expl:or 'self' type invariant] inv_OwnResult_T_E self)
-    /\ ([@stop_split] [@expl:or 'res' type invariant] inv_OwnResult_T_F res)}
-    (! bb0
-    [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb2) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
-    | bb3 = s0
-      [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1)
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E e} any) ]
-      | s2 = -{resolve_E e}- s3
-      | s3 = [ &_ret <- res ] s4
-      | s4 = return {_ret} ]
-    | bb2 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_OwnResult_T_F res} any) ]
-      | s1 = -{resolve_OwnResult_T_F res}- s2
-      | s2 = elim_Ok {self} (fun (r0: t_T) -> [ &v <- r0 ] s3)
-      | s3 = [ &_ret <- Ok'0 v ] s4
-      | s4 = return {_ret} ] ]
-    [ & _ret: t_OwnResult_T_F = Any.any_l ()
-    | & self: t_OwnResult_T_E = self
-    | & res: t_OwnResult_T_F = res
-    | & v: t_T = Any.any_l ()
-    | & e: t_E = Any.any_l () ])
-    [ return (result: t_OwnResult_T_F) ->
-    {[@stop_split] [@expl:or_T ensures] ([@stop_split] [@expl:or result type invariant] inv_OwnResult_T_F result)
-      /\ ([@stop_split] [@expl:or ensures #0] forall t: t_T. self = Ok t -> result = Ok'0 t)
-      /\ ([@stop_split] [@expl:or ensures #1] (exists e: t_E. self = Err e) -> result = res)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_ref_T_E__copied (* OwnResult<&T, E> *)

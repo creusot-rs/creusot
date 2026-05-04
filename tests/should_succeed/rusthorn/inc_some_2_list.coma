@@ -1,3 +1,88 @@
+module M_inc_some_2_list
+  use creusot.int.UInt32
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_List = Cons UInt32.t t_List | Nil
+  
+  function sum (self: t_List) : int = match self with
+      | Cons a l -> UInt32.t'int a + sum l
+      | Nil -> 0
+      end
+  
+  let rec sum_x (self: t_List) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
+    any
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:sum_x ensures] UInt32.t'int result = sum self}
+      (! return {result}) ]
+  
+  type tup2_refmut_u32_refmut_List = { f0: MutBorrow.t UInt32.t; f1: MutBorrow.t t_List }
+  
+  let rec take_some_rest (self: MutBorrow.t t_List) (return (x: tup2_refmut_u32_refmut_List)) = any
+    [ return (result: tup2_refmut_u32_refmut_List) ->
+    {[@stop_split] [@expl:take_some_rest ensures] ([@stop_split] [@expl:take_some_rest ensures #0] sum self.final
+          - sum self.current
+        = UInt32.t'int result.f0.final + sum result.f1.final - UInt32.t'int result.f0.current - sum result.f1.current)
+      /\ ([@stop_split] [@expl:take_some_rest ensures #1] UInt32.t'int result.f0.current <= sum self.current)
+      /\ ([@stop_split] [@expl:take_some_rest ensures #2] sum result.f1.current <= sum self.current)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_List [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_List
+  
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_u32
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec inc_some_2_list (l: t_List) (j: UInt32.t) (k: UInt32.t) (return (x: ())) =
+    {[@stop_split] [@expl:inc_some_2_list requires] sum l + UInt32.t'int j + UInt32.t'int k <= 1000000}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = sum_x {l} (fun (_x: UInt32.t) -> [ &sum0 <- _x ] s1)
+      | s1 = MutBorrow.borrow_mut <t_List> {l}
+          (fun (_bor: MutBorrow.t t_List) -> [ &_13 <- _bor ] [ &l <- _bor.final ] s2)
+      | s2 = take_some_rest {_13} (fun (_x: tup2_refmut_u32_refmut_List) -> [ &_12 <- _x ] s3)
+      | s3 = [ &ma <- _12.f0 ] s4
+      | s4 = [ &ml <- _12.f1 ] s5
+      | s5 = MutBorrow.borrow_final <t_List> {ml.current} {MutBorrow.get_id ml}
+          (fun (_bor: MutBorrow.t t_List) -> [ &_16 <- _bor ] [ &ml <- { ml with current = _bor.final } ] s6)
+      | s6 = take_some_rest {_16} (fun (_x: tup2_refmut_u32_refmut_List) -> [ &_15 <- _x ] s7)
+      | s7 = -{resolve_refmut_List _15.f1}- s8
+      | s8 = [ &mb <- _15.f0 ] s9
+      | s9 = UInt32.add {ma.current} {j} (fun (_x: UInt32.t) -> [ &ma <- { ma with current = _x } ] s10)
+      | s10 = -{resolve_refmut_u32 ma}- s11
+      | s11 = UInt32.add {mb.current} {k} (fun (_x: UInt32.t) -> [ &mb <- { mb with current = _x } ] s12)
+      | s12 = -{resolve_refmut_u32 mb}- s13
+      | s13 = -{resolve_refmut_List ml}- s14
+      | s14 = sum_x {l} (fun (_x: UInt32.t) -> [ &_21 <- _x ] s15)
+      | s15 = UInt32.add {sum0} {j} (fun (_x: UInt32.t) -> [ &_24 <- _x ] s16)
+      | s16 = UInt32.add {_24} {k} (fun (_x: UInt32.t) -> [ &_23 <- _x ] s17)
+      | s17 = [ &_20 <- _21 = _23 ] s18
+      | s18 = any [ br0 -> {_20 = false} (! bb6) | br1 -> {_20} (! bb7) ] ]
+    | bb7 = return {_ret}
+    | bb6 = {false} any ]
+    [ & _ret: () = Any.any_l ()
+    | & l: t_List = l
+    | & j: UInt32.t = j
+    | & k: UInt32.t = k
+    | & sum0: UInt32.t = Any.any_l ()
+    | & ma: MutBorrow.t UInt32.t = Any.any_l ()
+    | & ml: MutBorrow.t t_List = Any.any_l ()
+    | & _12: tup2_refmut_u32_refmut_List = Any.any_l ()
+    | & _13: MutBorrow.t t_List = Any.any_l ()
+    | & mb: MutBorrow.t UInt32.t = Any.any_l ()
+    | & _15: tup2_refmut_u32_refmut_List = Any.any_l ()
+    | & _16: MutBorrow.t t_List = Any.any_l ()
+    | & _20: bool = Any.any_l ()
+    | & _21: UInt32.t = Any.any_l ()
+    | & _23: UInt32.t = Any.any_l ()
+    | & _24: UInt32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
 module M_impl_List__lemma_sum_nonneg (* List *)
   use creusot.int.UInt32
   use int.Int
@@ -166,89 +251,4 @@ module M_impl_List__take_some_rest (* List *)
       /\ ([@stop_split] [@expl:take_some_rest ensures #1] UInt32.t'int result.f0.current <= sum self.current)
       /\ ([@stop_split] [@expl:take_some_rest ensures #2] sum result.f1.current <= sum self.current)}
       (! return {result}) ]
-end
-module M_inc_some_2_list
-  use creusot.int.UInt32
-  use creusot.prelude.MutBorrow
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_List = Cons UInt32.t t_List | Nil
-  
-  function sum (self: t_List) : int = match self with
-      | Cons a l -> UInt32.t'int a + sum l
-      | Nil -> 0
-      end
-  
-  let rec sum_x (self: t_List) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
-    any
-    [ return (result: UInt32.t) -> {[@stop_split] [@expl:sum_x ensures] UInt32.t'int result = sum self}
-      (! return {result}) ]
-  
-  type tup2_refmut_u32_refmut_List = { f0: MutBorrow.t UInt32.t; f1: MutBorrow.t t_List }
-  
-  let rec take_some_rest (self: MutBorrow.t t_List) (return (x: tup2_refmut_u32_refmut_List)) = any
-    [ return (result: tup2_refmut_u32_refmut_List) ->
-    {[@stop_split] [@expl:take_some_rest ensures] ([@stop_split] [@expl:take_some_rest ensures #0] sum self.final
-          - sum self.current
-        = UInt32.t'int result.f0.final + sum result.f1.final - UInt32.t'int result.f0.current - sum result.f1.current)
-      /\ ([@stop_split] [@expl:take_some_rest ensures #1] UInt32.t'int result.f0.current <= sum self.current)
-      /\ ([@stop_split] [@expl:take_some_rest ensures #2] sum result.f1.current <= sum self.current)}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_List [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_List
-  
-  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_u32
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec inc_some_2_list (l: t_List) (j: UInt32.t) (k: UInt32.t) (return (x: ())) =
-    {[@stop_split] [@expl:inc_some_2_list requires] sum l + UInt32.t'int j + UInt32.t'int k <= 1000000}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = sum_x {l} (fun (_x: UInt32.t) -> [ &sum0 <- _x ] s1)
-      | s1 = MutBorrow.borrow_mut <t_List> {l}
-          (fun (_bor: MutBorrow.t t_List) -> [ &_13 <- _bor ] [ &l <- _bor.final ] s2)
-      | s2 = take_some_rest {_13} (fun (_x: tup2_refmut_u32_refmut_List) -> [ &_12 <- _x ] s3)
-      | s3 = [ &ma <- _12.f0 ] s4
-      | s4 = [ &ml <- _12.f1 ] s5
-      | s5 = MutBorrow.borrow_final <t_List> {ml.current} {MutBorrow.get_id ml}
-          (fun (_bor: MutBorrow.t t_List) -> [ &_16 <- _bor ] [ &ml <- { ml with current = _bor.final } ] s6)
-      | s6 = take_some_rest {_16} (fun (_x: tup2_refmut_u32_refmut_List) -> [ &_15 <- _x ] s7)
-      | s7 = -{resolve_refmut_List _15.f1}- s8
-      | s8 = [ &mb <- _15.f0 ] s9
-      | s9 = UInt32.add {ma.current} {j} (fun (_x: UInt32.t) -> [ &ma <- { ma with current = _x } ] s10)
-      | s10 = -{resolve_refmut_u32 ma}- s11
-      | s11 = UInt32.add {mb.current} {k} (fun (_x: UInt32.t) -> [ &mb <- { mb with current = _x } ] s12)
-      | s12 = -{resolve_refmut_u32 mb}- s13
-      | s13 = -{resolve_refmut_List ml}- s14
-      | s14 = sum_x {l} (fun (_x: UInt32.t) -> [ &_21 <- _x ] s15)
-      | s15 = UInt32.add {sum0} {j} (fun (_x: UInt32.t) -> [ &_24 <- _x ] s16)
-      | s16 = UInt32.add {_24} {k} (fun (_x: UInt32.t) -> [ &_23 <- _x ] s17)
-      | s17 = [ &_20 <- _21 = _23 ] s18
-      | s18 = any [ br0 -> {_20 = false} (! bb6) | br1 -> {_20} (! bb7) ] ]
-    | bb7 = return {_ret}
-    | bb6 = {false} any ]
-    [ & _ret: () = Any.any_l ()
-    | & l: t_List = l
-    | & j: UInt32.t = j
-    | & k: UInt32.t = k
-    | & sum0: UInt32.t = Any.any_l ()
-    | & ma: MutBorrow.t UInt32.t = Any.any_l ()
-    | & ml: MutBorrow.t t_List = Any.any_l ()
-    | & _12: tup2_refmut_u32_refmut_List = Any.any_l ()
-    | & _13: MutBorrow.t t_List = Any.any_l ()
-    | & mb: MutBorrow.t UInt32.t = Any.any_l ()
-    | & _15: tup2_refmut_u32_refmut_List = Any.any_l ()
-    | & _16: MutBorrow.t t_List = Any.any_l ()
-    | & _20: bool = Any.any_l ()
-    | & _21: UInt32.t = Any.any_l ()
-    | & _23: UInt32.t = Any.any_l ()
-    | & _24: UInt32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

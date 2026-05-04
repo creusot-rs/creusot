@@ -1,3 +1,39 @@
+module M_add
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.Int
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec add (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) = {[@stop_split] [@expl:add requires] UInt64.t'int x
+      + UInt64.t'int y
+    <= UInt64.t'int const_MAX}
+    (! bb0
+    [ bb0 = s0 [ s0 = UInt64.add {x} {y} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
+    [ return (result: UInt64.t) -> (! return {result}) ]
+end
+module M_sub
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec sub (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) = {[@stop_split] [@expl:sub requires] UInt64.t'int x
+      - UInt64.t'int y
+    >= 0}
+    (! bb0
+    [ bb0 = s0 [ s0 = UInt64.sub {x} {y} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
+    [ return (result: UInt64.t) -> (! return {result}) ]
+end
 module M_division
   use creusot.int.UInt64
   use creusot.prelude.Any
@@ -61,42 +97,6 @@ module M_multiply
     {[@stop_split] [@expl:multiply requires] UInt64.t'int x * UInt64.t'int y <= UInt64.t'int const_MAX}
     (! bb0
     [ bb0 = s0 [ s0 = UInt64.mul {x} {y} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
-    [ return (result: UInt64.t) -> (! return {result}) ]
-end
-module M_add
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  use int.Int
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec add (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) = {[@stop_split] [@expl:add requires] UInt64.t'int x
-      + UInt64.t'int y
-    <= UInt64.t'int const_MAX}
-    (! bb0
-    [ bb0 = s0 [ s0 = UInt64.add {x} {y} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
-    [ return (result: UInt64.t) -> (! return {result}) ]
-end
-module M_sub
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  use int.Int
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec sub (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) = {[@stop_split] [@expl:sub requires] UInt64.t'int x
-      - UInt64.t'int y
-    >= 0}
-    (! bb0
-    [ bb0 = s0 [ s0 = UInt64.sub {x} {y} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
     [ return (result: UInt64.t) -> (! return {result}) ]
 end

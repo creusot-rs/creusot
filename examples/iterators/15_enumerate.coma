@@ -1,11 +1,15 @@
-module M_impl_Iterator_for_Enumerate_I__produces_refl (* <Enumerate<I> as common::Iterator> *)
+module M_enumerate
   use creusot.int.UInt64
+  use creusot.prelude.Any
   use seq.Seq
+  use creusot.prelude.MutBorrow
   use int.Int
   
   type t_I
   
   type t_Enumerate_I = { iter: t_I; count: UInt64.t }
+  
+  predicate inv_I (_1: t_I)
   
   type t_Item
   
@@ -20,76 +24,37 @@ module M_impl_Iterator_for_Enumerate_I__produces_refl (* <Enumerate<I> as common
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  type tup2_usize_Item = { f0: UInt64.t; f1: t_Item }
+  predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate produces_Enumerate_I (self: t_Enumerate_I) (visited: Seq.seq tup2_usize_Item) (o: t_Enumerate_I) =
-    Seq.length visited = UInt64.t'int o.count - UInt64.t'int self.count
-    /\ (exists s: Seq.seq t_Item. produces_I self.iter s o.iter
-      /\ Seq.length visited = Seq.length s
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s
-        -> UInt64.t'int (Seq.get visited i).f0 = UInt64.t'int self.count + i /\ (Seq.get visited i).f1 = Seq.get s i))
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  meta "compute_max_steps" 1000000
+  predicate invariant_Enumerate_I (self: t_Enumerate_I) =
+    (forall s: Seq.seq t_Item, i: t_I [produces_I self.iter s i]. produces_I self.iter s i
+        -> UInt64.t'int self.count + Seq.length s < UInt64.t'int const_MAX)
+    /\ (forall i: MutBorrow.t t_I. completed_I i -> produces_I i.current (Seq.empty: Seq.seq t_Item) i.final)
   
-  meta "select_lsinst" "all"
+  predicate inv_Enumerate_I (_1: t_Enumerate_I)
   
-  constant self : t_Enumerate_I
-  
-  function produces_refl_Enumerate_I (self: t_Enumerate_I) : ()
-  
-  goal vc_produces_refl_Enumerate_I:
-    [@stop_split] [@expl:produces_refl ensures] produces_Enumerate_I self (Seq.empty: Seq.seq tup2_usize_Item) self
-end
-module M_impl_Iterator_for_Enumerate_I__produces_trans (* <Enumerate<I> as common::Iterator> *)
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.Int
-  
-  type t_I
-  
-  type t_Enumerate_I = { iter: t_I; count: UInt64.t }
-  
-  type t_Item
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
-  
-  type tup2_usize_Item = { f0: UInt64.t; f1: t_Item }
-  
-  predicate produces_Enumerate_I (self: t_Enumerate_I) (visited: Seq.seq tup2_usize_Item) (o: t_Enumerate_I) =
-    Seq.length visited = UInt64.t'int o.count - UInt64.t'int self.count
-    /\ (exists s: Seq.seq t_Item. produces_I self.iter s o.iter
-      /\ Seq.length visited = Seq.length s
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s
-        -> UInt64.t'int (Seq.get visited i).f0 = UInt64.t'int self.count + i /\ (Seq.get visited i).f1 = Seq.get s i))
+  axiom inv_axiom [@rewrite]: forall x: t_Enumerate_I [inv_Enumerate_I x]. inv_Enumerate_I x
+      = (invariant_Enumerate_I x /\ inv_I x.iter)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  constant a : t_Enumerate_I
-  
-  constant ab : Seq.seq tup2_usize_Item
-  
-  constant b : t_Enumerate_I
-  
-  constant bc : Seq.seq tup2_usize_Item
-  
-  constant c : t_Enumerate_I
-  
-  function produces_trans_Enumerate_I (a: t_Enumerate_I) (ab: Seq.seq tup2_usize_Item) (b: t_Enumerate_I) (bc: Seq.seq tup2_usize_Item) (c: t_Enumerate_I) : ()
-  
-  goal vc_produces_trans_Enumerate_I: produces_Enumerate_I a ab b
-    -> produces_Enumerate_I b bc c
-    -> ([@stop_split] [@expl:produces_trans ensures] produces_Enumerate_I a (Seq.(++) ab bc) c)
+  let rec enumerate_I (iter'0: t_I) (return (x: t_Enumerate_I)) =
+    {[@stop_split] [@expl:enumerate_I requires] ([@stop_split] [@expl:enumerate 'iter' type invariant] inv_I iter'0)
+    /\ ([@stop_split] [@expl:enumerate requires #0] forall i: MutBorrow.t t_I. completed_I i
+        -> produces_I i.current (Seq.empty: Seq.seq t_Item) i.final)
+    /\ ([@stop_split] [@expl:enumerate requires #1] forall s: Seq.seq t_Item, i: t_I. produces_I iter'0 s i
+      -> Seq.length s < UInt64.t'int const_MAX)}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- { iter = iter'0; count = (0: UInt64.t) } ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Enumerate_I = Any.any_l () | & iter'0: t_I = iter'0 ])
+    [ return (result: t_Enumerate_I) ->
+    {[@stop_split] [@expl:enumerate_I ensures] ([@stop_split] [@expl:enumerate result type invariant] inv_Enumerate_I result)
+      /\ ([@stop_split] [@expl:enumerate ensures] result.iter = iter'0 /\ UInt64.t'int result.count = 0)}
+      (! return {result}) ]
 end
 module M_impl_Iterator_for_Enumerate_I__next (* <Enumerate<I> as common::Iterator> *)
   use creusot.int.UInt64
@@ -271,18 +236,14 @@ module M_impl_Iterator_for_Enumerate_I__next (* <Enumerate<I> as common::Iterato
         end)}
       (! return {result}) ]
 end
-module M_enumerate
+module M_impl_Iterator_for_Enumerate_I__produces_refl (* <Enumerate<I> as common::Iterator> *)
   use creusot.int.UInt64
-  use creusot.prelude.Any
   use seq.Seq
-  use creusot.prelude.MutBorrow
   use int.Int
   
   type t_I
   
   type t_Enumerate_I = { iter: t_I; count: UInt64.t }
-  
-  predicate inv_I (_1: t_I)
   
   type t_Item
   
@@ -297,37 +258,76 @@ module M_enumerate
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
-  predicate completed_I (self: MutBorrow.t t_I)
+  type tup2_usize_Item = { f0: UInt64.t; f1: t_Item }
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate invariant_Enumerate_I (self: t_Enumerate_I) =
-    (forall s: Seq.seq t_Item, i: t_I [produces_I self.iter s i]. produces_I self.iter s i
-        -> UInt64.t'int self.count + Seq.length s < UInt64.t'int const_MAX)
-    /\ (forall i: MutBorrow.t t_I. completed_I i -> produces_I i.current (Seq.empty: Seq.seq t_Item) i.final)
-  
-  predicate inv_Enumerate_I (_1: t_Enumerate_I)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Enumerate_I [inv_Enumerate_I x]. inv_Enumerate_I x
-      = (invariant_Enumerate_I x /\ inv_I x.iter)
+  predicate produces_Enumerate_I (self: t_Enumerate_I) (visited: Seq.seq tup2_usize_Item) (o: t_Enumerate_I) =
+    Seq.length visited = UInt64.t'int o.count - UInt64.t'int self.count
+    /\ (exists s: Seq.seq t_Item. produces_I self.iter s o.iter
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> UInt64.t'int (Seq.get visited i).f0 = UInt64.t'int self.count + i /\ (Seq.get visited i).f1 = Seq.get s i))
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec enumerate_I (iter'0: t_I) (return (x: t_Enumerate_I)) =
-    {[@stop_split] [@expl:enumerate_I requires] ([@stop_split] [@expl:enumerate 'iter' type invariant] inv_I iter'0)
-    /\ ([@stop_split] [@expl:enumerate requires #0] forall i: MutBorrow.t t_I. completed_I i
-        -> produces_I i.current (Seq.empty: Seq.seq t_Item) i.final)
-    /\ ([@stop_split] [@expl:enumerate requires #1] forall s: Seq.seq t_Item, i: t_I. produces_I iter'0 s i
-      -> Seq.length s < UInt64.t'int const_MAX)}
-    (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- { iter = iter'0; count = (0: UInt64.t) } ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: t_Enumerate_I = Any.any_l () | & iter'0: t_I = iter'0 ])
-    [ return (result: t_Enumerate_I) ->
-    {[@stop_split] [@expl:enumerate_I ensures] ([@stop_split] [@expl:enumerate result type invariant] inv_Enumerate_I result)
-      /\ ([@stop_split] [@expl:enumerate ensures] result.iter = iter'0 /\ UInt64.t'int result.count = 0)}
-      (! return {result}) ]
+  constant self : t_Enumerate_I
+  
+  function produces_refl_Enumerate_I (self: t_Enumerate_I) : ()
+  
+  goal vc_produces_refl_Enumerate_I:
+    [@stop_split] [@expl:produces_refl ensures] produces_Enumerate_I self (Seq.empty: Seq.seq tup2_usize_Item) self
+end
+module M_impl_Iterator_for_Enumerate_I__produces_trans (* <Enumerate<I> as common::Iterator> *)
+  use creusot.int.UInt64
+  use seq.Seq
+  use int.Int
+  
+  type t_I
+  
+  type t_Enumerate_I = { iter: t_I; count: UInt64.t }
+  
+  type t_Item
+  
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_I (self: t_I) : ()
+  
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+  
+  type tup2_usize_Item = { f0: UInt64.t; f1: t_Item }
+  
+  predicate produces_Enumerate_I (self: t_Enumerate_I) (visited: Seq.seq tup2_usize_Item) (o: t_Enumerate_I) =
+    Seq.length visited = UInt64.t'int o.count - UInt64.t'int self.count
+    /\ (exists s: Seq.seq t_Item. produces_I self.iter s o.iter
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> UInt64.t'int (Seq.get visited i).f0 = UInt64.t'int self.count + i /\ (Seq.get visited i).f1 = Seq.get s i))
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : t_Enumerate_I
+  
+  constant ab : Seq.seq tup2_usize_Item
+  
+  constant b : t_Enumerate_I
+  
+  constant bc : Seq.seq tup2_usize_Item
+  
+  constant c : t_Enumerate_I
+  
+  function produces_trans_Enumerate_I (a: t_Enumerate_I) (ab: Seq.seq tup2_usize_Item) (b: t_Enumerate_I) (bc: Seq.seq tup2_usize_Item) (c: t_Enumerate_I) : ()
+  
+  goal vc_produces_trans_Enumerate_I: produces_Enumerate_I a ab b
+    -> produces_Enumerate_I b bc c
+    -> ([@stop_split] [@expl:produces_trans ensures] produces_Enumerate_I a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Enumerate_I__next__refines (* <Enumerate<I> as common::Iterator> *)
   use creusot.prelude.MutBorrow

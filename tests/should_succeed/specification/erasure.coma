@@ -1,3 +1,26 @@
+module M_nested
+  use creusot.prelude.Any
+  
+  let rec hidden (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec nested (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = hidden (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_nested__hidden
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec hidden (return (x: ())) = (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
 module M_foo
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -35,21 +58,6 @@ module M_baz
   let rec baz (return (x: Int32.t)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- const_N ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> (! return {result}) ]
-end
-module M_impl_Quux_for_i32__quux (* <i32 as Quux> *)
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  let rec foo (x: Int32.t) (return (x'0: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec quux_i32 (self: Int32.t) (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = foo {self} (fun (_x: Int32.t) -> [ &_2 <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & self: Int32.t = self | & _2: Int32.t = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
 end
 module M_quux2
   use creusot.int.Int32
@@ -189,18 +197,6 @@ module M_test_foo2
     | & _20: bool = Any.any_l ()
     | & _22: bool = Any.any_l ()
     | & _24: bool = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
-end
-module M_impl_Tr_for_i32__takes_ref (* <i32 as Tr> *)
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec takes_ref_i32 (self: Int32.t) (return (x: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & self: Int32.t = self ]) [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_takes_ref
   use creusot.int.Int32
@@ -549,29 +545,6 @@ module M_specs
     | bb6 = return {_ret} ]
     [ & _ret: () = Any.any_l () | & x: int = x | & _7: Int32.t = Any.any_l () | & _8: int = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:specs ensures] false} (! return {result}) ]
-end
-module M_nested
-  use creusot.prelude.Any
-  
-  let rec hidden (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec nested (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = hidden (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_nested__hidden
-  use creusot.prelude.Any
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec hidden (return (x: ())) = (! bb0
-    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_nested2
   use creusot.prelude.Any
@@ -1134,4 +1107,31 @@ module M_apply_test2
   let rec apply_test2 (return (x: Int32.t)) = (! bb0
     [ bb0 = s0 [ s0 = apply_foo3 {()} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
+end
+module M_impl_Quux_for_i32__quux (* <i32 as Quux> *)
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  let rec foo (x: Int32.t) (return (x'0: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec quux_i32 (self: Int32.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = foo {self} (fun (_x: Int32.t) -> [ &_2 <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & self: Int32.t = self | & _2: Int32.t = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end
+module M_impl_Tr_for_i32__takes_ref (* <i32 as Tr> *)
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec takes_ref_i32 (self: Int32.t) (return (x: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & self: Int32.t = self ]) [ return (result: Int32.t) -> (! return {result}) ]
 end

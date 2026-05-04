@@ -1,66 +1,3 @@
-module M_impl_FakeFnOnce_for_AddsTwo__call (* <AddsTwo<'a> as FakeFnOnce> *)
-  use creusot.int.UInt32
-  use int.ComputerDivision
-  use creusot.prelude.MutBorrow
-  use creusot.prelude.Any
-  
-  type t_MutexInner_u32
-  
-  type t_Mutex_u32_Even = { f0: t_MutexInner_u32; f1: () }
-  
-  type t_AddsTwo = { mutex: t_Mutex_u32_Even }
-  
-  type t_GuardInner_u32
-  
-  type t_MutexGuard_u32_Even = { f0'0: t_GuardInner_u32; f1'0: () }
-  
-  let rec lock_u32 (self: t_Mutex_u32_Even) (return (x: t_MutexGuard_u32_Even)) = any
-    [ return (result: t_MutexGuard_u32_Even) -> {[@stop_split] [@expl:lock ensures] self.f1 = result.f1'0}
-      (! return {result}) ]
-  
-  predicate inv_Even (self: ()) (x: UInt32.t) = ComputerDivision.mod (UInt32.t'int x) 2 = 0
-  
-  let rec deref_u32 (self: t_MutexGuard_u32_Even) (return (x: UInt32.t)) = any
-    [ return (result: UInt32.t) -> {[@stop_split] [@expl:deref ensures] inv_Even self.f1'0 result} (! return {result}) ]
-  
-  let rec set_u32 (self: MutBorrow.t t_MutexGuard_u32_Even) (v: UInt32.t) (return (x: ())) =
-    {[@stop_split] [@expl:set requires] inv_Even self.current.f1'0 v}
-    any [ return (result: ()) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec call_AddsTwo (self: t_AddsTwo) (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = lock_u32 {self.mutex} (fun (_x: t_MutexGuard_u32_Even) -> [ &v <- _x ] s1)
-      | s1 = deref_u32 {v} (fun (_x: UInt32.t) -> [ &_5 <- _x ] s2)
-      | s2 = [ &val' <- _5 ] s3
-      | s3 = [ &_7 <- UInt32.lt val' (100000: UInt32.t) ] s4
-      | s4 = any [ br0 -> {_7 = false} (! bb5) | br1 -> {_7} (! bb3) ] ]
-    | bb3 = s0
-      [ s0 = UInt32.add {val'} {(2: UInt32.t)} (fun (_x: UInt32.t) -> [ &_11 <- _x ] s1)
-      | s1 = MutBorrow.borrow_mut <t_MutexGuard_u32_Even> {v}
-          (fun (_bor: MutBorrow.t t_MutexGuard_u32_Even) -> [ &_10 <- _bor ] [ &v <- _bor.final ] s2)
-      | s2 = set_u32 {_10} {_11} (fun (_x: ()) -> [ &_9 <- _x ] s3)
-      | s3 = return {_ret} ]
-    | bb5 = s0
-      [ s0 = MutBorrow.borrow_mut <t_MutexGuard_u32_Even> {v}
-          (fun (_bor: MutBorrow.t t_MutexGuard_u32_Even) -> [ &_14 <- _bor ] [ &v <- _bor.final ] s1)
-      | s1 = set_u32 {_14} {(0: UInt32.t)} (fun (_x: ()) -> [ &_13 <- _x ] s2)
-      | s2 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & self: t_AddsTwo = self
-    | & v: t_MutexGuard_u32_Even = Any.any_l ()
-    | & val': UInt32.t = Any.any_l ()
-    | & _5: UInt32.t = Any.any_l ()
-    | & _7: bool = Any.any_l ()
-    | & _9: () = Any.any_l ()
-    | & _10: MutBorrow.t t_MutexGuard_u32_Even = Any.any_l ()
-    | & _11: UInt32.t = Any.any_l ()
-    | & _13: () = Any.any_l ()
-    | & _14: MutBorrow.t t_MutexGuard_u32_Even = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
 module M_concurrent
   use creusot.int.UInt32
   use int.ComputerDivision
@@ -145,6 +82,69 @@ module M_concurrent
     | & j2: t_JoinHandle_unit_SpawnPostCond_AddsTwo = Any.any_l ()
     | & _16: t_Result_unit_unit = Any.any_l ()
     | & _18: t_Result_unit_unit = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_impl_FakeFnOnce_for_AddsTwo__call (* <AddsTwo<'a> as FakeFnOnce> *)
+  use creusot.int.UInt32
+  use int.ComputerDivision
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  
+  type t_MutexInner_u32
+  
+  type t_Mutex_u32_Even = { f0: t_MutexInner_u32; f1: () }
+  
+  type t_AddsTwo = { mutex: t_Mutex_u32_Even }
+  
+  type t_GuardInner_u32
+  
+  type t_MutexGuard_u32_Even = { f0'0: t_GuardInner_u32; f1'0: () }
+  
+  let rec lock_u32 (self: t_Mutex_u32_Even) (return (x: t_MutexGuard_u32_Even)) = any
+    [ return (result: t_MutexGuard_u32_Even) -> {[@stop_split] [@expl:lock ensures] self.f1 = result.f1'0}
+      (! return {result}) ]
+  
+  predicate inv_Even (self: ()) (x: UInt32.t) = ComputerDivision.mod (UInt32.t'int x) 2 = 0
+  
+  let rec deref_u32 (self: t_MutexGuard_u32_Even) (return (x: UInt32.t)) = any
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:deref ensures] inv_Even self.f1'0 result} (! return {result}) ]
+  
+  let rec set_u32 (self: MutBorrow.t t_MutexGuard_u32_Even) (v: UInt32.t) (return (x: ())) =
+    {[@stop_split] [@expl:set requires] inv_Even self.current.f1'0 v}
+    any [ return (result: ()) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec call_AddsTwo (self: t_AddsTwo) (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = lock_u32 {self.mutex} (fun (_x: t_MutexGuard_u32_Even) -> [ &v <- _x ] s1)
+      | s1 = deref_u32 {v} (fun (_x: UInt32.t) -> [ &_5 <- _x ] s2)
+      | s2 = [ &val' <- _5 ] s3
+      | s3 = [ &_7 <- UInt32.lt val' (100000: UInt32.t) ] s4
+      | s4 = any [ br0 -> {_7 = false} (! bb5) | br1 -> {_7} (! bb3) ] ]
+    | bb3 = s0
+      [ s0 = UInt32.add {val'} {(2: UInt32.t)} (fun (_x: UInt32.t) -> [ &_11 <- _x ] s1)
+      | s1 = MutBorrow.borrow_mut <t_MutexGuard_u32_Even> {v}
+          (fun (_bor: MutBorrow.t t_MutexGuard_u32_Even) -> [ &_10 <- _bor ] [ &v <- _bor.final ] s2)
+      | s2 = set_u32 {_10} {_11} (fun (_x: ()) -> [ &_9 <- _x ] s3)
+      | s3 = return {_ret} ]
+    | bb5 = s0
+      [ s0 = MutBorrow.borrow_mut <t_MutexGuard_u32_Even> {v}
+          (fun (_bor: MutBorrow.t t_MutexGuard_u32_Even) -> [ &_14 <- _bor ] [ &v <- _bor.final ] s1)
+      | s1 = set_u32 {_14} {(0: UInt32.t)} (fun (_x: ()) -> [ &_13 <- _x ] s2)
+      | s2 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: t_AddsTwo = self
+    | & v: t_MutexGuard_u32_Even = Any.any_l ()
+    | & val': UInt32.t = Any.any_l ()
+    | & _5: UInt32.t = Any.any_l ()
+    | & _7: bool = Any.any_l ()
+    | & _9: () = Any.any_l ()
+    | & _10: MutBorrow.t t_MutexGuard_u32_Even = Any.any_l ()
+    | & _11: UInt32.t = Any.any_l ()
+    | & _13: () = Any.any_l ()
+    | & _14: MutBorrow.t t_MutexGuard_u32_Even = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_impl_FakeFnOnce_for_AddsTwo__call__refines (* <AddsTwo<'a> as FakeFnOnce> *)
   type t_MutexInner_u32

@@ -1,3 +1,14 @@
+module M_assume
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec assume' (b: bool) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = -{[@expl:assertion] b}- s1 | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & b: bool = b ])
+    [ return (result: ()) -> {[@stop_split] [@expl:assume ensures] b} (! return {result}) ]
+end
 module M_assertion
   use creusot.prelude.Any
   
@@ -19,17 +30,6 @@ module M_assertion
       | s2 = {[@expl:assertion] x = x} s3
       | s3 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: t_T = x ])
     [ return (result: ()) -> (! return {result}) ]
-end
-module M_assume
-  use creusot.prelude.Any
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec assume' (b: bool) (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = -{[@expl:assertion] b}- s1 | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & b: bool = b ])
-    [ return (result: ()) -> {[@stop_split] [@expl:assume ensures] b} (! return {result}) ]
 end
 module M_apair
   use creusot.int.Int64

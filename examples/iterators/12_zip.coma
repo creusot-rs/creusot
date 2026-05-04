@@ -1,128 +1,3 @@
-module M_impl_Iterator_for_Zip_A_B__produces_refl (* <Zip<A, B> as common::Iterator> *)
-  use seq.Seq
-  use int.Int
-  
-  type t_A
-  
-  type t_B
-  
-  type t_Zip_A_B = { a: t_A; b: t_B }
-  
-  type t_Item
-  
-  predicate produces_A (self: t_A) (visited: Seq.seq t_Item) (o: t_A)
-  
-  function produces_trans_A (a'0: t_A) (ab: Seq.seq t_Item) (b'0: t_A) (bc: Seq.seq t_Item) (c: t_A) : ()
-  
-  axiom produces_trans_A_spec:
-    forall a'0: t_A, ab: Seq.seq t_Item, b'0: t_A, bc: Seq.seq t_Item, c: t_A. produces_A a'0 ab b'0
-      -> produces_A b'0 bc c -> produces_A a'0 (Seq.(++) ab bc) c
-  
-  function produces_refl_A (self: t_A) : ()
-  
-  axiom produces_refl_A_spec: forall self: t_A. produces_A self (Seq.empty: Seq.seq t_Item) self
-  
-  type t_Item'0
-  
-  predicate produces_B (self: t_B) (visited: Seq.seq t_Item'0) (o: t_B)
-  
-  function produces_trans_B (a'0: t_B) (ab: Seq.seq t_Item'0) (b'0: t_B) (bc: Seq.seq t_Item'0) (c: t_B) : ()
-  
-  axiom produces_trans_B_spec:
-    forall a'0: t_B, ab: Seq.seq t_Item'0, b'0: t_B, bc: Seq.seq t_Item'0, c: t_B. produces_B a'0 ab b'0
-      -> produces_B b'0 bc c -> produces_B a'0 (Seq.(++) ab bc) c
-  
-  function produces_refl_B (self: t_B) : ()
-  
-  axiom produces_refl_B_spec: forall self: t_B. produces_B self (Seq.empty: Seq.seq t_Item'0) self
-  
-  type tup2_Item_Item = { f0: t_Item; f1: t_Item'0 }
-  
-  predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
-    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
-      /\ Seq.length p2 = Seq.length visited
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
-      /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Zip_A_B
-  
-  function produces_refl_Zip_A_B (self: t_Zip_A_B) : ()
-  
-  goal vc_produces_refl_Zip_A_B:
-    [@stop_split] [@expl:produces_refl ensures] produces_Zip_A_B self (Seq.empty: Seq.seq tup2_Item_Item) self
-end
-module M_impl_Iterator_for_Zip_A_B__produces_trans (* <Zip<A, B> as common::Iterator> *)
-  use seq.Seq
-  use int.Int
-  
-  type t_A
-  
-  type t_B
-  
-  type t_Zip_A_B = { a: t_A; b: t_B }
-  
-  type t_Item
-  
-  predicate produces_A (self: t_A) (visited: Seq.seq t_Item) (o: t_A)
-  
-  function produces_trans_A (a'0: t_A) (ab: Seq.seq t_Item) (b'0: t_A) (bc: Seq.seq t_Item) (c: t_A) : ()
-  
-  axiom produces_trans_A_spec:
-    forall a'0: t_A, ab: Seq.seq t_Item, b'0: t_A, bc: Seq.seq t_Item, c: t_A. produces_A a'0 ab b'0
-      -> produces_A b'0 bc c -> produces_A a'0 (Seq.(++) ab bc) c
-  
-  function produces_refl_A (self: t_A) : ()
-  
-  axiom produces_refl_A_spec: forall self: t_A. produces_A self (Seq.empty: Seq.seq t_Item) self
-  
-  type t_Item'0
-  
-  predicate produces_B (self: t_B) (visited: Seq.seq t_Item'0) (o: t_B)
-  
-  function produces_trans_B (a'0: t_B) (ab: Seq.seq t_Item'0) (b'0: t_B) (bc: Seq.seq t_Item'0) (c: t_B) : ()
-  
-  axiom produces_trans_B_spec:
-    forall a'0: t_B, ab: Seq.seq t_Item'0, b'0: t_B, bc: Seq.seq t_Item'0, c: t_B. produces_B a'0 ab b'0
-      -> produces_B b'0 bc c -> produces_B a'0 (Seq.(++) ab bc) c
-  
-  function produces_refl_B (self: t_B) : ()
-  
-  axiom produces_refl_B_spec: forall self: t_B. produces_B self (Seq.empty: Seq.seq t_Item'0) self
-  
-  type tup2_Item_Item = { f0: t_Item; f1: t_Item'0 }
-  
-  predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
-    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
-      /\ Seq.length p2 = Seq.length visited
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
-      /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant a'0 : t_Zip_A_B
-  
-  constant ab : Seq.seq tup2_Item_Item
-  
-  constant b'0 : t_Zip_A_B
-  
-  constant bc : Seq.seq tup2_Item_Item
-  
-  constant c : t_Zip_A_B
-  
-  function produces_trans_Zip_A_B (a'0: t_Zip_A_B) (ab: Seq.seq tup2_Item_Item) (b'0: t_Zip_A_B) (bc: Seq.seq tup2_Item_Item) (c: t_Zip_A_B) : ()
-  
-  goal vc_produces_trans_Zip_A_B: produces_Zip_A_B a'0 ab b'0
-    -> produces_Zip_A_B b'0 bc c
-    -> ([@stop_split] [@expl:produces_trans ensures] produces_Zip_A_B a'0 (Seq.(++) ab bc) c)
-end
 module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
@@ -382,6 +257,131 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
         | Some'1 v -> produces_Zip_A_B self.current (Seq.singleton v) self.final
         end)}
       (! return {result}) ]
+end
+module M_impl_Iterator_for_Zip_A_B__produces_refl (* <Zip<A, B> as common::Iterator> *)
+  use seq.Seq
+  use int.Int
+  
+  type t_A
+  
+  type t_B
+  
+  type t_Zip_A_B = { a: t_A; b: t_B }
+  
+  type t_Item
+  
+  predicate produces_A (self: t_A) (visited: Seq.seq t_Item) (o: t_A)
+  
+  function produces_trans_A (a'0: t_A) (ab: Seq.seq t_Item) (b'0: t_A) (bc: Seq.seq t_Item) (c: t_A) : ()
+  
+  axiom produces_trans_A_spec:
+    forall a'0: t_A, ab: Seq.seq t_Item, b'0: t_A, bc: Seq.seq t_Item, c: t_A. produces_A a'0 ab b'0
+      -> produces_A b'0 bc c -> produces_A a'0 (Seq.(++) ab bc) c
+  
+  function produces_refl_A (self: t_A) : ()
+  
+  axiom produces_refl_A_spec: forall self: t_A. produces_A self (Seq.empty: Seq.seq t_Item) self
+  
+  type t_Item'0
+  
+  predicate produces_B (self: t_B) (visited: Seq.seq t_Item'0) (o: t_B)
+  
+  function produces_trans_B (a'0: t_B) (ab: Seq.seq t_Item'0) (b'0: t_B) (bc: Seq.seq t_Item'0) (c: t_B) : ()
+  
+  axiom produces_trans_B_spec:
+    forall a'0: t_B, ab: Seq.seq t_Item'0, b'0: t_B, bc: Seq.seq t_Item'0, c: t_B. produces_B a'0 ab b'0
+      -> produces_B b'0 bc c -> produces_B a'0 (Seq.(++) ab bc) c
+  
+  function produces_refl_B (self: t_B) : ()
+  
+  axiom produces_refl_B_spec: forall self: t_B. produces_B self (Seq.empty: Seq.seq t_Item'0) self
+  
+  type tup2_Item_Item = { f0: t_Item; f1: t_Item'0 }
+  
+  predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
+    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
+      /\ Seq.length p2 = Seq.length visited
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
+      /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Zip_A_B
+  
+  function produces_refl_Zip_A_B (self: t_Zip_A_B) : ()
+  
+  goal vc_produces_refl_Zip_A_B:
+    [@stop_split] [@expl:produces_refl ensures] produces_Zip_A_B self (Seq.empty: Seq.seq tup2_Item_Item) self
+end
+module M_impl_Iterator_for_Zip_A_B__produces_trans (* <Zip<A, B> as common::Iterator> *)
+  use seq.Seq
+  use int.Int
+  
+  type t_A
+  
+  type t_B
+  
+  type t_Zip_A_B = { a: t_A; b: t_B }
+  
+  type t_Item
+  
+  predicate produces_A (self: t_A) (visited: Seq.seq t_Item) (o: t_A)
+  
+  function produces_trans_A (a'0: t_A) (ab: Seq.seq t_Item) (b'0: t_A) (bc: Seq.seq t_Item) (c: t_A) : ()
+  
+  axiom produces_trans_A_spec:
+    forall a'0: t_A, ab: Seq.seq t_Item, b'0: t_A, bc: Seq.seq t_Item, c: t_A. produces_A a'0 ab b'0
+      -> produces_A b'0 bc c -> produces_A a'0 (Seq.(++) ab bc) c
+  
+  function produces_refl_A (self: t_A) : ()
+  
+  axiom produces_refl_A_spec: forall self: t_A. produces_A self (Seq.empty: Seq.seq t_Item) self
+  
+  type t_Item'0
+  
+  predicate produces_B (self: t_B) (visited: Seq.seq t_Item'0) (o: t_B)
+  
+  function produces_trans_B (a'0: t_B) (ab: Seq.seq t_Item'0) (b'0: t_B) (bc: Seq.seq t_Item'0) (c: t_B) : ()
+  
+  axiom produces_trans_B_spec:
+    forall a'0: t_B, ab: Seq.seq t_Item'0, b'0: t_B, bc: Seq.seq t_Item'0, c: t_B. produces_B a'0 ab b'0
+      -> produces_B b'0 bc c -> produces_B a'0 (Seq.(++) ab bc) c
+  
+  function produces_refl_B (self: t_B) : ()
+  
+  axiom produces_refl_B_spec: forall self: t_B. produces_B self (Seq.empty: Seq.seq t_Item'0) self
+  
+  type tup2_Item_Item = { f0: t_Item; f1: t_Item'0 }
+  
+  predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
+    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
+      /\ Seq.length p2 = Seq.length visited
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
+      /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a'0 : t_Zip_A_B
+  
+  constant ab : Seq.seq tup2_Item_Item
+  
+  constant b'0 : t_Zip_A_B
+  
+  constant bc : Seq.seq tup2_Item_Item
+  
+  constant c : t_Zip_A_B
+  
+  function produces_trans_Zip_A_B (a'0: t_Zip_A_B) (ab: Seq.seq tup2_Item_Item) (b'0: t_Zip_A_B) (bc: Seq.seq tup2_Item_Item) (c: t_Zip_A_B) : ()
+  
+  goal vc_produces_trans_Zip_A_B: produces_Zip_A_B a'0 ab b'0
+    -> produces_Zip_A_B b'0 bc c
+    -> ([@stop_split] [@expl:produces_trans ensures] produces_Zip_A_B a'0 (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Zip_A_B__next__refines (* <Zip<A, B> as common::Iterator> *)
   use creusot.prelude.MutBorrow
