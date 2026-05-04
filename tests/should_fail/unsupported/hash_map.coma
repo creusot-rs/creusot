@@ -1,24 +1,3 @@
-module M_impl_Foo__new (* Foo *)
-  use creusot.prelude.Any
-  
-  type t_HashMap_u64_u8_RandomState_Global
-  
-  type t_Foo = { f0: t_HashMap_u64_u8_RandomState_Global }
-  
-  predicate inv_HashMap_u64_u8_RandomState_Global (_1: t_HashMap_u64_u8_RandomState_Global)
-  
-  predicate inv_Foo (_1: t_Foo)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Foo [inv_Foo x]. inv_Foo x = inv_HashMap_u64_u8_RandomState_Global x.f0
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec new (return (x: t_Foo)) = (! bb0
-    [ bb0 = {false} any ] [ & _ret: t_Foo = Any.any_l () | & _1: t_HashMap_u64_u8_RandomState_Global = Any.any_l () ])
-    [ return (result: t_Foo) -> {[@stop_split] [@expl:new result type invariant] inv_Foo result} (! return {result}) ]
-end
 module M_impl_Foo__add (* Foo *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -87,4 +66,25 @@ module M_impl_Foo__add (* Foo *)
     [ return (result: ()) -> {[@stop_split] [@expl:add ensures] get_Int (view_Foo self.final) (UInt64.t'int num)
       = Some bar}
       (! return {result}) ]
+end
+module M_impl_Foo__new (* Foo *)
+  use creusot.prelude.Any
+  
+  type t_HashMap_u64_u8_RandomState_Global
+  
+  type t_Foo = { f0: t_HashMap_u64_u8_RandomState_Global }
+  
+  predicate inv_HashMap_u64_u8_RandomState_Global (_1: t_HashMap_u64_u8_RandomState_Global)
+  
+  predicate inv_Foo (_1: t_Foo)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Foo [inv_Foo x]. inv_Foo x = inv_HashMap_u64_u8_RandomState_Global x.f0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec new (return (x: t_Foo)) = (! bb0
+    [ bb0 = {false} any ] [ & _ret: t_Foo = Any.any_l () | & _1: t_HashMap_u64_u8_RandomState_Global = Any.any_l () ])
+    [ return (result: t_Foo) -> {[@stop_split] [@expl:new result type invariant] inv_Foo result} (! return {result}) ]
 end

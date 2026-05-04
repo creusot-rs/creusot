@@ -1,3 +1,20 @@
+module M_should_use_impl
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  let rec default_u32 (self: UInt32.t) (return (x: UInt32.t)) = any [ return (result: UInt32.t) -> (! return {result}) ]
+  
+  predicate logic_default_u32 (self: UInt32.t) = true
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec should_use_impl (x: UInt32.t) (return (x'0: ())) = (! bb0
+    [ bb0 = s0 [ s0 = default_u32 {x} (fun (_x: UInt32.t) -> [ &_4 <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & x: UInt32.t = x | & _4: UInt32.t = Any.any_l () ])
+    [ return (result: ()) -> {[@stop_split] [@expl:should_use_impl ensures] logic_default_u32 x} (! return {result}) ]
+end
 module M_trait_T__default
   use creusot.int.UInt32
   use creusot.prelude.Any
@@ -23,21 +40,4 @@ module M_trait_T__default
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- (0: UInt32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> (! return {result}) ]
-end
-module M_should_use_impl
-  use creusot.int.UInt32
-  use creusot.prelude.Any
-  
-  let rec default_u32 (self: UInt32.t) (return (x: UInt32.t)) = any [ return (result: UInt32.t) -> (! return {result}) ]
-  
-  predicate logic_default_u32 (self: UInt32.t) = true
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec should_use_impl (x: UInt32.t) (return (x'0: ())) = (! bb0
-    [ bb0 = s0 [ s0 = default_u32 {x} (fun (_x: UInt32.t) -> [ &_4 <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & x: UInt32.t = x | & _4: UInt32.t = Any.any_l () ])
-    [ return (result: ()) -> {[@stop_split] [@expl:should_use_impl ensures] logic_default_u32 x} (! return {result}) ]
 end

@@ -1,85 +1,3 @@
-module M_impl_Iterator_for_Copied_I__produces_refl (* <Copied<I> as common::Iterator> *)
-  use seq.Seq
-  use int.Int
-  
-  type t_I
-  
-  type t_Copied_I = { iter: t_I }
-  
-  type t_T
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
-  
-  predicate produces_Copied_I (self: t_Copied_I) (visited: Seq.seq t_T) (o: t_Copied_I) =
-    exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ Seq.length visited = Seq.length s
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Copied_I
-  
-  function produces_refl_Copied_I (self: t_Copied_I) : ()
-  
-  goal vc_produces_refl_Copied_I:
-    [@stop_split] [@expl:produces_refl ensures] produces_Copied_I self (Seq.empty: Seq.seq t_T) self
-end
-module M_impl_Iterator_for_Copied_I__produces_trans (* <Copied<I> as common::Iterator> *)
-  use seq.Seq
-  use int.Int
-  
-  type t_I
-  
-  type t_Copied_I = { iter: t_I }
-  
-  type t_T
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
-  
-  predicate produces_Copied_I (self: t_Copied_I) (visited: Seq.seq t_T) (o: t_Copied_I) =
-    exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ Seq.length visited = Seq.length s
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant a : t_Copied_I
-  
-  constant ab : Seq.seq t_T
-  
-  constant b : t_Copied_I
-  
-  constant bc : Seq.seq t_T
-  
-  constant c : t_Copied_I
-  
-  function produces_trans_Copied_I (a: t_Copied_I) (ab: Seq.seq t_T) (b: t_Copied_I) (bc: Seq.seq t_T) (c: t_Copied_I) : ()
-  
-  goal vc_produces_trans_Copied_I: produces_Copied_I a ab b
-    -> produces_Copied_I b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Copied_I a (Seq.(++) ab bc) c)
-end
 module M_impl_Iterator_for_Copied_I__next (* <Copied<I> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
@@ -232,6 +150,88 @@ module M_impl_Iterator_for_Copied_I__next (* <Copied<I> as common::Iterator> *)
         | Some'0 v -> produces_Copied_I self.current (Seq.singleton v) self.final
         end)}
       (! return {result}) ]
+end
+module M_impl_Iterator_for_Copied_I__produces_refl (* <Copied<I> as common::Iterator> *)
+  use seq.Seq
+  use int.Int
+  
+  type t_I
+  
+  type t_Copied_I = { iter: t_I }
+  
+  type t_T
+  
+  predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
+  
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
+  
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_I (self: t_I) : ()
+  
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
+  
+  predicate produces_Copied_I (self: t_Copied_I) (visited: Seq.seq t_T) (o: t_Copied_I) =
+    exists s: Seq.seq t_T. produces_I self.iter s o.iter
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Copied_I
+  
+  function produces_refl_Copied_I (self: t_Copied_I) : ()
+  
+  goal vc_produces_refl_Copied_I:
+    [@stop_split] [@expl:produces_refl ensures] produces_Copied_I self (Seq.empty: Seq.seq t_T) self
+end
+module M_impl_Iterator_for_Copied_I__produces_trans (* <Copied<I> as common::Iterator> *)
+  use seq.Seq
+  use int.Int
+  
+  type t_I
+  
+  type t_Copied_I = { iter: t_I }
+  
+  type t_T
+  
+  predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
+  
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
+  
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_I (self: t_I) : ()
+  
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
+  
+  predicate produces_Copied_I (self: t_Copied_I) (visited: Seq.seq t_T) (o: t_Copied_I) =
+    exists s: Seq.seq t_T. produces_I self.iter s o.iter
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : t_Copied_I
+  
+  constant ab : Seq.seq t_T
+  
+  constant b : t_Copied_I
+  
+  constant bc : Seq.seq t_T
+  
+  constant c : t_Copied_I
+  
+  function produces_trans_Copied_I (a: t_Copied_I) (ab: Seq.seq t_T) (b: t_Copied_I) (bc: Seq.seq t_T) (c: t_Copied_I) : ()
+  
+  goal vc_produces_trans_Copied_I: produces_Copied_I a ab b
+    -> produces_Copied_I b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Copied_I a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Copied_I__produces_trans__refines (* <Copied<I> as common::Iterator> *)
   use seq.Seq

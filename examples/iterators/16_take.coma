@@ -1,83 +1,3 @@
-module M_impl_Iterator_for_Take_I__produces_refl (* <Take<I> as common::Iterator> *)
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.Int
-  
-  type t_I
-  
-  type t_Take_I = { iter: t_I; n: UInt64.t }
-  
-  type t_Item
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate produces_Take_I (self: t_Take_I) (visited: Seq.seq t_Item) (o: t_Take_I) =
-    UInt64.t'int self.n = UInt64.t'int o.n + Seq.length visited /\ produces_I self.iter visited o.iter
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Take_I
-  
-  function produces_refl_Take_I (self: t_Take_I) : ()
-  
-  goal vc_produces_refl_Take_I:
-    [@stop_split] [@expl:produces_refl ensures] produces_Take_I self (Seq.empty: Seq.seq t_Item) self
-end
-module M_impl_Iterator_for_Take_I__produces_trans (* <Take<I> as common::Iterator> *)
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.Int
-  
-  type t_I
-  
-  type t_Take_I = { iter: t_I; n: UInt64.t }
-  
-  type t_Item
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate produces_Take_I (self: t_Take_I) (visited: Seq.seq t_Item) (o: t_Take_I) =
-    UInt64.t'int self.n = UInt64.t'int o.n + Seq.length visited /\ produces_I self.iter visited o.iter
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant a : t_Take_I
-  
-  constant ab : Seq.seq t_Item
-  
-  constant b : t_Take_I
-  
-  constant bc : Seq.seq t_Item
-  
-  constant c : t_Take_I
-  
-  function produces_trans_Take_I (a: t_Take_I) (ab: Seq.seq t_Item) (b: t_Take_I) (bc: Seq.seq t_Item) (c: t_Take_I) : ()
-  
-  goal vc_produces_trans_Take_I: produces_Take_I a ab b
-    -> produces_Take_I b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Take_I a (Seq.(++) ab bc) c)
-end
 module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
@@ -212,6 +132,86 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
         | Some v -> produces_Take_I self.current (Seq.singleton v) self.final
         end)}
       (! return {result}) ]
+end
+module M_impl_Iterator_for_Take_I__produces_refl (* <Take<I> as common::Iterator> *)
+  use creusot.int.UInt64
+  use seq.Seq
+  use int.Int
+  
+  type t_I
+  
+  type t_Take_I = { iter: t_I; n: UInt64.t }
+  
+  type t_Item
+  
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_I (self: t_I) : ()
+  
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+  
+  predicate produces_Take_I (self: t_Take_I) (visited: Seq.seq t_Item) (o: t_Take_I) =
+    UInt64.t'int self.n = UInt64.t'int o.n + Seq.length visited /\ produces_I self.iter visited o.iter
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Take_I
+  
+  function produces_refl_Take_I (self: t_Take_I) : ()
+  
+  goal vc_produces_refl_Take_I:
+    [@stop_split] [@expl:produces_refl ensures] produces_Take_I self (Seq.empty: Seq.seq t_Item) self
+end
+module M_impl_Iterator_for_Take_I__produces_trans (* <Take<I> as common::Iterator> *)
+  use creusot.int.UInt64
+  use seq.Seq
+  use int.Int
+  
+  type t_I
+  
+  type t_Take_I = { iter: t_I; n: UInt64.t }
+  
+  type t_Item
+  
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_I (self: t_I) : ()
+  
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+  
+  predicate produces_Take_I (self: t_Take_I) (visited: Seq.seq t_Item) (o: t_Take_I) =
+    UInt64.t'int self.n = UInt64.t'int o.n + Seq.length visited /\ produces_I self.iter visited o.iter
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : t_Take_I
+  
+  constant ab : Seq.seq t_Item
+  
+  constant b : t_Take_I
+  
+  constant bc : Seq.seq t_Item
+  
+  constant c : t_Take_I
+  
+  function produces_trans_Take_I (a: t_Take_I) (ab: Seq.seq t_Item) (b: t_Take_I) (bc: Seq.seq t_Item) (c: t_Take_I) : ()
+  
+  goal vc_produces_trans_Take_I: produces_Take_I a ab b
+    -> produces_Take_I b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Take_I a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Take_I__next__refines (* <Take<I> as common::Iterator> *)
   use creusot.prelude.MutBorrow

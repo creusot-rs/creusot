@@ -1,3 +1,46 @@
+module M_test
+  use creusot.int.Int32
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  type tup2_refmut_i32_u32 = { f0: MutBorrow.t Int32.t; f1: UInt32.t }
+  
+  let rec reborrow_tuple_i32 (x: MutBorrow.t Int32.t) (return (x'0: tup2_refmut_i32_u32)) = any
+    [ return (result: tup2_refmut_i32_u32) -> {[@stop_split] [@expl:reborrow_tuple ensures] result.f0.current
+      = x.current}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_i32
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec test (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &x <- (5: Int32.t) ] s1
+      | s1 = MutBorrow.borrow_mut <Int32.t> {x}
+          (fun (_bor: MutBorrow.t Int32.t) -> [ &_6 <- _bor ] [ &x <- _bor.final ] s2)
+      | s2 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
+          (fun (_bor: MutBorrow.t Int32.t) -> [ &_5 <- _bor ] [ &_6 <- { _6 with current = _bor.final } ] s3)
+      | s3 = reborrow_tuple_i32 {_5} (fun (_x: tup2_refmut_i32_u32) -> [ &_4 <- _x ] s4)
+      | s4 = [ &res <- _4.f0 ] s5
+      | s5 = -{resolve_refmut_i32 _6}- s6
+      | s6 = {[@expl:assertion] res.final = (5: Int32.t)} s7
+      | s7 = [ &res <- { res with current = (10: Int32.t) } ] s8
+      | s8 = -{resolve_refmut_i32 res}- s9
+      | s9 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & x: Int32.t = Any.any_l ()
+    | & res: MutBorrow.t Int32.t = Any.any_l ()
+    | & _4: tup2_refmut_i32_u32 = Any.any_l ()
+    | & _5: MutBorrow.t Int32.t = Any.any_l ()
+    | & _6: MutBorrow.t Int32.t = Any.any_l () ])
+    [ return (result: ()) -> {[@stop_split] [@expl:test ensures] false} (! return {result}) ]
+end
 module M_reborrow_tuple
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
@@ -46,47 +89,4 @@ module M_reborrow_tuple
     {[@stop_split] [@expl:reborrow_tuple_T ensures] ([@stop_split] [@expl:reborrow_tuple result type invariant] inv_tup2_refmut_T_u32 result)
       /\ ([@stop_split] [@expl:reborrow_tuple ensures] result.f0.current = x.current)}
       (! return {result}) ]
-end
-module M_test
-  use creusot.int.Int32
-  use creusot.prelude.MutBorrow
-  use creusot.int.UInt32
-  use creusot.prelude.Any
-  
-  type tup2_refmut_i32_u32 = { f0: MutBorrow.t Int32.t; f1: UInt32.t }
-  
-  let rec reborrow_tuple_i32 (x: MutBorrow.t Int32.t) (return (x'0: tup2_refmut_i32_u32)) = any
-    [ return (result: tup2_refmut_i32_u32) -> {[@stop_split] [@expl:reborrow_tuple ensures] result.f0.current
-      = x.current}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_i32
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec test (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &x <- (5: Int32.t) ] s1
-      | s1 = MutBorrow.borrow_mut <Int32.t> {x}
-          (fun (_bor: MutBorrow.t Int32.t) -> [ &_6 <- _bor ] [ &x <- _bor.final ] s2)
-      | s2 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
-          (fun (_bor: MutBorrow.t Int32.t) -> [ &_5 <- _bor ] [ &_6 <- { _6 with current = _bor.final } ] s3)
-      | s3 = reborrow_tuple_i32 {_5} (fun (_x: tup2_refmut_i32_u32) -> [ &_4 <- _x ] s4)
-      | s4 = [ &res <- _4.f0 ] s5
-      | s5 = -{resolve_refmut_i32 _6}- s6
-      | s6 = {[@expl:assertion] res.final = (5: Int32.t)} s7
-      | s7 = [ &res <- { res with current = (10: Int32.t) } ] s8
-      | s8 = -{resolve_refmut_i32 res}- s9
-      | s9 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & x: Int32.t = Any.any_l ()
-    | & res: MutBorrow.t Int32.t = Any.any_l ()
-    | & _4: tup2_refmut_i32_u32 = Any.any_l ()
-    | & _5: MutBorrow.t Int32.t = Any.any_l ()
-    | & _6: MutBorrow.t Int32.t = Any.any_l () ])
-    [ return (result: ()) -> {[@stop_split] [@expl:test ensures] false} (! return {result}) ]
 end

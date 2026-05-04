@@ -93,6 +93,77 @@ module M_custom_variant__impl_WellFounded_for_CustomVariant__no_infinite_decreas
     /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_CustomVariant (index_Mapping_Int_CustomVariant s result) (index_Mapping_Int_CustomVariant s (result
     + 1))))
 end
+module M_custom_variant__impl_WellFounded_for_CustomVariant__no_infinite_decreasing_sequence__refines (* <custom_variant::CustomVariant as creusot_std::logic::WellFounded> *)
+  use creusot.int.UInt32
+  use map.Map
+  use int.Int
+  
+  type t_CustomVariant = { f0: UInt32.t; f1: UInt32.t }
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u32 (self: UInt32.t) (o: UInt32.t) : t_Ordering = if UInt32.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom eq_cmp_u32_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (cmp_log_u32 x y = Equal)
+  
+  function antisym2_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom antisym2_u32_spec: forall x: UInt32.t, y: UInt32.t. cmp_log_u32 x y = Greater -> cmp_log_u32 y x = Less
+  
+  function antisym1_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom antisym1_u32_spec: forall x: UInt32.t, y: UInt32.t. cmp_log_u32 x y = Less -> cmp_log_u32 y x = Greater
+  
+  function trans_u32 (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
+  
+  axiom trans_u32_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. cmp_log_u32 x y = o
+      -> cmp_log_u32 y z = o -> cmp_log_u32 x z = o
+  
+  function refl_u32 (x: UInt32.t) : ()
+  
+  axiom refl_u32_spec: forall x: UInt32.t. cmp_log_u32 x x = Equal
+  
+  function cmp_gt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom cmp_gt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y = (cmp_log_u32 x y = Greater)
+  
+  function cmp_ge_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom cmp_ge_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y = (cmp_log_u32 x y <> Less)
+  
+  function cmp_lt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom cmp_lt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y = (cmp_log_u32 x y = Less)
+  
+  function cmp_le_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
+  
+  axiom cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log_u32 x y <> Greater)
+  
+  predicate well_founded_relation_CustomVariant (self: t_CustomVariant) (other: t_CustomVariant) =
+    UInt32.gt self.f0 other.f0 /\ UInt32.gt self.f1 other.f1
+  
+  function index_Mapping_Int_CustomVariant [@inline:trivial] (self: Map.map int t_CustomVariant) (a: int) : t_CustomVariant
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Int_CustomVariant
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall s: Map.map int t_CustomVariant. forall result: int. result >= 0
+          /\ not well_founded_relation_CustomVariant (index_Mapping_Int_CustomVariant s result) (index_Mapping_Int_CustomVariant s (result
+          + 1))
+        -> result >= 0
+        /\ not well_founded_relation_CustomVariant (index_Mapping_Int_CustomVariant s result) (index_Mapping_Int_CustomVariant s (result
+        + 1))
+end
 module M_variant_int
   use creusot.int.UInt32
   use creusot.prelude.Any
@@ -250,75 +321,4 @@ module M_custom_variant_0
       custom_variant {x} (_k) ] [ function_variant: t_CustomVariant = x ])
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:custom_variant ensures] result = (0: UInt32.t)}
       (! return {result}) ]
-end
-module M_custom_variant__impl_WellFounded_for_CustomVariant__no_infinite_decreasing_sequence__refines (* <custom_variant::CustomVariant as creusot_std::logic::WellFounded> *)
-  use creusot.int.UInt32
-  use map.Map
-  use int.Int
-  
-  type t_CustomVariant = { f0: UInt32.t; f1: UInt32.t }
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u32 (self: UInt32.t) (o: UInt32.t) : t_Ordering = if UInt32.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom eq_cmp_u32_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (cmp_log_u32 x y = Equal)
-  
-  function antisym2_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom antisym2_u32_spec: forall x: UInt32.t, y: UInt32.t. cmp_log_u32 x y = Greater -> cmp_log_u32 y x = Less
-  
-  function antisym1_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom antisym1_u32_spec: forall x: UInt32.t, y: UInt32.t. cmp_log_u32 x y = Less -> cmp_log_u32 y x = Greater
-  
-  function trans_u32 (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Ordering) : ()
-  
-  axiom trans_u32_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Ordering. cmp_log_u32 x y = o
-      -> cmp_log_u32 y z = o -> cmp_log_u32 x z = o
-  
-  function refl_u32 (x: UInt32.t) : ()
-  
-  axiom refl_u32_spec: forall x: UInt32.t. cmp_log_u32 x x = Equal
-  
-  function cmp_gt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom cmp_gt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y = (cmp_log_u32 x y = Greater)
-  
-  function cmp_ge_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom cmp_ge_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y = (cmp_log_u32 x y <> Less)
-  
-  function cmp_lt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom cmp_lt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y = (cmp_log_u32 x y = Less)
-  
-  function cmp_le_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log_u32 x y <> Greater)
-  
-  predicate well_founded_relation_CustomVariant (self: t_CustomVariant) (other: t_CustomVariant) =
-    UInt32.gt self.f0 other.f0 /\ UInt32.gt self.f1 other.f1
-  
-  function index_Mapping_Int_CustomVariant [@inline:trivial] (self: Map.map int t_CustomVariant) (a: int) : t_CustomVariant
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Int_CustomVariant
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall s: Map.map int t_CustomVariant. forall result: int. result >= 0
-          /\ not well_founded_relation_CustomVariant (index_Mapping_Int_CustomVariant s result) (index_Mapping_Int_CustomVariant s (result
-          + 1))
-        -> result >= 0
-        /\ not well_founded_relation_CustomVariant (index_Mapping_Int_CustomVariant s result) (index_Mapping_Int_CustomVariant s (result
-        + 1))
 end

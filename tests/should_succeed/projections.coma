@@ -1,3 +1,30 @@
+module M_f
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_Option_i32 = None | Some Int32.t
+  
+  let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
+    [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec f (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_2 <- Some (10: Int32.t) ] s1
+      | s1 = any [ br0 -> {_2 = None} (! bb5) | br1 (x0: Int32.t) -> {_2 = Some x0} (! bb4) ] ]
+    | bb4 = s0 [ s0 = elim_Some {_2} (fun (r0: Int32.t) -> [ &x <- r0 ] s1) | s1 = return {_ret} ]
+    | bb5 = return {_ret} ]
+    [ & _ret: () = Any.any_l () | & _2: t_Option_i32 = Any.any_l () | & x: Int32.t = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end
 module M_copy_out_of_ref
   use creusot.int.UInt32
   use creusot.prelude.Any
@@ -99,32 +126,5 @@ module M_write_into_sum
       | s4 = return {_ret} ]
     | bb3 = s0 [ s0 = -{resolve_refmut_Option_u32 x}- s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & x: MutBorrow.t t_Option_u32 = x | & y: MutBorrow.t UInt32.t = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
-end
-module M_f
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  type t_Option_i32 = None | Some Int32.t
-  
-  let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
-    [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Some] match _x with
-        | Some _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec f (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_2 <- Some (10: Int32.t) ] s1
-      | s1 = any [ br0 -> {_2 = None} (! bb5) | br1 (x0: Int32.t) -> {_2 = Some x0} (! bb4) ] ]
-    | bb4 = s0 [ s0 = elim_Some {_2} (fun (r0: Int32.t) -> [ &x <- r0 ] s1) | s1 = return {_ret} ]
-    | bb5 = return {_ret} ]
-    [ & _ret: () = Any.any_l () | & _2: t_Option_i32 = Any.any_l () | & x: Int32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end

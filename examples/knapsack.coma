@@ -1,21 +1,3 @@
-module M_max
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  use int.MinMax
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec max (a: UInt64.t) (b: UInt64.t) (return (x: UInt64.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_7 <- UInt64.lt a b ] s1 | s1 = any [ br0 -> {_7 = false} (! bb2) | br1 -> {_7} (! bb1) ] ]
-    | bb1 = s0 [ s0 = [ &_ret <- b ] s1 | s1 = return {_ret} ]
-    | bb2 = s0 [ s0 = [ &_ret <- a ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: UInt64.t = Any.any_l () | & a: UInt64.t = a | & b: UInt64.t = b | & _7: bool = Any.any_l () ])
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:max ensures] UInt64.t'int result
-      = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
-      (! return {result}) ]
-end
 module M_m
   use creusot.int.UInt64
   use seq.Seq
@@ -70,6 +52,24 @@ module M_m
         >= 0)))
     
     )
+end
+module M_max
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.MinMax
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec max (a: UInt64.t) (b: UInt64.t) (return (x: UInt64.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_7 <- UInt64.lt a b ] s1 | s1 = any [ br0 -> {_7 = false} (! bb2) | br1 -> {_7} (! bb1) ] ]
+    | bb1 = s0 [ s0 = [ &_ret <- b ] s1 | s1 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- a ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & a: UInt64.t = a | & b: UInt64.t = b | & _7: bool = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:max ensures] UInt64.t'int result
+      = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
+      (! return {result}) ]
 end
 module M_knapsack01_dyn
   use creusot.int.UInt64

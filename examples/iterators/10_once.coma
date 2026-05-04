@@ -1,59 +1,3 @@
-module M_impl_Iterator_for_Once_T__produces_refl (* <Once<T> as common::Iterator> *)
-  use seq.Seq
-  
-  type t_T
-  
-  type t_Option_T = None | Some t_T
-  
-  type t_Once_T = { f0: t_Option_T }
-  
-  predicate produces_Once_T (self: t_Once_T) (visited: Seq.seq t_T) (o: t_Once_T) =
-    visited = (Seq.empty: Seq.seq t_T) /\ self = o
-    \/ (exists e: t_T. self = { f0 = Some e } /\ visited = Seq.singleton e /\ o = { f0 = None })
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Once_T
-  
-  function produces_refl_Once_T (self: t_Once_T) : ()
-  
-  goal vc_produces_refl_Once_T:
-    [@stop_split] [@expl:produces_refl ensures] produces_Once_T self (Seq.empty: Seq.seq t_T) self
-end
-module M_impl_Iterator_for_Once_T__produces_trans (* <Once<T> as common::Iterator> *)
-  use seq.Seq
-  
-  type t_T
-  
-  type t_Option_T = None | Some t_T
-  
-  type t_Once_T = { f0: t_Option_T }
-  
-  predicate produces_Once_T (self: t_Once_T) (visited: Seq.seq t_T) (o: t_Once_T) =
-    visited = (Seq.empty: Seq.seq t_T) /\ self = o
-    \/ (exists e: t_T. self = { f0 = Some e } /\ visited = Seq.singleton e /\ o = { f0 = None })
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant a : t_Once_T
-  
-  constant ab : Seq.seq t_T
-  
-  constant b : t_Once_T
-  
-  constant bc : Seq.seq t_T
-  
-  constant c : t_Once_T
-  
-  function produces_trans_Once_T (a: t_Once_T) (ab: Seq.seq t_T) (b: t_Once_T) (bc: Seq.seq t_T) (c: t_Once_T) : ()
-  
-  goal vc_produces_trans_Once_T: produces_Once_T a ab b
-    -> produces_Once_T b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Once_T a (Seq.(++) ab bc) c)
-end
 module M_impl_Iterator_for_Once_T__next (* <Once<T> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -142,6 +86,62 @@ module M_impl_Iterator_for_Once_T__next (* <Once<T> as common::Iterator> *)
         | Some v -> produces_Once_T self.current (Seq.singleton v) self.final
         end)}
       (! return {result}) ]
+end
+module M_impl_Iterator_for_Once_T__produces_refl (* <Once<T> as common::Iterator> *)
+  use seq.Seq
+  
+  type t_T
+  
+  type t_Option_T = None | Some t_T
+  
+  type t_Once_T = { f0: t_Option_T }
+  
+  predicate produces_Once_T (self: t_Once_T) (visited: Seq.seq t_T) (o: t_Once_T) =
+    visited = (Seq.empty: Seq.seq t_T) /\ self = o
+    \/ (exists e: t_T. self = { f0 = Some e } /\ visited = Seq.singleton e /\ o = { f0 = None })
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Once_T
+  
+  function produces_refl_Once_T (self: t_Once_T) : ()
+  
+  goal vc_produces_refl_Once_T:
+    [@stop_split] [@expl:produces_refl ensures] produces_Once_T self (Seq.empty: Seq.seq t_T) self
+end
+module M_impl_Iterator_for_Once_T__produces_trans (* <Once<T> as common::Iterator> *)
+  use seq.Seq
+  
+  type t_T
+  
+  type t_Option_T = None | Some t_T
+  
+  type t_Once_T = { f0: t_Option_T }
+  
+  predicate produces_Once_T (self: t_Once_T) (visited: Seq.seq t_T) (o: t_Once_T) =
+    visited = (Seq.empty: Seq.seq t_T) /\ self = o
+    \/ (exists e: t_T. self = { f0 = Some e } /\ visited = Seq.singleton e /\ o = { f0 = None })
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : t_Once_T
+  
+  constant ab : Seq.seq t_T
+  
+  constant b : t_Once_T
+  
+  constant bc : Seq.seq t_T
+  
+  constant c : t_Once_T
+  
+  function produces_trans_Once_T (a: t_Once_T) (ab: Seq.seq t_T) (b: t_Once_T) (bc: Seq.seq t_T) (c: t_Once_T) : ()
+  
+  goal vc_produces_trans_Once_T: produces_Once_T a ab b
+    -> produces_Once_T b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Once_T a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Once_T__next__refines (* <Once<T> as common::Iterator> *)
   use creusot.prelude.MutBorrow

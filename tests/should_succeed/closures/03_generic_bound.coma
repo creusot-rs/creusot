@@ -1,3 +1,27 @@
+module M_caller
+  use creusot.prelude.Any
+  use creusot.int.UInt32
+  
+  let rec closure0 [@coma:extspec] (self: ()) (_x: UInt32.t) (return (x: ())) = bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ] [ return (result: ()) -> return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  let rec closure_param_closure0 (f: ()) (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec caller (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_1 <- () ] s1
+      | s1 = closure_param_closure0 {_1} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end
 module M_closure_param
   use creusot.int.UInt32
   use creusot.prelude.Any
@@ -79,29 +103,5 @@ module M_closure_param
       | s2 = [ &_3 <- (0: UInt32.t) ] s3
       | s3 = call_F {f} {_3} (fun (_x: ()) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & f: t_F = f | & _3: UInt32.t = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
-end
-module M_caller
-  use creusot.prelude.Any
-  use creusot.int.UInt32
-  
-  let rec closure0 [@coma:extspec] (self: ()) (_x: UInt32.t) (return (x: ())) = bb0
-    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ] [ return (result: ()) -> return {result} ]
-  
-  meta "rewrite_def" predicate closure0'pre
-  
-  meta "rewrite_def" predicate closure0'post'return
-  
-  let rec closure_param_closure0 (f: ()) (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec caller (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_1 <- () ] s1
-      | s1 = closure_param_closure0 {_1} (fun (_x: ()) -> [ &_ret <- _x ] s2)
-      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end

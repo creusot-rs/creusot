@@ -3,7 +3,6 @@ use crate::{
         self, Why3Generator,
         clone_map::{CloneNames, Dependency, Kind, Namer},
         closures::{closure_hist_inv, closure_post, closure_pre},
-        is_trusted_item,
         logic::{lower_logical_defn, spec_axioms},
         program,
         resolve::{ResolveDef, elaborate_resolve_def, structural_resolve},

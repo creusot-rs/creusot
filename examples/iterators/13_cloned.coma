@@ -1,211 +1,3 @@
-module M_impl_Iterator_for_Cloned_I__produces_refl (* <Cloned<I> as common::Iterator> *)
-  use seq.Seq
-  use int.Int
-  
-  type t_I
-  
-  type t_Cloned_I = { iter: t_I }
-  
-  type t_T
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T)
-  
-  axiom postcondition_fndef:
-    forall args: t_T, res: t_T [postcondition_once_clone () args res]. postcondition_once_clone () args res
-      -> (let self_ = args in inv_T res)
-  
-  predicate resolve_clone [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_clone
-  
-  predicate postcondition_mut_clone (self: ()) (args: t_T) (result_state: ()) (result: t_T)
-  
-  axiom postcondition_fndef'0:
-    forall args: t_T, res: t_T [postcondition_mut_clone () args () res]. postcondition_mut_clone () args () res
-      -> (let self_ = args in inv_T res)
-  
-  function fn_mut_once_clone (self: ()) (args: t_T) (res: t_T) : ()
-  
-  axiom fn_mut_once_clone_spec: forall self: (), args: t_T, res: t_T. postcondition_once_clone self args res
-      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
-  
-  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_clone
-  
-  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
-      -> hist_inv_clone b c -> hist_inv_clone self c
-  
-  function hist_inv_refl_clone (self: ()) : ()
-  
-  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
-  
-  function postcondition_mut_hist_inv_clone (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
-  
-  axiom postcondition_mut_hist_inv_clone_spec:
-    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut_clone self args res_state res
-      -> hist_inv_clone self res_state
-  
-  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
-  
-  predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
-  
-  axiom postcondition_fndef'1:
-    forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_T res)
-  
-  function fn_once_clone (self: ()) (args: t_T) (res: t_T) : ()
-  
-  axiom fn_once_clone_spec: forall self: (), args: t_T, res: t_T. postcondition_once_clone self args res
-      = (postcondition_clone self args res /\ resolve_clone self)
-  
-  function fn_mut_clone (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
-  
-  axiom fn_mut_clone_spec:
-    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut_clone self args res_state res
-      = (postcondition_clone self args res /\ self = res_state)
-  
-  predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
-    exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ Seq.length visited = Seq.length s
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Cloned_I
-  
-  function produces_refl_Cloned_I (self: t_Cloned_I) : ()
-  
-  goal vc_produces_refl_Cloned_I:
-    [@stop_split] [@expl:produces_refl ensures] produces_Cloned_I self (Seq.empty: Seq.seq t_T) self
-end
-module M_impl_Iterator_for_Cloned_I__produces_trans (* <Cloned<I> as common::Iterator> *)
-  use seq.Seq
-  use int.Int
-  
-  type t_I
-  
-  type t_Cloned_I = { iter: t_I }
-  
-  type t_T
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T)
-  
-  axiom postcondition_fndef:
-    forall args: t_T, res: t_T [postcondition_once_clone () args res]. postcondition_once_clone () args res
-      -> (let self_ = args in inv_T res)
-  
-  predicate resolve_clone [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_clone
-  
-  predicate postcondition_mut_clone (self: ()) (args: t_T) (result_state: ()) (result: t_T)
-  
-  axiom postcondition_fndef'0:
-    forall args: t_T, res: t_T [postcondition_mut_clone () args () res]. postcondition_mut_clone () args () res
-      -> (let self_ = args in inv_T res)
-  
-  function fn_mut_once_clone (self: ()) (args: t_T) (res: t_T) : ()
-  
-  axiom fn_mut_once_clone_spec: forall self: (), args: t_T, res: t_T. postcondition_once_clone self args res
-      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
-  
-  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_clone
-  
-  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
-      -> hist_inv_clone b c -> hist_inv_clone self c
-  
-  function hist_inv_refl_clone (self: ()) : ()
-  
-  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
-  
-  function postcondition_mut_hist_inv_clone (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
-  
-  axiom postcondition_mut_hist_inv_clone_spec:
-    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut_clone self args res_state res
-      -> hist_inv_clone self res_state
-  
-  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
-  
-  predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
-  
-  axiom postcondition_fndef'1:
-    forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_T res)
-  
-  function fn_once_clone (self: ()) (args: t_T) (res: t_T) : ()
-  
-  axiom fn_once_clone_spec: forall self: (), args: t_T, res: t_T. postcondition_once_clone self args res
-      = (postcondition_clone self args res /\ resolve_clone self)
-  
-  function fn_mut_clone (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
-  
-  axiom fn_mut_clone_spec:
-    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut_clone self args res_state res
-      = (postcondition_clone self args res /\ self = res_state)
-  
-  predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
-    exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ Seq.length visited = Seq.length s
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant a : t_Cloned_I
-  
-  constant ab : Seq.seq t_T
-  
-  constant b : t_Cloned_I
-  
-  constant bc : Seq.seq t_T
-  
-  constant c : t_Cloned_I
-  
-  function produces_trans_Cloned_I (a: t_Cloned_I) (ab: Seq.seq t_T) (b: t_Cloned_I) (bc: Seq.seq t_T) (c: t_Cloned_I) : ()
-  
-  goal vc_produces_trans_Cloned_I: produces_Cloned_I a ab b
-    -> produces_Cloned_I b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Cloned_I a (Seq.(++) ab bc) c)
-end
 module M_impl_Iterator_for_Cloned_I__next (* <Cloned<I> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use seq.Seq
@@ -432,6 +224,214 @@ module M_impl_Iterator_for_Cloned_I__next (* <Cloned<I> as common::Iterator> *)
         | Some'0 v -> produces_Cloned_I self.current (Seq.singleton v) self.final
         end)}
       (! return {result}) ]
+end
+module M_impl_Iterator_for_Cloned_I__produces_refl (* <Cloned<I> as common::Iterator> *)
+  use seq.Seq
+  use int.Int
+  
+  type t_I
+  
+  type t_Cloned_I = { iter: t_I }
+  
+  type t_T
+  
+  predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
+  
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
+  
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_I (self: t_I) : ()
+  
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef:
+    forall args: t_T, res: t_T [postcondition_once_clone () args res]. postcondition_once_clone () args res
+      -> (let self_ = args in inv_T res)
+  
+  predicate resolve_clone [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_clone
+  
+  predicate postcondition_mut_clone (self: ()) (args: t_T) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'0:
+    forall args: t_T, res: t_T [postcondition_mut_clone () args () res]. postcondition_mut_clone () args () res
+      -> (let self_ = args in inv_T res)
+  
+  function fn_mut_once_clone (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_mut_once_clone_spec: forall self: (), args: t_T, res: t_T. postcondition_once_clone self args res
+      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
+  
+  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_clone
+  
+  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
+      -> hist_inv_clone b c -> hist_inv_clone self c
+  
+  function hist_inv_refl_clone (self: ()) : ()
+  
+  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
+  
+  function postcondition_mut_hist_inv_clone (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_clone_spec:
+    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut_clone self args res_state res
+      -> hist_inv_clone self res_state
+  
+  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
+  
+  predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef'1:
+    forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
+      -> (let self_ = args in inv_T res)
+  
+  function fn_once_clone (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_once_clone_spec: forall self: (), args: t_T, res: t_T. postcondition_once_clone self args res
+      = (postcondition_clone self args res /\ resolve_clone self)
+  
+  function fn_mut_clone (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_clone_spec:
+    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut_clone self args res_state res
+      = (postcondition_clone self args res /\ self = res_state)
+  
+  predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
+    exists s: Seq.seq t_T. produces_I self.iter s o.iter
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Cloned_I
+  
+  function produces_refl_Cloned_I (self: t_Cloned_I) : ()
+  
+  goal vc_produces_refl_Cloned_I:
+    [@stop_split] [@expl:produces_refl ensures] produces_Cloned_I self (Seq.empty: Seq.seq t_T) self
+end
+module M_impl_Iterator_for_Cloned_I__produces_trans (* <Cloned<I> as common::Iterator> *)
+  use seq.Seq
+  use int.Int
+  
+  type t_I
+  
+  type t_Cloned_I = { iter: t_I }
+  
+  type t_T
+  
+  predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
+  
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
+  
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_I (self: t_I) : ()
+  
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef:
+    forall args: t_T, res: t_T [postcondition_once_clone () args res]. postcondition_once_clone () args res
+      -> (let self_ = args in inv_T res)
+  
+  predicate resolve_clone [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_clone
+  
+  predicate postcondition_mut_clone (self: ()) (args: t_T) (result_state: ()) (result: t_T)
+  
+  axiom postcondition_fndef'0:
+    forall args: t_T, res: t_T [postcondition_mut_clone () args () res]. postcondition_mut_clone () args () res
+      -> (let self_ = args in inv_T res)
+  
+  function fn_mut_once_clone (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_mut_once_clone_spec: forall self: (), args: t_T, res: t_T. postcondition_once_clone self args res
+      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
+  
+  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_clone
+  
+  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
+      -> hist_inv_clone b c -> hist_inv_clone self c
+  
+  function hist_inv_refl_clone (self: ()) : ()
+  
+  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
+  
+  function postcondition_mut_hist_inv_clone (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom postcondition_mut_hist_inv_clone_spec:
+    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut_clone self args res_state res
+      -> hist_inv_clone self res_state
+  
+  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
+  
+  predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef'1:
+    forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
+      -> (let self_ = args in inv_T res)
+  
+  function fn_once_clone (self: ()) (args: t_T) (res: t_T) : ()
+  
+  axiom fn_once_clone_spec: forall self: (), args: t_T, res: t_T. postcondition_once_clone self args res
+      = (postcondition_clone self args res /\ resolve_clone self)
+  
+  function fn_mut_clone (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
+  
+  axiom fn_mut_clone_spec:
+    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut_clone self args res_state res
+      = (postcondition_clone self args res /\ self = res_state)
+  
+  predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
+    exists s: Seq.seq t_T. produces_I self.iter s o.iter
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant a : t_Cloned_I
+  
+  constant ab : Seq.seq t_T
+  
+  constant b : t_Cloned_I
+  
+  constant bc : Seq.seq t_T
+  
+  constant c : t_Cloned_I
+  
+  function produces_trans_Cloned_I (a: t_Cloned_I) (ab: Seq.seq t_T) (b: t_Cloned_I) (bc: Seq.seq t_T) (c: t_Cloned_I) : ()
+  
+  goal vc_produces_trans_Cloned_I: produces_Cloned_I a ab b
+    -> produces_Cloned_I b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Cloned_I a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Cloned_I__produces_trans__refines (* <Cloned<I> as common::Iterator> *)
   use seq.Seq

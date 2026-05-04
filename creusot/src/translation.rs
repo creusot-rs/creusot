@@ -16,6 +16,7 @@ use crate::{
     validate::validate,
 };
 use creusot_args::options::{Options, Output};
+use itertools::Itertools;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_index::bit_set::DenseBitSet;
 use rustc_middle::ty::TyCtxt;
@@ -212,7 +213,7 @@ fn print_crate<I: Iterator<Item = FileModule>>(
         Output::None => return Ok(None),
     };
 
-    for modl in modules {
+    for modl in modules.sorted_by(|m1, m2| m1.path.cmp(&m2.path)) {
         module_output(&modl, &mut output)?;
     }
 

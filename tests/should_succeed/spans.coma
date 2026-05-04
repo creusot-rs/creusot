@@ -1,19 +1,3 @@
-module M_impl_Tr_for_S__foo [#"spans.rs" 17 4 17 27] (* <S as Tr> *)
-  let%span sspans = "spans.rs" 15 15 15 21
-  let%span sspans'0 = "spans.rs" 16 14 16 30
-  
-  use creusot.prelude.Any
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec foo_S [#"spans.rs" 17 4 17 27] (x: bool) (return (x'0: bool)) =
-    {[@stop_split] [@expl:foo requires] [%#sspans] x /\ x}
-    (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & x: bool = x ])
-    [ return (result: bool) -> {[@stop_split] [@expl:foo ensures] [%#sspans'0] result \/ result} (! return {result}) ]
-end
 module M_bar [#"spans.rs" 24 0 24 33]
   let%span sspans = "spans.rs" 25 14 25 16
   let%span sspans'0 = "spans.rs" 27 10 27 11
@@ -84,46 +68,6 @@ module M_baz [#"spans.rs" 37 0 37 25]
       /\ (([@stop_split] [@expl:baz ensures] [%#sspans'1] baz (i - 1) = 0)
       -> ([@stop_split] [@expl:baz ensures] [%#sspans'1] baz (i - 1) = 0))
     )
-end
-module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
-  let%span sspans = "spans.rs" 61 22 61 23
-  let%span sspans'0 = "spans.rs" 61 13 61 23
-  let%span sspans'1 = "spans.rs" 60 16 60 20
-  let%span sspans'2 = "spans.rs" 58 15 58 26
-  let%span sspans'3 = "spans.rs" 60 25 60 29
-  let%span sspans'4 = "spans.rs" 59 14 59 38
-  let%span sspans'5 = "spans.rs" 52 20 52 32
-  
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_NonNeg = { f0: UInt64.t }
-  
-  predicate invariant_NonNeg [#"spans.rs" 51 4 51 30] (self: t_NonNeg) = [%#sspans'5] 0 <= UInt64.t'int self.f0
-  
-  predicate inv_NonNeg (_1: t_NonNeg)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_NonNeg [inv_NonNeg x]. inv_NonNeg x = invariant_NonNeg x
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec decr [#"spans.rs" 60 4 60 29] (self: t_NonNeg) (return (x: t_NonNeg)) =
-    {[@stop_split] [@expl:decr requires] ([@stop_split] [@expl:decr 'self' type invariant] [%#sspans'1] inv_NonNeg self)
-    /\ ([@stop_split] [@expl:decr requires] [%#sspans'2] 0 < UInt64.t'int self.f0)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_NonNeg self} any) ]
-      | s1 = UInt64.sub [%#sspans'0] {self.f0} {[%#sspans] (1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s2)
-      | s2 = [ &_ret <- { f0 = _6 } ] s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: t_NonNeg = Any.any_l () | & self: t_NonNeg = self | & _6: UInt64.t = Any.any_l () ])
-    [ return (result: t_NonNeg) ->
-    {[@stop_split] [@expl:decr ensures] ([@stop_split] [@expl:decr result type invariant] [%#sspans'3] inv_NonNeg result)
-      /\ ([@stop_split] [@expl:decr ensures] [%#sspans'4] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1)}
-      (! return {result}) ]
 end
 module M_quux [#"spans.rs" 68 0 68 32]
   let%span sspans = "spans.rs" 69 14 69 15
@@ -251,6 +195,22 @@ module M_slices [#"spans.rs" 73 0 73 32]
     | & _13: UInt64.t = Any.any_l ()
     | & _14: bool = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
 end
+module M_impl_Tr_for_S__foo [#"spans.rs" 17 4 17 27] (* <S as Tr> *)
+  let%span sspans = "spans.rs" 15 15 15 21
+  let%span sspans'0 = "spans.rs" 16 14 16 30
+  
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec foo_S [#"spans.rs" 17 4 17 27] (x: bool) (return (x'0: bool)) =
+    {[@stop_split] [@expl:foo requires] [%#sspans] x /\ x}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & x: bool = x ])
+    [ return (result: bool) -> {[@stop_split] [@expl:foo ensures] [%#sspans'0] result \/ result} (! return {result}) ]
+end
 module M_impl_Tr_for_S__foo__refines [#"spans.rs" 17 4 17 27] (* <S as Tr> *)
   let%span sspans = "spans.rs" 7 15 7 16
   let%span sspans'0 = "spans.rs" 15 15 15 21
@@ -263,4 +223,44 @@ module M_impl_Tr_for_S__foo__refines [#"spans.rs" 17 4 17 27] (* <S as Tr> *)
   
   goal refines: forall x: bool. ([%#sspans] x)
       -> ([%#sspans'0] x /\ x) /\ (forall result: bool. ([%#sspans'1] result \/ result) -> ([%#sspans'2] result))
+end
+module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
+  let%span sspans = "spans.rs" 61 22 61 23
+  let%span sspans'0 = "spans.rs" 61 13 61 23
+  let%span sspans'1 = "spans.rs" 60 16 60 20
+  let%span sspans'2 = "spans.rs" 58 15 58 26
+  let%span sspans'3 = "spans.rs" 60 25 60 29
+  let%span sspans'4 = "spans.rs" 59 14 59 38
+  let%span sspans'5 = "spans.rs" 52 20 52 32
+  
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_NonNeg = { f0: UInt64.t }
+  
+  predicate invariant_NonNeg [#"spans.rs" 51 4 51 30] (self: t_NonNeg) = [%#sspans'5] 0 <= UInt64.t'int self.f0
+  
+  predicate inv_NonNeg (_1: t_NonNeg)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_NonNeg [inv_NonNeg x]. inv_NonNeg x = invariant_NonNeg x
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec decr [#"spans.rs" 60 4 60 29] (self: t_NonNeg) (return (x: t_NonNeg)) =
+    {[@stop_split] [@expl:decr requires] ([@stop_split] [@expl:decr 'self' type invariant] [%#sspans'1] inv_NonNeg self)
+    /\ ([@stop_split] [@expl:decr requires] [%#sspans'2] 0 < UInt64.t'int self.f0)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_NonNeg self} any) ]
+      | s1 = UInt64.sub [%#sspans'0] {self.f0} {[%#sspans] (1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_ret <- { f0 = _6 } ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_NonNeg = Any.any_l () | & self: t_NonNeg = self | & _6: UInt64.t = Any.any_l () ])
+    [ return (result: t_NonNeg) ->
+    {[@stop_split] [@expl:decr ensures] ([@stop_split] [@expl:decr result type invariant] [%#sspans'3] inv_NonNeg result)
+      /\ ([@stop_split] [@expl:decr ensures] [%#sspans'4] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1)}
+      (! return {result}) ]
 end

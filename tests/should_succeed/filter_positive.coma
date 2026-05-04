@@ -1,104 +1,3 @@
-module M_num_of_pos
-  use creusot.int.Int32
-  use seq.Seq
-  use int.Int
-  
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
-  
-  meta "rewrite_def" predicate well_founded_relation_Int
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant i : int
-  
-  constant j : int
-  
-  constant t : Seq.seq Int32.t
-  
-  function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
-  
-  goal vc_num_of_pos: if i >= j then
-      true
-    else
-      if Int32.to_int (Seq.get t (j - 1)) > 0 then
-        [@expl:variant decreases] well_founded_relation_Int (j - i) (j - 1 - i)
-      else
-        [@expl:variant decreases] well_founded_relation_Int (j - i) (j - 1 - i)
-    
-
-end
-module M_lemma_num_of_pos_increasing
-  use creusot.int.Int32
-  use seq.Seq
-  use int.Int
-  
-  function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
-  
-  axiom num_of_pos_def: forall i: int, j: int, t: Seq.seq Int32.t [num_of_pos i j t]. num_of_pos i j t
-      = (if i >= j then
-        0
-      else
-        if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
-      )
-  
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
-  
-  meta "rewrite_def" predicate well_founded_relation_Int
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant i : int
-  
-  constant j : int
-  
-  constant k : int
-  
-  constant t : Seq.seq Int32.t
-  
-  function lemma_num_of_pos_increasing (i: int) (j: int) (k: int) (t: Seq.seq Int32.t) : ()
-  
-  goal vc_lemma_num_of_pos_increasing: j <= k
-    -> (if j < k then
-      (([@stop_split] [@expl:lemma_num_of_pos_increasing requires] j + 1 <= k)
-        /\ ([@expl:variant decreases] well_founded_relation_Int (k - j) (k - (j + 1))))
-      /\ (([@stop_split] [@expl:lemma_num_of_pos_increasing ensures] num_of_pos i (j + 1) t <= num_of_pos i k t)
-      -> ([@stop_split] [@expl:lemma_num_of_pos_increasing ensures] num_of_pos i j t <= num_of_pos i k t))
-    else
-      [@stop_split] [@expl:lemma_num_of_pos_increasing ensures] num_of_pos i j t <= num_of_pos i k t
-    )
-end
-module M_lemma_num_of_pos_strictly_increasing
-  use creusot.int.Int32
-  use seq.Seq
-  use int.Int
-  
-  function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
-  
-  axiom num_of_pos_def: forall i: int, j: int, t: Seq.seq Int32.t [num_of_pos i j t]. num_of_pos i j t
-      = (if i >= j then
-        0
-      else
-        if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
-      )
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant i : int
-  
-  constant t : Seq.seq Int32.t
-  
-  function lemma_num_of_pos_strictly_increasing (i: int) (t: Seq.seq Int32.t) : ()
-  
-  goal vc_lemma_num_of_pos_strictly_increasing: 0 <= i /\ i < Seq.length t
-    -> Int32.to_int (Seq.get t i) > 0
-    -> ([@stop_split] [@expl:lemma_num_of_pos_strictly_increasing ensures] num_of_pos 0 i t < num_of_pos 0 (i + 1) t)
-end
 module M_m
   use creusot.int.UInt64
   use seq.Seq
@@ -268,4 +167,105 @@ module M_m
     | & _62: Int32.t = Any.any_l ()
     | & _65: MutBorrow.t Int32.t = Any.any_l ()
     | & _66: MutBorrow.t t_Vec_i32_Global = Any.any_l () ]) [ return (result: t_Vec_i32_Global) -> (! return {result}) ]
+end
+module M_num_of_pos
+  use creusot.int.Int32
+  use seq.Seq
+  use int.Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant i : int
+  
+  constant j : int
+  
+  constant t : Seq.seq Int32.t
+  
+  function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
+  
+  goal vc_num_of_pos: if i >= j then
+      true
+    else
+      if Int32.to_int (Seq.get t (j - 1)) > 0 then
+        [@expl:variant decreases] well_founded_relation_Int (j - i) (j - 1 - i)
+      else
+        [@expl:variant decreases] well_founded_relation_Int (j - i) (j - 1 - i)
+    
+
+end
+module M_lemma_num_of_pos_increasing
+  use creusot.int.Int32
+  use seq.Seq
+  use int.Int
+  
+  function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
+  
+  axiom num_of_pos_def: forall i: int, j: int, t: Seq.seq Int32.t [num_of_pos i j t]. num_of_pos i j t
+      = (if i >= j then
+        0
+      else
+        if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
+      )
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant i : int
+  
+  constant j : int
+  
+  constant k : int
+  
+  constant t : Seq.seq Int32.t
+  
+  function lemma_num_of_pos_increasing (i: int) (j: int) (k: int) (t: Seq.seq Int32.t) : ()
+  
+  goal vc_lemma_num_of_pos_increasing: j <= k
+    -> (if j < k then
+      (([@stop_split] [@expl:lemma_num_of_pos_increasing requires] j + 1 <= k)
+        /\ ([@expl:variant decreases] well_founded_relation_Int (k - j) (k - (j + 1))))
+      /\ (([@stop_split] [@expl:lemma_num_of_pos_increasing ensures] num_of_pos i (j + 1) t <= num_of_pos i k t)
+      -> ([@stop_split] [@expl:lemma_num_of_pos_increasing ensures] num_of_pos i j t <= num_of_pos i k t))
+    else
+      [@stop_split] [@expl:lemma_num_of_pos_increasing ensures] num_of_pos i j t <= num_of_pos i k t
+    )
+end
+module M_lemma_num_of_pos_strictly_increasing
+  use creusot.int.Int32
+  use seq.Seq
+  use int.Int
+  
+  function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
+  
+  axiom num_of_pos_def: forall i: int, j: int, t: Seq.seq Int32.t [num_of_pos i j t]. num_of_pos i j t
+      = (if i >= j then
+        0
+      else
+        if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
+      )
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant i : int
+  
+  constant t : Seq.seq Int32.t
+  
+  function lemma_num_of_pos_strictly_increasing (i: int) (t: Seq.seq Int32.t) : ()
+  
+  goal vc_lemma_num_of_pos_strictly_increasing: 0 <= i /\ i < Seq.length t
+    -> Int32.to_int (Seq.get t i) > 0
+    -> ([@stop_split] [@expl:lemma_num_of_pos_strictly_increasing ensures] num_of_pos 0 i t < num_of_pos 0 (i + 1) t)
 end

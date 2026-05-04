@@ -1,3 +1,48 @@
+module M_impl_Iterator_for_Empty_T__next (* <Empty<T> as common::Iterator> *)
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use seq.Seq
+  
+  type t_Empty_T = { f0: () }
+  
+  predicate resolve_refmut_Empty_T [@inline:trivial] (_1: MutBorrow.t t_Empty_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Empty_T
+  
+  type t_T
+  
+  type t_Option_T = None | Some t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0'0 -> inv_T f0'0
+        end
+  
+  predicate completed_Empty_T (self: MutBorrow.t t_Empty_T) = resolve_refmut_Empty_T self
+  
+  predicate produces_Empty_T (self: t_Empty_T) (visited: Seq.seq t_T) (o: t_Empty_T) =
+    visited = (Seq.empty: Seq.seq t_T) /\ self = o
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec next_Empty_T (self: MutBorrow.t t_Empty_T) (return (x: t_Option_T)) = (! bb0
+    [ bb0 = s0 [ s0 = -{resolve_refmut_Empty_T self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_Option_T = Any.any_l () | & self: MutBorrow.t t_Empty_T = self ])
+    [ return (result: t_Option_T) ->
+    {[@stop_split] [@expl:next_Empty_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_T result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
+        | None -> completed_Empty_T self
+        | Some v -> produces_Empty_T self.current (Seq.singleton v) self.final
+        end)}
+      (! return {result}) ]
+end
 module M_impl_Iterator_for_Empty_T__produces_refl (* <Empty<T> as common::Iterator> *)
   use seq.Seq
   
@@ -47,51 +92,6 @@ module M_impl_Iterator_for_Empty_T__produces_trans (* <Empty<T> as common::Itera
   
   goal vc_produces_trans_Empty_T: produces_Empty_T a ab b
     -> produces_Empty_T b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Empty_T a (Seq.(++) ab bc) c)
-end
-module M_impl_Iterator_for_Empty_T__next (* <Empty<T> as common::Iterator> *)
-  use creusot.prelude.MutBorrow
-  use creusot.prelude.Any
-  use seq.Seq
-  
-  type t_Empty_T = { f0: () }
-  
-  predicate resolve_refmut_Empty_T [@inline:trivial] (_1: MutBorrow.t t_Empty_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Empty_T
-  
-  type t_T
-  
-  type t_Option_T = None | Some t_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_Option_T (_1: t_Option_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-      = match x with
-        | None -> true
-        | Some f0'0 -> inv_T f0'0
-        end
-  
-  predicate completed_Empty_T (self: MutBorrow.t t_Empty_T) = resolve_refmut_Empty_T self
-  
-  predicate produces_Empty_T (self: t_Empty_T) (visited: Seq.seq t_T) (o: t_Empty_T) =
-    visited = (Seq.empty: Seq.seq t_T) /\ self = o
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec next_Empty_T (self: MutBorrow.t t_Empty_T) (return (x: t_Option_T)) = (! bb0
-    [ bb0 = s0 [ s0 = -{resolve_refmut_Empty_T self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ] ]
-    [ & _ret: t_Option_T = Any.any_l () | & self: MutBorrow.t t_Empty_T = self ])
-    [ return (result: t_Option_T) ->
-    {[@stop_split] [@expl:next_Empty_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_T result)
-      /\ ([@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Empty_T self
-        | Some v -> produces_Empty_T self.current (Seq.singleton v) self.final
-        end)}
-      (! return {result}) ]
 end
 module M_impl_Iterator_for_Empty_T__produces_refl__refines (* <Empty<T> as common::Iterator> *)
   use seq.Seq

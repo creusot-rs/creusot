@@ -1,3 +1,110 @@
+module M_m
+  use creusot.int.UInt64
+  use seq.Seq
+  use int.MinMax
+  use int.Int
+  
+  type t_Name
+  
+  type t_Item_Name = { name: t_Name; weight: UInt64.t; value: UInt64.t }
+  
+  predicate subseq_rev_Item_Name (s1: Seq.seq t_Item_Name) (i1: int) (s2: Seq.seq t_Item_Name) (i2: int)
+  
+  axiom subseq_rev_Item_Name_def:
+    forall s1: Seq.seq t_Item_Name, i1: int, s2: Seq.seq t_Item_Name, i2: int [subseq_rev_Item_Name s1 i1 s2 i2]. 0
+          <= i1
+        /\ i1 <= Seq.length s1
+      -> 0 <= i2 /\ i2 <= Seq.length s2
+      -> subseq_rev_Item_Name s1 i1 s2 i2
+      = (if i2 = 0 then
+        i1 = Seq.length s1
+      else
+        i1 < Seq.length s1 /\ Seq.get s1 i1 = Seq.get s2 (i2 - 1) /\ subseq_rev_Item_Name s1 (i1 + 1) s2 (i2 - 1)
+        \/ subseq_rev_Item_Name s1 i1 s2 (i2 - 1)
+      )
+  
+  function sum_weights_Name (s: Seq.seq t_Item_Name) (i: int) : int
+  
+  axiom sum_weights_Name_def: forall s: Seq.seq t_Item_Name, i: int [sum_weights_Name s i]. 0 <= i /\ i <= Seq.length s
+      -> sum_weights_Name s i
+      = (if i = Seq.length s then 0 else UInt64.t'int (Seq.get s i).weight + sum_weights_Name s (i + 1))
+  
+  axiom sum_weights_Name_spec: forall s: Seq.seq t_Item_Name, i: int [sum_weights_Name s i]. 0 <= i /\ i <= Seq.length s
+      -> sum_weights_Name s i >= 0
+  
+  function sum_values_Name (s: Seq.seq t_Item_Name) (i: int) : int
+  
+  axiom sum_values_Name_def: forall s: Seq.seq t_Item_Name, i: int [sum_values_Name s i]. i >= 0 /\ i <= Seq.length s
+      -> sum_values_Name s i
+      = (if i = Seq.length s then 0 else UInt64.t'int (Seq.get s i).value + sum_values_Name s (i + 1))
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant items : Seq.seq t_Item_Name
+  
+  constant i : int
+  
+  constant w : int
+  
+  function m_Name (items: Seq.seq t_Item_Name) (i: int) (w: int) : int
+  
+  goal vc_m_Name: 0 <= i /\ i <= Seq.length items
+    -> 0 <= w
+    -> (if i = 0 then
+      let result = 0 in [@stop_split] [@expl:m_Name ensures] ([@stop_split] [@expl:m ensures #0] result >= 0)
+      /\ ([@stop_split] [@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
+          /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items i /\ sum_weights_Name s j <= w
+        -> sum_values_Name s j <= result)
+    else
+      if UInt64.t'int (Seq.get items (i - 1)).weight > w then
+        (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
+            /\ ([@stop_split] [@expl:m requires #1] 0 <= w))
+          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
+        /\ (([@stop_split] [@expl:m ensures] ([@stop_split] [@expl:m ensures #0] m_Name items (i - 1) w >= 0)
+          /\ ([@stop_split] [@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
+              /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items (i - 1) /\ sum_weights_Name s j <= w
+            -> sum_values_Name s j <= m_Name items (i - 1) w))
+        -> (let result = m_Name items (i
+        - 1) w in [@stop_split] [@expl:m_Name ensures] ([@stop_split] [@expl:m ensures #0] result >= 0)
+        /\ ([@stop_split] [@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
+            /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items i /\ sum_weights_Name s j <= w
+          -> sum_values_Name s j <= result)))
+      else
+        (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
+            /\ ([@stop_split] [@expl:m requires #1] 0 <= w))
+          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
+        /\ (([@stop_split] [@expl:m ensures] ([@stop_split] [@expl:m ensures #0] m_Name items (i - 1) w >= 0)
+          /\ ([@stop_split] [@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
+              /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items (i - 1) /\ sum_weights_Name s j <= w
+            -> sum_values_Name s j <= m_Name items (i - 1) w))
+        -> (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1
+              /\ i - 1 <= Seq.length items)
+            /\ ([@stop_split] [@expl:m requires #1] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).weight))
+          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
+        /\ (([@stop_split] [@expl:m ensures] ([@stop_split] [@expl:m ensures #0] m_Name items (i - 1) (w
+              - UInt64.t'int (Seq.get items (i - 1)).weight)
+            >= 0)
+          /\ ([@stop_split] [@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
+              /\ j <= Seq.length s
+              /\ subseq_rev_Item_Name s j items (i - 1)
+              /\ sum_weights_Name s j <= w - UInt64.t'int (Seq.get items (i - 1)).weight
+            -> sum_values_Name s j <= m_Name items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).weight)))
+        -> (let result = MinMax.max (m_Name items (i - 1) w) (m_Name items (i - 1) (w
+          - UInt64.t'int (Seq.get items (i - 1)).weight)
+        + UInt64.t'int (Seq.get items (i
+        - 1)).value) in [@stop_split] [@expl:m_Name ensures] ([@stop_split] [@expl:m ensures #0] result >= 0)
+        /\ ([@stop_split] [@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
+            /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items i /\ sum_weights_Name s j <= w
+          -> sum_values_Name s j <= result))))
+    
+    )
+end
 module M_max
   use creusot.int.UInt64
   use creusot.prelude.Any
@@ -135,113 +242,6 @@ module M_subseq_rev
             /\ i1 <= Seq.length s1)
           /\ ([@stop_split] [@expl:subseq_rev requires #1] 0 <= i2 - 1 /\ i2 - 1 <= Seq.length s2))
         /\ ([@expl:variant decreases] well_founded_relation_Int i2 (i2 - 1))
-    
-    )
-end
-module M_m
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.MinMax
-  use int.Int
-  
-  type t_Name
-  
-  type t_Item_Name = { name: t_Name; weight: UInt64.t; value: UInt64.t }
-  
-  predicate subseq_rev_Item_Name (s1: Seq.seq t_Item_Name) (i1: int) (s2: Seq.seq t_Item_Name) (i2: int)
-  
-  axiom subseq_rev_Item_Name_def:
-    forall s1: Seq.seq t_Item_Name, i1: int, s2: Seq.seq t_Item_Name, i2: int [subseq_rev_Item_Name s1 i1 s2 i2]. 0
-          <= i1
-        /\ i1 <= Seq.length s1
-      -> 0 <= i2 /\ i2 <= Seq.length s2
-      -> subseq_rev_Item_Name s1 i1 s2 i2
-      = (if i2 = 0 then
-        i1 = Seq.length s1
-      else
-        i1 < Seq.length s1 /\ Seq.get s1 i1 = Seq.get s2 (i2 - 1) /\ subseq_rev_Item_Name s1 (i1 + 1) s2 (i2 - 1)
-        \/ subseq_rev_Item_Name s1 i1 s2 (i2 - 1)
-      )
-  
-  function sum_weights_Name (s: Seq.seq t_Item_Name) (i: int) : int
-  
-  axiom sum_weights_Name_def: forall s: Seq.seq t_Item_Name, i: int [sum_weights_Name s i]. 0 <= i /\ i <= Seq.length s
-      -> sum_weights_Name s i
-      = (if i = Seq.length s then 0 else UInt64.t'int (Seq.get s i).weight + sum_weights_Name s (i + 1))
-  
-  axiom sum_weights_Name_spec: forall s: Seq.seq t_Item_Name, i: int [sum_weights_Name s i]. 0 <= i /\ i <= Seq.length s
-      -> sum_weights_Name s i >= 0
-  
-  function sum_values_Name (s: Seq.seq t_Item_Name) (i: int) : int
-  
-  axiom sum_values_Name_def: forall s: Seq.seq t_Item_Name, i: int [sum_values_Name s i]. i >= 0 /\ i <= Seq.length s
-      -> sum_values_Name s i
-      = (if i = Seq.length s then 0 else UInt64.t'int (Seq.get s i).value + sum_values_Name s (i + 1))
-  
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
-  
-  meta "rewrite_def" predicate well_founded_relation_Int
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant items : Seq.seq t_Item_Name
-  
-  constant i : int
-  
-  constant w : int
-  
-  function m_Name (items: Seq.seq t_Item_Name) (i: int) (w: int) : int
-  
-  goal vc_m_Name: 0 <= i /\ i <= Seq.length items
-    -> 0 <= w
-    -> (if i = 0 then
-      let result = 0 in [@stop_split] [@expl:m_Name ensures] ([@stop_split] [@expl:m ensures #0] result >= 0)
-      /\ ([@stop_split] [@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
-          /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items i /\ sum_weights_Name s j <= w
-        -> sum_values_Name s j <= result)
-    else
-      if UInt64.t'int (Seq.get items (i - 1)).weight > w then
-        (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
-            /\ ([@stop_split] [@expl:m requires #1] 0 <= w))
-          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
-        /\ (([@stop_split] [@expl:m ensures] ([@stop_split] [@expl:m ensures #0] m_Name items (i - 1) w >= 0)
-          /\ ([@stop_split] [@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
-              /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items (i - 1) /\ sum_weights_Name s j <= w
-            -> sum_values_Name s j <= m_Name items (i - 1) w))
-        -> (let result = m_Name items (i
-        - 1) w in [@stop_split] [@expl:m_Name ensures] ([@stop_split] [@expl:m ensures #0] result >= 0)
-        /\ ([@stop_split] [@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
-            /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items i /\ sum_weights_Name s j <= w
-          -> sum_values_Name s j <= result)))
-      else
-        (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
-            /\ ([@stop_split] [@expl:m requires #1] 0 <= w))
-          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
-        /\ (([@stop_split] [@expl:m ensures] ([@stop_split] [@expl:m ensures #0] m_Name items (i - 1) w >= 0)
-          /\ ([@stop_split] [@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
-              /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items (i - 1) /\ sum_weights_Name s j <= w
-            -> sum_values_Name s j <= m_Name items (i - 1) w))
-        -> (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1
-              /\ i - 1 <= Seq.length items)
-            /\ ([@stop_split] [@expl:m requires #1] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).weight))
-          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
-        /\ (([@stop_split] [@expl:m ensures] ([@stop_split] [@expl:m ensures #0] m_Name items (i - 1) (w
-              - UInt64.t'int (Seq.get items (i - 1)).weight)
-            >= 0)
-          /\ ([@stop_split] [@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
-              /\ j <= Seq.length s
-              /\ subseq_rev_Item_Name s j items (i - 1)
-              /\ sum_weights_Name s j <= w - UInt64.t'int (Seq.get items (i - 1)).weight
-            -> sum_values_Name s j <= m_Name items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).weight)))
-        -> (let result = MinMax.max (m_Name items (i - 1) w) (m_Name items (i - 1) (w
-          - UInt64.t'int (Seq.get items (i - 1)).weight)
-        + UInt64.t'int (Seq.get items (i
-        - 1)).value) in [@stop_split] [@expl:m_Name ensures] ([@stop_split] [@expl:m ensures #0] result >= 0)
-        /\ ([@stop_split] [@expl:m ensures #1] forall s: Seq.seq t_Item_Name, j: int. 0 <= j
-            /\ j <= Seq.length s /\ subseq_rev_Item_Name s j items i /\ sum_weights_Name s j <= w
-          -> sum_values_Name s j <= result))))
     
     )
 end
