@@ -14,7 +14,6 @@ use crate::{
         clone_map::{Namer, PreMod},
         common_meta_decls,
         dependency::Dependency,
-        is_trusted_item,
         optimization::optimizations,
         projections::{Focus, borrow_generated_id, projections_to_expr},
         signature::{Contract, ProgramSignature, lower_program_sig},
@@ -65,7 +64,7 @@ pub(crate) fn translate_function<'tcx>(
     let names = Dependencies::new(ctx, def_id);
     let namespace_ty = names.namespace_ty();
 
-    if !def_id.is_local() || !ctx.has_body(def_id) || is_trusted_item(ctx.tcx, def_id) {
+    if !ctx.has_body(def_id) {
         return None;
     }
 

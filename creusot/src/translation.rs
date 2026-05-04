@@ -8,7 +8,7 @@ pub(crate) mod specification;
 pub(crate) mod traits;
 
 use crate::{
-    backend::Why3Generator,
+    backend::{Why3Generator, is_trusted_item},
     contracts_items::is_no_translate,
     ctx::{TranslationCtx, gather_params_open_inv},
     metadata,
@@ -34,6 +34,9 @@ pub(crate) fn before_analysis<'tcx>(tcx: TyCtxt<'tcx>) -> HashMap<DefId, DenseBi
 }
 
 fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
+    if is_trusted_item(tcx, def_id) {
+        return false;
+    }
     loop {
         if is_no_translate(tcx, def_id) {
             return false;
@@ -84,7 +87,12 @@ pub(crate) fn after_analysis<'tcx>(
 
     for impls in why3.all_local_trait_impls(()).values() {
         for impl_id in impls {
-            why3.translate(impl_id.to_def_id());
+            let impl_id = impl_id.to_def_id();
+            if !should_translate(why3.tcx, impl_id) {
+                info!("Skipping {:?}", impl_id);
+                continue;
+            }
+            why3.translate(impl_id);
         }
     }
     why3.dcx().abort_if_errors();
