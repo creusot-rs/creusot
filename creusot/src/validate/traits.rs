@@ -56,19 +56,19 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
         let trusted_trait = is_trusted(ctx.tcx, trait_ref.def_id)
             || ctx.is_diagnostic_item(sym::Send, trait_ref.def_id)
             || ctx.is_diagnostic_item(sym::Sync, trait_ref.def_id);
-        if trusted_trait != is_trusted_item(ctx.tcx, impl_id.to_def_id()) {
-            let msg = if trusted_trait {
-                format!(
-                    "Expected implementation of trait `{}` for `{}` to be marked as `#[trusted]`",
-                    trait_ref.print_only_trait_path(),
-                    trait_ref.self_ty()
-                )
-            } else {
-                format!(
-                    "Cannot have trusted implementation of untrusted trait `{}`",
-                    trait_ref.print_only_trait_path()
-                )
-            };
+        if trusted_trait && !is_trusted_item(ctx.tcx, impl_id.to_def_id()) {
+            let msg = format!(
+                "Expected implementation of trait `{}` for `{}` to be marked as `#[trusted]`",
+                trait_ref.print_only_trait_path(),
+                trait_ref.self_ty()
+            );
+            ctx.error(ctx.def_span(impl_id.to_def_id()), msg).emit();
+        }
+        if !trusted_trait && is_trusted(ctx.tcx, impl_id.to_def_id()) {
+            let msg = format!(
+                "Cannot have trusted implementation of untrusted trait `{}`",
+                trait_ref.print_only_trait_path()
+            );
             ctx.error(ctx.def_span(impl_id.to_def_id()), msg).emit();
         }
 
