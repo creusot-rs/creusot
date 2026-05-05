@@ -6,11 +6,18 @@ use crate::prelude::*;
 use crate::resolve::structural_resolve;
 
 pub trait PermTarget {
-    type Value: ?Sized;
+    type Value<'a>
+    where
+        Self: 'a;
     type PermPayload: ?Sized;
 
     #[logic(open, inline)]
-    fn is_disjoint(&self, _self_val: &Self::Value, other: &Self, _other_val: &Self::Value) -> bool {
+    fn is_disjoint(
+        &self,
+        _self_val: Self::Value<'_>,
+        other: &Self,
+        _other_val: Self::Value<'_>,
+    ) -> bool {
         self != other
     }
 }
@@ -72,7 +79,7 @@ impl<C: ?Sized + PermTarget> Perm<C> {
 
     /// Get the logical value contained by the container.
     #[logic(opaque)]
-    pub fn val<'a>(self) -> &'a C::Value {
+    pub fn val<'a>(self) -> C::Value<'a> {
         dead
     }
 
@@ -98,13 +105,4 @@ impl<C: ?Sized + PermTarget> Resolve for Perm<C> {
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
-}
-
-impl<C: ?Sized + PermTarget<Value: Sized>> View for Perm<C> {
-    type ViewTy = C::Value;
-
-    #[logic(open, inline)]
-    fn view(self) -> Self::ViewTy {
-        *self.val()
-    }
 }

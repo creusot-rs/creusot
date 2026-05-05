@@ -35,9 +35,9 @@ impl Protocol for MessagePassingAtomicInv {
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
-            !*self.atomic_own.val() ||
+            !self.atomic_own.val() ||
              match self.data_own {
-                Some(data_own) => *self.data == *data_own.ward() && *self.atomic_own.val() && data_own.val()@ == 1,
+                Some(data_own) => *self.data == *data_own.ward() && self.atomic_own.val() && data_own.val()@ == 1,
                 None => self.tok.val() == Some(Excl(())),
             }
         }

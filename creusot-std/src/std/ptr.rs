@@ -520,7 +520,10 @@ extern_spec! {
 }
 
 impl<T: ?Sized> PermTarget for *const T {
-    type Value = T;
+    type Value<'a>
+        = &'a T
+    where
+        Self: 'a;
     type PermPayload = (NotObjective, PhantomData<T>, [bool]);
 
     #[logic(open, inline)]

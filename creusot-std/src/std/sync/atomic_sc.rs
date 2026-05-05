@@ -15,12 +15,12 @@ macro_rules! impl_atomic {
         pub struct $atomic_type $(< $T >)?(::std::sync::atomic::$atomic_type $(< $T >)?);
 
         impl $(< $T >)? PermTarget for $atomic_type $(< $T >)? {
-            type Value = $type;
+            type Value<'a> = $type where Self: 'a;
             type PermPayload = ();
         }
 
         impl $(< $T >)? $atomic_type $(< $T >)? {
-            #[ensures(*result.1.val() == val)]
+            #[ensures(result.1.val() == val)]
             #[ensures(*result.1.ward() == result.0)]
             #[inline(always)]
             #[trusted]
@@ -31,7 +31,7 @@ macro_rules! impl_atomic {
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::into_inner`].")]
             #[requires(self == *own.ward())]
-            #[ensures(result == *own.val())]
+            #[ensures(result == own.val())]
             #[inline(always)]
             #[trusted]
             #[allow(unused_variables)]

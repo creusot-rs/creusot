@@ -16,9 +16,9 @@ use core::marker::PhantomData;
 // This trick is correct for SC accesses under SC-DRF, and for Rel/Acq/Rlx and Rlx accesses, but
 // perhaps not for C20's SC accesses.
 #[opaque]
-pub struct Committer<C: PermTarget<Value: Sized>, T, Load, Store>(PhantomData<(C, T, Load, Store)>);
+pub struct Committer<C: PermTarget, T, Load, Store>(PhantomData<(C, T, Load, Store)>);
 
-impl<C: PermTarget<Value: Sized>, T, Load, Store> Committer<C, T, Load, Store> {
+impl<C: PermTarget, T, Load, Store> Committer<C, T, Load, Store> {
     /// Identity of the committer
     ///
     /// This is used so that we can only use the committer with the right [`AtomicOwn`].
@@ -64,7 +64,7 @@ impl<C: PermTarget<Value: Sized>, T, Load, Store> Committer<C, T, Load, Store> {
 
 impl<C, T, Store> Committer<C, T, Ordering::Relaxed, Store>
 where
-    C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp,
+    C: PermTarget<Value<'static> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'static,
 {
     /// 'Shoot' the committer
     ///
@@ -85,7 +85,7 @@ where
 
 impl<C, T, Store> Committer<C, T, Ordering::Acquire, Store>
 where
-    C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp,
+    C: PermTarget<Value<'static> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'static,
 {
     /// 'Shoot' the committer
     ///
@@ -107,16 +107,16 @@ where
     }
 }
 
-impl<C, Store> Committer<C, C::Value, Ordering::SeqCst, Store>
+impl<C, Store> Committer<C, C::Value<'static>, Ordering::SeqCst, Store>
 where
-    C: PermTarget<Value: Sized>,
+    C: PermTarget,
 {
     /// 'Shoot' the committer
     ///
     /// This does the read on the atomic in ghost code.
     #[requires(!self.shot_store())]
     #[requires(self.ward() == *(*own).ward())]
-    #[ensures(self.val_load() == *own.val())]
+    #[ensures(self.val_load() == own.val())]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
@@ -127,7 +127,7 @@ where
 
 impl<C, T, Load> Committer<C, T, Load, Ordering::Relaxed>
 where
-    C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp,
+    C: PermTarget<Value<'static> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'static,
 {
     /// 'Shoot' the committer (Relaxed)
     ///
@@ -141,7 +141,7 @@ where
     #[ensures((*self).ward().get_timestamp(*sync_view) <= self.timestamp())]
     #[ensures(self.timestamp() < (*self).ward().get_timestamp(^sync_view))]
     #[ensures((*own).val().get(self.timestamp() + 1) == None)]
-    #[ensures(*(^own).val() == (*own).val().insert(self.timestamp() + 1, ((*self).val_store(), rel_view@)))]
+    #[ensures((^own).val() == (*own).val().insert(self.timestamp() + 1, ((*self).val_store(), rel_view@)))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
@@ -157,7 +157,7 @@ where
 
 impl<C, T, Load> Committer<C, T, Load, Ordering::Release>
 where
-    C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp,
+    C: PermTarget<Value<'static> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'static,
 {
     /// 'Shoot' the committer
     ///
@@ -171,7 +171,7 @@ where
     #[ensures((*self).ward().get_timestamp(*sync_view) <= self.timestamp())]
     #[ensures(self.timestamp() < (*self).ward().get_timestamp(^sync_view))]
     #[ensures((*own).val().get(self.timestamp() + 1) == None)]
-    #[ensures(*(^own).val() == (*own).val().insert(self.timestamp() + 1, ((*self).val_store(), ^sync_view)))]
+    #[ensures((^own).val() == (*own).val().insert(self.timestamp() + 1, ((*self).val_store(), ^sync_view)))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
@@ -180,9 +180,9 @@ where
     }
 }
 
-impl<C, Load> Committer<C, C::Value, Load, Ordering::SeqCst>
+impl<C, Load> Committer<C, C::Value<'static>, Load, Ordering::SeqCst>
 where
-    C: PermTarget<Value: Sized>,
+    C: PermTarget,
 {
     /// 'Shoot' the committer
     ///
@@ -192,7 +192,7 @@ where
     #[ensures((*self).hist_inv(^self))]
     #[ensures((^self).shot_store())]
     #[ensures((*own).ward() == (^own).ward())]
-    #[ensures(*(^own).val() == (*self).val_store())]
+    #[ensures((^own).val() == (*self).val_store())]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
