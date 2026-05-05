@@ -54,7 +54,7 @@ macro_rules! impl_atomic {
         pub struct $atomic_type $(< $T >)?(::std::sync::atomic::$atomic_type $(< $T >)?);
 
         impl $(< $T >)? PermTarget for $atomic_type $(< $T >)? {
-            type Value = FMap<Timestamp, ($type, SyncView)>;
+            type Value<'a> = FMap<Timestamp, ($type, SyncView)> where Self: 'a;
             type PermPayload = ();
         }
 
@@ -72,7 +72,7 @@ macro_rules! impl_atomic {
         }
 
         impl $(< $T >)? $atomic_type $(< $T >)? {
-            #[ensures(*result.1.val() == FMap::singleton(result.0.get_timestamp(^sync_view), (val, **sync_view)))]
+            #[ensures(result.1.val() == FMap::singleton(result.0.get_timestamp(^sync_view), (val, **sync_view)))]
             #[ensures(*result.1.ward() == result.0)]
             #[inline(always)]
             #[trusted]
@@ -101,7 +101,7 @@ macro_rules! impl_atomic {
             #[doc = "Clear the old unusable history, thanks to the full ownership of the atomic."]
             #[requires(*self == *own.ward())]
             #[ensures(match (*own).val().get(*result) {
-                Some((v, _)) => *(^own).val() == FMap::singleton(*result, (v, **sync_view)),
+                Some((v, _)) => (^own).val() == FMap::singleton(*result, (v, **sync_view)),
                 None => false
             })]
             #[ensures(self.get_timestamp(^sync_view) == *result)]

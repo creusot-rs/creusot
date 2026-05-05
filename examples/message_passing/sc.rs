@@ -42,8 +42,8 @@ impl Protocol for MessagePassingAtomicInv {
     fn protocol(self) -> bool {
         pearlite! {
             match self.state {
-                State::NotWrittenYet => !*self.atomic_own.val(),
-                State::Synchronisation(data_own) => self.public_data.0 == *data_own.ward() && *self.atomic_own.val() && data_own.val()@ == 1,
+                State::NotWrittenYet => !self.atomic_own.val(),
+                State::Synchronisation(data_own) => self.public_data.0 == *data_own.ward() && self.atomic_own.val() && data_own.val()@ == 1,
                 State::Readable(tok) => self.public_data.1 == tok.id()
             }
         }
