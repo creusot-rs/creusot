@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::marker::PhantomData;
+use core::{marker::PhantomData, panic};
 
 #[cfg(creusot)]
 use core::cmp::Ordering;
@@ -38,6 +38,15 @@ impl SyncView {
     #[check(ghost)]
     #[trusted]
     pub fn new() -> Ghost<Self> {
+        panic!("Should not be called outside ghost code")
+    }
+
+    #[check(ghost)]
+    #[trusted]
+    #[requires(*to <= *self)]
+    #[ensures(^self == *to)]
+    #[allow(unused_variables)]
+    pub fn weaken(&mut self, to: Snapshot<SyncView>) {
         panic!("Should not be called outside ghost code")
     }
 }
@@ -106,6 +115,7 @@ impl OrdLogic for SyncView {
 pub struct ReleaseSyncView(());
 
 impl Clone for ReleaseSyncView {
+    #[check(ghost)]
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
         *self
@@ -116,6 +126,15 @@ impl ReleaseSyncView {
     #[check(ghost)]
     #[trusted]
     pub fn new() -> Ghost<Self> {
+        panic!("Should not be called outside ghost code")
+    }
+
+    #[check(ghost)]
+    #[trusted]
+    #[requires(*to <= (*self)@)]
+    #[ensures((^self)@ == *to)]
+    #[allow(unused_variables)]
+    pub fn weaken(&mut self, to: Snapshot<SyncView>) {
         panic!("Should not be called outside ghost code")
     }
 }
@@ -149,6 +168,15 @@ impl AcquireSyncView {
     pub fn new() -> Ghost<Self> {
         panic!("Should not be called outside ghost code")
     }
+
+    #[check(ghost)]
+    #[trusted]
+    #[requires(*to <= (*self)@)]
+    #[ensures((^self)@ == *to)]
+    #[allow(unused_variables)]
+    pub fn weaken(&mut self, to: Snapshot<SyncView>) {
+        panic!("Should not be called outside ghost code")
+    }
 }
 
 impl View for AcquireSyncView {
@@ -172,7 +200,7 @@ impl<T> Objective for AtView<T> {}
 
 impl<T> AtView<T> {
     #[logic(opaque)]
-    pub fn view_logic(&self) -> SyncView {
+    pub fn view(&self) -> SyncView {
         dead
     }
 
@@ -183,7 +211,7 @@ impl<T> AtView<T> {
 
     #[check(ghost)]
     #[trusted]
-    #[ensures(result.0 == result.1.view_logic() && result.1.val() == *val)]
+    #[ensures(result.0 == result.1.view() && result.1.val() == *val)]
     #[allow(unused_variables)]
     pub fn new(val: Ghost<T>) -> Ghost<(SyncView, Self)> {
         Ghost::conjure()
@@ -191,7 +219,7 @@ impl<T> AtView<T> {
 
     #[check(ghost)]
     #[trusted]
-    #[requires(self.view_logic() <= sync_view)]
+    #[requires(self.view() <= sync_view)]
     #[ensures(result == self.val())]
     #[allow(unused_variables)]
     pub fn sync(self, sync_view: SyncView) -> T {
@@ -200,8 +228,11 @@ impl<T> AtView<T> {
 
     #[check(ghost)]
     #[trusted]
-    #[ensures(result == self.view_logic())]
-    pub fn view(&self) -> SyncView {
+    #[requires(self.view() <= *to)]
+    #[ensures((^self).view() == *to)]
+    #[ensures((*self).val() == (^self).val())]
+    #[allow(unused_variables)]
+    pub fn weaken(&mut self, to: Snapshot<SyncView>) {
         panic!("Should not be called outside ghost code")
     }
 }
