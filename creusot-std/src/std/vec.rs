@@ -89,7 +89,7 @@ impl<T, A: Allocator> Invariant for Vec<T, A> {
 }
 
 extern_spec! {
-    mod alloc {
+    mod std {
         mod vec {
             #[ensures(result@.len() == n@)]
             #[ensures(forall<i> 0 <= i && i < n@ ==> result[i] == elem)]
@@ -303,7 +303,7 @@ impl<T> FromIteratorSpec<T> for Vec<T> {
 #[cfg(not(feature = "nightly"))]
 mod impls {
     use crate::prelude::*;
-    use alloc::vec::*;
+    use std::vec::*;
 
     impl<T> View for Vec<T> {
         type ViewTy = Seq<T>;
