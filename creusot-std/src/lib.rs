@@ -72,8 +72,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "512"]
 
-extern crate alloc;
-
 extern crate creusot_std_proc as base_macros;
 extern crate self as creusot_std;
 
