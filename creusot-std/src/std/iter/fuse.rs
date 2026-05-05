@@ -38,11 +38,11 @@ impl<I: IteratorSpec> IteratorSpec for Fuse<I> {
         }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -58,7 +58,7 @@ pub trait FusedIterator: core::iter::FusedIterator + IteratorSpec {
 }
 
 impl<I: IteratorSpec> FusedIterator for Fuse<I> {
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::empty())]

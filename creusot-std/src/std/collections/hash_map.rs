@@ -85,11 +85,11 @@ impl<K: DeepModel, V, A: Allocator> IteratorSpec for IntoIter<K, V, A> {
         pearlite! { resolve(self) && self@.is_empty() }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -131,11 +131,11 @@ impl<'a, K: DeepModel, V> IteratorSpec for Iter<'a, K, V> {
         pearlite! { resolve(self) && self@.is_empty() }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -177,11 +177,11 @@ impl<'a, K: DeepModel, V> IteratorSpec for IterMut<'a, K, V> {
         pearlite! { resolve(self) && self@.is_empty() }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

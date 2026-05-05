@@ -108,7 +108,7 @@ fi
 if [ "$DEBUG" ] ; then
     set -x
 fi
-if [ -z "$TMP"] ; then
+if [ -z "$TMP" ] ; then
     TMP=/tmp
 fi
 BOLD=$'\e[1m'

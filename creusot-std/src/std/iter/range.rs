@@ -87,11 +87,11 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for RangeInclusive<I
         }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -111,11 +111,11 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range
         }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self) {}
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces_back(ab, b))]
     #[requires(b.produces_back(bc, c))]
     #[ensures(a.produces_back(ab.concat(bc), c))]

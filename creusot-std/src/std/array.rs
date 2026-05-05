@@ -77,7 +77,7 @@ impl<T, const N: usize> View for IntoIter<T, N> {
 
 impl<T, const N: usize> IteratorSpec for IntoIter<T, N> {
     #[logic(open, prophetic)]
-    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, visited: Seq<T>, o: Self) -> bool {
         pearlite! { self@ == visited.concat(o@) }
     }
 
@@ -86,15 +86,45 @@ impl<T, const N: usize> IteratorSpec for IntoIter<T, N> {
         pearlite! { resolve(self) && self@ == Seq::empty() }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
-    fn produces_refl(self) {}
+    fn produces_refl(self) {
+        let _ = Seq::<T>::concat_empty;
+    }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {
+        let _ = ab.reverse_concat(bc);
+        let _ = Seq::<T>::concat_assoc;
+    }
+}
+
+impl<T, const N: usize> DoubleEndedIteratorSpec for IntoIter<T, N> {
+    #[logic(open)]
+    fn produces_back(self, visited: Seq<T>, o: Self) -> bool {
+        pearlite! {
+            self@ == o@.concat(visited.reverse())
+        }
+    }
+
+    #[logic(law)]
+    #[ensures(self.produces_back(Seq::empty(), self))]
+    fn produces_back_refl(self) {
+        let _ = Seq::<T>::reverse_empty();
+        let _ = Seq::<T>::concat_empty;
+    }
+
+    #[logic(law)]
+    #[requires(a.produces_back(ab, b))]
+    #[requires(b.produces_back(bc, c))]
+    #[ensures(a.produces_back(ab.concat(bc), c))]
+    fn produces_back_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {
+        let _ = ab.reverse_concat(bc);
+        let _ = Seq::<T>::concat_assoc;
+    }
 }
 
 extern_spec! {

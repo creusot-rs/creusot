@@ -682,7 +682,9 @@ impl<T> IteratorSpec for IntoIter<T> {
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+        let _ = Seq::<T>::concat_empty;
+    }
 }
 
 impl<'a, T> View for Iter<'a, T> {
@@ -716,7 +718,9 @@ impl<T> IteratorSpec for Iter<'_, T> {
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+        let _ = Seq::<T>::concat_empty;
+    }
 }
 
 impl<'a, T> View for IterMut<'a, T> {
@@ -767,7 +771,9 @@ impl<T> IteratorSpec for IterMut<'_, T> {
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
+        let _ = Seq::<T>::concat_empty;
+    }
 }
 
 pub trait OptionExt<T> {
