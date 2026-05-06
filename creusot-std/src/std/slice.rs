@@ -614,3 +614,19 @@ impl<'a, T> DoubleEndedIteratorSpec for IterMut<'a, T> {
         let _ = Seq::<Self::Item>::concat_assoc;
     }
 }
+
+#[cfg(feature = "std")]
+extern_spec! {
+    impl<'a, T> Iter<'a, T> {
+        #[ensures(result@ == self@@)]
+        fn as_slice(&self) -> &'a [T];
+    }
+}
+
+#[cfg(feature = "std")]
+extern_spec! {
+    impl<'a, T> IterMut<'a, T> {
+        #[ensures(result@ == self@@)]
+        fn as_slice(&self) -> &'a [T];
+    }
+}
