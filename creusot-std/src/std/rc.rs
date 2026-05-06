@@ -63,8 +63,8 @@ extern_spec! {
         fn as_ptr(this: &Rc<T, A>) -> *const T;
 
         #[check(ghost)]
-        #[ensures(result == (this.as_ptr_logic().deep_model() == other.as_ptr_logic().deep_model()))]
-        #[ensures(result ==> this@ == other@)]
+        #[ensures(result == (this.as_ptr_logic().addr_logic() == other.as_ptr_logic().addr_logic()))]
+        #[ensures(result ==> this == other)]
         fn ptr_eq(this: &Rc<T, A>, other: &Rc<T, A>) -> bool;
     }
 
