@@ -1,8 +1,7 @@
 module M_rc
   use creusot.int.Int32
-  use creusot.prelude.Opaque
-  use creusot.int.UInt64
   use creusot.prelude.Ptr
+  use creusot.prelude.Opaque
   use creusot.prelude.Any
   
   type t_Rc_i32_Global
@@ -41,15 +40,6 @@ module M_rc
   
   predicate resolve_Rc_i32_Global (_1: t_Rc_i32_Global)
   
-  type t_PtrDeepModel__private
-  
-  type t_PtrDeepModel = { addr: UInt64.t; t_PtrDeepModel__private: t_PtrDeepModel__private }
-  
-  function deep_model_ptr_i32 (self: Opaque.ptr) : t_PtrDeepModel
-  
-  axiom deep_model_ptr_i32_spec: forall self: Opaque.ptr [deep_model_ptr_i32 self]. (deep_model_ptr_i32 self).addr
-      = Ptr.addr_logic_u64 self
-  
   function as_ptr_Rc_i32_Global (self: t_Rc_i32_Global) : Opaque.ptr
   
   let rec ptr_eq_i32 (this: t_Rc_i32_Global) (other: t_Rc_i32_Global) (return (x: bool)) =
@@ -57,8 +47,8 @@ module M_rc
     /\ ([@stop_split] [@expl:ptr_eq 'other' type invariant] inv_ref_Rc_i32_Global other)}
     any
     [ return (result: bool) -> {[@stop_split] [@expl:ptr_eq_i32 ensures] ([@stop_split] [@expl:ptr_eq ensures #0] result
-        = (deep_model_ptr_i32 (as_ptr_Rc_i32_Global this) = deep_model_ptr_i32 (as_ptr_Rc_i32_Global other)))
-      /\ ([@stop_split] [@expl:ptr_eq ensures #1] result -> view_Rc_i32_Global this = view_Rc_i32_Global other)}
+        = (Ptr.addr_logic_u64 (as_ptr_Rc_i32_Global this) = Ptr.addr_logic_u64 (as_ptr_Rc_i32_Global other)))
+      /\ ([@stop_split] [@expl:ptr_eq ensures #1] result -> this = other)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

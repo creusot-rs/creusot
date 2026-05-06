@@ -5,6 +5,7 @@ pub mod implementation {
     use creusot_std::{
         cell::PermCell,
         ghost::{
+            GhostShared,
             invariant::{
                 NonAtomicInvariant, NonAtomicInvariantExt as _, Protocol, Tokens, declare_namespace,
             },
@@ -42,7 +43,7 @@ pub mod implementation {
         /// The corresponding value is the logical value of the map.
         frag: Ghost<Fragment<FMap<PermCell<Inner<T>>, Ag<Seq<T>>>>>,
         /// The [`Id`] in the public part is the id of the whole `GMap`, **not** the individual keys !
-        inv: Ghost<Rc<NonAtomicInvariant<PA<T>>>>,
+        inv: Ghost<GhostShared<NonAtomicInvariant<PA<T>>>>,
     }
 
     impl<T> Clone for PersistentArray<T> {
@@ -51,7 +52,7 @@ pub mod implementation {
             Self {
                 permcell: self.permcell.clone(),
                 frag: ghost!(self.frag.core()),
-                inv: ghost!(self.inv.clone()),
+                inv: self.inv,
             }
         }
     }
@@ -141,7 +142,7 @@ pub mod implementation {
             let mut frag = ghost!(Fragment::new_unit(auth.id_ghost()));
             ghost!(auth.update(&mut frag, FMapInsertLocalUpdate(snapshot!(*perm.ward()), new_ag)));
 
-            let inv = ghost! {
+            let inv = GhostShared::new(ghost! {
                 let mut perms = FMap::new();
                 perms.insert_ghost(snapshot!(*perm.ward()), perm.into_inner());
                 let na_inv = NonAtomicInvariant::new(
@@ -152,8 +153,8 @@ pub mod implementation {
                     }),
                     snapshot!(PARRAY()),
                 );
-                Rc::new(na_inv.into_inner())
-            };
+                na_inv.into_inner()
+            });
 
             Self { permcell: Rc::new(permcell), frag, inv }
         }
@@ -182,7 +183,7 @@ pub mod implementation {
                     frag
                 }
             });
-            Self { permcell: Rc::new(permcell), frag, inv: ghost!(self.inv.clone()) }
+            Self { permcell: Rc::new(permcell), frag, inv: self.inv }
         }
 
         /// Get the value of the array at index `i`.

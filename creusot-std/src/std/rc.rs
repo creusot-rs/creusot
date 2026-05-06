@@ -48,7 +48,10 @@ impl<T: ?Sized, A: Allocator> View for Rc<T, A> {
 
 extern_spec! {
     impl<T> Rc<T> {
-        #[check(ghost)]
+        /// Note: if you want to have a `Rc` in ghost code, please use
+        /// [`crate::ghost::GhostShared`].
+        #[check(terminates)] // Not ghost, to avoid exhausting all possible `Rc`
+                             // addresses. This could be observed by `ptr_eq`.
         #[ensures(*result@ == value)]
         fn new(value: T) -> Self;
     }
@@ -59,9 +62,9 @@ extern_spec! {
         #[ensures(!result.is_null_logic())]
         fn as_ptr(this: &Rc<T, A>) -> *const T;
 
-        #[check(terminates)] // Not ghost, as this would allow deducing that there is a finite number of possible `Rc`s.
-        #[ensures(result == (this.as_ptr_logic().deep_model() == other.as_ptr_logic().deep_model()))]
-        #[ensures(result ==> this@ == other@)]
+        #[check(ghost)]
+        #[ensures(result == (this.as_ptr_logic().addr_logic() == other.as_ptr_logic().addr_logic()))]
+        #[ensures(result ==> this == other)]
         fn ptr_eq(this: &Rc<T, A>, other: &Rc<T, A>) -> bool;
     }
 
@@ -73,7 +76,7 @@ extern_spec! {
     }
 
     impl<T: ?Sized, A: Allocator + Clone> Clone for Rc<T, A> {
-        #[check(ghost)]
+        #[check(terminates)] // Not ghost: see `Rc::new`
         #[ensures(result == *self)]
         fn clone(&self) -> Rc<T, A>;
     }
