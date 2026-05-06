@@ -32,3 +32,22 @@ pub fn check_iter_mut() {
     let a = iter.next().unwrap();
     proof_assert!(a@ == 2);
 }
+
+pub fn check_iter_as_slice() {
+    let numbers = &[1, 2, 3];
+    let mut iter = numbers.iter();
+    iter.next();
+    iter.next();
+    let slice = iter.as_slice();
+    proof_assert!(slice@ == seq![3i32]);
+}
+
+pub fn check_iter_mut_as_slice() {
+    let numbers = &mut [1, 2, 3];
+    let mut iter = numbers.iter_mut();
+    *iter.next().unwrap() += 1;
+    iter.next();
+    let slice = iter.as_slice();
+    proof_assert!(numbers@ == seq![2i32, 2i32, 3i32]);
+    proof_assert!(slice@ == seq![3i32]);
+}
