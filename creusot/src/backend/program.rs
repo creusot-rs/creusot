@@ -35,7 +35,6 @@ use crate::{
             Statement, StatementKind, Terminator,
         },
         pearlite::Term,
-        traits::TraitResolved,
     },
 };
 use indexmap::IndexMap;
@@ -173,16 +172,11 @@ pub(crate) fn to_why_body<'tcx>(
         //   [ inner_return ... ]
         // ```
         let variant = {
-            let subst = ctx.tcx.mk_args(&[variant_expr.ty.into()]);
-            let wf_relation = Intrinsic::WellFoundedRelation.get(ctx);
-            let typing_env = ctx.typing_env(body_id.def_id);
             let (wf_relation, subst) =
-                TraitResolved::resolve_item(ctx.tcx, typing_env, wf_relation, subst)
-                    .to_opt(wf_relation, subst)
-                    .expect("The `WellFounded` trait should be implemented in this context");
+                ctx.resolve_wf_relation(ctx.typing_env(body_id.def_id), variant_expr.ty);
             let variant_decreases = Term::call(
                 ctx.tcx,
-                typing_env,
+                ctx.typing_env(body_id.def_id),
                 wf_relation,
                 subst,
                 [Term::var(variant_name, variant_expr.ty), variant_expr.spanned()],
@@ -393,15 +387,8 @@ fn component_to_defn<'tcx>(
 
     let block = body.blocks.shift_remove(&head).unwrap();
     let variant = block.variant.clone().map(|variant| {
-        let wf_relation = Intrinsic::WellFoundedRelation.get(ctx);
-        let typing_env = ctx.typing_env(lower.def_id);
-        assert_eq!(GenericArgs::identity_for_item(ctx.tcx, wf_relation).len(), 1); // sanity check
-        let subst = ctx.tcx.mk_args(&[variant.term.ty.into()]);
-
         let (wf_relation, subst) =
-            TraitResolved::resolve_item(ctx.tcx, typing_env, wf_relation, subst)
-                .to_opt(wf_relation, subst)
-                .expect("The `WellFounded` trait should be implemented in this context");
+            ctx.resolve_wf_relation(ctx.typing_env(lower.def_id), variant.term.ty);
         let variant_decreases = Term::call_no_normalize(
             ctx.tcx,
             wf_relation,

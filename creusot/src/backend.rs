@@ -1,12 +1,13 @@
 use crate::{
-    contracts_items::{is_spec, is_trusted},
+    contracts_items::{Intrinsic, is_spec, is_trusted},
     ctx::{HasTyCtxt, ItemType, TranslatedItem, TranslationCtx},
+    translation::traits::TraitResolved,
     util::{impl_subject, path_of_span},
 };
 use creusot_args::options::SpanMode;
 use indexmap::IndexMap;
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{GenericArgs, GenericArgsRef, Ty, TyCtxt, TypingEnv};
 use rustc_span::Span;
 use std::{
     cell::{Cell, RefCell},
@@ -168,6 +169,20 @@ impl<'tcx> Why3Generator<'tcx> {
             }
             id.index = parent_id;
         }
+    }
+
+    pub fn resolve_wf_relation(
+        &self,
+        typing_env: TypingEnv<'tcx>,
+        ty: Ty<'tcx>,
+    ) -> (DefId, GenericArgsRef<'tcx>) {
+        let wf_relation = Intrinsic::WellFoundedRelation.get(self);
+        assert_eq!(GenericArgs::identity_for_item(self.tcx, wf_relation).len(), 1); // sanity check
+        let subst = self.mk_args(&[ty.into()]);
+
+        TraitResolved::resolve_item(self.tcx, typing_env, wf_relation, subst)
+            .to_opt(wf_relation, subst)
+            .expect("The `WellFounded` trait should be implemented in this context")
     }
 }
 
