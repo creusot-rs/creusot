@@ -12,13 +12,10 @@ use crate::{
         },
         ty::{constructor, ity_to_prelude, translate_ty, uty_to_prelude},
     },
-    contracts_items::{Intrinsic, is_builtin_ascription},
+    contracts_items::is_builtin_ascription,
     ctx::{HasTyCtxt, PreMod},
     naming::name,
-    translation::{
-        pearlite::{BinOp, Literal, Pattern, Term, TermKind, UnOp},
-        traits::TraitResolved,
-    },
+    translation::pearlite::{BinOp, Literal, Pattern, Term, TermKind, UnOp},
     util::erased_identity_for_item,
 };
 use rustc_hir::def_id::DefId;
