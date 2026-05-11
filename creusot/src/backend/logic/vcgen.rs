@@ -523,12 +523,8 @@ impl<'tcx> VCGen<'_, 'tcx> {
     /// Note that this only generates a variant for a simply recursive,
     /// non-polymorphic call.
     fn build_variant(&self, call_args: &[Exp], variant_after: Term<'tcx>) -> Exp {
-        let wf_relation = Intrinsic::WellFoundedRelation.get(self.ctx);
-        let variant_subst = self.ctx.tcx.mk_args(&[variant_after.ty.into()]);
         let (wf_relation, variant_subst) =
-            TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, wf_relation, variant_subst)
-                .to_opt(wf_relation, variant_subst)
-                .expect("The `WellFounded` trait should be implemented in this context");
+            self.ctx.resolve_wf_relation(self.typing_env, variant_after.ty);
         let wf_relation = Exp::Var(self.names.item(wf_relation, variant_subst));
         let subst: HashMap<Ident, Exp> =
             self.args_names.iter().cloned().zip(call_args.iter().cloned()).collect();

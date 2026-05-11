@@ -1,10 +1,9 @@
-use super::pearlite::{Term, TermKind};
 use crate::{
     backend::ty_inv::sig_add_type_invariant_spec,
     contracts_items::{is_law, is_pearlite, is_sealed, is_spec},
     ctx::*,
     naming::name,
-    translation::pearlite::{PIdent, Substable},
+    translation::pearlite::{PIdent, Substable, Term, TermKind},
     util::erased_identity_for_item,
     very_stable_hash::get_very_stable_hash,
 };
