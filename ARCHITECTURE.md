@@ -41,8 +41,6 @@ To Creusot programs consist of 3 different kinds of functions:
 - **Logical functions**: These functions **do not exist at runtime**, they exist purely during proofs.
 They may be used inside specification clauses and are written in a language called *Pearlite*, a specification language for Rust which gives them additional expressive power.
 We will cover Pearlite in a future section
-- **Hybrid functions**: Hybrid functions are functions which are both logical and program functions.
-They must therefore be side-effect free, and can be used equivalently in specifications or programs. Here, think of `Vec::len` as an example.
 
 ## Pearlite
 
