@@ -49,6 +49,76 @@ All you have to do is activate flakes temporarily by using `--extra-experimental
 nix --extra-experimental-features 'nix-command flakes' shell "github:creusot-rs/creusot"
 ```
 
+## Nix installion via flakes
+
+Here is a sample flake.nix that provides a shell with Creusot as a dependency from github:
+```
+{
+  description = "A devShell example";
+
+  inputs = {
+    nixpkgs.url      = "github:NixOS/nixpkgs/nixos-unstable";
+    rust-overlay.url = "github:oxalica/rust-overlay";
+    flake-utils.url  = "github:numtide/flake-utils";
+    creusot.url      = "github:creusot-rs/creusot";
+  };
+
+  outputs = { self, nixpkgs, rust-overlay, flake-utils, creusot, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        overlays = [ (import rust-overlay) ];
+        pkgs = import nixpkgs {
+          inherit system overlays;
+        };
+        # This matches the nightly defined in
+        # github:creusot-rs/creusot/rustToolchain
+        rustToolchain = pkgs.rust-bin.nightly."2026-04-21".default.override {
+          extensions = [ "rust-src" "rustc-dev" "llvm-tools-preview" ];
+        };
+      in
+      {
+        devShells.default = pkgs.mkShell {
+          packages = [
+            rustToolchain
+            pkgs.rust-analyzer
+            pkgs.rustfmt
+            pkgs.why3
+            creusot.packages.${system}.default
+          ];
+
+          buildInputs = [
+            pkgs.openssl
+            pkgs.pkg-config
+          ];
+
+          shellHook = ''
+            echo "========== Creusot shell loaded! =========="
+            why3 config detect
+          '';
+        };
+      }
+    );
+}
+```
+You'll need to allow non-free packages to be able to build the `alt-ergo` package. The recommended method is to use [direnv](https://direnv.net/) to isolate the non-free flag to only your project. To do this create a `.envrc` file with the following commands:
+```
+# in project root, where flake.nix is
+$ printf 'export NIXPKGS_ALLOW_UNFREE=1\nuse flake . --impure' > .envrc
+```
+Now allow `direnv` to build the environment and create the shell:
+```
+$ direnv allow .
+# Bunch of building
+Found prover Alt-Ergo version 2.6.2, OK.
+Found prover Alt-Ergo version 2.6.2 (alternative: counterexamples)
+Found prover Alt-Ergo version 2.6.2 (alternative: BV)
+Found prover CVC4 version 1.8 (alternative: strings+counterexamples)
+Found prover CVC4 version 1.8 (alternative: strings)
+Found prover CVC4 version 1.8 (alternative: counterexamples)
+Found prover CVC4 version 1.8, OK.
+...
+```
+
 ## Manual installation
 
 1. You can install the core files from the Creusot repository with Cargo alone:
