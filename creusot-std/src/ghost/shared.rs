@@ -48,15 +48,28 @@ impl<T> GhostShared<T> {
     pub fn val(self) -> T {
         dead
     }
-}
 
-impl<T> AsRef<T> for GhostShared<T> {
     /// Access the value of the `GhostShared` immutably.
+    ///
+    /// # Note on lifetimes
+    ///
+    /// Note that this function returns a borrow at an arbitrary lifetime
+    /// `'a`. This is possible because `GhostShared` is a ghost-only type: the
+    /// underlying `T` object is 'magically' made to live at least as long as
+    /// `'a`.
     #[trusted]
     #[check(ghost)]
     #[ensures(*result == self.val())]
+    pub fn to_ref<'a>(self) -> &'a T {
+        unreachable!("ghost only")
+    }
+}
+
+impl<T> AsRef<T> for GhostShared<T> {
+    #[check(ghost)]
+    #[ensures(*result == self.val())]
     fn as_ref(&self) -> &T {
-        unreachable!("ghost code only")
+        self.to_ref()
     }
 }
 
@@ -75,6 +88,6 @@ impl<T> Deref for GhostShared<T> {
     #[check(ghost)]
     #[ensures(*result == self.val())]
     fn deref(&self) -> &T {
-        self.as_ref()
+        self.to_ref()
     }
 }
