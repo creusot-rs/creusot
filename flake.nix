@@ -65,7 +65,7 @@
           };
         in
         {
-          overlays.deps = import ./nix/pkgs.nix pins;
+          overlays.deps = import ./nix/deps pins;
         };
 
       perSystem =
