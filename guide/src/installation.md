@@ -70,11 +70,6 @@ Here is a sample flake.nix that provides a shell with Creusot as a dependency fr
         pkgs = import nixpkgs {
           inherit system overlays;
         };
-        # This matches the nightly defined in
-        # github:creusot-rs/creusot/rustToolchain
-        rustToolchain = pkgs.rust-bin.nightly."2026-04-21".default.override {
-          extensions = [ "rust-src" "rustc-dev" "llvm-tools-preview" ];
-        };
       in
       {
         devShells.default = pkgs.mkShell {
@@ -86,10 +81,7 @@ Here is a sample flake.nix that provides a shell with Creusot as a dependency fr
             creusot.packages.${system}.default
           ];
 
-          buildInputs = [
-            pkgs.openssl
-            pkgs.pkg-config
-          ];
+          buildInputs = [];
 
           shellHook = ''
             echo "========== Creusot shell loaded! =========="
@@ -100,24 +92,7 @@ Here is a sample flake.nix that provides a shell with Creusot as a dependency fr
     );
 }
 ```
-You'll need to allow non-free packages to be able to build the `alt-ergo` package. The recommended method is to use [direnv](https://direnv.net/) to isolate the non-free flag to only your project. To do this create a `.envrc` file with the following commands:
-```
-# in project root, where flake.nix is
-$ printf 'export NIXPKGS_ALLOW_UNFREE=1\nuse flake . --impure' > .envrc
-```
-Now allow `direnv` to build the environment and create the shell:
-```
-$ direnv allow .
-# Bunch of building
-Found prover Alt-Ergo version 2.6.2, OK.
-Found prover Alt-Ergo version 2.6.2 (alternative: counterexamples)
-Found prover Alt-Ergo version 2.6.2 (alternative: BV)
-Found prover CVC4 version 1.8 (alternative: strings+counterexamples)
-Found prover CVC4 version 1.8 (alternative: strings)
-Found prover CVC4 version 1.8 (alternative: counterexamples)
-Found prover CVC4 version 1.8, OK.
-...
-```
+Note, you'll need to allow non-free packages to be able to build the `alt-ergo` package.
 
 ## Manual installation
 
