@@ -2,7 +2,8 @@
   pkgs,
   version,
   sha256,
-}: let
+}:
+let
   ocamlPackages = pkgs.ocamlPackages;
   ocplib-simplex_0_4 = pkgs.stdenv.mkDerivation rec {
     pname = "ocplib-simplex";
@@ -15,48 +16,50 @@
       hash = "sha256-bhlTBpJg031x2lUjwuVrhQgOGmDLW/+0naN8wRjv6i4=";
     };
 
-    nativeBuildInputs =
-      [pkgs.autoreconfHook]
-      ++ (with ocamlPackages; [
-        ocaml
-        findlib
-      ]);
+    nativeBuildInputs = [
+      pkgs.autoreconfHook
+    ]
+    ++ (with ocamlPackages; [
+      ocaml
+      findlib
+    ]);
 
-    installFlags = ["LIBDIR=$(OCAMLFIND_DESTDIR)"];
+    installFlags = [ "LIBDIR=$(OCAMLFIND_DESTDIR)" ];
 
     createFindlibDestdir = true;
   };
 in
-  ocamlPackages.buildDunePackage rec {
-    pname = "alt-ergo-free";
-    inherit version;
+ocamlPackages.buildDunePackage rec {
+  pname = "alt-ergo-free";
+  inherit version;
 
-    src = pkgs.fetchurl {
-      url = "https://github.com/OCamlPro/alt-ergo/releases/download/v${version}-free/alt-ergo-${version}-free.tar.gz";
-      hash = sha256;
-    };
+  src = pkgs.fetchurl {
+    url = "https://github.com/OCamlPro/alt-ergo/releases/download/v${version}-free/alt-ergo-${version}-free.tar.gz";
+    hash = sha256;
+  };
 
-    nativeBuildInputs = [ocamlPackages.menhir];
+  nativeBuildInputs = [ ocamlPackages.menhir ];
 
-    sourceRoot = ".";
+  sourceRoot = ".";
 
-    buildInputs =
-      [ocplib-simplex_0_4]
-      ++ (with ocamlPackages; [
-        cmdliner
-        camlzip
-        stdlib-shims
-        dune-configurator
-        dune-build-info
-        num
-        psmt2-frontend
-        zarith
-        seq
-      ]);
+  buildInputs = [
+    ocplib-simplex_0_4
+  ]
+  ++ (with ocamlPackages; [
+    cmdliner
+    camlzip
+    stdlib-shims
+    dune-configurator
+    dune-build-info
+    num
+    psmt2-frontend
+    zarith
+    seq
+  ]);
 
-    meta = {
-      description = "High-performance theorem prover and SMT solver";
-      homepage = "https://alt-ergo.ocamlpro.com/";
-      license = pkgs.lib.licenses.cecill-c;
-    };
-  }
+  meta = {
+    description = "High-performance theorem prover and SMT solver";
+    homepage = "https://alt-ergo.ocamlpro.com/";
+    license = pkgs.lib.licenses.cecill-c;
+  };
+}
