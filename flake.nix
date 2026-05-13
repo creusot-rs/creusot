@@ -279,42 +279,47 @@
                       --set DYLD_FALLBACK_LIBRARY_PATH "${makeLibraryPath [ rust.toolchain.build ]}"
                   '';
                 };
+            }
+            // (
+              let
+                mkEnv =
+                    isFree:
+                  pkgs.buildEnv {
+                    name = "creusot-env";
+                    paths = [
+                      packages.creusot
+                      packages.prelude
+                      pkgs.gcc
+                      rust.toolchain.build
+                      (mkWhy3Framework isFree)
+                    ];
 
-              default = pkgs.buildEnv {
-                name = "creusot-env";
-                paths = [
-                  packages.creusot
-                  packages.prelude
-                  pkgs.gcc
-                  rust.toolchain.build
-                  (mkWhy3Framework { isFree = false; })
-                ];
+                    nativeBuildInputs = [ pkgs.makeWrapper ];
+                    postBuild = ''
+                      wrapProgram $out/bin/cargo-creusot \
+                        --set CREUSOT_DATA_HOME "$out"
+                    '';
+                  };
 
-                nativeBuildInputs = [ pkgs.makeWrapper ];
-                postBuild = ''
-                  wrapProgram $out/bin/cargo-creusot \
-                    --set CREUSOT_DATA_HOME "$out"
-                '';
-              };
-            };
+              in
+              {
+                default = mkEnv { isFree = false; };
+                free = mkEnv { isFree = true; };
+              }
+            );
 
           devShells =
             let
               mkShell =
-                {
-                  isFree,
-                }:
-                let
-                  why3Framework = mkWhy3Framework { inherit isFree; };
-                in
+                isFree:
                 pkgs.mkShell {
                   inputsFrom = [ packages.creusot ];
                   packages = [
-                    why3Framework
                     rust.toolchain.dev
+                    (mkWhy3Framework isFree)
                   ];
 
-                  CREUSOT_DATA_HOME = why3Framework;
+                  CREUSOT_DATA_HOME = mkWhy3Framework isFree;
                   LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ rust.toolchain.dev ];
                   DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ rust.toolchain.dev ];
 
