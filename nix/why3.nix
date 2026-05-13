@@ -1,10 +1,21 @@
 {
-  pkgs,
-  version,
+  # Dependencies
+  autoreconfHook,
+  ocaml,
+  ocamlPackages,
+  wrapGAppsHook3,
+
+  # Previous overlay
+  why3,
+
+  # Librairies
+  fetchurl,
+  stdenv,
+
+  # Pins
   sha256,
+  version,
 }:
-with pkgs;
-with ocamlPackages;
 stdenv.mkDerivation {
   inherit (why3)
     installTargets
@@ -15,25 +26,29 @@ stdenv.mkDerivation {
     ;
   inherit version;
 
-  src = pkgs.fetchurl {
+  src = fetchurl {
     url = "https://gitlab.inria.fr/why3/why3/-/archive/${version}/why3-${version}.tar.gz";
     hash = sha256;
   };
 
   nativeBuildInputs = [
-    findlib
-    menhir
     ocaml
     wrapGAppsHook3
-  ];
+  ]
+  ++ (with ocamlPackages; [
+    findlib
+    menhir
+  ]);
 
   buildInputs = [
     autoreconfHook
+  ]
+  ++ (with ocamlPackages; [
     lablgtk3-sourceview3
     ocamlgraph
-  ];
+  ]);
 
-  propagatedBuildInputs = [
+  propagatedBuildInputs = with ocamlPackages; [
     camlzip
     menhirLib
     re

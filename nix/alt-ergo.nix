@@ -1,12 +1,18 @@
 {
-  pkgs,
-  version,
+  # Previous overlay
+  alt-ergo,
+
+  # Librairies
+  fetchurl,
+
+  # Pins
   sha256,
+  version,
 }:
-pkgs.alt-ergo.overrideAttrs {
+alt-ergo.overrideAttrs {
   inherit version;
 
-  src = pkgs.fetchurl {
+  src = fetchurl {
     url = "https://github.com/OCamlPro/alt-ergo/releases/download/v${version}/alt-ergo-${version}.tbz";
     hash = sha256;
   };

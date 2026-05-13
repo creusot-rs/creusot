@@ -1,15 +1,24 @@
 {
-  pkgs,
-  version,
+  # Dependencies
+  autoreconfHook,
+  ocamlPackages,
+
+  # Librairies
+  fetchFromGitHub,
+  fetchurl,
+  lib,
+  stdenv,
+
+  # Pins
   sha256,
+  version,
 }:
 let
-  ocamlPackages = pkgs.ocamlPackages;
-  ocplib-simplex_0_4 = pkgs.stdenv.mkDerivation rec {
+  ocplib-simplex_0_4 = stdenv.mkDerivation rec {
     pname = "ocplib-simplex";
     version = "0.4.1";
 
-    src = pkgs.fetchFromGitHub {
+    src = fetchFromGitHub {
       owner = "OCamlPro";
       repo = pname;
       rev = "v${version}";
@@ -17,7 +26,7 @@ let
     };
 
     nativeBuildInputs = [
-      pkgs.autoreconfHook
+      autoreconfHook
     ]
     ++ (with ocamlPackages; [
       ocaml
@@ -33,7 +42,7 @@ ocamlPackages.buildDunePackage rec {
   pname = "alt-ergo-free";
   inherit version;
 
-  src = pkgs.fetchurl {
+  src = fetchurl {
     url = "https://github.com/OCamlPro/alt-ergo/releases/download/v${version}-free/alt-ergo-${version}-free.tar.gz";
     hash = sha256;
   };
@@ -60,6 +69,6 @@ ocamlPackages.buildDunePackage rec {
   meta = {
     description = "High-performance theorem prover and SMT solver";
     homepage = "https://alt-ergo.ocamlpro.com/";
-    license = pkgs.lib.licenses.cecill-c;
+    license = lib.licenses.cecill-c;
   };
 }

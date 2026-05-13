@@ -1,12 +1,18 @@
 {
-  pkgs,
-  version,
+  # Previous overlay
+  z3,
+
+  # Librairies
+  fetchFromGitHub,
+
+  # Pins
   sha256,
+  version,
 }:
-pkgs.z3.overrideAttrs {
+z3.overrideAttrs {
   inherit version;
 
-  src = pkgs.fetchFromGitHub {
+  src = fetchFromGitHub {
     owner = "Z3Prover";
     repo = "z3";
     rev = "z3-${version}";

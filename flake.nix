@@ -65,11 +65,7 @@
           };
         in
         {
-          overlays.deps =
-            _: pkgs:
-            import ./nix {
-              inherit pins pkgs;
-            };
+          overlays.deps = import ./nix/pkgs.nix pins;
         };
 
       perSystem =
@@ -156,7 +152,6 @@
                 }) solvers
               );
             };
-
         in
         rec {
           _module.args.pkgs = import nixpkgs {
@@ -283,7 +278,7 @@
             // (
               let
                 mkEnv =
-                    isFree:
+                  isFree:
                   pkgs.buildEnv {
                     name = "creusot-env";
                     paths = [

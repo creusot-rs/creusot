@@ -1,11 +1,30 @@
 {
-  pkgs,
-  version,
+  # Dependencies
+  antlr3_4,
+  cadical,
+  cln,
+  cmake,
+  cryptominisat,
+  gmp,
+  jdk,
+  libantlr3c,
+  pkg-config,
+  python3,
+  symfpu,
+
+  # Previous overlay
+  cvc4,
+
+  # Librairies
+  fetchFromGitHub,
+  stdenv,
+
+  # Pins
   sha256,
+  version,
 }:
-with pkgs;
 let
-  cvc4-cryptominisat = pkgs.cryptominisat.overrideAttrs (old: {
+  cvc4-cryptominisat = cryptominisat.overrideAttrs (old: {
     src = fetchFromGitHub {
       owner = "msoos";
       repo = "cryptominisat";

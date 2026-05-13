@@ -1,27 +1,34 @@
 {
-  pkgs,
-  version,
-  sha256,
+  # Dependencies
+  ocamlPackages,
   why3,
+  zeromq,
+
+  # Librairies
+  fetchurl,
+
+  # Pins
+  sha256,
+  version,
 }:
-with pkgs;
-with ocamlPackages;
-buildDunePackage {
+ocamlPackages.buildDunePackage {
   inherit version;
 
   pname = "why3find";
 
-  src = pkgs.fetchurl {
+  src = fetchurl {
     url = "https://github.com/creusot-rs/why3find/archive/${version}.tar.gz";
     hash = sha256;
   };
 
   buildInputs = [
+    why3
+    zeromq
+  ]
+  ++ (with ocamlPackages; [
     dune-site
     terminal_size
-    why3
     yojson
-    zeromq
     zmq
-  ];
+  ]);
 }

@@ -1,9 +1,32 @@
 {
-  pkgs,
-  version,
+  # Dependencies
+  autoreconfHook,
+  bash,
+  cadical,
+  cln,
+  cmake,
+  glpk,
+  gmp,
+  libedit,
+  libpoly,
+  pkg-config,
+  python3,
+  symfpu,
+  which,
+
+  # Previous overlay
+  cvc5,
+
+  # Librairies
+  fetchFromGitHub,
+  fetchpatch,
+  fetchurl,
+  stdenv,
+
+  # Pins
   sha256,
+  version,
 }:
-with pkgs;
 let
   cvc5-cadical = cadical.override { version = "2.1.3"; };
 
@@ -88,8 +111,8 @@ stdenv.mkDerivation {
     gmp
     libedit
     libpoly
-    python313Packages.pexpect
-    python313Packages.pyparsing
+    python3.pkgs.pexpect
+    python3.pkgs.pyparsing
     symfpu
   ];
 
