@@ -49,50 +49,67 @@ All you have to do is activate flakes temporarily by using `--extra-experimental
 nix --extra-experimental-features 'nix-command flakes' shell "github:creusot-rs/creusot"
 ```
 
-## Nix installion via flakes
+## Use Creusot within a project (using `nix`)
 
-Here is a sample flake.nix that provides a shell with Creusot as a dependency from github:
+Here is a sample `flake.nix` that provides a shell with Creusot as a dependency, using `flake-parts`:
 ```
 {
-  description = "A devShell example";
-
   inputs = {
-    nixpkgs.url      = "github:NixOS/nixpkgs/nixos-unstable";
-    rust-overlay.url = "github:oxalica/rust-overlay";
-    flake-utils.url  = "github:numtide/flake-utils";
-    creusot.url      = "github:creusot-rs/creusot";
+    # Both `nixpkgs` and `flake-parts` are pinned to the same version as Creusot's
+    nixpkgs.follows = "creusot/nixpkgs";
+    flake-parts.follows = "creusot/flake-parts";
+
+    creusot.url = "github:creusot-rs/creusot";
   };
 
-  outputs = { self, nixpkgs, rust-overlay, flake-utils, creusot, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        overlays = [ (import rust-overlay) ];
-        pkgs = import nixpkgs {
-          inherit system overlays;
-        };
-      in
-      {
-        devShells.default = pkgs.mkShell {
-          packages = [
-            rustToolchain
-            pkgs.rust-analyzer
-            pkgs.rustfmt
-            pkgs.why3
-            creusot.packages.${system}.default
-          ];
+  outputs =
+    inputs@{
+      creusot,
+      flake-parts,
+      nixpkgs,
+      self,
+    }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [
+        "aarch64-darwin"
+        "x86_64-linux"
+      ];
 
-          buildInputs = [];
+      perSystem =
+        {
+          pkgs,
+          system,
+          ...
+        }:
+        {
+          # `pkgs` will also contain the `creusot` set, thanks to Creusot's overlay
+          _module.args.pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ creusot.overlays.default ];
+          };
 
-          shellHook = ''
-            echo "========== Creusot shell loaded! =========="
-            why3 config detect
-          '';
+          # `nix fmt`
+          formatter = pkgs.nixfmt-tree;
+
+          # `nix develop`
+          devShells.default = pkgs.mkShell {
+            packages = [
+              # `mkCreusotWrapped` produces a wrapped version of Creusot, along with all its dependencies (similar to `clang`).
+              # The `isFree` argument allows switching between the free and non-free version of the solver `alt-ergo`.
+              (pkgs.creusot.mkCreusotWrapped { isFree = true; })
+
+              # Further packages could be added, notably `cargo` for the `cargo creusot` command
+              pkgs.cargo
+              pkgs.clippy
+              pkgs.rust-analyzer
+              pkgs.rustfmt
+              # ...
+            ];
+          };
         };
-      }
-    );
+    };
 }
 ```
-Note, you'll need to allow non-free packages to be able to build the `alt-ergo` package.
 
 ## Manual installation
 
