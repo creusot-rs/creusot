@@ -1,7 +1,7 @@
 {
   # Dependencies
+  creusot,
   ocamlPackages,
-  why3,
   zeromq,
 
   # Librairies
@@ -22,7 +22,7 @@ ocamlPackages.buildDunePackage {
   };
 
   buildInputs = [
-    why3
+    creusot.why3
     zeromq
   ]
   ++ (with ocamlPackages; [

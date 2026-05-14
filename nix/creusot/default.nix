@@ -20,13 +20,15 @@ let
   envBuilder = rustLib.overrideToolchain toolchain;
 in
 {
-  prelude = final.callPackage ./prelude.nix {
-    inherit (attrs) meta version;
-    inherit envBuilder src;
-  };
+  creusot = prev.creusot or { } // {
+    prelude = final.callPackage ./prelude.nix {
+      inherit (attrs) meta version;
+      inherit envBuilder src;
+    };
 
-  creusot = final.callPackage ./creusot.nix {
-    inherit (attrs) meta version;
-    inherit envBuilder src toolchain;
+    creusot = final.callPackage ./creusot.nix {
+      inherit (attrs) meta version;
+      inherit envBuilder src toolchain;
+    };
   };
 }

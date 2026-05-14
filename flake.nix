@@ -130,7 +130,7 @@
             }:
             let
               solvers =
-                with pkgs;
+                with pkgs.creusot;
                 let
                   solvers = if isFree then [ alt-ergo-free ] else [ alt-ergo ];
                 in
@@ -162,14 +162,14 @@
               );
             };
         in
-        rec {
+        {
           _module.args.pkgs = import nixpkgs {
             inherit system;
             overlays = [ self.overlays.default ];
           };
 
           packages = {
-            inherit (pkgs) prelude creusot;
+            inherit (pkgs.creusot) prelude creusot;
           }
           // (
             let
@@ -178,8 +178,8 @@
                 pkgs.buildEnv {
                   name = "creusot-env";
                   paths = [
-                    packages.creusot
-                    packages.prelude
+                    pkgs.creusot.creusot
+                    pkgs.creusot.prelude
                     pkgs.gcc
                     rust.toolchain.build
                     (mkWhy3Framework isFree)
@@ -204,7 +204,7 @@
               mkShell =
                 isFree:
                 pkgs.mkShell {
-                  inputsFrom = [ packages.creusot ];
+                  inputsFrom = [ pkgs.creusot.creusot ];
                   packages = [
                     rust.toolchain.dev
                     (mkWhy3Framework isFree)
