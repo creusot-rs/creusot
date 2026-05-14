@@ -32,6 +32,7 @@ stdenv.mkDerivation {
   };
 
   nativeBuildInputs = [
+    autoreconfHook
     ocaml
     wrapGAppsHook3
   ]
@@ -40,13 +41,10 @@ stdenv.mkDerivation {
     menhir
   ]);
 
-  buildInputs = [
-    autoreconfHook
-  ]
-  ++ (with ocamlPackages; [
+  buildInputs = with ocamlPackages; [
     lablgtk3-sourceview3
     ocamlgraph
-  ]);
+  ];
 
   propagatedBuildInputs = with ocamlPackages; [
     camlzip

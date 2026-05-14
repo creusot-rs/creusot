@@ -15,14 +15,18 @@
 {
   isFree,
 }:
+
+let
+  why3Framework = creusot.mkWhy3Framework { inherit isFree; };
+in
 buildEnv {
   name = "creusot-env";
   paths = [
     creusot.prelude
     creusot.creusot
-    (creusot.mkWhy3Framework isFree)
     gcc
     rustToolchain
+    why3Framework
   ];
 
   nativeBuildInputs = [ makeWrapper ];
@@ -30,4 +34,6 @@ buildEnv {
     wrapProgram $out/bin/cargo-creusot \
       --set CREUSOT_DATA_HOME "$out"
   '';
+
+  passthru = { inherit why3Framework; };
 }

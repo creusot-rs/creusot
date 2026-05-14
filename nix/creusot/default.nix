@@ -43,7 +43,7 @@ in
       inherit rustBuilder rustToolchain src;
     };
 
-    mkWhy3Framework = final.callPackage ./mkWhy3Framework.nix {};
+    mkWhy3Framework = final.callPackage ./mkWhy3Framework.nix { };
     mkCreusotShell = final.callPackage ./mkCreusotShell.nix {
       inherit rustToolchain;
     };

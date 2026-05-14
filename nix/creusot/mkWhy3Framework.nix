@@ -33,4 +33,11 @@ symlinkJoin {
   name = "creusot-why3";
   paths = solvers ++ [ why3json ];
   postBuild = "ln -s $out $out/creusot";
+
+  passthru = builtins.listToAttrs (
+    map (drv: {
+      name = drv.pname;
+      value = drv;
+    }) solvers
+  );
 }

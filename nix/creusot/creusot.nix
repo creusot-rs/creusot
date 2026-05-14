@@ -39,7 +39,7 @@ rustBuilder.buildPackage rec {
 
   doNotRemoveReferencesToRustToolchain = true;
 
-  postInstall = with lib.strings; ''
+  postInstall = ''
     mkdir $out/share
     cp {Cargo.toml,Cargo.lock} $out/share/.
     cp -r {creusot-std,creusot-std-proc,pearlite-syn} $out/share/.
@@ -49,7 +49,7 @@ rustBuilder.buildPackage rec {
       --set CREUSOT_RUSTC $out/bin/creusot-rustc \
 
     wrapProgram $out/bin/creusot-rustc \
-      --set LD_LIBRARY_PATH "${makeLibraryPath [ rustToolchain ]}" \
-      --set DYLD_FALLBACK_LIBRARY_PATH "${makeLibraryPath [ rustToolchain ]}"
+      --set LD_LIBRARY_PATH "${lib.makeLibraryPath [ rustToolchain ]}" \
+      --set DYLD_FALLBACK_LIBRARY_PATH "${lib.makeLibraryPath [ rustToolchain ]}"
   '';
 }
