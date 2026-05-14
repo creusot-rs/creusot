@@ -101,12 +101,25 @@
 
           formatter = pkgs.nixfmt-tree;
 
-          packages = {
-            inherit (pkgs.creusot) prelude creusot;
+          packages =
+            let
+              rustShellToolchain = pkgs.creusot.mkRustToolchain [ ];
 
-            default = pkgs.creusot.mkCreusotShell { isFree = false; };
-            free = pkgs.creusot.mkCreusotShell { isFree = true; };
-          };
+              mkCreusot =
+                isFree:
+                (pkgs.creusot.mkCreusotWrapped isFree).override (old: {
+                  paths = old.paths ++ [
+                    pkgs.gcc
+                    rustShellToolchain
+                  ];
+                });
+            in
+            {
+              inherit (pkgs.creusot) prelude creusot;
+
+              default = mkCreusot { isFree = false; };
+              free = mkCreusot { isFree = true; };
+            };
 
           devShells =
             let
