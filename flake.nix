@@ -93,136 +93,52 @@
           system,
           ...
         }:
-        let
-          rust =
-            let
-              inherit ((pkgs.lib.importTOML ./rust-toolchain).toolchain) channel components;
-
-              devComponents = [
-                "clippy"
-                "rust-analyzer"
-                "rust-src"
-                "rustfmt"
-              ];
-
-              mkRustToolchain =
-                components:
-                let
-                  toolchain = {
-                    inherit channel components;
-                    profile = "minimal";
-                  };
-                in
-                pkgs.rust-bin.fromRustupToolchain toolchain;
-            in
-            {
-              lib = crane.mkLib pkgs;
-
-              toolchain = {
-                build = mkRustToolchain components;
-                dev = mkRustToolchain (components ++ devComponents);
-              };
-            };
-
-          mkWhy3Framework =
-            {
-              isFree,
-            }:
-            let
-              solvers =
-                with pkgs.creusot;
-                let
-                  solvers = if isFree then [ alt-ergo-free ] else [ alt-ergo ];
-                in
-                [
-                  cvc4
-                  cvc5
-                  why3
-                  why3find
-                  z3
-                ]
-                ++ solvers;
-
-              why3json = pkgs.writeTextFile {
-                destination = "/why3find.json";
-                name = "why3find.json";
-                text = builtins.readFile ./why3find.json;
-              };
-            in
-            pkgs.symlinkJoin {
-              name = "creusot-why3";
-              paths = solvers ++ [ why3json ];
-              postBuild = "ln -s $out $out/creusot";
-
-              passthru = builtins.listToAttrs (
-                map (drv: {
-                  name = drv.pname;
-                  value = drv;
-                }) solvers
-              );
-            };
-        in
         {
           _module.args.pkgs = import nixpkgs {
             inherit system;
             overlays = [ self.overlays.default ];
           };
 
+          formatter = pkgs.nixfmt-tree;
+
           packages = {
             inherit (pkgs.creusot) prelude creusot;
-          }
-          // (
-            let
-              mkEnv =
-                isFree:
-                pkgs.buildEnv {
-                  name = "creusot-env";
-                  paths = [
-                    pkgs.creusot.creusot
-                    pkgs.creusot.prelude
-                    pkgs.gcc
-                    rust.toolchain.build
-                    (mkWhy3Framework isFree)
-                  ];
 
-                  nativeBuildInputs = [ pkgs.makeWrapper ];
-                  postBuild = ''
-                    wrapProgram $out/bin/cargo-creusot \
-                      --set CREUSOT_DATA_HOME "$out"
-                  '';
-                };
-
-            in
-            {
-              default = mkEnv { isFree = false; };
-              free = mkEnv { isFree = true; };
-            }
-          );
+            default = pkgs.creusot.mkCreusotShell { isFree = false; };
+            free = pkgs.creusot.mkCreusotShell { isFree = true; };
+          };
 
           devShells =
             let
-              mkShell =
+              rustDevToolchain = pkgs.creusot.mkRustToolchain (
+                pkgs.creusot.components
+                ++ [
+                  "clippy"
+                  "rust-analyzer"
+                  "rust-src"
+                  "rustfmt"
+                ]
+              );
+
+              mkDevShell =
                 isFree:
                 pkgs.mkShell {
                   inputsFrom = [ pkgs.creusot.creusot ];
+
                   packages = [
-                    rust.toolchain.dev
-                    (mkWhy3Framework isFree)
+                    (pkgs.creusot.mkWhy3Framework isFree)
+                    rustDevToolchain
                   ];
 
-                  CREUSOT_DATA_HOME = mkWhy3Framework isFree;
-                  LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ rust.toolchain.dev ];
-                  DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ rust.toolchain.dev ];
-
-                  passthru = rust.toolchain.dev.passthru.availableComponents;
+                  CREUSOT_DATA_HOME = pkgs.creusot.mkWhy3Framework isFree;
+                  LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ rustDevToolchain ];
+                  DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ rustDevToolchain ];
                 };
             in
             {
-              default = mkShell { isFree = false; };
-              free = mkShell { isFree = true; };
+              default = mkDevShell { isFree = false; };
+              free = mkDevShell { isFree = true; };
             };
-
-          formatter = pkgs.nixfmt-tree;
         };
     };
 }

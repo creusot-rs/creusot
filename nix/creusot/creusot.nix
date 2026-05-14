@@ -9,25 +9,25 @@
   stdenv,
 
   # Attributes
-  envBuilder,
   meta,
+  rustBuilder,
+  rustToolchain,
   src,
-  toolchain,
   version,
 }:
 
 let
   pname = "cargo-creusot";
   cargoExtraArgs = "--workspace --exclude creusot-install --exclude prelude-generator";
+
+  cargoArtifacts = rustBuilder.buildDepsOnly {
+    inherit meta pname version;
+    inherit cargoExtraArgs src;
+  };
 in
-envBuilder.buildPackage rec {
-  inherit
-    cargoExtraArgs
-    meta
-    pname
-    src
-    version
-    ;
+rustBuilder.buildPackage rec {
+  inherit meta pname version;
+  inherit cargoArtifacts cargoExtraArgs src;
 
   nativeBuildInputs = [
     makeWrapper
@@ -36,16 +36,6 @@ envBuilder.buildPackage rec {
     libiconv
     libzip
   ];
-
-  cargoArtifacts = envBuilder.buildDepsOnly {
-    inherit
-      cargoExtraArgs
-      meta
-      pname
-      src
-      version
-      ;
-  };
 
   doNotRemoveReferencesToRustToolchain = true;
 
@@ -59,7 +49,7 @@ envBuilder.buildPackage rec {
       --set CREUSOT_RUSTC $out/bin/creusot-rustc \
 
     wrapProgram $out/bin/creusot-rustc \
-      --set LD_LIBRARY_PATH "${makeLibraryPath [ toolchain ]}" \
-      --set DYLD_FALLBACK_LIBRARY_PATH "${makeLibraryPath [ toolchain ]}"
+      --set LD_LIBRARY_PATH "${makeLibraryPath [ rustToolchain ]}" \
+      --set DYLD_FALLBACK_LIBRARY_PATH "${makeLibraryPath [ rustToolchain ]}"
   '';
 }

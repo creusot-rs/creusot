@@ -16,19 +16,36 @@ let
       || (builtins.match ".*/.*\.stderr" path != null);
   };
 
-  toolchain = final.rust-bin.fromRustupToolchain attrs.toolchain;
-  envBuilder = rustLib.overrideToolchain toolchain;
+  mkRustToolchain =
+    components:
+    final.rust-bin.fromRustupToolchain {
+      inherit (attrs.toolchain) channel;
+      inherit components;
+
+      profile = "minimal";
+    };
+
+  rustToolchain = mkRustToolchain attrs.toolchain.components;
+  rustBuilder = rustLib.overrideToolchain rustToolchain;
 in
 {
   creusot = prev.creusot or { } // {
+    inherit (attrs.toolchain) components;
+    inherit mkRustToolchain;
+
     prelude = final.callPackage ./prelude.nix {
       inherit (attrs) meta version;
-      inherit envBuilder src;
+      inherit rustBuilder src;
     };
 
     creusot = final.callPackage ./creusot.nix {
       inherit (attrs) meta version;
-      inherit envBuilder src toolchain;
+      inherit rustBuilder rustToolchain src;
+    };
+
+    mkWhy3Framework = final.callPackage ./mkWhy3Framework.nix {};
+    mkCreusotShell = final.callPackage ./mkCreusotShell.nix {
+      inherit rustToolchain;
     };
   };
 }
