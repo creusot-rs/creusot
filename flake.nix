@@ -1,7 +1,7 @@
 {
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-25.11";
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-parts.url = "github:hercules-ci/flake-parts";
 
     crane.url = "github:ipetkov/crane";
 
@@ -11,236 +11,134 @@
     };
   };
 
-  outputs = {
-    self,
-    crane,
-    flake-utils,
-    nixpkgs,
-    rust-overlay,
-  }:
-    flake-utils.lib.eachDefaultSystem (system: let
-      lib = nixpkgs.lib.extend (_: _: (import ./nix {
-        inherit pins pkgs;
-      }));
+  outputs =
+    inputs@{
+      crane,
+      flake-parts,
+      nixpkgs,
+      rust-overlay,
+      self,
+    }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [
+        "aarch64-darwin"
+        "x86_64-linux"
+      ];
 
-      overlays = [rust-overlay.overlays.default];
-      pkgs = import nixpkgs {inherit overlays system;};
-
-      pins = {
-        why3 = {
-          version = "2c0f2992af85f82f3eda0f158dcf10e62e0db875";
-          sha256 = "sha256-9ReUqizS2Jmh2qqRmnygKmFCTaHrpvMGg+wiwrhONiE=";
-        };
-
-        why3find = {
-          version = "eab37557d3e24e1913a3c4f44bc5528ef497c6c9";
-          sha256 = "sha256-nyf/d3d0y5WuH5fTz93HkCbziwN0WR7sAzas+Ipauwg=";
-        };
-
-        alt-ergo = {
-          version = "2.6.2";
-          sha256 = "sha256-OeLJEop9HonzMuMaJxbzWfO54akl/oHxH6SnSbXSTYI=";
-        };
-
-        alt-ergo-free = {
-          version = "2.4.3";
-          sha256 = "sha256-ksVP9HH9pY+T6Es/wgC9pGd805AGw1e1vgfVlNGCXG8=";
-        };
-
-        cvc4 = {
-          version = "1.8";
-          sha256 = "sha256-V6KShPLW6kFBJaNgqy98rjOxULmf5c8AmDwo9fclGuY=";
-        };
-
-        cvc5 = {
-          version = "1.3.1";
-          sha256 = "sha256-nxJjrpWZfYPuuKN4CWxOHEuou4r+MdK0AjdEPZHZbHI=";
-        };
-
-        z3 = {
-          version = "4.15.3";
-          sha256 = "sha256-Lw037Z0t0ySxkgMXkbjNW5CB4QQLRrrSEBsLJqiomZ4=";
-        };
-
-        creusot = {
-          inherit ((pkgs.lib.importTOML ./Cargo.toml).workspace.package) version;
-
-          meta = with pkgs.lib; {
-            homepage = "https://github.com/creusot-rs/creusot";
-            license = licenses.lgpl2;
-          };
-        };
-      };
-
-      rust = let
-        inherit ((pkgs.lib.importTOML ./rust-toolchain).toolchain) channel components;
-        devComponents = ["clippy" "rust-analyzer" "rust-src" "rustfmt"];
-
-        mkRustToolchain = components: let
-          toolchain = {
-            inherit channel components;
-            profile = "minimal";
-          };
-        in
-          pkgs.rust-bin.fromRustupToolchain toolchain;
-      in {
-        lib = crane.mkLib pkgs;
-
-        toolchain = {
-          build = mkRustToolchain components;
-          dev = mkRustToolchain (components ++ devComponents);
-        };
-
-        envBuilder = rust.lib.overrideToolchain rust.toolchain.build;
-      };
-
-      mkWhy3Framework = {isFree ? false}: let
-        solvers = let
-          free-solvers = with lib.pkgs; [cvc4 cvc5 why3 why3find z3];
-        in
-          if isFree
-          then [lib.pkgs.alt-ergo-free] ++ free-solvers
-          else [lib.pkgs.alt-ergo] ++ free-solvers;
-
-        why3json = pkgs.writeTextFile {
-          destination = "/why3find.json";
-          name = "why3find.json";
-          text = builtins.readFile ./why3find.json;
-        };
-      in
-        pkgs.symlinkJoin {
-          name = "creusot-why3";
-          paths = solvers ++ [why3json];
-          postBuild = "ln -s $out $out/creusot";
-
-          passthru = builtins.listToAttrs (map (drv: {
-              name = drv.pname;
-              value = drv;
-            })
-            solvers);
-        };
-    in rec {
-      inherit lib;
-
-      packages = let
-        src = pkgs.lib.cleanSourceWith {
-          name = "creusot-source";
-          src = ./.;
-
-          filter = path: type:
-            (rust.lib.filterCargoSources path type)
-            || (builtins.match ".*/rust-toolchain" path != null)
-            || (builtins.match ".*/messages.ftl" path != null)
-            || (builtins.match ".*/*.coma" path != null)
-            || (builtins.match ".*/*.json" path != null)
-            || (builtins.match ".*/*.stderr" path != null);
-        };
-      in {
-        why3Framework = mkWhy3Framework {};
-
-        prelude = let
-          inherit (pins.creusot) meta version;
-          inherit src;
-
-          pname = "prelude-generator";
-          cargoExtraArgs = "--bin prelude-generator";
-
-          cargoArtifacts = rust.envBuilder.buildDepsOnly {
-            inherit (pins.creusot) meta version;
-            inherit cargoExtraArgs pname src;
-          };
-
-          preludeBinary = rust.envBuilder.buildPackage {
-            inherit cargoArtifacts cargoExtraArgs meta pname src version;
-
-            nativeBuildInputs = with pkgs;
-              lib.optionals stdenv.isDarwin [libiconv libzip];
-          };
-        in
-          pkgs.runCommand "prelude" {
-            nativeBuildInputs = [preludeBinary];
-          } ''
-            mkdir -p $out/share/why3find ./prelude-generator ./target/creusot
-            cp ${src}/prelude-generator/*.coma ./prelude-generator
-
-            CARGO_MANIFEST_DIR=./target ${preludeBinary}/bin/prelude-generator
-
-            cp -r ./target/creusot/packages $out/share/why3find/.
-          '';
-
-        creusot = let
-          inherit (pins.creusot) meta version;
-
-          pname = "cargo-creusot";
-          cargoExtraArgs = "--workspace --exclude creusot-install --exclude prelude-generator";
-        in
-          rust.envBuilder.buildPackage rec {
-            inherit cargoExtraArgs meta pname src version;
-
-            nativeBuildInputs = with pkgs;
-              [makeWrapper]
-              ++ lib.optionals stdenv.isDarwin [libiconv libzip];
-
-            cargoArtifacts = rust.envBuilder.buildDepsOnly {
-              inherit cargoExtraArgs meta pname src version;
+      flake =
+        let
+          creusotAttrs = with nixpkgs.lib; {
+            meta = {
+              homepage = "https://github.com/creusot-rs/creusot";
+              license = licenses.lgpl2;
             };
 
-            doNotRemoveReferencesToRustToolchain = true;
-
-            postInstall = with lib.strings; ''
-              mkdir $out/share
-              cp {Cargo.toml,Cargo.lock} $out/share/.
-              cp -r {creusot-std,creusot-std-proc,pearlite-syn} $out/share/.
-
-              wrapProgram $out/bin/cargo-creusot \
-                --set CREUSOT_STD $out/share/creusot-std \
-                --set CREUSOT_RUSTC $out/bin/creusot-rustc \
-
-              wrapProgram $out/bin/creusot-rustc \
-                --set LD_LIBRARY_PATH "${makeLibraryPath [rust.toolchain.build]}" \
-                --set DYLD_FALLBACK_LIBRARY_PATH "${makeLibraryPath [rust.toolchain.build]}"
-            '';
+            toolchain = (importTOML ./rust-toolchain).toolchain;
+            version = (importTOML ./Cargo.toml).workspace.package.version;
           };
 
-        default = pkgs.buildEnv {
-          name = "creusot-env";
-          paths =
-            [pkgs.gcc rust.toolchain.build]
-            ++ (with packages; [creusot prelude why3Framework]);
+          pins = {
+            why3 = {
+              version = "2c0f2992af85f82f3eda0f158dcf10e62e0db875";
+              sha256 = "sha256-9ReUqizS2Jmh2qqRmnygKmFCTaHrpvMGg+wiwrhONiE=";
+            };
 
-          nativeBuildInputs = [pkgs.makeWrapper];
-          postBuild = ''
-            wrapProgram $out/bin/cargo-creusot \
-              --set CREUSOT_DATA_HOME "$out"
-          '';
-        };
-      };
+            why3find = {
+              version = "eab37557d3e24e1913a3c4f44bc5528ef497c6c9";
+              sha256 = "sha256-nyf/d3d0y5WuH5fTz93HkCbziwN0WR7sAzas+Ipauwg=";
+            };
 
-      devShells = let
-        mkShell = {
-          creusot,
-          isFree ? false,
-        }: let
-          why3Framework = mkWhy3Framework {inherit isFree;};
+            alt-ergo = {
+              version = "2.6.2";
+              sha256 = "sha256-OeLJEop9HonzMuMaJxbzWfO54akl/oHxH6SnSbXSTYI=";
+            };
+
+            alt-ergo-free = {
+              version = "2.4.3";
+              sha256 = "sha256-ksVP9HH9pY+T6Es/wgC9pGd805AGw1e1vgfVlNGCXG8=";
+            };
+
+            cvc4 = {
+              version = "1.8";
+              sha256 = "sha256-V6KShPLW6kFBJaNgqy98rjOxULmf5c8AmDwo9fclGuY=";
+            };
+
+            cvc5 = {
+              version = "1.3.1";
+              sha256 = "sha256-nxJjrpWZfYPuuKN4CWxOHEuou4r+MdK0AjdEPZHZbHI=";
+            };
+
+            z3 = {
+              version = "4.15.3";
+              sha256 = "sha256-Lw037Z0t0ySxkgMXkbjNW5CB4QQLRrrSEBsLJqiomZ4=";
+            };
+          };
         in
-          pkgs.mkShell {
-            inputsFrom = [creusot];
-            packages = [why3Framework rust.toolchain.dev];
+        {
+          overlays = rec {
+            deps = import ./nix/deps pins;
+            creusot = import ./nix/creusot (creusotAttrs // { inherit crane; });
 
-            CREUSOT_DATA_HOME = why3Framework;
-            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
-            DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [rust.toolchain.dev];
-
-            passthru = rust.toolchain.dev.passthru.availableComponents;
+            default = nixpkgs.lib.composeManyExtensions [
+              rust-overlay.overlays.default
+              self.overlays.deps
+              self.overlays.creusot
+            ];
           };
-      in {
-        default = mkShell {creusot = packages.creusot;};
-        free = mkShell {
-          creusot = packages.creusot;
-          isFree = true;
         };
-      };
 
-      formatter = pkgs.alejandra;
-    });
+      perSystem =
+        {
+          pkgs,
+          system,
+          ...
+        }:
+        {
+          _module.args.pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ self.overlays.default ];
+          };
+
+          formatter = pkgs.nixfmt-tree;
+
+          packages = {
+            inherit (pkgs.creusot) prelude creusot;
+
+            default = pkgs.creusot.mkCreusotShell { isFree = false; };
+            free = pkgs.creusot.mkCreusotShell { isFree = true; };
+          };
+
+          devShells =
+            let
+              rustDevToolchain = pkgs.creusot.mkRustToolchain (
+                pkgs.creusot.components
+                ++ [
+                  "clippy"
+                  "rust-analyzer"
+                  "rust-src"
+                  "rustfmt"
+                ]
+              );
+
+              mkDevShell =
+                isFree:
+                pkgs.mkShell {
+                  inputsFrom = [ pkgs.creusot.creusot ];
+
+                  packages = [
+                    (pkgs.creusot.mkWhy3Framework isFree)
+                    rustDevToolchain
+                  ];
+
+                  CREUSOT_DATA_HOME = pkgs.creusot.mkWhy3Framework isFree;
+                  LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ rustDevToolchain ];
+                  DYLD_FALLBACK_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ rustDevToolchain ];
+                };
+            in
+            {
+              default = mkDevShell { isFree = false; };
+              free = mkDevShell { isFree = true; };
+            };
+        };
+    };
 }
