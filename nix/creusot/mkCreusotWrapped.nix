@@ -6,9 +6,6 @@
 
   # Librairies
   buildEnv,
-
-  # Attributes
-  rustToolchain,
 }:
 
 # Arguments
@@ -20,12 +17,10 @@ let
   why3Framework = creusot.mkWhy3Framework { inherit isFree; };
 in
 buildEnv {
-  name = "creusot-env";
+  name = "creusot-wrapped";
   paths = [
     creusot.prelude
     creusot.creusot
-    gcc
-    rustToolchain
     why3Framework
   ];
 
