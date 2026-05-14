@@ -27,6 +27,16 @@
 
       flake =
         let
+          creusotAttrs = with nixpkgs.lib; {
+            meta = {
+              homepage = "https://github.com/creusot-rs/creusot";
+              license = licenses.lgpl2;
+            };
+
+            toolchain = (importTOML ./rust-toolchain).toolchain;
+            version = (importTOML ./Cargo.toml).workspace.package.version;
+          };
+
           pins = {
             why3 = {
               version = "2c0f2992af85f82f3eda0f158dcf10e62e0db875";
@@ -65,7 +75,16 @@
           };
         in
         {
-          overlays.deps = import ./nix/deps pins;
+          overlays = rec {
+            deps = import ./nix/deps pins;
+            creusot = import ./nix/creusot (creusotAttrs // { inherit crane; });
+
+            default = nixpkgs.lib.composeManyExtensions [
+              rust-overlay.overlays.default
+              self.overlays.deps
+              self.overlays.creusot
+            ];
+          };
         };
 
       perSystem =
@@ -75,15 +94,6 @@
           ...
         }:
         let
-          creusot = {
-            inherit ((pkgs.lib.importTOML ./Cargo.toml).workspace.package) version;
-
-            meta = with pkgs.lib; {
-              homepage = "https://github.com/creusot-rs/creusot";
-              license = licenses.lgpl2;
-            };
-          };
-
           rust =
             let
               inherit ((pkgs.lib.importTOML ./rust-toolchain).toolchain) channel components;
@@ -112,26 +122,25 @@
                 build = mkRustToolchain components;
                 dev = mkRustToolchain (components ++ devComponents);
               };
-
-              envBuilder = rust.lib.overrideToolchain rust.toolchain.build;
             };
 
           mkWhy3Framework =
             {
-              isFree ? false,
+              isFree,
             }:
             let
               solvers =
+                with pkgs;
                 let
-                  solvers = if isFree then [ pkgs.alt-ergo-free ] else [ pkgs.alt-ergo ];
+                  solvers = if isFree then [ alt-ergo-free ] else [ alt-ergo ];
                 in
-                (with pkgs; [
+                [
                   cvc4
                   cvc5
                   why3
                   why3find
                   z3
-                ])
+                ]
                 ++ solvers;
 
               why3json = pkgs.writeTextFile {
@@ -156,152 +165,39 @@
         rec {
           _module.args.pkgs = import nixpkgs {
             inherit system;
-
-            overlays = [
-              rust-overlay.overlays.default
-              self.overlays.deps
-            ];
+            overlays = [ self.overlays.default ];
           };
 
-          packages =
+          packages = {
+            inherit (pkgs) prelude creusot;
+          }
+          // (
             let
-              src = pkgs.lib.cleanSourceWith {
-                name = "creusot-source";
-                src = ./.;
+              mkEnv =
+                isFree:
+                pkgs.buildEnv {
+                  name = "creusot-env";
+                  paths = [
+                    packages.creusot
+                    packages.prelude
+                    pkgs.gcc
+                    rust.toolchain.build
+                    (mkWhy3Framework isFree)
+                  ];
 
-                filter =
-                  path: type:
-                  (rust.lib.filterCargoSources path type)
-                  || (builtins.match ".*/rust-toolchain" path != null)
-                  || (builtins.match ".*/messages.ftl" path != null)
-                  || (builtins.match ".*/*.coma" path != null)
-                  || (builtins.match ".*/*.json" path != null)
-                  || (builtins.match ".*/*.stderr" path != null);
-              };
-            in
-            {
-              prelude =
-                let
-                  inherit (creusot) meta version;
-                  inherit src;
-
-                  pname = "prelude-generator";
-                  cargoExtraArgs = "--bin prelude-generator";
-
-                  cargoArtifacts = rust.envBuilder.buildDepsOnly {
-                    inherit (creusot) meta version;
-                    inherit cargoExtraArgs pname src;
-                  };
-
-                  preludeBinary = rust.envBuilder.buildPackage {
-                    inherit
-                      cargoArtifacts
-                      cargoExtraArgs
-                      meta
-                      pname
-                      src
-                      version
-                      ;
-
-                    nativeBuildInputs =
-                      with pkgs;
-                      lib.optionals stdenv.isDarwin [
-                        libiconv
-                        libzip
-                      ];
-                  };
-                in
-                pkgs.runCommand "prelude"
-                  {
-                    nativeBuildInputs = [ preludeBinary ];
-                  }
-                  ''
-                    mkdir -p $out/share/why3find ./prelude-generator ./target/creusot
-                    cp ${src}/prelude-generator/*.coma ./prelude-generator
-
-                    CARGO_MANIFEST_DIR=./target ${preludeBinary}/bin/prelude-generator
-
-                    cp -r ./target/creusot/packages $out/share/why3find/.
-                  '';
-
-              creusot =
-                let
-                  inherit (creusot) meta version;
-
-                  pname = "cargo-creusot";
-                  cargoExtraArgs = "--workspace --exclude creusot-install --exclude prelude-generator";
-                in
-                rust.envBuilder.buildPackage rec {
-                  inherit
-                    cargoExtraArgs
-                    meta
-                    pname
-                    src
-                    version
-                    ;
-
-                  nativeBuildInputs =
-                    with pkgs;
-                    [ makeWrapper ]
-                    ++ lib.optionals stdenv.isDarwin [
-                      libiconv
-                      libzip
-                    ];
-
-                  cargoArtifacts = rust.envBuilder.buildDepsOnly {
-                    inherit
-                      cargoExtraArgs
-                      meta
-                      pname
-                      src
-                      version
-                      ;
-                  };
-
-                  doNotRemoveReferencesToRustToolchain = true;
-
-                  postInstall = with pkgs.lib.strings; ''
-                    mkdir $out/share
-                    cp {Cargo.toml,Cargo.lock} $out/share/.
-                    cp -r {creusot-std,creusot-std-proc,pearlite-syn} $out/share/.
-
+                  nativeBuildInputs = [ pkgs.makeWrapper ];
+                  postBuild = ''
                     wrapProgram $out/bin/cargo-creusot \
-                      --set CREUSOT_STD $out/share/creusot-std \
-                      --set CREUSOT_RUSTC $out/bin/creusot-rustc \
-
-                    wrapProgram $out/bin/creusot-rustc \
-                      --set LD_LIBRARY_PATH "${makeLibraryPath [ rust.toolchain.build ]}" \
-                      --set DYLD_FALLBACK_LIBRARY_PATH "${makeLibraryPath [ rust.toolchain.build ]}"
+                      --set CREUSOT_DATA_HOME "$out"
                   '';
                 };
+
+            in
+            {
+              default = mkEnv { isFree = false; };
+              free = mkEnv { isFree = true; };
             }
-            // (
-              let
-                mkEnv =
-                  isFree:
-                  pkgs.buildEnv {
-                    name = "creusot-env";
-                    paths = [
-                      packages.creusot
-                      packages.prelude
-                      pkgs.gcc
-                      rust.toolchain.build
-                      (mkWhy3Framework isFree)
-                    ];
-
-                    nativeBuildInputs = [ pkgs.makeWrapper ];
-                    postBuild = ''
-                      wrapProgram $out/bin/cargo-creusot \
-                        --set CREUSOT_DATA_HOME "$out"
-                    '';
-                  };
-
-              in
-              {
-                default = mkEnv { isFree = false; };
-                free = mkEnv { isFree = true; };
-              }
-            );
+          );
 
           devShells =
             let
