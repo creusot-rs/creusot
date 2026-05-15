@@ -160,7 +160,7 @@ if [ "$TEST_BUILD_NEW" ] || [ "$TEST_ALL" ] ; then
   pushd $TMP
   DIR=creusot-test-please-ignore
   rm -rf $DIR
-  cargo_creusot new $DIR --main --creusot-std $CREUSOT_DIR/creusot-std
+  cargo_creusot new $DIR --main --creusot-path $CREUSOT_DIR
   cd $DIR
   cargo fmt --check
   cargo build
@@ -178,7 +178,7 @@ if [ "$TEST_BUILD_NO_STD" ] || [ "$TEST_ALL" ] ; then
   pushd $TMP
   DIR=creusot-test-please-ignore
   rm -rf $DIR
-  cargo_creusot new $DIR --no-std --creusot-std $CREUSOT_DIR/creusot-std
+  cargo_creusot new $DIR --no-std --creusot-path $CREUSOT_DIR
   cd $DIR
   echo "$TLC" > rust-toolchain
   cargo fmt --check
