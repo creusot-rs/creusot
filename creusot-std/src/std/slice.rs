@@ -4,7 +4,7 @@ use crate::{ghost::perm::Perm, invariant::*, logic::ops::IndexLogic, prelude::*}
 #[cfg(creusot)]
 use core::ops::{Index, IndexMut};
 use core::{
-    ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
+    ops::{Bound, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
     slice::*,
 };
 #[cfg(all(creusot, feature = "std"))]
@@ -274,6 +274,67 @@ impl<T> SliceIndexSpec<[T]> for RangeToInclusive<usize> {
     #[logic(open)]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! { forall<i> self.end@ < i && i < old.len() ==> old[i] == fin[i] }
+    }
+}
+
+impl<T> SliceIndexSpec<[T]> for (Bound<usize>, Bound<usize>) {
+    #[logic(open)]
+    fn in_bounds(self, seq: Seq<T>) -> bool {
+        match self {
+            (Bound::Included(start), Bound::Included(end)) => (start..=end).in_bounds(seq),
+            (Bound::Included(start), Bound::Excluded(end)) => (start..end).in_bounds(seq),
+            (Bound::Included(start), Bound::Unbounded) => (start..).in_bounds(seq),
+            (Bound::Excluded(start), Bound::Excluded(end)) => (start + 1usize..end).in_bounds(seq),
+            (Bound::Excluded(start), Bound::Included(end)) => (start + 1usize..=end).in_bounds(seq),
+            (Bound::Excluded(start), Bound::Unbounded) => (start + 1usize..).in_bounds(seq),
+            (Bound::Unbounded, Bound::Unbounded) => (..).in_bounds(seq),
+            (Bound::Unbounded, Bound::Included(end)) => (..=end).in_bounds(seq),
+            (Bound::Unbounded, Bound::Excluded(end)) => (..end).in_bounds(seq),
+        }
+    }
+
+    #[logic(open)]
+    fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
+        match self {
+            (Bound::Included(start), Bound::Included(end)) => (start..=end).has_value(seq, out),
+            (Bound::Included(start), Bound::Excluded(end)) => (start..end).has_value(seq, out),
+            (Bound::Included(start), Bound::Unbounded) => (start..).has_value(seq, out),
+            (Bound::Excluded(start), Bound::Excluded(end)) => {
+                (start + 1usize..end).has_value(seq, out)
+            }
+            (Bound::Excluded(start), Bound::Included(end)) => {
+                (start + 1usize..=end).has_value(seq, out)
+            }
+            (Bound::Excluded(start), Bound::Unbounded) => (start + 1usize..).has_value(seq, out),
+            (Bound::Unbounded, Bound::Unbounded) => (..).has_value(seq, out),
+            (Bound::Unbounded, Bound::Included(end)) => (..=end).has_value(seq, out),
+            (Bound::Unbounded, Bound::Excluded(end)) => (..end).has_value(seq, out),
+        }
+    }
+
+    #[logic(open)]
+    fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
+        match self {
+            (Bound::Included(start), Bound::Included(end)) => {
+                (start..=end).resolve_elswhere(old, fin)
+            }
+            (Bound::Included(start), Bound::Excluded(end)) => {
+                (start..end).resolve_elswhere(old, fin)
+            }
+            (Bound::Included(start), Bound::Unbounded) => (start..).resolve_elswhere(old, fin),
+            (Bound::Excluded(start), Bound::Excluded(end)) => {
+                (start + 1usize..end).resolve_elswhere(old, fin)
+            }
+            (Bound::Excluded(start), Bound::Included(end)) => {
+                (start + 1usize..=end).resolve_elswhere(old, fin)
+            }
+            (Bound::Excluded(start), Bound::Unbounded) => {
+                (start + 1usize..).resolve_elswhere(old, fin)
+            }
+            (Bound::Unbounded, Bound::Unbounded) => (..).resolve_elswhere(old, fin),
+            (Bound::Unbounded, Bound::Included(end)) => (..=end).resolve_elswhere(old, fin),
+            (Bound::Unbounded, Bound::Excluded(end)) => (..end).resolve_elswhere(old, fin),
+        }
     }
 }
 
