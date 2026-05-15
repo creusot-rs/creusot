@@ -49,6 +49,68 @@ All you have to do is activate flakes temporarily by using `--extra-experimental
 nix --extra-experimental-features 'nix-command flakes' shell "github:creusot-rs/creusot"
 ```
 
+## Use Creusot within a project (using `nix`)
+
+Here is a sample `flake.nix` that provides a shell with Creusot as a dependency, using `flake-parts`:
+```
+{
+  inputs = {
+    # Both `nixpkgs` and `flake-parts` are pinned to the same version as Creusot's
+    nixpkgs.follows = "creusot/nixpkgs";
+    flake-parts.follows = "creusot/flake-parts";
+
+    creusot.url = "github:creusot-rs/creusot";
+  };
+
+  outputs =
+    inputs@{
+      creusot,
+      flake-parts,
+      nixpkgs,
+      self,
+    }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [
+        "aarch64-darwin"
+        "x86_64-linux"
+      ];
+
+      perSystem =
+        {
+          pkgs,
+          system,
+          ...
+        }:
+        {
+          # `pkgs` will also contain the `creusot` set, thanks to Creusot's overlay
+          _module.args.pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ creusot.overlays.default ];
+          };
+
+          # `nix fmt`
+          formatter = pkgs.nixfmt-tree;
+
+          # `nix develop`
+          devShells.default = pkgs.mkShell {
+            packages = [
+              # `mkCreusotWrapped` produces a wrapped version of Creusot, along with all its dependencies (similar to `clang`).
+              # The `isFree` argument allows switching between the free and non-free version of the solver `alt-ergo`.
+              (pkgs.creusot.mkCreusotWrapped { isFree = true; })
+
+              # Further packages could be added, notably `cargo` for the `cargo creusot` command
+              pkgs.cargo
+              pkgs.clippy
+              pkgs.rust-analyzer
+              pkgs.rustfmt
+              # ...
+            ];
+          };
+        };
+    };
+}
+```
+
 ## Manual installation
 
 1. You can install the core files from the Creusot repository with Cargo alone:
