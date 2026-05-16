@@ -5,7 +5,8 @@ and some configuration options.
 
 ## Quick installation (using custom script)
 
-The `INSTALL` script installs Creusot and its accompanying tools.
+The `INSTALL` script in the Creusot repository installs Creusot and its
+accompanying tools.
 
 Requirements to run the `INSTALL` script:
 
@@ -14,6 +15,8 @@ Requirements to run the `INSTALL` script:
 - `curl` to download provers: `alt-ergo`, `z3`, `cvc4`, `cvc5`.
 
 ```sh
+git clone https://github.com/creusot-rs/creusot
+cd creusot
 ./INSTALL
 ```
 
@@ -191,3 +194,20 @@ Nevertheless, you may like to experiment with some of these options:
   For example: `compute_in_goal` and `inline_goal` are tactics; `apply H`, `exists X` are not tactics.
 
 See [the Why3find README](https://git.frama-c.com/pub/why3find#why3find) for more information.
+
+## Creusot versions
+
+If you are just getting started with Creusot, we recommend that you install Creusot
+from the default `master` branch.
+This is the "dev version" `X.Y.Z-dev` where `X.Y.Z` is the upcoming version number.
+The main benefit is to allow you to get fixes quicker if you run into issues.
+The drawback is that your projects must then depend on the dev version of
+the `creusot-std` crate. In particular, you cannot get it from crates.io,
+and you have to apply "patches" in the Cargo config.
+`cargo creusot new` handles this automatically in simple cases,
+but some intervention may be necessary when switching between a dev version
+and a released version of Creusot.
+
+We make a new release of Creusot every month, providing a clearly defined version
+for your projects to depend on (as opposed to having to remember a specific commit hash).
+This also enables getting the `creusot-std` crate from crates.io.

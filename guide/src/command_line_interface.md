@@ -131,7 +131,7 @@ which ensures that the Coma artifacts are always up to date.
 ### `new`
 
 ```
-cargo creusot new <NAME> [--main] [--creusot-std <PATH>]
+cargo creusot new <NAME> [--main] [--tests] [--no-std] [--creusot-path <PATH>]
 ```
 
 Create or update package named `<NAME>`.
@@ -141,7 +141,16 @@ Create directory `<NAME>` if it doesn't already exist, and run `cargo creusot in
 #### Options
 
 - `--main`: Create `main.rs` for an executable crate. (By default, only a library crate `lib.rs` is created.)
-- `--creusot-std <PATH>`: Path to local `creusot-std` used to set the `[patch.crates-io]` section of `Cargo.toml`.
+- `--creusot-path <PATH>`: Path to local `creusot` repository, used to find dev
+    versions of `creusot-std`, `creusot-std-proc`, and `pearlite-syn`.
+    - This creates a symlink `creusot` pointing to `<PATH>` in the newly created project,
+      and a file `.cargo/config.toml` that points to `creusot/creusot-std`,
+      going through that symlink to find `creusot-std` (and thus the other crates as well).
+    - This option has a default value so you shouldn't need to set this normally.
+        + For non-Nix installations, this defaults to a path hard-coded during the
+          compilation of `cargo-creusot`, so it should work as long as you didn't move it.
+        + In a Nix shell, this option is set via the environment variable `CREUSOT_PATH`.
+    - This option is ignored in released versions of Creusot.
 
 ### `init`
 
@@ -159,14 +168,17 @@ If `Cargo.toml` exists, update an existing package for verification with Creusot
 
     For released versions of Creusot, this is equivalent to `cargo add creusot-std@<VERSION>` just with the right version.
 
-    For a development version of Creusot (prerelease version `-dev`), this also adds the following lines:
+    For a development version of Creusot (prerelease version `-dev`), this also creates
+    `.cargo/config.toml` with these contents:
 
     ```
     [patch.crates-io]
-    creusot-std = { path = "/path/to/creusot-std" }
+    creusot-std = { path = "creusot/creusot-std" }
     ```
 
-    This setting is documented in [The Cargo Book: Overriding Dependencies](https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html).
+    and a `creusot` symlink to the Creusot repository.
+
+    The `[patch.crates-io]` setting is documented in [The Cargo Book: Overriding Dependencies](https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html).
 
 - add `why3find.json` if it doesn't exist.
 
@@ -174,7 +186,7 @@ If `Cargo.toml` exists, update an existing package for verification with Creusot
 
 - `<NAME>`: Name of the package. (By default, it is the name of the directory.)
 - `--main`: Create `main.rs` for an executable crate. (By default, only a library crate `lib.rs` is created.)
-- `--creusot-std <PATH>`: Path to local `creusot-std` used to set the `[patch.crates-io]` section of `Cargo.toml`.
+- `--creusot-path <PATH>`: Path to local `creusot` repository.
 
 ## Configuration
 
