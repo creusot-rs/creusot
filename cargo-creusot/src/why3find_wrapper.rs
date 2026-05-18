@@ -87,7 +87,7 @@ fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> Result
     if args.why3session || args.ide.ide_always {
         why3find.arg("-s");
     }
-    why3find.arg("--summary");
+    why3find.args(["--summary", "--no-autodetect-provers"]);
     why3find.args(&args.why3find_arg);
     why3find.args(files);
     // Add $XDG_DATA_HOME/creusot/bin to PATH for why3find to find why3
