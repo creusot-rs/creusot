@@ -1,3 +1,79 @@
+module M_rightmost_bit_64
+  use creusot.int.Int64BW
+  use creusot.prelude.Any
+  use int.Int
+  
+  let rec wrapping_neg (self_: Int64BW.t) (return (x: Int64BW.t)) = any
+    [ return (result: Int64BW.t) -> {[@stop_split] [@expl:wrapping_neg ensures] result = Int64BW.neg self_}
+      (! return {result}) ]
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_i64 (self: Int64BW.t) (o: Int64BW.t) : t_Ordering = if Int64BW.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom eq_cmp_i64_spec: forall x: Int64BW.t, y: Int64BW.t. (x = y) = (cmp_log_i64 x y = Equal)
+  
+  function antisym2_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom antisym2_i64_spec: forall x: Int64BW.t, y: Int64BW.t. cmp_log_i64 x y = Greater -> cmp_log_i64 y x = Less
+  
+  function antisym1_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom antisym1_i64_spec: forall x: Int64BW.t, y: Int64BW.t. cmp_log_i64 x y = Less -> cmp_log_i64 y x = Greater
+  
+  function trans_i64 (x: Int64BW.t) (y: Int64BW.t) (z: Int64BW.t) (o: t_Ordering) : ()
+  
+  axiom trans_i64_spec: forall x: Int64BW.t, y: Int64BW.t, z: Int64BW.t, o: t_Ordering. cmp_log_i64 x y = o
+      -> cmp_log_i64 y z = o -> cmp_log_i64 x z = o
+  
+  function refl_i64 (x: Int64BW.t) : ()
+  
+  axiom refl_i64_spec: forall x: Int64BW.t. cmp_log_i64 x x = Equal
+  
+  function cmp_gt_log_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom cmp_gt_log_i64_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.gt x y = (cmp_log_i64 x y = Greater)
+  
+  function cmp_ge_log_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom cmp_ge_log_i64_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.ge x y = (cmp_log_i64 x y <> Less)
+  
+  function cmp_lt_log_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom cmp_lt_log_i64_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.lt x y = (cmp_log_i64 x y = Less)
+  
+  function cmp_le_log_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom cmp_le_log_i64_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.le x y = (cmp_log_i64 x y <> Greater)
+  
+  constant const_MIN: Int64BW.t = (9223372036854775808: Int64BW.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec rightmost_bit_64 (x: Int64BW.t) (return (x'0: Int64BW.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = wrapping_neg {x} (fun (_x: Int64BW.t) -> [ &_11 <- _x ] s1)
+      | s1 = [ &_ret <- Int64BW.bw_and x _11 ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: Int64BW.t = Any.any_l () | & x: Int64BW.t = x | & _11: Int64BW.t = Any.any_l () ])
+    [ return (result: Int64BW.t) ->
+    {[@stop_split] [@expl:rightmost_bit_64 ensures] ([@stop_split] [@expl:rightmost_bit_64 ensures #0] Int64BW.ge x (0: Int64BW.t)
+        -> Int64BW.le (0: Int64BW.t) result /\ Int64BW.le result x)
+      /\ ([@stop_split] [@expl:rightmost_bit_64 ensures #1] Int64BW.le x (0: Int64BW.t) /\ Int64BW.gt x const_MIN
+        -> Int64BW.le (0: Int64BW.t) result /\ Int64BW.to_int result <= - Int64BW.to_int x)
+      /\ ([@stop_split] [@expl:rightmost_bit_64 ensures #2] (x = const_MIN) = (result = const_MIN))
+      /\ ([@stop_split] [@expl:rightmost_bit_64 ensures #3] forall i: Int64BW.t. Int64BW.le (0: Int64BW.t) i
+          /\ Int64BW.lt i result -> Int64BW.bw_and i x = (0: Int64BW.t))}
+      (! return {result}) ]
+end
 module M_rightmost_bit_8
   use creusot.int.Int8BW
   use creusot.prelude.Any
@@ -81,81 +157,5 @@ module M_rightmost_bit_8
       /\ ([@stop_split] [@expl:rightmost_bit_8 ensures #3] forall i: Int8BW.t. Int8BW.le (0: Int8BW.t) i
             /\ Int8BW.lt i result -> Int8BW.bw_and i x = (0: Int8BW.t))
       /\ ([@stop_split] [@expl:rightmost_bit_8 ensures #4] x <> (0: Int8BW.t) -> count8_log result = 1)}
-      (! return {result}) ]
-end
-module M_rightmost_bit_64
-  use creusot.int.Int64BW
-  use creusot.prelude.Any
-  use int.Int
-  
-  let rec wrapping_neg (self_: Int64BW.t) (return (x: Int64BW.t)) = any
-    [ return (result: Int64BW.t) -> {[@stop_split] [@expl:wrapping_neg ensures] result = Int64BW.neg self_}
-      (! return {result}) ]
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_i64 (self: Int64BW.t) (o: Int64BW.t) : t_Ordering = if Int64BW.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom eq_cmp_i64_spec: forall x: Int64BW.t, y: Int64BW.t. (x = y) = (cmp_log_i64 x y = Equal)
-  
-  function antisym2_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom antisym2_i64_spec: forall x: Int64BW.t, y: Int64BW.t. cmp_log_i64 x y = Greater -> cmp_log_i64 y x = Less
-  
-  function antisym1_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom antisym1_i64_spec: forall x: Int64BW.t, y: Int64BW.t. cmp_log_i64 x y = Less -> cmp_log_i64 y x = Greater
-  
-  function trans_i64 (x: Int64BW.t) (y: Int64BW.t) (z: Int64BW.t) (o: t_Ordering) : ()
-  
-  axiom trans_i64_spec: forall x: Int64BW.t, y: Int64BW.t, z: Int64BW.t, o: t_Ordering. cmp_log_i64 x y = o
-      -> cmp_log_i64 y z = o -> cmp_log_i64 x z = o
-  
-  function refl_i64 (x: Int64BW.t) : ()
-  
-  axiom refl_i64_spec: forall x: Int64BW.t. cmp_log_i64 x x = Equal
-  
-  function cmp_gt_log_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom cmp_gt_log_i64_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.gt x y = (cmp_log_i64 x y = Greater)
-  
-  function cmp_ge_log_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom cmp_ge_log_i64_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.ge x y = (cmp_log_i64 x y <> Less)
-  
-  function cmp_lt_log_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom cmp_lt_log_i64_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.lt x y = (cmp_log_i64 x y = Less)
-  
-  function cmp_le_log_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom cmp_le_log_i64_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.le x y = (cmp_log_i64 x y <> Greater)
-  
-  constant const_MIN: Int64BW.t = (9223372036854775808: Int64BW.t)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec rightmost_bit_64 (x: Int64BW.t) (return (x'0: Int64BW.t)) = (! bb0
-    [ bb0 = s0
-      [ s0 = wrapping_neg {x} (fun (_x: Int64BW.t) -> [ &_11 <- _x ] s1)
-      | s1 = [ &_ret <- Int64BW.bw_and x _11 ] s2
-      | s2 = return {_ret} ] ]
-    [ & _ret: Int64BW.t = Any.any_l () | & x: Int64BW.t = x | & _11: Int64BW.t = Any.any_l () ])
-    [ return (result: Int64BW.t) ->
-    {[@stop_split] [@expl:rightmost_bit_64 ensures] ([@stop_split] [@expl:rightmost_bit_64 ensures #0] Int64BW.ge x (0: Int64BW.t)
-        -> Int64BW.le (0: Int64BW.t) result /\ Int64BW.le result x)
-      /\ ([@stop_split] [@expl:rightmost_bit_64 ensures #1] Int64BW.le x (0: Int64BW.t) /\ Int64BW.gt x const_MIN
-        -> Int64BW.le (0: Int64BW.t) result /\ Int64BW.to_int result <= - Int64BW.to_int x)
-      /\ ([@stop_split] [@expl:rightmost_bit_64 ensures #2] (x = const_MIN) = (result = const_MIN))
-      /\ ([@stop_split] [@expl:rightmost_bit_64 ensures #3] forall i: Int64BW.t. Int64BW.le (0: Int64BW.t) i
-          /\ Int64BW.lt i result -> Int64BW.bw_and i x = (0: Int64BW.t))}
       (! return {result}) ]
 end

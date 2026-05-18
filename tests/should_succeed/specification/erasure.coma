@@ -1,25 +1,89 @@
-module M_nested
+module M_apply
+  use creusot.int.Int32
   use creusot.prelude.Any
   
-  let rec hidden (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate precondition_F (self: t_F) (args: Int32.t)
+  
+  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  let rec call_once_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+    any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec nested (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = hidden (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+  let rec apply_F (f: t_F) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:apply_F requires] ([@stop_split] [@expl:apply 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:apply requires] precondition_F f (0: Int32.t))}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_5 <- (0: Int32.t) ] s1
+      | s1 = call_once_F {f} {_5} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & _5: Int32.t = Any.any_l () ])
+    [ return (result: Int32.t) -> (! return {result}) ]
 end
-module M_nested__hidden
+module M_apply_test
+  use creusot.int.Int32
   use creusot.prelude.Any
+  
+  predicate precondition_foo [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in true
+  
+  meta "rewrite_def" predicate precondition_foo
+  
+  let rec apply_foo (f: ()) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:apply requires] precondition_foo f (0: Int32.t)}
+    any [ return (result: Int32.t) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec hidden (return (x: ())) = (! bb0
-    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+  let rec apply_test (return (x: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = apply_foo {()} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
+end
+module M_apply_test2
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  predicate precondition_foo3 [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in true
+  
+  meta "rewrite_def" predicate precondition_foo3
+  
+  let rec apply_foo3 (f: ()) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:apply requires] precondition_foo3 f (0: Int32.t)}
+    any [ return (result: Int32.t) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec apply_test2 (return (x: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = apply_foo3 {()} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
+end
+module M_baz
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  constant const_N : Int32.t
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec baz (return (x: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- const_N ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ])
+    [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_foo
   use creusot.int.Int32
@@ -45,19 +109,181 @@ module M_foo2
     [ bb0 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ])
     [ return (result: Int32.t) -> (! return {result}) ]
 end
-module M_baz
+module M_foog
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  constant const_N : Int32.t
+  let rec new_i32 (x: Int32.t) (return (x'0: Int32.t)) = any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  type tup2_i32_Ghost_i32 = { f0: Int32.t; f1: Int32.t }
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec baz (return (x: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- const_N ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ])
-    [ return (result: Int32.t) -> (! return {result}) ]
+  let rec foog (x: Int32.t) (return (x'0: tup2_i32_Ghost_i32)) = (! bb0
+    [ bb0 = s0
+      [ s0 = new_i32 {x} (fun (_x: Int32.t) -> [ &_5 <- _x ] s1)
+      | s1 = [ &_ret <- { f0 = x; f1 = _5 } ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: tup2_i32_Ghost_i32 = Any.any_l () | & x: Int32.t = x | & _5: Int32.t = Any.any_l () ])
+    [ return (result: tup2_i32_Ghost_i32) -> (! return {result}) ]
+end
+module M_ghost_split
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec ghost_split (return (x: ())) = (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_ghost_split2
+  use creusot.prelude.Any
+  
+  type tup2_unit_unit = { f0: (); f1: () }
+  
+  let rec new_tup2_unit_unit (x: tup2_unit_unit) (return (x'0: tup2_unit_unit)) = any
+    [ return (result: tup2_unit_unit) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  type tup2_Ghost_unit_Ghost_unit = { f0'0: (); f1'0: () }
+  
+  let rec split_unit (self: tup2_unit_unit) (return (x: tup2_Ghost_unit_Ghost_unit)) = any
+    [ return (result: tup2_Ghost_unit_Ghost_unit) ->
+    {[@stop_split] [@expl:split_unit ensures] ([@stop_split] [@expl:split ensures #0] self.f0 = result.f0'0)
+      /\ ([@stop_split] [@expl:split ensures #1] self.f1 = result.f1'0)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec ghost_split2 (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_4 <- { f0 = _5; f1 = _6 } ] s1
+      | s1 = new_tup2_unit_unit {_4} (fun (_x: tup2_unit_unit) -> [ &_3 <- _x ] s2)
+      | s2 = split_unit {_3} (fun (_x: tup2_Ghost_unit_Ghost_unit) -> [ &_2 <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & _2: tup2_Ghost_unit_Ghost_unit = Any.any_l ()
+    | & _3: tup2_unit_unit = Any.any_l ()
+    | & _4: tup2_unit_unit = Any.any_l ()
+    | & _5: () = Any.any_l ()
+    | & _6: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_impl_Quux_for_i32__quux (* <i32 as Quux> *)
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  let rec foo (x: Int32.t) (return (x'0: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec quux_i32 (self: Int32.t) (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = foo {self} (fun (_x: Int32.t) -> [ &_2 <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & self: Int32.t = self | & _2: Int32.t = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end
+module M_impl_Tr_for_i32__takes_ref (* <i32 as Tr> *)
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec takes_ref_i32 (self: Int32.t) (return (x: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & self: Int32.t = self ]) [ return (result: Int32.t) -> (! return {result}) ]
+end
+module M_nested
+  use creusot.prelude.Any
+  
+  let rec hidden (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec nested (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = hidden (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_nested__hidden
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec hidden (return (x: ())) = (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_nested2
+  use creusot.prelude.Any
+  
+  let rec hidden (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec nested2 (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = hidden (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_nested2__hidden
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec hidden (return (x: ())) = (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_nested3
+  use creusot.prelude.Any
+  
+  let rec hidden (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec nested3 (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = hidden (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_nested3__hidden
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec hidden (return (x: ())) = (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_no_specs
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  let rec foo (x: Int32.t) (return (x'0: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec no_specs (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = foo {(0: Int32.t)} (fun (_x: Int32.t) -> [ &_1 <- _x ] s1) | s1 = bb3 ]
+    | bb3 = bb3 [ bb3 = (! any [ br0 -> {false = false} (! bb5) | br1 -> {false} (! bb3) ]) ]
+    | bb5 = return {_ret} ] [ & _ret: () = Any.any_l () | & _1: Int32.t = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end
 module M_quux2
   use creusot.int.Int32
@@ -92,6 +318,473 @@ module M_quux2
     | & _5: Int32.t = Any.any_l ()
     | & _8: int = Any.any_l ()
     | & _9: int = Any.any_l () ]) [ return (result: int) -> (! return {result}) ]
+end
+module M_slice_as_mut_ptr
+  use creusot.prelude.MutBorrow
+  use creusot.slice.Slice64
+  use seq.Seq
+  use creusot.prelude.Opaque
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+  
+  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+  
+  meta "rewrite_def" predicate inv_slice_T
+  
+  predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+    inv_slice_T self.current /\ inv_slice_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_slice_T
+  
+  predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_slice_T
+  
+  let rec as_mut_ptr_T (self_: MutBorrow.t (Slice64.slice t_T)) (return (x: Opaque.ptr)) =
+    {[@stop_split] [@expl:as_mut_ptr 'self_' type invariant] inv_refmut_slice_T self_}
+    any [ return (result: Opaque.ptr) -> (! return {result}) ]
+  
+  predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_slice_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec slice_as_mut_ptr_T (s: MutBorrow.t (Slice64.slice t_T)) (return (x: Opaque.ptr)) =
+    {[@stop_split] [@expl:slice_as_mut_ptr 's' type invariant] inv_refmut_slice_T s}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <Slice64.slice t_T> {s.current} {MutBorrow.get_id s}
+          (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
+            [ &_2 <- _bor ] -{inv_slice_T _bor.final}-
+            [ &s <- { s with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_slice_T s.current} any) ]
+      | s1 = as_mut_ptr_T {_2} (fun (_x: Opaque.ptr) -> [ &_ret <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T s} any) ]
+      | s3 = -{resolve_refmut_slice_T s}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: Opaque.ptr = Any.any_l ()
+    | & s: MutBorrow.t (Slice64.slice t_T) = s
+    | & _2: MutBorrow.t (Slice64.slice t_T) = Any.any_l () ]) [ return (result: Opaque.ptr) -> (! return {result}) ]
+end
+module M_slice_as_mut_ptr_perm
+  use creusot.prelude.MutBorrow
+  use creusot.slice.Slice64
+  use seq.Seq
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+  
+  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+  
+  meta "rewrite_def" predicate inv_slice_T
+  
+  type t_Perm_ptr_slice_T
+  
+  type tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_Perm_ptr_slice_T }
+  
+  predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+    inv_slice_T self.current /\ inv_slice_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_slice_T
+  
+  predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_slice_T
+  
+  predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ward_ptr_slice_T (self: t_Perm_ptr_slice_T) : Opaque.ptr
+  
+  predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
+    Seq.length (Slice64.view _value) = UInt64.t'int _metadata
+  
+  meta "rewrite_def" predicate metadata_matches_slice_T
+  
+  function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
+  
+  function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
+  
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+  
+  meta "rewrite_def" predicate invariant_ref_slice_T
+  
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_slice_T
+  
+  predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
+    not is_null_ptr_slice_T (ward_ptr_slice_T self)
+    /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (ward_ptr_slice_T self))
+    /\ inv_ref_slice_T (val_ptr_slice_T self)
+  
+  predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
+      = invariant_Perm_ptr_slice_T x
+  
+  predicate invariant_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) =
+    inv_Perm_ptr_slice_T self.current /\ inv_Perm_ptr_slice_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Perm_ptr_slice_T
+  
+  predicate inv_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_slice_T) =
+    invariant_refmut_Perm_ptr_slice_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Perm_ptr_slice_T
+  
+  predicate invariant_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) =
+    inv_refmut_Perm_ptr_slice_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_refmut_Perm_ptr_slice_T
+  
+  predicate inv_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_slice_T) =
+    invariant_Ghost_refmut_Perm_ptr_slice_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_refmut_Perm_ptr_slice_T
+  
+  predicate inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) =
+    inv_Ghost_refmut_Perm_ptr_slice_T _1.f1
+  
+  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T
+  
+  function fin_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) : t_Perm_ptr_slice_T
+   = self.final
+  
+  meta "rewrite_def" function fin_Ghost_refmut_Perm_ptr_slice_T
+  
+  let rec as_mut_ptr_perm_slice_T (self: MutBorrow.t (Slice64.slice t_T))
+    (return (x: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T)) =
+    {[@stop_split] [@expl:as_mut_ptr_perm 'self' type invariant] inv_refmut_slice_T self}
+    any
+    [ return (result: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) ->
+    {[@stop_split] [@expl:as_mut_ptr_perm_slice_T ensures] ([@stop_split] [@expl:as_mut_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result)
+      /\ ([@stop_split] [@expl:as_mut_ptr_perm ensures #0] result.f0 = Opaque.thin (ward_ptr_slice_T result.f1.current))
+      /\ ([@stop_split] [@expl:as_mut_ptr_perm ensures #1] self.current = val_ptr_slice_T result.f1.current)
+      /\ ([@stop_split] [@expl:as_mut_ptr_perm ensures #2] self.final
+      = val_ptr_slice_T (fin_Ghost_refmut_Perm_ptr_slice_T result.f1))}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_slice_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec slice_as_mut_ptr_perm_T (s: MutBorrow.t (Slice64.slice t_T))
+    (return (x: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T)) =
+    {[@stop_split] [@expl:slice_as_mut_ptr_perm 's' type invariant] inv_refmut_slice_T s}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <Slice64.slice t_T> {s.current} {MutBorrow.get_id s}
+          (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
+            [ &_4 <- _bor ] -{inv_slice_T _bor.final}-
+            [ &s <- { s with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_slice_T s.current} any) ]
+      | s1 = as_mut_ptr_perm_slice_T {_4} (fun (_x: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) -> [ &_ret <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T s} any) ]
+      | s3 = -{resolve_refmut_slice_T s}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T = Any.any_l ()
+    | & s: MutBorrow.t (Slice64.slice t_T) = s
+    | & _4: MutBorrow.t (Slice64.slice t_T) = Any.any_l () ])
+    [ return (result: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) ->
+    {[@stop_split] [@expl:slice_as_mut_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result}
+      (! return {result}) ]
+end
+module M_slice_as_ptr
+  use creusot.slice.Slice64
+  use creusot.prelude.Opaque
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+  
+  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+  
+  meta "rewrite_def" predicate inv_slice_T
+  
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+  
+  meta "rewrite_def" predicate invariant_ref_slice_T
+  
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_slice_T
+  
+  let rec as_ptr_T (self_: Slice64.slice t_T) (return (x: Opaque.ptr)) =
+    {[@stop_split] [@expl:as_ptr 'self_' type invariant] inv_ref_slice_T self_}
+    any [ return (result: Opaque.ptr) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec slice_as_ptr_T (s: Slice64.slice t_T) (return (x: Opaque.ptr)) =
+    {[@stop_split] [@expl:slice_as_ptr 's' type invariant] inv_ref_slice_T s}
+    (! bb0
+    [ bb0 = s0 [ s0 = as_ptr_T {s} (fun (_x: Opaque.ptr) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Opaque.ptr = Any.any_l () | & s: Slice64.slice t_T = s ])
+    [ return (result: Opaque.ptr) -> (! return {result}) ]
+end
+module M_slice_as_ptr_perm
+  use creusot.slice.Slice64
+  use creusot.prelude.Opaque
+  use seq.Seq
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  type t_Perm_ptr_slice_T
+  
+  type tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T = { f0: Opaque.ptr; f1: t_Perm_ptr_slice_T }
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+  
+  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+  
+  meta "rewrite_def" predicate inv_slice_T
+  
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+  
+  meta "rewrite_def" predicate invariant_ref_slice_T
+  
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_slice_T
+  
+  predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  function ward_ptr_slice_T (self: t_Perm_ptr_slice_T) : Opaque.ptr
+  
+  predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
+    Seq.length (Slice64.view _value) = UInt64.t'int _metadata
+  
+  meta "rewrite_def" predicate metadata_matches_slice_T
+  
+  function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
+  
+  function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
+  
+  predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
+    not is_null_ptr_slice_T (ward_ptr_slice_T self)
+    /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (ward_ptr_slice_T self))
+    /\ inv_ref_slice_T (val_ptr_slice_T self)
+  
+  predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
+      = invariant_Perm_ptr_slice_T x
+  
+  predicate invariant_ref_Perm_ptr_slice_T [@inline:trivial] (self: t_Perm_ptr_slice_T) = inv_Perm_ptr_slice_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Perm_ptr_slice_T
+  
+  predicate inv_ref_Perm_ptr_slice_T [@inline:trivial] (_1: t_Perm_ptr_slice_T) = invariant_ref_Perm_ptr_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Perm_ptr_slice_T
+  
+  predicate invariant_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (self: t_Perm_ptr_slice_T) =
+    inv_ref_Perm_ptr_slice_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_ref_Perm_ptr_slice_T
+  
+  predicate inv_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1: t_Perm_ptr_slice_T) =
+    invariant_Ghost_ref_Perm_ptr_slice_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_slice_T
+  
+  predicate inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) =
+    inv_Ghost_ref_Perm_ptr_slice_T _1.f1
+  
+  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T
+  
+  let rec as_ptr_perm_slice_T (self: Slice64.slice t_T) (return (x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T)) =
+    {[@stop_split] [@expl:as_ptr_perm 'self' type invariant] inv_ref_slice_T self}
+    any
+    [ return (result: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) ->
+    {[@stop_split] [@expl:as_ptr_perm_slice_T ensures] ([@stop_split] [@expl:as_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result)
+      /\ ([@stop_split] [@expl:as_ptr_perm ensures #0] result.f0 = Opaque.thin (ward_ptr_slice_T result.f1))
+      /\ ([@stop_split] [@expl:as_ptr_perm ensures #1] self = val_ptr_slice_T result.f1)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec slice_as_ptr_perm_T (s: Slice64.slice t_T) (return (x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T)) =
+    {[@stop_split] [@expl:slice_as_ptr_perm 's' type invariant] inv_ref_slice_T s}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = as_ptr_perm_slice_T {s} (fun (_x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) -> [ &_ret <- _x ] s1)
+      | s1 = return {_ret} ] ]
+    [ & _ret: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T = Any.any_l () | & s: Slice64.slice t_T = s ])
+    [ return (result: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) ->
+    {[@stop_split] [@expl:slice_as_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result}
+      (! return {result}) ]
+end
+module M_specs
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  let rec foo (x: Int32.t) (return (x'0: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec specs (x: int) (return (x'0: ())) = {[@stop_split] [@expl:specs requires] false}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {[@expl:assertion] false} s1
+      | s1 = foo {(0: Int32.t)} (fun (_x: Int32.t) -> [ &_7 <- _x ] s2)
+      | s2 = [ &_8 <- x ] s3
+      | s3 = bb3 ]
+    | bb3 = bb3
+      [ bb3 = {[@expl:loop invariant] false}
+        (! s0)
+        [ s0 = any [ br0 -> {false = false} (! bb6) | br1 -> {false} (! bb3) ] ] ]
+    | bb6 = return {_ret} ]
+    [ & _ret: () = Any.any_l () | & x: int = x | & _7: Int32.t = Any.any_l () | & _8: int = Any.any_l () ])
+    [ return (result: ()) -> {[@stop_split] [@expl:specs ensures] false} (! return {result}) ]
+end
+module M_takes_ref
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec takes_ref (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ])
+    [ return (result: Int32.t) -> (! return {result}) ]
+end
+module M_takes_ref_test
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  let rec takes_ref_i32 (self: Int32.t) (return (x: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec takes_ref_test (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = takes_ref_i32 {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ]) [ return (result: Int32.t) -> (! return {result}) ]
+end
+module M_takes_ref_test2
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  let rec takes_ref (x: Int32.t) (return (x'0: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec takes_ref_test2 (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_5 <- x ] s1 | s1 = takes_ref {_5} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2) | s2 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x | & _5: Int32.t = Any.any_l () ])
+    [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_test_foo
   use creusot.int.Int32
@@ -197,69 +890,6 @@ module M_test_foo2
     | & _20: bool = Any.any_l ()
     | & _22: bool = Any.any_l ()
     | & _24: bool = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
-end
-module M_takes_ref
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec takes_ref (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> (! return {result}) ]
-end
-module M_takes_ref_test
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  let rec takes_ref_i32 (self: Int32.t) (return (x: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec takes_ref_test (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = takes_ref_i32 {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x ]) [ return (result: Int32.t) -> (! return {result}) ]
-end
-module M_takes_ref_test2
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  let rec takes_ref (x: Int32.t) (return (x'0: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec takes_ref_test2 (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_5 <- x ] s1 | s1 = takes_ref {_5} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2) | s2 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x | & _5: Int32.t = Any.any_l () ])
-    [ return (result: Int32.t) -> (! return {result}) ]
-end
-module M_foog
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  let rec new_i32 (x: Int32.t) (return (x'0: Int32.t)) = any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
-  
-  type tup2_i32_Ghost_i32 = { f0: Int32.t; f1: Int32.t }
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec foog (x: Int32.t) (return (x'0: tup2_i32_Ghost_i32)) = (! bb0
-    [ bb0 = s0
-      [ s0 = new_i32 {x} (fun (_x: Int32.t) -> [ &_5 <- _x ] s1)
-      | s1 = [ &_ret <- { f0 = x; f1 = _5 } ] s2
-      | s2 = return {_ret} ] ]
-    [ & _ret: tup2_i32_Ghost_i32 = Any.any_l () | & x: Int32.t = x | & _5: Int32.t = Any.any_l () ])
-    [ return (result: tup2_i32_Ghost_i32) -> (! return {result}) ]
 end
 module M_test_ghost_fields
   use creusot.int.Int32
@@ -504,634 +1134,4 @@ module M_test_ptr_mut2
     [ return (result: MutBorrow.t t_T) ->
     {[@stop_split] [@expl:test_ptr_mut2 result type invariant] inv_refmut_T result}
       (! return {result}) ]
-end
-module M_no_specs
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  let rec foo (x: Int32.t) (return (x'0: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec no_specs (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = foo {(0: Int32.t)} (fun (_x: Int32.t) -> [ &_1 <- _x ] s1) | s1 = bb3 ]
-    | bb3 = bb3 [ bb3 = (! any [ br0 -> {false = false} (! bb5) | br1 -> {false} (! bb3) ]) ]
-    | bb5 = return {_ret} ] [ & _ret: () = Any.any_l () | & _1: Int32.t = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
-end
-module M_specs
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  let rec foo (x: Int32.t) (return (x'0: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec specs (x: int) (return (x'0: ())) = {[@stop_split] [@expl:specs requires] false}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = {[@expl:assertion] false} s1
-      | s1 = foo {(0: Int32.t)} (fun (_x: Int32.t) -> [ &_7 <- _x ] s2)
-      | s2 = [ &_8 <- x ] s3
-      | s3 = bb3 ]
-    | bb3 = bb3
-      [ bb3 = {[@expl:loop invariant] false}
-        (! s0)
-        [ s0 = any [ br0 -> {false = false} (! bb6) | br1 -> {false} (! bb3) ] ] ]
-    | bb6 = return {_ret} ]
-    [ & _ret: () = Any.any_l () | & x: int = x | & _7: Int32.t = Any.any_l () | & _8: int = Any.any_l () ])
-    [ return (result: ()) -> {[@stop_split] [@expl:specs ensures] false} (! return {result}) ]
-end
-module M_nested2
-  use creusot.prelude.Any
-  
-  let rec hidden (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec nested2 (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = hidden (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_nested2__hidden
-  use creusot.prelude.Any
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec hidden (return (x: ())) = (! bb0
-    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_nested3
-  use creusot.prelude.Any
-  
-  let rec hidden (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec nested3 (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = hidden (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_nested3__hidden
-  use creusot.prelude.Any
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec hidden (return (x: ())) = (! bb0
-    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_ghost_split
-  use creusot.prelude.Any
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec ghost_split (return (x: ())) = (! bb0
-    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_ghost_split2
-  use creusot.prelude.Any
-  
-  type tup2_unit_unit = { f0: (); f1: () }
-  
-  let rec new_tup2_unit_unit (x: tup2_unit_unit) (return (x'0: tup2_unit_unit)) = any
-    [ return (result: tup2_unit_unit) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
-  
-  type tup2_Ghost_unit_Ghost_unit = { f0'0: (); f1'0: () }
-  
-  let rec split_unit (self: tup2_unit_unit) (return (x: tup2_Ghost_unit_Ghost_unit)) = any
-    [ return (result: tup2_Ghost_unit_Ghost_unit) ->
-    {[@stop_split] [@expl:split_unit ensures] ([@stop_split] [@expl:split ensures #0] self.f0 = result.f0'0)
-      /\ ([@stop_split] [@expl:split ensures #1] self.f1 = result.f1'0)}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec ghost_split2 (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_4 <- { f0 = _5; f1 = _6 } ] s1
-      | s1 = new_tup2_unit_unit {_4} (fun (_x: tup2_unit_unit) -> [ &_3 <- _x ] s2)
-      | s2 = split_unit {_3} (fun (_x: tup2_Ghost_unit_Ghost_unit) -> [ &_2 <- _x ] s3)
-      | s3 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & _2: tup2_Ghost_unit_Ghost_unit = Any.any_l ()
-    | & _3: tup2_unit_unit = Any.any_l ()
-    | & _4: tup2_unit_unit = Any.any_l ()
-    | & _5: () = Any.any_l ()
-    | & _6: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_slice_as_ptr
-  use creusot.slice.Slice64
-  use creusot.prelude.Opaque
-  use seq.Seq
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
-  
-  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
-  
-  meta "rewrite_def" predicate inv_slice_T
-  
-  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
-  
-  meta "rewrite_def" predicate invariant_ref_slice_T
-  
-  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
-  
-  meta "rewrite_def" predicate inv_ref_slice_T
-  
-  let rec as_ptr_T (self_: Slice64.slice t_T) (return (x: Opaque.ptr)) =
-    {[@stop_split] [@expl:as_ptr 'self_' type invariant] inv_ref_slice_T self_}
-    any [ return (result: Opaque.ptr) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec slice_as_ptr_T (s: Slice64.slice t_T) (return (x: Opaque.ptr)) =
-    {[@stop_split] [@expl:slice_as_ptr 's' type invariant] inv_ref_slice_T s}
-    (! bb0
-    [ bb0 = s0 [ s0 = as_ptr_T {s} (fun (_x: Opaque.ptr) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Opaque.ptr = Any.any_l () | & s: Slice64.slice t_T = s ])
-    [ return (result: Opaque.ptr) -> (! return {result}) ]
-end
-module M_slice_as_ptr_perm
-  use creusot.slice.Slice64
-  use creusot.prelude.Opaque
-  use seq.Seq
-  use creusot.prelude.Ptr
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_T
-  
-  type t_Perm_ptr_slice_T
-  
-  type tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T = { f0: Opaque.ptr; f1: t_Perm_ptr_slice_T }
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
-  
-  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
-  
-  meta "rewrite_def" predicate inv_slice_T
-  
-  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
-  
-  meta "rewrite_def" predicate invariant_ref_slice_T
-  
-  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
-  
-  meta "rewrite_def" predicate inv_ref_slice_T
-  
-  predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
-  
-  function ward_ptr_slice_T (self: t_Perm_ptr_slice_T) : Opaque.ptr
-  
-  predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
-    Seq.length (Slice64.view _value) = UInt64.t'int _metadata
-  
-  meta "rewrite_def" predicate metadata_matches_slice_T
-  
-  function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
-  
-  function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
-  
-  predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
-    not is_null_ptr_slice_T (ward_ptr_slice_T self)
-    /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (ward_ptr_slice_T self))
-    /\ inv_ref_slice_T (val_ptr_slice_T self)
-  
-  predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
-      = invariant_Perm_ptr_slice_T x
-  
-  predicate invariant_ref_Perm_ptr_slice_T [@inline:trivial] (self: t_Perm_ptr_slice_T) = inv_Perm_ptr_slice_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Perm_ptr_slice_T
-  
-  predicate inv_ref_Perm_ptr_slice_T [@inline:trivial] (_1: t_Perm_ptr_slice_T) = invariant_ref_Perm_ptr_slice_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Perm_ptr_slice_T
-  
-  predicate invariant_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (self: t_Perm_ptr_slice_T) =
-    inv_ref_Perm_ptr_slice_T self
-  
-  meta "rewrite_def" predicate invariant_Ghost_ref_Perm_ptr_slice_T
-  
-  predicate inv_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1: t_Perm_ptr_slice_T) =
-    invariant_Ghost_ref_Perm_ptr_slice_T _1
-  
-  meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_slice_T
-  
-  predicate inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) =
-    inv_Ghost_ref_Perm_ptr_slice_T _1.f1
-  
-  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T
-  
-  let rec as_ptr_perm_slice_T (self: Slice64.slice t_T) (return (x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T)) =
-    {[@stop_split] [@expl:as_ptr_perm 'self' type invariant] inv_ref_slice_T self}
-    any
-    [ return (result: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) ->
-    {[@stop_split] [@expl:as_ptr_perm_slice_T ensures] ([@stop_split] [@expl:as_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result)
-      /\ ([@stop_split] [@expl:as_ptr_perm ensures #0] result.f0 = Opaque.thin (ward_ptr_slice_T result.f1))
-      /\ ([@stop_split] [@expl:as_ptr_perm ensures #1] self = val_ptr_slice_T result.f1)}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec slice_as_ptr_perm_T (s: Slice64.slice t_T) (return (x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T)) =
-    {[@stop_split] [@expl:slice_as_ptr_perm 's' type invariant] inv_ref_slice_T s}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = as_ptr_perm_slice_T {s} (fun (_x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) -> [ &_ret <- _x ] s1)
-      | s1 = return {_ret} ] ]
-    [ & _ret: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T = Any.any_l () | & s: Slice64.slice t_T = s ])
-    [ return (result: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) ->
-    {[@stop_split] [@expl:slice_as_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result}
-      (! return {result}) ]
-end
-module M_slice_as_mut_ptr
-  use creusot.prelude.MutBorrow
-  use creusot.slice.Slice64
-  use seq.Seq
-  use creusot.prelude.Opaque
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
-  
-  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
-  
-  meta "rewrite_def" predicate inv_slice_T
-  
-  predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
-    inv_slice_T self.current /\ inv_slice_T self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_slice_T
-  
-  predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
-  
-  meta "rewrite_def" predicate inv_refmut_slice_T
-  
-  let rec as_mut_ptr_T (self_: MutBorrow.t (Slice64.slice t_T)) (return (x: Opaque.ptr)) =
-    {[@stop_split] [@expl:as_mut_ptr 'self_' type invariant] inv_refmut_slice_T self_}
-    any [ return (result: Opaque.ptr) -> (! return {result}) ]
-  
-  predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_slice_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec slice_as_mut_ptr_T (s: MutBorrow.t (Slice64.slice t_T)) (return (x: Opaque.ptr)) =
-    {[@stop_split] [@expl:slice_as_mut_ptr 's' type invariant] inv_refmut_slice_T s}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <Slice64.slice t_T> {s.current} {MutBorrow.get_id s}
-          (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
-            [ &_2 <- _bor ] -{inv_slice_T _bor.final}-
-            [ &s <- { s with current = _bor.final } ] s1)
-        [ _ck -> (! {[@expl:type invariant] inv_slice_T s.current} any) ]
-      | s1 = as_mut_ptr_T {_2} (fun (_x: Opaque.ptr) -> [ &_ret <- _x ] s2)
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T s} any) ]
-      | s3 = -{resolve_refmut_slice_T s}- s4
-      | s4 = return {_ret} ] ]
-    [ & _ret: Opaque.ptr = Any.any_l ()
-    | & s: MutBorrow.t (Slice64.slice t_T) = s
-    | & _2: MutBorrow.t (Slice64.slice t_T) = Any.any_l () ]) [ return (result: Opaque.ptr) -> (! return {result}) ]
-end
-module M_slice_as_mut_ptr_perm
-  use creusot.prelude.MutBorrow
-  use creusot.slice.Slice64
-  use seq.Seq
-  use creusot.prelude.Opaque
-  use creusot.prelude.Ptr
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
-  
-  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
-  
-  meta "rewrite_def" predicate inv_slice_T
-  
-  type t_Perm_ptr_slice_T
-  
-  type tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_Perm_ptr_slice_T }
-  
-  predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
-    inv_slice_T self.current /\ inv_slice_T self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_slice_T
-  
-  predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
-  
-  meta "rewrite_def" predicate inv_refmut_slice_T
-  
-  predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
-  
-  function ward_ptr_slice_T (self: t_Perm_ptr_slice_T) : Opaque.ptr
-  
-  predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
-    Seq.length (Slice64.view _value) = UInt64.t'int _metadata
-  
-  meta "rewrite_def" predicate metadata_matches_slice_T
-  
-  function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
-  
-  function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
-  
-  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
-  
-  meta "rewrite_def" predicate invariant_ref_slice_T
-  
-  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
-  
-  meta "rewrite_def" predicate inv_ref_slice_T
-  
-  predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
-    not is_null_ptr_slice_T (ward_ptr_slice_T self)
-    /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (ward_ptr_slice_T self))
-    /\ inv_ref_slice_T (val_ptr_slice_T self)
-  
-  predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
-      = invariant_Perm_ptr_slice_T x
-  
-  predicate invariant_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) =
-    inv_Perm_ptr_slice_T self.current /\ inv_Perm_ptr_slice_T self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Perm_ptr_slice_T
-  
-  predicate inv_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_slice_T) =
-    invariant_refmut_Perm_ptr_slice_T _1
-  
-  meta "rewrite_def" predicate inv_refmut_Perm_ptr_slice_T
-  
-  predicate invariant_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) =
-    inv_refmut_Perm_ptr_slice_T self
-  
-  meta "rewrite_def" predicate invariant_Ghost_refmut_Perm_ptr_slice_T
-  
-  predicate inv_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_slice_T) =
-    invariant_Ghost_refmut_Perm_ptr_slice_T _1
-  
-  meta "rewrite_def" predicate inv_Ghost_refmut_Perm_ptr_slice_T
-  
-  predicate inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) =
-    inv_Ghost_refmut_Perm_ptr_slice_T _1.f1
-  
-  meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T
-  
-  function fin_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) : t_Perm_ptr_slice_T
-   = self.final
-  
-  meta "rewrite_def" function fin_Ghost_refmut_Perm_ptr_slice_T
-  
-  let rec as_mut_ptr_perm_slice_T (self: MutBorrow.t (Slice64.slice t_T))
-    (return (x: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T)) =
-    {[@stop_split] [@expl:as_mut_ptr_perm 'self' type invariant] inv_refmut_slice_T self}
-    any
-    [ return (result: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) ->
-    {[@stop_split] [@expl:as_mut_ptr_perm_slice_T ensures] ([@stop_split] [@expl:as_mut_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result)
-      /\ ([@stop_split] [@expl:as_mut_ptr_perm ensures #0] result.f0 = Opaque.thin (ward_ptr_slice_T result.f1.current))
-      /\ ([@stop_split] [@expl:as_mut_ptr_perm ensures #1] self.current = val_ptr_slice_T result.f1.current)
-      /\ ([@stop_split] [@expl:as_mut_ptr_perm ensures #2] self.final
-      = val_ptr_slice_T (fin_Ghost_refmut_Perm_ptr_slice_T result.f1))}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_slice_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec slice_as_mut_ptr_perm_T (s: MutBorrow.t (Slice64.slice t_T))
-    (return (x: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T)) =
-    {[@stop_split] [@expl:slice_as_mut_ptr_perm 's' type invariant] inv_refmut_slice_T s}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <Slice64.slice t_T> {s.current} {MutBorrow.get_id s}
-          (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
-            [ &_4 <- _bor ] -{inv_slice_T _bor.final}-
-            [ &s <- { s with current = _bor.final } ] s1)
-        [ _ck -> (! {[@expl:type invariant] inv_slice_T s.current} any) ]
-      | s1 = as_mut_ptr_perm_slice_T {_4} (fun (_x: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) -> [ &_ret <- _x ] s2)
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T s} any) ]
-      | s3 = -{resolve_refmut_slice_T s}- s4
-      | s4 = return {_ret} ] ]
-    [ & _ret: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T = Any.any_l ()
-    | & s: MutBorrow.t (Slice64.slice t_T) = s
-    | & _4: MutBorrow.t (Slice64.slice t_T) = Any.any_l () ])
-    [ return (result: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) ->
-    {[@stop_split] [@expl:slice_as_mut_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result}
-      (! return {result}) ]
-end
-module M_apply
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  type t_F
-  
-  predicate inv_F (_1: t_F)
-  
-  predicate precondition_F (self: t_F) (args: Int32.t)
-  
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  let rec call_once_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
-    {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
-    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
-    any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec apply_F (f: t_F) (return (x: Int32.t)) =
-    {[@stop_split] [@expl:apply_F requires] ([@stop_split] [@expl:apply 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:apply requires] precondition_F f (0: Int32.t))}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_5 <- (0: Int32.t) ] s1
-      | s1 = call_once_F {f} {_5} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
-      | s2 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & _5: Int32.t = Any.any_l () ])
-    [ return (result: Int32.t) -> (! return {result}) ]
-end
-module M_apply_test
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  predicate precondition_foo [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in true
-  
-  meta "rewrite_def" predicate precondition_foo
-  
-  let rec apply_foo (f: ()) (return (x: Int32.t)) =
-    {[@stop_split] [@expl:apply requires] precondition_foo f (0: Int32.t)}
-    any [ return (result: Int32.t) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec apply_test (return (x: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = apply_foo {()} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
-end
-module M_apply_test2
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  predicate precondition_foo3 [@inline:trivial] (self: ()) (args: Int32.t) = let x = args in true
-  
-  meta "rewrite_def" predicate precondition_foo3
-  
-  let rec apply_foo3 (f: ()) (return (x: Int32.t)) =
-    {[@stop_split] [@expl:apply requires] precondition_foo3 f (0: Int32.t)}
-    any [ return (result: Int32.t) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec apply_test2 (return (x: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = apply_foo3 {()} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
-end
-module M_impl_Quux_for_i32__quux (* <i32 as Quux> *)
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  let rec foo (x: Int32.t) (return (x'0: Int32.t)) = any [ return (result: Int32.t) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec quux_i32 (self: Int32.t) (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = foo {self} (fun (_x: Int32.t) -> [ &_2 <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & self: Int32.t = self | & _2: Int32.t = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
-end
-module M_impl_Tr_for_i32__takes_ref (* <i32 as Tr> *)
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec takes_ref_i32 (self: Int32.t) (return (x: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & self: Int32.t = self ]) [ return (result: Int32.t) -> (! return {result}) ]
 end

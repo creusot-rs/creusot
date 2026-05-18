@@ -1,25 +1,3 @@
-module M_nested__inner_func
-  use creusot.prelude.Any
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec inner_func (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])
-    [ return (result: bool) -> {[@stop_split] [@expl:inner_func ensures] result = true} (! return {result}) ]
-end
-module M_nested__further__another
-  use creusot.prelude.Any
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec another (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])
-    [ return (result: bool) -> (! return {result}) ]
-end
 module M_f
   use creusot.prelude.Any
   
@@ -38,4 +16,26 @@ module M_f
       | s1 = another (fun (_x: bool) -> [ &_2 <- _x ] s2)
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _1: bool = Any.any_l () | & _2: bool = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
+end
+module M_nested__further__another
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec another (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])
+    [ return (result: bool) -> (! return {result}) ]
+end
+module M_nested__inner_func
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec inner_func (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:inner_func ensures] result = true} (! return {result}) ]
 end

@@ -1,121 +1,3 @@
-module M_deref_wrap
-  use creusot.prelude.Any
-  
-  type t_T
-  
-  type t_Target
-  
-  predicate precondition_deref (self: ()) (args: t_T)
-  
-  axiom precondition_fndef: forall args: t_T [precondition_deref () args]. (let self_ = args in false)
-      -> precondition_deref () args
-  
-  predicate inv_Target (_1: t_Target)
-  
-  predicate invariant_ref_Target [@inline:trivial] (self: t_Target) = inv_Target self
-  
-  meta "rewrite_def" predicate invariant_ref_Target
-  
-  predicate inv_ref_Target [@inline:trivial] (_1: t_Target) = invariant_ref_Target _1
-  
-  meta "rewrite_def" predicate inv_ref_Target
-  
-  predicate postcondition_once_deref (self: ()) (args: t_T) (result: t_Target)
-  
-  axiom postcondition_fndef:
-    forall args: t_T, res: t_Target [postcondition_once_deref () args res]. postcondition_once_deref () args res
-      -> (let self_ = args in inv_ref_Target res)
-  
-  let rec deref_T (self_: t_T) (return (x: t_Target)) =
-    {[@stop_split] [@expl:deref requires] precondition_deref () self_}
-    any
-    [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self_ result}
-      (! return {result}) ]
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate resolve_deref [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_deref
-  
-  predicate postcondition_mut_deref (self: ()) (args: t_T) (result_state: ()) (result: t_Target)
-  
-  axiom postcondition_fndef'0:
-    forall args: t_T, res: t_Target [postcondition_mut_deref () args () res]. postcondition_mut_deref () args () res
-      -> (let self_ = args in inv_ref_Target res)
-  
-  function fn_mut_once_deref (self: ()) (args: t_T) (res: t_Target) : ()
-  
-  axiom fn_mut_once_deref_spec: forall self: (), args: t_T, res: t_Target. postcondition_once_deref self args res
-      = (exists res_state: (). postcondition_mut_deref self args res_state res /\ resolve_deref res_state)
-  
-  predicate hist_inv_deref [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_deref
-  
-  function hist_inv_trans_deref (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_deref_spec: forall self: (), b: (), c: (). hist_inv_deref self b
-      -> hist_inv_deref b c -> hist_inv_deref self c
-  
-  function hist_inv_refl_deref (self: ()) : ()
-  
-  axiom hist_inv_refl_deref_spec: forall self: (). hist_inv_deref self self
-  
-  function postcondition_mut_hist_inv_deref (self: ()) (args: t_T) (res_state: ()) (res: t_Target) : ()
-  
-  axiom postcondition_mut_hist_inv_deref_spec:
-    forall self: (), args: t_T, res_state: (), res: t_Target. postcondition_mut_deref self args res_state res
-      -> hist_inv_deref self res_state
-  
-  function fn_hist_inv_deref (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_deref_spec: forall self: (), res_state: (). hist_inv_deref self res_state = (self = res_state)
-  
-  predicate postcondition_deref (self: ()) (args: t_T) (result: t_Target)
-  
-  axiom postcondition_fndef'1:
-    forall args: t_T, res: t_Target [postcondition_deref () args res]. postcondition_deref () args res
-      -> (let self_ = args in inv_ref_Target res)
-  
-  function fn_once_deref (self: ()) (args: t_T) (res: t_Target) : ()
-  
-  axiom fn_once_deref_spec: forall self: (), args: t_T, res: t_Target. postcondition_once_deref self args res
-      = (postcondition_deref self args res /\ resolve_deref self)
-  
-  function fn_mut_deref (self: ()) (args: t_T) (res_state: ()) (res: t_Target) : ()
-  
-  axiom fn_mut_deref_spec:
-    forall self: (), args: t_T, res_state: (), res: t_Target. postcondition_mut_deref self args res_state res
-      = (postcondition_deref self args res /\ self = res_state)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec deref_wrap_T (x: t_T) (return (x'0: t_Target)) =
-    {[@stop_split] [@expl:deref_wrap_T requires] ([@stop_split] [@expl:deref_wrap 'x' type invariant] inv_ref_T x)
-    /\ ([@stop_split] [@expl:deref_wrap requires] precondition_deref () x)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_8 <- x ] s1
-      | s1 = deref_T {_8} (fun (_x: t_Target) -> [ &_6 <- _x ] s2)
-      | s2 = [ &_ret <- _6 ] s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: t_Target = Any.any_l () | & x: t_T = x | & _6: t_Target = Any.any_l () | & _8: t_T = Any.any_l () ])
-    [ return (result: t_Target) ->
-    {[@stop_split] [@expl:deref_wrap_T ensures] ([@stop_split] [@expl:deref_wrap result type invariant] inv_ref_Target result)
-      /\ ([@stop_split] [@expl:deref_wrap ensures] postcondition_deref () x result)}
-      (! return {result}) ]
-end
 module M_deref_mut_wrap
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -276,5 +158,123 @@ module M_deref_mut_wrap
     [ return (result: MutBorrow.t t_Target) ->
     {[@stop_split] [@expl:deref_mut_wrap_T ensures] ([@stop_split] [@expl:deref_mut_wrap result type invariant] inv_refmut_Target result)
       /\ ([@stop_split] [@expl:deref_mut_wrap ensures] postcondition_deref_mut () x result)}
+      (! return {result}) ]
+end
+module M_deref_wrap
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_Target
+  
+  predicate precondition_deref (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition_deref () args]. (let self_ = args in false)
+      -> precondition_deref () args
+  
+  predicate inv_Target (_1: t_Target)
+  
+  predicate invariant_ref_Target [@inline:trivial] (self: t_Target) = inv_Target self
+  
+  meta "rewrite_def" predicate invariant_ref_Target
+  
+  predicate inv_ref_Target [@inline:trivial] (_1: t_Target) = invariant_ref_Target _1
+  
+  meta "rewrite_def" predicate inv_ref_Target
+  
+  predicate postcondition_once_deref (self: ()) (args: t_T) (result: t_Target)
+  
+  axiom postcondition_fndef:
+    forall args: t_T, res: t_Target [postcondition_once_deref () args res]. postcondition_once_deref () args res
+      -> (let self_ = args in inv_ref_Target res)
+  
+  let rec deref_T (self_: t_T) (return (x: t_Target)) =
+    {[@stop_split] [@expl:deref requires] precondition_deref () self_}
+    any
+    [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self_ result}
+      (! return {result}) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate resolve_deref [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_deref
+  
+  predicate postcondition_mut_deref (self: ()) (args: t_T) (result_state: ()) (result: t_Target)
+  
+  axiom postcondition_fndef'0:
+    forall args: t_T, res: t_Target [postcondition_mut_deref () args () res]. postcondition_mut_deref () args () res
+      -> (let self_ = args in inv_ref_Target res)
+  
+  function fn_mut_once_deref (self: ()) (args: t_T) (res: t_Target) : ()
+  
+  axiom fn_mut_once_deref_spec: forall self: (), args: t_T, res: t_Target. postcondition_once_deref self args res
+      = (exists res_state: (). postcondition_mut_deref self args res_state res /\ resolve_deref res_state)
+  
+  predicate hist_inv_deref [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_deref
+  
+  function hist_inv_trans_deref (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_deref_spec: forall self: (), b: (), c: (). hist_inv_deref self b
+      -> hist_inv_deref b c -> hist_inv_deref self c
+  
+  function hist_inv_refl_deref (self: ()) : ()
+  
+  axiom hist_inv_refl_deref_spec: forall self: (). hist_inv_deref self self
+  
+  function postcondition_mut_hist_inv_deref (self: ()) (args: t_T) (res_state: ()) (res: t_Target) : ()
+  
+  axiom postcondition_mut_hist_inv_deref_spec:
+    forall self: (), args: t_T, res_state: (), res: t_Target. postcondition_mut_deref self args res_state res
+      -> hist_inv_deref self res_state
+  
+  function fn_hist_inv_deref (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_deref_spec: forall self: (), res_state: (). hist_inv_deref self res_state = (self = res_state)
+  
+  predicate postcondition_deref (self: ()) (args: t_T) (result: t_Target)
+  
+  axiom postcondition_fndef'1:
+    forall args: t_T, res: t_Target [postcondition_deref () args res]. postcondition_deref () args res
+      -> (let self_ = args in inv_ref_Target res)
+  
+  function fn_once_deref (self: ()) (args: t_T) (res: t_Target) : ()
+  
+  axiom fn_once_deref_spec: forall self: (), args: t_T, res: t_Target. postcondition_once_deref self args res
+      = (postcondition_deref self args res /\ resolve_deref self)
+  
+  function fn_mut_deref (self: ()) (args: t_T) (res_state: ()) (res: t_Target) : ()
+  
+  axiom fn_mut_deref_spec:
+    forall self: (), args: t_T, res_state: (), res: t_Target. postcondition_mut_deref self args res_state res
+      = (postcondition_deref self args res /\ self = res_state)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec deref_wrap_T (x: t_T) (return (x'0: t_Target)) =
+    {[@stop_split] [@expl:deref_wrap_T requires] ([@stop_split] [@expl:deref_wrap 'x' type invariant] inv_ref_T x)
+    /\ ([@stop_split] [@expl:deref_wrap requires] precondition_deref () x)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_8 <- x ] s1
+      | s1 = deref_T {_8} (fun (_x: t_Target) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_ret <- _6 ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_Target = Any.any_l () | & x: t_T = x | & _6: t_Target = Any.any_l () | & _8: t_T = Any.any_l () ])
+    [ return (result: t_Target) ->
+    {[@stop_split] [@expl:deref_wrap_T ensures] ([@stop_split] [@expl:deref_wrap result type invariant] inv_ref_Target result)
+      /\ ([@stop_split] [@expl:deref_wrap ensures] postcondition_deref () x result)}
       (! return {result}) ]
 end

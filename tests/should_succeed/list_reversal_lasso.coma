@@ -1,69 +1,3 @@
-module M_impl_Index_for_Memory__index (* <Memory as std::ops::Index<usize>> *)
-  use creusot.int.UInt64
-  use seq.Seq
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Vec_usize_Global
-  
-  type t_Memory = { f0: t_Vec_usize_Global }
-  
-  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
-    UInt64.t'int self < Seq.length seq
-  
-  meta "rewrite_def" predicate in_bounds_usize
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
-  
-  axiom view_Vec_usize_Global_spec:
-    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
-      <= UInt64.t'int const_MAX
-  
-  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) (out: UInt64.t) =
-    Seq.get seq (UInt64.t'int self) = out
-  
-  meta "rewrite_def" predicate has_value_usize
-  
-  let rec index_Vec_usize_Global (self_: t_Vec_usize_Global) (ix: UInt64.t) (return (x: UInt64.t)) =
-    {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_usize_Global self_)}
-    any
-    [ return (result: UInt64.t) ->
-    {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_usize_Global self_) result}
-      (! return {result}) ]
-  
-  predicate nonnull_ptr (self: t_Memory) (i: UInt64.t) =
-    Seq.length (view_Vec_usize_Global self.f0) <= UInt64.t'int const_MAX
-    /\ UInt64.t'int i < Seq.length (view_Vec_usize_Global self.f0)
-  
-  function index_Vec_usize_Global'0 [@inline:trivial] (self: t_Vec_usize_Global) (ix: UInt64.t) : UInt64.t =
-    Seq.get (view_Vec_usize_Global self) (UInt64.t'int ix)
-  
-  meta "rewrite_def" function index_Vec_usize_Global'0
-  
-  function index_Memory (self: t_Memory) (i: UInt64.t) : UInt64.t = index_Vec_usize_Global'0 self.f0 i
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec index_Memory'0 (self: t_Memory) (i: UInt64.t) (return (x: UInt64.t)) =
-    {[@stop_split] [@expl:index requires] nonnull_ptr self i}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = index_Vec_usize_Global {self.f0} {i} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s1)
-      | s1 = [ &_9 <- _10 ] s2
-      | s2 = [ &_ret <- _9 ] s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: UInt64.t = Any.any_l ()
-    | & self: t_Memory = self
-    | & i: UInt64.t = i
-    | & _9: UInt64.t = Any.any_l ()
-    | & _10: UInt64.t = Any.any_l () ])
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:index ensures] result = index_Memory self i}
-      (! return {result}) ]
-end
 module M_impl_IndexMut_for_Memory__index_mut (* <Memory as std::ops::IndexMut<usize>> *)
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
@@ -170,10 +104,459 @@ module M_impl_IndexMut_for_Memory__index_mut (* <Memory as std::ops::IndexMut<us
         -> index_Memory self.final j = index_Memory self.current j)}
       (! return {result}) ]
 end
-module M_impl_Memory_0__list_reversal_safe (* Memory *)
+module M_impl_Index_for_Memory__index (* <Memory as std::ops::Index<usize>> *)
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Vec_usize_Global
+  
+  type t_Memory = { f0: t_Vec_usize_Global }
+  
+  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
+    UInt64.t'int self < Seq.length seq
+  
+  meta "rewrite_def" predicate in_bounds_usize
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
+  
+  axiom view_Vec_usize_Global_spec:
+    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) (out: UInt64.t) =
+    Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value_usize
+  
+  let rec index_Vec_usize_Global (self_: t_Vec_usize_Global) (ix: UInt64.t) (return (x: UInt64.t)) =
+    {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_usize_Global self_)}
+    any
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_usize_Global self_) result}
+      (! return {result}) ]
+  
+  predicate nonnull_ptr (self: t_Memory) (i: UInt64.t) =
+    Seq.length (view_Vec_usize_Global self.f0) <= UInt64.t'int const_MAX
+    /\ UInt64.t'int i < Seq.length (view_Vec_usize_Global self.f0)
+  
+  function index_Vec_usize_Global'0 [@inline:trivial] (self: t_Vec_usize_Global) (ix: UInt64.t) : UInt64.t =
+    Seq.get (view_Vec_usize_Global self) (UInt64.t'int ix)
+  
+  meta "rewrite_def" function index_Vec_usize_Global'0
+  
+  function index_Memory (self: t_Memory) (i: UInt64.t) : UInt64.t = index_Vec_usize_Global'0 self.f0 i
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec index_Memory'0 (self: t_Memory) (i: UInt64.t) (return (x: UInt64.t)) =
+    {[@stop_split] [@expl:index requires] nonnull_ptr self i}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = index_Vec_usize_Global {self.f0} {i} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s1)
+      | s1 = [ &_9 <- _10 ] s2
+      | s2 = [ &_ret <- _9 ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
+    | & self: t_Memory = self
+    | & i: UInt64.t = i
+    | & _9: UInt64.t = Any.any_l ()
+    | & _10: UInt64.t = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:index ensures] result = index_Memory self i}
+      (! return {result}) ]
+end
+module M_impl_Memory_0__find_lasso (* Memory *)
+  use creusot.int.UInt64
+  use seq.Seq
+  use int.Int
+  
+  type t_Vec_usize_Global
+  
+  type t_Memory = { f0: t_Vec_usize_Global }
+  
+  type t_Option_Seq_usize = None | Some (Seq.seq UInt64.t)
+  
+  type tup2_Seq_usize_Option_Seq_usize = { f0'0: Seq.seq UInt64.t; f1'0: t_Option_Seq_usize }
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
+  
+  axiom view_Vec_usize_Global_spec:
+    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate nonnull_ptr (self: t_Memory) (i: UInt64.t) =
+    Seq.length (view_Vec_usize_Global self.f0) <= UInt64.t'int const_MAX
+    /\ UInt64.t'int i < Seq.length (view_Vec_usize_Global self.f0)
+  
+  function index_Vec_usize_Global [@inline:trivial] (self: t_Vec_usize_Global) (ix: UInt64.t) : UInt64.t =
+    Seq.get (view_Vec_usize_Global self) (UInt64.t'int ix)
+  
+  meta "rewrite_def" function index_Vec_usize_Global
+  
+  function index_Memory (self: t_Memory) (i: UInt64.t) : UInt64.t = index_Vec_usize_Global self.f0 i
+  
+  constant const_NULL: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate mem_is_well_formed (self: t_Memory) =
+    forall i: UInt64.t. nonnull_ptr self i -> index_Memory self i = const_NULL \/ nonnull_ptr self (index_Memory self i)
+  
+  predicate list_seg (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) (last: UInt64.t) (l: int) (h: int) =
+    first = (if h = l then last else Seq.get s l)
+    /\ (forall i: int. l <= i /\ i < h
+        -> nonnull_ptr self (Seq.get s i)
+        /\ index_Memory self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
+    /\ (forall i: int, j: int. l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j -> Seq.get s i <> Seq.get s j)
+  
+  predicate list (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) =
+    list_seg self first s const_NULL 0 (Seq.length s)
+  
+  predicate lasso (self: t_Memory) (first: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t) =
+    let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
+    /\ (forall i: int, j: int. 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
+        -> Seq.get s1 i <> Seq.get s2 j)
+    /\ list_seg self first s1 mid 0 (Seq.length s1)
+    /\ list_seg self mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
+  
+  type t_Option_Int = None'0 | Some'0 int
+  
+  function find_ptr_in_seq (s: Seq.seq UInt64.t) (i: int) (p: int) : t_Option_Int
+  
+  axiom find_ptr_in_seq_def: forall s: Seq.seq UInt64.t, i: int, p: int [find_ptr_in_seq s i p]. 0 <= i
+        /\ i <= Seq.length s
+      -> find_ptr_in_seq s i p
+      = (if i = Seq.length s then
+        None'0
+      else
+        if UInt64.t'int (Seq.get s i) = p then Some'0 i else find_ptr_in_seq s (i + 1) p
+      )
+  
+  axiom find_ptr_in_seq_spec: forall s: Seq.seq UInt64.t, i: int, p: int [find_ptr_in_seq s i p]. 0 <= i
+        /\ i <= Seq.length s
+      -> match find_ptr_in_seq s i p with
+        | None'0 -> forall j: int. i <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> p
+        | Some'0 j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
+        end
+  
+  predicate pigeon (s: Seq.seq UInt64.t) (n: int)
+  
+  axiom pigeon_def: forall s: Seq.seq UInt64.t, n: int [pigeon s n]. 0 <= n
+      -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
+      -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
+          -> Seq.get s i <> Seq.get s j)
+      -> pigeon s n
+      = (if n = 0 then
+        true
+      else
+        match find_ptr_in_seq s 0 (n - 1) with
+          | None'0 -> pigeon s (n - 1)
+          | Some'0 i -> match find_ptr_in_seq s (i + 1) (n - 1) with
+            | None'0 -> pigeon (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) (n - 1)
+            | Some'0 _ -> true
+            end
+          end
+      )
+  
+  axiom pigeon_spec: forall s: Seq.seq UInt64.t, n: int. 0 <= n
+      -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
+      -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
+          -> Seq.get s i <> Seq.get s j) -> Seq.length s <= n
+  
+  axiom pigeon_spec'0: forall s: Seq.seq UInt64.t, n: int [pigeon s n]. 0 <= n
+      -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
+      -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
+          -> Seq.get s i <> Seq.get s j) -> pigeon s n
+  
+  function find_lasso_aux (self: t_Memory) (first: UInt64.t) (last: UInt64.t) (s: Seq.seq UInt64.t) : tup2_Seq_usize_Option_Seq_usize
+  
+  axiom find_lasso_aux_def:
+    forall self: t_Memory, first: UInt64.t, last: UInt64.t, s: Seq.seq UInt64.t [find_lasso_aux self first last s]. mem_is_well_formed self
+      -> last = const_NULL \/ nonnull_ptr self last
+      -> list_seg self first s last 0 (Seq.length s)
+      -> find_lasso_aux self first last s
+      = (if last = const_NULL then
+        { f0'0 = s; f1'0 = None }
+      else
+        match find_ptr_in_seq s 0 (UInt64.t'int last) with
+          | None'0 -> if pigeon s (Seq.length (view_Vec_usize_Global self.f0)) then
+            find_lasso_aux self first (index_Memory self last) (Seq.snoc s last)
+          else
+            { f0'0 = s; f1'0 = None }
+          
+          | Some'0 i -> { f0'0 = Seq.([..]) s 0 (i + 1); f1'0 = Some (Seq.([..]) s (i + 1) (Seq.length s)) }
+          end
+      )
+  
+  axiom find_lasso_aux_spec:
+    forall self: t_Memory, first: UInt64.t, last: UInt64.t, s: Seq.seq UInt64.t [find_lasso_aux self first last s]. mem_is_well_formed self
+      -> last = const_NULL \/ nonnull_ptr self last
+      -> list_seg self first s last 0 (Seq.length s)
+      -> match find_lasso_aux self first last s with
+        | {f0'0 = s'0; f1'0 = None} -> list self first s'0
+        | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Memory
+  
+  constant first : UInt64.t
+  
+  function find_lasso (self: t_Memory) (first: UInt64.t) : tup2_Seq_usize_Option_Seq_usize
+  
+  goal vc_find_lasso: mem_is_well_formed self
+    -> first = const_NULL \/ nonnull_ptr self first
+    -> ([@stop_split] [@expl:find_lasso_aux requires] ([@stop_split] [@expl:find_lasso_aux requires #0] mem_is_well_formed self)
+      /\ ([@stop_split] [@expl:find_lasso_aux requires #1] first = const_NULL \/ nonnull_ptr self first)
+      /\ ([@stop_split] [@expl:find_lasso_aux requires #2] list_seg self first (Seq.empty: Seq.seq UInt64.t) first 0 (Seq.length (Seq.empty: Seq.seq UInt64.t))))
+    /\ (([@stop_split] [@expl:find_lasso_aux ensures] match find_lasso_aux self first first (Seq.empty: Seq.seq UInt64.t) with
+        | {f0'0 = s; f1'0 = None} -> list self first s
+        | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
+        end)
+    -> ([@stop_split] [@expl:find_lasso ensures] match find_lasso_aux self first first (Seq.empty: Seq.seq UInt64.t) with
+      | {f0'0 = s; f1'0 = None} -> list self first s
+      | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
+      end))
+end
+module M_impl_Memory_0__find_lasso_aux (* Memory *)
+  use creusot.int.UInt64
+  use seq.Seq
+  use int.Int
+  
+  type t_Vec_usize_Global
+  
+  type t_Memory = { f0: t_Vec_usize_Global }
+  
+  type t_Option_Seq_usize = None | Some (Seq.seq UInt64.t)
+  
+  type tup2_Seq_usize_Option_Seq_usize = { f0'0: Seq.seq UInt64.t; f1'0: t_Option_Seq_usize }
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
+  
+  axiom view_Vec_usize_Global_spec:
+    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate nonnull_ptr (self: t_Memory) (i: UInt64.t) =
+    Seq.length (view_Vec_usize_Global self.f0) <= UInt64.t'int const_MAX
+    /\ UInt64.t'int i < Seq.length (view_Vec_usize_Global self.f0)
+  
+  function index_Vec_usize_Global [@inline:trivial] (self: t_Vec_usize_Global) (ix: UInt64.t) : UInt64.t =
+    Seq.get (view_Vec_usize_Global self) (UInt64.t'int ix)
+  
+  meta "rewrite_def" function index_Vec_usize_Global
+  
+  function index_Memory (self: t_Memory) (i: UInt64.t) : UInt64.t = index_Vec_usize_Global self.f0 i
+  
+  constant const_NULL: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate mem_is_well_formed (self: t_Memory) =
+    forall i: UInt64.t. nonnull_ptr self i -> index_Memory self i = const_NULL \/ nonnull_ptr self (index_Memory self i)
+  
+  predicate list_seg (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) (last: UInt64.t) (l: int) (h: int) =
+    first = (if h = l then last else Seq.get s l)
+    /\ (forall i: int. l <= i /\ i < h
+        -> nonnull_ptr self (Seq.get s i)
+        /\ index_Memory self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
+    /\ (forall i: int, j: int. l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j -> Seq.get s i <> Seq.get s j)
+  
+  predicate list (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) =
+    list_seg self first s const_NULL 0 (Seq.length s)
+  
+  predicate lasso (self: t_Memory) (first: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t) =
+    let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
+    /\ (forall i: int, j: int. 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
+        -> Seq.get s1 i <> Seq.get s2 j)
+    /\ list_seg self first s1 mid 0 (Seq.length s1)
+    /\ list_seg self mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
+  
+  type t_Option_Int = None'0 | Some'0 int
+  
+  function find_ptr_in_seq (s: Seq.seq UInt64.t) (i: int) (p: int) : t_Option_Int
+  
+  axiom find_ptr_in_seq_def: forall s: Seq.seq UInt64.t, i: int, p: int [find_ptr_in_seq s i p]. 0 <= i
+        /\ i <= Seq.length s
+      -> find_ptr_in_seq s i p
+      = (if i = Seq.length s then
+        None'0
+      else
+        if UInt64.t'int (Seq.get s i) = p then Some'0 i else find_ptr_in_seq s (i + 1) p
+      )
+  
+  axiom find_ptr_in_seq_spec: forall s: Seq.seq UInt64.t, i: int, p: int [find_ptr_in_seq s i p]. 0 <= i
+        /\ i <= Seq.length s
+      -> match find_ptr_in_seq s i p with
+        | None'0 -> forall j: int. i <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> p
+        | Some'0 j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
+        end
+  
+  predicate pigeon (s: Seq.seq UInt64.t) (n: int)
+  
+  axiom pigeon_def: forall s: Seq.seq UInt64.t, n: int [pigeon s n]. 0 <= n
+      -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
+      -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
+          -> Seq.get s i <> Seq.get s j)
+      -> pigeon s n
+      = (if n = 0 then
+        true
+      else
+        match find_ptr_in_seq s 0 (n - 1) with
+          | None'0 -> pigeon s (n - 1)
+          | Some'0 i -> match find_ptr_in_seq s (i + 1) (n - 1) with
+            | None'0 -> pigeon (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) (n - 1)
+            | Some'0 _ -> true
+            end
+          end
+      )
+  
+  axiom pigeon_spec: forall s: Seq.seq UInt64.t, n: int. 0 <= n
+      -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
+      -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
+          -> Seq.get s i <> Seq.get s j) -> Seq.length s <= n
+  
+  axiom pigeon_spec'0: forall s: Seq.seq UInt64.t, n: int [pigeon s n]. 0 <= n
+      -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
+      -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
+          -> Seq.get s i <> Seq.get s j) -> pigeon s n
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Memory
+  
+  constant first : UInt64.t
+  
+  constant last : UInt64.t
+  
+  constant s : Seq.seq UInt64.t
+  
+  function find_lasso_aux (self: t_Memory) (first: UInt64.t) (last: UInt64.t) (s: Seq.seq UInt64.t) : tup2_Seq_usize_Option_Seq_usize
+  
+  goal vc_find_lasso_aux: mem_is_well_formed self
+    -> last = const_NULL \/ nonnull_ptr self last
+    -> list_seg self first s last 0 (Seq.length s)
+    -> (if last = const_NULL then
+      [@stop_split] [@expl:find_lasso_aux ensures] match { f0'0 = s; f1'0 = None } with
+        | {f0'0 = s'0; f1'0 = None} -> list self first s'0
+        | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
+        end
+    else
+      ([@stop_split] [@expl:find_ptr_in_seq requires] 0 <= 0 /\ 0 <= Seq.length s)
+      /\ (([@stop_split] [@expl:find_ptr_in_seq ensures] match find_ptr_in_seq s 0 (UInt64.t'int last) with
+          | None'0 -> forall j: int. 0 <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> UInt64.t'int last
+          | Some'0 j -> 0 <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = UInt64.t'int last
+          end)
+      -> match find_ptr_in_seq s 0 (UInt64.t'int last) with
+        | None'0 -> ([@stop_split] [@expl:view ensures] Seq.length (view_Vec_usize_Global self.f0)
+          <= UInt64.t'int const_MAX)
+        -> ([@stop_split] [@expl:pigeon requires] ([@stop_split] [@expl:pigeon requires #0] 0
+            <= Seq.length (view_Vec_usize_Global self.f0))
+          /\ ([@stop_split] [@expl:pigeon requires #1] forall i: int. 0 <= i /\ i < Seq.length s
+              -> UInt64.t'int (Seq.get s i) < Seq.length (view_Vec_usize_Global self.f0))
+          /\ ([@stop_split] [@expl:pigeon requires #2] forall i: int, j: int. 0 <= i
+              /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j -> Seq.get s i <> Seq.get s j))
+        /\ (([@stop_split] [@expl:pigeon ensures] ([@stop_split] [@expl:pigeon ensures #0] Seq.length s
+            <= Seq.length (view_Vec_usize_Global self.f0))
+          /\ ([@stop_split] [@expl:pigeon ensures #1] pigeon s (Seq.length (view_Vec_usize_Global self.f0))))
+        -> (if pigeon s (Seq.length (view_Vec_usize_Global self.f0)) then
+          (([@stop_split] [@expl:find_lasso_aux requires] ([@stop_split] [@expl:find_lasso_aux requires #0] mem_is_well_formed self)
+              /\ ([@stop_split] [@expl:find_lasso_aux requires #1] index_Memory self last = const_NULL
+                \/ nonnull_ptr self (index_Memory self last))
+              /\ ([@stop_split] [@expl:find_lasso_aux requires #2] list_seg self first (Seq.snoc s last) (index_Memory self last) 0 (Seq.length (Seq.snoc s last))))
+            /\ ([@expl:variant decreases] well_founded_relation_Int (Seq.length (view_Vec_usize_Global self.f0)
+            - Seq.length s) (Seq.length (view_Vec_usize_Global self.f0) - Seq.length (Seq.snoc s last))))
+          /\ (([@stop_split] [@expl:find_lasso_aux ensures] match find_lasso_aux self first (index_Memory self last) (Seq.snoc s last) with
+              | {f0'0 = s'0; f1'0 = None} -> list self first s'0
+              | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
+              end)
+          -> ([@stop_split] [@expl:find_lasso_aux ensures] match find_lasso_aux self first (index_Memory self last) (Seq.snoc s last) with
+            | {f0'0 = s'0; f1'0 = None} -> list self first s'0
+            | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
+            end))
+        else
+          [@stop_split] [@expl:find_lasso_aux ensures] match { f0'0 = s; f1'0 = None } with
+            | {f0'0 = s'0; f1'0 = None} -> list self first s'0
+            | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
+            end
+        ))
+        | Some'0 i -> [@stop_split] [@expl:find_lasso_aux ensures] match { f0'0 = Seq.([..]) s 0 (i + 1);
+                                                                           f1'0 = Some (Seq.([..]) s (i
+                                                                           + 1) (Seq.length s)) } with
+          | {f0'0 = s'0; f1'0 = None} -> list self first s'0
+          | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
+          end
+        end)
+    )
+end
+module M_impl_Memory_0__find_ptr_in_seq (* Memory *)
+  use creusot.int.UInt64
+  use seq.Seq
+  use int.Int
+  
+  type t_Option_Int = None | Some int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant s : Seq.seq UInt64.t
+  
+  constant i : int
+  
+  constant p : int
+  
+  function find_ptr_in_seq (s: Seq.seq UInt64.t) (i: int) (p: int) : t_Option_Int
+  
+  goal vc_find_ptr_in_seq: 0 <= i /\ i <= Seq.length s
+    -> (if i = Seq.length s then
+      [@stop_split] [@expl:find_ptr_in_seq ensures] match None with
+        | None -> forall j: int. i <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> p
+        | Some j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
+        end
+    else
+      if UInt64.t'int (Seq.get s i) = p then
+        [@stop_split] [@expl:find_ptr_in_seq ensures] match Some i with
+          | None -> forall j: int. i <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> p
+          | Some j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
+          end
+      else
+        (([@stop_split] [@expl:find_ptr_in_seq requires] 0 <= i + 1 /\ i + 1 <= Seq.length s)
+          /\ ([@expl:variant decreases] well_founded_relation_Int (Seq.length s - i) (Seq.length s - (i + 1))))
+        /\ (([@stop_split] [@expl:find_ptr_in_seq ensures] match find_ptr_in_seq s (i + 1) p with
+            | None -> forall j: int. i + 1 <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> p
+            | Some j -> i + 1 <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
+            end)
+        -> ([@stop_split] [@expl:find_ptr_in_seq ensures] match find_ptr_in_seq s (i + 1) p with
+          | None -> forall j: int. i <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> p
+          | Some j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
+          end))
+    
+    )
+end
+module M_impl_Memory_0__list_reversal_lasso (* Memory *)
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use seq.Seq
+  use seq.Reverse
   use creusot.prelude.Any
   use int.Int
   
@@ -202,14 +585,12 @@ module M_impl_Memory_0__list_reversal_safe (* Memory *)
   
   function index_Memory (self: t_Memory) (i: UInt64.t) : UInt64.t = index_Vec_usize_Global self.f0 i
   
-  predicate mem_is_well_formed (self: t_Memory) =
-    forall i: UInt64.t. nonnull_ptr self i -> index_Memory self i = const_NULL \/ nonnull_ptr self (index_Memory self i)
-  
-  let rec index_Memory'0 (self: t_Memory) (i: UInt64.t) (return (x: UInt64.t)) =
-    {[@stop_split] [@expl:index requires] nonnull_ptr self i}
-    any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:index ensures] result = index_Memory self i}
-      (! return {result}) ]
+  predicate list_seg (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) (last: UInt64.t) (l: int) (h: int) =
+    first = (if h = l then last else Seq.get s l)
+    /\ (forall i: int. l <= i /\ i < h
+        -> nonnull_ptr self (Seq.get s i)
+        /\ index_Memory self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
+    /\ (forall i: int, j: int. l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j -> Seq.get s i <> Seq.get s j)
   
   let rec index_mut_Memory (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
     {[@stop_split] [@expl:index_mut requires] nonnull_ptr self.current i}
@@ -224,6 +605,12 @@ module M_impl_Memory_0__list_reversal_safe (* Memory *)
         -> index_Memory self.final j = index_Memory self.current j)}
       (! return {result}) ]
   
+  let rec replace_usize (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:replace_usize ensures] ([@stop_split] [@expl:replace ensures #0] dest.final = src)
+      /\ ([@stop_split] [@expl:replace ensures #1] result = dest.current)}
+      (! return {result}) ]
+  
   predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_usize
@@ -232,44 +619,90 @@ module M_impl_Memory_0__list_reversal_safe (* Memory *)
   
   meta "rewrite_def" predicate resolve_refmut_Memory
   
+  predicate lasso (self: t_Memory) (first: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t) =
+    let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
+    /\ (forall i: int, j: int. 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
+        -> Seq.get s1 i <> Seq.get s2 j)
+    /\ list_seg self first s1 mid 0 (Seq.length s1)
+    /\ list_seg self mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec list_reversal_safe (self: MutBorrow.t t_Memory) (l: UInt64.t) (return (x: UInt64.t)) =
-    {[@stop_split] [@expl:list_reversal_safe requires] ([@stop_split] [@expl:list_reversal_safe requires #0] mem_is_well_formed self.current)
-    /\ ([@stop_split] [@expl:list_reversal_safe requires #1] l = const_NULL \/ nonnull_ptr self.current l)}
+  let rec list_reversal_lasso (self: MutBorrow.t t_Memory) (l: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t)
+    (return (x: UInt64.t)) = {[@stop_split] [@expl:list_reversal_lasso requires] lasso self.current l s1 s2}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1 | s1 = [ &_old <- self.final ] s2 | s2 = bb1 ]
-    | bb1 = bb1
-      [ bb1 = {[@expl:inferred invariant: unchanged value] _old = self.final}
-        {[@expl:loop invariant #0] r = const_NULL \/ nonnull_ptr self.current r}
-        {[@expl:loop invariant #1] l = const_NULL \/ nonnull_ptr self.current l}
-        {[@expl:loop invariant #2] mem_is_well_formed self.current}
+    [ bb0 = s0
+      [ s0 = [ &r <- const_NULL ] s1'0 | s1'0 = [ &n <- 0 ] s2'0 | s2'0 = [ &_old <- self.final ] s3 | s3 = bb2 ]
+    | bb2 = bb2
+      [ bb2 = {[@expl:inferred invariant: unchanged value] _old = self.final}
+        {[@expl:loop invariant #0] 0 <= n /\ n <= 2 * Seq.length s1 + Seq.length s2}
+        {[@expl:loop invariant #1] let mid = if Seq.length s2 = 0 then
+          Seq.get s1 (Seq.length s1 - 1)
+        else
+          Seq.get s2 0
+         in n <= Seq.length s1
+        -> list_seg self.current l s1 mid n (Seq.length s1)
+        /\ list_seg self.current mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
+        /\ list_seg self.current r (Reverse.reverse s1) const_NULL (Seq.length s1 - n) (Seq.length s1)}
+        {[@expl:loop invariant #2] Seq.length s1 < n /\ n <= Seq.length s1 + Seq.length s2
+        -> list_seg self.current l s2 (Seq.get s1 (Seq.length s1 - 1)) (n - Seq.length s1) (Seq.length s2)
+        /\ list_seg self.current r (Reverse.reverse s2) (Seq.get s1 (Seq.length s1 - 1)) (Seq.length s1 + Seq.length s2
+          - n) (Seq.length s2)
+        /\ list_seg self.current (Seq.get s1 (Seq.length s1 - 1)) (Reverse.reverse s1) const_NULL 0 (Seq.length s1)}
+        {[@expl:loop invariant #3] let mid = if Seq.length s2 = 0 then
+          Seq.get s1 (Seq.length s1 - 1)
+        else
+          Seq.get s2 (Seq.length s2 - 1)
+         in Seq.length s1 + Seq.length s2 < n
+        -> list_seg self.current l (Reverse.reverse s1) const_NULL (n - Seq.length s1 - Seq.length s2) (Seq.length s1)
+        /\ list_seg self.current r s1 mid (2 * Seq.length s1 + Seq.length s2 - n) (Seq.length s1)
+        /\ list_seg self.current mid (Reverse.reverse s2) (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)}
         (! s0)
-        [ s0 = [ &_21 <- l <> const_NULL ] s1 | s1 = any [ br0 -> {_21 = false} (! bb6) | br1 -> {_21} (! bb3) ] ]
-        [ bb3 = s0
-          [ s0 = [ &tmp <- l ] s1
-          | s1 = index_Memory'0 {self.current} {l} (fun (_x: UInt64.t) -> [ &_25 <- _x ] s2)
-          | s2 = [ &l <- _25 ] s3
-          | s3 = MutBorrow.borrow_mut <t_Memory> {self.current}
-              (fun (_bor: MutBorrow.t t_Memory) -> [ &_30 <- _bor ] [ &self <- { self with current = _bor.final } ] s4)
-          | s4 = index_mut_Memory {_30} {tmp} (fun (_x: MutBorrow.t UInt64.t) -> [ &_29 <- _x ] s5)
-          | s5 = [ &_29 <- { _29 with current = r } ] s6
-          | s6 = -{resolve_refmut_usize _29}- s7
-          | s7 = [ &r <- tmp ] s8
-          | s8 = bb1 ] ] ]
-    | bb6 = s0 [ s0 = -{resolve_refmut_Memory self}- s1 | s1 = [ &_ret <- r ] s2 | s2 = return {_ret} ] ]
+        [ s0 = [ &_46 <- l <> const_NULL ] s1'0 | s1'0 = any [ br0 -> {_46 = false} (! bb9) | br1 -> {_46} (! bb4) ] ]
+        [ bb4 = s0
+          [ s0 = MutBorrow.borrow_mut <t_Memory> {self.current}
+              (fun (_bor: MutBorrow.t t_Memory) ->
+                [ &_52 <- _bor ] [ &self <- { self with current = _bor.final } ] s1'0)
+          | s1'0 = index_mut_Memory {_52} {l} (fun (_x: MutBorrow.t UInt64.t) -> [ &_51 <- _x ] s2'0)
+          | s2'0 = MutBorrow.borrow_final <UInt64.t> {_51.current} {MutBorrow.get_id _51}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_50 <- _bor ] [ &_51 <- { _51 with current = _bor.final } ] s3)
+          | s3 = MutBorrow.borrow_mut <UInt64.t> {r}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_56 <- _bor ] [ &r <- _bor.final ] s4)
+          | s4 = MutBorrow.borrow_final <UInt64.t> {_56.current} {MutBorrow.get_id _56}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_55 <- _bor ] [ &_56 <- { _56 with current = _bor.final } ] s5)
+          | s5 = replace_usize {_55} {l} (fun (_x: UInt64.t) -> [ &_54 <- _x ] s6)
+          | s6 = -{resolve_refmut_usize _56}- s7
+          | s7 = MutBorrow.borrow_final <UInt64.t> {_50.current} {MutBorrow.get_id _50}
+              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_49 <- _bor ] [ &_50 <- { _50 with current = _bor.final } ] s8)
+          | s8 = replace_usize {_49} {_54} (fun (_x: UInt64.t) -> [ &_48 <- _x ] s9)
+          | s9 = -{resolve_refmut_usize _51}- s10
+          | s10 = -{resolve_refmut_usize _50}- s11
+          | s11 = [ &l <- _48 ] s12
+          | s12 = [ &n <- n + 1 ] s13
+          | s13 = bb2 ] ] ]
+    | bb9 = s0 [ s0 = -{resolve_refmut_Memory self}- s1'0 | s1'0 = [ &_ret <- r ] s2'0 | s2'0 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & self: MutBorrow.t t_Memory = self
     | & l: UInt64.t = l
+    | & s1: Seq.seq UInt64.t = s1
+    | & s2: Seq.seq UInt64.t = s2
     | & r: UInt64.t = Any.any_l ()
-    | & _21: bool = Any.any_l ()
-    | & tmp: UInt64.t = Any.any_l ()
-    | & _25: UInt64.t = Any.any_l ()
-    | & _29: MutBorrow.t UInt64.t = Any.any_l ()
-    | & _30: MutBorrow.t t_Memory = Any.any_l ()
-    | & _old: t_Memory = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
+    | & n: int = Any.any_l ()
+    | & _46: bool = Any.any_l ()
+    | & _48: UInt64.t = Any.any_l ()
+    | & _49: MutBorrow.t UInt64.t = Any.any_l ()
+    | & _50: MutBorrow.t UInt64.t = Any.any_l ()
+    | & _51: MutBorrow.t UInt64.t = Any.any_l ()
+    | & _52: MutBorrow.t t_Memory = Any.any_l ()
+    | & _54: UInt64.t = Any.any_l ()
+    | & _55: MutBorrow.t UInt64.t = Any.any_l ()
+    | & _56: MutBorrow.t UInt64.t = Any.any_l ()
+    | & _old: t_Memory = Any.any_l () ])
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:list_reversal_lasso ensures] lasso self.final result s1 (Reverse.reverse s2)}
+      (! return {result}) ]
 end
 module M_impl_Memory_0__list_reversal_list (* Memory *)
   use creusot.int.UInt64
@@ -546,11 +979,10 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
     {[@stop_split] [@expl:list_reversal_loop ensures] loop_ self.final result (push_front_usize (Reverse.reverse (Seq.([..]) s 1 (Seq.length s))) (Seq.get s 0))}
       (! return {result}) ]
 end
-module M_impl_Memory_0__list_reversal_lasso (* Memory *)
+module M_impl_Memory_0__list_reversal_safe (* Memory *)
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use seq.Seq
-  use seq.Reverse
   use creusot.prelude.Any
   use int.Int
   
@@ -579,12 +1011,14 @@ module M_impl_Memory_0__list_reversal_lasso (* Memory *)
   
   function index_Memory (self: t_Memory) (i: UInt64.t) : UInt64.t = index_Vec_usize_Global self.f0 i
   
-  predicate list_seg (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) (last: UInt64.t) (l: int) (h: int) =
-    first = (if h = l then last else Seq.get s l)
-    /\ (forall i: int. l <= i /\ i < h
-        -> nonnull_ptr self (Seq.get s i)
-        /\ index_Memory self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
-    /\ (forall i: int, j: int. l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j -> Seq.get s i <> Seq.get s j)
+  predicate mem_is_well_formed (self: t_Memory) =
+    forall i: UInt64.t. nonnull_ptr self i -> index_Memory self i = const_NULL \/ nonnull_ptr self (index_Memory self i)
+  
+  let rec index_Memory'0 (self: t_Memory) (i: UInt64.t) (return (x: UInt64.t)) =
+    {[@stop_split] [@expl:index requires] nonnull_ptr self i}
+    any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:index ensures] result = index_Memory self i}
+      (! return {result}) ]
   
   let rec index_mut_Memory (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
     {[@stop_split] [@expl:index_mut requires] nonnull_ptr self.current i}
@@ -599,12 +1033,6 @@ module M_impl_Memory_0__list_reversal_lasso (* Memory *)
         -> index_Memory self.final j = index_Memory self.current j)}
       (! return {result}) ]
   
-  let rec replace_usize (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) ->
-    {[@stop_split] [@expl:replace_usize ensures] ([@stop_split] [@expl:replace ensures #0] dest.final = src)
-      /\ ([@stop_split] [@expl:replace ensures #1] result = dest.current)}
-      (! return {result}) ]
-  
   predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_usize
@@ -613,139 +1041,44 @@ module M_impl_Memory_0__list_reversal_lasso (* Memory *)
   
   meta "rewrite_def" predicate resolve_refmut_Memory
   
-  predicate lasso (self: t_Memory) (first: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t) =
-    let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
-    /\ (forall i: int, j: int. 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
-        -> Seq.get s1 i <> Seq.get s2 j)
-    /\ list_seg self first s1 mid 0 (Seq.length s1)
-    /\ list_seg self mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec list_reversal_lasso (self: MutBorrow.t t_Memory) (l: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t)
-    (return (x: UInt64.t)) = {[@stop_split] [@expl:list_reversal_lasso requires] lasso self.current l s1 s2}
+  let rec list_reversal_safe (self: MutBorrow.t t_Memory) (l: UInt64.t) (return (x: UInt64.t)) =
+    {[@stop_split] [@expl:list_reversal_safe requires] ([@stop_split] [@expl:list_reversal_safe requires #0] mem_is_well_formed self.current)
+    /\ ([@stop_split] [@expl:list_reversal_safe requires #1] l = const_NULL \/ nonnull_ptr self.current l)}
     (! bb0
-    [ bb0 = s0
-      [ s0 = [ &r <- const_NULL ] s1'0 | s1'0 = [ &n <- 0 ] s2'0 | s2'0 = [ &_old <- self.final ] s3 | s3 = bb2 ]
-    | bb2 = bb2
-      [ bb2 = {[@expl:inferred invariant: unchanged value] _old = self.final}
-        {[@expl:loop invariant #0] 0 <= n /\ n <= 2 * Seq.length s1 + Seq.length s2}
-        {[@expl:loop invariant #1] let mid = if Seq.length s2 = 0 then
-          Seq.get s1 (Seq.length s1 - 1)
-        else
-          Seq.get s2 0
-         in n <= Seq.length s1
-        -> list_seg self.current l s1 mid n (Seq.length s1)
-        /\ list_seg self.current mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
-        /\ list_seg self.current r (Reverse.reverse s1) const_NULL (Seq.length s1 - n) (Seq.length s1)}
-        {[@expl:loop invariant #2] Seq.length s1 < n /\ n <= Seq.length s1 + Seq.length s2
-        -> list_seg self.current l s2 (Seq.get s1 (Seq.length s1 - 1)) (n - Seq.length s1) (Seq.length s2)
-        /\ list_seg self.current r (Reverse.reverse s2) (Seq.get s1 (Seq.length s1 - 1)) (Seq.length s1 + Seq.length s2
-          - n) (Seq.length s2)
-        /\ list_seg self.current (Seq.get s1 (Seq.length s1 - 1)) (Reverse.reverse s1) const_NULL 0 (Seq.length s1)}
-        {[@expl:loop invariant #3] let mid = if Seq.length s2 = 0 then
-          Seq.get s1 (Seq.length s1 - 1)
-        else
-          Seq.get s2 (Seq.length s2 - 1)
-         in Seq.length s1 + Seq.length s2 < n
-        -> list_seg self.current l (Reverse.reverse s1) const_NULL (n - Seq.length s1 - Seq.length s2) (Seq.length s1)
-        /\ list_seg self.current r s1 mid (2 * Seq.length s1 + Seq.length s2 - n) (Seq.length s1)
-        /\ list_seg self.current mid (Reverse.reverse s2) (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)}
+    [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1 | s1 = [ &_old <- self.final ] s2 | s2 = bb1 ]
+    | bb1 = bb1
+      [ bb1 = {[@expl:inferred invariant: unchanged value] _old = self.final}
+        {[@expl:loop invariant #0] r = const_NULL \/ nonnull_ptr self.current r}
+        {[@expl:loop invariant #1] l = const_NULL \/ nonnull_ptr self.current l}
+        {[@expl:loop invariant #2] mem_is_well_formed self.current}
         (! s0)
-        [ s0 = [ &_46 <- l <> const_NULL ] s1'0 | s1'0 = any [ br0 -> {_46 = false} (! bb9) | br1 -> {_46} (! bb4) ] ]
-        [ bb4 = s0
-          [ s0 = MutBorrow.borrow_mut <t_Memory> {self.current}
-              (fun (_bor: MutBorrow.t t_Memory) ->
-                [ &_52 <- _bor ] [ &self <- { self with current = _bor.final } ] s1'0)
-          | s1'0 = index_mut_Memory {_52} {l} (fun (_x: MutBorrow.t UInt64.t) -> [ &_51 <- _x ] s2'0)
-          | s2'0 = MutBorrow.borrow_final <UInt64.t> {_51.current} {MutBorrow.get_id _51}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_50 <- _bor ] [ &_51 <- { _51 with current = _bor.final } ] s3)
-          | s3 = MutBorrow.borrow_mut <UInt64.t> {r}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_56 <- _bor ] [ &r <- _bor.final ] s4)
-          | s4 = MutBorrow.borrow_final <UInt64.t> {_56.current} {MutBorrow.get_id _56}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_55 <- _bor ] [ &_56 <- { _56 with current = _bor.final } ] s5)
-          | s5 = replace_usize {_55} {l} (fun (_x: UInt64.t) -> [ &_54 <- _x ] s6)
-          | s6 = -{resolve_refmut_usize _56}- s7
-          | s7 = MutBorrow.borrow_final <UInt64.t> {_50.current} {MutBorrow.get_id _50}
-              (fun (_bor: MutBorrow.t UInt64.t) -> [ &_49 <- _bor ] [ &_50 <- { _50 with current = _bor.final } ] s8)
-          | s8 = replace_usize {_49} {_54} (fun (_x: UInt64.t) -> [ &_48 <- _x ] s9)
-          | s9 = -{resolve_refmut_usize _51}- s10
-          | s10 = -{resolve_refmut_usize _50}- s11
-          | s11 = [ &l <- _48 ] s12
-          | s12 = [ &n <- n + 1 ] s13
-          | s13 = bb2 ] ] ]
-    | bb9 = s0 [ s0 = -{resolve_refmut_Memory self}- s1'0 | s1'0 = [ &_ret <- r ] s2'0 | s2'0 = return {_ret} ] ]
+        [ s0 = [ &_21 <- l <> const_NULL ] s1 | s1 = any [ br0 -> {_21 = false} (! bb6) | br1 -> {_21} (! bb3) ] ]
+        [ bb3 = s0
+          [ s0 = [ &tmp <- l ] s1
+          | s1 = index_Memory'0 {self.current} {l} (fun (_x: UInt64.t) -> [ &_25 <- _x ] s2)
+          | s2 = [ &l <- _25 ] s3
+          | s3 = MutBorrow.borrow_mut <t_Memory> {self.current}
+              (fun (_bor: MutBorrow.t t_Memory) -> [ &_30 <- _bor ] [ &self <- { self with current = _bor.final } ] s4)
+          | s4 = index_mut_Memory {_30} {tmp} (fun (_x: MutBorrow.t UInt64.t) -> [ &_29 <- _x ] s5)
+          | s5 = [ &_29 <- { _29 with current = r } ] s6
+          | s6 = -{resolve_refmut_usize _29}- s7
+          | s7 = [ &r <- tmp ] s8
+          | s8 = bb1 ] ] ]
+    | bb6 = s0 [ s0 = -{resolve_refmut_Memory self}- s1 | s1 = [ &_ret <- r ] s2 | s2 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & self: MutBorrow.t t_Memory = self
     | & l: UInt64.t = l
-    | & s1: Seq.seq UInt64.t = s1
-    | & s2: Seq.seq UInt64.t = s2
     | & r: UInt64.t = Any.any_l ()
-    | & n: int = Any.any_l ()
-    | & _46: bool = Any.any_l ()
-    | & _48: UInt64.t = Any.any_l ()
-    | & _49: MutBorrow.t UInt64.t = Any.any_l ()
-    | & _50: MutBorrow.t UInt64.t = Any.any_l ()
-    | & _51: MutBorrow.t UInt64.t = Any.any_l ()
-    | & _52: MutBorrow.t t_Memory = Any.any_l ()
-    | & _54: UInt64.t = Any.any_l ()
-    | & _55: MutBorrow.t UInt64.t = Any.any_l ()
-    | & _56: MutBorrow.t UInt64.t = Any.any_l ()
-    | & _old: t_Memory = Any.any_l () ])
-    [ return (result: UInt64.t) ->
-    {[@stop_split] [@expl:list_reversal_lasso ensures] lasso self.final result s1 (Reverse.reverse s2)}
-      (! return {result}) ]
-end
-module M_impl_Memory_0__find_ptr_in_seq (* Memory *)
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.Int
-  
-  type t_Option_Int = None | Some int
-  
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
-  
-  meta "rewrite_def" predicate well_founded_relation_Int
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant s : Seq.seq UInt64.t
-  
-  constant i : int
-  
-  constant p : int
-  
-  function find_ptr_in_seq (s: Seq.seq UInt64.t) (i: int) (p: int) : t_Option_Int
-  
-  goal vc_find_ptr_in_seq: 0 <= i /\ i <= Seq.length s
-    -> (if i = Seq.length s then
-      [@stop_split] [@expl:find_ptr_in_seq ensures] match None with
-        | None -> forall j: int. i <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> p
-        | Some j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
-        end
-    else
-      if UInt64.t'int (Seq.get s i) = p then
-        [@stop_split] [@expl:find_ptr_in_seq ensures] match Some i with
-          | None -> forall j: int. i <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> p
-          | Some j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
-          end
-      else
-        (([@stop_split] [@expl:find_ptr_in_seq requires] 0 <= i + 1 /\ i + 1 <= Seq.length s)
-          /\ ([@expl:variant decreases] well_founded_relation_Int (Seq.length s - i) (Seq.length s - (i + 1))))
-        /\ (([@stop_split] [@expl:find_ptr_in_seq ensures] match find_ptr_in_seq s (i + 1) p with
-            | None -> forall j: int. i + 1 <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> p
-            | Some j -> i + 1 <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
-            end)
-        -> ([@stop_split] [@expl:find_ptr_in_seq ensures] match find_ptr_in_seq s (i + 1) p with
-          | None -> forall j: int. i <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> p
-          | Some j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
-          end))
-    
-    )
+    | & _21: bool = Any.any_l ()
+    | & tmp: UInt64.t = Any.any_l ()
+    | & _25: UInt64.t = Any.any_l ()
+    | & _29: MutBorrow.t UInt64.t = Any.any_l ()
+    | & _30: MutBorrow.t t_Memory = Any.any_l ()
+    | & _old: t_Memory = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
 end
 module M_impl_Memory_0__pigeon (* Memory *)
   use creusot.int.UInt64
@@ -841,337 +1174,4 @@ module M_impl_Memory_0__pigeon (* Memory *)
           end)
         end)
     )
-end
-module M_impl_Memory_0__find_lasso_aux (* Memory *)
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.Int
-  
-  type t_Vec_usize_Global
-  
-  type t_Memory = { f0: t_Vec_usize_Global }
-  
-  type t_Option_Seq_usize = None | Some (Seq.seq UInt64.t)
-  
-  type tup2_Seq_usize_Option_Seq_usize = { f0'0: Seq.seq UInt64.t; f1'0: t_Option_Seq_usize }
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
-  
-  axiom view_Vec_usize_Global_spec:
-    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
-      <= UInt64.t'int const_MAX
-  
-  predicate nonnull_ptr (self: t_Memory) (i: UInt64.t) =
-    Seq.length (view_Vec_usize_Global self.f0) <= UInt64.t'int const_MAX
-    /\ UInt64.t'int i < Seq.length (view_Vec_usize_Global self.f0)
-  
-  function index_Vec_usize_Global [@inline:trivial] (self: t_Vec_usize_Global) (ix: UInt64.t) : UInt64.t =
-    Seq.get (view_Vec_usize_Global self) (UInt64.t'int ix)
-  
-  meta "rewrite_def" function index_Vec_usize_Global
-  
-  function index_Memory (self: t_Memory) (i: UInt64.t) : UInt64.t = index_Vec_usize_Global self.f0 i
-  
-  constant const_NULL: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate mem_is_well_formed (self: t_Memory) =
-    forall i: UInt64.t. nonnull_ptr self i -> index_Memory self i = const_NULL \/ nonnull_ptr self (index_Memory self i)
-  
-  predicate list_seg (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) (last: UInt64.t) (l: int) (h: int) =
-    first = (if h = l then last else Seq.get s l)
-    /\ (forall i: int. l <= i /\ i < h
-        -> nonnull_ptr self (Seq.get s i)
-        /\ index_Memory self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
-    /\ (forall i: int, j: int. l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j -> Seq.get s i <> Seq.get s j)
-  
-  predicate list (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) =
-    list_seg self first s const_NULL 0 (Seq.length s)
-  
-  predicate lasso (self: t_Memory) (first: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t) =
-    let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
-    /\ (forall i: int, j: int. 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
-        -> Seq.get s1 i <> Seq.get s2 j)
-    /\ list_seg self first s1 mid 0 (Seq.length s1)
-    /\ list_seg self mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
-  
-  type t_Option_Int = None'0 | Some'0 int
-  
-  function find_ptr_in_seq (s: Seq.seq UInt64.t) (i: int) (p: int) : t_Option_Int
-  
-  axiom find_ptr_in_seq_def: forall s: Seq.seq UInt64.t, i: int, p: int [find_ptr_in_seq s i p]. 0 <= i
-        /\ i <= Seq.length s
-      -> find_ptr_in_seq s i p
-      = (if i = Seq.length s then
-        None'0
-      else
-        if UInt64.t'int (Seq.get s i) = p then Some'0 i else find_ptr_in_seq s (i + 1) p
-      )
-  
-  axiom find_ptr_in_seq_spec: forall s: Seq.seq UInt64.t, i: int, p: int [find_ptr_in_seq s i p]. 0 <= i
-        /\ i <= Seq.length s
-      -> match find_ptr_in_seq s i p with
-        | None'0 -> forall j: int. i <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> p
-        | Some'0 j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
-        end
-  
-  predicate pigeon (s: Seq.seq UInt64.t) (n: int)
-  
-  axiom pigeon_def: forall s: Seq.seq UInt64.t, n: int [pigeon s n]. 0 <= n
-      -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
-      -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
-          -> Seq.get s i <> Seq.get s j)
-      -> pigeon s n
-      = (if n = 0 then
-        true
-      else
-        match find_ptr_in_seq s 0 (n - 1) with
-          | None'0 -> pigeon s (n - 1)
-          | Some'0 i -> match find_ptr_in_seq s (i + 1) (n - 1) with
-            | None'0 -> pigeon (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) (n - 1)
-            | Some'0 _ -> true
-            end
-          end
-      )
-  
-  axiom pigeon_spec: forall s: Seq.seq UInt64.t, n: int. 0 <= n
-      -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
-      -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
-          -> Seq.get s i <> Seq.get s j) -> Seq.length s <= n
-  
-  axiom pigeon_spec'0: forall s: Seq.seq UInt64.t, n: int [pigeon s n]. 0 <= n
-      -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
-      -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
-          -> Seq.get s i <> Seq.get s j) -> pigeon s n
-  
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
-  
-  meta "rewrite_def" predicate well_founded_relation_Int
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Memory
-  
-  constant first : UInt64.t
-  
-  constant last : UInt64.t
-  
-  constant s : Seq.seq UInt64.t
-  
-  function find_lasso_aux (self: t_Memory) (first: UInt64.t) (last: UInt64.t) (s: Seq.seq UInt64.t) : tup2_Seq_usize_Option_Seq_usize
-  
-  goal vc_find_lasso_aux: mem_is_well_formed self
-    -> last = const_NULL \/ nonnull_ptr self last
-    -> list_seg self first s last 0 (Seq.length s)
-    -> (if last = const_NULL then
-      [@stop_split] [@expl:find_lasso_aux ensures] match { f0'0 = s; f1'0 = None } with
-        | {f0'0 = s'0; f1'0 = None} -> list self first s'0
-        | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
-        end
-    else
-      ([@stop_split] [@expl:find_ptr_in_seq requires] 0 <= 0 /\ 0 <= Seq.length s)
-      /\ (([@stop_split] [@expl:find_ptr_in_seq ensures] match find_ptr_in_seq s 0 (UInt64.t'int last) with
-          | None'0 -> forall j: int. 0 <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> UInt64.t'int last
-          | Some'0 j -> 0 <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = UInt64.t'int last
-          end)
-      -> match find_ptr_in_seq s 0 (UInt64.t'int last) with
-        | None'0 -> ([@stop_split] [@expl:view ensures] Seq.length (view_Vec_usize_Global self.f0)
-          <= UInt64.t'int const_MAX)
-        -> ([@stop_split] [@expl:pigeon requires] ([@stop_split] [@expl:pigeon requires #0] 0
-            <= Seq.length (view_Vec_usize_Global self.f0))
-          /\ ([@stop_split] [@expl:pigeon requires #1] forall i: int. 0 <= i /\ i < Seq.length s
-              -> UInt64.t'int (Seq.get s i) < Seq.length (view_Vec_usize_Global self.f0))
-          /\ ([@stop_split] [@expl:pigeon requires #2] forall i: int, j: int. 0 <= i
-              /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j -> Seq.get s i <> Seq.get s j))
-        /\ (([@stop_split] [@expl:pigeon ensures] ([@stop_split] [@expl:pigeon ensures #0] Seq.length s
-            <= Seq.length (view_Vec_usize_Global self.f0))
-          /\ ([@stop_split] [@expl:pigeon ensures #1] pigeon s (Seq.length (view_Vec_usize_Global self.f0))))
-        -> (if pigeon s (Seq.length (view_Vec_usize_Global self.f0)) then
-          (([@stop_split] [@expl:find_lasso_aux requires] ([@stop_split] [@expl:find_lasso_aux requires #0] mem_is_well_formed self)
-              /\ ([@stop_split] [@expl:find_lasso_aux requires #1] index_Memory self last = const_NULL
-                \/ nonnull_ptr self (index_Memory self last))
-              /\ ([@stop_split] [@expl:find_lasso_aux requires #2] list_seg self first (Seq.snoc s last) (index_Memory self last) 0 (Seq.length (Seq.snoc s last))))
-            /\ ([@expl:variant decreases] well_founded_relation_Int (Seq.length (view_Vec_usize_Global self.f0)
-            - Seq.length s) (Seq.length (view_Vec_usize_Global self.f0) - Seq.length (Seq.snoc s last))))
-          /\ (([@stop_split] [@expl:find_lasso_aux ensures] match find_lasso_aux self first (index_Memory self last) (Seq.snoc s last) with
-              | {f0'0 = s'0; f1'0 = None} -> list self first s'0
-              | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
-              end)
-          -> ([@stop_split] [@expl:find_lasso_aux ensures] match find_lasso_aux self first (index_Memory self last) (Seq.snoc s last) with
-            | {f0'0 = s'0; f1'0 = None} -> list self first s'0
-            | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
-            end))
-        else
-          [@stop_split] [@expl:find_lasso_aux ensures] match { f0'0 = s; f1'0 = None } with
-            | {f0'0 = s'0; f1'0 = None} -> list self first s'0
-            | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
-            end
-        ))
-        | Some'0 i -> [@stop_split] [@expl:find_lasso_aux ensures] match { f0'0 = Seq.([..]) s 0 (i + 1);
-                                                                           f1'0 = Some (Seq.([..]) s (i
-                                                                           + 1) (Seq.length s)) } with
-          | {f0'0 = s'0; f1'0 = None} -> list self first s'0
-          | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
-          end
-        end)
-    )
-end
-module M_impl_Memory_0__find_lasso (* Memory *)
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.Int
-  
-  type t_Vec_usize_Global
-  
-  type t_Memory = { f0: t_Vec_usize_Global }
-  
-  type t_Option_Seq_usize = None | Some (Seq.seq UInt64.t)
-  
-  type tup2_Seq_usize_Option_Seq_usize = { f0'0: Seq.seq UInt64.t; f1'0: t_Option_Seq_usize }
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
-  
-  axiom view_Vec_usize_Global_spec:
-    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
-      <= UInt64.t'int const_MAX
-  
-  predicate nonnull_ptr (self: t_Memory) (i: UInt64.t) =
-    Seq.length (view_Vec_usize_Global self.f0) <= UInt64.t'int const_MAX
-    /\ UInt64.t'int i < Seq.length (view_Vec_usize_Global self.f0)
-  
-  function index_Vec_usize_Global [@inline:trivial] (self: t_Vec_usize_Global) (ix: UInt64.t) : UInt64.t =
-    Seq.get (view_Vec_usize_Global self) (UInt64.t'int ix)
-  
-  meta "rewrite_def" function index_Vec_usize_Global
-  
-  function index_Memory (self: t_Memory) (i: UInt64.t) : UInt64.t = index_Vec_usize_Global self.f0 i
-  
-  constant const_NULL: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate mem_is_well_formed (self: t_Memory) =
-    forall i: UInt64.t. nonnull_ptr self i -> index_Memory self i = const_NULL \/ nonnull_ptr self (index_Memory self i)
-  
-  predicate list_seg (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) (last: UInt64.t) (l: int) (h: int) =
-    first = (if h = l then last else Seq.get s l)
-    /\ (forall i: int. l <= i /\ i < h
-        -> nonnull_ptr self (Seq.get s i)
-        /\ index_Memory self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
-    /\ (forall i: int, j: int. l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j -> Seq.get s i <> Seq.get s j)
-  
-  predicate list (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) =
-    list_seg self first s const_NULL 0 (Seq.length s)
-  
-  predicate lasso (self: t_Memory) (first: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t) =
-    let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
-    /\ (forall i: int, j: int. 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
-        -> Seq.get s1 i <> Seq.get s2 j)
-    /\ list_seg self first s1 mid 0 (Seq.length s1)
-    /\ list_seg self mid s2 (Seq.get s1 (Seq.length s1 - 1)) 0 (Seq.length s2)
-  
-  type t_Option_Int = None'0 | Some'0 int
-  
-  function find_ptr_in_seq (s: Seq.seq UInt64.t) (i: int) (p: int) : t_Option_Int
-  
-  axiom find_ptr_in_seq_def: forall s: Seq.seq UInt64.t, i: int, p: int [find_ptr_in_seq s i p]. 0 <= i
-        /\ i <= Seq.length s
-      -> find_ptr_in_seq s i p
-      = (if i = Seq.length s then
-        None'0
-      else
-        if UInt64.t'int (Seq.get s i) = p then Some'0 i else find_ptr_in_seq s (i + 1) p
-      )
-  
-  axiom find_ptr_in_seq_spec: forall s: Seq.seq UInt64.t, i: int, p: int [find_ptr_in_seq s i p]. 0 <= i
-        /\ i <= Seq.length s
-      -> match find_ptr_in_seq s i p with
-        | None'0 -> forall j: int. i <= j /\ j < Seq.length s -> UInt64.t'int (Seq.get s j) <> p
-        | Some'0 j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
-        end
-  
-  predicate pigeon (s: Seq.seq UInt64.t) (n: int)
-  
-  axiom pigeon_def: forall s: Seq.seq UInt64.t, n: int [pigeon s n]. 0 <= n
-      -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
-      -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
-          -> Seq.get s i <> Seq.get s j)
-      -> pigeon s n
-      = (if n = 0 then
-        true
-      else
-        match find_ptr_in_seq s 0 (n - 1) with
-          | None'0 -> pigeon s (n - 1)
-          | Some'0 i -> match find_ptr_in_seq s (i + 1) (n - 1) with
-            | None'0 -> pigeon (Seq.(++) (Seq.([..]) s 0 i) (Seq.([..]) s (i + 1) (Seq.length s))) (n - 1)
-            | Some'0 _ -> true
-            end
-          end
-      )
-  
-  axiom pigeon_spec: forall s: Seq.seq UInt64.t, n: int. 0 <= n
-      -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
-      -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
-          -> Seq.get s i <> Seq.get s j) -> Seq.length s <= n
-  
-  axiom pigeon_spec'0: forall s: Seq.seq UInt64.t, n: int [pigeon s n]. 0 <= n
-      -> (forall i: int. 0 <= i /\ i < Seq.length s -> UInt64.t'int (Seq.get s i) < n)
-      -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
-          -> Seq.get s i <> Seq.get s j) -> pigeon s n
-  
-  function find_lasso_aux (self: t_Memory) (first: UInt64.t) (last: UInt64.t) (s: Seq.seq UInt64.t) : tup2_Seq_usize_Option_Seq_usize
-  
-  axiom find_lasso_aux_def:
-    forall self: t_Memory, first: UInt64.t, last: UInt64.t, s: Seq.seq UInt64.t [find_lasso_aux self first last s]. mem_is_well_formed self
-      -> last = const_NULL \/ nonnull_ptr self last
-      -> list_seg self first s last 0 (Seq.length s)
-      -> find_lasso_aux self first last s
-      = (if last = const_NULL then
-        { f0'0 = s; f1'0 = None }
-      else
-        match find_ptr_in_seq s 0 (UInt64.t'int last) with
-          | None'0 -> if pigeon s (Seq.length (view_Vec_usize_Global self.f0)) then
-            find_lasso_aux self first (index_Memory self last) (Seq.snoc s last)
-          else
-            { f0'0 = s; f1'0 = None }
-          
-          | Some'0 i -> { f0'0 = Seq.([..]) s 0 (i + 1); f1'0 = Some (Seq.([..]) s (i + 1) (Seq.length s)) }
-          end
-      )
-  
-  axiom find_lasso_aux_spec:
-    forall self: t_Memory, first: UInt64.t, last: UInt64.t, s: Seq.seq UInt64.t [find_lasso_aux self first last s]. mem_is_well_formed self
-      -> last = const_NULL \/ nonnull_ptr self last
-      -> list_seg self first s last 0 (Seq.length s)
-      -> match find_lasso_aux self first last s with
-        | {f0'0 = s'0; f1'0 = None} -> list self first s'0
-        | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
-        end
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Memory
-  
-  constant first : UInt64.t
-  
-  function find_lasso (self: t_Memory) (first: UInt64.t) : tup2_Seq_usize_Option_Seq_usize
-  
-  goal vc_find_lasso: mem_is_well_formed self
-    -> first = const_NULL \/ nonnull_ptr self first
-    -> ([@stop_split] [@expl:find_lasso_aux requires] ([@stop_split] [@expl:find_lasso_aux requires #0] mem_is_well_formed self)
-      /\ ([@stop_split] [@expl:find_lasso_aux requires #1] first = const_NULL \/ nonnull_ptr self first)
-      /\ ([@stop_split] [@expl:find_lasso_aux requires #2] list_seg self first (Seq.empty: Seq.seq UInt64.t) first 0 (Seq.length (Seq.empty: Seq.seq UInt64.t))))
-    /\ (([@stop_split] [@expl:find_lasso_aux ensures] match find_lasso_aux self first first (Seq.empty: Seq.seq UInt64.t) with
-        | {f0'0 = s; f1'0 = None} -> list self first s
-        | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
-        end)
-    -> ([@stop_split] [@expl:find_lasso ensures] match find_lasso_aux self first first (Seq.empty: Seq.seq UInt64.t) with
-      | {f0'0 = s; f1'0 = None} -> list self first s
-      | {f0'0 = s1; f1'0 = Some s2} -> lasso self first s1 s2
-      end))
 end

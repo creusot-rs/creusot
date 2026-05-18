@@ -15,6 +15,20 @@ module M_caller
       [ s0 = pearlite_closure {fun (_a: UInt32.t) -> true} (fun (_x: ()) -> [ &_1 <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
+module M_ghost_closure
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  use map.Map
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec ghost_closure (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_x <- fun (a: UInt32.t) -> a ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & _x: Map.map UInt32.t UInt32.t = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end
 module M_has_len_3
   use creusot.slice.Slice64
   use creusot.int.UInt32
@@ -29,6 +43,18 @@ module M_has_len_3
   predicate has_len_3 (v: Slice64.slice UInt32.t)
   
   goal vc_has_len_3: true
+end
+module M_pearlite_closure
+  use creusot.prelude.Any
+  use creusot.int.UInt32
+  use map.Map
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec pearlite_closure (_x: Map.map UInt32.t bool) (return (x: ())) = (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_struct_in_pearlite
   use creusot.prelude.Any
@@ -57,30 +83,4 @@ module M_struct_order
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:struct_order ensures] x = { field1 = false; field2 = (0: UInt32.t) }}
       (! return {result}) ]
-end
-module M_ghost_closure
-  use creusot.int.UInt32
-  use creusot.prelude.Any
-  use map.Map
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec ghost_closure (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_x <- fun (a: UInt32.t) -> a ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & _x: Map.map UInt32.t UInt32.t = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
-end
-module M_pearlite_closure
-  use creusot.prelude.Any
-  use creusot.int.UInt32
-  use map.Map
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec pearlite_closure (_x: Map.map UInt32.t bool) (return (x: ())) = (! bb0
-    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

@@ -349,6 +349,548 @@ module M_test1
       | s3 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@stop_split] [@expl:test1 ensures] postcondition_F f x result} (! return {result}) ]
 end
+module M_test10
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_F
+  
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
+  
+  meta "rewrite_def" predicate inv_refmut_F
+  
+  predicate precondition_F (self: t_F) (args: Int32.t)
+  
+  predicate precondition_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) =
+    precondition_F self.current args
+  
+  meta "rewrite_def" predicate precondition_refmut_F
+  
+  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  predicate resolve_F (_1: t_F)
+  
+  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  
+  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_mut_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+  
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
+  
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
+  
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
+  
+  function hist_inv_refl_F (self: t_F) : ()
+  
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  
+  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
+  
+  predicate postcondition_once_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
+    postcondition_mut_F self.current args self.final result
+  
+  meta "rewrite_def" predicate postcondition_once_refmut_F
+  
+  predicate resolve_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_F
+  
+  predicate postcondition_mut_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result_state: MutBorrow.t t_F) (result: Int32.t) =
+    postcondition_mut_F self.current args result_state.current result /\ self.final = result_state.final
+  
+  meta "rewrite_def" predicate postcondition_mut_refmut_F
+  
+  function fn_mut_once_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_mut_once_refmut_F_spec:
+    forall self: MutBorrow.t t_F, args: Int32.t, res: Int32.t. postcondition_once_refmut_F self args res
+      = (exists res_state: MutBorrow.t t_F. postcondition_mut_refmut_F self args res_state res
+        /\ resolve_refmut_F res_state)
+  
+  predicate hist_inv_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (result_state: MutBorrow.t t_F) =
+    hist_inv_F self.current result_state.current /\ self.final = result_state.final
+  
+  meta "rewrite_def" predicate hist_inv_refmut_F
+  
+  function hist_inv_trans_refmut_F (self: MutBorrow.t t_F) (b: MutBorrow.t t_F) (c: MutBorrow.t t_F) : ()
+  
+  axiom hist_inv_trans_refmut_F_spec:
+    forall self: MutBorrow.t t_F, b: MutBorrow.t t_F, c: MutBorrow.t t_F. hist_inv_refmut_F self b
+      -> hist_inv_refmut_F b c -> hist_inv_refmut_F self c
+  
+  function hist_inv_refl_refmut_F (self: MutBorrow.t t_F) : ()
+  
+  axiom hist_inv_refl_refmut_F_spec: forall self: MutBorrow.t t_F. hist_inv_refmut_F self self
+  
+  function postcondition_mut_hist_inv_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (res_state: MutBorrow.t t_F) (res: Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_refmut_F_spec:
+    forall self: MutBorrow.t t_F, args: Int32.t, res_state: MutBorrow.t t_F, res: Int32.t. postcondition_mut_refmut_F self args res_state res
+      -> hist_inv_refmut_F self res_state
+  
+  let rec call_fnmut_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:call_fnmut_refmut_F requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_refmut_F f)
+    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_refmut_F f x)}
+    any
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_fnmut ensures] exists f2: MutBorrow.t t_F. postcondition_mut_refmut_F f x f2 result
+        /\ resolve_refmut_F f2}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec test10_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:test10_F requires] ([@stop_split] [@expl:test10 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:test10 requires] precondition_F f x)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <t_F> {f}
+          (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s1 = call_fnmut_refmut_F {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s3 = -{resolve_F f}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:test10 ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
+      (! return {result}) ]
+end
+module M_test11
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate invariant_Box_F_Global (self: t_F) = inv_F self
+  
+  predicate inv_Box_F_Global [@inline:trivial] (_1: t_F) = invariant_Box_F_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_F_Global
+  
+  predicate precondition_F (self: t_F) (args: Int32.t)
+  
+  predicate precondition_Box_F_Global [@inline:trivial] (self: t_F) (args: Int32.t) = precondition_F self args
+  
+  meta "rewrite_def" predicate precondition_Box_F_Global
+  
+  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  predicate postcondition_once_Box_F_Global [@inline:trivial] (self: t_F) (args: Int32.t) (result: Int32.t) =
+    postcondition_once_F self args result
+  
+  meta "rewrite_def" predicate postcondition_once_Box_F_Global
+  
+  let rec call_fnonce_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:call_fnonce_Box_F_Global requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f)
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_Box_F_Global f x)}
+    any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_Box_F_Global f x result}
+      (! return {result}) ]
+  
+  predicate resolve_F (_1: t_F)
+  
+  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  
+  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_mut_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+  
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
+  
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
+  
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
+  
+  function hist_inv_refl_F (self: t_F) : ()
+  
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  
+  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec test11_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:test11_F requires] ([@stop_split] [@expl:test11 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:test11 requires] precondition_F f x)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:test11 ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
+      (! return {result}) ]
+end
+module M_test12
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_F
+  
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
+  
+  meta "rewrite_def" predicate inv_refmut_F
+  
+  predicate precondition_F (self: t_F) (args: Int32.t)
+  
+  predicate precondition_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) =
+    precondition_F self.current args
+  
+  meta "rewrite_def" predicate precondition_refmut_F
+  
+  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  predicate resolve_F (_1: t_F)
+  
+  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  
+  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_mut_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+  
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
+  
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
+  
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
+  
+  function hist_inv_refl_F (self: t_F) : ()
+  
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  
+  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
+  
+  predicate postcondition_once_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
+    postcondition_mut_F self.current args self.final result
+  
+  meta "rewrite_def" predicate postcondition_once_refmut_F
+  
+  let rec call_fnonce_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:call_fnonce_refmut_F requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_refmut_F f)
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_refmut_F f x)}
+    any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_refmut_F f x result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec test12_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:test12_F requires] ([@stop_split] [@expl:test12 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:test12 requires] precondition_F f x)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <t_F> {f}
+          (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s1 = call_fnonce_refmut_F {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s3 = -{resolve_F f}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:test12 ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
+      (! return {result}) ]
+end
+module M_test13
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate invariant_Box_F_Global (self: t_F) = inv_F self
+  
+  predicate inv_Box_F_Global [@inline:trivial] (_1: t_F) = invariant_Box_F_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_F_Global
+  
+  predicate precondition_F (self: t_F) (args: Int32.t)
+  
+  predicate precondition_Box_F_Global [@inline:trivial] (self: t_F) (args: Int32.t) = precondition_F self args
+  
+  meta "rewrite_def" predicate precondition_Box_F_Global
+  
+  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  predicate postcondition_once_Box_F_Global [@inline:trivial] (self: t_F) (args: Int32.t) (result: Int32.t) =
+    postcondition_once_F self args result
+  
+  meta "rewrite_def" predicate postcondition_once_Box_F_Global
+  
+  let rec call_fnonce_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:call_fnonce_Box_F_Global requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f)
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_Box_F_Global f x)}
+    any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_Box_F_Global f x result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec test13_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:test13_F requires] ([@stop_split] [@expl:test13 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:test13 requires] precondition_F f x)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test13 ensures] postcondition_once_F f x result}
+      (! return {result}) ]
+end
+module M_test14
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate precondition_F (self: t_F) (args: Int32.t)
+  
+  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  predicate resolve_F (_1: t_F)
+  
+  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  
+  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_mut_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+  
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
+  
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
+  
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
+  
+  function hist_inv_refl_F (self: t_F) : ()
+  
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  
+  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
+  
+  let rec call_fnmut_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:call_fnmut_F requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_F f x)}
+    any
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
+      (! return {result}) ]
+  
+  function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
+  
+  axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F. hist_inv_F self res_state = (self = res_state)
+  
+  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
+      = (postcondition_F self args res /\ resolve_F self)
+  
+  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  
+  axiom fn_mut_F_spec:
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
+      = (postcondition_F self args res /\ self = res_state)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec test14_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:test14_F requires] ([@stop_split] [@expl:test14 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:test14 requires] precondition_F f x)}
+    (! bb0
+    [ bb0 = s0 [ s0 = call_fnmut_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test14 ensures] postcondition_F f x result}
+      (! return {result}) ]
+end
+module M_test15
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate precondition_F (self: t_F) (args: Int32.t)
+  
+  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  let rec call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:call_fnonce_F requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_F f x)}
+    any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_F f x result}
+      (! return {result}) ]
+  
+  predicate resolve_F (_1: t_F)
+  
+  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  
+  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_mut_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+  
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
+  
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
+  
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
+  
+  function hist_inv_refl_F (self: t_F) : ()
+  
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  
+  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
+  
+  function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
+  
+  axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F. hist_inv_F self res_state = (self = res_state)
+  
+  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
+      = (postcondition_F self args res /\ resolve_F self)
+  
+  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  
+  axiom fn_mut_F_spec:
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
+      = (postcondition_F self args res /\ self = res_state)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec test15_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:test15_F requires] ([@stop_split] [@expl:test15 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:test15 requires] precondition_F f x)}
+    (! bb0
+    [ bb0 = s0 [ s0 = call_fnonce_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test15 ensures] postcondition_F f x result}
+      (! return {result}) ]
+end
+module M_test16
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate precondition_F (self: t_F) (args: Int32.t)
+  
+  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  
+  let rec call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:call_fnonce_F requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_F f x)}
+    any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_F f x result}
+      (! return {result}) ]
+  
+  predicate resolve_F (_1: t_F)
+  
+  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  
+  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  
+  axiom fn_mut_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
+      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+  
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
+  
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
+  
+  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
+  
+  function hist_inv_refl_F (self: t_F) : ()
+  
+  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  
+  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
+      -> hist_inv_F self res_state
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec test16_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+    {[@stop_split] [@expl:test16_F requires] ([@stop_split] [@expl:test16 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:test16 requires] precondition_F f x)}
+    (! bb0
+    [ bb0 = s0 [ s0 = call_fnonce_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:test16 ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
+      (! return {result}) ]
+end
 module M_test2
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -1281,547 +1823,5 @@ module M_test9
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) -> {[@stop_split] [@expl:test9 ensures] exists f2: t_F. postcondition_mut_F f x f2 result
         /\ resolve_F f2}
-      (! return {result}) ]
-end
-module M_test10
-  use creusot.prelude.MutBorrow
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  type t_F
-  
-  predicate inv_F (_1: t_F)
-  
-  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_F
-  
-  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
-  
-  meta "rewrite_def" predicate inv_refmut_F
-  
-  predicate precondition_F (self: t_F) (args: Int32.t)
-  
-  predicate precondition_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) =
-    precondition_F self.current args
-  
-  meta "rewrite_def" predicate precondition_refmut_F
-  
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate resolve_F (_1: t_F)
-  
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
-  
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_mut_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
-  
-  predicate hist_inv_F (self: t_F) (result_state: t_F)
-  
-  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
-  
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
-      -> hist_inv_F b c -> hist_inv_F self c
-  
-  function hist_inv_refl_F (self: t_F) : ()
-  
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
-  
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
-      -> hist_inv_F self res_state
-  
-  predicate postcondition_once_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_mut_F self.current args self.final result
-  
-  meta "rewrite_def" predicate postcondition_once_refmut_F
-  
-  predicate resolve_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_F
-  
-  predicate postcondition_mut_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result_state: MutBorrow.t t_F) (result: Int32.t) =
-    postcondition_mut_F self.current args result_state.current result /\ self.final = result_state.final
-  
-  meta "rewrite_def" predicate postcondition_mut_refmut_F
-  
-  function fn_mut_once_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_mut_once_refmut_F_spec:
-    forall self: MutBorrow.t t_F, args: Int32.t, res: Int32.t. postcondition_once_refmut_F self args res
-      = (exists res_state: MutBorrow.t t_F. postcondition_mut_refmut_F self args res_state res
-        /\ resolve_refmut_F res_state)
-  
-  predicate hist_inv_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (result_state: MutBorrow.t t_F) =
-    hist_inv_F self.current result_state.current /\ self.final = result_state.final
-  
-  meta "rewrite_def" predicate hist_inv_refmut_F
-  
-  function hist_inv_trans_refmut_F (self: MutBorrow.t t_F) (b: MutBorrow.t t_F) (c: MutBorrow.t t_F) : ()
-  
-  axiom hist_inv_trans_refmut_F_spec:
-    forall self: MutBorrow.t t_F, b: MutBorrow.t t_F, c: MutBorrow.t t_F. hist_inv_refmut_F self b
-      -> hist_inv_refmut_F b c -> hist_inv_refmut_F self c
-  
-  function hist_inv_refl_refmut_F (self: MutBorrow.t t_F) : ()
-  
-  axiom hist_inv_refl_refmut_F_spec: forall self: MutBorrow.t t_F. hist_inv_refmut_F self self
-  
-  function postcondition_mut_hist_inv_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (res_state: MutBorrow.t t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_refmut_F_spec:
-    forall self: MutBorrow.t t_F, args: Int32.t, res_state: MutBorrow.t t_F, res: Int32.t. postcondition_mut_refmut_F self args res_state res
-      -> hist_inv_refmut_F self res_state
-  
-  let rec call_fnmut_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:call_fnmut_refmut_F requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_refmut_F f)
-    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_refmut_F f x)}
-    any
-    [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_fnmut ensures] exists f2: MutBorrow.t t_F. postcondition_mut_refmut_F f x f2 result
-        /\ resolve_refmut_F f2}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec test10_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:test10_F requires] ([@stop_split] [@expl:test10 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test10 requires] precondition_F f x)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = MutBorrow.borrow_mut <t_F> {f}
-          (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
-        [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
-      | s1 = call_fnmut_refmut_F {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
-      | s3 = -{resolve_F f}- s4
-      | s4 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
-    [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:test10 ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
-      (! return {result}) ]
-end
-module M_test11
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  type t_F
-  
-  predicate inv_F (_1: t_F)
-  
-  predicate invariant_Box_F_Global (self: t_F) = inv_F self
-  
-  predicate inv_Box_F_Global [@inline:trivial] (_1: t_F) = invariant_Box_F_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_F_Global
-  
-  predicate precondition_F (self: t_F) (args: Int32.t)
-  
-  predicate precondition_Box_F_Global [@inline:trivial] (self: t_F) (args: Int32.t) = precondition_F self args
-  
-  meta "rewrite_def" predicate precondition_Box_F_Global
-  
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate postcondition_once_Box_F_Global [@inline:trivial] (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once_F self args result
-  
-  meta "rewrite_def" predicate postcondition_once_Box_F_Global
-  
-  let rec call_fnonce_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:call_fnonce_Box_F_Global requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_Box_F_Global f x)}
-    any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_Box_F_Global f x result}
-      (! return {result}) ]
-  
-  predicate resolve_F (_1: t_F)
-  
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
-  
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_mut_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
-  
-  predicate hist_inv_F (self: t_F) (result_state: t_F)
-  
-  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
-  
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
-      -> hist_inv_F b c -> hist_inv_F self c
-  
-  function hist_inv_refl_F (self: t_F) : ()
-  
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
-  
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
-      -> hist_inv_F self res_state
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec test11_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:test11_F requires] ([@stop_split] [@expl:test11 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test11 requires] precondition_F f x)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:test11 ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
-      (! return {result}) ]
-end
-module M_test12
-  use creusot.prelude.MutBorrow
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  type t_F
-  
-  predicate inv_F (_1: t_F)
-  
-  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_F
-  
-  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
-  
-  meta "rewrite_def" predicate inv_refmut_F
-  
-  predicate precondition_F (self: t_F) (args: Int32.t)
-  
-  predicate precondition_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) =
-    precondition_F self.current args
-  
-  meta "rewrite_def" predicate precondition_refmut_F
-  
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate resolve_F (_1: t_F)
-  
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
-  
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_mut_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
-  
-  predicate hist_inv_F (self: t_F) (result_state: t_F)
-  
-  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
-  
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
-      -> hist_inv_F b c -> hist_inv_F self c
-  
-  function hist_inv_refl_F (self: t_F) : ()
-  
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
-  
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
-      -> hist_inv_F self res_state
-  
-  predicate postcondition_once_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_mut_F self.current args self.final result
-  
-  meta "rewrite_def" predicate postcondition_once_refmut_F
-  
-  let rec call_fnonce_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:call_fnonce_refmut_F requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_refmut_F f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_refmut_F f x)}
-    any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_refmut_F f x result}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec test12_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:test12_F requires] ([@stop_split] [@expl:test12 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test12 requires] precondition_F f x)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = MutBorrow.borrow_mut <t_F> {f}
-          (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
-        [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
-      | s1 = call_fnonce_refmut_F {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
-      | s3 = -{resolve_F f}- s4
-      | s4 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
-    [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:test12 ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
-      (! return {result}) ]
-end
-module M_test13
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  type t_F
-  
-  predicate inv_F (_1: t_F)
-  
-  predicate invariant_Box_F_Global (self: t_F) = inv_F self
-  
-  predicate inv_Box_F_Global [@inline:trivial] (_1: t_F) = invariant_Box_F_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_F_Global
-  
-  predicate precondition_F (self: t_F) (args: Int32.t)
-  
-  predicate precondition_Box_F_Global [@inline:trivial] (self: t_F) (args: Int32.t) = precondition_F self args
-  
-  meta "rewrite_def" predicate precondition_Box_F_Global
-  
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate postcondition_once_Box_F_Global [@inline:trivial] (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once_F self args result
-  
-  meta "rewrite_def" predicate postcondition_once_Box_F_Global
-  
-  let rec call_fnonce_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:call_fnonce_Box_F_Global requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_Box_F_Global f x)}
-    any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_Box_F_Global f x result}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec test13_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:test13_F requires] ([@stop_split] [@expl:test13 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test13 requires] precondition_F f x)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test13 ensures] postcondition_once_F f x result}
-      (! return {result}) ]
-end
-module M_test14
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  type t_F
-  
-  predicate inv_F (_1: t_F)
-  
-  predicate precondition_F (self: t_F) (args: Int32.t)
-  
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  predicate resolve_F (_1: t_F)
-  
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
-  
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_mut_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
-  
-  predicate hist_inv_F (self: t_F) (result_state: t_F)
-  
-  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
-  
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
-      -> hist_inv_F b c -> hist_inv_F self c
-  
-  function hist_inv_refl_F (self: t_F) : ()
-  
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
-  
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
-      -> hist_inv_F self res_state
-  
-  let rec call_fnmut_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:call_fnmut_F requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_F f x)}
-    any
-    [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
-      (! return {result}) ]
-  
-  function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
-  
-  axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F. hist_inv_F self res_state = (self = res_state)
-  
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
-  
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec test14_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:test14_F requires] ([@stop_split] [@expl:test14 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test14 requires] precondition_F f x)}
-    (! bb0
-    [ bb0 = s0 [ s0 = call_fnmut_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test14 ensures] postcondition_F f x result}
-      (! return {result}) ]
-end
-module M_test15
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  type t_F
-  
-  predicate inv_F (_1: t_F)
-  
-  predicate precondition_F (self: t_F) (args: Int32.t)
-  
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  let rec call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:call_fnonce_F requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_F f x)}
-    any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_F f x result}
-      (! return {result}) ]
-  
-  predicate resolve_F (_1: t_F)
-  
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
-  
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_mut_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
-  
-  predicate hist_inv_F (self: t_F) (result_state: t_F)
-  
-  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
-  
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
-      -> hist_inv_F b c -> hist_inv_F self c
-  
-  function hist_inv_refl_F (self: t_F) : ()
-  
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
-  
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
-      -> hist_inv_F self res_state
-  
-  function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
-  
-  axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F. hist_inv_F self res_state = (self = res_state)
-  
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
-  
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec test15_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:test15_F requires] ([@stop_split] [@expl:test15 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test15 requires] precondition_F f x)}
-    (! bb0
-    [ bb0 = s0 [ s0 = call_fnonce_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test15 ensures] postcondition_F f x result}
-      (! return {result}) ]
-end
-module M_test16
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  type t_F
-  
-  predicate inv_F (_1: t_F)
-  
-  predicate precondition_F (self: t_F) (args: Int32.t)
-  
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
-  
-  let rec call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:call_fnonce_F requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_F f x)}
-    any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_F f x result}
-      (! return {result}) ]
-  
-  predicate resolve_F (_1: t_F)
-  
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
-  
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_mut_once_F_spec: forall self: t_F, args: Int32.t, res: Int32.t. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
-  
-  predicate hist_inv_F (self: t_F) (result_state: t_F)
-  
-  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
-  
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
-      -> hist_inv_F b c -> hist_inv_F self c
-  
-  function hist_inv_refl_F (self: t_F) : ()
-  
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
-  
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t. postcondition_mut_F self args res_state res
-      -> hist_inv_F self res_state
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec test16_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:test16_F requires] ([@stop_split] [@expl:test16 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test16 requires] precondition_F f x)}
-    (! bb0
-    [ bb0 = s0 [ s0 = call_fnonce_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:test16 ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
       (! return {result}) ]
 end

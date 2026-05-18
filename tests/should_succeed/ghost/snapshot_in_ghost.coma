@@ -1,3 +1,27 @@
+module M_bar
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  let rec new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec bar (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &x <- (1: Int32.t) ] s1
+      | s1 = [ &_4 <- x ] s2
+      | s2 = {[@expl:assertion] exists y: Int32.t. x = y} s3
+      | s3 = new_unit {_3} (fun (_x: ()) -> [ &_2 <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & x: Int32.t = Any.any_l ()
+    | & _2: () = Any.any_l ()
+    | & _3: () = Any.any_l ()
+    | & _4: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
 module M_foo
   use creusot.prelude.Any
   
@@ -27,28 +51,4 @@ module M_is_ghost
   let rec is_ghost (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &x <- 1 ] s1 | s1 = {[@expl:assertion] x = 1} s2 | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & x: int = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_bar
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  let rec new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec bar (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &x <- (1: Int32.t) ] s1
-      | s1 = [ &_4 <- x ] s2
-      | s2 = {[@expl:assertion] exists y: Int32.t. x = y} s3
-      | s3 = new_unit {_3} (fun (_x: ()) -> [ &_2 <- _x ] s4)
-      | s4 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & x: Int32.t = Any.any_l ()
-    | & _2: () = Any.any_l ()
-    | & _3: () = Any.any_l ()
-    | & _4: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

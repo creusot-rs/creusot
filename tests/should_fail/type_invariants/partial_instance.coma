@@ -1,33 +1,3 @@
-module M_mk_s
-  use creusot.prelude.Opaque
-  use creusot.prelude.Ptr
-  use creusot.int.UInt64
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
-  
-  let rec null_T (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:null ensures] is_null_ptr_T result} (! return {result}) ]
-  
-  type t_S_T = { f0: Int32.t; f1: Opaque.ptr }
-  
-  predicate inv_S_T (_1: t_S_T)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec mk_s_T (t: Int32.t) (return (x: t_S_T)) = (! bb0
-    [ bb0 = s0
-      [ s0 = null_T (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s1)
-      | s1 = [ &_ret <- { f0 = t; f1 = _6 } ] s2
-      | s2 = return {_ret} ] ] [ & _ret: t_S_T = Any.any_l () | & t: Int32.t = t | & _6: Opaque.ptr = Any.any_l () ])
-    [ return (result: t_S_T) ->
-    {[@stop_split] [@expl:mk_s_T ensures] ([@stop_split] [@expl:mk_s result type invariant] inv_S_T result)
-      /\ ([@stop_split] [@expl:mk_s ensures] result.f0 = t)}
-      (! return {result}) ]
-end
 module M_evil
   use creusot.int.Int32
   use creusot.prelude.Opaque
@@ -58,4 +28,34 @@ module M_evil
       | s2 = {[@expl:assertion] false} s3
       | s3 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _s: t_S_i32 = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
+end
+module M_mk_s
+  use creusot.prelude.Opaque
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  let rec null_T (return (x: Opaque.ptr)) = any
+    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:null ensures] is_null_ptr_T result} (! return {result}) ]
+  
+  type t_S_T = { f0: Int32.t; f1: Opaque.ptr }
+  
+  predicate inv_S_T (_1: t_S_T)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec mk_s_T (t: Int32.t) (return (x: t_S_T)) = (! bb0
+    [ bb0 = s0
+      [ s0 = null_T (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_ret <- { f0 = t; f1 = _6 } ] s2
+      | s2 = return {_ret} ] ] [ & _ret: t_S_T = Any.any_l () | & t: Int32.t = t | & _6: Opaque.ptr = Any.any_l () ])
+    [ return (result: t_S_T) ->
+    {[@stop_split] [@expl:mk_s_T ensures] ([@stop_split] [@expl:mk_s result type invariant] inv_S_T result)
+      /\ ([@stop_split] [@expl:mk_s ensures] result.f0 = t)}
+      (! return {result}) ]
 end

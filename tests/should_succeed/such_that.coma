@@ -1,3 +1,17 @@
+module M_even
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  use int.ComputerDivision
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec even (return (x: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- (2: Int32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ])
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:even ensures] ComputerDivision.mod (Int32.to_int result) 2 = 0}
+      (! return {result}) ]
+end
 module M_foo
   use map.Map
   use creusot.int.Int32
@@ -43,18 +57,4 @@ module M_foo
     | & mapping: Map.map int int = Any.any_l ()
     | & predicate': Map.map int bool = Any.any_l ()
     | & x'0: int = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_even
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  use int.ComputerDivision
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec even (return (x: Int32.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- (2: Int32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:even ensures] ComputerDivision.mod (Int32.to_int result) 2 = 0}
-      (! return {result}) ]
 end

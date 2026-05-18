@@ -1,33 +1,3 @@
-module M_map_spec
-  use creusot.prelude.Any
-  use set.Fset
-  use map.Map
-  
-  type t_U
-  
-  predicate contains_U [@inline:trivial] (self: Fset.fset t_U) (e: t_U) = Fset.mem e self
-  
-  meta "rewrite_def" predicate contains_U
-  
-  type t_T
-  
-  function map_T (self: Fset.fset t_T) (f: Map.map t_T t_U) : Fset.fset t_U = Fset.map f self
-  
-  predicate contains_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) = Fset.mem e self
-  
-  meta "rewrite_def" predicate contains_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec map_spec_T (return (x: ())) = (! bb0
-    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
-    [ return (result: ()) ->
-    {[@stop_split] [@expl:map_spec ensures] forall xs: Fset.fset t_T, f: Map.map t_T t_U, y: t_U. contains_U (map_T xs f) y
-        = (exists x: t_T. contains_T xs x /\ Map.get f x = y)}
-      (! return {result}) ]
-end
 module M_filter_spec
   use creusot.prelude.Any
   use set.Fset
@@ -69,5 +39,35 @@ module M_interval_spec
     [ return (result: ()) ->
     {[@stop_split] [@expl:interval_spec ensures] forall i: int, j: int, k: int. contains_Int (FsetInt.interval i j) k
         = (i <= k /\ k < j)}
+      (! return {result}) ]
+end
+module M_map_spec
+  use creusot.prelude.Any
+  use set.Fset
+  use map.Map
+  
+  type t_U
+  
+  predicate contains_U [@inline:trivial] (self: Fset.fset t_U) (e: t_U) = Fset.mem e self
+  
+  meta "rewrite_def" predicate contains_U
+  
+  type t_T
+  
+  function map_T (self: Fset.fset t_T) (f: Map.map t_T t_U) : Fset.fset t_U = Fset.map f self
+  
+  predicate contains_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) = Fset.mem e self
+  
+  meta "rewrite_def" predicate contains_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec map_spec_T (return (x: ())) = (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:map_spec ensures] forall xs: Fset.fset t_T, f: Map.map t_T t_U, y: t_U. contains_U (map_T xs f) y
+        = (exists x: t_T. contains_T xs x /\ Map.get f x = y)}
       (! return {result}) ]
 end

@@ -1,428 +1,3 @@
-module M_slice_iter
-  use creusot.int.UInt64
-  use creusot.slice.Slice64
-  use seq.Seq
-  use creusot.prelude.MutBorrow
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_T
-  
-  type t_Iter_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
-  
-  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
-  
-  meta "rewrite_def" predicate inv_slice_T
-  
-  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
-  
-  meta "rewrite_def" predicate invariant_ref_slice_T
-  
-  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
-  
-  meta "rewrite_def" predicate inv_ref_slice_T
-  
-  predicate inv_Iter_T (_1: t_Iter_T)
-  
-  function view_Iter_T (self: t_Iter_T) : Slice64.slice t_T
-  
-  let rec iter_T (self_: Slice64.slice t_T) (return (x: t_Iter_T)) =
-    {[@stop_split] [@expl:iter 'self_' type invariant] inv_ref_slice_T self_}
-    any
-    [ return (result: t_Iter_T) ->
-    {[@stop_split] [@expl:iter_T ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_T result)
-      /\ ([@stop_split] [@expl:iter ensures] view_Iter_T result = self_)}
-      (! return {result}) ]
-  
-  let rec into_iter_Iter_T (self_: t_Iter_T) (return (x: t_Iter_T)) =
-    {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Iter_T self_}
-    any
-    [ return (result: t_Iter_T) ->
-    {[@stop_split] [@expl:into_iter_Iter_T ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_T result)
-      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
-      (! return {result}) ]
-  
-  type t_Option_ref_T = None | Some t_T
-  
-  predicate invariant_refmut_Iter_T [@inline:trivial] (self: MutBorrow.t t_Iter_T) =
-    inv_Iter_T self.current /\ inv_Iter_T self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Iter_T
-  
-  predicate inv_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = invariant_refmut_Iter_T _1
-  
-  meta "rewrite_def" predicate inv_refmut_Iter_T
-  
-  predicate inv_Option_ref_T (_1: t_Option_ref_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
-      = match x with
-        | None -> true
-        | Some f0 -> inv_ref_T f0
-        end
-  
-  function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
-  
-  meta "rewrite_def" function index_slice_T
-  
-  function to_ref_seq_slice_T (self: Slice64.slice t_T) : Seq.seq t_T
-  
-  axiom to_ref_seq_slice_T_spec:
-    forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. Seq.length (to_ref_seq_slice_T self)
-      = Seq.length (Slice64.view self)
-  
-  axiom to_ref_seq_slice_T_spec'0: forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. forall i: int. 0 <= i
-          /\ i < Seq.length (to_ref_seq_slice_T self) -> Seq.get (to_ref_seq_slice_T self) i = index_slice_T self i
-  
-  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (tl: t_Iter_T) =
-    to_ref_seq_slice_T (view_Iter_T self) = Seq.(++) visited (to_ref_seq_slice_T (view_Iter_T tl))
-  
-  function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : ()
-  
-  axiom produces_trans_Iter_T_spec:
-    forall a: t_Iter_T, ab: Seq.seq t_T, b: t_Iter_T, bc: Seq.seq t_T, c: t_Iter_T. produces_Iter_T a ab b
-      -> produces_Iter_T b bc c -> produces_Iter_T a (Seq.(++) ab bc) c
-  
-  function produces_refl_Iter_T (self: t_Iter_T) : ()
-  
-  axiom produces_refl_Iter_T_spec: forall self: t_Iter_T. produces_Iter_T self (Seq.empty: Seq.seq t_T) self
-  
-  predicate resolve_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Iter_T
-  
-  predicate completed_Iter_T (self: MutBorrow.t t_Iter_T) =
-    resolve_refmut_Iter_T self /\ Slice64.view (view_Iter_T self.current) = (Seq.empty: Seq.seq t_T)
-  
-  let rec next_Iter_T (self_: MutBorrow.t t_Iter_T) (return (x: t_Option_ref_T)) =
-    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_T self_}
-    any
-    [ return (result: t_Option_ref_T) ->
-    {[@stop_split] [@expl:next_Iter_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_ref_T result)
-      /\ ([@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Iter_T self_
-        | Some v -> produces_Iter_T self_.current (Seq.singleton v) self_.final
-        end)}
-      (! return {result}) ]
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  let rec elim_Some (_x: t_Option_ref_T) (return (f0: t_T)) = any
-    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Some] match _x with
-        | Some _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate resolve_Iter_T (_1: t_Iter_T)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec slice_iter_T (slice: Slice64.slice t_T) (return (x: UInt64.t)) =
-    {[@stop_split] [@expl:slice_iter_T requires] ([@stop_split] [@expl:slice_iter 'slice' type invariant] inv_ref_slice_T slice)
-    /\ ([@stop_split] [@expl:slice_iter requires] Seq.length (Slice64.view slice) < 1000)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &i <- (0: UInt64.t) ] s1
-      | s1 = iter_T {slice} (fun (_x: t_Iter_T) -> [ &_9 <- _x ] s2)
-      | s2 = into_iter_Iter_T {_9} (fun (_x: t_Iter_T) -> [ &iter <- _x ] s3)
-      | s3 = [ &iter_old <- iter ] s4
-      | s4 = [ &produced <- Seq.empty: Seq.seq t_T ] s5
-      | s5 = bb5 ]
-    | bb5 = bb5
-      [ bb5 = {[@expl:inferred invariant: type invariant] inv_Iter_T iter}
-        {[@expl:for invariant] inv_Seq_ref_T produced}
-        {[@expl:for invariant] produces_Iter_T iter_old produced iter}
-        {[@expl:loop invariant] UInt64.t'int i = Seq.length produced}
-        (! s0)
-        [ s0 = MutBorrow.borrow_mut <t_Iter_T> {iter}
-            (fun (_bor: MutBorrow.t t_Iter_T) -> [ &_31 <- _bor ] -{inv_Iter_T _bor.final}- [ &iter <- _bor.final ] s1)
-          [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
-        | s1 = MutBorrow.borrow_final <t_Iter_T> {_31.current} {MutBorrow.get_id _31}
-            (fun (_bor: MutBorrow.t t_Iter_T) ->
-              [ &_30 <- _bor ] -{inv_Iter_T _bor.final}-
-              [ &_31 <- { _31 with current = _bor.final } ] s2)
-          [ _ck -> (! {[@expl:type invariant] inv_Iter_T _31.current} any) ]
-        | s2 = next_Iter_T {_30} (fun (_x: t_Option_ref_T) -> [ &_29 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_T _31} any) ]
-        | s4 = -{resolve_refmut_Iter_T _31}- s5
-        | s5 = any [ br0 -> {_29 = None} (! bb10) | br1 (x0: t_T) -> {_29 = Some x0} (! bb11) ] ]
-        [ bb11 = s0
-          [ s0 = elim_Some {_29} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s3)
-          | s3 = bb5 ] ] ]
-    | bb10 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
-      | s1 = -{resolve_Iter_T iter}- s2
-      | s2 = [ &_ret <- i ] s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: UInt64.t = Any.any_l ()
-    | & slice: Slice64.slice t_T = slice
-    | & i: UInt64.t = Any.any_l ()
-    | & iter: t_Iter_T = Any.any_l ()
-    | & _9: t_Iter_T = Any.any_l ()
-    | & iter_old: t_Iter_T = Any.any_l ()
-    | & produced: Seq.seq t_T = Any.any_l ()
-    | & _29: t_Option_ref_T = Any.any_l ()
-    | & _30: MutBorrow.t t_Iter_T = Any.any_l ()
-    | & _31: MutBorrow.t t_Iter_T = Any.any_l ()
-    | & __creusot_proc_iter_elem: t_T = Any.any_l () ])
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:slice_iter ensures] UInt64.t'int result
-      = Seq.length (Slice64.view slice)}
-      (! return {result}) ]
-end
-module M_vec_iter
-  use creusot.int.UInt64
-  use seq.Seq
-  use creusot.slice.Slice64
-  use creusot.prelude.MutBorrow
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Vec_T_Global
-  
-  type t_Iter_T
-  
-  type t_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function view_Vec_T_Global (self: t_Vec_T_Global) : Seq.seq t_T
-  
-  axiom view_Vec_T_Global_spec:
-    forall self: t_Vec_T_Global [view_Vec_T_Global self]. Seq.length (view_Vec_T_Global self) <= UInt64.t'int const_MAX
-  
-  predicate invariant_Vec_T_Global (self: t_Vec_T_Global) = inv_Seq_T (view_Vec_T_Global self)
-  
-  predicate inv_Vec_T_Global (_1: t_Vec_T_Global)
-  
-  axiom inv_axiom: forall x: t_Vec_T_Global [inv_Vec_T_Global x]. inv_Vec_T_Global x -> invariant_Vec_T_Global x
-  
-  predicate invariant_ref_Vec_T_Global [@inline:trivial] (self: t_Vec_T_Global) = inv_Vec_T_Global self
-  
-  meta "rewrite_def" predicate invariant_ref_Vec_T_Global
-  
-  predicate inv_ref_Vec_T_Global [@inline:trivial] (_1: t_Vec_T_Global) = invariant_ref_Vec_T_Global _1
-  
-  meta "rewrite_def" predicate inv_ref_Vec_T_Global
-  
-  predicate inv_Iter_T (_1: t_Iter_T)
-  
-  function view_Iter_T (self: t_Iter_T) : Slice64.slice t_T
-  
-  let rec into_iter_ref_Vec_T_Global (self_: t_Vec_T_Global) (return (x: t_Iter_T)) =
-    {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_ref_Vec_T_Global self_}
-    any
-    [ return (result: t_Iter_T) ->
-    {[@stop_split] [@expl:into_iter_ref_Vec_T_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_T result)
-      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_T_Global self_ = Slice64.view (view_Iter_T result))}
-      (! return {result}) ]
-  
-  type t_Option_ref_T = None | Some t_T
-  
-  predicate invariant_refmut_Iter_T [@inline:trivial] (self: MutBorrow.t t_Iter_T) =
-    inv_Iter_T self.current /\ inv_Iter_T self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Iter_T
-  
-  predicate inv_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = invariant_refmut_Iter_T _1
-  
-  meta "rewrite_def" predicate inv_refmut_Iter_T
-  
-  predicate inv_Option_ref_T (_1: t_Option_ref_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
-      = match x with
-        | None -> true
-        | Some f0 -> inv_ref_T f0
-        end
-  
-  function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
-  
-  meta "rewrite_def" function index_slice_T
-  
-  function to_ref_seq_slice_T (self: Slice64.slice t_T) : Seq.seq t_T
-  
-  axiom to_ref_seq_slice_T_spec:
-    forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. Seq.length (to_ref_seq_slice_T self)
-      = Seq.length (Slice64.view self)
-  
-  axiom to_ref_seq_slice_T_spec'0: forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. forall i: int. 0 <= i
-          /\ i < Seq.length (to_ref_seq_slice_T self) -> Seq.get (to_ref_seq_slice_T self) i = index_slice_T self i
-  
-  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (tl: t_Iter_T) =
-    to_ref_seq_slice_T (view_Iter_T self) = Seq.(++) visited (to_ref_seq_slice_T (view_Iter_T tl))
-  
-  function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : ()
-  
-  axiom produces_trans_Iter_T_spec:
-    forall a: t_Iter_T, ab: Seq.seq t_T, b: t_Iter_T, bc: Seq.seq t_T, c: t_Iter_T. produces_Iter_T a ab b
-      -> produces_Iter_T b bc c -> produces_Iter_T a (Seq.(++) ab bc) c
-  
-  function produces_refl_Iter_T (self: t_Iter_T) : ()
-  
-  axiom produces_refl_Iter_T_spec: forall self: t_Iter_T. produces_Iter_T self (Seq.empty: Seq.seq t_T) self
-  
-  predicate resolve_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Iter_T
-  
-  predicate completed_Iter_T (self: MutBorrow.t t_Iter_T) =
-    resolve_refmut_Iter_T self /\ Slice64.view (view_Iter_T self.current) = (Seq.empty: Seq.seq t_T)
-  
-  let rec next_Iter_T (self_: MutBorrow.t t_Iter_T) (return (x: t_Option_ref_T)) =
-    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_T self_}
-    any
-    [ return (result: t_Option_ref_T) ->
-    {[@stop_split] [@expl:next_Iter_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_ref_T result)
-      /\ ([@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Iter_T self_
-        | Some v -> produces_Iter_T self_.current (Seq.singleton v) self_.final
-        end)}
-      (! return {result}) ]
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  let rec elim_Some (_x: t_Option_ref_T) (return (f0: t_T)) = any
-    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Some] match _x with
-        | Some _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate resolve_Iter_T (_1: t_Iter_T)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec vec_iter_T (vec: t_Vec_T_Global) (return (x: UInt64.t)) =
-    {[@stop_split] [@expl:vec_iter_T requires] ([@stop_split] [@expl:vec_iter 'vec' type invariant] inv_ref_Vec_T_Global vec)
-    /\ ([@stop_split] [@expl:vec_iter requires] Seq.length (view_Vec_T_Global vec) < 1000)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &i <- (0: UInt64.t) ] s1
-      | s1 = into_iter_ref_Vec_T_Global {vec} (fun (_x: t_Iter_T) -> [ &iter <- _x ] s2)
-      | s2 = [ &iter_old <- iter ] s3
-      | s3 = [ &produced <- Seq.empty: Seq.seq t_T ] s4
-      | s4 = bb4 ]
-    | bb4 = bb4
-      [ bb4 = {[@expl:inferred invariant: type invariant] inv_Iter_T iter}
-        {[@expl:for invariant] inv_Seq_ref_T produced}
-        {[@expl:for invariant] produces_Iter_T iter_old produced iter}
-        {[@expl:loop invariant] UInt64.t'int i = Seq.length produced}
-        (! s0)
-        [ s0 = MutBorrow.borrow_mut <t_Iter_T> {iter}
-            (fun (_bor: MutBorrow.t t_Iter_T) -> [ &_30 <- _bor ] -{inv_Iter_T _bor.final}- [ &iter <- _bor.final ] s1)
-          [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
-        | s1 = MutBorrow.borrow_final <t_Iter_T> {_30.current} {MutBorrow.get_id _30}
-            (fun (_bor: MutBorrow.t t_Iter_T) ->
-              [ &_29 <- _bor ] -{inv_Iter_T _bor.final}-
-              [ &_30 <- { _30 with current = _bor.final } ] s2)
-          [ _ck -> (! {[@expl:type invariant] inv_Iter_T _30.current} any) ]
-        | s2 = next_Iter_T {_29} (fun (_x: t_Option_ref_T) -> [ &_28 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_T _30} any) ]
-        | s4 = -{resolve_refmut_Iter_T _30}- s5
-        | s5 = any [ br0 -> {_28 = None} (! bb9) | br1 (x0: t_T) -> {_28 = Some x0} (! bb10) ] ]
-        [ bb10 = s0
-          [ s0 = elim_Some {_28} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s3)
-          | s3 = bb4 ] ] ]
-    | bb9 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
-      | s1 = -{resolve_Iter_T iter}- s2
-      | s2 = [ &_ret <- i ] s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: UInt64.t = Any.any_l ()
-    | & vec: t_Vec_T_Global = vec
-    | & i: UInt64.t = Any.any_l ()
-    | & iter: t_Iter_T = Any.any_l ()
-    | & iter_old: t_Iter_T = Any.any_l ()
-    | & produced: Seq.seq t_T = Any.any_l ()
-    | & _28: t_Option_ref_T = Any.any_l ()
-    | & _29: MutBorrow.t t_Iter_T = Any.any_l ()
-    | & _30: MutBorrow.t t_Iter_T = Any.any_l ()
-    | & __creusot_proc_iter_elem: t_T = Any.any_l () ])
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:vec_iter ensures] UInt64.t'int result
-      = Seq.length (view_Vec_T_Global vec)}
-      (! return {result}) ]
-end
 module M_all_zero
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
@@ -646,235 +221,6 @@ module M_all_zero
       /\ ([@stop_split] [@expl:all_zero ensures #1] forall i: int. 0 <= i
           /\ i < Seq.length (view_Vec_usize_Global v.current) -> UInt64.t'int (index_Vec_usize_Global v.final i) = 0)}
       (! return {result}) ]
-end
-module M_skip_take
-  use creusot.int.UInt64
-  use creusot.prelude.MutBorrow
-  use seq.Seq
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_I
-  
-  type t_Take_I
-  
-  type tup2_I_usize = { f0: t_I; f1: UInt64.t }
-  
-  predicate inv_I (_1: t_I)
-  
-  predicate precondition_take (self: ()) (args: tup2_I_usize)
-  
-  axiom precondition_fndef:
-    forall args: tup2_I_usize [precondition_take () args]. (let {f0 = self_; f1 = n} = args in inv_I self_)
-      -> precondition_take () args
-  
-  function iter_Take_I (self: t_Take_I) : t_I
-  
-  predicate invariant_Take_I [@inline:trivial] (self: t_Take_I) = inv_I (iter_Take_I self)
-  
-  meta "rewrite_def" predicate invariant_Take_I
-  
-  predicate inv_Take_I (_1: t_Take_I)
-  
-  axiom inv_axiom: forall x: t_Take_I [inv_Take_I x]. inv_Take_I x -> invariant_Take_I x
-  
-  function n_Take_I (self: t_Take_I) : UInt64.t
-  
-  predicate postcondition_once_take (self: ()) (args: tup2_I_usize) (result: t_Take_I)
-  
-  axiom postcondition_fndef:
-    forall args: tup2_I_usize, res: t_Take_I [postcondition_once_take () args res]. postcondition_once_take () args res
-      -> (let {f0 = self_; f1 = n} = args in inv_Take_I res /\ iter_Take_I res = self_ /\ n_Take_I res = n)
-  
-  let rec take_I (self_: t_I) (n: UInt64.t) (return (x: t_Take_I)) =
-    {[@stop_split] [@expl:take requires] precondition_take () { f0 = self_; f1 = n }}
-    any
-    [ return (result: t_Take_I) -> {[@stop_split] [@expl:take ensures] postcondition_once_take () { f0 = self_;
-                                                                                                    f1 = n } result}
-      (! return {result}) ]
-  
-  type t_Skip_Take_I
-  
-  function iter_Skip_Take_I (self: t_Skip_Take_I) : t_Take_I
-  
-  predicate invariant_Skip_Take_I [@inline:trivial] (self: t_Skip_Take_I) = inv_Take_I (iter_Skip_Take_I self)
-  
-  meta "rewrite_def" predicate invariant_Skip_Take_I
-  
-  predicate inv_Skip_Take_I (_1: t_Skip_Take_I)
-  
-  axiom inv_axiom'0: forall x: t_Skip_Take_I [inv_Skip_Take_I x]. inv_Skip_Take_I x -> invariant_Skip_Take_I x
-  
-  function n_Skip_Take_I (self: t_Skip_Take_I) : UInt64.t
-  
-  let rec skip_Take_I (self_: t_Take_I) (n: UInt64.t) (return (x: t_Skip_Take_I)) =
-    {[@stop_split] [@expl:skip 'self_' type invariant] inv_Take_I self_}
-    any
-    [ return (result: t_Skip_Take_I) ->
-    {[@stop_split] [@expl:skip_Take_I ensures] ([@stop_split] [@expl:skip result type invariant] inv_Skip_Take_I result)
-      /\ ([@stop_split] [@expl:skip ensures] iter_Skip_Take_I result = self_ /\ n_Skip_Take_I result = n)}
-      (! return {result}) ]
-  
-  type t_Item
-  
-  type t_Option_Item = None | Some t_Item
-  
-  predicate invariant_refmut_Skip_Take_I [@inline:trivial] (self: MutBorrow.t t_Skip_Take_I) =
-    inv_Skip_Take_I self.current /\ inv_Skip_Take_I self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Skip_Take_I
-  
-  predicate inv_refmut_Skip_Take_I [@inline:trivial] (_1: MutBorrow.t t_Skip_Take_I) = invariant_refmut_Skip_Take_I _1
-  
-  meta "rewrite_def" predicate inv_refmut_Skip_Take_I
-  
-  predicate inv_Item (_1: t_Item)
-  
-  predicate inv_Option_Item (_1: t_Option_Item)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
-      = match x with
-        | None -> true
-        | Some f0'0 -> inv_Item f0'0
-        end
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate produces_Take_I (self: t_Take_I) (visited: Seq.seq t_Item) (o: t_Take_I) =
-    UInt64.t'int (n_Take_I self) = UInt64.t'int (n_Take_I o) + Seq.length visited
-    /\ produces_I (iter_Take_I self) visited (iter_Take_I o)
-  
-  function produces_trans_Take_I (a: t_Take_I) (ab: Seq.seq t_Item) (b: t_Take_I) (bc: Seq.seq t_Item) (c: t_Take_I) : ()
-  
-  axiom produces_trans_Take_I_spec:
-    forall a: t_Take_I, ab: Seq.seq t_Item, b: t_Take_I, bc: Seq.seq t_Item, c: t_Take_I. produces_Take_I a ab b
-      -> produces_Take_I b bc c -> produces_Take_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_Take_I (self: t_Take_I) : ()
-  
-  axiom produces_refl_Take_I_spec: forall self: t_Take_I. produces_Take_I self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate resolve_Item (_1: t_Item)
-  
-  predicate produces_Skip_Take_I (self: t_Skip_Take_I) (visited: Seq.seq t_Item) (o: t_Skip_Take_I) =
-    visited = (Seq.empty: Seq.seq t_Item) /\ self = o
-    \/ UInt64.t'int (n_Skip_Take_I o) = 0
-    /\ Seq.length visited > 0
-    /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int (n_Skip_Take_I self)
-      /\ produces_Take_I (iter_Skip_Take_I self) (Seq.(++) s visited) (iter_Skip_Take_I o)
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
-  
-  function produces_trans_Skip_Take_I (a: t_Skip_Take_I) (ab: Seq.seq t_Item) (b: t_Skip_Take_I) (bc: Seq.seq t_Item) (c: t_Skip_Take_I) : ()
-  
-  axiom produces_trans_Skip_Take_I_spec:
-    forall a: t_Skip_Take_I, ab: Seq.seq t_Item, b: t_Skip_Take_I, bc: Seq.seq t_Item, c: t_Skip_Take_I. produces_Skip_Take_I a ab b
-      -> produces_Skip_Take_I b bc c -> produces_Skip_Take_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_Skip_Take_I (self: t_Skip_Take_I) : ()
-  
-  axiom produces_refl_Skip_Take_I_spec:
-    forall self: t_Skip_Take_I. produces_Skip_Take_I self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate resolve_refmut_Take_I [@inline:trivial] (_1: MutBorrow.t t_Take_I) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Take_I
-  
-  predicate completed_I (self: MutBorrow.t t_I)
-  
-  function iter_mut_Take_I (self: MutBorrow.t t_Take_I) : MutBorrow.t t_I
-  
-  axiom iter_mut_Take_I_spec: forall self: MutBorrow.t t_Take_I [iter_mut_Take_I self]. iter_Take_I self.current
-        = (iter_mut_Take_I self).current
-      /\ iter_Take_I self.final = (iter_mut_Take_I self).final
-  
-  predicate completed_Take_I (self: MutBorrow.t t_Take_I) =
-    UInt64.t'int (n_Take_I self.current) = 0 /\ resolve_refmut_Take_I self
-    \/ UInt64.t'int (n_Take_I self.current) > 0
-    /\ UInt64.t'int (n_Take_I self.current) = UInt64.t'int (n_Take_I self.final) + 1
-    /\ completed_I (iter_mut_Take_I self)
-  
-  predicate completed_Skip_Take_I (self: MutBorrow.t t_Skip_Take_I) =
-    UInt64.t'int (n_Skip_Take_I self.final) = 0
-    /\ (exists s: Seq.seq t_Item, i: MutBorrow.t t_Take_I. Seq.length s <= UInt64.t'int (n_Skip_Take_I self.current)
-      /\ produces_Take_I (iter_Skip_Take_I self.current) s i.current
-      /\ (forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length s -> resolve_Item (Seq.get s i'0))
-      /\ completed_Take_I i /\ i.final = iter_Skip_Take_I self.final)
-  
-  let rec next_Skip_Take_I (self_: MutBorrow.t t_Skip_Take_I) (return (x: t_Option_Item)) =
-    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Skip_Take_I self_}
-    any
-    [ return (result: t_Option_Item) ->
-    {[@stop_split] [@expl:next_Skip_Take_I ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_Item result)
-      /\ ([@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Skip_Take_I self_
-        | Some v -> produces_Skip_Take_I self_.current (Seq.singleton v) self_.final
-        end)}
-      (! return {result}) ]
-  
-  predicate resolve_I (_1: t_I)
-  
-  predicate resolve_Take_I [@inline:trivial] (self: t_Take_I) = resolve_I (iter_Take_I self)
-  
-  meta "rewrite_def" predicate resolve_Take_I
-  
-  predicate resolve_Take_I'0 (_1: t_Take_I)
-  
-  axiom resolve_axiom: forall x: t_Take_I [resolve_Take_I'0 x]. resolve_Take_I'0 x -> resolve_Take_I x
-  
-  predicate resolve_Skip_Take_I [@inline:trivial] (self: t_Skip_Take_I) = resolve_Take_I'0 (iter_Skip_Take_I self)
-  
-  meta "rewrite_def" predicate resolve_Skip_Take_I
-  
-  predicate resolve_Skip_Take_I'0 (_1: t_Skip_Take_I)
-  
-  axiom resolve_axiom'0: forall x: t_Skip_Take_I [resolve_Skip_Take_I'0 x]. resolve_Skip_Take_I'0 x
-      -> resolve_Skip_Take_I x
-  
-  predicate resolve_Option_Item (_1: t_Option_Item)
-  
-  axiom resolve_axiom'1 [@rewrite]: forall x: t_Option_Item [resolve_Option_Item x]. resolve_Option_Item x
-      = match x with
-        | None -> true
-        | Some x0 -> resolve_Item x0
-        end
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec skip_take_I (iter: t_I) (n: UInt64.t) (return (x: ())) =
-    {[@stop_split] [@expl:skip_take 'iter' type invariant] inv_I iter}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = take_I {iter} {n} (fun (_x: t_Take_I) -> [ &_6 <- _x ] s1)
-      | s1 = skip_Take_I {_6} {n} (fun (_x: t_Skip_Take_I) -> [ &_5 <- _x ] s2)
-      | s2 = MutBorrow.borrow_mut <t_Skip_Take_I> {_5}
-          (fun (_bor: MutBorrow.t t_Skip_Take_I) ->
-            [ &_4 <- _bor ] -{inv_Skip_Take_I _bor.final}-
-            [ &_5 <- _bor.final ] s3) [ _ck -> (! {[@expl:type invariant] inv_Skip_Take_I _5} any) ]
-      | s3 = next_Skip_Take_I {_4} (fun (_x: t_Option_Item) -> [ &res <- _x ] s4)
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Skip_Take_I _5} any) ]
-      | s5 = -{resolve_Skip_Take_I'0 _5}- s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Option_Item res} any) ]
-      | s7 = -{resolve_Option_Item res}- s8
-      | s8 = {[@expl:assertion] res = None} s9
-      | s9 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & iter: t_I = iter
-    | & n: UInt64.t = n
-    | & res: t_Option_Item = Any.any_l ()
-    | & _4: MutBorrow.t t_Skip_Take_I = Any.any_l ()
-    | & _5: t_Skip_Take_I = Any.any_l ()
-    | & _6: t_Take_I = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_counter
   use creusot.int.UInt64
@@ -1192,158 +538,6 @@ module M_counter
     | & _7: Slice64.slice UInt32.t = Any.any_l ()
     | & _9: closure0 = Any.any_l ()
     | & _10: MutBorrow.t UInt64.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_sum_range
-  use creusot.int.Int64
-  use seq.Seq
-  use creusot.prelude.MutBorrow
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Range_isize = { start: Int64.t; end': Int64.t }
-  
-  let rec into_iter_Range_isize (self_: t_Range_isize) (return (x: t_Range_isize)) = any
-    [ return (result: t_Range_isize) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
-  
-  type t_Option_isize = None | Some Int64.t
-  
-  function deep_model_isize [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
-  
-  meta "rewrite_def" function deep_model_isize
-  
-  predicate produces_Range_isize (self: t_Range_isize) (visited: Seq.seq Int64.t) (o: t_Range_isize) =
-    self.end' = o.end'
-    /\ deep_model_isize self.start <= deep_model_isize o.start
-    /\ (Seq.length visited > 0 -> deep_model_isize o.start <= deep_model_isize o.end')
-    /\ Seq.length visited = deep_model_isize o.start - deep_model_isize self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> deep_model_isize (Seq.get visited i) = deep_model_isize self.start + i)
-  
-  function produces_trans_Range_isize (a: t_Range_isize) (ab: Seq.seq Int64.t) (b: t_Range_isize) (bc: Seq.seq Int64.t) (c: t_Range_isize) : ()
-  
-  axiom produces_trans_Range_isize_spec:
-    forall a: t_Range_isize, ab: Seq.seq Int64.t, b: t_Range_isize, bc: Seq.seq Int64.t, c: t_Range_isize. produces_Range_isize a ab b
-      -> produces_Range_isize b bc c -> produces_Range_isize a (Seq.(++) ab bc) c
-  
-  function produces_refl_Range_isize (self: t_Range_isize) : ()
-  
-  axiom produces_refl_Range_isize_spec:
-    forall self: t_Range_isize. produces_Range_isize self (Seq.empty: Seq.seq Int64.t) self
-  
-  predicate resolve_refmut_Range_isize [@inline:trivial] (_1: MutBorrow.t t_Range_isize) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Range_isize
-  
-  predicate completed_Range_isize (self: MutBorrow.t t_Range_isize) =
-    resolve_refmut_Range_isize self /\ deep_model_isize self.current.start >= deep_model_isize self.current.end'
-  
-  let rec next_Range_isize (self_: MutBorrow.t t_Range_isize) (return (x: t_Option_isize)) = any
-    [ return (result: t_Option_isize) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Range_isize self_
-        | Some v -> produces_Range_isize self_.current (Seq.singleton v) self_.final
-        end}
-      (! return {result}) ]
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
-  
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
-  
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
-  
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
-  
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
-  
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
-  
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
-  
-  predicate inv_Seq_isize [@inline:trivial] (_1: Seq.seq Int64.t) = true
-  
-  meta "rewrite_def" predicate inv_Seq_isize
-  
-  let rec elim_Some (_x: t_Option_isize) (return (f0: Int64.t)) = any
-    [ _k (f0: Int64.t) -> {Some f0 = _x} (! return {f0})
-    | _chk -> (! {[@expl:elim Some] match _x with
-        | Some _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec sum_range (n: Int64.t) (return (x: Int64.t)) = {[@stop_split] [@expl:sum_range requires] Int64.to_int n >= 0}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &i <- (0: Int64.t) ] s1
-      | s1 = [ &_9 <- { start = (0: Int64.t); end' = n } ] s2
-      | s2 = into_iter_Range_isize {_9} (fun (_x: t_Range_isize) -> [ &iter <- _x ] s3)
-      | s3 = [ &iter_old <- iter ] s4
-      | s4 = [ &produced <- Seq.empty: Seq.seq Int64.t ] s5
-      | s5 = bb4 ]
-    | bb4 = bb4
-      [ bb4 = {[@expl:for invariant] inv_Seq_isize produced}
-        {[@expl:for invariant] produces_Range_isize iter_old produced iter}
-        {[@expl:loop invariant] Int64.to_int i = Seq.length produced /\ Int64.le i n}
-        (! s0)
-        [ s0 = MutBorrow.borrow_mut <t_Range_isize> {iter}
-            (fun (_bor: MutBorrow.t t_Range_isize) -> [ &_32 <- _bor ] [ &iter <- _bor.final ] s1)
-        | s1 = MutBorrow.borrow_final <t_Range_isize> {_32.current} {MutBorrow.get_id _32}
-            (fun (_bor: MutBorrow.t t_Range_isize) -> [ &_31 <- _bor ] [ &_32 <- { _32 with current = _bor.final } ] s2)
-        | s2 = next_Range_isize {_31} (fun (_x: t_Option_isize) -> [ &_30 <- _x ] s3)
-        | s3 = -{resolve_refmut_Range_isize _32}- s4
-        | s4 = any [ br0 -> {_30 = None} (! bb9) | br1 (x0: Int64.t) -> {_30 = Some x0} (! bb10) ] ]
-        [ bb10 = s0
-          [ s0 = elim_Some {_30} (fun (r0: Int64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = Int64.add {i} {(1: Int64.t)} (fun (_x: Int64.t) -> [ &i <- _x ] s3)
-          | s3 = bb4 ] ] ]
-    | bb9 = s0 [ s0 = [ &_ret <- i ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: Int64.t = Any.any_l ()
-    | & n: Int64.t = n
-    | & i: Int64.t = Any.any_l ()
-    | & iter: t_Range_isize = Any.any_l ()
-    | & _9: t_Range_isize = Any.any_l ()
-    | & iter_old: t_Range_isize = Any.any_l ()
-    | & produced: Seq.seq Int64.t = Any.any_l ()
-    | & _30: t_Option_isize = Any.any_l ()
-    | & _31: MutBorrow.t t_Range_isize = Any.any_l ()
-    | & _32: MutBorrow.t t_Range_isize = Any.any_l ()
-    | & __creusot_proc_iter_elem: Int64.t = Any.any_l () ])
-    [ return (result: Int64.t) -> {[@stop_split] [@expl:sum_range ensures] result = n} (! return {result}) ]
 end
 module M_enumerate_range
   use creusot.int.UInt64
@@ -1969,5 +1163,811 @@ module M_my_reverse
     | & _old: Slice64.slice t_T = Any.any_l () ])
     [ return (result: ()) ->
     {[@stop_split] [@expl:my_reverse ensures] Seq.(==) (Slice64.view slice.final) (Reverse.reverse (Slice64.view slice.current))}
+      (! return {result}) ]
+end
+module M_skip_take
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_I
+  
+  type t_Take_I
+  
+  type tup2_I_usize = { f0: t_I; f1: UInt64.t }
+  
+  predicate inv_I (_1: t_I)
+  
+  predicate precondition_take (self: ()) (args: tup2_I_usize)
+  
+  axiom precondition_fndef:
+    forall args: tup2_I_usize [precondition_take () args]. (let {f0 = self_; f1 = n} = args in inv_I self_)
+      -> precondition_take () args
+  
+  function iter_Take_I (self: t_Take_I) : t_I
+  
+  predicate invariant_Take_I [@inline:trivial] (self: t_Take_I) = inv_I (iter_Take_I self)
+  
+  meta "rewrite_def" predicate invariant_Take_I
+  
+  predicate inv_Take_I (_1: t_Take_I)
+  
+  axiom inv_axiom: forall x: t_Take_I [inv_Take_I x]. inv_Take_I x -> invariant_Take_I x
+  
+  function n_Take_I (self: t_Take_I) : UInt64.t
+  
+  predicate postcondition_once_take (self: ()) (args: tup2_I_usize) (result: t_Take_I)
+  
+  axiom postcondition_fndef:
+    forall args: tup2_I_usize, res: t_Take_I [postcondition_once_take () args res]. postcondition_once_take () args res
+      -> (let {f0 = self_; f1 = n} = args in inv_Take_I res /\ iter_Take_I res = self_ /\ n_Take_I res = n)
+  
+  let rec take_I (self_: t_I) (n: UInt64.t) (return (x: t_Take_I)) =
+    {[@stop_split] [@expl:take requires] precondition_take () { f0 = self_; f1 = n }}
+    any
+    [ return (result: t_Take_I) -> {[@stop_split] [@expl:take ensures] postcondition_once_take () { f0 = self_;
+                                                                                                    f1 = n } result}
+      (! return {result}) ]
+  
+  type t_Skip_Take_I
+  
+  function iter_Skip_Take_I (self: t_Skip_Take_I) : t_Take_I
+  
+  predicate invariant_Skip_Take_I [@inline:trivial] (self: t_Skip_Take_I) = inv_Take_I (iter_Skip_Take_I self)
+  
+  meta "rewrite_def" predicate invariant_Skip_Take_I
+  
+  predicate inv_Skip_Take_I (_1: t_Skip_Take_I)
+  
+  axiom inv_axiom'0: forall x: t_Skip_Take_I [inv_Skip_Take_I x]. inv_Skip_Take_I x -> invariant_Skip_Take_I x
+  
+  function n_Skip_Take_I (self: t_Skip_Take_I) : UInt64.t
+  
+  let rec skip_Take_I (self_: t_Take_I) (n: UInt64.t) (return (x: t_Skip_Take_I)) =
+    {[@stop_split] [@expl:skip 'self_' type invariant] inv_Take_I self_}
+    any
+    [ return (result: t_Skip_Take_I) ->
+    {[@stop_split] [@expl:skip_Take_I ensures] ([@stop_split] [@expl:skip result type invariant] inv_Skip_Take_I result)
+      /\ ([@stop_split] [@expl:skip ensures] iter_Skip_Take_I result = self_ /\ n_Skip_Take_I result = n)}
+      (! return {result}) ]
+  
+  type t_Item
+  
+  type t_Option_Item = None | Some t_Item
+  
+  predicate invariant_refmut_Skip_Take_I [@inline:trivial] (self: MutBorrow.t t_Skip_Take_I) =
+    inv_Skip_Take_I self.current /\ inv_Skip_Take_I self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Skip_Take_I
+  
+  predicate inv_refmut_Skip_Take_I [@inline:trivial] (_1: MutBorrow.t t_Skip_Take_I) = invariant_refmut_Skip_Take_I _1
+  
+  meta "rewrite_def" predicate inv_refmut_Skip_Take_I
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate inv_Option_Item (_1: t_Option_Item)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
+      = match x with
+        | None -> true
+        | Some f0'0 -> inv_Item f0'0
+        end
+  
+  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+  
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+  
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_I (self: t_I) : ()
+  
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+  
+  predicate produces_Take_I (self: t_Take_I) (visited: Seq.seq t_Item) (o: t_Take_I) =
+    UInt64.t'int (n_Take_I self) = UInt64.t'int (n_Take_I o) + Seq.length visited
+    /\ produces_I (iter_Take_I self) visited (iter_Take_I o)
+  
+  function produces_trans_Take_I (a: t_Take_I) (ab: Seq.seq t_Item) (b: t_Take_I) (bc: Seq.seq t_Item) (c: t_Take_I) : ()
+  
+  axiom produces_trans_Take_I_spec:
+    forall a: t_Take_I, ab: Seq.seq t_Item, b: t_Take_I, bc: Seq.seq t_Item, c: t_Take_I. produces_Take_I a ab b
+      -> produces_Take_I b bc c -> produces_Take_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_Take_I (self: t_Take_I) : ()
+  
+  axiom produces_refl_Take_I_spec: forall self: t_Take_I. produces_Take_I self (Seq.empty: Seq.seq t_Item) self
+  
+  predicate resolve_Item (_1: t_Item)
+  
+  predicate produces_Skip_Take_I (self: t_Skip_Take_I) (visited: Seq.seq t_Item) (o: t_Skip_Take_I) =
+    visited = (Seq.empty: Seq.seq t_Item) /\ self = o
+    \/ UInt64.t'int (n_Skip_Take_I o) = 0
+    /\ Seq.length visited > 0
+    /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int (n_Skip_Take_I self)
+      /\ produces_Take_I (iter_Skip_Take_I self) (Seq.(++) s visited) (iter_Skip_Take_I o)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
+  
+  function produces_trans_Skip_Take_I (a: t_Skip_Take_I) (ab: Seq.seq t_Item) (b: t_Skip_Take_I) (bc: Seq.seq t_Item) (c: t_Skip_Take_I) : ()
+  
+  axiom produces_trans_Skip_Take_I_spec:
+    forall a: t_Skip_Take_I, ab: Seq.seq t_Item, b: t_Skip_Take_I, bc: Seq.seq t_Item, c: t_Skip_Take_I. produces_Skip_Take_I a ab b
+      -> produces_Skip_Take_I b bc c -> produces_Skip_Take_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_Skip_Take_I (self: t_Skip_Take_I) : ()
+  
+  axiom produces_refl_Skip_Take_I_spec:
+    forall self: t_Skip_Take_I. produces_Skip_Take_I self (Seq.empty: Seq.seq t_Item) self
+  
+  predicate resolve_refmut_Take_I [@inline:trivial] (_1: MutBorrow.t t_Take_I) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Take_I
+  
+  predicate completed_I (self: MutBorrow.t t_I)
+  
+  function iter_mut_Take_I (self: MutBorrow.t t_Take_I) : MutBorrow.t t_I
+  
+  axiom iter_mut_Take_I_spec: forall self: MutBorrow.t t_Take_I [iter_mut_Take_I self]. iter_Take_I self.current
+        = (iter_mut_Take_I self).current
+      /\ iter_Take_I self.final = (iter_mut_Take_I self).final
+  
+  predicate completed_Take_I (self: MutBorrow.t t_Take_I) =
+    UInt64.t'int (n_Take_I self.current) = 0 /\ resolve_refmut_Take_I self
+    \/ UInt64.t'int (n_Take_I self.current) > 0
+    /\ UInt64.t'int (n_Take_I self.current) = UInt64.t'int (n_Take_I self.final) + 1
+    /\ completed_I (iter_mut_Take_I self)
+  
+  predicate completed_Skip_Take_I (self: MutBorrow.t t_Skip_Take_I) =
+    UInt64.t'int (n_Skip_Take_I self.final) = 0
+    /\ (exists s: Seq.seq t_Item, i: MutBorrow.t t_Take_I. Seq.length s <= UInt64.t'int (n_Skip_Take_I self.current)
+      /\ produces_Take_I (iter_Skip_Take_I self.current) s i.current
+      /\ (forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length s -> resolve_Item (Seq.get s i'0))
+      /\ completed_Take_I i /\ i.final = iter_Skip_Take_I self.final)
+  
+  let rec next_Skip_Take_I (self_: MutBorrow.t t_Skip_Take_I) (return (x: t_Option_Item)) =
+    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Skip_Take_I self_}
+    any
+    [ return (result: t_Option_Item) ->
+    {[@stop_split] [@expl:next_Skip_Take_I ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_Item result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
+        | None -> completed_Skip_Take_I self_
+        | Some v -> produces_Skip_Take_I self_.current (Seq.singleton v) self_.final
+        end)}
+      (! return {result}) ]
+  
+  predicate resolve_I (_1: t_I)
+  
+  predicate resolve_Take_I [@inline:trivial] (self: t_Take_I) = resolve_I (iter_Take_I self)
+  
+  meta "rewrite_def" predicate resolve_Take_I
+  
+  predicate resolve_Take_I'0 (_1: t_Take_I)
+  
+  axiom resolve_axiom: forall x: t_Take_I [resolve_Take_I'0 x]. resolve_Take_I'0 x -> resolve_Take_I x
+  
+  predicate resolve_Skip_Take_I [@inline:trivial] (self: t_Skip_Take_I) = resolve_Take_I'0 (iter_Skip_Take_I self)
+  
+  meta "rewrite_def" predicate resolve_Skip_Take_I
+  
+  predicate resolve_Skip_Take_I'0 (_1: t_Skip_Take_I)
+  
+  axiom resolve_axiom'0: forall x: t_Skip_Take_I [resolve_Skip_Take_I'0 x]. resolve_Skip_Take_I'0 x
+      -> resolve_Skip_Take_I x
+  
+  predicate resolve_Option_Item (_1: t_Option_Item)
+  
+  axiom resolve_axiom'1 [@rewrite]: forall x: t_Option_Item [resolve_Option_Item x]. resolve_Option_Item x
+      = match x with
+        | None -> true
+        | Some x0 -> resolve_Item x0
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec skip_take_I (iter: t_I) (n: UInt64.t) (return (x: ())) =
+    {[@stop_split] [@expl:skip_take 'iter' type invariant] inv_I iter}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = take_I {iter} {n} (fun (_x: t_Take_I) -> [ &_6 <- _x ] s1)
+      | s1 = skip_Take_I {_6} {n} (fun (_x: t_Skip_Take_I) -> [ &_5 <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <t_Skip_Take_I> {_5}
+          (fun (_bor: MutBorrow.t t_Skip_Take_I) ->
+            [ &_4 <- _bor ] -{inv_Skip_Take_I _bor.final}-
+            [ &_5 <- _bor.final ] s3) [ _ck -> (! {[@expl:type invariant] inv_Skip_Take_I _5} any) ]
+      | s3 = next_Skip_Take_I {_4} (fun (_x: t_Option_Item) -> [ &res <- _x ] s4)
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Skip_Take_I _5} any) ]
+      | s5 = -{resolve_Skip_Take_I'0 _5}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Option_Item res} any) ]
+      | s7 = -{resolve_Option_Item res}- s8
+      | s8 = {[@expl:assertion] res = None} s9
+      | s9 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & iter: t_I = iter
+    | & n: UInt64.t = n
+    | & res: t_Option_Item = Any.any_l ()
+    | & _4: MutBorrow.t t_Skip_Take_I = Any.any_l ()
+    | & _5: t_Skip_Take_I = Any.any_l ()
+    | & _6: t_Take_I = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_slice_iter
+  use creusot.int.UInt64
+  use creusot.slice.Slice64
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  type t_Iter_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+  
+  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+  
+  meta "rewrite_def" predicate inv_slice_T
+  
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+  
+  meta "rewrite_def" predicate invariant_ref_slice_T
+  
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_slice_T
+  
+  predicate inv_Iter_T (_1: t_Iter_T)
+  
+  function view_Iter_T (self: t_Iter_T) : Slice64.slice t_T
+  
+  let rec iter_T (self_: Slice64.slice t_T) (return (x: t_Iter_T)) =
+    {[@stop_split] [@expl:iter 'self_' type invariant] inv_ref_slice_T self_}
+    any
+    [ return (result: t_Iter_T) ->
+    {[@stop_split] [@expl:iter_T ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_T result)
+      /\ ([@stop_split] [@expl:iter ensures] view_Iter_T result = self_)}
+      (! return {result}) ]
+  
+  let rec into_iter_Iter_T (self_: t_Iter_T) (return (x: t_Iter_T)) =
+    {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Iter_T self_}
+    any
+    [ return (result: t_Iter_T) ->
+    {[@stop_split] [@expl:into_iter_Iter_T ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_T result)
+      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
+      (! return {result}) ]
+  
+  type t_Option_ref_T = None | Some t_T
+  
+  predicate invariant_refmut_Iter_T [@inline:trivial] (self: MutBorrow.t t_Iter_T) =
+    inv_Iter_T self.current /\ inv_Iter_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Iter_T
+  
+  predicate inv_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = invariant_refmut_Iter_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Iter_T
+  
+  predicate inv_Option_ref_T (_1: t_Option_ref_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_ref_T f0
+        end
+  
+  function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_T
+  
+  function to_ref_seq_slice_T (self: Slice64.slice t_T) : Seq.seq t_T
+  
+  axiom to_ref_seq_slice_T_spec:
+    forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. Seq.length (to_ref_seq_slice_T self)
+      = Seq.length (Slice64.view self)
+  
+  axiom to_ref_seq_slice_T_spec'0: forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. forall i: int. 0 <= i
+          /\ i < Seq.length (to_ref_seq_slice_T self) -> Seq.get (to_ref_seq_slice_T self) i = index_slice_T self i
+  
+  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (tl: t_Iter_T) =
+    to_ref_seq_slice_T (view_Iter_T self) = Seq.(++) visited (to_ref_seq_slice_T (view_Iter_T tl))
+  
+  function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : ()
+  
+  axiom produces_trans_Iter_T_spec:
+    forall a: t_Iter_T, ab: Seq.seq t_T, b: t_Iter_T, bc: Seq.seq t_T, c: t_Iter_T. produces_Iter_T a ab b
+      -> produces_Iter_T b bc c -> produces_Iter_T a (Seq.(++) ab bc) c
+  
+  function produces_refl_Iter_T (self: t_Iter_T) : ()
+  
+  axiom produces_refl_Iter_T_spec: forall self: t_Iter_T. produces_Iter_T self (Seq.empty: Seq.seq t_T) self
+  
+  predicate resolve_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Iter_T
+  
+  predicate completed_Iter_T (self: MutBorrow.t t_Iter_T) =
+    resolve_refmut_Iter_T self /\ Slice64.view (view_Iter_T self.current) = (Seq.empty: Seq.seq t_T)
+  
+  let rec next_Iter_T (self_: MutBorrow.t t_Iter_T) (return (x: t_Option_ref_T)) =
+    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_T self_}
+    any
+    [ return (result: t_Option_ref_T) ->
+    {[@stop_split] [@expl:next_Iter_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_ref_T result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
+        | None -> completed_Iter_T self_
+        | Some v -> produces_Iter_T self_.current (Seq.singleton v) self_.final
+        end)}
+      (! return {result}) ]
+  
+  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
+  
+  meta "rewrite_def" predicate invariant_ref_ref_T
+  
+  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_ref_T
+  
+  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_ref_T
+  
+  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_ref_T
+  
+  let rec elim_Some (_x: t_Option_ref_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate resolve_Iter_T (_1: t_Iter_T)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec slice_iter_T (slice: Slice64.slice t_T) (return (x: UInt64.t)) =
+    {[@stop_split] [@expl:slice_iter_T requires] ([@stop_split] [@expl:slice_iter 'slice' type invariant] inv_ref_slice_T slice)
+    /\ ([@stop_split] [@expl:slice_iter requires] Seq.length (Slice64.view slice) < 1000)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &i <- (0: UInt64.t) ] s1
+      | s1 = iter_T {slice} (fun (_x: t_Iter_T) -> [ &_9 <- _x ] s2)
+      | s2 = into_iter_Iter_T {_9} (fun (_x: t_Iter_T) -> [ &iter <- _x ] s3)
+      | s3 = [ &iter_old <- iter ] s4
+      | s4 = [ &produced <- Seq.empty: Seq.seq t_T ] s5
+      | s5 = bb5 ]
+    | bb5 = bb5
+      [ bb5 = {[@expl:inferred invariant: type invariant] inv_Iter_T iter}
+        {[@expl:for invariant] inv_Seq_ref_T produced}
+        {[@expl:for invariant] produces_Iter_T iter_old produced iter}
+        {[@expl:loop invariant] UInt64.t'int i = Seq.length produced}
+        (! s0)
+        [ s0 = MutBorrow.borrow_mut <t_Iter_T> {iter}
+            (fun (_bor: MutBorrow.t t_Iter_T) -> [ &_31 <- _bor ] -{inv_Iter_T _bor.final}- [ &iter <- _bor.final ] s1)
+          [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Iter_T> {_31.current} {MutBorrow.get_id _31}
+            (fun (_bor: MutBorrow.t t_Iter_T) ->
+              [ &_30 <- _bor ] -{inv_Iter_T _bor.final}-
+              [ &_31 <- { _31 with current = _bor.final } ] s2)
+          [ _ck -> (! {[@expl:type invariant] inv_Iter_T _31.current} any) ]
+        | s2 = next_Iter_T {_30} (fun (_x: t_Option_ref_T) -> [ &_29 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_T _31} any) ]
+        | s4 = -{resolve_refmut_Iter_T _31}- s5
+        | s5 = any [ br0 -> {_29 = None} (! bb10) | br1 (x0: t_T) -> {_29 = Some x0} (! bb11) ] ]
+        [ bb11 = s0
+          [ s0 = elim_Some {_29} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s3)
+          | s3 = bb5 ] ] ]
+    | bb10 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
+      | s1 = -{resolve_Iter_T iter}- s2
+      | s2 = [ &_ret <- i ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
+    | & slice: Slice64.slice t_T = slice
+    | & i: UInt64.t = Any.any_l ()
+    | & iter: t_Iter_T = Any.any_l ()
+    | & _9: t_Iter_T = Any.any_l ()
+    | & iter_old: t_Iter_T = Any.any_l ()
+    | & produced: Seq.seq t_T = Any.any_l ()
+    | & _29: t_Option_ref_T = Any.any_l ()
+    | & _30: MutBorrow.t t_Iter_T = Any.any_l ()
+    | & _31: MutBorrow.t t_Iter_T = Any.any_l ()
+    | & __creusot_proc_iter_elem: t_T = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:slice_iter ensures] UInt64.t'int result
+      = Seq.length (Slice64.view slice)}
+      (! return {result}) ]
+end
+module M_sum_range
+  use creusot.int.Int64
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Range_isize = { start: Int64.t; end': Int64.t }
+  
+  let rec into_iter_Range_isize (self_: t_Range_isize) (return (x: t_Range_isize)) = any
+    [ return (result: t_Range_isize) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
+  
+  type t_Option_isize = None | Some Int64.t
+  
+  function deep_model_isize [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
+  
+  meta "rewrite_def" function deep_model_isize
+  
+  predicate produces_Range_isize (self: t_Range_isize) (visited: Seq.seq Int64.t) (o: t_Range_isize) =
+    self.end' = o.end'
+    /\ deep_model_isize self.start <= deep_model_isize o.start
+    /\ (Seq.length visited > 0 -> deep_model_isize o.start <= deep_model_isize o.end')
+    /\ Seq.length visited = deep_model_isize o.start - deep_model_isize self.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+      -> deep_model_isize (Seq.get visited i) = deep_model_isize self.start + i)
+  
+  function produces_trans_Range_isize (a: t_Range_isize) (ab: Seq.seq Int64.t) (b: t_Range_isize) (bc: Seq.seq Int64.t) (c: t_Range_isize) : ()
+  
+  axiom produces_trans_Range_isize_spec:
+    forall a: t_Range_isize, ab: Seq.seq Int64.t, b: t_Range_isize, bc: Seq.seq Int64.t, c: t_Range_isize. produces_Range_isize a ab b
+      -> produces_Range_isize b bc c -> produces_Range_isize a (Seq.(++) ab bc) c
+  
+  function produces_refl_Range_isize (self: t_Range_isize) : ()
+  
+  axiom produces_refl_Range_isize_spec:
+    forall self: t_Range_isize. produces_Range_isize self (Seq.empty: Seq.seq Int64.t) self
+  
+  predicate resolve_refmut_Range_isize [@inline:trivial] (_1: MutBorrow.t t_Range_isize) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Range_isize
+  
+  predicate completed_Range_isize (self: MutBorrow.t t_Range_isize) =
+    resolve_refmut_Range_isize self /\ deep_model_isize self.current.start >= deep_model_isize self.current.end'
+  
+  let rec next_Range_isize (self_: MutBorrow.t t_Range_isize) (return (x: t_Option_isize)) = any
+    [ return (result: t_Option_isize) -> {[@stop_split] [@expl:next ensures] match result with
+        | None -> completed_Range_isize self_
+        | Some v -> produces_Range_isize self_.current (Seq.singleton v) self_.final
+        end}
+      (! return {result}) ]
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  
+  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  
+  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
+      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  
+  function refl_isize (x: Int64.t) : ()
+  
+  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  
+  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  
+  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  
+  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  
+  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  
+  predicate inv_Seq_isize [@inline:trivial] (_1: Seq.seq Int64.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_isize
+  
+  let rec elim_Some (_x: t_Option_isize) (return (f0: Int64.t)) = any
+    [ _k (f0: Int64.t) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec sum_range (n: Int64.t) (return (x: Int64.t)) = {[@stop_split] [@expl:sum_range requires] Int64.to_int n >= 0}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &i <- (0: Int64.t) ] s1
+      | s1 = [ &_9 <- { start = (0: Int64.t); end' = n } ] s2
+      | s2 = into_iter_Range_isize {_9} (fun (_x: t_Range_isize) -> [ &iter <- _x ] s3)
+      | s3 = [ &iter_old <- iter ] s4
+      | s4 = [ &produced <- Seq.empty: Seq.seq Int64.t ] s5
+      | s5 = bb4 ]
+    | bb4 = bb4
+      [ bb4 = {[@expl:for invariant] inv_Seq_isize produced}
+        {[@expl:for invariant] produces_Range_isize iter_old produced iter}
+        {[@expl:loop invariant] Int64.to_int i = Seq.length produced /\ Int64.le i n}
+        (! s0)
+        [ s0 = MutBorrow.borrow_mut <t_Range_isize> {iter}
+            (fun (_bor: MutBorrow.t t_Range_isize) -> [ &_32 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_isize> {_32.current} {MutBorrow.get_id _32}
+            (fun (_bor: MutBorrow.t t_Range_isize) -> [ &_31 <- _bor ] [ &_32 <- { _32 with current = _bor.final } ] s2)
+        | s2 = next_Range_isize {_31} (fun (_x: t_Option_isize) -> [ &_30 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_isize _32}- s4
+        | s4 = any [ br0 -> {_30 = None} (! bb9) | br1 (x0: Int64.t) -> {_30 = Some x0} (! bb10) ] ]
+        [ bb10 = s0
+          [ s0 = elim_Some {_30} (fun (r0: Int64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = Int64.add {i} {(1: Int64.t)} (fun (_x: Int64.t) -> [ &i <- _x ] s3)
+          | s3 = bb4 ] ] ]
+    | bb9 = s0 [ s0 = [ &_ret <- i ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: Int64.t = Any.any_l ()
+    | & n: Int64.t = n
+    | & i: Int64.t = Any.any_l ()
+    | & iter: t_Range_isize = Any.any_l ()
+    | & _9: t_Range_isize = Any.any_l ()
+    | & iter_old: t_Range_isize = Any.any_l ()
+    | & produced: Seq.seq Int64.t = Any.any_l ()
+    | & _30: t_Option_isize = Any.any_l ()
+    | & _31: MutBorrow.t t_Range_isize = Any.any_l ()
+    | & _32: MutBorrow.t t_Range_isize = Any.any_l ()
+    | & __creusot_proc_iter_elem: Int64.t = Any.any_l () ])
+    [ return (result: Int64.t) -> {[@stop_split] [@expl:sum_range ensures] result = n} (! return {result}) ]
+end
+module M_vec_iter
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.slice.Slice64
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Vec_T_Global
+  
+  type t_Iter_T
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_T_Global (self: t_Vec_T_Global) : Seq.seq t_T
+  
+  axiom view_Vec_T_Global_spec:
+    forall self: t_Vec_T_Global [view_Vec_T_Global self]. Seq.length (view_Vec_T_Global self) <= UInt64.t'int const_MAX
+  
+  predicate invariant_Vec_T_Global (self: t_Vec_T_Global) = inv_Seq_T (view_Vec_T_Global self)
+  
+  predicate inv_Vec_T_Global (_1: t_Vec_T_Global)
+  
+  axiom inv_axiom: forall x: t_Vec_T_Global [inv_Vec_T_Global x]. inv_Vec_T_Global x -> invariant_Vec_T_Global x
+  
+  predicate invariant_ref_Vec_T_Global [@inline:trivial] (self: t_Vec_T_Global) = inv_Vec_T_Global self
+  
+  meta "rewrite_def" predicate invariant_ref_Vec_T_Global
+  
+  predicate inv_ref_Vec_T_Global [@inline:trivial] (_1: t_Vec_T_Global) = invariant_ref_Vec_T_Global _1
+  
+  meta "rewrite_def" predicate inv_ref_Vec_T_Global
+  
+  predicate inv_Iter_T (_1: t_Iter_T)
+  
+  function view_Iter_T (self: t_Iter_T) : Slice64.slice t_T
+  
+  let rec into_iter_ref_Vec_T_Global (self_: t_Vec_T_Global) (return (x: t_Iter_T)) =
+    {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_ref_Vec_T_Global self_}
+    any
+    [ return (result: t_Iter_T) ->
+    {[@stop_split] [@expl:into_iter_ref_Vec_T_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_T result)
+      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_T_Global self_ = Slice64.view (view_Iter_T result))}
+      (! return {result}) ]
+  
+  type t_Option_ref_T = None | Some t_T
+  
+  predicate invariant_refmut_Iter_T [@inline:trivial] (self: MutBorrow.t t_Iter_T) =
+    inv_Iter_T self.current /\ inv_Iter_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Iter_T
+  
+  predicate inv_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = invariant_refmut_Iter_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Iter_T
+  
+  predicate inv_Option_ref_T (_1: t_Option_ref_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_ref_T f0
+        end
+  
+  function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_T
+  
+  function to_ref_seq_slice_T (self: Slice64.slice t_T) : Seq.seq t_T
+  
+  axiom to_ref_seq_slice_T_spec:
+    forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. Seq.length (to_ref_seq_slice_T self)
+      = Seq.length (Slice64.view self)
+  
+  axiom to_ref_seq_slice_T_spec'0: forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. forall i: int. 0 <= i
+          /\ i < Seq.length (to_ref_seq_slice_T self) -> Seq.get (to_ref_seq_slice_T self) i = index_slice_T self i
+  
+  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (tl: t_Iter_T) =
+    to_ref_seq_slice_T (view_Iter_T self) = Seq.(++) visited (to_ref_seq_slice_T (view_Iter_T tl))
+  
+  function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : ()
+  
+  axiom produces_trans_Iter_T_spec:
+    forall a: t_Iter_T, ab: Seq.seq t_T, b: t_Iter_T, bc: Seq.seq t_T, c: t_Iter_T. produces_Iter_T a ab b
+      -> produces_Iter_T b bc c -> produces_Iter_T a (Seq.(++) ab bc) c
+  
+  function produces_refl_Iter_T (self: t_Iter_T) : ()
+  
+  axiom produces_refl_Iter_T_spec: forall self: t_Iter_T. produces_Iter_T self (Seq.empty: Seq.seq t_T) self
+  
+  predicate resolve_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Iter_T
+  
+  predicate completed_Iter_T (self: MutBorrow.t t_Iter_T) =
+    resolve_refmut_Iter_T self /\ Slice64.view (view_Iter_T self.current) = (Seq.empty: Seq.seq t_T)
+  
+  let rec next_Iter_T (self_: MutBorrow.t t_Iter_T) (return (x: t_Option_ref_T)) =
+    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_T self_}
+    any
+    [ return (result: t_Option_ref_T) ->
+    {[@stop_split] [@expl:next_Iter_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_ref_T result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
+        | None -> completed_Iter_T self_
+        | Some v -> produces_Iter_T self_.current (Seq.singleton v) self_.final
+        end)}
+      (! return {result}) ]
+  
+  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
+  
+  meta "rewrite_def" predicate invariant_ref_ref_T
+  
+  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_ref_T
+  
+  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_ref_T
+  
+  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_ref_T
+  
+  let rec elim_Some (_x: t_Option_ref_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate resolve_Iter_T (_1: t_Iter_T)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec vec_iter_T (vec: t_Vec_T_Global) (return (x: UInt64.t)) =
+    {[@stop_split] [@expl:vec_iter_T requires] ([@stop_split] [@expl:vec_iter 'vec' type invariant] inv_ref_Vec_T_Global vec)
+    /\ ([@stop_split] [@expl:vec_iter requires] Seq.length (view_Vec_T_Global vec) < 1000)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &i <- (0: UInt64.t) ] s1
+      | s1 = into_iter_ref_Vec_T_Global {vec} (fun (_x: t_Iter_T) -> [ &iter <- _x ] s2)
+      | s2 = [ &iter_old <- iter ] s3
+      | s3 = [ &produced <- Seq.empty: Seq.seq t_T ] s4
+      | s4 = bb4 ]
+    | bb4 = bb4
+      [ bb4 = {[@expl:inferred invariant: type invariant] inv_Iter_T iter}
+        {[@expl:for invariant] inv_Seq_ref_T produced}
+        {[@expl:for invariant] produces_Iter_T iter_old produced iter}
+        {[@expl:loop invariant] UInt64.t'int i = Seq.length produced}
+        (! s0)
+        [ s0 = MutBorrow.borrow_mut <t_Iter_T> {iter}
+            (fun (_bor: MutBorrow.t t_Iter_T) -> [ &_30 <- _bor ] -{inv_Iter_T _bor.final}- [ &iter <- _bor.final ] s1)
+          [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Iter_T> {_30.current} {MutBorrow.get_id _30}
+            (fun (_bor: MutBorrow.t t_Iter_T) ->
+              [ &_29 <- _bor ] -{inv_Iter_T _bor.final}-
+              [ &_30 <- { _30 with current = _bor.final } ] s2)
+          [ _ck -> (! {[@expl:type invariant] inv_Iter_T _30.current} any) ]
+        | s2 = next_Iter_T {_29} (fun (_x: t_Option_ref_T) -> [ &_28 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_T _30} any) ]
+        | s4 = -{resolve_refmut_Iter_T _30}- s5
+        | s5 = any [ br0 -> {_28 = None} (! bb9) | br1 (x0: t_T) -> {_28 = Some x0} (! bb10) ] ]
+        [ bb10 = s0
+          [ s0 = elim_Some {_28} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s3)
+          | s3 = bb4 ] ] ]
+    | bb9 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
+      | s1 = -{resolve_Iter_T iter}- s2
+      | s2 = [ &_ret <- i ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
+    | & vec: t_Vec_T_Global = vec
+    | & i: UInt64.t = Any.any_l ()
+    | & iter: t_Iter_T = Any.any_l ()
+    | & iter_old: t_Iter_T = Any.any_l ()
+    | & produced: Seq.seq t_T = Any.any_l ()
+    | & _28: t_Option_ref_T = Any.any_l ()
+    | & _29: MutBorrow.t t_Iter_T = Any.any_l ()
+    | & _30: MutBorrow.t t_Iter_T = Any.any_l ()
+    | & __creusot_proc_iter_elem: t_T = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:vec_iter ensures] UInt64.t'int result
+      = Seq.length (view_Vec_T_Global vec)}
       (! return {result}) ]
 end

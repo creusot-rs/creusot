@@ -1,252 +1,3 @@
-module M_test_mut_ref
-  use creusot.slice.Slice64
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  use creusot.prelude.MutBorrow
-  use seq.Seq
-  use int.Int
-  
-  type t_Iter_i32
-  
-  predicate inv_Iter_i32 (_1: t_Iter_i32)
-  
-  function view_Iter_i32 (self: t_Iter_i32) : Slice64.slice Int32.t
-  
-  let rec iter_i32 (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
-    [ return (result: t_Iter_i32) ->
-    {[@stop_split] [@expl:iter_i32 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_i32 result)
-      /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self_)}
-      (! return {result}) ]
-  
-  type t_Option_ref_i32 = None | Some Int32.t
-  
-  predicate invariant_refmut_Iter_i32 [@inline:trivial] (self: MutBorrow.t t_Iter_i32) =
-    inv_Iter_i32 self.current /\ inv_Iter_i32 self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Iter_i32
-  
-  predicate inv_refmut_Iter_i32 [@inline:trivial] (_1: MutBorrow.t t_Iter_i32) = invariant_refmut_Iter_i32 _1
-  
-  meta "rewrite_def" predicate inv_refmut_Iter_i32
-  
-  function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
-    Seq.get (Slice64.view self) ix
-  
-  meta "rewrite_def" function index_slice_i32
-  
-  function to_ref_seq_slice_i32 (self: Slice64.slice Int32.t) : Seq.seq Int32.t
-  
-  axiom to_ref_seq_slice_i32_spec:
-    forall self: Slice64.slice Int32.t [to_ref_seq_slice_i32 self]. Seq.length (to_ref_seq_slice_i32 self)
-      = Seq.length (Slice64.view self)
-  
-  axiom to_ref_seq_slice_i32_spec'0: forall self: Slice64.slice Int32.t [to_ref_seq_slice_i32 self]. forall i: int. 0
-            <= i
-          /\ i < Seq.length (to_ref_seq_slice_i32 self)
-        -> Seq.get (to_ref_seq_slice_i32 self) i = index_slice_i32 self i
-  
-  predicate produces_Iter_i32 (self: t_Iter_i32) (visited: Seq.seq Int32.t) (tl: t_Iter_i32) =
-    to_ref_seq_slice_i32 (view_Iter_i32 self) = Seq.(++) visited (to_ref_seq_slice_i32 (view_Iter_i32 tl))
-  
-  function produces_trans_Iter_i32 (a: t_Iter_i32) (ab: Seq.seq Int32.t) (b: t_Iter_i32) (bc: Seq.seq Int32.t) (c: t_Iter_i32) : ()
-  
-  axiom produces_trans_Iter_i32_spec:
-    forall a: t_Iter_i32, ab: Seq.seq Int32.t, b: t_Iter_i32, bc: Seq.seq Int32.t, c: t_Iter_i32. produces_Iter_i32 a ab b
-      -> produces_Iter_i32 b bc c -> produces_Iter_i32 a (Seq.(++) ab bc) c
-  
-  function produces_refl_Iter_i32 (self: t_Iter_i32) : ()
-  
-  axiom produces_refl_Iter_i32_spec: forall self: t_Iter_i32. produces_Iter_i32 self (Seq.empty: Seq.seq Int32.t) self
-  
-  predicate resolve_refmut_Iter_i32 [@inline:trivial] (_1: MutBorrow.t t_Iter_i32) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Iter_i32
-  
-  predicate completed_Iter_i32 (self: MutBorrow.t t_Iter_i32) =
-    resolve_refmut_Iter_i32 self /\ Slice64.view (view_Iter_i32 self.current) = (Seq.empty: Seq.seq Int32.t)
-  
-  let rec next_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
-    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_i32 self_}
-    any
-    [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Iter_i32 self_
-        | Some v -> produces_Iter_i32 self_.current (Seq.singleton v) self_.final
-        end}
-      (! return {result}) ]
-  
-  type tup2_ref_Option_ref_i32_ref_Option_ref_i32 = { f0: t_Option_ref_i32; f1: t_Option_ref_i32 }
-  
-  type t_Option_Int = None'0 | Some'0 int
-  
-  function deep_model_i32 [@inline:trivial] (self: Int32.t) : int = Int32.to_int self
-  
-  meta "rewrite_def" function deep_model_i32
-  
-  function deep_model_ref_i32 [@inline:trivial] (self: Int32.t) : int = deep_model_i32 self
-  
-  meta "rewrite_def" function deep_model_ref_i32
-  
-  function deep_model_Option_ref_i32 [@inline:trivial] (self: t_Option_ref_i32) : t_Option_Int = match self with
-      | Some t -> Some'0 (deep_model_ref_i32 t)
-      | None -> None'0
-      end
-  
-  meta "rewrite_def" function deep_model_Option_ref_i32
-  
-  function deep_model_ref_Option_ref_i32 [@inline:trivial] (self: t_Option_ref_i32) : t_Option_Int =
-    deep_model_Option_ref_i32 self
-  
-  meta "rewrite_def" function deep_model_ref_Option_ref_i32
-  
-  let rec eq_Option_ref_i32 (self_: t_Option_ref_i32) (rhs: t_Option_ref_i32) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
-      = (deep_model_ref_Option_ref_i32 self_ = deep_model_ref_Option_ref_i32 rhs)}
-      (! return {result}) ]
-  
-  predicate resolve_Iter_i32 (_1: t_Iter_i32)
-  
-  type t_AssertKind = Eq | Ne | Match
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec test_mut_ref (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = bb0'0
-        [ bb0'0 = s0'0
-          [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
-              /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 2}-
-              [ &_1 <- __arr_temp ] s1'0) ]
-          | s1'0 = [ &_ret'0 <- _1 ] s2'0
-          | s2'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: Slice64.array Int32.t = Any.any_l () | & _1: Slice64.array Int32.t = Any.any_l () ]
-        [ _const_ret (_const: Slice64.array Int32.t) -> [ &_78 <- _const ] s1 ]
-      | s1 = iter_i32 {_78} (fun (_x: t_Iter_i32) -> [ &a <- _x ] s2)
-      | s2 = MutBorrow.borrow_mut <t_Iter_i32> {a}
-          (fun (_bor: MutBorrow.t t_Iter_i32) -> [ &_10 <- _bor ] -{inv_Iter_i32 _bor.final}- [ &a <- _bor.final ] s3)
-        [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
-      | s3 = MutBorrow.borrow_final <t_Iter_i32> {_10.current} {MutBorrow.get_id _10}
-          (fun (_bor: MutBorrow.t t_Iter_i32) ->
-            [ &_9 <- _bor ] -{inv_Iter_i32 _bor.final}-
-            [ &_10 <- { _10 with current = _bor.final } ] s4)
-        [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 _10.current} any) ]
-      | s4 = next_Iter_i32 {_9} (fun (_x: t_Option_ref_i32) -> [ &_8 <- _x ] s5)
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_i32 _10} any) ]
-      | s6 = -{resolve_refmut_Iter_i32 _10}- s7
-      | s7 = bb0'0
-        [ bb0'0 = s0'0
-          [ s0'0 = [ &_1 <- Some (1: Int32.t) ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: t_Option_ref_i32 = Any.any_l () | & _1: t_Option_ref_i32 = Any.any_l () ]
-        [ _const_ret (_const: t_Option_ref_i32) -> [ &_77 <- _const ] s8 ]
-      | s8 = [ &_6 <- { f0 = _8; f1 = _77 } ] s9
-      | s9 = [ &left_val <- _6.f0 ] s10
-      | s10 = [ &right_val <- _6.f1 ] s11
-      | s11 = eq_Option_ref_i32 {left_val} {right_val} (fun (_x: bool) -> [ &_17 <- _x ] s12)
-      | s12 = any [ br0 -> {_17 = false} (! bb5) | br1 -> {_17} (! bb4) ] ]
-    | bb4 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Iter_i32> {a}
-          (fun (_bor: MutBorrow.t t_Iter_i32) -> [ &_34 <- _bor ] -{inv_Iter_i32 _bor.final}- [ &a <- _bor.final ] s1)
-        [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
-      | s1 = MutBorrow.borrow_final <t_Iter_i32> {_34.current} {MutBorrow.get_id _34}
-          (fun (_bor: MutBorrow.t t_Iter_i32) ->
-            [ &_33 <- _bor ] -{inv_Iter_i32 _bor.final}-
-            [ &_34 <- { _34 with current = _bor.final } ] s2)
-        [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 _34.current} any) ]
-      | s2 = next_Iter_i32 {_33} (fun (_x: t_Option_ref_i32) -> [ &_32 <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_i32 _34} any) ]
-      | s4 = -{resolve_refmut_Iter_i32 _34}- s5
-      | s5 = bb0'0
-        [ bb0'0 = s0'0
-          [ s0'0 = [ &_1 <- Some (2: Int32.t) ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: t_Option_ref_i32 = Any.any_l () | & _1: t_Option_ref_i32 = Any.any_l () ]
-        [ _const_ret (_const: t_Option_ref_i32) -> [ &_76 <- _const ] s6 ]
-      | s6 = [ &_30 <- { f0 = _32; f1 = _76 } ] s7
-      | s7 = [ &left_val'0 <- _30.f0 ] s8
-      | s8 = [ &right_val'0 <- _30.f1 ] s9
-      | s9 = eq_Option_ref_i32 {left_val'0} {right_val'0} (fun (_x: bool) -> [ &_41 <- _x ] s10)
-      | s10 = any [ br0 -> {_41 = false} (! bb9) | br1 -> {_41} (! bb8) ] ]
-    | bb8 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Iter_i32> {a}
-          (fun (_bor: MutBorrow.t t_Iter_i32) -> [ &_58 <- _bor ] -{inv_Iter_i32 _bor.final}- [ &a <- _bor.final ] s1)
-        [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
-      | s1 = MutBorrow.borrow_final <t_Iter_i32> {_58.current} {MutBorrow.get_id _58}
-          (fun (_bor: MutBorrow.t t_Iter_i32) ->
-            [ &_57 <- _bor ] -{inv_Iter_i32 _bor.final}-
-            [ &_58 <- { _58 with current = _bor.final } ] s2)
-        [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 _58.current} any) ]
-      | s2 = next_Iter_i32 {_57} (fun (_x: t_Option_ref_i32) -> [ &_56 <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_i32 _58} any) ]
-      | s4 = -{resolve_refmut_Iter_i32 _58}- s5
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
-      | s6 = -{resolve_Iter_i32 a}- s7
-      | s7 = bb0'0
-        [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- None ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
-        [ & _ret'0: t_Option_ref_i32 = Any.any_l () | & _1: t_Option_ref_i32 = Any.any_l () ]
-        [ _const_ret (_const: t_Option_ref_i32) -> [ &_75 <- _const ] s8 ]
-      | s8 = [ &_54 <- { f0 = _56; f1 = _75 } ] s9
-      | s9 = [ &left_val'1 <- _54.f0 ] s10
-      | s10 = [ &right_val'1 <- _54.f1 ] s11
-      | s11 = eq_Option_ref_i32 {left_val'1} {right_val'1} (fun (_x: bool) -> [ &_63 <- _x ] s12)
-      | s12 = any [ br0 -> {_63 = false} (! bb13) | br1 -> {_63} (! bb12) ] ]
-    | bb12 = return {_ret}
-    | bb13 = s0
-      [ s0 = [ &kind'1 <- Eq ] s1
-      | s1 = [ &_71 <- left_val'1 ] s2
-      | s2 = [ &_73 <- right_val'1 ] s3
-      | s3 = {false} any ]
-    | bb9 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
-      | s1 = -{resolve_Iter_i32 a}- s2
-      | s2 = [ &kind'0 <- Eq ] s3
-      | s3 = [ &_49 <- left_val'0 ] s4
-      | s4 = [ &_51 <- right_val'0 ] s5
-      | s5 = {false} any ]
-    | bb5 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
-      | s1 = -{resolve_Iter_i32 a}- s2
-      | s2 = [ &kind <- Eq ] s3
-      | s3 = [ &_25 <- left_val ] s4
-      | s4 = [ &_27 <- right_val ] s5
-      | s5 = {false} any ] ]
-    [ & _ret: () = Any.any_l ()
-    | & a: t_Iter_i32 = Any.any_l ()
-    | & _6: tup2_ref_Option_ref_i32_ref_Option_ref_i32 = Any.any_l ()
-    | & _8: t_Option_ref_i32 = Any.any_l ()
-    | & _9: MutBorrow.t t_Iter_i32 = Any.any_l ()
-    | & _10: MutBorrow.t t_Iter_i32 = Any.any_l ()
-    | & left_val: t_Option_ref_i32 = Any.any_l ()
-    | & right_val: t_Option_ref_i32 = Any.any_l ()
-    | & _17: bool = Any.any_l ()
-    | & kind: t_AssertKind = Any.any_l ()
-    | & _25: t_Option_ref_i32 = Any.any_l ()
-    | & _27: t_Option_ref_i32 = Any.any_l ()
-    | & _30: tup2_ref_Option_ref_i32_ref_Option_ref_i32 = Any.any_l ()
-    | & _32: t_Option_ref_i32 = Any.any_l ()
-    | & _33: MutBorrow.t t_Iter_i32 = Any.any_l ()
-    | & _34: MutBorrow.t t_Iter_i32 = Any.any_l ()
-    | & left_val'0: t_Option_ref_i32 = Any.any_l ()
-    | & right_val'0: t_Option_ref_i32 = Any.any_l ()
-    | & _41: bool = Any.any_l ()
-    | & kind'0: t_AssertKind = Any.any_l ()
-    | & _49: t_Option_ref_i32 = Any.any_l ()
-    | & _51: t_Option_ref_i32 = Any.any_l ()
-    | & _54: tup2_ref_Option_ref_i32_ref_Option_ref_i32 = Any.any_l ()
-    | & _56: t_Option_ref_i32 = Any.any_l ()
-    | & _57: MutBorrow.t t_Iter_i32 = Any.any_l ()
-    | & _58: MutBorrow.t t_Iter_i32 = Any.any_l ()
-    | & left_val'1: t_Option_ref_i32 = Any.any_l ()
-    | & right_val'1: t_Option_ref_i32 = Any.any_l ()
-    | & _63: bool = Any.any_l ()
-    | & kind'1: t_AssertKind = Any.any_l ()
-    | & _71: t_Option_ref_i32 = Any.any_l ()
-    | & _73: t_Option_ref_i32 = Any.any_l ()
-    | & _75: t_Option_ref_i32 = Any.any_l ()
-    | & _76: t_Option_ref_i32 = Any.any_l ()
-    | & _77: t_Option_ref_i32 = Any.any_l ()
-    | & _78: Slice64.array Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
 module M_test_filter
   use creusot.slice.Slice64
   use creusot.prelude.Any
@@ -1047,4 +798,253 @@ module M_test_filter_map
     | & _74: t_Option_bool = Any.any_l ()
     | & _75: t_Option_bool = Any.any_l ()
     | & _76: Slice64.array bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_test_mut_ref
+  use creusot.slice.Slice64
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  use creusot.prelude.MutBorrow
+  use seq.Seq
+  use int.Int
+  
+  type t_Iter_i32
+  
+  predicate inv_Iter_i32 (_1: t_Iter_i32)
+  
+  function view_Iter_i32 (self: t_Iter_i32) : Slice64.slice Int32.t
+  
+  let rec iter_i32 (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
+    [ return (result: t_Iter_i32) ->
+    {[@stop_split] [@expl:iter_i32 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_i32 result)
+      /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self_)}
+      (! return {result}) ]
+  
+  type t_Option_ref_i32 = None | Some Int32.t
+  
+  predicate invariant_refmut_Iter_i32 [@inline:trivial] (self: MutBorrow.t t_Iter_i32) =
+    inv_Iter_i32 self.current /\ inv_Iter_i32 self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Iter_i32
+  
+  predicate inv_refmut_Iter_i32 [@inline:trivial] (_1: MutBorrow.t t_Iter_i32) = invariant_refmut_Iter_i32 _1
+  
+  meta "rewrite_def" predicate inv_refmut_Iter_i32
+  
+  function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_i32
+  
+  function to_ref_seq_slice_i32 (self: Slice64.slice Int32.t) : Seq.seq Int32.t
+  
+  axiom to_ref_seq_slice_i32_spec:
+    forall self: Slice64.slice Int32.t [to_ref_seq_slice_i32 self]. Seq.length (to_ref_seq_slice_i32 self)
+      = Seq.length (Slice64.view self)
+  
+  axiom to_ref_seq_slice_i32_spec'0: forall self: Slice64.slice Int32.t [to_ref_seq_slice_i32 self]. forall i: int. 0
+            <= i
+          /\ i < Seq.length (to_ref_seq_slice_i32 self)
+        -> Seq.get (to_ref_seq_slice_i32 self) i = index_slice_i32 self i
+  
+  predicate produces_Iter_i32 (self: t_Iter_i32) (visited: Seq.seq Int32.t) (tl: t_Iter_i32) =
+    to_ref_seq_slice_i32 (view_Iter_i32 self) = Seq.(++) visited (to_ref_seq_slice_i32 (view_Iter_i32 tl))
+  
+  function produces_trans_Iter_i32 (a: t_Iter_i32) (ab: Seq.seq Int32.t) (b: t_Iter_i32) (bc: Seq.seq Int32.t) (c: t_Iter_i32) : ()
+  
+  axiom produces_trans_Iter_i32_spec:
+    forall a: t_Iter_i32, ab: Seq.seq Int32.t, b: t_Iter_i32, bc: Seq.seq Int32.t, c: t_Iter_i32. produces_Iter_i32 a ab b
+      -> produces_Iter_i32 b bc c -> produces_Iter_i32 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Iter_i32 (self: t_Iter_i32) : ()
+  
+  axiom produces_refl_Iter_i32_spec: forall self: t_Iter_i32. produces_Iter_i32 self (Seq.empty: Seq.seq Int32.t) self
+  
+  predicate resolve_refmut_Iter_i32 [@inline:trivial] (_1: MutBorrow.t t_Iter_i32) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Iter_i32
+  
+  predicate completed_Iter_i32 (self: MutBorrow.t t_Iter_i32) =
+    resolve_refmut_Iter_i32 self /\ Slice64.view (view_Iter_i32 self.current) = (Seq.empty: Seq.seq Int32.t)
+  
+  let rec next_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
+    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_i32 self_}
+    any
+    [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:next ensures] match result with
+        | None -> completed_Iter_i32 self_
+        | Some v -> produces_Iter_i32 self_.current (Seq.singleton v) self_.final
+        end}
+      (! return {result}) ]
+  
+  type tup2_ref_Option_ref_i32_ref_Option_ref_i32 = { f0: t_Option_ref_i32; f1: t_Option_ref_i32 }
+  
+  type t_Option_Int = None'0 | Some'0 int
+  
+  function deep_model_i32 [@inline:trivial] (self: Int32.t) : int = Int32.to_int self
+  
+  meta "rewrite_def" function deep_model_i32
+  
+  function deep_model_ref_i32 [@inline:trivial] (self: Int32.t) : int = deep_model_i32 self
+  
+  meta "rewrite_def" function deep_model_ref_i32
+  
+  function deep_model_Option_ref_i32 [@inline:trivial] (self: t_Option_ref_i32) : t_Option_Int = match self with
+      | Some t -> Some'0 (deep_model_ref_i32 t)
+      | None -> None'0
+      end
+  
+  meta "rewrite_def" function deep_model_Option_ref_i32
+  
+  function deep_model_ref_Option_ref_i32 [@inline:trivial] (self: t_Option_ref_i32) : t_Option_Int =
+    deep_model_Option_ref_i32 self
+  
+  meta "rewrite_def" function deep_model_ref_Option_ref_i32
+  
+  let rec eq_Option_ref_i32 (self_: t_Option_ref_i32) (rhs: t_Option_ref_i32) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
+      = (deep_model_ref_Option_ref_i32 self_ = deep_model_ref_Option_ref_i32 rhs)}
+      (! return {result}) ]
+  
+  predicate resolve_Iter_i32 (_1: t_Iter_i32)
+  
+  type t_AssertKind = Eq | Ne | Match
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec test_mut_ref (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = bb0'0
+        [ bb0'0 = s0'0
+          [ s0'0 = any
+            [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
+              /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 2}-
+              [ &_1 <- __arr_temp ] s1'0) ]
+          | s1'0 = [ &_ret'0 <- _1 ] s2'0
+          | s2'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: Slice64.array Int32.t = Any.any_l () | & _1: Slice64.array Int32.t = Any.any_l () ]
+        [ _const_ret (_const: Slice64.array Int32.t) -> [ &_78 <- _const ] s1 ]
+      | s1 = iter_i32 {_78} (fun (_x: t_Iter_i32) -> [ &a <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <t_Iter_i32> {a}
+          (fun (_bor: MutBorrow.t t_Iter_i32) -> [ &_10 <- _bor ] -{inv_Iter_i32 _bor.final}- [ &a <- _bor.final ] s3)
+        [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
+      | s3 = MutBorrow.borrow_final <t_Iter_i32> {_10.current} {MutBorrow.get_id _10}
+          (fun (_bor: MutBorrow.t t_Iter_i32) ->
+            [ &_9 <- _bor ] -{inv_Iter_i32 _bor.final}-
+            [ &_10 <- { _10 with current = _bor.final } ] s4)
+        [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 _10.current} any) ]
+      | s4 = next_Iter_i32 {_9} (fun (_x: t_Option_ref_i32) -> [ &_8 <- _x ] s5)
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_i32 _10} any) ]
+      | s6 = -{resolve_refmut_Iter_i32 _10}- s7
+      | s7 = bb0'0
+        [ bb0'0 = s0'0
+          [ s0'0 = [ &_1 <- Some (1: Int32.t) ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: t_Option_ref_i32 = Any.any_l () | & _1: t_Option_ref_i32 = Any.any_l () ]
+        [ _const_ret (_const: t_Option_ref_i32) -> [ &_77 <- _const ] s8 ]
+      | s8 = [ &_6 <- { f0 = _8; f1 = _77 } ] s9
+      | s9 = [ &left_val <- _6.f0 ] s10
+      | s10 = [ &right_val <- _6.f1 ] s11
+      | s11 = eq_Option_ref_i32 {left_val} {right_val} (fun (_x: bool) -> [ &_17 <- _x ] s12)
+      | s12 = any [ br0 -> {_17 = false} (! bb5) | br1 -> {_17} (! bb4) ] ]
+    | bb4 = s0
+      [ s0 = MutBorrow.borrow_mut <t_Iter_i32> {a}
+          (fun (_bor: MutBorrow.t t_Iter_i32) -> [ &_34 <- _bor ] -{inv_Iter_i32 _bor.final}- [ &a <- _bor.final ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
+      | s1 = MutBorrow.borrow_final <t_Iter_i32> {_34.current} {MutBorrow.get_id _34}
+          (fun (_bor: MutBorrow.t t_Iter_i32) ->
+            [ &_33 <- _bor ] -{inv_Iter_i32 _bor.final}-
+            [ &_34 <- { _34 with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 _34.current} any) ]
+      | s2 = next_Iter_i32 {_33} (fun (_x: t_Option_ref_i32) -> [ &_32 <- _x ] s3)
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_i32 _34} any) ]
+      | s4 = -{resolve_refmut_Iter_i32 _34}- s5
+      | s5 = bb0'0
+        [ bb0'0 = s0'0
+          [ s0'0 = [ &_1 <- Some (2: Int32.t) ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: t_Option_ref_i32 = Any.any_l () | & _1: t_Option_ref_i32 = Any.any_l () ]
+        [ _const_ret (_const: t_Option_ref_i32) -> [ &_76 <- _const ] s6 ]
+      | s6 = [ &_30 <- { f0 = _32; f1 = _76 } ] s7
+      | s7 = [ &left_val'0 <- _30.f0 ] s8
+      | s8 = [ &right_val'0 <- _30.f1 ] s9
+      | s9 = eq_Option_ref_i32 {left_val'0} {right_val'0} (fun (_x: bool) -> [ &_41 <- _x ] s10)
+      | s10 = any [ br0 -> {_41 = false} (! bb9) | br1 -> {_41} (! bb8) ] ]
+    | bb8 = s0
+      [ s0 = MutBorrow.borrow_mut <t_Iter_i32> {a}
+          (fun (_bor: MutBorrow.t t_Iter_i32) -> [ &_58 <- _bor ] -{inv_Iter_i32 _bor.final}- [ &a <- _bor.final ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
+      | s1 = MutBorrow.borrow_final <t_Iter_i32> {_58.current} {MutBorrow.get_id _58}
+          (fun (_bor: MutBorrow.t t_Iter_i32) ->
+            [ &_57 <- _bor ] -{inv_Iter_i32 _bor.final}-
+            [ &_58 <- { _58 with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 _58.current} any) ]
+      | s2 = next_Iter_i32 {_57} (fun (_x: t_Option_ref_i32) -> [ &_56 <- _x ] s3)
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_i32 _58} any) ]
+      | s4 = -{resolve_refmut_Iter_i32 _58}- s5
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
+      | s6 = -{resolve_Iter_i32 a}- s7
+      | s7 = bb0'0
+        [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- None ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: t_Option_ref_i32 = Any.any_l () | & _1: t_Option_ref_i32 = Any.any_l () ]
+        [ _const_ret (_const: t_Option_ref_i32) -> [ &_75 <- _const ] s8 ]
+      | s8 = [ &_54 <- { f0 = _56; f1 = _75 } ] s9
+      | s9 = [ &left_val'1 <- _54.f0 ] s10
+      | s10 = [ &right_val'1 <- _54.f1 ] s11
+      | s11 = eq_Option_ref_i32 {left_val'1} {right_val'1} (fun (_x: bool) -> [ &_63 <- _x ] s12)
+      | s12 = any [ br0 -> {_63 = false} (! bb13) | br1 -> {_63} (! bb12) ] ]
+    | bb12 = return {_ret}
+    | bb13 = s0
+      [ s0 = [ &kind'1 <- Eq ] s1
+      | s1 = [ &_71 <- left_val'1 ] s2
+      | s2 = [ &_73 <- right_val'1 ] s3
+      | s3 = {false} any ]
+    | bb9 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
+      | s1 = -{resolve_Iter_i32 a}- s2
+      | s2 = [ &kind'0 <- Eq ] s3
+      | s3 = [ &_49 <- left_val'0 ] s4
+      | s4 = [ &_51 <- right_val'0 ] s5
+      | s5 = {false} any ]
+    | bb5 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
+      | s1 = -{resolve_Iter_i32 a}- s2
+      | s2 = [ &kind <- Eq ] s3
+      | s3 = [ &_25 <- left_val ] s4
+      | s4 = [ &_27 <- right_val ] s5
+      | s5 = {false} any ] ]
+    [ & _ret: () = Any.any_l ()
+    | & a: t_Iter_i32 = Any.any_l ()
+    | & _6: tup2_ref_Option_ref_i32_ref_Option_ref_i32 = Any.any_l ()
+    | & _8: t_Option_ref_i32 = Any.any_l ()
+    | & _9: MutBorrow.t t_Iter_i32 = Any.any_l ()
+    | & _10: MutBorrow.t t_Iter_i32 = Any.any_l ()
+    | & left_val: t_Option_ref_i32 = Any.any_l ()
+    | & right_val: t_Option_ref_i32 = Any.any_l ()
+    | & _17: bool = Any.any_l ()
+    | & kind: t_AssertKind = Any.any_l ()
+    | & _25: t_Option_ref_i32 = Any.any_l ()
+    | & _27: t_Option_ref_i32 = Any.any_l ()
+    | & _30: tup2_ref_Option_ref_i32_ref_Option_ref_i32 = Any.any_l ()
+    | & _32: t_Option_ref_i32 = Any.any_l ()
+    | & _33: MutBorrow.t t_Iter_i32 = Any.any_l ()
+    | & _34: MutBorrow.t t_Iter_i32 = Any.any_l ()
+    | & left_val'0: t_Option_ref_i32 = Any.any_l ()
+    | & right_val'0: t_Option_ref_i32 = Any.any_l ()
+    | & _41: bool = Any.any_l ()
+    | & kind'0: t_AssertKind = Any.any_l ()
+    | & _49: t_Option_ref_i32 = Any.any_l ()
+    | & _51: t_Option_ref_i32 = Any.any_l ()
+    | & _54: tup2_ref_Option_ref_i32_ref_Option_ref_i32 = Any.any_l ()
+    | & _56: t_Option_ref_i32 = Any.any_l ()
+    | & _57: MutBorrow.t t_Iter_i32 = Any.any_l ()
+    | & _58: MutBorrow.t t_Iter_i32 = Any.any_l ()
+    | & left_val'1: t_Option_ref_i32 = Any.any_l ()
+    | & right_val'1: t_Option_ref_i32 = Any.any_l ()
+    | & _63: bool = Any.any_l ()
+    | & kind'1: t_AssertKind = Any.any_l ()
+    | & _71: t_Option_ref_i32 = Any.any_l ()
+    | & _73: t_Option_ref_i32 = Any.any_l ()
+    | & _75: t_Option_ref_i32 = Any.any_l ()
+    | & _76: t_Option_ref_i32 = Any.any_l ()
+    | & _77: t_Option_ref_i32 = Any.any_l ()
+    | & _78: Slice64.array Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

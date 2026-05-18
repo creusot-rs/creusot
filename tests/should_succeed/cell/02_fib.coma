@@ -24,43 +24,6 @@ module M_fib
     
 
 end
-module M_lemma_fib_bound
-  use bv.Pow2int
-  use int.Int
-  
-  function fib (i: int) : int
-  
-  axiom fib_def: forall i: int [fib i]. fib i = (if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2))
-  
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
-  
-  meta "rewrite_def" predicate well_founded_relation_Int
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant i : int
-  
-  function lemma_fib_bound (i: int) : ()
-  
-  goal vc_lemma_fib_bound: 0 <= i
-    -> (if i = 0 then
-      [@stop_split] [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i
-    else
-      if i = 1 then
-        [@stop_split] [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i
-      else
-        (([@stop_split] [@expl:lemma_fib_bound requires] 0 <= i - 2)
-          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 2)))
-        /\ (([@stop_split] [@expl:lemma_fib_bound ensures] fib (i - 2) <= Pow2int.pow2 (i - 2))
-        -> (let _ = lemma_fib_bound (i - 2) in (([@stop_split] [@expl:lemma_fib_bound requires] 0 <= i - 1)
-          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
-        /\ (([@stop_split] [@expl:lemma_fib_bound ensures] fib (i - 1) <= Pow2int.pow2 (i - 1))
-        -> ([@stop_split] [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i))))
-    
-    )
-end
 module M_fib_memo
   use creusot.int.UInt64
   use seq.Seq
@@ -217,4 +180,41 @@ module M_fib_memo
     | & _41: t_Option_usize = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:fib_memo ensures] UInt64.t'int result = fib (UInt64.t'int i)}
       (! return {result}) ]
+end
+module M_lemma_fib_bound
+  use bv.Pow2int
+  use int.Int
+  
+  function fib (i: int) : int
+  
+  axiom fib_def: forall i: int [fib i]. fib i = (if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2))
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant i : int
+  
+  function lemma_fib_bound (i: int) : ()
+  
+  goal vc_lemma_fib_bound: 0 <= i
+    -> (if i = 0 then
+      [@stop_split] [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i
+    else
+      if i = 1 then
+        [@stop_split] [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i
+      else
+        (([@stop_split] [@expl:lemma_fib_bound requires] 0 <= i - 2)
+          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 2)))
+        /\ (([@stop_split] [@expl:lemma_fib_bound ensures] fib (i - 2) <= Pow2int.pow2 (i - 2))
+        -> (let _ = lemma_fib_bound (i - 2) in (([@stop_split] [@expl:lemma_fib_bound requires] 0 <= i - 1)
+          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
+        /\ (([@stop_split] [@expl:lemma_fib_bound ensures] fib (i - 1) <= Pow2int.pow2 (i - 1))
+        -> ([@stop_split] [@expl:lemma_fib_bound ensures] fib i <= Pow2int.pow2 i))))
+    
+    )
 end

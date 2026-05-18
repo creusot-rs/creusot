@@ -1,32 +1,3 @@
-module M_index_slice
-  use creusot.int.UInt64
-  use creusot.slice.Slice64Ops
-  use creusot.int.UInt32
-  use creusot.slice.Slice64
-  use creusot.prelude.Any
-  use seq.Seq
-  use int.Int
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec index_slice (a: Slice64.slice UInt32.t) (return (x: UInt32.t)) =
-    {[@stop_split] [@expl:index_slice requires] 10 < Seq.length (Slice64.view a)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_4 <- (10: UInt64.t) ] s1
-      | s1 = [ &_5 <- Slice64Ops.length a ] s2
-      | s2 = [ &_6 <- UInt64.lt _4 _5 ] s3
-      | s3 = {[@expl:index in bounds] _6} s4
-      | s4 = Slice64Ops.get <UInt32.t> {a} {_4} (fun (r: UInt32.t) -> [ &_ret <- r ] s5)
-      | s5 = return {_ret} ] ]
-    [ & _ret: UInt32.t = Any.any_l ()
-    | & a: Slice64.slice UInt32.t = a
-    | & _4: UInt64.t = Any.any_l ()
-    | & _5: UInt64.t = Any.any_l ()
-    | & _6: bool = Any.any_l () ]) [ return (result: UInt32.t) -> (! return {result}) ]
-end
 module M_index_mut_slice
   use creusot.int.UInt64
   use creusot.prelude.Opaque
@@ -74,6 +45,35 @@ module M_index_mut_slice
     [ return (result: ()) -> {[@stop_split] [@expl:index_mut_slice ensures] UInt32.t'int (index_slice_u32 a.final 2)
       = 3}
       (! return {result}) ]
+end
+module M_index_slice
+  use creusot.int.UInt64
+  use creusot.slice.Slice64Ops
+  use creusot.int.UInt32
+  use creusot.slice.Slice64
+  use creusot.prelude.Any
+  use seq.Seq
+  use int.Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec index_slice (a: Slice64.slice UInt32.t) (return (x: UInt32.t)) =
+    {[@stop_split] [@expl:index_slice requires] 10 < Seq.length (Slice64.view a)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_4 <- (10: UInt64.t) ] s1
+      | s1 = [ &_5 <- Slice64Ops.length a ] s2
+      | s2 = [ &_6 <- UInt64.lt _4 _5 ] s3
+      | s3 = {[@expl:index in bounds] _6} s4
+      | s4 = Slice64Ops.get <UInt32.t> {a} {_4} (fun (r: UInt32.t) -> [ &_ret <- r ] s5)
+      | s5 = return {_ret} ] ]
+    [ & _ret: UInt32.t = Any.any_l ()
+    | & a: Slice64.slice UInt32.t = a
+    | & _4: UInt64.t = Any.any_l ()
+    | & _5: UInt64.t = Any.any_l ()
+    | & _6: bool = Any.any_l () ]) [ return (result: UInt32.t) -> (! return {result}) ]
 end
 module M_slice_first
   use creusot.slice.Slice64

@@ -11,87 +11,6 @@ module M_ghost_arg
     [ & _ret: () = Any.any_l () | & g: UInt32.t = g | & _x: UInt32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
-module M_ghost_vec
-  use seq.Seq
-  use creusot.int.UInt32
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Vec_u32_Global
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function view_Vec_u32_Global (self: t_Vec_u32_Global) : Seq.seq UInt32.t
-  
-  axiom view_Vec_u32_Global_spec:
-    forall self: t_Vec_u32_Global [view_Vec_u32_Global self]. Seq.length (view_Vec_u32_Global self)
-      <= UInt64.t'int const_MAX
-  
-  let rec new_u32 (return (x: t_Vec_u32_Global)) = any
-    [ return (result: t_Vec_u32_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_u32_Global result)
-      = 0}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec ghost_vec (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = new_u32 (fun (_x: t_Vec_u32_Global) -> [ &x <- _x ] s1) | s1 = [ &_s <- x ] s2 | s2 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & x: t_Vec_u32_Global = Any.any_l () | & _s: t_Vec_u32_Global = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
-end
-module M_ghost_copy
-  use creusot.int.Int32
-  use seq.Seq
-  use creusot.prelude.Any
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec ghost_copy (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &a <- (0: Int32.t) ] s1
-      | s1 = [ &_s <- Seq.snoc (Seq.empty: Seq.seq Int32.t) (0: Int32.t) ] s2
-      | s2 = [ &_s <- Seq.snoc _s a ] s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & a: Int32.t = Any.any_l () | & _s: Seq.seq Int32.t = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
-end
-module M_ghost_is_copy
-  use creusot.int.Int32
-  use creusot.prelude.MutBorrow
-  use creusot.prelude.Any
-  
-  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_i32
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec ghost_is_copy (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &x <- (0: Int32.t) ] s1
-      | s1 = MutBorrow.borrow_mut <Int32.t> {x}
-          (fun (_bor: MutBorrow.t Int32.t) -> [ &r <- _bor ] [ &x <- _bor.final ] s2)
-      | s2 = -{resolve_refmut_i32 r}- s3
-      | s3 = [ &g <- r ] s4
-      | s4 = [ &g1 <- g ] s5
-      | s5 = [ &g2 <- g ] s6
-      | s6 = {[@expl:assertion] g1 = g2} s7
-      | s7 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & x: Int32.t = Any.any_l ()
-    | & r: MutBorrow.t Int32.t = Any.any_l ()
-    | & g: MutBorrow.t Int32.t = Any.any_l ()
-    | & g1: MutBorrow.t Int32.t = Any.any_l ()
-    | & g2: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
 module M_ghost_check
   use seq.Seq
   use creusot.int.Int32
@@ -150,6 +69,87 @@ module M_ghost_check
     | & _6: MutBorrow.t t_Vec_i32_Global = Any.any_l ()
     | & _8: bool = Any.any_l ()
     | & _9: UInt64.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_ghost_copy
+  use creusot.int.Int32
+  use seq.Seq
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec ghost_copy (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &a <- (0: Int32.t) ] s1
+      | s1 = [ &_s <- Seq.snoc (Seq.empty: Seq.seq Int32.t) (0: Int32.t) ] s2
+      | s2 = [ &_s <- Seq.snoc _s a ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & a: Int32.t = Any.any_l () | & _s: Seq.seq Int32.t = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end
+module M_ghost_is_copy
+  use creusot.int.Int32
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_i32
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec ghost_is_copy (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &x <- (0: Int32.t) ] s1
+      | s1 = MutBorrow.borrow_mut <Int32.t> {x}
+          (fun (_bor: MutBorrow.t Int32.t) -> [ &r <- _bor ] [ &x <- _bor.final ] s2)
+      | s2 = -{resolve_refmut_i32 r}- s3
+      | s3 = [ &g <- r ] s4
+      | s4 = [ &g1 <- g ] s5
+      | s5 = [ &g2 <- g ] s6
+      | s6 = {[@expl:assertion] g1 = g2} s7
+      | s7 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & x: Int32.t = Any.any_l ()
+    | & r: MutBorrow.t Int32.t = Any.any_l ()
+    | & g: MutBorrow.t Int32.t = Any.any_l ()
+    | & g1: MutBorrow.t Int32.t = Any.any_l ()
+    | & g2: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_ghost_vec
+  use seq.Seq
+  use creusot.int.UInt32
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Vec_u32_Global
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_u32_Global (self: t_Vec_u32_Global) : Seq.seq UInt32.t
+  
+  axiom view_Vec_u32_Global_spec:
+    forall self: t_Vec_u32_Global [view_Vec_u32_Global self]. Seq.length (view_Vec_u32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  let rec new_u32 (return (x: t_Vec_u32_Global)) = any
+    [ return (result: t_Vec_u32_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_u32_Global result)
+      = 0}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec ghost_vec (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = new_u32 (fun (_x: t_Vec_u32_Global) -> [ &x <- _x ] s1) | s1 = [ &_s <- x ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & x: t_Vec_u32_Global = Any.any_l () | & _s: t_Vec_u32_Global = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end
 module M_takes_struct
   use creusot.int.UInt32

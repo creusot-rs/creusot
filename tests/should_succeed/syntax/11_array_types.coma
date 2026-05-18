@@ -1,3 +1,51 @@
+module M_call_omg
+  use creusot.int.Int64
+  use creusot.int.UInt64
+  use creusot.slice.Slice64
+  use creusot.slice.Slice64Ops
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_UsesArray = { f0: Slice64.array Int64.t }
+  
+  predicate inv_Seq_i64 [@inline:trivial] (_1: Seq.seq Int64.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_i64
+  
+  predicate invariant_array_i64_5 (self: Slice64.array Int64.t) =
+    inv_Seq_i64 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (5: UInt64.t)
+  
+  predicate inv_array_i64_5 [@inline:trivial] (_1: Slice64.array Int64.t) = invariant_array_i64_5 _1
+  
+  meta "rewrite_def" predicate inv_array_i64_5
+  
+  predicate inv_UsesArray (_1: t_UsesArray)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_UsesArray [inv_UsesArray x]. inv_UsesArray x = inv_array_i64_5 x.f0
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  let rec omg (x: t_UsesArray) (return (x'0: ())) =
+    {[@stop_split] [@expl:omg requires] ([@stop_split] [@expl:omg 'x' type invariant] inv_UsesArray x)
+    /\ ([@stop_split] [@expl:omg requires] Seq.length (Slice64.view x.f0) > 0
+    /\ Seq.length (Slice64.view x.f0) < UInt64.t'int const_MAX)}
+    any [ return (result: ()) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec call_omg (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = Slice64Ops.create <Int64.t> {(5: UInt64.t)} {fun (_: int) -> (3: Int64.t)}
+          (fun (_res: Slice64.array Int64.t) -> [ &arr <- _res ] s1)
+      | s1 = [ &_2 <- { f0 = arr } ] s2
+      | s2 = omg {_2} (fun (_x: ()) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & arr: Slice64.array Int64.t = Any.any_l () | & _2: t_UsesArray = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end
 module M_omg
   use creusot.int.UInt64
   use creusot.int.Int64
@@ -49,53 +97,5 @@ module M_omg
       | s4 = {[@expl:assertion] Int64.to_int (index_array_i64_5 x.f0 0) = 5} s5
       | s5 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & x: t_UsesArray = x | & _4: UInt64.t = Any.any_l () | & _5: bool = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
-end
-module M_call_omg
-  use creusot.int.Int64
-  use creusot.int.UInt64
-  use creusot.slice.Slice64
-  use creusot.slice.Slice64Ops
-  use seq.Seq
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_UsesArray = { f0: Slice64.array Int64.t }
-  
-  predicate inv_Seq_i64 [@inline:trivial] (_1: Seq.seq Int64.t) = true
-  
-  meta "rewrite_def" predicate inv_Seq_i64
-  
-  predicate invariant_array_i64_5 (self: Slice64.array Int64.t) =
-    inv_Seq_i64 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (5: UInt64.t)
-  
-  predicate inv_array_i64_5 [@inline:trivial] (_1: Slice64.array Int64.t) = invariant_array_i64_5 _1
-  
-  meta "rewrite_def" predicate inv_array_i64_5
-  
-  predicate inv_UsesArray (_1: t_UsesArray)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_UsesArray [inv_UsesArray x]. inv_UsesArray x = inv_array_i64_5 x.f0
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  let rec omg (x: t_UsesArray) (return (x'0: ())) =
-    {[@stop_split] [@expl:omg requires] ([@stop_split] [@expl:omg 'x' type invariant] inv_UsesArray x)
-    /\ ([@stop_split] [@expl:omg requires] Seq.length (Slice64.view x.f0) > 0
-    /\ Seq.length (Slice64.view x.f0) < UInt64.t'int const_MAX)}
-    any [ return (result: ()) -> (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec call_omg (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = Slice64Ops.create <Int64.t> {(5: UInt64.t)} {fun (_: int) -> (3: Int64.t)}
-          (fun (_res: Slice64.array Int64.t) -> [ &arr <- _res ] s1)
-      | s1 = [ &_2 <- { f0 = arr } ] s2
-      | s2 = omg {_2} (fun (_x: ()) -> [ &_ret <- _x ] s3)
-      | s3 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & arr: Slice64.array Int64.t = Any.any_l () | & _2: t_UsesArray = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
