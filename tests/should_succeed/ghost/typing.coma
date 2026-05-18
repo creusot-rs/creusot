@@ -1,3 +1,30 @@
+module M_copy_enter_ghost
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  type tup2_i32_i32 = { f0: Int32.t; f1: Int32.t }
+  
+  let rec new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec copy_enter_ghost (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &x <- (2: Int32.t) ] s1
+      | s1 = [ &pair <- { f0 = (6: Int32.t); f1 = (42: Int32.t) } ] s2
+      | s2 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s3)
+      | s3 = {[@expl:assertion] Int32.to_int x = 2} s4
+      | s4 = {[@expl:assertion] Int32.to_int pair.f0 = 6 /\ Int32.to_int pair.f1 = 42} s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & x: Int32.t = Any.any_l ()
+    | & pair: tup2_i32_i32 = Any.any_l ()
+    | & _4: () = Any.any_l ()
+    | & _5: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
 module M_ghost_enter_ghost
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
@@ -89,33 +116,6 @@ module M_snapshot_enter_ghost
     [ & _ret: () = Any.any_l ()
     | & g_read: t_NonCopy = Any.any_l ()
     | & g_mut: t_NonCopy = Any.any_l ()
-    | & _4: () = Any.any_l ()
-    | & _5: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_copy_enter_ghost
-  use creusot.int.Int32
-  use creusot.prelude.Any
-  
-  type tup2_i32_i32 = { f0: Int32.t; f1: Int32.t }
-  
-  let rec new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec copy_enter_ghost (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &x <- (2: Int32.t) ] s1
-      | s1 = [ &pair <- { f0 = (6: Int32.t); f1 = (42: Int32.t) } ] s2
-      | s2 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s3)
-      | s3 = {[@expl:assertion] Int32.to_int x = 2} s4
-      | s4 = {[@expl:assertion] Int32.to_int pair.f0 = 6 /\ Int32.to_int pair.f1 = 42} s5
-      | s5 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & x: Int32.t = Any.any_l ()
-    | & pair: tup2_i32_i32 = Any.any_l ()
     | & _4: () = Any.any_l ()
     | & _5: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

@@ -1,3 +1,411 @@
+module M_hashset_difference
+  use set.Fset
+  use creusot.prelude.MutBorrow
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_HashSet_T_RandomState_Global
+  
+  type t_Difference_T_RandomState_Global
+  
+  predicate inv_HashSet_T_RandomState_Global (_1: t_HashSet_T_RandomState_Global)
+  
+  predicate invariant_ref_HashSet_T_RandomState_Global [@inline:trivial] (self: t_HashSet_T_RandomState_Global) =
+    inv_HashSet_T_RandomState_Global self
+  
+  meta "rewrite_def" predicate invariant_ref_HashSet_T_RandomState_Global
+  
+  predicate inv_ref_HashSet_T_RandomState_Global [@inline:trivial] (_1: t_HashSet_T_RandomState_Global) =
+    invariant_ref_HashSet_T_RandomState_Global _1
+  
+  meta "rewrite_def" predicate inv_ref_HashSet_T_RandomState_Global
+  
+  predicate inv_Difference_T_RandomState_Global (_1: t_Difference_T_RandomState_Global)
+  
+  type t_DeepModelTy
+  
+  function view_Difference_T_RandomState_Global (self: t_Difference_T_RandomState_Global) : Fset.fset t_DeepModelTy
+  
+  function view_HashSet_T_RandomState_Global (self: t_HashSet_T_RandomState_Global) : Fset.fset t_DeepModelTy
+  
+  let rec difference_T (self_: t_HashSet_T_RandomState_Global) (other: t_HashSet_T_RandomState_Global)
+    (return (x: t_Difference_T_RandomState_Global)) =
+    {[@stop_split] [@expl:difference_T requires] ([@stop_split] [@expl:difference 'self_' type invariant] inv_ref_HashSet_T_RandomState_Global self_)
+    /\ ([@stop_split] [@expl:difference 'other' type invariant] inv_ref_HashSet_T_RandomState_Global other)}
+    any
+    [ return (result: t_Difference_T_RandomState_Global) ->
+    {[@stop_split] [@expl:difference_T ensures] ([@stop_split] [@expl:difference result type invariant] inv_Difference_T_RandomState_Global result)
+      /\ ([@stop_split] [@expl:difference ensures] view_Difference_T_RandomState_Global result
+      = Fset.diff (view_HashSet_T_RandomState_Global self_) (view_HashSet_T_RandomState_Global other))}
+      (! return {result}) ]
+  
+  type t_Copied_Difference_T_RandomState_Global
+  
+  function iter_Copied_Difference_T_RandomState_Global (self: t_Copied_Difference_T_RandomState_Global) : t_Difference_T_RandomState_Global
+  
+  predicate invariant_Copied_Difference_T_RandomState_Global [@inline:trivial] (self: t_Copied_Difference_T_RandomState_Global) =
+    inv_Difference_T_RandomState_Global (iter_Copied_Difference_T_RandomState_Global self)
+  
+  meta "rewrite_def" predicate invariant_Copied_Difference_T_RandomState_Global
+  
+  predicate inv_Copied_Difference_T_RandomState_Global (_1: t_Copied_Difference_T_RandomState_Global)
+  
+  axiom inv_axiom:
+    forall x: t_Copied_Difference_T_RandomState_Global [inv_Copied_Difference_T_RandomState_Global x]. inv_Copied_Difference_T_RandomState_Global x
+      -> invariant_Copied_Difference_T_RandomState_Global x
+  
+  let rec copied_Difference_T_RandomState_Global (self_: t_Difference_T_RandomState_Global)
+    (return (x: t_Copied_Difference_T_RandomState_Global)) =
+    {[@stop_split] [@expl:copied 'self_' type invariant] inv_Difference_T_RandomState_Global self_}
+    any
+    [ return (result: t_Copied_Difference_T_RandomState_Global) ->
+    {[@stop_split] [@expl:copied_Difference_T_RandomState_Global ensures] ([@stop_split] [@expl:copied result type invariant] inv_Copied_Difference_T_RandomState_Global result)
+      /\ ([@stop_split] [@expl:copied ensures] iter_Copied_Difference_T_RandomState_Global result = self_)}
+      (! return {result}) ]
+  
+  predicate resolve_Difference_T_RandomState_Global (_1: t_Difference_T_RandomState_Global)
+  
+  predicate resolve_Copied_Difference_T_RandomState_Global [@inline:trivial] (self: t_Copied_Difference_T_RandomState_Global) =
+    resolve_Difference_T_RandomState_Global (iter_Copied_Difference_T_RandomState_Global self)
+  
+  meta "rewrite_def" predicate resolve_Copied_Difference_T_RandomState_Global
+  
+  predicate resolve_Copied_Difference_T_RandomState_Global'0 (_1: t_Copied_Difference_T_RandomState_Global)
+  
+  axiom resolve_axiom:
+    forall x: t_Copied_Difference_T_RandomState_Global [resolve_Copied_Difference_T_RandomState_Global'0 x]. resolve_Copied_Difference_T_RandomState_Global'0 x
+      -> resolve_Copied_Difference_T_RandomState_Global x
+  
+  type t_T
+  
+  predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
+  
+  meta "rewrite_def" predicate contains_DeepModelTy
+  
+  function deep_model_T (self: t_T) : t_DeepModelTy
+  
+  function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
+  
+  meta "rewrite_def" function deep_model_ref_T
+  
+  predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
+    exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  
+  predicate set_produces_ref_T (start: t_Difference_T_RandomState_Global) (visited: Seq.seq t_T) (end': t_Difference_T_RandomState_Global) =
+    Fset.cardinal (view_Difference_T_RandomState_Global start)
+      = Seq.length visited + Fset.cardinal (view_Difference_T_RandomState_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_RandomState_Global start) x
+        -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
+        \/ contains_DeepModelTy (view_Difference_T_RandomState_Global end') x)
+    /\ (forall x: t_T. contains_ref_T visited x
+        -> contains_DeepModelTy (view_Difference_T_RandomState_Global start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Difference_T_RandomState_Global end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_RandomState_Global end') x
+        -> contains_DeepModelTy (view_Difference_T_RandomState_Global start) x
+        /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
+    /\ (forall i: int, j: int. 0 <= i
+        /\ i < Seq.length visited
+        /\ 0 <= j
+        /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
+      -> i = j)
+  
+  predicate produces_Difference_T_RandomState_Global (self: t_Difference_T_RandomState_Global) (visited: Seq.seq t_T) (o: t_Difference_T_RandomState_Global) =
+    set_produces_ref_T self visited o
+  
+  function produces_trans_Difference_T_RandomState_Global (a: t_Difference_T_RandomState_Global) (ab: Seq.seq t_T) (b: t_Difference_T_RandomState_Global) (bc: Seq.seq t_T) (c: t_Difference_T_RandomState_Global) : ()
+  
+  axiom produces_trans_Difference_T_RandomState_Global_spec:
+    forall a: t_Difference_T_RandomState_Global, ab: Seq.seq t_T, b: t_Difference_T_RandomState_Global, bc: Seq.seq t_T, c: t_Difference_T_RandomState_Global. produces_Difference_T_RandomState_Global a ab b
+      -> produces_Difference_T_RandomState_Global b bc c
+      -> produces_Difference_T_RandomState_Global a (Seq.(++) ab bc) c
+  
+  function produces_refl_Difference_T_RandomState_Global (self: t_Difference_T_RandomState_Global) : ()
+  
+  axiom produces_refl_Difference_T_RandomState_Global_spec:
+    forall self: t_Difference_T_RandomState_Global. produces_Difference_T_RandomState_Global self (Seq.empty: Seq.seq t_T) self
+  
+  predicate produces_Copied_Difference_T_RandomState_Global (self: t_Copied_Difference_T_RandomState_Global) (visited: Seq.seq t_T) (o: t_Copied_Difference_T_RandomState_Global) =
+    exists s: Seq.seq t_T. produces_Difference_T_RandomState_Global (iter_Copied_Difference_T_RandomState_Global self) s (iter_Copied_Difference_T_RandomState_Global o)
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
+  
+  function produces_trans_Copied_Difference_T_RandomState_Global (a: t_Copied_Difference_T_RandomState_Global) (ab: Seq.seq t_T) (b: t_Copied_Difference_T_RandomState_Global) (bc: Seq.seq t_T) (c: t_Copied_Difference_T_RandomState_Global) : ()
+  
+  axiom produces_trans_Copied_Difference_T_RandomState_Global_spec:
+    forall a: t_Copied_Difference_T_RandomState_Global, ab: Seq.seq t_T, b: t_Copied_Difference_T_RandomState_Global, bc: Seq.seq t_T, c: t_Copied_Difference_T_RandomState_Global. produces_Copied_Difference_T_RandomState_Global a ab b
+      -> produces_Copied_Difference_T_RandomState_Global b bc c
+      -> produces_Copied_Difference_T_RandomState_Global a (Seq.(++) ab bc) c
+  
+  function produces_refl_Copied_Difference_T_RandomState_Global (self: t_Copied_Difference_T_RandomState_Global) : ()
+  
+  axiom produces_refl_Copied_Difference_T_RandomState_Global_spec:
+    forall self: t_Copied_Difference_T_RandomState_Global. produces_Copied_Difference_T_RandomState_Global self (Seq.empty: Seq.seq t_T) self
+  
+  predicate resolve_refmut_Difference_T_RandomState_Global [@inline:trivial] (_1: MutBorrow.t t_Difference_T_RandomState_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Difference_T_RandomState_Global
+  
+  predicate completed_Difference_T_RandomState_Global (self: MutBorrow.t t_Difference_T_RandomState_Global) =
+    resolve_refmut_Difference_T_RandomState_Global self
+    /\ Fset.is_empty (view_Difference_T_RandomState_Global self.current)
+  
+  predicate completed_Copied_Difference_T_RandomState_Global (self: MutBorrow.t t_Copied_Difference_T_RandomState_Global) =
+    exists inner: MutBorrow.t t_Difference_T_RandomState_Global. inner.current
+        = iter_Copied_Difference_T_RandomState_Global self.current
+      /\ inner.final = iter_Copied_Difference_T_RandomState_Global self.final
+      /\ completed_Difference_T_RandomState_Global inner
+  
+  predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  
+  predicate from_iter_post_HashSet_T_RandomState_Global (prod: Seq.seq t_T) (res: t_HashSet_T_RandomState_Global) =
+    forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState_Global res) x
+      = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)
+  
+  let rec collect_Copied_Difference_T_RandomState_Global (self_: t_Copied_Difference_T_RandomState_Global)
+    (return (x: t_HashSet_T_RandomState_Global)) =
+    {[@stop_split] [@expl:collect 'self_' type invariant] inv_Copied_Difference_T_RandomState_Global self_}
+    any
+    [ return (result: t_HashSet_T_RandomState_Global) ->
+    {[@stop_split] [@expl:collect_Copied_Difference_T_RandomState_Global ensures] ([@stop_split] [@expl:collect result type invariant] inv_HashSet_T_RandomState_Global result)
+      /\ ([@stop_split] [@expl:collect ensures] exists done': MutBorrow.t t_Copied_Difference_T_RandomState_Global, prod: Seq.seq t_T. resolve_Copied_Difference_T_RandomState_Global'0 done'.final
+        /\ completed_Copied_Difference_T_RandomState_Global done'
+        /\ produces_Copied_Difference_T_RandomState_Global self_ prod done'.current
+        /\ from_iter_post_HashSet_T_RandomState_Global prod result)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec hashset_difference_T (xs: t_HashSet_T_RandomState_Global) (ys: t_HashSet_T_RandomState_Global)
+    (return (x: t_HashSet_T_RandomState_Global)) =
+    {[@stop_split] [@expl:hashset_difference_T requires] ([@stop_split] [@expl:hashset_difference 'xs' type invariant] inv_ref_HashSet_T_RandomState_Global xs)
+    /\ ([@stop_split] [@expl:hashset_difference 'ys' type invariant] inv_ref_HashSet_T_RandomState_Global ys)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = difference_T {xs} {ys} (fun (_x: t_Difference_T_RandomState_Global) -> [ &_7 <- _x ] s1)
+      | s1 = copied_Difference_T_RandomState_Global {_7}
+          (fun (_x: t_Copied_Difference_T_RandomState_Global) -> [ &_6 <- _x ] s2)
+      | s2 = collect_Copied_Difference_T_RandomState_Global {_6}
+          (fun (_x: t_HashSet_T_RandomState_Global) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_HashSet_T_RandomState_Global = Any.any_l ()
+    | & xs: t_HashSet_T_RandomState_Global = xs
+    | & ys: t_HashSet_T_RandomState_Global = ys
+    | & _6: t_Copied_Difference_T_RandomState_Global = Any.any_l ()
+    | & _7: t_Difference_T_RandomState_Global = Any.any_l () ])
+    [ return (result: t_HashSet_T_RandomState_Global) ->
+    {[@stop_split] [@expl:hashset_difference_T ensures] ([@stop_split] [@expl:hashset_difference result type invariant] inv_HashSet_T_RandomState_Global result)
+      /\ ([@stop_split] [@expl:hashset_difference ensures] view_HashSet_T_RandomState_Global result
+      = Fset.diff (view_HashSet_T_RandomState_Global xs) (view_HashSet_T_RandomState_Global ys))}
+      (! return {result}) ]
+end
+module M_hashset_intersection
+  use set.Fset
+  use creusot.prelude.MutBorrow
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_HashSet_T_RandomState_Global
+  
+  type t_Intersection_T_RandomState_Global
+  
+  predicate inv_HashSet_T_RandomState_Global (_1: t_HashSet_T_RandomState_Global)
+  
+  predicate invariant_ref_HashSet_T_RandomState_Global [@inline:trivial] (self: t_HashSet_T_RandomState_Global) =
+    inv_HashSet_T_RandomState_Global self
+  
+  meta "rewrite_def" predicate invariant_ref_HashSet_T_RandomState_Global
+  
+  predicate inv_ref_HashSet_T_RandomState_Global [@inline:trivial] (_1: t_HashSet_T_RandomState_Global) =
+    invariant_ref_HashSet_T_RandomState_Global _1
+  
+  meta "rewrite_def" predicate inv_ref_HashSet_T_RandomState_Global
+  
+  predicate inv_Intersection_T_RandomState_Global (_1: t_Intersection_T_RandomState_Global)
+  
+  type t_DeepModelTy
+  
+  function view_Intersection_T_RandomState_Global (self: t_Intersection_T_RandomState_Global) : Fset.fset t_DeepModelTy
+  
+  function view_HashSet_T_RandomState_Global (self: t_HashSet_T_RandomState_Global) : Fset.fset t_DeepModelTy
+  
+  let rec intersection_T (self_: t_HashSet_T_RandomState_Global) (other: t_HashSet_T_RandomState_Global)
+    (return (x: t_Intersection_T_RandomState_Global)) =
+    {[@stop_split] [@expl:intersection_T requires] ([@stop_split] [@expl:intersection 'self_' type invariant] inv_ref_HashSet_T_RandomState_Global self_)
+    /\ ([@stop_split] [@expl:intersection 'other' type invariant] inv_ref_HashSet_T_RandomState_Global other)}
+    any
+    [ return (result: t_Intersection_T_RandomState_Global) ->
+    {[@stop_split] [@expl:intersection_T ensures] ([@stop_split] [@expl:intersection result type invariant] inv_Intersection_T_RandomState_Global result)
+      /\ ([@stop_split] [@expl:intersection ensures] view_Intersection_T_RandomState_Global result
+      = Fset.inter (view_HashSet_T_RandomState_Global self_) (view_HashSet_T_RandomState_Global other))}
+      (! return {result}) ]
+  
+  type t_Copied_Intersection_T_RandomState_Global
+  
+  function iter_Copied_Intersection_T_RandomState_Global (self: t_Copied_Intersection_T_RandomState_Global) : t_Intersection_T_RandomState_Global
+  
+  predicate invariant_Copied_Intersection_T_RandomState_Global [@inline:trivial] (self: t_Copied_Intersection_T_RandomState_Global) =
+    inv_Intersection_T_RandomState_Global (iter_Copied_Intersection_T_RandomState_Global self)
+  
+  meta "rewrite_def" predicate invariant_Copied_Intersection_T_RandomState_Global
+  
+  predicate inv_Copied_Intersection_T_RandomState_Global (_1: t_Copied_Intersection_T_RandomState_Global)
+  
+  axiom inv_axiom:
+    forall x: t_Copied_Intersection_T_RandomState_Global [inv_Copied_Intersection_T_RandomState_Global x]. inv_Copied_Intersection_T_RandomState_Global x
+      -> invariant_Copied_Intersection_T_RandomState_Global x
+  
+  let rec copied_Intersection_T_RandomState_Global (self_: t_Intersection_T_RandomState_Global)
+    (return (x: t_Copied_Intersection_T_RandomState_Global)) =
+    {[@stop_split] [@expl:copied 'self_' type invariant] inv_Intersection_T_RandomState_Global self_}
+    any
+    [ return (result: t_Copied_Intersection_T_RandomState_Global) ->
+    {[@stop_split] [@expl:copied_Intersection_T_RandomState_Global ensures] ([@stop_split] [@expl:copied result type invariant] inv_Copied_Intersection_T_RandomState_Global result)
+      /\ ([@stop_split] [@expl:copied ensures] iter_Copied_Intersection_T_RandomState_Global result = self_)}
+      (! return {result}) ]
+  
+  predicate resolve_Intersection_T_RandomState_Global (_1: t_Intersection_T_RandomState_Global)
+  
+  predicate resolve_Copied_Intersection_T_RandomState_Global [@inline:trivial] (self: t_Copied_Intersection_T_RandomState_Global) =
+    resolve_Intersection_T_RandomState_Global (iter_Copied_Intersection_T_RandomState_Global self)
+  
+  meta "rewrite_def" predicate resolve_Copied_Intersection_T_RandomState_Global
+  
+  predicate resolve_Copied_Intersection_T_RandomState_Global'0 (_1: t_Copied_Intersection_T_RandomState_Global)
+  
+  axiom resolve_axiom:
+    forall x: t_Copied_Intersection_T_RandomState_Global [resolve_Copied_Intersection_T_RandomState_Global'0 x]. resolve_Copied_Intersection_T_RandomState_Global'0 x
+      -> resolve_Copied_Intersection_T_RandomState_Global x
+  
+  type t_T
+  
+  predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
+  
+  meta "rewrite_def" predicate contains_DeepModelTy
+  
+  function deep_model_T (self: t_T) : t_DeepModelTy
+  
+  function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
+  
+  meta "rewrite_def" function deep_model_ref_T
+  
+  predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
+    exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  
+  predicate set_produces_ref_T (start: t_Intersection_T_RandomState_Global) (visited: Seq.seq t_T) (end': t_Intersection_T_RandomState_Global) =
+    Fset.cardinal (view_Intersection_T_RandomState_Global start)
+      = Seq.length visited + Fset.cardinal (view_Intersection_T_RandomState_Global end')
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_RandomState_Global start) x
+        -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
+        \/ contains_DeepModelTy (view_Intersection_T_RandomState_Global end') x)
+    /\ (forall x: t_T. contains_ref_T visited x
+        -> contains_DeepModelTy (view_Intersection_T_RandomState_Global start) (deep_model_ref_T x)
+        /\ not contains_DeepModelTy (view_Intersection_T_RandomState_Global end') (deep_model_ref_T x))
+    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_RandomState_Global end') x
+        -> contains_DeepModelTy (view_Intersection_T_RandomState_Global start) x
+        /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
+    /\ (forall i: int, j: int. 0 <= i
+        /\ i < Seq.length visited
+        /\ 0 <= j
+        /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
+      -> i = j)
+  
+  predicate produces_Intersection_T_RandomState_Global (self: t_Intersection_T_RandomState_Global) (visited: Seq.seq t_T) (o: t_Intersection_T_RandomState_Global) =
+    set_produces_ref_T self visited o
+  
+  function produces_trans_Intersection_T_RandomState_Global (a: t_Intersection_T_RandomState_Global) (ab: Seq.seq t_T) (b: t_Intersection_T_RandomState_Global) (bc: Seq.seq t_T) (c: t_Intersection_T_RandomState_Global) : ()
+  
+  axiom produces_trans_Intersection_T_RandomState_Global_spec:
+    forall a: t_Intersection_T_RandomState_Global, ab: Seq.seq t_T, b: t_Intersection_T_RandomState_Global, bc: Seq.seq t_T, c: t_Intersection_T_RandomState_Global. produces_Intersection_T_RandomState_Global a ab b
+      -> produces_Intersection_T_RandomState_Global b bc c
+      -> produces_Intersection_T_RandomState_Global a (Seq.(++) ab bc) c
+  
+  function produces_refl_Intersection_T_RandomState_Global (self: t_Intersection_T_RandomState_Global) : ()
+  
+  axiom produces_refl_Intersection_T_RandomState_Global_spec:
+    forall self: t_Intersection_T_RandomState_Global. produces_Intersection_T_RandomState_Global self (Seq.empty: Seq.seq t_T) self
+  
+  predicate produces_Copied_Intersection_T_RandomState_Global (self: t_Copied_Intersection_T_RandomState_Global) (visited: Seq.seq t_T) (o: t_Copied_Intersection_T_RandomState_Global) =
+    exists s: Seq.seq t_T. produces_Intersection_T_RandomState_Global (iter_Copied_Intersection_T_RandomState_Global self) s (iter_Copied_Intersection_T_RandomState_Global o)
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
+  
+  function produces_trans_Copied_Intersection_T_RandomState_Global (a: t_Copied_Intersection_T_RandomState_Global) (ab: Seq.seq t_T) (b: t_Copied_Intersection_T_RandomState_Global) (bc: Seq.seq t_T) (c: t_Copied_Intersection_T_RandomState_Global) : ()
+  
+  axiom produces_trans_Copied_Intersection_T_RandomState_Global_spec:
+    forall a: t_Copied_Intersection_T_RandomState_Global, ab: Seq.seq t_T, b: t_Copied_Intersection_T_RandomState_Global, bc: Seq.seq t_T, c: t_Copied_Intersection_T_RandomState_Global. produces_Copied_Intersection_T_RandomState_Global a ab b
+      -> produces_Copied_Intersection_T_RandomState_Global b bc c
+      -> produces_Copied_Intersection_T_RandomState_Global a (Seq.(++) ab bc) c
+  
+  function produces_refl_Copied_Intersection_T_RandomState_Global (self: t_Copied_Intersection_T_RandomState_Global) : ()
+  
+  axiom produces_refl_Copied_Intersection_T_RandomState_Global_spec:
+    forall self: t_Copied_Intersection_T_RandomState_Global. produces_Copied_Intersection_T_RandomState_Global self (Seq.empty: Seq.seq t_T) self
+  
+  predicate resolve_refmut_Intersection_T_RandomState_Global [@inline:trivial] (_1: MutBorrow.t t_Intersection_T_RandomState_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Intersection_T_RandomState_Global
+  
+  predicate completed_Intersection_T_RandomState_Global (self: MutBorrow.t t_Intersection_T_RandomState_Global) =
+    resolve_refmut_Intersection_T_RandomState_Global self
+    /\ Fset.is_empty (view_Intersection_T_RandomState_Global self.current)
+  
+  predicate completed_Copied_Intersection_T_RandomState_Global (self: MutBorrow.t t_Copied_Intersection_T_RandomState_Global) =
+    exists inner: MutBorrow.t t_Intersection_T_RandomState_Global. inner.current
+        = iter_Copied_Intersection_T_RandomState_Global self.current
+      /\ inner.final = iter_Copied_Intersection_T_RandomState_Global self.final
+      /\ completed_Intersection_T_RandomState_Global inner
+  
+  predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+  
+  predicate from_iter_post_HashSet_T_RandomState_Global (prod: Seq.seq t_T) (res: t_HashSet_T_RandomState_Global) =
+    forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState_Global res) x
+      = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)
+  
+  let rec collect_Copied_Intersection_T_RandomState_Global (self_: t_Copied_Intersection_T_RandomState_Global)
+    (return (x: t_HashSet_T_RandomState_Global)) =
+    {[@stop_split] [@expl:collect 'self_' type invariant] inv_Copied_Intersection_T_RandomState_Global self_}
+    any
+    [ return (result: t_HashSet_T_RandomState_Global) ->
+    {[@stop_split] [@expl:collect_Copied_Intersection_T_RandomState_Global ensures] ([@stop_split] [@expl:collect result type invariant] inv_HashSet_T_RandomState_Global result)
+      /\ ([@stop_split] [@expl:collect ensures] exists done': MutBorrow.t t_Copied_Intersection_T_RandomState_Global, prod: Seq.seq t_T. resolve_Copied_Intersection_T_RandomState_Global'0 done'.final
+        /\ completed_Copied_Intersection_T_RandomState_Global done'
+        /\ produces_Copied_Intersection_T_RandomState_Global self_ prod done'.current
+        /\ from_iter_post_HashSet_T_RandomState_Global prod result)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec hashset_intersection_T (xs: t_HashSet_T_RandomState_Global) (ys: t_HashSet_T_RandomState_Global)
+    (return (x: t_HashSet_T_RandomState_Global)) =
+    {[@stop_split] [@expl:hashset_intersection_T requires] ([@stop_split] [@expl:hashset_intersection 'xs' type invariant] inv_ref_HashSet_T_RandomState_Global xs)
+    /\ ([@stop_split] [@expl:hashset_intersection 'ys' type invariant] inv_ref_HashSet_T_RandomState_Global ys)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = intersection_T {xs} {ys} (fun (_x: t_Intersection_T_RandomState_Global) -> [ &_7 <- _x ] s1)
+      | s1 = copied_Intersection_T_RandomState_Global {_7}
+          (fun (_x: t_Copied_Intersection_T_RandomState_Global) -> [ &_6 <- _x ] s2)
+      | s2 = collect_Copied_Intersection_T_RandomState_Global {_6}
+          (fun (_x: t_HashSet_T_RandomState_Global) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_HashSet_T_RandomState_Global = Any.any_l ()
+    | & xs: t_HashSet_T_RandomState_Global = xs
+    | & ys: t_HashSet_T_RandomState_Global = ys
+    | & _6: t_Copied_Intersection_T_RandomState_Global = Any.any_l ()
+    | & _7: t_Intersection_T_RandomState_Global = Any.any_l () ])
+    [ return (result: t_HashSet_T_RandomState_Global) ->
+    {[@stop_split] [@expl:hashset_intersection_T ensures] ([@stop_split] [@expl:hashset_intersection result type invariant] inv_HashSet_T_RandomState_Global result)
+      /\ ([@stop_split] [@expl:hashset_intersection ensures] view_HashSet_T_RandomState_Global result
+      = Fset.inter (view_HashSet_T_RandomState_Global xs) (view_HashSet_T_RandomState_Global ys))}
+      (! return {result}) ]
+end
 module M_roundtrip_hashmap_into_iter
   use creusot.prelude.MutBorrow
   use seq.Seq
@@ -916,413 +1324,5 @@ module M_roundtrip_hashset_iter
     {[@stop_split] [@expl:roundtrip_hashset_iter_T ensures] ([@stop_split] [@expl:roundtrip_hashset_iter result type invariant] inv_HashSet_ref_T_RandomState_Global result)
       /\ ([@stop_split] [@expl:roundtrip_hashset_iter ensures] view_HashSet_ref_T_RandomState_Global result
       = view_HashSet_T_RandomState_Global xs)}
-      (! return {result}) ]
-end
-module M_hashset_intersection
-  use set.Fset
-  use creusot.prelude.MutBorrow
-  use seq.Seq
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_HashSet_T_RandomState_Global
-  
-  type t_Intersection_T_RandomState_Global
-  
-  predicate inv_HashSet_T_RandomState_Global (_1: t_HashSet_T_RandomState_Global)
-  
-  predicate invariant_ref_HashSet_T_RandomState_Global [@inline:trivial] (self: t_HashSet_T_RandomState_Global) =
-    inv_HashSet_T_RandomState_Global self
-  
-  meta "rewrite_def" predicate invariant_ref_HashSet_T_RandomState_Global
-  
-  predicate inv_ref_HashSet_T_RandomState_Global [@inline:trivial] (_1: t_HashSet_T_RandomState_Global) =
-    invariant_ref_HashSet_T_RandomState_Global _1
-  
-  meta "rewrite_def" predicate inv_ref_HashSet_T_RandomState_Global
-  
-  predicate inv_Intersection_T_RandomState_Global (_1: t_Intersection_T_RandomState_Global)
-  
-  type t_DeepModelTy
-  
-  function view_Intersection_T_RandomState_Global (self: t_Intersection_T_RandomState_Global) : Fset.fset t_DeepModelTy
-  
-  function view_HashSet_T_RandomState_Global (self: t_HashSet_T_RandomState_Global) : Fset.fset t_DeepModelTy
-  
-  let rec intersection_T (self_: t_HashSet_T_RandomState_Global) (other: t_HashSet_T_RandomState_Global)
-    (return (x: t_Intersection_T_RandomState_Global)) =
-    {[@stop_split] [@expl:intersection_T requires] ([@stop_split] [@expl:intersection 'self_' type invariant] inv_ref_HashSet_T_RandomState_Global self_)
-    /\ ([@stop_split] [@expl:intersection 'other' type invariant] inv_ref_HashSet_T_RandomState_Global other)}
-    any
-    [ return (result: t_Intersection_T_RandomState_Global) ->
-    {[@stop_split] [@expl:intersection_T ensures] ([@stop_split] [@expl:intersection result type invariant] inv_Intersection_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:intersection ensures] view_Intersection_T_RandomState_Global result
-      = Fset.inter (view_HashSet_T_RandomState_Global self_) (view_HashSet_T_RandomState_Global other))}
-      (! return {result}) ]
-  
-  type t_Copied_Intersection_T_RandomState_Global
-  
-  function iter_Copied_Intersection_T_RandomState_Global (self: t_Copied_Intersection_T_RandomState_Global) : t_Intersection_T_RandomState_Global
-  
-  predicate invariant_Copied_Intersection_T_RandomState_Global [@inline:trivial] (self: t_Copied_Intersection_T_RandomState_Global) =
-    inv_Intersection_T_RandomState_Global (iter_Copied_Intersection_T_RandomState_Global self)
-  
-  meta "rewrite_def" predicate invariant_Copied_Intersection_T_RandomState_Global
-  
-  predicate inv_Copied_Intersection_T_RandomState_Global (_1: t_Copied_Intersection_T_RandomState_Global)
-  
-  axiom inv_axiom:
-    forall x: t_Copied_Intersection_T_RandomState_Global [inv_Copied_Intersection_T_RandomState_Global x]. inv_Copied_Intersection_T_RandomState_Global x
-      -> invariant_Copied_Intersection_T_RandomState_Global x
-  
-  let rec copied_Intersection_T_RandomState_Global (self_: t_Intersection_T_RandomState_Global)
-    (return (x: t_Copied_Intersection_T_RandomState_Global)) =
-    {[@stop_split] [@expl:copied 'self_' type invariant] inv_Intersection_T_RandomState_Global self_}
-    any
-    [ return (result: t_Copied_Intersection_T_RandomState_Global) ->
-    {[@stop_split] [@expl:copied_Intersection_T_RandomState_Global ensures] ([@stop_split] [@expl:copied result type invariant] inv_Copied_Intersection_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:copied ensures] iter_Copied_Intersection_T_RandomState_Global result = self_)}
-      (! return {result}) ]
-  
-  predicate resolve_Intersection_T_RandomState_Global (_1: t_Intersection_T_RandomState_Global)
-  
-  predicate resolve_Copied_Intersection_T_RandomState_Global [@inline:trivial] (self: t_Copied_Intersection_T_RandomState_Global) =
-    resolve_Intersection_T_RandomState_Global (iter_Copied_Intersection_T_RandomState_Global self)
-  
-  meta "rewrite_def" predicate resolve_Copied_Intersection_T_RandomState_Global
-  
-  predicate resolve_Copied_Intersection_T_RandomState_Global'0 (_1: t_Copied_Intersection_T_RandomState_Global)
-  
-  axiom resolve_axiom:
-    forall x: t_Copied_Intersection_T_RandomState_Global [resolve_Copied_Intersection_T_RandomState_Global'0 x]. resolve_Copied_Intersection_T_RandomState_Global'0 x
-      -> resolve_Copied_Intersection_T_RandomState_Global x
-  
-  type t_T
-  
-  predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
-  
-  meta "rewrite_def" predicate contains_DeepModelTy
-  
-  function deep_model_T (self: t_T) : t_DeepModelTy
-  
-  function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
-  
-  meta "rewrite_def" function deep_model_ref_T
-  
-  predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
-    exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
-  
-  predicate set_produces_ref_T (start: t_Intersection_T_RandomState_Global) (visited: Seq.seq t_T) (end': t_Intersection_T_RandomState_Global) =
-    Fset.cardinal (view_Intersection_T_RandomState_Global start)
-      = Seq.length visited + Fset.cardinal (view_Intersection_T_RandomState_Global end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_RandomState_Global start) x
-        -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
-        \/ contains_DeepModelTy (view_Intersection_T_RandomState_Global end') x)
-    /\ (forall x: t_T. contains_ref_T visited x
-        -> contains_DeepModelTy (view_Intersection_T_RandomState_Global start) (deep_model_ref_T x)
-        /\ not contains_DeepModelTy (view_Intersection_T_RandomState_Global end') (deep_model_ref_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Intersection_T_RandomState_Global end') x
-        -> contains_DeepModelTy (view_Intersection_T_RandomState_Global start) x
-        /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
-    /\ (forall i: int, j: int. 0 <= i
-        /\ i < Seq.length visited
-        /\ 0 <= j
-        /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
-      -> i = j)
-  
-  predicate produces_Intersection_T_RandomState_Global (self: t_Intersection_T_RandomState_Global) (visited: Seq.seq t_T) (o: t_Intersection_T_RandomState_Global) =
-    set_produces_ref_T self visited o
-  
-  function produces_trans_Intersection_T_RandomState_Global (a: t_Intersection_T_RandomState_Global) (ab: Seq.seq t_T) (b: t_Intersection_T_RandomState_Global) (bc: Seq.seq t_T) (c: t_Intersection_T_RandomState_Global) : ()
-  
-  axiom produces_trans_Intersection_T_RandomState_Global_spec:
-    forall a: t_Intersection_T_RandomState_Global, ab: Seq.seq t_T, b: t_Intersection_T_RandomState_Global, bc: Seq.seq t_T, c: t_Intersection_T_RandomState_Global. produces_Intersection_T_RandomState_Global a ab b
-      -> produces_Intersection_T_RandomState_Global b bc c
-      -> produces_Intersection_T_RandomState_Global a (Seq.(++) ab bc) c
-  
-  function produces_refl_Intersection_T_RandomState_Global (self: t_Intersection_T_RandomState_Global) : ()
-  
-  axiom produces_refl_Intersection_T_RandomState_Global_spec:
-    forall self: t_Intersection_T_RandomState_Global. produces_Intersection_T_RandomState_Global self (Seq.empty: Seq.seq t_T) self
-  
-  predicate produces_Copied_Intersection_T_RandomState_Global (self: t_Copied_Intersection_T_RandomState_Global) (visited: Seq.seq t_T) (o: t_Copied_Intersection_T_RandomState_Global) =
-    exists s: Seq.seq t_T. produces_Intersection_T_RandomState_Global (iter_Copied_Intersection_T_RandomState_Global self) s (iter_Copied_Intersection_T_RandomState_Global o)
-      /\ Seq.length visited = Seq.length s
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
-  
-  function produces_trans_Copied_Intersection_T_RandomState_Global (a: t_Copied_Intersection_T_RandomState_Global) (ab: Seq.seq t_T) (b: t_Copied_Intersection_T_RandomState_Global) (bc: Seq.seq t_T) (c: t_Copied_Intersection_T_RandomState_Global) : ()
-  
-  axiom produces_trans_Copied_Intersection_T_RandomState_Global_spec:
-    forall a: t_Copied_Intersection_T_RandomState_Global, ab: Seq.seq t_T, b: t_Copied_Intersection_T_RandomState_Global, bc: Seq.seq t_T, c: t_Copied_Intersection_T_RandomState_Global. produces_Copied_Intersection_T_RandomState_Global a ab b
-      -> produces_Copied_Intersection_T_RandomState_Global b bc c
-      -> produces_Copied_Intersection_T_RandomState_Global a (Seq.(++) ab bc) c
-  
-  function produces_refl_Copied_Intersection_T_RandomState_Global (self: t_Copied_Intersection_T_RandomState_Global) : ()
-  
-  axiom produces_refl_Copied_Intersection_T_RandomState_Global_spec:
-    forall self: t_Copied_Intersection_T_RandomState_Global. produces_Copied_Intersection_T_RandomState_Global self (Seq.empty: Seq.seq t_T) self
-  
-  predicate resolve_refmut_Intersection_T_RandomState_Global [@inline:trivial] (_1: MutBorrow.t t_Intersection_T_RandomState_Global) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Intersection_T_RandomState_Global
-  
-  predicate completed_Intersection_T_RandomState_Global (self: MutBorrow.t t_Intersection_T_RandomState_Global) =
-    resolve_refmut_Intersection_T_RandomState_Global self
-    /\ Fset.is_empty (view_Intersection_T_RandomState_Global self.current)
-  
-  predicate completed_Copied_Intersection_T_RandomState_Global (self: MutBorrow.t t_Copied_Intersection_T_RandomState_Global) =
-    exists inner: MutBorrow.t t_Intersection_T_RandomState_Global. inner.current
-        = iter_Copied_Intersection_T_RandomState_Global self.current
-      /\ inner.final = iter_Copied_Intersection_T_RandomState_Global self.final
-      /\ completed_Intersection_T_RandomState_Global inner
-  
-  predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
-  
-  predicate from_iter_post_HashSet_T_RandomState_Global (prod: Seq.seq t_T) (res: t_HashSet_T_RandomState_Global) =
-    forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState_Global res) x
-      = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)
-  
-  let rec collect_Copied_Intersection_T_RandomState_Global (self_: t_Copied_Intersection_T_RandomState_Global)
-    (return (x: t_HashSet_T_RandomState_Global)) =
-    {[@stop_split] [@expl:collect 'self_' type invariant] inv_Copied_Intersection_T_RandomState_Global self_}
-    any
-    [ return (result: t_HashSet_T_RandomState_Global) ->
-    {[@stop_split] [@expl:collect_Copied_Intersection_T_RandomState_Global ensures] ([@stop_split] [@expl:collect result type invariant] inv_HashSet_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:collect ensures] exists done': MutBorrow.t t_Copied_Intersection_T_RandomState_Global, prod: Seq.seq t_T. resolve_Copied_Intersection_T_RandomState_Global'0 done'.final
-        /\ completed_Copied_Intersection_T_RandomState_Global done'
-        /\ produces_Copied_Intersection_T_RandomState_Global self_ prod done'.current
-        /\ from_iter_post_HashSet_T_RandomState_Global prod result)}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec hashset_intersection_T (xs: t_HashSet_T_RandomState_Global) (ys: t_HashSet_T_RandomState_Global)
-    (return (x: t_HashSet_T_RandomState_Global)) =
-    {[@stop_split] [@expl:hashset_intersection_T requires] ([@stop_split] [@expl:hashset_intersection 'xs' type invariant] inv_ref_HashSet_T_RandomState_Global xs)
-    /\ ([@stop_split] [@expl:hashset_intersection 'ys' type invariant] inv_ref_HashSet_T_RandomState_Global ys)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = intersection_T {xs} {ys} (fun (_x: t_Intersection_T_RandomState_Global) -> [ &_7 <- _x ] s1)
-      | s1 = copied_Intersection_T_RandomState_Global {_7}
-          (fun (_x: t_Copied_Intersection_T_RandomState_Global) -> [ &_6 <- _x ] s2)
-      | s2 = collect_Copied_Intersection_T_RandomState_Global {_6}
-          (fun (_x: t_HashSet_T_RandomState_Global) -> [ &_ret <- _x ] s3)
-      | s3 = return {_ret} ] ]
-    [ & _ret: t_HashSet_T_RandomState_Global = Any.any_l ()
-    | & xs: t_HashSet_T_RandomState_Global = xs
-    | & ys: t_HashSet_T_RandomState_Global = ys
-    | & _6: t_Copied_Intersection_T_RandomState_Global = Any.any_l ()
-    | & _7: t_Intersection_T_RandomState_Global = Any.any_l () ])
-    [ return (result: t_HashSet_T_RandomState_Global) ->
-    {[@stop_split] [@expl:hashset_intersection_T ensures] ([@stop_split] [@expl:hashset_intersection result type invariant] inv_HashSet_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:hashset_intersection ensures] view_HashSet_T_RandomState_Global result
-      = Fset.inter (view_HashSet_T_RandomState_Global xs) (view_HashSet_T_RandomState_Global ys))}
-      (! return {result}) ]
-end
-module M_hashset_difference
-  use set.Fset
-  use creusot.prelude.MutBorrow
-  use seq.Seq
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_HashSet_T_RandomState_Global
-  
-  type t_Difference_T_RandomState_Global
-  
-  predicate inv_HashSet_T_RandomState_Global (_1: t_HashSet_T_RandomState_Global)
-  
-  predicate invariant_ref_HashSet_T_RandomState_Global [@inline:trivial] (self: t_HashSet_T_RandomState_Global) =
-    inv_HashSet_T_RandomState_Global self
-  
-  meta "rewrite_def" predicate invariant_ref_HashSet_T_RandomState_Global
-  
-  predicate inv_ref_HashSet_T_RandomState_Global [@inline:trivial] (_1: t_HashSet_T_RandomState_Global) =
-    invariant_ref_HashSet_T_RandomState_Global _1
-  
-  meta "rewrite_def" predicate inv_ref_HashSet_T_RandomState_Global
-  
-  predicate inv_Difference_T_RandomState_Global (_1: t_Difference_T_RandomState_Global)
-  
-  type t_DeepModelTy
-  
-  function view_Difference_T_RandomState_Global (self: t_Difference_T_RandomState_Global) : Fset.fset t_DeepModelTy
-  
-  function view_HashSet_T_RandomState_Global (self: t_HashSet_T_RandomState_Global) : Fset.fset t_DeepModelTy
-  
-  let rec difference_T (self_: t_HashSet_T_RandomState_Global) (other: t_HashSet_T_RandomState_Global)
-    (return (x: t_Difference_T_RandomState_Global)) =
-    {[@stop_split] [@expl:difference_T requires] ([@stop_split] [@expl:difference 'self_' type invariant] inv_ref_HashSet_T_RandomState_Global self_)
-    /\ ([@stop_split] [@expl:difference 'other' type invariant] inv_ref_HashSet_T_RandomState_Global other)}
-    any
-    [ return (result: t_Difference_T_RandomState_Global) ->
-    {[@stop_split] [@expl:difference_T ensures] ([@stop_split] [@expl:difference result type invariant] inv_Difference_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:difference ensures] view_Difference_T_RandomState_Global result
-      = Fset.diff (view_HashSet_T_RandomState_Global self_) (view_HashSet_T_RandomState_Global other))}
-      (! return {result}) ]
-  
-  type t_Copied_Difference_T_RandomState_Global
-  
-  function iter_Copied_Difference_T_RandomState_Global (self: t_Copied_Difference_T_RandomState_Global) : t_Difference_T_RandomState_Global
-  
-  predicate invariant_Copied_Difference_T_RandomState_Global [@inline:trivial] (self: t_Copied_Difference_T_RandomState_Global) =
-    inv_Difference_T_RandomState_Global (iter_Copied_Difference_T_RandomState_Global self)
-  
-  meta "rewrite_def" predicate invariant_Copied_Difference_T_RandomState_Global
-  
-  predicate inv_Copied_Difference_T_RandomState_Global (_1: t_Copied_Difference_T_RandomState_Global)
-  
-  axiom inv_axiom:
-    forall x: t_Copied_Difference_T_RandomState_Global [inv_Copied_Difference_T_RandomState_Global x]. inv_Copied_Difference_T_RandomState_Global x
-      -> invariant_Copied_Difference_T_RandomState_Global x
-  
-  let rec copied_Difference_T_RandomState_Global (self_: t_Difference_T_RandomState_Global)
-    (return (x: t_Copied_Difference_T_RandomState_Global)) =
-    {[@stop_split] [@expl:copied 'self_' type invariant] inv_Difference_T_RandomState_Global self_}
-    any
-    [ return (result: t_Copied_Difference_T_RandomState_Global) ->
-    {[@stop_split] [@expl:copied_Difference_T_RandomState_Global ensures] ([@stop_split] [@expl:copied result type invariant] inv_Copied_Difference_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:copied ensures] iter_Copied_Difference_T_RandomState_Global result = self_)}
-      (! return {result}) ]
-  
-  predicate resolve_Difference_T_RandomState_Global (_1: t_Difference_T_RandomState_Global)
-  
-  predicate resolve_Copied_Difference_T_RandomState_Global [@inline:trivial] (self: t_Copied_Difference_T_RandomState_Global) =
-    resolve_Difference_T_RandomState_Global (iter_Copied_Difference_T_RandomState_Global self)
-  
-  meta "rewrite_def" predicate resolve_Copied_Difference_T_RandomState_Global
-  
-  predicate resolve_Copied_Difference_T_RandomState_Global'0 (_1: t_Copied_Difference_T_RandomState_Global)
-  
-  axiom resolve_axiom:
-    forall x: t_Copied_Difference_T_RandomState_Global [resolve_Copied_Difference_T_RandomState_Global'0 x]. resolve_Copied_Difference_T_RandomState_Global'0 x
-      -> resolve_Copied_Difference_T_RandomState_Global x
-  
-  type t_T
-  
-  predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
-  
-  meta "rewrite_def" predicate contains_DeepModelTy
-  
-  function deep_model_T (self: t_T) : t_DeepModelTy
-  
-  function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
-  
-  meta "rewrite_def" function deep_model_ref_T
-  
-  predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
-    exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
-  
-  predicate set_produces_ref_T (start: t_Difference_T_RandomState_Global) (visited: Seq.seq t_T) (end': t_Difference_T_RandomState_Global) =
-    Fset.cardinal (view_Difference_T_RandomState_Global start)
-      = Seq.length visited + Fset.cardinal (view_Difference_T_RandomState_Global end')
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_RandomState_Global start) x
-        -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
-        \/ contains_DeepModelTy (view_Difference_T_RandomState_Global end') x)
-    /\ (forall x: t_T. contains_ref_T visited x
-        -> contains_DeepModelTy (view_Difference_T_RandomState_Global start) (deep_model_ref_T x)
-        /\ not contains_DeepModelTy (view_Difference_T_RandomState_Global end') (deep_model_ref_T x))
-    /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_RandomState_Global end') x
-        -> contains_DeepModelTy (view_Difference_T_RandomState_Global start) x
-        /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
-    /\ (forall i: int, j: int. 0 <= i
-        /\ i < Seq.length visited
-        /\ 0 <= j
-        /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
-      -> i = j)
-  
-  predicate produces_Difference_T_RandomState_Global (self: t_Difference_T_RandomState_Global) (visited: Seq.seq t_T) (o: t_Difference_T_RandomState_Global) =
-    set_produces_ref_T self visited o
-  
-  function produces_trans_Difference_T_RandomState_Global (a: t_Difference_T_RandomState_Global) (ab: Seq.seq t_T) (b: t_Difference_T_RandomState_Global) (bc: Seq.seq t_T) (c: t_Difference_T_RandomState_Global) : ()
-  
-  axiom produces_trans_Difference_T_RandomState_Global_spec:
-    forall a: t_Difference_T_RandomState_Global, ab: Seq.seq t_T, b: t_Difference_T_RandomState_Global, bc: Seq.seq t_T, c: t_Difference_T_RandomState_Global. produces_Difference_T_RandomState_Global a ab b
-      -> produces_Difference_T_RandomState_Global b bc c
-      -> produces_Difference_T_RandomState_Global a (Seq.(++) ab bc) c
-  
-  function produces_refl_Difference_T_RandomState_Global (self: t_Difference_T_RandomState_Global) : ()
-  
-  axiom produces_refl_Difference_T_RandomState_Global_spec:
-    forall self: t_Difference_T_RandomState_Global. produces_Difference_T_RandomState_Global self (Seq.empty: Seq.seq t_T) self
-  
-  predicate produces_Copied_Difference_T_RandomState_Global (self: t_Copied_Difference_T_RandomState_Global) (visited: Seq.seq t_T) (o: t_Copied_Difference_T_RandomState_Global) =
-    exists s: Seq.seq t_T. produces_Difference_T_RandomState_Global (iter_Copied_Difference_T_RandomState_Global self) s (iter_Copied_Difference_T_RandomState_Global o)
-      /\ Seq.length visited = Seq.length s
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
-  
-  function produces_trans_Copied_Difference_T_RandomState_Global (a: t_Copied_Difference_T_RandomState_Global) (ab: Seq.seq t_T) (b: t_Copied_Difference_T_RandomState_Global) (bc: Seq.seq t_T) (c: t_Copied_Difference_T_RandomState_Global) : ()
-  
-  axiom produces_trans_Copied_Difference_T_RandomState_Global_spec:
-    forall a: t_Copied_Difference_T_RandomState_Global, ab: Seq.seq t_T, b: t_Copied_Difference_T_RandomState_Global, bc: Seq.seq t_T, c: t_Copied_Difference_T_RandomState_Global. produces_Copied_Difference_T_RandomState_Global a ab b
-      -> produces_Copied_Difference_T_RandomState_Global b bc c
-      -> produces_Copied_Difference_T_RandomState_Global a (Seq.(++) ab bc) c
-  
-  function produces_refl_Copied_Difference_T_RandomState_Global (self: t_Copied_Difference_T_RandomState_Global) : ()
-  
-  axiom produces_refl_Copied_Difference_T_RandomState_Global_spec:
-    forall self: t_Copied_Difference_T_RandomState_Global. produces_Copied_Difference_T_RandomState_Global self (Seq.empty: Seq.seq t_T) self
-  
-  predicate resolve_refmut_Difference_T_RandomState_Global [@inline:trivial] (_1: MutBorrow.t t_Difference_T_RandomState_Global) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Difference_T_RandomState_Global
-  
-  predicate completed_Difference_T_RandomState_Global (self: MutBorrow.t t_Difference_T_RandomState_Global) =
-    resolve_refmut_Difference_T_RandomState_Global self
-    /\ Fset.is_empty (view_Difference_T_RandomState_Global self.current)
-  
-  predicate completed_Copied_Difference_T_RandomState_Global (self: MutBorrow.t t_Copied_Difference_T_RandomState_Global) =
-    exists inner: MutBorrow.t t_Difference_T_RandomState_Global. inner.current
-        = iter_Copied_Difference_T_RandomState_Global self.current
-      /\ inner.final = iter_Copied_Difference_T_RandomState_Global self.final
-      /\ completed_Difference_T_RandomState_Global inner
-  
-  predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
-  
-  predicate from_iter_post_HashSet_T_RandomState_Global (prod: Seq.seq t_T) (res: t_HashSet_T_RandomState_Global) =
-    forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState_Global res) x
-      = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)
-  
-  let rec collect_Copied_Difference_T_RandomState_Global (self_: t_Copied_Difference_T_RandomState_Global)
-    (return (x: t_HashSet_T_RandomState_Global)) =
-    {[@stop_split] [@expl:collect 'self_' type invariant] inv_Copied_Difference_T_RandomState_Global self_}
-    any
-    [ return (result: t_HashSet_T_RandomState_Global) ->
-    {[@stop_split] [@expl:collect_Copied_Difference_T_RandomState_Global ensures] ([@stop_split] [@expl:collect result type invariant] inv_HashSet_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:collect ensures] exists done': MutBorrow.t t_Copied_Difference_T_RandomState_Global, prod: Seq.seq t_T. resolve_Copied_Difference_T_RandomState_Global'0 done'.final
-        /\ completed_Copied_Difference_T_RandomState_Global done'
-        /\ produces_Copied_Difference_T_RandomState_Global self_ prod done'.current
-        /\ from_iter_post_HashSet_T_RandomState_Global prod result)}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec hashset_difference_T (xs: t_HashSet_T_RandomState_Global) (ys: t_HashSet_T_RandomState_Global)
-    (return (x: t_HashSet_T_RandomState_Global)) =
-    {[@stop_split] [@expl:hashset_difference_T requires] ([@stop_split] [@expl:hashset_difference 'xs' type invariant] inv_ref_HashSet_T_RandomState_Global xs)
-    /\ ([@stop_split] [@expl:hashset_difference 'ys' type invariant] inv_ref_HashSet_T_RandomState_Global ys)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = difference_T {xs} {ys} (fun (_x: t_Difference_T_RandomState_Global) -> [ &_7 <- _x ] s1)
-      | s1 = copied_Difference_T_RandomState_Global {_7}
-          (fun (_x: t_Copied_Difference_T_RandomState_Global) -> [ &_6 <- _x ] s2)
-      | s2 = collect_Copied_Difference_T_RandomState_Global {_6}
-          (fun (_x: t_HashSet_T_RandomState_Global) -> [ &_ret <- _x ] s3)
-      | s3 = return {_ret} ] ]
-    [ & _ret: t_HashSet_T_RandomState_Global = Any.any_l ()
-    | & xs: t_HashSet_T_RandomState_Global = xs
-    | & ys: t_HashSet_T_RandomState_Global = ys
-    | & _6: t_Copied_Difference_T_RandomState_Global = Any.any_l ()
-    | & _7: t_Difference_T_RandomState_Global = Any.any_l () ])
-    [ return (result: t_HashSet_T_RandomState_Global) ->
-    {[@stop_split] [@expl:hashset_difference_T ensures] ([@stop_split] [@expl:hashset_difference result type invariant] inv_HashSet_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:hashset_difference ensures] view_HashSet_T_RandomState_Global result
-      = Fset.diff (view_HashSet_T_RandomState_Global xs) (view_HashSet_T_RandomState_Global ys))}
       (! return {result}) ]
 end

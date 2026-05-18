@@ -60,54 +60,6 @@ module M_impl_Clone_for_Expr__clone (* <Expr as std::clone::Clone> *)
     | & v: UInt64.t = Any.any_l () ])
     [ return (result: t_Expr) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
 end
-module M_impl_From_for_Expr__from (* <Expr as std::convert::From<usize>> *)
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  
-  type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
-  
-  let rec variable (v: UInt64.t) (return (x: t_Expr)) = any
-    [ return (result: t_Expr) -> {[@stop_split] [@expl:variable ensures] result = Var v} (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec from_Expr (a: UInt64.t) (return (x: t_Expr)) = (! bb0
-    [ bb0 = s0 [ s0 = variable {a} (fun (_x: t_Expr) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: t_Expr = Any.any_l () | & a: UInt64.t = a ]) [ return (result: t_Expr) -> (! return {result}) ]
-end
-module M_impl_From_for_Expr_0__from (* <Expr as std::convert::From<bool>> *)
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  
-  type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec from_Expr (b: bool) (return (x: t_Expr)) = (! bb0
-    [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ]
-    | bb1 = s0 [ s0 = [ &_ret <- True' ] s1 | s1 = return {_ret} ]
-    | bb2 = s0 [ s0 = [ &_ret <- False' ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Expr = Any.any_l () | & b: bool = b ])
-    [ return (result: t_Expr) -> (! return {result}) ]
-end
-module M_impl_Expr__variable (* Expr *)
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  
-  type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec variable (v: UInt64.t) (return (x: t_Expr)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- Var v ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: t_Expr = Any.any_l () | & v: UInt64.t = v ])
-    [ return (result: t_Expr) -> {[@stop_split] [@expl:variable ensures] result = Var v} (! return {result}) ]
-end
 module M_impl_Expr__ite (* Expr *)
   use creusot.int.UInt64
   use creusot.prelude.Any
@@ -122,77 +74,6 @@ module M_impl_Expr__ite (* Expr *)
     [ bb0 = s0 [ s0 = [ &_ret <- IfThenElse c t e ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Expr = Any.any_l () | & c: t_Expr = c | & t: t_Expr = t | & e: t_Expr = e ])
     [ return (result: t_Expr) -> {[@stop_split] [@expl:ite ensures] result = IfThenElse c t e} (! return {result}) ]
-end
-module M_impl_Expr__transpose (* Expr *)
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  
-  type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
-  
-  let rec elim_IfThenElse (_x: t_Expr) (return (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
-    [ _k (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {IfThenElse c t e = _x} (! return {c} {t} {e})
-    | _chk -> (! {[@expl:elim IfThenElse] match _x with
-        | IfThenElse _ _ _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  let rec clone_Expr (self: t_Expr) (return (x: t_Expr)) = any
-    [ return (result: t_Expr) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
-  
-  predicate is_normalized (self: t_Expr) =
-    match self with
-      | IfThenElse c t e -> is_normalized c
-      /\ is_normalized t
-      /\ is_normalized e
-      /\ match c with
-        | IfThenElse _ _ _ -> false
-        | _ -> true
-        end
-      | Var _ -> true
-      | True' -> true
-      | False' -> true
-      end
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec transpose (self: t_Expr) (a: t_Expr) (b: t_Expr) (return (x: t_Expr)) =
-    {[@stop_split] [@expl:transpose requires] ([@stop_split] [@expl:transpose requires #0] is_normalized self)
-    /\ ([@stop_split] [@expl:transpose requires #1] is_normalized a)
-    /\ ([@stop_split] [@expl:transpose requires #2] is_normalized b)}
-    (! bb0
-    [ bb0 = any
-      [ br0 (x0: t_Expr) (x1: t_Expr) (x2: t_Expr) -> {self = IfThenElse x0 x1 x2} (! bb8)
-      | br1 (x0: UInt64.t) -> {self = Var x0} (! bb23)
-      | br2 -> {self = True'} (! bb6)
-      | br3 -> {self = False'} (! bb5) ]
-    | bb5 = s0 [ s0 = [ &_ret <- b ] s1 | s1 = return {_ret} ]
-    | bb6 = s0 [ s0 = [ &_ret <- a ] s1 | s1 = return {_ret} ]
-    | bb23 = s0 [ s0 = [ &_ret <- IfThenElse self a b ] s1 | s1 = return {_ret} ]
-    | bb8 = s0
-      [ s0 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &c <- rc ] s1)
-      | s1 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &t <- rt ] s2)
-      | s2 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &e <- re ] s3)
-      | s3 = clone_Expr {a} (fun (_x: t_Expr) -> [ &_19 <- _x ] s4)
-      | s4 = clone_Expr {b} (fun (_x: t_Expr) -> [ &_21 <- _x ] s5)
-      | s5 = transpose {t} {_19} {_21} (fun (_x: t_Expr) -> [ &_17 <- _x ] s6)
-      | s6 = transpose {e} {a} {b} (fun (_x: t_Expr) -> [ &_24 <- _x ] s7)
-      | s7 = [ &_ret <- IfThenElse c _17 _24 ] s8
-      | s8 = return {_ret} ] ]
-    [ & _ret: t_Expr = Any.any_l ()
-    | & self: t_Expr = self
-    | & a: t_Expr = a
-    | & b: t_Expr = b
-    | & c: t_Expr = Any.any_l ()
-    | & t: t_Expr = Any.any_l ()
-    | & e: t_Expr = Any.any_l ()
-    | & _17: t_Expr = Any.any_l ()
-    | & _19: t_Expr = Any.any_l ()
-    | & _21: t_Expr = Any.any_l ()
-    | & _24: t_Expr = Any.any_l () ])
-    [ return (result: t_Expr) -> {[@stop_split] [@expl:transpose ensures] is_normalized result} (! return {result}) ]
 end
 module M_impl_Expr__normalize (* Expr *)
   use creusot.int.UInt64
@@ -518,4 +399,123 @@ module M_impl_Expr__simplify_helper (* Expr *)
               = Some'0 v) -> does_not_contain result i)
       /\ ([@stop_split] [@expl:simplify_helper ensures #1] is_simplified result)}
       (! return {result}) ]
+end
+module M_impl_Expr__transpose (* Expr *)
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
+  
+  let rec elim_IfThenElse (_x: t_Expr) (return (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
+    [ _k (c: t_Expr) (t: t_Expr) (e: t_Expr) -> {IfThenElse c t e = _x} (! return {c} {t} {e})
+    | _chk -> (! {[@expl:elim IfThenElse] match _x with
+        | IfThenElse _ _ _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  let rec clone_Expr (self: t_Expr) (return (x: t_Expr)) = any
+    [ return (result: t_Expr) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
+  
+  predicate is_normalized (self: t_Expr) =
+    match self with
+      | IfThenElse c t e -> is_normalized c
+      /\ is_normalized t
+      /\ is_normalized e
+      /\ match c with
+        | IfThenElse _ _ _ -> false
+        | _ -> true
+        end
+      | Var _ -> true
+      | True' -> true
+      | False' -> true
+      end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec transpose (self: t_Expr) (a: t_Expr) (b: t_Expr) (return (x: t_Expr)) =
+    {[@stop_split] [@expl:transpose requires] ([@stop_split] [@expl:transpose requires #0] is_normalized self)
+    /\ ([@stop_split] [@expl:transpose requires #1] is_normalized a)
+    /\ ([@stop_split] [@expl:transpose requires #2] is_normalized b)}
+    (! bb0
+    [ bb0 = any
+      [ br0 (x0: t_Expr) (x1: t_Expr) (x2: t_Expr) -> {self = IfThenElse x0 x1 x2} (! bb8)
+      | br1 (x0: UInt64.t) -> {self = Var x0} (! bb23)
+      | br2 -> {self = True'} (! bb6)
+      | br3 -> {self = False'} (! bb5) ]
+    | bb5 = s0 [ s0 = [ &_ret <- b ] s1 | s1 = return {_ret} ]
+    | bb6 = s0 [ s0 = [ &_ret <- a ] s1 | s1 = return {_ret} ]
+    | bb23 = s0 [ s0 = [ &_ret <- IfThenElse self a b ] s1 | s1 = return {_ret} ]
+    | bb8 = s0
+      [ s0 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &c <- rc ] s1)
+      | s1 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &t <- rt ] s2)
+      | s2 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &e <- re ] s3)
+      | s3 = clone_Expr {a} (fun (_x: t_Expr) -> [ &_19 <- _x ] s4)
+      | s4 = clone_Expr {b} (fun (_x: t_Expr) -> [ &_21 <- _x ] s5)
+      | s5 = transpose {t} {_19} {_21} (fun (_x: t_Expr) -> [ &_17 <- _x ] s6)
+      | s6 = transpose {e} {a} {b} (fun (_x: t_Expr) -> [ &_24 <- _x ] s7)
+      | s7 = [ &_ret <- IfThenElse c _17 _24 ] s8
+      | s8 = return {_ret} ] ]
+    [ & _ret: t_Expr = Any.any_l ()
+    | & self: t_Expr = self
+    | & a: t_Expr = a
+    | & b: t_Expr = b
+    | & c: t_Expr = Any.any_l ()
+    | & t: t_Expr = Any.any_l ()
+    | & e: t_Expr = Any.any_l ()
+    | & _17: t_Expr = Any.any_l ()
+    | & _19: t_Expr = Any.any_l ()
+    | & _21: t_Expr = Any.any_l ()
+    | & _24: t_Expr = Any.any_l () ])
+    [ return (result: t_Expr) -> {[@stop_split] [@expl:transpose ensures] is_normalized result} (! return {result}) ]
+end
+module M_impl_Expr__variable (* Expr *)
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec variable (v: UInt64.t) (return (x: t_Expr)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- Var v ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Expr = Any.any_l () | & v: UInt64.t = v ])
+    [ return (result: t_Expr) -> {[@stop_split] [@expl:variable ensures] result = Var v} (! return {result}) ]
+end
+module M_impl_From_for_Expr__from (* <Expr as std::convert::From<usize>> *)
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
+  
+  let rec variable (v: UInt64.t) (return (x: t_Expr)) = any
+    [ return (result: t_Expr) -> {[@stop_split] [@expl:variable ensures] result = Var v} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec from_Expr (a: UInt64.t) (return (x: t_Expr)) = (! bb0
+    [ bb0 = s0 [ s0 = variable {a} (fun (_x: t_Expr) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_Expr = Any.any_l () | & a: UInt64.t = a ]) [ return (result: t_Expr) -> (! return {result}) ]
+end
+module M_impl_From_for_Expr_0__from (* <Expr as std::convert::From<bool>> *)
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec from_Expr (b: bool) (return (x: t_Expr)) = (! bb0
+    [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ]
+    | bb1 = s0 [ s0 = [ &_ret <- True' ] s1 | s1 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- False' ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Expr = Any.any_l () | & b: bool = b ])
+    [ return (result: t_Expr) -> (! return {result}) ]
 end

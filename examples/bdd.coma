@@ -206,144 +206,44 @@ module M_hashmap__impl_Hash_for_tup2_U_V__hash__refines (* <(U, V) as hashmap::H
       /\ (forall result: UInt64.t. UInt64.t'int result = hash_log_tup2_U_V (deep_model_ref_tup2_U_V self)
         -> UInt64.t'int result = hash_log_tup2_U_V (deep_model_ref_tup2_U_V self))
 end
-module M_impl_Eq_for_Node__assert_fields_are_eq (* <Node<'arena> as std::cmp::Eq> *)
-  use creusot.prelude.Any
+module M_impl_Bdd__size (* Bdd<'arena> *)
   use creusot.int.UInt64
+  use int.Int
   
-  type t_Bdd = { f0: t_Node; f1: UInt64.t }
-  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  with t_Bdd = { f0: t_Node; f1: UInt64.t }
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec assert_fields_are_eq_Node (self: t_Node) (return (x: ())) = (! bb0
-    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_impl_PartialEq_for_Node__eq (* <Node<'arena> as std::cmp::PartialEq> *)
-  use creusot.int.UInt64
-  use creusot.prelude.Any
+  constant self : t_Bdd
   
-  type t_Bdd = { f0: t_Node; f1: UInt64.t }
-  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  function size (self: t_Bdd) : int
   
-  type tup2_ref_Node_ref_Node = { f0'0: t_Node; f1'0: t_Node }
-  
-  let rec elim_If (_x: t_Node) (return (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd)) = any
-    [ _k (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) -> {If v childt childf = _x} (! return {v} {childt} {childf})
-    | _chk -> (! {[@expl:elim If] match _x with
-        | If _ _ _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  function deep_model_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = self.f1
-  
-  meta "rewrite_def" function deep_model_Bdd
-  
-  function view_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
-  
-  meta "rewrite_def" function view_Bdd
-  
-  let rec eq_Bdd (self: t_Bdd) (o: t_Bdd) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (view_Bdd self = view_Bdd o)}
-      (! return {result}) ]
-  
-  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
-  
-  function deep_model_Node (self: t_Node) : t_NodeLog = match self with
-      | False' -> False''0
-      | True' -> True''0
-      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
+  goal vc_size: match self with
+      | {f0 = True'; f1 = _} -> [@stop_split] [@expl:size ensures] 0 >= 0
+      | {f0 = False'; f1 = _} -> [@stop_split] [@expl:size ensures] 0 >= 0
+      | {f0 = If _ childt childf; f1 = _} -> ([@stop_split] [@expl:size ensures] size childt >= 0)
+      -> (let ht = size childt in ([@stop_split] [@expl:size ensures] size childf >= 0)
+      -> (let hf = size childf in [@stop_split] [@expl:size ensures] 1 + ht + hf >= 0))
       end
-  
-  function deep_model_ref_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
-  
-  meta "rewrite_def" function deep_model_ref_Node
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec eq_Node (self: t_Node) (rhs: t_Node) (return (x: bool)) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_6 <- { f0'0 = self; f1'0 = rhs } ] s1
-      | s1 = any
-        [ br0 -> {_6.f0'0 = False'} (! bb2)
-        | br1 -> {_6.f0'0 = True'} (! bb4)
-        | br2 (x0: UInt64.t) (x1: t_Bdd) (x2: t_Bdd) -> {_6.f0'0 = If x0 x1 x2} (! bb6) ] ]
-    | bb6 = any
-      [ br0 -> {_6.f1'0 = False'} (! bb1)
-      | br1 -> {_6.f1'0 = True'} (! bb1)
-      | br2 (x0: UInt64.t) (x1: t_Bdd) (x2: t_Bdd) -> {_6.f1'0 = If x0 x1 x2} (! bb8) ]
-    | bb8 = s0
-      [ s0 = elim_If {_6.f0'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &v_1 <- rv ] s1)
-      | s1 = elim_If {_6.f0'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childt_1 <- rchildt ] s2)
-      | s2 = elim_If {_6.f0'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childf_1 <- rchildf ] s3)
-      | s3 = elim_If {_6.f1'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &v_2 <- rv ] s4)
-      | s4 = elim_If {_6.f1'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childt_2 <- rchildt ] s5)
-      | s5 = elim_If {_6.f1'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childf_2 <- rchildf ] s6)
-      | s6 = eq_Bdd {childf_1} {childf_2} (fun (_x: bool) -> [ &_19 <- _x ] s7)
-      | s7 = any [ br0 -> {_19 = false} (! bb19) | br1 -> {_19} (! bb12) ] ]
-    | bb12 = s0
-      [ s0 = eq_Bdd {childt_1} {childt_2} (fun (_x: bool) -> [ &_22 <- _x ] s1)
-      | s1 = any [ br0 -> {_22 = false} (! bb19) | br1 -> {_22} (! bb14) ] ]
-    | bb14 = s0 [ s0 = [ &_25 <- v_1 = v_2 ] s1 | s1 = any [ br0 -> {_25 = false} (! bb19) | br1 -> {_25} (! bb15) ] ]
-    | bb15 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ]
-    | bb19 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
-    | bb4 = any
-      [ br0 -> {_6.f1'0 = False'} (! bb1)
-      | br1 -> {_6.f1'0 = True'} (! bb9)
-      | br2 (x0: UInt64.t) (x1: t_Bdd) (x2: t_Bdd) -> {_6.f1'0 = If x0 x1 x2} (! bb1) ]
-    | bb9 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ]
-    | bb2 = any
-      [ br0 -> {_6.f1'0 = False'} (! bb10)
-      | br1 -> {_6.f1'0 = True'} (! bb1)
-      | br2 (x0: UInt64.t) (x1: t_Bdd) (x2: t_Bdd) -> {_6.f1'0 = If x0 x1 x2} (! bb1) ]
-    | bb1 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
-    | bb10 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l ()
-    | & self: t_Node = self
-    | & rhs: t_Node = rhs
-    | & _6: tup2_ref_Node_ref_Node = Any.any_l ()
-    | & v_1: UInt64.t = Any.any_l ()
-    | & childt_1: t_Bdd = Any.any_l ()
-    | & childf_1: t_Bdd = Any.any_l ()
-    | & v_2: UInt64.t = Any.any_l ()
-    | & childt_2: t_Bdd = Any.any_l ()
-    | & childf_2: t_Bdd = Any.any_l ()
-    | & _19: bool = Any.any_l ()
-    | & _22: bool = Any.any_l ()
-    | & _25: bool = Any.any_l () ])
-    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
-      = (deep_model_ref_Node self = deep_model_ref_Node rhs)}
-      (! return {result}) ]
 end
-module M_impl_PartialEq_for_Node__eq__refines (* <Node<'arena> as std::cmp::PartialEq> *)
+module M_impl_Clone_for_Bdd__clone (* <Bdd<'arena> as std::clone::Clone> *)
   use creusot.int.UInt64
+  use creusot.prelude.Any
   
-  type t_Bdd = { f0: t_Node; f1: UInt64.t }
-  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  
-  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
-  
-  function deep_model_Node (self: t_Node) : t_NodeLog = match self with
-      | False' -> False''0
-      | True' -> True''0
-      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
-      end
-  
-  function deep_model_ref_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
-  
-  meta "rewrite_def" function deep_model_ref_Node
+  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  with t_Bdd = { f0: t_Node; f1: UInt64.t }
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: t_Node, rhs: t_Node. forall result: bool. result
-          = (deep_model_ref_Node self_ = deep_model_ref_Node rhs)
-        -> result = (deep_model_ref_Node self_ = deep_model_ref_Node rhs)
+  let rec clone_Bdd (self: t_Bdd) (return (x: t_Bdd)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Bdd = Any.any_l () | & self: t_Bdd = self ])
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
 end
 module M_impl_Clone_for_Node__clone (* <Node<'arena> as std::clone::Clone> *)
   use creusot.int.UInt64
@@ -527,71 +427,38 @@ module M_impl_Clone_for_Node__clone (* <Node<'arena> as std::clone::Clone> *)
         end}
       (! return {result}) ]
 end
-module M_impl_Eq_for_Bdd__assert_fields_are_eq (* <Bdd<'arena> as std::cmp::Eq> *)
-  use creusot.prelude.Any
+module M_impl_Context__bdd_canonical (* Context<'arena> *)
   use creusot.int.UInt64
-  
-  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  with t_Bdd = { f0: t_Node; f1: UInt64.t }
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec assert_fields_are_eq_Bdd (self: t_Bdd) (return (x: ())) = (! bb0
-    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
-end
-module M_impl_Clone_for_Bdd__clone (* <Bdd<'arena> as std::clone::Clone> *)
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  
-  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  with t_Bdd = { f0: t_Node; f1: UInt64.t }
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec clone_Bdd (self: t_Bdd) (return (x: t_Bdd)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: t_Bdd = Any.any_l () | & self: t_Bdd = self ])
-    [ return (result: t_Bdd) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
-end
-module M_impl_Hash_for_Node__hash (* <Node<'arena> as hashmap::Hash> *)
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  use int.ComputerDivision
+  use map.Map
+  use map.Const
   use int.Int
+  
+  type t_Bump
+  
+  type t_MyHashMap_Node_Bdd
   
   type t_Bdd = { f0: t_Node; f1: UInt64.t }
   with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
   
-  let rec elim_If (_x: t_Node) (return (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd)) = any
-    [ _k (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) -> {If v childt childf = _x} (! return {v} {childt} {childf})
-    | _chk -> (! {[@expl:elim If] match _x with
-        | If _ _ _ -> true
-        | _ -> false
-        end}
-      any) ]
+  type t_MyHashMap_Bdd_Bdd
   
-  let rec wrapping_mul (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt64.mul self_ rhs}
-      (! return {result}) ]
+  type t_MyHashMap_tup2_Bdd_Bdd_Bdd
   
-  let rec wrapping_add (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt64.add self_ rhs}
-      (! return {result}) ]
+  type t_PeanoInt = { f0'0: UInt64.t }
+  
+  type t_Context = {
+    alloc: t_Bump;
+    hashcons: t_MyHashMap_Node_Bdd;
+    hashcons_ghost: Map.map UInt64.t t_Node;
+    not_memo: t_MyHashMap_Bdd_Bdd;
+    and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
+    cnt: t_PeanoInt }
+  
+  type t_Option_Bdd = None | Some t_Bdd
   
   type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function hash_log_Node (x: t_NodeLog) : int = match x with
-      | False''0 -> 1
-      | True''0 -> 2
-      | If'0 v childt childf -> ComputerDivision.mod (UInt64.t'int v + UInt64.t'int childt * 5
-      + UInt64.t'int childf * 7) (UInt64.t'int const_MAX + 1)
-      end
+  function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
   
   function deep_model_Node (self: t_Node) : t_NodeLog = match self with
       | False' -> False''0
@@ -603,56 +470,239 @@ module M_impl_Hash_for_Node__hash (* <Node<'arena> as hashmap::Hash> *)
   
   meta "rewrite_def" function view_Node
   
+  predicate is_valid_bdd (self: t_Context) (b: t_Bdd) =
+    Map.get (view_MyHashMap_Node_Bdd self.hashcons) (view_Node b.f0) = Some b
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function leastvar (self: t_Bdd) : int = match self with
+      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
+      end
+  
+  predicate is_valid_node (self: t_Context) (n: t_Node) =
+    match n with
+      | True' -> true
+      | False' -> true
+      | If v childt childf -> childt.f0 <> childf.f0
+      /\ is_valid_bdd self childt
+      /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
+      end
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
+  
+  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
+  
+  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
+  
+  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  
+  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
+      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
+  
+  function refl_u64 (x: UInt64.t) : ()
+  
+  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
+  
+  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
+  
+  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
+  
+  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
+  
+  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  
+  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
+  
+  meta "rewrite_def" function view_PeanoInt
+  
+  function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
+  
+  predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
+    match self with
+      | {f0 = True'; f1 = _} -> true
+      | {f0 = False'; f1 = _} -> false
+      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
+      end
+  
+  type tup2_u64_u64 = { f0'1: UInt64.t; f1'1: UInt64.t }
+  
+  function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
+  
+  predicate invariant_Context [@inline:trivial] (self: t_Context) =
+    (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.hashcons) n with
+          | Some b -> view_Node b.f0 = n
+          /\ is_valid_node self b.f0
+          /\ UInt64.lt b.f1 (view_PeanoInt self.cnt) /\ Map.get self.hashcons_ghost b.f1 = b.f0
+          | None -> true
+          end)
+    /\ (forall bm: UInt64.t. match Map.get (view_MyHashMap_Bdd_Bdd self.not_memo) bm with
+          | None -> true
+          | Some n -> let b = { f0 = Map.get self.hashcons_ghost bm; f1 = bm } in is_valid_bdd self n
+          /\ is_valid_bdd self b
+          /\ (forall v: Map.map UInt64.t bool. interp n v = (not interp b v)) /\ leastvar b <= leastvar n
+          end)
+    /\ (forall abm: tup2_u64_u64. match Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.and_memo) abm with
+        | None -> true
+        | Some n -> let a = { f0 = Map.get self.hashcons_ghost abm.f0'1;
+                              f1 = abm.f0'1 } in let b = { f0 = Map.get self.hashcons_ghost abm.f1'1;
+                                                           f1 = abm.f1'1 } in is_valid_bdd self n
+        /\ is_valid_bdd self a
+        /\ is_valid_bdd self b
+        /\ (forall v: Map.map UInt64.t bool. interp n v = (interp a v /\ interp b v))
+        /\ (leastvar a <= leastvar n \/ leastvar b <= leastvar n)
+        end)
+  
+  meta "rewrite_def" predicate invariant_Context
+  
+  predicate inv_Context (_1: t_Context)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
+  
+  function size (self: t_Bdd) : int = match self with
+      | {f0 = True'; f1 = _} -> 0
+      | {f0 = False'; f1 = _} -> 0
+      | {f0 = If _ childt childf; f1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
+      end
+  
+  axiom size_spec: forall self: t_Bdd [size self]. size self >= 0
+  
+  function discr_valuation (self: t_Context) (a: t_Bdd) (b: t_Bdd) : Map.map UInt64.t bool
+  
+  axiom discr_valuation_def: forall self: t_Context, a: t_Bdd, b: t_Bdd [discr_valuation self a b]. inv_Context self
+      -> is_valid_bdd self a
+      -> is_valid_bdd self b
+      -> a <> b
+      -> discr_valuation self a b
+      = (if leastvar a < leastvar b then
+        match a with
+          | {f0 = If v childt childf; f1 = _} -> if childf <> b then
+            Map.set (discr_valuation self childf b) v false
+          else
+            Map.set (discr_valuation self childt b) v true
+          
+          | _ -> Const.const true
+          end
+      else
+        if leastvar a > leastvar b then
+          match b with
+            | {f0 = If v childt childf; f1 = _} -> if childf <> a then
+              Map.set (discr_valuation self a childf) v false
+            else
+              Map.set (discr_valuation self a childt) v true
+            
+            | _ -> Const.const true
+            end
+        else
+          match a with
+            | {f0 = If v childta childfa; f1 = _} -> match b with
+              | {f0 = If _ childtb childfb; f1 = _} -> if childfa <> childfb then
+                Map.set (discr_valuation self childfa childfb) v false
+              else
+                Map.set (discr_valuation self childta childtb) v true
+              
+              | _ -> Const.const true
+              end
+            | _ -> Const.const true
+            end
+      
+      )
+  
+  axiom discr_valuation_spec: forall self: t_Context, a: t_Bdd, b: t_Bdd [discr_valuation self a b]. inv_Context self
+      -> is_valid_bdd self a
+      -> is_valid_bdd self b -> a <> b -> interp a (discr_valuation self a b) <> interp b (discr_valuation self a b)
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec hash_Node (self: t_Node) (return (x: UInt64.t)) = (! bb0
-    [ bb0 = any
-      [ br0 -> {self = False'} (! bb6)
-      | br1 -> {self = True'} (! bb5)
-      | br2 (x0: UInt64.t) (x1: t_Bdd) (x2: t_Bdd) -> {self = If x0 x1 x2} (! bb4) ]
-    | bb4 = s0
-      [ s0 = elim_If {self} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &v <- rv ] s1)
-      | s1 = elim_If {self} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childt <- rchildt ] s2)
-      | s2 = elim_If {self} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childf <- rchildf ] s3)
-      | s3 = wrapping_mul {childt.f1} {(5: UInt64.t)} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s4)
-      | s4 = wrapping_add {v} {_10} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
-      | s5 = wrapping_mul {childf.f1} {(7: UInt64.t)} (fun (_x: UInt64.t) -> [ &_12 <- _x ] s6)
-      | s6 = wrapping_add {_8} {_12} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s7)
-      | s7 = return {_ret} ]
-    | bb5 = s0 [ s0 = [ &_ret <- (2: UInt64.t) ] s1 | s1 = return {_ret} ]
-    | bb6 = s0 [ s0 = [ &_ret <- (1: UInt64.t) ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: UInt64.t = Any.any_l ()
-    | & self: t_Node = self
-    | & v: UInt64.t = Any.any_l ()
-    | & childt: t_Bdd = Any.any_l ()
-    | & childf: t_Bdd = Any.any_l ()
-    | & _8: UInt64.t = Any.any_l ()
-    | & _10: UInt64.t = Any.any_l ()
-    | & _12: UInt64.t = Any.any_l () ])
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] UInt64.t'int result
-      = hash_log_Node (view_Node self)}
-      (! return {result}) ]
+  constant self : t_Context
+  
+  constant a : t_Bdd
+  
+  constant b : t_Bdd
+  
+  function bdd_canonical (self: t_Context) (a: t_Bdd) (b: t_Bdd) : ()
+  
+  goal vc_bdd_canonical: inv_Context self
+    -> is_valid_bdd self a
+    -> is_valid_bdd self b
+    -> (forall v: Map.map UInt64.t bool. interp a v = interp b v)
+    -> (if a <> b then
+      ([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+        /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self a)
+        /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self b)
+        /\ ([@stop_split] [@expl:discr_valuation requires #3] a <> b))
+      /\ (([@stop_split] [@expl:discr_valuation ensures] interp a (discr_valuation self a b)
+        <> interp b (discr_valuation self a b))
+      -> (let _ = discr_valuation self a b in [@stop_split] [@expl:bdd_canonical ensures] a = b))
+    else
+      [@stop_split] [@expl:bdd_canonical ensures] a = b
+    )
 end
-module M_impl_Hash_for_Node__hash__refines (* <Node<'arena> as hashmap::Hash> *)
+module M_impl_Context__discr_valuation (* Context<'arena> *)
   use creusot.int.UInt64
-  use int.ComputerDivision
+  use map.Map
+  use map.Const
   use int.Int
+  
+  type t_Bump
+  
+  type t_MyHashMap_Node_Bdd
   
   type t_Bdd = { f0: t_Node; f1: UInt64.t }
   with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
   
+  type t_MyHashMap_Bdd_Bdd
+  
+  type t_MyHashMap_tup2_Bdd_Bdd_Bdd
+  
+  type t_PeanoInt = { f0'0: UInt64.t }
+  
+  type t_Context = {
+    alloc: t_Bump;
+    hashcons: t_MyHashMap_Node_Bdd;
+    hashcons_ghost: Map.map UInt64.t t_Node;
+    not_memo: t_MyHashMap_Bdd_Bdd;
+    and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
+    cnt: t_PeanoInt }
+  
+  function size (self: t_Bdd) : int = match self with
+      | {f0 = True'; f1 = _} -> 0
+      | {f0 = False'; f1 = _} -> 0
+      | {f0 = If _ childt childf; f1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
+      end
+  
+  axiom size_spec: forall self: t_Bdd [size self]. size self >= 0
+  
+  type t_Option_Bdd = None | Some t_Bdd
+  
   type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
   
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function hash_log_Node (x: t_NodeLog) : int = match x with
-      | False''0 -> 1
-      | True''0 -> 2
-      | If'0 v childt childf -> ComputerDivision.mod (UInt64.t'int v + UInt64.t'int childt * 5
-      + UInt64.t'int childf * 7) (UInt64.t'int const_MAX + 1)
-      end
+  function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
   
   function deep_model_Node (self: t_Node) : t_NodeLog = match self with
       | False' -> False''0
@@ -664,148 +714,235 @@ module M_impl_Hash_for_Node__hash__refines (* <Node<'arena> as hashmap::Hash> *)
   
   meta "rewrite_def" function view_Node
   
-  function deep_model_ref_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
+  predicate is_valid_bdd (self: t_Context) (b: t_Bdd) =
+    Map.get (view_MyHashMap_Node_Bdd self.hashcons) (view_Node b.f0) = Some b
   
-  meta "rewrite_def" function deep_model_ref_Node
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Node. forall result: UInt64.t. UInt64.t'int result = hash_log_Node (view_Node self)
-        -> UInt64.t'int result = hash_log_Node (deep_model_ref_Node self)
-end
-module M_impl_Hash_for_Bdd__hash (* <Bdd<'arena> as hashmap::Hash> *)
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  
-  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  with t_Bdd = { f0: t_Node; f1: UInt64.t }
-  
-  function hash_log_Bdd [@inline:trivial] (x: UInt64.t) : int = UInt64.t'int x
-  
-  meta "rewrite_def" function hash_log_Bdd
-  
-  function deep_model_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = self.f1
-  
-  meta "rewrite_def" function deep_model_Bdd
-  
-  function view_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
-  
-  meta "rewrite_def" function view_Bdd
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec hash_Bdd (self: t_Bdd) (return (x: UInt64.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- self.f1 ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: UInt64.t = Any.any_l () | & self: t_Bdd = self ])
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] UInt64.t'int result
-      = hash_log_Bdd (view_Bdd self)}
-      (! return {result}) ]
-end
-module M_impl_Hash_for_Bdd__hash__refines (* <Bdd<'arena> as hashmap::Hash> *)
-  use creusot.int.UInt64
-  
-  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  with t_Bdd = { f0: t_Node; f1: UInt64.t }
-  
-  function hash_log_Bdd [@inline:trivial] (x: UInt64.t) : int = UInt64.t'int x
-  
-  meta "rewrite_def" function hash_log_Bdd
-  
-  function deep_model_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = self.f1
-  
-  meta "rewrite_def" function deep_model_Bdd
-  
-  function view_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
-  
-  meta "rewrite_def" function view_Bdd
-  
-  function deep_model_ref_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
-  
-  meta "rewrite_def" function deep_model_ref_Bdd
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Bdd. forall result: UInt64.t. UInt64.t'int result = hash_log_Bdd (view_Bdd self)
-        -> UInt64.t'int result = hash_log_Bdd (deep_model_ref_Bdd self)
-end
-module M_impl_PartialEq_for_Bdd__eq (* <Bdd<'arena> as std::cmp::PartialEq> *)
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  
-  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  with t_Bdd = { f0: t_Node; f1: UInt64.t }
-  
-  function deep_model_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = self.f1
-  
-  meta "rewrite_def" function deep_model_Bdd
-  
-  function view_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
-  
-  meta "rewrite_def" function view_Bdd
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec eq_Bdd (self: t_Bdd) (o: t_Bdd) (return (x: bool)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- self.f1 = o.f1 ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l () | & self: t_Bdd = self | & o: t_Bdd = o ])
-    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (view_Bdd self = view_Bdd o)}
-      (! return {result}) ]
-end
-module M_impl_PartialEq_for_Bdd__eq__refines (* <Bdd<'arena> as std::cmp::PartialEq> *)
-  use creusot.int.UInt64
-  
-  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  with t_Bdd = { f0: t_Node; f1: UInt64.t }
-  
-  function deep_model_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = self.f1
-  
-  meta "rewrite_def" function deep_model_Bdd
-  
-  function view_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
-  
-  meta "rewrite_def" function view_Bdd
-  
-  function deep_model_ref_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
-  
-  meta "rewrite_def" function deep_model_ref_Bdd
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: t_Bdd, rhs: t_Bdd. forall result: bool. result = (view_Bdd self_ = view_Bdd rhs)
-        -> result = (deep_model_ref_Bdd self_ = deep_model_ref_Bdd rhs)
-end
-module M_impl_Bdd__size (* Bdd<'arena> *)
-  use creusot.int.UInt64
-  use int.Int
-  
-  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  with t_Bdd = { f0: t_Node; f1: UInt64.t }
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Bdd
-  
-  function size (self: t_Bdd) : int
-  
-  goal vc_size: match self with
-      | {f0 = True'; f1 = _} -> [@stop_split] [@expl:size ensures] 0 >= 0
-      | {f0 = False'; f1 = _} -> [@stop_split] [@expl:size ensures] 0 >= 0
-      | {f0 = If _ childt childf; f1 = _} -> ([@stop_split] [@expl:size ensures] size childt >= 0)
-      -> (let ht = size childt in ([@stop_split] [@expl:size ensures] size childf >= 0)
-      -> (let hf = size childf in [@stop_split] [@expl:size ensures] 1 + ht + hf >= 0))
+  function leastvar (self: t_Bdd) : int = match self with
+      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
       end
+  
+  predicate is_valid_node (self: t_Context) (n: t_Node) =
+    match n with
+      | True' -> true
+      | False' -> true
+      | If v childt childf -> childt.f0 <> childf.f0
+      /\ is_valid_bdd self childt
+      /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
+      end
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
+  
+  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
+  
+  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
+  
+  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  
+  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
+      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
+  
+  function refl_u64 (x: UInt64.t) : ()
+  
+  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
+  
+  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
+  
+  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
+  
+  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
+  
+  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  
+  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
+  
+  meta "rewrite_def" function view_PeanoInt
+  
+  function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
+  
+  predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
+    match self with
+      | {f0 = True'; f1 = _} -> true
+      | {f0 = False'; f1 = _} -> false
+      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
+      end
+  
+  type tup2_u64_u64 = { f0'1: UInt64.t; f1'1: UInt64.t }
+  
+  function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
+  
+  predicate invariant_Context [@inline:trivial] (self: t_Context) =
+    (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.hashcons) n with
+          | Some b -> view_Node b.f0 = n
+          /\ is_valid_node self b.f0
+          /\ UInt64.lt b.f1 (view_PeanoInt self.cnt) /\ Map.get self.hashcons_ghost b.f1 = b.f0
+          | None -> true
+          end)
+    /\ (forall bm: UInt64.t. match Map.get (view_MyHashMap_Bdd_Bdd self.not_memo) bm with
+          | None -> true
+          | Some n -> let b = { f0 = Map.get self.hashcons_ghost bm; f1 = bm } in is_valid_bdd self n
+          /\ is_valid_bdd self b
+          /\ (forall v: Map.map UInt64.t bool. interp n v = (not interp b v)) /\ leastvar b <= leastvar n
+          end)
+    /\ (forall abm: tup2_u64_u64. match Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.and_memo) abm with
+        | None -> true
+        | Some n -> let a = { f0 = Map.get self.hashcons_ghost abm.f0'1;
+                              f1 = abm.f0'1 } in let b = { f0 = Map.get self.hashcons_ghost abm.f1'1;
+                                                           f1 = abm.f1'1 } in is_valid_bdd self n
+        /\ is_valid_bdd self a
+        /\ is_valid_bdd self b
+        /\ (forall v: Map.map UInt64.t bool. interp n v = (interp a v /\ interp b v))
+        /\ (leastvar a <= leastvar n \/ leastvar b <= leastvar n)
+        end)
+  
+  meta "rewrite_def" predicate invariant_Context
+  
+  predicate inv_Context (_1: t_Context)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
+  
+  function set_irrelevent_var (self: t_Context) (a: t_Bdd) (x: UInt64.t) (v: Map.map UInt64.t bool) (b: bool) : () =
+    match a with
+      | {f0 = If _ childt childf; f1 = _} -> let _ = set_irrelevent_var self childt x v b in let _ = set_irrelevent_var self childf x v b in ()
+      | _ -> ()
+      end
+  
+  axiom set_irrelevent_var_spec:
+    forall self: t_Context, a: t_Bdd, x: UInt64.t, v: Map.map UInt64.t bool, b: bool. inv_Context self
+      -> is_valid_bdd self a -> UInt64.t'int x < leastvar a -> interp a v = interp a (Map.set v x b)
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Context
+  
+  constant a : t_Bdd
+  
+  constant b : t_Bdd
+  
+  function discr_valuation (self: t_Context) (a: t_Bdd) (b: t_Bdd) : Map.map UInt64.t bool
+  
+  goal vc_discr_valuation: inv_Context self
+    -> is_valid_bdd self a
+    -> is_valid_bdd self b
+    -> a <> b
+    -> (if leastvar a < leastvar b then
+      match a with
+        | {f0 = If v childt childf; f1 = _} -> if childf <> b then
+          (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+              /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self childf)
+              /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self b)
+              /\ ([@stop_split] [@expl:discr_valuation requires #3] childf <> b))
+            /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size childf + size b)))
+          /\ (([@stop_split] [@expl:discr_valuation ensures] interp childf (discr_valuation self childf b)
+            <> interp b (discr_valuation self childf b))
+          -> (let result = Map.set (discr_valuation self childf b) v false in [@stop_split] [@expl:discr_valuation ensures] interp a result
+          <> interp b result))
+        else
+          (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+              /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self childt)
+              /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self b)
+              /\ ([@stop_split] [@expl:discr_valuation requires #3] childt <> b))
+            /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size childt + size b)))
+          /\ (([@stop_split] [@expl:discr_valuation ensures] interp childt (discr_valuation self childt b)
+            <> interp b (discr_valuation self childt b))
+          -> (let result = Map.set (discr_valuation self childt b) v true in [@stop_split] [@expl:discr_valuation ensures] interp a result
+          <> interp b result))
+        
+        | _ -> let result = Const.const true in [@stop_split] [@expl:discr_valuation ensures] interp a result
+        <> interp b result
+        end
+    else
+      if leastvar a > leastvar b then
+        match b with
+          | {f0 = If v childt childf; f1 = _} -> if childf <> a then
+            (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+                /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self a)
+                /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self childf)
+                /\ ([@stop_split] [@expl:discr_valuation requires #3] a <> childf))
+              /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size a + size childf)))
+            /\ (([@stop_split] [@expl:discr_valuation ensures] interp a (discr_valuation self a childf)
+              <> interp childf (discr_valuation self a childf))
+            -> (let result = Map.set (discr_valuation self a childf) v false in [@stop_split] [@expl:discr_valuation ensures] interp a result
+            <> interp b result))
+          else
+            (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+                /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self a)
+                /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self childt)
+                /\ ([@stop_split] [@expl:discr_valuation requires #3] a <> childt))
+              /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size a + size childt)))
+            /\ (([@stop_split] [@expl:discr_valuation ensures] interp a (discr_valuation self a childt)
+              <> interp childt (discr_valuation self a childt))
+            -> (let result = Map.set (discr_valuation self a childt) v true in [@stop_split] [@expl:discr_valuation ensures] interp a result
+            <> interp b result))
+          
+          | _ -> let result = Const.const true in [@stop_split] [@expl:discr_valuation ensures] interp a result
+          <> interp b result
+          end
+      else
+        match a with
+          | {f0 = If v childta childfa; f1 = _} -> match b with
+            | {f0 = If _ childtb childfb; f1 = _} -> if childfa <> childfb then
+              (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+                  /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self childfa)
+                  /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self childfb)
+                  /\ ([@stop_split] [@expl:discr_valuation requires #3] childfa <> childfb))
+                /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size childfa
+                + size childfb)))
+              /\ (([@stop_split] [@expl:discr_valuation ensures] interp childfa (discr_valuation self childfa childfb)
+                <> interp childfb (discr_valuation self childfa childfb))
+              -> (let result = Map.set (discr_valuation self childfa childfb) v false in [@stop_split] [@expl:discr_valuation ensures] interp a result
+              <> interp b result))
+            else
+              (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
+                  /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self childta)
+                  /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self childtb)
+                  /\ ([@stop_split] [@expl:discr_valuation requires #3] childta <> childtb))
+                /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size childta
+                + size childtb)))
+              /\ (([@stop_split] [@expl:discr_valuation ensures] interp childta (discr_valuation self childta childtb)
+                <> interp childtb (discr_valuation self childta childtb))
+              -> (let result = Map.set (discr_valuation self childta childtb) v true in [@stop_split] [@expl:discr_valuation ensures] interp a result
+              <> interp b result))
+            
+            | _ -> let result = Const.const true in [@stop_split] [@expl:discr_valuation ensures] interp a result
+            <> interp b result
+            end
+          | _ -> let result = Const.const true in [@stop_split] [@expl:discr_valuation ensures] interp a result
+          <> interp b result
+          end
+    
+    )
 end
 module M_impl_Context__grows_is_valid_bdd (* Context<'arena> *)
   use creusot.prelude.MutBorrow
@@ -1212,952 +1349,6 @@ module M_impl_Context__set_irrelevent_var (* Context<'arena> *)
       = interp a (Map.set v x b)))))
       | _ -> [@stop_split] [@expl:set_irrelevent_var ensures] interp a v = interp a (Map.set v x b)
       end
-end
-module M_impl_Context__discr_valuation (* Context<'arena> *)
-  use creusot.int.UInt64
-  use map.Map
-  use map.Const
-  use int.Int
-  
-  type t_Bump
-  
-  type t_MyHashMap_Node_Bdd
-  
-  type t_Bdd = { f0: t_Node; f1: UInt64.t }
-  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  
-  type t_MyHashMap_Bdd_Bdd
-  
-  type t_MyHashMap_tup2_Bdd_Bdd_Bdd
-  
-  type t_PeanoInt = { f0'0: UInt64.t }
-  
-  type t_Context = {
-    alloc: t_Bump;
-    hashcons: t_MyHashMap_Node_Bdd;
-    hashcons_ghost: Map.map UInt64.t t_Node;
-    not_memo: t_MyHashMap_Bdd_Bdd;
-    and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
-    cnt: t_PeanoInt }
-  
-  function size (self: t_Bdd) : int = match self with
-      | {f0 = True'; f1 = _} -> 0
-      | {f0 = False'; f1 = _} -> 0
-      | {f0 = If _ childt childf; f1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
-      end
-  
-  axiom size_spec: forall self: t_Bdd [size self]. size self >= 0
-  
-  type t_Option_Bdd = None | Some t_Bdd
-  
-  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
-  
-  function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
-  
-  function deep_model_Node (self: t_Node) : t_NodeLog = match self with
-      | False' -> False''0
-      | True' -> True''0
-      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
-      end
-  
-  function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
-  
-  meta "rewrite_def" function view_Node
-  
-  predicate is_valid_bdd (self: t_Context) (b: t_Bdd) =
-    Map.get (view_MyHashMap_Node_Bdd self.hashcons) (view_Node b.f0) = Some b
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function leastvar (self: t_Bdd) : int = match self with
-      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
-      end
-  
-  predicate is_valid_node (self: t_Context) (n: t_Node) =
-    match n with
-      | True' -> true
-      | False' -> true
-      | If v childt childf -> childt.f0 <> childf.f0
-      /\ is_valid_bdd self childt
-      /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
-      end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
-  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
-  
-  meta "rewrite_def" function view_PeanoInt
-  
-  function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
-  
-  predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
-    match self with
-      | {f0 = True'; f1 = _} -> true
-      | {f0 = False'; f1 = _} -> false
-      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
-      end
-  
-  type tup2_u64_u64 = { f0'1: UInt64.t; f1'1: UInt64.t }
-  
-  function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
-  
-  predicate invariant_Context [@inline:trivial] (self: t_Context) =
-    (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.hashcons) n with
-          | Some b -> view_Node b.f0 = n
-          /\ is_valid_node self b.f0
-          /\ UInt64.lt b.f1 (view_PeanoInt self.cnt) /\ Map.get self.hashcons_ghost b.f1 = b.f0
-          | None -> true
-          end)
-    /\ (forall bm: UInt64.t. match Map.get (view_MyHashMap_Bdd_Bdd self.not_memo) bm with
-          | None -> true
-          | Some n -> let b = { f0 = Map.get self.hashcons_ghost bm; f1 = bm } in is_valid_bdd self n
-          /\ is_valid_bdd self b
-          /\ (forall v: Map.map UInt64.t bool. interp n v = (not interp b v)) /\ leastvar b <= leastvar n
-          end)
-    /\ (forall abm: tup2_u64_u64. match Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.and_memo) abm with
-        | None -> true
-        | Some n -> let a = { f0 = Map.get self.hashcons_ghost abm.f0'1;
-                              f1 = abm.f0'1 } in let b = { f0 = Map.get self.hashcons_ghost abm.f1'1;
-                                                           f1 = abm.f1'1 } in is_valid_bdd self n
-        /\ is_valid_bdd self a
-        /\ is_valid_bdd self b
-        /\ (forall v: Map.map UInt64.t bool. interp n v = (interp a v /\ interp b v))
-        /\ (leastvar a <= leastvar n \/ leastvar b <= leastvar n)
-        end)
-  
-  meta "rewrite_def" predicate invariant_Context
-  
-  predicate inv_Context (_1: t_Context)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
-  
-  function set_irrelevent_var (self: t_Context) (a: t_Bdd) (x: UInt64.t) (v: Map.map UInt64.t bool) (b: bool) : () =
-    match a with
-      | {f0 = If _ childt childf; f1 = _} -> let _ = set_irrelevent_var self childt x v b in let _ = set_irrelevent_var self childf x v b in ()
-      | _ -> ()
-      end
-  
-  axiom set_irrelevent_var_spec:
-    forall self: t_Context, a: t_Bdd, x: UInt64.t, v: Map.map UInt64.t bool, b: bool. inv_Context self
-      -> is_valid_bdd self a -> UInt64.t'int x < leastvar a -> interp a v = interp a (Map.set v x b)
-  
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
-  
-  meta "rewrite_def" predicate well_founded_relation_Int
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Context
-  
-  constant a : t_Bdd
-  
-  constant b : t_Bdd
-  
-  function discr_valuation (self: t_Context) (a: t_Bdd) (b: t_Bdd) : Map.map UInt64.t bool
-  
-  goal vc_discr_valuation: inv_Context self
-    -> is_valid_bdd self a
-    -> is_valid_bdd self b
-    -> a <> b
-    -> (if leastvar a < leastvar b then
-      match a with
-        | {f0 = If v childt childf; f1 = _} -> if childf <> b then
-          (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
-              /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self childf)
-              /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self b)
-              /\ ([@stop_split] [@expl:discr_valuation requires #3] childf <> b))
-            /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size childf + size b)))
-          /\ (([@stop_split] [@expl:discr_valuation ensures] interp childf (discr_valuation self childf b)
-            <> interp b (discr_valuation self childf b))
-          -> (let result = Map.set (discr_valuation self childf b) v false in [@stop_split] [@expl:discr_valuation ensures] interp a result
-          <> interp b result))
-        else
-          (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
-              /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self childt)
-              /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self b)
-              /\ ([@stop_split] [@expl:discr_valuation requires #3] childt <> b))
-            /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size childt + size b)))
-          /\ (([@stop_split] [@expl:discr_valuation ensures] interp childt (discr_valuation self childt b)
-            <> interp b (discr_valuation self childt b))
-          -> (let result = Map.set (discr_valuation self childt b) v true in [@stop_split] [@expl:discr_valuation ensures] interp a result
-          <> interp b result))
-        
-        | _ -> let result = Const.const true in [@stop_split] [@expl:discr_valuation ensures] interp a result
-        <> interp b result
-        end
-    else
-      if leastvar a > leastvar b then
-        match b with
-          | {f0 = If v childt childf; f1 = _} -> if childf <> a then
-            (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
-                /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self a)
-                /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self childf)
-                /\ ([@stop_split] [@expl:discr_valuation requires #3] a <> childf))
-              /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size a + size childf)))
-            /\ (([@stop_split] [@expl:discr_valuation ensures] interp a (discr_valuation self a childf)
-              <> interp childf (discr_valuation self a childf))
-            -> (let result = Map.set (discr_valuation self a childf) v false in [@stop_split] [@expl:discr_valuation ensures] interp a result
-            <> interp b result))
-          else
-            (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
-                /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self a)
-                /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self childt)
-                /\ ([@stop_split] [@expl:discr_valuation requires #3] a <> childt))
-              /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size a + size childt)))
-            /\ (([@stop_split] [@expl:discr_valuation ensures] interp a (discr_valuation self a childt)
-              <> interp childt (discr_valuation self a childt))
-            -> (let result = Map.set (discr_valuation self a childt) v true in [@stop_split] [@expl:discr_valuation ensures] interp a result
-            <> interp b result))
-          
-          | _ -> let result = Const.const true in [@stop_split] [@expl:discr_valuation ensures] interp a result
-          <> interp b result
-          end
-      else
-        match a with
-          | {f0 = If v childta childfa; f1 = _} -> match b with
-            | {f0 = If _ childtb childfb; f1 = _} -> if childfa <> childfb then
-              (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
-                  /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self childfa)
-                  /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self childfb)
-                  /\ ([@stop_split] [@expl:discr_valuation requires #3] childfa <> childfb))
-                /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size childfa
-                + size childfb)))
-              /\ (([@stop_split] [@expl:discr_valuation ensures] interp childfa (discr_valuation self childfa childfb)
-                <> interp childfb (discr_valuation self childfa childfb))
-              -> (let result = Map.set (discr_valuation self childfa childfb) v false in [@stop_split] [@expl:discr_valuation ensures] interp a result
-              <> interp b result))
-            else
-              (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
-                  /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self childta)
-                  /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self childtb)
-                  /\ ([@stop_split] [@expl:discr_valuation requires #3] childta <> childtb))
-                /\ ([@expl:variant decreases] well_founded_relation_Int (size a + size b) (size childta
-                + size childtb)))
-              /\ (([@stop_split] [@expl:discr_valuation ensures] interp childta (discr_valuation self childta childtb)
-                <> interp childtb (discr_valuation self childta childtb))
-              -> (let result = Map.set (discr_valuation self childta childtb) v true in [@stop_split] [@expl:discr_valuation ensures] interp a result
-              <> interp b result))
-            
-            | _ -> let result = Const.const true in [@stop_split] [@expl:discr_valuation ensures] interp a result
-            <> interp b result
-            end
-          | _ -> let result = Const.const true in [@stop_split] [@expl:discr_valuation ensures] interp a result
-          <> interp b result
-          end
-    
-    )
-end
-module M_impl_Context__bdd_canonical (* Context<'arena> *)
-  use creusot.int.UInt64
-  use map.Map
-  use map.Const
-  use int.Int
-  
-  type t_Bump
-  
-  type t_MyHashMap_Node_Bdd
-  
-  type t_Bdd = { f0: t_Node; f1: UInt64.t }
-  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  
-  type t_MyHashMap_Bdd_Bdd
-  
-  type t_MyHashMap_tup2_Bdd_Bdd_Bdd
-  
-  type t_PeanoInt = { f0'0: UInt64.t }
-  
-  type t_Context = {
-    alloc: t_Bump;
-    hashcons: t_MyHashMap_Node_Bdd;
-    hashcons_ghost: Map.map UInt64.t t_Node;
-    not_memo: t_MyHashMap_Bdd_Bdd;
-    and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
-    cnt: t_PeanoInt }
-  
-  type t_Option_Bdd = None | Some t_Bdd
-  
-  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
-  
-  function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
-  
-  function deep_model_Node (self: t_Node) : t_NodeLog = match self with
-      | False' -> False''0
-      | True' -> True''0
-      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
-      end
-  
-  function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
-  
-  meta "rewrite_def" function view_Node
-  
-  predicate is_valid_bdd (self: t_Context) (b: t_Bdd) =
-    Map.get (view_MyHashMap_Node_Bdd self.hashcons) (view_Node b.f0) = Some b
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function leastvar (self: t_Bdd) : int = match self with
-      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
-      end
-  
-  predicate is_valid_node (self: t_Context) (n: t_Node) =
-    match n with
-      | True' -> true
-      | False' -> true
-      | If v childt childf -> childt.f0 <> childf.f0
-      /\ is_valid_bdd self childt
-      /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
-      end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
-  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
-  
-  meta "rewrite_def" function view_PeanoInt
-  
-  function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
-  
-  predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
-    match self with
-      | {f0 = True'; f1 = _} -> true
-      | {f0 = False'; f1 = _} -> false
-      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
-      end
-  
-  type tup2_u64_u64 = { f0'1: UInt64.t; f1'1: UInt64.t }
-  
-  function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
-  
-  predicate invariant_Context [@inline:trivial] (self: t_Context) =
-    (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.hashcons) n with
-          | Some b -> view_Node b.f0 = n
-          /\ is_valid_node self b.f0
-          /\ UInt64.lt b.f1 (view_PeanoInt self.cnt) /\ Map.get self.hashcons_ghost b.f1 = b.f0
-          | None -> true
-          end)
-    /\ (forall bm: UInt64.t. match Map.get (view_MyHashMap_Bdd_Bdd self.not_memo) bm with
-          | None -> true
-          | Some n -> let b = { f0 = Map.get self.hashcons_ghost bm; f1 = bm } in is_valid_bdd self n
-          /\ is_valid_bdd self b
-          /\ (forall v: Map.map UInt64.t bool. interp n v = (not interp b v)) /\ leastvar b <= leastvar n
-          end)
-    /\ (forall abm: tup2_u64_u64. match Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.and_memo) abm with
-        | None -> true
-        | Some n -> let a = { f0 = Map.get self.hashcons_ghost abm.f0'1;
-                              f1 = abm.f0'1 } in let b = { f0 = Map.get self.hashcons_ghost abm.f1'1;
-                                                           f1 = abm.f1'1 } in is_valid_bdd self n
-        /\ is_valid_bdd self a
-        /\ is_valid_bdd self b
-        /\ (forall v: Map.map UInt64.t bool. interp n v = (interp a v /\ interp b v))
-        /\ (leastvar a <= leastvar n \/ leastvar b <= leastvar n)
-        end)
-  
-  meta "rewrite_def" predicate invariant_Context
-  
-  predicate inv_Context (_1: t_Context)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
-  
-  function size (self: t_Bdd) : int = match self with
-      | {f0 = True'; f1 = _} -> 0
-      | {f0 = False'; f1 = _} -> 0
-      | {f0 = If _ childt childf; f1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
-      end
-  
-  axiom size_spec: forall self: t_Bdd [size self]. size self >= 0
-  
-  function discr_valuation (self: t_Context) (a: t_Bdd) (b: t_Bdd) : Map.map UInt64.t bool
-  
-  axiom discr_valuation_def: forall self: t_Context, a: t_Bdd, b: t_Bdd [discr_valuation self a b]. inv_Context self
-      -> is_valid_bdd self a
-      -> is_valid_bdd self b
-      -> a <> b
-      -> discr_valuation self a b
-      = (if leastvar a < leastvar b then
-        match a with
-          | {f0 = If v childt childf; f1 = _} -> if childf <> b then
-            Map.set (discr_valuation self childf b) v false
-          else
-            Map.set (discr_valuation self childt b) v true
-          
-          | _ -> Const.const true
-          end
-      else
-        if leastvar a > leastvar b then
-          match b with
-            | {f0 = If v childt childf; f1 = _} -> if childf <> a then
-              Map.set (discr_valuation self a childf) v false
-            else
-              Map.set (discr_valuation self a childt) v true
-            
-            | _ -> Const.const true
-            end
-        else
-          match a with
-            | {f0 = If v childta childfa; f1 = _} -> match b with
-              | {f0 = If _ childtb childfb; f1 = _} -> if childfa <> childfb then
-                Map.set (discr_valuation self childfa childfb) v false
-              else
-                Map.set (discr_valuation self childta childtb) v true
-              
-              | _ -> Const.const true
-              end
-            | _ -> Const.const true
-            end
-      
-      )
-  
-  axiom discr_valuation_spec: forall self: t_Context, a: t_Bdd, b: t_Bdd [discr_valuation self a b]. inv_Context self
-      -> is_valid_bdd self a
-      -> is_valid_bdd self b -> a <> b -> interp a (discr_valuation self a b) <> interp b (discr_valuation self a b)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_Context
-  
-  constant a : t_Bdd
-  
-  constant b : t_Bdd
-  
-  function bdd_canonical (self: t_Context) (a: t_Bdd) (b: t_Bdd) : ()
-  
-  goal vc_bdd_canonical: inv_Context self
-    -> is_valid_bdd self a
-    -> is_valid_bdd self b
-    -> (forall v: Map.map UInt64.t bool. interp a v = interp b v)
-    -> (if a <> b then
-      ([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
-        /\ ([@stop_split] [@expl:discr_valuation requires #1] is_valid_bdd self a)
-        /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self b)
-        /\ ([@stop_split] [@expl:discr_valuation requires #3] a <> b))
-      /\ (([@stop_split] [@expl:discr_valuation ensures] interp a (discr_valuation self a b)
-        <> interp b (discr_valuation self a b))
-      -> (let _ = discr_valuation self a b in [@stop_split] [@expl:bdd_canonical ensures] a = b))
-    else
-      [@stop_split] [@expl:bdd_canonical ensures] a = b
-    )
-end
-module M_impl_Context_0__false (* Context<'arena> *)
-  use creusot.int.UInt64
-  use creusot.prelude.MutBorrow
-  use map.Map
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Bdd = { f0: t_Node; f1: UInt64.t }
-  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  
-  type t_Bump
-  
-  type t_MyHashMap_Node_Bdd
-  
-  type t_MyHashMap_Bdd_Bdd
-  
-  type t_MyHashMap_tup2_Bdd_Bdd_Bdd
-  
-  type t_PeanoInt = { f0'0: UInt64.t }
-  
-  type t_Context = {
-    alloc: t_Bump;
-    hashcons: t_MyHashMap_Node_Bdd;
-    hashcons_ghost: Map.map UInt64.t t_Node;
-    not_memo: t_MyHashMap_Bdd_Bdd;
-    and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
-    cnt: t_PeanoInt }
-  
-  type t_Option_Bdd = None | Some t_Bdd
-  
-  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
-  
-  function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
-  
-  function deep_model_Node (self: t_Node) : t_NodeLog = match self with
-      | False' -> False''0
-      | True' -> True''0
-      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
-      end
-  
-  function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
-  
-  meta "rewrite_def" function view_Node
-  
-  predicate is_valid_bdd (self: t_Context) (b: t_Bdd) =
-    Map.get (view_MyHashMap_Node_Bdd self.hashcons) (view_Node b.f0) = Some b
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function leastvar (self: t_Bdd) : int = match self with
-      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
-      end
-  
-  predicate is_valid_node (self: t_Context) (n: t_Node) =
-    match n with
-      | True' -> true
-      | False' -> true
-      | If v childt childf -> childt.f0 <> childf.f0
-      /\ is_valid_bdd self childt
-      /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
-      end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
-  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
-  
-  meta "rewrite_def" function view_PeanoInt
-  
-  function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
-  
-  predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
-    match self with
-      | {f0 = True'; f1 = _} -> true
-      | {f0 = False'; f1 = _} -> false
-      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
-      end
-  
-  type tup2_u64_u64 = { f0'1: UInt64.t; f1'1: UInt64.t }
-  
-  function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
-  
-  predicate invariant_Context [@inline:trivial] (self: t_Context) =
-    (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.hashcons) n with
-          | Some b -> view_Node b.f0 = n
-          /\ is_valid_node self b.f0
-          /\ UInt64.lt b.f1 (view_PeanoInt self.cnt) /\ Map.get self.hashcons_ghost b.f1 = b.f0
-          | None -> true
-          end)
-    /\ (forall bm: UInt64.t. match Map.get (view_MyHashMap_Bdd_Bdd self.not_memo) bm with
-          | None -> true
-          | Some n -> let b = { f0 = Map.get self.hashcons_ghost bm; f1 = bm } in is_valid_bdd self n
-          /\ is_valid_bdd self b
-          /\ (forall v: Map.map UInt64.t bool. interp n v = (not interp b v)) /\ leastvar b <= leastvar n
-          end)
-    /\ (forall abm: tup2_u64_u64. match Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.and_memo) abm with
-        | None -> true
-        | Some n -> let a = { f0 = Map.get self.hashcons_ghost abm.f0'1;
-                              f1 = abm.f0'1 } in let b = { f0 = Map.get self.hashcons_ghost abm.f1'1;
-                                                           f1 = abm.f1'1 } in is_valid_bdd self n
-        /\ is_valid_bdd self a
-        /\ is_valid_bdd self b
-        /\ (forall v: Map.map UInt64.t bool. interp n v = (interp a v /\ interp b v))
-        /\ (leastvar a <= leastvar n \/ leastvar b <= leastvar n)
-        end)
-  
-  meta "rewrite_def" predicate invariant_Context
-  
-  predicate inv_Context (_1: t_Context)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
-  
-  predicate invariant_refmut_Context [@inline:trivial] (self: MutBorrow.t t_Context) =
-    inv_Context self.current /\ inv_Context self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Context
-  
-  predicate inv_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant_refmut_Context _1
-  
-  meta "rewrite_def" predicate inv_refmut_Context
-  
-  predicate grows (self: MutBorrow.t t_Context) =
-    UInt64.le (view_PeanoInt self.current.cnt) (view_PeanoInt self.final.cnt)
-    /\ (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.current.hashcons) n with
-        | Some b -> Map.get (view_MyHashMap_Node_Bdd self.final.hashcons) n = Some b
-        | None -> true
-        end)
-  
-  let rec hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
-    {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
-    /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
-    any
-    [ return (result: t_Bdd) ->
-    {[@stop_split] [@expl:hashcons ensures] ([@stop_split] [@expl:hashcons ensures #0] result.f0 = n)
-      /\ ([@stop_split] [@expl:hashcons ensures #1] grows self)
-      /\ ([@stop_split] [@expl:hashcons ensures #2] is_valid_bdd self.final result)}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Context
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec false_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
-    {[@stop_split] [@expl:false_ 'self' type invariant] inv_refmut_Context self}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_9 <- False' ] s1
-      | s1 = MutBorrow.borrow_final <t_Context> {self.current} {MutBorrow.get_id self}
-          (fun (_bor: MutBorrow.t t_Context) ->
-            [ &_8 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s2)
-        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s2 = hashcons'0 {_8} {_9} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
-      | s4 = -{resolve_refmut_Context self}- s5
-      | s5 = return {_ret} ] ]
-    [ & _ret: t_Bdd = Any.any_l ()
-    | & self: MutBorrow.t t_Context = self
-    | & _8: MutBorrow.t t_Context = Any.any_l ()
-    | & _9: t_Node = Any.any_l () ])
-    [ return (result: t_Bdd) ->
-    {[@stop_split] [@expl:false_ ensures] ([@stop_split] [@expl:false_ ensures #0] grows self)
-      /\ ([@stop_split] [@expl:false_ ensures #1] is_valid_bdd self.final result)
-      /\ ([@stop_split] [@expl:false_ ensures #2] forall v: Map.map UInt64.t bool. not interp result v)
-      /\ ([@stop_split] [@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
-      (! return {result}) ]
-end
-module M_impl_Context_0__true (* Context<'arena> *)
-  use creusot.int.UInt64
-  use creusot.prelude.MutBorrow
-  use map.Map
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Bdd = { f0: t_Node; f1: UInt64.t }
-  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
-  
-  type t_Bump
-  
-  type t_MyHashMap_Node_Bdd
-  
-  type t_MyHashMap_Bdd_Bdd
-  
-  type t_MyHashMap_tup2_Bdd_Bdd_Bdd
-  
-  type t_PeanoInt = { f0'0: UInt64.t }
-  
-  type t_Context = {
-    alloc: t_Bump;
-    hashcons: t_MyHashMap_Node_Bdd;
-    hashcons_ghost: Map.map UInt64.t t_Node;
-    not_memo: t_MyHashMap_Bdd_Bdd;
-    and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
-    cnt: t_PeanoInt }
-  
-  type t_Option_Bdd = None | Some t_Bdd
-  
-  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
-  
-  function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
-  
-  function deep_model_Node (self: t_Node) : t_NodeLog = match self with
-      | False' -> False''0
-      | True' -> True''0
-      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
-      end
-  
-  function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
-  
-  meta "rewrite_def" function view_Node
-  
-  predicate is_valid_bdd (self: t_Context) (b: t_Bdd) =
-    Map.get (view_MyHashMap_Node_Bdd self.hashcons) (view_Node b.f0) = Some b
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function leastvar (self: t_Bdd) : int = match self with
-      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
-      end
-  
-  predicate is_valid_node (self: t_Context) (n: t_Node) =
-    match n with
-      | True' -> true
-      | False' -> true
-      | If v childt childf -> childt.f0 <> childf.f0
-      /\ is_valid_bdd self childt
-      /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
-      end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
-  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
-  
-  meta "rewrite_def" function view_PeanoInt
-  
-  function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
-  
-  predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
-    match self with
-      | {f0 = True'; f1 = _} -> true
-      | {f0 = False'; f1 = _} -> false
-      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
-      end
-  
-  type tup2_u64_u64 = { f0'1: UInt64.t; f1'1: UInt64.t }
-  
-  function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
-  
-  predicate invariant_Context [@inline:trivial] (self: t_Context) =
-    (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.hashcons) n with
-          | Some b -> view_Node b.f0 = n
-          /\ is_valid_node self b.f0
-          /\ UInt64.lt b.f1 (view_PeanoInt self.cnt) /\ Map.get self.hashcons_ghost b.f1 = b.f0
-          | None -> true
-          end)
-    /\ (forall bm: UInt64.t. match Map.get (view_MyHashMap_Bdd_Bdd self.not_memo) bm with
-          | None -> true
-          | Some n -> let b = { f0 = Map.get self.hashcons_ghost bm; f1 = bm } in is_valid_bdd self n
-          /\ is_valid_bdd self b
-          /\ (forall v: Map.map UInt64.t bool. interp n v = (not interp b v)) /\ leastvar b <= leastvar n
-          end)
-    /\ (forall abm: tup2_u64_u64. match Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.and_memo) abm with
-        | None -> true
-        | Some n -> let a = { f0 = Map.get self.hashcons_ghost abm.f0'1;
-                              f1 = abm.f0'1 } in let b = { f0 = Map.get self.hashcons_ghost abm.f1'1;
-                                                           f1 = abm.f1'1 } in is_valid_bdd self n
-        /\ is_valid_bdd self a
-        /\ is_valid_bdd self b
-        /\ (forall v: Map.map UInt64.t bool. interp n v = (interp a v /\ interp b v))
-        /\ (leastvar a <= leastvar n \/ leastvar b <= leastvar n)
-        end)
-  
-  meta "rewrite_def" predicate invariant_Context
-  
-  predicate inv_Context (_1: t_Context)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
-  
-  predicate invariant_refmut_Context [@inline:trivial] (self: MutBorrow.t t_Context) =
-    inv_Context self.current /\ inv_Context self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Context
-  
-  predicate inv_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant_refmut_Context _1
-  
-  meta "rewrite_def" predicate inv_refmut_Context
-  
-  predicate grows (self: MutBorrow.t t_Context) =
-    UInt64.le (view_PeanoInt self.current.cnt) (view_PeanoInt self.final.cnt)
-    /\ (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.current.hashcons) n with
-        | Some b -> Map.get (view_MyHashMap_Node_Bdd self.final.hashcons) n = Some b
-        | None -> true
-        end)
-  
-  let rec hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
-    {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
-    /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
-    any
-    [ return (result: t_Bdd) ->
-    {[@stop_split] [@expl:hashcons ensures] ([@stop_split] [@expl:hashcons ensures #0] result.f0 = n)
-      /\ ([@stop_split] [@expl:hashcons ensures #1] grows self)
-      /\ ([@stop_split] [@expl:hashcons ensures #2] is_valid_bdd self.final result)}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Context
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec true_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
-    {[@stop_split] [@expl:true_ 'self' type invariant] inv_refmut_Context self}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_9 <- True' ] s1
-      | s1 = MutBorrow.borrow_final <t_Context> {self.current} {MutBorrow.get_id self}
-          (fun (_bor: MutBorrow.t t_Context) ->
-            [ &_8 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s2)
-        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s2 = hashcons'0 {_8} {_9} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
-      | s4 = -{resolve_refmut_Context self}- s5
-      | s5 = return {_ret} ] ]
-    [ & _ret: t_Bdd = Any.any_l ()
-    | & self: MutBorrow.t t_Context = self
-    | & _8: MutBorrow.t t_Context = Any.any_l ()
-    | & _9: t_Node = Any.any_l () ])
-    [ return (result: t_Bdd) -> {[@stop_split] [@expl:true_ ensures] ([@stop_split] [@expl:true_ ensures #0] grows self)
-      /\ ([@stop_split] [@expl:true_ ensures #1] is_valid_bdd self.final result)
-      /\ ([@stop_split] [@expl:true_ ensures #2] forall v: Map.map UInt64.t bool. interp result v)
-      /\ ([@stop_split] [@expl:true_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
-      (! return {result}) ]
 end
 module M_impl_Context_0__and (* Context<'arena> *)
   use creusot.int.UInt64
@@ -2660,6 +1851,491 @@ module M_impl_Context_0__and (* Context<'arena> *)
       /\ ([@stop_split] [@expl:and ensures #3] leastvar a <= leastvar result \/ leastvar b <= leastvar result)}
       (! return {result}) ]
 end
+module M_impl_Context_0__false (* Context<'arena> *)
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Bdd = { f0: t_Node; f1: UInt64.t }
+  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  
+  type t_Bump
+  
+  type t_MyHashMap_Node_Bdd
+  
+  type t_MyHashMap_Bdd_Bdd
+  
+  type t_MyHashMap_tup2_Bdd_Bdd_Bdd
+  
+  type t_PeanoInt = { f0'0: UInt64.t }
+  
+  type t_Context = {
+    alloc: t_Bump;
+    hashcons: t_MyHashMap_Node_Bdd;
+    hashcons_ghost: Map.map UInt64.t t_Node;
+    not_memo: t_MyHashMap_Bdd_Bdd;
+    and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
+    cnt: t_PeanoInt }
+  
+  type t_Option_Bdd = None | Some t_Bdd
+  
+  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
+  
+  function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
+  
+  function deep_model_Node (self: t_Node) : t_NodeLog = match self with
+      | False' -> False''0
+      | True' -> True''0
+      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
+      end
+  
+  function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
+  
+  meta "rewrite_def" function view_Node
+  
+  predicate is_valid_bdd (self: t_Context) (b: t_Bdd) =
+    Map.get (view_MyHashMap_Node_Bdd self.hashcons) (view_Node b.f0) = Some b
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function leastvar (self: t_Bdd) : int = match self with
+      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
+      end
+  
+  predicate is_valid_node (self: t_Context) (n: t_Node) =
+    match n with
+      | True' -> true
+      | False' -> true
+      | If v childt childf -> childt.f0 <> childf.f0
+      /\ is_valid_bdd self childt
+      /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
+      end
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
+  
+  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
+  
+  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
+  
+  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  
+  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
+      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
+  
+  function refl_u64 (x: UInt64.t) : ()
+  
+  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
+  
+  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
+  
+  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
+  
+  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
+  
+  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  
+  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
+  
+  meta "rewrite_def" function view_PeanoInt
+  
+  function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
+  
+  predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
+    match self with
+      | {f0 = True'; f1 = _} -> true
+      | {f0 = False'; f1 = _} -> false
+      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
+      end
+  
+  type tup2_u64_u64 = { f0'1: UInt64.t; f1'1: UInt64.t }
+  
+  function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
+  
+  predicate invariant_Context [@inline:trivial] (self: t_Context) =
+    (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.hashcons) n with
+          | Some b -> view_Node b.f0 = n
+          /\ is_valid_node self b.f0
+          /\ UInt64.lt b.f1 (view_PeanoInt self.cnt) /\ Map.get self.hashcons_ghost b.f1 = b.f0
+          | None -> true
+          end)
+    /\ (forall bm: UInt64.t. match Map.get (view_MyHashMap_Bdd_Bdd self.not_memo) bm with
+          | None -> true
+          | Some n -> let b = { f0 = Map.get self.hashcons_ghost bm; f1 = bm } in is_valid_bdd self n
+          /\ is_valid_bdd self b
+          /\ (forall v: Map.map UInt64.t bool. interp n v = (not interp b v)) /\ leastvar b <= leastvar n
+          end)
+    /\ (forall abm: tup2_u64_u64. match Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.and_memo) abm with
+        | None -> true
+        | Some n -> let a = { f0 = Map.get self.hashcons_ghost abm.f0'1;
+                              f1 = abm.f0'1 } in let b = { f0 = Map.get self.hashcons_ghost abm.f1'1;
+                                                           f1 = abm.f1'1 } in is_valid_bdd self n
+        /\ is_valid_bdd self a
+        /\ is_valid_bdd self b
+        /\ (forall v: Map.map UInt64.t bool. interp n v = (interp a v /\ interp b v))
+        /\ (leastvar a <= leastvar n \/ leastvar b <= leastvar n)
+        end)
+  
+  meta "rewrite_def" predicate invariant_Context
+  
+  predicate inv_Context (_1: t_Context)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
+  
+  predicate invariant_refmut_Context [@inline:trivial] (self: MutBorrow.t t_Context) =
+    inv_Context self.current /\ inv_Context self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Context
+  
+  predicate inv_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant_refmut_Context _1
+  
+  meta "rewrite_def" predicate inv_refmut_Context
+  
+  predicate grows (self: MutBorrow.t t_Context) =
+    UInt64.le (view_PeanoInt self.current.cnt) (view_PeanoInt self.final.cnt)
+    /\ (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.current.hashcons) n with
+        | Some b -> Map.get (view_MyHashMap_Node_Bdd self.final.hashcons) n = Some b
+        | None -> true
+        end)
+  
+  let rec hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
+    {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
+    any
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:hashcons ensures] ([@stop_split] [@expl:hashcons ensures #0] result.f0 = n)
+      /\ ([@stop_split] [@expl:hashcons ensures #1] grows self)
+      /\ ([@stop_split] [@expl:hashcons ensures #2] is_valid_bdd self.final result)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Context
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec false_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
+    {[@stop_split] [@expl:false_ 'self' type invariant] inv_refmut_Context self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_9 <- False' ] s1
+      | s1 = MutBorrow.borrow_final <t_Context> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t t_Context) ->
+            [ &_8 <- _bor ] -{inv_Context _bor.final}-
+            [ &self <- { self with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
+      | s2 = hashcons'0 {_8} {_9} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
+      | s4 = -{resolve_refmut_Context self}- s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Bdd = Any.any_l ()
+    | & self: MutBorrow.t t_Context = self
+    | & _8: MutBorrow.t t_Context = Any.any_l ()
+    | & _9: t_Node = Any.any_l () ])
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:false_ ensures] ([@stop_split] [@expl:false_ ensures #0] grows self)
+      /\ ([@stop_split] [@expl:false_ ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:false_ ensures #2] forall v: Map.map UInt64.t bool. not interp result v)
+      /\ ([@stop_split] [@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
+      (! return {result}) ]
+end
+module M_impl_Context_0__hashcons (* Context<'arena> *)
+  use creusot.int.UInt64
+  use map.Map
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_MyHashMap_Node_Bdd
+  
+  type t_Bdd = { f0: t_Node; f1: UInt64.t }
+  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  
+  type t_Bump
+  
+  type t_MyHashMap_Bdd_Bdd
+  
+  type t_MyHashMap_tup2_Bdd_Bdd_Bdd
+  
+  type t_PeanoInt = { f0'0: UInt64.t }
+  
+  type t_Context = {
+    alloc: t_Bump;
+    hashcons: t_MyHashMap_Node_Bdd;
+    hashcons_ghost: Map.map UInt64.t t_Node;
+    not_memo: t_MyHashMap_Bdd_Bdd;
+    and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
+    cnt: t_PeanoInt }
+  
+  type t_Option_ref_Bdd = None | Some t_Bdd
+  
+  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
+  
+  type t_Option_Bdd = None'0 | Some'0 t_Bdd
+  
+  function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
+  
+  function deep_model_Node (self: t_Node) : t_NodeLog = match self with
+      | False' -> False''0
+      | True' -> True''0
+      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
+      end
+  
+  function deep_model_ref_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
+  
+  meta "rewrite_def" function deep_model_ref_Node
+  
+  let rec get_Node (self: t_MyHashMap_Node_Bdd) (key: t_Node) (return (x: t_Option_ref_Bdd)) = any
+    [ return (result: t_Option_ref_Bdd) -> {[@stop_split] [@expl:get ensures] match result with
+        | Some v -> Map.get (view_MyHashMap_Node_Bdd self) (deep_model_ref_Node key) = Some'0 v
+        | None -> Map.get (view_MyHashMap_Node_Bdd self) (deep_model_ref_Node key) = None'0
+        end}
+      (! return {result}) ]
+  
+  let rec alloc_Node (self: t_Bump) (val': t_Node) (return (x: MutBorrow.t t_Node)) = any
+    [ return (result: MutBorrow.t t_Node) -> {[@stop_split] [@expl:alloc ensures] result.current = val'}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Node [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Node
+  
+  let rec add_Node (self: MutBorrow.t t_MyHashMap_Node_Bdd) (key: t_Node) (val': t_Bdd) (return (x: ())) = any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:add ensures] forall i: t_NodeLog. Map.get (view_MyHashMap_Node_Bdd self.final) i
+        = (if i = deep_model_Node key then Some'0 val' else Map.get (view_MyHashMap_Node_Bdd self.current) i)}
+      (! return {result}) ]
+  
+  let rec incr (self: t_PeanoInt) (return (x: t_PeanoInt)) = any
+    [ return (result: t_PeanoInt) -> {[@stop_split] [@expl:incr ensures] UInt64.t'int result.f0'0
+      = UInt64.t'int self.f0'0 + 1}
+      (! return {result}) ]
+  
+  function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
+  
+  meta "rewrite_def" function view_Node
+  
+  predicate is_valid_bdd (self: t_Context) (b: t_Bdd) =
+    Map.get (view_MyHashMap_Node_Bdd self.hashcons) (view_Node b.f0) = Some'0 b
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function leastvar (self: t_Bdd) : int = match self with
+      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
+      end
+  
+  predicate is_valid_node (self: t_Context) (n: t_Node) =
+    match n with
+      | True' -> true
+      | False' -> true
+      | If v childt childf -> childt.f0 <> childf.f0
+      /\ is_valid_bdd self childt
+      /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
+      end
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
+  
+  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
+  
+  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
+  
+  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  
+  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
+      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
+  
+  function refl_u64 (x: UInt64.t) : ()
+  
+  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
+  
+  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
+  
+  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
+  
+  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
+  
+  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  
+  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
+  
+  meta "rewrite_def" function view_PeanoInt
+  
+  function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
+  
+  predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
+    match self with
+      | {f0 = True'; f1 = _} -> true
+      | {f0 = False'; f1 = _} -> false
+      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
+      end
+  
+  type tup2_u64_u64 = { f0'1: UInt64.t; f1'1: UInt64.t }
+  
+  function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
+  
+  predicate invariant_Context [@inline:trivial] (self: t_Context) =
+    (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.hashcons) n with
+          | Some'0 b -> view_Node b.f0 = n
+          /\ is_valid_node self b.f0
+          /\ UInt64.lt b.f1 (view_PeanoInt self.cnt) /\ Map.get self.hashcons_ghost b.f1 = b.f0
+          | None'0 -> true
+          end)
+    /\ (forall bm: UInt64.t. match Map.get (view_MyHashMap_Bdd_Bdd self.not_memo) bm with
+          | None'0 -> true
+          | Some'0 n -> let b = { f0 = Map.get self.hashcons_ghost bm; f1 = bm } in is_valid_bdd self n
+          /\ is_valid_bdd self b
+          /\ (forall v: Map.map UInt64.t bool. interp n v = (not interp b v)) /\ leastvar b <= leastvar n
+          end)
+    /\ (forall abm: tup2_u64_u64. match Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.and_memo) abm with
+        | None'0 -> true
+        | Some'0 n -> let a = { f0 = Map.get self.hashcons_ghost abm.f0'1;
+                                f1 = abm.f0'1 } in let b = { f0 = Map.get self.hashcons_ghost abm.f1'1;
+                                                             f1 = abm.f1'1 } in is_valid_bdd self n
+        /\ is_valid_bdd self a
+        /\ is_valid_bdd self b
+        /\ (forall v: Map.map UInt64.t bool. interp n v = (interp a v /\ interp b v))
+        /\ (leastvar a <= leastvar n \/ leastvar b <= leastvar n)
+        end)
+  
+  meta "rewrite_def" predicate invariant_Context
+  
+  predicate inv_Context (_1: t_Context)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
+  
+  predicate invariant_refmut_Context [@inline:trivial] (self: MutBorrow.t t_Context) =
+    inv_Context self.current /\ inv_Context self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Context
+  
+  predicate inv_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant_refmut_Context _1
+  
+  meta "rewrite_def" predicate inv_refmut_Context
+  
+  predicate resolve_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Context
+  
+  let rec elim_Some (_x: t_Option_ref_Bdd) (return (f0'2: t_Bdd)) = any
+    [ _k (f0'2: t_Bdd) -> {Some f0'2 = _x} (! return {f0'2})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate grows (self: MutBorrow.t t_Context) =
+    UInt64.le (view_PeanoInt self.current.cnt) (view_PeanoInt self.final.cnt)
+    /\ (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.current.hashcons) n with
+        | Some'0 b -> Map.get (view_MyHashMap_Node_Bdd self.final.hashcons) n = Some'0 b
+        | None'0 -> true
+        end)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
+    {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_16 <- n ] s1
+      | s1 = get_Node {self.current.hashcons} {_16} (fun (_x: t_Option_ref_Bdd) -> [ &_13 <- _x ] s2)
+      | s2 = any [ br0 -> {_13 = None} (! bb4) | br1 (x0: t_Bdd) -> {_13 = Some x0} (! bb2) ] ]
+    | bb4 = s0
+      [ s0 = alloc_Node {self.current.alloc} {n} (fun (_x: MutBorrow.t t_Node) -> [ &_26 <- _x ] s1)
+      | s1 = -{resolve_refmut_Node _26}- s2
+      | s2 = [ &r'0 <- { f0 = _26.current; f1 = self.current.cnt.f0'0 } ] s3
+      | s3 = MutBorrow.borrow_final <t_MyHashMap_Node_Bdd> {self.current.hashcons}
+          {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+          (fun (_bor: MutBorrow.t t_MyHashMap_Node_Bdd) ->
+            [ &_31 <- _bor ] [ &self <- { self with current = { self.current with hashcons = _bor.final } } ] s4)
+      | s4 = add_Node {_31} {n} {r'0} (fun (_x: ()) -> [ &_30 <- _x ] s5)
+      | s5 =
+        [ &self <- { self with current = { self.current with hashcons_ghost = Map.set self.current.hashcons_ghost r'0.f1 r'0.f0 } } ]
+        s6
+      | s6 = incr {self.current.cnt} (fun (_x: t_PeanoInt) -> [ &_39 <- _x ] s7)
+      | s7 = [ &self <- { self with current = { self.current with cnt = _39 } } ] s8
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
+      | s9 = -{resolve_refmut_Context self}- s10
+      | s10 = [ &_ret <- r'0 ] s11
+      | s11 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
+      | s1 = -{resolve_refmut_Context self}- s2
+      | s2 = elim_Some {_13} (fun (r0: t_Bdd) -> [ &r <- r0 ] s3)
+      | s3 = {[@expl:assertion] view_Node r.f0 = view_Node n} s4
+      | s4 = [ &_ret <- r ] s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Bdd = Any.any_l ()
+    | & self: MutBorrow.t t_Context = self
+    | & n: t_Node = n
+    | & _13: t_Option_ref_Bdd = Any.any_l ()
+    | & _16: t_Node = Any.any_l ()
+    | & r: t_Bdd = Any.any_l ()
+    | & r'0: t_Bdd = Any.any_l ()
+    | & _26: MutBorrow.t t_Node = Any.any_l ()
+    | & _30: () = Any.any_l ()
+    | & _31: MutBorrow.t t_MyHashMap_Node_Bdd = Any.any_l ()
+    | & _39: t_PeanoInt = Any.any_l () ])
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:hashcons ensures] ([@stop_split] [@expl:hashcons ensures #0] result.f0 = n)
+      /\ ([@stop_split] [@expl:hashcons ensures #1] grows self)
+      /\ ([@stop_split] [@expl:hashcons ensures #2] is_valid_bdd self.final result)}
+      (! return {result}) ]
+end
 module M_impl_Context_0__new (* Context<'arena> *)
   use creusot.int.UInt64
   use map.Map
@@ -2859,6 +2535,248 @@ module M_impl_Context_0__new (* Context<'arena> *)
     | & _7: t_MyHashMap_tup2_Bdd_Bdd_Bdd = Any.any_l ()
     | & _8: t_PeanoInt = Any.any_l () ])
     [ return (result: t_Context) -> {[@stop_split] [@expl:new result type invariant] inv_Context result}
+      (! return {result}) ]
+end
+module M_impl_Context_0__node (* Context<'arena> *)
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  with t_Bdd = { f0: t_Node; f1: UInt64.t }
+  
+  function deep_model_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = self.f1
+  
+  meta "rewrite_def" function deep_model_Bdd
+  
+  function view_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
+  
+  meta "rewrite_def" function view_Bdd
+  
+  let rec eq_Bdd (self: t_Bdd) (o: t_Bdd) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (view_Bdd self = view_Bdd o)}
+      (! return {result}) ]
+  
+  type t_Bump
+  
+  type t_MyHashMap_Node_Bdd
+  
+  type t_MyHashMap_Bdd_Bdd
+  
+  type t_MyHashMap_tup2_Bdd_Bdd_Bdd
+  
+  type t_PeanoInt = { f0'0: UInt64.t }
+  
+  type t_Context = {
+    alloc: t_Bump;
+    hashcons: t_MyHashMap_Node_Bdd;
+    hashcons_ghost: Map.map UInt64.t t_Node;
+    not_memo: t_MyHashMap_Bdd_Bdd;
+    and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
+    cnt: t_PeanoInt }
+  
+  type t_Option_Bdd = None | Some t_Bdd
+  
+  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
+  
+  function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
+  
+  function deep_model_Node (self: t_Node) : t_NodeLog = match self with
+      | False' -> False''0
+      | True' -> True''0
+      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
+      end
+  
+  function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
+  
+  meta "rewrite_def" function view_Node
+  
+  predicate is_valid_bdd (self: t_Context) (b: t_Bdd) =
+    Map.get (view_MyHashMap_Node_Bdd self.hashcons) (view_Node b.f0) = Some b
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function leastvar (self: t_Bdd) : int = match self with
+      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
+      end
+  
+  predicate is_valid_node (self: t_Context) (n: t_Node) =
+    match n with
+      | True' -> true
+      | False' -> true
+      | If v childt childf -> childt.f0 <> childf.f0
+      /\ is_valid_bdd self childt
+      /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
+      end
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
+  
+  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
+  
+  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
+  
+  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  
+  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
+      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
+  
+  function refl_u64 (x: UInt64.t) : ()
+  
+  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
+  
+  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
+  
+  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
+  
+  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
+  
+  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  
+  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
+  
+  meta "rewrite_def" function view_PeanoInt
+  
+  function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
+  
+  predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
+    match self with
+      | {f0 = True'; f1 = _} -> true
+      | {f0 = False'; f1 = _} -> false
+      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
+      end
+  
+  type tup2_u64_u64 = { f0'1: UInt64.t; f1'1: UInt64.t }
+  
+  function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
+  
+  predicate invariant_Context [@inline:trivial] (self: t_Context) =
+    (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.hashcons) n with
+          | Some b -> view_Node b.f0 = n
+          /\ is_valid_node self b.f0
+          /\ UInt64.lt b.f1 (view_PeanoInt self.cnt) /\ Map.get self.hashcons_ghost b.f1 = b.f0
+          | None -> true
+          end)
+    /\ (forall bm: UInt64.t. match Map.get (view_MyHashMap_Bdd_Bdd self.not_memo) bm with
+          | None -> true
+          | Some n -> let b = { f0 = Map.get self.hashcons_ghost bm; f1 = bm } in is_valid_bdd self n
+          /\ is_valid_bdd self b
+          /\ (forall v: Map.map UInt64.t bool. interp n v = (not interp b v)) /\ leastvar b <= leastvar n
+          end)
+    /\ (forall abm: tup2_u64_u64. match Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.and_memo) abm with
+        | None -> true
+        | Some n -> let a = { f0 = Map.get self.hashcons_ghost abm.f0'1;
+                              f1 = abm.f0'1 } in let b = { f0 = Map.get self.hashcons_ghost abm.f1'1;
+                                                           f1 = abm.f1'1 } in is_valid_bdd self n
+        /\ is_valid_bdd self a
+        /\ is_valid_bdd self b
+        /\ (forall v: Map.map UInt64.t bool. interp n v = (interp a v /\ interp b v))
+        /\ (leastvar a <= leastvar n \/ leastvar b <= leastvar n)
+        end)
+  
+  meta "rewrite_def" predicate invariant_Context
+  
+  predicate inv_Context (_1: t_Context)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
+  
+  predicate invariant_refmut_Context [@inline:trivial] (self: MutBorrow.t t_Context) =
+    inv_Context self.current /\ inv_Context self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Context
+  
+  predicate inv_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant_refmut_Context _1
+  
+  meta "rewrite_def" predicate inv_refmut_Context
+  
+  predicate resolve_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Context
+  
+  predicate grows (self: MutBorrow.t t_Context) =
+    UInt64.le (view_PeanoInt self.current.cnt) (view_PeanoInt self.final.cnt)
+    /\ (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.current.hashcons) n with
+        | Some b -> Map.get (view_MyHashMap_Node_Bdd self.final.hashcons) n = Some b
+        | None -> true
+        end)
+  
+  let rec hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
+    {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
+    any
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:hashcons ensures] ([@stop_split] [@expl:hashcons ensures #0] result.f0 = n)
+      /\ ([@stop_split] [@expl:hashcons ensures #1] grows self)
+      /\ ([@stop_split] [@expl:hashcons ensures #2] is_valid_bdd self.final result)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (return (x'0: t_Bdd)) =
+    {[@stop_split] [@expl:node requires] ([@stop_split] [@expl:node 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:node requires #0] is_valid_bdd self.current childt)
+    /\ ([@stop_split] [@expl:node requires #1] is_valid_bdd self.current childf)
+    /\ ([@stop_split] [@expl:node requires #2] UInt64.t'int x < leastvar childt /\ UInt64.t'int x < leastvar childf)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = eq_Bdd {childt} {childf} (fun (_x: bool) -> [ &_26 <- _x ] s1)
+      | s1 = any [ br0 -> {_26 = false} (! bb3) | br1 -> {_26} (! bb2) ] ]
+    | bb2 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
+      | s1 = -{resolve_refmut_Context self}- s2
+      | s2 = [ &_ret <- childt ] s3
+      | s3 = return {_ret} ]
+    | bb3 = s0
+      [ s0 = [ &_31 <- If x childt childf ] s1
+      | s1 = MutBorrow.borrow_final <t_Context> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t t_Context) ->
+            [ &_30 <- _bor ] -{inv_Context _bor.final}-
+            [ &self <- { self with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
+      | s2 = hashcons'0 {_30} {_31} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
+      | s4 = -{resolve_refmut_Context self}- s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Bdd = Any.any_l ()
+    | & self: MutBorrow.t t_Context = self
+    | & x: UInt64.t = x
+    | & childt: t_Bdd = childt
+    | & childf: t_Bdd = childf
+    | & _26: bool = Any.any_l ()
+    | & _30: MutBorrow.t t_Context = Any.any_l ()
+    | & _31: t_Node = Any.any_l () ])
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:node ensures] ([@stop_split] [@expl:node ensures #0] grows self)
+      /\ ([@stop_split] [@expl:node ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:node ensures #2] forall v: Map.map UInt64.t bool. interp result v
+          = (if Map.get v x then interp childt v else interp childf v))
+      /\ ([@stop_split] [@expl:node ensures #3] UInt64.t'int x <= leastvar result)}
       (! return {result}) ]
 end
 module M_impl_Context_0__not (* Context<'arena> *)
@@ -3219,6 +3137,220 @@ module M_impl_Context_0__not (* Context<'arena> *)
       /\ ([@stop_split] [@expl:not ensures #3] leastvar x <= leastvar result)}
       (! return {result}) ]
 end
+module M_impl_Context_0__true (* Context<'arena> *)
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Bdd = { f0: t_Node; f1: UInt64.t }
+  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  
+  type t_Bump
+  
+  type t_MyHashMap_Node_Bdd
+  
+  type t_MyHashMap_Bdd_Bdd
+  
+  type t_MyHashMap_tup2_Bdd_Bdd_Bdd
+  
+  type t_PeanoInt = { f0'0: UInt64.t }
+  
+  type t_Context = {
+    alloc: t_Bump;
+    hashcons: t_MyHashMap_Node_Bdd;
+    hashcons_ghost: Map.map UInt64.t t_Node;
+    not_memo: t_MyHashMap_Bdd_Bdd;
+    and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
+    cnt: t_PeanoInt }
+  
+  type t_Option_Bdd = None | Some t_Bdd
+  
+  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
+  
+  function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
+  
+  function deep_model_Node (self: t_Node) : t_NodeLog = match self with
+      | False' -> False''0
+      | True' -> True''0
+      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
+      end
+  
+  function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
+  
+  meta "rewrite_def" function view_Node
+  
+  predicate is_valid_bdd (self: t_Context) (b: t_Bdd) =
+    Map.get (view_MyHashMap_Node_Bdd self.hashcons) (view_Node b.f0) = Some b
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function leastvar (self: t_Bdd) : int = match self with
+      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
+      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
+      end
+  
+  predicate is_valid_node (self: t_Context) (n: t_Node) =
+    match n with
+      | True' -> true
+      | False' -> true
+      | If v childt childf -> childt.f0 <> childf.f0
+      /\ is_valid_bdd self childt
+      /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
+      end
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
+  
+  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
+  
+  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
+  
+  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  
+  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
+      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
+  
+  function refl_u64 (x: UInt64.t) : ()
+  
+  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
+  
+  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
+  
+  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
+  
+  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
+  
+  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  
+  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  
+  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
+  
+  meta "rewrite_def" function view_PeanoInt
+  
+  function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
+  
+  predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
+    match self with
+      | {f0 = True'; f1 = _} -> true
+      | {f0 = False'; f1 = _} -> false
+      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
+      end
+  
+  type tup2_u64_u64 = { f0'1: UInt64.t; f1'1: UInt64.t }
+  
+  function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
+  
+  predicate invariant_Context [@inline:trivial] (self: t_Context) =
+    (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.hashcons) n with
+          | Some b -> view_Node b.f0 = n
+          /\ is_valid_node self b.f0
+          /\ UInt64.lt b.f1 (view_PeanoInt self.cnt) /\ Map.get self.hashcons_ghost b.f1 = b.f0
+          | None -> true
+          end)
+    /\ (forall bm: UInt64.t. match Map.get (view_MyHashMap_Bdd_Bdd self.not_memo) bm with
+          | None -> true
+          | Some n -> let b = { f0 = Map.get self.hashcons_ghost bm; f1 = bm } in is_valid_bdd self n
+          /\ is_valid_bdd self b
+          /\ (forall v: Map.map UInt64.t bool. interp n v = (not interp b v)) /\ leastvar b <= leastvar n
+          end)
+    /\ (forall abm: tup2_u64_u64. match Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.and_memo) abm with
+        | None -> true
+        | Some n -> let a = { f0 = Map.get self.hashcons_ghost abm.f0'1;
+                              f1 = abm.f0'1 } in let b = { f0 = Map.get self.hashcons_ghost abm.f1'1;
+                                                           f1 = abm.f1'1 } in is_valid_bdd self n
+        /\ is_valid_bdd self a
+        /\ is_valid_bdd self b
+        /\ (forall v: Map.map UInt64.t bool. interp n v = (interp a v /\ interp b v))
+        /\ (leastvar a <= leastvar n \/ leastvar b <= leastvar n)
+        end)
+  
+  meta "rewrite_def" predicate invariant_Context
+  
+  predicate inv_Context (_1: t_Context)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
+  
+  predicate invariant_refmut_Context [@inline:trivial] (self: MutBorrow.t t_Context) =
+    inv_Context self.current /\ inv_Context self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Context
+  
+  predicate inv_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant_refmut_Context _1
+  
+  meta "rewrite_def" predicate inv_refmut_Context
+  
+  predicate grows (self: MutBorrow.t t_Context) =
+    UInt64.le (view_PeanoInt self.current.cnt) (view_PeanoInt self.final.cnt)
+    /\ (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.current.hashcons) n with
+        | Some b -> Map.get (view_MyHashMap_Node_Bdd self.final.hashcons) n = Some b
+        | None -> true
+        end)
+  
+  let rec hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
+    {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
+    /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
+    any
+    [ return (result: t_Bdd) ->
+    {[@stop_split] [@expl:hashcons ensures] ([@stop_split] [@expl:hashcons ensures #0] result.f0 = n)
+      /\ ([@stop_split] [@expl:hashcons ensures #1] grows self)
+      /\ ([@stop_split] [@expl:hashcons ensures #2] is_valid_bdd self.final result)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Context
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec true_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
+    {[@stop_split] [@expl:true_ 'self' type invariant] inv_refmut_Context self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_9 <- True' ] s1
+      | s1 = MutBorrow.borrow_final <t_Context> {self.current} {MutBorrow.get_id self}
+          (fun (_bor: MutBorrow.t t_Context) ->
+            [ &_8 <- _bor ] -{inv_Context _bor.final}-
+            [ &self <- { self with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
+      | s2 = hashcons'0 {_8} {_9} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
+      | s4 = -{resolve_refmut_Context self}- s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Bdd = Any.any_l ()
+    | & self: MutBorrow.t t_Context = self
+    | & _8: MutBorrow.t t_Context = Any.any_l ()
+    | & _9: t_Node = Any.any_l () ])
+    [ return (result: t_Bdd) -> {[@stop_split] [@expl:true_ ensures] ([@stop_split] [@expl:true_ ensures #0] grows self)
+      /\ ([@stop_split] [@expl:true_ ensures #1] is_valid_bdd self.final result)
+      /\ ([@stop_split] [@expl:true_ ensures #2] forall v: Map.map UInt64.t bool. interp result v)
+      /\ ([@stop_split] [@expl:true_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
+      (! return {result}) ]
+end
 module M_impl_Context_0__v (* Context<'arena> *)
   use creusot.int.UInt64
   use map.Map
@@ -3469,41 +3601,128 @@ module M_impl_Context_0__v (* Context<'arena> *)
       /\ ([@stop_split] [@expl:v ensures #2] forall v'0: Map.map UInt64.t bool. interp result v'0 = Map.get v'0 x)}
       (! return {result}) ]
 end
-module M_impl_Context_0__hashcons (* Context<'arena> *)
-  use creusot.int.UInt64
-  use map.Map
-  use creusot.prelude.MutBorrow
+module M_impl_Eq_for_Bdd__assert_fields_are_eq (* <Bdd<'arena> as std::cmp::Eq> *)
   use creusot.prelude.Any
-  use int.Int
+  use creusot.int.UInt64
   
-  type t_MyHashMap_Node_Bdd
+  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  with t_Bdd = { f0: t_Node; f1: UInt64.t }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec assert_fields_are_eq_Bdd (self: t_Bdd) (return (x: ())) = (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_impl_Eq_for_Node__assert_fields_are_eq (* <Node<'arena> as std::cmp::Eq> *)
+  use creusot.prelude.Any
+  use creusot.int.UInt64
   
   type t_Bdd = { f0: t_Node; f1: UInt64.t }
   with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
   
-  type t_Bump
+  meta "compute_max_steps" 1000000
   
-  type t_MyHashMap_Bdd_Bdd
+  meta "select_lsinst" "all"
   
-  type t_MyHashMap_tup2_Bdd_Bdd_Bdd
+  let rec assert_fields_are_eq_Node (self: t_Node) (return (x: ())) = (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_impl_Hash_for_Bdd__hash (* <Bdd<'arena> as hashmap::Hash> *)
+  use creusot.int.UInt64
+  use creusot.prelude.Any
   
-  type t_PeanoInt = { f0'0: UInt64.t }
+  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  with t_Bdd = { f0: t_Node; f1: UInt64.t }
   
-  type t_Context = {
-    alloc: t_Bump;
-    hashcons: t_MyHashMap_Node_Bdd;
-    hashcons_ghost: Map.map UInt64.t t_Node;
-    not_memo: t_MyHashMap_Bdd_Bdd;
-    and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
-    cnt: t_PeanoInt }
+  function hash_log_Bdd [@inline:trivial] (x: UInt64.t) : int = UInt64.t'int x
   
-  type t_Option_ref_Bdd = None | Some t_Bdd
+  meta "rewrite_def" function hash_log_Bdd
+  
+  function deep_model_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = self.f1
+  
+  meta "rewrite_def" function deep_model_Bdd
+  
+  function view_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
+  
+  meta "rewrite_def" function view_Bdd
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec hash_Bdd (self: t_Bdd) (return (x: UInt64.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self.f1 ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & self: t_Bdd = self ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] UInt64.t'int result
+      = hash_log_Bdd (view_Bdd self)}
+      (! return {result}) ]
+end
+module M_impl_Hash_for_Bdd__hash__refines (* <Bdd<'arena> as hashmap::Hash> *)
+  use creusot.int.UInt64
+  
+  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  with t_Bdd = { f0: t_Node; f1: UInt64.t }
+  
+  function hash_log_Bdd [@inline:trivial] (x: UInt64.t) : int = UInt64.t'int x
+  
+  meta "rewrite_def" function hash_log_Bdd
+  
+  function deep_model_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = self.f1
+  
+  meta "rewrite_def" function deep_model_Bdd
+  
+  function view_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
+  
+  meta "rewrite_def" function view_Bdd
+  
+  function deep_model_ref_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
+  
+  meta "rewrite_def" function deep_model_ref_Bdd
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Bdd. forall result: UInt64.t. UInt64.t'int result = hash_log_Bdd (view_Bdd self)
+        -> UInt64.t'int result = hash_log_Bdd (deep_model_ref_Bdd self)
+end
+module M_impl_Hash_for_Node__hash (* <Node<'arena> as hashmap::Hash> *)
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.ComputerDivision
+  use int.Int
+  
+  type t_Bdd = { f0: t_Node; f1: UInt64.t }
+  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  
+  let rec elim_If (_x: t_Node) (return (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd)) = any
+    [ _k (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) -> {If v childt childf = _x} (! return {v} {childt} {childf})
+    | _chk -> (! {[@expl:elim If] match _x with
+        | If _ _ _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  let rec wrapping_mul (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt64.mul self_ rhs}
+      (! return {result}) ]
+  
+  let rec wrapping_add (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt64.add self_ rhs}
+      (! return {result}) ]
   
   type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
   
-  type t_Option_Bdd = None'0 | Some'0 t_Bdd
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
+  function hash_log_Node (x: t_NodeLog) : int = match x with
+      | False''0 -> 1
+      | True''0 -> 2
+      | If'0 v childt childf -> ComputerDivision.mod (UInt64.t'int v + UInt64.t'int childt * 5
+      + UInt64.t'int childf * 7) (UInt64.t'int const_MAX + 1)
+      end
   
   function deep_model_Node (self: t_Node) : t_NodeLog = match self with
       | False' -> False''0
@@ -3511,243 +3730,148 @@ module M_impl_Context_0__hashcons (* Context<'arena> *)
       | If v childt childf -> If'0 v (childt.f1) (childf.f1)
       end
   
-  function deep_model_ref_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
-  
-  meta "rewrite_def" function deep_model_ref_Node
-  
-  let rec get_Node (self: t_MyHashMap_Node_Bdd) (key: t_Node) (return (x: t_Option_ref_Bdd)) = any
-    [ return (result: t_Option_ref_Bdd) -> {[@stop_split] [@expl:get ensures] match result with
-        | Some v -> Map.get (view_MyHashMap_Node_Bdd self) (deep_model_ref_Node key) = Some'0 v
-        | None -> Map.get (view_MyHashMap_Node_Bdd self) (deep_model_ref_Node key) = None'0
-        end}
-      (! return {result}) ]
-  
-  let rec alloc_Node (self: t_Bump) (val': t_Node) (return (x: MutBorrow.t t_Node)) = any
-    [ return (result: MutBorrow.t t_Node) -> {[@stop_split] [@expl:alloc ensures] result.current = val'}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_Node [@inline:trivial] (_1: MutBorrow.t t_Node) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Node
-  
-  let rec add_Node (self: MutBorrow.t t_MyHashMap_Node_Bdd) (key: t_Node) (val': t_Bdd) (return (x: ())) = any
-    [ return (result: ()) ->
-    {[@stop_split] [@expl:add ensures] forall i: t_NodeLog. Map.get (view_MyHashMap_Node_Bdd self.final) i
-        = (if i = deep_model_Node key then Some'0 val' else Map.get (view_MyHashMap_Node_Bdd self.current) i)}
-      (! return {result}) ]
-  
-  let rec incr (self: t_PeanoInt) (return (x: t_PeanoInt)) = any
-    [ return (result: t_PeanoInt) -> {[@stop_split] [@expl:incr ensures] UInt64.t'int result.f0'0
-      = UInt64.t'int self.f0'0 + 1}
-      (! return {result}) ]
-  
   function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
   
   meta "rewrite_def" function view_Node
-  
-  predicate is_valid_bdd (self: t_Context) (b: t_Bdd) =
-    Map.get (view_MyHashMap_Node_Bdd self.hashcons) (view_Node b.f0) = Some'0 b
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function leastvar (self: t_Bdd) : int = match self with
-      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
-      end
-  
-  predicate is_valid_node (self: t_Context) (n: t_Node) =
-    match n with
-      | True' -> true
-      | False' -> true
-      | If v childt childf -> childt.f0 <> childf.f0
-      /\ is_valid_bdd self childt
-      /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
-      end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
-  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
-  
-  meta "rewrite_def" function view_PeanoInt
-  
-  function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
-  
-  predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
-    match self with
-      | {f0 = True'; f1 = _} -> true
-      | {f0 = False'; f1 = _} -> false
-      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
-      end
-  
-  type tup2_u64_u64 = { f0'1: UInt64.t; f1'1: UInt64.t }
-  
-  function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
-  
-  predicate invariant_Context [@inline:trivial] (self: t_Context) =
-    (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.hashcons) n with
-          | Some'0 b -> view_Node b.f0 = n
-          /\ is_valid_node self b.f0
-          /\ UInt64.lt b.f1 (view_PeanoInt self.cnt) /\ Map.get self.hashcons_ghost b.f1 = b.f0
-          | None'0 -> true
-          end)
-    /\ (forall bm: UInt64.t. match Map.get (view_MyHashMap_Bdd_Bdd self.not_memo) bm with
-          | None'0 -> true
-          | Some'0 n -> let b = { f0 = Map.get self.hashcons_ghost bm; f1 = bm } in is_valid_bdd self n
-          /\ is_valid_bdd self b
-          /\ (forall v: Map.map UInt64.t bool. interp n v = (not interp b v)) /\ leastvar b <= leastvar n
-          end)
-    /\ (forall abm: tup2_u64_u64. match Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.and_memo) abm with
-        | None'0 -> true
-        | Some'0 n -> let a = { f0 = Map.get self.hashcons_ghost abm.f0'1;
-                                f1 = abm.f0'1 } in let b = { f0 = Map.get self.hashcons_ghost abm.f1'1;
-                                                             f1 = abm.f1'1 } in is_valid_bdd self n
-        /\ is_valid_bdd self a
-        /\ is_valid_bdd self b
-        /\ (forall v: Map.map UInt64.t bool. interp n v = (interp a v /\ interp b v))
-        /\ (leastvar a <= leastvar n \/ leastvar b <= leastvar n)
-        end)
-  
-  meta "rewrite_def" predicate invariant_Context
-  
-  predicate inv_Context (_1: t_Context)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
-  
-  predicate invariant_refmut_Context [@inline:trivial] (self: MutBorrow.t t_Context) =
-    inv_Context self.current /\ inv_Context self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Context
-  
-  predicate inv_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant_refmut_Context _1
-  
-  meta "rewrite_def" predicate inv_refmut_Context
-  
-  predicate resolve_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Context
-  
-  let rec elim_Some (_x: t_Option_ref_Bdd) (return (f0'2: t_Bdd)) = any
-    [ _k (f0'2: t_Bdd) -> {Some f0'2 = _x} (! return {f0'2})
-    | _chk -> (! {[@expl:elim Some] match _x with
-        | Some _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate grows (self: MutBorrow.t t_Context) =
-    UInt64.le (view_PeanoInt self.current.cnt) (view_PeanoInt self.final.cnt)
-    /\ (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.current.hashcons) n with
-        | Some'0 b -> Map.get (view_MyHashMap_Node_Bdd self.final.hashcons) n = Some'0 b
-        | None'0 -> true
-        end)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
-    {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
-    /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_16 <- n ] s1
-      | s1 = get_Node {self.current.hashcons} {_16} (fun (_x: t_Option_ref_Bdd) -> [ &_13 <- _x ] s2)
-      | s2 = any [ br0 -> {_13 = None} (! bb4) | br1 (x0: t_Bdd) -> {_13 = Some x0} (! bb2) ] ]
+  let rec hash_Node (self: t_Node) (return (x: UInt64.t)) = (! bb0
+    [ bb0 = any
+      [ br0 -> {self = False'} (! bb6)
+      | br1 -> {self = True'} (! bb5)
+      | br2 (x0: UInt64.t) (x1: t_Bdd) (x2: t_Bdd) -> {self = If x0 x1 x2} (! bb4) ]
     | bb4 = s0
-      [ s0 = alloc_Node {self.current.alloc} {n} (fun (_x: MutBorrow.t t_Node) -> [ &_26 <- _x ] s1)
-      | s1 = -{resolve_refmut_Node _26}- s2
-      | s2 = [ &r'0 <- { f0 = _26.current; f1 = self.current.cnt.f0'0 } ] s3
-      | s3 = MutBorrow.borrow_final <t_MyHashMap_Node_Bdd> {self.current.hashcons}
-          {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-          (fun (_bor: MutBorrow.t t_MyHashMap_Node_Bdd) ->
-            [ &_31 <- _bor ] [ &self <- { self with current = { self.current with hashcons = _bor.final } } ] s4)
-      | s4 = add_Node {_31} {n} {r'0} (fun (_x: ()) -> [ &_30 <- _x ] s5)
-      | s5 =
-        [ &self <- { self with current = { self.current with hashcons_ghost = Map.set self.current.hashcons_ghost r'0.f1 r'0.f0 } } ]
-        s6
-      | s6 = incr {self.current.cnt} (fun (_x: t_PeanoInt) -> [ &_39 <- _x ] s7)
-      | s7 = [ &self <- { self with current = { self.current with cnt = _39 } } ] s8
-      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
-      | s9 = -{resolve_refmut_Context self}- s10
-      | s10 = [ &_ret <- r'0 ] s11
-      | s11 = return {_ret} ]
-    | bb2 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
-      | s1 = -{resolve_refmut_Context self}- s2
-      | s2 = elim_Some {_13} (fun (r0: t_Bdd) -> [ &r <- r0 ] s3)
-      | s3 = {[@expl:assertion] view_Node r.f0 = view_Node n} s4
-      | s4 = [ &_ret <- r ] s5
-      | s5 = return {_ret} ] ]
-    [ & _ret: t_Bdd = Any.any_l ()
-    | & self: MutBorrow.t t_Context = self
-    | & n: t_Node = n
-    | & _13: t_Option_ref_Bdd = Any.any_l ()
-    | & _16: t_Node = Any.any_l ()
-    | & r: t_Bdd = Any.any_l ()
-    | & r'0: t_Bdd = Any.any_l ()
-    | & _26: MutBorrow.t t_Node = Any.any_l ()
-    | & _30: () = Any.any_l ()
-    | & _31: MutBorrow.t t_MyHashMap_Node_Bdd = Any.any_l ()
-    | & _39: t_PeanoInt = Any.any_l () ])
-    [ return (result: t_Bdd) ->
-    {[@stop_split] [@expl:hashcons ensures] ([@stop_split] [@expl:hashcons ensures #0] result.f0 = n)
-      /\ ([@stop_split] [@expl:hashcons ensures #1] grows self)
-      /\ ([@stop_split] [@expl:hashcons ensures #2] is_valid_bdd self.final result)}
+      [ s0 = elim_If {self} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &v <- rv ] s1)
+      | s1 = elim_If {self} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childt <- rchildt ] s2)
+      | s2 = elim_If {self} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childf <- rchildf ] s3)
+      | s3 = wrapping_mul {childt.f1} {(5: UInt64.t)} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s4)
+      | s4 = wrapping_add {v} {_10} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s5 = wrapping_mul {childf.f1} {(7: UInt64.t)} (fun (_x: UInt64.t) -> [ &_12 <- _x ] s6)
+      | s6 = wrapping_add {_8} {_12} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s7)
+      | s7 = return {_ret} ]
+    | bb5 = s0 [ s0 = [ &_ret <- (2: UInt64.t) ] s1 | s1 = return {_ret} ]
+    | bb6 = s0 [ s0 = [ &_ret <- (1: UInt64.t) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
+    | & self: t_Node = self
+    | & v: UInt64.t = Any.any_l ()
+    | & childt: t_Bdd = Any.any_l ()
+    | & childf: t_Bdd = Any.any_l ()
+    | & _8: UInt64.t = Any.any_l ()
+    | & _10: UInt64.t = Any.any_l ()
+    | & _12: UInt64.t = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] UInt64.t'int result
+      = hash_log_Node (view_Node self)}
       (! return {result}) ]
 end
-module M_impl_Context_0__node (* Context<'arena> *)
+module M_impl_Hash_for_Node__hash__refines (* <Node<'arena> as hashmap::Hash> *)
   use creusot.int.UInt64
-  use creusot.prelude.MutBorrow
-  use map.Map
-  use creusot.prelude.Any
+  use int.ComputerDivision
   use int.Int
+  
+  type t_Bdd = { f0: t_Node; f1: UInt64.t }
+  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  
+  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function hash_log_Node (x: t_NodeLog) : int = match x with
+      | False''0 -> 1
+      | True''0 -> 2
+      | If'0 v childt childf -> ComputerDivision.mod (UInt64.t'int v + UInt64.t'int childt * 5
+      + UInt64.t'int childf * 7) (UInt64.t'int const_MAX + 1)
+      end
+  
+  function deep_model_Node (self: t_Node) : t_NodeLog = match self with
+      | False' -> False''0
+      | True' -> True''0
+      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
+      end
+  
+  function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
+  
+  meta "rewrite_def" function view_Node
+  
+  function deep_model_ref_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
+  
+  meta "rewrite_def" function deep_model_ref_Node
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Node. forall result: UInt64.t. UInt64.t'int result = hash_log_Node (view_Node self)
+        -> UInt64.t'int result = hash_log_Node (deep_model_ref_Node self)
+end
+module M_impl_PartialEq_for_Bdd__eq (* <Bdd<'arena> as std::cmp::PartialEq> *)
+  use creusot.int.UInt64
+  use creusot.prelude.Any
   
   type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
   with t_Bdd = { f0: t_Node; f1: UInt64.t }
+  
+  function deep_model_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = self.f1
+  
+  meta "rewrite_def" function deep_model_Bdd
+  
+  function view_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
+  
+  meta "rewrite_def" function view_Bdd
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec eq_Bdd (self: t_Bdd) (o: t_Bdd) (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self.f1 = o.f1 ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: t_Bdd = self | & o: t_Bdd = o ])
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (view_Bdd self = view_Bdd o)}
+      (! return {result}) ]
+end
+module M_impl_PartialEq_for_Bdd__eq__refines (* <Bdd<'arena> as std::cmp::PartialEq> *)
+  use creusot.int.UInt64
+  
+  type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  with t_Bdd = { f0: t_Node; f1: UInt64.t }
+  
+  function deep_model_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = self.f1
+  
+  meta "rewrite_def" function deep_model_Bdd
+  
+  function view_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
+  
+  meta "rewrite_def" function view_Bdd
+  
+  function deep_model_ref_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = deep_model_Bdd self
+  
+  meta "rewrite_def" function deep_model_ref_Bdd
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_Bdd, rhs: t_Bdd. forall result: bool. result = (view_Bdd self_ = view_Bdd rhs)
+        -> result = (deep_model_ref_Bdd self_ = deep_model_ref_Bdd rhs)
+end
+module M_impl_PartialEq_for_Node__eq (* <Node<'arena> as std::cmp::PartialEq> *)
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_Bdd = { f0: t_Node; f1: UInt64.t }
+  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  
+  type tup2_ref_Node_ref_Node = { f0'0: t_Node; f1'0: t_Node }
+  
+  let rec elim_If (_x: t_Node) (return (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd)) = any
+    [ _k (v: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) -> {If v childt childf = _x} (! return {v} {childt} {childf})
+    | _chk -> (! {[@expl:elim If] match _x with
+        | If _ _ _ -> true
+        | _ -> false
+        end}
+      any) ]
   
   function deep_model_Bdd [@inline:trivial] (self: t_Bdd) : UInt64.t = self.f1
   
@@ -3761,29 +3885,7 @@ module M_impl_Context_0__node (* Context<'arena> *)
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (view_Bdd self = view_Bdd o)}
       (! return {result}) ]
   
-  type t_Bump
-  
-  type t_MyHashMap_Node_Bdd
-  
-  type t_MyHashMap_Bdd_Bdd
-  
-  type t_MyHashMap_tup2_Bdd_Bdd_Bdd
-  
-  type t_PeanoInt = { f0'0: UInt64.t }
-  
-  type t_Context = {
-    alloc: t_Bump;
-    hashcons: t_MyHashMap_Node_Bdd;
-    hashcons_ghost: Map.map UInt64.t t_Node;
-    not_memo: t_MyHashMap_Bdd_Bdd;
-    and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
-    cnt: t_PeanoInt }
-  
-  type t_Option_Bdd = None | Some t_Bdd
-  
   type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
-  
-  function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
   
   function deep_model_Node (self: t_Node) : t_NodeLog = match self with
       | False' -> False''0
@@ -3791,193 +3893,91 @@ module M_impl_Context_0__node (* Context<'arena> *)
       | If v childt childf -> If'0 v (childt.f1) (childf.f1)
       end
   
-  function view_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
+  function deep_model_ref_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
   
-  meta "rewrite_def" function view_Node
-  
-  predicate is_valid_bdd (self: t_Context) (b: t_Bdd) =
-    Map.get (view_MyHashMap_Node_Bdd self.hashcons) (view_Node b.f0) = Some b
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function leastvar (self: t_Bdd) : int = match self with
-      | {f0 = True'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = False'; f1 = _} -> UInt64.t'int const_MAX + 1
-      | {f0 = If v _ _; f1 = _} -> UInt64.t'int v
-      end
-  
-  predicate is_valid_node (self: t_Context) (n: t_Node) =
-    match n with
-      | True' -> true
-      | False' -> true
-      | If v childt childf -> childt.f0 <> childf.f0
-      /\ is_valid_bdd self childt
-      /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
-      end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
-  function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
-  
-  meta "rewrite_def" function view_PeanoInt
-  
-  function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
-  
-  predicate interp (self: t_Bdd) (vars: Map.map UInt64.t bool) =
-    match self with
-      | {f0 = True'; f1 = _} -> true
-      | {f0 = False'; f1 = _} -> false
-      | {f0 = If v childt childf; f1 = _} -> if Map.get vars v then interp childt vars else interp childf vars
-      end
-  
-  type tup2_u64_u64 = { f0'1: UInt64.t; f1'1: UInt64.t }
-  
-  function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
-  
-  predicate invariant_Context [@inline:trivial] (self: t_Context) =
-    (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.hashcons) n with
-          | Some b -> view_Node b.f0 = n
-          /\ is_valid_node self b.f0
-          /\ UInt64.lt b.f1 (view_PeanoInt self.cnt) /\ Map.get self.hashcons_ghost b.f1 = b.f0
-          | None -> true
-          end)
-    /\ (forall bm: UInt64.t. match Map.get (view_MyHashMap_Bdd_Bdd self.not_memo) bm with
-          | None -> true
-          | Some n -> let b = { f0 = Map.get self.hashcons_ghost bm; f1 = bm } in is_valid_bdd self n
-          /\ is_valid_bdd self b
-          /\ (forall v: Map.map UInt64.t bool. interp n v = (not interp b v)) /\ leastvar b <= leastvar n
-          end)
-    /\ (forall abm: tup2_u64_u64. match Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.and_memo) abm with
-        | None -> true
-        | Some n -> let a = { f0 = Map.get self.hashcons_ghost abm.f0'1;
-                              f1 = abm.f0'1 } in let b = { f0 = Map.get self.hashcons_ghost abm.f1'1;
-                                                           f1 = abm.f1'1 } in is_valid_bdd self n
-        /\ is_valid_bdd self a
-        /\ is_valid_bdd self b
-        /\ (forall v: Map.map UInt64.t bool. interp n v = (interp a v /\ interp b v))
-        /\ (leastvar a <= leastvar n \/ leastvar b <= leastvar n)
-        end)
-  
-  meta "rewrite_def" predicate invariant_Context
-  
-  predicate inv_Context (_1: t_Context)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
-  
-  predicate invariant_refmut_Context [@inline:trivial] (self: MutBorrow.t t_Context) =
-    inv_Context self.current /\ inv_Context self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Context
-  
-  predicate inv_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = invariant_refmut_Context _1
-  
-  meta "rewrite_def" predicate inv_refmut_Context
-  
-  predicate resolve_refmut_Context [@inline:trivial] (_1: MutBorrow.t t_Context) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Context
-  
-  predicate grows (self: MutBorrow.t t_Context) =
-    UInt64.le (view_PeanoInt self.current.cnt) (view_PeanoInt self.final.cnt)
-    /\ (forall n: t_NodeLog. match Map.get (view_MyHashMap_Node_Bdd self.current.hashcons) n with
-        | Some b -> Map.get (view_MyHashMap_Node_Bdd self.final.hashcons) n = Some b
-        | None -> true
-        end)
-  
-  let rec hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
-    {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
-    /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
-    any
-    [ return (result: t_Bdd) ->
-    {[@stop_split] [@expl:hashcons ensures] ([@stop_split] [@expl:hashcons ensures #0] result.f0 = n)
-      /\ ([@stop_split] [@expl:hashcons ensures #1] grows self)
-      /\ ([@stop_split] [@expl:hashcons ensures #2] is_valid_bdd self.final result)}
-      (! return {result}) ]
+  meta "rewrite_def" function deep_model_ref_Node
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (return (x'0: t_Bdd)) =
-    {[@stop_split] [@expl:node requires] ([@stop_split] [@expl:node 'self' type invariant] inv_refmut_Context self)
-    /\ ([@stop_split] [@expl:node requires #0] is_valid_bdd self.current childt)
-    /\ ([@stop_split] [@expl:node requires #1] is_valid_bdd self.current childf)
-    /\ ([@stop_split] [@expl:node requires #2] UInt64.t'int x < leastvar childt /\ UInt64.t'int x < leastvar childf)}
-    (! bb0
+  let rec eq_Node (self: t_Node) (rhs: t_Node) (return (x: bool)) = (! bb0
     [ bb0 = s0
-      [ s0 = eq_Bdd {childt} {childf} (fun (_x: bool) -> [ &_26 <- _x ] s1)
-      | s1 = any [ br0 -> {_26 = false} (! bb3) | br1 -> {_26} (! bb2) ] ]
-    | bb2 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
-      | s1 = -{resolve_refmut_Context self}- s2
-      | s2 = [ &_ret <- childt ] s3
-      | s3 = return {_ret} ]
-    | bb3 = s0
-      [ s0 = [ &_31 <- If x childt childf ] s1
-      | s1 = MutBorrow.borrow_final <t_Context> {self.current} {MutBorrow.get_id self}
-          (fun (_bor: MutBorrow.t t_Context) ->
-            [ &_30 <- _bor ] -{inv_Context _bor.final}-
-            [ &self <- { self with current = _bor.final } ] s2)
-        [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s2 = hashcons'0 {_30} {_31} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
-      | s4 = -{resolve_refmut_Context self}- s5
-      | s5 = return {_ret} ] ]
-    [ & _ret: t_Bdd = Any.any_l ()
-    | & self: MutBorrow.t t_Context = self
-    | & x: UInt64.t = x
-    | & childt: t_Bdd = childt
-    | & childf: t_Bdd = childf
-    | & _26: bool = Any.any_l ()
-    | & _30: MutBorrow.t t_Context = Any.any_l ()
-    | & _31: t_Node = Any.any_l () ])
-    [ return (result: t_Bdd) -> {[@stop_split] [@expl:node ensures] ([@stop_split] [@expl:node ensures #0] grows self)
-      /\ ([@stop_split] [@expl:node ensures #1] is_valid_bdd self.final result)
-      /\ ([@stop_split] [@expl:node ensures #2] forall v: Map.map UInt64.t bool. interp result v
-          = (if Map.get v x then interp childt v else interp childf v))
-      /\ ([@stop_split] [@expl:node ensures #3] UInt64.t'int x <= leastvar result)}
+      [ s0 = [ &_6 <- { f0'0 = self; f1'0 = rhs } ] s1
+      | s1 = any
+        [ br0 -> {_6.f0'0 = False'} (! bb2)
+        | br1 -> {_6.f0'0 = True'} (! bb4)
+        | br2 (x0: UInt64.t) (x1: t_Bdd) (x2: t_Bdd) -> {_6.f0'0 = If x0 x1 x2} (! bb6) ] ]
+    | bb6 = any
+      [ br0 -> {_6.f1'0 = False'} (! bb1)
+      | br1 -> {_6.f1'0 = True'} (! bb1)
+      | br2 (x0: UInt64.t) (x1: t_Bdd) (x2: t_Bdd) -> {_6.f1'0 = If x0 x1 x2} (! bb8) ]
+    | bb8 = s0
+      [ s0 = elim_If {_6.f0'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &v_1 <- rv ] s1)
+      | s1 = elim_If {_6.f0'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childt_1 <- rchildt ] s2)
+      | s2 = elim_If {_6.f0'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childf_1 <- rchildf ] s3)
+      | s3 = elim_If {_6.f1'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &v_2 <- rv ] s4)
+      | s4 = elim_If {_6.f1'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childt_2 <- rchildt ] s5)
+      | s5 = elim_If {_6.f1'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childf_2 <- rchildf ] s6)
+      | s6 = eq_Bdd {childf_1} {childf_2} (fun (_x: bool) -> [ &_19 <- _x ] s7)
+      | s7 = any [ br0 -> {_19 = false} (! bb19) | br1 -> {_19} (! bb12) ] ]
+    | bb12 = s0
+      [ s0 = eq_Bdd {childt_1} {childt_2} (fun (_x: bool) -> [ &_22 <- _x ] s1)
+      | s1 = any [ br0 -> {_22 = false} (! bb19) | br1 -> {_22} (! bb14) ] ]
+    | bb14 = s0 [ s0 = [ &_25 <- v_1 = v_2 ] s1 | s1 = any [ br0 -> {_25 = false} (! bb19) | br1 -> {_25} (! bb15) ] ]
+    | bb15 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ]
+    | bb19 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb4 = any
+      [ br0 -> {_6.f1'0 = False'} (! bb1)
+      | br1 -> {_6.f1'0 = True'} (! bb9)
+      | br2 (x0: UInt64.t) (x1: t_Bdd) (x2: t_Bdd) -> {_6.f1'0 = If x0 x1 x2} (! bb1) ]
+    | bb9 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ]
+    | bb2 = any
+      [ br0 -> {_6.f1'0 = False'} (! bb10)
+      | br1 -> {_6.f1'0 = True'} (! bb1)
+      | br2 (x0: UInt64.t) (x1: t_Bdd) (x2: t_Bdd) -> {_6.f1'0 = If x0 x1 x2} (! bb1) ]
+    | bb1 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb10 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l ()
+    | & self: t_Node = self
+    | & rhs: t_Node = rhs
+    | & _6: tup2_ref_Node_ref_Node = Any.any_l ()
+    | & v_1: UInt64.t = Any.any_l ()
+    | & childt_1: t_Bdd = Any.any_l ()
+    | & childf_1: t_Bdd = Any.any_l ()
+    | & v_2: UInt64.t = Any.any_l ()
+    | & childt_2: t_Bdd = Any.any_l ()
+    | & childf_2: t_Bdd = Any.any_l ()
+    | & _19: bool = Any.any_l ()
+    | & _22: bool = Any.any_l ()
+    | & _25: bool = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
+      = (deep_model_ref_Node self = deep_model_ref_Node rhs)}
       (! return {result}) ]
+end
+module M_impl_PartialEq_for_Node__eq__refines (* <Node<'arena> as std::cmp::PartialEq> *)
+  use creusot.int.UInt64
+  
+  type t_Bdd = { f0: t_Node; f1: UInt64.t }
+  with t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
+  
+  type t_NodeLog = False''0 | True''0 | If'0 UInt64.t UInt64.t UInt64.t
+  
+  function deep_model_Node (self: t_Node) : t_NodeLog = match self with
+      | False' -> False''0
+      | True' -> True''0
+      | If v childt childf -> If'0 v (childt.f1) (childf.f1)
+      end
+  
+  function deep_model_ref_Node [@inline:trivial] (self: t_Node) : t_NodeLog = deep_model_Node self
+  
+  meta "rewrite_def" function deep_model_ref_Node
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_Node, rhs: t_Node. forall result: bool. result
+          = (deep_model_ref_Node self_ = deep_model_ref_Node rhs)
+        -> result = (deep_model_ref_Node self_ = deep_model_ref_Node rhs)
 end

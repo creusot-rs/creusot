@@ -155,6 +155,351 @@ module M_impl_List_T__new (* List<T> *)
       /\ ([@stop_split] [@expl:new ensures] view_List_T result = (Seq.empty: Seq.seq t_T))}
       (! return {result}) ]
 end
+module M_impl_List_T__pop_front (* List<T> *)
+  use creusot.prelude.Opaque
+  use seq.Seq
+  use creusot.prelude.Ptr
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use map.Map
+  use int.Int
+  
+  type t_Perm_ptr_Link_T
+  
+  type t_List_T = { first: Opaque.ptr; last: Opaque.ptr; seq: Seq.seq t_Perm_ptr_Link_T }
+  
+  predicate is_null_ptr_Link_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  let rec is_null_Link_T (self_: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Link_T self_}
+      (! return {result}) ]
+  
+  function ward_ptr_Link_T (self: t_Perm_ptr_Link_T) : Opaque.ptr
+  
+  type t_T
+  
+  type t_Link_T = { value: t_T; next: Opaque.ptr }
+  
+  function val_ptr_Link_T (self: t_Perm_ptr_Link_T) : t_Link_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
+    \/ Seq.length self.seq > 0
+    /\ self.first = ward_ptr_Link_T (Seq.get self.seq 0)
+    /\ self.last = ward_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))
+    /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
+        -> (val_ptr_Link_T (Seq.get self.seq i)).next = ward_ptr_Link_T (Seq.get self.seq (i + 1)))
+    /\ is_null_ptr_Link_T (val_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))).next
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
+  predicate metadata_matches_Link_T [@inline:trivial] (_value: t_Link_T) (_metadata: ()) = true
+  
+  meta "rewrite_def" predicate metadata_matches_Link_T
+  
+  function metadata_Link_T (_1: Opaque.ptr) : ()
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_Link_T (_1: t_Link_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Link_T [inv_Link_T x]. inv_Link_T x = inv_T x.value
+  
+  predicate invariant_ref_Link_T [@inline:trivial] (self: t_Link_T) = inv_Link_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Link_T
+  
+  predicate inv_ref_Link_T [@inline:trivial] (_1: t_Link_T) = invariant_ref_Link_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Link_T
+  
+  predicate invariant_Perm_ptr_Link_T (self: t_Perm_ptr_Link_T) =
+    not is_null_ptr_Link_T (ward_ptr_Link_T self)
+    /\ metadata_matches_Link_T (val_ptr_Link_T self) (metadata_Link_T (ward_ptr_Link_T self))
+    /\ inv_ref_Link_T (val_ptr_Link_T self)
+  
+  predicate inv_Perm_ptr_Link_T (_1: t_Perm_ptr_Link_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Link_T [inv_Perm_ptr_Link_T x]. inv_Perm_ptr_Link_T x
+      = invariant_Perm_ptr_Link_T x
+  
+  predicate invariant_Box_Perm_ptr_Link_T_Global (self: t_Perm_ptr_Link_T) = inv_Perm_ptr_Link_T self
+  
+  predicate inv_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: t_Perm_ptr_Link_T) =
+    invariant_Box_Perm_ptr_Link_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_Perm_ptr_Link_T_Global
+  
+  predicate invariant_ref_Box_Perm_ptr_Link_T_Global [@inline:trivial] (self: t_Perm_ptr_Link_T) =
+    inv_Box_Perm_ptr_Link_T_Global self
+  
+  meta "rewrite_def" predicate invariant_ref_Box_Perm_ptr_Link_T_Global
+  
+  predicate inv_ref_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: t_Perm_ptr_Link_T) =
+    invariant_ref_Box_Perm_ptr_Link_T_Global _1
+  
+  meta "rewrite_def" predicate inv_ref_Box_Perm_ptr_Link_T_Global
+  
+  predicate invariant_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (self: Seq.seq t_Perm_ptr_Link_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Box_Perm_ptr_Link_T_Global (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Box_Perm_ptr_Link_T_Global
+  
+  predicate inv_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Link_T) =
+    invariant_Seq_Box_Perm_ptr_Link_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Seq_Box_Perm_ptr_Link_T_Global
+  
+  predicate invariant_Ghost_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (self: Seq.seq t_Perm_ptr_Link_T) =
+    inv_Seq_Box_Perm_ptr_Link_T_Global self
+  
+  meta "rewrite_def" predicate invariant_Ghost_Seq_Box_Perm_ptr_Link_T_Global
+  
+  predicate inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Link_T) =
+    invariant_Ghost_Seq_Box_Perm_ptr_Link_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global
+  
+  predicate inv_List_T (_1: t_List_T)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
+      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global x.seq)
+  
+  predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
+    inv_List_T self.current /\ inv_List_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_List_T
+  
+  predicate inv_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = invariant_refmut_List_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_List_T
+  
+  predicate resolve_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_List_T
+  
+  type t_Option_T = None | Some t_T
+  
+  predicate invariant_refmut_Ghost_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (self: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) =
+    inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global self.current /\ inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Ghost_Seq_Box_Perm_ptr_Link_T_Global
+  
+  predicate inv_refmut_Ghost_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) =
+    invariant_refmut_Ghost_Seq_Box_Perm_ptr_Link_T_Global _1
+  
+  meta "rewrite_def" predicate inv_refmut_Ghost_Seq_Box_Perm_ptr_Link_T_Global
+  
+  predicate invariant_refmut_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (self: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) =
+    inv_Seq_Box_Perm_ptr_Link_T_Global self.current /\ inv_Seq_Box_Perm_ptr_Link_T_Global self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Seq_Box_Perm_ptr_Link_T_Global
+  
+  predicate inv_refmut_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) =
+    invariant_refmut_Seq_Box_Perm_ptr_Link_T_Global _1
+  
+  meta "rewrite_def" predicate inv_refmut_Seq_Box_Perm_ptr_Link_T_Global
+  
+  let rec deref_mut_Ghost_Seq_Box_Perm_ptr_Link_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T))
+    (return (x: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T))) =
+    {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Seq_Box_Perm_ptr_Link_T_Global self}
+    any
+    [ return (result: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) ->
+    {[@stop_split] [@expl:deref_mut_Ghost_Seq_Box_Perm_ptr_Link_T_Global ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_Seq_Box_Perm_ptr_Link_T_Global result)
+      /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
+      (! return {result}) ]
+  
+  type t_Option_Box_Perm_ptr_Link_T_Global = None'0 | Some'0 t_Perm_ptr_Link_T
+  
+  predicate inv_Option_Box_Perm_ptr_Link_T_Global (_1: t_Option_Box_Perm_ptr_Link_T_Global)
+  
+  axiom inv_axiom'2 [@rewrite]:
+    forall x: t_Option_Box_Perm_ptr_Link_T_Global [inv_Option_Box_Perm_ptr_Link_T_Global x]. inv_Option_Box_Perm_ptr_Link_T_Global x
+      = match x with
+        | None'0 -> true
+        | Some'0 f0 -> inv_Box_Perm_ptr_Link_T_Global f0
+        end
+  
+  function tail_Box_Perm_ptr_Link_T_Global (self: Seq.seq t_Perm_ptr_Link_T) : Seq.seq t_Perm_ptr_Link_T =
+    Seq.([..]) self 1 (Seq.length self)
+  
+  let rec pop_front_ghost_Box_Perm_ptr_Link_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T))
+    (return (x: t_Option_Box_Perm_ptr_Link_T_Global)) =
+    {[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Link_T_Global self}
+    any
+    [ return (result: t_Option_Box_Perm_ptr_Link_T_Global) ->
+    {[@stop_split] [@expl:pop_front_ghost_Box_Perm_ptr_Link_T_Global ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_Box_Perm_ptr_Link_T_Global result)
+      /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
+        | None'0 -> self.current = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ self.current = self.final
+        | Some'0 r -> Seq.length self.current > 0
+        /\ r = Seq.get self.current 0 /\ self.final = tail_Box_Perm_ptr_Link_T_Global self.current
+        end)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Seq_Box_Perm_ptr_Link_T_Global
+  
+  let rec unwrap_Box_Perm_ptr_Link_T_Global (self_: t_Option_Box_Perm_ptr_Link_T_Global)
+    (return (x: t_Perm_ptr_Link_T)) =
+    {[@stop_split] [@expl:unwrap_Box_Perm_ptr_Link_T_Global requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_Box_Perm_ptr_Link_T_Global self_)
+    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None'0)}
+    any
+    [ return (result: t_Perm_ptr_Link_T) ->
+    {[@stop_split] [@expl:unwrap_Box_Perm_ptr_Link_T_Global ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_Box_Perm_ptr_Link_T_Global result)
+      /\ ([@stop_split] [@expl:unwrap ensures] Some'0 result = self_)}
+      (! return {result}) ]
+  
+  predicate invariant_Ghost_Box_Perm_ptr_Link_T_Global [@inline:trivial] (self: t_Perm_ptr_Link_T) =
+    inv_Box_Perm_ptr_Link_T_Global self
+  
+  meta "rewrite_def" predicate invariant_Ghost_Box_Perm_ptr_Link_T_Global
+  
+  predicate inv_Ghost_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: t_Perm_ptr_Link_T) =
+    invariant_Ghost_Box_Perm_ptr_Link_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Ghost_Box_Perm_ptr_Link_T_Global
+  
+  let rec new_Box_Perm_ptr_Link_T_Global (x: t_Perm_ptr_Link_T) (return (x'0: t_Perm_ptr_Link_T)) =
+    {[@stop_split] [@expl:new 'x' type invariant] inv_Box_Perm_ptr_Link_T_Global x}
+    any
+    [ return (result: t_Perm_ptr_Link_T) ->
+    {[@stop_split] [@expl:new_Box_Perm_ptr_Link_T_Global ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Box_Perm_ptr_Link_T_Global result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
+  predicate invariant_Box_Link_T_Global (self: t_Link_T) = inv_Link_T self
+  
+  predicate inv_Box_Link_T_Global [@inline:trivial] (_1: t_Link_T) = invariant_Box_Link_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_Link_T_Global
+  
+  let rec to_box_Link_T (ptr: Opaque.ptr) (own: t_Perm_ptr_Link_T) (return (x: t_Link_T)) =
+    {[@stop_split] [@expl:to_box_Link_T requires] ([@stop_split] [@expl:to_box 'own' type invariant] inv_Ghost_Box_Perm_ptr_Link_T_Global own)
+    /\ ([@stop_split] [@expl:to_box requires] ptr = ward_ptr_Link_T own)}
+    any
+    [ return (result: t_Link_T) ->
+    {[@stop_split] [@expl:to_box_Link_T ensures] ([@stop_split] [@expl:to_box result type invariant] inv_Box_Link_T_Global result)
+      /\ ([@stop_split] [@expl:to_box ensures] result = val_ptr_Link_T own)}
+      (! return {result}) ]
+  
+  predicate is_null_ptr_Link_T'0 (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+  
+  let rec null_mut_Link_T (return (x: Opaque.ptr)) = any
+    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:null_mut ensures] is_null_ptr_Link_T'0 result}
+      (! return {result}) ]
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom'3 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_T f0
+        end
+  
+  function index_Mapping_Box_Perm_ptr_Link_T_Global_T [@inline:trivial] (self: Map.map t_Perm_ptr_Link_T t_T) (a: t_Perm_ptr_Link_T) : t_T
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Box_Perm_ptr_Link_T_Global_T
+  
+  function map_Box_Perm_ptr_Link_T_Global (self: Seq.seq t_Perm_ptr_Link_T) (m: Map.map t_Perm_ptr_Link_T t_T) : Seq.seq t_T
+  
+  axiom map_Box_Perm_ptr_Link_T_Global_spec:
+    forall self: Seq.seq t_Perm_ptr_Link_T, m: Map.map t_Perm_ptr_Link_T t_T [map_Box_Perm_ptr_Link_T_Global self m]. Seq.length (map_Box_Perm_ptr_Link_T_Global self m)
+      = Seq.length self
+  
+  axiom map_Box_Perm_ptr_Link_T_Global_spec'0:
+    forall self: Seq.seq t_Perm_ptr_Link_T, m: Map.map t_Perm_ptr_Link_T t_T [map_Box_Perm_ptr_Link_T_Global self m]. forall i: int. 0
+            <= i
+          /\ i < Seq.length self
+        -> Seq.get (map_Box_Perm_ptr_Link_T_Global self m) i
+        = index_Mapping_Box_Perm_ptr_Link_T_Global_T m (Seq.get self i)
+  
+  function view_List_T (self: t_List_T) : Seq.seq t_T =
+    map_Box_Perm_ptr_Link_T_Global self.seq (fun (ptr_perm: t_Perm_ptr_Link_T) -> (val_ptr_Link_T ptr_perm).value)
+  
+  function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+  
+  function pop_front_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec pop_front_T'0 (self: MutBorrow.t t_List_T) (return (x: t_Option_T)) =
+    {[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_List_T self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = is_null_Link_T {self.current.first} (fun (_x: bool) -> [ &_5 <- _x ] s1)
+      | s1 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ] ]
+    | bb2 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T self} any) ]
+      | s1 = -{resolve_refmut_List_T self}- s2
+      | s2 = [ &_ret <- None ] s3
+      | s3 = return {_ret} ]
+    | bb3 = s0
+      [ s0 = MutBorrow.borrow_final <Seq.seq t_Perm_ptr_Link_T> {self.current.seq}
+          {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
+          (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) ->
+            [ &_13 <- _bor ] -{inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global _bor.final}-
+            [ &self <- { self with current = { self.current with seq = _bor.final } } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global self.current.seq} any) ]
+      | s1 = deref_mut_Ghost_Seq_Box_Perm_ptr_Link_T_Global {_13}
+          (fun (_x: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) -> [ &_12 <- _x ] s2)
+      | s2 = MutBorrow.borrow_final <Seq.seq t_Perm_ptr_Link_T> {_12.current} {MutBorrow.get_id _12}
+          (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) ->
+            [ &_11 <- _bor ] -{inv_Seq_Box_Perm_ptr_Link_T_Global _bor.final}-
+            [ &_12 <- { _12 with current = _bor.final } ] s3)
+        [ _ck -> (! {[@expl:type invariant] inv_Seq_Box_Perm_ptr_Link_T_Global _12.current} any) ]
+      | s3 = pop_front_ghost_Box_Perm_ptr_Link_T_Global {_11}
+          (fun (_x: t_Option_Box_Perm_ptr_Link_T_Global) -> [ &_10 <- _x ] s4)
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Link_T_Global _12} any) ]
+      | s5 = -{resolve_refmut_Seq_Box_Perm_ptr_Link_T_Global _12}- s6
+      | s6 = unwrap_Box_Perm_ptr_Link_T_Global {_10} (fun (_x: t_Perm_ptr_Link_T) -> [ &_9 <- _x ] s7)
+      | s7 = new_Box_Perm_ptr_Link_T_Global {_9} (fun (_x: t_Perm_ptr_Link_T) -> [ &own <- _x ] s8)
+      | s8 = [ &_17 <- self.current.first ] s9
+      | s9 = to_box_Link_T {_17} {own} (fun (_x: t_Link_T) -> [ &_15 <- _x ] s10)
+      | s10 = [ &link <- _15 ] s11
+      | s11 = [ &self <- { self with current = { self.current with first = link.next } } ] s12
+      | s12 = is_null_Link_T {self.current.first} (fun (_x: bool) -> [ &_22 <- _x ] s13)
+      | s13 = any [ br0 -> {_22 = false} (! bb13) | br1 -> {_22} (! bb11) ] ]
+    | bb11 = s0
+      [ s0 = null_mut_Link_T (fun (_x: Opaque.ptr) -> [ &_24 <- _x ] s1)
+      | s1 = [ &self <- { self with current = { self.current with last = _24 } } ] s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T self} any) ]
+      | s3 = -{resolve_refmut_List_T self}- s4
+      | s4 = bb14 ]
+    | bb13 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T self} any) ]
+      | s1 = -{resolve_refmut_List_T self}- s2
+      | s2 = bb14 ]
+    | bb14 = s0 [ s0 = [ &_ret <- Some (link.value) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Option_T = Any.any_l ()
+    | & self: MutBorrow.t t_List_T = self
+    | & _5: bool = Any.any_l ()
+    | & own: t_Perm_ptr_Link_T = Any.any_l ()
+    | & _9: t_Perm_ptr_Link_T = Any.any_l ()
+    | & _10: t_Option_Box_Perm_ptr_Link_T_Global = Any.any_l ()
+    | & _11: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
+    | & _12: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
+    | & _13: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
+    | & link: t_Link_T = Any.any_l ()
+    | & _15: t_Link_T = Any.any_l ()
+    | & _17: Opaque.ptr = Any.any_l ()
+    | & _22: bool = Any.any_l ()
+    | & _24: Opaque.ptr = Any.any_l () ])
+    [ return (result: t_Option_T) ->
+    {[@stop_split] [@expl:pop_front_T ensures] ([@stop_split] [@expl:pop_front result type invariant] inv_Option_T result)
+      /\ ([@stop_split] [@expl:pop_front ensures] match result with
+        | None -> view_List_T self.current = (Seq.empty: Seq.seq t_T)
+        /\ view_List_T self.final = (Seq.empty: Seq.seq t_T)
+        | Some x -> Seq.length (view_List_T self.current) > 0
+        /\ x = Seq.get (view_List_T self.current) 0 /\ view_List_T self.final = pop_front_T (view_List_T self.current)
+        end)}
+      (! return {result}) ]
+end
 module M_impl_List_T__push_back (* List<T> *)
   use creusot.prelude.Opaque
   use creusot.prelude.Ptr
@@ -981,350 +1326,5 @@ module M_impl_List_T__push_front (* List<T> *)
     | & _22: t_Perm_ptr_Link_T = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:push_front ensures] view_List_T self.final
       = push_front_T (view_List_T self.current) value'0}
-      (! return {result}) ]
-end
-module M_impl_List_T__pop_front (* List<T> *)
-  use creusot.prelude.Opaque
-  use seq.Seq
-  use creusot.prelude.Ptr
-  use creusot.int.UInt64
-  use creusot.prelude.MutBorrow
-  use creusot.prelude.Any
-  use map.Map
-  use int.Int
-  
-  type t_Perm_ptr_Link_T
-  
-  type t_List_T = { first: Opaque.ptr; last: Opaque.ptr; seq: Seq.seq t_Perm_ptr_Link_T }
-  
-  predicate is_null_ptr_Link_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
-  
-  let rec is_null_Link_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Link_T self_}
-      (! return {result}) ]
-  
-  function ward_ptr_Link_T (self: t_Perm_ptr_Link_T) : Opaque.ptr
-  
-  type t_T
-  
-  type t_Link_T = { value: t_T; next: Opaque.ptr }
-  
-  function val_ptr_Link_T (self: t_Perm_ptr_Link_T) : t_Link_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
-    \/ Seq.length self.seq > 0
-    /\ self.first = ward_ptr_Link_T (Seq.get self.seq 0)
-    /\ self.last = ward_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))
-    /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
-        -> (val_ptr_Link_T (Seq.get self.seq i)).next = ward_ptr_Link_T (Seq.get self.seq (i + 1)))
-    /\ is_null_ptr_Link_T (val_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))).next
-  
-  meta "rewrite_def" predicate invariant_List_T
-  
-  predicate metadata_matches_Link_T [@inline:trivial] (_value: t_Link_T) (_metadata: ()) = true
-  
-  meta "rewrite_def" predicate metadata_matches_Link_T
-  
-  function metadata_Link_T (_1: Opaque.ptr) : ()
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_Link_T (_1: t_Link_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Link_T [inv_Link_T x]. inv_Link_T x = inv_T x.value
-  
-  predicate invariant_ref_Link_T [@inline:trivial] (self: t_Link_T) = inv_Link_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Link_T
-  
-  predicate inv_ref_Link_T [@inline:trivial] (_1: t_Link_T) = invariant_ref_Link_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Link_T
-  
-  predicate invariant_Perm_ptr_Link_T (self: t_Perm_ptr_Link_T) =
-    not is_null_ptr_Link_T (ward_ptr_Link_T self)
-    /\ metadata_matches_Link_T (val_ptr_Link_T self) (metadata_Link_T (ward_ptr_Link_T self))
-    /\ inv_ref_Link_T (val_ptr_Link_T self)
-  
-  predicate inv_Perm_ptr_Link_T (_1: t_Perm_ptr_Link_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Link_T [inv_Perm_ptr_Link_T x]. inv_Perm_ptr_Link_T x
-      = invariant_Perm_ptr_Link_T x
-  
-  predicate invariant_Box_Perm_ptr_Link_T_Global (self: t_Perm_ptr_Link_T) = inv_Perm_ptr_Link_T self
-  
-  predicate inv_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: t_Perm_ptr_Link_T) =
-    invariant_Box_Perm_ptr_Link_T_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_Perm_ptr_Link_T_Global
-  
-  predicate invariant_ref_Box_Perm_ptr_Link_T_Global [@inline:trivial] (self: t_Perm_ptr_Link_T) =
-    inv_Box_Perm_ptr_Link_T_Global self
-  
-  meta "rewrite_def" predicate invariant_ref_Box_Perm_ptr_Link_T_Global
-  
-  predicate inv_ref_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: t_Perm_ptr_Link_T) =
-    invariant_ref_Box_Perm_ptr_Link_T_Global _1
-  
-  meta "rewrite_def" predicate inv_ref_Box_Perm_ptr_Link_T_Global
-  
-  predicate invariant_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (self: Seq.seq t_Perm_ptr_Link_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Box_Perm_ptr_Link_T_Global (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Box_Perm_ptr_Link_T_Global
-  
-  predicate inv_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Link_T) =
-    invariant_Seq_Box_Perm_ptr_Link_T_Global _1
-  
-  meta "rewrite_def" predicate inv_Seq_Box_Perm_ptr_Link_T_Global
-  
-  predicate invariant_Ghost_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (self: Seq.seq t_Perm_ptr_Link_T) =
-    inv_Seq_Box_Perm_ptr_Link_T_Global self
-  
-  meta "rewrite_def" predicate invariant_Ghost_Seq_Box_Perm_ptr_Link_T_Global
-  
-  predicate inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Link_T) =
-    invariant_Ghost_Seq_Box_Perm_ptr_Link_T_Global _1
-  
-  meta "rewrite_def" predicate inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global
-  
-  predicate inv_List_T (_1: t_List_T)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global x.seq)
-  
-  predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
-    inv_List_T self.current /\ inv_List_T self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_List_T
-  
-  predicate inv_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = invariant_refmut_List_T _1
-  
-  meta "rewrite_def" predicate inv_refmut_List_T
-  
-  predicate resolve_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_List_T
-  
-  type t_Option_T = None | Some t_T
-  
-  predicate invariant_refmut_Ghost_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (self: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) =
-    inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global self.current /\ inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Ghost_Seq_Box_Perm_ptr_Link_T_Global
-  
-  predicate inv_refmut_Ghost_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) =
-    invariant_refmut_Ghost_Seq_Box_Perm_ptr_Link_T_Global _1
-  
-  meta "rewrite_def" predicate inv_refmut_Ghost_Seq_Box_Perm_ptr_Link_T_Global
-  
-  predicate invariant_refmut_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (self: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) =
-    inv_Seq_Box_Perm_ptr_Link_T_Global self.current /\ inv_Seq_Box_Perm_ptr_Link_T_Global self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Seq_Box_Perm_ptr_Link_T_Global
-  
-  predicate inv_refmut_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) =
-    invariant_refmut_Seq_Box_Perm_ptr_Link_T_Global _1
-  
-  meta "rewrite_def" predicate inv_refmut_Seq_Box_Perm_ptr_Link_T_Global
-  
-  let rec deref_mut_Ghost_Seq_Box_Perm_ptr_Link_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T))
-    (return (x: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T))) =
-    {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Seq_Box_Perm_ptr_Link_T_Global self}
-    any
-    [ return (result: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) ->
-    {[@stop_split] [@expl:deref_mut_Ghost_Seq_Box_Perm_ptr_Link_T_Global ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_Seq_Box_Perm_ptr_Link_T_Global result)
-      /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
-      (! return {result}) ]
-  
-  type t_Option_Box_Perm_ptr_Link_T_Global = None'0 | Some'0 t_Perm_ptr_Link_T
-  
-  predicate inv_Option_Box_Perm_ptr_Link_T_Global (_1: t_Option_Box_Perm_ptr_Link_T_Global)
-  
-  axiom inv_axiom'2 [@rewrite]:
-    forall x: t_Option_Box_Perm_ptr_Link_T_Global [inv_Option_Box_Perm_ptr_Link_T_Global x]. inv_Option_Box_Perm_ptr_Link_T_Global x
-      = match x with
-        | None'0 -> true
-        | Some'0 f0 -> inv_Box_Perm_ptr_Link_T_Global f0
-        end
-  
-  function tail_Box_Perm_ptr_Link_T_Global (self: Seq.seq t_Perm_ptr_Link_T) : Seq.seq t_Perm_ptr_Link_T =
-    Seq.([..]) self 1 (Seq.length self)
-  
-  let rec pop_front_ghost_Box_Perm_ptr_Link_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T))
-    (return (x: t_Option_Box_Perm_ptr_Link_T_Global)) =
-    {[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Link_T_Global self}
-    any
-    [ return (result: t_Option_Box_Perm_ptr_Link_T_Global) ->
-    {[@stop_split] [@expl:pop_front_ghost_Box_Perm_ptr_Link_T_Global ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_Box_Perm_ptr_Link_T_Global result)
-      /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
-        | None'0 -> self.current = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ self.current = self.final
-        | Some'0 r -> Seq.length self.current > 0
-        /\ r = Seq.get self.current 0 /\ self.final = tail_Box_Perm_ptr_Link_T_Global self.current
-        end)}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_Seq_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Seq_Box_Perm_ptr_Link_T_Global
-  
-  let rec unwrap_Box_Perm_ptr_Link_T_Global (self_: t_Option_Box_Perm_ptr_Link_T_Global)
-    (return (x: t_Perm_ptr_Link_T)) =
-    {[@stop_split] [@expl:unwrap_Box_Perm_ptr_Link_T_Global requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_Box_Perm_ptr_Link_T_Global self_)
-    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None'0)}
-    any
-    [ return (result: t_Perm_ptr_Link_T) ->
-    {[@stop_split] [@expl:unwrap_Box_Perm_ptr_Link_T_Global ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_Box_Perm_ptr_Link_T_Global result)
-      /\ ([@stop_split] [@expl:unwrap ensures] Some'0 result = self_)}
-      (! return {result}) ]
-  
-  predicate invariant_Ghost_Box_Perm_ptr_Link_T_Global [@inline:trivial] (self: t_Perm_ptr_Link_T) =
-    inv_Box_Perm_ptr_Link_T_Global self
-  
-  meta "rewrite_def" predicate invariant_Ghost_Box_Perm_ptr_Link_T_Global
-  
-  predicate inv_Ghost_Box_Perm_ptr_Link_T_Global [@inline:trivial] (_1: t_Perm_ptr_Link_T) =
-    invariant_Ghost_Box_Perm_ptr_Link_T_Global _1
-  
-  meta "rewrite_def" predicate inv_Ghost_Box_Perm_ptr_Link_T_Global
-  
-  let rec new_Box_Perm_ptr_Link_T_Global (x: t_Perm_ptr_Link_T) (return (x'0: t_Perm_ptr_Link_T)) =
-    {[@stop_split] [@expl:new 'x' type invariant] inv_Box_Perm_ptr_Link_T_Global x}
-    any
-    [ return (result: t_Perm_ptr_Link_T) ->
-    {[@stop_split] [@expl:new_Box_Perm_ptr_Link_T_Global ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Box_Perm_ptr_Link_T_Global result)
-      /\ ([@stop_split] [@expl:new ensures] result = x)}
-      (! return {result}) ]
-  
-  predicate invariant_Box_Link_T_Global (self: t_Link_T) = inv_Link_T self
-  
-  predicate inv_Box_Link_T_Global [@inline:trivial] (_1: t_Link_T) = invariant_Box_Link_T_Global _1
-  
-  meta "rewrite_def" predicate inv_Box_Link_T_Global
-  
-  let rec to_box_Link_T (ptr: Opaque.ptr) (own: t_Perm_ptr_Link_T) (return (x: t_Link_T)) =
-    {[@stop_split] [@expl:to_box_Link_T requires] ([@stop_split] [@expl:to_box 'own' type invariant] inv_Ghost_Box_Perm_ptr_Link_T_Global own)
-    /\ ([@stop_split] [@expl:to_box requires] ptr = ward_ptr_Link_T own)}
-    any
-    [ return (result: t_Link_T) ->
-    {[@stop_split] [@expl:to_box_Link_T ensures] ([@stop_split] [@expl:to_box result type invariant] inv_Box_Link_T_Global result)
-      /\ ([@stop_split] [@expl:to_box ensures] result = val_ptr_Link_T own)}
-      (! return {result}) ]
-  
-  predicate is_null_ptr_Link_T'0 (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
-  
-  let rec null_mut_Link_T (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:null_mut ensures] is_null_ptr_Link_T'0 result}
-      (! return {result}) ]
-  
-  predicate inv_Option_T (_1: t_Option_T)
-  
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-      = match x with
-        | None -> true
-        | Some f0 -> inv_T f0
-        end
-  
-  function index_Mapping_Box_Perm_ptr_Link_T_Global_T [@inline:trivial] (self: Map.map t_Perm_ptr_Link_T t_T) (a: t_Perm_ptr_Link_T) : t_T
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Box_Perm_ptr_Link_T_Global_T
-  
-  function map_Box_Perm_ptr_Link_T_Global (self: Seq.seq t_Perm_ptr_Link_T) (m: Map.map t_Perm_ptr_Link_T t_T) : Seq.seq t_T
-  
-  axiom map_Box_Perm_ptr_Link_T_Global_spec:
-    forall self: Seq.seq t_Perm_ptr_Link_T, m: Map.map t_Perm_ptr_Link_T t_T [map_Box_Perm_ptr_Link_T_Global self m]. Seq.length (map_Box_Perm_ptr_Link_T_Global self m)
-      = Seq.length self
-  
-  axiom map_Box_Perm_ptr_Link_T_Global_spec'0:
-    forall self: Seq.seq t_Perm_ptr_Link_T, m: Map.map t_Perm_ptr_Link_T t_T [map_Box_Perm_ptr_Link_T_Global self m]. forall i: int. 0
-            <= i
-          /\ i < Seq.length self
-        -> Seq.get (map_Box_Perm_ptr_Link_T_Global self m) i
-        = index_Mapping_Box_Perm_ptr_Link_T_Global_T m (Seq.get self i)
-  
-  function view_List_T (self: t_List_T) : Seq.seq t_T =
-    map_Box_Perm_ptr_Link_T_Global self.seq (fun (ptr_perm: t_Perm_ptr_Link_T) -> (val_ptr_Link_T ptr_perm).value)
-  
-  function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
-  
-  function pop_front_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec pop_front_T'0 (self: MutBorrow.t t_List_T) (return (x: t_Option_T)) =
-    {[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_List_T self}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = is_null_Link_T {self.current.first} (fun (_x: bool) -> [ &_5 <- _x ] s1)
-      | s1 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ] ]
-    | bb2 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T self} any) ]
-      | s1 = -{resolve_refmut_List_T self}- s2
-      | s2 = [ &_ret <- None ] s3
-      | s3 = return {_ret} ]
-    | bb3 = s0
-      [ s0 = MutBorrow.borrow_final <Seq.seq t_Perm_ptr_Link_T> {self.current.seq}
-          {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
-          (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) ->
-            [ &_13 <- _bor ] -{inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global _bor.final}-
-            [ &self <- { self with current = { self.current with seq = _bor.final } } ] s1)
-        [ _ck -> (! {[@expl:type invariant] inv_Ghost_Seq_Box_Perm_ptr_Link_T_Global self.current.seq} any) ]
-      | s1 = deref_mut_Ghost_Seq_Box_Perm_ptr_Link_T_Global {_13}
-          (fun (_x: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) -> [ &_12 <- _x ] s2)
-      | s2 = MutBorrow.borrow_final <Seq.seq t_Perm_ptr_Link_T> {_12.current} {MutBorrow.get_id _12}
-          (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) ->
-            [ &_11 <- _bor ] -{inv_Seq_Box_Perm_ptr_Link_T_Global _bor.final}-
-            [ &_12 <- { _12 with current = _bor.final } ] s3)
-        [ _ck -> (! {[@expl:type invariant] inv_Seq_Box_Perm_ptr_Link_T_Global _12.current} any) ]
-      | s3 = pop_front_ghost_Box_Perm_ptr_Link_T_Global {_11}
-          (fun (_x: t_Option_Box_Perm_ptr_Link_T_Global) -> [ &_10 <- _x ] s4)
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Link_T_Global _12} any) ]
-      | s5 = -{resolve_refmut_Seq_Box_Perm_ptr_Link_T_Global _12}- s6
-      | s6 = unwrap_Box_Perm_ptr_Link_T_Global {_10} (fun (_x: t_Perm_ptr_Link_T) -> [ &_9 <- _x ] s7)
-      | s7 = new_Box_Perm_ptr_Link_T_Global {_9} (fun (_x: t_Perm_ptr_Link_T) -> [ &own <- _x ] s8)
-      | s8 = [ &_17 <- self.current.first ] s9
-      | s9 = to_box_Link_T {_17} {own} (fun (_x: t_Link_T) -> [ &_15 <- _x ] s10)
-      | s10 = [ &link <- _15 ] s11
-      | s11 = [ &self <- { self with current = { self.current with first = link.next } } ] s12
-      | s12 = is_null_Link_T {self.current.first} (fun (_x: bool) -> [ &_22 <- _x ] s13)
-      | s13 = any [ br0 -> {_22 = false} (! bb13) | br1 -> {_22} (! bb11) ] ]
-    | bb11 = s0
-      [ s0 = null_mut_Link_T (fun (_x: Opaque.ptr) -> [ &_24 <- _x ] s1)
-      | s1 = [ &self <- { self with current = { self.current with last = _24 } } ] s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T self} any) ]
-      | s3 = -{resolve_refmut_List_T self}- s4
-      | s4 = bb14 ]
-    | bb13 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T self} any) ]
-      | s1 = -{resolve_refmut_List_T self}- s2
-      | s2 = bb14 ]
-    | bb14 = s0 [ s0 = [ &_ret <- Some (link.value) ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: t_Option_T = Any.any_l ()
-    | & self: MutBorrow.t t_List_T = self
-    | & _5: bool = Any.any_l ()
-    | & own: t_Perm_ptr_Link_T = Any.any_l ()
-    | & _9: t_Perm_ptr_Link_T = Any.any_l ()
-    | & _10: t_Option_Box_Perm_ptr_Link_T_Global = Any.any_l ()
-    | & _11: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
-    | & _12: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
-    | & _13: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T) = Any.any_l ()
-    | & link: t_Link_T = Any.any_l ()
-    | & _15: t_Link_T = Any.any_l ()
-    | & _17: Opaque.ptr = Any.any_l ()
-    | & _22: bool = Any.any_l ()
-    | & _24: Opaque.ptr = Any.any_l () ])
-    [ return (result: t_Option_T) ->
-    {[@stop_split] [@expl:pop_front_T ensures] ([@stop_split] [@expl:pop_front result type invariant] inv_Option_T result)
-      /\ ([@stop_split] [@expl:pop_front ensures] match result with
-        | None -> view_List_T self.current = (Seq.empty: Seq.seq t_T)
-        /\ view_List_T self.final = (Seq.empty: Seq.seq t_T)
-        | Some x -> Seq.length (view_List_T self.current) > 0
-        /\ x = Seq.get (view_List_T self.current) 0 /\ view_List_T self.final = pop_front_T (view_List_T self.current)
-        end)}
       (! return {result}) ]
 end

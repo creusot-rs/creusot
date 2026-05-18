@@ -1,9 +1,410 @@
-module M_implementation__union
+module M_example
+  use set.Fset
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int32
+  use map.Map
+  use creusot.prelude.Any
+  
+  type t_UF_i32
+  
+  predicate invariant_UF_i32 (self: t_UF_i32)
+  
+  predicate inv_UF_i32 (_1: t_UF_i32)
+  
+  axiom inv_axiom: forall x: t_UF_i32 [inv_UF_i32 x]. inv_UF_i32 x -> invariant_UF_i32 x
+  
+  predicate invariant_Ghost_UF_i32 [@inline:trivial] (self: t_UF_i32) = inv_UF_i32 self
+  
+  meta "rewrite_def" predicate invariant_Ghost_UF_i32
+  
+  predicate inv_Ghost_UF_i32 [@inline:trivial] (_1: t_UF_i32) = invariant_Ghost_UF_i32 _1
+  
+  meta "rewrite_def" predicate inv_Ghost_UF_i32
+  
+  type t_Elem_i32
+  
+  function domain_i32 (self: t_UF_i32) : Fset.fset t_Elem_i32
+  
+  let rec new_i32 (return (x: t_UF_i32)) = any
+    [ return (result: t_UF_i32) ->
+    {[@stop_split] [@expl:new_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_UF_i32 result)
+      /\ ([@stop_split] [@expl:new ensures] Fset.is_empty (domain_i32 result))}
+      (! return {result}) ]
+  
+  predicate invariant_refmut_Ghost_UF_i32 [@inline:trivial] (self: MutBorrow.t t_UF_i32) =
+    inv_Ghost_UF_i32 self.current /\ inv_Ghost_UF_i32 self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Ghost_UF_i32
+  
+  predicate inv_refmut_Ghost_UF_i32 [@inline:trivial] (_1: MutBorrow.t t_UF_i32) = invariant_refmut_Ghost_UF_i32 _1
+  
+  meta "rewrite_def" predicate inv_refmut_Ghost_UF_i32
+  
+  predicate invariant_refmut_UF_i32 [@inline:trivial] (self: MutBorrow.t t_UF_i32) =
+    inv_UF_i32 self.current /\ inv_UF_i32 self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_UF_i32
+  
+  predicate inv_refmut_UF_i32 [@inline:trivial] (_1: MutBorrow.t t_UF_i32) = invariant_refmut_UF_i32 _1
+  
+  meta "rewrite_def" predicate inv_refmut_UF_i32
+  
+  predicate invariant_Ghost_refmut_UF_i32 [@inline:trivial] (self: MutBorrow.t t_UF_i32) = inv_refmut_UF_i32 self
+  
+  meta "rewrite_def" predicate invariant_Ghost_refmut_UF_i32
+  
+  predicate inv_Ghost_refmut_UF_i32 [@inline:trivial] (_1: MutBorrow.t t_UF_i32) = invariant_Ghost_refmut_UF_i32 _1
+  
+  meta "rewrite_def" predicate inv_Ghost_refmut_UF_i32
+  
+  let rec borrow_mut_UF_i32 (self: MutBorrow.t t_UF_i32) (return (x: MutBorrow.t t_UF_i32)) =
+    {[@stop_split] [@expl:borrow_mut 'self' type invariant] inv_refmut_Ghost_UF_i32 self}
+    any
+    [ return (result: MutBorrow.t t_UF_i32) ->
+    {[@stop_split] [@expl:borrow_mut_UF_i32 ensures] ([@stop_split] [@expl:borrow_mut result type invariant] inv_Ghost_refmut_UF_i32 result)
+      /\ ([@stop_split] [@expl:borrow_mut ensures] result = self)}
+      (! return {result}) ]
+  
+  predicate inv_Elem_i32 (_1: t_Elem_i32)
+  
+  predicate contains_Elem_i32 [@inline:trivial] (self: Fset.fset t_Elem_i32) (e: t_Elem_i32) = Fset.mem e self
+  
+  meta "rewrite_def" predicate contains_Elem_i32
+  
+  predicate in_domain_i32 (self: t_UF_i32) (e: t_Elem_i32) = contains_Elem_i32 (domain_i32 self) e
+  
+  function fin_Ghost_refmut_UF_i32 [@inline:trivial] (self: MutBorrow.t t_UF_i32) : t_UF_i32 = self.final
+  
+  meta "rewrite_def" function fin_Ghost_refmut_UF_i32
+  
+  function insert_Elem_i32 [@inline:trivial] (self: Fset.fset t_Elem_i32) (e: t_Elem_i32) : Fset.fset t_Elem_i32 =
+    Fset.add e self
+  
+  meta "rewrite_def" function insert_Elem_i32
+  
+  function index_Mapping_Elem_i32_Elem_i32 [@inline:trivial] (self: Map.map t_Elem_i32 t_Elem_i32) (a: t_Elem_i32) : t_Elem_i32
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Elem_i32_Elem_i32
+  
+  function roots_map_i32 (self: t_UF_i32) : Map.map t_Elem_i32 t_Elem_i32
+  
+  axiom roots_map_i32_spec: forall self: t_UF_i32 [roots_map_i32 self]. inv_UF_i32 self
+      -> (forall e: t_Elem_i32. in_domain_i32 self e
+        -> in_domain_i32 self (index_Mapping_Elem_i32_Elem_i32 (roots_map_i32 self) e)
+        /\ index_Mapping_Elem_i32_Elem_i32 (roots_map_i32 self) e
+        = index_Mapping_Elem_i32_Elem_i32 (roots_map_i32 self) (index_Mapping_Elem_i32_Elem_i32 (roots_map_i32 self) e))
+  
+  function payloads_map_i32 (self: t_UF_i32) : Map.map t_Elem_i32 Int32.t
+  
+  let rec make_i32 (uf: MutBorrow.t t_UF_i32) (payload: Int32.t) (return (x: t_Elem_i32)) =
+    {[@stop_split] [@expl:make 'uf' type invariant] inv_Ghost_refmut_UF_i32 uf}
+    any
+    [ return (result: t_Elem_i32) ->
+    {[@stop_split] [@expl:make_i32 ensures] ([@stop_split] [@expl:make result type invariant] inv_Elem_i32 result)
+      /\ ([@stop_split] [@expl:make ensures #0] not in_domain_i32 uf.current result)
+      /\ ([@stop_split] [@expl:make ensures #1] domain_i32 (fin_Ghost_refmut_UF_i32 uf)
+        = insert_Elem_i32 (domain_i32 uf.current) result)
+      /\ ([@stop_split] [@expl:make ensures #2] roots_map_i32 (fin_Ghost_refmut_UF_i32 uf)
+        = Map.set (roots_map_i32 uf.current) result result)
+      /\ ([@stop_split] [@expl:make ensures #3] payloads_map_i32 (fin_Ghost_refmut_UF_i32 uf)
+      = Map.set (payloads_map_i32 uf.current) result payload)}
+      (! return {result}) ]
+  
+  predicate invariant_ref_Ghost_UF_i32 [@inline:trivial] (self: t_UF_i32) = inv_Ghost_UF_i32 self
+  
+  meta "rewrite_def" predicate invariant_ref_Ghost_UF_i32
+  
+  predicate inv_ref_Ghost_UF_i32 [@inline:trivial] (_1: t_UF_i32) = invariant_ref_Ghost_UF_i32 _1
+  
+  meta "rewrite_def" predicate inv_ref_Ghost_UF_i32
+  
+  predicate invariant_ref_UF_i32 [@inline:trivial] (self: t_UF_i32) = inv_UF_i32 self
+  
+  meta "rewrite_def" predicate invariant_ref_UF_i32
+  
+  predicate inv_ref_UF_i32 [@inline:trivial] (_1: t_UF_i32) = invariant_ref_UF_i32 _1
+  
+  meta "rewrite_def" predicate inv_ref_UF_i32
+  
+  predicate invariant_Ghost_ref_UF_i32 [@inline:trivial] (self: t_UF_i32) = inv_ref_UF_i32 self
+  
+  meta "rewrite_def" predicate invariant_Ghost_ref_UF_i32
+  
+  predicate inv_Ghost_ref_UF_i32 [@inline:trivial] (_1: t_UF_i32) = invariant_Ghost_ref_UF_i32 _1
+  
+  meta "rewrite_def" predicate inv_Ghost_ref_UF_i32
+  
+  let rec borrow_UF_i32 (self: t_UF_i32) (return (x: t_UF_i32)) =
+    {[@stop_split] [@expl:borrow 'self' type invariant] inv_ref_Ghost_UF_i32 self}
+    any
+    [ return (result: t_UF_i32) ->
+    {[@stop_split] [@expl:borrow_UF_i32 ensures] ([@stop_split] [@expl:borrow result type invariant] inv_Ghost_ref_UF_i32 result)
+      /\ ([@stop_split] [@expl:borrow ensures] result = self)}
+      (! return {result}) ]
+  
+  predicate invariant_ref_Elem_i32 [@inline:trivial] (self: t_Elem_i32) = inv_Elem_i32 self
+  
+  meta "rewrite_def" predicate invariant_ref_Elem_i32
+  
+  predicate inv_ref_Elem_i32 [@inline:trivial] (_1: t_Elem_i32) = invariant_ref_Elem_i32 _1
+  
+  meta "rewrite_def" predicate inv_ref_Elem_i32
+  
+  function root_i32 (self: t_UF_i32) (e: t_Elem_i32) : t_Elem_i32 =
+    index_Mapping_Elem_i32_Elem_i32 (roots_map_i32 self) e
+  
+  function index_Mapping_Elem_i32_i32 [@inline:trivial] (self: Map.map t_Elem_i32 Int32.t) (a: t_Elem_i32) : Int32.t =
+    Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Elem_i32_i32
+  
+  function payload_i32 (self: t_UF_i32) (e: t_Elem_i32) : Int32.t = index_Mapping_Elem_i32_i32 (payloads_map_i32 self) e
+  
+  let rec get_i32 (uf: t_UF_i32) (elem: t_Elem_i32) (return (x: Int32.t)) =
+    {[@stop_split] [@expl:get_i32 requires] ([@stop_split] [@expl:get 'uf' type invariant] inv_Ghost_ref_UF_i32 uf)
+    /\ ([@stop_split] [@expl:get 'elem' type invariant] inv_ref_Elem_i32 elem)
+    /\ ([@stop_split] [@expl:get requires #0] in_domain_i32 uf elem)
+    /\ ([@stop_split] [@expl:get requires #1] root_i32 uf elem = elem)}
+    any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:get ensures] result = payload_i32 uf elem} (! return {result}) ]
+  
+  let rec clone_Elem_i32 (self: t_Elem_i32) (return (x: t_Elem_i32)) =
+    {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Elem_i32 self}
+    any
+    [ return (result: t_Elem_i32) ->
+    {[@stop_split] [@expl:clone_Elem_i32 ensures] ([@stop_split] [@expl:clone result type invariant] inv_Elem_i32 result)
+      /\ ([@stop_split] [@expl:clone ensures] self = result)}
+      (! return {result}) ]
+  
+  predicate domain_unchanged_i32 (self: MutBorrow.t t_UF_i32) = domain_i32 self.current = domain_i32 self.final
+  
+  predicate payloads_unchanged_i32 (self: MutBorrow.t t_UF_i32) =
+    payloads_map_i32 self.current = payloads_map_i32 self.final
+  
+  let rec union_i32 (uf: MutBorrow.t t_UF_i32) (x: t_Elem_i32) (y: t_Elem_i32) (return (x'0: t_Elem_i32)) =
+    {[@stop_split] [@expl:union_i32 requires] ([@stop_split] [@expl:union 'uf' type invariant] inv_Ghost_refmut_UF_i32 uf)
+    /\ ([@stop_split] [@expl:union 'x' type invariant] inv_Elem_i32 x)
+    /\ ([@stop_split] [@expl:union 'y' type invariant] inv_Elem_i32 y)
+    /\ ([@stop_split] [@expl:union requires] in_domain_i32 uf.current x /\ in_domain_i32 uf.current y)}
+    any
+    [ return (result: t_Elem_i32) ->
+    {[@stop_split] [@expl:union_i32 ensures] ([@stop_split] [@expl:union result type invariant] inv_Elem_i32 result)
+      /\ ([@stop_split] [@expl:union ensures #0] domain_unchanged_i32 uf /\ payloads_unchanged_i32 uf)
+      /\ ([@stop_split] [@expl:union ensures #1] result = root_i32 uf.current x \/ result = root_i32 uf.current y)
+      /\ ([@stop_split] [@expl:union ensures #2] forall z: t_Elem_i32. in_domain_i32 uf.current z
+        -> root_i32 (fin_Ghost_refmut_UF_i32 uf) z
+        = (if root_i32 uf.current z = root_i32 uf.current x \/ root_i32 uf.current z = root_i32 uf.current y then
+          result
+        else
+          root_i32 uf.current z
+        ))}
+      (! return {result}) ]
+  
+  predicate resolve_Elem_i32 (_1: t_Elem_i32)
+  
+  predicate unchanged_i32 (self: MutBorrow.t t_UF_i32) =
+    domain_i32 self.current = domain_i32 self.final
+    /\ roots_map_i32 self.current = roots_map_i32 self.final
+    /\ payloads_map_i32 self.current = payloads_map_i32 self.final
+  
+  let rec find_i32 (uf: MutBorrow.t t_UF_i32) (elem: t_Elem_i32) (return (x: t_Elem_i32)) =
+    {[@stop_split] [@expl:find_i32 requires] ([@stop_split] [@expl:find 'uf' type invariant] inv_Ghost_refmut_UF_i32 uf)
+    /\ ([@stop_split] [@expl:find 'elem' type invariant] inv_Elem_i32 elem)
+    /\ ([@stop_split] [@expl:find requires] in_domain_i32 uf.current elem)}
+    any
+    [ return (result: t_Elem_i32) ->
+    {[@stop_split] [@expl:find_i32 ensures] ([@stop_split] [@expl:find result type invariant] inv_Elem_i32 result)
+      /\ ([@stop_split] [@expl:find ensures #0] result = root_i32 uf.current elem)
+      /\ ([@stop_split] [@expl:find ensures #1] unchanged_i32 uf)}
+      (! return {result}) ]
+  
+  predicate resolve_UF_i32 (_1: t_UF_i32)
+  
+  predicate resolve_Ghost_UF_i32 [@inline:trivial] (self: t_UF_i32) = resolve_UF_i32 self
+  
+  meta "rewrite_def" predicate resolve_Ghost_UF_i32
+  
+  predicate resolve_Ghost_UF_i32'0 [@inline:trivial] (_1: t_UF_i32) = resolve_Ghost_UF_i32 _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_UF_i32'0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec example (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = new_i32 (fun (_x: t_UF_i32) -> [ &uf <- _x ] s1)
+      | s1 = MutBorrow.borrow_mut <t_UF_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UF_i32) -> [ &_4 <- _bor ] -{inv_Ghost_UF_i32 _bor.final}- [ &uf <- _bor.final ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
+      | s2 = borrow_mut_UF_i32 {_4} (fun (_x: MutBorrow.t t_UF_i32) -> [ &_3 <- _x ] s3)
+      | s3 = make_i32 {_3} {(1: Int32.t)} (fun (_x: t_Elem_i32) -> [ &x <- _x ] s4)
+      | s4 = MutBorrow.borrow_mut <t_UF_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UF_i32) -> [ &_7 <- _bor ] -{inv_Ghost_UF_i32 _bor.final}- [ &uf <- _bor.final ] s5)
+        [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
+      | s5 = borrow_mut_UF_i32 {_7} (fun (_x: MutBorrow.t t_UF_i32) -> [ &_6 <- _x ] s6)
+      | s6 = make_i32 {_6} {(2: Int32.t)} (fun (_x: t_Elem_i32) -> [ &y <- _x ] s7)
+      | s7 = MutBorrow.borrow_mut <t_UF_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UF_i32) ->
+            [ &_10 <- _bor ] -{inv_Ghost_UF_i32 _bor.final}-
+            [ &uf <- _bor.final ] s8) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
+      | s8 = borrow_mut_UF_i32 {_10} (fun (_x: MutBorrow.t t_UF_i32) -> [ &_9 <- _x ] s9)
+      | s9 = make_i32 {_9} {(3: Int32.t)} (fun (_x: t_Elem_i32) -> [ &z <- _x ] s10)
+      | s10 = borrow_UF_i32 {uf} (fun (_x: t_UF_i32) -> [ &_15 <- _x ] s11)
+      | s11 = [ &_18 <- x ] s12
+      | s12 = get_i32 {_15} {_18} (fun (_x: Int32.t) -> [ &_14 <- _x ] s13)
+      | s13 = [ &_12 <- _14 = (1: Int32.t) ] s14
+      | s14 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb10) ] ]
+    | bb10 = s0
+      [ s0 = borrow_UF_i32 {uf} (fun (_x: t_UF_i32) -> [ &_24 <- _x ] s1)
+      | s1 = [ &_27 <- y ] s2
+      | s2 = get_i32 {_24} {_27} (fun (_x: Int32.t) -> [ &_23 <- _x ] s3)
+      | s3 = [ &_21 <- _23 = (2: Int32.t) ] s4
+      | s4 = any [ br0 -> {_21 = false} (! bb15) | br1 -> {_21} (! bb14) ] ]
+    | bb14 = s0
+      [ s0 = borrow_UF_i32 {uf} (fun (_x: t_UF_i32) -> [ &_33 <- _x ] s1)
+      | s1 = [ &_36 <- z ] s2
+      | s2 = get_i32 {_33} {_36} (fun (_x: Int32.t) -> [ &_32 <- _x ] s3)
+      | s3 = [ &_30 <- _32 = (3: Int32.t) ] s4
+      | s4 = any [ br0 -> {_30 = false} (! bb19) | br1 -> {_30} (! bb18) ] ]
+    | bb18 = s0
+      [ s0 = MutBorrow.borrow_mut <t_UF_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UF_i32) ->
+            [ &_40 <- _bor ] -{inv_Ghost_UF_i32 _bor.final}-
+            [ &uf <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
+      | s1 = borrow_mut_UF_i32 {_40} (fun (_x: MutBorrow.t t_UF_i32) -> [ &_39 <- _x ] s2)
+      | s2 = clone_Elem_i32 {x} (fun (_x: t_Elem_i32) -> [ &_41 <- _x ] s3)
+      | s3 = clone_Elem_i32 {y} (fun (_x: t_Elem_i32) -> [ &_43 <- _x ] s4)
+      | s4 = union_i32 {_39} {_41} {_43} (fun (_x: t_Elem_i32) -> [ &_38 <- _x ] s5)
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 _38} any) ]
+      | s6 = -{resolve_Elem_i32 _38}- s7
+      | s7 = MutBorrow.borrow_mut <t_UF_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UF_i32) ->
+            [ &_47 <- _bor ] -{inv_Ghost_UF_i32 _bor.final}-
+            [ &uf <- _bor.final ] s8) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
+      | s8 = borrow_mut_UF_i32 {_47} (fun (_x: MutBorrow.t t_UF_i32) -> [ &_46 <- _x ] s9)
+      | s9 = find_i32 {_46} {x} (fun (_x: t_Elem_i32) -> [ &xr <- _x ] s10)
+      | s10 = MutBorrow.borrow_mut <t_UF_i32> {uf}
+          (fun (_bor: MutBorrow.t t_UF_i32) ->
+            [ &_51 <- _bor ] -{inv_Ghost_UF_i32 _bor.final}-
+            [ &uf <- _bor.final ] s11) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
+      | s11 = borrow_mut_UF_i32 {_51} (fun (_x: MutBorrow.t t_UF_i32) -> [ &_50 <- _x ] s12)
+      | s12 = find_i32 {_50} {y} (fun (_x: t_Elem_i32) -> [ &yr <- _x ] s13)
+      | s13 = borrow_UF_i32 {uf} (fun (_x: t_UF_i32) -> [ &_57 <- _x ] s14)
+      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 xr} any) ]
+      | s15 = -{resolve_Elem_i32 xr}- s16
+      | s16 = [ &_60 <- xr ] s17
+      | s17 = get_i32 {_57} {_60} (fun (_x: Int32.t) -> [ &_56 <- _x ] s18)
+      | s18 = borrow_UF_i32 {uf} (fun (_x: t_UF_i32) -> [ &_63 <- _x ] s19)
+      | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 yr} any) ]
+      | s20 = -{resolve_Elem_i32 yr}- s21
+      | s21 = [ &_66 <- yr ] s22
+      | s22 = get_i32 {_63} {_66} (fun (_x: Int32.t) -> [ &_62 <- _x ] s23)
+      | s23 = [ &_54 <- _56 = _62 ] s24
+      | s24 = any [ br0 -> {_54 = false} (! bb34) | br1 -> {_54} (! bb33) ] ]
+    | bb33 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
+      | s1 = -{resolve_Ghost_UF_i32'0 uf}- s2
+      | s2 = borrow_UF_i32 {uf} (fun (_x: t_UF_i32) -> [ &_72 <- _x ] s3)
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 z} any) ]
+      | s4 = -{resolve_Elem_i32 z}- s5
+      | s5 = [ &_75 <- z ] s6
+      | s6 = get_i32 {_72} {_75} (fun (_x: Int32.t) -> [ &_71 <- _x ] s7)
+      | s7 = [ &_69 <- _71 = (3: Int32.t) ] s8
+      | s8 = any [ br0 -> {_69 = false} (! bb38) | br1 -> {_69} (! bb43) ] ]
+    | bb43 = return {_ret}
+    | bb38 = {false} any
+    | bb34 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 z} any) ]
+      | s1 = -{resolve_Elem_i32 z}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
+      | s3 = -{resolve_Ghost_UF_i32'0 uf}- s4
+      | s4 = {false} any ]
+    | bb19 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 z} any) ]
+      | s1 = -{resolve_Elem_i32 z}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 y} any) ]
+      | s3 = -{resolve_Elem_i32 y}- s4
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 x} any) ]
+      | s5 = -{resolve_Elem_i32 x}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
+      | s7 = -{resolve_Ghost_UF_i32'0 uf}- s8
+      | s8 = {false} any ]
+    | bb15 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 z} any) ]
+      | s1 = -{resolve_Elem_i32 z}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 y} any) ]
+      | s3 = -{resolve_Elem_i32 y}- s4
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 x} any) ]
+      | s5 = -{resolve_Elem_i32 x}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
+      | s7 = -{resolve_Ghost_UF_i32'0 uf}- s8
+      | s8 = {false} any ]
+    | bb11 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 z} any) ]
+      | s1 = -{resolve_Elem_i32 z}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 y} any) ]
+      | s3 = -{resolve_Elem_i32 y}- s4
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 x} any) ]
+      | s5 = -{resolve_Elem_i32 x}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
+      | s7 = -{resolve_Ghost_UF_i32'0 uf}- s8
+      | s8 = {false} any ] ]
+    [ & _ret: () = Any.any_l ()
+    | & uf: t_UF_i32 = Any.any_l ()
+    | & x: t_Elem_i32 = Any.any_l ()
+    | & _3: MutBorrow.t t_UF_i32 = Any.any_l ()
+    | & _4: MutBorrow.t t_UF_i32 = Any.any_l ()
+    | & y: t_Elem_i32 = Any.any_l ()
+    | & _6: MutBorrow.t t_UF_i32 = Any.any_l ()
+    | & _7: MutBorrow.t t_UF_i32 = Any.any_l ()
+    | & z: t_Elem_i32 = Any.any_l ()
+    | & _9: MutBorrow.t t_UF_i32 = Any.any_l ()
+    | & _10: MutBorrow.t t_UF_i32 = Any.any_l ()
+    | & _12: bool = Any.any_l ()
+    | & _14: Int32.t = Any.any_l ()
+    | & _15: t_UF_i32 = Any.any_l ()
+    | & _18: t_Elem_i32 = Any.any_l ()
+    | & _21: bool = Any.any_l ()
+    | & _23: Int32.t = Any.any_l ()
+    | & _24: t_UF_i32 = Any.any_l ()
+    | & _27: t_Elem_i32 = Any.any_l ()
+    | & _30: bool = Any.any_l ()
+    | & _32: Int32.t = Any.any_l ()
+    | & _33: t_UF_i32 = Any.any_l ()
+    | & _36: t_Elem_i32 = Any.any_l ()
+    | & _38: t_Elem_i32 = Any.any_l ()
+    | & _39: MutBorrow.t t_UF_i32 = Any.any_l ()
+    | & _40: MutBorrow.t t_UF_i32 = Any.any_l ()
+    | & _41: t_Elem_i32 = Any.any_l ()
+    | & _43: t_Elem_i32 = Any.any_l ()
+    | & xr: t_Elem_i32 = Any.any_l ()
+    | & _46: MutBorrow.t t_UF_i32 = Any.any_l ()
+    | & _47: MutBorrow.t t_UF_i32 = Any.any_l ()
+    | & yr: t_Elem_i32 = Any.any_l ()
+    | & _50: MutBorrow.t t_UF_i32 = Any.any_l ()
+    | & _51: MutBorrow.t t_UF_i32 = Any.any_l ()
+    | & _54: bool = Any.any_l ()
+    | & _56: Int32.t = Any.any_l ()
+    | & _57: t_UF_i32 = Any.any_l ()
+    | & _60: t_Elem_i32 = Any.any_l ()
+    | & _62: Int32.t = Any.any_l ()
+    | & _63: t_UF_i32 = Any.any_l ()
+    | & _66: t_Elem_i32 = Any.any_l ()
+    | & _69: bool = Any.any_l ()
+    | & _71: Int32.t = Any.any_l ()
+    | & _72: t_UF_i32 = Any.any_l ()
+    | & _75: t_Elem_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_implementation__find
   use creusot.prelude.MutBorrow
   use set.Fset
   use map.Map
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use int.Int
   
   type t_Rc_PermCell_Node_T_Global
   
@@ -130,6 +531,126 @@ module M_implementation__union
   
   meta "rewrite_def" predicate inv_Ghost_refmut_UF_T
   
+  predicate invariant_ref_Ghost_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) = inv_Ghost_refmut_UF_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Ghost_refmut_UF_T
+  
+  predicate inv_ref_Ghost_refmut_UF_T [@inline:trivial] (_1: MutBorrow.t t_UF_T) = invariant_ref_Ghost_refmut_UF_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Ghost_refmut_UF_T
+  
+  predicate invariant_ref_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) = inv_refmut_UF_T self
+  
+  meta "rewrite_def" predicate invariant_ref_refmut_UF_T
+  
+  predicate inv_ref_refmut_UF_T [@inline:trivial] (_1: MutBorrow.t t_UF_T) = invariant_ref_refmut_UF_T _1
+  
+  meta "rewrite_def" predicate inv_ref_refmut_UF_T
+  
+  let rec deref_Ghost_refmut_UF_T (self: MutBorrow.t t_UF_T) (return (x: MutBorrow.t t_UF_T)) =
+    {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_refmut_UF_T self}
+    any
+    [ return (result: MutBorrow.t t_UF_T) ->
+    {[@stop_split] [@expl:deref_Ghost_refmut_UF_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_refmut_UF_T result)
+      /\ ([@stop_split] [@expl:deref ensures] result = self)}
+      (! return {result}) ]
+  
+  type t_Option_ref_Perm_PermCell_Node_T = None'0 | Some'0 t_Perm_PermCell_Node_T
+  
+  function map_Option_Perm_PermCell_Node_T (self: t_Option_Perm_PermCell_Node_T) (f: Map.map t_Perm_PermCell_Node_T t_Perm_PermCell_Node_T) : t_Option_ref_Perm_PermCell_Node_T
+   = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  let rec get_ghost_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
+    (return (x: t_Option_ref_Perm_PermCell_Node_T)) = any
+    [ return (result: t_Option_ref_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:get_ghost ensures] result
+      = map_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self key) (fun (v: t_Perm_PermCell_Node_T) -> v)}
+      (! return {result}) ]
+  
+  let rec unwrap_ref_Perm_PermCell_Node_T (self_: t_Option_ref_Perm_PermCell_Node_T)
+    (return (x: t_Perm_PermCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'0}
+    any
+    [ return (result: t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self_}
+      (! return {result}) ]
+  
+  let rec new_ref_Perm_PermCell_Node_T (x: t_Perm_PermCell_Node_T) (return (x'0: t_Perm_PermCell_Node_T)) = any
+    [ return (result: t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
+  
+  predicate invariant_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (self: t_Rc_PermCell_Node_T_Global) =
+    inv_Rc_PermCell_Node_T_Global self
+  
+  meta "rewrite_def" predicate invariant_ref_Rc_PermCell_Node_T_Global
+  
+  predicate inv_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (_1: t_Rc_PermCell_Node_T_Global) =
+    invariant_ref_Rc_PermCell_Node_T_Global _1
+  
+  meta "rewrite_def" predicate inv_ref_Rc_PermCell_Node_T_Global
+  
+  let rec deref_Rc_PermCell_Node_T_Global (self_: t_Rc_PermCell_Node_T_Global) (return (x: t_PermCell_Node_T)) =
+    {[@stop_split] [@expl:deref 'self_' type invariant] inv_ref_Rc_PermCell_Node_T_Global self_}
+    any
+    [ return (result: t_PermCell_Node_T) -> {[@stop_split] [@expl:deref ensures] result
+      = view_Rc_PermCell_Node_T_Global self_}
+      (! return {result}) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_Elem_T (_1: t_Elem_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  
+  predicate inv_Node_T (_1: t_Node_T)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x
+      = match x with
+        | Root rank payload -> inv_T payload
+        | Link f0'2 -> inv_Elem_T f0'2
+        end
+  
+  predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Node_T
+  
+  predicate inv_ref_Node_T [@inline:trivial] (_1: t_Node_T) = invariant_ref_Node_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Node_T
+  
+  let rec borrow_Node_T (self: t_PermCell_Node_T) (perm: t_Perm_PermCell_Node_T) (return (x: t_Node_T)) =
+    {[@stop_split] [@expl:borrow requires] self = ward_PermCell_Node_T perm}
+    any
+    [ return (result: t_Node_T) ->
+    {[@stop_split] [@expl:borrow_Node_T ensures] ([@stop_split] [@expl:borrow result type invariant] inv_ref_Node_T result)
+      /\ ([@stop_split] [@expl:borrow ensures] result = val_PermCell_Node_T perm)}
+      (! return {result}) ]
+  
+  let rec elim_Link (_x: t_Node_T) (return (f0'2: t_Elem_T)) = any
+    [ _k (f0'2: t_Elem_T) -> {Link f0'2 = _x} (! return {f0'2})
+    | _chk -> (! {[@expl:elim Link] match _x with
+        | Link _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Elem_T
+  
+  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Elem_T
+  
+  let rec clone_Elem_T (self: t_Elem_T) (return (x: t_Elem_T)) =
+    {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Elem_T self}
+    any
+    [ return (result: t_Elem_T) ->
+    {[@stop_split] [@expl:clone_Elem_T ensures] ([@stop_split] [@expl:clone result type invariant] inv_Elem_T result)
+      /\ ([@stop_split] [@expl:clone ensures] self = result)}
+      (! return {result}) ]
+  
   predicate invariant_refmut_Ghost_refmut_UF_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UF_T)) =
     inv_Ghost_refmut_UF_T self.current /\ inv_Ghost_refmut_UF_T self.final
   
@@ -175,11 +696,126 @@ module M_implementation__union
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
+  let rec new_refmut_UFInner_T (x: MutBorrow.t t_UFInner_T) (return (x'0: MutBorrow.t t_UFInner_T)) = any
+    [ return (result: MutBorrow.t t_UFInner_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  predicate inv_Elem_T (_1: t_Elem_T)
+  let rec deref_mut_Ghost_refmut_UFInner_T (self: MutBorrow.t (MutBorrow.t t_UFInner_T))
+    (return (x: MutBorrow.t (MutBorrow.t t_UFInner_T))) = any
+    [ return (result: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
+      (! return {result}) ]
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  type t_Option_refmut_Perm_PermCell_Node_T = None'1 | Some'1 (MutBorrow.t t_Perm_PermCell_Node_T)
+  
+  function len_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) : int
+  
+  axiom len_Snapshot_Elem_T_spec:
+    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [len_Snapshot_Elem_T self]. len_Snapshot_Elem_T self >= 0
+  
+  let rec get_mut_ghost_Snapshot_Elem_T (self: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
+    (return (x: t_Option_refmut_Perm_PermCell_Node_T)) = any
+    [ return (result: t_Option_refmut_Perm_PermCell_Node_T) ->
+    {[@stop_split] [@expl:get_mut_ghost_Snapshot_Elem_T ensures] ([@stop_split] [@expl:get_mut_ghost ensures #0] if contains_Snapshot_Elem_T self.current key then
+          match result with
+            | None'1 -> false
+            | Some'1 r -> contains_Snapshot_Elem_T self.final key
+            /\ index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.current key = r.current
+            /\ index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.final key = r.final
+            end
+        else
+          result = None'1 /\ self.current = self.final
+        )
+      /\ ([@stop_split] [@expl:get_mut_ghost ensures #1] forall k: t_Elem_T. k <> key
+          -> get_Snapshot_Elem_T self.current k = get_Snapshot_Elem_T self.final k)
+      /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] len_Snapshot_Elem_T self.current
+      = len_Snapshot_Elem_T self.final)}
+      (! return {result}) ]
+  
+  let rec unwrap_refmut_Perm_PermCell_Node_T (self_: t_Option_refmut_Perm_PermCell_Node_T)
+    (return (x: MutBorrow.t t_Perm_PermCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'1}
+    any
+    [ return (result: MutBorrow.t t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'1 result
+      = self_}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_refmut_UFInner_T
+  
+  let rec new_refmut_Perm_PermCell_Node_T (x: MutBorrow.t t_Perm_PermCell_Node_T)
+    (return (x'0: MutBorrow.t t_Perm_PermCell_Node_T)) = any
+    [ return (result: MutBorrow.t t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:new ensures] result = x}
+      (! return {result}) ]
+  
+  predicate resolve_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
+  
+  predicate resolve_Elem_T (_1: t_Elem_T)
+  
+  axiom resolve_axiom [@rewrite]: forall x: t_Elem_T [resolve_Elem_T x]. resolve_Elem_T x
+      = resolve_Rc_PermCell_Node_T_Global x.f0
+  
+  predicate invariant_refmut_Node_T [@inline:trivial] (self: MutBorrow.t t_Node_T) =
+    inv_Node_T self.current /\ inv_Node_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Node_T
+  
+  predicate inv_refmut_Node_T [@inline:trivial] (_1: MutBorrow.t t_Node_T) = invariant_refmut_Node_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Node_T
+  
+  function fin_Ghost_refmut_Perm_PermCell_Node_T [@inline:trivial] (self: MutBorrow.t t_Perm_PermCell_Node_T) : t_Perm_PermCell_Node_T
+   = self.final
+  
+  meta "rewrite_def" function fin_Ghost_refmut_Perm_PermCell_Node_T
+  
+  let rec borrow_mut_Node_T (self: t_PermCell_Node_T) (perm: MutBorrow.t t_Perm_PermCell_Node_T)
+    (return (x: MutBorrow.t t_Node_T)) = {[@stop_split] [@expl:borrow_mut requires] self
+    = ward_PermCell_Node_T perm.current}
+    any
+    [ return (result: MutBorrow.t t_Node_T) ->
+    {[@stop_split] [@expl:borrow_mut_Node_T ensures] ([@stop_split] [@expl:borrow_mut result type invariant] inv_refmut_Node_T result)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #0] self
+        = ward_PermCell_Node_T (fin_Ghost_refmut_Perm_PermCell_Node_T perm))
+      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = val_PermCell_Node_T perm.current)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #2] result.final
+      = val_PermCell_Node_T (fin_Ghost_refmut_Perm_PermCell_Node_T perm))}
+      (! return {result}) ]
+  
+  predicate resolve_T (_1: t_T)
+  
+  predicate resolve_Node_T (_1: t_Node_T)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall x: t_Node_T [resolve_Node_T x]. resolve_Node_T x
+      = match x with
+        | Root x0 x1 -> resolve_T x1
+        | Link x0 -> resolve_Elem_T x0
+        end
+  
+  predicate resolve_refmut_Node_T [@inline:trivial] (_1: MutBorrow.t t_Node_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Node_T
+  
+  predicate resolve_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_UFInner_T
+  
+  predicate resolve_Ghost_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) =
+    resolve_refmut_UFInner_T self
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_UFInner_T
+  
+  predicate resolve_Ghost_refmut_UFInner_T'0 [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) =
+    resolve_Ghost_refmut_UFInner_T _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_UFInner_T'0
+  
+  predicate resolve_Ghost_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) = resolve_refmut_UF_T self
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_UF_T
+  
+  predicate resolve_Ghost_refmut_UF_T'0 [@inline:trivial] (_1: MutBorrow.t t_UF_T) = resolve_Ghost_refmut_UF_T _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_UF_T'0
   
   predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
   
@@ -199,161 +835,801 @@ module M_implementation__union
     domain_T self.current = domain_T self.final
     /\ roots_map_T self.current = roots_map_T self.final /\ payloads_map_T self.current = payloads_map_T self.final
   
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
   let rec find_T (uf: MutBorrow.t t_UF_T) (elem: t_Elem_T) (return (x: t_Elem_T)) =
     {[@stop_split] [@expl:find_T requires] ([@stop_split] [@expl:find 'uf' type invariant] inv_Ghost_refmut_UF_T uf)
     /\ ([@stop_split] [@expl:find 'elem' type invariant] inv_Elem_T elem)
     /\ ([@stop_split] [@expl:find requires] in_domain_T uf.current elem)}
-    any
+    (! bb0
+    [ bb0 = s0
+      [ s0 = deref_Ghost_refmut_UF_T {uf} (fun (_x: MutBorrow.t t_UF_T) -> [ &_14 <- _x ] s1)
+      | s1 = [ &_17 <- elem ] s2
+      | s2 = get_ghost_Snapshot_Elem_T {_14.current.f0'0.perms} {_17}
+          (fun (_x: t_Option_ref_Perm_PermCell_Node_T) -> [ &_12 <- _x ] s3)
+      | s3 = unwrap_ref_Perm_PermCell_Node_T {_12} (fun (_x: t_Perm_PermCell_Node_T) -> [ &__temp <- _x ] s4)
+      | s4 = new_ref_Perm_PermCell_Node_T {__temp} (fun (_x: t_Perm_PermCell_Node_T) -> [ &perm <- _x ] s5)
+      | s5 = deref_Rc_PermCell_Node_T_Global {elem.f0} (fun (_x: t_PermCell_Node_T) -> [ &_25 <- _x ] s6)
+      | s6 = borrow_Node_T {_25} {perm} (fun (_x: t_Node_T) -> [ &_23 <- _x ] s7)
+      | s7 = any
+        [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_23 = Root x0 x1} (! bb9)
+        | br1 (x0: t_Elem_T) -> {_23 = Link x0} (! bb10) ] ]
+    | bb10 = s0
+      [ s0 = elim_Link {_23} (fun (r0: t_Elem_T) -> [ &e <- r0 ] s1)
+      | s1 = clone_Elem_T {e} (fun (_x: t_Elem_T) -> [ &e'0 <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
+            [ &_39 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
+            [ &uf <- _bor.final ] s3) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
+      | s3 = deref_mut_Ghost_refmut_UF_T {_39} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_38 <- _x ] s4)
+      | s4 = MutBorrow.borrow_mut <t_UF_T> {_38.current.current}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_37 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_38 <- { _38 with current = { _38.current with current = _bor.final } } ] s5)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _38.current.current} any) ]
+      | s5 = MutBorrow.borrow_final <t_UF_T> {_37.current} {MutBorrow.get_id _37}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_36 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_37 <- { _37 with current = _bor.final } ] s6)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _37.current} any) ]
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _38} any) ]
+      | s7 = -{resolve_refmut_refmut_UF_T _38}- s8
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _37} any) ]
+      | s9 = -{resolve_refmut_UF_T _37}- s10
+      | s10 = MutBorrow.borrow_final <t_UF_T> {_36.current} {MutBorrow.get_id _36}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_35 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_36 <- { _36 with current = _bor.final } ] s11)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _36.current} any) ]
+      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _36} any) ]
+      | s12 = -{resolve_refmut_UF_T _36}- s13
+      | s13 = MutBorrow.borrow_final <t_UF_T> {_35.current} {MutBorrow.get_id _35}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_34 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_35 <- { _35 with current = _bor.final } ] s14)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _35.current} any) ]
+      | s14 = new_refmut_UF_T {_34} (fun (_x: MutBorrow.t t_UF_T) -> [ &_33 <- _x ] s15)
+      | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _35} any) ]
+      | s16 = -{resolve_refmut_UF_T _35}- s17
+      | s17 = find_T {_33} {e'0} (fun (_x: t_Elem_T) -> [ &root <- _x ] s18)
+      | s18 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
+            [ &_43 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
+            [ &uf <- _bor.final ] s19) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
+      | s19 = deref_mut_Ghost_refmut_UF_T {_43} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_42 <- _x ] s20)
+      | s20 = MutBorrow.borrow_mut <t_UFInner_T> {_42.current.current.f0'0}
+          (fun (_bor: MutBorrow.t t_UFInner_T) ->
+            [ &__temp'0 <- _bor ]
+            [ &_42 <- { _42 with current = { _42.current with current = { f0'0 = _bor.final } } } ] s21)
+      | s21 = new_refmut_UFInner_T {__temp'0} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s22)
+      | s22 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_50 <- _bor ] [ &uf'0 <- _bor.final ] s23)
+      | s23 = deref_mut_Ghost_refmut_UFInner_T {_50}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_49 <- _x ] s24)
+      | s24 = [ &_52 <- elem ] s25
+      | s25 = MutBorrow.borrow_mut <t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T> {_49.current.current.perms}
+          (fun (_bor: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) ->
+            [ &_48 <- _bor ]
+            [ &_49 <- { _49 with current = { _49.current with current = { _49.current.current with perms = _bor.final } } } ]
+            s26)
+      | s26 = get_mut_ghost_Snapshot_Elem_T {_48} {_52}
+          (fun (_x: t_Option_refmut_Perm_PermCell_Node_T) -> [ &_47 <- _x ] s27)
+      | s27 = unwrap_refmut_Perm_PermCell_Node_T {_47}
+          (fun (_x: MutBorrow.t t_Perm_PermCell_Node_T) -> [ &__temp'1 <- _x ] s28)
+      | s28 = -{resolve_refmut_refmut_UFInner_T _49}- s29
+      | s29 = new_refmut_Perm_PermCell_Node_T {__temp'1}
+          (fun (_x: MutBorrow.t t_Perm_PermCell_Node_T) -> [ &mut_perm <- _x ] s30)
+      | s30 = clone_Elem_T {root} (fun (_x: t_Elem_T) -> [ &_60 <- _x ] s31)
+      | s31 = [ &_59 <- Link _60 ] s32
+      | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_Elem_T elem} any) ]
+      | s33 = -{resolve_Elem_T elem}- s34
+      | s34 = deref_Rc_PermCell_Node_T_Global {elem.f0} (fun (_x: t_PermCell_Node_T) -> [ &_64 <- _x ] s35)
+      | s35 = borrow_mut_Node_T {_64} {mut_perm} (fun (_x: MutBorrow.t t_Node_T) -> [ &_62 <- _x ] s36)
+      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_Node_T _62.current} any) ]
+      | s37 = -{resolve_Node_T _62.current}- s38
+      | s38 = [ &_62 <- { _62 with current = _59 } ] s39
+      | s39 = s40 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _62} any) ]
+      | s40 = -{resolve_refmut_Node_T _62}- s41
+      | s41 = -{resolve_Ghost_refmut_UFInner_T'0 uf'0}- s42
+      | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _42} any) ]
+      | s43 = -{resolve_refmut_refmut_UF_T _42}- s44
+      | s44 = s45 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
+      | s45 = -{resolve_Ghost_refmut_UF_T'0 uf}- s46
+      | s46 = [ &_ret <- root ] s47
+      | s47 = return {_ret} ]
+    | bb9 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
+      | s1 = -{resolve_Ghost_refmut_UF_T'0 uf}- s2
+      | s2 = [ &_ret <- elem ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_Elem_T = Any.any_l ()
+    | & uf: MutBorrow.t t_UF_T = uf
+    | & elem: t_Elem_T = elem
+    | & __temp: t_Perm_PermCell_Node_T = Any.any_l ()
+    | & _12: t_Option_ref_Perm_PermCell_Node_T = Any.any_l ()
+    | & _14: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _17: t_Elem_T = Any.any_l ()
+    | & perm: t_Perm_PermCell_Node_T = Any.any_l ()
+    | & _23: t_Node_T = Any.any_l ()
+    | & _25: t_PermCell_Node_T = Any.any_l ()
+    | & e: t_Elem_T = Any.any_l ()
+    | & e'0: t_Elem_T = Any.any_l ()
+    | & root: t_Elem_T = Any.any_l ()
+    | & _33: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _34: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _35: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _36: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _37: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _38: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _39: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & __temp'0: MutBorrow.t t_UFInner_T = Any.any_l ()
+    | & _42: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _43: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & uf'0: MutBorrow.t t_UFInner_T = Any.any_l ()
+    | & __temp'1: MutBorrow.t t_Perm_PermCell_Node_T = Any.any_l ()
+    | & _47: t_Option_refmut_Perm_PermCell_Node_T = Any.any_l ()
+    | & _48: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T = Any.any_l ()
+    | & _49: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
+    | & _50: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
+    | & _52: t_Elem_T = Any.any_l ()
+    | & mut_perm: MutBorrow.t t_Perm_PermCell_Node_T = Any.any_l ()
+    | & _59: t_Node_T = Any.any_l ()
+    | & _60: t_Elem_T = Any.any_l ()
+    | & _62: MutBorrow.t t_Node_T = Any.any_l ()
+    | & _64: t_PermCell_Node_T = Any.any_l () ])
     [ return (result: t_Elem_T) ->
     {[@stop_split] [@expl:find_T ensures] ([@stop_split] [@expl:find result type invariant] inv_Elem_T result)
       /\ ([@stop_split] [@expl:find ensures #0] result = root_T uf.current elem)
       /\ ([@stop_split] [@expl:find ensures #1] unchanged_T uf)}
       (! return {result}) ]
+end
+module M_implementation__get
+  use set.Fset
+  use map.Map
+  use creusot.int.UInt64
+  use creusot.prelude.Any
   
-  predicate domain_unchanged_T (self: MutBorrow.t t_UF_T) = domain_T self.current = domain_T self.final
+  type t_Rc_PermCell_Node_T_Global
   
-  predicate payloads_unchanged_T (self: MutBorrow.t t_UF_T) = payloads_map_T self.current = payloads_map_T self.final
+  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
   
-  function fin_Ghost_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) : t_UF_T = self.final
+  type t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
   
-  meta "rewrite_def" function fin_Ghost_refmut_UF_T
+  type t_T
   
-  let rec link_T (uf: MutBorrow.t t_UF_T) (x: t_Elem_T) (y: t_Elem_T) (return (x'0: t_Elem_T)) =
-    {[@stop_split] [@expl:link_T requires] ([@stop_split] [@expl:link 'uf' type invariant] inv_Ghost_refmut_UF_T uf)
-    /\ ([@stop_split] [@expl:link 'x' type invariant] inv_Elem_T x)
-    /\ ([@stop_split] [@expl:link 'y' type invariant] inv_Elem_T y)
-    /\ ([@stop_split] [@expl:link requires #0] in_domain_T uf.current x /\ in_domain_T uf.current y)
-    /\ ([@stop_split] [@expl:link requires #1] root_T uf.current x = x /\ root_T uf.current y = y)}
+  type t_UFInner_T = {
+    domain: Fset.fset t_Elem_T;
+    perms: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T;
+    payloads: Map.map t_Elem_T t_T;
+    roots: Map.map t_Elem_T t_Elem_T }
+  
+  type t_UF_T = { f0'0: t_UFInner_T }
+  
+  predicate contains_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) (e: t_Elem_T) = Fset.mem e self
+  
+  meta "rewrite_def" predicate contains_Elem_T
+  
+  function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
+  
+  type t_Perm_PermCell_Node_T
+  
+  type t_Option_Perm_PermCell_Node_T = None | Some t_Perm_PermCell_Node_T
+  
+  function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PermCell_Node_T
+  
+  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PermCell_Node_T
+   = Map.get (to_mapping_Snapshot_Elem_T self) k
+  
+  meta "rewrite_def" function get_Snapshot_Elem_T
+  
+  predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) =
+    get_Snapshot_Elem_T self k <> None
+  
+  meta "rewrite_def" predicate contains_Snapshot_Elem_T
+  
+  type t_PermCell_Node_T
+  
+  function ward_PermCell_Node_T (self: t_Perm_PermCell_Node_T) : t_PermCell_Node_T
+  
+  predicate index_Mapping_Perm_PermCell_Node_T_bool [@inline:trivial] (self: Map.map t_Perm_PermCell_Node_T bool) (a: t_Perm_PermCell_Node_T) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Perm_PermCell_Node_T_bool
+  
+  function such_that_Perm_PermCell_Node_T (p: Map.map t_Perm_PermCell_Node_T bool) : t_Perm_PermCell_Node_T
+  
+  axiom such_that_Perm_PermCell_Node_T_spec:
+    forall p: Map.map t_Perm_PermCell_Node_T bool [such_that_Perm_PermCell_Node_T p]. (exists x: t_Perm_PermCell_Node_T. index_Mapping_Perm_PermCell_Node_T_bool p x)
+      -> index_Mapping_Perm_PermCell_Node_T_bool p (such_that_Perm_PermCell_Node_T p)
+  
+  function unwrap_Option_Perm_PermCell_Node_T (self: t_Option_Perm_PermCell_Node_T) : t_Perm_PermCell_Node_T =
+    match self with
+      | Some x -> x
+      | None -> such_that_Perm_PermCell_Node_T (fun (__0: t_Perm_PermCell_Node_T) -> true)
+      end
+  
+  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) : t_Perm_PermCell_Node_T
+   = unwrap_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self k)
+  
+  meta "rewrite_def" function lookup_Snapshot_Elem_T
+  
+  function index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T) : t_Perm_PermCell_Node_T
+   = lookup_Snapshot_Elem_T self key
+  
+  meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
+  
+  function view_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) : t_PermCell_Node_T
+  
+  function index_Mapping_Elem_T_Elem_T [@inline:trivial] (self: Map.map t_Elem_T t_Elem_T) (a: t_Elem_T) : t_Elem_T =
+    Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Elem_T_Elem_T
+  
+  type t_PeanoInt = { f0'1: UInt64.t }
+  
+  type t_Node_T = Root t_PeanoInt t_T | Link t_Elem_T
+  
+  function val_PermCell_Node_T (self: t_Perm_PermCell_Node_T) : t_Node_T
+  
+  function index_Mapping_Elem_T_T [@inline:trivial] (self: Map.map t_Elem_T t_T) (a: t_Elem_T) : t_T = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Elem_T_T
+  
+  predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
+    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
+      -> contains_Snapshot_Elem_T self.f0'0.perms e
+      /\ ward_PermCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.f0'0.perms e)
+        = view_Rc_PermCell_Node_T_Global e.f0
+      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
+      /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
+        = index_Mapping_Elem_T_Elem_T self.f0'0.roots e
+      /\ match val_PermCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.f0'0.perms e) with
+        | Link e2 -> contains_Elem_T (domain_T self) e2
+        /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e <> e
+        /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e = index_Mapping_Elem_T_Elem_T self.f0'0.roots e2
+        | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'0.roots e = e
+        /\ index_Mapping_Elem_T_T self.f0'0.payloads e = payload
+        end
+  
+  meta "rewrite_def" predicate invariant_UF_T
+  
+  predicate inv_UF_T (_1: t_UF_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
+  
+  predicate invariant_ref_UF_T [@inline:trivial] (self: t_UF_T) = inv_UF_T self
+  
+  meta "rewrite_def" predicate invariant_ref_UF_T
+  
+  predicate inv_ref_UF_T [@inline:trivial] (_1: t_UF_T) = invariant_ref_UF_T _1
+  
+  meta "rewrite_def" predicate inv_ref_UF_T
+  
+  predicate invariant_Ghost_ref_UF_T [@inline:trivial] (self: t_UF_T) = inv_ref_UF_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_ref_UF_T
+  
+  predicate inv_Ghost_ref_UF_T [@inline:trivial] (_1: t_UF_T) = invariant_Ghost_ref_UF_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_ref_UF_T
+  
+  predicate invariant_ref_Ghost_ref_UF_T [@inline:trivial] (self: t_UF_T) = inv_Ghost_ref_UF_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Ghost_ref_UF_T
+  
+  predicate inv_ref_Ghost_ref_UF_T [@inline:trivial] (_1: t_UF_T) = invariant_ref_Ghost_ref_UF_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Ghost_ref_UF_T
+  
+  predicate invariant_ref_ref_UF_T [@inline:trivial] (self: t_UF_T) = inv_ref_UF_T self
+  
+  meta "rewrite_def" predicate invariant_ref_ref_UF_T
+  
+  predicate inv_ref_ref_UF_T [@inline:trivial] (_1: t_UF_T) = invariant_ref_ref_UF_T _1
+  
+  meta "rewrite_def" predicate inv_ref_ref_UF_T
+  
+  let rec deref_Ghost_ref_UF_T (self: t_UF_T) (return (x: t_UF_T)) =
+    {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_ref_UF_T self}
     any
-    [ return (result: t_Elem_T) ->
-    {[@stop_split] [@expl:link_T ensures] ([@stop_split] [@expl:link result type invariant] inv_Elem_T result)
-      /\ ([@stop_split] [@expl:link ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf)
-      /\ ([@stop_split] [@expl:link ensures #1] result = root_T uf.current x \/ result = root_T uf.current y)
-      /\ ([@stop_split] [@expl:link ensures #2] result = root_T (fin_Ghost_refmut_UF_T uf) result)
-      /\ ([@stop_split] [@expl:link ensures #3] forall z: t_Elem_T. in_domain_T uf.current z
-        -> root_T (fin_Ghost_refmut_UF_T uf) z
-        = (if root_T uf.current z = root_T uf.current x \/ root_T uf.current z = root_T uf.current y then
-          result
-        else
-          root_T uf.current z
-        ))}
+    [ return (result: t_UF_T) ->
+    {[@stop_split] [@expl:deref_Ghost_ref_UF_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_ref_UF_T result)
+      /\ ([@stop_split] [@expl:deref ensures] result = self)}
       (! return {result}) ]
+  
+  type t_Option_ref_Perm_PermCell_Node_T = None'0 | Some'0 t_Perm_PermCell_Node_T
+  
+  function map_Option_Perm_PermCell_Node_T (self: t_Option_Perm_PermCell_Node_T) (f: Map.map t_Perm_PermCell_Node_T t_Perm_PermCell_Node_T) : t_Option_ref_Perm_PermCell_Node_T
+   = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  let rec get_ghost_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
+    (return (x: t_Option_ref_Perm_PermCell_Node_T)) = any
+    [ return (result: t_Option_ref_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:get_ghost ensures] result
+      = map_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self key) (fun (v: t_Perm_PermCell_Node_T) -> v)}
+      (! return {result}) ]
+  
+  let rec unwrap_ref_Perm_PermCell_Node_T (self_: t_Option_ref_Perm_PermCell_Node_T)
+    (return (x: t_Perm_PermCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'0}
+    any
+    [ return (result: t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self_}
+      (! return {result}) ]
+  
+  let rec new_ref_Perm_PermCell_Node_T (x: t_Perm_PermCell_Node_T) (return (x'0: t_Perm_PermCell_Node_T)) = any
+    [ return (result: t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
+  
+  predicate invariant_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (self: t_Rc_PermCell_Node_T_Global) =
+    inv_Rc_PermCell_Node_T_Global self
+  
+  meta "rewrite_def" predicate invariant_ref_Rc_PermCell_Node_T_Global
+  
+  predicate inv_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (_1: t_Rc_PermCell_Node_T_Global) =
+    invariant_ref_Rc_PermCell_Node_T_Global _1
+  
+  meta "rewrite_def" predicate inv_ref_Rc_PermCell_Node_T_Global
+  
+  let rec deref_Rc_PermCell_Node_T_Global (self_: t_Rc_PermCell_Node_T_Global) (return (x: t_PermCell_Node_T)) =
+    {[@stop_split] [@expl:deref 'self_' type invariant] inv_ref_Rc_PermCell_Node_T_Global self_}
+    any
+    [ return (result: t_PermCell_Node_T) -> {[@stop_split] [@expl:deref ensures] result
+      = view_Rc_PermCell_Node_T_Global self_}
+      (! return {result}) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_Elem_T (_1: t_Elem_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  
+  predicate inv_Node_T (_1: t_Node_T)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x
+      = match x with
+        | Root rank payload -> inv_T payload
+        | Link f0'2 -> inv_Elem_T f0'2
+        end
+  
+  predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Node_T
+  
+  predicate inv_ref_Node_T [@inline:trivial] (_1: t_Node_T) = invariant_ref_Node_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Node_T
+  
+  let rec borrow_Node_T (self: t_PermCell_Node_T) (perm: t_Perm_PermCell_Node_T) (return (x: t_Node_T)) =
+    {[@stop_split] [@expl:borrow requires] self = ward_PermCell_Node_T perm}
+    any
+    [ return (result: t_Node_T) ->
+    {[@stop_split] [@expl:borrow_Node_T ensures] ([@stop_split] [@expl:borrow result type invariant] inv_ref_Node_T result)
+      /\ ([@stop_split] [@expl:borrow ensures] result = val_PermCell_Node_T perm)}
+      (! return {result}) ]
+  
+  let rec elim_Root (_x: t_Node_T) (return (rank: t_PeanoInt) (payload: t_T)) = any
+    [ _k (rank: t_PeanoInt) (payload: t_T) -> {Root rank payload = _x} (! return {rank} {payload})
+    | _chk -> (! {[@expl:elim Root] match _x with
+        | Root _ _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Elem_T
+  
+  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Elem_T
+  
+  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
+  
+  function roots_map_T (self: t_UF_T) : Map.map t_Elem_T t_Elem_T = self.f0'0.roots
+  
+  axiom roots_map_T_spec: forall self: t_UF_T [roots_map_T self]. inv_UF_T self
+      -> (forall e: t_Elem_T. in_domain_T self e
+        -> in_domain_T self (index_Mapping_Elem_T_Elem_T (roots_map_T self) e)
+        /\ index_Mapping_Elem_T_Elem_T (roots_map_T self) e
+        = index_Mapping_Elem_T_Elem_T (roots_map_T self) (index_Mapping_Elem_T_Elem_T (roots_map_T self) e))
+  
+  function root_T (self: t_UF_T) (e: t_Elem_T) : t_Elem_T = index_Mapping_Elem_T_Elem_T (roots_map_T self) e
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  function payloads_map_T (self: t_UF_T) : Map.map t_Elem_T t_T = self.f0'0.payloads
+  
+  function payload_T (self: t_UF_T) (e: t_Elem_T) : t_T = index_Mapping_Elem_T_T (payloads_map_T self) e
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec union_T (uf: MutBorrow.t t_UF_T) (x: t_Elem_T) (y: t_Elem_T) (return (x'0: t_Elem_T)) =
-    {[@stop_split] [@expl:union_T requires] ([@stop_split] [@expl:union 'uf' type invariant] inv_Ghost_refmut_UF_T uf)
-    /\ ([@stop_split] [@expl:union 'x' type invariant] inv_Elem_T x)
-    /\ ([@stop_split] [@expl:union 'y' type invariant] inv_Elem_T y)
-    /\ ([@stop_split] [@expl:union requires] in_domain_T uf.current x /\ in_domain_T uf.current y)}
+  let rec get_T (uf: t_UF_T) (elem: t_Elem_T) (return (x: t_T)) =
+    {[@stop_split] [@expl:get_T requires] ([@stop_split] [@expl:get 'uf' type invariant] inv_Ghost_ref_UF_T uf)
+    /\ ([@stop_split] [@expl:get 'elem' type invariant] inv_ref_Elem_T elem)
+    /\ ([@stop_split] [@expl:get requires #0] in_domain_T uf elem)
+    /\ ([@stop_split] [@expl:get requires #1] root_T uf elem = elem)}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
-          (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
-            [ &_25 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
-            [ &uf <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
-      | s1 = deref_mut_Ghost_refmut_UF_T {_25} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_24 <- _x ] s2)
-      | s2 = MutBorrow.borrow_mut <t_UF_T> {_24.current.current}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_23 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_24 <- { _24 with current = { _24.current with current = _bor.final } } ] s3)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _24.current.current} any) ]
-      | s3 = MutBorrow.borrow_final <t_UF_T> {_23.current} {MutBorrow.get_id _23}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_22 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_23 <- { _23 with current = _bor.final } ] s4)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _23.current} any) ]
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _24} any) ]
-      | s5 = -{resolve_refmut_refmut_UF_T _24}- s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _23} any) ]
-      | s7 = -{resolve_refmut_UF_T _23}- s8
-      | s8 = MutBorrow.borrow_final <t_UF_T> {_22.current} {MutBorrow.get_id _22}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_21 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_22 <- { _22 with current = _bor.final } ] s9)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _22.current} any) ]
-      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _22} any) ]
-      | s10 = -{resolve_refmut_UF_T _22}- s11
-      | s11 = MutBorrow.borrow_final <t_UF_T> {_21.current} {MutBorrow.get_id _21}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_20 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_21 <- { _21 with current = _bor.final } ] s12)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _21.current} any) ]
-      | s12 = new_refmut_UF_T {_20} (fun (_x: MutBorrow.t t_UF_T) -> [ &_19 <- _x ] s13)
-      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _21} any) ]
-      | s14 = -{resolve_refmut_UF_T _21}- s15
-      | s15 = find_T {_19} {x} (fun (_x: t_Elem_T) -> [ &rx <- _x ] s16)
-      | s16 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
-          (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
-            [ &_34 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
-            [ &uf <- _bor.final ] s17) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
-      | s17 = deref_mut_Ghost_refmut_UF_T {_34} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_33 <- _x ] s18)
-      | s18 = MutBorrow.borrow_mut <t_UF_T> {_33.current.current}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_32 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_33 <- { _33 with current = { _33.current with current = _bor.final } } ] s19)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _33.current.current} any) ]
-      | s19 = MutBorrow.borrow_final <t_UF_T> {_32.current} {MutBorrow.get_id _32}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_31 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_32 <- { _32 with current = _bor.final } ] s20)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _32.current} any) ]
-      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _33} any) ]
-      | s21 = -{resolve_refmut_refmut_UF_T _33}- s22
-      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _32} any) ]
-      | s23 = -{resolve_refmut_UF_T _32}- s24
-      | s24 = MutBorrow.borrow_final <t_UF_T> {_31.current} {MutBorrow.get_id _31}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_30 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_31 <- { _31 with current = _bor.final } ] s25)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _31.current} any) ]
-      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _31} any) ]
-      | s26 = -{resolve_refmut_UF_T _31}- s27
-      | s27 = MutBorrow.borrow_final <t_UF_T> {_30.current} {MutBorrow.get_id _30}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_29 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_30 <- { _30 with current = _bor.final } ] s28)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _30.current} any) ]
-      | s28 = new_refmut_UF_T {_29} (fun (_x: MutBorrow.t t_UF_T) -> [ &_28 <- _x ] s29)
-      | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _30} any) ]
-      | s30 = -{resolve_refmut_UF_T _30}- s31
-      | s31 = find_T {_28} {y} (fun (_x: t_Elem_T) -> [ &ry <- _x ] s32)
-      | s32 = link_T {uf} {rx} {ry} (fun (_x: t_Elem_T) -> [ &_ret <- _x ] s33)
-      | s33 = return {_ret} ] ]
-    [ & _ret: t_Elem_T = Any.any_l ()
-    | & uf: MutBorrow.t t_UF_T = uf
-    | & x: t_Elem_T = x
-    | & y: t_Elem_T = y
-    | & rx: t_Elem_T = Any.any_l ()
-    | & _19: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _20: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _21: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _22: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _23: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _24: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
-    | & _25: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
-    | & ry: t_Elem_T = Any.any_l ()
-    | & _28: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _29: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _30: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _31: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _32: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _33: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
-    | & _34: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l () ])
-    [ return (result: t_Elem_T) ->
-    {[@stop_split] [@expl:union_T ensures] ([@stop_split] [@expl:union result type invariant] inv_Elem_T result)
-      /\ ([@stop_split] [@expl:union ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf)
-      /\ ([@stop_split] [@expl:union ensures #1] result = root_T uf.current x \/ result = root_T uf.current y)
-      /\ ([@stop_split] [@expl:union ensures #2] forall z: t_Elem_T. in_domain_T uf.current z
-        -> root_T (fin_Ghost_refmut_UF_T uf) z
-        = (if root_T uf.current z = root_T uf.current x \/ root_T uf.current z = root_T uf.current y then
-          result
-        else
-          root_T uf.current z
-        ))}
+      [ s0 = deref_Ghost_ref_UF_T {uf} (fun (_x: t_UF_T) -> [ &_16 <- _x ] s1)
+      | s1 = [ &_19 <- elem ] s2
+      | s2 = get_ghost_Snapshot_Elem_T {_16.f0'0.perms} {_19}
+          (fun (_x: t_Option_ref_Perm_PermCell_Node_T) -> [ &_14 <- _x ] s3)
+      | s3 = unwrap_ref_Perm_PermCell_Node_T {_14} (fun (_x: t_Perm_PermCell_Node_T) -> [ &_13 <- _x ] s4)
+      | s4 = new_ref_Perm_PermCell_Node_T {_13} (fun (_x: t_Perm_PermCell_Node_T) -> [ &perm <- _x ] s5)
+      | s5 = deref_Rc_PermCell_Node_T_Global {elem.f0} (fun (_x: t_PermCell_Node_T) -> [ &_25 <- _x ] s6)
+      | s6 = borrow_Node_T {_25} {perm} (fun (_x: t_Node_T) -> [ &_23 <- _x ] s7)
+      | s7 = any
+        [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_23 = Root x0 x1} (! bb10)
+        | br1 (x0: t_Elem_T) -> {_23 = Link x0} (! bb8) ] ]
+    | bb8 = {false} any
+    | bb10 = s0
+      [ s0 = elim_Root {_23} (fun (rrank: t_PeanoInt) (rpayload: t_T) -> [ &payload <- rpayload ] s1)
+      | s1 = [ &_ret <- payload ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l ()
+    | & uf: t_UF_T = uf
+    | & elem: t_Elem_T = elem
+    | & perm: t_Perm_PermCell_Node_T = Any.any_l ()
+    | & _13: t_Perm_PermCell_Node_T = Any.any_l ()
+    | & _14: t_Option_ref_Perm_PermCell_Node_T = Any.any_l ()
+    | & _16: t_UF_T = Any.any_l ()
+    | & _19: t_Elem_T = Any.any_l ()
+    | & _23: t_Node_T = Any.any_l ()
+    | & _25: t_PermCell_Node_T = Any.any_l ()
+    | & payload: t_T = Any.any_l () ])
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:get_T ensures] ([@stop_split] [@expl:get result type invariant] inv_ref_T result)
+      /\ ([@stop_split] [@expl:get ensures] result = payload_T uf elem)}
       (! return {result}) ]
+end
+module M_implementation__impl_Clone_for_Elem_T__clone (* <implementation::Elem<T> as std::clone::Clone> *)
+  use creusot.prelude.Any
+  
+  type t_Rc_PermCell_Node_T_Global
+  
+  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
+  
+  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
+  
+  predicate invariant_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (self: t_Rc_PermCell_Node_T_Global) =
+    inv_Rc_PermCell_Node_T_Global self
+  
+  meta "rewrite_def" predicate invariant_ref_Rc_PermCell_Node_T_Global
+  
+  predicate inv_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (_1: t_Rc_PermCell_Node_T_Global) =
+    invariant_ref_Rc_PermCell_Node_T_Global _1
+  
+  meta "rewrite_def" predicate inv_ref_Rc_PermCell_Node_T_Global
+  
+  let rec clone_Rc_PermCell_Node_T_Global (self_: t_Rc_PermCell_Node_T_Global)
+    (return (x: t_Rc_PermCell_Node_T_Global)) =
+    {[@stop_split] [@expl:clone 'self_' type invariant] inv_ref_Rc_PermCell_Node_T_Global self_}
+    any
+    [ return (result: t_Rc_PermCell_Node_T_Global) ->
+    {[@stop_split] [@expl:clone_Rc_PermCell_Node_T_Global ensures] ([@stop_split] [@expl:clone result type invariant] inv_Rc_PermCell_Node_T_Global result)
+      /\ ([@stop_split] [@expl:clone ensures] result = self_)}
+      (! return {result}) ]
+  
+  predicate inv_Elem_T (_1: t_Elem_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  
+  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Elem_T
+  
+  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Elem_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec clone_Elem_T (self: t_Elem_T) (return (x: t_Elem_T)) =
+    {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Elem_T self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = clone_Rc_PermCell_Node_T_Global {self.f0} (fun (_x: t_Rc_PermCell_Node_T_Global) -> [ &_4 <- _x ] s1)
+      | s1 = [ &_ret <- { f0 = _4 } ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_Elem_T = Any.any_l () | & self: t_Elem_T = self | & _4: t_Rc_PermCell_Node_T_Global = Any.any_l () ])
+    [ return (result: t_Elem_T) ->
+    {[@stop_split] [@expl:clone_Elem_T ensures] ([@stop_split] [@expl:clone result type invariant] inv_Elem_T result)
+      /\ ([@stop_split] [@expl:clone ensures] self = result)}
+      (! return {result}) ]
+end
+module M_implementation__impl_Clone_for_Elem_T__clone__refines (* <implementation::Elem<T> as std::clone::Clone> *)
+  type t_Rc_PermCell_Node_T_Global
+  
+  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
+  
+  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
+  
+  predicate inv_Elem_T (_1: t_Elem_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  
+  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Elem_T
+  
+  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Elem_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_Elem_T. inv_ref_Elem_T self_
+      -> inv_ref_Elem_T self_ /\ (forall result: t_Elem_T. inv_Elem_T result /\ self_ = result -> inv_Elem_T result)
+end
+module M_implementation__impl_PartialEq_for_Elem_T__eq (* <implementation::Elem<T> as std::cmp::PartialEq> *)
+  use creusot.prelude.Ptr
+  use creusot.prelude.Opaque
+  use creusot.prelude.Any
+  use creusot.int.UInt64
+  
+  type t_Rc_PermCell_Node_T_Global
+  
+  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
+  
+  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
+  
+  predicate invariant_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (self: t_Rc_PermCell_Node_T_Global) =
+    inv_Rc_PermCell_Node_T_Global self
+  
+  meta "rewrite_def" predicate invariant_ref_Rc_PermCell_Node_T_Global
+  
+  predicate inv_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (_1: t_Rc_PermCell_Node_T_Global) =
+    invariant_ref_Rc_PermCell_Node_T_Global _1
+  
+  meta "rewrite_def" predicate inv_ref_Rc_PermCell_Node_T_Global
+  
+  function as_ptr_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) : Opaque.ptr
+  
+  let rec ptr_eq_PermCell_Node_T (this: t_Rc_PermCell_Node_T_Global) (other: t_Rc_PermCell_Node_T_Global)
+    (return (x: bool)) =
+    {[@stop_split] [@expl:ptr_eq_PermCell_Node_T requires] ([@stop_split] [@expl:ptr_eq 'this' type invariant] inv_ref_Rc_PermCell_Node_T_Global this)
+    /\ ([@stop_split] [@expl:ptr_eq 'other' type invariant] inv_ref_Rc_PermCell_Node_T_Global other)}
+    any
+    [ return (result: bool) ->
+    {[@stop_split] [@expl:ptr_eq_PermCell_Node_T ensures] ([@stop_split] [@expl:ptr_eq ensures #0] result
+        = (Ptr.addr_logic_u64 (as_ptr_Rc_PermCell_Node_T_Global this)
+        = Ptr.addr_logic_u64 (as_ptr_Rc_PermCell_Node_T_Global other)))
+      /\ ([@stop_split] [@expl:ptr_eq ensures #1] result -> this = other)}
+      (! return {result}) ]
+  
+  predicate inv_Elem_T (_1: t_Elem_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  
+  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Elem_T
+  
+  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Elem_T
+  
+  function deep_model_Elem_T [@inline:trivial] (self: t_Elem_T) : UInt64.t =
+    Ptr.addr_logic_u64 (as_ptr_Rc_PermCell_Node_T_Global self.f0)
+  
+  meta "rewrite_def" function deep_model_Elem_T
+  
+  function deep_model_ref_Elem_T [@inline:trivial] (self: t_Elem_T) : UInt64.t = deep_model_Elem_T self
+  
+  meta "rewrite_def" function deep_model_ref_Elem_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec eq_Elem_T (self: t_Elem_T) (other: t_Elem_T) (return (x: bool)) =
+    {[@stop_split] [@expl:eq_Elem_T requires] ([@stop_split] [@expl:eq 'self' type invariant] inv_ref_Elem_T self)
+    /\ ([@stop_split] [@expl:eq 'other' type invariant] inv_ref_Elem_T other)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_10 <- self.f0 ] s1
+      | s1 = [ &_12 <- other.f0 ] s2
+      | s2 = ptr_eq_PermCell_Node_T {_10} {_12} (fun (_x: bool) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l ()
+    | & self: t_Elem_T = self
+    | & other: t_Elem_T = other
+    | & _10: t_Rc_PermCell_Node_T_Global = Any.any_l ()
+    | & _12: t_Rc_PermCell_Node_T_Global = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:eq_Elem_T ensures] ([@stop_split] [@expl:eq ensures #0] result
+        = (deep_model_ref_Elem_T self = deep_model_ref_Elem_T other))
+      /\ ([@stop_split] [@expl:eq ensures #1] result -> self = other)}
+      (! return {result}) ]
+end
+module M_implementation__impl_PartialEq_for_Elem_T__eq__refines (* <implementation::Elem<T> as std::cmp::PartialEq> *)
+  use creusot.int.UInt64
+  use creusot.prelude.Ptr
+  use creusot.prelude.Opaque
+  
+  type t_Rc_PermCell_Node_T_Global
+  
+  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
+  
+  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
+  
+  predicate inv_Elem_T (_1: t_Elem_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  
+  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Elem_T
+  
+  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Elem_T
+  
+  function as_ptr_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) : Opaque.ptr
+  
+  function deep_model_Elem_T [@inline:trivial] (self: t_Elem_T) : UInt64.t =
+    Ptr.addr_logic_u64 (as_ptr_Rc_PermCell_Node_T_Global self.f0)
+  
+  meta "rewrite_def" function deep_model_Elem_T
+  
+  function deep_model_ref_Elem_T [@inline:trivial] (self: t_Elem_T) : UInt64.t = deep_model_Elem_T self
+  
+  meta "rewrite_def" function deep_model_ref_Elem_T
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self_: t_Elem_T, rhs: t_Elem_T. inv_ref_Elem_T self_
+      -> inv_ref_Elem_T rhs
+      -> inv_ref_Elem_T self_
+      /\ inv_ref_Elem_T rhs
+      /\ (forall result: bool. result = (deep_model_ref_Elem_T self_ = deep_model_ref_Elem_T rhs)
+          /\ (result -> self_ = rhs) -> result = (deep_model_ref_Elem_T self_ = deep_model_ref_Elem_T rhs))
+end
+module M_implementation__impl_UF_T__roots_map (* implementation::UF<T> *)
+  use set.Fset
+  use map.Map
+  use creusot.int.UInt64
+  
+  type t_Rc_PermCell_Node_T_Global
+  
+  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
+  
+  type t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
+  
+  type t_T
+  
+  type t_UFInner_T = {
+    domain: Fset.fset t_Elem_T;
+    perms: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T;
+    payloads: Map.map t_Elem_T t_T;
+    roots: Map.map t_Elem_T t_Elem_T }
+  
+  type t_UF_T = { f0'0: t_UFInner_T }
+  
+  predicate contains_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) (e: t_Elem_T) = Fset.mem e self
+  
+  meta "rewrite_def" predicate contains_Elem_T
+  
+  function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
+  
+  type t_Perm_PermCell_Node_T
+  
+  type t_Option_Perm_PermCell_Node_T = None | Some t_Perm_PermCell_Node_T
+  
+  function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PermCell_Node_T
+  
+  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PermCell_Node_T
+   = Map.get (to_mapping_Snapshot_Elem_T self) k
+  
+  meta "rewrite_def" function get_Snapshot_Elem_T
+  
+  predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) =
+    get_Snapshot_Elem_T self k <> None
+  
+  meta "rewrite_def" predicate contains_Snapshot_Elem_T
+  
+  type t_PermCell_Node_T
+  
+  function ward_PermCell_Node_T (self: t_Perm_PermCell_Node_T) : t_PermCell_Node_T
+  
+  predicate index_Mapping_Perm_PermCell_Node_T_bool [@inline:trivial] (self: Map.map t_Perm_PermCell_Node_T bool) (a: t_Perm_PermCell_Node_T) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Perm_PermCell_Node_T_bool
+  
+  function such_that_Perm_PermCell_Node_T (p: Map.map t_Perm_PermCell_Node_T bool) : t_Perm_PermCell_Node_T
+  
+  axiom such_that_Perm_PermCell_Node_T_spec:
+    forall p: Map.map t_Perm_PermCell_Node_T bool [such_that_Perm_PermCell_Node_T p]. (exists x: t_Perm_PermCell_Node_T. index_Mapping_Perm_PermCell_Node_T_bool p x)
+      -> index_Mapping_Perm_PermCell_Node_T_bool p (such_that_Perm_PermCell_Node_T p)
+  
+  function unwrap_Option_Perm_PermCell_Node_T (self: t_Option_Perm_PermCell_Node_T) : t_Perm_PermCell_Node_T =
+    match self with
+      | Some x -> x
+      | None -> such_that_Perm_PermCell_Node_T (fun (__0: t_Perm_PermCell_Node_T) -> true)
+      end
+  
+  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) : t_Perm_PermCell_Node_T
+   = unwrap_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self k)
+  
+  meta "rewrite_def" function lookup_Snapshot_Elem_T
+  
+  function index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T) : t_Perm_PermCell_Node_T
+   = lookup_Snapshot_Elem_T self key
+  
+  meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
+  
+  function view_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) : t_PermCell_Node_T
+  
+  function index_Mapping_Elem_T_Elem_T [@inline:trivial] (self: Map.map t_Elem_T t_Elem_T) (a: t_Elem_T) : t_Elem_T =
+    Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Elem_T_Elem_T
+  
+  type t_PeanoInt = { f0'1: UInt64.t }
+  
+  type t_Node_T = Root t_PeanoInt t_T | Link t_Elem_T
+  
+  function val_PermCell_Node_T (self: t_Perm_PermCell_Node_T) : t_Node_T
+  
+  function index_Mapping_Elem_T_T [@inline:trivial] (self: Map.map t_Elem_T t_T) (a: t_Elem_T) : t_T = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Elem_T_T
+  
+  predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
+    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
+      -> contains_Snapshot_Elem_T self.f0'0.perms e
+      /\ ward_PermCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.f0'0.perms e)
+        = view_Rc_PermCell_Node_T_Global e.f0
+      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
+      /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
+        = index_Mapping_Elem_T_Elem_T self.f0'0.roots e
+      /\ match val_PermCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.f0'0.perms e) with
+        | Link e2 -> contains_Elem_T (domain_T self) e2
+        /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e <> e
+        /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e = index_Mapping_Elem_T_Elem_T self.f0'0.roots e2
+        | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'0.roots e = e
+        /\ index_Mapping_Elem_T_T self.f0'0.payloads e = payload
+        end
+  
+  meta "rewrite_def" predicate invariant_UF_T
+  
+  predicate inv_UF_T (_1: t_UF_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
+  
+  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_UF_T
+  
+  function roots_map_T (self: t_UF_T) : Map.map t_Elem_T t_Elem_T
+  
+  goal vc_roots_map_T: inv_UF_T self
+    -> (let result = self.f0'0.roots in [@stop_split] [@expl:roots_map ensures] forall e: t_Elem_T. in_domain_T self e
+      -> in_domain_T self (index_Mapping_Elem_T_Elem_T result e)
+      /\ index_Mapping_Elem_T_Elem_T result e
+      = index_Mapping_Elem_T_Elem_T result (index_Mapping_Elem_T_Elem_T result e))
 end
 module M_implementation__link
   use creusot.prelude.MutBorrow
@@ -1263,217 +2539,6 @@ module M_implementation__link
         ))}
       (! return {result}) ]
 end
-module M_implementation__new
-  use map.Map
-  use map.Const
-  use set.Fset
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
-  
-  type t_Rc_PermCell_Node_T_Global
-  
-  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
-  
-  type t_Perm_PermCell_Node_T
-  
-  type t_Option_Perm_PermCell_Node_T = None | Some t_Perm_PermCell_Node_T
-  
-  function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PermCell_Node_T
-  
-  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PermCell_Node_T
-   = Map.get (to_mapping_Snapshot_Elem_T self) k
-  
-  meta "rewrite_def" function get_Snapshot_Elem_T
-  
-  predicate ext_eq_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (other: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) =
-    forall k: t_Elem_T. get_Snapshot_Elem_T self k = get_Snapshot_Elem_T other k
-  
-  axiom ext_eq_Snapshot_Elem_T_spec:
-    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T, other: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [self
-      = other]. ext_eq_Snapshot_Elem_T self other = (self = other)
-  
-  function len_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) : int
-  
-  axiom len_Snapshot_Elem_T_spec:
-    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [len_Snapshot_Elem_T self]. len_Snapshot_Elem_T self >= 0
-  
-  constant empty_Snapshot_Elem_T : t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
-  
-  axiom empty_Snapshot_Elem_T_spec: len_Snapshot_Elem_T empty_Snapshot_Elem_T = 0
-  
-  axiom empty_Snapshot_Elem_T_spec'0: to_mapping_Snapshot_Elem_T empty_Snapshot_Elem_T = Const.const (None)
-  
-  predicate is_empty_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) =
-    ext_eq_Snapshot_Elem_T self empty_Snapshot_Elem_T
-  
-  let rec new_Snapshot_Elem_T (return (x: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T)) = any
-    [ return (result: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) ->
-    {[@stop_split] [@expl:new ensures] is_empty_Snapshot_Elem_T result}
-      (! return {result}) ]
-  
-  let rec into_inner_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T)
-    (return (x: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T)) = any
-    [ return (result: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:into_inner ensures] result
-      = self}
-      (! return {result}) ]
-  
-  type t_T
-  
-  predicate index_Mapping_Mapping_Elem_T_T_bool [@inline:trivial] (self: Map.map (Map.map t_Elem_T t_T) bool) (a: Map.map t_Elem_T t_T) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_Mapping_Elem_T_T_bool
-  
-  function such_that_Mapping_Elem_T_T (p: Map.map (Map.map t_Elem_T t_T) bool) : Map.map t_Elem_T t_T
-  
-  axiom such_that_Mapping_Elem_T_T_spec:
-    forall p: Map.map (Map.map t_Elem_T t_T) bool [such_that_Mapping_Elem_T_T p]. (exists x: Map.map t_Elem_T t_T. index_Mapping_Mapping_Elem_T_T_bool p x)
-      -> index_Mapping_Mapping_Elem_T_T_bool p (such_that_Mapping_Elem_T_T p)
-  
-  predicate index_Mapping_Mapping_Elem_T_Elem_T_bool [@inline:trivial] (self: Map.map (Map.map t_Elem_T t_Elem_T) bool) (a: Map.map t_Elem_T t_Elem_T) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_Mapping_Elem_T_Elem_T_bool
-  
-  function such_that_Mapping_Elem_T_Elem_T (p: Map.map (Map.map t_Elem_T t_Elem_T) bool) : Map.map t_Elem_T t_Elem_T
-  
-  axiom such_that_Mapping_Elem_T_Elem_T_spec:
-    forall p: Map.map (Map.map t_Elem_T t_Elem_T) bool [such_that_Mapping_Elem_T_Elem_T p]. (exists x: Map.map t_Elem_T t_Elem_T. index_Mapping_Mapping_Elem_T_Elem_T_bool p x)
-      -> index_Mapping_Mapping_Elem_T_Elem_T_bool p (such_that_Mapping_Elem_T_Elem_T p)
-  
-  type t_UFInner_T = {
-    domain: Fset.fset t_Elem_T;
-    perms: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T;
-    payloads: Map.map t_Elem_T t_T;
-    roots: Map.map t_Elem_T t_Elem_T }
-  
-  type t_UF_T = { f0'0: t_UFInner_T }
-  
-  predicate contains_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) (e: t_Elem_T) = Fset.mem e self
-  
-  meta "rewrite_def" predicate contains_Elem_T
-  
-  function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
-  
-  predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) =
-    get_Snapshot_Elem_T self k <> None
-  
-  meta "rewrite_def" predicate contains_Snapshot_Elem_T
-  
-  type t_PermCell_Node_T
-  
-  function ward_PermCell_Node_T (self: t_Perm_PermCell_Node_T) : t_PermCell_Node_T
-  
-  predicate index_Mapping_Perm_PermCell_Node_T_bool [@inline:trivial] (self: Map.map t_Perm_PermCell_Node_T bool) (a: t_Perm_PermCell_Node_T) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_Perm_PermCell_Node_T_bool
-  
-  function such_that_Perm_PermCell_Node_T (p: Map.map t_Perm_PermCell_Node_T bool) : t_Perm_PermCell_Node_T
-  
-  axiom such_that_Perm_PermCell_Node_T_spec:
-    forall p: Map.map t_Perm_PermCell_Node_T bool [such_that_Perm_PermCell_Node_T p]. (exists x: t_Perm_PermCell_Node_T. index_Mapping_Perm_PermCell_Node_T_bool p x)
-      -> index_Mapping_Perm_PermCell_Node_T_bool p (such_that_Perm_PermCell_Node_T p)
-  
-  function unwrap_Option_Perm_PermCell_Node_T (self: t_Option_Perm_PermCell_Node_T) : t_Perm_PermCell_Node_T =
-    match self with
-      | Some x -> x
-      | None -> such_that_Perm_PermCell_Node_T (fun (__0: t_Perm_PermCell_Node_T) -> true)
-      end
-  
-  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) : t_Perm_PermCell_Node_T
-   = unwrap_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_Elem_T
-  
-  function index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T) : t_Perm_PermCell_Node_T
-   = lookup_Snapshot_Elem_T self key
-  
-  meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
-  
-  function view_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) : t_PermCell_Node_T
-  
-  function index_Mapping_Elem_T_Elem_T [@inline:trivial] (self: Map.map t_Elem_T t_Elem_T) (a: t_Elem_T) : t_Elem_T =
-    Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Elem_T_Elem_T
-  
-  type t_PeanoInt = { f0'1: UInt64.t }
-  
-  type t_Node_T = Root t_PeanoInt t_T | Link t_Elem_T
-  
-  function val_PermCell_Node_T (self: t_Perm_PermCell_Node_T) : t_Node_T
-  
-  function index_Mapping_Elem_T_T [@inline:trivial] (self: Map.map t_Elem_T t_T) (a: t_Elem_T) : t_T = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Elem_T_T
-  
-  predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
-    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
-      -> contains_Snapshot_Elem_T self.f0'0.perms e
-      /\ ward_PermCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.f0'0.perms e)
-        = view_Rc_PermCell_Node_T_Global e.f0
-      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
-      /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
-        = index_Mapping_Elem_T_Elem_T self.f0'0.roots e
-      /\ match val_PermCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.f0'0.perms e) with
-        | Link e2 -> contains_Elem_T (domain_T self) e2
-        /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e <> e
-        /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e = index_Mapping_Elem_T_Elem_T self.f0'0.roots e2
-        | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'0.roots e = e
-        /\ index_Mapping_Elem_T_T self.f0'0.payloads e = payload
-        end
-  
-  meta "rewrite_def" predicate invariant_UF_T
-  
-  predicate inv_UF_T (_1: t_UF_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
-  
-  predicate invariant_Ghost_UF_T [@inline:trivial] (self: t_UF_T) = inv_UF_T self
-  
-  meta "rewrite_def" predicate invariant_Ghost_UF_T
-  
-  predicate inv_Ghost_UF_T [@inline:trivial] (_1: t_UF_T) = invariant_Ghost_UF_T _1
-  
-  meta "rewrite_def" predicate inv_Ghost_UF_T
-  
-  let rec new_UF_T (x: t_UF_T) (return (x'0: t_UF_T)) = {[@stop_split] [@expl:new 'x' type invariant] inv_UF_T x}
-    any
-    [ return (result: t_UF_T) ->
-    {[@stop_split] [@expl:new_UF_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_UF_T result)
-      /\ ([@stop_split] [@expl:new ensures] result = x)}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec new_T (return (x: t_UF_T)) = (! bb0
-    [ bb0 = s0
-      [ s0 = new_Snapshot_Elem_T (fun (_x: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) -> [ &_7 <- _x ] s1)
-      | s1 = into_inner_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T {_7}
-          (fun (_x: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) -> [ &_6 <- _x ] s2)
-      | s2 = [ &_3 <- { domain = Fset.empty: Fset.fset t_Elem_T;
-                        perms = _6;
-                        payloads = such_that_Mapping_Elem_T_T (fun (__0: Map.map t_Elem_T t_T) -> true);
-                        roots = such_that_Mapping_Elem_T_Elem_T (fun (__0: Map.map t_Elem_T t_Elem_T) -> true) } ] s3
-      | s3 = [ &_2 <- { f0'0 = _3 } ] s4
-      | s4 = new_UF_T {_2} (fun (_x: t_UF_T) -> [ &_ret <- _x ] s5)
-      | s5 = return {_ret} ] ]
-    [ & _ret: t_UF_T = Any.any_l ()
-    | & _2: t_UF_T = Any.any_l ()
-    | & _3: t_UFInner_T = Any.any_l ()
-    | & _6: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T = Any.any_l ()
-    | & _7: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T = Any.any_l () ])
-    [ return (result: t_UF_T) ->
-    {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_UF_T result)
-      /\ ([@stop_split] [@expl:new ensures] Fset.is_empty (domain_T result))}
-      (! return {result}) ]
-end
 module M_implementation__make
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
@@ -1842,13 +2907,223 @@ module M_implementation__make
       = Map.set (payloads_map_T uf.current) result payload)}
       (! return {result}) ]
 end
-module M_implementation__find
+module M_implementation__new
+  use map.Map
+  use map.Const
+  use set.Fset
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
+  
+  type t_Rc_PermCell_Node_T_Global
+  
+  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
+  
+  type t_Perm_PermCell_Node_T
+  
+  type t_Option_Perm_PermCell_Node_T = None | Some t_Perm_PermCell_Node_T
+  
+  function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PermCell_Node_T
+  
+  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PermCell_Node_T
+   = Map.get (to_mapping_Snapshot_Elem_T self) k
+  
+  meta "rewrite_def" function get_Snapshot_Elem_T
+  
+  predicate ext_eq_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (other: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) =
+    forall k: t_Elem_T. get_Snapshot_Elem_T self k = get_Snapshot_Elem_T other k
+  
+  axiom ext_eq_Snapshot_Elem_T_spec:
+    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T, other: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [self
+      = other]. ext_eq_Snapshot_Elem_T self other = (self = other)
+  
+  function len_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) : int
+  
+  axiom len_Snapshot_Elem_T_spec:
+    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [len_Snapshot_Elem_T self]. len_Snapshot_Elem_T self >= 0
+  
+  constant empty_Snapshot_Elem_T : t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
+  
+  axiom empty_Snapshot_Elem_T_spec: len_Snapshot_Elem_T empty_Snapshot_Elem_T = 0
+  
+  axiom empty_Snapshot_Elem_T_spec'0: to_mapping_Snapshot_Elem_T empty_Snapshot_Elem_T = Const.const (None)
+  
+  predicate is_empty_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) =
+    ext_eq_Snapshot_Elem_T self empty_Snapshot_Elem_T
+  
+  let rec new_Snapshot_Elem_T (return (x: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T)) = any
+    [ return (result: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) ->
+    {[@stop_split] [@expl:new ensures] is_empty_Snapshot_Elem_T result}
+      (! return {result}) ]
+  
+  let rec into_inner_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T)
+    (return (x: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T)) = any
+    [ return (result: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:into_inner ensures] result
+      = self}
+      (! return {result}) ]
+  
+  type t_T
+  
+  predicate index_Mapping_Mapping_Elem_T_T_bool [@inline:trivial] (self: Map.map (Map.map t_Elem_T t_T) bool) (a: Map.map t_Elem_T t_T) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Mapping_Elem_T_T_bool
+  
+  function such_that_Mapping_Elem_T_T (p: Map.map (Map.map t_Elem_T t_T) bool) : Map.map t_Elem_T t_T
+  
+  axiom such_that_Mapping_Elem_T_T_spec:
+    forall p: Map.map (Map.map t_Elem_T t_T) bool [such_that_Mapping_Elem_T_T p]. (exists x: Map.map t_Elem_T t_T. index_Mapping_Mapping_Elem_T_T_bool p x)
+      -> index_Mapping_Mapping_Elem_T_T_bool p (such_that_Mapping_Elem_T_T p)
+  
+  predicate index_Mapping_Mapping_Elem_T_Elem_T_bool [@inline:trivial] (self: Map.map (Map.map t_Elem_T t_Elem_T) bool) (a: Map.map t_Elem_T t_Elem_T) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Mapping_Elem_T_Elem_T_bool
+  
+  function such_that_Mapping_Elem_T_Elem_T (p: Map.map (Map.map t_Elem_T t_Elem_T) bool) : Map.map t_Elem_T t_Elem_T
+  
+  axiom such_that_Mapping_Elem_T_Elem_T_spec:
+    forall p: Map.map (Map.map t_Elem_T t_Elem_T) bool [such_that_Mapping_Elem_T_Elem_T p]. (exists x: Map.map t_Elem_T t_Elem_T. index_Mapping_Mapping_Elem_T_Elem_T_bool p x)
+      -> index_Mapping_Mapping_Elem_T_Elem_T_bool p (such_that_Mapping_Elem_T_Elem_T p)
+  
+  type t_UFInner_T = {
+    domain: Fset.fset t_Elem_T;
+    perms: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T;
+    payloads: Map.map t_Elem_T t_T;
+    roots: Map.map t_Elem_T t_Elem_T }
+  
+  type t_UF_T = { f0'0: t_UFInner_T }
+  
+  predicate contains_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) (e: t_Elem_T) = Fset.mem e self
+  
+  meta "rewrite_def" predicate contains_Elem_T
+  
+  function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
+  
+  predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) =
+    get_Snapshot_Elem_T self k <> None
+  
+  meta "rewrite_def" predicate contains_Snapshot_Elem_T
+  
+  type t_PermCell_Node_T
+  
+  function ward_PermCell_Node_T (self: t_Perm_PermCell_Node_T) : t_PermCell_Node_T
+  
+  predicate index_Mapping_Perm_PermCell_Node_T_bool [@inline:trivial] (self: Map.map t_Perm_PermCell_Node_T bool) (a: t_Perm_PermCell_Node_T) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Perm_PermCell_Node_T_bool
+  
+  function such_that_Perm_PermCell_Node_T (p: Map.map t_Perm_PermCell_Node_T bool) : t_Perm_PermCell_Node_T
+  
+  axiom such_that_Perm_PermCell_Node_T_spec:
+    forall p: Map.map t_Perm_PermCell_Node_T bool [such_that_Perm_PermCell_Node_T p]. (exists x: t_Perm_PermCell_Node_T. index_Mapping_Perm_PermCell_Node_T_bool p x)
+      -> index_Mapping_Perm_PermCell_Node_T_bool p (such_that_Perm_PermCell_Node_T p)
+  
+  function unwrap_Option_Perm_PermCell_Node_T (self: t_Option_Perm_PermCell_Node_T) : t_Perm_PermCell_Node_T =
+    match self with
+      | Some x -> x
+      | None -> such_that_Perm_PermCell_Node_T (fun (__0: t_Perm_PermCell_Node_T) -> true)
+      end
+  
+  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) : t_Perm_PermCell_Node_T
+   = unwrap_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self k)
+  
+  meta "rewrite_def" function lookup_Snapshot_Elem_T
+  
+  function index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T) : t_Perm_PermCell_Node_T
+   = lookup_Snapshot_Elem_T self key
+  
+  meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
+  
+  function view_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) : t_PermCell_Node_T
+  
+  function index_Mapping_Elem_T_Elem_T [@inline:trivial] (self: Map.map t_Elem_T t_Elem_T) (a: t_Elem_T) : t_Elem_T =
+    Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Elem_T_Elem_T
+  
+  type t_PeanoInt = { f0'1: UInt64.t }
+  
+  type t_Node_T = Root t_PeanoInt t_T | Link t_Elem_T
+  
+  function val_PermCell_Node_T (self: t_Perm_PermCell_Node_T) : t_Node_T
+  
+  function index_Mapping_Elem_T_T [@inline:trivial] (self: Map.map t_Elem_T t_T) (a: t_Elem_T) : t_T = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Elem_T_T
+  
+  predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
+    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
+      -> contains_Snapshot_Elem_T self.f0'0.perms e
+      /\ ward_PermCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.f0'0.perms e)
+        = view_Rc_PermCell_Node_T_Global e.f0
+      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
+      /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
+        = index_Mapping_Elem_T_Elem_T self.f0'0.roots e
+      /\ match val_PermCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.f0'0.perms e) with
+        | Link e2 -> contains_Elem_T (domain_T self) e2
+        /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e <> e
+        /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e = index_Mapping_Elem_T_Elem_T self.f0'0.roots e2
+        | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'0.roots e = e
+        /\ index_Mapping_Elem_T_T self.f0'0.payloads e = payload
+        end
+  
+  meta "rewrite_def" predicate invariant_UF_T
+  
+  predicate inv_UF_T (_1: t_UF_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
+  
+  predicate invariant_Ghost_UF_T [@inline:trivial] (self: t_UF_T) = inv_UF_T self
+  
+  meta "rewrite_def" predicate invariant_Ghost_UF_T
+  
+  predicate inv_Ghost_UF_T [@inline:trivial] (_1: t_UF_T) = invariant_Ghost_UF_T _1
+  
+  meta "rewrite_def" predicate inv_Ghost_UF_T
+  
+  let rec new_UF_T (x: t_UF_T) (return (x'0: t_UF_T)) = {[@stop_split] [@expl:new 'x' type invariant] inv_UF_T x}
+    any
+    [ return (result: t_UF_T) ->
+    {[@stop_split] [@expl:new_UF_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_UF_T result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec new_T (return (x: t_UF_T)) = (! bb0
+    [ bb0 = s0
+      [ s0 = new_Snapshot_Elem_T (fun (_x: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) -> [ &_7 <- _x ] s1)
+      | s1 = into_inner_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T {_7}
+          (fun (_x: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) -> [ &_6 <- _x ] s2)
+      | s2 = [ &_3 <- { domain = Fset.empty: Fset.fset t_Elem_T;
+                        perms = _6;
+                        payloads = such_that_Mapping_Elem_T_T (fun (__0: Map.map t_Elem_T t_T) -> true);
+                        roots = such_that_Mapping_Elem_T_Elem_T (fun (__0: Map.map t_Elem_T t_Elem_T) -> true) } ] s3
+      | s3 = [ &_2 <- { f0'0 = _3 } ] s4
+      | s4 = new_UF_T {_2} (fun (_x: t_UF_T) -> [ &_ret <- _x ] s5)
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_UF_T = Any.any_l ()
+    | & _2: t_UF_T = Any.any_l ()
+    | & _3: t_UFInner_T = Any.any_l ()
+    | & _6: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T = Any.any_l ()
+    | & _7: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T = Any.any_l () ])
+    [ return (result: t_UF_T) ->
+    {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_UF_T result)
+      /\ ([@stop_split] [@expl:new ensures] Fset.is_empty (domain_T result))}
+      (! return {result}) ]
+end
+module M_implementation__union
   use creusot.prelude.MutBorrow
   use set.Fset
   use map.Map
   use creusot.int.UInt64
   use creusot.prelude.Any
-  use int.Int
   
   type t_Rc_PermCell_Node_T_Global
   
@@ -1975,126 +3250,6 @@ module M_implementation__find
   
   meta "rewrite_def" predicate inv_Ghost_refmut_UF_T
   
-  predicate invariant_ref_Ghost_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) = inv_Ghost_refmut_UF_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Ghost_refmut_UF_T
-  
-  predicate inv_ref_Ghost_refmut_UF_T [@inline:trivial] (_1: MutBorrow.t t_UF_T) = invariant_ref_Ghost_refmut_UF_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Ghost_refmut_UF_T
-  
-  predicate invariant_ref_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) = inv_refmut_UF_T self
-  
-  meta "rewrite_def" predicate invariant_ref_refmut_UF_T
-  
-  predicate inv_ref_refmut_UF_T [@inline:trivial] (_1: MutBorrow.t t_UF_T) = invariant_ref_refmut_UF_T _1
-  
-  meta "rewrite_def" predicate inv_ref_refmut_UF_T
-  
-  let rec deref_Ghost_refmut_UF_T (self: MutBorrow.t t_UF_T) (return (x: MutBorrow.t t_UF_T)) =
-    {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_refmut_UF_T self}
-    any
-    [ return (result: MutBorrow.t t_UF_T) ->
-    {[@stop_split] [@expl:deref_Ghost_refmut_UF_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_refmut_UF_T result)
-      /\ ([@stop_split] [@expl:deref ensures] result = self)}
-      (! return {result}) ]
-  
-  type t_Option_ref_Perm_PermCell_Node_T = None'0 | Some'0 t_Perm_PermCell_Node_T
-  
-  function map_Option_Perm_PermCell_Node_T (self: t_Option_Perm_PermCell_Node_T) (f: Map.map t_Perm_PermCell_Node_T t_Perm_PermCell_Node_T) : t_Option_ref_Perm_PermCell_Node_T
-   = match self with
-      | None -> None'0
-      | Some x -> Some'0 (Map.get f x)
-      end
-  
-  let rec get_ghost_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
-    (return (x: t_Option_ref_Perm_PermCell_Node_T)) = any
-    [ return (result: t_Option_ref_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:get_ghost ensures] result
-      = map_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self key) (fun (v: t_Perm_PermCell_Node_T) -> v)}
-      (! return {result}) ]
-  
-  let rec unwrap_ref_Perm_PermCell_Node_T (self_: t_Option_ref_Perm_PermCell_Node_T)
-    (return (x: t_Perm_PermCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'0}
-    any
-    [ return (result: t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self_}
-      (! return {result}) ]
-  
-  let rec new_ref_Perm_PermCell_Node_T (x: t_Perm_PermCell_Node_T) (return (x'0: t_Perm_PermCell_Node_T)) = any
-    [ return (result: t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
-  
-  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
-  
-  predicate invariant_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (self: t_Rc_PermCell_Node_T_Global) =
-    inv_Rc_PermCell_Node_T_Global self
-  
-  meta "rewrite_def" predicate invariant_ref_Rc_PermCell_Node_T_Global
-  
-  predicate inv_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (_1: t_Rc_PermCell_Node_T_Global) =
-    invariant_ref_Rc_PermCell_Node_T_Global _1
-  
-  meta "rewrite_def" predicate inv_ref_Rc_PermCell_Node_T_Global
-  
-  let rec deref_Rc_PermCell_Node_T_Global (self_: t_Rc_PermCell_Node_T_Global) (return (x: t_PermCell_Node_T)) =
-    {[@stop_split] [@expl:deref 'self_' type invariant] inv_ref_Rc_PermCell_Node_T_Global self_}
-    any
-    [ return (result: t_PermCell_Node_T) -> {[@stop_split] [@expl:deref ensures] result
-      = view_Rc_PermCell_Node_T_Global self_}
-      (! return {result}) ]
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_Elem_T (_1: t_Elem_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
-  
-  predicate inv_Node_T (_1: t_Node_T)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x
-      = match x with
-        | Root rank payload -> inv_T payload
-        | Link f0'2 -> inv_Elem_T f0'2
-        end
-  
-  predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Node_T
-  
-  predicate inv_ref_Node_T [@inline:trivial] (_1: t_Node_T) = invariant_ref_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Node_T
-  
-  let rec borrow_Node_T (self: t_PermCell_Node_T) (perm: t_Perm_PermCell_Node_T) (return (x: t_Node_T)) =
-    {[@stop_split] [@expl:borrow requires] self = ward_PermCell_Node_T perm}
-    any
-    [ return (result: t_Node_T) ->
-    {[@stop_split] [@expl:borrow_Node_T ensures] ([@stop_split] [@expl:borrow result type invariant] inv_ref_Node_T result)
-      /\ ([@stop_split] [@expl:borrow ensures] result = val_PermCell_Node_T perm)}
-      (! return {result}) ]
-  
-  let rec elim_Link (_x: t_Node_T) (return (f0'2: t_Elem_T)) = any
-    [ _k (f0'2: t_Elem_T) -> {Link f0'2 = _x} (! return {f0'2})
-    | _chk -> (! {[@expl:elim Link] match _x with
-        | Link _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  let rec clone_Elem_T (self: t_Elem_T) (return (x: t_Elem_T)) =
-    {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Elem_T self}
-    any
-    [ return (result: t_Elem_T) ->
-    {[@stop_split] [@expl:clone_Elem_T ensures] ([@stop_split] [@expl:clone result type invariant] inv_Elem_T result)
-      /\ ([@stop_split] [@expl:clone ensures] self = result)}
-      (! return {result}) ]
-  
   predicate invariant_refmut_Ghost_refmut_UF_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_UF_T)) =
     inv_Ghost_refmut_UF_T self.current /\ inv_Ghost_refmut_UF_T self.final
   
@@ -2140,126 +3295,11 @@ module M_implementation__find
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  let rec new_refmut_UFInner_T (x: MutBorrow.t t_UFInner_T) (return (x'0: MutBorrow.t t_UFInner_T)) = any
-    [ return (result: MutBorrow.t t_UFInner_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
   
-  let rec deref_mut_Ghost_refmut_UFInner_T (self: MutBorrow.t (MutBorrow.t t_UFInner_T))
-    (return (x: MutBorrow.t (MutBorrow.t t_UFInner_T))) = any
-    [ return (result: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
-      (! return {result}) ]
+  predicate inv_Elem_T (_1: t_Elem_T)
   
-  type t_Option_refmut_Perm_PermCell_Node_T = None'1 | Some'1 (MutBorrow.t t_Perm_PermCell_Node_T)
-  
-  function len_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) : int
-  
-  axiom len_Snapshot_Elem_T_spec:
-    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [len_Snapshot_Elem_T self]. len_Snapshot_Elem_T self >= 0
-  
-  let rec get_mut_ghost_Snapshot_Elem_T (self: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
-    (return (x: t_Option_refmut_Perm_PermCell_Node_T)) = any
-    [ return (result: t_Option_refmut_Perm_PermCell_Node_T) ->
-    {[@stop_split] [@expl:get_mut_ghost_Snapshot_Elem_T ensures] ([@stop_split] [@expl:get_mut_ghost ensures #0] if contains_Snapshot_Elem_T self.current key then
-          match result with
-            | None'1 -> false
-            | Some'1 r -> contains_Snapshot_Elem_T self.final key
-            /\ index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.current key = r.current
-            /\ index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.final key = r.final
-            end
-        else
-          result = None'1 /\ self.current = self.final
-        )
-      /\ ([@stop_split] [@expl:get_mut_ghost ensures #1] forall k: t_Elem_T. k <> key
-          -> get_Snapshot_Elem_T self.current k = get_Snapshot_Elem_T self.final k)
-      /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] len_Snapshot_Elem_T self.current
-      = len_Snapshot_Elem_T self.final)}
-      (! return {result}) ]
-  
-  let rec unwrap_refmut_Perm_PermCell_Node_T (self_: t_Option_refmut_Perm_PermCell_Node_T)
-    (return (x: MutBorrow.t t_Perm_PermCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'1}
-    any
-    [ return (result: MutBorrow.t t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'1 result
-      = self_}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_refmut_UFInner_T
-  
-  let rec new_refmut_Perm_PermCell_Node_T (x: MutBorrow.t t_Perm_PermCell_Node_T)
-    (return (x'0: MutBorrow.t t_Perm_PermCell_Node_T)) = any
-    [ return (result: MutBorrow.t t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:new ensures] result = x}
-      (! return {result}) ]
-  
-  predicate resolve_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
-  
-  predicate resolve_Elem_T (_1: t_Elem_T)
-  
-  axiom resolve_axiom [@rewrite]: forall x: t_Elem_T [resolve_Elem_T x]. resolve_Elem_T x
-      = resolve_Rc_PermCell_Node_T_Global x.f0
-  
-  predicate invariant_refmut_Node_T [@inline:trivial] (self: MutBorrow.t t_Node_T) =
-    inv_Node_T self.current /\ inv_Node_T self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Node_T
-  
-  predicate inv_refmut_Node_T [@inline:trivial] (_1: MutBorrow.t t_Node_T) = invariant_refmut_Node_T _1
-  
-  meta "rewrite_def" predicate inv_refmut_Node_T
-  
-  function fin_Ghost_refmut_Perm_PermCell_Node_T [@inline:trivial] (self: MutBorrow.t t_Perm_PermCell_Node_T) : t_Perm_PermCell_Node_T
-   = self.final
-  
-  meta "rewrite_def" function fin_Ghost_refmut_Perm_PermCell_Node_T
-  
-  let rec borrow_mut_Node_T (self: t_PermCell_Node_T) (perm: MutBorrow.t t_Perm_PermCell_Node_T)
-    (return (x: MutBorrow.t t_Node_T)) = {[@stop_split] [@expl:borrow_mut requires] self
-    = ward_PermCell_Node_T perm.current}
-    any
-    [ return (result: MutBorrow.t t_Node_T) ->
-    {[@stop_split] [@expl:borrow_mut_Node_T ensures] ([@stop_split] [@expl:borrow_mut result type invariant] inv_refmut_Node_T result)
-      /\ ([@stop_split] [@expl:borrow_mut ensures #0] self
-        = ward_PermCell_Node_T (fin_Ghost_refmut_Perm_PermCell_Node_T perm))
-      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = val_PermCell_Node_T perm.current)
-      /\ ([@stop_split] [@expl:borrow_mut ensures #2] result.final
-      = val_PermCell_Node_T (fin_Ghost_refmut_Perm_PermCell_Node_T perm))}
-      (! return {result}) ]
-  
-  predicate resolve_T (_1: t_T)
-  
-  predicate resolve_Node_T (_1: t_Node_T)
-  
-  axiom resolve_axiom'0 [@rewrite]: forall x: t_Node_T [resolve_Node_T x]. resolve_Node_T x
-      = match x with
-        | Root x0 x1 -> resolve_T x1
-        | Link x0 -> resolve_Elem_T x0
-        end
-  
-  predicate resolve_refmut_Node_T [@inline:trivial] (_1: MutBorrow.t t_Node_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Node_T
-  
-  predicate resolve_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_UFInner_T
-  
-  predicate resolve_Ghost_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) =
-    resolve_refmut_UFInner_T self
-  
-  meta "rewrite_def" predicate resolve_Ghost_refmut_UFInner_T
-  
-  predicate resolve_Ghost_refmut_UFInner_T'0 [@inline:trivial] (_1: MutBorrow.t t_UFInner_T) =
-    resolve_Ghost_refmut_UFInner_T _1
-  
-  meta "rewrite_def" predicate resolve_Ghost_refmut_UFInner_T'0
-  
-  predicate resolve_Ghost_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) = resolve_refmut_UF_T self
-  
-  meta "rewrite_def" predicate resolve_Ghost_refmut_UF_T
-  
-  predicate resolve_Ghost_refmut_UF_T'0 [@inline:trivial] (_1: MutBorrow.t t_UF_T) = resolve_Ghost_refmut_UF_T _1
-  
-  meta "rewrite_def" predicate resolve_Ghost_refmut_UF_T'0
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
   
   predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
   
@@ -2279,1199 +3319,159 @@ module M_implementation__find
     domain_T self.current = domain_T self.final
     /\ roots_map_T self.current = roots_map_T self.final /\ payloads_map_T self.current = payloads_map_T self.final
   
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
   let rec find_T (uf: MutBorrow.t t_UF_T) (elem: t_Elem_T) (return (x: t_Elem_T)) =
     {[@stop_split] [@expl:find_T requires] ([@stop_split] [@expl:find 'uf' type invariant] inv_Ghost_refmut_UF_T uf)
     /\ ([@stop_split] [@expl:find 'elem' type invariant] inv_Elem_T elem)
     /\ ([@stop_split] [@expl:find requires] in_domain_T uf.current elem)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = deref_Ghost_refmut_UF_T {uf} (fun (_x: MutBorrow.t t_UF_T) -> [ &_14 <- _x ] s1)
-      | s1 = [ &_17 <- elem ] s2
-      | s2 = get_ghost_Snapshot_Elem_T {_14.current.f0'0.perms} {_17}
-          (fun (_x: t_Option_ref_Perm_PermCell_Node_T) -> [ &_12 <- _x ] s3)
-      | s3 = unwrap_ref_Perm_PermCell_Node_T {_12} (fun (_x: t_Perm_PermCell_Node_T) -> [ &__temp <- _x ] s4)
-      | s4 = new_ref_Perm_PermCell_Node_T {__temp} (fun (_x: t_Perm_PermCell_Node_T) -> [ &perm <- _x ] s5)
-      | s5 = deref_Rc_PermCell_Node_T_Global {elem.f0} (fun (_x: t_PermCell_Node_T) -> [ &_25 <- _x ] s6)
-      | s6 = borrow_Node_T {_25} {perm} (fun (_x: t_Node_T) -> [ &_23 <- _x ] s7)
-      | s7 = any
-        [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_23 = Root x0 x1} (! bb9)
-        | br1 (x0: t_Elem_T) -> {_23 = Link x0} (! bb10) ] ]
-    | bb10 = s0
-      [ s0 = elim_Link {_23} (fun (r0: t_Elem_T) -> [ &e <- r0 ] s1)
-      | s1 = clone_Elem_T {e} (fun (_x: t_Elem_T) -> [ &e'0 <- _x ] s2)
-      | s2 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
-          (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
-            [ &_39 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
-            [ &uf <- _bor.final ] s3) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
-      | s3 = deref_mut_Ghost_refmut_UF_T {_39} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_38 <- _x ] s4)
-      | s4 = MutBorrow.borrow_mut <t_UF_T> {_38.current.current}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_37 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_38 <- { _38 with current = { _38.current with current = _bor.final } } ] s5)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _38.current.current} any) ]
-      | s5 = MutBorrow.borrow_final <t_UF_T> {_37.current} {MutBorrow.get_id _37}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_36 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_37 <- { _37 with current = _bor.final } ] s6)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _37.current} any) ]
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _38} any) ]
-      | s7 = -{resolve_refmut_refmut_UF_T _38}- s8
-      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _37} any) ]
-      | s9 = -{resolve_refmut_UF_T _37}- s10
-      | s10 = MutBorrow.borrow_final <t_UF_T> {_36.current} {MutBorrow.get_id _36}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_35 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_36 <- { _36 with current = _bor.final } ] s11)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _36.current} any) ]
-      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _36} any) ]
-      | s12 = -{resolve_refmut_UF_T _36}- s13
-      | s13 = MutBorrow.borrow_final <t_UF_T> {_35.current} {MutBorrow.get_id _35}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_34 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_35 <- { _35 with current = _bor.final } ] s14)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _35.current} any) ]
-      | s14 = new_refmut_UF_T {_34} (fun (_x: MutBorrow.t t_UF_T) -> [ &_33 <- _x ] s15)
-      | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _35} any) ]
-      | s16 = -{resolve_refmut_UF_T _35}- s17
-      | s17 = find_T {_33} {e'0} (fun (_x: t_Elem_T) -> [ &root <- _x ] s18)
-      | s18 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
-          (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
-            [ &_43 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
-            [ &uf <- _bor.final ] s19) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
-      | s19 = deref_mut_Ghost_refmut_UF_T {_43} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_42 <- _x ] s20)
-      | s20 = MutBorrow.borrow_mut <t_UFInner_T> {_42.current.current.f0'0}
-          (fun (_bor: MutBorrow.t t_UFInner_T) ->
-            [ &__temp'0 <- _bor ]
-            [ &_42 <- { _42 with current = { _42.current with current = { f0'0 = _bor.final } } } ] s21)
-      | s21 = new_refmut_UFInner_T {__temp'0} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s22)
-      | s22 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
-          (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_50 <- _bor ] [ &uf'0 <- _bor.final ] s23)
-      | s23 = deref_mut_Ghost_refmut_UFInner_T {_50}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_49 <- _x ] s24)
-      | s24 = [ &_52 <- elem ] s25
-      | s25 = MutBorrow.borrow_mut <t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T> {_49.current.current.perms}
-          (fun (_bor: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) ->
-            [ &_48 <- _bor ]
-            [ &_49 <- { _49 with current = { _49.current with current = { _49.current.current with perms = _bor.final } } } ]
-            s26)
-      | s26 = get_mut_ghost_Snapshot_Elem_T {_48} {_52}
-          (fun (_x: t_Option_refmut_Perm_PermCell_Node_T) -> [ &_47 <- _x ] s27)
-      | s27 = unwrap_refmut_Perm_PermCell_Node_T {_47}
-          (fun (_x: MutBorrow.t t_Perm_PermCell_Node_T) -> [ &__temp'1 <- _x ] s28)
-      | s28 = -{resolve_refmut_refmut_UFInner_T _49}- s29
-      | s29 = new_refmut_Perm_PermCell_Node_T {__temp'1}
-          (fun (_x: MutBorrow.t t_Perm_PermCell_Node_T) -> [ &mut_perm <- _x ] s30)
-      | s30 = clone_Elem_T {root} (fun (_x: t_Elem_T) -> [ &_60 <- _x ] s31)
-      | s31 = [ &_59 <- Link _60 ] s32
-      | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_Elem_T elem} any) ]
-      | s33 = -{resolve_Elem_T elem}- s34
-      | s34 = deref_Rc_PermCell_Node_T_Global {elem.f0} (fun (_x: t_PermCell_Node_T) -> [ &_64 <- _x ] s35)
-      | s35 = borrow_mut_Node_T {_64} {mut_perm} (fun (_x: MutBorrow.t t_Node_T) -> [ &_62 <- _x ] s36)
-      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_Node_T _62.current} any) ]
-      | s37 = -{resolve_Node_T _62.current}- s38
-      | s38 = [ &_62 <- { _62 with current = _59 } ] s39
-      | s39 = s40 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _62} any) ]
-      | s40 = -{resolve_refmut_Node_T _62}- s41
-      | s41 = -{resolve_Ghost_refmut_UFInner_T'0 uf'0}- s42
-      | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _42} any) ]
-      | s43 = -{resolve_refmut_refmut_UF_T _42}- s44
-      | s44 = s45 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
-      | s45 = -{resolve_Ghost_refmut_UF_T'0 uf}- s46
-      | s46 = [ &_ret <- root ] s47
-      | s47 = return {_ret} ]
-    | bb9 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
-      | s1 = -{resolve_Ghost_refmut_UF_T'0 uf}- s2
-      | s2 = [ &_ret <- elem ] s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: t_Elem_T = Any.any_l ()
-    | & uf: MutBorrow.t t_UF_T = uf
-    | & elem: t_Elem_T = elem
-    | & __temp: t_Perm_PermCell_Node_T = Any.any_l ()
-    | & _12: t_Option_ref_Perm_PermCell_Node_T = Any.any_l ()
-    | & _14: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _17: t_Elem_T = Any.any_l ()
-    | & perm: t_Perm_PermCell_Node_T = Any.any_l ()
-    | & _23: t_Node_T = Any.any_l ()
-    | & _25: t_PermCell_Node_T = Any.any_l ()
-    | & e: t_Elem_T = Any.any_l ()
-    | & e'0: t_Elem_T = Any.any_l ()
-    | & root: t_Elem_T = Any.any_l ()
-    | & _33: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _34: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _35: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _36: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _37: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _38: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
-    | & _39: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
-    | & __temp'0: MutBorrow.t t_UFInner_T = Any.any_l ()
-    | & _42: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
-    | & _43: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
-    | & uf'0: MutBorrow.t t_UFInner_T = Any.any_l ()
-    | & __temp'1: MutBorrow.t t_Perm_PermCell_Node_T = Any.any_l ()
-    | & _47: t_Option_refmut_Perm_PermCell_Node_T = Any.any_l ()
-    | & _48: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T = Any.any_l ()
-    | & _49: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
-    | & _50: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
-    | & _52: t_Elem_T = Any.any_l ()
-    | & mut_perm: MutBorrow.t t_Perm_PermCell_Node_T = Any.any_l ()
-    | & _59: t_Node_T = Any.any_l ()
-    | & _60: t_Elem_T = Any.any_l ()
-    | & _62: MutBorrow.t t_Node_T = Any.any_l ()
-    | & _64: t_PermCell_Node_T = Any.any_l () ])
+    any
     [ return (result: t_Elem_T) ->
     {[@stop_split] [@expl:find_T ensures] ([@stop_split] [@expl:find result type invariant] inv_Elem_T result)
       /\ ([@stop_split] [@expl:find ensures #0] result = root_T uf.current elem)
       /\ ([@stop_split] [@expl:find ensures #1] unchanged_T uf)}
       (! return {result}) ]
-end
-module M_implementation__get
-  use set.Fset
-  use map.Map
-  use creusot.int.UInt64
-  use creusot.prelude.Any
   
-  type t_Rc_PermCell_Node_T_Global
+  predicate domain_unchanged_T (self: MutBorrow.t t_UF_T) = domain_T self.current = domain_T self.final
   
-  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
+  predicate payloads_unchanged_T (self: MutBorrow.t t_UF_T) = payloads_map_T self.current = payloads_map_T self.final
   
-  type t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
+  function fin_Ghost_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) : t_UF_T = self.final
   
-  type t_T
+  meta "rewrite_def" function fin_Ghost_refmut_UF_T
   
-  type t_UFInner_T = {
-    domain: Fset.fset t_Elem_T;
-    perms: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T;
-    payloads: Map.map t_Elem_T t_T;
-    roots: Map.map t_Elem_T t_Elem_T }
-  
-  type t_UF_T = { f0'0: t_UFInner_T }
-  
-  predicate contains_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) (e: t_Elem_T) = Fset.mem e self
-  
-  meta "rewrite_def" predicate contains_Elem_T
-  
-  function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
-  
-  type t_Perm_PermCell_Node_T
-  
-  type t_Option_Perm_PermCell_Node_T = None | Some t_Perm_PermCell_Node_T
-  
-  function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PermCell_Node_T
-  
-  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PermCell_Node_T
-   = Map.get (to_mapping_Snapshot_Elem_T self) k
-  
-  meta "rewrite_def" function get_Snapshot_Elem_T
-  
-  predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) =
-    get_Snapshot_Elem_T self k <> None
-  
-  meta "rewrite_def" predicate contains_Snapshot_Elem_T
-  
-  type t_PermCell_Node_T
-  
-  function ward_PermCell_Node_T (self: t_Perm_PermCell_Node_T) : t_PermCell_Node_T
-  
-  predicate index_Mapping_Perm_PermCell_Node_T_bool [@inline:trivial] (self: Map.map t_Perm_PermCell_Node_T bool) (a: t_Perm_PermCell_Node_T) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_Perm_PermCell_Node_T_bool
-  
-  function such_that_Perm_PermCell_Node_T (p: Map.map t_Perm_PermCell_Node_T bool) : t_Perm_PermCell_Node_T
-  
-  axiom such_that_Perm_PermCell_Node_T_spec:
-    forall p: Map.map t_Perm_PermCell_Node_T bool [such_that_Perm_PermCell_Node_T p]. (exists x: t_Perm_PermCell_Node_T. index_Mapping_Perm_PermCell_Node_T_bool p x)
-      -> index_Mapping_Perm_PermCell_Node_T_bool p (such_that_Perm_PermCell_Node_T p)
-  
-  function unwrap_Option_Perm_PermCell_Node_T (self: t_Option_Perm_PermCell_Node_T) : t_Perm_PermCell_Node_T =
-    match self with
-      | Some x -> x
-      | None -> such_that_Perm_PermCell_Node_T (fun (__0: t_Perm_PermCell_Node_T) -> true)
-      end
-  
-  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) : t_Perm_PermCell_Node_T
-   = unwrap_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_Elem_T
-  
-  function index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T) : t_Perm_PermCell_Node_T
-   = lookup_Snapshot_Elem_T self key
-  
-  meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
-  
-  function view_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) : t_PermCell_Node_T
-  
-  function index_Mapping_Elem_T_Elem_T [@inline:trivial] (self: Map.map t_Elem_T t_Elem_T) (a: t_Elem_T) : t_Elem_T =
-    Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Elem_T_Elem_T
-  
-  type t_PeanoInt = { f0'1: UInt64.t }
-  
-  type t_Node_T = Root t_PeanoInt t_T | Link t_Elem_T
-  
-  function val_PermCell_Node_T (self: t_Perm_PermCell_Node_T) : t_Node_T
-  
-  function index_Mapping_Elem_T_T [@inline:trivial] (self: Map.map t_Elem_T t_T) (a: t_Elem_T) : t_T = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Elem_T_T
-  
-  predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
-    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
-      -> contains_Snapshot_Elem_T self.f0'0.perms e
-      /\ ward_PermCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.f0'0.perms e)
-        = view_Rc_PermCell_Node_T_Global e.f0
-      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
-      /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
-        = index_Mapping_Elem_T_Elem_T self.f0'0.roots e
-      /\ match val_PermCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.f0'0.perms e) with
-        | Link e2 -> contains_Elem_T (domain_T self) e2
-        /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e <> e
-        /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e = index_Mapping_Elem_T_Elem_T self.f0'0.roots e2
-        | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'0.roots e = e
-        /\ index_Mapping_Elem_T_T self.f0'0.payloads e = payload
-        end
-  
-  meta "rewrite_def" predicate invariant_UF_T
-  
-  predicate inv_UF_T (_1: t_UF_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
-  
-  predicate invariant_ref_UF_T [@inline:trivial] (self: t_UF_T) = inv_UF_T self
-  
-  meta "rewrite_def" predicate invariant_ref_UF_T
-  
-  predicate inv_ref_UF_T [@inline:trivial] (_1: t_UF_T) = invariant_ref_UF_T _1
-  
-  meta "rewrite_def" predicate inv_ref_UF_T
-  
-  predicate invariant_Ghost_ref_UF_T [@inline:trivial] (self: t_UF_T) = inv_ref_UF_T self
-  
-  meta "rewrite_def" predicate invariant_Ghost_ref_UF_T
-  
-  predicate inv_Ghost_ref_UF_T [@inline:trivial] (_1: t_UF_T) = invariant_Ghost_ref_UF_T _1
-  
-  meta "rewrite_def" predicate inv_Ghost_ref_UF_T
-  
-  predicate invariant_ref_Ghost_ref_UF_T [@inline:trivial] (self: t_UF_T) = inv_Ghost_ref_UF_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Ghost_ref_UF_T
-  
-  predicate inv_ref_Ghost_ref_UF_T [@inline:trivial] (_1: t_UF_T) = invariant_ref_Ghost_ref_UF_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Ghost_ref_UF_T
-  
-  predicate invariant_ref_ref_UF_T [@inline:trivial] (self: t_UF_T) = inv_ref_UF_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_UF_T
-  
-  predicate inv_ref_ref_UF_T [@inline:trivial] (_1: t_UF_T) = invariant_ref_ref_UF_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_UF_T
-  
-  let rec deref_Ghost_ref_UF_T (self: t_UF_T) (return (x: t_UF_T)) =
-    {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_ref_UF_T self}
+  let rec link_T (uf: MutBorrow.t t_UF_T) (x: t_Elem_T) (y: t_Elem_T) (return (x'0: t_Elem_T)) =
+    {[@stop_split] [@expl:link_T requires] ([@stop_split] [@expl:link 'uf' type invariant] inv_Ghost_refmut_UF_T uf)
+    /\ ([@stop_split] [@expl:link 'x' type invariant] inv_Elem_T x)
+    /\ ([@stop_split] [@expl:link 'y' type invariant] inv_Elem_T y)
+    /\ ([@stop_split] [@expl:link requires #0] in_domain_T uf.current x /\ in_domain_T uf.current y)
+    /\ ([@stop_split] [@expl:link requires #1] root_T uf.current x = x /\ root_T uf.current y = y)}
     any
-    [ return (result: t_UF_T) ->
-    {[@stop_split] [@expl:deref_Ghost_ref_UF_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_ref_UF_T result)
-      /\ ([@stop_split] [@expl:deref ensures] result = self)}
-      (! return {result}) ]
-  
-  type t_Option_ref_Perm_PermCell_Node_T = None'0 | Some'0 t_Perm_PermCell_Node_T
-  
-  function map_Option_Perm_PermCell_Node_T (self: t_Option_Perm_PermCell_Node_T) (f: Map.map t_Perm_PermCell_Node_T t_Perm_PermCell_Node_T) : t_Option_ref_Perm_PermCell_Node_T
-   = match self with
-      | None -> None'0
-      | Some x -> Some'0 (Map.get f x)
-      end
-  
-  let rec get_ghost_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
-    (return (x: t_Option_ref_Perm_PermCell_Node_T)) = any
-    [ return (result: t_Option_ref_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:get_ghost ensures] result
-      = map_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self key) (fun (v: t_Perm_PermCell_Node_T) -> v)}
-      (! return {result}) ]
-  
-  let rec unwrap_ref_Perm_PermCell_Node_T (self_: t_Option_ref_Perm_PermCell_Node_T)
-    (return (x: t_Perm_PermCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'0}
-    any
-    [ return (result: t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self_}
-      (! return {result}) ]
-  
-  let rec new_ref_Perm_PermCell_Node_T (x: t_Perm_PermCell_Node_T) (return (x'0: t_Perm_PermCell_Node_T)) = any
-    [ return (result: t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
-  
-  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
-  
-  predicate invariant_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (self: t_Rc_PermCell_Node_T_Global) =
-    inv_Rc_PermCell_Node_T_Global self
-  
-  meta "rewrite_def" predicate invariant_ref_Rc_PermCell_Node_T_Global
-  
-  predicate inv_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (_1: t_Rc_PermCell_Node_T_Global) =
-    invariant_ref_Rc_PermCell_Node_T_Global _1
-  
-  meta "rewrite_def" predicate inv_ref_Rc_PermCell_Node_T_Global
-  
-  let rec deref_Rc_PermCell_Node_T_Global (self_: t_Rc_PermCell_Node_T_Global) (return (x: t_PermCell_Node_T)) =
-    {[@stop_split] [@expl:deref 'self_' type invariant] inv_ref_Rc_PermCell_Node_T_Global self_}
-    any
-    [ return (result: t_PermCell_Node_T) -> {[@stop_split] [@expl:deref ensures] result
-      = view_Rc_PermCell_Node_T_Global self_}
-      (! return {result}) ]
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_Elem_T (_1: t_Elem_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
-  
-  predicate inv_Node_T (_1: t_Node_T)
-  
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x
-      = match x with
-        | Root rank payload -> inv_T payload
-        | Link f0'2 -> inv_Elem_T f0'2
-        end
-  
-  predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Node_T
-  
-  predicate inv_ref_Node_T [@inline:trivial] (_1: t_Node_T) = invariant_ref_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Node_T
-  
-  let rec borrow_Node_T (self: t_PermCell_Node_T) (perm: t_Perm_PermCell_Node_T) (return (x: t_Node_T)) =
-    {[@stop_split] [@expl:borrow requires] self = ward_PermCell_Node_T perm}
-    any
-    [ return (result: t_Node_T) ->
-    {[@stop_split] [@expl:borrow_Node_T ensures] ([@stop_split] [@expl:borrow result type invariant] inv_ref_Node_T result)
-      /\ ([@stop_split] [@expl:borrow ensures] result = val_PermCell_Node_T perm)}
-      (! return {result}) ]
-  
-  let rec elim_Root (_x: t_Node_T) (return (rank: t_PeanoInt) (payload: t_T)) = any
-    [ _k (rank: t_PeanoInt) (payload: t_T) -> {Root rank payload = _x} (! return {rank} {payload})
-    | _chk -> (! {[@expl:elim Root] match _x with
-        | Root _ _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
-  
-  function roots_map_T (self: t_UF_T) : Map.map t_Elem_T t_Elem_T = self.f0'0.roots
-  
-  axiom roots_map_T_spec: forall self: t_UF_T [roots_map_T self]. inv_UF_T self
-      -> (forall e: t_Elem_T. in_domain_T self e
-        -> in_domain_T self (index_Mapping_Elem_T_Elem_T (roots_map_T self) e)
-        /\ index_Mapping_Elem_T_Elem_T (roots_map_T self) e
-        = index_Mapping_Elem_T_Elem_T (roots_map_T self) (index_Mapping_Elem_T_Elem_T (roots_map_T self) e))
-  
-  function root_T (self: t_UF_T) (e: t_Elem_T) : t_Elem_T = index_Mapping_Elem_T_Elem_T (roots_map_T self) e
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  function payloads_map_T (self: t_UF_T) : Map.map t_Elem_T t_T = self.f0'0.payloads
-  
-  function payload_T (self: t_UF_T) (e: t_Elem_T) : t_T = index_Mapping_Elem_T_T (payloads_map_T self) e
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec get_T (uf: t_UF_T) (elem: t_Elem_T) (return (x: t_T)) =
-    {[@stop_split] [@expl:get_T requires] ([@stop_split] [@expl:get 'uf' type invariant] inv_Ghost_ref_UF_T uf)
-    /\ ([@stop_split] [@expl:get 'elem' type invariant] inv_ref_Elem_T elem)
-    /\ ([@stop_split] [@expl:get requires #0] in_domain_T uf elem)
-    /\ ([@stop_split] [@expl:get requires #1] root_T uf elem = elem)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = deref_Ghost_ref_UF_T {uf} (fun (_x: t_UF_T) -> [ &_16 <- _x ] s1)
-      | s1 = [ &_19 <- elem ] s2
-      | s2 = get_ghost_Snapshot_Elem_T {_16.f0'0.perms} {_19}
-          (fun (_x: t_Option_ref_Perm_PermCell_Node_T) -> [ &_14 <- _x ] s3)
-      | s3 = unwrap_ref_Perm_PermCell_Node_T {_14} (fun (_x: t_Perm_PermCell_Node_T) -> [ &_13 <- _x ] s4)
-      | s4 = new_ref_Perm_PermCell_Node_T {_13} (fun (_x: t_Perm_PermCell_Node_T) -> [ &perm <- _x ] s5)
-      | s5 = deref_Rc_PermCell_Node_T_Global {elem.f0} (fun (_x: t_PermCell_Node_T) -> [ &_25 <- _x ] s6)
-      | s6 = borrow_Node_T {_25} {perm} (fun (_x: t_Node_T) -> [ &_23 <- _x ] s7)
-      | s7 = any
-        [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_23 = Root x0 x1} (! bb10)
-        | br1 (x0: t_Elem_T) -> {_23 = Link x0} (! bb8) ] ]
-    | bb8 = {false} any
-    | bb10 = s0
-      [ s0 = elim_Root {_23} (fun (rrank: t_PeanoInt) (rpayload: t_T) -> [ &payload <- rpayload ] s1)
-      | s1 = [ &_ret <- payload ] s2
-      | s2 = return {_ret} ] ]
-    [ & _ret: t_T = Any.any_l ()
-    | & uf: t_UF_T = uf
-    | & elem: t_Elem_T = elem
-    | & perm: t_Perm_PermCell_Node_T = Any.any_l ()
-    | & _13: t_Perm_PermCell_Node_T = Any.any_l ()
-    | & _14: t_Option_ref_Perm_PermCell_Node_T = Any.any_l ()
-    | & _16: t_UF_T = Any.any_l ()
-    | & _19: t_Elem_T = Any.any_l ()
-    | & _23: t_Node_T = Any.any_l ()
-    | & _25: t_PermCell_Node_T = Any.any_l ()
-    | & payload: t_T = Any.any_l () ])
-    [ return (result: t_T) ->
-    {[@stop_split] [@expl:get_T ensures] ([@stop_split] [@expl:get result type invariant] inv_ref_T result)
-      /\ ([@stop_split] [@expl:get ensures] result = payload_T uf elem)}
-      (! return {result}) ]
-end
-module M_implementation__impl_PartialEq_for_Elem_T__eq (* <implementation::Elem<T> as std::cmp::PartialEq> *)
-  use creusot.prelude.Ptr
-  use creusot.prelude.Opaque
-  use creusot.prelude.Any
-  use creusot.int.UInt64
-  
-  type t_Rc_PermCell_Node_T_Global
-  
-  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
-  
-  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
-  
-  predicate invariant_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (self: t_Rc_PermCell_Node_T_Global) =
-    inv_Rc_PermCell_Node_T_Global self
-  
-  meta "rewrite_def" predicate invariant_ref_Rc_PermCell_Node_T_Global
-  
-  predicate inv_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (_1: t_Rc_PermCell_Node_T_Global) =
-    invariant_ref_Rc_PermCell_Node_T_Global _1
-  
-  meta "rewrite_def" predicate inv_ref_Rc_PermCell_Node_T_Global
-  
-  function as_ptr_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) : Opaque.ptr
-  
-  let rec ptr_eq_PermCell_Node_T (this: t_Rc_PermCell_Node_T_Global) (other: t_Rc_PermCell_Node_T_Global)
-    (return (x: bool)) =
-    {[@stop_split] [@expl:ptr_eq_PermCell_Node_T requires] ([@stop_split] [@expl:ptr_eq 'this' type invariant] inv_ref_Rc_PermCell_Node_T_Global this)
-    /\ ([@stop_split] [@expl:ptr_eq 'other' type invariant] inv_ref_Rc_PermCell_Node_T_Global other)}
-    any
-    [ return (result: bool) ->
-    {[@stop_split] [@expl:ptr_eq_PermCell_Node_T ensures] ([@stop_split] [@expl:ptr_eq ensures #0] result
-        = (Ptr.addr_logic_u64 (as_ptr_Rc_PermCell_Node_T_Global this)
-        = Ptr.addr_logic_u64 (as_ptr_Rc_PermCell_Node_T_Global other)))
-      /\ ([@stop_split] [@expl:ptr_eq ensures #1] result -> this = other)}
-      (! return {result}) ]
-  
-  predicate inv_Elem_T (_1: t_Elem_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  function deep_model_Elem_T [@inline:trivial] (self: t_Elem_T) : UInt64.t =
-    Ptr.addr_logic_u64 (as_ptr_Rc_PermCell_Node_T_Global self.f0)
-  
-  meta "rewrite_def" function deep_model_Elem_T
-  
-  function deep_model_ref_Elem_T [@inline:trivial] (self: t_Elem_T) : UInt64.t = deep_model_Elem_T self
-  
-  meta "rewrite_def" function deep_model_ref_Elem_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec eq_Elem_T (self: t_Elem_T) (other: t_Elem_T) (return (x: bool)) =
-    {[@stop_split] [@expl:eq_Elem_T requires] ([@stop_split] [@expl:eq 'self' type invariant] inv_ref_Elem_T self)
-    /\ ([@stop_split] [@expl:eq 'other' type invariant] inv_ref_Elem_T other)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_10 <- self.f0 ] s1
-      | s1 = [ &_12 <- other.f0 ] s2
-      | s2 = ptr_eq_PermCell_Node_T {_10} {_12} (fun (_x: bool) -> [ &_ret <- _x ] s3)
-      | s3 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l ()
-    | & self: t_Elem_T = self
-    | & other: t_Elem_T = other
-    | & _10: t_Rc_PermCell_Node_T_Global = Any.any_l ()
-    | & _12: t_Rc_PermCell_Node_T_Global = Any.any_l () ])
-    [ return (result: bool) -> {[@stop_split] [@expl:eq_Elem_T ensures] ([@stop_split] [@expl:eq ensures #0] result
-        = (deep_model_ref_Elem_T self = deep_model_ref_Elem_T other))
-      /\ ([@stop_split] [@expl:eq ensures #1] result -> self = other)}
-      (! return {result}) ]
-end
-module M_implementation__impl_PartialEq_for_Elem_T__eq__refines (* <implementation::Elem<T> as std::cmp::PartialEq> *)
-  use creusot.int.UInt64
-  use creusot.prelude.Ptr
-  use creusot.prelude.Opaque
-  
-  type t_Rc_PermCell_Node_T_Global
-  
-  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
-  
-  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
-  
-  predicate inv_Elem_T (_1: t_Elem_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  function as_ptr_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) : Opaque.ptr
-  
-  function deep_model_Elem_T [@inline:trivial] (self: t_Elem_T) : UInt64.t =
-    Ptr.addr_logic_u64 (as_ptr_Rc_PermCell_Node_T_Global self.f0)
-  
-  meta "rewrite_def" function deep_model_Elem_T
-  
-  function deep_model_ref_Elem_T [@inline:trivial] (self: t_Elem_T) : UInt64.t = deep_model_Elem_T self
-  
-  meta "rewrite_def" function deep_model_ref_Elem_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: t_Elem_T, rhs: t_Elem_T. inv_ref_Elem_T self_
-      -> inv_ref_Elem_T rhs
-      -> inv_ref_Elem_T self_
-      /\ inv_ref_Elem_T rhs
-      /\ (forall result: bool. result = (deep_model_ref_Elem_T self_ = deep_model_ref_Elem_T rhs)
-          /\ (result -> self_ = rhs) -> result = (deep_model_ref_Elem_T self_ = deep_model_ref_Elem_T rhs))
-end
-module M_implementation__impl_Clone_for_Elem_T__clone (* <implementation::Elem<T> as std::clone::Clone> *)
-  use creusot.prelude.Any
-  
-  type t_Rc_PermCell_Node_T_Global
-  
-  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
-  
-  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
-  
-  predicate invariant_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (self: t_Rc_PermCell_Node_T_Global) =
-    inv_Rc_PermCell_Node_T_Global self
-  
-  meta "rewrite_def" predicate invariant_ref_Rc_PermCell_Node_T_Global
-  
-  predicate inv_ref_Rc_PermCell_Node_T_Global [@inline:trivial] (_1: t_Rc_PermCell_Node_T_Global) =
-    invariant_ref_Rc_PermCell_Node_T_Global _1
-  
-  meta "rewrite_def" predicate inv_ref_Rc_PermCell_Node_T_Global
-  
-  let rec clone_Rc_PermCell_Node_T_Global (self_: t_Rc_PermCell_Node_T_Global)
-    (return (x: t_Rc_PermCell_Node_T_Global)) =
-    {[@stop_split] [@expl:clone 'self_' type invariant] inv_ref_Rc_PermCell_Node_T_Global self_}
-    any
-    [ return (result: t_Rc_PermCell_Node_T_Global) ->
-    {[@stop_split] [@expl:clone_Rc_PermCell_Node_T_Global ensures] ([@stop_split] [@expl:clone result type invariant] inv_Rc_PermCell_Node_T_Global result)
-      /\ ([@stop_split] [@expl:clone ensures] result = self_)}
-      (! return {result}) ]
-  
-  predicate inv_Elem_T (_1: t_Elem_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec clone_Elem_T (self: t_Elem_T) (return (x: t_Elem_T)) =
-    {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Elem_T self}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = clone_Rc_PermCell_Node_T_Global {self.f0} (fun (_x: t_Rc_PermCell_Node_T_Global) -> [ &_4 <- _x ] s1)
-      | s1 = [ &_ret <- { f0 = _4 } ] s2
-      | s2 = return {_ret} ] ]
-    [ & _ret: t_Elem_T = Any.any_l () | & self: t_Elem_T = self | & _4: t_Rc_PermCell_Node_T_Global = Any.any_l () ])
     [ return (result: t_Elem_T) ->
-    {[@stop_split] [@expl:clone_Elem_T ensures] ([@stop_split] [@expl:clone result type invariant] inv_Elem_T result)
-      /\ ([@stop_split] [@expl:clone ensures] self = result)}
-      (! return {result}) ]
-end
-module M_implementation__impl_Clone_for_Elem_T__clone__refines (* <implementation::Elem<T> as std::clone::Clone> *)
-  type t_Rc_PermCell_Node_T_Global
-  
-  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
-  
-  predicate inv_Rc_PermCell_Node_T_Global (_1: t_Rc_PermCell_Node_T_Global)
-  
-  predicate inv_Elem_T (_1: t_Elem_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self_: t_Elem_T. inv_ref_Elem_T self_
-      -> inv_ref_Elem_T self_ /\ (forall result: t_Elem_T. inv_Elem_T result /\ self_ = result -> inv_Elem_T result)
-end
-module M_implementation__impl_UF_T__roots_map (* implementation::UF<T> *)
-  use set.Fset
-  use map.Map
-  use creusot.int.UInt64
-  
-  type t_Rc_PermCell_Node_T_Global
-  
-  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
-  
-  type t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
-  
-  type t_T
-  
-  type t_UFInner_T = {
-    domain: Fset.fset t_Elem_T;
-    perms: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T;
-    payloads: Map.map t_Elem_T t_T;
-    roots: Map.map t_Elem_T t_Elem_T }
-  
-  type t_UF_T = { f0'0: t_UFInner_T }
-  
-  predicate contains_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) (e: t_Elem_T) = Fset.mem e self
-  
-  meta "rewrite_def" predicate contains_Elem_T
-  
-  function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
-  
-  type t_Perm_PermCell_Node_T
-  
-  type t_Option_Perm_PermCell_Node_T = None | Some t_Perm_PermCell_Node_T
-  
-  function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PermCell_Node_T
-  
-  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PermCell_Node_T
-   = Map.get (to_mapping_Snapshot_Elem_T self) k
-  
-  meta "rewrite_def" function get_Snapshot_Elem_T
-  
-  predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) =
-    get_Snapshot_Elem_T self k <> None
-  
-  meta "rewrite_def" predicate contains_Snapshot_Elem_T
-  
-  type t_PermCell_Node_T
-  
-  function ward_PermCell_Node_T (self: t_Perm_PermCell_Node_T) : t_PermCell_Node_T
-  
-  predicate index_Mapping_Perm_PermCell_Node_T_bool [@inline:trivial] (self: Map.map t_Perm_PermCell_Node_T bool) (a: t_Perm_PermCell_Node_T) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_Perm_PermCell_Node_T_bool
-  
-  function such_that_Perm_PermCell_Node_T (p: Map.map t_Perm_PermCell_Node_T bool) : t_Perm_PermCell_Node_T
-  
-  axiom such_that_Perm_PermCell_Node_T_spec:
-    forall p: Map.map t_Perm_PermCell_Node_T bool [such_that_Perm_PermCell_Node_T p]. (exists x: t_Perm_PermCell_Node_T. index_Mapping_Perm_PermCell_Node_T_bool p x)
-      -> index_Mapping_Perm_PermCell_Node_T_bool p (such_that_Perm_PermCell_Node_T p)
-  
-  function unwrap_Option_Perm_PermCell_Node_T (self: t_Option_Perm_PermCell_Node_T) : t_Perm_PermCell_Node_T =
-    match self with
-      | Some x -> x
-      | None -> such_that_Perm_PermCell_Node_T (fun (__0: t_Perm_PermCell_Node_T) -> true)
-      end
-  
-  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) : t_Perm_PermCell_Node_T
-   = unwrap_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_Elem_T
-  
-  function index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T) : t_Perm_PermCell_Node_T
-   = lookup_Snapshot_Elem_T self key
-  
-  meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
-  
-  function view_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) : t_PermCell_Node_T
-  
-  function index_Mapping_Elem_T_Elem_T [@inline:trivial] (self: Map.map t_Elem_T t_Elem_T) (a: t_Elem_T) : t_Elem_T =
-    Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Elem_T_Elem_T
-  
-  type t_PeanoInt = { f0'1: UInt64.t }
-  
-  type t_Node_T = Root t_PeanoInt t_T | Link t_Elem_T
-  
-  function val_PermCell_Node_T (self: t_Perm_PermCell_Node_T) : t_Node_T
-  
-  function index_Mapping_Elem_T_T [@inline:trivial] (self: Map.map t_Elem_T t_T) (a: t_Elem_T) : t_T = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Elem_T_T
-  
-  predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
-    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
-      -> contains_Snapshot_Elem_T self.f0'0.perms e
-      /\ ward_PermCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.f0'0.perms e)
-        = view_Rc_PermCell_Node_T_Global e.f0
-      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
-      /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
-        = index_Mapping_Elem_T_Elem_T self.f0'0.roots e
-      /\ match val_PermCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.f0'0.perms e) with
-        | Link e2 -> contains_Elem_T (domain_T self) e2
-        /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e <> e
-        /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e = index_Mapping_Elem_T_Elem_T self.f0'0.roots e2
-        | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'0.roots e = e
-        /\ index_Mapping_Elem_T_T self.f0'0.payloads e = payload
-        end
-  
-  meta "rewrite_def" predicate invariant_UF_T
-  
-  predicate inv_UF_T (_1: t_UF_T)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
-  
-  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant self : t_UF_T
-  
-  function roots_map_T (self: t_UF_T) : Map.map t_Elem_T t_Elem_T
-  
-  goal vc_roots_map_T: inv_UF_T self
-    -> (let result = self.f0'0.roots in [@stop_split] [@expl:roots_map ensures] forall e: t_Elem_T. in_domain_T self e
-      -> in_domain_T self (index_Mapping_Elem_T_Elem_T result e)
-      /\ index_Mapping_Elem_T_Elem_T result e
-      = index_Mapping_Elem_T_Elem_T result (index_Mapping_Elem_T_Elem_T result e))
-end
-module M_example
-  use set.Fset
-  use creusot.prelude.MutBorrow
-  use creusot.int.Int32
-  use map.Map
-  use creusot.prelude.Any
-  
-  type t_UF_i32
-  
-  predicate invariant_UF_i32 (self: t_UF_i32)
-  
-  predicate inv_UF_i32 (_1: t_UF_i32)
-  
-  axiom inv_axiom: forall x: t_UF_i32 [inv_UF_i32 x]. inv_UF_i32 x -> invariant_UF_i32 x
-  
-  predicate invariant_Ghost_UF_i32 [@inline:trivial] (self: t_UF_i32) = inv_UF_i32 self
-  
-  meta "rewrite_def" predicate invariant_Ghost_UF_i32
-  
-  predicate inv_Ghost_UF_i32 [@inline:trivial] (_1: t_UF_i32) = invariant_Ghost_UF_i32 _1
-  
-  meta "rewrite_def" predicate inv_Ghost_UF_i32
-  
-  type t_Elem_i32
-  
-  function domain_i32 (self: t_UF_i32) : Fset.fset t_Elem_i32
-  
-  let rec new_i32 (return (x: t_UF_i32)) = any
-    [ return (result: t_UF_i32) ->
-    {[@stop_split] [@expl:new_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_UF_i32 result)
-      /\ ([@stop_split] [@expl:new ensures] Fset.is_empty (domain_i32 result))}
-      (! return {result}) ]
-  
-  predicate invariant_refmut_Ghost_UF_i32 [@inline:trivial] (self: MutBorrow.t t_UF_i32) =
-    inv_Ghost_UF_i32 self.current /\ inv_Ghost_UF_i32 self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Ghost_UF_i32
-  
-  predicate inv_refmut_Ghost_UF_i32 [@inline:trivial] (_1: MutBorrow.t t_UF_i32) = invariant_refmut_Ghost_UF_i32 _1
-  
-  meta "rewrite_def" predicate inv_refmut_Ghost_UF_i32
-  
-  predicate invariant_refmut_UF_i32 [@inline:trivial] (self: MutBorrow.t t_UF_i32) =
-    inv_UF_i32 self.current /\ inv_UF_i32 self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_UF_i32
-  
-  predicate inv_refmut_UF_i32 [@inline:trivial] (_1: MutBorrow.t t_UF_i32) = invariant_refmut_UF_i32 _1
-  
-  meta "rewrite_def" predicate inv_refmut_UF_i32
-  
-  predicate invariant_Ghost_refmut_UF_i32 [@inline:trivial] (self: MutBorrow.t t_UF_i32) = inv_refmut_UF_i32 self
-  
-  meta "rewrite_def" predicate invariant_Ghost_refmut_UF_i32
-  
-  predicate inv_Ghost_refmut_UF_i32 [@inline:trivial] (_1: MutBorrow.t t_UF_i32) = invariant_Ghost_refmut_UF_i32 _1
-  
-  meta "rewrite_def" predicate inv_Ghost_refmut_UF_i32
-  
-  let rec borrow_mut_UF_i32 (self: MutBorrow.t t_UF_i32) (return (x: MutBorrow.t t_UF_i32)) =
-    {[@stop_split] [@expl:borrow_mut 'self' type invariant] inv_refmut_Ghost_UF_i32 self}
-    any
-    [ return (result: MutBorrow.t t_UF_i32) ->
-    {[@stop_split] [@expl:borrow_mut_UF_i32 ensures] ([@stop_split] [@expl:borrow_mut result type invariant] inv_Ghost_refmut_UF_i32 result)
-      /\ ([@stop_split] [@expl:borrow_mut ensures] result = self)}
-      (! return {result}) ]
-  
-  predicate inv_Elem_i32 (_1: t_Elem_i32)
-  
-  predicate contains_Elem_i32 [@inline:trivial] (self: Fset.fset t_Elem_i32) (e: t_Elem_i32) = Fset.mem e self
-  
-  meta "rewrite_def" predicate contains_Elem_i32
-  
-  predicate in_domain_i32 (self: t_UF_i32) (e: t_Elem_i32) = contains_Elem_i32 (domain_i32 self) e
-  
-  function fin_Ghost_refmut_UF_i32 [@inline:trivial] (self: MutBorrow.t t_UF_i32) : t_UF_i32 = self.final
-  
-  meta "rewrite_def" function fin_Ghost_refmut_UF_i32
-  
-  function insert_Elem_i32 [@inline:trivial] (self: Fset.fset t_Elem_i32) (e: t_Elem_i32) : Fset.fset t_Elem_i32 =
-    Fset.add e self
-  
-  meta "rewrite_def" function insert_Elem_i32
-  
-  function index_Mapping_Elem_i32_Elem_i32 [@inline:trivial] (self: Map.map t_Elem_i32 t_Elem_i32) (a: t_Elem_i32) : t_Elem_i32
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Elem_i32_Elem_i32
-  
-  function roots_map_i32 (self: t_UF_i32) : Map.map t_Elem_i32 t_Elem_i32
-  
-  axiom roots_map_i32_spec: forall self: t_UF_i32 [roots_map_i32 self]. inv_UF_i32 self
-      -> (forall e: t_Elem_i32. in_domain_i32 self e
-        -> in_domain_i32 self (index_Mapping_Elem_i32_Elem_i32 (roots_map_i32 self) e)
-        /\ index_Mapping_Elem_i32_Elem_i32 (roots_map_i32 self) e
-        = index_Mapping_Elem_i32_Elem_i32 (roots_map_i32 self) (index_Mapping_Elem_i32_Elem_i32 (roots_map_i32 self) e))
-  
-  function payloads_map_i32 (self: t_UF_i32) : Map.map t_Elem_i32 Int32.t
-  
-  let rec make_i32 (uf: MutBorrow.t t_UF_i32) (payload: Int32.t) (return (x: t_Elem_i32)) =
-    {[@stop_split] [@expl:make 'uf' type invariant] inv_Ghost_refmut_UF_i32 uf}
-    any
-    [ return (result: t_Elem_i32) ->
-    {[@stop_split] [@expl:make_i32 ensures] ([@stop_split] [@expl:make result type invariant] inv_Elem_i32 result)
-      /\ ([@stop_split] [@expl:make ensures #0] not in_domain_i32 uf.current result)
-      /\ ([@stop_split] [@expl:make ensures #1] domain_i32 (fin_Ghost_refmut_UF_i32 uf)
-        = insert_Elem_i32 (domain_i32 uf.current) result)
-      /\ ([@stop_split] [@expl:make ensures #2] roots_map_i32 (fin_Ghost_refmut_UF_i32 uf)
-        = Map.set (roots_map_i32 uf.current) result result)
-      /\ ([@stop_split] [@expl:make ensures #3] payloads_map_i32 (fin_Ghost_refmut_UF_i32 uf)
-      = Map.set (payloads_map_i32 uf.current) result payload)}
-      (! return {result}) ]
-  
-  predicate invariant_ref_Ghost_UF_i32 [@inline:trivial] (self: t_UF_i32) = inv_Ghost_UF_i32 self
-  
-  meta "rewrite_def" predicate invariant_ref_Ghost_UF_i32
-  
-  predicate inv_ref_Ghost_UF_i32 [@inline:trivial] (_1: t_UF_i32) = invariant_ref_Ghost_UF_i32 _1
-  
-  meta "rewrite_def" predicate inv_ref_Ghost_UF_i32
-  
-  predicate invariant_ref_UF_i32 [@inline:trivial] (self: t_UF_i32) = inv_UF_i32 self
-  
-  meta "rewrite_def" predicate invariant_ref_UF_i32
-  
-  predicate inv_ref_UF_i32 [@inline:trivial] (_1: t_UF_i32) = invariant_ref_UF_i32 _1
-  
-  meta "rewrite_def" predicate inv_ref_UF_i32
-  
-  predicate invariant_Ghost_ref_UF_i32 [@inline:trivial] (self: t_UF_i32) = inv_ref_UF_i32 self
-  
-  meta "rewrite_def" predicate invariant_Ghost_ref_UF_i32
-  
-  predicate inv_Ghost_ref_UF_i32 [@inline:trivial] (_1: t_UF_i32) = invariant_Ghost_ref_UF_i32 _1
-  
-  meta "rewrite_def" predicate inv_Ghost_ref_UF_i32
-  
-  let rec borrow_UF_i32 (self: t_UF_i32) (return (x: t_UF_i32)) =
-    {[@stop_split] [@expl:borrow 'self' type invariant] inv_ref_Ghost_UF_i32 self}
-    any
-    [ return (result: t_UF_i32) ->
-    {[@stop_split] [@expl:borrow_UF_i32 ensures] ([@stop_split] [@expl:borrow result type invariant] inv_Ghost_ref_UF_i32 result)
-      /\ ([@stop_split] [@expl:borrow ensures] result = self)}
-      (! return {result}) ]
-  
-  predicate invariant_ref_Elem_i32 [@inline:trivial] (self: t_Elem_i32) = inv_Elem_i32 self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_i32
-  
-  predicate inv_ref_Elem_i32 [@inline:trivial] (_1: t_Elem_i32) = invariant_ref_Elem_i32 _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_i32
-  
-  function root_i32 (self: t_UF_i32) (e: t_Elem_i32) : t_Elem_i32 =
-    index_Mapping_Elem_i32_Elem_i32 (roots_map_i32 self) e
-  
-  function index_Mapping_Elem_i32_i32 [@inline:trivial] (self: Map.map t_Elem_i32 Int32.t) (a: t_Elem_i32) : Int32.t =
-    Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Elem_i32_i32
-  
-  function payload_i32 (self: t_UF_i32) (e: t_Elem_i32) : Int32.t = index_Mapping_Elem_i32_i32 (payloads_map_i32 self) e
-  
-  let rec get_i32 (uf: t_UF_i32) (elem: t_Elem_i32) (return (x: Int32.t)) =
-    {[@stop_split] [@expl:get_i32 requires] ([@stop_split] [@expl:get 'uf' type invariant] inv_Ghost_ref_UF_i32 uf)
-    /\ ([@stop_split] [@expl:get 'elem' type invariant] inv_ref_Elem_i32 elem)
-    /\ ([@stop_split] [@expl:get requires #0] in_domain_i32 uf elem)
-    /\ ([@stop_split] [@expl:get requires #1] root_i32 uf elem = elem)}
-    any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:get ensures] result = payload_i32 uf elem} (! return {result}) ]
-  
-  let rec clone_Elem_i32 (self: t_Elem_i32) (return (x: t_Elem_i32)) =
-    {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Elem_i32 self}
-    any
-    [ return (result: t_Elem_i32) ->
-    {[@stop_split] [@expl:clone_Elem_i32 ensures] ([@stop_split] [@expl:clone result type invariant] inv_Elem_i32 result)
-      /\ ([@stop_split] [@expl:clone ensures] self = result)}
-      (! return {result}) ]
-  
-  predicate domain_unchanged_i32 (self: MutBorrow.t t_UF_i32) = domain_i32 self.current = domain_i32 self.final
-  
-  predicate payloads_unchanged_i32 (self: MutBorrow.t t_UF_i32) =
-    payloads_map_i32 self.current = payloads_map_i32 self.final
-  
-  let rec union_i32 (uf: MutBorrow.t t_UF_i32) (x: t_Elem_i32) (y: t_Elem_i32) (return (x'0: t_Elem_i32)) =
-    {[@stop_split] [@expl:union_i32 requires] ([@stop_split] [@expl:union 'uf' type invariant] inv_Ghost_refmut_UF_i32 uf)
-    /\ ([@stop_split] [@expl:union 'x' type invariant] inv_Elem_i32 x)
-    /\ ([@stop_split] [@expl:union 'y' type invariant] inv_Elem_i32 y)
-    /\ ([@stop_split] [@expl:union requires] in_domain_i32 uf.current x /\ in_domain_i32 uf.current y)}
-    any
-    [ return (result: t_Elem_i32) ->
-    {[@stop_split] [@expl:union_i32 ensures] ([@stop_split] [@expl:union result type invariant] inv_Elem_i32 result)
-      /\ ([@stop_split] [@expl:union ensures #0] domain_unchanged_i32 uf /\ payloads_unchanged_i32 uf)
-      /\ ([@stop_split] [@expl:union ensures #1] result = root_i32 uf.current x \/ result = root_i32 uf.current y)
-      /\ ([@stop_split] [@expl:union ensures #2] forall z: t_Elem_i32. in_domain_i32 uf.current z
-        -> root_i32 (fin_Ghost_refmut_UF_i32 uf) z
-        = (if root_i32 uf.current z = root_i32 uf.current x \/ root_i32 uf.current z = root_i32 uf.current y then
+    {[@stop_split] [@expl:link_T ensures] ([@stop_split] [@expl:link result type invariant] inv_Elem_T result)
+      /\ ([@stop_split] [@expl:link ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf)
+      /\ ([@stop_split] [@expl:link ensures #1] result = root_T uf.current x \/ result = root_T uf.current y)
+      /\ ([@stop_split] [@expl:link ensures #2] result = root_T (fin_Ghost_refmut_UF_T uf) result)
+      /\ ([@stop_split] [@expl:link ensures #3] forall z: t_Elem_T. in_domain_T uf.current z
+        -> root_T (fin_Ghost_refmut_UF_T uf) z
+        = (if root_T uf.current z = root_T uf.current x \/ root_T uf.current z = root_T uf.current y then
           result
         else
-          root_i32 uf.current z
+          root_T uf.current z
         ))}
       (! return {result}) ]
   
-  predicate resolve_Elem_i32 (_1: t_Elem_i32)
-  
-  predicate unchanged_i32 (self: MutBorrow.t t_UF_i32) =
-    domain_i32 self.current = domain_i32 self.final
-    /\ roots_map_i32 self.current = roots_map_i32 self.final
-    /\ payloads_map_i32 self.current = payloads_map_i32 self.final
-  
-  let rec find_i32 (uf: MutBorrow.t t_UF_i32) (elem: t_Elem_i32) (return (x: t_Elem_i32)) =
-    {[@stop_split] [@expl:find_i32 requires] ([@stop_split] [@expl:find 'uf' type invariant] inv_Ghost_refmut_UF_i32 uf)
-    /\ ([@stop_split] [@expl:find 'elem' type invariant] inv_Elem_i32 elem)
-    /\ ([@stop_split] [@expl:find requires] in_domain_i32 uf.current elem)}
-    any
-    [ return (result: t_Elem_i32) ->
-    {[@stop_split] [@expl:find_i32 ensures] ([@stop_split] [@expl:find result type invariant] inv_Elem_i32 result)
-      /\ ([@stop_split] [@expl:find ensures #0] result = root_i32 uf.current elem)
-      /\ ([@stop_split] [@expl:find ensures #1] unchanged_i32 uf)}
-      (! return {result}) ]
-  
-  predicate resolve_UF_i32 (_1: t_UF_i32)
-  
-  predicate resolve_Ghost_UF_i32 [@inline:trivial] (self: t_UF_i32) = resolve_UF_i32 self
-  
-  meta "rewrite_def" predicate resolve_Ghost_UF_i32
-  
-  predicate resolve_Ghost_UF_i32'0 [@inline:trivial] (_1: t_UF_i32) = resolve_Ghost_UF_i32 _1
-  
-  meta "rewrite_def" predicate resolve_Ghost_UF_i32'0
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec example (return (x: ())) = (! bb0
+  let rec union_T (uf: MutBorrow.t t_UF_T) (x: t_Elem_T) (y: t_Elem_T) (return (x'0: t_Elem_T)) =
+    {[@stop_split] [@expl:union_T requires] ([@stop_split] [@expl:union 'uf' type invariant] inv_Ghost_refmut_UF_T uf)
+    /\ ([@stop_split] [@expl:union 'x' type invariant] inv_Elem_T x)
+    /\ ([@stop_split] [@expl:union 'y' type invariant] inv_Elem_T y)
+    /\ ([@stop_split] [@expl:union requires] in_domain_T uf.current x /\ in_domain_T uf.current y)}
+    (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 (fun (_x: t_UF_i32) -> [ &uf <- _x ] s1)
-      | s1 = MutBorrow.borrow_mut <t_UF_i32> {uf}
-          (fun (_bor: MutBorrow.t t_UF_i32) -> [ &_4 <- _bor ] -{inv_Ghost_UF_i32 _bor.final}- [ &uf <- _bor.final ] s2)
-        [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
-      | s2 = borrow_mut_UF_i32 {_4} (fun (_x: MutBorrow.t t_UF_i32) -> [ &_3 <- _x ] s3)
-      | s3 = make_i32 {_3} {(1: Int32.t)} (fun (_x: t_Elem_i32) -> [ &x <- _x ] s4)
-      | s4 = MutBorrow.borrow_mut <t_UF_i32> {uf}
-          (fun (_bor: MutBorrow.t t_UF_i32) -> [ &_7 <- _bor ] -{inv_Ghost_UF_i32 _bor.final}- [ &uf <- _bor.final ] s5)
-        [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
-      | s5 = borrow_mut_UF_i32 {_7} (fun (_x: MutBorrow.t t_UF_i32) -> [ &_6 <- _x ] s6)
-      | s6 = make_i32 {_6} {(2: Int32.t)} (fun (_x: t_Elem_i32) -> [ &y <- _x ] s7)
-      | s7 = MutBorrow.borrow_mut <t_UF_i32> {uf}
-          (fun (_bor: MutBorrow.t t_UF_i32) ->
-            [ &_10 <- _bor ] -{inv_Ghost_UF_i32 _bor.final}-
-            [ &uf <- _bor.final ] s8) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
-      | s8 = borrow_mut_UF_i32 {_10} (fun (_x: MutBorrow.t t_UF_i32) -> [ &_9 <- _x ] s9)
-      | s9 = make_i32 {_9} {(3: Int32.t)} (fun (_x: t_Elem_i32) -> [ &z <- _x ] s10)
-      | s10 = borrow_UF_i32 {uf} (fun (_x: t_UF_i32) -> [ &_15 <- _x ] s11)
-      | s11 = [ &_18 <- x ] s12
-      | s12 = get_i32 {_15} {_18} (fun (_x: Int32.t) -> [ &_14 <- _x ] s13)
-      | s13 = [ &_12 <- _14 = (1: Int32.t) ] s14
-      | s14 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb10) ] ]
-    | bb10 = s0
-      [ s0 = borrow_UF_i32 {uf} (fun (_x: t_UF_i32) -> [ &_24 <- _x ] s1)
-      | s1 = [ &_27 <- y ] s2
-      | s2 = get_i32 {_24} {_27} (fun (_x: Int32.t) -> [ &_23 <- _x ] s3)
-      | s3 = [ &_21 <- _23 = (2: Int32.t) ] s4
-      | s4 = any [ br0 -> {_21 = false} (! bb15) | br1 -> {_21} (! bb14) ] ]
-    | bb14 = s0
-      [ s0 = borrow_UF_i32 {uf} (fun (_x: t_UF_i32) -> [ &_33 <- _x ] s1)
-      | s1 = [ &_36 <- z ] s2
-      | s2 = get_i32 {_33} {_36} (fun (_x: Int32.t) -> [ &_32 <- _x ] s3)
-      | s3 = [ &_30 <- _32 = (3: Int32.t) ] s4
-      | s4 = any [ br0 -> {_30 = false} (! bb19) | br1 -> {_30} (! bb18) ] ]
-    | bb18 = s0
-      [ s0 = MutBorrow.borrow_mut <t_UF_i32> {uf}
-          (fun (_bor: MutBorrow.t t_UF_i32) ->
-            [ &_40 <- _bor ] -{inv_Ghost_UF_i32 _bor.final}-
-            [ &uf <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
-      | s1 = borrow_mut_UF_i32 {_40} (fun (_x: MutBorrow.t t_UF_i32) -> [ &_39 <- _x ] s2)
-      | s2 = clone_Elem_i32 {x} (fun (_x: t_Elem_i32) -> [ &_41 <- _x ] s3)
-      | s3 = clone_Elem_i32 {y} (fun (_x: t_Elem_i32) -> [ &_43 <- _x ] s4)
-      | s4 = union_i32 {_39} {_41} {_43} (fun (_x: t_Elem_i32) -> [ &_38 <- _x ] s5)
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 _38} any) ]
-      | s6 = -{resolve_Elem_i32 _38}- s7
-      | s7 = MutBorrow.borrow_mut <t_UF_i32> {uf}
-          (fun (_bor: MutBorrow.t t_UF_i32) ->
-            [ &_47 <- _bor ] -{inv_Ghost_UF_i32 _bor.final}-
-            [ &uf <- _bor.final ] s8) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
-      | s8 = borrow_mut_UF_i32 {_47} (fun (_x: MutBorrow.t t_UF_i32) -> [ &_46 <- _x ] s9)
-      | s9 = find_i32 {_46} {x} (fun (_x: t_Elem_i32) -> [ &xr <- _x ] s10)
-      | s10 = MutBorrow.borrow_mut <t_UF_i32> {uf}
-          (fun (_bor: MutBorrow.t t_UF_i32) ->
-            [ &_51 <- _bor ] -{inv_Ghost_UF_i32 _bor.final}-
-            [ &uf <- _bor.final ] s11) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
-      | s11 = borrow_mut_UF_i32 {_51} (fun (_x: MutBorrow.t t_UF_i32) -> [ &_50 <- _x ] s12)
-      | s12 = find_i32 {_50} {y} (fun (_x: t_Elem_i32) -> [ &yr <- _x ] s13)
-      | s13 = borrow_UF_i32 {uf} (fun (_x: t_UF_i32) -> [ &_57 <- _x ] s14)
-      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 xr} any) ]
-      | s15 = -{resolve_Elem_i32 xr}- s16
-      | s16 = [ &_60 <- xr ] s17
-      | s17 = get_i32 {_57} {_60} (fun (_x: Int32.t) -> [ &_56 <- _x ] s18)
-      | s18 = borrow_UF_i32 {uf} (fun (_x: t_UF_i32) -> [ &_63 <- _x ] s19)
-      | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 yr} any) ]
-      | s20 = -{resolve_Elem_i32 yr}- s21
-      | s21 = [ &_66 <- yr ] s22
-      | s22 = get_i32 {_63} {_66} (fun (_x: Int32.t) -> [ &_62 <- _x ] s23)
-      | s23 = [ &_54 <- _56 = _62 ] s24
-      | s24 = any [ br0 -> {_54 = false} (! bb34) | br1 -> {_54} (! bb33) ] ]
-    | bb33 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
-      | s1 = -{resolve_Ghost_UF_i32'0 uf}- s2
-      | s2 = borrow_UF_i32 {uf} (fun (_x: t_UF_i32) -> [ &_72 <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 z} any) ]
-      | s4 = -{resolve_Elem_i32 z}- s5
-      | s5 = [ &_75 <- z ] s6
-      | s6 = get_i32 {_72} {_75} (fun (_x: Int32.t) -> [ &_71 <- _x ] s7)
-      | s7 = [ &_69 <- _71 = (3: Int32.t) ] s8
-      | s8 = any [ br0 -> {_69 = false} (! bb38) | br1 -> {_69} (! bb43) ] ]
-    | bb43 = return {_ret}
-    | bb38 = {false} any
-    | bb34 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 z} any) ]
-      | s1 = -{resolve_Elem_i32 z}- s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
-      | s3 = -{resolve_Ghost_UF_i32'0 uf}- s4
-      | s4 = {false} any ]
-    | bb19 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 z} any) ]
-      | s1 = -{resolve_Elem_i32 z}- s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 y} any) ]
-      | s3 = -{resolve_Elem_i32 y}- s4
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 x} any) ]
-      | s5 = -{resolve_Elem_i32 x}- s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
-      | s7 = -{resolve_Ghost_UF_i32'0 uf}- s8
-      | s8 = {false} any ]
-    | bb15 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 z} any) ]
-      | s1 = -{resolve_Elem_i32 z}- s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 y} any) ]
-      | s3 = -{resolve_Elem_i32 y}- s4
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 x} any) ]
-      | s5 = -{resolve_Elem_i32 x}- s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
-      | s7 = -{resolve_Ghost_UF_i32'0 uf}- s8
-      | s8 = {false} any ]
-    | bb11 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 z} any) ]
-      | s1 = -{resolve_Elem_i32 z}- s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 y} any) ]
-      | s3 = -{resolve_Elem_i32 y}- s4
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Elem_i32 x} any) ]
-      | s5 = -{resolve_Elem_i32 x}- s6
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UF_i32 uf} any) ]
-      | s7 = -{resolve_Ghost_UF_i32'0 uf}- s8
-      | s8 = {false} any ] ]
-    [ & _ret: () = Any.any_l ()
-    | & uf: t_UF_i32 = Any.any_l ()
-    | & x: t_Elem_i32 = Any.any_l ()
-    | & _3: MutBorrow.t t_UF_i32 = Any.any_l ()
-    | & _4: MutBorrow.t t_UF_i32 = Any.any_l ()
-    | & y: t_Elem_i32 = Any.any_l ()
-    | & _6: MutBorrow.t t_UF_i32 = Any.any_l ()
-    | & _7: MutBorrow.t t_UF_i32 = Any.any_l ()
-    | & z: t_Elem_i32 = Any.any_l ()
-    | & _9: MutBorrow.t t_UF_i32 = Any.any_l ()
-    | & _10: MutBorrow.t t_UF_i32 = Any.any_l ()
-    | & _12: bool = Any.any_l ()
-    | & _14: Int32.t = Any.any_l ()
-    | & _15: t_UF_i32 = Any.any_l ()
-    | & _18: t_Elem_i32 = Any.any_l ()
-    | & _21: bool = Any.any_l ()
-    | & _23: Int32.t = Any.any_l ()
-    | & _24: t_UF_i32 = Any.any_l ()
-    | & _27: t_Elem_i32 = Any.any_l ()
-    | & _30: bool = Any.any_l ()
-    | & _32: Int32.t = Any.any_l ()
-    | & _33: t_UF_i32 = Any.any_l ()
-    | & _36: t_Elem_i32 = Any.any_l ()
-    | & _38: t_Elem_i32 = Any.any_l ()
-    | & _39: MutBorrow.t t_UF_i32 = Any.any_l ()
-    | & _40: MutBorrow.t t_UF_i32 = Any.any_l ()
-    | & _41: t_Elem_i32 = Any.any_l ()
-    | & _43: t_Elem_i32 = Any.any_l ()
-    | & xr: t_Elem_i32 = Any.any_l ()
-    | & _46: MutBorrow.t t_UF_i32 = Any.any_l ()
-    | & _47: MutBorrow.t t_UF_i32 = Any.any_l ()
-    | & yr: t_Elem_i32 = Any.any_l ()
-    | & _50: MutBorrow.t t_UF_i32 = Any.any_l ()
-    | & _51: MutBorrow.t t_UF_i32 = Any.any_l ()
-    | & _54: bool = Any.any_l ()
-    | & _56: Int32.t = Any.any_l ()
-    | & _57: t_UF_i32 = Any.any_l ()
-    | & _60: t_Elem_i32 = Any.any_l ()
-    | & _62: Int32.t = Any.any_l ()
-    | & _63: t_UF_i32 = Any.any_l ()
-    | & _66: t_Elem_i32 = Any.any_l ()
-    | & _69: bool = Any.any_l ()
-    | & _71: Int32.t = Any.any_l ()
-    | & _72: t_UF_i32 = Any.any_l ()
-    | & _75: t_Elem_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+      [ s0 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
+            [ &_25 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
+            [ &uf <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
+      | s1 = deref_mut_Ghost_refmut_UF_T {_25} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_24 <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <t_UF_T> {_24.current.current}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_23 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_24 <- { _24 with current = { _24.current with current = _bor.final } } ] s3)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _24.current.current} any) ]
+      | s3 = MutBorrow.borrow_final <t_UF_T> {_23.current} {MutBorrow.get_id _23}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_22 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_23 <- { _23 with current = _bor.final } ] s4)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _23.current} any) ]
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _24} any) ]
+      | s5 = -{resolve_refmut_refmut_UF_T _24}- s6
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _23} any) ]
+      | s7 = -{resolve_refmut_UF_T _23}- s8
+      | s8 = MutBorrow.borrow_final <t_UF_T> {_22.current} {MutBorrow.get_id _22}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_21 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_22 <- { _22 with current = _bor.final } ] s9)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _22.current} any) ]
+      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _22} any) ]
+      | s10 = -{resolve_refmut_UF_T _22}- s11
+      | s11 = MutBorrow.borrow_final <t_UF_T> {_21.current} {MutBorrow.get_id _21}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_20 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_21 <- { _21 with current = _bor.final } ] s12)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _21.current} any) ]
+      | s12 = new_refmut_UF_T {_20} (fun (_x: MutBorrow.t t_UF_T) -> [ &_19 <- _x ] s13)
+      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _21} any) ]
+      | s14 = -{resolve_refmut_UF_T _21}- s15
+      | s15 = find_T {_19} {x} (fun (_x: t_Elem_T) -> [ &rx <- _x ] s16)
+      | s16 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
+            [ &_34 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
+            [ &uf <- _bor.final ] s17) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
+      | s17 = deref_mut_Ghost_refmut_UF_T {_34} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_33 <- _x ] s18)
+      | s18 = MutBorrow.borrow_mut <t_UF_T> {_33.current.current}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_32 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_33 <- { _33 with current = { _33.current with current = _bor.final } } ] s19)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _33.current.current} any) ]
+      | s19 = MutBorrow.borrow_final <t_UF_T> {_32.current} {MutBorrow.get_id _32}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_31 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_32 <- { _32 with current = _bor.final } ] s20)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _32.current} any) ]
+      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _33} any) ]
+      | s21 = -{resolve_refmut_refmut_UF_T _33}- s22
+      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _32} any) ]
+      | s23 = -{resolve_refmut_UF_T _32}- s24
+      | s24 = MutBorrow.borrow_final <t_UF_T> {_31.current} {MutBorrow.get_id _31}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_30 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_31 <- { _31 with current = _bor.final } ] s25)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _31.current} any) ]
+      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _31} any) ]
+      | s26 = -{resolve_refmut_UF_T _31}- s27
+      | s27 = MutBorrow.borrow_final <t_UF_T> {_30.current} {MutBorrow.get_id _30}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_29 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_30 <- { _30 with current = _bor.final } ] s28)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _30.current} any) ]
+      | s28 = new_refmut_UF_T {_29} (fun (_x: MutBorrow.t t_UF_T) -> [ &_28 <- _x ] s29)
+      | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _30} any) ]
+      | s30 = -{resolve_refmut_UF_T _30}- s31
+      | s31 = find_T {_28} {y} (fun (_x: t_Elem_T) -> [ &ry <- _x ] s32)
+      | s32 = link_T {uf} {rx} {ry} (fun (_x: t_Elem_T) -> [ &_ret <- _x ] s33)
+      | s33 = return {_ret} ] ]
+    [ & _ret: t_Elem_T = Any.any_l ()
+    | & uf: MutBorrow.t t_UF_T = uf
+    | & x: t_Elem_T = x
+    | & y: t_Elem_T = y
+    | & rx: t_Elem_T = Any.any_l ()
+    | & _19: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _20: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _21: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _22: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _23: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _24: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _25: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & ry: t_Elem_T = Any.any_l ()
+    | & _28: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _29: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _30: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _31: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _32: MutBorrow.t t_UF_T = Any.any_l ()
+    | & _33: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _34: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l () ])
+    [ return (result: t_Elem_T) ->
+    {[@stop_split] [@expl:union_T ensures] ([@stop_split] [@expl:union result type invariant] inv_Elem_T result)
+      /\ ([@stop_split] [@expl:union ensures #0] domain_unchanged_T uf /\ payloads_unchanged_T uf)
+      /\ ([@stop_split] [@expl:union ensures #1] result = root_T uf.current x \/ result = root_T uf.current y)
+      /\ ([@stop_split] [@expl:union ensures #2] forall z: t_Elem_T. in_domain_T uf.current z
+        -> root_T (fin_Ghost_refmut_UF_T uf) z
+        = (if root_T uf.current z = root_T uf.current x \/ root_T uf.current z = root_T uf.current y then
+          result
+        else
+          root_T uf.current z
+        ))}
+      (! return {result}) ]
 end

@@ -1,52 +1,3 @@
-module M_count8
-  use creusot.int.Int32BW
-  use creusot.int.UInt8BW
-  use creusot.prelude.Any
-  use int.Int
-  
-  function count8_log (n: UInt8BW.t) : int = (if UInt8BW.bw_and n (1: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
-                + (if UInt8BW.bw_and n (2: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
-              + (if UInt8BW.bw_and n (4: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
-            + (if UInt8BW.bw_and n (8: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
-          + (if UInt8BW.bw_and n (16: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
-        + (if UInt8BW.bw_and n (32: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
-      + (if UInt8BW.bw_and n (64: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
-    + (if UInt8BW.bw_and n (128: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec count8 (n: UInt8BW.t) (return (x: UInt8BW.t)) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &x <- n ] s1
-      | s1 = UInt8BW.shr {x} {Int32BW.to_BV256 (1: Int32BW.t)} (fun (_x: UInt8BW.t) -> [ &_8 <- _x ] s2)
-      | s2 = [ &_7 <- UInt8BW.bw_and _8 (85: UInt8BW.t) ] s3
-      | s3 = UInt8BW.sub {x} {_7} (fun (_x: UInt8BW.t) -> [ &x <- _x ] s4)
-      | s4 = [ &_10 <- UInt8BW.bw_and x (51: UInt8BW.t) ] s5
-      | s5 = UInt8BW.shr {x} {Int32BW.to_BV256 (2: Int32BW.t)} (fun (_x: UInt8BW.t) -> [ &_13 <- _x ] s6)
-      | s6 = [ &_12 <- UInt8BW.bw_and _13 (51: UInt8BW.t) ] s7
-      | s7 = UInt8BW.add {_10} {_12} (fun (_x: UInt8BW.t) -> [ &x <- _x ] s8)
-      | s8 = UInt8BW.shr {x} {Int32BW.to_BV256 (4: Int32BW.t)} (fun (_x: UInt8BW.t) -> [ &_17 <- _x ] s9)
-      | s9 = UInt8BW.add {x} {_17} (fun (_x: UInt8BW.t) -> [ &_15 <- _x ] s10)
-      | s10 = [ &x <- UInt8BW.bw_and _15 (15: UInt8BW.t) ] s11
-      | s11 = [ &_ret <- x ] s12
-      | s12 = return {_ret} ] ]
-    [ & _ret: UInt8BW.t = Any.any_l ()
-    | & n: UInt8BW.t = n
-    | & x: UInt8BW.t = Any.any_l ()
-    | & _7: UInt8BW.t = Any.any_l ()
-    | & _8: UInt8BW.t = Any.any_l ()
-    | & _10: UInt8BW.t = Any.any_l ()
-    | & _12: UInt8BW.t = Any.any_l ()
-    | & _13: UInt8BW.t = Any.any_l ()
-    | & _15: UInt8BW.t = Any.any_l ()
-    | & _17: UInt8BW.t = Any.any_l () ])
-    [ return (result: UInt8BW.t) ->
-    {[@stop_split] [@expl:count8 ensures] ([@stop_split] [@expl:count8 ensures #0] UInt8BW.t'int result <= 8)
-      /\ ([@stop_split] [@expl:count8 ensures #1] UInt8BW.t'int result = count8_log n)}
-      (! return {result}) ]
-end
 module M_count16
   use creusot.int.Int32BW
   use creusot.int.UInt16BW
@@ -177,5 +128,54 @@ module M_count64
     | & _21: UInt64BW.t = Any.any_l ()
     | & _24: UInt64BW.t = Any.any_l () ])
     [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:count64 ensures] UInt64BW.t'int result <= 64}
+      (! return {result}) ]
+end
+module M_count8
+  use creusot.int.Int32BW
+  use creusot.int.UInt8BW
+  use creusot.prelude.Any
+  use int.Int
+  
+  function count8_log (n: UInt8BW.t) : int = (if UInt8BW.bw_and n (1: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
+                + (if UInt8BW.bw_and n (2: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
+              + (if UInt8BW.bw_and n (4: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
+            + (if UInt8BW.bw_and n (8: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
+          + (if UInt8BW.bw_and n (16: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
+        + (if UInt8BW.bw_and n (32: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
+      + (if UInt8BW.bw_and n (64: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
+    + (if UInt8BW.bw_and n (128: UInt8BW.t) = (0: UInt8BW.t) then 0 else 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec count8 (n: UInt8BW.t) (return (x: UInt8BW.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &x <- n ] s1
+      | s1 = UInt8BW.shr {x} {Int32BW.to_BV256 (1: Int32BW.t)} (fun (_x: UInt8BW.t) -> [ &_8 <- _x ] s2)
+      | s2 = [ &_7 <- UInt8BW.bw_and _8 (85: UInt8BW.t) ] s3
+      | s3 = UInt8BW.sub {x} {_7} (fun (_x: UInt8BW.t) -> [ &x <- _x ] s4)
+      | s4 = [ &_10 <- UInt8BW.bw_and x (51: UInt8BW.t) ] s5
+      | s5 = UInt8BW.shr {x} {Int32BW.to_BV256 (2: Int32BW.t)} (fun (_x: UInt8BW.t) -> [ &_13 <- _x ] s6)
+      | s6 = [ &_12 <- UInt8BW.bw_and _13 (51: UInt8BW.t) ] s7
+      | s7 = UInt8BW.add {_10} {_12} (fun (_x: UInt8BW.t) -> [ &x <- _x ] s8)
+      | s8 = UInt8BW.shr {x} {Int32BW.to_BV256 (4: Int32BW.t)} (fun (_x: UInt8BW.t) -> [ &_17 <- _x ] s9)
+      | s9 = UInt8BW.add {x} {_17} (fun (_x: UInt8BW.t) -> [ &_15 <- _x ] s10)
+      | s10 = [ &x <- UInt8BW.bw_and _15 (15: UInt8BW.t) ] s11
+      | s11 = [ &_ret <- x ] s12
+      | s12 = return {_ret} ] ]
+    [ & _ret: UInt8BW.t = Any.any_l ()
+    | & n: UInt8BW.t = n
+    | & x: UInt8BW.t = Any.any_l ()
+    | & _7: UInt8BW.t = Any.any_l ()
+    | & _8: UInt8BW.t = Any.any_l ()
+    | & _10: UInt8BW.t = Any.any_l ()
+    | & _12: UInt8BW.t = Any.any_l ()
+    | & _13: UInt8BW.t = Any.any_l ()
+    | & _15: UInt8BW.t = Any.any_l ()
+    | & _17: UInt8BW.t = Any.any_l () ])
+    [ return (result: UInt8BW.t) ->
+    {[@stop_split] [@expl:count8 ensures] ([@stop_split] [@expl:count8 ensures #0] UInt8BW.t'int result <= 8)
+      /\ ([@stop_split] [@expl:count8 ensures #1] UInt8BW.t'int result = count8_log n)}
       (! return {result}) ]
 end

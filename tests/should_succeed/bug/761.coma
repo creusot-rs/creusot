@@ -1,3 +1,17 @@
+module M_elim_empty
+  predicate inv_Empty [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_Empty
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec elim_empty (x: ()) (return (x'0: ())) = {[@stop_split] [@expl:elim_empty 'x' type invariant] inv_Empty x}
+    (! bb0
+    [ bb0 = s0 [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Empty x} any) ] | s1 = {false} any ] ] [ & x: () = x ])
+    [ return (result: ()) -> (! return {result}) ]
+end
 module M_try_option
   use creusot.prelude.Any
   
@@ -283,18 +297,4 @@ module M_try_result
     {[@stop_split] [@expl:try_result_T ensures] ([@stop_split] [@expl:try_result result type invariant] inv_Result_T_E result)
       /\ ([@stop_split] [@expl:try_result ensures] result = x)}
       (! return {result}) ]
-end
-module M_elim_empty
-  predicate inv_Empty [@inline:trivial] (_1: ()) = false
-  
-  meta "rewrite_def" predicate inv_Empty
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec elim_empty (x: ()) (return (x'0: ())) = {[@stop_split] [@expl:elim_empty 'x' type invariant] inv_Empty x}
-    (! bb0
-    [ bb0 = s0 [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Empty x} any) ] | s1 = {false} any ] ] [ & x: () = x ])
-    [ return (result: ()) -> (! return {result}) ]
 end

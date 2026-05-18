@@ -151,6 +151,82 @@ module M_impl_Iterator_for_Copied_I__next (* <Copied<I> as common::Iterator> *)
         end)}
       (! return {result}) ]
 end
+module M_impl_Iterator_for_Copied_I__next__refines (* <Copied<I> as common::Iterator> *)
+  use creusot.prelude.MutBorrow
+  use seq.Seq
+  use int.Int
+  
+  type t_I
+  
+  type t_Copied_I = { iter: t_I }
+  
+  predicate inv_I (_1: t_I)
+  
+  predicate inv_Copied_I (_1: t_Copied_I)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Copied_I [inv_Copied_I x]. inv_Copied_I x = inv_I x.iter
+  
+  predicate invariant_refmut_Copied_I [@inline:trivial] (self: MutBorrow.t t_Copied_I) =
+    inv_Copied_I self.current /\ inv_Copied_I self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Copied_I
+  
+  predicate inv_refmut_Copied_I [@inline:trivial] (_1: MutBorrow.t t_Copied_I) = invariant_refmut_Copied_I _1
+  
+  meta "rewrite_def" predicate inv_refmut_Copied_I
+  
+  type t_T
+  
+  type t_Option_T = None | Some t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate inv_Option_T (_1: t_Option_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_T f0
+        end
+  
+  predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
+  
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
+  
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_I (self: t_I) : ()
+  
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
+  
+  predicate completed_I (self: MutBorrow.t t_I)
+  
+  predicate completed_Copied_I (self: MutBorrow.t t_Copied_I) =
+    completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
+  
+  predicate produces_Copied_I (self: t_Copied_I) (visited: Seq.seq t_T) (o: t_Copied_I) =
+    exists s: Seq.seq t_T. produces_I self.iter s o.iter
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: MutBorrow.t t_Copied_I. inv_refmut_Copied_I self
+      -> inv_refmut_Copied_I self
+      /\ (forall result: t_Option_T. inv_Option_T result
+          /\ match result with
+            | None -> completed_Copied_I self
+            | Some v -> produces_Copied_I self.current (Seq.singleton v) self.final
+            end
+        -> inv_Option_T result
+        /\ match result with
+          | None -> completed_Copied_I self
+          | Some v -> produces_Copied_I self.current (Seq.singleton v) self.final
+          end)
+end
 module M_impl_Iterator_for_Copied_I__produces_refl (* <Copied<I> as common::Iterator> *)
   use seq.Seq
   use int.Int
@@ -187,6 +263,39 @@ module M_impl_Iterator_for_Copied_I__produces_refl (* <Copied<I> as common::Iter
   
   goal vc_produces_refl_Copied_I:
     [@stop_split] [@expl:produces_refl ensures] produces_Copied_I self (Seq.empty: Seq.seq t_T) self
+end
+module M_impl_Iterator_for_Copied_I__produces_refl__refines (* <Copied<I> as common::Iterator> *)
+  use seq.Seq
+  use int.Int
+  
+  type t_I
+  
+  type t_Copied_I = { iter: t_I }
+  
+  type t_T
+  
+  predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
+  
+  function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
+  
+  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
+      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+  
+  function produces_refl_I (self: t_I) : ()
+  
+  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
+  
+  predicate produces_Copied_I (self: t_Copied_I) (visited: Seq.seq t_T) (o: t_Copied_I) =
+    exists s: Seq.seq t_T. produces_I self.iter s o.iter
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Copied_I. forall result: (). produces_Copied_I self (Seq.empty: Seq.seq t_T) self
+        -> produces_Copied_I self (Seq.empty: Seq.seq t_T) self
 end
 module M_impl_Iterator_for_Copied_I__produces_trans (* <Copied<I> as common::Iterator> *)
   use seq.Seq
@@ -269,113 +378,4 @@ module M_impl_Iterator_for_Copied_I__produces_trans__refines (* <Copied<I> as co
       -> produces_Copied_I a ab b
       /\ produces_Copied_I b bc c
       /\ (forall result: (). produces_Copied_I a (Seq.(++) ab bc) c -> produces_Copied_I a (Seq.(++) ab bc) c)
-end
-module M_impl_Iterator_for_Copied_I__next__refines (* <Copied<I> as common::Iterator> *)
-  use creusot.prelude.MutBorrow
-  use seq.Seq
-  use int.Int
-  
-  type t_I
-  
-  type t_Copied_I = { iter: t_I }
-  
-  predicate inv_I (_1: t_I)
-  
-  predicate inv_Copied_I (_1: t_Copied_I)
-  
-  axiom inv_axiom [@rewrite]: forall x: t_Copied_I [inv_Copied_I x]. inv_Copied_I x = inv_I x.iter
-  
-  predicate invariant_refmut_Copied_I [@inline:trivial] (self: MutBorrow.t t_Copied_I) =
-    inv_Copied_I self.current /\ inv_Copied_I self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Copied_I
-  
-  predicate inv_refmut_Copied_I [@inline:trivial] (_1: MutBorrow.t t_Copied_I) = invariant_refmut_Copied_I _1
-  
-  meta "rewrite_def" predicate inv_refmut_Copied_I
-  
-  type t_T
-  
-  type t_Option_T = None | Some t_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_Option_T (_1: t_Option_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-      = match x with
-        | None -> true
-        | Some f0 -> inv_T f0
-        end
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
-  
-  predicate completed_I (self: MutBorrow.t t_I)
-  
-  predicate completed_Copied_I (self: MutBorrow.t t_Copied_I) =
-    completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
-  
-  predicate produces_Copied_I (self: t_Copied_I) (visited: Seq.seq t_T) (o: t_Copied_I) =
-    exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ Seq.length visited = Seq.length s
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: MutBorrow.t t_Copied_I. inv_refmut_Copied_I self
-      -> inv_refmut_Copied_I self
-      /\ (forall result: t_Option_T. inv_Option_T result
-          /\ match result with
-            | None -> completed_Copied_I self
-            | Some v -> produces_Copied_I self.current (Seq.singleton v) self.final
-            end
-        -> inv_Option_T result
-        /\ match result with
-          | None -> completed_Copied_I self
-          | Some v -> produces_Copied_I self.current (Seq.singleton v) self.final
-          end)
-end
-module M_impl_Iterator_for_Copied_I__produces_refl__refines (* <Copied<I> as common::Iterator> *)
-  use seq.Seq
-  use int.Int
-  
-  type t_I
-  
-  type t_Copied_I = { iter: t_I }
-  
-  type t_T
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
-  
-  predicate produces_Copied_I (self: t_Copied_I) (visited: Seq.seq t_T) (o: t_Copied_I) =
-    exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ Seq.length visited = Seq.length s
-      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> Seq.get visited i = Seq.get s i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Copied_I. forall result: (). produces_Copied_I self (Seq.empty: Seq.seq t_T) self
-        -> produces_Copied_I self (Seq.empty: Seq.seq t_T) self
 end

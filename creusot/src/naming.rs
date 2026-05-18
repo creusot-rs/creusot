@@ -60,9 +60,22 @@ pub(crate) fn ascii_item_name(prefix: &str, tcx: TyCtxt, id: DefId) -> String {
 
 /// Common representation of module name from which we can generate both
 /// a Why3 module name (`M_krate__modl__f`) and a file name (`krate/modl/M_f.coma`).
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ModulePath {
     path: Vec<Symbol>,
+}
+
+impl PartialOrd for ModulePath {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+/// We compare the string representations of `Symbol`s, rather than their raw indices.
+impl Ord for ModulePath {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.path.iter().map(|sym| sym.as_str()).cmp(other.path.iter().map(|sym| sym.as_str()))
+    }
 }
 
 impl ModulePath {

@@ -1,190 +1,3 @@
-module M_min
-  use creusot.int.UInt64
-  use creusot.int.Int64
-  use seq.Seq
-  use creusot.slice.Slice64
-  use creusot.prelude.MutBorrow
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Point = { x: Int64.t; y: Int64.t }
-  
-  type tup2_usize_Point = { f0: UInt64.t; f1: t_Point }
-  
-  type t_Option_ref_tup2_usize_Point = None | Some tup2_usize_Point
-  
-  type t_Vec_tup2_usize_Point_Global
-  
-  type t_Iter_tup2_usize_Point
-  
-  predicate inv_Iter_tup2_usize_Point (_1: t_Iter_tup2_usize_Point)
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function view_Vec_tup2_usize_Point_Global (self: t_Vec_tup2_usize_Point_Global) : Seq.seq tup2_usize_Point
-  
-  axiom view_Vec_tup2_usize_Point_Global_spec:
-    forall self: t_Vec_tup2_usize_Point_Global [view_Vec_tup2_usize_Point_Global self]. Seq.length (view_Vec_tup2_usize_Point_Global self)
-      <= UInt64.t'int const_MAX
-  
-  function view_Iter_tup2_usize_Point (self: t_Iter_tup2_usize_Point) : Slice64.slice tup2_usize_Point
-  
-  let rec into_iter_ref_Vec_tup2_usize_Point_Global (self_: t_Vec_tup2_usize_Point_Global)
-    (return (x'0: t_Iter_tup2_usize_Point)) = any
-    [ return (result: t_Iter_tup2_usize_Point) ->
-    {[@stop_split] [@expl:into_iter_ref_Vec_tup2_usize_Point_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_tup2_usize_Point result)
-      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_tup2_usize_Point_Global self_
-      = Slice64.view (view_Iter_tup2_usize_Point result))}
-      (! return {result}) ]
-  
-  predicate invariant_refmut_Iter_tup2_usize_Point [@inline:trivial] (self: MutBorrow.t t_Iter_tup2_usize_Point) =
-    inv_Iter_tup2_usize_Point self.current /\ inv_Iter_tup2_usize_Point self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Iter_tup2_usize_Point
-  
-  predicate inv_refmut_Iter_tup2_usize_Point [@inline:trivial] (_1: MutBorrow.t t_Iter_tup2_usize_Point) =
-    invariant_refmut_Iter_tup2_usize_Point _1
-  
-  meta "rewrite_def" predicate inv_refmut_Iter_tup2_usize_Point
-  
-  function index_slice_tup2_usize_Point [@inline:trivial] (self: Slice64.slice tup2_usize_Point) (ix: int) : tup2_usize_Point
-   = Seq.get (Slice64.view self) ix
-  
-  meta "rewrite_def" function index_slice_tup2_usize_Point
-  
-  function to_ref_seq_slice_tup2_usize_Point (self: Slice64.slice tup2_usize_Point) : Seq.seq tup2_usize_Point
-  
-  axiom to_ref_seq_slice_tup2_usize_Point_spec:
-    forall self: Slice64.slice tup2_usize_Point [to_ref_seq_slice_tup2_usize_Point self]. Seq.length (to_ref_seq_slice_tup2_usize_Point self)
-      = Seq.length (Slice64.view self)
-  
-  axiom to_ref_seq_slice_tup2_usize_Point_spec'0:
-    forall self: Slice64.slice tup2_usize_Point [to_ref_seq_slice_tup2_usize_Point self]. forall i: int. 0 <= i
-          /\ i < Seq.length (to_ref_seq_slice_tup2_usize_Point self)
-        -> Seq.get (to_ref_seq_slice_tup2_usize_Point self) i = index_slice_tup2_usize_Point self i
-  
-  predicate produces_Iter_tup2_usize_Point (self: t_Iter_tup2_usize_Point) (visited: Seq.seq tup2_usize_Point) (tl: t_Iter_tup2_usize_Point) =
-    to_ref_seq_slice_tup2_usize_Point (view_Iter_tup2_usize_Point self)
-    = Seq.(++) visited (to_ref_seq_slice_tup2_usize_Point (view_Iter_tup2_usize_Point tl))
-  
-  function produces_trans_Iter_tup2_usize_Point (a: t_Iter_tup2_usize_Point) (ab: Seq.seq tup2_usize_Point) (b: t_Iter_tup2_usize_Point) (bc: Seq.seq tup2_usize_Point) (c: t_Iter_tup2_usize_Point) : ()
-  
-  axiom produces_trans_Iter_tup2_usize_Point_spec:
-    forall a: t_Iter_tup2_usize_Point, ab: Seq.seq tup2_usize_Point, b: t_Iter_tup2_usize_Point, bc: Seq.seq tup2_usize_Point, c: t_Iter_tup2_usize_Point. produces_Iter_tup2_usize_Point a ab b
-      -> produces_Iter_tup2_usize_Point b bc c -> produces_Iter_tup2_usize_Point a (Seq.(++) ab bc) c
-  
-  function produces_refl_Iter_tup2_usize_Point (self: t_Iter_tup2_usize_Point) : ()
-  
-  axiom produces_refl_Iter_tup2_usize_Point_spec:
-    forall self: t_Iter_tup2_usize_Point. produces_Iter_tup2_usize_Point self (Seq.empty: Seq.seq tup2_usize_Point) self
-  
-  predicate resolve_refmut_Iter_tup2_usize_Point [@inline:trivial] (_1: MutBorrow.t t_Iter_tup2_usize_Point) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Iter_tup2_usize_Point
-  
-  predicate completed_Iter_tup2_usize_Point (self: MutBorrow.t t_Iter_tup2_usize_Point) =
-    resolve_refmut_Iter_tup2_usize_Point self
-    /\ Slice64.view (view_Iter_tup2_usize_Point self.current) = (Seq.empty: Seq.seq tup2_usize_Point)
-  
-  let rec next_Iter_tup2_usize_Point (self_: MutBorrow.t t_Iter_tup2_usize_Point)
-    (return (x'0: t_Option_ref_tup2_usize_Point)) =
-    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_tup2_usize_Point self_}
-    any
-    [ return (result: t_Option_ref_tup2_usize_Point) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Iter_tup2_usize_Point self_
-        | Some v -> produces_Iter_tup2_usize_Point self_.current (Seq.singleton v) self_.final
-        end}
-      (! return {result}) ]
-  
-  function index_Vec_tup2_usize_Point_Global [@inline:trivial] (self: t_Vec_tup2_usize_Point_Global) (ix: int) : tup2_usize_Point
-   = Seq.get (view_Vec_tup2_usize_Point_Global self) ix
-  
-  meta "rewrite_def" function index_Vec_tup2_usize_Point_Global
-  
-  predicate inv_Seq_ref_tup2_usize_Point [@inline:trivial] (_1: Seq.seq tup2_usize_Point) = true
-  
-  meta "rewrite_def" predicate inv_Seq_ref_tup2_usize_Point
-  
-  let rec elim_Some (_x: t_Option_ref_tup2_usize_Point) (return (f0'0: tup2_usize_Point)) = any
-    [ _k (f0'0: tup2_usize_Point) -> {Some f0'0 = _x} (! return {f0'0})
-    | _chk -> (! {[@expl:elim Some] match _x with
-        | Some _ -> true
-        | _ -> false
-        end}
-      any) ]
-  
-  predicate resolve_Iter_tup2_usize_Point (_1: t_Iter_tup2_usize_Point)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec min (v: t_Vec_tup2_usize_Point_Global) (return (x'0: t_Option_ref_tup2_usize_Point)) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &min'0 <- None ] s1
-      | s1 = into_iter_ref_Vec_tup2_usize_Point_Global {v} (fun (_x: t_Iter_tup2_usize_Point) -> [ &iter <- _x ] s2)
-      | s2 = [ &iter_old <- iter ] s3
-      | s3 = [ &produced <- Seq.empty: Seq.seq tup2_usize_Point ] s4
-      | s4 = bb4 ]
-    | bb4 = bb4
-      [ bb4 = {[@expl:inferred invariant: type invariant] inv_Iter_tup2_usize_Point iter}
-        {[@expl:for invariant] inv_Seq_ref_tup2_usize_Point produced}
-        {[@expl:for invariant] produces_Iter_tup2_usize_Point iter_old produced iter}
-        {[@expl:loop invariant] forall r: tup2_usize_Point. min'0 = Some r
-          -> (exists i: int. 0 <= i
-            /\ i < Seq.length (view_Vec_tup2_usize_Point_Global v) /\ index_Vec_tup2_usize_Point_Global v i = r)}
-        (! s0)
-        [ s0 = MutBorrow.borrow_mut <t_Iter_tup2_usize_Point> {iter}
-            (fun (_bor: MutBorrow.t t_Iter_tup2_usize_Point) ->
-              [ &_28 <- _bor ] -{inv_Iter_tup2_usize_Point _bor.final}-
-              [ &iter <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Iter_tup2_usize_Point iter} any) ]
-        | s1 = MutBorrow.borrow_final <t_Iter_tup2_usize_Point> {_28.current} {MutBorrow.get_id _28}
-            (fun (_bor: MutBorrow.t t_Iter_tup2_usize_Point) ->
-              [ &_27 <- _bor ] -{inv_Iter_tup2_usize_Point _bor.final}-
-              [ &_28 <- { _28 with current = _bor.final } ] s2)
-          [ _ck -> (! {[@expl:type invariant] inv_Iter_tup2_usize_Point _28.current} any) ]
-        | s2 = next_Iter_tup2_usize_Point {_27} (fun (_x: t_Option_ref_tup2_usize_Point) -> [ &_26 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_tup2_usize_Point _28} any) ]
-        | s4 = -{resolve_refmut_Iter_tup2_usize_Point _28}- s5
-        | s5 = any [ br0 -> {_26 = None} (! bb9) | br1 (x0: tup2_usize_Point) -> {_26 = Some x0} (! bb10) ] ]
-        [ bb10 = s0
-          [ s0 = elim_Some {_26} (fun (r0: tup2_usize_Point) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = [ &x'0 <- __creusot_proc_iter_elem ] s3
-          | s3 = any [ br0 -> {min'0 = None} (! bb15) | br1 (x0: tup2_usize_Point) -> {min'0 = Some x0} (! bb14) ] ]
-        | bb14 = s0
-          [ s0 = elim_Some {min'0} (fun (r0: tup2_usize_Point) -> [ &m <- r0 ] s1)
-          | s1 = [ &_42 <- UInt64.lt x'0.f0 m.f0 ] s2
-          | s2 = any [ br0 -> {_42 = false} (! bb4) | br1 -> {_42} (! bb16) ] ]
-        | bb16 = s0 [ s0 = [ &_45 <- Some x'0 ] s1 | s1 = [ &min'0 <- _45 ] s2 | s2 = bb4 ]
-        | bb15 = s0 [ s0 = [ &_39 <- Some x'0 ] s1 | s1 = [ &min'0 <- _39 ] s2 | s2 = bb4 ] ] ]
-    | bb9 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_tup2_usize_Point iter} any) ]
-      | s1 = -{resolve_Iter_tup2_usize_Point iter}- s2
-      | s2 = [ &_ret <- min'0 ] s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: t_Option_ref_tup2_usize_Point = Any.any_l ()
-    | & v: t_Vec_tup2_usize_Point_Global = v
-    | & min'0: t_Option_ref_tup2_usize_Point = Any.any_l ()
-    | & iter: t_Iter_tup2_usize_Point = Any.any_l ()
-    | & iter_old: t_Iter_tup2_usize_Point = Any.any_l ()
-    | & produced: Seq.seq tup2_usize_Point = Any.any_l ()
-    | & _26: t_Option_ref_tup2_usize_Point = Any.any_l ()
-    | & _27: MutBorrow.t t_Iter_tup2_usize_Point = Any.any_l ()
-    | & _28: MutBorrow.t t_Iter_tup2_usize_Point = Any.any_l ()
-    | & __creusot_proc_iter_elem: tup2_usize_Point = Any.any_l ()
-    | & x'0: tup2_usize_Point = Any.any_l ()
-    | & _39: t_Option_ref_tup2_usize_Point = Any.any_l ()
-    | & m: tup2_usize_Point = Any.any_l ()
-    | & _42: bool = Any.any_l ()
-    | & _45: t_Option_ref_tup2_usize_Point = Any.any_l () ])
-    [ return (result: t_Option_ref_tup2_usize_Point) ->
-    {[@stop_split] [@expl:min ensures] forall r: tup2_usize_Point. result = Some r
-        -> (exists i: int. 0 <= i
-          /\ i < Seq.length (view_Vec_tup2_usize_Point_Global v) /\ index_Vec_tup2_usize_Point_Global v i = r)}
-      (! return {result}) ]
-end
 module M_dumb_nonlinear_arith
   use creusot.int.UInt64
   use int.Int
@@ -199,6 +12,959 @@ module M_dumb_nonlinear_arith
   
   goal vc_dumb_nonlinear_arith: UInt64.t'int a <= 1000
     -> ([@stop_split] [@expl:dumb_nonlinear_arith ensures] UInt64.t'int a * UInt64.t'int a <= 1000000)
+end
+module M_impl_Board__available (* Board *)
+  use creusot.int.Int64
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Point = { x: Int64.t; y: Int64.t }
+  
+  type t_Vec_Vec_usize_Global_Global
+  
+  type t_Board = { size: UInt64.t; field: t_Vec_Vec_usize_Global_Global }
+  
+  type t_Vec_usize_Global
+  
+  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec_usize_Global) =
+    UInt64.t'int self < Seq.length seq
+  
+  meta "rewrite_def" predicate in_bounds_usize
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_Vec_usize_Global_Global (self: t_Vec_Vec_usize_Global_Global) : Seq.seq t_Vec_usize_Global
+  
+  axiom view_Vec_Vec_usize_Global_Global_spec:
+    forall self: t_Vec_Vec_usize_Global_Global [view_Vec_Vec_usize_Global_Global self]. Seq.length (view_Vec_Vec_usize_Global_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec_usize_Global) (out: t_Vec_usize_Global) =
+    Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value_usize
+  
+  let rec index_Vec_Vec_usize_Global_Global (self_: t_Vec_Vec_usize_Global_Global) (ix: UInt64.t)
+    (return (x'0: t_Vec_usize_Global)) =
+    {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_Vec_usize_Global_Global self_)}
+    any
+    [ return (result: t_Vec_usize_Global) ->
+    {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_Vec_usize_Global_Global self_) result}
+      (! return {result}) ]
+  
+  predicate in_bounds_usize'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
+    UInt64.t'int self < Seq.length seq
+  
+  meta "rewrite_def" predicate in_bounds_usize'0
+  
+  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
+  
+  axiom view_Vec_usize_Global_spec:
+    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate has_value_usize'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) (out: UInt64.t) =
+    Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value_usize'0
+  
+  let rec index_Vec_usize_Global (self_: t_Vec_usize_Global) (ix: UInt64.t) (return (x'0: UInt64.t)) =
+    {[@stop_split] [@expl:index requires] in_bounds_usize'0 ix (view_Vec_usize_Global self_)}
+    any
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:index ensures] has_value_usize'0 ix (view_Vec_usize_Global self_) result}
+      (! return {result}) ]
+  
+  function index_Vec_Vec_usize_Global_Global'0 [@inline:trivial] (self: t_Vec_Vec_usize_Global_Global) (ix: int) : t_Vec_usize_Global
+   = Seq.get (view_Vec_Vec_usize_Global_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_Vec_usize_Global_Global'0
+  
+  predicate wf (self: t_Board) =
+    UInt64.t'int self.size <= 1000
+    /\ Seq.length (view_Vec_Vec_usize_Global_Global self.field) = UInt64.t'int self.size
+    /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.size
+      -> Seq.length (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global'0 self.field i)) = UInt64.t'int self.size)
+  
+  predicate in_bounds (self: t_Board) (p: t_Point) =
+    0 <= Int64.to_int p.x
+    /\ Int64.to_int p.x < UInt64.t'int self.size /\ 0 <= Int64.to_int p.y /\ Int64.to_int p.y < UInt64.t'int self.size
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec available (self: t_Board) (p: t_Point) (return (x'0: bool)) =
+    {[@stop_split] [@expl:available requires] wf self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_8 <- Int64.le (0: Int64.t) p.x ] s1 | s1 = any [ br0 -> {_8 = false} (! bb9) | br1 -> {_8} (! bb1) ] ]
+    | bb1 = s0
+      [ s0 = [ &_11 <- UInt64.of_int (Int64.to_int p.x) ] s1
+      | s1 = [ &_10 <- UInt64.lt _11 self.size ] s2
+      | s2 = any [ br0 -> {_10 = false} (! bb9) | br1 -> {_10} (! bb2) ] ]
+    | bb2 = s0
+      [ s0 = [ &_14 <- Int64.le (0: Int64.t) p.y ] s1
+      | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb3) ] ]
+    | bb3 = s0
+      [ s0 = [ &_17 <- UInt64.of_int (Int64.to_int p.y) ] s1
+      | s1 = [ &_16 <- UInt64.lt _17 self.size ] s2
+      | s2 = any [ br0 -> {_16 = false} (! bb9) | br1 -> {_16} (! bb4) ] ]
+    | bb4 = s0
+      [ s0 = [ &_25 <- UInt64.of_int (Int64.to_int p.x) ] s1
+      | s1 = index_Vec_Vec_usize_Global_Global {self.field} {_25} (fun (_x: t_Vec_usize_Global) -> [ &_23 <- _x ] s2)
+      | s2 = [ &_27 <- UInt64.of_int (Int64.to_int p.y) ] s3
+      | s3 = index_Vec_usize_Global {_23} {_27} (fun (_x: UInt64.t) -> [ &_21 <- _x ] s4)
+      | s4 = [ &_ret <- _21 = (0: UInt64.t) ] s5
+      | s5 = return {_ret} ]
+    | bb9 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l ()
+    | & self: t_Board = self
+    | & p: t_Point = p
+    | & _8: bool = Any.any_l ()
+    | & _10: bool = Any.any_l ()
+    | & _11: UInt64.t = Any.any_l ()
+    | & _14: bool = Any.any_l ()
+    | & _16: bool = Any.any_l ()
+    | & _17: UInt64.t = Any.any_l ()
+    | & _21: UInt64.t = Any.any_l ()
+    | & _23: t_Vec_usize_Global = Any.any_l ()
+    | & _25: UInt64.t = Any.any_l ()
+    | & _27: UInt64.t = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:available ensures] result -> in_bounds self p}
+      (! return {result}) ]
+end
+module M_impl_Board__count_degree (* Board *)
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.int.Int64
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Vec_tup2_isize_isize_Global
+  
+  type tup2_isize_isize = { f0: Int64.t; f1: Int64.t }
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_tup2_isize_isize_Global (self: t_Vec_tup2_isize_isize_Global) : Seq.seq tup2_isize_isize
+  
+  axiom view_Vec_tup2_isize_isize_Global_spec:
+    forall self: t_Vec_tup2_isize_isize_Global [view_Vec_tup2_isize_isize_Global self]. Seq.length (view_Vec_tup2_isize_isize_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function index_Vec_tup2_isize_isize_Global [@inline:trivial] (self: t_Vec_tup2_isize_isize_Global) (ix: int) : tup2_isize_isize
+   = Seq.get (view_Vec_tup2_isize_isize_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_tup2_isize_isize_Global
+  
+  let rec moves (return (x: t_Vec_tup2_isize_isize_Global)) = any
+    [ return (result: t_Vec_tup2_isize_isize_Global) ->
+    {[@stop_split] [@expl:moves ensures] ([@stop_split] [@expl:moves ensures #0] Seq.length (view_Vec_tup2_isize_isize_Global result)
+        = 8)
+      /\ ([@stop_split] [@expl:moves ensures #1] forall i: int. 0 <= i /\ i < 8
+        -> - 2 <= Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f0
+        /\ Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f0 <= 2
+        /\ - 2 <= Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f1
+        /\ Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f1 <= 2)}
+      (! return {result}) ]
+  
+  type t_IntoIter_tup2_isize_isize_Global
+  
+  predicate inv_IntoIter_tup2_isize_isize_Global (_1: t_IntoIter_tup2_isize_isize_Global)
+  
+  function view_IntoIter_tup2_isize_isize_Global (self: t_IntoIter_tup2_isize_isize_Global) : Seq.seq tup2_isize_isize
+  
+  let rec into_iter_Vec_tup2_isize_isize_Global (self_: t_Vec_tup2_isize_isize_Global)
+    (return (x: t_IntoIter_tup2_isize_isize_Global)) = any
+    [ return (result: t_IntoIter_tup2_isize_isize_Global) ->
+    {[@stop_split] [@expl:into_iter_Vec_tup2_isize_isize_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_IntoIter_tup2_isize_isize_Global result)
+      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_tup2_isize_isize_Global self_
+      = view_IntoIter_tup2_isize_isize_Global result)}
+      (! return {result}) ]
+  
+  type t_Option_tup2_isize_isize = None | Some tup2_isize_isize
+  
+  predicate invariant_refmut_IntoIter_tup2_isize_isize_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
+    inv_IntoIter_tup2_isize_isize_Global self.current /\ inv_IntoIter_tup2_isize_isize_Global self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_IntoIter_tup2_isize_isize_Global
+  
+  predicate inv_refmut_IntoIter_tup2_isize_isize_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
+    invariant_refmut_IntoIter_tup2_isize_isize_Global _1
+  
+  meta "rewrite_def" predicate inv_refmut_IntoIter_tup2_isize_isize_Global
+  
+  predicate produces_IntoIter_tup2_isize_isize_Global (self: t_IntoIter_tup2_isize_isize_Global) (visited: Seq.seq tup2_isize_isize) (rhs: t_IntoIter_tup2_isize_isize_Global) =
+    view_IntoIter_tup2_isize_isize_Global self = Seq.(++) visited (view_IntoIter_tup2_isize_isize_Global rhs)
+  
+  function produces_trans_IntoIter_tup2_isize_isize_Global (a: t_IntoIter_tup2_isize_isize_Global) (ab: Seq.seq tup2_isize_isize) (b: t_IntoIter_tup2_isize_isize_Global) (bc: Seq.seq tup2_isize_isize) (c: t_IntoIter_tup2_isize_isize_Global) : ()
+  
+  axiom produces_trans_IntoIter_tup2_isize_isize_Global_spec:
+    forall a: t_IntoIter_tup2_isize_isize_Global, ab: Seq.seq tup2_isize_isize, b: t_IntoIter_tup2_isize_isize_Global, bc: Seq.seq tup2_isize_isize, c: t_IntoIter_tup2_isize_isize_Global. produces_IntoIter_tup2_isize_isize_Global a ab b
+      -> produces_IntoIter_tup2_isize_isize_Global b bc c
+      -> produces_IntoIter_tup2_isize_isize_Global a (Seq.(++) ab bc) c
+  
+  function produces_refl_IntoIter_tup2_isize_isize_Global (self: t_IntoIter_tup2_isize_isize_Global) : ()
+  
+  axiom produces_refl_IntoIter_tup2_isize_isize_Global_spec:
+    forall self: t_IntoIter_tup2_isize_isize_Global. produces_IntoIter_tup2_isize_isize_Global self (Seq.empty: Seq.seq tup2_isize_isize) self
+  
+  predicate resolve_refmut_IntoIter_tup2_isize_isize_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_IntoIter_tup2_isize_isize_Global
+  
+  predicate completed_IntoIter_tup2_isize_isize_Global (self: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
+    resolve_refmut_IntoIter_tup2_isize_isize_Global self
+    /\ view_IntoIter_tup2_isize_isize_Global self.current = (Seq.empty: Seq.seq tup2_isize_isize)
+  
+  let rec next_IntoIter_tup2_isize_isize_Global (self_: MutBorrow.t t_IntoIter_tup2_isize_isize_Global)
+    (return (x: t_Option_tup2_isize_isize)) =
+    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_IntoIter_tup2_isize_isize_Global self_}
+    any
+    [ return (result: t_Option_tup2_isize_isize) -> {[@stop_split] [@expl:next ensures] match result with
+        | None -> completed_IntoIter_tup2_isize_isize_Global self_
+        | Some v -> produces_IntoIter_tup2_isize_isize_Global self_.current (Seq.singleton v) self_.final
+        end}
+      (! return {result}) ]
+  
+  predicate inv_Seq_tup2_isize_isize [@inline:trivial] (_1: Seq.seq tup2_isize_isize) = true
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_isize_isize
+  
+  let rec elim_Some (_x: t_Option_tup2_isize_isize) (return (f0'0: tup2_isize_isize)) = any
+    [ _k (f0'0: tup2_isize_isize) -> {Some f0'0 = _x} (! return {f0'0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  type t_Point = { x: Int64.t; y: Int64.t }
+  
+  let rec mov (self: t_Point) (p: tup2_isize_isize) (return (x'0: t_Point)) =
+    {[@stop_split] [@expl:mov requires] ([@stop_split] [@expl:mov requires #0] - 10000 <= Int64.to_int self.x
+      /\ Int64.to_int self.x <= 10000)
+    /\ ([@stop_split] [@expl:mov requires #1] - 10000 <= Int64.to_int self.y /\ Int64.to_int self.y <= 10000)
+    /\ ([@stop_split] [@expl:mov requires #2] - 10000 <= Int64.to_int p.f0 /\ Int64.to_int p.f0 <= 10000)
+    /\ ([@stop_split] [@expl:mov requires #3] - 10000 <= Int64.to_int p.f1 /\ Int64.to_int p.f1 <= 10000)}
+    any
+    [ return (result: t_Point) ->
+    {[@stop_split] [@expl:mov ensures] ([@stop_split] [@expl:mov ensures #0] Int64.to_int result.x
+        = Int64.to_int self.x + Int64.to_int p.f0)
+      /\ ([@stop_split] [@expl:mov ensures #1] Int64.to_int result.y = Int64.to_int self.y + Int64.to_int p.f1)}
+      (! return {result}) ]
+  
+  type t_Vec_Vec_usize_Global_Global
+  
+  type t_Board = { size: UInt64.t; field: t_Vec_Vec_usize_Global_Global }
+  
+  type t_Vec_usize_Global
+  
+  function view_Vec_Vec_usize_Global_Global (self: t_Vec_Vec_usize_Global_Global) : Seq.seq t_Vec_usize_Global
+  
+  axiom view_Vec_Vec_usize_Global_Global_spec:
+    forall self: t_Vec_Vec_usize_Global_Global [view_Vec_Vec_usize_Global_Global self]. Seq.length (view_Vec_Vec_usize_Global_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
+  
+  axiom view_Vec_usize_Global_spec:
+    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function index_Vec_Vec_usize_Global_Global [@inline:trivial] (self: t_Vec_Vec_usize_Global_Global) (ix: int) : t_Vec_usize_Global
+   = Seq.get (view_Vec_Vec_usize_Global_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_Vec_usize_Global_Global
+  
+  predicate wf (self: t_Board) =
+    UInt64.t'int self.size <= 1000
+    /\ Seq.length (view_Vec_Vec_usize_Global_Global self.field) = UInt64.t'int self.size
+    /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.size
+      -> Seq.length (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global self.field i)) = UInt64.t'int self.size)
+  
+  predicate in_bounds (self: t_Board) (p: t_Point) =
+    0 <= Int64.to_int p.x
+    /\ Int64.to_int p.x < UInt64.t'int self.size /\ 0 <= Int64.to_int p.y /\ Int64.to_int p.y < UInt64.t'int self.size
+  
+  let rec available (self: t_Board) (p: t_Point) (return (x'0: bool)) =
+    {[@stop_split] [@expl:available requires] wf self}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:available ensures] result -> in_bounds self p}
+      (! return {result}) ]
+  
+  predicate resolve_tup2_isize_isize [@inline:trivial] (_1: tup2_isize_isize) = true
+  
+  meta "rewrite_def" predicate resolve_tup2_isize_isize
+  
+  predicate resolve_IntoIter_tup2_isize_isize_Global [@inline:trivial] (self: t_IntoIter_tup2_isize_isize_Global) =
+    forall i: int. 0 <= i /\ i < Seq.length (view_IntoIter_tup2_isize_isize_Global self)
+      -> resolve_tup2_isize_isize (Seq.get (view_IntoIter_tup2_isize_isize_Global self) i)
+  
+  meta "rewrite_def" predicate resolve_IntoIter_tup2_isize_isize_Global
+  
+  predicate resolve_IntoIter_tup2_isize_isize_Global'0 (_1: t_IntoIter_tup2_isize_isize_Global)
+  
+  axiom resolve_axiom:
+    forall x'0: t_IntoIter_tup2_isize_isize_Global [resolve_IntoIter_tup2_isize_isize_Global'0 x'0]. resolve_IntoIter_tup2_isize_isize_Global'0 x'0
+      -> resolve_IntoIter_tup2_isize_isize_Global x'0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec count_degree (self: t_Board) (p: t_Point) (return (x'0: UInt64.t)) =
+    {[@stop_split] [@expl:count_degree requires] ([@stop_split] [@expl:count_degree requires #0] wf self)
+    /\ ([@stop_split] [@expl:count_degree requires #1] in_bounds self p)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &count <- (0: UInt64.t) ] s1
+      | s1 = moves (fun (_x: t_Vec_tup2_isize_isize_Global) -> [ &_11 <- _x ] s2)
+      | s2 = into_iter_Vec_tup2_isize_isize_Global {_11}
+          (fun (_x: t_IntoIter_tup2_isize_isize_Global) -> [ &iter <- _x ] s3)
+      | s3 = [ &iter_old <- iter ] s4
+      | s4 = [ &produced <- Seq.empty: Seq.seq tup2_isize_isize ] s5
+      | s5 = bb5 ]
+    | bb5 = bb5
+      [ bb5 = {[@expl:inferred invariant: type invariant] inv_IntoIter_tup2_isize_isize_Global iter}
+        {[@expl:for invariant] inv_Seq_tup2_isize_isize produced}
+        {[@expl:for invariant] produces_IntoIter_tup2_isize_isize_Global iter_old produced iter}
+        {[@expl:loop invariant] UInt64.t'int count <= Seq.length produced}
+        (! s0)
+        [ s0 = MutBorrow.borrow_mut <t_IntoIter_tup2_isize_isize_Global> {iter}
+            (fun (_bor: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) ->
+              [ &_32 <- _bor ] -{inv_IntoIter_tup2_isize_isize_Global _bor.final}-
+              [ &iter <- _bor.final ] s1)
+          [ _ck -> (! {[@expl:type invariant] inv_IntoIter_tup2_isize_isize_Global iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_IntoIter_tup2_isize_isize_Global> {_32.current} {MutBorrow.get_id _32}
+            (fun (_bor: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) ->
+              [ &_31 <- _bor ] -{inv_IntoIter_tup2_isize_isize_Global _bor.final}-
+              [ &_32 <- { _32 with current = _bor.final } ] s2)
+          [ _ck -> (! {[@expl:type invariant] inv_IntoIter_tup2_isize_isize_Global _32.current} any) ]
+        | s2 = next_IntoIter_tup2_isize_isize_Global {_31} (fun (_x: t_Option_tup2_isize_isize) -> [ &_30 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_IntoIter_tup2_isize_isize_Global _32} any) ]
+        | s4 = -{resolve_refmut_IntoIter_tup2_isize_isize_Global _32}- s5
+        | s5 = any [ br0 -> {_30 = None} (! bb10) | br1 (x0: tup2_isize_isize) -> {_30 = Some x0} (! bb11) ] ]
+        [ bb11 = s0
+          [ s0 = elim_Some {_30} (fun (r0: tup2_isize_isize) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &m <- __creusot_proc_iter_elem ] s3
+          | s3 = [ &_44 <- m ] s4
+          | s4 = mov {p} {_44} (fun (_x: t_Point) -> [ &next <- _x ] s5)
+          | s5 = available {self} {next} (fun (_x: bool) -> [ &_45 <- _x ] s6)
+          | s6 = any [ br0 -> {_45 = false} (! bb5) | br1 -> {_45} (! bb15) ] ]
+        | bb15 = s0
+          [ s0 = UInt64.add {count} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &count <- _x ] s1) | s1 = bb5 ] ] ]
+    | bb10 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_IntoIter_tup2_isize_isize_Global iter} any) ]
+      | s1 = -{resolve_IntoIter_tup2_isize_isize_Global'0 iter}- s2
+      | s2 = [ &_ret <- count ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
+    | & self: t_Board = self
+    | & p: t_Point = p
+    | & count: UInt64.t = Any.any_l ()
+    | & iter: t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
+    | & _11: t_Vec_tup2_isize_isize_Global = Any.any_l ()
+    | & iter_old: t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
+    | & produced: Seq.seq tup2_isize_isize = Any.any_l ()
+    | & _30: t_Option_tup2_isize_isize = Any.any_l ()
+    | & _31: MutBorrow.t t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
+    | & _32: MutBorrow.t t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
+    | & __creusot_proc_iter_elem: tup2_isize_isize = Any.any_l ()
+    | & m: tup2_isize_isize = Any.any_l ()
+    | & next: t_Point = Any.any_l ()
+    | & _44: tup2_isize_isize = Any.any_l ()
+    | & _45: bool = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
+end
+module M_impl_Board__new (* Board *)
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Range_usize = { start: UInt64.t; end': UInt64.t }
+  
+  type closure3 = { c0: UInt64.t }
+  
+  predicate resolve_refmut_closure3 [@inline:trivial] (_1: MutBorrow.t closure3) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure3
+  
+  type t_Vec_usize_Global
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
+  
+  axiom view_Vec_usize_Global_spec:
+    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function index_Vec_usize_Global [@inline:trivial] (self: t_Vec_usize_Global) (ix: int) : UInt64.t =
+    Seq.get (view_Vec_usize_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_usize_Global
+  
+  let rec from_elem_usize (elem: UInt64.t) (n: UInt64.t) (return (x: t_Vec_usize_Global)) = any
+    [ return (result: t_Vec_usize_Global) ->
+    {[@stop_split] [@expl:from_elem_usize ensures] ([@stop_split] [@expl:from_elem ensures #0] Seq.length (view_Vec_usize_Global result)
+        = UInt64.t'int n)
+      /\ ([@stop_split] [@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
+        -> index_Vec_usize_Global result i = elem)}
+      (! return {result}) ]
+  
+  type tup2_usize_Snapshot_Seq_usize = { f0: UInt64.t; f1: Seq.seq UInt64.t }
+  
+  predicate postcondition_once_closure3 [@inline:trivial] (self: closure3) (args: tup2_usize_Snapshot_Seq_usize) (result: t_Vec_usize_Global) =
+    let {f0 = _0; f1 = _1} = args in Seq.length (view_Vec_usize_Global result) = UInt64.t'int self.c0
+  
+  meta "rewrite_def" predicate postcondition_once_closure3
+  
+  predicate resolve_closure3 [@inline:trivial] (_1: closure3) = true
+  
+  meta "rewrite_def" predicate resolve_closure3
+  
+  predicate hist_inv_closure3 [@inline:trivial] (self: closure3) (result_state: closure3) = result_state.c0 = self.c0
+  
+  meta "rewrite_def" predicate hist_inv_closure3
+  
+  predicate postcondition_mut_closure3 [@inline:trivial] (self: closure3) (args: tup2_usize_Snapshot_Seq_usize) (result_state: closure3) (result: t_Vec_usize_Global) =
+    let {f0 = _0; f1 = _1} = args in Seq.length (view_Vec_usize_Global result) = UInt64.t'int result_state.c0
+    /\ hist_inv_closure3 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure3
+  
+  function fn_mut_once_closure3 (self: closure3) (args: tup2_usize_Snapshot_Seq_usize) (res: t_Vec_usize_Global) : ()
+  
+  axiom fn_mut_once_closure3_spec:
+    forall self: closure3, args: tup2_usize_Snapshot_Seq_usize, res: t_Vec_usize_Global. postcondition_once_closure3 self args res
+      = (exists res_state: closure3. postcondition_mut_closure3 self args res_state res /\ resolve_closure3 res_state)
+  
+  function hist_inv_trans_closure3 (self: closure3) (b: closure3) (c: closure3) : ()
+  
+  axiom hist_inv_trans_closure3_spec: forall self: closure3, b: closure3, c: closure3. hist_inv_closure3 self b
+      -> hist_inv_closure3 b c -> hist_inv_closure3 self c
+  
+  function hist_inv_refl_closure3 (self: closure3) : ()
+  
+  axiom hist_inv_refl_closure3_spec: forall self: closure3. hist_inv_closure3 self self
+  
+  function postcondition_mut_hist_inv_closure3 (self: closure3) (args: tup2_usize_Snapshot_Seq_usize) (res_state: closure3) (res: t_Vec_usize_Global) : ()
+  
+  axiom postcondition_mut_hist_inv_closure3_spec:
+    forall self: closure3, args: tup2_usize_Snapshot_Seq_usize, res_state: closure3, res: t_Vec_usize_Global. postcondition_mut_closure3 self args res_state res
+      -> hist_inv_closure3 self res_state
+  
+  let rec closure3 (self: MutBorrow.t closure3) (_0: UInt64.t) (_1: Seq.seq UInt64.t) (return (x: t_Vec_usize_Global)) =
+    (! bb0
+    [ bb0 = s0
+      [ s0 = -{resolve_refmut_closure3 self}- s1
+      | s1 = from_elem_usize {(0: UInt64.t)} {self.current.c0} (fun (_x: t_Vec_usize_Global) -> [ &res <- _x ] s2)
+      | s2 = [ &_ret <- res ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_Vec_usize_Global = Any.any_l ()
+    | & self: MutBorrow.t closure3 = self
+    | & res: t_Vec_usize_Global = Any.any_l () ])
+    [ return (result: t_Vec_usize_Global) ->
+    {[@stop_split] [@expl:closure3 ensures] ([@stop_split] [@expl:closure ensures] Seq.length (view_Vec_usize_Global result)
+        = UInt64.t'int self.final.c0)
+      /\ ([@stop_split] [@expl:closure hist_inv post] hist_inv_closure3 self.current self.final)}
+      (! return {result}) ]
+  
+  function deep_model_usize [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model_usize
+  
+  predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
+    self.end' = o.end'
+    /\ deep_model_usize self.start <= deep_model_usize o.start
+    /\ (Seq.length visited > 0 -> deep_model_usize o.start <= deep_model_usize o.end')
+    /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+      -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
+  
+  function produces_trans_Range_usize (a: t_Range_usize) (ab: Seq.seq UInt64.t) (b: t_Range_usize) (bc: Seq.seq UInt64.t) (c: t_Range_usize) : ()
+  
+  axiom produces_trans_Range_usize_spec:
+    forall a: t_Range_usize, ab: Seq.seq UInt64.t, b: t_Range_usize, bc: Seq.seq UInt64.t, c: t_Range_usize. produces_Range_usize a ab b
+      -> produces_Range_usize b bc c -> produces_Range_usize a (Seq.(++) ab bc) c
+  
+  function produces_refl_Range_usize (self: t_Range_usize) : ()
+  
+  axiom produces_refl_Range_usize_spec:
+    forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
+  
+  function produces_trans_Range_usize'0 (a: t_Range_usize) (ab: Seq.seq UInt64.t) (b: t_Range_usize) (bc: Seq.seq UInt64.t) (c: t_Range_usize) : ()
+  
+  axiom produces_trans_Range_usize_spec'0:
+    forall a: t_Range_usize, ab: Seq.seq UInt64.t, b: t_Range_usize, bc: Seq.seq UInt64.t, c: t_Range_usize. produces_Range_usize a ab b
+      -> produces_Range_usize b bc c -> produces_Range_usize a (Seq.(++) ab bc) c
+  
+  function produces_refl_Range_usize'0 (self: t_Range_usize) : ()
+  
+  axiom produces_refl_Range_usize_spec'0:
+    forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
+  
+  type t_MapInv_Range_usize_closure3 = { iter: t_Range_usize; func: closure3; produced: Seq.seq UInt64.t }
+  
+  predicate inv_usize [@inline:trivial] (_1: UInt64.t) = true
+  
+  meta "rewrite_def" predicate inv_usize
+  
+  predicate precondition_closure3 [@inline:trivial] (self: closure3) (args: tup2_usize_Snapshot_Seq_usize) =
+    let {f0 = _0; f1 = _1} = args in true
+  
+  meta "rewrite_def" predicate precondition_closure3
+  
+  predicate resolve_refmut_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Range_usize
+  
+  predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
+    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+  
+  predicate next_precondition_Range_usize [@inline:trivial] (iter'0: t_Range_usize) (func'0: closure3) (produced'0: Seq.seq UInt64.t) =
+    forall e: UInt64.t, i: t_Range_usize. inv_usize e /\ produces_Range_usize iter'0 (Seq.singleton e) i
+      -> precondition_closure3 func'0 { f0 = e; f1 = produced'0 }
+  
+  meta "rewrite_def" predicate next_precondition_Range_usize
+  
+  predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_usize
+  
+  predicate inv_refmut_closure3 [@inline:trivial] (_1: MutBorrow.t closure3) = true
+  
+  meta "rewrite_def" predicate inv_refmut_closure3
+  
+  predicate preservation_Range_usize [@inline:trivial] (iter'0: t_Range_usize) (func'0: closure3) =
+    forall s: Seq.seq UInt64.t, e1: UInt64.t, e2: UInt64.t, f: MutBorrow.t closure3, b: t_Vec_usize_Global, i: t_Range_usize. hist_inv_closure3 func'0 f.current
+      -> inv_Seq_usize s /\ inv_usize e1 /\ inv_usize e2 /\ inv_refmut_closure3 f
+      -> produces_Range_usize iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
+      -> postcondition_mut_closure3 f.current { f0 = e1; f1 = s } f.final b
+      -> precondition_closure3 f.final { f0 = e2; f1 = Seq.snoc s e1 }
+  
+  meta "rewrite_def" predicate preservation_Range_usize
+  
+  predicate reinitialize_Range_usize [@inline:trivial] =
+    forall iter'0: MutBorrow.t t_Range_usize, func'0: closure3. completed_Range_usize iter'0
+      -> next_precondition_Range_usize iter'0.final func'0 (Seq.empty: Seq.seq UInt64.t)
+      /\ preservation_Range_usize iter'0.final func'0
+  
+  meta "rewrite_def" predicate reinitialize_Range_usize
+  
+  predicate preservation_inv_Range_usize (iter'0: t_Range_usize) (func'0: closure3) (produced'0: Seq.seq UInt64.t)
+  
+  axiom preservation_inv_Range_usize_spec:
+    forall iter'0: t_Range_usize, func'0: closure3, produced'0: Seq.seq UInt64.t [preservation_inv_Range_usize iter'0 func'0 produced'0]. produced'0
+        = (Seq.empty: Seq.seq UInt64.t)
+      -> preservation_inv_Range_usize iter'0 func'0 produced'0 = preservation_Range_usize iter'0 func'0
+  
+  predicate invariant_MapInv_Range_usize_closure3 (self: t_MapInv_Range_usize_closure3) =
+    reinitialize_Range_usize
+    /\ preservation_inv_Range_usize self.iter self.func self.produced
+    /\ next_precondition_Range_usize self.iter self.func self.produced
+  
+  predicate inv_MapInv_Range_usize_closure3 (_1: t_MapInv_Range_usize_closure3)
+  
+  axiom inv_axiom [@rewrite]:
+    forall x: t_MapInv_Range_usize_closure3 [inv_MapInv_Range_usize_closure3 x]. inv_MapInv_Range_usize_closure3 x
+      = invariant_MapInv_Range_usize_closure3 x
+  
+  let rec map_inv_Range_usize (self: t_Range_usize) (func'0: closure3) (return (x: t_MapInv_Range_usize_closure3)) =
+    {[@stop_split] [@expl:map_inv_Range_usize requires] ([@stop_split] [@expl:map_inv requires #0] forall e: UInt64.t, i2: t_Range_usize. produces_Range_usize self (Seq.singleton e) i2
+          /\ inv_usize e -> precondition_closure3 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt64.t })
+    /\ ([@stop_split] [@expl:map_inv requires #1] reinitialize_Range_usize)
+    /\ ([@stop_split] [@expl:map_inv requires #2] preservation_Range_usize self func'0)}
+    any
+    [ return (result: t_MapInv_Range_usize_closure3) ->
+    {[@stop_split] [@expl:map_inv_Range_usize ensures] ([@stop_split] [@expl:map_inv result type invariant] inv_MapInv_Range_usize_closure3 result)
+      /\ ([@stop_split] [@expl:map_inv ensures] result
+      = { iter = self; func = func'0; produced = Seq.empty: Seq.seq UInt64.t })}
+      (! return {result}) ]
+  
+  type t_Vec_Vec_usize_Global_Global
+  
+  predicate resolve_MapInv_Range_usize_closure3 [@inline:trivial] (_1: t_MapInv_Range_usize_closure3) = true
+  
+  meta "rewrite_def" predicate resolve_MapInv_Range_usize_closure3
+  
+  predicate produces_MapInv_Range_usize_closure3 [@inline:trivial] (self: t_MapInv_Range_usize_closure3) (visited: Seq.seq t_Vec_usize_Global) (succ: t_MapInv_Range_usize_closure3) =
+    hist_inv_closure3 self.func succ.func
+    /\ (exists fs: Seq.seq (MutBorrow.t closure3). Seq.length fs = Seq.length visited
+      /\ (exists s: Seq.seq UInt64.t. Seq.length s = Seq.length visited
+        /\ produces_Range_usize self.iter s succ.iter
+        /\ succ.produced = Seq.(++) self.produced s
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            self.func = succ.func
+          else
+            (Seq.get fs 0).current = self.func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.func
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv_closure3 self.func (Seq.get fs i).current
+          /\ postcondition_mut_closure3 (Seq.get fs i).current { f0 = Seq.get s i;
+                                                                 f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
+  
+  meta "rewrite_def" predicate produces_MapInv_Range_usize_closure3
+  
+  function produces_trans_MapInv_Range_usize_closure3 (a: t_MapInv_Range_usize_closure3) (ab: Seq.seq t_Vec_usize_Global) (b: t_MapInv_Range_usize_closure3) (bc: Seq.seq t_Vec_usize_Global) (c: t_MapInv_Range_usize_closure3) : ()
+  
+  axiom produces_trans_MapInv_Range_usize_closure3_spec:
+    forall a: t_MapInv_Range_usize_closure3, ab: Seq.seq t_Vec_usize_Global, b: t_MapInv_Range_usize_closure3, bc: Seq.seq t_Vec_usize_Global, c: t_MapInv_Range_usize_closure3. produces_MapInv_Range_usize_closure3 a ab b
+      -> produces_MapInv_Range_usize_closure3 b bc c -> produces_MapInv_Range_usize_closure3 a (Seq.(++) ab bc) c
+  
+  function produces_refl_MapInv_Range_usize_closure3 (self: t_MapInv_Range_usize_closure3) : ()
+  
+  axiom produces_refl_MapInv_Range_usize_closure3_spec:
+    forall self: t_MapInv_Range_usize_closure3. produces_MapInv_Range_usize_closure3 self (Seq.empty: Seq.seq t_Vec_usize_Global) self
+  
+  predicate completed_MapInv_Range_usize_closure3 (self: MutBorrow.t t_MapInv_Range_usize_closure3) =
+    self.final.produced = (Seq.empty: Seq.seq UInt64.t)
+    /\ completed_Range_usize (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
+    /\ self.current.func = self.final.func
+  
+  function view_Vec_Vec_usize_Global_Global (self: t_Vec_Vec_usize_Global_Global) : Seq.seq t_Vec_usize_Global
+  
+  axiom view_Vec_Vec_usize_Global_Global_spec:
+    forall self: t_Vec_Vec_usize_Global_Global [view_Vec_Vec_usize_Global_Global self]. Seq.length (view_Vec_Vec_usize_Global_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate from_iter_post_Vec_Vec_usize_Global_Global (prod: Seq.seq t_Vec_usize_Global) (res: t_Vec_Vec_usize_Global_Global) =
+    prod = view_Vec_Vec_usize_Global_Global res
+  
+  let rec collect_MapInv_Range_usize_closure3 (self_: t_MapInv_Range_usize_closure3)
+    (return (x: t_Vec_Vec_usize_Global_Global)) =
+    {[@stop_split] [@expl:collect 'self_' type invariant] inv_MapInv_Range_usize_closure3 self_}
+    any
+    [ return (result: t_Vec_Vec_usize_Global_Global) ->
+    {[@stop_split] [@expl:collect ensures] exists done': MutBorrow.t t_MapInv_Range_usize_closure3, prod: Seq.seq t_Vec_usize_Global. resolve_MapInv_Range_usize_closure3 done'.final
+        /\ completed_MapInv_Range_usize_closure3 done'
+        /\ produces_MapInv_Range_usize_closure3 self_ prod done'.current
+        /\ from_iter_post_Vec_Vec_usize_Global_Global prod result}
+      (! return {result}) ]
+  
+  type t_Board = { size: UInt64.t; field: t_Vec_Vec_usize_Global_Global }
+  
+  function index_Vec_Vec_usize_Global_Global [@inline:trivial] (self: t_Vec_Vec_usize_Global_Global) (ix: int) : t_Vec_usize_Global
+   = Seq.get (view_Vec_Vec_usize_Global_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_Vec_usize_Global_Global
+  
+  predicate wf (self: t_Board) =
+    UInt64.t'int self.size <= 1000
+    /\ Seq.length (view_Vec_Vec_usize_Global_Global self.field) = UInt64.t'int self.size
+    /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.size
+      -> Seq.length (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global self.field i)) = UInt64.t'int self.size)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec new (size'0: UInt64.t) (return (x: t_Board)) = {[@stop_split] [@expl:new requires] UInt64.t'int size'0
+    <= 1000}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_9 <- { start = (0: UInt64.t); end' = size'0 } ] s1
+      | s1 = [ &_11 <- { c0 = size'0 } ] s2
+      | s2 = map_inv_Range_usize {_9} {_11} (fun (_x: t_MapInv_Range_usize_closure3) -> [ &_8 <- _x ] s3)
+      | s3 = collect_MapInv_Range_usize_closure3 {_8} (fun (_x: t_Vec_Vec_usize_Global_Global) -> [ &rows <- _x ] s4)
+      | s4 = [ &_ret <- { size = size'0; field = rows } ] s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Board = Any.any_l ()
+    | & size'0: UInt64.t = size'0
+    | & rows: t_Vec_Vec_usize_Global_Global = Any.any_l ()
+    | & _8: t_MapInv_Range_usize_closure3 = Any.any_l ()
+    | & _9: t_Range_usize = Any.any_l ()
+    | & _11: closure3 = Any.any_l () ])
+    [ return (result: t_Board) -> {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new ensures #0] result.size
+        = size'0)
+      /\ ([@stop_split] [@expl:new ensures #1] wf result)}
+      (! return {result}) ]
+end
+module M_impl_Board__set (* Board *)
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int64
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Vec_Vec_usize_Global_Global
+  
+  type t_Board = { size: UInt64.t; field: t_Vec_Vec_usize_Global_Global }
+  
+  type t_Point = { x: Int64.t; y: Int64.t }
+  
+  type t_Vec_usize_Global
+  
+  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec_usize_Global) =
+    UInt64.t'int self < Seq.length seq
+  
+  meta "rewrite_def" predicate in_bounds_usize
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_Vec_usize_Global_Global (self: t_Vec_Vec_usize_Global_Global) : Seq.seq t_Vec_usize_Global
+  
+  axiom view_Vec_Vec_usize_Global_Global_spec:
+    forall self: t_Vec_Vec_usize_Global_Global [view_Vec_Vec_usize_Global_Global self]. Seq.length (view_Vec_Vec_usize_Global_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec_usize_Global) (out: t_Vec_usize_Global) =
+    Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value_usize
+  
+  predicate resolve_elswhere_usize [@inline:trivial] (self: UInt64.t) (old': Seq.seq t_Vec_usize_Global) (fin: Seq.seq t_Vec_usize_Global) =
+    forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+  
+  meta "rewrite_def" predicate resolve_elswhere_usize
+  
+  let rec index_mut_Vec_Vec_usize_Global_Global (self_: MutBorrow.t t_Vec_Vec_usize_Global_Global) (ix: UInt64.t)
+    (return (x'0: MutBorrow.t t_Vec_usize_Global)) =
+    {[@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_Vec_usize_Global_Global self_.current)}
+    any
+    [ return (result: MutBorrow.t t_Vec_usize_Global) ->
+    {[@stop_split] [@expl:index_mut_Vec_Vec_usize_Global_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize ix (view_Vec_Vec_usize_Global_Global self_.current) result.current)
+      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize ix (view_Vec_Vec_usize_Global_Global self_.final) result.final)
+      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_Vec_usize_Global_Global self_.current) (view_Vec_Vec_usize_Global_Global self_.final))
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_Vec_usize_Global_Global self_.final)
+      = Seq.length (view_Vec_Vec_usize_Global_Global self_.current))}
+      (! return {result}) ]
+  
+  predicate in_bounds_usize'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
+    UInt64.t'int self < Seq.length seq
+  
+  meta "rewrite_def" predicate in_bounds_usize'0
+  
+  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
+  
+  axiom view_Vec_usize_Global_spec:
+    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate has_value_usize'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) (out: UInt64.t) =
+    Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value_usize'0
+  
+  predicate resolve_elswhere_usize'0 [@inline:trivial] (self: UInt64.t) (old': Seq.seq UInt64.t) (fin: Seq.seq UInt64.t) =
+    forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+  
+  meta "rewrite_def" predicate resolve_elswhere_usize'0
+  
+  let rec index_mut_Vec_usize_Global (self_: MutBorrow.t t_Vec_usize_Global) (ix: UInt64.t)
+    (return (x'0: MutBorrow.t UInt64.t)) =
+    {[@stop_split] [@expl:index_mut requires] in_bounds_usize'0 ix (view_Vec_usize_Global self_.current)}
+    any
+    [ return (result: MutBorrow.t UInt64.t) ->
+    {[@stop_split] [@expl:index_mut_Vec_usize_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize'0 ix (view_Vec_usize_Global self_.current) result.current)
+      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize'0 ix (view_Vec_usize_Global self_.final) result.final)
+      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize'0 ix (view_Vec_usize_Global self_.current) (view_Vec_usize_Global self_.final))
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_usize_Global self_.final)
+      = Seq.length (view_Vec_usize_Global self_.current))}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_usize
+  
+  predicate resolve_refmut_Vec_usize_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_usize_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Vec_usize_Global
+  
+  predicate resolve_refmut_Board [@inline:trivial] (_1: MutBorrow.t t_Board) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Board
+  
+  function index_Vec_Vec_usize_Global_Global [@inline:trivial] (self: t_Vec_Vec_usize_Global_Global) (ix: int) : t_Vec_usize_Global
+   = Seq.get (view_Vec_Vec_usize_Global_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_Vec_usize_Global_Global
+  
+  predicate wf (self: t_Board) =
+    UInt64.t'int self.size <= 1000
+    /\ Seq.length (view_Vec_Vec_usize_Global_Global self.field) = UInt64.t'int self.size
+    /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.size
+      -> Seq.length (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global self.field i)) = UInt64.t'int self.size)
+  
+  predicate in_bounds (self: t_Board) (p: t_Point) =
+    0 <= Int64.to_int p.x
+    /\ Int64.to_int p.x < UInt64.t'int self.size /\ 0 <= Int64.to_int p.y /\ Int64.to_int p.y < UInt64.t'int self.size
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec set (self: MutBorrow.t t_Board) (p: t_Point) (v: UInt64.t) (return (x'0: ())) =
+    {[@stop_split] [@expl:set requires] ([@stop_split] [@expl:set requires #0] wf self.current)
+    /\ ([@stop_split] [@expl:set requires #1] in_bounds self.current p)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <t_Vec_Vec_usize_Global_Global> {self.current.field}
+          {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+          (fun (_bor: MutBorrow.t t_Vec_Vec_usize_Global_Global) ->
+            [ &_17 <- _bor ] [ &self <- { self with current = { self.current with field = _bor.final } } ] s1)
+      | s1 = [ &_18 <- UInt64.of_int (Int64.to_int p.x) ] s2
+      | s2 = index_mut_Vec_Vec_usize_Global_Global {_17} {_18}
+          (fun (_x: MutBorrow.t t_Vec_usize_Global) -> [ &_16 <- _x ] s3)
+      | s3 = MutBorrow.borrow_final <t_Vec_usize_Global> {_16.current} {MutBorrow.get_id _16}
+          (fun (_bor: MutBorrow.t t_Vec_usize_Global) ->
+            [ &_15 <- _bor ] [ &_16 <- { _16 with current = _bor.final } ] s4)
+      | s4 = [ &_20 <- UInt64.of_int (Int64.to_int p.y) ] s5
+      | s5 = index_mut_Vec_usize_Global {_15} {_20} (fun (_x: MutBorrow.t UInt64.t) -> [ &_14 <- _x ] s6)
+      | s6 = [ &_14 <- { _14 with current = v } ] s7
+      | s7 = -{resolve_refmut_usize _14}- s8
+      | s8 = -{resolve_refmut_Vec_usize_Global _16}- s9
+      | s9 = -{resolve_refmut_Board self}- s10
+      | s10 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t t_Board = self
+    | & p: t_Point = p
+    | & v: UInt64.t = v
+    | & _14: MutBorrow.t UInt64.t = Any.any_l ()
+    | & _15: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
+    | & _16: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
+    | & _17: MutBorrow.t t_Vec_Vec_usize_Global_Global = Any.any_l ()
+    | & _18: UInt64.t = Any.any_l ()
+    | & _20: UInt64.t = Any.any_l () ])
+    [ return (result: ()) -> {[@stop_split] [@expl:set ensures] ([@stop_split] [@expl:set ensures #0] wf self.final)
+      /\ ([@stop_split] [@expl:set ensures #1] self.final.size = self.current.size)}
+      (! return {result}) ]
+end
+module M_impl_Clone_for_Point__clone (* <Point as std::clone::Clone> *)
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  
+  type t_Point = { x: Int64.t; y: Int64.t }
+  
+  let rec clone_isize (self_: Int64.t) (return (x'0: Int64.t)) = any
+    [ return (result: Int64.t) -> {[@stop_split] [@expl:clone ensures] result = self_} (! return {result}) ]
+  
+  predicate postcondition_once_clone [@inline:trivial] (self: ()) (args: Int64.t) (result: Int64.t) =
+    let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_once_clone
+  
+  predicate resolve_clone [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_clone
+  
+  predicate postcondition_mut_clone [@inline:trivial] (self: ()) (args: Int64.t) (result_state: ()) (result: Int64.t) =
+    let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_mut_clone
+  
+  function fn_mut_once_clone (self: ()) (args: Int64.t) (res: Int64.t) : ()
+  
+  axiom fn_mut_once_clone_spec: forall self: (), args: Int64.t, res: Int64.t. postcondition_once_clone self args res
+      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
+  
+  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
+  
+  meta "rewrite_def" predicate hist_inv_clone
+  
+  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
+      -> hist_inv_clone b c -> hist_inv_clone self c
+  
+  function hist_inv_refl_clone (self: ()) : ()
+  
+  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
+  
+  function postcondition_mut_hist_inv_clone (self: ()) (args: Int64.t) (res_state: ()) (res: Int64.t) : ()
+  
+  axiom postcondition_mut_hist_inv_clone_spec:
+    forall self: (), args: Int64.t, res_state: (), res: Int64.t. postcondition_mut_clone self args res_state res
+      -> hist_inv_clone self res_state
+  
+  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
+  
+  predicate postcondition_clone [@inline:trivial] (self: ()) (args: Int64.t) (result: Int64.t) =
+    let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_clone
+  
+  function fn_once_clone (self: ()) (args: Int64.t) (res: Int64.t) : ()
+  
+  axiom fn_once_clone_spec: forall self: (), args: Int64.t, res: Int64.t. postcondition_once_clone self args res
+      = (postcondition_clone self args res /\ resolve_clone self)
+  
+  function fn_mut_clone (self: ()) (args: Int64.t) (res_state: ()) (res: Int64.t) : ()
+  
+  axiom fn_mut_clone_spec:
+    forall self: (), args: Int64.t, res_state: (), res: Int64.t. postcondition_mut_clone self args res_state res
+      = (postcondition_clone self args res /\ self = res_state)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec clone_Point (self: t_Point) (return (x'0: t_Point)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_6 <- self.x ] s1
+      | s1 = clone_isize {_6} (fun (_x: Int64.t) -> [ &_4 <- _x ] s2)
+      | s2 = [ &_9 <- self.y ] s3
+      | s3 = clone_isize {_9} (fun (_x: Int64.t) -> [ &_7 <- _x ] s4)
+      | s4 = [ &_ret <- { x = _4; y = _7 } ] s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Point = Any.any_l ()
+    | & self: t_Point = self
+    | & _4: Int64.t = Any.any_l ()
+    | & _6: Int64.t = Any.any_l ()
+    | & _7: Int64.t = Any.any_l ()
+    | & _9: Int64.t = Any.any_l () ])
+    [ return (result: t_Point) -> {[@stop_split] [@expl:clone ensures] postcondition_clone () self.x result.x
+      /\ postcondition_clone () self.y result.y}
+      (! return {result}) ]
+end
+module M_impl_Point__mov (* Point *)
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  use int.Int
+  
+  type tup2_isize_isize = { f0: Int64.t; f1: Int64.t }
+  
+  type t_Point = { x: Int64.t; y: Int64.t }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec mov (self: t_Point) (p: tup2_isize_isize) (return (x'0: t_Point)) =
+    {[@stop_split] [@expl:mov requires] ([@stop_split] [@expl:mov requires #0] - 10000 <= Int64.to_int self.x
+      /\ Int64.to_int self.x <= 10000)
+    /\ ([@stop_split] [@expl:mov requires #1] - 10000 <= Int64.to_int self.y /\ Int64.to_int self.y <= 10000)
+    /\ ([@stop_split] [@expl:mov requires #2] - 10000 <= Int64.to_int p.f0 /\ Int64.to_int p.f0 <= 10000)
+    /\ ([@stop_split] [@expl:mov requires #3] - 10000 <= Int64.to_int p.f1 /\ Int64.to_int p.f1 <= 10000)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = Int64.add {self.x} {p.f0} (fun (_x: Int64.t) -> [ &_17 <- _x ] s1)
+      | s1 = Int64.add {self.y} {p.f1} (fun (_x: Int64.t) -> [ &_20 <- _x ] s2)
+      | s2 = [ &_ret <- { x = _17; y = _20 } ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_Point = Any.any_l ()
+    | & self: t_Point = self
+    | & p: tup2_isize_isize = p
+    | & _17: Int64.t = Any.any_l ()
+    | & _20: Int64.t = Any.any_l () ])
+    [ return (result: t_Point) ->
+    {[@stop_split] [@expl:mov ensures] ([@stop_split] [@expl:mov ensures #0] Int64.to_int result.x
+        = Int64.to_int self.x + Int64.to_int p.f0)
+      /\ ([@stop_split] [@expl:mov ensures #1] Int64.to_int result.y = Int64.to_int self.y + Int64.to_int p.f1)}
+      (! return {result}) ]
 end
 module M_knights_tour
   use creusot.int.UInt64
@@ -706,956 +1472,190 @@ module M_knights_tour
     | & _124: () = Any.any_l ()
     | & _125: MutBorrow.t t_Board = Any.any_l () ]) [ return (result: t_Option_Board) -> (! return {result}) ]
 end
-module M_impl_Clone_for_Point__clone (* <Point as std::clone::Clone> *)
-  use creusot.int.Int64
-  use creusot.prelude.Any
-  
-  type t_Point = { x: Int64.t; y: Int64.t }
-  
-  let rec clone_isize (self_: Int64.t) (return (x'0: Int64.t)) = any
-    [ return (result: Int64.t) -> {[@stop_split] [@expl:clone ensures] result = self_} (! return {result}) ]
-  
-  predicate postcondition_once_clone [@inline:trivial] (self: ()) (args: Int64.t) (result: Int64.t) =
-    let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_clone
-  
-  predicate resolve_clone [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_clone
-  
-  predicate postcondition_mut_clone [@inline:trivial] (self: ()) (args: Int64.t) (result_state: ()) (result: Int64.t) =
-    let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_clone
-  
-  function fn_mut_once_clone (self: ()) (args: Int64.t) (res: Int64.t) : ()
-  
-  axiom fn_mut_once_clone_spec: forall self: (), args: Int64.t, res: Int64.t. postcondition_once_clone self args res
-      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
-  
-  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_clone
-  
-  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
-      -> hist_inv_clone b c -> hist_inv_clone self c
-  
-  function hist_inv_refl_clone (self: ()) : ()
-  
-  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
-  
-  function postcondition_mut_hist_inv_clone (self: ()) (args: Int64.t) (res_state: ()) (res: Int64.t) : ()
-  
-  axiom postcondition_mut_hist_inv_clone_spec:
-    forall self: (), args: Int64.t, res_state: (), res: Int64.t. postcondition_mut_clone self args res_state res
-      -> hist_inv_clone self res_state
-  
-  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
-  
-  predicate postcondition_clone [@inline:trivial] (self: ()) (args: Int64.t) (result: Int64.t) =
-    let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_clone
-  
-  function fn_once_clone (self: ()) (args: Int64.t) (res: Int64.t) : ()
-  
-  axiom fn_once_clone_spec: forall self: (), args: Int64.t, res: Int64.t. postcondition_once_clone self args res
-      = (postcondition_clone self args res /\ resolve_clone self)
-  
-  function fn_mut_clone (self: ()) (args: Int64.t) (res_state: ()) (res: Int64.t) : ()
-  
-  axiom fn_mut_clone_spec:
-    forall self: (), args: Int64.t, res_state: (), res: Int64.t. postcondition_mut_clone self args res_state res
-      = (postcondition_clone self args res /\ self = res_state)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec clone_Point (self: t_Point) (return (x'0: t_Point)) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_6 <- self.x ] s1
-      | s1 = clone_isize {_6} (fun (_x: Int64.t) -> [ &_4 <- _x ] s2)
-      | s2 = [ &_9 <- self.y ] s3
-      | s3 = clone_isize {_9} (fun (_x: Int64.t) -> [ &_7 <- _x ] s4)
-      | s4 = [ &_ret <- { x = _4; y = _7 } ] s5
-      | s5 = return {_ret} ] ]
-    [ & _ret: t_Point = Any.any_l ()
-    | & self: t_Point = self
-    | & _4: Int64.t = Any.any_l ()
-    | & _6: Int64.t = Any.any_l ()
-    | & _7: Int64.t = Any.any_l ()
-    | & _9: Int64.t = Any.any_l () ])
-    [ return (result: t_Point) -> {[@stop_split] [@expl:clone ensures] postcondition_clone () self.x result.x
-      /\ postcondition_clone () self.y result.y}
-      (! return {result}) ]
-end
-module M_impl_Point__mov (* Point *)
-  use creusot.int.Int64
-  use creusot.prelude.Any
-  use int.Int
-  
-  type tup2_isize_isize = { f0: Int64.t; f1: Int64.t }
-  
-  type t_Point = { x: Int64.t; y: Int64.t }
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec mov (self: t_Point) (p: tup2_isize_isize) (return (x'0: t_Point)) =
-    {[@stop_split] [@expl:mov requires] ([@stop_split] [@expl:mov requires #0] - 10000 <= Int64.to_int self.x
-      /\ Int64.to_int self.x <= 10000)
-    /\ ([@stop_split] [@expl:mov requires #1] - 10000 <= Int64.to_int self.y /\ Int64.to_int self.y <= 10000)
-    /\ ([@stop_split] [@expl:mov requires #2] - 10000 <= Int64.to_int p.f0 /\ Int64.to_int p.f0 <= 10000)
-    /\ ([@stop_split] [@expl:mov requires #3] - 10000 <= Int64.to_int p.f1 /\ Int64.to_int p.f1 <= 10000)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = Int64.add {self.x} {p.f0} (fun (_x: Int64.t) -> [ &_17 <- _x ] s1)
-      | s1 = Int64.add {self.y} {p.f1} (fun (_x: Int64.t) -> [ &_20 <- _x ] s2)
-      | s2 = [ &_ret <- { x = _17; y = _20 } ] s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: t_Point = Any.any_l ()
-    | & self: t_Point = self
-    | & p: tup2_isize_isize = p
-    | & _17: Int64.t = Any.any_l ()
-    | & _20: Int64.t = Any.any_l () ])
-    [ return (result: t_Point) ->
-    {[@stop_split] [@expl:mov ensures] ([@stop_split] [@expl:mov ensures #0] Int64.to_int result.x
-        = Int64.to_int self.x + Int64.to_int p.f0)
-      /\ ([@stop_split] [@expl:mov ensures #1] Int64.to_int result.y = Int64.to_int self.y + Int64.to_int p.f1)}
-      (! return {result}) ]
-end
-module M_impl_Board__new (* Board *)
+module M_min
   use creusot.int.UInt64
-  use creusot.prelude.MutBorrow
-  use seq.Seq
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Range_usize = { start: UInt64.t; end': UInt64.t }
-  
-  type closure3 = { c0: UInt64.t }
-  
-  predicate resolve_refmut_closure3 [@inline:trivial] (_1: MutBorrow.t closure3) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_closure3
-  
-  type t_Vec_usize_Global
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
-  
-  axiom view_Vec_usize_Global_spec:
-    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
-      <= UInt64.t'int const_MAX
-  
-  function index_Vec_usize_Global [@inline:trivial] (self: t_Vec_usize_Global) (ix: int) : UInt64.t =
-    Seq.get (view_Vec_usize_Global self) ix
-  
-  meta "rewrite_def" function index_Vec_usize_Global
-  
-  let rec from_elem_usize (elem: UInt64.t) (n: UInt64.t) (return (x: t_Vec_usize_Global)) = any
-    [ return (result: t_Vec_usize_Global) ->
-    {[@stop_split] [@expl:from_elem_usize ensures] ([@stop_split] [@expl:from_elem ensures #0] Seq.length (view_Vec_usize_Global result)
-        = UInt64.t'int n)
-      /\ ([@stop_split] [@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
-        -> index_Vec_usize_Global result i = elem)}
-      (! return {result}) ]
-  
-  type tup2_usize_Snapshot_Seq_usize = { f0: UInt64.t; f1: Seq.seq UInt64.t }
-  
-  predicate postcondition_once_closure3 [@inline:trivial] (self: closure3) (args: tup2_usize_Snapshot_Seq_usize) (result: t_Vec_usize_Global) =
-    let {f0 = _0; f1 = _1} = args in Seq.length (view_Vec_usize_Global result) = UInt64.t'int self.c0
-  
-  meta "rewrite_def" predicate postcondition_once_closure3
-  
-  predicate resolve_closure3 [@inline:trivial] (_1: closure3) = true
-  
-  meta "rewrite_def" predicate resolve_closure3
-  
-  predicate hist_inv_closure3 [@inline:trivial] (self: closure3) (result_state: closure3) = result_state.c0 = self.c0
-  
-  meta "rewrite_def" predicate hist_inv_closure3
-  
-  predicate postcondition_mut_closure3 [@inline:trivial] (self: closure3) (args: tup2_usize_Snapshot_Seq_usize) (result_state: closure3) (result: t_Vec_usize_Global) =
-    let {f0 = _0; f1 = _1} = args in Seq.length (view_Vec_usize_Global result) = UInt64.t'int result_state.c0
-    /\ hist_inv_closure3 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure3
-  
-  function fn_mut_once_closure3 (self: closure3) (args: tup2_usize_Snapshot_Seq_usize) (res: t_Vec_usize_Global) : ()
-  
-  axiom fn_mut_once_closure3_spec:
-    forall self: closure3, args: tup2_usize_Snapshot_Seq_usize, res: t_Vec_usize_Global. postcondition_once_closure3 self args res
-      = (exists res_state: closure3. postcondition_mut_closure3 self args res_state res /\ resolve_closure3 res_state)
-  
-  function hist_inv_trans_closure3 (self: closure3) (b: closure3) (c: closure3) : ()
-  
-  axiom hist_inv_trans_closure3_spec: forall self: closure3, b: closure3, c: closure3. hist_inv_closure3 self b
-      -> hist_inv_closure3 b c -> hist_inv_closure3 self c
-  
-  function hist_inv_refl_closure3 (self: closure3) : ()
-  
-  axiom hist_inv_refl_closure3_spec: forall self: closure3. hist_inv_closure3 self self
-  
-  function postcondition_mut_hist_inv_closure3 (self: closure3) (args: tup2_usize_Snapshot_Seq_usize) (res_state: closure3) (res: t_Vec_usize_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_closure3_spec:
-    forall self: closure3, args: tup2_usize_Snapshot_Seq_usize, res_state: closure3, res: t_Vec_usize_Global. postcondition_mut_closure3 self args res_state res
-      -> hist_inv_closure3 self res_state
-  
-  let rec closure3 (self: MutBorrow.t closure3) (_0: UInt64.t) (_1: Seq.seq UInt64.t) (return (x: t_Vec_usize_Global)) =
-    (! bb0
-    [ bb0 = s0
-      [ s0 = -{resolve_refmut_closure3 self}- s1
-      | s1 = from_elem_usize {(0: UInt64.t)} {self.current.c0} (fun (_x: t_Vec_usize_Global) -> [ &res <- _x ] s2)
-      | s2 = [ &_ret <- res ] s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: t_Vec_usize_Global = Any.any_l ()
-    | & self: MutBorrow.t closure3 = self
-    | & res: t_Vec_usize_Global = Any.any_l () ])
-    [ return (result: t_Vec_usize_Global) ->
-    {[@stop_split] [@expl:closure3 ensures] ([@stop_split] [@expl:closure ensures] Seq.length (view_Vec_usize_Global result)
-        = UInt64.t'int self.final.c0)
-      /\ ([@stop_split] [@expl:closure hist_inv post] hist_inv_closure3 self.current self.final)}
-      (! return {result}) ]
-  
-  function deep_model_usize [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
-  
-  meta "rewrite_def" function deep_model_usize
-  
-  predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
-    self.end' = o.end'
-    /\ deep_model_usize self.start <= deep_model_usize o.start
-    /\ (Seq.length visited > 0 -> deep_model_usize o.start <= deep_model_usize o.end')
-    /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
-  
-  function produces_trans_Range_usize (a: t_Range_usize) (ab: Seq.seq UInt64.t) (b: t_Range_usize) (bc: Seq.seq UInt64.t) (c: t_Range_usize) : ()
-  
-  axiom produces_trans_Range_usize_spec:
-    forall a: t_Range_usize, ab: Seq.seq UInt64.t, b: t_Range_usize, bc: Seq.seq UInt64.t, c: t_Range_usize. produces_Range_usize a ab b
-      -> produces_Range_usize b bc c -> produces_Range_usize a (Seq.(++) ab bc) c
-  
-  function produces_refl_Range_usize (self: t_Range_usize) : ()
-  
-  axiom produces_refl_Range_usize_spec:
-    forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
-  
-  function produces_trans_Range_usize'0 (a: t_Range_usize) (ab: Seq.seq UInt64.t) (b: t_Range_usize) (bc: Seq.seq UInt64.t) (c: t_Range_usize) : ()
-  
-  axiom produces_trans_Range_usize_spec'0:
-    forall a: t_Range_usize, ab: Seq.seq UInt64.t, b: t_Range_usize, bc: Seq.seq UInt64.t, c: t_Range_usize. produces_Range_usize a ab b
-      -> produces_Range_usize b bc c -> produces_Range_usize a (Seq.(++) ab bc) c
-  
-  function produces_refl_Range_usize'0 (self: t_Range_usize) : ()
-  
-  axiom produces_refl_Range_usize_spec'0:
-    forall self: t_Range_usize. produces_Range_usize self (Seq.empty: Seq.seq UInt64.t) self
-  
-  type t_MapInv_Range_usize_closure3 = { iter: t_Range_usize; func: closure3; produced: Seq.seq UInt64.t }
-  
-  predicate inv_usize [@inline:trivial] (_1: UInt64.t) = true
-  
-  meta "rewrite_def" predicate inv_usize
-  
-  predicate precondition_closure3 [@inline:trivial] (self: closure3) (args: tup2_usize_Snapshot_Seq_usize) =
-    let {f0 = _0; f1 = _1} = args in true
-  
-  meta "rewrite_def" predicate precondition_closure3
-  
-  predicate resolve_refmut_Range_usize [@inline:trivial] (_1: MutBorrow.t t_Range_usize) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Range_usize
-  
-  predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
-  
-  predicate next_precondition_Range_usize [@inline:trivial] (iter'0: t_Range_usize) (func'0: closure3) (produced'0: Seq.seq UInt64.t) =
-    forall e: UInt64.t, i: t_Range_usize. inv_usize e /\ produces_Range_usize iter'0 (Seq.singleton e) i
-      -> precondition_closure3 func'0 { f0 = e; f1 = produced'0 }
-  
-  meta "rewrite_def" predicate next_precondition_Range_usize
-  
-  predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
-  
-  meta "rewrite_def" predicate inv_Seq_usize
-  
-  predicate inv_refmut_closure3 [@inline:trivial] (_1: MutBorrow.t closure3) = true
-  
-  meta "rewrite_def" predicate inv_refmut_closure3
-  
-  predicate preservation_Range_usize [@inline:trivial] (iter'0: t_Range_usize) (func'0: closure3) =
-    forall s: Seq.seq UInt64.t, e1: UInt64.t, e2: UInt64.t, f: MutBorrow.t closure3, b: t_Vec_usize_Global, i: t_Range_usize. hist_inv_closure3 func'0 f.current
-      -> inv_Seq_usize s /\ inv_usize e1 /\ inv_usize e2 /\ inv_refmut_closure3 f
-      -> produces_Range_usize iter'0 (Seq.snoc (Seq.snoc s e1) e2) i
-      -> postcondition_mut_closure3 f.current { f0 = e1; f1 = s } f.final b
-      -> precondition_closure3 f.final { f0 = e2; f1 = Seq.snoc s e1 }
-  
-  meta "rewrite_def" predicate preservation_Range_usize
-  
-  predicate reinitialize_Range_usize [@inline:trivial] =
-    forall iter'0: MutBorrow.t t_Range_usize, func'0: closure3. completed_Range_usize iter'0
-      -> next_precondition_Range_usize iter'0.final func'0 (Seq.empty: Seq.seq UInt64.t)
-      /\ preservation_Range_usize iter'0.final func'0
-  
-  meta "rewrite_def" predicate reinitialize_Range_usize
-  
-  predicate preservation_inv_Range_usize (iter'0: t_Range_usize) (func'0: closure3) (produced'0: Seq.seq UInt64.t)
-  
-  axiom preservation_inv_Range_usize_spec:
-    forall iter'0: t_Range_usize, func'0: closure3, produced'0: Seq.seq UInt64.t [preservation_inv_Range_usize iter'0 func'0 produced'0]. produced'0
-        = (Seq.empty: Seq.seq UInt64.t)
-      -> preservation_inv_Range_usize iter'0 func'0 produced'0 = preservation_Range_usize iter'0 func'0
-  
-  predicate invariant_MapInv_Range_usize_closure3 (self: t_MapInv_Range_usize_closure3) =
-    reinitialize_Range_usize
-    /\ preservation_inv_Range_usize self.iter self.func self.produced
-    /\ next_precondition_Range_usize self.iter self.func self.produced
-  
-  predicate inv_MapInv_Range_usize_closure3 (_1: t_MapInv_Range_usize_closure3)
-  
-  axiom inv_axiom [@rewrite]:
-    forall x: t_MapInv_Range_usize_closure3 [inv_MapInv_Range_usize_closure3 x]. inv_MapInv_Range_usize_closure3 x
-      = invariant_MapInv_Range_usize_closure3 x
-  
-  let rec map_inv_Range_usize (self: t_Range_usize) (func'0: closure3) (return (x: t_MapInv_Range_usize_closure3)) =
-    {[@stop_split] [@expl:map_inv_Range_usize requires] ([@stop_split] [@expl:map_inv requires #0] forall e: UInt64.t, i2: t_Range_usize. produces_Range_usize self (Seq.singleton e) i2
-          /\ inv_usize e -> precondition_closure3 func'0 { f0 = e; f1 = Seq.empty: Seq.seq UInt64.t })
-    /\ ([@stop_split] [@expl:map_inv requires #1] reinitialize_Range_usize)
-    /\ ([@stop_split] [@expl:map_inv requires #2] preservation_Range_usize self func'0)}
-    any
-    [ return (result: t_MapInv_Range_usize_closure3) ->
-    {[@stop_split] [@expl:map_inv_Range_usize ensures] ([@stop_split] [@expl:map_inv result type invariant] inv_MapInv_Range_usize_closure3 result)
-      /\ ([@stop_split] [@expl:map_inv ensures] result
-      = { iter = self; func = func'0; produced = Seq.empty: Seq.seq UInt64.t })}
-      (! return {result}) ]
-  
-  type t_Vec_Vec_usize_Global_Global
-  
-  predicate resolve_MapInv_Range_usize_closure3 [@inline:trivial] (_1: t_MapInv_Range_usize_closure3) = true
-  
-  meta "rewrite_def" predicate resolve_MapInv_Range_usize_closure3
-  
-  predicate produces_MapInv_Range_usize_closure3 [@inline:trivial] (self: t_MapInv_Range_usize_closure3) (visited: Seq.seq t_Vec_usize_Global) (succ: t_MapInv_Range_usize_closure3) =
-    hist_inv_closure3 self.func succ.func
-    /\ (exists fs: Seq.seq (MutBorrow.t closure3). Seq.length fs = Seq.length visited
-      /\ (exists s: Seq.seq UInt64.t. Seq.length s = Seq.length visited
-        /\ produces_Range_usize self.iter s succ.iter
-        /\ succ.produced = Seq.(++) self.produced s
-        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
-        /\ (if Seq.length visited = 0 then
-            self.func = succ.func
-          else
-            (Seq.get fs 0).current = self.func /\ (Seq.get fs (Seq.length visited - 1)).final = succ.func
-          )
-        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> hist_inv_closure3 self.func (Seq.get fs i).current
-          /\ postcondition_mut_closure3 (Seq.get fs i).current { f0 = Seq.get s i;
-                                                                 f1 = Seq.(++) self.produced (Seq.([..]) s 0 i) } (Seq.get fs i).final (Seq.get visited i))))
-  
-  meta "rewrite_def" predicate produces_MapInv_Range_usize_closure3
-  
-  function produces_trans_MapInv_Range_usize_closure3 (a: t_MapInv_Range_usize_closure3) (ab: Seq.seq t_Vec_usize_Global) (b: t_MapInv_Range_usize_closure3) (bc: Seq.seq t_Vec_usize_Global) (c: t_MapInv_Range_usize_closure3) : ()
-  
-  axiom produces_trans_MapInv_Range_usize_closure3_spec:
-    forall a: t_MapInv_Range_usize_closure3, ab: Seq.seq t_Vec_usize_Global, b: t_MapInv_Range_usize_closure3, bc: Seq.seq t_Vec_usize_Global, c: t_MapInv_Range_usize_closure3. produces_MapInv_Range_usize_closure3 a ab b
-      -> produces_MapInv_Range_usize_closure3 b bc c -> produces_MapInv_Range_usize_closure3 a (Seq.(++) ab bc) c
-  
-  function produces_refl_MapInv_Range_usize_closure3 (self: t_MapInv_Range_usize_closure3) : ()
-  
-  axiom produces_refl_MapInv_Range_usize_closure3_spec:
-    forall self: t_MapInv_Range_usize_closure3. produces_MapInv_Range_usize_closure3 self (Seq.empty: Seq.seq t_Vec_usize_Global) self
-  
-  predicate completed_MapInv_Range_usize_closure3 (self: MutBorrow.t t_MapInv_Range_usize_closure3) =
-    self.final.produced = (Seq.empty: Seq.seq UInt64.t)
-    /\ completed_Range_usize (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
-    /\ self.current.func = self.final.func
-  
-  function view_Vec_Vec_usize_Global_Global (self: t_Vec_Vec_usize_Global_Global) : Seq.seq t_Vec_usize_Global
-  
-  axiom view_Vec_Vec_usize_Global_Global_spec:
-    forall self: t_Vec_Vec_usize_Global_Global [view_Vec_Vec_usize_Global_Global self]. Seq.length (view_Vec_Vec_usize_Global_Global self)
-      <= UInt64.t'int const_MAX
-  
-  predicate from_iter_post_Vec_Vec_usize_Global_Global (prod: Seq.seq t_Vec_usize_Global) (res: t_Vec_Vec_usize_Global_Global) =
-    prod = view_Vec_Vec_usize_Global_Global res
-  
-  let rec collect_MapInv_Range_usize_closure3 (self_: t_MapInv_Range_usize_closure3)
-    (return (x: t_Vec_Vec_usize_Global_Global)) =
-    {[@stop_split] [@expl:collect 'self_' type invariant] inv_MapInv_Range_usize_closure3 self_}
-    any
-    [ return (result: t_Vec_Vec_usize_Global_Global) ->
-    {[@stop_split] [@expl:collect ensures] exists done': MutBorrow.t t_MapInv_Range_usize_closure3, prod: Seq.seq t_Vec_usize_Global. resolve_MapInv_Range_usize_closure3 done'.final
-        /\ completed_MapInv_Range_usize_closure3 done'
-        /\ produces_MapInv_Range_usize_closure3 self_ prod done'.current
-        /\ from_iter_post_Vec_Vec_usize_Global_Global prod result}
-      (! return {result}) ]
-  
-  type t_Board = { size: UInt64.t; field: t_Vec_Vec_usize_Global_Global }
-  
-  function index_Vec_Vec_usize_Global_Global [@inline:trivial] (self: t_Vec_Vec_usize_Global_Global) (ix: int) : t_Vec_usize_Global
-   = Seq.get (view_Vec_Vec_usize_Global_Global self) ix
-  
-  meta "rewrite_def" function index_Vec_Vec_usize_Global_Global
-  
-  predicate wf (self: t_Board) =
-    UInt64.t'int self.size <= 1000
-    /\ Seq.length (view_Vec_Vec_usize_Global_Global self.field) = UInt64.t'int self.size
-    /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.size
-      -> Seq.length (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global self.field i)) = UInt64.t'int self.size)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec new (size'0: UInt64.t) (return (x: t_Board)) = {[@stop_split] [@expl:new requires] UInt64.t'int size'0
-    <= 1000}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_9 <- { start = (0: UInt64.t); end' = size'0 } ] s1
-      | s1 = [ &_11 <- { c0 = size'0 } ] s2
-      | s2 = map_inv_Range_usize {_9} {_11} (fun (_x: t_MapInv_Range_usize_closure3) -> [ &_8 <- _x ] s3)
-      | s3 = collect_MapInv_Range_usize_closure3 {_8} (fun (_x: t_Vec_Vec_usize_Global_Global) -> [ &rows <- _x ] s4)
-      | s4 = [ &_ret <- { size = size'0; field = rows } ] s5
-      | s5 = return {_ret} ] ]
-    [ & _ret: t_Board = Any.any_l ()
-    | & size'0: UInt64.t = size'0
-    | & rows: t_Vec_Vec_usize_Global_Global = Any.any_l ()
-    | & _8: t_MapInv_Range_usize_closure3 = Any.any_l ()
-    | & _9: t_Range_usize = Any.any_l ()
-    | & _11: closure3 = Any.any_l () ])
-    [ return (result: t_Board) -> {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new ensures #0] result.size
-        = size'0)
-      /\ ([@stop_split] [@expl:new ensures #1] wf result)}
-      (! return {result}) ]
-end
-module M_impl_Board__available (* Board *)
   use creusot.int.Int64
-  use creusot.int.UInt64
   use seq.Seq
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Point = { x: Int64.t; y: Int64.t }
-  
-  type t_Vec_Vec_usize_Global_Global
-  
-  type t_Board = { size: UInt64.t; field: t_Vec_Vec_usize_Global_Global }
-  
-  type t_Vec_usize_Global
-  
-  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec_usize_Global) =
-    UInt64.t'int self < Seq.length seq
-  
-  meta "rewrite_def" predicate in_bounds_usize
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function view_Vec_Vec_usize_Global_Global (self: t_Vec_Vec_usize_Global_Global) : Seq.seq t_Vec_usize_Global
-  
-  axiom view_Vec_Vec_usize_Global_Global_spec:
-    forall self: t_Vec_Vec_usize_Global_Global [view_Vec_Vec_usize_Global_Global self]. Seq.length (view_Vec_Vec_usize_Global_Global self)
-      <= UInt64.t'int const_MAX
-  
-  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec_usize_Global) (out: t_Vec_usize_Global) =
-    Seq.get seq (UInt64.t'int self) = out
-  
-  meta "rewrite_def" predicate has_value_usize
-  
-  let rec index_Vec_Vec_usize_Global_Global (self_: t_Vec_Vec_usize_Global_Global) (ix: UInt64.t)
-    (return (x'0: t_Vec_usize_Global)) =
-    {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_Vec_usize_Global_Global self_)}
-    any
-    [ return (result: t_Vec_usize_Global) ->
-    {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_Vec_usize_Global_Global self_) result}
-      (! return {result}) ]
-  
-  predicate in_bounds_usize'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
-    UInt64.t'int self < Seq.length seq
-  
-  meta "rewrite_def" predicate in_bounds_usize'0
-  
-  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
-  
-  axiom view_Vec_usize_Global_spec:
-    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
-      <= UInt64.t'int const_MAX
-  
-  predicate has_value_usize'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) (out: UInt64.t) =
-    Seq.get seq (UInt64.t'int self) = out
-  
-  meta "rewrite_def" predicate has_value_usize'0
-  
-  let rec index_Vec_usize_Global (self_: t_Vec_usize_Global) (ix: UInt64.t) (return (x'0: UInt64.t)) =
-    {[@stop_split] [@expl:index requires] in_bounds_usize'0 ix (view_Vec_usize_Global self_)}
-    any
-    [ return (result: UInt64.t) ->
-    {[@stop_split] [@expl:index ensures] has_value_usize'0 ix (view_Vec_usize_Global self_) result}
-      (! return {result}) ]
-  
-  function index_Vec_Vec_usize_Global_Global'0 [@inline:trivial] (self: t_Vec_Vec_usize_Global_Global) (ix: int) : t_Vec_usize_Global
-   = Seq.get (view_Vec_Vec_usize_Global_Global self) ix
-  
-  meta "rewrite_def" function index_Vec_Vec_usize_Global_Global'0
-  
-  predicate wf (self: t_Board) =
-    UInt64.t'int self.size <= 1000
-    /\ Seq.length (view_Vec_Vec_usize_Global_Global self.field) = UInt64.t'int self.size
-    /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.size
-      -> Seq.length (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global'0 self.field i)) = UInt64.t'int self.size)
-  
-  predicate in_bounds (self: t_Board) (p: t_Point) =
-    0 <= Int64.to_int p.x
-    /\ Int64.to_int p.x < UInt64.t'int self.size /\ 0 <= Int64.to_int p.y /\ Int64.to_int p.y < UInt64.t'int self.size
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec available (self: t_Board) (p: t_Point) (return (x'0: bool)) =
-    {[@stop_split] [@expl:available requires] wf self}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_8 <- Int64.le (0: Int64.t) p.x ] s1 | s1 = any [ br0 -> {_8 = false} (! bb9) | br1 -> {_8} (! bb1) ] ]
-    | bb1 = s0
-      [ s0 = [ &_11 <- UInt64.of_int (Int64.to_int p.x) ] s1
-      | s1 = [ &_10 <- UInt64.lt _11 self.size ] s2
-      | s2 = any [ br0 -> {_10 = false} (! bb9) | br1 -> {_10} (! bb2) ] ]
-    | bb2 = s0
-      [ s0 = [ &_14 <- Int64.le (0: Int64.t) p.y ] s1
-      | s1 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb3) ] ]
-    | bb3 = s0
-      [ s0 = [ &_17 <- UInt64.of_int (Int64.to_int p.y) ] s1
-      | s1 = [ &_16 <- UInt64.lt _17 self.size ] s2
-      | s2 = any [ br0 -> {_16 = false} (! bb9) | br1 -> {_16} (! bb4) ] ]
-    | bb4 = s0
-      [ s0 = [ &_25 <- UInt64.of_int (Int64.to_int p.x) ] s1
-      | s1 = index_Vec_Vec_usize_Global_Global {self.field} {_25} (fun (_x: t_Vec_usize_Global) -> [ &_23 <- _x ] s2)
-      | s2 = [ &_27 <- UInt64.of_int (Int64.to_int p.y) ] s3
-      | s3 = index_Vec_usize_Global {_23} {_27} (fun (_x: UInt64.t) -> [ &_21 <- _x ] s4)
-      | s4 = [ &_ret <- _21 = (0: UInt64.t) ] s5
-      | s5 = return {_ret} ]
-    | bb9 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l ()
-    | & self: t_Board = self
-    | & p: t_Point = p
-    | & _8: bool = Any.any_l ()
-    | & _10: bool = Any.any_l ()
-    | & _11: UInt64.t = Any.any_l ()
-    | & _14: bool = Any.any_l ()
-    | & _16: bool = Any.any_l ()
-    | & _17: UInt64.t = Any.any_l ()
-    | & _21: UInt64.t = Any.any_l ()
-    | & _23: t_Vec_usize_Global = Any.any_l ()
-    | & _25: UInt64.t = Any.any_l ()
-    | & _27: UInt64.t = Any.any_l () ])
-    [ return (result: bool) -> {[@stop_split] [@expl:available ensures] result -> in_bounds self p}
-      (! return {result}) ]
-end
-module M_impl_Board__count_degree (* Board *)
-  use creusot.int.UInt64
-  use seq.Seq
-  use creusot.int.Int64
+  use creusot.slice.Slice64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use int.Int
   
-  type t_Vec_tup2_isize_isize_Global
+  type t_Point = { x: Int64.t; y: Int64.t }
   
-  type tup2_isize_isize = { f0: Int64.t; f1: Int64.t }
+  type tup2_usize_Point = { f0: UInt64.t; f1: t_Point }
+  
+  type t_Option_ref_tup2_usize_Point = None | Some tup2_usize_Point
+  
+  type t_Vec_tup2_usize_Point_Global
+  
+  type t_Iter_tup2_usize_Point
+  
+  predicate inv_Iter_tup2_usize_Point (_1: t_Iter_tup2_usize_Point)
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  function view_Vec_tup2_isize_isize_Global (self: t_Vec_tup2_isize_isize_Global) : Seq.seq tup2_isize_isize
+  function view_Vec_tup2_usize_Point_Global (self: t_Vec_tup2_usize_Point_Global) : Seq.seq tup2_usize_Point
   
-  axiom view_Vec_tup2_isize_isize_Global_spec:
-    forall self: t_Vec_tup2_isize_isize_Global [view_Vec_tup2_isize_isize_Global self]. Seq.length (view_Vec_tup2_isize_isize_Global self)
+  axiom view_Vec_tup2_usize_Point_Global_spec:
+    forall self: t_Vec_tup2_usize_Point_Global [view_Vec_tup2_usize_Point_Global self]. Seq.length (view_Vec_tup2_usize_Point_Global self)
       <= UInt64.t'int const_MAX
   
-  function index_Vec_tup2_isize_isize_Global [@inline:trivial] (self: t_Vec_tup2_isize_isize_Global) (ix: int) : tup2_isize_isize
-   = Seq.get (view_Vec_tup2_isize_isize_Global self) ix
+  function view_Iter_tup2_usize_Point (self: t_Iter_tup2_usize_Point) : Slice64.slice tup2_usize_Point
   
-  meta "rewrite_def" function index_Vec_tup2_isize_isize_Global
-  
-  let rec moves (return (x: t_Vec_tup2_isize_isize_Global)) = any
-    [ return (result: t_Vec_tup2_isize_isize_Global) ->
-    {[@stop_split] [@expl:moves ensures] ([@stop_split] [@expl:moves ensures #0] Seq.length (view_Vec_tup2_isize_isize_Global result)
-        = 8)
-      /\ ([@stop_split] [@expl:moves ensures #1] forall i: int. 0 <= i /\ i < 8
-        -> - 2 <= Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f0
-        /\ Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f0 <= 2
-        /\ - 2 <= Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f1
-        /\ Int64.to_int (index_Vec_tup2_isize_isize_Global result i).f1 <= 2)}
+  let rec into_iter_ref_Vec_tup2_usize_Point_Global (self_: t_Vec_tup2_usize_Point_Global)
+    (return (x'0: t_Iter_tup2_usize_Point)) = any
+    [ return (result: t_Iter_tup2_usize_Point) ->
+    {[@stop_split] [@expl:into_iter_ref_Vec_tup2_usize_Point_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_tup2_usize_Point result)
+      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_tup2_usize_Point_Global self_
+      = Slice64.view (view_Iter_tup2_usize_Point result))}
       (! return {result}) ]
   
-  type t_IntoIter_tup2_isize_isize_Global
+  predicate invariant_refmut_Iter_tup2_usize_Point [@inline:trivial] (self: MutBorrow.t t_Iter_tup2_usize_Point) =
+    inv_Iter_tup2_usize_Point self.current /\ inv_Iter_tup2_usize_Point self.final
   
-  predicate inv_IntoIter_tup2_isize_isize_Global (_1: t_IntoIter_tup2_isize_isize_Global)
+  meta "rewrite_def" predicate invariant_refmut_Iter_tup2_usize_Point
   
-  function view_IntoIter_tup2_isize_isize_Global (self: t_IntoIter_tup2_isize_isize_Global) : Seq.seq tup2_isize_isize
+  predicate inv_refmut_Iter_tup2_usize_Point [@inline:trivial] (_1: MutBorrow.t t_Iter_tup2_usize_Point) =
+    invariant_refmut_Iter_tup2_usize_Point _1
   
-  let rec into_iter_Vec_tup2_isize_isize_Global (self_: t_Vec_tup2_isize_isize_Global)
-    (return (x: t_IntoIter_tup2_isize_isize_Global)) = any
-    [ return (result: t_IntoIter_tup2_isize_isize_Global) ->
-    {[@stop_split] [@expl:into_iter_Vec_tup2_isize_isize_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_IntoIter_tup2_isize_isize_Global result)
-      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_tup2_isize_isize_Global self_
-      = view_IntoIter_tup2_isize_isize_Global result)}
-      (! return {result}) ]
+  meta "rewrite_def" predicate inv_refmut_Iter_tup2_usize_Point
   
-  type t_Option_tup2_isize_isize = None | Some tup2_isize_isize
+  function index_slice_tup2_usize_Point [@inline:trivial] (self: Slice64.slice tup2_usize_Point) (ix: int) : tup2_usize_Point
+   = Seq.get (Slice64.view self) ix
   
-  predicate invariant_refmut_IntoIter_tup2_isize_isize_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
-    inv_IntoIter_tup2_isize_isize_Global self.current /\ inv_IntoIter_tup2_isize_isize_Global self.final
+  meta "rewrite_def" function index_slice_tup2_usize_Point
   
-  meta "rewrite_def" predicate invariant_refmut_IntoIter_tup2_isize_isize_Global
+  function to_ref_seq_slice_tup2_usize_Point (self: Slice64.slice tup2_usize_Point) : Seq.seq tup2_usize_Point
   
-  predicate inv_refmut_IntoIter_tup2_isize_isize_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
-    invariant_refmut_IntoIter_tup2_isize_isize_Global _1
+  axiom to_ref_seq_slice_tup2_usize_Point_spec:
+    forall self: Slice64.slice tup2_usize_Point [to_ref_seq_slice_tup2_usize_Point self]. Seq.length (to_ref_seq_slice_tup2_usize_Point self)
+      = Seq.length (Slice64.view self)
   
-  meta "rewrite_def" predicate inv_refmut_IntoIter_tup2_isize_isize_Global
+  axiom to_ref_seq_slice_tup2_usize_Point_spec'0:
+    forall self: Slice64.slice tup2_usize_Point [to_ref_seq_slice_tup2_usize_Point self]. forall i: int. 0 <= i
+          /\ i < Seq.length (to_ref_seq_slice_tup2_usize_Point self)
+        -> Seq.get (to_ref_seq_slice_tup2_usize_Point self) i = index_slice_tup2_usize_Point self i
   
-  predicate produces_IntoIter_tup2_isize_isize_Global (self: t_IntoIter_tup2_isize_isize_Global) (visited: Seq.seq tup2_isize_isize) (rhs: t_IntoIter_tup2_isize_isize_Global) =
-    view_IntoIter_tup2_isize_isize_Global self = Seq.(++) visited (view_IntoIter_tup2_isize_isize_Global rhs)
+  predicate produces_Iter_tup2_usize_Point (self: t_Iter_tup2_usize_Point) (visited: Seq.seq tup2_usize_Point) (tl: t_Iter_tup2_usize_Point) =
+    to_ref_seq_slice_tup2_usize_Point (view_Iter_tup2_usize_Point self)
+    = Seq.(++) visited (to_ref_seq_slice_tup2_usize_Point (view_Iter_tup2_usize_Point tl))
   
-  function produces_trans_IntoIter_tup2_isize_isize_Global (a: t_IntoIter_tup2_isize_isize_Global) (ab: Seq.seq tup2_isize_isize) (b: t_IntoIter_tup2_isize_isize_Global) (bc: Seq.seq tup2_isize_isize) (c: t_IntoIter_tup2_isize_isize_Global) : ()
+  function produces_trans_Iter_tup2_usize_Point (a: t_Iter_tup2_usize_Point) (ab: Seq.seq tup2_usize_Point) (b: t_Iter_tup2_usize_Point) (bc: Seq.seq tup2_usize_Point) (c: t_Iter_tup2_usize_Point) : ()
   
-  axiom produces_trans_IntoIter_tup2_isize_isize_Global_spec:
-    forall a: t_IntoIter_tup2_isize_isize_Global, ab: Seq.seq tup2_isize_isize, b: t_IntoIter_tup2_isize_isize_Global, bc: Seq.seq tup2_isize_isize, c: t_IntoIter_tup2_isize_isize_Global. produces_IntoIter_tup2_isize_isize_Global a ab b
-      -> produces_IntoIter_tup2_isize_isize_Global b bc c
-      -> produces_IntoIter_tup2_isize_isize_Global a (Seq.(++) ab bc) c
+  axiom produces_trans_Iter_tup2_usize_Point_spec:
+    forall a: t_Iter_tup2_usize_Point, ab: Seq.seq tup2_usize_Point, b: t_Iter_tup2_usize_Point, bc: Seq.seq tup2_usize_Point, c: t_Iter_tup2_usize_Point. produces_Iter_tup2_usize_Point a ab b
+      -> produces_Iter_tup2_usize_Point b bc c -> produces_Iter_tup2_usize_Point a (Seq.(++) ab bc) c
   
-  function produces_refl_IntoIter_tup2_isize_isize_Global (self: t_IntoIter_tup2_isize_isize_Global) : ()
+  function produces_refl_Iter_tup2_usize_Point (self: t_Iter_tup2_usize_Point) : ()
   
-  axiom produces_refl_IntoIter_tup2_isize_isize_Global_spec:
-    forall self: t_IntoIter_tup2_isize_isize_Global. produces_IntoIter_tup2_isize_isize_Global self (Seq.empty: Seq.seq tup2_isize_isize) self
+  axiom produces_refl_Iter_tup2_usize_Point_spec:
+    forall self: t_Iter_tup2_usize_Point. produces_Iter_tup2_usize_Point self (Seq.empty: Seq.seq tup2_usize_Point) self
   
-  predicate resolve_refmut_IntoIter_tup2_isize_isize_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
+  predicate resolve_refmut_Iter_tup2_usize_Point [@inline:trivial] (_1: MutBorrow.t t_Iter_tup2_usize_Point) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_IntoIter_tup2_isize_isize_Global
+  meta "rewrite_def" predicate resolve_refmut_Iter_tup2_usize_Point
   
-  predicate completed_IntoIter_tup2_isize_isize_Global (self: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) =
-    resolve_refmut_IntoIter_tup2_isize_isize_Global self
-    /\ view_IntoIter_tup2_isize_isize_Global self.current = (Seq.empty: Seq.seq tup2_isize_isize)
+  predicate completed_Iter_tup2_usize_Point (self: MutBorrow.t t_Iter_tup2_usize_Point) =
+    resolve_refmut_Iter_tup2_usize_Point self
+    /\ Slice64.view (view_Iter_tup2_usize_Point self.current) = (Seq.empty: Seq.seq tup2_usize_Point)
   
-  let rec next_IntoIter_tup2_isize_isize_Global (self_: MutBorrow.t t_IntoIter_tup2_isize_isize_Global)
-    (return (x: t_Option_tup2_isize_isize)) =
-    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_IntoIter_tup2_isize_isize_Global self_}
+  let rec next_Iter_tup2_usize_Point (self_: MutBorrow.t t_Iter_tup2_usize_Point)
+    (return (x'0: t_Option_ref_tup2_usize_Point)) =
+    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_tup2_usize_Point self_}
     any
-    [ return (result: t_Option_tup2_isize_isize) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_IntoIter_tup2_isize_isize_Global self_
-        | Some v -> produces_IntoIter_tup2_isize_isize_Global self_.current (Seq.singleton v) self_.final
+    [ return (result: t_Option_ref_tup2_usize_Point) -> {[@stop_split] [@expl:next ensures] match result with
+        | None -> completed_Iter_tup2_usize_Point self_
+        | Some v -> produces_Iter_tup2_usize_Point self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
   
-  predicate inv_Seq_tup2_isize_isize [@inline:trivial] (_1: Seq.seq tup2_isize_isize) = true
+  function index_Vec_tup2_usize_Point_Global [@inline:trivial] (self: t_Vec_tup2_usize_Point_Global) (ix: int) : tup2_usize_Point
+   = Seq.get (view_Vec_tup2_usize_Point_Global self) ix
   
-  meta "rewrite_def" predicate inv_Seq_tup2_isize_isize
+  meta "rewrite_def" function index_Vec_tup2_usize_Point_Global
   
-  let rec elim_Some (_x: t_Option_tup2_isize_isize) (return (f0'0: tup2_isize_isize)) = any
-    [ _k (f0'0: tup2_isize_isize) -> {Some f0'0 = _x} (! return {f0'0})
+  predicate inv_Seq_ref_tup2_usize_Point [@inline:trivial] (_1: Seq.seq tup2_usize_Point) = true
+  
+  meta "rewrite_def" predicate inv_Seq_ref_tup2_usize_Point
+  
+  let rec elim_Some (_x: t_Option_ref_tup2_usize_Point) (return (f0'0: tup2_usize_Point)) = any
+    [ _k (f0'0: tup2_usize_Point) -> {Some f0'0 = _x} (! return {f0'0})
     | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
       any) ]
   
-  type t_Point = { x: Int64.t; y: Int64.t }
-  
-  let rec mov (self: t_Point) (p: tup2_isize_isize) (return (x'0: t_Point)) =
-    {[@stop_split] [@expl:mov requires] ([@stop_split] [@expl:mov requires #0] - 10000 <= Int64.to_int self.x
-      /\ Int64.to_int self.x <= 10000)
-    /\ ([@stop_split] [@expl:mov requires #1] - 10000 <= Int64.to_int self.y /\ Int64.to_int self.y <= 10000)
-    /\ ([@stop_split] [@expl:mov requires #2] - 10000 <= Int64.to_int p.f0 /\ Int64.to_int p.f0 <= 10000)
-    /\ ([@stop_split] [@expl:mov requires #3] - 10000 <= Int64.to_int p.f1 /\ Int64.to_int p.f1 <= 10000)}
-    any
-    [ return (result: t_Point) ->
-    {[@stop_split] [@expl:mov ensures] ([@stop_split] [@expl:mov ensures #0] Int64.to_int result.x
-        = Int64.to_int self.x + Int64.to_int p.f0)
-      /\ ([@stop_split] [@expl:mov ensures #1] Int64.to_int result.y = Int64.to_int self.y + Int64.to_int p.f1)}
-      (! return {result}) ]
-  
-  type t_Vec_Vec_usize_Global_Global
-  
-  type t_Board = { size: UInt64.t; field: t_Vec_Vec_usize_Global_Global }
-  
-  type t_Vec_usize_Global
-  
-  function view_Vec_Vec_usize_Global_Global (self: t_Vec_Vec_usize_Global_Global) : Seq.seq t_Vec_usize_Global
-  
-  axiom view_Vec_Vec_usize_Global_Global_spec:
-    forall self: t_Vec_Vec_usize_Global_Global [view_Vec_Vec_usize_Global_Global self]. Seq.length (view_Vec_Vec_usize_Global_Global self)
-      <= UInt64.t'int const_MAX
-  
-  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
-  
-  axiom view_Vec_usize_Global_spec:
-    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
-      <= UInt64.t'int const_MAX
-  
-  function index_Vec_Vec_usize_Global_Global [@inline:trivial] (self: t_Vec_Vec_usize_Global_Global) (ix: int) : t_Vec_usize_Global
-   = Seq.get (view_Vec_Vec_usize_Global_Global self) ix
-  
-  meta "rewrite_def" function index_Vec_Vec_usize_Global_Global
-  
-  predicate wf (self: t_Board) =
-    UInt64.t'int self.size <= 1000
-    /\ Seq.length (view_Vec_Vec_usize_Global_Global self.field) = UInt64.t'int self.size
-    /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.size
-      -> Seq.length (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global self.field i)) = UInt64.t'int self.size)
-  
-  predicate in_bounds (self: t_Board) (p: t_Point) =
-    0 <= Int64.to_int p.x
-    /\ Int64.to_int p.x < UInt64.t'int self.size /\ 0 <= Int64.to_int p.y /\ Int64.to_int p.y < UInt64.t'int self.size
-  
-  let rec available (self: t_Board) (p: t_Point) (return (x'0: bool)) =
-    {[@stop_split] [@expl:available requires] wf self}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:available ensures] result -> in_bounds self p}
-      (! return {result}) ]
-  
-  predicate resolve_tup2_isize_isize [@inline:trivial] (_1: tup2_isize_isize) = true
-  
-  meta "rewrite_def" predicate resolve_tup2_isize_isize
-  
-  predicate resolve_IntoIter_tup2_isize_isize_Global [@inline:trivial] (self: t_IntoIter_tup2_isize_isize_Global) =
-    forall i: int. 0 <= i /\ i < Seq.length (view_IntoIter_tup2_isize_isize_Global self)
-      -> resolve_tup2_isize_isize (Seq.get (view_IntoIter_tup2_isize_isize_Global self) i)
-  
-  meta "rewrite_def" predicate resolve_IntoIter_tup2_isize_isize_Global
-  
-  predicate resolve_IntoIter_tup2_isize_isize_Global'0 (_1: t_IntoIter_tup2_isize_isize_Global)
-  
-  axiom resolve_axiom:
-    forall x'0: t_IntoIter_tup2_isize_isize_Global [resolve_IntoIter_tup2_isize_isize_Global'0 x'0]. resolve_IntoIter_tup2_isize_isize_Global'0 x'0
-      -> resolve_IntoIter_tup2_isize_isize_Global x'0
+  predicate resolve_Iter_tup2_usize_Point (_1: t_Iter_tup2_usize_Point)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec count_degree (self: t_Board) (p: t_Point) (return (x'0: UInt64.t)) =
-    {[@stop_split] [@expl:count_degree requires] ([@stop_split] [@expl:count_degree requires #0] wf self)
-    /\ ([@stop_split] [@expl:count_degree requires #1] in_bounds self p)}
-    (! bb0
+  let rec min (v: t_Vec_tup2_usize_Point_Global) (return (x'0: t_Option_ref_tup2_usize_Point)) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &count <- (0: UInt64.t) ] s1
-      | s1 = moves (fun (_x: t_Vec_tup2_isize_isize_Global) -> [ &_11 <- _x ] s2)
-      | s2 = into_iter_Vec_tup2_isize_isize_Global {_11}
-          (fun (_x: t_IntoIter_tup2_isize_isize_Global) -> [ &iter <- _x ] s3)
-      | s3 = [ &iter_old <- iter ] s4
-      | s4 = [ &produced <- Seq.empty: Seq.seq tup2_isize_isize ] s5
-      | s5 = bb5 ]
-    | bb5 = bb5
-      [ bb5 = {[@expl:inferred invariant: type invariant] inv_IntoIter_tup2_isize_isize_Global iter}
-        {[@expl:for invariant] inv_Seq_tup2_isize_isize produced}
-        {[@expl:for invariant] produces_IntoIter_tup2_isize_isize_Global iter_old produced iter}
-        {[@expl:loop invariant] UInt64.t'int count <= Seq.length produced}
+      [ s0 = [ &min'0 <- None ] s1
+      | s1 = into_iter_ref_Vec_tup2_usize_Point_Global {v} (fun (_x: t_Iter_tup2_usize_Point) -> [ &iter <- _x ] s2)
+      | s2 = [ &iter_old <- iter ] s3
+      | s3 = [ &produced <- Seq.empty: Seq.seq tup2_usize_Point ] s4
+      | s4 = bb4 ]
+    | bb4 = bb4
+      [ bb4 = {[@expl:inferred invariant: type invariant] inv_Iter_tup2_usize_Point iter}
+        {[@expl:for invariant] inv_Seq_ref_tup2_usize_Point produced}
+        {[@expl:for invariant] produces_Iter_tup2_usize_Point iter_old produced iter}
+        {[@expl:loop invariant] forall r: tup2_usize_Point. min'0 = Some r
+          -> (exists i: int. 0 <= i
+            /\ i < Seq.length (view_Vec_tup2_usize_Point_Global v) /\ index_Vec_tup2_usize_Point_Global v i = r)}
         (! s0)
-        [ s0 = MutBorrow.borrow_mut <t_IntoIter_tup2_isize_isize_Global> {iter}
-            (fun (_bor: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) ->
-              [ &_32 <- _bor ] -{inv_IntoIter_tup2_isize_isize_Global _bor.final}-
-              [ &iter <- _bor.final ] s1)
-          [ _ck -> (! {[@expl:type invariant] inv_IntoIter_tup2_isize_isize_Global iter} any) ]
-        | s1 = MutBorrow.borrow_final <t_IntoIter_tup2_isize_isize_Global> {_32.current} {MutBorrow.get_id _32}
-            (fun (_bor: MutBorrow.t t_IntoIter_tup2_isize_isize_Global) ->
-              [ &_31 <- _bor ] -{inv_IntoIter_tup2_isize_isize_Global _bor.final}-
-              [ &_32 <- { _32 with current = _bor.final } ] s2)
-          [ _ck -> (! {[@expl:type invariant] inv_IntoIter_tup2_isize_isize_Global _32.current} any) ]
-        | s2 = next_IntoIter_tup2_isize_isize_Global {_31} (fun (_x: t_Option_tup2_isize_isize) -> [ &_30 <- _x ] s3)
-        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_IntoIter_tup2_isize_isize_Global _32} any) ]
-        | s4 = -{resolve_refmut_IntoIter_tup2_isize_isize_Global _32}- s5
-        | s5 = any [ br0 -> {_30 = None} (! bb10) | br1 (x0: tup2_isize_isize) -> {_30 = Some x0} (! bb11) ] ]
-        [ bb11 = s0
-          [ s0 = elim_Some {_30} (fun (r0: tup2_isize_isize) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+        [ s0 = MutBorrow.borrow_mut <t_Iter_tup2_usize_Point> {iter}
+            (fun (_bor: MutBorrow.t t_Iter_tup2_usize_Point) ->
+              [ &_28 <- _bor ] -{inv_Iter_tup2_usize_Point _bor.final}-
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Iter_tup2_usize_Point iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Iter_tup2_usize_Point> {_28.current} {MutBorrow.get_id _28}
+            (fun (_bor: MutBorrow.t t_Iter_tup2_usize_Point) ->
+              [ &_27 <- _bor ] -{inv_Iter_tup2_usize_Point _bor.final}-
+              [ &_28 <- { _28 with current = _bor.final } ] s2)
+          [ _ck -> (! {[@expl:type invariant] inv_Iter_tup2_usize_Point _28.current} any) ]
+        | s2 = next_Iter_tup2_usize_Point {_27} (fun (_x: t_Option_ref_tup2_usize_Point) -> [ &_26 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_tup2_usize_Point _28} any) ]
+        | s4 = -{resolve_refmut_Iter_tup2_usize_Point _28}- s5
+        | s5 = any [ br0 -> {_26 = None} (! bb9) | br1 (x0: tup2_usize_Point) -> {_26 = Some x0} (! bb10) ] ]
+        [ bb10 = s0
+          [ s0 = elim_Some {_26} (fun (r0: tup2_usize_Point) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = [ &m <- __creusot_proc_iter_elem ] s3
-          | s3 = [ &_44 <- m ] s4
-          | s4 = mov {p} {_44} (fun (_x: t_Point) -> [ &next <- _x ] s5)
-          | s5 = available {self} {next} (fun (_x: bool) -> [ &_45 <- _x ] s6)
-          | s6 = any [ br0 -> {_45 = false} (! bb5) | br1 -> {_45} (! bb15) ] ]
-        | bb15 = s0
-          [ s0 = UInt64.add {count} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &count <- _x ] s1) | s1 = bb5 ] ] ]
-    | bb10 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_IntoIter_tup2_isize_isize_Global iter} any) ]
-      | s1 = -{resolve_IntoIter_tup2_isize_isize_Global'0 iter}- s2
-      | s2 = [ &_ret <- count ] s3
+          | s2 = [ &x'0 <- __creusot_proc_iter_elem ] s3
+          | s3 = any [ br0 -> {min'0 = None} (! bb15) | br1 (x0: tup2_usize_Point) -> {min'0 = Some x0} (! bb14) ] ]
+        | bb14 = s0
+          [ s0 = elim_Some {min'0} (fun (r0: tup2_usize_Point) -> [ &m <- r0 ] s1)
+          | s1 = [ &_42 <- UInt64.lt x'0.f0 m.f0 ] s2
+          | s2 = any [ br0 -> {_42 = false} (! bb4) | br1 -> {_42} (! bb16) ] ]
+        | bb16 = s0 [ s0 = [ &_45 <- Some x'0 ] s1 | s1 = [ &min'0 <- _45 ] s2 | s2 = bb4 ]
+        | bb15 = s0 [ s0 = [ &_39 <- Some x'0 ] s1 | s1 = [ &min'0 <- _39 ] s2 | s2 = bb4 ] ] ]
+    | bb9 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_tup2_usize_Point iter} any) ]
+      | s1 = -{resolve_Iter_tup2_usize_Point iter}- s2
+      | s2 = [ &_ret <- min'0 ] s3
       | s3 = return {_ret} ] ]
-    [ & _ret: UInt64.t = Any.any_l ()
-    | & self: t_Board = self
-    | & p: t_Point = p
-    | & count: UInt64.t = Any.any_l ()
-    | & iter: t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
-    | & _11: t_Vec_tup2_isize_isize_Global = Any.any_l ()
-    | & iter_old: t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
-    | & produced: Seq.seq tup2_isize_isize = Any.any_l ()
-    | & _30: t_Option_tup2_isize_isize = Any.any_l ()
-    | & _31: MutBorrow.t t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
-    | & _32: MutBorrow.t t_IntoIter_tup2_isize_isize_Global = Any.any_l ()
-    | & __creusot_proc_iter_elem: tup2_isize_isize = Any.any_l ()
-    | & m: tup2_isize_isize = Any.any_l ()
-    | & next: t_Point = Any.any_l ()
-    | & _44: tup2_isize_isize = Any.any_l ()
-    | & _45: bool = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
-end
-module M_impl_Board__set (* Board *)
-  use creusot.int.UInt64
-  use creusot.prelude.MutBorrow
-  use creusot.int.Int64
-  use seq.Seq
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Vec_Vec_usize_Global_Global
-  
-  type t_Board = { size: UInt64.t; field: t_Vec_Vec_usize_Global_Global }
-  
-  type t_Point = { x: Int64.t; y: Int64.t }
-  
-  type t_Vec_usize_Global
-  
-  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec_usize_Global) =
-    UInt64.t'int self < Seq.length seq
-  
-  meta "rewrite_def" predicate in_bounds_usize
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function view_Vec_Vec_usize_Global_Global (self: t_Vec_Vec_usize_Global_Global) : Seq.seq t_Vec_usize_Global
-  
-  axiom view_Vec_Vec_usize_Global_Global_spec:
-    forall self: t_Vec_Vec_usize_Global_Global [view_Vec_Vec_usize_Global_Global self]. Seq.length (view_Vec_Vec_usize_Global_Global self)
-      <= UInt64.t'int const_MAX
-  
-  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Vec_usize_Global) (out: t_Vec_usize_Global) =
-    Seq.get seq (UInt64.t'int self) = out
-  
-  meta "rewrite_def" predicate has_value_usize
-  
-  predicate resolve_elswhere_usize [@inline:trivial] (self: UInt64.t) (old': Seq.seq t_Vec_usize_Global) (fin: Seq.seq t_Vec_usize_Global) =
-    forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
-  
-  meta "rewrite_def" predicate resolve_elswhere_usize
-  
-  let rec index_mut_Vec_Vec_usize_Global_Global (self_: MutBorrow.t t_Vec_Vec_usize_Global_Global) (ix: UInt64.t)
-    (return (x'0: MutBorrow.t t_Vec_usize_Global)) =
-    {[@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_Vec_usize_Global_Global self_.current)}
-    any
-    [ return (result: MutBorrow.t t_Vec_usize_Global) ->
-    {[@stop_split] [@expl:index_mut_Vec_Vec_usize_Global_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize ix (view_Vec_Vec_usize_Global_Global self_.current) result.current)
-      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize ix (view_Vec_Vec_usize_Global_Global self_.final) result.final)
-      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_Vec_usize_Global_Global self_.current) (view_Vec_Vec_usize_Global_Global self_.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_Vec_usize_Global_Global self_.final)
-      = Seq.length (view_Vec_Vec_usize_Global_Global self_.current))}
-      (! return {result}) ]
-  
-  predicate in_bounds_usize'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
-    UInt64.t'int self < Seq.length seq
-  
-  meta "rewrite_def" predicate in_bounds_usize'0
-  
-  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
-  
-  axiom view_Vec_usize_Global_spec:
-    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
-      <= UInt64.t'int const_MAX
-  
-  predicate has_value_usize'0 [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) (out: UInt64.t) =
-    Seq.get seq (UInt64.t'int self) = out
-  
-  meta "rewrite_def" predicate has_value_usize'0
-  
-  predicate resolve_elswhere_usize'0 [@inline:trivial] (self: UInt64.t) (old': Seq.seq UInt64.t) (fin: Seq.seq UInt64.t) =
-    forall i: int. 0 <= i /\ i <> UInt64.t'int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
-  
-  meta "rewrite_def" predicate resolve_elswhere_usize'0
-  
-  let rec index_mut_Vec_usize_Global (self_: MutBorrow.t t_Vec_usize_Global) (ix: UInt64.t)
-    (return (x'0: MutBorrow.t UInt64.t)) =
-    {[@stop_split] [@expl:index_mut requires] in_bounds_usize'0 ix (view_Vec_usize_Global self_.current)}
-    any
-    [ return (result: MutBorrow.t UInt64.t) ->
-    {[@stop_split] [@expl:index_mut_Vec_usize_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize'0 ix (view_Vec_usize_Global self_.current) result.current)
-      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize'0 ix (view_Vec_usize_Global self_.final) result.final)
-      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize'0 ix (view_Vec_usize_Global self_.current) (view_Vec_usize_Global self_.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_usize_Global self_.final)
-      = Seq.length (view_Vec_usize_Global self_.current))}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_usize
-  
-  predicate resolve_refmut_Vec_usize_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_usize_Global) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Vec_usize_Global
-  
-  predicate resolve_refmut_Board [@inline:trivial] (_1: MutBorrow.t t_Board) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Board
-  
-  function index_Vec_Vec_usize_Global_Global [@inline:trivial] (self: t_Vec_Vec_usize_Global_Global) (ix: int) : t_Vec_usize_Global
-   = Seq.get (view_Vec_Vec_usize_Global_Global self) ix
-  
-  meta "rewrite_def" function index_Vec_Vec_usize_Global_Global
-  
-  predicate wf (self: t_Board) =
-    UInt64.t'int self.size <= 1000
-    /\ Seq.length (view_Vec_Vec_usize_Global_Global self.field) = UInt64.t'int self.size
-    /\ (forall i: int. 0 <= i /\ i < UInt64.t'int self.size
-      -> Seq.length (view_Vec_usize_Global (index_Vec_Vec_usize_Global_Global self.field i)) = UInt64.t'int self.size)
-  
-  predicate in_bounds (self: t_Board) (p: t_Point) =
-    0 <= Int64.to_int p.x
-    /\ Int64.to_int p.x < UInt64.t'int self.size /\ 0 <= Int64.to_int p.y /\ Int64.to_int p.y < UInt64.t'int self.size
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec set (self: MutBorrow.t t_Board) (p: t_Point) (v: UInt64.t) (return (x'0: ())) =
-    {[@stop_split] [@expl:set requires] ([@stop_split] [@expl:set requires #0] wf self.current)
-    /\ ([@stop_split] [@expl:set requires #1] in_bounds self.current p)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <t_Vec_Vec_usize_Global_Global> {self.current.field}
-          {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-          (fun (_bor: MutBorrow.t t_Vec_Vec_usize_Global_Global) ->
-            [ &_17 <- _bor ] [ &self <- { self with current = { self.current with field = _bor.final } } ] s1)
-      | s1 = [ &_18 <- UInt64.of_int (Int64.to_int p.x) ] s2
-      | s2 = index_mut_Vec_Vec_usize_Global_Global {_17} {_18}
-          (fun (_x: MutBorrow.t t_Vec_usize_Global) -> [ &_16 <- _x ] s3)
-      | s3 = MutBorrow.borrow_final <t_Vec_usize_Global> {_16.current} {MutBorrow.get_id _16}
-          (fun (_bor: MutBorrow.t t_Vec_usize_Global) ->
-            [ &_15 <- _bor ] [ &_16 <- { _16 with current = _bor.final } ] s4)
-      | s4 = [ &_20 <- UInt64.of_int (Int64.to_int p.y) ] s5
-      | s5 = index_mut_Vec_usize_Global {_15} {_20} (fun (_x: MutBorrow.t UInt64.t) -> [ &_14 <- _x ] s6)
-      | s6 = [ &_14 <- { _14 with current = v } ] s7
-      | s7 = -{resolve_refmut_usize _14}- s8
-      | s8 = -{resolve_refmut_Vec_usize_Global _16}- s9
-      | s9 = -{resolve_refmut_Board self}- s10
-      | s10 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & self: MutBorrow.t t_Board = self
-    | & p: t_Point = p
-    | & v: UInt64.t = v
-    | & _14: MutBorrow.t UInt64.t = Any.any_l ()
-    | & _15: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
-    | & _16: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
-    | & _17: MutBorrow.t t_Vec_Vec_usize_Global_Global = Any.any_l ()
-    | & _18: UInt64.t = Any.any_l ()
-    | & _20: UInt64.t = Any.any_l () ])
-    [ return (result: ()) -> {[@stop_split] [@expl:set ensures] ([@stop_split] [@expl:set ensures #0] wf self.final)
-      /\ ([@stop_split] [@expl:set ensures #1] self.final.size = self.current.size)}
+    [ & _ret: t_Option_ref_tup2_usize_Point = Any.any_l ()
+    | & v: t_Vec_tup2_usize_Point_Global = v
+    | & min'0: t_Option_ref_tup2_usize_Point = Any.any_l ()
+    | & iter: t_Iter_tup2_usize_Point = Any.any_l ()
+    | & iter_old: t_Iter_tup2_usize_Point = Any.any_l ()
+    | & produced: Seq.seq tup2_usize_Point = Any.any_l ()
+    | & _26: t_Option_ref_tup2_usize_Point = Any.any_l ()
+    | & _27: MutBorrow.t t_Iter_tup2_usize_Point = Any.any_l ()
+    | & _28: MutBorrow.t t_Iter_tup2_usize_Point = Any.any_l ()
+    | & __creusot_proc_iter_elem: tup2_usize_Point = Any.any_l ()
+    | & x'0: tup2_usize_Point = Any.any_l ()
+    | & _39: t_Option_ref_tup2_usize_Point = Any.any_l ()
+    | & m: tup2_usize_Point = Any.any_l ()
+    | & _42: bool = Any.any_l ()
+    | & _45: t_Option_ref_tup2_usize_Point = Any.any_l () ])
+    [ return (result: t_Option_ref_tup2_usize_Point) ->
+    {[@stop_split] [@expl:min ensures] forall r: tup2_usize_Point. result = Some r
+        -> (exists i: int. 0 <= i
+          /\ i < Seq.length (view_Vec_tup2_usize_Point_Global v) /\ index_Vec_tup2_usize_Point_Global v i = r)}
       (! return {result}) ]
 end

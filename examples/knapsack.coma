@@ -1,76 +1,3 @@
-module M_m
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.MinMax
-  use int.Int
-  
-  type t_Name
-  
-  type t_Item_Name = { name: t_Name; weight: UInt64.t; value: UInt64.t }
-  
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
-  
-  meta "rewrite_def" predicate well_founded_relation_Int
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant items : Seq.seq t_Item_Name
-  
-  constant i : int
-  
-  constant w : int
-  
-  function m_Name (items: Seq.seq t_Item_Name) (i: int) (w: int) : int
-  
-  goal vc_m_Name: 0 <= i /\ i <= Seq.length items
-    -> 0 <= w
-    -> (if i = 0 then
-      [@stop_split] [@expl:m ensures] 0 >= 0
-    else
-      if UInt64.t'int (Seq.get items (i - 1)).weight > w then
-        (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
-            /\ ([@stop_split] [@expl:m requires #1] 0 <= w))
-          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
-        /\ (([@stop_split] [@expl:m ensures] m_Name items (i - 1) w >= 0)
-        -> ([@stop_split] [@expl:m ensures] m_Name items (i - 1) w >= 0))
-      else
-        (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
-            /\ ([@stop_split] [@expl:m requires #1] 0 <= w))
-          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
-        /\ (([@stop_split] [@expl:m ensures] m_Name items (i - 1) w >= 0)
-        -> (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1
-              /\ i - 1 <= Seq.length items)
-            /\ ([@stop_split] [@expl:m requires #1] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).weight))
-          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
-        /\ (([@stop_split] [@expl:m ensures] m_Name items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).weight)
-          >= 0)
-        -> ([@stop_split] [@expl:m ensures] MinMax.max (m_Name items (i - 1) w) (m_Name items (i - 1) (w
-            - UInt64.t'int (Seq.get items (i - 1)).weight)
-          + UInt64.t'int (Seq.get items (i - 1)).value)
-        >= 0)))
-    
-    )
-end
-module M_max
-  use creusot.int.UInt64
-  use creusot.prelude.Any
-  use int.MinMax
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec max (a: UInt64.t) (b: UInt64.t) (return (x: UInt64.t)) = (! bb0
-    [ bb0 = s0 [ s0 = [ &_7 <- UInt64.lt a b ] s1 | s1 = any [ br0 -> {_7 = false} (! bb2) | br1 -> {_7} (! bb1) ] ]
-    | bb1 = s0 [ s0 = [ &_ret <- b ] s1 | s1 = return {_ret} ]
-    | bb2 = s0 [ s0 = [ &_ret <- a ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: UInt64.t = Any.any_l () | & a: UInt64.t = a | & b: UInt64.t = b | & _7: bool = Any.any_l () ])
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:max ensures] UInt64.t'int result
-      = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
-      (! return {result}) ]
-end
 module M_knapsack01_dyn
   use creusot.int.UInt64
   use seq.Seq
@@ -557,5 +484,78 @@ module M_knapsack01_dyn
     | & _143: MutBorrow.t t_Vec_ref_Item_Name_Global = Any.any_l () ])
     [ return (result: t_Vec_ref_Item_Name_Global) ->
     {[@stop_split] [@expl:knapsack01_dyn result type invariant] inv_Vec_ref_Item_Name_Global result}
+      (! return {result}) ]
+end
+module M_m
+  use creusot.int.UInt64
+  use seq.Seq
+  use int.MinMax
+  use int.Int
+  
+  type t_Name
+  
+  type t_Item_Name = { name: t_Name; weight: UInt64.t; value: UInt64.t }
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant items : Seq.seq t_Item_Name
+  
+  constant i : int
+  
+  constant w : int
+  
+  function m_Name (items: Seq.seq t_Item_Name) (i: int) (w: int) : int
+  
+  goal vc_m_Name: 0 <= i /\ i <= Seq.length items
+    -> 0 <= w
+    -> (if i = 0 then
+      [@stop_split] [@expl:m ensures] 0 >= 0
+    else
+      if UInt64.t'int (Seq.get items (i - 1)).weight > w then
+        (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
+            /\ ([@stop_split] [@expl:m requires #1] 0 <= w))
+          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
+        /\ (([@stop_split] [@expl:m ensures] m_Name items (i - 1) w >= 0)
+        -> ([@stop_split] [@expl:m ensures] m_Name items (i - 1) w >= 0))
+      else
+        (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
+            /\ ([@stop_split] [@expl:m requires #1] 0 <= w))
+          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
+        /\ (([@stop_split] [@expl:m ensures] m_Name items (i - 1) w >= 0)
+        -> (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1
+              /\ i - 1 <= Seq.length items)
+            /\ ([@stop_split] [@expl:m requires #1] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).weight))
+          /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
+        /\ (([@stop_split] [@expl:m ensures] m_Name items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).weight)
+          >= 0)
+        -> ([@stop_split] [@expl:m ensures] MinMax.max (m_Name items (i - 1) w) (m_Name items (i - 1) (w
+            - UInt64.t'int (Seq.get items (i - 1)).weight)
+          + UInt64.t'int (Seq.get items (i - 1)).value)
+        >= 0)))
+    
+    )
+end
+module M_max
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.MinMax
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec max (a: UInt64.t) (b: UInt64.t) (return (x: UInt64.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_7 <- UInt64.lt a b ] s1 | s1 = any [ br0 -> {_7 = false} (! bb2) | br1 -> {_7} (! bb1) ] ]
+    | bb1 = s0 [ s0 = [ &_ret <- b ] s1 | s1 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- a ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & a: UInt64.t = a | & b: UInt64.t = b | & _7: bool = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:max ensures] UInt64.t'int result
+      = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
       (! return {result}) ]
 end

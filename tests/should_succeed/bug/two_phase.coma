@@ -1,62 +1,3 @@
-module M_test
-  use creusot.int.UInt64
-  use seq.Seq
-  use creusot.prelude.MutBorrow
-  use creusot.prelude.Any
-  use int.Int
-  
-  type t_Vec_usize_Global
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
-  
-  axiom view_Vec_usize_Global_spec:
-    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
-      <= UInt64.t'int const_MAX
-  
-  let rec len_usize (self_: t_Vec_usize_Global) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_usize_Global self_)}
-      (! return {result}) ]
-  
-  let rec push_usize (self_: MutBorrow.t t_Vec_usize_Global) (v: UInt64.t) (return (x: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:push ensures] view_Vec_usize_Global self_.final
-      = Seq.snoc (view_Vec_usize_Global self_.current) v}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_Vec_usize_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_usize_Global) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Vec_usize_Global
-  
-  function index_Vec_usize_Global [@inline:trivial] (self: t_Vec_usize_Global) (ix: int) : UInt64.t =
-    Seq.get (view_Vec_usize_Global self) ix
-  
-  meta "rewrite_def" function index_Vec_usize_Global
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec test (v: MutBorrow.t t_Vec_usize_Global) (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = len_usize {v.current} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1)
-      | s1 = MutBorrow.borrow_final <t_Vec_usize_Global> {v.current} {MutBorrow.get_id v}
-          (fun (_bor: MutBorrow.t t_Vec_usize_Global) -> [ &_5 <- _bor ] [ &v <- { v with current = _bor.final } ] s2)
-      | s2 = push_usize {_5} {_6} (fun (_x: ()) -> [ &_4 <- _x ] s3)
-      | s3 = -{resolve_refmut_Vec_usize_Global v}- s4
-      | s4 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & v: MutBorrow.t t_Vec_usize_Global = v
-    | & _4: () = Any.any_l ()
-    | & _5: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
-    | & _6: UInt64.t = Any.any_l () ])
-    [ return (result: ()) ->
-    {[@stop_split] [@expl:test ensures] UInt64.t'int (index_Vec_usize_Global v.final (Seq.length (view_Vec_usize_Global v.current)))
-      = Seq.length (view_Vec_usize_Global v.current)}
-      (! return {result}) ]
-end
 module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
@@ -191,4 +132,63 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
     | & _2: MutBorrow.t t_Vec_K_Global = Any.any_l ()
     | & _3: UInt64.t = Any.any_l ()
     | & _4: t_K = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_test
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Vec_usize_Global
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
+  
+  axiom view_Vec_usize_Global_spec:
+    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
+      <= UInt64.t'int const_MAX
+  
+  let rec len_usize (self_: t_Vec_usize_Global) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
+      = Seq.length (view_Vec_usize_Global self_)}
+      (! return {result}) ]
+  
+  let rec push_usize (self_: MutBorrow.t t_Vec_usize_Global) (v: UInt64.t) (return (x: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:push ensures] view_Vec_usize_Global self_.final
+      = Seq.snoc (view_Vec_usize_Global self_.current) v}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Vec_usize_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_usize_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Vec_usize_Global
+  
+  function index_Vec_usize_Global [@inline:trivial] (self: t_Vec_usize_Global) (ix: int) : UInt64.t =
+    Seq.get (view_Vec_usize_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_usize_Global
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec test (v: MutBorrow.t t_Vec_usize_Global) (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = len_usize {v.current} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1)
+      | s1 = MutBorrow.borrow_final <t_Vec_usize_Global> {v.current} {MutBorrow.get_id v}
+          (fun (_bor: MutBorrow.t t_Vec_usize_Global) -> [ &_5 <- _bor ] [ &v <- { v with current = _bor.final } ] s2)
+      | s2 = push_usize {_5} {_6} (fun (_x: ()) -> [ &_4 <- _x ] s3)
+      | s3 = -{resolve_refmut_Vec_usize_Global v}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & v: MutBorrow.t t_Vec_usize_Global = v
+    | & _4: () = Any.any_l ()
+    | & _5: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
+    | & _6: UInt64.t = Any.any_l () ])
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:test ensures] UInt64.t'int (index_Vec_usize_Global v.final (Seq.length (view_Vec_usize_Global v.current)))
+      = Seq.length (view_Vec_usize_Global v.current)}
+      (! return {result}) ]
 end

@@ -1,112 +1,3 @@
-module M_x
-  use creusot.prelude.Any
-  
-  type t_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  type t_DeepModelTy
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
-  
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
-  
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
-  
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
-  
-  function deep_model_T (self: t_T) : t_DeepModelTy
-  
-  function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
-  
-  meta "rewrite_def" function deep_model_ref_T
-  
-  function deep_model_ref_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_ref_T self
-  
-  meta "rewrite_def" function deep_model_ref_ref_T
-  
-  let rec le_ref_T (self_: t_T) (other: t_T) (return (x: bool)) =
-    {[@stop_split] [@expl:le_ref_T requires] ([@stop_split] [@expl:le 'self_' type invariant] inv_ref_ref_T self_)
-    /\ ([@stop_split] [@expl:le 'other' type invariant] inv_ref_ref_T other)}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:le ensures] result
-      = le_log_DeepModelTy (deep_model_ref_ref_T self_) (deep_model_ref_ref_T other)}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let rec x_T (x: t_T) (return (x'0: bool)) = {[@stop_split] [@expl:x 'x' type invariant] inv_ref_T x}
-    (! bb0
-    [ bb0 = s0 [ s0 = le_ref_T {x} {x} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l () | & x: t_T = x ])
-    [ return (result: bool) -> {[@stop_split] [@expl:x ensures] result = true} (! return {result}) ]
-end
 module M_gt_or_le
   use creusot.prelude.Any
   
@@ -234,4 +125,113 @@ module M_gt_or_le_int
     [ & _ret: bool = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
     [ return (result: bool) -> {[@stop_split] [@expl:gt_or_le_int ensures] result = (UInt64.t'int x <= UInt64.t'int y)}
       (! return {result}) ]
+end
+module M_x
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
+  
+  meta "rewrite_def" predicate invariant_ref_ref_T
+  
+  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_ref_T
+  
+  type t_DeepModelTy
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  
+  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  
+  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
+      -> cmp_log_DeepModelTy y x = Less
+  
+  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
+      -> cmp_log_DeepModelTy y x = Greater
+  
+  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
+  
+  axiom trans_DeepModelTy_spec:
+    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
+      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
+  
+  function refl_DeepModelTy (x: t_DeepModelTy) : ()
+  
+  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
+  
+  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y = Greater)
+  
+  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y <> Less)
+  
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y = Less)
+  
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
+  
+  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  
+  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
+      = (cmp_log_DeepModelTy x y <> Greater)
+  
+  function deep_model_T (self: t_T) : t_DeepModelTy
+  
+  function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
+  
+  meta "rewrite_def" function deep_model_ref_T
+  
+  function deep_model_ref_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_ref_T self
+  
+  meta "rewrite_def" function deep_model_ref_ref_T
+  
+  let rec le_ref_T (self_: t_T) (other: t_T) (return (x: bool)) =
+    {[@stop_split] [@expl:le_ref_T requires] ([@stop_split] [@expl:le 'self_' type invariant] inv_ref_ref_T self_)
+    /\ ([@stop_split] [@expl:le 'other' type invariant] inv_ref_ref_T other)}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:le ensures] result
+      = le_log_DeepModelTy (deep_model_ref_ref_T self_) (deep_model_ref_ref_T other)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec x_T (x: t_T) (return (x'0: bool)) = {[@stop_split] [@expl:x 'x' type invariant] inv_ref_T x}
+    (! bb0
+    [ bb0 = s0 [ s0 = le_ref_T {x} {x} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & x: t_T = x ])
+    [ return (result: bool) -> {[@stop_split] [@expl:x ensures] result = true} (! return {result}) ]
 end
