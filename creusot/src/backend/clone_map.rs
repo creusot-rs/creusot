@@ -351,13 +351,6 @@ struct DepGraphBuilder<'tcx> {
 }
 
 impl<'tcx> DepGraphBuilder<'tcx> {
-    /// The source item itself is kept out of the graph.
-    fn new(source: Dependency<'tcx>) -> Self {
-        let mut graph = Self::default();
-        graph.visited.insert(source);
-        graph
-    }
-
     /// Add a direct dependency of the source item
     fn add_node(&mut self, d: Dependency<'tcx>) {
         if self.visited.insert(d) {
@@ -446,8 +439,14 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
     pub(crate) fn new(ctx: &'a TranslationCtx<'tcx>, self_id: DefId) -> Self {
         debug!("cloning self: {:?}", self_id);
         let names = CloneNames::new(ctx, self_id);
-        let dep_graph = RefCell::new(DepGraphBuilder::new(names.source_item()));
+        let dep_graph = RefCell::new(DepGraphBuilder::default());
         Dependencies { names, dep_graph }
+    }
+
+    /// Use this to avoid expanding the body of a recursive logic function as a dependency of its own VC.
+    pub(crate) fn visit_source(&self) {
+        let source = self.names.source_item();
+        self.dep_graph.borrow_mut().visited.insert(source);
     }
 
     /// Get a name for the `Namespace` type, _without_ adding it to the list of dependencies.

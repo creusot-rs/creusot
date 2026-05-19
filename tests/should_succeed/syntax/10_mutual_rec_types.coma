@@ -8,7 +8,7 @@ module M_impl_Tree__height (* Tree *)
   with t_Node = { left: t_Tree; val': UInt32.t; right: t_Tree }
   with t_Option_Box_Node_Global = None | Some t_Node
   
-  let rec elim_Some (_x: t_Option_Box_Node_Global) (return (f0'0: t_Node)) = any
+  let elim_Some (_x: t_Option_Box_Node_Global) (return (f0'0: t_Node)) = any
     [ _k (f0'0: t_Node) -> {Some f0'0 = _x} (! return {f0'0})
     | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
@@ -16,11 +16,13 @@ module M_impl_Tree__height (* Tree *)
         end}
       any) ]
   
+  let height (self: t_Tree) (return (x: UInt64.t)) = any [ return (result: UInt64.t) -> (! return {result}) ]
+  
   function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
   meta "rewrite_def" function deep_model_u64
   
-  let rec max_u64 (self_: UInt64.t) (o: UInt64.t) (return (x: UInt64.t)) = any
+  let max_u64 (self_: UInt64.t) (o: UInt64.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) ->
     {[@stop_split] [@expl:max_u64 ensures] ([@stop_split] [@expl:max ensures #0] deep_model_u64 result
         >= deep_model_u64 self_)
@@ -34,7 +36,7 @@ module M_impl_Tree__height (* Tree *)
   
   meta "select_lsinst" "all"
   
-  let rec height (self: t_Tree) (return (x: UInt64.t)) = (! bb0
+  let height'0 (self: t_Tree) (return (x: UInt64.t)) = (! bb0
     [ bb0 = any [ br0 -> {self.f0 = None} (! bb4) | br1 (x0: t_Node) -> {self.f0 = Some x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_Some {self.f0} (fun (r0: t_Node) -> [ &n <- r0 ] s1)
@@ -63,6 +65,6 @@ module M_use_tree
   
   meta "select_lsinst" "all"
   
-  let rec use_tree (_1: t_Tree) (return (x: ())) = (! bb0
+  let use_tree (_1: t_Tree) (return (x: ())) = (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

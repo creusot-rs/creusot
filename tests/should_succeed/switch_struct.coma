@@ -4,7 +4,7 @@ module M_test
   
   type t_M_u32 = F UInt32.t | G UInt32.t
   
-  let rec elim_G (_x: t_M_u32) (return (field2: UInt32.t)) = any
+  let elim_G (_x: t_M_u32) (return (field2: UInt32.t)) = any
     [ _k (field2: UInt32.t) -> {G field2 = _x} (! return {field2})
     | _chk -> (! {[@expl:elim G] match _x with
         | G _ -> true
@@ -12,7 +12,7 @@ module M_test
         end}
       any) ]
   
-  let rec elim_F (_x: t_M_u32) (return (field1: UInt32.t)) = any
+  let elim_F (_x: t_M_u32) (return (field1: UInt32.t)) = any
     [ _k (field1: UInt32.t) -> {F field1 = _x} (! return {field1})
     | _chk -> (! {[@expl:elim F] match _x with
         | F _ -> true
@@ -24,7 +24,7 @@ module M_test
   
   meta "select_lsinst" "all"
   
-  let rec test (o: t_M_u32) (return (x: bool)) = (! bb0
+  let test (o: t_M_u32) (return (x: bool)) = (! bb0
     [ bb0 = any [ br0 (x0: UInt32.t) -> {o = F x0} (! bb4) | br1 (x0: UInt32.t) -> {o = G x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_G {o} (fun (rfield2: UInt32.t) -> [ &field2 <- rfield2 ] s1)

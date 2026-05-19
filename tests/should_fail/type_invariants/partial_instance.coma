@@ -11,7 +11,7 @@ module M_evil
   
   axiom inv_axiom [@rewrite]: forall x: t_S_i32 [inv_S_i32 x]. inv_S_i32 x = invariant_S_i32 x
   
-  let rec mk_s_i32 (t: Int32.t) (return (x: t_S_i32)) = any
+  let mk_s_i32 (t: Int32.t) (return (x: t_S_i32)) = any
     [ return (result: t_S_i32) ->
     {[@stop_split] [@expl:mk_s_i32 ensures] ([@stop_split] [@expl:mk_s result type invariant] inv_S_i32 result)
       /\ ([@stop_split] [@expl:mk_s ensures] result.f0 = t)}
@@ -21,7 +21,7 @@ module M_evil
   
   meta "select_lsinst" "all"
   
-  let rec evil (return (x: ())) = (! bb0
+  let evil (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = mk_s_i32 {(1: Int32.t)} (fun (_x: t_S_i32) -> [ &_s <- _x ] s1)
       | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_S_i32 _s} any) ]
@@ -38,7 +38,7 @@ module M_mk_s
   
   predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let rec null_T (return (x: Opaque.ptr)) = any
+  let null_T (return (x: Opaque.ptr)) = any
     [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:null ensures] is_null_ptr_T result} (! return {result}) ]
   
   type t_S_T = { f0: Int32.t; f1: Opaque.ptr }
@@ -49,7 +49,7 @@ module M_mk_s
   
   meta "select_lsinst" "all"
   
-  let rec mk_s_T (t: Int32.t) (return (x: t_S_T)) = (! bb0
+  let mk_s_T (t: Int32.t) (return (x: t_S_T)) = (! bb0
     [ bb0 = s0
       [ s0 = null_T (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s1)
       | s1 = [ &_ret <- { f0 = t; f1 = _6 } ] s2

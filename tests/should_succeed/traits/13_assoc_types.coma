@@ -17,12 +17,18 @@ module M_impl_Model_for_ref_T__model (* <&T as Model> *)
   
   predicate inv_ModelTy (_1: t_ModelTy)
   
+  let model_ref_T (self: t_T) (return (x: t_ModelTy)) =
+  {[@stop_split] [@expl:model 'self' type invariant] inv_ref_T self}
+    any
+    [ return (result: t_ModelTy) -> {[@stop_split] [@expl:model result type invariant] inv_ModelTy result}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec model_ref_T (self: t_T) (return (x: t_ModelTy)) =
-    {[@stop_split] [@expl:model 'self' type invariant] inv_ref_T self}
+  let model_ref_T'0 (self: t_T) (return (x: t_ModelTy)) =
+  {[@stop_split] [@expl:model 'self' type invariant] inv_ref_T self}
     (! bb0
     [ bb0 = s0 [ s0 = model_ref_T {self} (fun (_x: t_ModelTy) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_ModelTy = Any.any_l () | & self: t_T = self ])

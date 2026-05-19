@@ -20,8 +20,8 @@ module M_bar [#"spans.rs" 24 0 24 33]
   
   meta "select_lsinst" "all"
   
-  let rec bar [#"spans.rs" 24 0 24 33] (i: UInt64.t) (return (x: UInt64.t)) =
-    {[@stop_split] [@expl:bar requires] [%#sspans'4] UInt64.t'int i <= 0}
+  let bar [#"spans.rs" 24 0 24 33] (i: UInt64.t) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:bar requires] [%#sspans'4] UInt64.t'int i <= 0}
     (! bb0
     [ bb0 = bb0invariant
       [ bb0 = {[@expl:loop variant] well_founded_relation_Int variant_old_bb1 ([%#sspans] UInt64.t'int i)} bb0invariant
@@ -94,8 +94,8 @@ module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
   
   meta "select_lsinst" "all"
   
-  let rec decr [#"spans.rs" 60 4 60 29] (self: t_NonNeg) (return (x: t_NonNeg)) =
-    {[@stop_split] [@expl:decr requires] ([@stop_split] [@expl:decr 'self' type invariant] [%#sspans'1] inv_NonNeg self)
+  let decr [#"spans.rs" 60 4 60 29] (self: t_NonNeg) (return (x: t_NonNeg)) =
+  {[@stop_split] [@expl:decr requires] ([@stop_split] [@expl:decr 'self' type invariant] [%#sspans'1] inv_NonNeg self)
     /\ ([@stop_split] [@expl:decr requires] [%#sspans'2] 0 < UInt64.t'int self.f0)}
     (! bb0
     [ bb0 = s0
@@ -119,8 +119,8 @@ module M_impl_Tr_for_S__foo [#"spans.rs" 17 4 17 27] (* <S as Tr> *)
   
   meta "select_lsinst" "all"
   
-  let rec foo_S [#"spans.rs" 17 4 17 27] (x: bool) (return (x'0: bool)) =
-    {[@stop_split] [@expl:foo requires] [%#sspans] x /\ x}
+  let foo_S [#"spans.rs" 17 4 17 27] (x: bool) (return (x'0: bool)) = {[@stop_split] [@expl:foo requires] [%#sspans] x
+    /\ x}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & x: bool = x ])
     [ return (result: bool) -> {[@stop_split] [@expl:foo ensures] [%#sspans'0] result \/ result} (! return {result}) ]
@@ -165,13 +165,20 @@ module M_quux [#"spans.rs" 68 0 68 32]
   
   axiom inv_axiom [@rewrite]: forall x: t_NonNeg [inv_NonNeg x]. inv_NonNeg x = invariant_NonNeg x
   
-  let rec decr (self: t_NonNeg) (return (x: t_NonNeg)) =
-    {[@stop_split] [@expl:decr requires] ([@stop_split] [@expl:decr 'self' type invariant] [%#sspans'6] inv_NonNeg self)
+  let decr (self: t_NonNeg) (return (x: t_NonNeg)) =
+  {[@stop_split] [@expl:decr requires] ([@stop_split] [@expl:decr 'self' type invariant] [%#sspans'6] inv_NonNeg self)
     /\ ([@stop_split] [@expl:decr requires] [%#sspans'7] 0 < UInt64.t'int self.f0)}
     any
     [ return (result: t_NonNeg) ->
     {[@stop_split] [@expl:decr ensures] ([@stop_split] [@expl:decr result type invariant] [%#sspans'8] inv_NonNeg result)
       /\ ([@stop_split] [@expl:decr ensures] [%#sspans'9] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1)}
+      (! return {result}) ]
+  
+  let quux (i: t_NonNeg) (return (x: t_NonNeg)) =
+  {[@stop_split] [@expl:quux requires] ([@stop_split] [@expl:quux 'i' type invariant] [%#sspans'3] inv_NonNeg i)
+    /\ ([@stop_split] [@expl:quux requires] [%#sspans'4] 0 <= UInt64.t'int i.f0)}
+    any
+    [ return (result: t_NonNeg) -> {[@stop_split] [@expl:quux result type invariant] [%#sspans'5] inv_NonNeg result}
       (! return {result}) ]
   
   predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
@@ -183,8 +190,8 @@ module M_quux [#"spans.rs" 68 0 68 32]
   
   meta "select_lsinst" "all"
   
-  let rec quux [#"spans.rs" 68 0 68 32] (i: t_NonNeg) (return (x: t_NonNeg)) =
-    {[@stop_split] [@expl:quux requires] ([@stop_split] [@expl:quux 'i' type invariant] [%#sspans'3] inv_NonNeg i)
+  let quux'0 [#"spans.rs" 68 0 68 32] (i: t_NonNeg) (return (x: t_NonNeg)) =
+  {[@stop_split] [@expl:quux requires] ([@stop_split] [@expl:quux 'i' type invariant] [%#sspans'3] inv_NonNeg i)
     /\ ([@stop_split] [@expl:quux requires] [%#sspans'4] 0 <= UInt64.t'int i.f0)}
     (! bb0
     [ bb0 = s0
@@ -221,7 +228,7 @@ module M_slices [#"spans.rs" 73 0 73 32]
   use creusot.prelude.Any
   use int.Int
   
-  let rec len_usize (self_: Slice64.slice UInt64.t) (return (x: UInt64.t)) = any
+  let len_usize (self_: Slice64.slice UInt64.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] [%#sslice] Seq.length (Slice64.view self_)
       = UInt64.t'int result}
       (! return {result}) ]
@@ -230,8 +237,8 @@ module M_slices [#"spans.rs" 73 0 73 32]
   
   meta "select_lsinst" "all"
   
-  let rec slices [#"spans.rs" 73 0 73 32] (i: UInt64.t) (return (x: UInt64.t)) =
-    {[@stop_split] [@expl:slices requires] [%#sspans'7] UInt64.t'int i < 3}
+  let slices [#"spans.rs" 73 0 73 32] (i: UInt64.t) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:slices requires] [%#sspans'7] UInt64.t'int i < 3}
     (! bb0
     [ bb0 = s0
       [ s0 = Slice64Ops.create [%#sspans] <UInt64.t> {[%#sspans] (3: UInt64.t)}

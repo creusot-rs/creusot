@@ -22,7 +22,7 @@ module M_can_extend
   
   meta "rewrite_def" function view_Box_slice_i32_Global
   
-  let rec into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
+  let into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:into_vec ensures] view_Vec_i32_Global result
       = view_Box_slice_i32_Global self_}
       (! return {result}) ]
@@ -37,7 +37,7 @@ module M_can_extend
   
   function view_IntoIter_i32_Global (self: t_IntoIter_i32_Global) : Seq.seq Int32.t
   
-  let rec into_iter_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: t_IntoIter_i32_Global)) = any
+  let into_iter_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: t_IntoIter_i32_Global)) = any
     [ return (result: t_IntoIter_i32_Global) ->
     {[@stop_split] [@expl:into_iter_Vec_i32_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_IntoIter_i32_Global result)
       /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_i32_Global self_ = view_IntoIter_i32_Global result)}
@@ -140,8 +140,8 @@ module M_can_extend
   predicate completed_IntoIter_i32_Global (self: MutBorrow.t t_IntoIter_i32_Global) =
     resolve_refmut_IntoIter_i32_Global self /\ view_IntoIter_i32_Global self.current = (Seq.empty: Seq.seq Int32.t)
   
-  let rec extend_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (iter: t_Vec_i32_Global) (return (x: ())) =
-    {[@stop_split] [@expl:extend requires] precondition_into_iter () iter}
+  let extend_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (iter: t_Vec_i32_Global) (return (x: ())) =
+  {[@stop_split] [@expl:extend requires] precondition_into_iter () iter}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:extend ensures] exists start_: t_IntoIter_i32_Global, done': MutBorrow.t t_IntoIter_i32_Global, prod: Seq.seq Int32.t. inv_IntoIter_i32_Global start_
@@ -157,7 +157,7 @@ module M_can_extend
   
   meta "select_lsinst" "all"
   
-  let rec can_extend (return (x: ())) = (! bb0
+  let can_extend (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = any
         [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)

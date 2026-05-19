@@ -6,7 +6,7 @@ module M_ghost_arg
   
   meta "select_lsinst" "all"
   
-  let rec ghost_arg (g: UInt32.t) (return (x: ())) = (! bb0
+  let ghost_arg (g: UInt32.t) (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &_x <- g ] s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & g: UInt32.t = g | & _x: UInt32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
@@ -29,19 +29,19 @@ module M_ghost_check
     forall self: t_Vec_i32_Global [view_Vec_i32_Global self]. Seq.length (view_Vec_i32_Global self)
       <= UInt64.t'int const_MAX
   
-  let rec new_i32 (return (x: t_Vec_i32_Global)) = any
+  let new_i32 (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_i32_Global result)
       = 0}
       (! return {result}) ]
   
   function logi_drop_Vec_i32_Global (_1: t_Vec_i32_Global) : () = ()
   
-  let rec push_i32 (self_: MutBorrow.t t_Vec_i32_Global) (v: Int32.t) (return (x: ())) = any
+  let push_i32 (self_: MutBorrow.t t_Vec_i32_Global) (v: Int32.t) (return (x: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:push ensures] view_Vec_i32_Global self_.final
       = Seq.snoc (view_Vec_i32_Global self_.current) v}
       (! return {result}) ]
   
-  let rec len_i32 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (view_Vec_i32_Global self_)}
       (! return {result}) ]
@@ -50,7 +50,7 @@ module M_ghost_check
   
   meta "select_lsinst" "all"
   
-  let rec ghost_check (return (x: ())) = (! bb0
+  let ghost_check (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = new_i32 (fun (_x: t_Vec_i32_Global) -> [ &x <- _x ] s1)
       | s1 = [ &_2 <- let _ = logi_drop_Vec_i32_Global x in () ] s2
@@ -79,7 +79,7 @@ module M_ghost_copy
   
   meta "select_lsinst" "all"
   
-  let rec ghost_copy (return (x: ())) = (! bb0
+  let ghost_copy (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &a <- (0: Int32.t) ] s1
       | s1 = [ &_s <- Seq.snoc (Seq.empty: Seq.seq Int32.t) (0: Int32.t) ] s2
@@ -101,7 +101,7 @@ module M_ghost_is_copy
   
   meta "select_lsinst" "all"
   
-  let rec ghost_is_copy (return (x: ())) = (! bb0
+  let ghost_is_copy (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (0: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
@@ -136,7 +136,7 @@ module M_ghost_vec
     forall self: t_Vec_u32_Global [view_Vec_u32_Global self]. Seq.length (view_Vec_u32_Global self)
       <= UInt64.t'int const_MAX
   
-  let rec new_u32 (return (x: t_Vec_u32_Global)) = any
+  let new_u32 (return (x: t_Vec_u32_Global)) = any
     [ return (result: t_Vec_u32_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_u32_Global result)
       = 0}
       (! return {result}) ]
@@ -145,7 +145,7 @@ module M_ghost_vec
   
   meta "select_lsinst" "all"
   
-  let rec ghost_vec (return (x: ())) = (! bb0
+  let ghost_vec (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = new_u32 (fun (_x: t_Vec_u32_Global) -> [ &x <- _x ] s1) | s1 = [ &_s <- x ] s2 | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & x: t_Vec_u32_Global = Any.any_l () | & _s: t_Vec_u32_Global = Any.any_l () ])
@@ -161,8 +161,8 @@ module M_takes_struct
   
   meta "select_lsinst" "all"
   
-  let rec takes_struct (x: t_MyStruct) (return (x'0: t_MyStruct)) =
-    {[@stop_split] [@expl:takes_struct requires] UInt32.t'int x.g = 0}
+  let takes_struct (x: t_MyStruct) (return (x'0: t_MyStruct)) =
+  {[@stop_split] [@expl:takes_struct requires] UInt32.t'int x.g = 0}
     (! bb0
     [ bb0 = s0 [ s0 = [ &x <- { x with g = x.f } ] s1 | s1 = [ &_ret <- x ] s2 | s2 = return {_ret} ] ]
     [ & _ret: t_MyStruct = Any.any_l () | & x: t_MyStruct = x ]) [ return (result: t_MyStruct) -> (! return {result}) ]
