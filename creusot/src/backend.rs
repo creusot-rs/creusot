@@ -1,7 +1,7 @@
 use crate::{
     contracts_items::{Intrinsic, is_spec, is_trusted},
     ctx::{HasTyCtxt, ItemType, TranslatedItem, TranslationCtx},
-    translation::traits::TraitResolved,
+    resolution::TraitResolved,
     util::{impl_subject, path_of_span},
 };
 use creusot_args::options::SpanMode;

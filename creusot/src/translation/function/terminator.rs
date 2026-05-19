@@ -4,10 +4,11 @@ use crate::{
     contracts_items::Intrinsic,
     ctx::{HasTyCtxt as _, TranslationCtx},
     lints::{CONTRACTLESS_EXTERNAL_FUNCTION, Diagnostics},
+    resolution::TraitResolved,
     translation::{
         fmir::{self, *},
         pearlite::{Term, TermKind, UnOp},
-        traits::{self, TraitResolved},
+        traits,
     },
 };
 use itertools::Itertools;

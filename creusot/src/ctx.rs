@@ -2,16 +2,17 @@ use crate::{
     backend::resolve::is_resolve_trivial,
     callbacks,
     contracts_items::{
-        Intrinsic, gather_intrinsics, get_creusot_item, is_extern_spec, is_logic, is_opaque,
-        is_open_inv_param, is_prophetic, is_trusted, opacity_witness_name,
+        Intrinsic, gather_intrinsics, get_creusot_item, is_extern_spec, is_extern_type, is_logic,
+        is_opaque, is_open_inv_param, is_prophetic, is_trusted, opacity_witness_name,
     },
     metadata::{BinaryMetadata, Metadata, encode_def_ids, get_erasure_required},
     naming::{ComaNames, ModulePath, lowercase_prefix},
     translation::{
         self,
         external::{
-            ExternSpec, extract_erasure_from_child, extract_erasure_from_item,
-            extract_extern_specs_from_item,
+            ExternSpec, TrustedPositivity, extract_erasure_from_child, extract_erasure_from_item,
+            extract_extern_specs_from_item, extract_extern_trusted_positivity,
+            extract_trusted_positivity,
         },
         fmir,
         pearlite::{self, Scoped, Term, TermWithTriggers},
@@ -175,6 +176,7 @@ pub struct TranslationCtx<'tcx> {
     erasure_required: RefCell<IndexSet<DefId>>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
+    trusted_positivity: HashMap<DefId, TrustedPositivity>,
     erased_local_defid: HashMap<LocalDefId, Option<Erasure<'tcx>>>,
     erasures_to_check: IndexSet<LocalDefId>,
     coma_names: ComaNames,
@@ -266,6 +268,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             erasure_required: Default::default(),
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
+            trusted_positivity: Default::default(),
             erased_local_defid: Default::default(),
             erasures_to_check: Default::default(),
             coma_names: ComaNames::new(tcx),
@@ -416,6 +419,17 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.extern_specs.get(&def_id).or_else(|| self.externs.extern_spec(def_id))
     }
 
+    pub(crate) fn trusted_positivity(&self, def_id: DefId, index: usize) -> bool {
+        let Some(tp) = self.get_trusted_positivity(def_id) else {
+            return false;
+        };
+        tp.positivity.contains(index)
+    }
+
+    pub(crate) fn get_trusted_positivity(&self, def_id: DefId) -> Option<&TrustedPositivity> {
+        self.trusted_positivity.get(&def_id).or_else(|| self.externs.trusted_positivity(def_id))
+    }
+
     pub(crate) fn opacity(&self, item: DefId) -> &Opacity {
         self.opacity.insert(item, |&item| Box::new(self.mk_opacity(item)))
     }
@@ -487,6 +501,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.creusot_items,
             self.raw_intrinsics,
             self.extern_specs,
+            self.trusted_positivity,
             self.params_open_inv,
             erased_thir,
             self.erased_local_defid,
@@ -543,7 +558,13 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
     }
 
-    pub(crate) fn load_extern_specs(&mut self) {
+    pub(crate) fn load_specs(&mut self) {
+        self.load_extern_specs();
+        self.load_trusted_positivity();
+        self.load_erasures();
+    }
+
+    fn load_extern_specs(&mut self) {
         let mut traits_or_impls = Vec::new();
 
         for def_id in self.tcx.hir_body_owners() {
@@ -590,7 +611,44 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
     }
 
-    pub(crate) fn load_erasures(&mut self) {
+    fn load_trusted_positivity(&mut self) {
+        for id in self.tcx.hir_free_items() {
+            let item = self.tcx.hir_item(id);
+            let def_id = item.owner_id.to_def_id();
+            use rustc_hir::ItemKind::*;
+            match item.kind {
+                Struct(..) if is_extern_type(self.tcx, def_id) => {
+                    let (extern_id, tp) = extract_extern_trusted_positivity(self.tcx, def_id);
+                    if self.trusted_positivity.insert(extern_id, tp).is_some() {
+                        self.crash_and_error(
+                            self.def_span(def_id),
+                            format!(
+                                "duplicate extern type specification for {}",
+                                self.def_path_str(extern_id)
+                            ),
+                        )
+                    }
+                }
+                Struct(..) | Enum(..) | Union(..) => {
+                    let Some(tp) = extract_trusted_positivity(self.tcx, def_id) else {
+                        continue;
+                    };
+                    if self.trusted_positivity.insert(def_id, tp).is_some() {
+                        self.crash_and_error(
+                            self.def_span(def_id),
+                            format!(
+                                "duplicate extern type specification for {}",
+                                self.def_path_str(def_id)
+                            ),
+                        )
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn load_erasures(&mut self) {
         for def_id in self.tcx.hir_body_owners() {
             let thir = self.tcx.thir_body(def_id).unwrap_or_else(|err| err.raise_fatal());
             let Some((eraser, erasure)) = extract_erasure_from_item(self, def_id, thir) else {

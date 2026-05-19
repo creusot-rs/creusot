@@ -6,7 +6,7 @@ use crate::{
     contracts_items::{Intrinsic, get_builtin, is_bitwise},
     ctx::*,
     naming::name,
-    translation::traits::TraitResolved,
+    resolution::TraitResolved,
     util::{erased_identity_for_item, path_of_span},
 };
 use creusot_args::options::SpanMode;

@@ -48,6 +48,7 @@ mod gather_spec_closures;
 mod lints;
 mod metadata;
 mod naming;
+mod resolution;
 mod translated_item;
 mod translation;
 mod util;

@@ -1,12 +1,10 @@
 use crate::{
     contracts_items::{Intrinsic, get_builtin},
     ctx::{HasTyCtxt as _, TranslationCtx},
-    translation::{
-        pearlite::{
-            BinOp, Literal, Term, TermKind, UnOp,
-            visit::{TermVisitorMut, super_visit_mut_term},
-        },
-        traits::TraitResolved,
+    resolution::TraitResolved,
+    translation::pearlite::{
+        BinOp, Literal, Term, TermKind, UnOp,
+        visit::{TermVisitorMut, super_visit_mut_term},
     },
 };
 use rustc_hir::def_id::DefId;

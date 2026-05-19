@@ -13,10 +13,8 @@ use crate::{
     },
     contracts_items::{Intrinsic, is_trivial_if_param_trivial},
     ctx::{Namer, TranslationCtx},
-    translation::{
-        pearlite::{Ident, Pattern, Term, TermKind, Trigger},
-        traits::TraitResolved,
-    },
+    resolution::TraitResolved,
+    translation::pearlite::{Ident, Pattern, Term, TermKind, Trigger},
 };
 
 pub fn is_resolve_trivial<'tcx>(

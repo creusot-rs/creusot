@@ -37,7 +37,7 @@ use crate::{
     backend::is_trusted_item,
     contracts_items::{Intrinsic, is_before_loop, is_erasure, is_spec},
     ctx::{Erasure, HasTyCtxt, ThirExpr, TranslationCtx},
-    translation::traits::TraitResolved,
+    resolution::TraitResolved,
     util::{NamelessGenericArgs, ODecodable, OEncodable},
     validate::{is_ghost_block, is_ghost_or_snap},
 };

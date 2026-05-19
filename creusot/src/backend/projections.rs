@@ -8,10 +8,8 @@ use crate::{
     contracts_items::Intrinsic,
     ctx::{PreMod, TranslationCtx},
     naming::name,
-    translation::{
-        pearlite::{PIdent, Pattern, Term},
-        traits::TraitResolved,
-    },
+    resolution::TraitResolved,
+    translation::pearlite::{PIdent, Pattern, Term},
 };
 use rustc_abi::VariantIdx;
 use rustc_middle::{
