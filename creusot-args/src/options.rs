@@ -38,13 +38,15 @@ pub struct CreusotArgs {
     /// Specify locations of metadata for external crates. The format is the same as rustc's `--extern` flag.
     #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, PathBuf>, required=false)]
     pub extern_paths: Vec<(String, PathBuf)>,
-
     /// Enable `#[erasure]` checking across crates.
     #[clap(long, num_args = 0..=1, default_value_t = ErasureCheck::Warn, default_missing_value = "error")]
     pub erasure_check: ErasureCheck,
     /// Directory where cross-crate information for `#[erasure]` checks is stored.
     #[clap(long)]
     pub erasure_check_dir: Option<PathBuf>,
+    /// Maximum number of dependencies in a Coma module, to prevent infinite recursion.
+    #[clap(long = "max-dep-count", default_value_t = 9000)]
+    pub max_dep_count: usize,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum, Serialize, Deserialize)]
@@ -130,6 +132,7 @@ pub struct Options {
     pub span_mode: SpanMode,
     pub erasure_check: ErasureCheck,
     pub erasure_check_dir: Option<PathBuf>,
+    pub max_dep_count: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -183,6 +186,7 @@ impl CreusotArgs {
             prefix: Vec::new(), // to be set in callbacks::ToWhy::set_output_dir
             erasure_check: self.erasure_check,
             erasure_check_dir: self.erasure_check_dir,
+            max_dep_count: self.max_dep_count,
         })
     }
 }

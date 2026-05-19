@@ -54,6 +54,7 @@ struct VCGen<'a, 'tcx> {
     self_id: DefId,
     args_names: Vec<Ident>,
     variant: Option<Exp>,
+    variant_ty: Option<Ty<'tcx>>,
     typing_env: TypingEnv<'tcx>,
 }
 
@@ -64,12 +65,20 @@ pub(super) fn wp<'tcx>(
     self_id: DefId,
     args_names: Vec<Ident>,
     variant: Option<Exp>,
+    variant_ty: Option<Ty<'tcx>>,
     t: Term<'tcx>,
     dest: Ident,
     post: Exp,
 ) -> Exp {
-    let vcgen =
-        VCGen { typing_env: ctx.typing_env(self_id), ctx, names, self_id, args_names, variant };
+    let vcgen = VCGen {
+        typing_env: ctx.typing_env(self_id),
+        ctx,
+        names,
+        self_id,
+        args_names,
+        variant,
+        variant_ty,
+    };
     vcgen.build_wp(&t, &|exp| Exp::let_(dest, exp, post.clone()))
 }
 
@@ -198,10 +207,6 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     .skip_normalization().normalize_contract(self.ctx, self.typing_env);
 
                 let variant = if self.ctx.should_check_variant_decreases(self.self_id, id) {
-                    let subst_id = erased_identity_for_item(self.ctx.tcx, id);
-                    if subst != subst_id {
-                        self.ctx.crash_and_error(t.span, "polymorphic recursion is not supported.")
-                    }
                     if self.self_id != id {
                         self.ctx
                             .dcx()
@@ -219,6 +224,12 @@ impl<'tcx> VCGen<'_, 'tcx> {
 
                     let variant = pre_sig.contract.variant.clone();
                     if let Some(variant) = variant {
+                        if self.variant_ty.unwrap() != variant.ty {
+                            self.ctx.crash_and_error(
+                                self.ctx.def_span(self.self_id),
+                                "mismatch in the type of variant in a recursive call",
+                            )
+                        }
                         self.build_variant(&args, variant)
                     } else {
                         self.ctx.crash_and_error(

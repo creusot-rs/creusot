@@ -251,6 +251,9 @@ pub(crate) trait Namer<'tcx> {
 impl<'a, 'tcx> Namer<'tcx> for CloneNames<'a, 'tcx> {
     fn raw_dependency(&self, key: Dependency<'tcx>) -> &Kind {
         self.names.insert(key, |_| {
+            if self.names.len() >= 100 {
+                self.ctx.crash_and_error(self.ctx.def_span(self.source_id()), "Runaway recursion?");
+            }
             if let Some((did, _)) = key.did()
                 && let Some(why3_modl) = get_builtin(self.tcx(), did)
             {
