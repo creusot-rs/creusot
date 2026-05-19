@@ -351,13 +351,6 @@ struct DepGraphBuilder<'tcx> {
 }
 
 impl<'tcx> DepGraphBuilder<'tcx> {
-    /// The source item itself is kept out of the graph.
-    fn new(source: Dependency<'tcx>) -> Self {
-        let mut graph = Self::default();
-        graph.visited.insert(source);
-        graph
-    }
-
     /// Add a direct dependency of the source item
     fn add_node(&mut self, d: Dependency<'tcx>) {
         if self.visited.insert(d) {
@@ -446,7 +439,7 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
     pub(crate) fn new(ctx: &'a TranslationCtx<'tcx>, self_id: DefId) -> Self {
         debug!("cloning self: {:?}", self_id);
         let names = CloneNames::new(ctx, self_id);
-        let dep_graph = RefCell::new(DepGraphBuilder::new(names.source_item()));
+        let dep_graph = RefCell::new(DepGraphBuilder::default());
         Dependencies { names, dep_graph }
     }
 
