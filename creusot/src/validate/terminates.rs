@@ -83,7 +83,7 @@ pub(crate) type RecursiveCalls = IndexMap<DefId, IndexSet<DefId>>;
 /// For each function with a `#[variant]`, returns the called function before
 /// which the variant should have decreased.
 #[must_use]
-pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
+pub(crate) fn validate_terminates<'tcx>(ctx: &TranslationCtx<'tcx>) -> RecursiveCalls {
     // Check for ghost loops
     for local_id in ctx.hir_body_owners() {
         let def_id = local_id.to_def_id();
@@ -111,8 +111,8 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
         };
         assert!(def_id.is_local());
         let call = call_graph[self_edge];
-        let CallKind::Direct(span) = call else { continue };
-        call_graph.remove_edge(self_edge);
+        let CallKind::Direct(span, _) = call else { continue };
+        call_graph.remove_edge(self_edge); // TODO: there are more than 1 edge now
         if has_variant_clause(ctx.tcx, def_id) {
             recursive_calls.entry(def_id).or_default().insert(def_id);
             continue;
@@ -181,7 +181,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
             let f2 = ctx.def_path_str(next_node);
 
             match call {
-                CallKind::Direct(span) => {
+                CallKind::Direct(span, _) => {
                     error.span_note(span, format!("{adverb} `{f1}` calls `{f2}`{punct}"));
                 }
                 CallKind::GenericBound(indirect_id, span) => {
@@ -207,13 +207,13 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
     recursive_calls
 }
 
-struct CallGraph {
-    graph: graph::DiGraph<GraphNode, CallKind>,
+struct CallGraph<'tcx> {
+    graph: graph::DiGraph<GraphNode, CallKind<'tcx>>,
 }
 
 #[derive(Default)]
 struct BuildFunctionsGraph<'tcx> {
-    graph: graph::DiGraph<GraphNode, CallKind>,
+    graph: graph::DiGraph<GraphNode, CallKind<'tcx>>,
     graph_node_to_index: IndexMap<GraphNode, graph::NodeIndex>,
     /// Stores the generic bounds that are left when instantiating the default method in
     /// the impl block.
@@ -280,9 +280,9 @@ impl GraphNode {
 }
 
 #[derive(Clone, Copy, Debug)]
-enum CallKind {
+enum CallKind<'tcx> {
     /// Call of a function.
-    Direct(Span),
+    Direct(Span, GenericArgsRef<'tcx>),
     /// 'Indirect' call, this is an egde going inside an `impl` block. This happens when
     /// calling a generic function while specializing a type. For example:
     /// ```rust
@@ -349,7 +349,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 .instantiate(ctx.tcx, subst_r)
                 .skip_normalization()
         }
-        self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
+        self.graph.add_edge(node, called_node, CallKind::Direct(call_span, subst));
         for impl_id in proof_tree_nodes(ctx.tcx, typing_env, bounds) {
             let item_node = self.insert_node(GraphNode::impl_(impl_id));
             self.graph.update_edge(node, item_node, CallKind::GenericBound(called_id, call_span));
@@ -442,12 +442,12 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
     }
 }
 
-impl CallGraph {
+impl<'tcx> CallGraph<'tcx> {
     /// Build the call graph of all functions appearing in the current crate,
     /// exclusively for the purpose of termination checking.
     ///
     /// In particular, this means it only contains `#[check(terminates)]` or `#[trusted(terminates)]` functions.
-    fn build(ctx: &TranslationCtx) -> Self {
+    fn build(ctx: &TranslationCtx<'tcx>) -> Self {
         let tcx = ctx.tcx;
         let mut build_call_graph = BuildFunctionsGraph::default();
 
