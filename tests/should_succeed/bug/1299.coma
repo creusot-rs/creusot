@@ -1,0 +1,206 @@
+module M_count_paths
+  use creusot.int.Int64
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use seq.Seq
+  use int.Int
+  
+  type t_Range_isize = { start: Int64.t; end': Int64.t }
+  
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure0
+  
+  let count_paths (i: Int64.t) (return (x: ())) = {[@stop_split] [@expl:count_paths requires] Int64.to_int i >= 0}
+    any [ return (result: ()) -> (! return {result}) ]
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
+  
+  let closure0 [@coma:extspec] (self: MutBorrow.t ()) (j: Int64.t) (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = -{resolve_refmut_closure0 self}- s1
+      | s1 = count_paths {j} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t () = self | & j: Int64.t = j ]
+    [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  predicate postcondition_once_closure0 (self: ()) (args: Int64.t) (result: ()) =
+    let j = args in exists e: (). exists bor_self: MutBorrow.t (). bor_self.current = self
+        /\ bor_self.final = e /\ closure0'post'return bor_self j result /\ hist_inv_closure0 self e
+  
+  meta "rewrite_def" predicate postcondition_once_closure0
+  
+  predicate postcondition_mut_closure0 (self: ()) (args: Int64.t) (result_state: ()) (result: ()) =
+    let j = args in exists bor_self: MutBorrow.t (). bor_self.current = self
+      /\ bor_self.final = result_state /\ closure0'post'return bor_self j result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  function fn_mut_once_closure0 (self: ()) (args: Int64.t) (res: ()) : ()
+  
+  axiom fn_mut_once_closure0_spec:
+    forall self: (), args: Int64.t, res: () [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
+      = (exists res_state: (). postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
+  
+  function hist_inv_trans_closure0 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_closure0_spec:
+    forall self: (), b: (), c: () [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
+      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
+  
+  function hist_inv_refl_closure0 (self: ()) : ()
+  
+  axiom hist_inv_refl_closure0_spec: forall self: () [hist_inv_closure0 self self]. hist_inv_closure0 self self
+  
+  function postcondition_mut_hist_inv_closure0 (self: ()) (args: Int64.t) (res_state: ()) (res: ()) : ()
+  
+  axiom postcondition_mut_hist_inv_closure0_spec:
+    forall self: (), args: Int64.t, res_state: (), res: () [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
+      -> hist_inv_closure0 self res_state
+  
+  type t_Map_Range_isize_closure0
+  
+  function deep_model_isize [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
+  
+  meta "rewrite_def" function deep_model_isize
+  
+  predicate produces_Range_isize (self: t_Range_isize) (visited: Seq.seq Int64.t) (o: t_Range_isize) =
+    self.end' = o.end'
+    /\ deep_model_isize self.start <= deep_model_isize o.start
+    /\ (Seq.length visited > 0 -> deep_model_isize o.start <= deep_model_isize o.end')
+    /\ Seq.length visited = deep_model_isize o.start - deep_model_isize self.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+      -> deep_model_isize (Seq.get visited i) = deep_model_isize self.start + i)
+  
+  function produces_trans_Range_isize (a: t_Range_isize) (ab: Seq.seq Int64.t) (b: t_Range_isize) (bc: Seq.seq Int64.t) (c: t_Range_isize) : ()
+  
+  axiom produces_trans_Range_isize_spec:
+    forall a: t_Range_isize, ab: Seq.seq Int64.t, b: t_Range_isize, bc: Seq.seq Int64.t, c: t_Range_isize. produces_Range_isize a ab b
+      -> produces_Range_isize b bc c -> produces_Range_isize a (Seq.(++) ab bc) c
+  
+  function produces_refl_Range_isize (self: t_Range_isize) : ()
+  
+  axiom produces_refl_Range_isize_spec:
+    forall self: t_Range_isize. produces_Range_isize self (Seq.empty: Seq.seq Int64.t) self
+  
+  predicate inv_isize [@inline:trivial] (_1: Int64.t) = true
+  
+  meta "rewrite_def" predicate inv_isize
+  
+  predicate precondition_closure0 (self: ()) (args: Int64.t) =
+    let j = args in forall bor_self: MutBorrow.t (). bor_self.current = self -> closure0'pre bor_self j
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate resolve_refmut_Range_isize [@inline:trivial] (_1: MutBorrow.t t_Range_isize) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Range_isize
+  
+  predicate completed_Range_isize (self: MutBorrow.t t_Range_isize) =
+    resolve_refmut_Range_isize self /\ deep_model_isize self.current.start >= deep_model_isize self.current.end'
+  
+  predicate next_precondition_Range_isize [@inline:trivial] (iter: t_Range_isize) (func: ()) =
+    forall e: Int64.t, i: t_Range_isize [produces_Range_isize iter (Seq.singleton e) i]. inv_isize e
+        /\ produces_Range_isize iter (Seq.singleton e) i -> precondition_closure0 func e
+  
+  meta "rewrite_def" predicate next_precondition_Range_isize
+  
+  predicate inv_Seq_isize [@inline:trivial] (_1: Seq.seq Int64.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_isize
+  
+  predicate inv_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = true
+  
+  meta "rewrite_def" predicate inv_refmut_closure0
+  
+  predicate preservation_Range_isize [@inline:trivial] (iter: t_Range_isize) (func: ()) =
+    forall s: Seq.seq Int64.t, e1: Int64.t, e2: Int64.t, f: MutBorrow.t (), b: (), i: t_Range_isize [produces_Range_isize iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current e1 f.final b]. hist_inv_closure0 func f.current
+      -> inv_Seq_isize s /\ inv_isize e1 /\ inv_isize e2 /\ inv_refmut_closure0 f
+      -> produces_Range_isize iter (Seq.snoc (Seq.snoc s e1) e2) i
+      -> postcondition_mut_closure0 f.current e1 f.final b -> precondition_closure0 f.final e2
+  
+  meta "rewrite_def" predicate preservation_Range_isize
+  
+  predicate reinitialize_Range_isize [@inline:trivial] =
+    forall iter: MutBorrow.t t_Range_isize, func: (). completed_Range_isize iter
+      -> next_precondition_Range_isize iter.final func /\ preservation_Range_isize iter.final func
+  
+  meta "rewrite_def" predicate reinitialize_Range_isize
+  
+  predicate inv_Range_isize [@inline:trivial] (_1: t_Range_isize) = true
+  
+  meta "rewrite_def" predicate inv_Range_isize
+  
+  function iter_Map_Range_isize_closure0 (self: t_Map_Range_isize_closure0) : t_Range_isize
+  
+  predicate inv_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate inv_closure0
+  
+  function func_Map_Range_isize_closure0 (self: t_Map_Range_isize_closure0) : ()
+  
+  predicate invariant_Map_Range_isize_closure0 (self: t_Map_Range_isize_closure0)
+  
+  axiom invariant_Map_Range_isize_closure0_spec:
+    forall self: t_Map_Range_isize_closure0 [invariant_Map_Range_isize_closure0 self]. invariant_Map_Range_isize_closure0 self
+      -> inv_Range_isize (iter_Map_Range_isize_closure0 self) /\ inv_closure0 (func_Map_Range_isize_closure0 self)
+  
+  predicate inv_Map_Range_isize_closure0 (_1: t_Map_Range_isize_closure0)
+  
+  axiom inv_axiom: forall x: t_Map_Range_isize_closure0 [inv_Map_Range_isize_closure0 x]. inv_Map_Range_isize_closure0 x
+      -> invariant_Map_Range_isize_closure0 x
+  
+  let map_Range_isize (self_: t_Range_isize) (f: ()) (return (x: t_Map_Range_isize_closure0)) =
+  {[@stop_split] [@expl:map_Range_isize requires] ([@stop_split] [@expl:map requires #0] forall e: Int64.t, i2: t_Range_isize. produces_Range_isize self_ (Seq.singleton e) i2
+          /\ inv_isize e -> precondition_closure0 f e)
+    /\ ([@stop_split] [@expl:map requires #1] reinitialize_Range_isize)
+    /\ ([@stop_split] [@expl:map requires #2] preservation_Range_isize self_ f)}
+    any
+    [ return (result: t_Map_Range_isize_closure0) ->
+    {[@stop_split] [@expl:map_Range_isize ensures] ([@stop_split] [@expl:map result type invariant] inv_Map_Range_isize_closure0 result)
+      /\ ([@stop_split] [@expl:map ensures] iter_Map_Range_isize_closure0 result = self_
+      /\ func_Map_Range_isize_closure0 result = f)}
+      (! return {result}) ]
+  
+  predicate resolve_Range_isize [@inline:trivial] (_1: t_Range_isize) = true
+  
+  meta "rewrite_def" predicate resolve_Range_isize
+  
+  predicate resolve_Map_Range_isize_closure0 [@inline:trivial] (self: t_Map_Range_isize_closure0) =
+    resolve_Range_isize (iter_Map_Range_isize_closure0 self) /\ resolve_closure0 (func_Map_Range_isize_closure0 self)
+  
+  meta "rewrite_def" predicate resolve_Map_Range_isize_closure0
+  
+  predicate resolve_Map_Range_isize_closure0'0 (_1: t_Map_Range_isize_closure0)
+  
+  axiom resolve_axiom:
+    forall x: t_Map_Range_isize_closure0 [resolve_Map_Range_isize_closure0'0 x]. resolve_Map_Range_isize_closure0'0 x
+      -> resolve_Map_Range_isize_closure0 x
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let count_paths'0 (i: Int64.t) (return (x: ())) = {[@stop_split] [@expl:count_paths requires] Int64.to_int i >= 0}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_5 <- { start = (0: Int64.t); end' = i } ] s1
+      | s1 = [ &_7 <- () ] s2
+      | s2 = map_Range_isize {_5} {_7} (fun (_x: t_Map_Range_isize_closure0) -> [ &_4 <- _x ] s3)
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Map_Range_isize_closure0 _4} any) ]
+      | s4 = -{resolve_Map_Range_isize_closure0'0 _4}- s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & i: Int64.t = i
+    | & _4: t_Map_Range_isize_closure0 = Any.any_l ()
+    | & _5: t_Range_isize = Any.any_l ()
+    | & _7: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end

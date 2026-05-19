@@ -13,7 +13,7 @@ use crate::{
         },
         ty_inv::{TyInvDef, elaborate_tyinv_def, sig_add_type_invariant_spec},
     },
-    contracts_items::{Intrinsic, get_builtin, is_inline, is_logic, why3_metas},
+    contracts_items::{Intrinsic, get_builtin, is_logic, why3_metas},
     ctx::{BodyId, HasTyCtxt, ItemType},
     naming::name,
     resolution::TraitResolved,

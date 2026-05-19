@@ -4,7 +4,7 @@ module M_foo99
   
   type t_Option_i32 = None | Some Int32.t
   
-  let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
+  let elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
     [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
@@ -12,7 +12,7 @@ module M_foo99
         end}
       any) ]
   
-  let rec closure0 [@coma:extspec] (self: ()) (x: t_Option_i32) (return (x'0: Int32.t)) = bb0
+  let closure0 [@coma:extspec] (self: ()) (x: t_Option_i32) (return (x'0: Int32.t)) = bb0
     [ bb0 = any [ br0 -> {x = None} (! bb3) | br1 (x0: Int32.t) -> {x = Some x0} (! bb4) ]
     | bb4 = s0
       [ s0 = elim_Some {x} (fun (r0: Int32.t) -> [ &y <- r0 ] s1) | s1 = [ &_ret <- y ] s2 | s2 = return {_ret} ]
@@ -27,7 +27,7 @@ module M_foo99
   
   meta "select_lsinst" "all"
   
-  let rec foo99 (return (x: ())) = (! bb0
+  let foo99 (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &_my_closure <- () ] s1 | s1 = [ &_ret <- _my_closure ] s2 | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & _my_closure: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
