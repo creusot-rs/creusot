@@ -219,6 +219,7 @@ impl<T: ?Sized> Ghost<T> {
 }
 
 impl<T, U: ?Sized> Ghost<(T, U)> {
+    /// Transform a `Ghost` of a pair into a pair of `Ghost`s.
     #[check(ghost)]
     #[trusted]
     #[erasure(_)]
@@ -228,6 +229,31 @@ impl<T, U: ?Sized> Ghost<(T, U)> {
         (Ghost::conjure(), Ghost::conjure())
     }
 }
+
+/// Implement splitting `Ghost` of tuples
+macro_rules! split_ghost {
+    ( $( ( $t:ident , $n:literal ) )+ ) => {
+        impl<$( $t , )+> Ghost<($( $t ),+)> {
+            /// Transform a `Ghost` of tuple into a tuple of `Ghost`s.
+            #[check(ghost)]
+            #[trusted]
+            $(
+                #[ensures((*self).$n == *result.$n)]
+            )+
+            pub fn split(self) -> ($( Ghost<$t> ),+) {
+                ($( { split_ghost!(@ignore $t); Ghost::conjure() } ),+)
+            }
+        }
+    };
+    (@ignore $($t:tt)*) => {};
+}
+
+split_ghost! { (T1, 0) (T2, 1) (T3, 2) }
+split_ghost! { (T1, 0) (T2, 1) (T3, 2) (T4, 3) }
+split_ghost! { (T1, 0) (T2, 1) (T3, 2) (T4, 3) (T5, 4) }
+split_ghost! { (T1, 0) (T2, 1) (T3, 2) (T4, 3) (T5, 4) (T6, 5) }
+split_ghost! { (T1, 0) (T2, 1) (T3, 2) (T4, 3) (T5, 4) (T6, 5) (T7, 6) }
+split_ghost! { (T1, 0) (T2, 1) (T3, 2) (T4, 3) (T5, 4) (T6, 5) (T7, 6) (T8, 7) }
 
 /// A trait for types that can be extracted from snapshots in ghost code.
 ///
