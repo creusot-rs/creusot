@@ -66,8 +66,8 @@ pub(crate) fn from_thir_with_triggers<'tcx>(
         param.pat.as_ref().map(|box pat| lower.pattern_term(ctx, pat, true))
     };
     let is_closure = ctx.is_closure_like(did);
-    let patterns: Box<[Pattern]> = if is_spec(ctx.tcx, did) && is_closure {
-        // Most specs are closures.
+    let patterns: Box<[Pattern]> = if is_spec(ctx.tcx, did) {
+        assert!(is_closure);
         // Preconditions and variants have all of their variables bound in the parent function.
         // Postconditions also bind a `result` variable.
         let parent = ctx.parent(did).expect_local();
@@ -100,7 +100,7 @@ pub(crate) fn from_thir_with_triggers<'tcx>(
             .collect::<Result<_, ErrorGuaranteed>>()
     } else {
         assert!(!is_closure);
-        // Case of non-specs or trait item specs (which desugar to extra trait items).
+        // Case of non-specs
         thir.params.iter().filter_map(to_pattern).collect::<Result<_, ErrorGuaranteed>>()
     }?;
     let bound: BoundVars = patterns

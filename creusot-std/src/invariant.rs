@@ -111,7 +111,7 @@ pub fn inv<T: ?Sized>(_: &T) -> bool {
 
 /// A type implements `InhabitedInvariants` when its type invariant is inhabited.
 /// This is needed to define subset types.
-pub trait InhabitedInvariant: Invariant {
+pub trait InhabitedInvariant: Invariant + Sized {
     #[logic]
     #[ensures(result.invariant())]
     fn inhabits() -> Self;

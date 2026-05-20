@@ -12,7 +12,7 @@ use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
-    Attribute, Ident, Item, Pat, Path, ReturnType, Signature, Stmt, Token, Type, parenthesized,
+    Attribute, Ident, Item, Pat, Path, ReturnType, Stmt, Token, Type, parenthesized,
     parse::{self, Parse},
     parse_macro_input, parse_quote,
     punctuated::Punctuated,
@@ -30,38 +30,47 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
     let req_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
     let name_tag = req_name.to_string();
+    let requires_tokens = fn_spec_item(req_name.clone(), FnSpecResultKind::NoResult, req_body);
     match item {
-        ContractSubject::FnOrMethod(mut fn_or_meth) if fn_or_meth.is_trait_signature() => {
+        ContractSubject::FnOrMethod(mut fn_or_meth) => {
+            let ty_result = match fn_or_meth.sig.output {
+                ReturnType::Default => parse_quote! { () },
+                ReturnType::Type(_, ref ty) => (**ty).clone(),
+            };
             let attrs = std::mem::take(&mut fn_or_meth.attrs);
-            let mut sig = fn_or_meth.sig.clone();
-            sig.ident = req_name.clone();
-            sig.output = parse_quote! { -> bool };
 
-            let requires_tokens = sig_spec_item(req_name, sig, req_body);
-            TS1::from(quote! {
-              #requires_tokens
-              #[creusot::clause::requires=#name_tag]
-              #(#attrs)*
-              #documentation
-              #fn_or_meth
-            })
-        }
-        ContractSubject::FnOrMethod(mut f) => {
-            let attrs = std::mem::take(&mut f.attrs);
-            let requires_tokens = fn_spec_item(req_name, FnSpecResultKind::NoResult, req_body);
+            let mut companion = TokenStream::new();
+            if let Some(b) = fn_or_meth.body.as_mut() {
+                b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)));
+            } else {
+                assert!(fn_or_meth.is_trait_signature());
+                let mut sig = fn_or_meth.sig.clone();
+                sig.ident = req_name.clone();
+                // Make sure the spec method has a prototype which is very similar to the original one,
+                // To guarantee that they have the same ParamEnv
+                // (in particular, they have the same early/late bound variables)
+                sig.output = parse_quote! { -> ::core::marker::PhantomData<#ty_result> };
 
-            if let Some(b) = f.body.as_mut() {
-                b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)))
+                companion = quote! {
+                    #[creusot::no_translate]
+                    #[doc(hidden)]
+                    #sig {
+                        #requires_tokens
+                        ::core::marker::PhantomData
+                    }
+                };
             }
+
             TS1::from(quote! {
-              #[creusot::clause::requires=#name_tag]
-              #(#attrs)*
-              #documentation
-              #f
+                #companion
+
+                #[creusot::clause::requires=#name_tag]
+                #(#attrs)*
+                #documentation
+                #fn_or_meth
             })
         }
         ContractSubject::Closure(mut clos) => {
-            let requires_tokens = fn_spec_item(req_name, FnSpecResultKind::NoResult, req_body);
             let body = &clos.body;
             *clos.body = parse_quote!({let res = #body; #requires_tokens res});
             TS1::from(quote! {
@@ -79,6 +88,14 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     let mut item = parse_macro_input!(tokens as ContractSubject);
     let (result, ens_body) = match parse_macro_input!(attr as EnsuresTerm) {
         EnsuresTerm::EnsuresClosure(closure) => {
+            if matches!(item, ContractSubject::Closure(_)) {
+                return syn::Error::new(
+                    closure.span(),
+                    "The syntax #[ensures(|res| ...)] is not supported for specifying closures.",
+                )
+                .into_compile_error()
+                .into();
+            }
             (closure.result, pretyping::encode_term_with_triggers(&closure.body))
         }
         EnsuresTerm::TermWithTriggers(term) => {
@@ -89,44 +106,49 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     item.mark_unused();
 
     let ens_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
-    let name_tag = ens_name.to_string();
+    let name_tag = ens_name.clone().to_string();
     match item {
-        ContractSubject::FnOrMethod(mut s) if s.is_trait_signature() => {
-            let attrs = std::mem::take(&mut s.attrs);
-            let mut sig = s.sig.clone();
-            let result = match sig.output {
-                ReturnType::Default => parse_quote! { #result: () },
-                ReturnType::Type(_, ty) => parse_quote! { #result: #ty },
-            };
-
-            sig.ident = ens_name.clone();
-            sig.inputs.push(result);
-            sig.output = parse_quote! { -> bool };
-            let ensures_tokens = sig_spec_item(ens_name, sig, ens_body);
-            TS1::from(quote! {
-              #ensures_tokens
-              #[creusot::clause::ensures=#name_tag]
-              #(#attrs)*
-              #documentation
-              #s
-            })
-        }
-        ContractSubject::FnOrMethod(mut f) => {
-            let attrs = std::mem::take(&mut f.attrs);
-            let ty_result = match f.sig.output {
+        ContractSubject::FnOrMethod(mut fn_or_meth) => {
+            let ty_result = match fn_or_meth.sig.output {
                 ReturnType::Default => parse_quote! { () },
                 ReturnType::Type(_, ref ty) => (**ty).clone(),
             };
-            let ensures_tokens =
-                fn_spec_item(ens_name, FnSpecResultKind::Typed(result, ty_result), ens_body);
-            if let Some(b) = f.body.as_mut() {
-                b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)))
+            let ensures_tokens = fn_spec_item(
+                ens_name.clone(),
+                FnSpecResultKind::Typed(result, ty_result.clone()),
+                ens_body,
+            );
+            let attrs = std::mem::take(&mut fn_or_meth.attrs);
+
+            let mut companion = TokenStream::new();
+            if let Some(b) = fn_or_meth.body.as_mut() {
+                b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)));
+            } else {
+                assert!(fn_or_meth.is_trait_signature());
+                let mut sig = fn_or_meth.sig.clone();
+                sig.ident = ens_name;
+                // Make sure the spec method has a prototype which is very similar to the original one,
+                // To guarantee that they have the same ParamEnv
+                // (in particular, they have the same early/late bound variables)
+                sig.output = parse_quote! { -> ::core::marker::PhantomData<#ty_result> };
+
+                companion = quote! {
+                    #[creusot::no_translate]
+                    #[doc(hidden)]
+                    #sig {
+                        #ensures_tokens
+                        ::core::marker::PhantomData
+                    }
+                };
             }
+
             TS1::from(quote! {
+                #companion
+
                 #[creusot::clause::ensures=#name_tag]
                 #(#attrs)*
                 #documentation
-                #f
+                #fn_or_meth
             })
         }
         ContractSubject::Closure(mut clos) => {
@@ -230,16 +252,6 @@ impl Parse for Attributes {
     }
 }
 
-fn spec_attrs(tag: Ident) -> TokenStream {
-    let name_tag = tag.to_string();
-    quote! {
-         #[creusot::no_translate]
-         #[creusot::item=#name_tag]
-         #[creusot::spec]
-         #[doc(hidden)]
-    }
-}
-
 enum FnSpecResultKind {
     NoResult,            // No result identifier (for ensures clauses)
     Typed(Pat, Type),    // The result identifier is typed explicitly (i.e. `|result : #ty| ...`)
@@ -249,8 +261,7 @@ enum FnSpecResultKind {
 // Generate a token stream for the item representing a specific
 // `requires` or `ensures`
 fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, fn_spec_body: TokenStream) -> TokenStream {
-    let attrs = spec_attrs(tag);
-
+    let name_tag = tag.to_string();
     let unify_ty_result = if let FnSpecResultKind::Unified(result, res) = &reskind {
         // Tell type inference that res and result have the same type
         quote! { ::creusot_std::__stubs::closure_result(#res, #result); }
@@ -267,18 +278,11 @@ fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, fn_spec_body: TokenStream
     quote! {
         #[allow(let_underscore_drop)]
         let _ =
-            #attrs
+            #[creusot::no_translate]
+            #[creusot::item=#name_tag]
+            #[creusot::spec]
             |#result_bind| -> bool { #unify_ty_result #fn_spec_body }
         ;
-    }
-}
-
-fn sig_spec_item(tag: Ident, sig: Signature, fn_spec_body: TokenStream) -> TokenStream {
-    let attrs = spec_attrs(tag);
-
-    quote! {
-        #attrs
-        #sig { #fn_spec_body }
     }
 }
 

@@ -271,20 +271,25 @@ pub(crate) fn inherited_extern_spec<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    let subst = erased_identity_for_item(ctx.tcx, def_id);
-
     if def_id.is_local() || ctx.extern_spec(def_id).is_some() {
         return None;
     }
 
     let assoc = ctx.opt_associated_item(def_id)?;
-    let trait_ref = ctx.impl_opt_trait_ref(assoc.impl_container(ctx.tcx)?)?;
+    let impl_id = assoc.impl_container(ctx.tcx)?;
+    let trait_ref = ctx
+        .impl_opt_trait_ref(impl_id)?
+        .instantiate(ctx.tcx, erased_identity_for_item(ctx.tcx, impl_id))
+        .skip_normalization();
     let id = assoc.trait_item_def_id()?;
 
     if ctx.extern_spec(id).is_none() {
         return None;
     }
-    Some((id, trait_ref.instantiate(ctx.tcx, subst).skip_normalization().args))
+
+    let subst = erased_identity_for_item(ctx.tcx, def_id);
+    let subst = subst.rebase_onto(ctx.tcx, impl_id, trait_ref.args);
+    Some((id, subst))
 }
 
 pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {

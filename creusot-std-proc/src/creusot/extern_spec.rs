@@ -343,7 +343,8 @@ impl FlatSpec {
         let f = ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(block) };
 
         quote_spanned! {span=>
-            #[creusot::no_translate] #[creusot::extern_spec]
+            #[creusot::no_translate]
+            #[creusot::extern_spec]
             #f
 
             #[cfg(doc)]
