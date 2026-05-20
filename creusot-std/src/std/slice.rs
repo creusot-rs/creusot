@@ -277,18 +277,20 @@ impl<T> SliceIndexSpec<[T]> for RangeToInclusive<usize> {
     }
 }
 
-#[logic(open)]
-pub fn to_logic_range(interval: (Bound<usize>, Bound<usize>), len: Int) -> Range<Int> {
-    match interval {
-        (Bound::Included(start), Bound::Included(end)) => start.view()..end.view() + 1,
-        (Bound::Included(start), Bound::Excluded(end)) => start.view()..end.view(),
-        (Bound::Included(start), Bound::Unbounded) => start.view()..len,
-        (Bound::Excluded(start), Bound::Excluded(end)) => start.view() + 1..end.view(),
-        (Bound::Excluded(start), Bound::Included(end)) => start.view() + 1..end.view() + 1,
-        (Bound::Excluded(start), Bound::Unbounded) => start.view() + 1..len,
-        (Bound::Unbounded, Bound::Unbounded) => 0..len,
-        (Bound::Unbounded, Bound::Included(end)) => 0..end.view() + 1,
-        (Bound::Unbounded, Bound::Excluded(end)) => 0..end.view(),
+#[logic(open, inline)]
+pub fn to_logic_range((lo, hi): (Bound<usize>, Bound<usize>), len: Int) -> Range<Int> {
+    pearlite! {
+        let lo = match lo {
+            Bound::Included(i) => i@,
+            Bound::Excluded(i) => i@ + 1,
+            Bound::Unbounded => 0
+        };
+        let hi = match hi {
+            Bound::Included(i) => i@ + 1,
+            Bound::Excluded(i) => i@,
+            Bound::Unbounded => len
+        };
+        lo..hi
     }
 }
 
