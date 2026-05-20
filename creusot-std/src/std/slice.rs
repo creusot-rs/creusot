@@ -277,63 +277,40 @@ impl<T> SliceIndexSpec<[T]> for RangeToInclusive<usize> {
     }
 }
 
+#[logic(open)]
+pub fn to_logic_range(interval: (Bound<usize>, Bound<usize>), len: Int) -> Range<Int> {
+    match interval {
+        (Bound::Included(start), Bound::Included(end)) => start.view()..end.view() + 1,
+        (Bound::Included(start), Bound::Excluded(end)) => start.view()..end.view(),
+        (Bound::Included(start), Bound::Unbounded) => start.view()..len,
+        (Bound::Excluded(start), Bound::Excluded(end)) => start.view() + 1..end.view(),
+        (Bound::Excluded(start), Bound::Included(end)) => start.view() + 1..end.view() + 1,
+        (Bound::Excluded(start), Bound::Unbounded) => start.view() + 1..len,
+        (Bound::Unbounded, Bound::Unbounded) => 0..len,
+        (Bound::Unbounded, Bound::Included(end)) => 0..end.view() + 1,
+        (Bound::Unbounded, Bound::Excluded(end)) => 0..end.view(),
+    }
+}
+
 impl<T> SliceIndexSpec<[T]> for (Bound<usize>, Bound<usize>) {
     #[logic(open)]
     fn in_bounds(self, seq: Seq<T>) -> bool {
-        match self {
-            (Bound::Included(start), Bound::Included(end)) => (start..=end).in_bounds(seq),
-            (Bound::Included(start), Bound::Excluded(end)) => (start..end).in_bounds(seq),
-            (Bound::Included(start), Bound::Unbounded) => (start..).in_bounds(seq),
-            (Bound::Excluded(start), Bound::Excluded(end)) => (start + 1usize..end).in_bounds(seq),
-            (Bound::Excluded(start), Bound::Included(end)) => (start + 1usize..=end).in_bounds(seq),
-            (Bound::Excluded(start), Bound::Unbounded) => (start + 1usize..).in_bounds(seq),
-            (Bound::Unbounded, Bound::Unbounded) => (..).in_bounds(seq),
-            (Bound::Unbounded, Bound::Included(end)) => (..=end).in_bounds(seq),
-            (Bound::Unbounded, Bound::Excluded(end)) => (..end).in_bounds(seq),
-        }
+        let range = to_logic_range(self, seq.len());
+        pearlite! { range.start <= range.end && range.end <= seq.len() }
     }
 
     #[logic(open)]
     fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
-        match self {
-            (Bound::Included(start), Bound::Included(end)) => (start..=end).has_value(seq, out),
-            (Bound::Included(start), Bound::Excluded(end)) => (start..end).has_value(seq, out),
-            (Bound::Included(start), Bound::Unbounded) => (start..).has_value(seq, out),
-            (Bound::Excluded(start), Bound::Excluded(end)) => {
-                (start + 1usize..end).has_value(seq, out)
-            }
-            (Bound::Excluded(start), Bound::Included(end)) => {
-                (start + 1usize..=end).has_value(seq, out)
-            }
-            (Bound::Excluded(start), Bound::Unbounded) => (start + 1usize..).has_value(seq, out),
-            (Bound::Unbounded, Bound::Unbounded) => (..).has_value(seq, out),
-            (Bound::Unbounded, Bound::Included(end)) => (..=end).has_value(seq, out),
-            (Bound::Unbounded, Bound::Excluded(end)) => (..end).has_value(seq, out),
-        }
+        let range = to_logic_range(self, seq.len());
+        pearlite! { seq.subsequence(range.start, range.end) == out@ }
     }
 
     #[logic(open)]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
-        match self {
-            (Bound::Included(start), Bound::Included(end)) => {
-                (start..=end).resolve_elswhere(old, fin)
-            }
-            (Bound::Included(start), Bound::Excluded(end)) => {
-                (start..end).resolve_elswhere(old, fin)
-            }
-            (Bound::Included(start), Bound::Unbounded) => (start..).resolve_elswhere(old, fin),
-            (Bound::Excluded(start), Bound::Excluded(end)) => {
-                (start + 1usize..end).resolve_elswhere(old, fin)
-            }
-            (Bound::Excluded(start), Bound::Included(end)) => {
-                (start + 1usize..=end).resolve_elswhere(old, fin)
-            }
-            (Bound::Excluded(start), Bound::Unbounded) => {
-                (start + 1usize..).resolve_elswhere(old, fin)
-            }
-            (Bound::Unbounded, Bound::Unbounded) => (..).resolve_elswhere(old, fin),
-            (Bound::Unbounded, Bound::Included(end)) => (..=end).resolve_elswhere(old, fin),
-            (Bound::Unbounded, Bound::Excluded(end)) => (..end).resolve_elswhere(old, fin),
+        let range = to_logic_range(self, old.len());
+        pearlite! {
+            forall<i> 0 <= i && (i < range.start || range.end <= i) && i < old.len()
+            ==> old[i] == fin[i]
         }
     }
 }
