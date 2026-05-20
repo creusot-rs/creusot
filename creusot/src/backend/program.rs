@@ -72,7 +72,10 @@ pub(crate) fn translate_function<'tcx>(
 
     let (mut decls, setters) = names.provide_deps(ctx);
     let body = setters.call_setters(body);
-    let defn = to_why_defn(ctx, name, def_id, body, sig);
+    let mut defn = to_why_defn(ctx, def_id, body, sig);
+    // Refresh the name of the function. The previous name is already used for recursive calls,
+    // which are translated to a separate abstract function.
+    defn.prototype.name = defn.prototype.name.refresh();
     decls.extend(common_meta_decls());
     decls.push(Decl::Coma(defn));
 
@@ -126,7 +129,7 @@ pub(crate) fn to_why<'tcx>(
     def_id: DefId,
 ) -> Defn {
     let (body, sig) = to_why_body(ctx, names, name, def_id);
-    to_why_defn(ctx, name, def_id, body, sig)
+    to_why_defn(ctx, def_id, body, sig)
 }
 
 pub(crate) fn to_why_body<'tcx>(
@@ -239,9 +242,8 @@ pub(crate) fn to_why_body<'tcx>(
     (body, sig)
 }
 
-pub(crate) fn to_why_defn<'tcx>(
+fn to_why_defn<'tcx>(
     ctx: &Why3Generator<'tcx>,
-    name: Ident,
     def_id: DefId,
     mut body: Expr,
     mut sig: ProgramSignature,
@@ -257,7 +259,7 @@ pub(crate) fn to_why_defn<'tcx>(
         ret = ret.black_box();
     }
 
-    let name = name.name().to_string();
+    let name = sig.prototype.name.name().to_string();
     let postcond = Expr::assert(sig.contract.ensures_conj(&name), ret);
     body = Expr::Defn(
         body.boxed(),

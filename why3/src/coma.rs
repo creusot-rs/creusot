@@ -431,8 +431,10 @@ impl Print for Expr {
                     )
                 } else {
                     // Print the handler bodies
-                    let handlers: Box<[_]> =
-                        handlers.iter().map(|d| print_nonrec_defn(d, alloc, scope)).collect();
+                    let handlers: Box<[_]> = handlers
+                        .iter()
+                        .map(|d| print_nonrec_defn(d, " ->", alloc, scope))
+                        .collect();
                     // Bind the names of the handlers
                     let handlers: Box<[_]> =
                         handlers.into_iter().map(|d| d.pretty(alloc, scope)).collect();
@@ -582,6 +584,7 @@ struct NonRecDefnDoc<'a, A: pretty::DocAllocator<'a>> {
     name: Ident,
     attrs: pretty::DocBuilder<'a, A>,
     params: pretty::DocBuilder<'a, A>,
+    arrow: &'static str,
     body: pretty::DocBuilder<'a, A>,
 }
 
@@ -596,7 +599,7 @@ impl<'a, A: pretty::DocAllocator<'a>> NonRecDefnDoc<'a, A> {
             self.name.pretty_value_name(alloc, scope),
             self.attrs,
             self.params,
-            " ->",
+            self.arrow,
             self.body
         ]
     }
@@ -604,6 +607,7 @@ impl<'a, A: pretty::DocAllocator<'a>> NonRecDefnDoc<'a, A> {
 
 fn print_nonrec_defn<'a, A: pretty::DocAllocator<'a>>(
     defn: &'a Defn,
+    arrow: &'static str, // " ->" or " ="
     alloc: &'a A,
     scope: &mut Why3Scope,
 ) -> NonRecDefnDoc<'a, A>
@@ -626,6 +630,7 @@ where
         )
         .nest(2)
         .group(),
+        arrow,
         body: alloc.softline().append(defn.body.pretty(alloc, scope).nest(2)).group(),
     };
     scope.close();
@@ -641,10 +646,6 @@ impl Print for Defn {
     where
         A::Doc: Clone,
     {
-        scope.bind_value(self.prototype.name);
-        scope.open();
-        let doc = docs![alloc, "let rec ", print_rec_defn(self, alloc, scope),];
-        scope.close();
-        doc
+        docs![alloc, "let ", print_nonrec_defn(self, " =", alloc, scope).pretty(alloc, scope),]
     }
 }
