@@ -342,7 +342,9 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
         }) => {
             let from = encode_term_(from, locals)?.toks();
             let to = encode_term_(to, locals)?.toks();
-            Ok(quote_spanned! {sp=> ::std::ops::RangeInclusive::new_log(#from, #to) }.into())
+            Ok(quote_spanned! {sp=>
+                <::core::ops::RangeInclusive<_> as ::creusot_std::std::ops::RangeInclusiveExt<_>>::new_log(#from, #to)
+            }.into())
         }
         Term::Range(TermRange { from, limits, to }) => {
             let from = match from {
