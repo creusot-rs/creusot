@@ -296,6 +296,10 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.type_of(Intrinsic::Int.get(self)).no_bound_vars().unwrap()
     }
 
+    pub(crate) fn has_variant(&self, def_id: DefId) -> bool {
+        self.variant_calls.borrow().contains_key(&def_id)
+    }
+
     /// Returns `true` if a call from `caller` to `callee` should be checked to
     /// have decreased a variant.
     pub(crate) fn should_check_variant_decreases(&self, caller: DefId, callee: DefId) -> bool {
