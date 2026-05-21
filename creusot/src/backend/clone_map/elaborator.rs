@@ -116,7 +116,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         if ctx.def_kind(def_id) == DefKind::Closure {
             // Inline the body of closures
-            let mut decls = vec![Decl::Coma(program::to_why(ctx, &names, name, def_id))];
+            let mut decls = vec![Decl::Coma(program::translate_closure(ctx, &names, name, def_id))];
             if !pre_sig.contract.has_user_contract {
                 decls.extend(["'pre", "'post'return"].map(|s| {
                     Decl::Meta(Meta {

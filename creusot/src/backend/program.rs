@@ -122,7 +122,7 @@ pub(crate) fn node_graph(x: &Body) -> petgraph::graphmap::DiGraphMap<BasicBlock,
 }
 
 /// Translate a program function body to why3.
-pub(crate) fn to_why<'tcx>(
+pub(crate) fn translate_closure<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     name: Ident,
@@ -147,11 +147,14 @@ pub(crate) fn to_why_body<'tcx>(
     let sig = ctx.sig(def_id);
     let args = sig.inputs.iter().map(|(name, _, _)| name.0).collect::<Box<[_]>>();
     let body_id = BodyId::local(def_id.expect_local());
-    let variant_ident = if ctx.ctx.has_variant(body_id.def_id) {
-        Some(Ident::fresh_local("variant'"))
-    } else {
-        None
-    };
+
+    let mut top_item = def_id;
+    while ctx.def_kind(top_item) == DefKind::Closure {
+        top_item = ctx.parent(def_id);
+    }
+    let variant_ident =
+        if ctx.ctx.has_variant(top_item) { Some(Ident::fresh_local("variant'")) } else { None };
+
     let mut body = why_body(ctx, names, body_id, None, &args, name::return_(), variant_ident);
     let mut sig = {
         let mut sig = sig.clone();
@@ -161,10 +164,8 @@ pub(crate) fn to_why_body<'tcx>(
         lower_program_sig(ctx, names, name, sig, def_id, name::return_())
     };
 
-    let fmir_body = ctx.fmir_body(body_id).clone();
-    let variant_name = fmir_body.function_variant;
     if let Some((exp, ty)) = std::mem::take(&mut sig.variant) {
-        body = body.let_(std::iter::once(Var(variant_name.0, ty, exp, IsRef::NotRef)))
+        body = body.let_(std::iter::once(Var(variant_ident.unwrap(), ty, exp, IsRef::NotRef)))
     }
 
     (body, sig)
