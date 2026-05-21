@@ -557,10 +557,8 @@ module M_parallel_add
   
   meta "rewrite_def" predicate resolve_closure0
   
-  predicate hist_inv_closure0 [@inline:trivial] (self: closure0'2) (result_state: closure0'2) =
+  predicate hist_inv_closure0 (self: closure0'2) (result_state: closure0'2) =
     result_state.c0'2.final = self.c0'2.final /\ result_state.c1'2.final = self.c1'2.final
-  
-  meta "rewrite_def" predicate hist_inv_closure0
   
   let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0'2) (inv: MutBorrow.t t_ParallelAddAtomicInv)
     (return (x: ())) = {[@stop_split] [@expl:closure 'inv' type invariant] inv_refmut_ParallelAddAtomicInv inv}
@@ -625,14 +623,14 @@ module M_parallel_add
   
   meta "rewrite_def" predicate closure0'post'return
   
-  predicate postcondition_once_closure0 [@inline:trivial] (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+  predicate postcondition_once_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
     let inv = args in exists e: closure0'2. (exists bor_self: MutBorrow.t closure0'2. bor_self.current = self
           /\ bor_self.final = e /\ closure0'post'return bor_self inv result /\ hist_inv_closure0 self e)
       /\ resolve_closure0 e
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate postcondition_mut_closure0 [@inline:trivial] (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (result_state: closure0'2) (result: ()) =
+  predicate postcondition_mut_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (result_state: closure0'2) (result: ()) =
     let inv = args in exists bor_self: MutBorrow.t closure0'2. bor_self.current = self
       /\ bor_self.final = result_state
       /\ closure0'post'return bor_self inv result /\ hist_inv_closure0 self result_state
@@ -642,22 +640,23 @@ module M_parallel_add
   function fn_mut_once_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (res: ()) : ()
   
   axiom fn_mut_once_closure0_spec:
-    forall self: closure0'2, args: MutBorrow.t t_ParallelAddAtomicInv, res: (). postcondition_once_closure0 self args res
+    forall self: closure0'2, args: MutBorrow.t t_ParallelAddAtomicInv, res: () [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
       = (exists res_state: closure0'2. postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
   
   function hist_inv_trans_closure0 (self: closure0'2) (b: closure0'2) (c: closure0'2) : ()
   
-  axiom hist_inv_trans_closure0_spec: forall self: closure0'2, b: closure0'2, c: closure0'2. hist_inv_closure0 self b
+  axiom hist_inv_trans_closure0_spec:
+    forall self: closure0'2, b: closure0'2, c: closure0'2 [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
       -> hist_inv_closure0 b c -> hist_inv_closure0 self c
   
   function hist_inv_refl_closure0 (self: closure0'2) : ()
   
-  axiom hist_inv_refl_closure0_spec: forall self: closure0'2. hist_inv_closure0 self self
+  axiom hist_inv_refl_closure0_spec: forall self: closure0'2 [hist_inv_closure0 self self]. hist_inv_closure0 self self
   
   function postcondition_mut_hist_inv_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (res_state: closure0'2) (res: ()) : ()
   
   axiom postcondition_mut_hist_inv_closure0_spec:
-    forall self: closure0'2, args: MutBorrow.t t_ParallelAddAtomicInv, res_state: closure0'2, res: (). postcondition_mut_closure0 self args res_state res
+    forall self: closure0'2, args: MutBorrow.t t_ParallelAddAtomicInv, res_state: closure0'2, res: () [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
       -> hist_inv_closure0 self res_state
   
   type t_FnGhostWrapper_closure0 = { f0'5: closure0'2 }
@@ -674,17 +673,17 @@ module M_parallel_add
   
   predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
   
-  predicate precondition_closure0 [@inline:trivial] (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) =
+  predicate precondition_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) =
     let inv = args in forall bor_self: MutBorrow.t closure0'2. bor_self.current = self -> closure0'pre bor_self inv
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate precondition_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_ParallelAddAtomicInv) =
+  predicate precondition_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_ParallelAddAtomicInv) =
     precondition_closure0 self.f0'5 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0
   
-  predicate postcondition_once_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+  predicate postcondition_once_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
     postcondition_once_closure0 self.f0'5 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0
@@ -763,22 +762,22 @@ module M_parallel_add
   
   meta "rewrite_def" predicate inv_ref_AtomicI32
   
-  predicate precondition_closure0'0 [@inline:trivial] (self: closure0'1) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) =
+  predicate precondition_closure0'0 (self: closure0'1) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) =
     let c = args in closure0'0'pre self c
   
   meta "rewrite_def" predicate precondition_closure0'0
   
-  predicate precondition_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) =
+  predicate precondition_FnGhostWrapper_closure0'0 (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) =
     precondition_closure0'0 self.f0'6 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'0
   
-  predicate postcondition_once_closure0'0 [@inline:trivial] (self: closure0'1) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (result: ()) =
+  predicate postcondition_once_closure0'0 (self: closure0'1) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (result: ()) =
     let c = args in closure0'0'post'return self c result
   
   meta "rewrite_def" predicate postcondition_once_closure0'0
   
-  predicate postcondition_once_FnGhostWrapper_closure0'0 [@inline:trivial] (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (result: ()) =
+  predicate postcondition_once_FnGhostWrapper_closure0'0 (self: t_FnGhostWrapper_closure0'0) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (result: ()) =
     postcondition_once_closure0'0 self.f0'6 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'0
@@ -866,7 +865,7 @@ module M_parallel_add
   
   meta "rewrite_def" predicate inv_refmut_Scope
   
-  predicate precondition_closure0'1 [@inline:trivial] (self: closure0'0) (args: t_Tokens) =
+  predicate precondition_closure0'1 (self: closure0'0) (args: t_Tokens) =
     let tokens = args in closure0'1'pre self tokens
   
   meta "rewrite_def" predicate precondition_closure0'1
@@ -875,7 +874,7 @@ module M_parallel_add
   
   predicate valid_result_ScopedJoinHandle_unit (self: t_ScopedJoinHandle_unit) (_x: ())
   
-  predicate postcondition_once_closure0'1 [@inline:trivial] (self: closure0'0) (args: t_Tokens) (result: ()) =
+  predicate postcondition_once_closure0'1 (self: closure0'0) (args: t_Tokens) (result: ()) =
     let tokens = args in closure0'1'post'return self tokens result
   
   meta "rewrite_def" predicate postcondition_once_closure0'1
@@ -916,10 +915,8 @@ module M_parallel_add
   
   meta "rewrite_def" predicate resolve_closure0'1
   
-  predicate hist_inv_closure0'0 [@inline:trivial] (self: closure0'4) (result_state: closure0'4) =
+  predicate hist_inv_closure0'0 (self: closure0'4) (result_state: closure0'4) =
     result_state.c0'5.final = self.c0'5.final /\ result_state.c1'5.final = self.c1'5.final
-  
-  meta "rewrite_def" predicate hist_inv_closure0'0
   
   let rec closure0'2 [@coma:extspec] (self: MutBorrow.t closure0'4) (inv: MutBorrow.t t_ParallelAddAtomicInv)
     (return (x: ())) = {[@stop_split] [@expl:closure 'inv' type invariant] inv_refmut_ParallelAddAtomicInv inv}
@@ -984,14 +981,14 @@ module M_parallel_add
   
   meta "rewrite_def" predicate closure0'2'post'return
   
-  predicate postcondition_once_closure0'2 [@inline:trivial] (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+  predicate postcondition_once_closure0'2 (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
     let inv = args in exists e: closure0'4. (exists bor_self: MutBorrow.t closure0'4. bor_self.current = self
           /\ bor_self.final = e /\ closure0'2'post'return bor_self inv result /\ hist_inv_closure0'0 self e)
       /\ resolve_closure0'1 e
   
   meta "rewrite_def" predicate postcondition_once_closure0'2
   
-  predicate postcondition_mut_closure0'0 [@inline:trivial] (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) (result_state: closure0'4) (result: ()) =
+  predicate postcondition_mut_closure0'0 (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) (result_state: closure0'4) (result: ()) =
     let inv = args in exists bor_self: MutBorrow.t closure0'4. bor_self.current = self
       /\ bor_self.final = result_state
       /\ closure0'2'post'return bor_self inv result /\ hist_inv_closure0'0 self result_state
@@ -1001,24 +998,25 @@ module M_parallel_add
   function fn_mut_once_closure0'0 (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) (res: ()) : ()
   
   axiom fn_mut_once_closure0_spec'0:
-    forall self: closure0'4, args: MutBorrow.t t_ParallelAddAtomicInv, res: (). postcondition_once_closure0'2 self args res
+    forall self: closure0'4, args: MutBorrow.t t_ParallelAddAtomicInv, res: () [postcondition_once_closure0'2 self args res]. postcondition_once_closure0'2 self args res
       = (exists res_state: closure0'4. postcondition_mut_closure0'0 self args res_state res
         /\ resolve_closure0'1 res_state)
   
   function hist_inv_trans_closure0'0 (self: closure0'4) (b: closure0'4) (c: closure0'4) : ()
   
   axiom hist_inv_trans_closure0_spec'0:
-    forall self: closure0'4, b: closure0'4, c: closure0'4. hist_inv_closure0'0 self b
+    forall self: closure0'4, b: closure0'4, c: closure0'4 [hist_inv_closure0'0 self b, hist_inv_closure0'0 b c | hist_inv_closure0'0 self b, hist_inv_closure0'0 self c | hist_inv_closure0'0 b c, hist_inv_closure0'0 self c]. hist_inv_closure0'0 self b
       -> hist_inv_closure0'0 b c -> hist_inv_closure0'0 self c
   
   function hist_inv_refl_closure0'0 (self: closure0'4) : ()
   
-  axiom hist_inv_refl_closure0_spec'0: forall self: closure0'4. hist_inv_closure0'0 self self
+  axiom hist_inv_refl_closure0_spec'0:
+    forall self: closure0'4 [hist_inv_closure0'0 self self]. hist_inv_closure0'0 self self
   
   function postcondition_mut_hist_inv_closure0'0 (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) (res_state: closure0'4) (res: ()) : ()
   
   axiom postcondition_mut_hist_inv_closure0_spec'0:
-    forall self: closure0'4, args: MutBorrow.t t_ParallelAddAtomicInv, res_state: closure0'4, res: (). postcondition_mut_closure0'0 self args res_state res
+    forall self: closure0'4, args: MutBorrow.t t_ParallelAddAtomicInv, res_state: closure0'4, res: () [postcondition_mut_closure0'0 self args res_state res | hist_inv_closure0'0 self res_state]. postcondition_mut_closure0'0 self args res_state res
       -> hist_inv_closure0'0 self res_state
   
   type t_FnGhostWrapper_closure0'1 = { f0'7: closure0'4 }
@@ -1027,17 +1025,17 @@ module M_parallel_add
     [ return (result: t_FnGhostWrapper_closure0'1) -> {[@stop_split] [@expl:__new ensures] result.f0'7 = f}
       (! return {result}) ]
   
-  predicate precondition_closure0'2 [@inline:trivial] (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) =
+  predicate precondition_closure0'2 (self: closure0'4) (args: MutBorrow.t t_ParallelAddAtomicInv) =
     let inv = args in forall bor_self: MutBorrow.t closure0'4. bor_self.current = self -> closure0'2'pre bor_self inv
   
   meta "rewrite_def" predicate precondition_closure0'2
   
-  predicate precondition_FnGhostWrapper_closure0'1 [@inline:trivial] (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_ParallelAddAtomicInv) =
+  predicate precondition_FnGhostWrapper_closure0'1 (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_ParallelAddAtomicInv) =
     precondition_closure0'2 self.f0'7 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'1
   
-  predicate postcondition_once_FnGhostWrapper_closure0'1 [@inline:trivial] (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+  predicate postcondition_once_FnGhostWrapper_closure0'1 (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
     postcondition_once_closure0'2 self.f0'7 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'1
@@ -1109,22 +1107,22 @@ module M_parallel_add
     [ return (result: t_FnGhostWrapper_closure0'2) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
   
-  predicate precondition_closure0'3 [@inline:trivial] (self: closure0'3) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) =
+  predicate precondition_closure0'3 (self: closure0'3) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) =
     let c = args in closure0'3'pre self c
   
   meta "rewrite_def" predicate precondition_closure0'3
   
-  predicate precondition_FnGhostWrapper_closure0'2 [@inline:trivial] (self: t_FnGhostWrapper_closure0'2) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) =
+  predicate precondition_FnGhostWrapper_closure0'2 (self: t_FnGhostWrapper_closure0'2) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) =
     precondition_closure0'3 self.f0'8 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'2
   
-  predicate postcondition_once_closure0'3 [@inline:trivial] (self: closure0'3) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (result: ()) =
+  predicate postcondition_once_closure0'3 (self: closure0'3) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (result: ()) =
     let c = args in closure0'3'post'return self c result
   
   meta "rewrite_def" predicate postcondition_once_closure0'3
   
-  predicate postcondition_once_FnGhostWrapper_closure0'2 [@inline:trivial] (self: t_FnGhostWrapper_closure0'2) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (result: ()) =
+  predicate postcondition_once_FnGhostWrapper_closure0'2 (self: t_FnGhostWrapper_closure0'2) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (result: ()) =
     postcondition_once_closure0'3 self.f0'8 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'2
@@ -1186,12 +1184,11 @@ module M_parallel_add
   
   meta "rewrite_def" predicate closure1'post'return
   
-  predicate precondition_closure1 [@inline:trivial] (self: closure1) (args: t_Tokens) =
-    let tokens = args in closure1'pre self tokens
+  predicate precondition_closure1 (self: closure1) (args: t_Tokens) = let tokens = args in closure1'pre self tokens
   
   meta "rewrite_def" predicate precondition_closure1
   
-  predicate postcondition_once_closure1 [@inline:trivial] (self: closure1) (args: t_Tokens) (result: ()) =
+  predicate postcondition_once_closure1 (self: closure1) (args: t_Tokens) (result: ()) =
     let tokens = args in closure1'post'return self tokens result
   
   meta "rewrite_def" predicate postcondition_once_closure1
@@ -1289,12 +1286,11 @@ module M_parallel_add
   
   meta "rewrite_def" predicate closure0'4'post'return
   
-  predicate precondition_closure0'4 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_Scope) =
-    let s = args in closure0'4'pre self s
+  predicate precondition_closure0'4 (self: closure0) (args: MutBorrow.t t_Scope) = let s = args in closure0'4'pre self s
   
   meta "rewrite_def" predicate precondition_closure0'4
   
-  predicate postcondition_once_closure0'4 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_Scope) (result: ()) =
+  predicate postcondition_once_closure0'4 (self: closure0) (args: MutBorrow.t t_Scope) (result: ()) =
     let s = args in closure0'4'post'return self s result
   
   meta "rewrite_def" predicate postcondition_once_closure0'4

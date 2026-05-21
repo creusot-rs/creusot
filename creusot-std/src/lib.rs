@@ -546,7 +546,7 @@ mod base_prelude {
         model::{DeepModel, View},
         resolve::Resolve,
         snapshot::Snapshot,
-        std::iter::{DoubleEndedIteratorSpec, FromIteratorSpec, IteratorSpec},
+        std::iter::{DoubleEndedIteratorSpec, IteratorSpec},
     };
 
     pub use crate::std::{

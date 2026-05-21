@@ -1,8 +1,4 @@
-use crate::{
-    logic::FSet,
-    prelude::*,
-    std::iter::{FromIteratorSpec, IteratorSpec},
-};
+use crate::{logic::FSet, prelude::*, std::iter::IteratorSpec};
 #[cfg(feature = "nightly")]
 use std::alloc::Allocator;
 #[cfg(creusot)]
@@ -51,6 +47,18 @@ extern_spec! {
     impl<'a, T: DeepModel, S, A: Allocator> IntoIterator for &'a HashSet<T, S, A> {
         #[ensures(self@ == result@)]
         fn into_iter(self) -> Iter<'a, T>;
+    }
+
+
+    impl<T: Eq + Hash + DeepModel, S: BuildHasher + Default> FromIterator<T> for HashSet<T, S> {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: I::IntoIter, prod: Seq<T>, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&
+            forall<x: T::DeepModelTy>
+                result@.contains(x) == exists<x1: T> x1.deep_model() == x && prod.contains(x1)
+        )]
+        fn from_iter<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 }
 
@@ -151,13 +159,6 @@ impl<'a, T: DeepModel> IteratorSpec for Iter<'a, T> {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         set_produces_trans(a, ab, b, bc, c);
-    }
-}
-
-impl<T: Eq + Hash + DeepModel, S: Default + BuildHasher> FromIteratorSpec<T> for HashSet<T, S> {
-    #[logic(open)]
-    fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
-        pearlite! { forall<x: T::DeepModelTy> res@.contains(x) == exists<x1: T> x1.deep_model() == x && prod.contains(x1) }
     }
 }
 

@@ -1119,31 +1119,33 @@ module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
   
   function fn_mut_once_default (self: ()) (args: ()) (res: t_T) : ()
   
-  axiom fn_mut_once_default_spec: forall self: (), args: (), res: t_T. postcondition_once_default self args res
+  axiom fn_mut_once_default_spec:
+    forall self: (), args: (), res: t_T [postcondition_once_default self args res]. postcondition_once_default self args res
       = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
   
-  predicate hist_inv_default [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_default
+  predicate hist_inv_default (self: ()) (result_state: ()) = true
   
   function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_default_spec: forall self: (), b: (), c: (). hist_inv_default self b
+  axiom hist_inv_trans_default_spec:
+    forall self: (), b: (), c: () [hist_inv_default self b, hist_inv_default b c | hist_inv_default self b, hist_inv_default self c | hist_inv_default b c, hist_inv_default self c]. hist_inv_default self b
       -> hist_inv_default b c -> hist_inv_default self c
   
   function hist_inv_refl_default (self: ()) : ()
   
-  axiom hist_inv_refl_default_spec: forall self: (). hist_inv_default self self
+  axiom hist_inv_refl_default_spec: forall self: () [hist_inv_default self self]. hist_inv_default self self
   
   function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: t_T) : ()
   
   axiom postcondition_mut_hist_inv_default_spec:
-    forall self: (), args: (), res_state: (), res: t_T. postcondition_mut_default self args res_state res
+    forall self: (), args: (), res_state: (), res: t_T [postcondition_mut_default self args res_state res | hist_inv_default self res_state]. postcondition_mut_default self args res_state res
       -> hist_inv_default self res_state
   
   function fn_hist_inv_default (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_default_spec: forall self: (), res_state: (). hist_inv_default self res_state = (self = res_state)
+  axiom fn_hist_inv_default_spec:
+    forall self: (), res_state: () [hist_inv_default self res_state]. hist_inv_default self res_state
+      = (self = res_state)
   
   predicate postcondition_default (self: ()) (args: ()) (result: t_T)
   
@@ -1153,13 +1155,14 @@ module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
   
   function fn_once_default (self: ()) (args: ()) (res: t_T) : ()
   
-  axiom fn_once_default_spec: forall self: (), args: (), res: t_T. postcondition_once_default self args res
+  axiom fn_once_default_spec:
+    forall self: (), args: (), res: t_T [postcondition_once_default self args res]. postcondition_once_default self args res
       = (postcondition_default self args res /\ resolve_default self)
   
   function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: t_T) : ()
   
   axiom fn_mut_default_spec:
-    forall self: (), args: (), res_state: (), res: t_T. postcondition_mut_default self args res_state res
+    forall self: (), args: (), res_state: (), res: t_T [postcondition_mut_default self args res_state res]. postcondition_mut_default self args res_state res
       = (postcondition_default self args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
@@ -1270,31 +1273,32 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
   
   function fn_mut_once_clone (self: ()) (args: t_T) (res: t_T) : ()
   
-  axiom fn_mut_once_clone_spec: forall self: (), args: t_T, res: t_T. postcondition_once_clone self args res
+  axiom fn_mut_once_clone_spec:
+    forall self: (), args: t_T, res: t_T [postcondition_once_clone self args res]. postcondition_once_clone self args res
       = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
   
-  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_clone
+  predicate hist_inv_clone (self: ()) (result_state: ()) = true
   
   function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
+  axiom hist_inv_trans_clone_spec:
+    forall self: (), b: (), c: () [hist_inv_clone self b, hist_inv_clone b c | hist_inv_clone self b, hist_inv_clone self c | hist_inv_clone b c, hist_inv_clone self c]. hist_inv_clone self b
       -> hist_inv_clone b c -> hist_inv_clone self c
   
   function hist_inv_refl_clone (self: ()) : ()
   
-  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
+  axiom hist_inv_refl_clone_spec: forall self: () [hist_inv_clone self self]. hist_inv_clone self self
   
   function postcondition_mut_hist_inv_clone (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
   
   axiom postcondition_mut_hist_inv_clone_spec:
-    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut_clone self args res_state res
+    forall self: (), args: t_T, res_state: (), res: t_T [postcondition_mut_clone self args res_state res | hist_inv_clone self res_state]. postcondition_mut_clone self args res_state res
       -> hist_inv_clone self res_state
   
   function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
+  axiom fn_hist_inv_clone_spec:
+    forall self: (), res_state: () [hist_inv_clone self res_state]. hist_inv_clone self res_state = (self = res_state)
   
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
@@ -1304,13 +1308,14 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
   
   function fn_once_clone (self: ()) (args: t_T) (res: t_T) : ()
   
-  axiom fn_once_clone_spec: forall self: (), args: t_T, res: t_T. postcondition_once_clone self args res
+  axiom fn_once_clone_spec:
+    forall self: (), args: t_T, res: t_T [postcondition_once_clone self args res]. postcondition_once_clone self args res
       = (postcondition_clone self args res /\ resolve_clone self)
   
   function fn_mut_clone (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
   
   axiom fn_mut_clone_spec:
-    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut_clone self args res_state res
+    forall self: (), args: t_T, res_state: (), res: t_T [postcondition_mut_clone self args res_state res]. postcondition_mut_clone self args res_state res
       = (postcondition_clone self args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
@@ -1517,31 +1522,32 @@ module M_impl_OwnResult_refmut_T_E__cloned (* OwnResult<&mut T, E> *)
   
   function fn_mut_once_clone (self: ()) (args: t_T) (res: t_T) : ()
   
-  axiom fn_mut_once_clone_spec: forall self: (), args: t_T, res: t_T. postcondition_once_clone self args res
+  axiom fn_mut_once_clone_spec:
+    forall self: (), args: t_T, res: t_T [postcondition_once_clone self args res]. postcondition_once_clone self args res
       = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
   
-  predicate hist_inv_clone [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_clone
+  predicate hist_inv_clone (self: ()) (result_state: ()) = true
   
   function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_clone_spec: forall self: (), b: (), c: (). hist_inv_clone self b
+  axiom hist_inv_trans_clone_spec:
+    forall self: (), b: (), c: () [hist_inv_clone self b, hist_inv_clone b c | hist_inv_clone self b, hist_inv_clone self c | hist_inv_clone b c, hist_inv_clone self c]. hist_inv_clone self b
       -> hist_inv_clone b c -> hist_inv_clone self c
   
   function hist_inv_refl_clone (self: ()) : ()
   
-  axiom hist_inv_refl_clone_spec: forall self: (). hist_inv_clone self self
+  axiom hist_inv_refl_clone_spec: forall self: () [hist_inv_clone self self]. hist_inv_clone self self
   
   function postcondition_mut_hist_inv_clone (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
   
   axiom postcondition_mut_hist_inv_clone_spec:
-    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut_clone self args res_state res
+    forall self: (), args: t_T, res_state: (), res: t_T [postcondition_mut_clone self args res_state res | hist_inv_clone self res_state]. postcondition_mut_clone self args res_state res
       -> hist_inv_clone self res_state
   
   function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_clone_spec: forall self: (), res_state: (). hist_inv_clone self res_state = (self = res_state)
+  axiom fn_hist_inv_clone_spec:
+    forall self: (), res_state: () [hist_inv_clone self res_state]. hist_inv_clone self res_state = (self = res_state)
   
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
@@ -1551,13 +1557,14 @@ module M_impl_OwnResult_refmut_T_E__cloned (* OwnResult<&mut T, E> *)
   
   function fn_once_clone (self: ()) (args: t_T) (res: t_T) : ()
   
-  axiom fn_once_clone_spec: forall self: (), args: t_T, res: t_T. postcondition_once_clone self args res
+  axiom fn_once_clone_spec:
+    forall self: (), args: t_T, res: t_T [postcondition_once_clone self args res]. postcondition_once_clone self args res
       = (postcondition_clone self args res /\ resolve_clone self)
   
   function fn_mut_clone (self: ()) (args: t_T) (res_state: ()) (res: t_T) : ()
   
   axiom fn_mut_clone_spec:
-    forall self: (), args: t_T, res_state: (), res: t_T. postcondition_mut_clone self args res_state res
+    forall self: (), args: t_T, res_state: (), res: t_T [postcondition_mut_clone self args res_state res]. postcondition_mut_clone self args res_state res
       = (postcondition_clone self args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000

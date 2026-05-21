@@ -22,10 +22,7 @@ module M_counter
   
   meta "rewrite_def" predicate resolve_closure0
   
-  predicate hist_inv_closure0 [@inline:trivial] (self: closure0) (result_state: closure0) =
-    result_state.c0.final = self.c0.final
-  
-  meta "rewrite_def" predicate hist_inv_closure0
+  predicate hist_inv_closure0 (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
   
   let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (x: UInt32.t) (_prod: Seq.seq UInt32.t)
     (return (x'0: UInt32.t)) = bb0
@@ -48,7 +45,7 @@ module M_counter
   
   meta "rewrite_def" predicate closure0'post'return
   
-  predicate postcondition_once_closure0 [@inline:trivial] (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) (result: UInt32.t) =
+  predicate postcondition_once_closure0 (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) (result: UInt32.t) =
     let {f0 = x; f1 = _prod} = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current
             = self
           /\ bor_self.final = e /\ closure0'post'return bor_self x _prod result /\ hist_inv_closure0 self e)
@@ -56,7 +53,7 @@ module M_counter
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate postcondition_mut_closure0 [@inline:trivial] (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) (result_state: closure0) (result: UInt32.t) =
+  predicate postcondition_mut_closure0 (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) (result_state: closure0) (result: UInt32.t) =
     let {f0 = x; f1 = _prod} = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
       /\ bor_self.final = result_state
       /\ closure0'post'return bor_self x _prod result /\ hist_inv_closure0 self result_state
@@ -66,22 +63,23 @@ module M_counter
   function fn_mut_once_closure0 (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) (res: UInt32.t) : ()
   
   axiom fn_mut_once_closure0_spec:
-    forall self: closure0, args: tup2_u32_Snapshot_Seq_u32, res: UInt32.t. postcondition_once_closure0 self args res
+    forall self: closure0, args: tup2_u32_Snapshot_Seq_u32, res: UInt32.t [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
       = (exists res_state: closure0. postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
   
   function hist_inv_trans_closure0 (self: closure0) (b: closure0) (c: closure0) : ()
   
-  axiom hist_inv_trans_closure0_spec: forall self: closure0, b: closure0, c: closure0. hist_inv_closure0 self b
+  axiom hist_inv_trans_closure0_spec:
+    forall self: closure0, b: closure0, c: closure0 [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
       -> hist_inv_closure0 b c -> hist_inv_closure0 self c
   
   function hist_inv_refl_closure0 (self: closure0) : ()
   
-  axiom hist_inv_refl_closure0_spec: forall self: closure0. hist_inv_closure0 self self
+  axiom hist_inv_refl_closure0_spec: forall self: closure0 [hist_inv_closure0 self self]. hist_inv_closure0 self self
   
   function postcondition_mut_hist_inv_closure0 (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) (res_state: closure0) (res: UInt32.t) : ()
   
   axiom postcondition_mut_hist_inv_closure0_spec:
-    forall self: closure0, args: tup2_u32_Snapshot_Seq_u32, res_state: closure0, res: UInt32.t. postcondition_mut_closure0 self args res_state res
+    forall self: closure0, args: tup2_u32_Snapshot_Seq_u32, res_state: closure0, res: UInt32.t [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
       -> hist_inv_closure0 self res_state
   
   type t_I
@@ -106,7 +104,7 @@ module M_counter
   
   meta "rewrite_def" predicate inv_u32
   
-  predicate precondition_closure0 [@inline:trivial] (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) =
+  predicate precondition_closure0 (self: closure0) (args: tup2_u32_Snapshot_Seq_u32) =
     let {f0 = x; f1 = _prod} = args in forall bor_self: MutBorrow.t closure0. bor_self.current = self
       -> closure0'pre bor_self x _prod
   
@@ -243,9 +241,7 @@ module M_identity
   
   meta "rewrite_def" predicate resolve_closure0
   
-  predicate hist_inv_closure0 [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_closure0
+  predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
   
   let rec closure0 [@coma:extspec] (self: MutBorrow.t ()) (x: t_Item) (_1: Seq.seq t_Item) (return (x'0: t_Item)) =
     {[@stop_split] [@expl:closure 'x' type invariant] inv_Item x}
@@ -261,13 +257,13 @@ module M_identity
   
   meta "rewrite_def" predicate closure0'post'return
   
-  predicate postcondition_once_closure0 [@inline:trivial] (self: ()) (args: tup2_Item_Snapshot_Seq_Item) (result: t_Item) =
+  predicate postcondition_once_closure0 (self: ()) (args: tup2_Item_Snapshot_Seq_Item) (result: t_Item) =
     let {f0 = x; f1 = _1} = args in exists e: (). exists bor_self: MutBorrow.t (). bor_self.current = self
         /\ bor_self.final = e /\ closure0'post'return bor_self x _1 result /\ hist_inv_closure0 self e
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate postcondition_mut_closure0 [@inline:trivial] (self: ()) (args: tup2_Item_Snapshot_Seq_Item) (result_state: ()) (result: t_Item) =
+  predicate postcondition_mut_closure0 (self: ()) (args: tup2_Item_Snapshot_Seq_Item) (result_state: ()) (result: t_Item) =
     let {f0 = x; f1 = _1} = args in exists bor_self: MutBorrow.t (). bor_self.current = self
       /\ bor_self.final = result_state
       /\ closure0'post'return bor_self x _1 result /\ hist_inv_closure0 self result_state
@@ -277,29 +273,30 @@ module M_identity
   function fn_mut_once_closure0 (self: ()) (args: tup2_Item_Snapshot_Seq_Item) (res: t_Item) : ()
   
   axiom fn_mut_once_closure0_spec:
-    forall self: (), args: tup2_Item_Snapshot_Seq_Item, res: t_Item. postcondition_once_closure0 self args res
+    forall self: (), args: tup2_Item_Snapshot_Seq_Item, res: t_Item [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
       = (exists res_state: (). postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
   
   function hist_inv_trans_closure0 (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_closure0_spec: forall self: (), b: (), c: (). hist_inv_closure0 self b
+  axiom hist_inv_trans_closure0_spec:
+    forall self: (), b: (), c: () [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
       -> hist_inv_closure0 b c -> hist_inv_closure0 self c
   
   function hist_inv_refl_closure0 (self: ()) : ()
   
-  axiom hist_inv_refl_closure0_spec: forall self: (). hist_inv_closure0 self self
+  axiom hist_inv_refl_closure0_spec: forall self: () [hist_inv_closure0 self self]. hist_inv_closure0 self self
   
   function postcondition_mut_hist_inv_closure0 (self: ()) (args: tup2_Item_Snapshot_Seq_Item) (res_state: ()) (res: t_Item) : ()
   
   axiom postcondition_mut_hist_inv_closure0_spec:
-    forall self: (), args: tup2_Item_Snapshot_Seq_Item, res_state: (), res: t_Item. postcondition_mut_closure0 self args res_state res
+    forall self: (), args: tup2_Item_Snapshot_Seq_Item, res_state: (), res: t_Item [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
       -> hist_inv_closure0 self res_state
   
   type t_Map_I_closure0 = { iter: t_I; func: (); produced: Seq.seq t_Item }
   
   predicate inv_I (_1: t_I)
   
-  predicate precondition_closure0 [@inline:trivial] (self: ()) (args: tup2_Item_Snapshot_Seq_Item) =
+  predicate precondition_closure0 (self: ()) (args: tup2_Item_Snapshot_Seq_Item) =
     let {f0 = x; f1 = _1} = args in forall bor_self: MutBorrow.t (). bor_self.current = self
       -> closure0'pre bor_self x _1
   
@@ -514,24 +511,25 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
   function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
       = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
   function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+  axiom hist_inv_trans_F_spec:
+    forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
       -> hist_inv_F b c -> hist_inv_F self c
   
   function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
   function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
   let rec call_mut_F (self_: MutBorrow.t t_F) (arg: tup2_Item_Snapshot_Seq_Item) (return (x: t_B)) =
@@ -807,24 +805,25 @@ module M_impl_Iterator_for_Map_I_F__next__refines (* <Map<I, F> as common::Itera
   function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
       = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
   function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+  axiom hist_inv_trans_F_spec:
+    forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
       -> hist_inv_F b c -> hist_inv_F self c
   
   function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
   function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
   predicate preservation_I (iter'0: t_I) (func'0: t_F) =
@@ -975,24 +974,25 @@ module M_impl_Iterator_for_Map_I_F__produces_refl (* <Map<I, F> as common::Itera
   function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
       = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
   function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+  axiom hist_inv_trans_F_spec:
+    forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
       -> hist_inv_F b c -> hist_inv_F self c
   
   function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
   function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
   predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
@@ -1062,24 +1062,25 @@ module M_impl_Iterator_for_Map_I_F__produces_refl__refines (* <Map<I, F> as comm
   function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
       = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
   function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+  axiom hist_inv_trans_F_spec:
+    forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
       -> hist_inv_F b c -> hist_inv_F self c
   
   function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
   function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
   predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
@@ -1145,24 +1146,25 @@ module M_impl_Iterator_for_Map_I_F__produces_trans (* <Map<I, F> as common::Iter
   function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
       = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
   function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+  axiom hist_inv_trans_F_spec:
+    forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
       -> hist_inv_F b c -> hist_inv_F self c
   
   function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
   function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
   predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
@@ -1240,24 +1242,25 @@ module M_impl_Iterator_for_Map_I_F__produces_trans__refines (* <Map<I, F> as com
   function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
       = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
   function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+  axiom hist_inv_trans_F_spec:
+    forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
       -> hist_inv_F b c -> hist_inv_F self c
   
   function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
   function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
   predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
@@ -1354,24 +1357,25 @@ module M_impl_Map_I_F__preservation_inv (* Map<I, F> *)
   function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
       = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
   function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+  axiom hist_inv_trans_F_spec:
+    forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
       -> hist_inv_F b c -> hist_inv_F self c
   
   function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
   function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
   predicate precondition_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item)
@@ -1443,24 +1447,25 @@ module M_impl_Map_I_F__produces_one (* Map<I, F> *)
   function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
       = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
   function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+  axiom hist_inv_trans_F_spec:
+    forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
       -> hist_inv_F b c -> hist_inv_F self c
   
   function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
   function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
   predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq t_B) (succ: t_Map_I_F) =
@@ -1589,24 +1594,25 @@ module M_impl_Map_I_F__produces_one_invariant (* Map<I, F> *)
   function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
       = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
   function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+  axiom hist_inv_trans_F_spec:
+    forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
       -> hist_inv_F b c -> hist_inv_F self c
   
   function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
   function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
   predicate preservation_I (iter'0: t_I) (func'0: t_F) =
@@ -1681,9 +1687,7 @@ module M_increment
   
   meta "rewrite_def" predicate resolve_closure0
   
-  predicate hist_inv_closure0 [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_closure0
+  predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
   
   let rec closure0 [@coma:extspec] (self: MutBorrow.t ()) (x: UInt32.t) (_1: Seq.seq UInt32.t)
     (return (x'0: UInt32.t)) = bb0
@@ -1699,13 +1703,13 @@ module M_increment
   
   meta "rewrite_def" predicate closure0'post'return
   
-  predicate postcondition_once_closure0 [@inline:trivial] (self: ()) (args: tup2_u32_Snapshot_Seq_u32) (result: UInt32.t) =
+  predicate postcondition_once_closure0 (self: ()) (args: tup2_u32_Snapshot_Seq_u32) (result: UInt32.t) =
     let {f0 = x; f1 = _1} = args in exists e: (). exists bor_self: MutBorrow.t (). bor_self.current = self
         /\ bor_self.final = e /\ closure0'post'return bor_self x _1 result /\ hist_inv_closure0 self e
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate postcondition_mut_closure0 [@inline:trivial] (self: ()) (args: tup2_u32_Snapshot_Seq_u32) (result_state: ()) (result: UInt32.t) =
+  predicate postcondition_mut_closure0 (self: ()) (args: tup2_u32_Snapshot_Seq_u32) (result_state: ()) (result: UInt32.t) =
     let {f0 = x; f1 = _1} = args in exists bor_self: MutBorrow.t (). bor_self.current = self
       /\ bor_self.final = result_state
       /\ closure0'post'return bor_self x _1 result /\ hist_inv_closure0 self result_state
@@ -1715,22 +1719,23 @@ module M_increment
   function fn_mut_once_closure0 (self: ()) (args: tup2_u32_Snapshot_Seq_u32) (res: UInt32.t) : ()
   
   axiom fn_mut_once_closure0_spec:
-    forall self: (), args: tup2_u32_Snapshot_Seq_u32, res: UInt32.t. postcondition_once_closure0 self args res
+    forall self: (), args: tup2_u32_Snapshot_Seq_u32, res: UInt32.t [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
       = (exists res_state: (). postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
   
   function hist_inv_trans_closure0 (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_closure0_spec: forall self: (), b: (), c: (). hist_inv_closure0 self b
+  axiom hist_inv_trans_closure0_spec:
+    forall self: (), b: (), c: () [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
       -> hist_inv_closure0 b c -> hist_inv_closure0 self c
   
   function hist_inv_refl_closure0 (self: ()) : ()
   
-  axiom hist_inv_refl_closure0_spec: forall self: (). hist_inv_closure0 self self
+  axiom hist_inv_refl_closure0_spec: forall self: () [hist_inv_closure0 self self]. hist_inv_closure0 self self
   
   function postcondition_mut_hist_inv_closure0 (self: ()) (args: tup2_u32_Snapshot_Seq_u32) (res_state: ()) (res: UInt32.t) : ()
   
   axiom postcondition_mut_hist_inv_closure0_spec:
-    forall self: (), args: tup2_u32_Snapshot_Seq_u32, res_state: (), res: UInt32.t. postcondition_mut_closure0 self args res_state res
+    forall self: (), args: tup2_u32_Snapshot_Seq_u32, res_state: (), res: UInt32.t [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
       -> hist_inv_closure0 self res_state
   
   type t_U
@@ -1755,7 +1760,7 @@ module M_increment
   
   meta "rewrite_def" predicate inv_u32
   
-  predicate precondition_closure0 [@inline:trivial] (self: ()) (args: tup2_u32_Snapshot_Seq_u32) =
+  predicate precondition_closure0 (self: ()) (args: tup2_u32_Snapshot_Seq_u32) =
     let {f0 = x; f1 = _1} = args in forall bor_self: MutBorrow.t (). bor_self.current = self
       -> closure0'pre bor_self x _1
   
@@ -2008,24 +2013,25 @@ module M_map
   function fn_mut_once_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res: t_B) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B. postcondition_once_F self args res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
       = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
   function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+  axiom hist_inv_trans_F_spec:
+    forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
       -> hist_inv_F b c -> hist_inv_F self c
   
   function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
   function postcondition_mut_hist_inv_F (self: t_F) (args: tup2_Item_Snapshot_Seq_Item) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+    forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
   predicate preservation_I (iter'0: t_I) (func'0: t_F) =

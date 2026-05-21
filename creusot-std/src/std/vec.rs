@@ -241,6 +241,14 @@ extern_spec! {
             T::clone.postcondition((&self@[i],), result@[i]))]
         fn clone(&self) -> Vec<T, A>;
     }
+
+    impl<T> FromIterator<T> for Vec<T> {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(result@, *done) && done.completed() && resolve(^done))]
+        fn from_iter<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(iter: I) -> Self;
+    }
 }
 
 #[cfg(feature = "nightly")]
@@ -319,13 +327,6 @@ impl<T, A: Allocator> DoubleEndedIteratorSpec for IntoIter<T, A> {
     fn produces_back_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {
         let _ = ab.reverse_concat(bc);
         let _ = Seq::<T>::concat_assoc;
-    }
-}
-
-impl<T> FromIteratorSpec<T> for Vec<T> {
-    #[logic(open)]
-    fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
-        pearlite! { prod == res@ }
     }
 }
 

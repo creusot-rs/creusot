@@ -63,15 +63,13 @@ pub trait IteratorSpec: Iterator {
     }
 }
 
-pub trait FromIteratorSpec<A>: FromIterator<A> {
-    #[logic]
-    fn from_iter_post(prod: Seq<A>, res: Self) -> bool;
-}
-
-impl FromIteratorSpec<()> for () {
-    #[logic(open)]
-    fn from_iter_post(_: Seq<()>, _res: Self) -> bool {
-        true
+extern_spec! {
+    impl FromIterator<()> for () {
+        #[requires(T::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: T::IntoIter, prod: Seq<()>, done: &mut T::IntoIter>
+            T::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(prod, *done) && done.completed() && resolve(^done))]
+        fn from_iter<T: IntoIterator<Item = (), IntoIter: IteratorSpec>>(iter: T);
     }
 }
 
@@ -169,10 +167,14 @@ extern_spec! {
                 fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U::IntoIter>
                     where Self: Sized, U::IntoIter: Iterator;
 
-                #[ensures(exists<done: &mut Self, prod>
-                    resolve(^done) && done.completed() && self.produces(prod, *done) && B::from_iter_post(prod, result))]
-                fn collect<B>(self) -> B
-                    where Self: Sized, B: FromIteratorSpec<Self::Item>;
+                #[requires(B::from_iter.precondition((self,)))]
+                #[ensures(B::from_iter.postcondition((self,), result))]
+                // FIXME: Self_
+                fn collect<B: FromIterator<Self_::Item>>(self) -> B
+                    where Self: Sized
+                {
+                    FromIterator::from_iter(self)
+                }
 
                 #[check(ghost)]
                 #[ensures(result.iter() == self)]
@@ -180,16 +182,10 @@ extern_spec! {
                     where Self: Sized + DoubleEndedIteratorSpec;
             }
 
-            trait FromIterator<A>
-                where Self: FromIteratorSpec<A> {
-
+            trait FromIterator<A>: Sized {
                 #[requires(T::into_iter.precondition((iter,)))]
-                #[ensures(exists<into_iter: T::IntoIter, done: &mut T::IntoIter, prod: Seq<A>>
-                            T::into_iter.postcondition((iter,), into_iter) &&
-                            into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&
-                            Self::from_iter_post(prod, result))]
                 fn from_iter<T>(iter: T) -> Self
-                    where Self: Sized, T: IntoIterator<Item = A>, T::IntoIter: IteratorSpec;
+                    where T: IntoIterator<Item = A>;
             }
 
             #[check(ghost)]

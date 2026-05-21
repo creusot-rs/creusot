@@ -39,21 +39,29 @@ pub trait FnMutExt<Args: Tuple>: FnOnceExt<Args> {
 
     #[logic(law)]
     #[requires(self.postcondition_mut(args, res_state, res))]
-    #[ensures(self.hist_inv(res_state))]
+    #[ensures(
+        #[trigger(self.postcondition_mut(args, res_state, res))]
+        #[trigger(self.hist_inv(res_state))]
+        self.hist_inv(res_state))]
     fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output);
 
     #[logic(law)]
-    #[ensures(self.hist_inv(self))]
+    #[ensures(#[trigger(self.hist_inv(self))] self.hist_inv(self))]
     fn hist_inv_refl(self);
 
     #[logic(law)]
     #[requires(self.hist_inv(b))]
     #[requires(b.hist_inv(c))]
-    #[ensures(self.hist_inv(c))]
+    #[ensures(
+        #[trigger(self.hist_inv(b), b.hist_inv(c))]
+        #[trigger(self.hist_inv(b), self.hist_inv(c))]
+        #[trigger(b.hist_inv(c), self.hist_inv(c))]
+        self.hist_inv(c))]
     fn hist_inv_trans(self, b: Self, c: Self);
 
     #[logic(law)]
-    #[ensures(self.postcondition_once(args, res) ==
+    #[ensures(#[trigger(self.postcondition_once(args, res))]
+        self.postcondition_once(args, res) ==
               exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(res_state))]
     fn fn_mut_once(self, args: Args, res: Self::Output);
 }
@@ -69,15 +77,17 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
     fn postcondition(self, _: Args, _: Self::Output) -> bool;
 
     #[logic(law)]
-    #[ensures(self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
+    #[ensures(#[trigger(self.postcondition_mut(args, res_state, res))]
+        self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
     fn fn_mut(self, args: Args, res_state: Self, res: Self::Output);
 
     #[logic(law)]
-    #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(self)))]
+    #[ensures(#[trigger(self.postcondition_once(args, res))]
+        self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(self)))]
     fn fn_once(self, args: Args, res: Self::Output);
 
     #[logic(law)]
-    #[ensures(self.hist_inv(res_state) == (self == res_state))]
+    #[ensures(#[trigger(self.hist_inv(res_state))] self.hist_inv(res_state) == (self == res_state))]
     fn fn_hist_inv(self, res_state: Self);
 }
 
@@ -90,14 +100,14 @@ pub trait FnExt<Args>: FnMutExt<Args> {}
 impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
-    #[logic(open, prophetic, inline)]
+    #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[intrinsic("precondition")]
     fn precondition(self, args: Args) -> bool {
         dead
     }
 
-    #[logic(open, prophetic, inline)]
+    #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[intrinsic("postcondition_once")]
     fn postcondition_once(self, args: Args, result: Self::Output) -> bool {
@@ -107,14 +117,14 @@ impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
 
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
-    #[logic(open, prophetic, inline)]
+    #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[intrinsic("postcondition_mut")]
     fn postcondition_mut(self, args: Args, result_state: Self, result: Self::Output) -> bool {
         dead
     }
 
-    #[logic(open, prophetic, inline)]
+    #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[intrinsic("hist_inv")]
     fn hist_inv(self, result_state: Self) -> bool {
@@ -124,31 +134,39 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
     #[trusted]
     #[logic(law)]
     #[requires(self.postcondition_mut(args, res_state, res))]
-    #[ensures(self.hist_inv(res_state))]
+    #[ensures(
+        #[trigger(self.postcondition_mut(args, res_state, res))]
+        #[trigger(self.hist_inv(res_state))]
+        self.hist_inv(res_state))]
     fn postcondition_mut_hist_inv(self, args: Args, res_state: Self, res: Self::Output) {}
 
     #[trusted]
     #[logic(law)]
-    #[ensures(self.hist_inv(self))]
+    #[ensures(#[trigger(self.hist_inv(self))] self.hist_inv(self))]
     fn hist_inv_refl(self) {}
 
     #[trusted]
     #[logic(law)]
     #[requires(self.hist_inv(b))]
     #[requires(b.hist_inv(c))]
-    #[ensures(self.hist_inv(c))]
+    #[ensures(
+        #[trigger(self.hist_inv(b), b.hist_inv(c))]
+        #[trigger(self.hist_inv(b), self.hist_inv(c))]
+        #[trigger(b.hist_inv(c), self.hist_inv(c))]
+        self.hist_inv(c))]
     fn hist_inv_trans(self, b: Self, c: Self) {}
 
     #[logic(law)]
     #[trusted]
-    #[ensures(self.postcondition_once(args, res) ==
+    #[ensures(#[trigger(self.postcondition_once(args, res))]
+        self.postcondition_once(args, res) ==
               exists<res_state: Self> self.postcondition_mut(args, res_state, res) && resolve(res_state))]
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 
 #[cfg(feature = "nightly")]
 impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
-    #[logic(open, inline)]
+    #[logic(open, prophetic)]
     #[allow(unused_variables)]
     #[intrinsic("postcondition")]
     fn postcondition(self, args: Args, result: Self::Output) -> bool {
@@ -157,17 +175,19 @@ impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
 
     #[logic(law)]
     #[trusted]
-    #[ensures(self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
+    #[ensures(#[trigger(self.postcondition_mut(args, res_state, res))]
+        self.postcondition_mut(args, res_state, res) == (self.postcondition(args, res) && self == res_state))]
     fn fn_mut(self, args: Args, res_state: Self, res: Self::Output) {}
 
     #[logic(law)]
     #[trusted]
-    #[ensures(self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(self)))]
+    #[ensures(#[trigger(self.postcondition_once(args, res))]
+        self.postcondition_once(args, res) == (self.postcondition(args, res) && resolve(self)))]
     fn fn_once(self, args: Args, res: Self::Output) {}
 
     #[logic(law)]
     #[trusted]
-    #[ensures(self.hist_inv(res_state) == (self == res_state))]
+    #[ensures(#[trigger(self.hist_inv(res_state))] self.hist_inv(res_state) == (self == res_state))]
     fn fn_hist_inv(self, res_state: Self) {}
 }
 

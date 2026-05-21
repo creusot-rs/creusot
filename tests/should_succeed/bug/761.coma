@@ -185,7 +185,7 @@ module M_try_result
   
   type tup2_Result_T_E_Result_Infallible_E = { f0: t_Result_T_E; f1: t_Result_Infallible_E }
   
-  predicate postcondition_once_from [@inline:trivial] (self: ()) (args: t_E) (result: t_E) =
+  predicate postcondition_once_from (self: ()) (args: t_E) (result: t_E) =
     let self_ = args in inv_E result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_once_from
@@ -194,53 +194,54 @@ module M_try_result
   
   meta "rewrite_def" predicate resolve_from
   
-  predicate postcondition_mut_from [@inline:trivial] (self: ()) (args: t_E) (result_state: ()) (result: t_E) =
+  predicate postcondition_mut_from (self: ()) (args: t_E) (result_state: ()) (result: t_E) =
     let self_ = args in inv_E result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_mut_from
   
   function fn_mut_once_from (self: ()) (args: t_E) (res: t_E) : ()
   
-  axiom fn_mut_once_from_spec: forall self: (), args: t_E, res: t_E. postcondition_once_from self args res
+  axiom fn_mut_once_from_spec:
+    forall self: (), args: t_E, res: t_E [postcondition_once_from self args res]. postcondition_once_from self args res
       = (exists res_state: (). postcondition_mut_from self args res_state res /\ resolve_from res_state)
   
-  predicate hist_inv_from [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_from
+  predicate hist_inv_from (self: ()) (result_state: ()) = true
   
   function hist_inv_trans_from (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_from_spec: forall self: (), b: (), c: (). hist_inv_from self b
+  axiom hist_inv_trans_from_spec:
+    forall self: (), b: (), c: () [hist_inv_from self b, hist_inv_from b c | hist_inv_from self b, hist_inv_from self c | hist_inv_from b c, hist_inv_from self c]. hist_inv_from self b
       -> hist_inv_from b c -> hist_inv_from self c
   
   function hist_inv_refl_from (self: ()) : ()
   
-  axiom hist_inv_refl_from_spec: forall self: (). hist_inv_from self self
+  axiom hist_inv_refl_from_spec: forall self: () [hist_inv_from self self]. hist_inv_from self self
   
   function postcondition_mut_hist_inv_from (self: ()) (args: t_E) (res_state: ()) (res: t_E) : ()
   
   axiom postcondition_mut_hist_inv_from_spec:
-    forall self: (), args: t_E, res_state: (), res: t_E. postcondition_mut_from self args res_state res
+    forall self: (), args: t_E, res_state: (), res: t_E [postcondition_mut_from self args res_state res | hist_inv_from self res_state]. postcondition_mut_from self args res_state res
       -> hist_inv_from self res_state
   
   function fn_hist_inv_from (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_from_spec: forall self: (), res_state: (). hist_inv_from self res_state = (self = res_state)
+  axiom fn_hist_inv_from_spec:
+    forall self: (), res_state: () [hist_inv_from self res_state]. hist_inv_from self res_state = (self = res_state)
   
-  predicate postcondition_from [@inline:trivial] (self: ()) (args: t_E) (result: t_E) =
-    let self_ = args in inv_E result /\ result = self_
+  predicate postcondition_from (self: ()) (args: t_E) (result: t_E) = let self_ = args in inv_E result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_from
   
   function fn_once_from (self: ()) (args: t_E) (res: t_E) : ()
   
-  axiom fn_once_from_spec: forall self: (), args: t_E, res: t_E. postcondition_once_from self args res
+  axiom fn_once_from_spec:
+    forall self: (), args: t_E, res: t_E [postcondition_once_from self args res]. postcondition_once_from self args res
       = (postcondition_from self args res /\ resolve_from self)
   
   function fn_mut_from (self: ()) (args: t_E) (res_state: ()) (res: t_E) : ()
   
   axiom fn_mut_from_spec:
-    forall self: (), args: t_E, res_state: (), res: t_E. postcondition_mut_from self args res_state res
+    forall self: (), args: t_E, res_state: (), res: t_E [postcondition_mut_from self args res_state res]. postcondition_mut_from self args res_state res
       = (postcondition_from self args res /\ self = res_state)
   
   let rec from_E (self_: t_E) (return (x: t_E)) = {[@stop_split] [@expl:from 'self_' type invariant] inv_E self_}

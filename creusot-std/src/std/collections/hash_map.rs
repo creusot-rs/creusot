@@ -1,12 +1,9 @@
-use crate::{
-    logic::FMap,
-    prelude::*,
-    std::iter::{FromIteratorSpec, IteratorSpec},
-};
+use crate::{logic::FMap, prelude::*, std::iter::IteratorSpec};
 #[cfg(feature = "nightly")]
 use std::alloc::Allocator;
+use std::collections::hash_map::*;
+#[cfg(creusot)]
 use std::{
-    collections::hash_map::*,
     default::Default,
     hash::{BuildHasher, Hash},
 };
@@ -47,6 +44,20 @@ extern_spec! {
         #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == result@.contains(k))]
         #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) ==> (*self)@[k] == *result@[k] && (^self)@[k] == ^result@[k])]
         fn into_iter(self) -> IterMut<'a, K, V>;
+    }
+
+    impl<K: Eq + Hash + DeepModel, V, S: BuildHasher + Default> FromIterator<(K, V)>
+        for HashMap<K, V, S>
+    {
+        #[requires(T::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: T::IntoIter, prod: Seq<(K, V)>, done: &mut T::IntoIter>
+            T::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&
+            forall<k: K::DeepModelTy, v: V> (result@.get(k) == Some(v))
+                == (exists<i, k1: K> 0 <= i && i < prod.len() && k1.deep_model() == k && prod[i] == (k1, v)
+                    && forall<j> i < j && j < prod.len() ==> prod[j].0.deep_model() != k)
+        )]
+        fn from_iter<T: IntoIterator<Item = (K, V), IntoIter: IteratorSpec>>(iter: T) -> Self;
     }
 }
 
@@ -187,17 +198,6 @@ impl<'a, K: DeepModel, V> IteratorSpec for IterMut<'a, K, V> {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] }
-    }
-}
-
-impl<K: Eq + Hash + DeepModel, V, S: Default + BuildHasher> FromIteratorSpec<(K, V)>
-    for HashMap<K, V, S>
-{
-    #[logic(open)]
-    fn from_iter_post(prod: Seq<(K, V)>, res: Self) -> bool {
-        pearlite! { forall<k: K::DeepModelTy, v: V> (res@.get(k) == Some(v))
-        == (exists<i, k1: K> 0 <= i && i < prod.len() && k1.deep_model() == k && prod[i] == (k1, v)
-            && forall<j> i < j && j < prod.len() ==> prod[j].0.deep_model() != k) }
     }
 }
 
