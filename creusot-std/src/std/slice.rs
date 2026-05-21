@@ -4,7 +4,7 @@ use crate::{ghost::perm::Perm, invariant::*, logic::ops::IndexLogic, prelude::*}
 #[cfg(creusot)]
 use core::ops::{Index, IndexMut};
 use core::{
-    ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
+    ops::{Bound, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
     slice::*,
 };
 #[cfg(all(creusot, feature = "std"))]
@@ -274,6 +274,46 @@ impl<T> SliceIndexSpec<[T]> for RangeToInclusive<usize> {
     #[logic(open)]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
         pearlite! { forall<i> self.end@ < i && i < old.len() ==> old[i] == fin[i] }
+    }
+}
+
+#[logic(open, inline)]
+pub fn to_logic_range((lo, hi): (Bound<usize>, Bound<usize>), len: Int) -> Range<Int> {
+    pearlite! {
+        let lo = match lo {
+            Bound::Included(i) => i@,
+            Bound::Excluded(i) => i@ + 1,
+            Bound::Unbounded => 0
+        };
+        let hi = match hi {
+            Bound::Included(i) => i@ + 1,
+            Bound::Excluded(i) => i@,
+            Bound::Unbounded => len
+        };
+        lo..hi
+    }
+}
+
+impl<T> SliceIndexSpec<[T]> for (Bound<usize>, Bound<usize>) {
+    #[logic(open)]
+    fn in_bounds(self, seq: Seq<T>) -> bool {
+        let range = to_logic_range(self, seq.len());
+        pearlite! { range.start <= range.end && range.end <= seq.len() }
+    }
+
+    #[logic(open)]
+    fn has_value(self, seq: Seq<T>, out: [T]) -> bool {
+        let range = to_logic_range(self, seq.len());
+        pearlite! { seq.subsequence(range.start, range.end) == out@ }
+    }
+
+    #[logic(open)]
+    fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
+        let range = to_logic_range(self, old.len());
+        pearlite! {
+            forall<i> 0 <= i && (i < range.start || range.end <= i) && i < old.len()
+            ==> old[i] == fin[i]
+        }
     }
 }
 
