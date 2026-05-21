@@ -53,7 +53,7 @@ use rustc_trait_selection::traits::normalize_param_env_or_error;
 use rustc_type_ir::inherent::Ty as _;
 use std::{
     cell::{OnceCell, RefCell},
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     ops::Deref,
 };
 use why3::Ident;
@@ -161,6 +161,9 @@ impl<'tcx> HasTyCtxt<'tcx> for TyCtxt<'tcx> {
 
 pub type ThirExpr<'tcx> = (&'tcx Steal<thir::Thir<'tcx>>, thir::ExprId);
 
+/// Map each function to the list of functions that it calls that are mutually recursive with it.
+pub(crate) type RecursiveCalls<'tcx> = HashMap<DefId, HashSet<DefId>>;
+
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
@@ -172,7 +175,7 @@ pub struct TranslationCtx<'tcx> {
     creusot_items: HashMap<Symbol, DefId>,
     /// This field tracks recursive calls, where we should check that a variant
     /// decreases.
-    pub(crate) variant_calls: RefCell<IndexMap<DefId, IndexSet<DefId>>>,
+    pub(crate) variant_calls: RefCell<RecursiveCalls<'tcx>>,
     erasure_required: RefCell<IndexSet<DefId>>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
@@ -263,7 +266,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             terms: Default::default(),
             terms_with_triggers: Default::default(),
             creusot_items,
-            variant_calls: RefCell::new(IndexMap::new()),
+            variant_calls: Default::default(),
             opts,
             erasure_required: Default::default(),
             extern_specs: Default::default(),

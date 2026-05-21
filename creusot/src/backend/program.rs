@@ -1336,23 +1336,9 @@ impl<'tcx> Statement<'tcx> {
                 lower.assignment(&lhs, rhs, &mut istmts, self.span);
             }
             StatementKind::Call(dest, fun_id, subst, args, span) => {
-                let params =
-                    args.iter().map(|a| lower.ty(a.ty(lower.ctx.tcx, lower.locals))).collect();
                 let (fun_qname, args) = func_call_to_why3(lower, fun_id, subst, args, &mut istmts);
                 let ty = dest.ty(lower.ctx.tcx, lower.locals);
                 let ty = lower.ty(ty);
-                if lower.ctx.should_check_variant_decreases(lower.def_id, fun_id) {
-                    if !subst.types().eq(GenericArgs::identity_for_item(
-                        lower.ctx.tcx,
-                        lower.def_id,
-                    )
-                    .types())
-                    {
-                        lower.ctx.dcx().span_err(self.span, "Polymorphic recursion is not supported: recursive calls should have the same type parameters.");
-                    } else {
-                        recursive_calls.insert(fun_id, (fun_qname.clone(), params, ty.clone()));
-                    }
-                }
                 let ret_ident = Ident::fresh_local("_x");
                 istmts.push(IntermediateStmt::call_span(ret_ident, ty, fun_qname, args, span));
                 lower.assignment(&dest, Exp::var(ret_ident), &mut istmts, self.span);

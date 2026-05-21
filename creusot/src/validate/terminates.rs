@@ -40,7 +40,7 @@ use crate::{
         has_variant_clause, is_logic, is_loop_variant, is_no_translate, is_pearlite,
         is_trusted_ghost, is_trusted_terminates,
     },
-    ctx::{HasTyCtxt as _, TranslationCtx},
+    ctx::{HasTyCtxt as _, RecursiveCalls, TranslationCtx},
     resolution::{ImplSelection, ImplSource_, TraitResolved, select_trait_impl},
     translation::pearlite::{
         Ident, PIdent, Pattern, Scoped, Term, TermKind,
@@ -49,7 +49,7 @@ use crate::{
     util::erased_identity_for_item,
 };
 use indexmap::{IndexMap, IndexSet};
-use petgraph::{algo::tarjan_scc, graph};
+use petgraph::{algo::tarjan_scc, graph, visit::EdgeRef as _};
 use rustc_hir::{
     def::DefKind,
     def_id::{CRATE_DEF_ID, DefId, LocalDefId},
@@ -63,13 +63,11 @@ use rustc_middle::{
         TypingEnv, TypingMode, Unnormalized,
     },
 };
-use rustc_span::Span;
+use rustc_span::{DUMMY_SP, Span};
 use rustc_trait_selection::traits::{
     normalize_param_env_or_error, specialization_graph, translate_args,
 };
 use std::collections::{HashMap, HashSet};
-
-pub(crate) type RecursiveCalls = IndexMap<DefId, IndexSet<DefId>>;
 
 /// Validate that a `#[check(terminates)]` function cannot loop indefinitely. This includes:
 /// - forbidding program function from using loops without a variant.
@@ -83,7 +81,7 @@ pub(crate) type RecursiveCalls = IndexMap<DefId, IndexSet<DefId>>;
 /// For each function with a `#[variant]`, returns the called function before
 /// which the variant should have decreased.
 #[must_use]
-pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
+pub(crate) fn validate_terminates<'tcx>(ctx: &TranslationCtx<'tcx>) -> RecursiveCalls<'tcx> {
     // Check for ghost loops
     for local_id in ctx.hir_body_owners() {
         let def_id = local_id.to_def_id();
@@ -106,15 +104,29 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
     // Detect simple recursion
     for fun_index in call_graph.node_indices() {
         let def_id = call_graph.node_weight(fun_index).unwrap().def_id();
-        let Some(self_edge) = call_graph.find_edge(fun_index, fun_index) else {
+        let mut call_span = DUMMY_SP;
+        let self_edges = call_graph
+            .edges_connecting(fun_index, fun_index)
+            .map(|e| {
+                if let &CallKind::Direct(span, subst) = e.weight() {
+                    call_span = span;
+                    // FIXME: Support polymorphic recursion
+                    if subst != erased_identity_for_item(ctx.tcx, def_id) {
+                        ctx.error(call_span, "Polymorphic recursion is not supported").emit();
+                    }
+                    recursive_calls.entry(def_id).or_default().insert(def_id);
+                }
+                e.id()
+            })
+            .collect::<Vec<_>>();
+        if self_edges.is_empty() {
             continue;
-        };
+        }
         assert!(def_id.is_local());
-        let call = call_graph[self_edge];
-        let CallKind::Direct(span) = call else { continue };
-        call_graph.remove_edge(self_edge);
+        self_edges.iter().for_each(|edge| {
+            let _ = call_graph.remove_edge(*edge);
+        });
         if has_variant_clause(ctx.tcx, def_id) {
-            recursive_calls.entry(def_id).or_default().insert(def_id);
             continue;
         }
         let pearlite = is_pearlite(ctx.tcx, def_id);
@@ -129,7 +141,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
             "Recursive program function without a `#[variant]` clause"
         };
         let mut error = ctx.error(fun_span, msg);
-        error.span_note(span, "Recursive call happens here");
+        error.span_note(call_span, "Recursive call happens here");
         error.emit();
     }
 
@@ -181,7 +193,7 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
             let f2 = ctx.def_path_str(next_node);
 
             match call {
-                CallKind::Direct(span) => {
+                CallKind::Direct(span, _) => {
                     error.span_note(span, format!("{adverb} `{f1}` calls `{f2}`{punct}"));
                 }
                 CallKind::GenericBound(indirect_id, span) => {
@@ -207,13 +219,13 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
     recursive_calls
 }
 
-struct CallGraph {
-    graph: graph::DiGraph<GraphNode, CallKind>,
+struct CallGraph<'tcx> {
+    graph: graph::DiGraph<GraphNode, CallKind<'tcx>>,
 }
 
 #[derive(Default)]
 struct BuildFunctionsGraph<'tcx> {
-    graph: graph::DiGraph<GraphNode, CallKind>,
+    graph: graph::DiGraph<GraphNode, CallKind<'tcx>>,
     graph_node_to_index: IndexMap<GraphNode, graph::NodeIndex>,
     /// Stores the generic bounds that are left when instantiating the default method in
     /// the impl block.
@@ -280,9 +292,9 @@ impl GraphNode {
 }
 
 #[derive(Clone, Copy, Debug)]
-enum CallKind {
+enum CallKind<'tcx> {
     /// Call of a function.
-    Direct(Span),
+    Direct(Span, GenericArgsRef<'tcx>),
     /// 'Indirect' call, this is an egde going inside an `impl` block. This happens when
     /// calling a generic function while specializing a type. For example:
     /// ```rust
@@ -318,7 +330,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         // WARNING: `subst`` is not normalized (but we don't seem to use the fact that it should be)
         let res = TraitResolved::resolve_item(ctx.tcx, typing_env, called_id, subst);
 
-        let (called_node, bounds);
+        let (called_node, called_subst, bounds);
 
         // If we are calling a known method, and this method has been defined in an ancestor of the impl
         // we found, and this method is logic and transparent from this impl and this impl is local, then use a
@@ -329,7 +341,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             let Some(impl_ldid) = impl_defid.as_local() && // The impl is local
             ctx.is_transparent_from(def.0, impl_defid)
         {
-            called_id = def.0;
+            (called_id, called_subst) = def;
             let bnds;
             (called_node, bnds) =
                 self.visit_specialized_default_function(ctx, impl_ldid, called_id);
@@ -337,19 +349,18 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 .instantiate(ctx.tcx, def.1.rebase_onto(ctx.tcx, ctx.parent(def.0), impl_args))
                 .skip_normalization()
         } else {
-            let subst_r;
             // Note: we may get `NoInstance` here because termination checking of trait methods happens in a modified context (see `CallGraph::build`)
-            (called_id, subst_r) = if let TraitResolved::Instance { def, .. } = res {
+            (called_id, called_subst) = if let TraitResolved::Instance { def, .. } = res {
                 def
             } else {
                 (called_id, subst)
             };
             called_node = self.insert_node(GraphNode::function(called_id));
             bounds = EarlyBinder::bind(ctx.param_env(called_id).caller_bounds())
-                .instantiate(ctx.tcx, subst_r)
+                .instantiate(ctx.tcx, called_subst)
                 .skip_normalization()
         }
-        self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
+        self.graph.add_edge(node, called_node, CallKind::Direct(call_span, called_subst));
         for impl_id in proof_tree_nodes(ctx.tcx, typing_env, bounds) {
             let item_node = self.insert_node(GraphNode::impl_(impl_id));
             self.graph.update_edge(node, item_node, CallKind::GenericBound(called_id, call_span));
@@ -442,12 +453,12 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
     }
 }
 
-impl CallGraph {
+impl<'tcx> CallGraph<'tcx> {
     /// Build the call graph of all functions appearing in the current crate,
     /// exclusively for the purpose of termination checking.
     ///
     /// In particular, this means it only contains `#[check(terminates)]` or `#[trusted(terminates)]` functions.
-    fn build(ctx: &TranslationCtx) -> Self {
+    fn build(ctx: &TranslationCtx<'tcx>) -> Self {
         let tcx = ctx.tcx;
         let mut build_call_graph = BuildFunctionsGraph::default();
 
