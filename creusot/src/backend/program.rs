@@ -152,7 +152,7 @@ fn variant_param<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Option<(Iden
     Some((Ident::fresh_local("variant'"), variant.ty))
 }
 
-pub(crate) fn to_why_body<'tcx>(
+fn to_why_body<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     name: Ident,
