@@ -23,7 +23,7 @@ use crate::{
     validate::AnfBlock,
 };
 use creusot_args::options::Options;
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexSet;
 use once_map::unsync::OnceMap;
 use rustc_ast::{
     AttrVec, Fn, FnSig, NodeId,
