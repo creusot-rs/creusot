@@ -51,7 +51,7 @@ module M_take_first_mut
   
   meta "rewrite_def" predicate inv_refmut_refmut_slice_T
   
-  predicate postcondition_once_default [@inline:trivial] (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
+  predicate postcondition_once_default (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
     let () = args in inv_refmut_slice_T result
     /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ Slice64.view result.final = (Seq.empty: Seq.seq t_T)
   
@@ -61,7 +61,7 @@ module M_take_first_mut
   
   meta "rewrite_def" predicate resolve_default
   
-  predicate postcondition_mut_default [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
+  predicate postcondition_mut_default (self: ()) (args: ()) (result_state: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
     let () = args in inv_refmut_slice_T result
     /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ Slice64.view result.final = (Seq.empty: Seq.seq t_T)
   
@@ -70,33 +70,34 @@ module M_take_first_mut
   function fn_mut_once_default (self: ()) (args: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
   
   axiom fn_mut_once_default_spec:
-    forall self: (), args: (), res: MutBorrow.t (Slice64.slice t_T). postcondition_once_default self args res
+    forall self: (), args: (), res: MutBorrow.t (Slice64.slice t_T) [postcondition_once_default self args res]. postcondition_once_default self args res
       = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
   
-  predicate hist_inv_default [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_default
+  predicate hist_inv_default (self: ()) (result_state: ()) = true
   
   function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_default_spec: forall self: (), b: (), c: (). hist_inv_default self b
+  axiom hist_inv_trans_default_spec:
+    forall self: (), b: (), c: () [hist_inv_default self b, hist_inv_default b c | hist_inv_default self b, hist_inv_default self c | hist_inv_default b c, hist_inv_default self c]. hist_inv_default self b
       -> hist_inv_default b c -> hist_inv_default self c
   
   function hist_inv_refl_default (self: ()) : ()
   
-  axiom hist_inv_refl_default_spec: forall self: (). hist_inv_default self self
+  axiom hist_inv_refl_default_spec: forall self: () [hist_inv_default self self]. hist_inv_default self self
   
   function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
   
   axiom postcondition_mut_hist_inv_default_spec:
-    forall self: (), args: (), res_state: (), res: MutBorrow.t (Slice64.slice t_T). postcondition_mut_default self args res_state res
+    forall self: (), args: (), res_state: (), res: MutBorrow.t (Slice64.slice t_T) [postcondition_mut_default self args res_state res | hist_inv_default self res_state]. postcondition_mut_default self args res_state res
       -> hist_inv_default self res_state
   
   function fn_hist_inv_default (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_default_spec: forall self: (), res_state: (). hist_inv_default self res_state = (self = res_state)
+  axiom fn_hist_inv_default_spec:
+    forall self: (), res_state: () [hist_inv_default self res_state]. hist_inv_default self res_state
+      = (self = res_state)
   
-  predicate postcondition_default [@inline:trivial] (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
+  predicate postcondition_default (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
     let () = args in inv_refmut_slice_T result
     /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ Slice64.view result.final = (Seq.empty: Seq.seq t_T)
   
@@ -105,13 +106,13 @@ module M_take_first_mut
   function fn_once_default (self: ()) (args: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
   
   axiom fn_once_default_spec:
-    forall self: (), args: (), res: MutBorrow.t (Slice64.slice t_T). postcondition_once_default self args res
+    forall self: (), args: (), res: MutBorrow.t (Slice64.slice t_T) [postcondition_once_default self args res]. postcondition_once_default self args res
       = (postcondition_default self args res /\ resolve_default self)
   
   function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: MutBorrow.t (Slice64.slice t_T)) : ()
   
   axiom fn_mut_default_spec:
-    forall self: (), args: (), res_state: (), res: MutBorrow.t (Slice64.slice t_T). postcondition_mut_default self args res_state res
+    forall self: (), args: (), res_state: (), res: MutBorrow.t (Slice64.slice t_T) [postcondition_mut_default self args res_state res]. postcondition_mut_default self args res_state res
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_refmut_slice_T (return (x: MutBorrow.t (Slice64.slice t_T))) = any

@@ -41,23 +41,19 @@ impl ToTokens for Invariant {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let span = self.span;
         let term = pretyping::encode_term(&self.term);
-        let spec_closure = {
-            let expl = match self.kind {
-                LoopInvariant(Some(n)) => format!("expl:loop invariant #{}", n),
-                LoopInvariant(None) => "expl:loop invariant".to_string(),
-                ForInvariant => "expl:for invariant".to_string(),
-            };
-            quote_spanned! {span=>
-              #[creusot::spec::invariant = #expl]
-              || { #term }
-            }
+        let expl = match self.kind {
+            LoopInvariant(Some(n)) => format!("expl:loop invariant #{}", n),
+            LoopInvariant(None) => "expl:loop invariant".to_string(),
+            ForInvariant => "expl:for invariant".to_string(),
         };
         tokens.extend(quote_spanned! {span=>
             #[allow(let_underscore_drop)]
             let _ =
                 #[creusot::no_translate]
                 #[creusot::spec]
-                #spec_closure;
+                #[creusot::spec::invariant = #expl]
+                || { #term }
+            ;
         })
     }
 }
@@ -66,16 +62,14 @@ impl ToTokens for Variant {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let span = self.span;
         let term = pretyping::encode_term(&self.term);
-        let spec_closure = quote_spanned! {span=>
-          #[creusot::spec::variant::loop_]
-          || { ::creusot_std::__stubs::variant_check(#term) }
-        };
         tokens.extend(quote_spanned! {span=>
             #[allow(let_underscore_drop)]
             let _ =
                 #[creusot::no_translate]
                 #[creusot::spec]
-                #spec_closure;
+                #[creusot::spec::variant::loop_]
+                || { ::creusot_std::__stubs::variant_check(#term) }
+            ;
         })
     }
 }

@@ -27,7 +27,7 @@ module M_can_extend
       = view_Box_slice_i32_Global self_}
       (! return {result}) ]
   
-  predicate precondition_into_iter [@inline:trivial] (self: ()) (args: t_Vec_i32_Global) = let self_ = args in true
+  predicate precondition_into_iter (self: ()) (args: t_Vec_i32_Global) = let self_ = args in true
   
   meta "rewrite_def" predicate precondition_into_iter
   
@@ -57,7 +57,7 @@ module M_can_extend
   
   meta "rewrite_def" predicate inv_Seq_i32
   
-  predicate postcondition_once_into_iter [@inline:trivial] (self: ()) (args: t_Vec_i32_Global) (result: t_IntoIter_i32_Global) =
+  predicate postcondition_once_into_iter (self: ()) (args: t_Vec_i32_Global) (result: t_IntoIter_i32_Global) =
     let self_ = args in inv_IntoIter_i32_Global result /\ view_Vec_i32_Global self_ = view_IntoIter_i32_Global result
   
   meta "rewrite_def" predicate postcondition_once_into_iter
@@ -66,7 +66,7 @@ module M_can_extend
   
   meta "rewrite_def" predicate resolve_into_iter
   
-  predicate postcondition_mut_into_iter [@inline:trivial] (self: ()) (args: t_Vec_i32_Global) (result_state: ()) (result: t_IntoIter_i32_Global) =
+  predicate postcondition_mut_into_iter (self: ()) (args: t_Vec_i32_Global) (result_state: ()) (result: t_IntoIter_i32_Global) =
     let self_ = args in inv_IntoIter_i32_Global result /\ view_Vec_i32_Global self_ = view_IntoIter_i32_Global result
   
   meta "rewrite_def" predicate postcondition_mut_into_iter
@@ -74,34 +74,34 @@ module M_can_extend
   function fn_mut_once_into_iter (self: ()) (args: t_Vec_i32_Global) (res: t_IntoIter_i32_Global) : ()
   
   axiom fn_mut_once_into_iter_spec:
-    forall self: (), args: t_Vec_i32_Global, res: t_IntoIter_i32_Global. postcondition_once_into_iter self args res
+    forall self: (), args: t_Vec_i32_Global, res: t_IntoIter_i32_Global [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
       = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
   
-  predicate hist_inv_into_iter [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_into_iter
+  predicate hist_inv_into_iter (self: ()) (result_state: ()) = true
   
   function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_into_iter_spec: forall self: (), b: (), c: (). hist_inv_into_iter self b
+  axiom hist_inv_trans_into_iter_spec:
+    forall self: (), b: (), c: () [hist_inv_into_iter self b, hist_inv_into_iter b c | hist_inv_into_iter self b, hist_inv_into_iter self c | hist_inv_into_iter b c, hist_inv_into_iter self c]. hist_inv_into_iter self b
       -> hist_inv_into_iter b c -> hist_inv_into_iter self c
   
   function hist_inv_refl_into_iter (self: ()) : ()
   
-  axiom hist_inv_refl_into_iter_spec: forall self: (). hist_inv_into_iter self self
+  axiom hist_inv_refl_into_iter_spec: forall self: () [hist_inv_into_iter self self]. hist_inv_into_iter self self
   
   function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_Vec_i32_Global) (res_state: ()) (res: t_IntoIter_i32_Global) : ()
   
   axiom postcondition_mut_hist_inv_into_iter_spec:
-    forall self: (), args: t_Vec_i32_Global, res_state: (), res: t_IntoIter_i32_Global. postcondition_mut_into_iter self args res_state res
+    forall self: (), args: t_Vec_i32_Global, res_state: (), res: t_IntoIter_i32_Global [postcondition_mut_into_iter self args res_state res | hist_inv_into_iter self res_state]. postcondition_mut_into_iter self args res_state res
       -> hist_inv_into_iter self res_state
   
   function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_into_iter_spec: forall self: (), res_state: (). hist_inv_into_iter self res_state
+  axiom fn_hist_inv_into_iter_spec:
+    forall self: (), res_state: () [hist_inv_into_iter self res_state]. hist_inv_into_iter self res_state
       = (self = res_state)
   
-  predicate postcondition_into_iter [@inline:trivial] (self: ()) (args: t_Vec_i32_Global) (result: t_IntoIter_i32_Global) =
+  predicate postcondition_into_iter (self: ()) (args: t_Vec_i32_Global) (result: t_IntoIter_i32_Global) =
     let self_ = args in inv_IntoIter_i32_Global result /\ view_Vec_i32_Global self_ = view_IntoIter_i32_Global result
   
   meta "rewrite_def" predicate postcondition_into_iter
@@ -109,13 +109,13 @@ module M_can_extend
   function fn_once_into_iter (self: ()) (args: t_Vec_i32_Global) (res: t_IntoIter_i32_Global) : ()
   
   axiom fn_once_into_iter_spec:
-    forall self: (), args: t_Vec_i32_Global, res: t_IntoIter_i32_Global. postcondition_once_into_iter self args res
+    forall self: (), args: t_Vec_i32_Global, res: t_IntoIter_i32_Global [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
       = (postcondition_into_iter self args res /\ resolve_into_iter self)
   
   function fn_mut_into_iter (self: ()) (args: t_Vec_i32_Global) (res_state: ()) (res: t_IntoIter_i32_Global) : ()
   
   axiom fn_mut_into_iter_spec:
-    forall self: (), args: t_Vec_i32_Global, res_state: (), res: t_IntoIter_i32_Global. postcondition_mut_into_iter self args res_state res
+    forall self: (), args: t_Vec_i32_Global, res_state: (), res: t_IntoIter_i32_Global [postcondition_mut_into_iter self args res_state res]. postcondition_mut_into_iter self args res_state res
       = (postcondition_into_iter self args res /\ self = res_state)
   
   predicate produces_IntoIter_i32_Global (self: t_IntoIter_i32_Global) (visited: Seq.seq Int32.t) (rhs: t_IntoIter_i32_Global) =

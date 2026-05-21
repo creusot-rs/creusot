@@ -52,10 +52,7 @@ module M_sum_first_n_iter
   
   meta "rewrite_def" predicate resolve_closure0
   
-  predicate hist_inv_closure0 [@inline:trivial] (self: closure0) (result_state: closure0) =
-    result_state.c0.final = self.c0.final
-  
-  meta "rewrite_def" predicate hist_inv_closure0
+  predicate hist_inv_closure0 (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
   
   let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (x: UInt64.t) (produced: Seq.seq UInt64.t)
     (return (x'0: ())) = bb0
@@ -77,7 +74,7 @@ module M_sum_first_n_iter
   
   meta "rewrite_def" predicate closure0'post'return
   
-  predicate postcondition_once_closure0 [@inline:trivial] (self: closure0) (args: tup2_usize_Snapshot_Seq_usize) (result: ()) =
+  predicate postcondition_once_closure0 (self: closure0) (args: tup2_usize_Snapshot_Seq_usize) (result: ()) =
     let {f0 = x; f1 = produced} = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current
             = self
           /\ bor_self.final = e /\ closure0'post'return bor_self x produced result /\ hist_inv_closure0 self e)
@@ -85,7 +82,7 @@ module M_sum_first_n_iter
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate postcondition_mut_closure0 [@inline:trivial] (self: closure0) (args: tup2_usize_Snapshot_Seq_usize) (result_state: closure0) (result: ()) =
+  predicate postcondition_mut_closure0 (self: closure0) (args: tup2_usize_Snapshot_Seq_usize) (result_state: closure0) (result: ()) =
     let {f0 = x; f1 = produced} = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
       /\ bor_self.final = result_state
       /\ closure0'post'return bor_self x produced result /\ hist_inv_closure0 self result_state
@@ -95,22 +92,23 @@ module M_sum_first_n_iter
   function fn_mut_once_closure0 (self: closure0) (args: tup2_usize_Snapshot_Seq_usize) (res: ()) : ()
   
   axiom fn_mut_once_closure0_spec:
-    forall self: closure0, args: tup2_usize_Snapshot_Seq_usize, res: (). postcondition_once_closure0 self args res
+    forall self: closure0, args: tup2_usize_Snapshot_Seq_usize, res: () [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
       = (exists res_state: closure0. postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
   
   function hist_inv_trans_closure0 (self: closure0) (b: closure0) (c: closure0) : ()
   
-  axiom hist_inv_trans_closure0_spec: forall self: closure0, b: closure0, c: closure0. hist_inv_closure0 self b
+  axiom hist_inv_trans_closure0_spec:
+    forall self: closure0, b: closure0, c: closure0 [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
       -> hist_inv_closure0 b c -> hist_inv_closure0 self c
   
   function hist_inv_refl_closure0 (self: closure0) : ()
   
-  axiom hist_inv_refl_closure0_spec: forall self: closure0. hist_inv_closure0 self self
+  axiom hist_inv_refl_closure0_spec: forall self: closure0 [hist_inv_closure0 self self]. hist_inv_closure0 self self
   
   function postcondition_mut_hist_inv_closure0 (self: closure0) (args: tup2_usize_Snapshot_Seq_usize) (res_state: closure0) (res: ()) : ()
   
   axiom postcondition_mut_hist_inv_closure0_spec:
-    forall self: closure0, args: tup2_usize_Snapshot_Seq_usize, res_state: closure0, res: (). postcondition_mut_closure0 self args res_state res
+    forall self: closure0, args: tup2_usize_Snapshot_Seq_usize, res_state: closure0, res: () [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
       -> hist_inv_closure0 self res_state
   
   function range_inclusive_len_usize (r: t_RangeInclusive_usize) : int = if is_empty_log_RangeInclusive_usize r then
@@ -161,7 +159,7 @@ module M_sum_first_n_iter
   
   meta "rewrite_def" predicate inv_usize
   
-  predicate precondition_closure0 [@inline:trivial] (self: closure0) (args: tup2_usize_Snapshot_Seq_usize) =
+  predicate precondition_closure0 (self: closure0) (args: tup2_usize_Snapshot_Seq_usize) =
     let {f0 = x; f1 = produced'0} = args in forall bor_self: MutBorrow.t closure0. bor_self.current = self
       -> closure0'pre bor_self x produced'0
   
@@ -234,13 +232,85 @@ module M_sum_first_n_iter
       = { iter = self; func = func'0; produced = Seq.empty: Seq.seq UInt64.t })}
       (! return {result}) ]
   
-  predicate resolve_RangeInclusive_usize (_1: t_RangeInclusive_usize)
+  predicate precondition_into_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) =
+    let self_ = args in inv_MapInv_RangeInclusive_usize_closure0 self_
   
-  predicate resolve_MapInv_RangeInclusive_usize_closure0 (_1: t_MapInv_RangeInclusive_usize_closure0)
+  meta "rewrite_def" predicate precondition_into_iter
   
-  axiom resolve_axiom [@rewrite]:
-    forall x: t_MapInv_RangeInclusive_usize_closure0 [resolve_MapInv_RangeInclusive_usize_closure0 x]. resolve_MapInv_RangeInclusive_usize_closure0 x
-      = (resolve_RangeInclusive_usize x.iter /\ resolve_closure0 x.func)
+  predicate precondition_from_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) =
+    let iter'0 = args in inv_MapInv_RangeInclusive_usize_closure0 iter'0 /\ precondition_into_iter () iter'0
+  
+  meta "rewrite_def" predicate precondition_from_iter
+  
+  let rec into_iter_MapInv_RangeInclusive_usize_closure0 (self_: t_MapInv_RangeInclusive_usize_closure0)
+    (return (x: t_MapInv_RangeInclusive_usize_closure0)) =
+    {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_MapInv_RangeInclusive_usize_closure0 self_}
+    any
+    [ return (result: t_MapInv_RangeInclusive_usize_closure0) ->
+    {[@stop_split] [@expl:into_iter_MapInv_RangeInclusive_usize_closure0 ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_MapInv_RangeInclusive_usize_closure0 result)
+      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
+      (! return {result}) ]
+  
+  predicate postcondition_once_into_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (result: t_MapInv_RangeInclusive_usize_closure0) =
+    let self_ = args in inv_MapInv_RangeInclusive_usize_closure0 result /\ result = self_
+  
+  meta "rewrite_def" predicate postcondition_once_into_iter
+  
+  predicate resolve_into_iter [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_into_iter
+  
+  predicate postcondition_mut_into_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (result_state: ()) (result: t_MapInv_RangeInclusive_usize_closure0) =
+    let self_ = args in inv_MapInv_RangeInclusive_usize_closure0 result /\ result = self_
+  
+  meta "rewrite_def" predicate postcondition_mut_into_iter
+  
+  function fn_mut_once_into_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (res: t_MapInv_RangeInclusive_usize_closure0) : ()
+  
+  axiom fn_mut_once_into_iter_spec:
+    forall self: (), args: t_MapInv_RangeInclusive_usize_closure0, res: t_MapInv_RangeInclusive_usize_closure0 [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
+      = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
+  
+  predicate hist_inv_into_iter (self: ()) (result_state: ()) = true
+  
+  function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_into_iter_spec:
+    forall self: (), b: (), c: () [hist_inv_into_iter self b, hist_inv_into_iter b c | hist_inv_into_iter self b, hist_inv_into_iter self c | hist_inv_into_iter b c, hist_inv_into_iter self c]. hist_inv_into_iter self b
+      -> hist_inv_into_iter b c -> hist_inv_into_iter self c
+  
+  function hist_inv_refl_into_iter (self: ()) : ()
+  
+  axiom hist_inv_refl_into_iter_spec: forall self: () [hist_inv_into_iter self self]. hist_inv_into_iter self self
+  
+  function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (res_state: ()) (res: t_MapInv_RangeInclusive_usize_closure0) : ()
+  
+  axiom postcondition_mut_hist_inv_into_iter_spec:
+    forall self: (), args: t_MapInv_RangeInclusive_usize_closure0, res_state: (), res: t_MapInv_RangeInclusive_usize_closure0 [postcondition_mut_into_iter self args res_state res | hist_inv_into_iter self res_state]. postcondition_mut_into_iter self args res_state res
+      -> hist_inv_into_iter self res_state
+  
+  function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_into_iter_spec:
+    forall self: (), res_state: () [hist_inv_into_iter self res_state]. hist_inv_into_iter self res_state
+      = (self = res_state)
+  
+  predicate postcondition_into_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (result: t_MapInv_RangeInclusive_usize_closure0) =
+    let self_ = args in inv_MapInv_RangeInclusive_usize_closure0 result /\ result = self_
+  
+  meta "rewrite_def" predicate postcondition_into_iter
+  
+  function fn_once_into_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (res: t_MapInv_RangeInclusive_usize_closure0) : ()
+  
+  axiom fn_once_into_iter_spec:
+    forall self: (), args: t_MapInv_RangeInclusive_usize_closure0, res: t_MapInv_RangeInclusive_usize_closure0 [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
+      = (postcondition_into_iter self args res /\ resolve_into_iter self)
+  
+  function fn_mut_into_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (res_state: ()) (res: t_MapInv_RangeInclusive_usize_closure0) : ()
+  
+  axiom fn_mut_into_iter_spec:
+    forall self: (), args: t_MapInv_RangeInclusive_usize_closure0, res_state: (), res: t_MapInv_RangeInclusive_usize_closure0 [postcondition_mut_into_iter self args res_state res]. postcondition_mut_into_iter self args res_state res
+      = (postcondition_into_iter self args res /\ self = res_state)
   
   predicate produces_MapInv_RangeInclusive_usize_closure0 [@inline:trivial] (self: t_MapInv_RangeInclusive_usize_closure0) (visited: Seq.seq ()) (succ: t_MapInv_RangeInclusive_usize_closure0) =
     hist_inv_closure0 self.func succ.func
@@ -278,16 +348,101 @@ module M_sum_first_n_iter
     /\ completed_RangeInclusive_usize (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
     /\ self.current.func = self.final.func
   
-  predicate from_iter_post_unit (_1: Seq.seq ()) (_res: ()) = true
+  predicate resolve_RangeInclusive_usize (_1: t_RangeInclusive_usize)
+  
+  predicate resolve_MapInv_RangeInclusive_usize_closure0 (_1: t_MapInv_RangeInclusive_usize_closure0)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall x: t_MapInv_RangeInclusive_usize_closure0 [resolve_MapInv_RangeInclusive_usize_closure0 x]. resolve_MapInv_RangeInclusive_usize_closure0 x
+      = (resolve_RangeInclusive_usize x.iter /\ resolve_closure0 x.func)
+  
+  let rec from_iter_unit (iter'0: t_MapInv_RangeInclusive_usize_closure0) (return (x: ())) =
+    {[@stop_split] [@expl:from_iter_unit requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_MapInv_RangeInclusive_usize_closure0 iter'0)
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter'0)}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:from_iter ensures] exists into_iter: t_MapInv_RangeInclusive_usize_closure0, prod: Seq.seq (), done': MutBorrow.t t_MapInv_RangeInclusive_usize_closure0. postcondition_into_iter () iter'0 into_iter
+        /\ produces_MapInv_RangeInclusive_usize_closure0 into_iter prod done'.current
+        /\ completed_MapInv_RangeInclusive_usize_closure0 done'
+        /\ resolve_MapInv_RangeInclusive_usize_closure0 done'.final}
+      (! return {result}) ]
+  
+  predicate postcondition_once_from_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (result: ()) =
+    let iter'0 = args in exists into_iter: t_MapInv_RangeInclusive_usize_closure0, prod: Seq.seq (), done': MutBorrow.t t_MapInv_RangeInclusive_usize_closure0. postcondition_into_iter () iter'0 into_iter
+      /\ produces_MapInv_RangeInclusive_usize_closure0 into_iter prod done'.current
+      /\ completed_MapInv_RangeInclusive_usize_closure0 done'
+      /\ resolve_MapInv_RangeInclusive_usize_closure0 done'.final
+  
+  meta "rewrite_def" predicate postcondition_once_from_iter
+  
+  predicate resolve_from_iter [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_from_iter
+  
+  predicate postcondition_mut_from_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (result_state: ()) (result: ()) =
+    let iter'0 = args in exists into_iter: t_MapInv_RangeInclusive_usize_closure0, prod: Seq.seq (), done': MutBorrow.t t_MapInv_RangeInclusive_usize_closure0. postcondition_into_iter () iter'0 into_iter
+      /\ produces_MapInv_RangeInclusive_usize_closure0 into_iter prod done'.current
+      /\ completed_MapInv_RangeInclusive_usize_closure0 done'
+      /\ resolve_MapInv_RangeInclusive_usize_closure0 done'.final
+  
+  meta "rewrite_def" predicate postcondition_mut_from_iter
+  
+  function fn_mut_once_from_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (res: ()) : ()
+  
+  axiom fn_mut_once_from_iter_spec:
+    forall self: (), args: t_MapInv_RangeInclusive_usize_closure0, res: () [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
+      = (exists res_state: (). postcondition_mut_from_iter self args res_state res /\ resolve_from_iter res_state)
+  
+  predicate hist_inv_from_iter (self: ()) (result_state: ()) = true
+  
+  function hist_inv_trans_from_iter (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_from_iter_spec:
+    forall self: (), b: (), c: () [hist_inv_from_iter self b, hist_inv_from_iter b c | hist_inv_from_iter self b, hist_inv_from_iter self c | hist_inv_from_iter b c, hist_inv_from_iter self c]. hist_inv_from_iter self b
+      -> hist_inv_from_iter b c -> hist_inv_from_iter self c
+  
+  function hist_inv_refl_from_iter (self: ()) : ()
+  
+  axiom hist_inv_refl_from_iter_spec: forall self: () [hist_inv_from_iter self self]. hist_inv_from_iter self self
+  
+  function postcondition_mut_hist_inv_from_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (res_state: ()) (res: ()) : ()
+  
+  axiom postcondition_mut_hist_inv_from_iter_spec:
+    forall self: (), args: t_MapInv_RangeInclusive_usize_closure0, res_state: (), res: () [postcondition_mut_from_iter self args res_state res | hist_inv_from_iter self res_state]. postcondition_mut_from_iter self args res_state res
+      -> hist_inv_from_iter self res_state
+  
+  function fn_hist_inv_from_iter (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_from_iter_spec:
+    forall self: (), res_state: () [hist_inv_from_iter self res_state]. hist_inv_from_iter self res_state
+      = (self = res_state)
+  
+  predicate postcondition_from_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (result: ()) =
+    let iter'0 = args in exists into_iter: t_MapInv_RangeInclusive_usize_closure0, prod: Seq.seq (), done': MutBorrow.t t_MapInv_RangeInclusive_usize_closure0. postcondition_into_iter () iter'0 into_iter
+      /\ produces_MapInv_RangeInclusive_usize_closure0 into_iter prod done'.current
+      /\ completed_MapInv_RangeInclusive_usize_closure0 done'
+      /\ resolve_MapInv_RangeInclusive_usize_closure0 done'.final
+  
+  meta "rewrite_def" predicate postcondition_from_iter
+  
+  function fn_once_from_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (res: ()) : ()
+  
+  axiom fn_once_from_iter_spec:
+    forall self: (), args: t_MapInv_RangeInclusive_usize_closure0, res: () [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
+      = (postcondition_from_iter self args res /\ resolve_from_iter self)
+  
+  function fn_mut_from_iter (self: ()) (args: t_MapInv_RangeInclusive_usize_closure0) (res_state: ()) (res: ()) : ()
+  
+  axiom fn_mut_from_iter_spec:
+    forall self: (), args: t_MapInv_RangeInclusive_usize_closure0, res_state: (), res: () [postcondition_mut_from_iter self args res_state res]. postcondition_mut_from_iter self args res_state res
+      = (postcondition_from_iter self args res /\ self = res_state)
   
   let rec collect_MapInv_RangeInclusive_usize_closure0 (self_: t_MapInv_RangeInclusive_usize_closure0)
     (return (x: ())) =
-    {[@stop_split] [@expl:collect 'self_' type invariant] inv_MapInv_RangeInclusive_usize_closure0 self_}
+    {[@stop_split] [@expl:collect_MapInv_RangeInclusive_usize_closure0 requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_MapInv_RangeInclusive_usize_closure0 self_)
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
     any
-    [ return (result: ()) ->
-    {[@stop_split] [@expl:collect ensures] exists done': MutBorrow.t t_MapInv_RangeInclusive_usize_closure0, prod: Seq.seq (). resolve_MapInv_RangeInclusive_usize_closure0 done'.final
-        /\ completed_MapInv_RangeInclusive_usize_closure0 done'
-        /\ produces_MapInv_RangeInclusive_usize_closure0 self_ prod done'.current /\ from_iter_post_unit prod result}
+    [ return (result: ()) -> {[@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result}
       (! return {result}) ]
   
   constant const_MAX: UInt32.t = (4294967295: UInt32.t)

@@ -60,7 +60,7 @@ use rustc_middle::{
     thir::{self, visit::Visitor},
     ty::{
         self, Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt,
-        TypingEnv, TypingMode,
+        TypingEnv, TypingMode, Unnormalized,
     },
 };
 use rustc_span::Span;
@@ -814,6 +814,7 @@ pub(crate) fn proof_tree_nodes<'tcx>(
     let mut nodes = Vec::new();
     let mut predicates: Vec<_> = trait_refs_of_clauses(tcx, clauses).collect();
     while let Some(trait_ref) = predicates.pop() {
+        let trait_ref = tcx.normalize_erasing_regions(typing_env, Unnormalized::new(trait_ref));
         let ImplSelection::Found(source) = select_trait_impl(tcx, typing_env, trait_ref) else {
             continue;
         };
@@ -833,8 +834,8 @@ pub(crate) fn proof_tree_nodes<'tcx>(
 fn param_env_for_termination(tcx: TyCtxt, trait_item_id: DefId, impl_item_id: DefId) -> ParamEnv {
     let impl_id = tcx.impl_of_assoc(impl_item_id).unwrap();
     let trait_ref = tcx.impl_trait_ref(impl_id).instantiate_identity().skip_normalization();
-    let trait_item_args = GenericArgs::identity_for_item(tcx, trait_item_id);
-    let args = trait_item_args.rebase_onto(tcx, trait_ref.def_id, trait_ref.args);
+    let impl_item_args = erased_identity_for_item(tcx, impl_item_id);
+    let args = impl_item_args.rebase_onto(tcx, impl_id, trait_ref.args);
 
     // Reverse engineered from `GenericPredicates::instantiate_into`
     let predicates = tcx.predicates_of(impl_id).instantiate_identity(tcx).predicates.into_iter();

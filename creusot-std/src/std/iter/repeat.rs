@@ -15,7 +15,7 @@ impl<T: Clone> IteratorSpec for Repeat<T> {
         pearlite! { false }
     }
 
-    #[logic(open)]
+    #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self == o &&

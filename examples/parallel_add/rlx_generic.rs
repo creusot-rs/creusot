@@ -139,19 +139,9 @@ pub fn parallel_add(n: i32) {
             let f = h.join_unwrap();
             ghost! { frag.join_in(f.into_inner()) };
         }
+        proof_assert!(frag@ == Some((PR::from_int(1), n@)));
     });
 
-    final_read(atomic, inv, n, frag);
-}
-
-#[requires(inv.public() == (atomic, frag.id()))]
-#[requires(frag@ == Some((PR::from_int(1), n@)))]
-fn final_read(
-    atomic: AtomicI32,
-    inv: Ghost<AtomicInvariant<ParallelAddAtomicInv>>,
-    n: i32,
-    frag: Ghost<Fragment<Option<(PR, Int)>>>,
-) {
     let own = ghost! {
         // Destroy the invariant, get back the ownership of the atomic
         let inv = inv.into_inner().into_inner();

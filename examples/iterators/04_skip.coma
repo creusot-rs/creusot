@@ -9,7 +9,7 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   
   type t_Skip_I = { iter: t_I; n: UInt64.t }
   
-  predicate postcondition_once_default [@inline:trivial] (self: ()) (args: ()) (result: UInt64.t) =
+  predicate postcondition_once_default (self: ()) (args: ()) (result: UInt64.t) =
     let () = args in result = (0: UInt64.t)
   
   meta "rewrite_def" predicate postcondition_once_default
@@ -18,53 +18,55 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
   
   meta "rewrite_def" predicate resolve_default
   
-  predicate postcondition_mut_default [@inline:trivial] (self: ()) (args: ()) (result_state: ()) (result: UInt64.t) =
+  predicate postcondition_mut_default (self: ()) (args: ()) (result_state: ()) (result: UInt64.t) =
     let () = args in result = (0: UInt64.t)
   
   meta "rewrite_def" predicate postcondition_mut_default
   
   function fn_mut_once_default (self: ()) (args: ()) (res: UInt64.t) : ()
   
-  axiom fn_mut_once_default_spec: forall self: (), args: (), res: UInt64.t. postcondition_once_default self args res
+  axiom fn_mut_once_default_spec:
+    forall self: (), args: (), res: UInt64.t [postcondition_once_default self args res]. postcondition_once_default self args res
       = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
   
-  predicate hist_inv_default [@inline:trivial] (self: ()) (result_state: ()) = true
-  
-  meta "rewrite_def" predicate hist_inv_default
+  predicate hist_inv_default (self: ()) (result_state: ()) = true
   
   function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
   
-  axiom hist_inv_trans_default_spec: forall self: (), b: (), c: (). hist_inv_default self b
+  axiom hist_inv_trans_default_spec:
+    forall self: (), b: (), c: () [hist_inv_default self b, hist_inv_default b c | hist_inv_default self b, hist_inv_default self c | hist_inv_default b c, hist_inv_default self c]. hist_inv_default self b
       -> hist_inv_default b c -> hist_inv_default self c
   
   function hist_inv_refl_default (self: ()) : ()
   
-  axiom hist_inv_refl_default_spec: forall self: (). hist_inv_default self self
+  axiom hist_inv_refl_default_spec: forall self: () [hist_inv_default self self]. hist_inv_default self self
   
   function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: UInt64.t) : ()
   
   axiom postcondition_mut_hist_inv_default_spec:
-    forall self: (), args: (), res_state: (), res: UInt64.t. postcondition_mut_default self args res_state res
+    forall self: (), args: (), res_state: (), res: UInt64.t [postcondition_mut_default self args res_state res | hist_inv_default self res_state]. postcondition_mut_default self args res_state res
       -> hist_inv_default self res_state
   
   function fn_hist_inv_default (self: ()) (res_state: ()) : ()
   
-  axiom fn_hist_inv_default_spec: forall self: (), res_state: (). hist_inv_default self res_state = (self = res_state)
+  axiom fn_hist_inv_default_spec:
+    forall self: (), res_state: () [hist_inv_default self res_state]. hist_inv_default self res_state
+      = (self = res_state)
   
-  predicate postcondition_default [@inline:trivial] (self: ()) (args: ()) (result: UInt64.t) =
-    let () = args in result = (0: UInt64.t)
+  predicate postcondition_default (self: ()) (args: ()) (result: UInt64.t) = let () = args in result = (0: UInt64.t)
   
   meta "rewrite_def" predicate postcondition_default
   
   function fn_once_default (self: ()) (args: ()) (res: UInt64.t) : ()
   
-  axiom fn_once_default_spec: forall self: (), args: (), res: UInt64.t. postcondition_once_default self args res
+  axiom fn_once_default_spec:
+    forall self: (), args: (), res: UInt64.t [postcondition_once_default self args res]. postcondition_once_default self args res
       = (postcondition_default self args res /\ resolve_default self)
   
   function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: UInt64.t) : ()
   
   axiom fn_mut_default_spec:
-    forall self: (), args: (), res_state: (), res: UInt64.t. postcondition_mut_default self args res_state res
+    forall self: (), args: (), res_state: (), res: UInt64.t [postcondition_mut_default self args res_state res]. postcondition_mut_default self args res_state res
       = (postcondition_default self args res /\ self = res_state)
   
   let rec default_usize (return (x: UInt64.t)) = any

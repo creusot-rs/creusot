@@ -243,7 +243,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             _ => DeclKind::Function,
         };
         let mut decls = if !opaque && let Some(term) = term(ctx, &names, &bound, def_id, subst) {
-            lower_logical_defn(ctx, &names, sig, kind, term, is_inline(ctx.tcx, def_id))
+            lower_logical_defn(ctx, &names, sig, kind, term, def_id)
         } else {
             let mut decls = val(sig, kind);
 
@@ -377,14 +377,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         if opaque {
             val(sig, DeclKind::Constant)
         } else if let Some(term) = try_const_to_term(def_id, subst, ctx, typing_env) {
-            lower_logical_defn(
-                ctx,
-                &names,
-                sig,
-                DeclKind::Constant,
-                term,
-                is_inline(ctx.tcx, def_id),
-            )
+            lower_logical_defn(ctx, &names, sig, DeclKind::Constant, term, def_id)
         } else {
             // Generate a constant setter.
             let value_name = Ident::fresh_local("_const");

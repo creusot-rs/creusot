@@ -35,41 +35,45 @@ module M_generic_closure
   
   function fn_mut_once_F (self: t_F) (args: t_A) (res: t_B) : ()
   
-  axiom fn_mut_once_F_spec: forall self: t_F, args: t_A, res: t_B. postcondition_once_F self args res
+  axiom fn_mut_once_F_spec:
+    forall self: t_F, args: t_A, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
       = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
   function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
   
-  axiom hist_inv_trans_F_spec: forall self: t_F, b: t_F, c: t_F. hist_inv_F self b
+  axiom hist_inv_trans_F_spec:
+    forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
       -> hist_inv_F b c -> hist_inv_F self c
   
   function hist_inv_refl_F (self: t_F) : ()
   
-  axiom hist_inv_refl_F_spec: forall self: t_F. hist_inv_F self self
+  axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
   function postcondition_mut_hist_inv_F (self: t_F) (args: t_A) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: t_A, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+    forall self: t_F, args: t_A, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
   
-  axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F. hist_inv_F self res_state = (self = res_state)
+  axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
+      = (self = res_state)
   
   predicate postcondition_F (self: t_F) (args: t_A) (result: t_B)
   
   function fn_once_F (self: t_F) (args: t_A) (res: t_B) : ()
   
-  axiom fn_once_F_spec: forall self: t_F, args: t_A, res: t_B. postcondition_once_F self args res
+  axiom fn_once_F_spec:
+    forall self: t_F, args: t_A, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
       = (postcondition_F self args res /\ resolve_F self)
   
   function fn_mut_F (self: t_F) (args: t_A) (res_state: t_F) (res: t_B) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: t_A, res_state: t_F, res: t_B. postcondition_mut_F self args res_state res
+    forall self: t_F, args: t_A, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
       = (postcondition_F self args res /\ self = res_state)
   
   let rec call_F (self_: t_F) (arg: t_A) (return (x: t_B)) =

@@ -6,7 +6,7 @@ use crate::{
         term::lower_pure_weakdep,
         ty::{self, translate_ty},
     },
-    contracts_items::get_builtin,
+    contracts_items::{Intrinsic, get_builtin, is_inline},
     ctx::*,
     naming::name,
     translated_item::FileModule,
@@ -124,9 +124,10 @@ pub(crate) fn lower_logical_defn<'tcx>(
     sig: LogicSignature,
     kind: DeclKind,
     body: Term<'tcx>,
-    inline: bool,
+    def_id: DefId,
 ) -> Vec<Decl> {
     let mut decls = vec![];
+    let inline = is_inline(ctx.tcx, def_id);
 
     // We don't pull dependencies for FnDef items, because it may be more private than
     // the definition is transparent
@@ -135,8 +136,22 @@ pub(crate) fn lower_logical_defn<'tcx>(
     if sig.variant.is_none() {
         let mut sig = sig.why_sig.clone();
         let mut meta_decl = None;
+
         if inline {
             sig.attrs.push(Attribute::Attr("inline:trivial".into()));
+        }
+
+        // Special case: we want the pre-/post- of closures to be unfolded by compute_specified
+        // but not inined when sent to SMT solvers
+        if inline
+            || matches!(
+                ctx.intrinsic(def_id),
+                Intrinsic::Precondition
+                    | Intrinsic::Postcondition
+                    | Intrinsic::PostconditionMut
+                    | Intrinsic::PostconditionOnce
+            )
+        {
             let kw = match kind {
                 DeclKind::Constant => "constant",
                 DeclKind::Predicate => "predicate",

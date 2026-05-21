@@ -76,7 +76,9 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
 
     #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
-    fn produces_refl(self) {}
+    fn produces_refl(self) {
+        proof_assert!(Seq::<&mut F>::empty().len() == Seq::<B>::empty().len())
+    }
 
     #[logic(law)]
     #[requires(a.produces(ab, b))]

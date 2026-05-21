@@ -1,6 +1,6 @@
 use crate::{
     backend::{is_trusted_item, ty::classify_adt},
-    contracts_items::{get_creusot_item, is_opaque, is_trusted_terminates},
+    contracts_items::{is_no_translate, is_opaque, is_trusted_terminates},
     ctx::{HasTyCtxt as _, TranslationCtx},
     validate::terminates::{find_path, proof_tree_nodes},
 };
@@ -402,7 +402,7 @@ fn add_trait(ctx: &TranslationCtx, def_id: DefId, graph: &mut TypeGraph) {
     }
 
     for item in ctx.associated_items(def_id).in_definition_order() {
-        if get_creusot_item(ctx.tcx, item.def_id).is_some() {
+        if is_no_translate(ctx.tcx, item.def_id) {
             // Skip fake methods
             continue;
         }
