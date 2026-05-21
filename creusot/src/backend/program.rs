@@ -67,12 +67,16 @@ pub(crate) fn translate_function<'tcx>(
         return None;
     }
 
+    let variant_ident = variant_param(ctx, def_id).map(|(ident, _)| ident);
     let name = names.source_ident();
-    let (body, sig) = to_why_body(ctx, &names, name, def_id);
+    let (mut body, mut sig) = to_why_body(ctx, &names, name, def_id, variant_ident);
+    if let Some((exp, ty)) = std::mem::take(&mut sig.variant) {
+        body = body.let_([Var(variant_ident.unwrap(), ty, exp, IsRef::NotRef)])
+    };
 
     let (mut decls, setters) = names.provide_deps(ctx);
     let body = setters.call_setters(body);
-    let mut defn = to_why_defn(ctx, def_id, body, sig);
+    let mut defn = to_why_defn(ctx, def_id, body, sig, None);
     // Refresh the name of the function. The previous name is already used for recursive calls,
     // which are translated to a separate abstract function.
     defn.prototype.name = defn.prototype.name.refresh();
@@ -128,8 +132,24 @@ pub(crate) fn translate_closure<'tcx>(
     name: Ident,
     def_id: DefId,
 ) -> Defn {
-    let (body, sig) = to_why_body(ctx, names, name, def_id);
-    to_why_defn(ctx, def_id, body, sig)
+    let variant = variant_param(ctx, def_id);
+    let (body, sig) = to_why_body(ctx, names, name, def_id, variant.map(|(ident, _)| ident));
+    to_why_defn(
+        ctx,
+        def_id,
+        body,
+        sig,
+        variant.map(|(ident, ty)| (ident, translate_ty(ctx, names, DUMMY_SP, ty))),
+    )
+}
+
+fn variant_param<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Option<(Ident, Ty<'tcx>)> {
+    let mut top_item = def_id;
+    while ctx.def_kind(top_item) == DefKind::Closure {
+        top_item = ctx.parent(def_id);
+    }
+    let variant = ctx.sig(top_item).contract.variant.as_ref()?;
+    Some((Ident::fresh_local("variant'"), variant.ty))
 }
 
 pub(crate) fn to_why_body<'tcx>(
@@ -137,6 +157,7 @@ pub(crate) fn to_why_body<'tcx>(
     names: &impl Namer<'tcx>,
     name: Ident,
     def_id: DefId,
+    variant_ident: Option<Ident>,
 ) -> (Expr, ProgramSignature) {
     // The function receives name::return_ as an argument handler and
     // redefines it in an handler that wraps it with the postcondition:
@@ -148,25 +169,14 @@ pub(crate) fn to_why_body<'tcx>(
     let args = sig.inputs.iter().map(|(name, _, _)| name.0).collect::<Box<[_]>>();
     let body_id = BodyId::local(def_id.expect_local());
 
-    let mut top_item = def_id;
-    while ctx.def_kind(top_item) == DefKind::Closure {
-        top_item = ctx.parent(def_id);
-    }
-    let variant_ident =
-        if ctx.ctx.has_variant(top_item) { Some(Ident::fresh_local("variant'")) } else { None };
-
-    let mut body = why_body(ctx, names, body_id, None, &args, name::return_(), variant_ident);
-    let mut sig = {
+    let body = why_body(ctx, names, body_id, None, &args, name::return_(), variant_ident);
+    let sig = {
         let mut sig = sig.clone();
         // normalize any RPITs away
         sig.output = names.normalize(sig.output);
         sig_add_type_invariant_spec(ctx, names.typing_env(), names.source_id(), &mut sig, def_id);
         lower_program_sig(ctx, names, name, sig, def_id, name::return_())
     };
-
-    if let Some((exp, ty)) = std::mem::take(&mut sig.variant) {
-        body = body.let_(std::iter::once(Var(variant_ident.unwrap(), ty, exp, IsRef::NotRef)))
-    }
 
     (body, sig)
 }
@@ -176,6 +186,7 @@ fn to_why_defn<'tcx>(
     def_id: DefId,
     mut body: Expr,
     mut sig: ProgramSignature,
+    variant_arg: Option<(Ident, Type)>, // `Some` to generate a variant argument
 ) -> Defn {
     let mut ret = Expr::var(name::return_()).app([Arg::Term(Exp::var(name::result()))]);
 
@@ -204,6 +215,12 @@ fn to_why_defn<'tcx>(
         .into(),
     );
     body = Expr::assert(sig.contract.requires_conj(&name), body);
+
+    sig.prototype.params = variant_arg
+        .map(|(ident, ty)| Param::Term(ident, ty))
+        .into_iter()
+        .chain(sig.prototype.params)
+        .collect();
 
     Defn { prototype: sig.prototype, body }
 }
