@@ -223,7 +223,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     } else {
                         self.ctx.crash_and_error(
                             self.ctx.def_span(self.self_id),
-                            "this function is recursive, but it does not use a variant and it not structurally recursive.",
+                            "this function is recursive, but it does not use a variant and it is not structurally recursive.",
                         )
                     }
                 } else {
