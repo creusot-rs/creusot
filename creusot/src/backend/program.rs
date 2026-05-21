@@ -43,11 +43,11 @@ use rustc_abi::VariantIdx;
 use rustc_hir::{Safety, def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{BasicBlock, BinOp, PlaceTy, ProjectionElem, START_BLOCK, UnOp},
-    ty::{self, AdtDef, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind},
+    ty::{self, AdtDef, GenericArgsRef, Ty, TyCtxt, TyKind},
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::IntTy;
-use std::{collections::HashMap, fmt::Debug, iter::once};
+use std::{collections::HashMap, fmt::Debug};
 use why3::{
     Ident, Name,
     coma::{Arg, Defn, Expr, IsRef, Param, Prototype, Var},
@@ -390,9 +390,6 @@ fn component_to_defn<'tcx>(
 
     block
 }
-
-/// Keep the recursive calls, so that we generate the right handlers.
-type RecursiveCalls = IndexMap<DefId, (Name, Vec<Type>, Type)>;
 
 /// State to pass around when lowering a function from FMIR to Coma.
 struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
@@ -1293,7 +1290,11 @@ fn func_call_to_why3<'tcx>(
 
         let real_sig = lower.ctx.signature_unclosure(subst.as_closure().sig(), Safety::Safe);
 
-        once(Arg::Term(arg.into_why(lower, istmts, span)))
+        lower
+            .variant_ident
+            .map(|ident| Arg::Term(Exp::var(ident)))
+            .into_iter()
+            .chain([Arg::Term(arg.into_why(lower, istmts, span))])
             .chain(real_sig.inputs().iter().enumerate().map(|(ix, inp)| {
                 let inp = lower.ctx.instantiate_bound_regions_with_erased(inp.map_bound(|&x| x));
                 let projection = pl
@@ -1306,7 +1307,16 @@ fn func_call_to_why3<'tcx>(
             }))
             .collect()
     } else {
-        args.into_iter().map(|a| a.into_why(lower, istmts, span)).map(Arg::Term).collect()
+        let variant = if lower.ctx.should_check_variant_decreases(lower.names.source_id(), id) {
+            lower.variant_ident.map(|ident| Exp::var(ident))
+        } else {
+            None
+        };
+        variant
+            .into_iter()
+            .chain(args.into_iter().map(|a| a.into_why(lower, istmts, span)))
+            .map(Arg::Term)
+            .collect()
     };
 
     (lower.names.item(id, subst), args)
