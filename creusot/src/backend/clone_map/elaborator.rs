@@ -382,7 +382,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 Some(subst),
                 &[],
                 name::return_(),
-                &mut Default::default(),
+                None, // const has no variant
             );
 
             let output = ctx.instantiate_and_normalize_erasing_regions(
