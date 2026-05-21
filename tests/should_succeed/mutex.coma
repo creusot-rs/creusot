@@ -10,11 +10,11 @@ module M_concurrent
   
   predicate inv_Even (self: ()) (x: UInt32.t) = ComputerDivision.mod (UInt32.t'int x) 2 = 0
   
-  let rec new_u32 (val': UInt32.t) (i: ()) (return (x: t_Mutex_u32_Even)) =
-    {[@stop_split] [@expl:new requires] inv_Even i val'}
+  let new_u32 (val': UInt32.t) (i: ()) (return (x: t_Mutex_u32_Even)) =
+  {[@stop_split] [@expl:new requires] inv_Even i val'}
     any [ return (result: t_Mutex_u32_Even) -> (! return {result}) ]
   
-  let rec leak_Mutex_u32_Even (b: t_Mutex_u32_Even) (return (x: MutBorrow.t t_Mutex_u32_Even)) = any
+  let leak_Mutex_u32_Even (b: t_Mutex_u32_Even) (return (x: MutBorrow.t t_Mutex_u32_Even)) = any
     [ return (result: MutBorrow.t t_Mutex_u32_Even) -> {[@stop_split] [@expl:leak ensures] result.current = b}
       (! return {result}) ]
   
@@ -32,8 +32,8 @@ module M_concurrent
   
   predicate precondition_AddsTwo (self: t_AddsTwo) = true
   
-  let rec spawn_unit (f'0: t_AddsTwo) (return (x: t_JoinHandle_unit_SpawnPostCond_AddsTwo)) =
-    {[@stop_split] [@expl:spawn requires] precondition_AddsTwo f'0}
+  let spawn_unit (f'0: t_AddsTwo) (return (x: t_JoinHandle_unit_SpawnPostCond_AddsTwo)) =
+  {[@stop_split] [@expl:spawn requires] precondition_AddsTwo f'0}
     any [ return (result: t_JoinHandle_unit_SpawnPostCond_AddsTwo) -> (! return {result}) ]
   
   type t_Result_unit_unit = Ok () | Err ()
@@ -42,7 +42,7 @@ module M_concurrent
   
   predicate inv_SpawnPostCond_AddsTwo (self: t_SpawnPostCond_AddsTwo) (v: ()) = postcondition_AddsTwo self.f v
   
-  let rec join_unit (self: t_JoinHandle_unit_SpawnPostCond_AddsTwo) (return (x: t_Result_unit_unit)) = any
+  let join_unit (self: t_JoinHandle_unit_SpawnPostCond_AddsTwo) (return (x: t_Result_unit_unit)) = any
     [ return (result: t_Result_unit_unit) -> {[@stop_split] [@expl:join ensures] match result with
         | Ok v -> inv_SpawnPostCond_AddsTwo self.f1'0 v
         | _ -> true
@@ -53,7 +53,7 @@ module M_concurrent
   
   meta "select_lsinst" "all"
   
-  let rec concurrent (return (x: ())) = (! bb0
+  let concurrent (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_5 <- () ] s1
       | s1 = new_u32 {(0: UInt32.t)} {_5} (fun (_x: t_Mutex_u32_Even) -> [ &_4 <- _x ] s2)
@@ -99,24 +99,24 @@ module M_impl_FakeFnOnce_for_AddsTwo__call (* <AddsTwo<'a> as FakeFnOnce> *)
   
   type t_MutexGuard_u32_Even = { f0'0: t_GuardInner_u32; f1'0: () }
   
-  let rec lock_u32 (self: t_Mutex_u32_Even) (return (x: t_MutexGuard_u32_Even)) = any
+  let lock_u32 (self: t_Mutex_u32_Even) (return (x: t_MutexGuard_u32_Even)) = any
     [ return (result: t_MutexGuard_u32_Even) -> {[@stop_split] [@expl:lock ensures] self.f1 = result.f1'0}
       (! return {result}) ]
   
   predicate inv_Even (self: ()) (x: UInt32.t) = ComputerDivision.mod (UInt32.t'int x) 2 = 0
   
-  let rec deref_u32 (self: t_MutexGuard_u32_Even) (return (x: UInt32.t)) = any
+  let deref_u32 (self: t_MutexGuard_u32_Even) (return (x: UInt32.t)) = any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:deref ensures] inv_Even self.f1'0 result} (! return {result}) ]
   
-  let rec set_u32 (self: MutBorrow.t t_MutexGuard_u32_Even) (v: UInt32.t) (return (x: ())) =
-    {[@stop_split] [@expl:set requires] inv_Even self.current.f1'0 v}
+  let set_u32 (self: MutBorrow.t t_MutexGuard_u32_Even) (v: UInt32.t) (return (x: ())) =
+  {[@stop_split] [@expl:set requires] inv_Even self.current.f1'0 v}
     any [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec call_AddsTwo (self: t_AddsTwo) (return (x: ())) = (! bb0
+  let call_AddsTwo (self: t_AddsTwo) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = lock_u32 {self.mutex} (fun (_x: t_MutexGuard_u32_Even) -> [ &v <- _x ] s1)
       | s1 = deref_u32 {v} (fun (_x: UInt32.t) -> [ &_5 <- _x ] s2)

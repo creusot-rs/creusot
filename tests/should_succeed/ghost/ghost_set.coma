@@ -4,7 +4,7 @@ module M_ghost_map
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
-  let rec new_i32 (return (x: Fset.fset Int32.t)) = any
+  let new_i32 (return (x: Fset.fset Int32.t)) = any
     [ return (result: Fset.fset Int32.t) -> {[@stop_split] [@expl:new ensures] Fset.is_empty result}
       (! return {result}) ]
   
@@ -12,8 +12,8 @@ module M_ghost_map
   
   meta "rewrite_def" predicate contains_i32
   
-  let rec deref_mut_Ghost_FSet_i32 (self: MutBorrow.t (Fset.fset Int32.t))
-    (return (x: MutBorrow.t (Fset.fset Int32.t))) = any
+  let deref_mut_Ghost_FSet_i32 (self: MutBorrow.t (Fset.fset Int32.t)) (return (x: MutBorrow.t (Fset.fset Int32.t))) =
+  any
     [ return (result: MutBorrow.t (Fset.fset Int32.t)) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
   
@@ -21,7 +21,7 @@ module M_ghost_map
   
   meta "rewrite_def" function insert_i32
   
-  let rec insert_ghost_i32 (self: MutBorrow.t (Fset.fset Int32.t)) (value: Int32.t) (return (x: bool)) = any
+  let insert_ghost_i32 (self: MutBorrow.t (Fset.fset Int32.t)) (value: Int32.t) (return (x: bool)) = any
     [ return (result: bool) ->
     {[@stop_split] [@expl:insert_ghost_i32 ensures] ([@stop_split] [@expl:insert_ghost ensures #0] self.final
         = insert_i32 self.current value)
@@ -32,10 +32,10 @@ module M_ghost_map
   
   meta "rewrite_def" predicate resolve_refmut_FSet_i32
   
-  let rec deref_Ghost_FSet_i32 (self: Fset.fset Int32.t) (return (x: Fset.fset Int32.t)) = any
+  let deref_Ghost_FSet_i32 (self: Fset.fset Int32.t) (return (x: Fset.fset Int32.t)) = any
     [ return (result: Fset.fset Int32.t) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
-  let rec len_ghost_i32 (self: Fset.fset Int32.t) (return (x: int)) = any
+  let len_ghost_i32 (self: Fset.fset Int32.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Fset.cardinal self}
       (! return {result}) ]
   
@@ -45,25 +45,25 @@ module M_ghost_map
   
   meta "rewrite_def" function remove_i32
   
-  let rec remove_ghost_i32 (self: MutBorrow.t (Fset.fset Int32.t)) (value: Int32.t) (return (x: bool)) = any
+  let remove_ghost_i32 (self: MutBorrow.t (Fset.fset Int32.t)) (value: Int32.t) (return (x: bool)) = any
     [ return (result: bool) ->
     {[@stop_split] [@expl:remove_ghost_i32 ensures] ([@stop_split] [@expl:remove_ghost ensures #0] self.final
         = remove_i32 self.current value)
       /\ ([@stop_split] [@expl:remove_ghost ensures #1] result = contains_i32 self.current value)}
       (! return {result}) ]
   
-  let rec contains_ghost_i32 (self: Fset.fset Int32.t) (value: Int32.t) (return (x: bool)) = any
+  let contains_ghost_i32 (self: Fset.fset Int32.t) (value: Int32.t) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:contains_ghost ensures] result = contains_i32 self value}
       (! return {result}) ]
   
-  let rec new_unit (x: ()) (return (x'0: ())) = any
+  let new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec ghost_map (return (x: ())) = (! bb0
+  let ghost_map (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = new_i32 (fun (_x: Fset.fset Int32.t) -> [ &set <- _x ] s1)
       | s1 = {[@expl:assertion] forall k: Int32.t. not contains_i32 set k} s2

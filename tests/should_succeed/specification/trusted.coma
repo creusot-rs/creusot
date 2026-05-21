@@ -12,7 +12,7 @@ module M_carnation
     f0'0: t_Rose_Box_Carnation_Global;
     f1'0: t_Vec_Rose_Rose_Box_Carnation_Global_Global }
   
-  let rec elim_Branch (_x: t_Carnation) (return (f0'1: t_Rose_Rose_Box_Carnation_Global)) = any
+  let elim_Branch (_x: t_Carnation) (return (f0'1: t_Rose_Rose_Box_Carnation_Global)) = any
     [ _k (f0'1: t_Rose_Rose_Box_Carnation_Global) -> {Branch f0'1 = _x} (! return {f0'1})
     | _chk -> (! {[@expl:elim Branch] match _x with
         | Branch _ -> true
@@ -20,14 +20,14 @@ module M_carnation
         end}
       any) ]
   
-  let rec rose_Rose_Box_Carnation_Global (r: t_Rose_Rose_Box_Carnation_Global) (return (x: UInt64.t)) = any
+  let rose_Rose_Box_Carnation_Global (r: t_Rose_Rose_Box_Carnation_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:rose ensures] UInt64.t'int result = 0} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec carnation (c: t_Carnation) (return (x: UInt64.t)) = (! bb0
+  let carnation (c: t_Carnation) (return (x: UInt64.t)) = (! bb0
     [ bb0 = any [ br0 (x0: t_Rose_Rose_Box_Carnation_Global) -> {c = Branch x0} (! bb4) | br1 -> {c = Leaf} (! bb3) ]
     | bb3 = s0 [ s0 = [ &_ret <- (0: UInt64.t) ] s1 | s1 = return {_ret} ]
     | bb4 = s0
@@ -42,17 +42,17 @@ module M_innocent_victim
   use creusot.int.UInt32
   use creusot.prelude.Any
   
-  let rec my_unverified_code (return (x: UInt32.t)) = any
+  let my_unverified_code (return (x: UInt32.t)) = any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:my_unverified_code ensures] false} (! return {result}) ]
   
-  let rec im_out_of_control (return (x: UInt32.t)) = any
+  let im_out_of_control (return (x: UInt32.t)) = any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:im_out_of_control ensures] false} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec innocent_victim (return (x: UInt32.t)) = (! bb0
+  let innocent_victim (return (x: UInt32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = my_unverified_code (fun (_x: UInt32.t) -> [ &_2 <- _x ] s1)
       | s1 = im_out_of_control (fun (_x: UInt32.t) -> [ &_ret <- _x ] s2)
@@ -120,8 +120,8 @@ module M_rose
   
   function view_IntoIter_Rose_T_Global (self: t_IntoIter_Rose_T_Global) : Seq.seq t_Rose_T
   
-  let rec into_iter_Vec_Rose_T_Global (self_: t_Vec_Rose_T_Global) (return (x: t_IntoIter_Rose_T_Global)) =
-    {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Vec_Rose_T_Global self_}
+  let into_iter_Vec_Rose_T_Global (self_: t_Vec_Rose_T_Global) (return (x: t_IntoIter_Rose_T_Global)) =
+  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Vec_Rose_T_Global self_}
     any
     [ return (result: t_IntoIter_Rose_T_Global) ->
     {[@stop_split] [@expl:into_iter_Vec_Rose_T_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_IntoIter_Rose_T_Global result)
@@ -171,8 +171,8 @@ module M_rose
     resolve_refmut_IntoIter_Rose_T_Global self
     /\ view_IntoIter_Rose_T_Global self.current = (Seq.empty: Seq.seq t_Rose_T)
   
-  let rec next_IntoIter_Rose_T_Global (self_: MutBorrow.t t_IntoIter_Rose_T_Global) (return (x: t_Option_Rose_T)) =
-    {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_IntoIter_Rose_T_Global self_}
+  let next_IntoIter_Rose_T_Global (self_: MutBorrow.t t_IntoIter_Rose_T_Global) (return (x: t_Option_Rose_T)) =
+  {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_IntoIter_Rose_T_Global self_}
     any
     [ return (result: t_Option_Rose_T) ->
     {[@stop_split] [@expl:next_IntoIter_Rose_T_Global ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_Rose_T result)
@@ -182,13 +182,17 @@ module M_rose
         end)}
       (! return {result}) ]
   
-  let rec elim_Some (_x: t_Option_Rose_T) (return (f0'0: t_Rose_T)) = any
+  let elim_Some (_x: t_Option_Rose_T) (return (f0'0: t_Rose_T)) = any
     [ _k (f0'0: t_Rose_T) -> {Some f0'0 = _x} (! return {f0'0})
     | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
         | _ -> false
         end}
       any) ]
+  
+  let rose_T (r: t_Rose_T) (return (x: UInt64.t)) = {[@stop_split] [@expl:rose 'r' type invariant] inv_Rose_T r}
+    any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:rose ensures] UInt64.t'int result = 0} (! return {result}) ]
   
   function index_Vec_Rose_T_Global [@inline:trivial] (self: t_Vec_Rose_T_Global) (ix: int) : t_Rose_T =
     Seq.get (view_Vec_Rose_T_Global self) ix
@@ -227,7 +231,7 @@ module M_rose
   
   meta "select_lsinst" "all"
   
-  let rec rose_T (r: t_Rose_T) (return (x: UInt64.t)) = {[@stop_split] [@expl:rose 'r' type invariant] inv_Rose_T r}
+  let rose_T'0 (r: t_Rose_T) (return (x: UInt64.t)) = {[@stop_split] [@expl:rose 'r' type invariant] inv_Rose_T r}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_T r.f0} any) ]
@@ -275,14 +279,14 @@ module M_victim_of_lie
   use creusot.int.UInt32
   use creusot.prelude.Any
   
-  let rec lie (return (x: UInt32.t)) = any
+  let lie (return (x: UInt32.t)) = any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:lie ensures] result = (10: UInt32.t)} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec victim_of_lie (return (x: UInt32.t)) = (! bb0
+  let victim_of_lie (return (x: UInt32.t)) = (! bb0
     [ bb0 = s0 [ s0 = lie (fun (_x: UInt32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:victim_of_lie ensures] result = (10: UInt32.t)}

@@ -48,11 +48,16 @@ module M_mc91
   
   axiom cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y = (cmp_log_u32 x y <> Greater)
   
+  let mc91 (x: UInt32.t) (return (x'0: UInt32.t)) = any
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:mc91 ensures] UInt32.le x (100: UInt32.t)
+      -> UInt32.t'int result = 91 /\ UInt32.gt x (100: UInt32.t) -> UInt32.t'int result = UInt32.t'int x - 10}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec mc91 (x: UInt32.t) (return (x'0: UInt32.t)) = (! bb0
+  let mc91'0 (x: UInt32.t) (return (x'0: UInt32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- UInt32.gt x (100: UInt32.t) ] s1
       | s1 = any [ br0 -> {_4 = false} (! bb2) | br1 -> {_4} (! bb1) ] ]

@@ -31,7 +31,7 @@ module M_impl_Tree__sum_x (* Tree *)
   
   type t_Tree = Node t_Tree UInt32.t t_Tree | Leaf
   
-  let rec elim_Node (_x: t_Tree) (return (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree)) = any
+  let elim_Node (_x: t_Tree) (return (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree)) = any
     [ _k (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree) -> {Node f0 f1 f2 = _x} (! return {f0} {f1} {f2})
     | _chk -> (! {[@expl:elim Node] match _x with
         | Node _ _ _ -> true
@@ -51,11 +51,16 @@ module M_impl_Tree__sum_x (* Tree *)
   
   axiom lemma_sum_nonneg_spec: forall self: t_Tree. sum self >= 0
   
+  let sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
+    any
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:sum_x ensures] UInt32.t'int result = sum self}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
+  let sum_x'0 (self: t_Tree) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
     (! bb0
     [ bb0 = any
       [ br0 (x0: t_Tree) (x1: UInt32.t) (x2: t_Tree) -> {self = Node x0 x1 x2} (! bb4) | br1 -> {self = Leaf} (! bb3) ]
@@ -93,7 +98,7 @@ module M_impl_Tree__take_some (* Tree *)
   
   meta "rewrite_def" predicate resolve_refmut_Tree
   
-  let rec elim_Node (_x: t_Tree) (return (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree)) = any
+  let elim_Node (_x: t_Tree) (return (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree)) = any
     [ _k (f0: t_Tree) (f1: UInt32.t) (f2: t_Tree) -> {Node f0 f1 f2 = _x} (! return {f0} {f1} {f2})
     | _chk -> (! {[@expl:elim Node] match _x with
         | Node _ _ _ -> true
@@ -113,7 +118,7 @@ module M_impl_Tree__take_some (* Tree *)
   
   axiom lemma_sum_nonneg_spec: forall self: t_Tree. sum self >= 0
   
-  let rec random (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
+  let random (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
   
   predicate resolve_refmut_Box_Tree_Global [@inline:trivial] (_1: MutBorrow.t t_Tree) = _1.final = _1.current
   
@@ -123,11 +128,19 @@ module M_impl_Tree__take_some (* Tree *)
   
   meta "rewrite_def" predicate resolve_refmut_u32
   
+  let take_some (self: MutBorrow.t t_Tree) (return (x: MutBorrow.t UInt32.t)) = any
+    [ return (result: MutBorrow.t UInt32.t) ->
+    {[@stop_split] [@expl:take_some ensures] ([@stop_split] [@expl:take_some ensures #0] sum self.final
+          - sum self.current
+        = UInt32.t'int result.final - UInt32.t'int result.current)
+      /\ ([@stop_split] [@expl:take_some ensures #1] UInt32.t'int result.current <= sum self.current)}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let rec take_some (self: MutBorrow.t t_Tree) (return (x: MutBorrow.t UInt32.t)) = (! bb0
+  let take_some'0 (self: MutBorrow.t t_Tree) (return (x: MutBorrow.t UInt32.t)) = (! bb0
     [ bb0 = any
       [ br0 (x0: t_Tree) (x1: UInt32.t) (x2: t_Tree) -> {self.current = Node x0 x1 x2} (! bb4)
       | br1 -> {self.current = Leaf} (! bb3) ]
@@ -241,12 +254,12 @@ module M_inc_some_tree
       | Leaf -> 0
       end
   
-  let rec sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
+  let sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
     any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:sum_x ensures] UInt32.t'int result = sum self}
       (! return {result}) ]
   
-  let rec take_some (self: MutBorrow.t t_Tree) (return (x: MutBorrow.t UInt32.t)) = any
+  let take_some (self: MutBorrow.t t_Tree) (return (x: MutBorrow.t UInt32.t)) = any
     [ return (result: MutBorrow.t UInt32.t) ->
     {[@stop_split] [@expl:take_some ensures] ([@stop_split] [@expl:take_some ensures #0] sum self.final
           - sum self.current
@@ -262,7 +275,7 @@ module M_inc_some_tree
   
   meta "select_lsinst" "all"
   
-  let rec inc_some_tree (t: t_Tree) (k: UInt32.t) (return (x: ())) = {[@stop_split] [@expl:inc_some_tree requires] sum t
+  let inc_some_tree (t: t_Tree) (k: UInt32.t) (return (x: ())) = {[@stop_split] [@expl:inc_some_tree requires] sum t
       + UInt32.t'int k
     <= 1000000}
     (! bb0

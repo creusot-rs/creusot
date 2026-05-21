@@ -10,14 +10,14 @@ module M_insertion_sort
   use creusot.prelude.Any
   use int.Int
   
-  let rec len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+  let len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
       = UInt64.t'int result}
       (! return {result}) ]
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
-  let rec into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
+  let into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
     [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
@@ -52,7 +52,7 @@ module M_insertion_sort
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
     resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
   
-  let rec next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+  let next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_usize self_
         | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
@@ -114,7 +114,7 @@ module M_insertion_sort
   
   meta "rewrite_def" predicate inv_Seq_usize
   
-  let rec elim_Some (_x: t_Option_usize) (return (f0: UInt64.t)) = any
+  let elim_Some (_x: t_Option_usize) (return (f0: UInt64.t)) = any
     [ _k (f0: UInt64.t) -> {Some f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
@@ -175,8 +175,8 @@ module M_insertion_sort
   
   axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
   
-  let rec swap_i32 (self_: MutBorrow.t (Slice64.slice Int32.t)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
-    {[@stop_split] [@expl:swap_i32 requires] ([@stop_split] [@expl:swap requires #0] UInt64.t'int i
+  let swap_i32 (self_: MutBorrow.t (Slice64.slice Int32.t)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
+  {[@stop_split] [@expl:swap_i32 requires] ([@stop_split] [@expl:swap requires #0] UInt64.t'int i
       < Seq.length (Slice64.view self_.current))
     /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current))}
     any
@@ -194,7 +194,7 @@ module M_insertion_sort
   
   meta "select_lsinst" "all"
   
-  let rec insertion_sort (array: MutBorrow.t (Slice64.slice Int32.t)) (return (x: ())) = (! bb0
+  let insertion_sort (array: MutBorrow.t (Slice64.slice Int32.t)) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &original <- array ] s1
       | s1 = len_i32 {array.current} (fun (_x: UInt64.t) -> [ &n <- _x ] s2)

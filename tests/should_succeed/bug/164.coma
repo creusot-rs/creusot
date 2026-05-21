@@ -53,7 +53,7 @@ module M_main
   
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
-  let rec into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
+  let into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
     [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
@@ -92,14 +92,14 @@ module M_main
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
     resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
   
-  let rec next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
+  let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_i32 self_
         | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
   
-  let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
+  let elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
     [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
@@ -111,7 +111,7 @@ module M_main
   
   meta "select_lsinst" "all"
   
-  let rec main (return (x: ())) = (! bb0
+  let main (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (0: UInt64.t) ] s1
       | s1 = {[@expl:loop invariant] x = (0: UInt64.t)} s2
