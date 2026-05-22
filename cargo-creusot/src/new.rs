@@ -1,9 +1,9 @@
+use crate::config::{CREUSOT_STD_VERSION, implicit_table, write};
 use anyhow::Result;
-use cargo_metadata::semver::Version;
 use clap::Parser;
 use creusot_setup::creusot_paths;
 use std::{
-    fs::{self, remove_file},
+    fs,
     io::Write,
     path::{Path, PathBuf},
 };
@@ -33,9 +33,6 @@ pub struct NewInitArgs {
     /// Create test directory
     #[clap(long)]
     pub tests: bool,
-    /// Path to local creusot-std relative to the generated Cargo.toml
-    #[clap(long, env = "CREUSOT_PATH")]
-    pub creusot_path: Option<PathBuf>,
     /// Disable standard library
     #[clap(long)]
     pub no_std: bool,
@@ -133,12 +130,6 @@ pub fn init(args: InitArgs) -> Result<()> {
 pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
     let paths = creusot_paths();
     let cargo_toml = Path::new("Cargo.toml");
-    let self_version = Version::parse(CREUSOT_STD_VERSION)?;
-    let creusot_path = if self_version.pre.is_empty() {
-        None
-    } else {
-        args.creusot_path.or_else(|| Some(creusot_source_path()))
-    };
     if cargo_toml.exists() {
         patch_dep(cargo_toml)?;
     } else {
@@ -165,10 +156,9 @@ pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
     } else {
         PathBuf::new()
     };
-    write_cargo_config(&root, &creusot_path)?;
     let why3find_json = paths.why3find_json();
     copy(&why3find_json, root.join("why3find.json"));
-    write(root.join(".gitignore"), "target\ncreusot\n_creusot_erasure\n*.coma\n.why3find");
+    write(root.join(".gitignore"), "target\n_creusot_erasure\n*.coma\n.why3find");
     Ok(())
 }
 
@@ -183,58 +173,6 @@ fn find_parent_cargo_toml() -> Option<PathBuf> {
     None
 }
 
-/// For a dev version (`creusot_path` is `Some`), create `.cargo/config.toml`:
-///
-/// ```toml
-/// [patch.crates-io]
-/// creusot-std = { path = "creusot/creusot-std" }
-/// ```
-///
-/// And create a symlink `creusot` to the parent of `creusot_path` (this allows
-/// Cargo to also find `creusot-std-proc` and `pearlite-syn`).
-///
-/// For a released version (`creusot_path` is `None`), remove `.cargo/config.toml`
-/// if it only contains the above patch.
-fn write_cargo_config(root: &Path, creusot_path: &Option<PathBuf>) -> Result<()> {
-    let cargo = root.join(".cargo");
-    let cargo_config = cargo.join("config.toml");
-    if let Some(creusot_path) = creusot_path {
-        fs::create_dir_all(&cargo)?;
-        write(
-            cargo_config,
-            "[patch.crates-io]\ncreusot-std = { path = \"creusot/creusot-std\" }\n",
-        );
-        let creusot = root.join("creusot");
-        let _ = std::os::unix::fs::symlink(creusot_path, creusot);
-    } else {
-        if only_patch_creusot_std(&cargo_config) {
-            // Remove only if there is only a patch for creusot-std
-            if let Ok(_) = remove_file(&cargo_config) {
-                eprintln!("Removed '{}'", cargo_config.display());
-            }
-        }
-        let _ = fs::remove_dir(cargo); // Try remove empty directory
-    }
-    Ok(())
-}
-
-fn only_patch_creusot_std(cargo_config: &Path) -> bool {
-    use std::io::{self, BufRead};
-    let Ok(file) = fs::File::open(cargo_config) else {
-        return false;
-    };
-    let mut lines = io::BufReader::new(file).lines();
-    let Some(Ok(line0)) = lines.next() else {
-        return false;
-    };
-    let Some(Ok(line1)) = lines.next() else {
-        return false;
-    };
-    matches!(lines.next(), None)
-        && line0.trim() == "[patch.crates-io]"
-        && line1.trim_start().starts_with("creusot-std =")
-}
-
 fn validate_name(name: &str) -> Result<()> {
     if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
         return Err(anyhow::anyhow!(
@@ -242,21 +180,6 @@ fn validate_name(name: &str) -> Result<()> {
         ));
     }
     Ok(())
-}
-
-/// Do not overwrite existing file.
-/// Warn if writing fails, then return.
-fn write(path: impl AsRef<Path>, contents: &str) {
-    let path = path.as_ref();
-    fs::File::create_new(path)
-        .and_then(|mut file| file.write_all(contents.as_ref()))
-        .unwrap_or_else(|e| {
-            if e.kind() == std::io::ErrorKind::AlreadyExists {
-                eprintln!("File '{}' already exists. (Skipped)", path.display());
-            } else {
-                eprintln!("Could not write to '{}': {} (Skipped)", path.display(), e);
-            }
-        });
 }
 
 /// Do nothing if the target exists.
@@ -282,18 +205,23 @@ fn patch_dep(cargo_toml_path: impl AsRef<Path>) -> Result<()> {
     let cargo_toml = std::fs::read_to_string(cargo_toml_path)?;
     let mut cargo_toml = cargo_toml.parse::<toml_edit::DocumentMut>()?;
     if cargo_toml.contains_key("package") {
-        implicit_table(&mut cargo_toml, "dependencies")["creusot-std"] =
+        implicit_table(cargo_toml.as_table_mut(), "dependencies")["creusot-std"] =
             toml_edit::value(CREUSOT_STD_VERSION);
         // Remove legacy [patch.crates-io]
         // FIXME: remove after 0.12
         if let Some(toml_edit::Item::Table(patch)) = cargo_toml.get_mut("patch")
             && let toml_edit::Item::Table(ref mut crates_io) = patch["crates-io"]
         {
-            crates_io.remove("creusot-std");
-            if crates_io.is_empty() {
-                patch.remove("crates-io");
-                if patch.is_empty() {
-                    cargo_toml.remove("patch");
+            if let Some(_) = crates_io.remove("creusot-std") {
+                eprintln!(
+                    "Removed [patch.crates-io.creusot-std] in {} (you should update $HOME/.cargo/config.toml instead with `cargo creusot config --update`)",
+                    cargo_toml_path.display()
+                );
+                if crates_io.is_empty() {
+                    patch.remove("crates-io");
+                    if patch.is_empty() {
+                        cargo_toml.remove("patch");
+                    }
                 }
             }
         }
@@ -305,34 +233,4 @@ fn patch_dep(cargo_toml_path: impl AsRef<Path>) -> Result<()> {
     let mut file = std::fs::File::create(cargo_toml_path)?;
     file.write_all(cargo_toml.to_string().as_bytes())?;
     Ok(())
-}
-
-/// Get the value for the key if it exists.
-/// If the key doesn't exist, insert a `Table` and mark it implicit.
-///
-/// We don't just use `Index` (`toml[key]`) because it creates an
-/// `InlineTable` instead of a `Table`.
-/// And we call `set_implcit` because otherwise we would get an empty `[patch]`
-/// table next to `[patch.crates-io]` to appear in our generated toml file.
-fn implicit_table<'a>(toml: &'a mut toml_edit::Table, key: &'a str) -> &'a mut toml_edit::Item {
-    toml.entry(key).or_insert_with(|| {
-        let mut table = toml_edit::Table::new();
-        table.set_implicit(true);
-        table.into()
-    })
-}
-
-/// Only remember the version string at compile-time
-pub const CREUSOT_STD_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-/// The hard-coded path to the source of creusot-std
-/// Note: this is meaningless in nix. The nix config will set CREUSOT_PATH
-/// so this should not be reachable.
-fn creusot_source_path() -> PathBuf {
-    // This must be the dev version of `cargo-creusot`.
-    // It should have been installed from source and `creusot-std`
-    // should be available next to its source.
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.pop();
-    path
 }

@@ -11,6 +11,8 @@ use std::{
     process::{Command, exit},
 };
 
+mod config;
+use config::*;
 mod why3_launcher;
 use why3_launcher::*;
 mod why3find_wrapper;
@@ -28,6 +30,7 @@ fn main() -> Result<()> {
         Some(Clean(args)) => clean(args),
         Some(Why3(args)) => why3(args),
         Some(Why3Conf(args)) => why3_conf(args),
+        Some(Config(args)) => config(args),
         Some(Version) => version(),
     }
 }
@@ -299,6 +302,8 @@ pub enum CargoCreusotSubCommand {
     Why3(Why3Args),
     /// Regenerate `why3.conf`
     Why3Conf(Why3ConfArgs),
+    /// Check or update `~/.cargo/config.toml` with patch for `creusot-std`
+    Config(ConfigArgs),
     /// Show version information of Creusot and its dependencies
     Version,
 }
