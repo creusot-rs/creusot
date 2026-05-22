@@ -6,7 +6,7 @@ module M_copy_out_of_ref
   
   meta "select_lsinst" "all"
   
-  let rec copy_out_of_ref (x: UInt32.t) (return (x'0: UInt32.t)) = (! bb0
+  let copy_out_of_ref (x: UInt32.t) (return (x'0: UInt32.t)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l () | & x: UInt32.t = x ]) [ return (result: UInt32.t) -> (! return {result}) ]
 end
@@ -17,7 +17,7 @@ module M_copy_out_of_sum
   
   type t_Result_refmut_u32_refmut_u32 = Ok (MutBorrow.t UInt32.t) | Err (MutBorrow.t UInt32.t)
   
-  let rec elim_Err (_x: t_Result_refmut_u32_refmut_u32) (return (f0: MutBorrow.t UInt32.t)) = any
+  let elim_Err (_x: t_Result_refmut_u32_refmut_u32) (return (f0: MutBorrow.t UInt32.t)) = any
     [ _k (f0: MutBorrow.t UInt32.t) -> {Err f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Err] match _x with
         | Err _ -> true
@@ -29,7 +29,7 @@ module M_copy_out_of_sum
   
   meta "rewrite_def" predicate resolve_refmut_u32
   
-  let rec elim_Ok (_x: t_Result_refmut_u32_refmut_u32) (return (f0: MutBorrow.t UInt32.t)) = any
+  let elim_Ok (_x: t_Result_refmut_u32_refmut_u32) (return (f0: MutBorrow.t UInt32.t)) = any
     [ _k (f0: MutBorrow.t UInt32.t) -> {Ok f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Ok] match _x with
         | Ok _ -> true
@@ -41,7 +41,7 @@ module M_copy_out_of_sum
   
   meta "select_lsinst" "all"
   
-  let rec copy_out_of_sum (x: t_Result_refmut_u32_refmut_u32) (return (x'0: UInt32.t)) = (! bb0
+  let copy_out_of_sum (x: t_Result_refmut_u32_refmut_u32) (return (x'0: UInt32.t)) = (! bb0
     [ bb0 = any
       [ br0 (x0: MutBorrow.t UInt32.t) -> {x = Ok x0} (! bb4) | br1 (x0: MutBorrow.t UInt32.t) -> {x = Err x0} (! bb3) ]
     | bb3 = s0
@@ -65,7 +65,7 @@ module M_f
   
   type t_Option_i32 = None | Some Int32.t
   
-  let rec elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
+  let elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
     [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
@@ -77,7 +77,7 @@ module M_f
   
   meta "select_lsinst" "all"
   
-  let rec f (return (x: ())) = (! bb0
+  let f (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_2 <- Some (10: Int32.t) ] s1
       | s1 = any [ br0 -> {_2 = None} (! bb5) | br1 (x0: Int32.t) -> {_2 = Some x0} (! bb4) ] ]
@@ -93,7 +93,7 @@ module M_write_into_sum
   
   type t_Option_u32 = None | Some UInt32.t
   
-  let rec elim_Some (_x: t_Option_u32) (return (f0: UInt32.t)) = any
+  let elim_Some (_x: t_Option_u32) (return (f0: UInt32.t)) = any
     [ _k (f0: UInt32.t) -> {Some f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Some] match _x with
         | Some _ -> true
@@ -113,7 +113,7 @@ module M_write_into_sum
   
   meta "select_lsinst" "all"
   
-  let rec write_into_sum (x: MutBorrow.t t_Option_u32) (return (x'0: ())) = (! bb0
+  let write_into_sum (x: MutBorrow.t t_Option_u32) (return (x'0: ())) = (! bb0
     [ bb0 = any [ br0 -> {x.current = None} (! bb3) | br1 (x0: UInt32.t) -> {x.current = Some x0} (! bb4) ]
     | bb4 = s0
       [ s0 = elim_Some {x.current}

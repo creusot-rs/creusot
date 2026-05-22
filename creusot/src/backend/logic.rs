@@ -23,6 +23,7 @@ mod vcgen;
 
 pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<FileModule> {
     let names = Dependencies::new(ctx, def_id);
+    names.visit_source();
     let pre_sig = ctx.sig(def_id).clone().normalize_contract(ctx, ctx.typing_env(def_id));
 
     let namespace_ty = names.namespace_ty();

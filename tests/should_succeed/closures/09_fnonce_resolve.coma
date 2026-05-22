@@ -19,8 +19,9 @@ module M_f
   
   meta "rewrite_def" predicate resolve_Box_Box_refmut_i32_Global_Global
   
-  let rec closure0 (self: closure0) (return (x: ())) =
-    {[@stop_split] [@expl:closure requires] Int32.to_int self.c2.current = 1 /\ Int32.to_int self.c1.current = 1}
+  let closure0 (self: closure0) (return (x: ())) = {[@stop_split] [@expl:closure requires] Int32.to_int self.c2.current
+      = 1
+    /\ Int32.to_int self.c1.current = 1}
     (! bb0
     [ bb0 = any [ br0 -> {self.c0 = false} (! bb3) | br1 -> {self.c0} (! bb1) ]
     | bb1 = s0
@@ -60,7 +61,7 @@ module M_f
   
   meta "select_lsinst" "all"
   
-  let rec f (c: bool) (return (x: ())) = (! bb0
+  let f (c: bool) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = [ &y <- (1: Int32.t) ] s2
@@ -70,8 +71,8 @@ module M_f
       | s4 = MutBorrow.borrow_mut <Int32.t> {y}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_8 <- _bor ] [ &y <- _bor.final ] s5)
       | s5 = [ &by' <- _8 ] s6
-      | s6 = [ &f'0 <- { c0 = c; c1 = by'; c2 = bx } ] s7
-      | s7 = closure0 {f'0} (fun (_x: ()) -> [ &_10 <- _x ] s8)
+      | s6 = [ &f <- { c0 = c; c1 = by'; c2 = bx } ] s7
+      | s7 = closure0 {f} (fun (_x: ()) -> [ &_10 <- _x ] s8)
       | s8 = {[@expl:assertion] Int32.to_int x + Int32.to_int y = 3} s9
       | s9 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
@@ -82,7 +83,7 @@ module M_f
     | & _5: MutBorrow.t Int32.t = Any.any_l ()
     | & by': MutBorrow.t Int32.t = Any.any_l ()
     | & _8: MutBorrow.t Int32.t = Any.any_l ()
-    | & f'0: closure0 = Any.any_l ()
+    | & f: closure0 = Any.any_l ()
     | & _10: () = Any.any_l ()
     | & _12: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

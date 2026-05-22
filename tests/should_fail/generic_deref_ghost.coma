@@ -6,7 +6,7 @@ module M_bad
   
   meta "rewrite_def" predicate precondition_deref
   
-  let rec deref_Ghost_i32 (self: Int32.t) (return (x: Int32.t)) = any
+  let deref_Ghost_i32 (self: Int32.t) (return (x: Int32.t)) = any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
   predicate postcondition_once_deref (self: ()) (args: Int32.t) (result: Int32.t) = let self'0 = args in result = self'0
@@ -67,8 +67,8 @@ module M_bad
     forall self: (), args: Int32.t, res_state: (), res: Int32.t [postcondition_mut_deref self args res_state res]. postcondition_mut_deref self args res_state res
       = (postcondition_deref self args res /\ self = res_state)
   
-  let rec deref_wrap_Ghost_i32 (x: Int32.t) (return (x'0: Int32.t)) =
-    {[@stop_split] [@expl:deref_wrap requires] precondition_deref () x}
+  let deref_wrap_Ghost_i32 (x: Int32.t) (return (x'0: Int32.t)) =
+  {[@stop_split] [@expl:deref_wrap requires] precondition_deref () x}
     any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:deref_wrap ensures] postcondition_deref () x result}
       (! return {result}) ]
@@ -77,7 +77,7 @@ module M_bad
   
   meta "select_lsinst" "all"
   
-  let rec bad (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
+  let bad (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- x ] s1
       | s1 = deref_wrap_Ghost_i32 {_4} (fun (_x: Int32.t) -> [ &_2 <- _x ] s2)
@@ -114,8 +114,7 @@ module M_deref_wrap
     forall args: t_T, res: t_Target [postcondition_once_deref () args res]. postcondition_once_deref () args res
       -> (let self_ = args in inv_ref_Target res)
   
-  let rec deref_T (self_: t_T) (return (x: t_Target)) =
-    {[@stop_split] [@expl:deref requires] precondition_deref () self_}
+  let deref_T (self_: t_T) (return (x: t_Target)) = {[@stop_split] [@expl:deref requires] precondition_deref () self_}
     any
     [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self_ result}
       (! return {result}) ]
@@ -191,8 +190,8 @@ module M_deref_wrap
   
   meta "select_lsinst" "all"
   
-  let rec deref_wrap_T (x: t_T) (return (x'0: t_Target)) =
-    {[@stop_split] [@expl:deref_wrap_T requires] ([@stop_split] [@expl:deref_wrap 'x' type invariant] inv_ref_T x)
+  let deref_wrap_T (x: t_T) (return (x'0: t_Target)) =
+  {[@stop_split] [@expl:deref_wrap_T requires] ([@stop_split] [@expl:deref_wrap 'x' type invariant] inv_ref_T x)
     /\ ([@stop_split] [@expl:deref_wrap requires] precondition_deref () x)}
     (! bb0
     [ bb0 = s0
