@@ -1,8 +1,8 @@
 {
   # Dependencies
   creusot,
-  gcc,
   makeWrapper,
+  rustToolchain,
 
   # Librairies
   buildEnv,
@@ -10,6 +10,7 @@
 
 # Arguments
 {
+  cargo ? rustToolchain.passthru.availableComponents.cargo,
   isFree,
 }:
 
@@ -19,6 +20,7 @@ in
 buildEnv {
   name = "creusot-wrapped";
   paths = [
+    cargo
     creusot.prelude
     creusot.creusot
     why3Framework
@@ -26,7 +28,12 @@ buildEnv {
 
   nativeBuildInputs = [ makeWrapper ];
   postBuild = ''
+    wrapProgram $out/bin/cargo \
+      --add-flag "--config" \
+      --add-flag "patch.crates-io.creusot-std.path=\"$out/share/creusot-std\""
+
     wrapProgram $out/bin/cargo-creusot \
+      --set CARGO "$out/bin/cargo" \
       --set CREUSOT_DATA_HOME "$out"
   '';
 
