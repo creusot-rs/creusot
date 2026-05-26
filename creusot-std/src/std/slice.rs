@@ -665,8 +665,24 @@ extern_spec! {
 
 #[cfg(feature = "std")]
 extern_spec! {
+    impl<'a, T> ExactSizeIterator for Iter<'a, T> {
+        #[ensures(result@ == self@@.len())]
+        fn len(&self) -> usize;
+    }
+}
+
+#[cfg(feature = "std")]
+extern_spec! {
     impl<'a, T> IterMut<'a, T> {
         #[ensures(result@ == self@@)]
         fn as_slice(&self) -> &'a [T];
+    }
+}
+
+#[cfg(feature = "std")]
+extern_spec! {
+    impl<'a, T> ExactSizeIterator for IterMut<'a, T> {
+        #[ensures(result@ == self@@.len())]
+        fn len(&self) -> usize;
     }
 }
