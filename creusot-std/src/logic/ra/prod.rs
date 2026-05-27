@@ -8,11 +8,14 @@ use crate::{
 
 // TODO: general tuples
 
-impl<T: RA, U: RA> RA for (T, U) {
+macro_rules! ra_tuples {
+    ($(($t:ident, $n:tt, $v:ident))*) => {
+
+impl<$($t : RA),*> RA for ($($t),*) {
     #[logic(open)]
     fn op(self, other: Self) -> Option<Self> {
-        match (self.0.op(other.0), self.1.op(other.1)) {
-            (Some(r1), Some(r2)) => Some((r1, r2)),
+        match ($(self.$n.op(other.$n)),*) {
+            ($(Some($v)),*) => Some(($($v),*)),
             _ => None,
         }
     }
@@ -23,8 +26,8 @@ impl<T: RA, U: RA> RA for (T, U) {
         None => forall<c: Self> factor.op(c) != Some(self),
     })]
     fn factor(self, factor: Self) -> Option<Self> {
-        match (self.0.factor(factor.0), self.1.factor(factor.1)) {
-            (Some(x), Some(y)) => Some((x, y)),
+        match ($(self.$n.factor(factor.$n)),*) {
+            ($(Some($v)),*) => Some(($($v),*)),
             _ => None,
         }
     }
@@ -32,7 +35,7 @@ impl<T: RA, U: RA> RA for (T, U) {
     #[logic(open, inline)]
     #[ensures(#[trigger(self == other)] result == (self == other))]
     fn eq(self, other: Self) -> bool {
-        self.0.eq(other.0) && self.1.eq(other.1)
+        $(self.$n.eq(other.$n))&&*
     }
 
     #[logic(law)]
@@ -45,8 +48,8 @@ impl<T: RA, U: RA> RA for (T, U) {
 
     #[logic(open)]
     fn core(self) -> Option<Self> {
-        match (self.0.core(), self.1.core()) {
-            (Some(x), Some(y)) => Some((x, y)),
+        match ($(self.$n.core()),*) {
+            ($(Some($v)),*) => Some(($($v),*)),
             _ => None,
         }
     }
@@ -59,8 +62,9 @@ impl<T: RA, U: RA> RA for (T, U) {
     })]
     #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
     fn core_idemp(self) {
-        self.0.core_idemp();
-        self.1.core_idemp();
+        $(
+            self.$n.core_idemp();
+        )*
     }
 
     #[logic]
@@ -71,33 +75,43 @@ impl<T: RA, U: RA> RA for (T, U) {
         None => false,
     })]
     fn core_is_maximal_idemp(self, i: Self) {
-        self.0.core_is_maximal_idemp(i.0);
-        self.1.core_is_maximal_idemp(i.1);
+        $(
+            self.$n.core_is_maximal_idemp(i.$n);
+        )*
     }
 
-    #[logic(open)]
-    #[ensures(result == (forall<x, y> self.op(x) != None ==>
-        self.op(x) == self.op(y) ==> x == y))]
-    fn cancelable(self) -> bool {
-        proof_assert!(
-            // l, r are not exclusive
-            forall<l, r> self.0.op(l) != None ==> self.1.op(r) != None ==>
-            if self.0.cancelable() {
-                // if self cancelable, then self.1 cancelable
-                (forall<x, y> self.op(x) != None ==> self.op(x) == self.op(y) ==> x == y) ==>
-                forall<r2> self.1.op(r) == self.1.op(r2) ==>
-                r == r2
-            } else {
-                exists<l1, l2> self.0.op(l1) == self.0.op(l2) && l1 != l2
-            }
-        );
-        pearlite! {
-            (forall<l> self.0.op(l) == None) ||
-            (forall<r> self.1.op(r) == None) ||
-            (self.0.cancelable() && self.1.cancelable())
-        }
-    }
+    ra_tuples! { @cancelation $(($n, $v))* }
 }
+
+    };
+
+    // We use this to extract the first element
+    (@cancelation ($n1:tt, $v1:ident) $(($n:tt, $v:ident))*) => {
+        #[logic(open)]
+        #[ensures(result == (forall<x, y> self.op(x) != None ==>
+            self.op(x) == self.op(y) ==> x == y))]
+        fn cancelable(self) -> bool {
+            proof_assert!(
+                // If there are compatible elements on each projection…
+                forall<$v1, $($v),*> self.0.op($v1) != None ==> $(self.$n.op($v) != None ==>)*
+                // and self is cancelable…
+                (forall<x, y> self.op(x) != None ==> self.op(y) != None ==> self.op(x) == self.op(y) ==> x == y) ==>
+                // then self.0 is cancelable
+                forall<x, y> self.0.op(x) != None ==> self.0.op(y) != None ==>
+                    self.op((x, $($v),*)) == self.op((y, $($v),*)) ==> x == y
+            );
+            pearlite! {
+                (forall<$v1> self.0.op($v1) == None) ||
+                $(
+                    (forall<$v> self.$n.op($v) == None) ||
+                )*
+                ( self.$n1.cancelable() && $(self.$n.cancelable())&&* )
+            }
+        }
+    };
+}
+
+ra_tuples! { (T1, 0, v1) (T2, 1, v2) }
 
 impl<T: UnitRA, U: UnitRA> UnitRA for (T, U) {
     #[logic]
