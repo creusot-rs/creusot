@@ -198,7 +198,6 @@ pub fn intrinsic(params: TS1, tokens: TS1) -> TS1 {
 pub fn declare_namespace(namespace: TS1) -> TS1 {
     let ident = parse_macro_input!(namespace as Ident);
     quote! {
-        #[trusted]
         #[logic(opaque)]
         #[creusot::decl::new_namespace]
         #[allow(nonstandard_style)]
