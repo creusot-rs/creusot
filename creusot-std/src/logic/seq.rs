@@ -3,10 +3,12 @@ use crate::resolve::structural_resolve;
 use crate::{
     ghost::Plain,
     logic::{Mapping, ops::IndexLogic},
+    ord_laws_impl,
     prelude::*,
     std::ops::RangeInclusiveExt as _,
 };
 use core::{
+    cmp,
     marker::PhantomData,
     ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
 };
@@ -936,6 +938,77 @@ impl<T> Invariant for Seq<T> {
     #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
         pearlite! { forall<i> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }
+    }
+}
+
+impl<T: OrdLogic> Seq<T> {
+    #[logic]
+    fn lexico_lt_log(self, other: Self) -> bool {
+        pearlite! {
+            (exists<i: Int> 0 <= i && i < self.len() && i < other.len() &&
+                (forall<j: Int> 0 <= j && j < i ==> self[j] == other[j]) &&
+                self[i] < other[i])
+            ||
+            self.len() < other.len() &&
+            (forall<i: Int> 0 <= i && i < self.len() ==> self[i] == other[i])
+        }
+    }
+
+    #[logic]
+    #[requires(x.lexico_lt_log(y) && y.lexico_lt_log(z))]
+    #[ensures(x.lexico_lt_log(z))]
+    fn lexico_lt_log_trans(x: Self, y: Self, z: Self) {}
+
+    #[logic]
+    #[ensures(!self.lexico_lt_log(self))]
+    fn lexico_lt_log_irreflexive(self) {}
+
+    #[logic]
+    #[requires(self.len() > 0 && other.len() > 0)]
+    #[requires(self[0] == other[0])]
+    #[ensures(self.lexico_lt_log(other) == self[1..].lexico_lt_log(other[1..]))]
+    fn lexico_lt_log_tail(self, other: Self) {}
+
+    #[logic]
+    #[ensures(self.lexico_lt_log(other) || self == other || other.lexico_lt_log(self))]
+    #[variant(self.len())]
+    fn lexico_lt_log_total(self, other: Self) {
+        if self.len() > 0 && other.len() > 0 && self[0] == other[0] {
+            self[1..].lexico_lt_log_total(other[1..]);
+            self.lexico_lt_log_tail(other);
+            other.lexico_lt_log_tail(self);
+            proof_assert!(forall<i> 0 < i && i < self.len() ==> self[i] == self[1..][i-1]);
+            proof_assert!(forall<i> 0 < i && i < other.len() ==> other[i] == other[1..][i-1]);
+        }
+    }
+}
+
+impl<T: OrdLogic> OrdLogic for Seq<T> {
+    #[logic]
+    #[ensures(match result {
+        cmp::Ordering::Equal => self == other,
+        _ => {
+            (exists<i: Int> 0 <= i && i < self.len() && i < other.len() &&
+                (forall<j: Int> 0 <= j && j < i ==> self[j] == other[j]) &&
+                result == self[i].cmp_log(other[i]))
+            ||
+            result == self.len().cmp_log(other.len()) &&
+            (forall<i: Int> 0 <= i && i < self.len() && i < other.len() ==> self[i] == other[i])
+    }})]
+    fn cmp_log(self, other: Self) -> cmp::Ordering {
+        if self.lexico_lt_log(other) {
+            cmp::Ordering::Less
+        } else if other.lexico_lt_log(self) {
+            cmp::Ordering::Greater
+        } else {
+            proof_assert!(self.lexico_lt_log_total(other); true);
+            cmp::Ordering::Equal
+        }
+    }
+
+    ord_laws_impl! {
+        let _ = Self::lexico_lt_log_trans;
+        let _ = Self::lexico_lt_log_irreflexive;
     }
 }
 
