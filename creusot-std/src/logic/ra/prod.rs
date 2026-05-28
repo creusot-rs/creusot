@@ -112,6 +112,13 @@ impl<$($t : RA),*> RA for ($($t),*) {
 }
 
 ra_tuples! { (T1, 0, v1) (T2, 1, v2) }
+ra_tuples! { (T1, 0, v1) (T2, 1, v2) (T3, 2, v3) }
+ra_tuples! { (T1, 0, v1) (T2, 1, v2) (T3, 2, v3) (T4, 3, v4) }
+// FIXME: the proof is too difficult for these tuples
+// ra_tuples! { (T1, 0, v1) (T2, 1, v2) (T3, 2, v3) (T4, 3, v4) (T5, 4, v5) }
+// ra_tuples! { (T1, 0, v1) (T2, 1, v2) (T3, 2, v3) (T4, 3, v4) (T5, 4, v5) (T6, 5, v6) }
+// ra_tuples! { (T1, 0, v1) (T2, 1, v2) (T3, 2, v3) (T4, 3, v4) (T5, 4, v5) (T6, 5, v6) (T7, 6, v7) }
+// ra_tuples! { (T1, 0, v1) (T2, 1, v2) (T3, 2, v3) (T4, 3, v4) (T5, 4, v5) (T6, 5, v6) (T7, 6, v7) (T8, 7, v8) }
 
 impl<T: UnitRA, U: UnitRA> UnitRA for (T, U) {
     #[logic]
