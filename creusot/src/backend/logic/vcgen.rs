@@ -7,10 +7,10 @@ use crate::{
         projections::{borrow_generated_id, projections_term},
         signature::lower_contract,
         term::{
-            binop_function, binop_to_binop, lower_literal, lower_pat, lower_pure, recast_int,
+            binop_function, binop_to_binop, cast_int, lower_literal, lower_pat, lower_pure,
             tyconst_to_term_final, unsupported_cast,
         },
-        ty::{constructor, ity_to_prelude, translate_ty, uty_to_prelude},
+        ty::{constructor, translate_ty, ty_to_prelude},
     },
     contracts_items::is_builtin_ascription,
     ctx::{HasTyCtxt, PreMod},
@@ -101,67 +101,42 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 k(Exp::qvar(name::seq_create())
                     .app([Exp::int(elts.len() as i128), Exp::FunLiteral(elts)]))
             }),
-            TermKind::Cast { arg } => match arg.ty.kind() {
-                TyKind::Bool => self.build_wp(arg, &|arg| {
-                    let (fct_name, prelude_kind) = match t.ty.kind() {
-                        TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
-                        TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
-                        _ if self.ctx.int_ty() == t.ty => ("to_int", PreMod::Bool),
-                        _ => self.crash_and_error(
-                            t.span,
-                            "bool cast to non integral casts are currently unsupported",
-                        ),
-                    };
-                    k(Exp::qvar(self.names.in_pre(prelude_kind, fct_name)).app([arg]))
-                }),
-                TyKind::Int(_) | TyKind::Uint(_) => {
-                    // to
-                    let to_fct_name = if self.names.bitwise_mode() {
-                        "to_BV256"
-                    } else if let TyKind::Uint(_) = arg.ty.kind() {
-                        "t'int"
-                    } else {
-                        "to_int"
-                    };
-                    let to_prelude = match arg.ty.kind() {
-                        TyKind::Int(ity) => ity_to_prelude(self.ctx.tcx, *ity),
-                        TyKind::Uint(ity) => uty_to_prelude(self.ctx.tcx, *ity),
-                        _ => self.ctx.crash_and_error(
-                            t.span,
-                            format!("casts {:?} are currently unsupported", arg.ty.kind()),
-                        ),
-                    };
-
-                    // of
-                    let of_fct_name = if self.names.bitwise_mode() { "of_BV256" } else { "of_int" };
-                    let of_prelude = match t.ty.kind() {
-                        TyKind::Int(ity) => ity_to_prelude(self.ctx.tcx, *ity),
-                        TyKind::Uint(ity) => uty_to_prelude(self.ctx.tcx, *ity),
-                        _ => self.ctx.crash_and_error(
-                            t.span,
-                            format!("casts {:?} are currently unsupported", arg.ty.kind()),
-                        ),
-                    };
-
-                    self.build_wp(arg, &|arg| {
-                        let to_qname = self.names.in_pre(to_prelude, to_fct_name);
-                        let of_qname = self.names.in_pre(of_prelude, of_fct_name);
-                        k(Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([arg])]))
-                    })
-                }
-                // Pointer-to-pointer casts
-                TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = t.ty.kind() => {
-                    match ptr_cast_kind(self.ctx.tcx, self.names.typing_env(), ty1, ty2) {
-                        PtrCastKind::Id => self.build_wp(arg, k),
-                        PtrCastKind::Thin => self.build_wp(arg, &|arg| {
-                            let thin = self.names.in_pre(PreMod::Opaque, "thin");
-                            k(Exp::qvar(thin).app([arg]))
-                        }),
-                        PtrCastKind::Unknown => unsupported_cast(self.ctx, t.span, arg.ty, t.ty),
+            TermKind::Cast { arg } => {
+                let argty = arg.ty;
+                match argty.kind() {
+                    TyKind::Bool => match t.ty.kind() {
+                        TyKind::Int(_) | TyKind::Uint(_) => {
+                            self.build_wp(arg, &|arg| {
+                                let qname = self.names.in_pre(ty_to_prelude(self.ctx.tcx, t.ty), "of_bool");
+                                k(Exp::qvar(qname).app([arg]))
+                            })
+                        }
+                        _ if self.ctx.int_ty() == t.ty => {
+                            self.build_wp(arg, &|arg| {
+                                k(Exp::qvar(self.names.in_pre(PreMod::Bool, "to_int")).app([arg]))
+                            })
+                        }
+                        _ => unsupported_cast(self.ctx, t.span, argty, t.ty),
                     }
-                }
-                _ => unsupported_cast(self.ctx, t.span, arg.ty, t.ty),
-            },
+                    TyKind::Int(_) | TyKind::Uint(_) => {
+                        if !t.ty.is_integral() {
+                            unsupported_cast(self.ctx, t.span, argty, t.ty)
+                        };
+                        self.build_wp(arg, &|arg| { cast_int(self.names, argty, t.ty, arg) })
+                    }
+                    // Pointer-to-pointer casts
+                    TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = t.ty.kind() => {
+                        match ptr_cast_kind(self.ctx.tcx, self.names.typing_env(), ty1, ty2) {
+                            PtrCastKind::Id => self.build_wp(arg, k),
+                            PtrCastKind::Thin => self.build_wp(arg, &|arg| {
+                                let thin = self.names.in_pre(PreMod::Opaque, "thin");
+                                k(Exp::qvar(thin).app([arg]))
+                            }),
+                            PtrCastKind::Unknown => unsupported_cast(self.ctx, t.span, argty, t.ty),
+                        }
+                    }
+                    _ => unsupported_cast(self.ctx, t.span, argty, t.ty),
+            }},
             TermKind::Coerce { arg } => self.build_wp(arg, k),
             // Items are just global names so
             // VC(i, Q) = Q(i)
@@ -258,13 +233,13 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Binary { op, lhs, rhs } => match op {
                 And => self.build_wp(lhs, &|lhs| Exp::if_(lhs, self.build_wp(rhs, k), k(Exp::mk_false()))),
                 Or => self.build_wp(lhs, &|lhs| Exp::if_(lhs, k(Exp::mk_true()), self.build_wp(rhs, k))),
-                _ if let Some(fun) = binop_function(self.names, *op, t.ty.kind()) => {
-                    let rhs_ty = rhs.ty.kind();
-                    let lhs_ty = lhs.ty.kind();
+                _ if let Some(fun) = binop_function(self.names, *op, t.ty) => {
+                    let rhs_ty = rhs.ty;
+                    let lhs_ty = lhs.ty;
                     self.build_wp(lhs, &|lhs| {
                         self.build_wp(rhs, &|rhs| {
                         let rhs = if  matches!(*op, Shl | Shr) {
-                            recast_int(self.names, rhs_ty, lhs_ty, rhs)
+                            cast_int(self.names, rhs_ty, lhs_ty, rhs)
                         } else {
                             rhs
                         };

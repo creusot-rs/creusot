@@ -1,3 +1,637 @@
+module M_common__trait_ExactSizeIterator__is_empty
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Self
+  
+  predicate inv_Self (_1: t_Self)
+  
+  predicate invariant_ref_Self [@inline:trivial] (self: t_Self) = inv_Self self
+  
+  meta "rewrite_def" predicate invariant_ref_Self
+  
+  predicate inv_ref_Self [@inline:trivial] (_1: t_Self) = invariant_ref_Self _1
+  
+  meta "rewrite_def" predicate inv_ref_Self
+  
+  predicate precondition_len (self: ()) (args: t_Self)
+  
+  axiom precondition_fndef: forall args: t_Self [precondition_len () args]. (let self = args in inv_ref_Self self)
+      -> precondition_len () args
+  
+  type t_Item
+  
+  predicate produces_Self (self: t_Self) (visited: Seq.seq t_Item) (o: t_Self)
+  
+  function produces_trans_Self (a: t_Self) (ab: Seq.seq t_Item) (b: t_Self) (bc: Seq.seq t_Item) (c: t_Self) : ()
+  
+  axiom produces_trans_Self_spec:
+    forall a: t_Self, ab: Seq.seq t_Item, b: t_Self, bc: Seq.seq t_Item, c: t_Self. produces_Self a ab b
+      -> produces_Self b bc c -> produces_Self a (Seq.(++) ab bc) c
+  
+  function produces_refl_Self (self: t_Self) : ()
+  
+  axiom produces_refl_Self_spec: forall self: t_Self. produces_Self self (Seq.empty: Seq.seq t_Item) self
+  
+  predicate completed_Self (self: MutBorrow.t t_Self)
+  
+  predicate postcondition_once_len (self: ()) (args: t_Self) (result: UInt64.t)
+  
+  axiom postcondition_fndef:
+    forall args: t_Self, res: UInt64.t [postcondition_once_len () args res]. postcondition_once_len () args res
+      -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
+            /\ completed_Self i -> UInt64.t'int res = Seq.length s)
+      /\ (forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int res))
+  
+  let len_Self (self: t_Self) (return (x: UInt64.t)) = {[@stop_split] [@expl:len requires] precondition_len () self}
+    any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] postcondition_once_len () self result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_empty_Self (self: t_Self) (return (x: bool)) =
+  {[@stop_split] [@expl:is_empty 'self' type invariant] inv_ref_Self self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = len_Self {self} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_ret <- _6 = (0: UInt64.t) ] s2
+      | s2 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & self: t_Self = self | & _6: UInt64.t = Any.any_l () ])
+    [ return (result: bool) ->
+    {[@stop_split] [@expl:is_empty_Self ensures] ([@stop_split] [@expl:is_empty ensures #0] forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
+            /\ completed_Self i -> result = (s = (Seq.empty: Seq.seq t_Item)))
+      /\ ([@stop_split] [@expl:is_empty ensures #1] forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i
+          /\ result -> s = (Seq.empty: Seq.seq t_Item))}
+      (! return {result}) ]
+end
+module M_common__trait_ExactSizeIterator__len
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Self
+  
+  type t_Option_usize = None | Some UInt64.t
+  
+  type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+  
+  type t_Item
+  
+  predicate produces_Self (self: t_Self) (visited: Seq.seq t_Item) (o: t_Self)
+  
+  function produces_trans_Self (a: t_Self) (ab: Seq.seq t_Item) (b: t_Self) (bc: Seq.seq t_Item) (c: t_Self) : ()
+  
+  axiom produces_trans_Self_spec:
+    forall a: t_Self, ab: Seq.seq t_Item, b: t_Self, bc: Seq.seq t_Item, c: t_Self. produces_Self a ab b
+      -> produces_Self b bc c -> produces_Self a (Seq.(++) ab bc) c
+  
+  function produces_refl_Self (self: t_Self) : ()
+  
+  axiom produces_refl_Self_spec: forall self: t_Self. produces_Self self (Seq.empty: Seq.seq t_Item) self
+  
+  predicate completed_Self (self: MutBorrow.t t_Self)
+  
+  predicate postcondition_once_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
+  
+  axiom postcondition_fndef:
+    forall args: t_Self, res: tup2_usize_Option_usize [postcondition_once_size_hint () args res]. postcondition_once_size_hint () args res
+      -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
+            /\ completed_Self i -> UInt64.t'int res.f0 <= Seq.length s)
+      /\ match res.f1 with
+        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
+        | None -> true
+        end)
+  
+  predicate resolve_size_hint [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_size_hint
+  
+  predicate postcondition_mut_size_hint (self: ()) (args: t_Self) (result_state: ()) (result: tup2_usize_Option_usize)
+  
+  axiom postcondition_fndef'0:
+    forall args: t_Self, res: tup2_usize_Option_usize [postcondition_mut_size_hint () args () res]. postcondition_mut_size_hint () args () res
+      -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
+            /\ completed_Self i -> UInt64.t'int res.f0 <= Seq.length s)
+      /\ match res.f1 with
+        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
+        | None -> true
+        end)
+  
+  function fn_mut_once_size_hint (self: ()) (args: t_Self) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_mut_once_size_hint_spec:
+    forall self: (), args: t_Self, res: tup2_usize_Option_usize [postcondition_once_size_hint self args res]. postcondition_once_size_hint self args res
+      = (exists res_state: (). postcondition_mut_size_hint self args res_state res /\ resolve_size_hint res_state)
+  
+  predicate hist_inv_size_hint (self: ()) (result_state: ()) = true
+  
+  function hist_inv_trans_size_hint (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_size_hint_spec:
+    forall self: (), b: (), c: () [hist_inv_size_hint self b, hist_inv_size_hint b c | hist_inv_size_hint self b, hist_inv_size_hint self c | hist_inv_size_hint b c, hist_inv_size_hint self c]. hist_inv_size_hint self b
+      -> hist_inv_size_hint b c -> hist_inv_size_hint self c
+  
+  function hist_inv_refl_size_hint (self: ()) : ()
+  
+  axiom hist_inv_refl_size_hint_spec: forall self: () [hist_inv_size_hint self self]. hist_inv_size_hint self self
+  
+  function postcondition_mut_hist_inv_size_hint (self: ()) (args: t_Self) (res_state: ()) (res: tup2_usize_Option_usize) : ()
+  
+  axiom postcondition_mut_hist_inv_size_hint_spec:
+    forall self: (), args: t_Self, res_state: (), res: tup2_usize_Option_usize [postcondition_mut_size_hint self args res_state res | hist_inv_size_hint self res_state]. postcondition_mut_size_hint self args res_state res
+      -> hist_inv_size_hint self res_state
+  
+  function fn_hist_inv_size_hint (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_size_hint_spec:
+    forall self: (), res_state: () [hist_inv_size_hint self res_state]. hist_inv_size_hint self res_state
+      = (self = res_state)
+  
+  predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
+  
+  axiom postcondition_fndef'1:
+    forall args: t_Self, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+      -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
+            /\ completed_Self i -> UInt64.t'int res.f0 <= Seq.length s)
+      /\ match res.f1 with
+        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
+        | None -> true
+        end)
+  
+  function fn_once_size_hint (self: ()) (args: t_Self) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_once_size_hint_spec:
+    forall self: (), args: t_Self, res: tup2_usize_Option_usize [postcondition_once_size_hint self args res]. postcondition_once_size_hint self args res
+      = (postcondition_size_hint self args res /\ resolve_size_hint self)
+  
+  function fn_mut_size_hint (self: ()) (args: t_Self) (res_state: ()) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_mut_size_hint_spec:
+    forall self: (), args: t_Self, res_state: (), res: tup2_usize_Option_usize [postcondition_mut_size_hint self args res_state res]. postcondition_mut_size_hint self args res_state res
+      = (postcondition_size_hint self args res /\ self = res_state)
+  
+  predicate inv_Self (_1: t_Self)
+  
+  predicate invariant_ref_Self [@inline:trivial] (self: t_Self) = inv_Self self
+  
+  meta "rewrite_def" predicate invariant_ref_Self
+  
+  predicate inv_ref_Self [@inline:trivial] (_1: t_Self) = invariant_ref_Self _1
+  
+  meta "rewrite_def" predicate inv_ref_Self
+  
+  predicate precondition_size_hint (self: ()) (args: t_Self)
+  
+  axiom precondition_fndef: forall args: t_Self [precondition_size_hint () args]. (let self = args in inv_ref_Self self)
+      -> precondition_size_hint () args
+  
+  let size_hint_Self (self: t_Self) (return (x: tup2_usize_Option_usize)) =
+  {[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
+    any
+    [ return (result: tup2_usize_Option_usize) ->
+    {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
+      (! return {result}) ]
+  
+  function size_is_exact_Self (self: t_Self) : ()
+  
+  axiom size_is_exact_Self_spec:
+    forall self: t_Self. forall r: tup2_usize_Option_usize. postcondition_size_hint () self r -> r.f1 = Some (r.f0)
+  
+  type tup2_ref_Option_usize_ref_Option_usize = { f0'0: t_Option_usize; f1'0: t_Option_usize }
+  
+  type t_Option_Int = None'0 | Some'0 int
+  
+  function deep_model_usize [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model_usize
+  
+  function deep_model_Option_usize [@inline:trivial] (self: t_Option_usize) : t_Option_Int = match self with
+      | Some t -> Some'0 (deep_model_usize t)
+      | None -> None'0
+      end
+  
+  meta "rewrite_def" function deep_model_Option_usize
+  
+  function deep_model_ref_Option_usize [@inline:trivial] (self: t_Option_usize) : t_Option_Int =
+    deep_model_Option_usize self
+  
+  meta "rewrite_def" function deep_model_ref_Option_usize
+  
+  let eq_Option_usize (self_: t_Option_usize) (rhs: t_Option_usize) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
+      = (deep_model_ref_Option_usize self_ = deep_model_ref_Option_usize rhs)}
+      (! return {result}) ]
+  
+  type t_AssertKind = Eq | Ne | Match
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let len_Self (self: t_Self) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Self self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_6 <- size_is_exact_Self self ] s1
+      | s1 = size_hint_Self {self} (fun (_x: tup2_usize_Option_usize) -> [ &_11 <- _x ] s2)
+      | s2 = [ &lower <- _11.f0 ] s3
+      | s3 = [ &upper <- _11.f1 ] s4
+      | s4 = [ &_17 <- Some lower ] s5
+      | s5 = [ &_14 <- { f0'0 = upper; f1'0 = _17 } ] s6
+      | s6 = [ &left_val <- _14.f0'0 ] s7
+      | s7 = [ &right_val <- _14.f1'0 ] s8
+      | s8 = eq_Option_usize {left_val} {right_val} (fun (_x: bool) -> [ &_21 <- _x ] s9)
+      | s9 = any [ br0 -> {_21 = false} (! bb5) | br1 -> {_21} (! bb4) ] ]
+    | bb4 = s0 [ s0 = [ &_ret <- lower ] s1 | s1 = return {_ret} ]
+    | bb5 = s0
+      [ s0 = [ &kind <- Eq ] s1 | s1 = [ &_29 <- left_val ] s2 | s2 = [ &_31 <- right_val ] s3 | s3 = {false} any ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
+    | & self: t_Self = self
+    | & _6: () = Any.any_l ()
+    | & lower: UInt64.t = Any.any_l ()
+    | & upper: t_Option_usize = Any.any_l ()
+    | & _11: tup2_usize_Option_usize = Any.any_l ()
+    | & _14: tup2_ref_Option_usize_ref_Option_usize = Any.any_l ()
+    | & _17: t_Option_usize = Any.any_l ()
+    | & left_val: t_Option_usize = Any.any_l ()
+    | & right_val: t_Option_usize = Any.any_l ()
+    | & _21: bool = Any.any_l ()
+    | & kind: t_AssertKind = Any.any_l ()
+    | & _29: t_Option_usize = Any.any_l ()
+    | & _31: t_Option_usize = Any.any_l () ])
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:len_Self ensures] ([@stop_split] [@expl:len ensures #0] forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
+            /\ completed_Self i -> UInt64.t'int result = Seq.length s)
+      /\ ([@stop_split] [@expl:len ensures #1] forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i
+        -> Seq.length s <= UInt64.t'int result)}
+      (! return {result}) ]
+end
+module M_impl_ExactSizeIterator_for_Range__size_is_exact (* <Range as common::ExactSizeIterator> *)
+  use creusot.int.Int64
+  use creusot.int.UInt64
+  use seq.Seq
+  use int.Int
+  
+  type t_Range = { start: Int64.t; end': Int64.t }
+  
+  type t_Option_usize = None | Some UInt64.t
+  
+  type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+  
+  function deep_model_isize [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
+  
+  meta "rewrite_def" function deep_model_isize
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate postcondition_once_size_hint (self: ()) (args: t_Range) (result: tup2_usize_Option_usize) =
+    let self'0 = args in (deep_model_isize self'0.start >= deep_model_isize self'0.end'
+      -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in s >= 0 /\ s <= UInt64.t'int const_MAX
+      -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ (deep_model_isize self'0.end' - deep_model_isize self'0.start > UInt64.t'int const_MAX
+    -> result = { f0 = const_MAX; f1 = None })
+  
+  meta "rewrite_def" predicate postcondition_once_size_hint
+  
+  predicate resolve_size_hint [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_size_hint
+  
+  predicate postcondition_mut_size_hint (self: ()) (args: t_Range) (result_state: ()) (result: tup2_usize_Option_usize) =
+    let self'0 = args in (deep_model_isize self'0.start >= deep_model_isize self'0.end'
+      -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in s >= 0 /\ s <= UInt64.t'int const_MAX
+      -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ (deep_model_isize self'0.end' - deep_model_isize self'0.start > UInt64.t'int const_MAX
+    -> result = { f0 = const_MAX; f1 = None })
+  
+  meta "rewrite_def" predicate postcondition_mut_size_hint
+  
+  function fn_mut_once_size_hint (self: ()) (args: t_Range) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_mut_once_size_hint_spec:
+    forall self: (), args: t_Range, res: tup2_usize_Option_usize [postcondition_once_size_hint self args res]. postcondition_once_size_hint self args res
+      = (exists res_state: (). postcondition_mut_size_hint self args res_state res /\ resolve_size_hint res_state)
+  
+  predicate hist_inv_size_hint (self: ()) (result_state: ()) = true
+  
+  function hist_inv_trans_size_hint (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_size_hint_spec:
+    forall self: (), b: (), c: () [hist_inv_size_hint self b, hist_inv_size_hint b c | hist_inv_size_hint self b, hist_inv_size_hint self c | hist_inv_size_hint b c, hist_inv_size_hint self c]. hist_inv_size_hint self b
+      -> hist_inv_size_hint b c -> hist_inv_size_hint self c
+  
+  function hist_inv_refl_size_hint (self: ()) : ()
+  
+  axiom hist_inv_refl_size_hint_spec: forall self: () [hist_inv_size_hint self self]. hist_inv_size_hint self self
+  
+  function postcondition_mut_hist_inv_size_hint (self: ()) (args: t_Range) (res_state: ()) (res: tup2_usize_Option_usize) : ()
+  
+  axiom postcondition_mut_hist_inv_size_hint_spec:
+    forall self: (), args: t_Range, res_state: (), res: tup2_usize_Option_usize [postcondition_mut_size_hint self args res_state res | hist_inv_size_hint self res_state]. postcondition_mut_size_hint self args res_state res
+      -> hist_inv_size_hint self res_state
+  
+  function fn_hist_inv_size_hint (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_size_hint_spec:
+    forall self: (), res_state: () [hist_inv_size_hint self res_state]. hist_inv_size_hint self res_state
+      = (self = res_state)
+  
+  predicate postcondition_size_hint (self: ()) (args: t_Range) (result: tup2_usize_Option_usize) =
+    let self'0 = args in (deep_model_isize self'0.start >= deep_model_isize self'0.end'
+      -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in s >= 0 /\ s <= UInt64.t'int const_MAX
+      -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ (deep_model_isize self'0.end' - deep_model_isize self'0.start > UInt64.t'int const_MAX
+    -> result = { f0 = const_MAX; f1 = None })
+  
+  meta "rewrite_def" predicate postcondition_size_hint
+  
+  function fn_once_size_hint (self: ()) (args: t_Range) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_once_size_hint_spec:
+    forall self: (), args: t_Range, res: tup2_usize_Option_usize [postcondition_once_size_hint self args res]. postcondition_once_size_hint self args res
+      = (postcondition_size_hint self args res /\ resolve_size_hint self)
+  
+  function fn_mut_size_hint (self: ()) (args: t_Range) (res_state: ()) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_mut_size_hint_spec:
+    forall self: (), args: t_Range, res_state: (), res: tup2_usize_Option_usize [postcondition_mut_size_hint self args res_state res]. postcondition_mut_size_hint self args res_state res
+      = (postcondition_size_hint self args res /\ self = res_state)
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  
+  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  
+  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
+      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  
+  function refl_isize (x: Int64.t) : ()
+  
+  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  
+  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  
+  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  
+  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  
+  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  
+  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
+    self.end' = o.end'
+    /\ Int64.le self.start o.start
+    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
+  
+  function produces_trans_Range (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
+   = ()
+  
+  axiom produces_trans_Range_spec:
+    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces_Range a ab b
+      -> produces_Range b bc c -> produces_Range a (Seq.(++) ab bc) c
+  
+  function produces_refl_Range (self: t_Range) : () = ()
+  
+  axiom produces_refl_Range_spec: forall self: t_Range. produces_Range self (Seq.empty: Seq.seq Int64.t) self
+  
+  let size_hint_Range (self: t_Range) (return (x: tup2_usize_Option_usize)) = any
+    [ return (result: tup2_usize_Option_usize) ->
+    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] deep_model_isize self.start
+          >= deep_model_isize self.end' -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+      /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_isize self.end'
+        - deep_model_isize self.start in s >= 0 /\ s <= UInt64.t'int const_MAX
+        -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+      /\ ([@stop_split] [@expl:size_hint ensures #2] deep_model_isize self.end' - deep_model_isize self.start
+        > UInt64.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Range
+  
+  function size_is_exact_Range (self: t_Range) : ()
+  
+  goal vc_size_is_exact_Range:
+    [@stop_split] [@expl:size_is_exact ensures] forall r: tup2_usize_Option_usize. postcondition_size_hint () self r
+      -> r.f1 = Some (r.f0)
+end
+module M_impl_ExactSizeIterator_for_Range__size_is_exact__refines (* <Range as common::ExactSizeIterator> *)
+  use creusot.int.Int64
+  use creusot.int.UInt64
+  use seq.Seq
+  use int.Int
+  
+  type t_Range = { start: Int64.t; end': Int64.t }
+  
+  type t_Option_usize = None | Some UInt64.t
+  
+  type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+  
+  function deep_model_isize [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
+  
+  meta "rewrite_def" function deep_model_isize
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  predicate postcondition_once_size_hint (self: ()) (args: t_Range) (result: tup2_usize_Option_usize) =
+    let self'0 = args in (deep_model_isize self'0.start >= deep_model_isize self'0.end'
+      -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in s >= 0 /\ s <= UInt64.t'int const_MAX
+      -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ (deep_model_isize self'0.end' - deep_model_isize self'0.start > UInt64.t'int const_MAX
+    -> result = { f0 = const_MAX; f1 = None })
+  
+  meta "rewrite_def" predicate postcondition_once_size_hint
+  
+  predicate resolve_size_hint [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_size_hint
+  
+  predicate postcondition_mut_size_hint (self: ()) (args: t_Range) (result_state: ()) (result: tup2_usize_Option_usize) =
+    let self'0 = args in (deep_model_isize self'0.start >= deep_model_isize self'0.end'
+      -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in s >= 0 /\ s <= UInt64.t'int const_MAX
+      -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ (deep_model_isize self'0.end' - deep_model_isize self'0.start > UInt64.t'int const_MAX
+    -> result = { f0 = const_MAX; f1 = None })
+  
+  meta "rewrite_def" predicate postcondition_mut_size_hint
+  
+  function fn_mut_once_size_hint (self: ()) (args: t_Range) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_mut_once_size_hint_spec:
+    forall self: (), args: t_Range, res: tup2_usize_Option_usize [postcondition_once_size_hint self args res]. postcondition_once_size_hint self args res
+      = (exists res_state: (). postcondition_mut_size_hint self args res_state res /\ resolve_size_hint res_state)
+  
+  predicate hist_inv_size_hint (self: ()) (result_state: ()) = true
+  
+  function hist_inv_trans_size_hint (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_size_hint_spec:
+    forall self: (), b: (), c: () [hist_inv_size_hint self b, hist_inv_size_hint b c | hist_inv_size_hint self b, hist_inv_size_hint self c | hist_inv_size_hint b c, hist_inv_size_hint self c]. hist_inv_size_hint self b
+      -> hist_inv_size_hint b c -> hist_inv_size_hint self c
+  
+  function hist_inv_refl_size_hint (self: ()) : ()
+  
+  axiom hist_inv_refl_size_hint_spec: forall self: () [hist_inv_size_hint self self]. hist_inv_size_hint self self
+  
+  function postcondition_mut_hist_inv_size_hint (self: ()) (args: t_Range) (res_state: ()) (res: tup2_usize_Option_usize) : ()
+  
+  axiom postcondition_mut_hist_inv_size_hint_spec:
+    forall self: (), args: t_Range, res_state: (), res: tup2_usize_Option_usize [postcondition_mut_size_hint self args res_state res | hist_inv_size_hint self res_state]. postcondition_mut_size_hint self args res_state res
+      -> hist_inv_size_hint self res_state
+  
+  function fn_hist_inv_size_hint (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_size_hint_spec:
+    forall self: (), res_state: () [hist_inv_size_hint self res_state]. hist_inv_size_hint self res_state
+      = (self = res_state)
+  
+  predicate postcondition_size_hint (self: ()) (args: t_Range) (result: tup2_usize_Option_usize) =
+    let self'0 = args in (deep_model_isize self'0.start >= deep_model_isize self'0.end'
+      -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in s >= 0 /\ s <= UInt64.t'int const_MAX
+      -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ (deep_model_isize self'0.end' - deep_model_isize self'0.start > UInt64.t'int const_MAX
+    -> result = { f0 = const_MAX; f1 = None })
+  
+  meta "rewrite_def" predicate postcondition_size_hint
+  
+  function fn_once_size_hint (self: ()) (args: t_Range) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_once_size_hint_spec:
+    forall self: (), args: t_Range, res: tup2_usize_Option_usize [postcondition_once_size_hint self args res]. postcondition_once_size_hint self args res
+      = (postcondition_size_hint self args res /\ resolve_size_hint self)
+  
+  function fn_mut_size_hint (self: ()) (args: t_Range) (res_state: ()) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_mut_size_hint_spec:
+    forall self: (), args: t_Range, res_state: (), res: tup2_usize_Option_usize [postcondition_mut_size_hint self args res_state res]. postcondition_mut_size_hint self args res_state res
+      = (postcondition_size_hint self args res /\ self = res_state)
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  
+  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  
+  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
+      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  
+  function refl_isize (x: Int64.t) : ()
+  
+  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  
+  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  
+  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  
+  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  
+  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  
+  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  
+  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
+    self.end' = o.end'
+    /\ Int64.le self.start o.start
+    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
+  
+  function produces_trans_Range (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
+   = ()
+  
+  axiom produces_trans_Range_spec:
+    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces_Range a ab b
+      -> produces_Range b bc c -> produces_Range a (Seq.(++) ab bc) c
+  
+  function produces_refl_Range (self: t_Range) : () = ()
+  
+  axiom produces_refl_Range_spec: forall self: t_Range. produces_Range self (Seq.empty: Seq.seq Int64.t) self
+  
+  let size_hint_Range (self: t_Range) (return (x: tup2_usize_Option_usize)) = any
+    [ return (result: tup2_usize_Option_usize) ->
+    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] deep_model_isize self.start
+          >= deep_model_isize self.end' -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+      /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_isize self.end'
+        - deep_model_isize self.start in s >= 0 /\ s <= UInt64.t'int const_MAX
+        -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+      /\ ([@stop_split] [@expl:size_hint ensures #2] deep_model_isize self.end' - deep_model_isize self.start
+        > UInt64.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines:
+    forall self: t_Range. forall result: (). (forall r: tup2_usize_Option_usize. postcondition_size_hint () self r
+            -> r.f1 = Some (r.f0))
+        -> (forall r: tup2_usize_Option_usize. postcondition_size_hint () self r -> r.f1 = Some (r.f0))
+end
 module M_impl_Iterator_for_Range__next (* <Range as common::Iterator> *)
   use creusot.int.Int64
   use creusot.prelude.MutBorrow
@@ -465,6 +1099,160 @@ module M_impl_Iterator_for_Range__produces_trans__refines (* <Range as common::I
       -> produces_Range a ab b
       /\ produces_Range b bc c
       /\ (forall result: (). produces_Range a (Seq.(++) ab bc) c -> produces_Range a (Seq.(++) ab bc) c)
+end
+module M_impl_Iterator_for_Range__size_hint (* <Range as common::Iterator> *)
+  use creusot.int.Int64BW
+  use creusot.int.UInt64BW
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Range = { start: Int64BW.t; end': Int64BW.t }
+  
+  let wrapping_sub (self_: Int64BW.t) (rhs: Int64BW.t) (return (x: Int64BW.t)) = any
+    [ return (result: Int64BW.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int64BW.sub self_ rhs}
+      (! return {result}) ]
+  
+  type t_Option_usize = None | Some UInt64BW.t
+  
+  type tup2_usize_Option_usize = { f0: UInt64BW.t; f1: t_Option_usize }
+  
+  function deep_model_isize [@inline:trivial] (self: Int64BW.t) : int = Int64BW.to_int self
+  
+  meta "rewrite_def" function deep_model_isize
+  
+  constant const_MAX: UInt64BW.t = (18446744073709551615: UInt64BW.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let size_hint_Range (self: t_Range) (return (x: tup2_usize_Option_usize)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_8 <- Int64BW.lt self.start self.end' ] s1
+      | s1 = any [ br0 -> {_8 = false} (! bb3) | br1 -> {_8} (! bb1) ] ]
+    | bb1 = s0
+      [ s0 = wrapping_sub {self.end'} {self.start} (fun (_x: Int64BW.t) -> [ &_12 <- _x ] s1)
+      | s1 = [ &steps <- _12 ] s2
+      | s2 = [ &_16 <- Some steps ] s3
+      | s3 = [ &_ret <- { f0 = steps; f1 = _16 } ] s4
+      | s4 = return {_ret} ]
+    | bb3 = s0
+      [ s0 = [ &_18 <- Some (0: UInt64BW.t) ] s1
+      | s1 = [ &_ret <- { f0 = (0: UInt64BW.t); f1 = _18 } ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: tup2_usize_Option_usize = Any.any_l ()
+    | & self: t_Range = self
+    | & _8: bool = Any.any_l ()
+    | & steps: UInt64BW.t = Any.any_l ()
+    | & _12: Int64BW.t = Any.any_l ()
+    | & _16: t_Option_usize = Any.any_l ()
+    | & _18: t_Option_usize = Any.any_l () ])
+    [ return (result: tup2_usize_Option_usize) ->
+    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] deep_model_isize self.start
+          >= deep_model_isize self.end' -> result = { f0 = (0: UInt64BW.t); f1 = Some (0: UInt64BW.t) })
+      /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_isize self.end'
+        - deep_model_isize self.start in s >= 0 /\ s <= UInt64BW.t'int const_MAX
+        -> UInt64BW.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+      /\ ([@stop_split] [@expl:size_hint ensures #2] deep_model_isize self.end' - deep_model_isize self.start
+        > UInt64BW.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })}
+      (! return {result}) ]
+end
+module M_impl_Iterator_for_Range__size_hint__refines (* <Range as common::Iterator> *)
+  use creusot.int.Int64BW
+  use creusot.int.UInt64BW
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use int.Int
+  
+  type t_Range = { start: Int64BW.t; end': Int64BW.t }
+  
+  function deep_model_isize [@inline:trivial] (self: Int64BW.t) : int = Int64BW.to_int self
+  
+  meta "rewrite_def" function deep_model_isize
+  
+  type t_Option_usize = None | Some UInt64BW.t
+  
+  type tup2_usize_Option_usize = { f0: UInt64BW.t; f1: t_Option_usize }
+  
+  constant const_MAX: UInt64BW.t = (18446744073709551615: UInt64BW.t)
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_isize (self: Int64BW.t) (o: Int64BW.t) : t_Ordering = if Int64BW.lt self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom eq_cmp_isize_spec: forall x: Int64BW.t, y: Int64BW.t. (x = y) = (cmp_log_isize x y = Equal)
+  
+  function antisym2_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom antisym2_isize_spec: forall x: Int64BW.t, y: Int64BW.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  
+  function antisym1_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom antisym1_isize_spec: forall x: Int64BW.t, y: Int64BW.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  
+  function trans_isize (x: Int64BW.t) (y: Int64BW.t) (z: Int64BW.t) (o: t_Ordering) : ()
+  
+  axiom trans_isize_spec: forall x: Int64BW.t, y: Int64BW.t, z: Int64BW.t, o: t_Ordering. cmp_log_isize x y = o
+      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  
+  function refl_isize (x: Int64BW.t) : ()
+  
+  axiom refl_isize_spec: forall x: Int64BW.t. cmp_log_isize x x = Equal
+  
+  function cmp_gt_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom cmp_gt_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.gt x y = (cmp_log_isize x y = Greater)
+  
+  function cmp_ge_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom cmp_ge_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.ge x y = (cmp_log_isize x y <> Less)
+  
+  function cmp_lt_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom cmp_lt_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.lt x y = (cmp_log_isize x y = Less)
+  
+  function cmp_le_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  
+  axiom cmp_le_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.le x y = (cmp_log_isize x y <> Greater)
+  
+  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64BW.t) (o: t_Range) =
+    self.end' = o.end'
+    /\ Int64BW.le self.start o.start
+    /\ (Seq.length visited > 0 -> Int64BW.le o.start o.end')
+    /\ Seq.length visited = Int64BW.to_int o.start - Int64BW.to_int self.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+      -> Int64BW.to_int (Seq.get visited i) = Int64BW.to_int self.start + i)
+  
+  predicate resolve_refmut_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Range
+  
+  predicate completed_Range (self: MutBorrow.t t_Range) =
+    resolve_refmut_Range self /\ Int64BW.ge self.current.start self.current.end'
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Range. forall result: tup2_usize_Option_usize. (deep_model_isize self.start
+              >= deep_model_isize self.end' -> result = { f0 = (0: UInt64BW.t); f1 = Some (0: UInt64BW.t) })
+          /\ (let s = deep_model_isize self.end' - deep_model_isize self.start in s >= 0
+              /\ s <= UInt64BW.t'int const_MAX -> UInt64BW.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+          /\ (deep_model_isize self.end' - deep_model_isize self.start > UInt64BW.t'int const_MAX
+          -> result = { f0 = const_MAX; f1 = None })
+        -> (forall s: Seq.seq Int64BW.t, i: MutBorrow.t t_Range. produces_Range self s i.current /\ completed_Range i
+            -> UInt64BW.t'int result.f0 <= Seq.length s)
+        /\ match result.f1 with
+          | Some r -> forall s: Seq.seq Int64BW.t, i: t_Range. produces_Range self s i
+            -> Seq.length s <= UInt64BW.t'int r
+          | None -> true
+          end
 end
 module M_impl_Range__into_iter (* Range *)
   use creusot.int.Int64

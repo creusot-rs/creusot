@@ -1,6 +1,6 @@
-use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
+use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
 use core::iter::Skip;
 
 pub trait SkipExt<I> {
@@ -91,5 +91,30 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
                 s.concat(bc) == bc
             );
         }
+    }
+}
+
+extern_spec! {
+    impl<I: Iterator> Iterator for Skip<I> {
+        #[ensures(exists<r>
+            I::size_hint.postcondition((&self.iter(),), r) &&
+            (r.0@ <= self.n()@ ==> result.0 == 0usize) &&
+            (r.0@ >= self.n()@ ==> result.0 == r.0 - self.n()) &&
+            match r.1 {
+                Some(ub) =>
+                    (ub@ <= self.n()@ ==> result.1 == Some(0usize)) &&
+                    (ub@ >= self.n()@ ==> result.1 == Some(ub - self.n())),
+                None => result.1 == None
+            }
+        )]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Skip<I> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {
+        self.iter().size_is_exact()
     }
 }

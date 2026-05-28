@@ -1,8 +1,8 @@
 extern crate creusot_std;
 use creusot_std::prelude::*;
 
-mod common;
-use common::Iterator;
+pub mod common;
+use common::{Iterator, ExactSizeIterator};
 
 pub struct Skip<I: Iterator> {
     pub iter: I,
@@ -88,5 +88,34 @@ where
                 return r;
             }
         }
+    }
+
+    #[ensures(exists<r>
+        I::size_hint.postcondition((&self.iter,), r) &&
+        (r.0@ <= self.n@ ==> result.0 == 0usize) &&
+        (r.0@ >= self.n@ ==> result.0 == r.0 - self.n) &&
+        match r.1 {
+            Some(ub) =>
+                (ub@ <= self.n@ ==> result.1 == Some(0usize)) &&
+                (ub@ >= self.n@ ==> result.1 == Some(ub - self.n)),
+            None => result.1 == None
+        }
+    )]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (lower, upper) = self.iter.size_hint();
+        let lower = lower.saturating_sub(self.n);
+        let upper = match upper {
+            Some(x) => Some(x.saturating_sub(self.n)),
+            None => None,
+        };
+        (lower, upper)
+    }
+}
+
+impl<I: ExactSizeIterator> ExactSizeIterator for Skip<I> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {
+        self.iter.size_is_exact()
     }
 }

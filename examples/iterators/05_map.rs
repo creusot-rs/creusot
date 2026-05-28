@@ -2,8 +2,8 @@
 extern crate creusot_std;
 use creusot_std::{invariant::Invariant, prelude::*};
 
-mod common;
-use common::Iterator;
+pub mod common;
+use common::{ExactSizeIterator, Iterator};
 
 pub struct Map<I, F> {
     // The inner iterator
@@ -75,6 +75,36 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
             }
             None => None,
         }
+    }
+
+    #[ensures(I::size_hint.postcondition((&self.iter,), result))]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+impl<I: ExactSizeIterator, B, F: FnMut(I::Item) -> B> ExactSizeIterator for Map<I, F> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {
+        self.iter.size_is_exact()
+    }
+
+    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+        self.produces(s, *i) && i.completed() ==> result@ == s.len())]
+    #[ensures(forall<s: Seq<Self::Item>, i: Self>
+        self.produces(s, i) ==> s.len() <= result@)]
+    fn len(&self) -> usize {
+        self.iter.len()
+    }
+
+    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+        self.produces(s, *i) && i.completed() ==> result == (s == Seq::empty()))]
+    #[ensures(forall<s: Seq<Self::Item>, i: Self>
+        self.produces(s, i) && result ==> s == Seq::empty())]
+    fn is_empty(&self) -> bool {
+        proof_assert!(forall<s: Seq<I::Item>> s.len() == 0 ==> s == Seq::empty());
+        self.iter.is_empty()
     }
 }
 

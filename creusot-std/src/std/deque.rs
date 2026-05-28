@@ -1,8 +1,8 @@
 #[cfg(feature = "nightly")]
 use crate::logic::ops::IndexLogic;
-use crate::prelude::*;
 #[cfg(creusot)]
 use crate::{invariant::inv, resolve::structural_resolve};
+use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
 
 #[cfg(feature = "nightly")]
 use std::alloc::Allocator;
@@ -149,13 +149,13 @@ extern_spec! {
 
     impl<'a, T, A: Allocator> IntoIterator for &'a VecDeque<T, A> {
         #[check(ghost)]
-        #[ensures(self@ == result@@)]
+        #[ensures(self@ == result@.to_owned_seq())]
         fn into_iter(self) -> Iter<'a, T>;
     }
 }
 
 impl<'a, T> View for Iter<'a, T> {
-    type ViewTy = &'a [T];
+    type ViewTy = Seq<&'a T>;
 
     #[logic(opaque)]
     fn view(self) -> Self::ViewTy {
@@ -166,13 +166,13 @@ impl<'a, T> View for Iter<'a, T> {
 impl<'a, T> IteratorSpec for Iter<'a, T> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
-        pearlite! { resolve(self) && (*self@)@ == Seq::empty() }
+        pearlite! { resolve(self) && self@ == Seq::empty() }
     }
 
     #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
-            self@.to_ref_seq() == visited.concat(tl@.to_ref_seq())
+            self@ == visited.concat(tl@)
         }
     }
 
@@ -191,11 +191,25 @@ impl<'a, T> IteratorSpec for Iter<'a, T> {
     }
 }
 
+extern_spec! {
+    impl<'a, T> Iterator for Iter<'a, T> {
+        #[ensures(result.0@ == self@.len())]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<'a, T> ExactSizeIteratorSpec for Iter<'a, T> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
+}
+
 impl<'a, T> DoubleEndedIteratorSpec for Iter<'a, T> {
     #[logic(open)]
     fn produces_back(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
-          self@.to_ref_seq() == tl@.to_ref_seq().concat(visited.reverse())
+          self@ == tl@.concat(visited.reverse())
         }
     }
 

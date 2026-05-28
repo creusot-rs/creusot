@@ -1,8 +1,8 @@
 extern crate creusot_std;
 use creusot_std::{logic::Seq, prelude::*};
 
-mod common;
-use common::Iterator;
+pub mod common;
+use common::{ExactSizeIterator, Iterator};
 
 struct Range {
     pub start: isize,
@@ -53,6 +53,31 @@ impl Iterator for Range {
             Some(r)
         }
     }
+
+    #[bitwise_proof]
+    #[ensures(self.start.deep_model() >= self.end.deep_model() ==>
+        result == (0usize, Some(0usize)))]
+    #[ensures({
+        let s = self.end.deep_model() - self.start.deep_model();
+        s >= 0 && s <= usize::MAX@ ==>
+        result.0@ == s && result.1 == Some(result.0)
+    })]
+    #[ensures(self.end.deep_model() - self.start.deep_model() > usize::MAX@ ==>
+        result == (usize::MAX, None))]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if self.start < self.end {
+            let steps = self.end.wrapping_sub(self.start) as usize;
+            (steps, Some(steps))
+        } else {
+            (0, Some(0))
+        }
+    }
+}
+
+impl ExactSizeIterator for Range {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
 }
 
 impl Range {

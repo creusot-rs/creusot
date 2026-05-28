@@ -1,6 +1,6 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{invariant::*, logic::ops::IndexLogic, prelude::*};
+use crate::{invariant::*, logic::ops::IndexLogic, prelude::*, std::iter::ExactSizeIteratorSpec};
 use core::array::*;
 
 impl<T, const N: usize> Invariant for [T; N] {
@@ -100,6 +100,20 @@ impl<T, const N: usize> IteratorSpec for IntoIter<T, N> {
         let _ = ab.reverse_concat(bc);
         let _ = Seq::<T>::concat_assoc;
     }
+}
+
+extern_spec! {
+    impl<T, const N: usize> Iterator for IntoIter<T, N> {
+        #[ensures(result.0@ == self@.len())]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<T, const N: usize> ExactSizeIteratorSpec for IntoIter<T, N> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
 }
 
 impl<T, const N: usize> DoubleEndedIteratorSpec for IntoIter<T, N> {

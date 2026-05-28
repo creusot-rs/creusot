@@ -1,4 +1,7 @@
-use crate::{prelude::*, std::iter::Empty};
+use crate::{
+    prelude::*,
+    std::iter::{Empty, ExactSizeIteratorSpec},
+};
 
 impl<T> IteratorSpec for Empty<T> {
     #[logic(open, prophetic)]
@@ -29,5 +32,15 @@ extern_spec! {
         #[check(ghost)]
         #[ensures(result == None && self.completed())]
         fn next(&mut self) -> Option<T>;
+
+        #[check(ghost)]
+        #[ensures(result == (0usize, Some(0usize)))]
+        fn size_hint(&self) -> (usize, Option<usize>);
     }
+}
+
+impl<T> ExactSizeIteratorSpec for Empty<T> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
 }

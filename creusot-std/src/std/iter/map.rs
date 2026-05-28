@@ -1,6 +1,6 @@
-use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
+use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
 use core::iter::Map;
 
 pub trait MapExt<I, F> {
@@ -102,6 +102,21 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
     }
 }
 
+extern_spec! {
+    impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
+        #[ensures(I::size_hint.postcondition((&self.iter(),), result))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<I: ExactSizeIteratorSpec, B, F: FnMut(I::Item) -> B> ExactSizeIteratorSpec for Map<I, F> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {
+        self.iter().size_is_exact()
+    }
+}
+
 /// Get the witnesses for the existentials in `produces`
 #[logic(prophetic)]
 #[requires(this.produces(visited, succ))]
@@ -114,15 +129,11 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
          this.func().hist_inv(*result.0[i])
          && (*result.0[i]).postcondition_mut((result.1[i],), ^result.0[i], visited[i])
 )]
-fn produces_instantiate_existential<'a, I, B, F>(
+fn produces_instantiate_existential<'a, I: IteratorSpec, B, F: FnMut(I::Item) -> B>(
     this: Map<I, F>,
     visited: Seq<B>,
     succ: Map<I, F>,
-) -> (Seq<&'a mut F>, Seq<I::Item>)
-where
-    I: IteratorSpec,
-    F: FnMut(I::Item) -> B,
-{
+) -> (Seq<&'a mut F>, Seq<I::Item>) {
     creusot_std::logic::such_that(|(fs, s): (Seq<&mut F>, Seq<I::Item>)| {
         pearlite! {
             fs.len() == visited.len() && s.len() == visited.len()

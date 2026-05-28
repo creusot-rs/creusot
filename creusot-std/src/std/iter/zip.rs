@@ -1,4 +1,4 @@
-use crate::{invariant::*, prelude::*};
+use crate::{invariant::*, prelude::*, std::iter::ExactSizeIteratorSpec};
 use core::iter::Zip;
 
 pub trait ZipExt<A: Iterator, B: Iterator> {
@@ -61,4 +61,33 @@ impl<A: IteratorSpec, B: IteratorSpec> IteratorSpec for Zip<A, B> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+extern_spec! {
+    impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
+        #[ensures(exists<ra, rb>
+            A::size_hint.postcondition((&self.itera(),), ra) &&
+            B::size_hint.postcondition((&self.iterb(),), rb) &&
+            (ra.0@ <= rb.0@ ==> result.0 == ra.0) &&
+            (ra.0@ >= rb.0@ ==> result.0 == rb.0) &&
+            match (ra.1, rb.1) {
+                (Some(ua), Some(ub)) =>
+                    (ua@ <= ub@ ==> result.1 == Some(ua)) &&
+                    (ua@ >= ub@ ==> result.1 == Some(ub)),
+                (Some(ua), None) => result.1 == Some(ua),
+                (None, Some(ub)) => result.1 == Some(ub),
+                (None, None) => result.1 == None
+            }
+        )]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<A: ExactSizeIteratorSpec, B: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Zip<A, B> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {
+        self.itera().size_is_exact();
+        self.iterb().size_is_exact();
+    }
 }

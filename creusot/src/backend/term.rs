@@ -25,7 +25,7 @@ use rustc_middle::{
     mir::PlaceTy,
     ty::{self, Ty, TyCtxt, TyKind},
 };
-use rustc_span::{DUMMY_SP, Span};
+use rustc_span::Span;
 use rustc_type_ir::IntTy;
 use why3::{
     Ident, Name,
@@ -114,29 +114,40 @@ struct Lower<'a, 'tcx, N: Namer<'tcx>> {
     weakdep: bool,
 }
 
-pub fn recast_int<'tcx, N>(
-    namer: &N,
-    ty1: &TyKind<'tcx>,
-    ty2: &TyKind<'tcx>,
-    arg: why3::Exp,
-) -> why3::Exp
+pub fn cast_int<'tcx, N>(namer: &N, from_ty: Ty<'tcx>, to_ty: Ty<'tcx>, arg: why3::Exp) -> why3::Exp
 where
     N: Namer<'tcx>,
 {
-    if ty1 == ty2 {
+    let target_width = namer.tcx().sess.target.pointer_width;
+    let from_len = match from_ty.kind() {
+        TyKind::Int(ity) => ity.normalize(target_width).bit_width().unwrap(),
+        TyKind::Uint(uty) => uty.normalize(target_width).bit_width().unwrap(),
+        _ => unreachable!(),
+    };
+
+    let to_len = match to_ty.kind() {
+        TyKind::Int(ity) => ity.normalize(target_width).bit_width().unwrap(),
+        TyKind::Uint(uty) => uty.normalize(target_width).bit_width().unwrap(),
+        _ => unreachable!(),
+    };
+
+    if (to_ty.is_signed() == from_ty.is_signed() || namer.bitwise_mode()) && from_len == to_len {
         return arg;
     }
 
-    let e1 = namer.in_pre(
-        ty_to_prelude(namer.tcx(), ty1),
-        if namer.bitwise_mode() { "to_BV256" } else { "t'int" },
-    );
-    let e2 = why3::Exp::qvar(e1).app([arg]);
-    let e3 = namer.in_pre(
-        ty_to_prelude(namer.tcx(), ty2),
-        if namer.bitwise_mode() { "of_BV256" } else { "of_int" },
-    );
-    why3::Exp::qvar(e3).app([e2])
+    let to_fct_name = if namer.bitwise_mode() {
+        "to_BV256"
+    } else if let TyKind::Int(_) = from_ty.kind() {
+        "to_int"
+    } else {
+        "t'int"
+    };
+    let to_qname = namer.in_pre(ty_to_prelude(namer.tcx(), from_ty), to_fct_name);
+
+    let of_fct_name = if namer.bitwise_mode() { "of_BV256" } else { "of_int" };
+    let of_qname = namer.in_pre(ty_to_prelude(namer.tcx(), to_ty), of_fct_name);
+
+    why3::Exp::qvar(of_qname).app([why3::Exp::qvar(to_qname).app([arg])])
 }
 
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
@@ -148,73 +159,43 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::qvar(name::seq_create())
                     .app([Exp::int(elts.len() as i128), Exp::FunLiteral(elts)])
             }
-            TermKind::Cast { box arg } => match arg.ty.kind() {
-                TyKind::Bool => {
-                    let (fct_name, prelude_kind) = match term.ty.kind() {
-                        TyKind::Int(ity) => ("of_bool", ity_to_prelude(self.ctx.tcx, *ity)),
-                        TyKind::Uint(uty) => ("of_bool", uty_to_prelude(self.ctx.tcx, *uty)),
-                        _ => self.ctx.crash_and_error(
-                            DUMMY_SP,
-                            "bool cast to non integral casts are currently unsupported",
-                        ),
-                    };
-
-                    let qname = self.names.in_pre(prelude_kind, fct_name);
-                    Exp::qvar(qname).app([self.lower_term(arg)])
-                }
-                TyKind::Int(_) | TyKind::Uint(_) => {
-                    // to
-                    let (to_fct_name, to_prelude_kind) = match arg.ty.kind() {
-                        TyKind::Int(ity) => (
-                            if self.names.bitwise_mode() { "to_BV256" } else { "to_int" },
-                            ity_to_prelude(self.ctx.tcx, *ity),
-                        ),
-                        TyKind::Uint(ity) => (
-                            if self.names.bitwise_mode() { "to_BV256" } else { "t'int" },
-                            uty_to_prelude(self.ctx.tcx, *ity),
-                        ),
-                        _ => self.ctx.crash_and_error(
-                            DUMMY_SP,
-                            format!("casts {:?} are currently unsupported", arg.ty.kind()),
-                        ),
-                    };
-
-                    // of
-                    let (of_fct_name, of_prelude_kind) = match term.ty.kind() {
-                        TyKind::Int(ity) => (
-                            if self.names.bitwise_mode() { "of_BV256" } else { "of_int" },
-                            ity_to_prelude(self.ctx.tcx, *ity),
-                        ),
-                        TyKind::Uint(ity) => (
-                            if self.names.bitwise_mode() { "of_BV256" } else { "of_int" },
-                            uty_to_prelude(self.ctx.tcx, *ity),
-                        ),
-                        _ => self.ctx.crash_and_error(
-                            DUMMY_SP,
-                            format!("casts {:?} are currently unsupported", arg.ty.kind()),
-                        ),
-                    };
-
-                    let to_qname = self.names.in_pre(to_prelude_kind, to_fct_name);
-                    let of_qname = self.names.in_pre(of_prelude_kind, of_fct_name);
-
-                    Exp::qvar(of_qname).app([Exp::qvar(to_qname).app([self.lower_term(arg)])])
-                }
-                // Pointer-to-pointer casts
-                TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = term.ty.kind() => {
-                    match ptr_cast_kind(self.ctx.tcx, self.names.typing_env(), ty1, ty2) {
-                        PtrCastKind::Id => self.lower_term(arg),
-                        PtrCastKind::Thin => {
-                            let thin = self.names.in_pre(PreMod::Opaque, "thin");
-                            Exp::qvar(thin).app([self.lower_term(arg)])
+            TermKind::Cast { box arg } => {
+                let argty = arg.ty;
+                let arg = self.lower_term(arg);
+                match argty.kind() {
+                    TyKind::Bool => match term.ty.kind() {
+                        TyKind::Int(_) | TyKind::Uint(_) => {
+                            let qname =
+                                self.names.in_pre(ty_to_prelude(self.ctx.tcx, term.ty), "of_bool");
+                            Exp::qvar(qname).app([arg])
                         }
-                        PtrCastKind::Unknown => {
-                            unsupported_cast(self.ctx, term.span, arg.ty, term.ty)
+                        _ if self.ctx.int_ty() == term.ty => {
+                            Exp::qvar(self.names.in_pre(PreMod::Bool, "to_int")).app([arg])
+                        }
+                        _ => unsupported_cast(self.ctx, term.span, argty, term.ty),
+                    },
+                    TyKind::Int(_) | TyKind::Uint(_) => {
+                        if !term.ty.is_integral() {
+                            unsupported_cast(self.ctx, term.span, argty, term.ty)
+                        };
+                        cast_int(self.names, argty, term.ty, arg)
+                    }
+                    // Pointer-to-pointer casts
+                    TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = term.ty.kind() => {
+                        match ptr_cast_kind(self.ctx.tcx, self.names.typing_env(), ty1, ty2) {
+                            PtrCastKind::Id => arg,
+                            PtrCastKind::Thin => {
+                                let thin = self.names.in_pre(PreMod::Opaque, "thin");
+                                Exp::qvar(thin).app([arg])
+                            }
+                            PtrCastKind::Unknown => {
+                                unsupported_cast(self.ctx, term.span, argty, term.ty)
+                            }
                         }
                     }
+                    _ => unsupported_cast(self.ctx, term.span, argty, term.ty),
                 }
-                _ => unsupported_cast(self.ctx, term.span, arg.ty, term.ty),
-            },
+            }
             TermKind::Coerce { arg } => self.lower_term(arg),
             &TermKind::Item(id, subst)
                 if let TyKind::FnDef(_, _) = self.ctx.type_of(id).skip_binder().kind() =>
@@ -235,15 +216,15 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             )),
             TermKind::Var(v) => Exp::var(v.0),
             TermKind::Binary { op, box lhs, box rhs } => {
-                let lhs_ty = lhs.ty.kind();
-                let rhs_ty = rhs.ty.kind();
+                let lhs_ty = lhs.ty;
+                let rhs_ty = rhs.ty;
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
 
                 use BinOp::*;
-                if let Some(fun) = binop_function(self.names, *op, term.ty.kind()) {
+                if let Some(fun) = binop_function(self.names, *op, term.ty) {
                     let rhs = if matches!(*op, Shl | Shr) {
-                        recast_int(self.names, rhs_ty, lhs_ty, rhs)
+                        cast_int(self.names, rhs_ty, lhs_ty, rhs)
                     } else {
                         rhs
                     };
@@ -261,7 +242,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
                 if matches!(op, UnOp::Not) && arg.ty.is_integral() {
                     let bw_not =
-                        self.names.in_pre(ty_to_prelude(self.names.tcx(), arg.ty.kind()), "bw_not");
+                        self.names.in_pre(ty_to_prelude(self.names.tcx(), arg.ty), "bw_not");
                     return Exp::qvar(bw_not).app([self.lower_term(arg)]);
                 }
                 let op = match op {
@@ -595,7 +576,7 @@ pub(crate) fn binop_to_binop(op: BinOp) -> WBinOp {
 pub(crate) fn binop_function<'tcx>(
     namer: &impl Namer<'tcx>,
     op: BinOp,
-    ty: &TyKind,
+    ty: Ty,
 ) -> Option<why3::QName> {
     use BinOp::*;
     let name = match op {

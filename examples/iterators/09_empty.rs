@@ -1,9 +1,8 @@
-// WHY3PROVE
 extern crate creusot_std;
 use creusot_std::prelude::*;
 
-mod common;
-pub use common::Iterator;
+pub mod common;
+pub use common::{ExactSizeIterator, Iterator};
 
 pub struct Empty<T>(std::marker::PhantomData<T>);
 
@@ -15,7 +14,7 @@ impl<T> Iterator for Empty<T> {
         pearlite! { resolve(self) }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! { visited == Seq::empty() && self == o }
     }
@@ -37,4 +36,15 @@ impl<T> Iterator for Empty<T> {
     fn next(&mut self) -> Option<T> {
         None
     }
+
+    #[ensures(result == (0usize, Some(0usize)))]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(0))
+    }
+}
+
+impl<T> ExactSizeIterator for Empty<T> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
 }

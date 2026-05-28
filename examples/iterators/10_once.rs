@@ -3,7 +3,7 @@ extern crate creusot_std;
 use creusot_std::prelude::*;
 
 mod common;
-pub use common::Iterator;
+pub use common::{ExactSizeIterator, Iterator};
 
 pub struct Once<T>(pub Option<T>);
 
@@ -39,5 +39,32 @@ impl<T> Iterator for Once<T> {
     })]
     fn next(&mut self) -> Option<T> {
         self.0.take()
+    }
+
+    #[ensures(result.0 == match self.0 { Some(_) => 1usize, None => 0usize })]
+    #[ensures(result.1 == Some(result.0))]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let l = match self.0 {
+            Some(_) => 1,
+            None => 0,
+        };
+        (l, Some(l))
+    }
+}
+
+impl<T> ExactSizeIterator for Once<T> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
+
+    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+        self.produces(s, *i) && i.completed() ==> result@ == s.len())]
+    #[ensures(forall<s: Seq<Self::Item>, i: Self>
+        self.produces(s, i) ==> s.len() <= result@)]
+    fn len(&self) -> usize {
+        match self.0 {
+            Some(_) => 1,
+            None => 0,
+        }
     }
 }

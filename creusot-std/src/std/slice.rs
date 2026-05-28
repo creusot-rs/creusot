@@ -1,6 +1,9 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{ghost::perm::Perm, invariant::*, logic::ops::IndexLogic, prelude::*};
+use crate::{
+    ghost::perm::Perm, invariant::*, logic::ops::IndexLogic, prelude::*,
+    std::iter::ExactSizeIteratorSpec,
+};
 #[cfg(creusot)]
 use core::ops::{Index, IndexMut};
 use core::{
@@ -553,6 +556,20 @@ impl<'a, T> IteratorSpec for Iter<'a, T> {
     }
 }
 
+extern_spec! {
+    impl<'a, T> Iterator for Iter<'a, T> {
+        #[ensures(result.0@ == self@@.len())]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<'a, T> ExactSizeIteratorSpec for Iter<'a, T> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
+}
+
 impl<'a, T> DoubleEndedIteratorSpec for Iter<'a, T> {
     #[logic(open)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
@@ -630,6 +647,20 @@ impl<'a, T> IteratorSpec for IterMut<'a, T> {
     }
 }
 
+extern_spec! {
+    impl<'a, T> Iterator for IterMut<'a, T> {
+        #[ensures(result.0@ == self@@.len())]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<'a, T> ExactSizeIteratorSpec for IterMut<'a, T> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
+}
+
 impl<'a, T> DoubleEndedIteratorSpec for IterMut<'a, T> {
     #[logic(open)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
@@ -655,32 +686,22 @@ impl<'a, T> DoubleEndedIteratorSpec for IterMut<'a, T> {
     }
 }
 
-#[cfg(feature = "std")]
 extern_spec! {
     impl<'a, T> Iter<'a, T> {
         #[ensures(result@ == self@@)]
         fn as_slice(&self) -> &'a [T];
     }
-}
 
-#[cfg(feature = "std")]
-extern_spec! {
     impl<'a, T> ExactSizeIterator for Iter<'a, T> {
         #[ensures(result@ == self@@.len())]
         fn len(&self) -> usize;
     }
-}
 
-#[cfg(feature = "std")]
-extern_spec! {
     impl<'a, T> IterMut<'a, T> {
         #[ensures(result@ == self@@)]
         fn as_slice(&self) -> &'a [T];
     }
-}
 
-#[cfg(feature = "std")]
-extern_spec! {
     impl<'a, T> ExactSizeIterator for IterMut<'a, T> {
         #[ensures(result@ == self@@.len())]
         fn len(&self) -> usize;

@@ -1,6 +1,10 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{invariant::*, prelude::*, std::iter::Enumerate};
+use crate::{
+    invariant::*,
+    prelude::*,
+    std::iter::{Enumerate, ExactSizeIteratorSpec},
+};
 
 pub trait EnumerateExt<I> {
     #[logic]
@@ -80,4 +84,19 @@ impl<I: IteratorSpec> IteratorSpec for Enumerate<I> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+extern_spec! {
+    impl<I: Iterator> Iterator for Enumerate<I> {
+        #[ensures(I::size_hint.postcondition((&self.iter(),), result))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<'a, I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Enumerate<I> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {
+        self.iter().size_is_exact()
+    }
 }
