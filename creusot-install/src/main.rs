@@ -32,30 +32,11 @@ const CVC5: ManagedBinary =
 /// Install Creusot
 #[derive(Debug, Parser)]
 struct Args {
+    /// Only build these components. Build all if empty.
+    components: Vec<Component>,
     /// Look-up <TOOL> from PATH instead of using the built-in version
     #[arg(long, value_name = "TOOL")]
     external: Vec<SetupTool>,
-    /// Use existing cargo-creusot
-    #[arg(long)]
-    skip_cargo_creusot: bool,
-    /// Use existing creusot-rustc
-    #[arg(long)]
-    skip_creusot_rustc: bool,
-    /// Skip installing Why3 and Why3find (you must already have them in `$XDG_DATA_HOME/creusot/bin`)
-    #[arg(long)]
-    skip_why3: bool,
-    /// Skip installing why3.conf and why3find.json
-    #[arg(long)]
-    skip_why3_conf: bool,
-    /// Skip installing the Creusot prelude (Why3 library)
-    #[arg(long, conflicts_with = "only_build_prelude")]
-    skip_prelude: bool,
-    /// Skip installing provers
-    #[arg(long)]
-    skip_extra_tools: bool,
-    /// Only build the prelude, don't install anything (implies the skip options)
-    #[arg(long)]
-    only_build_prelude: bool,
     /// Set the number of available threads for Why3
     #[arg(long)]
     provers_parallelism: Option<usize>,
@@ -64,23 +45,29 @@ struct Args {
     dry_run: bool,
 }
 
+#[derive(Debug, ValueEnum, Clone, Copy, Hash, PartialEq, Eq)]
+enum Component {
+    /// Only build prelude
+    BuildPrelude,
+    /// Install Creusot prelude (a Why3 library)
+    Prelude,
+    /// Install Why3 and Why3find
+    Why3,
+    CargoCreusot,
+    CreusotRustc,
+    Provers,
+    /// Install config files `why3.conf` and `why3find.json`
+    Why3Conf,
+    /// Set up `.cargo/config.toml`
+    CargoCreusotConfig,
+}
+
 #[derive(Debug, ValueEnum, Clone, Copy, PartialEq)]
 enum SetupTool {
     AltErgo,
     Z3,
     CVC4,
     CVC5,
-}
-
-fn main() -> anyhow::Result<()> {
-    let args = Args::parse();
-    if !args.skip_prelude {
-        build_prelude(&args)?;
-    }
-    if args.only_build_prelude {
-        return Ok(());
-    }
-    install(&args)
 }
 
 impl Args {
@@ -149,34 +136,44 @@ impl Args {
         }
         Ok(())
     }
+
+    fn contains(&self, c: Component) -> bool {
+        self.components.is_empty() || self.components.contains(&c)
+    }
 }
 
-fn build_prelude(args: &Args) -> anyhow::Result<()> {
-    let mut cargo = Command::new("cargo");
-    cargo.args(["run", "--bin", "prelude-generator"]);
-    args.run(cargo)
+fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
+    install(&args)
 }
 
 fn install(args: &Args) -> anyhow::Result<()> {
     let paths: CreusotPaths = setup::creusot_paths();
     create_dirs(&paths, args)?;
-    if !args.skip_why3 {
+    use Component::*;
+    if args.contains(Why3) {
         install_why3(&paths, args)?;
     }
-    if !args.skip_prelude {
+    if args.contains(BuildPrelude) || args.contains(Prelude) {
+        build_prelude(args)?;
+    }
+    if args.contains(Prelude) {
         install_prelude(&paths, args)?;
     }
-    if !args.skip_cargo_creusot {
+    if args.contains(CargoCreusot) {
         install_cargo_creusot(args)?;
     }
-    if !args.skip_creusot_rustc {
+    if args.contains(CreusotRustc) {
         install_creusot_rustc(&paths, args)?;
     }
-    if !args.skip_extra_tools {
-        install_tools(&paths, &args)?;
+    if args.contains(Provers) {
+        install_provers(&paths, &args)?;
     }
-    if !args.skip_why3_conf {
+    if args.contains(Why3Conf) {
         install_config(&paths, &args)?;
+    }
+    if args.contains(CargoCreusotConfig) {
+        cargo_creusot_config(args)?;
     }
     Ok(())
 }
@@ -247,7 +244,7 @@ fn install_creusot_rustc(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Re
     args.run(cmd)
 }
 
-fn install_tools(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<()> {
+fn install_provers(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<()> {
     args.create_dir_all(&paths.cache_dir())?;
     for (bin, tool) in [
         (ALTERGO, SetupTool::AltErgo),
@@ -264,6 +261,12 @@ fn install_tools(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<()>
         }
     }
     Ok(())
+}
+
+fn build_prelude(args: &Args) -> anyhow::Result<()> {
+    let mut cargo = Command::new("cargo");
+    cargo.args(["run", "--bin", "prelude-generator"]);
+    args.run(cargo)
 }
 
 fn install_prelude(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<()> {
@@ -292,6 +295,12 @@ fn install_config(paths: &CreusotPaths, args: &Args) -> anyhow::Result<()> {
         // ad hoc code so that the CI job for Why3 tests can get this config without installing cargo-creusot
         setup::generate_why3_conf(paths, args.provers_parallelism)
     }
+}
+
+fn cargo_creusot_config(args: &Args) -> anyhow::Result<()> {
+    let mut cmd = Command::new("cargo");
+    cmd.args(["creusot", "config", "--update"]);
+    args.run(cmd)
 }
 
 fn get_path(bin: Binary, args: &Args) -> anyhow::Result<PathBuf> {

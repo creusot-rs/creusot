@@ -34,7 +34,7 @@ let
 
     cmakeFlags = [
       "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-      "-DENABLE_PYTHON_INTERFACE=OFF"
+      "-DENABLE_PYTHON_INTERFACE=0"
     ];
 
     patchPhase = ''
@@ -84,7 +84,7 @@ stdenv.mkDerivation {
     "-DENABLE_ASAN=0"
     "-DENABLE_UBSAN=0"
     "-DENABLE_TSAN=0"
-    "-DENABLE_ASSERTION=0"
+    "-DENABLE_ASSERTIONS=0"
     "-DENABLE_COMP_INC_TRACK=0"
     "-DENABLE_DEBUG_SYMBOLS=0"
     "-DENABLE_DUMPING=0"
@@ -106,7 +106,7 @@ stdenv.mkDerivation {
     "-DUSE_CADICAL=1"
     "-DUSE_CLN=1"
     "-DUSE_CRYPTOMINISAT=1"
-    "-DUSE_GPLK=0"
+    "-DUSE_GLPK=0"
     "-DUSE_KISSAT=0"
     "-DUSE_READLINE=0"
 

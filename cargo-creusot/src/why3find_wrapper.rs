@@ -52,13 +52,6 @@ pub struct ProveIdeWhen {
     ide_always: bool,
 }
 
-#[derive(Debug, Parser)]
-pub struct ConfigArgs {
-    /// All arguments are forwarded to `why3find config`; see `why3find config --help` for a list of options.
-    #[clap(allow_hyphen_values = true)]
-    pub args: Vec<String>,
-}
-
 fn check_why3find_json_exists(root: &Path) -> Result<()> {
     let why3find = root.join("why3find.json");
     if why3find.exists() {
