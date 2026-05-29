@@ -3,6 +3,7 @@
 //! See [`Resource`].
 
 mod auth;
+
 pub use auth::{Authority, Fragment};
 
 // We use a nested module that we re-export, to make sure that the definitions
