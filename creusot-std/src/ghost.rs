@@ -21,6 +21,7 @@ pub mod lifetime_logic;
 pub mod perm;
 pub mod resource;
 mod shared;
+pub mod thread;
 
 pub use self::{
     fn_ghost::{FnGhost, FnGhostWrapper},
