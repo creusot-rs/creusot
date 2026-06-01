@@ -5,13 +5,13 @@ use crate::{
     prelude::*,
 };
 use core::cmp::Ordering;
-#[cfg(creusot)]
+#[cfg(all(creusot, feature = "std"))]
 use num_rational::BigRational;
 
 #[builtin("real.Real.real")]
 pub struct Real;
 
-#[cfg(creusot)]
+#[cfg(all(creusot, feature = "std"))]
 impl DeepModel for BigRational {
     type DeepModelTy = Real;
 

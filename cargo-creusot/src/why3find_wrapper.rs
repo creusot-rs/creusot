@@ -116,7 +116,7 @@ pub fn why3find_prove(args: ProveArgs, root: &Path, targets: Vec<String>) -> Res
         )
     }
     let files = if args.patterns.is_empty() {
-        let verif = PathBuf::from("verif");
+        let verif = PathBuf::from(OUTPUT_PREFIX);
         targets
             .iter()
             .filter_map(|tgt| {
@@ -127,8 +127,7 @@ pub fn why3find_prove(args: ProveArgs, root: &Path, targets: Vec<String>) -> Res
     } else {
         let patterns =
             args.patterns.iter().map(|s| Pattern::parse(root, s)).collect::<Result<Patterns>>()?;
-        let files = match_patterns(&patterns)?;
-        files
+        match_patterns(&patterns)?
     };
     if files.is_empty() {
         // Fail if no files matched the patterns.
@@ -163,10 +162,6 @@ pub struct Patterns {
 }
 
 impl Patterns {
-    fn is_empty(&self) -> bool {
-        self.paths.is_empty() && self.spatterns.is_empty()
-    }
-
     fn matches(&self, path: &Path) -> bool {
         self.path_matches(path) || self.spattern_matches(path)
     }
@@ -316,16 +311,11 @@ fn strip_coma_str(name: &str) -> Option<&str> {
     name.strip_suffix(".coma")
 }
 
-/// If no patterns, return `"verif/"`.
-/// Otherwise, list files under `verif/` that match at least one pattern.
+/// List files under `verif/` that match at least one pattern.
 fn match_patterns(patterns: &Patterns) -> Result<Vec<PathBuf>> {
     let dir = PathBuf::from(OUTPUT_PREFIX);
-    if patterns.is_empty() {
-        Ok(vec![dir])
-    } else if !std::fs::exists(&dir)
-        .context(format!("failed to check directory '{}'", dir.display()))?
-    {
-        return Ok(vec![]);
+    if !std::fs::exists(&dir).context(format!("failed to check directory '{}'", dir.display()))? {
+        Ok(vec![])
     } else {
         let mut dest = vec![];
         match_patterns_from(patterns, &dir, &mut dest)?;

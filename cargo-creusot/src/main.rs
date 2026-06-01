@@ -107,6 +107,7 @@ impl Runner {
                         let ty = match kind {
                             TargetKind::Lib | TargetKind::RLib => "rlib",
                             TargetKind::Bin => "bin",
+                            TargetKind::StaticLib => "staticlib",
                             _ => return None, // Other types are unsupported at the moment
                         };
                         Some(format!("{}_{}", target.name.replace('-', "_"), ty))
