@@ -17,7 +17,7 @@ pub fn main() -> anyhow::Result<()> {
     };
     println!("PATH={:?}; export PATH;", &new_path);
 
-    eprintln!("Using Why3 config at: {}", &paths.why3_conf().display());
-    println!("WHY3CONFIG='{}'; export WHY3CONFIG;", &paths.why3_conf().display());
+    eprintln!("Using Why3 config at: {}", &paths.user_why3_conf().display());
+    println!("WHY3CONFIG='{}'; export WHY3CONFIG;", &paths.user_why3_conf().display());
     Ok(())
 }

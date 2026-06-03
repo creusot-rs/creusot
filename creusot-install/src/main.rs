@@ -2,7 +2,7 @@ use anyhow::{Context as _, anyhow, bail};
 use clap::*;
 use creusot_setup::{self as setup, Binary, CreusotPaths, tools_versions_urls::*};
 use std::{
-    fs,
+    fs, io,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -284,17 +284,18 @@ fn install_prelude(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<(
 fn install_config(paths: &CreusotPaths, args: &Args) -> anyhow::Result<()> {
     // Default why3find.json for `cargo creusot new`.
     args.copy(&PathBuf::from("why3find.json"), &paths.data_dir().join("why3find.json"))?;
+    args.copy(
+        &PathBuf::from("creusot-install/creusot_why3.conf"),
+        &paths.data_dir().join("creusot_why3.conf"),
+    )?;
     if args.dry_run {
-        let mut why3_conf = Command::new("cargo");
-        why3_conf.args(["creusot", "why3-conf"]);
-        if let Some(parallelism) = args.provers_parallelism {
-            why3_conf.args(["--provers-parallelism", &format!("{}", parallelism)]);
-        }
-        args.run(why3_conf)
+        println!("cat > {} << EOF", paths.user_why3_conf().display());
+        setup::write_default_why3_conf(&mut io::stdout(), args.provers_parallelism)?;
+        println!("EOF");
     } else {
-        // ad hoc code so that the CI job for Why3 tests can get this config without installing cargo-creusot
-        setup::generate_why3_conf(paths, args.provers_parallelism)
+        setup::update_why3_conf(paths, args.provers_parallelism)?;
     }
+    Ok(())
 }
 
 fn cargo_creusot_config(args: &Args) -> anyhow::Result<()> {

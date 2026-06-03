@@ -124,7 +124,9 @@ fn main() {
         let output;
         let library = std::env::current_dir().unwrap().join("target/creusot");
         let mut why3 = Command::new(paths.why3());
-        why3.arg("-C").arg(paths.why3_conf());
+        why3.env("PATH", paths.bin());
+        why3.arg("-C").arg(paths.user_why3_conf());
+        why3.arg("--extra-config").arg(paths.creusot_why3_conf());
         why3.arg("--warn-off=unused_variable");
         why3.arg("--warn-off=clone_not_abstract");
         why3.arg("--warn-off=axiom_abstract");
@@ -248,10 +250,12 @@ fn main() {
             }
 
             let mut why3find = Command::new(paths.why3find());
-            why3find.env("WHY3CONFIG", paths.why3_conf());
+            why3find.env("PATH", paths.bin());
+            why3find.env("WHY3CONFIG", paths.creusot_why3_conf());
             why3find.env("DUNE_DIR_LOCATIONS", &format!("why3find:lib:{}", library.display()));
             why3find.arg("prove").arg(file.canonicalize().unwrap());
             why3find.arg("--no-autodetect-provers");
+            why3find.args(["-j", &format!("{}", creusot_setup::default_provers_parallelism())]);
             if let Some(tactic) = tactic_re.captures_iter(&header_line).next() {
                 why3find.args(["--tactic", tactic.get(1).unwrap().as_str()]);
             }

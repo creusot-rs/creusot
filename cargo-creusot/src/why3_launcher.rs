@@ -1,10 +1,6 @@
 use anyhow::{Context as _, Result};
-use creusot_setup::{CreusotPaths, generate_why3_conf};
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    process::Command,
-};
+use creusot_setup::CreusotPaths;
+use std::{path::PathBuf, process::Command};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Why3Mode {
@@ -27,8 +23,14 @@ pub(crate) fn run_why3(
     args: String,
     paths: &CreusotPaths,
 ) -> Result<()> {
-    check_why3_conf_exists(paths)?;
+    creusot_setup::update_why3_conf(paths, None)?;
     let mut why3 = Command::new(paths.why3());
+    // Add Creusot bin path to PATH to find solvers
+    // Still keep the old paths for other binaries that why3 ide may use (like the editor).
+    let mut path = paths.bin().to_path_buf().into_os_string();
+    path.push(":");
+    path.push(std::env::var("PATH").unwrap());
+    why3.env("PATH", path);
     why3.args([
         "--warn-off=unused_variable",
         "--warn-off=clone_not_abstract",
@@ -40,27 +42,12 @@ pub(crate) fn run_why3(
     .arg(mode.to_string())
     .arg(coma_file)
     .arg("-C")
-    .arg(paths.why3_conf());
+    .arg(paths.user_why3_conf())
+    .arg("--extra-config")
+    .arg(paths.creusot_why3_conf());
     if !args.is_empty() {
         why3.args(args.split_ascii_whitespace());
     }
     why3.status().context("could not run why3")?;
     Ok(())
-}
-
-pub(crate) fn check_why3_conf_exists(paths: &CreusotPaths) -> Result<()> {
-    if older(&paths.why3_conf(), &paths.data_dir()) {
-        generate_why3_conf(paths, None)?;
-    }
-    Ok(())
-}
-
-// `true` if `older` does not exist or is older than `newer`.
-pub fn older(older: &Path, newer: &Path) -> bool {
-    let Ok(older_meta) = fs::metadata(older) else { return true };
-    let Ok(newer_meta) = fs::metadata(newer) else { return false };
-    let (Ok(older_time), Ok(newer_time)) = (older_meta.modified(), newer_meta.modified()) else {
-        return false;
-    };
-    older_time < newer_time
 }
