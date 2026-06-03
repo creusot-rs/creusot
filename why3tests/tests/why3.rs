@@ -33,6 +33,9 @@ struct Args {
     /// Ignore why3find cache
     #[clap(long)]
     no_cache: bool,
+    /// Timeout in seconds
+    #[clap(long)]
+    time: Option<f64>,
     /// Only run tests which contain this string
     filter: Option<String>,
 }
@@ -252,7 +255,9 @@ fn main() {
             if let Some(tactic) = tactic_re.captures_iter(&header_line).next() {
                 why3find.args(["--tactic", tactic.get(1).unwrap().as_str()]);
             }
-            if let Some(time) = time_re.captures_iter(&header_line).next() {
+            if let Some(time) = args.time {
+                why3find.args(["--time", &format!("{}", time)]);
+            } else if let Some(time) = time_re.captures_iter(&header_line).next() {
                 why3find.args(["--time", time.get(1).unwrap().as_str()]);
             }
             if let Some(depth) = depth_re.captures_iter(&header_line).next() {

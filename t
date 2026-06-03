@@ -13,6 +13,8 @@ for i in "$@"; do
       echo "    --fmt-check  Only check formatting of .rs files"
       echo "    --why3-all   Run why3 test on all .coma files"
       echo "                 (default is .coma files with changes from origin/master)"
+      echo "    --time=[N]   Timeout for why3 tests in seconds"
+      echo "    --no-cache   Ignore Why3find cache for why3 tests"
       echo "    [STRING]     Only run tests for files containing this string (tests: ui, why3)"
       echo "    --debug      Print commands as they are run"
       echo "    --installed  Run tests using installed Creusot (tests: build-new, build-no-std)"
@@ -58,7 +60,8 @@ for i in "$@"; do
       shift
       ;;
     --update)
-      UPDATE=1
+      UI_ARGS+=(--bless)
+      WHY3_ARGS+=(--update)
       shift
       ;;
     --debug)
@@ -77,13 +80,22 @@ for i in "$@"; do
       TMP=${i#--tmp=}
       shift
       ;;
+    --no-cache)
+      WHY3_ARGS+=("--no-cache")
+      shift
+      ;;
+    --time=*)
+      WHY3_ARGS+=("--time=${i#--time=}")
+      shift
+      ;;
     -*)
       echo "Unrecognized option $i"
       exit 1
       ;;
     *)
       WHY3_DIFF_FROM=0
-      PARAMS+=("$i")
+      UI_ARGS+=("$i")
+      WHY3_ARGS+=("$i")
       shift
       ;;
   esac
@@ -92,12 +104,6 @@ if [ ! "$NO_TEST_DEFAULT" ] ; then
   TEST_FMT=1
   TEST_UI=1
   TEST_WHY3=1
-fi
-UI_ARGS=("${PARAMS[@]}")
-WHY3_ARGS=("${PARAMS[@]}")
-if [ "$UPDATE" ] ; then
-  UI_ARGS+=(--bless)
-  WHY3_ARGS+=(--update)
 fi
 if [ "$FMT_CHECK" ] ; then
   FMT_ARGS+=(--check)
