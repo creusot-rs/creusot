@@ -108,8 +108,8 @@ fn detect_why3find_version(why3find: &Path) -> anyhow::Result<String> {
 
 fn detect_altergo_version(altergo: &Path) -> anyhow::Result<String> {
     let version_full = run(Command::new(&altergo).arg("--version"))?;
-    let version = version_full.trim_end().strip_prefix("v").map(String::from);
-    version.ok_or(anyhow!("bad Altergo version: {}", version_full))
+    let version = version_full.trim_end();
+    Ok(version.strip_prefix("v").unwrap_or(version).into())
 }
 
 // helpers: Z3
