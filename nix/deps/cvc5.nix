@@ -44,8 +44,8 @@ let
     patches = [
       (fetchpatch {
         name = "CoCoALib-0.99800-trace.patch";
-        url = "https://raw.githubusercontent.com/cvc5/cvc5/refs/heads/main/cmake/deps-utils/CoCoALib-0.99800-trace.patch";
-        sha256 = "sha256-57Ptq3ESLGJjAT9xC8Uk0zrfMoRl+KsU6cg6QxIZH6k=";
+        url = "https://raw.githubusercontent.com/cvc5/cvc5/e0514b3e454aa184654a66b7a979244babbc4c5e/cmake/deps-utils/CoCoALib-0.99800-trace.patch";
+        sha256 = "sha256-hY6/XkqLbqSunH6yUz9PmvrcPBWsd8FJYBUKhuHCYVs=";
       })
     ];
 
