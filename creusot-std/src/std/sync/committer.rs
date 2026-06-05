@@ -1,9 +1,11 @@
+#[cfg(feature = "sc-drf")]
+use crate::std::sync::atomic_sc::ordering::SeqCst;
 use crate::{
     ghost::{PermTarget, perm::Perm},
     logic::FMap,
     prelude::*,
     std::sync::{
-        atomic::Ordering,
+        atomic::ordering::{Acquire, Relaxed, Release},
         view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
     },
 };
@@ -62,7 +64,7 @@ impl<C: PermTarget, T, Load, Store> Committer<C, T, Load, Store> {
     }
 }
 
-impl<C, T, Store> Committer<C, T, Ordering::Relaxed, Store>
+impl<C, T, Store> Committer<C, T, Relaxed, Store>
 where
     C: PermTarget<Value<'static> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'static,
 {
@@ -83,7 +85,7 @@ where
     }
 }
 
-impl<C, T, Store> Committer<C, T, Ordering::Acquire, Store>
+impl<C, T, Store> Committer<C, T, Acquire, Store>
 where
     C: PermTarget<Value<'static> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'static,
 {
@@ -107,7 +109,8 @@ where
     }
 }
 
-impl<C, Store> Committer<C, C::Value<'static>, Ordering::SeqCst, Store>
+#[cfg(feature = "sc-drf")]
+impl<C, Store> Committer<C, C::Value<'static>, SeqCst, Store>
 where
     C: PermTarget,
 {
@@ -125,7 +128,7 @@ where
     }
 }
 
-impl<C, T, Load> Committer<C, T, Load, Ordering::Relaxed>
+impl<C, T, Load> Committer<C, T, Load, Relaxed>
 where
     C: PermTarget<Value<'static> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'static,
 {
@@ -155,7 +158,7 @@ where
     }
 }
 
-impl<C, T, Load> Committer<C, T, Load, Ordering::Release>
+impl<C, T, Load> Committer<C, T, Load, Release>
 where
     C: PermTarget<Value<'static> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'static,
 {
@@ -180,7 +183,8 @@ where
     }
 }
 
-impl<C, Load> Committer<C, C::Value<'static>, Load, Ordering::SeqCst>
+#[cfg(feature = "sc-drf")]
+impl<C, Load> Committer<C, C::Value<'static>, Load, SeqCst>
 where
     C: PermTarget,
 {

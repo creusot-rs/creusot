@@ -11,7 +11,10 @@ use creusot_std::{
     logic::{Id, ra::option::OptionLocalUpdate, real::PositiveReal as PR},
     prelude::{vec, *},
     std::{
-        sync::{atomic::Ordering, atomic_sc::AtomicI32, committer::Committer},
+        sync::{
+            atomic_sc::{AtomicI32, ordering::SeqCst},
+            committer::Committer,
+        },
         thread::{self, JoinHandleExt},
     },
 };
@@ -101,7 +104,7 @@ pub fn parallel_add(n: i32) {
             let h = s.spawn(move |tokens: Ghost<Tokens>| {
                 atomic.fetch_add(
                     1,
-                    ghost! { |c: &mut Committer<_, _, Ordering::SeqCst, Ordering::SeqCst>| {
+                    ghost! { |c: &mut Committer<_, _, SeqCst, SeqCst>| {
                         inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
                             inv.auth.update(&mut *frag, OptionLocalUpdate(((), 1int)));
                             c.shoot_load(&inv.own);

@@ -10,7 +10,10 @@ use creusot_std::{
     logic::{Id, ra::excl::Excl},
     prelude::*,
     std::{
-        sync::{atomic::Ordering, atomic_sc::AtomicBool, committer::Committer},
+        sync::{
+            atomic_sc::{AtomicBool, ordering::SeqCst},
+            committer::Committer,
+        },
         thread::{self, JoinHandleExt},
     },
 };
@@ -69,7 +72,7 @@ pub fn message_passing() {
 
             atomic.store(
                 true,
-                ghost! { |c: &mut Committer<_, _, _, Ordering::SeqCst>| {
+                ghost! { |c: &mut Committer<_, _, _, SeqCst>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         inv.data_own = Some(data_own.into_inner());
                         c.shoot_store(&mut inv.atomic_own);
@@ -84,7 +87,7 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while !atomic.load(ghost! { |c: &Committer<_, bool, Ordering::SeqCst, _>| {
+            while !atomic.load(ghost! { |c: &Committer<_, bool, SeqCst, _>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
                 if !*snapshot!{ c.val_load() }.into_ghost() {
                     return

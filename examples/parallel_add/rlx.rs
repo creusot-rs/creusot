@@ -12,7 +12,7 @@ use creusot_std::{
     prelude::*,
     std::{
         sync::{
-            atomic::{AtomicI32, Ordering},
+            atomic::{AtomicI32, ordering::Relaxed},
             committer::Committer,
             view::{ReleaseSyncView, SyncView, Timestamp},
         },
@@ -87,9 +87,9 @@ pub fn parallel_add() {
         let atomic = &atomic;
 
         let t1 = s.spawn(move |tokens: Ghost<Tokens>| {
-            atomic.fetch_add::<_, Ordering::Relaxed>(
+            atomic.fetch_add::<_, Relaxed>(
                 2,
-                ghost! { |c: &mut Committer<_, _, Ordering::Relaxed, Ordering::Relaxed>| {
+                ghost! { |c: &mut Committer<_, _, Relaxed, Relaxed>| {
                     inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
                         inv.auth1.update(*frag1, snapshot!((Some(Excl(true)), Some(Excl(true)))));
 
@@ -103,9 +103,9 @@ pub fn parallel_add() {
         });
 
         let t2 = s.spawn(move |tokens: Ghost<Tokens>| {
-            atomic.fetch_add::<_, Ordering::Relaxed>(
+            atomic.fetch_add::<_, Relaxed>(
                 2,
-                ghost! { |c: &mut Committer<_, _, Ordering::Relaxed, Ordering::Relaxed>| {
+                ghost! { |c: &mut Committer<_, _, Relaxed, Relaxed>| {
                     inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
                         inv.auth2.update(*frag2, snapshot!((Some(Excl(true)), Some(Excl(true)))));
 

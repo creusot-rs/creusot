@@ -7,20 +7,24 @@ use crate::{
     prelude::*,
     std::sync::{
         committer::Committer,
-        view::{HasTimestamp, SyncView, Timestamp},
+        view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
     },
 };
+use core::sync::atomic::{Ordering as OrderingTy, fence};
 
-/// Creusot wrapper around [`std::sync::atomic::Ordering`].
-#[allow(non_snake_case)]
-pub mod Ordering {
-    use std::sync::atomic;
+/// Creusot type-level wrappers around [`std::sync::atomic::Ordering`].
+pub mod ordering {
+    use core::sync::atomic::Ordering as OrderingTy;
 
     pub trait Ordering {
-        const ORDERING: atomic::Ordering;
+        const ORDERING: OrderingTy;
+    }
 
-        type Load: Ordering;
-        type Store: Ordering;
+    pub trait LoadOrdering: Ordering {}
+    pub trait StoreOrdering: Ordering {}
+    pub trait UpdateOrdering: Ordering {
+        type Load: LoadOrdering;
+        type Store: StoreOrdering;
     }
 
     pub struct None;
@@ -30,8 +34,10 @@ pub mod Ordering {
             pub struct $order;
 
             impl Ordering for $order {
-                const ORDERING: atomic::Ordering = atomic::Ordering::$order;
+                const ORDERING: OrderingTy = OrderingTy::$order;
+            }
 
+            impl UpdateOrdering for $order {
                 type Load = $load;
                 type Store = $store;
             }
@@ -42,16 +48,22 @@ pub mod Ordering {
     impl_ordering!(Acquire, load = Acquire, store = Relaxed);
     impl_ordering!(Release, load = Relaxed, store = Release);
     impl_ordering!(AcqRel, load = Acquire, store = Release);
-    impl_ordering!(SeqCst, load = SeqCst, store = SeqCst);
+
+    impl LoadOrdering for Relaxed {}
+    impl StoreOrdering for Relaxed {}
+    impl LoadOrdering for Acquire {}
+    impl StoreOrdering for Release {}
 }
 
-use Ordering::Ordering as _;
+use ordering::{LoadOrdering, StoreOrdering, UpdateOrdering};
+
+const SEQ_CST: OrderingTy = OrderingTy::SeqCst;
 
 macro_rules! impl_atomic {
     ($( ($type:ty, $atomic_type:ident $(< $T:ident >)?) ),+) => { $(
 
         #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
-        pub struct $atomic_type $(< $T >)?(::std::sync::atomic::$atomic_type $(< $T >)?);
+        pub struct $atomic_type $(< $T >)?(::core::sync::atomic::$atomic_type $(< $T >)?);
 
         impl $(< $T >)? PermTarget for $atomic_type $(< $T >)? {
             type Value<'a> = FMap<Timestamp, ($type, SyncView)> where Self: 'a;
@@ -79,7 +91,7 @@ macro_rules! impl_atomic {
             #[check(terminates)]
             #[allow(unused_variables)]
             pub fn new(val: $type, sync_view: Ghost<&mut SyncView>) -> (Self, Ghost<Perm<$atomic_type $(< $T >)?>>) {
-                (Self(std::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
+                (Self(core::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::into_inner`].")]
@@ -121,8 +133,6 @@ macro_rules! impl_atomic {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
-            #[requires(Success::ORDERING != Ordering::SeqCst::ORDERING)]
-            #[requires(Failure::ORDERING == Ordering::Acquire::ORDERING || Failure::ORDERING == Ordering::Relaxed::ORDERING)]
             #[requires(forall<c: &mut Committer<Self, $type, _, _>>
                 !c.shot_store() ==> c.ward() == *self ==>
                 c.val_load().deep_model() == current.deep_model() ==>
@@ -158,22 +168,25 @@ macro_rules! impl_atomic {
             #[inline(always)]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn compare_exchange<F, Success: Ordering::Ordering, Failure: Ordering::Ordering>(&self, current: $type, new: $type, f: Ghost<F>) -> Result<$type, $type>
+            pub fn compare_exchange<F, Success: UpdateOrdering, Failure: LoadOrdering>(&self, current: $type, new: $type, f: Ghost<F>) -> Result<$type, $type>
             where
                 F: FnGhost + FnOnce(Result<
                     &mut Committer<Self, $type, Success::Load, Success::Store>,
-                    &Committer<Self, $type, Failure, Ordering::None>
+                    &Committer<Self, $type, Failure, ordering::None>
                 >,
             )
             {
-                self.0.compare_exchange(current, new, Success::ORDERING, Failure::ORDERING)
+                self.0.compare_exchange(
+                    current,
+                    new,
+                    if cfg!(feature = "sc-drf") { SEQ_CST } else { Success::ORDERING },
+                    if cfg!(feature = "sc-drf") { SEQ_CST } else { Failure::ORDERING }
+                )
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange_weak`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
-            #[requires(Success::ORDERING != Ordering::SeqCst::ORDERING)] // TODO: [VL] Shouldn't it be enforce by a sc-drf flag instead?
-            #[requires(Failure::ORDERING == Ordering::Acquire::ORDERING || Failure::ORDERING == Ordering::Relaxed::ORDERING)]
             #[requires(forall<c: &mut Committer<Self, $type, _, _>> // TODO: [VL] Wrong permission here (Success == Ordering::RelAcq)
                 !c.shot_store() ==> c.ward() == *self ==>
                 c.val_load().deep_model() == current.deep_model() ==>
@@ -205,64 +218,59 @@ macro_rules! impl_atomic {
             #[inline(always)]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn compare_exchange_weak<F, Success: Ordering::Ordering, Failure: Ordering::Ordering>(&self, current: $type, new: $type, f: Ghost<F>) -> Result<$type, $type>
+            pub fn compare_exchange_weak<F, Success: UpdateOrdering, Failure: LoadOrdering>(&self, current: $type, new: $type, f: Ghost<F>) -> Result<$type, $type>
             where
                 F: FnGhost + FnOnce(Result<
                     &mut Committer<Self, $type, Success::Load, Success::Store>,
-                    &Committer<Self, $type, Failure, Ordering::None>
+                    &Committer<Self, $type, Failure, ordering::None>
                 >,
             )
             {
-                self.0.compare_exchange_weak(current, new, Success::ORDERING, Failure::ORDERING)
+                self.0.compare_exchange_weak(
+                    current,
+                    new,
+                    if cfg!(feature = "sc-drf") { SEQ_CST } else { Success::ORDERING },
+                    if cfg!(feature = "sc-drf") { SEQ_CST } else { Failure::ORDERING }
+                )
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
-            #[requires(Load::ORDERING == Ordering::Acquire::ORDERING || Load::ORDERING == Ordering::Relaxed::ORDERING)]
-            #[requires(forall<c: &Committer<Self, $type, Load, Ordering::None>>
+            #[requires(forall<c: &Committer<Self, $type, Load, ordering::None>>
                 !c.shot_store() ==> c.ward() == *self ==> f.precondition((c,))
             )]
-            #[ensures(exists<c: &Committer<Self, $type, Load, Ordering::None>>
+            #[ensures(exists<c: &Committer<Self, $type, Load, ordering::None>>
                 !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
             )]
             #[inline(always)]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn load<F, Load: Ordering::Ordering>(&self, f: Ghost<F>) -> $type
+            pub fn load<F, Load: LoadOrdering>(&self, f: Ghost<F>) -> $type
             where
-                F: FnGhost + FnOnce(&Committer<Self, $type, Load, Ordering::None>),
+                F: FnGhost + FnOnce(&Committer<Self, $type, Load, ordering::None>),
             {
                 // TODO: [VL] Do this check inside the macro_rules
-                self.0.load(if cfg!(feature = "sc-drf") {
-                    Ordering::SeqCst::ORDERING
-                } else {
-                    Load::ORDERING
-                })
+                self.0.load(if cfg!(feature = "sc-drf") { SEQ_CST } else { Load::ORDERING })
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
-            #[requires(Store::ORDERING == Ordering::Release::ORDERING || Store::ORDERING == Ordering::Relaxed::ORDERING)]
-            #[requires(forall<c: &mut Committer<Self, $type, Ordering::None, Store>>
+            #[requires(forall<c: &mut Committer<Self, $type, ordering::None, Store>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
                 f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
             )]
-            #[ensures(exists<c: &mut Committer<Self, $type, Ordering::None, Store>>
+            #[ensures(exists<c: &mut Committer<Self, $type, ordering::None, Store>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val &&
                 f.postcondition_once((c,), ())
             )]
             #[inline(always)]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn store<F, Store: Ordering::Ordering>(&self, val: $type, f: Ghost<F>)
+            pub fn store<F, Store: StoreOrdering>(&self, val: $type, f: Ghost<F>)
             where
-                F: FnGhost + FnOnce(&mut Committer<Self, $type, Ordering::None, Store>),
+                F: FnGhost + FnOnce(&mut Committer<Self, $type, ordering::None, Store>),
             {
                 self.0.store(
                     val,
-                    if cfg!(feature = "sc-drf") {
-                        Ordering::SeqCst::ORDERING
-                    } else {
-                        Store::ORDERING
-                    },
+                    if cfg!(feature = "sc-drf") { SEQ_CST } else { Store::ORDERING },
                 )
             }
         }
@@ -285,13 +293,17 @@ macro_rules! impl_atomic_int {
                 !c.shot_store() && c.ward() == *self && c.val_store() == val + c.val_load() &&
                 c.val_load() == result && f.postcondition_once((c,), ())
             )]
+            #[inline(always)]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn fetch_add<F, Ord: Ordering::Ordering>(&self, val: $int_type, f: Ghost<F>) -> $int_type
+            pub fn fetch_add<F, Ord: UpdateOrdering>(&self, val: $int_type, f: Ghost<F>) -> $int_type
             where
                 F: FnGhost + FnOnce(&mut Committer<Self, $int_type, Ord::Load, Ord::Store>),
             {
-                self.0.fetch_add(val, Ordering::SeqCst::ORDERING)
+                self.0.fetch_add(
+                    val,
+                    if cfg!(feature = "sc-drf") { SEQ_CST } else { Ord::ORDERING },
+                )
             }
         }
 
@@ -314,4 +326,20 @@ impl_atomic_int! {
     (u64, AtomicU64),
     (isize, AtomicIsize),
     (usize, AtomicUsize)
+}
+
+#[ensures(*sync_view == result@)]
+#[trusted]
+#[allow(unused_variables)]
+pub fn fence_release(sync_view: Ghost<SyncView>) -> Ghost<ReleaseSyncView> {
+    fence(OrderingTy::Release);
+    Ghost::conjure()
+}
+
+#[ensures(acq_view@ == *result)]
+#[trusted]
+#[allow(unused_variables)]
+pub fn fence_acquire(acq_view: Ghost<AcquireSyncView>) -> Ghost<SyncView> {
+    fence(OrderingTy::Acquire);
+    Ghost::conjure()
 }
