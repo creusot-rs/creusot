@@ -13,7 +13,10 @@ use creusot_std::{
     prelude::*,
     std::{
         sync::{
-            atomic::{AtomicBool, Ordering},
+            atomic::{
+                AtomicBool,
+                ordering::{Acquire, Release},
+            },
             committer::Committer,
             view::{AtView, SyncView},
         },
@@ -92,7 +95,7 @@ pub fn message_passing() {
 
             atomic.store(
                 true,
-                ghost! { |c: &mut Committer<_, _, _, Ordering::Release>| {
+                ghost! { |c: &mut Committer<_, _, _, Release>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         let (mut sync_view, at_view) = AtView::new(ghost!(data_own.into_inner())).into_inner();
                         if let State::Synchronisation(_, excl_state) | State::Readable(excl_state, _) = &inv.state {
@@ -113,7 +116,7 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while !atomic.load(ghost! { |c: &Committer<_, bool, Ordering::Acquire, _>| {
+            while !atomic.load(ghost! { |c: &Committer<_, bool, Acquire, _>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
                 if !*snapshot!(c.val_load()).into_ghost() {
                     return

@@ -12,7 +12,7 @@ use creusot_std::{
     prelude::{vec, *},
     std::{
         sync::{
-            atomic::{AtomicI32, Ordering},
+            atomic::{AtomicI32, ordering::Relaxed},
             committer::Committer,
             view::{ReleaseSyncView, SyncView, Timestamp},
         },
@@ -111,9 +111,9 @@ pub fn parallel_add(n: i32) {
             let f2 = snapshot! { Some((fraction(n@+1-produced.len(), n@), 0)) };
             let mut frag = ghost! { frag.split_off(f1, f2) };
             let h = s.spawn(move |tokens: Ghost<Tokens>| {
-                atomic.fetch_add::<_, Ordering::Relaxed>(
+                atomic.fetch_add::<_, Relaxed>(
                     1,
-                    ghost! { |c: &mut Committer<_, _, Ordering::Relaxed, Ordering::Relaxed>| {
+                    ghost! { |c: &mut Committer<_, _, Relaxed, Relaxed>| {
                         inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
                             inv.auth.update(&mut *frag, OptionLocalUpdate(((), 1int)));
 

@@ -13,9 +13,8 @@ use creusot_std::{
     prelude::*,
     std::{
         sync::{
-            atomic::{AtomicBool, Ordering},
+            atomic::{AtomicBool, fence_acquire, fence_release, ordering::Relaxed},
             committer::Committer,
-            fence::{fence_acquire, fence_release},
             view::{AtView, SyncView},
         },
         thread::{self, JoinHandleExt},
@@ -96,7 +95,7 @@ pub fn message_passing() {
 
             atomic.store(
                 true,
-                ghost! { |c: &mut Committer<_, _, _, Ordering::Relaxed>| {
+                ghost! { |c: &mut Committer<_, _, _, Relaxed>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         if let State::Synchronisation(_, excl_state) | State::Readable(excl_state, _) = &inv.state {
                             excl.valid_op_lemma(excl_state);
@@ -117,7 +116,7 @@ pub fn message_passing() {
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while !atomic.load(ghost! { |c: &Committer<_, bool, Ordering::Relaxed, _>| {
+            while !atomic.load(ghost! { |c: &Committer<_, bool, Relaxed, _>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
                 if !*snapshot!(c.val_load()).into_ghost() {
                     return

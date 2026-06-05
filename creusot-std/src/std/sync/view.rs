@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{ghost::NotObjective, prelude::*};
 use core::{marker::PhantomData, panic};
 
 #[cfg(creusot)]
@@ -25,7 +25,7 @@ pub trait HasTimestamp {
 /// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.cur`
 #[opaque]
 #[derive(Copy)]
-pub struct SyncView(());
+pub struct SyncView(NotObjective);
 
 impl Clone for SyncView {
     #[ensures(result == *self)]
@@ -112,13 +112,24 @@ impl OrdLogic for SyncView {
 /// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.rel`
 #[opaque]
 #[derive(Copy)]
-pub struct ReleaseSyncView(());
+#[allow(dead_code)]
+pub struct ReleaseSyncView(*mut ()); // Neither Sync nor Send
 
 impl Clone for ReleaseSyncView {
     #[check(ghost)]
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
         *self
+    }
+}
+
+impl From<ReleaseSyncView> for SyncView {
+    #[check(ghost)]
+    #[ensures(result == value@)]
+    #[trusted]
+    #[allow(unused_variables)]
+    fn from(value: ReleaseSyncView) -> Self {
+        panic!("Should not be called outside ghost code")
     }
 }
 
@@ -153,12 +164,23 @@ impl View for ReleaseSyncView {
 /// In Relaxed RustBelt, [`SyncView`] corresponds to the notation `V.acq`
 #[opaque]
 #[derive(Copy)]
-pub struct AcquireSyncView(());
+#[allow(dead_code)]
+pub struct AcquireSyncView(*mut ()); // Neither Sync nor Send
 
 impl Clone for AcquireSyncView {
     #[ensures(result == *self)]
     fn clone(&self) -> Self {
         *self
+    }
+}
+
+impl From<SyncView> for AcquireSyncView {
+    #[check(ghost)]
+    #[ensures(result@ == value)]
+    #[trusted]
+    #[allow(unused_variables)]
+    fn from(value: SyncView) -> Self {
+        panic!("Should not be called outside ghost code")
     }
 }
 

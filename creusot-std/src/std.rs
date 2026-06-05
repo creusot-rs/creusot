@@ -22,6 +22,7 @@ pub mod range;
 pub mod result;
 pub mod slice;
 pub mod string;
+pub mod sync;
 pub mod time;
 mod tuples;
 
@@ -41,8 +42,6 @@ pub mod deque;
 pub mod io;
 #[cfg(feature = "std")]
 pub mod rc;
-#[cfg(feature = "std")]
-pub mod sync;
 #[cfg(feature = "std")]
 pub mod thread;
 #[cfg(feature = "std")]
