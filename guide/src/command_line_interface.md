@@ -8,7 +8,7 @@
 - [`cargo creusot why3 ide`](#why3-ide)
 - [`cargo creusot new`](#new)
 - [`cargo creusot init`](#init)
-- [`cargo creusot why3-conf`](#why3-conf)
+- [`cargo creusot config`](#config)
 - [`cargo creusot version`](#version)
 
 ## Main commands
@@ -190,18 +190,19 @@ If `Cargo.toml` exists, update an existing package for verification with Creusot
 
 ## Configuration
 
-### `why3-conf`
+### `config`
 
 ```
-cargo creusot why3-conf [--provers-parallelism <N>]
+cargo creusot config [--update]
 ```
 
-Regenerate `why3.conf` (in `$XDG_CONFIG_HOME/creusot/`, by default on Linux `.config/creusot/`).
+For users of the dev version of Creusot (`master` branch): configure `~/.cargo/config.toml`
+to point to the local version of `creusot-std`. Or if you are upgrading from a dev version
+to a released version (`vX.Y.Z` tag), undo that configuration, so that you can use `creusot-std` from crates.io.
 
 #### Options
 
-- `--provers-parallelism`: Set the max number of threads to use to invoke SMT provers.
-    (Default: automatically detect the number of threads for your machine)
+- `--update`: Update `~/.cargo/config.toml` (default is to only check it).
 
 ### `version`
 

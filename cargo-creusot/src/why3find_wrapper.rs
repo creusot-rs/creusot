@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     OUTPUT_PREFIX,
-    why3_launcher::{self, Why3Mode, check_why3_conf_exists},
+    why3_launcher::{self, Why3Mode},
 };
 
 #[derive(Debug, Parser)]
@@ -67,6 +67,7 @@ fn check_why3find_json_exists(root: &Path) -> Result<()> {
 fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> Result<()> {
     let mut why3find = Command::new(&paths.why3find());
     why3find.arg("prove");
+    why3find.args(["-j", &format!("{}", creusot_setup::default_provers_parallelism())]);
     if args.ide.ide_on_fail {
         why3find.arg("-i");
     }
@@ -83,13 +84,14 @@ fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> Result
     why3find.args(["--summary", "--no-autodetect-provers"]);
     why3find.args(&args.why3find_arg);
     why3find.args(files);
-    // Add $XDG_DATA_HOME/creusot/bin to PATH for why3find to find why3
+    // Add $XDG_DATA_HOME/creusot/bin to $PATH for why3find to find why3 and solvers.
+    // Still keep the old paths for other binaries that why3 ide may use (like the editor).
     let mut path = paths.bin().to_path_buf().into_os_string();
     path.push(":");
     path.push(std::env::var("PATH").unwrap());
     why3find.env("PATH", path);
     why3find.env("DUNE_DIR_LOCATIONS", format!("why3find:lib:{}", paths.why3find_libs().display()));
-    why3find.env("WHY3CONFIG", &paths.why3_conf());
+    why3find.env("WHY3CONFIG", &paths.creusot_why3_conf());
     if args.dry_run_why3find {
         println!("{:?}", why3find);
         Ok(())
@@ -105,7 +107,7 @@ fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> Result
 
 pub fn why3find_prove(args: ProveArgs, root: &Path, targets: Vec<String>) -> Result<()> {
     let paths = creusot_paths();
-    check_why3_conf_exists(&paths)?;
+    creusot_setup::update_why3_conf(&paths, None)?;
     check_why3find_json_exists(root)?;
     // why3find likes relative paths. For that we move back to the root.
     std::env::set_current_dir(root)?;

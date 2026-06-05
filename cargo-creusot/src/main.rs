@@ -29,7 +29,6 @@ fn main() -> Result<()> {
         Some(Init(args)) => init(args),
         Some(Clean(args)) => clean(args),
         Some(Why3(args)) => why3(args),
-        Some(Why3Conf(args)) => why3_conf(args),
         Some(Config(args)) => config(args),
         Some(Version) => version(),
     }
@@ -301,8 +300,6 @@ pub enum CargoCreusotSubCommand {
     Clean(CleanArgs),
     /// Run Why3
     Why3(Why3Args),
-    /// Regenerate `why3.conf`
-    Why3Conf(Why3ConfArgs),
     /// Check or update `~/.cargo/config.toml` with patch for `creusot-std`
     Config(ConfigArgs),
     /// Show version information of Creusot and its dependencies
@@ -537,16 +534,6 @@ fn why3(args: Why3Args) -> Result<()> {
     };
     let paths = setup::creusot_paths();
     run_why3(mode, args.coma_file, args.args, &paths)
-}
-
-#[derive(Debug, Parser)]
-pub struct Why3ConfArgs {
-    #[clap(long)]
-    provers_parallelism: Option<usize>,
-}
-
-fn why3_conf(args: Why3ConfArgs) -> Result<()> {
-    setup::generate_why3_conf(&setup::creusot_paths(), args.provers_parallelism)
 }
 
 fn version() -> Result<()> {

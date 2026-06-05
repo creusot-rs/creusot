@@ -1,10 +1,8 @@
-use anyhow::{Context as _, Result};
+use anyhow::Result;
 use directories::ProjectDirs;
 use std::{
-    env, fs,
-    io::Write as _,
+    env, fs, io,
     path::{Path, PathBuf},
-    process::Command,
 };
 
 mod tools;
@@ -52,7 +50,11 @@ impl CreusotPaths {
         self.bin().join(path)
     }
 
-    pub fn why3_conf(&self) -> PathBuf {
+    pub fn creusot_why3_conf(&self) -> PathBuf {
+        self.data_dir().join("creusot_why3.conf")
+    }
+
+    pub fn user_why3_conf(&self) -> PathBuf {
         self.config_dir().join("why3.conf")
     }
 
@@ -89,42 +91,41 @@ pub fn toolchain_channel() -> String {
     toolchain["toolchain"]["channel"].as_str().unwrap().to_string()
 }
 
-pub fn generate_why3_conf(paths: &CreusotPaths, parallelism: Option<usize>) -> Result<()> {
-    let why3_conf = paths.why3_conf();
-    println!("Refreshing {}", why3_conf.display());
-    fs::create_dir_all(paths.config_dir())?;
-    let saved_settings = generate_why3_stub(paths, parallelism)?;
-    let mut why3 = Command::new(paths.why3());
-    why3.args(["config", "detect", "-C"])
-        .arg(&why3_conf)
-        .env("PATH", paths.bin())
-        .status()
-        .context("'why3 config detect' failed")?;
-    if let Some(saved_settings) = saved_settings {
-        let mut file = fs::OpenOptions::new().append(true).open(why3_conf)?;
-        writeln!(&mut file, "\n{saved_settings}")?;
+/// Update `$XDG_CONFIG_HOME/creusot/why3.conf`:
+/// - generate it if it doesn't exist (this mainly sets the `running_provers_max` setting);
+/// - otherwise remove any `[partial_prover]` and `[strategy]` (fix previous installations to upgrade to version 0.12) FIXME: don't do this fix after 0.12
+pub fn update_why3_conf(paths: &CreusotPaths, parallelism: Option<usize>) -> Result<()> {
+    let why3_conf = paths.user_why3_conf();
+    if fs::exists(&why3_conf).unwrap_or(false) {
+        let contents = fs::read_to_string(&why3_conf)?;
+        let mut lines = contents.lines();
+        let mut output = String::new();
+        let mut changed = false;
+        while let Some(line) = lines.next() {
+            // Drop [partial_prover] and [strategy] sections, delimited by empty line
+            if line == "[partial_prover]" || line == "[strategy]" {
+                changed = true;
+                let _ = (&mut lines).skip_while(|l| !l.is_empty()).next();
+            } else {
+                output += line;
+                output += "\n";
+            }
+        }
+        if changed {
+            println!("Refreshing {}", why3_conf.display());
+            fs::write(&why3_conf, output)?;
+        }
+    } else {
+        println!("Generating {}", why3_conf.display());
+        fs::create_dir_all(paths.config_dir())?;
+        let mut f = fs::File::create(why3_conf)?;
+        write_default_why3_conf(&mut f, parallelism)?;
     }
     Ok(())
 }
 
-/// Create stub `why3.conf` to be completed by `why3 config detect`.
-/// If there is already a `why3.conf`, extract its `[ide]` section and return it.
-///
-/// - Set `running_provers_max` (max number of threads)
-/// - Create a `[strategy]` (annoyingly, it must contain specific versions of provers used)
-fn generate_why3_stub(
-    paths: &CreusotPaths,
-    parallelism: Option<usize>,
-) -> anyhow::Result<Option<String>> {
-    let why3_conf = paths.why3_conf();
+pub fn write_default_why3_conf(f: &mut impl io::Write, parallelism: Option<usize>) -> Result<()> {
     let parallelism = parallelism.unwrap_or_else(default_provers_parallelism);
-    let version = |tool: Binary| tool.detect_version(&paths.binary(tool.binary_name));
-    let altergo = format!("Alt-Ergo,{}", version(ALTERGO)?);
-    let z3 = format!("Z3,{}", version(Z3)?);
-    let cvc5 = format!("CVC5,{}", version(CVC5)?);
-    let cvc4 = format!("CVC4,{}", version(CVC4)?);
-    let old_settings = extract_ide_section(&why3_conf);
-    let mut f = fs::File::create(why3_conf)?;
     write!(
         f,
         r#"[main]
@@ -132,33 +133,12 @@ magic = 14
 running_provers_max = {parallelism}
 memlimit = 1000
 timelimit = 5.000000
-
-[strategy]
-code = "start:
-c {altergo} .2 1000
-c {z3} .2 1000
-c {cvc5} .2 1000
-c {cvc4} .2 1000
-c {altergo} 1 1000 | {z3} 1 1000 | {cvc5} 1 1000 | {cvc4} 1 1000
-t compute_specified start
-t split_vc start
-c {altergo} 2 4000 | {z3} 2 4000 | {cvc5} 2 4000 | {cvc4} 2 4000
-"
-desc = "Automatic@ run@ of@ provers@ and@ most@ useful@ transformations"
-name = "Creusot_Auto"
-shortcut = "4"
 "#
     )?;
-    Ok(old_settings)
+    Ok(())
 }
 
-fn extract_ide_section(why3_conf: &Path) -> Option<String> {
-    let file = fs::read_to_string(why3_conf).ok()?;
-    let ide = file.split_at(file.find("[ide]")?).1;
-    Some(ide.split_once("\n\n").map(|s| s.0).unwrap_or(ide.trim_end()).to_string())
-}
-
-fn default_provers_parallelism() -> usize {
+pub fn default_provers_parallelism() -> usize {
     match std::thread::available_parallelism() {
         Ok(n) => n.get(),
         Err(_) => 1,
