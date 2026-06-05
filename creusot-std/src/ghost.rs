@@ -326,4 +326,12 @@ define_objective! {}
 ///
 /// This negative implementation primarily targets `Perm<PermCell<T>>` and
 /// `Perm<*const T>`.
+#[derive(Copy)]
 pub struct NotObjective {}
+
+impl Clone for NotObjective {
+    #[ensures(result == *self)]
+    fn clone(&self) -> Self {
+        *self
+    }
+}

@@ -310,23 +310,26 @@ macro_rules! impl_atomic_int {
     )* };
 }
 
-impl_atomic! {
-    (bool, AtomicBool),
-    (*mut T, AtomicPtr<T>)
-}
+#[cfg(target_has_atomic = "8")]
+impl_atomic!((bool, AtomicBool));
+#[cfg(target_has_atomic = "ptr")]
+impl_atomic!((*mut T, AtomicPtr<T>));
 
-impl_atomic_int! {
-    (i8, AtomicI8),
-    (u8, AtomicU8),
-    (i16, AtomicI16),
-    (u16, AtomicU16),
-    (i32, AtomicI32),
-    (u32, AtomicU32),
-    (i64, AtomicI64),
-    (u64, AtomicU64),
-    (isize, AtomicIsize),
-    (usize, AtomicUsize)
-}
+#[cfg(target_has_atomic = "8")]
+impl_atomic_int!((i8, AtomicI8), (u8, AtomicU8));
+#[cfg(target_has_atomic = "16")]
+impl_atomic_int!((i16, AtomicI16), (u16, AtomicU16));
+#[cfg(target_has_atomic = "32")]
+impl_atomic_int!((i32, AtomicI32), (u32, AtomicU32));
+#[cfg(target_has_atomic = "64")]
+impl_atomic_int!((i64, AtomicI64), (u64, AtomicU64));
+
+// FIXME: somehow, AtomicI128 is feature-gated, but I cannot eanble the feature?
+//#[cfg(target_has_atomic = "128")]
+//impl_atomic_int!((i128, AtomicI128), (u128, AtomicU128));
+
+#[cfg(target_has_atomic = "ptr")]
+impl_atomic_int!((isize, AtomicIsize), (usize, AtomicUsize));
 
 #[ensures(*sync_view == result@)]
 #[trusted]
@@ -341,5 +344,13 @@ pub fn fence_release(sync_view: Ghost<SyncView>) -> Ghost<ReleaseSyncView> {
 #[allow(unused_variables)]
 pub fn fence_acquire(acq_view: Ghost<AcquireSyncView>) -> Ghost<SyncView> {
     fence(OrderingTy::Acquire);
+    Ghost::conjure()
+}
+
+#[ensures(acq_view@ == result@)]
+#[trusted]
+#[allow(unused_variables)]
+pub fn fence_acqrel(acq_view: Ghost<AcquireSyncView>) -> Ghost<ReleaseSyncView> {
+    fence(OrderingTy::AcqRel);
     Ghost::conjure()
 }
