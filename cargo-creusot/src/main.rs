@@ -61,7 +61,13 @@ struct Runner {
 
 impl Runner {
     fn new() -> Result<Self> {
-        let metadata = cargo_metadata::MetadataCommand::new().exec()?;
+        // Pass the same features as in the main cargo invocation to avoid invalidating its caches
+        let metadata = cargo_metadata::MetadataCommand::new()
+            .features(cargo_metadata::CargoOpt::SomeFeatures(vec![
+                "creusot-std/creusot".into(),
+                "creusot-std/nightly".into(),
+            ]))
+            .exec()?;
         Ok(Self { metadata })
     }
 
