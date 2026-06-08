@@ -82,7 +82,7 @@ pub fn validate_recursive_types(ctx: &TranslationCtx) {
                         format!("`{next_name}` is a supertrait of `{current_name}`"),
                     );
                 }
-                FnBound(method, span) => {
+                ItemBound(method, span) => {
                     let meth = ctx.def_path_str(method);
                     error.span_note(span, format!("`{next_name}` is a bound of `{meth}`"));
                 }
@@ -328,8 +328,8 @@ enum TypeEdge {
     AssocType(DefId),
     /// A trait mentions another trait in its supertraits
     Supertrait(Span),
-    /// A trait mentions another trait in the signature of a method.
-    FnBound(DefId, Span),
+    /// A trait mentions another trait in the signature of a method or the bounds of an associated type.
+    ItemBound(DefId, Span),
 }
 
 fn build_type_graph(ctx: &TranslationCtx) -> TypeGraph {
@@ -406,13 +406,29 @@ fn add_trait(ctx: &TranslationCtx, def_id: DefId, graph: &mut TypeGraph) {
             // Skip fake methods
             continue;
         }
-        for &(clause, span) in ctx.predicates_of(item.def_id.expect_local()).predicates {
-            if let ty::ClauseKind::Trait(predicate) = clause.kind().skip_binder() {
-                graph.add_edge(
-                    node,
-                    TypeNode::Trait(predicate.trait_ref.def_id),
-                    TypeEdge::FnBound(item.def_id, span),
-                );
+        match item.kind {
+            AssocKind::Const { .. } => continue,
+            AssocKind::Fn { .. } => {
+                for &(clause, span) in ctx.predicates_of(item.def_id.expect_local()).predicates {
+                    if let ty::ClauseKind::Trait(predicate) = clause.kind().skip_binder() {
+                        graph.add_edge(
+                            node,
+                            TypeNode::Trait(predicate.trait_ref.def_id),
+                            TypeEdge::ItemBound(item.def_id, span),
+                        );
+                    }
+                }
+            }
+            AssocKind::Type { .. } => {
+                for &(clause, span) in ctx.explicit_item_bounds(item.def_id).skip_binder() {
+                    if let ty::ClauseKind::Trait(predicate) = clause.kind().skip_binder() {
+                        graph.add_edge(
+                            node,
+                            TypeNode::Trait(predicate.trait_ref.def_id),
+                            TypeEdge::ItemBound(item.def_id, span),
+                        );
+                    }
+                }
             }
         }
     }
