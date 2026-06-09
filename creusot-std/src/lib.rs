@@ -65,6 +65,7 @@
         auto_traits,
         new_range_api_legacy,
         negative_impls,
+        exact_size_is_empty,
     )
 )]
 #![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]

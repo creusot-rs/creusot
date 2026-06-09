@@ -1,4 +1,7 @@
-use crate::{prelude::*, std::iter::Once};
+use crate::{
+    prelude::*,
+    std::iter::{ExactSizeIteratorSpec, Once},
+};
 
 impl<T> View for Once<T> {
     type ViewTy = Option<T>;
@@ -42,5 +45,16 @@ extern_spec! {
             Some(v) => (*self).produces(Seq::singleton(v), ^self)
         })]
         fn next(&mut self) -> Option<T>;
+
+        #[check(ghost)]
+        #[ensures(result.0 == match self@ { Some(_) => 1usize, None => 0usize })]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
     }
+}
+
+impl<T> ExactSizeIteratorSpec for Once<T> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
 }

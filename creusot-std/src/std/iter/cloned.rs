@@ -1,6 +1,6 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{invariant::*, prelude::*};
+use crate::{invariant::*, prelude::*, std::iter::ExactSizeIteratorSpec};
 use core::iter::Cloned;
 
 pub trait ClonedExt<I> {
@@ -35,11 +35,7 @@ impl<I> Resolve for Cloned<I> {
     fn resolve_coherence(self) {}
 }
 
-impl<'a, I, T: 'a> IteratorSpec for Cloned<I>
-where
-    I: IteratorSpec<Item = &'a T>,
-    T: Clone,
-{
+impl<'a, I: IteratorSpec<Item = &'a T>, T: Clone + 'a> IteratorSpec for Cloned<I> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -66,4 +62,21 @@ where
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
+}
+
+extern_spec! {
+    impl<'a, I: Iterator<Item = &'a T>, T: Clone + 'a> Iterator for Cloned<I> {
+        #[ensures(I::size_hint.postcondition((&self.iter(),), result))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<'a, I: ExactSizeIteratorSpec<Item = &'a T>, T: Clone + 'a> ExactSizeIteratorSpec
+    for Cloned<I>
+{
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {
+        self.iter().size_is_exact()
+    }
 }

@@ -1,6 +1,6 @@
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
-use crate::{invariant::*, prelude::*};
+use crate::{invariant::*, prelude::*, std::iter::ExactSizeIteratorSpec};
 use core::iter::Take;
 
 pub trait TakeExt<I> {
@@ -78,4 +78,30 @@ impl<I: IteratorSpec> IteratorSpec for Take<I> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+extern_spec! {
+    impl<I: Iterator> Iterator for Take<I> {
+        #[ensures(self.n() > 0usize ==> exists<r>
+            I::size_hint.postcondition((&self.iter(),), r) &&
+            (r.0 <= self.n() ==> result.0 == r.0) &&
+            (r.0 >= self.n() ==> result.0 == self.n()) &&
+            match r.1 {
+                Some(ub) =>
+                    (ub <= self.n() ==> result.1 == Some(ub)) &&
+                    (ub >= self.n() ==> result.1 == Some(self.n())),
+                None => result.1 == Some(self.n()),
+            }
+        )]
+        #[ensures(self.n() == 0usize ==> result == (0usize, Some(0usize)))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Take<I> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {
+        self.iter().size_is_exact()
+    }
 }

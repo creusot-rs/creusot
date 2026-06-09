@@ -2,8 +2,8 @@
 extern crate creusot_std;
 use creusot_std::{logic::Seq, prelude::*};
 
-mod common;
-use common::Iterator;
+pub mod common;
+use common::{ExactSizeIterator, Iterator};
 
 pub struct Fuse<I: Iterator> {
     pub iter: Option<I>,
@@ -57,6 +57,25 @@ impl<I: Iterator> Iterator for Fuse<I> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+
+    #[ensures(match self.iter {
+        Some(s) => I::size_hint.postcondition((&s,), result),
+        None => result == (0usize, Some(0usize))
+    })]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match self.iter {
+            Some(ref iter) => iter.size_hint(),
+            None => (0, Some(0)),
+        }
+    }
+}
+
+impl<I: ExactSizeIterator> ExactSizeIterator for Fuse<I> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {
+        let _ = I::size_is_exact;
+    }
 }
 
 // Not a subtrait of `FusedIterator` here for type inference reasons.

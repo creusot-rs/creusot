@@ -1,4 +1,8 @@
-use crate::{logic::FMap, prelude::*, std::iter::IteratorSpec};
+use crate::{
+    logic::FMap,
+    prelude::*,
+    std::iter::{ExactSizeIteratorSpec, IteratorSpec},
+};
 #[cfg(feature = "nightly")]
 use std::alloc::Allocator;
 use std::collections::hash_map::*;
@@ -109,6 +113,21 @@ impl<K: DeepModel, V, A: Allocator> IteratorSpec for IntoIter<K, V, A> {
     }
 }
 
+extern_spec! {
+    impl<K: DeepModel, V, A: Allocator> Iterator for IntoIter<K, V, A>  {
+        #[ensures(result.0@ == self@.len())]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<K: DeepModel, V, A: Allocator> ExactSizeIteratorSpec for IntoIter<K, V, A> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
+}
+
 impl<'a, K: DeepModel, V> View for Iter<'a, K, V> {
     type ViewTy = FMap<K::DeepModelTy, V>;
 
@@ -153,6 +172,20 @@ impl<'a, K: DeepModel, V> IteratorSpec for Iter<'a, K, V> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] }
     }
+}
+
+extern_spec! {
+    impl<'a, K: DeepModel, V> Iterator for Iter<'a, K, V>  {
+        #[ensures(result.0@ == self@.len())]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<'a, K: DeepModel, V> ExactSizeIteratorSpec for Iter<'a, K, V> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
 }
 
 impl<'a, K: DeepModel, V> View for IterMut<'a, K, V> {
@@ -201,9 +234,23 @@ impl<'a, K: DeepModel, V> IteratorSpec for IterMut<'a, K, V> {
     }
 }
 
+extern_spec! {
+    impl<'a, K: DeepModel, V> Iterator for IterMut<'a, K, V>  {
+        #[ensures(result.0@ == self@.len())]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<'a, K: DeepModel, V> ExactSizeIteratorSpec for IterMut<'a, K, V> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
+}
+
 #[cfg(not(feature = "nightly"))]
 mod impls {
-    use crate::{logic::FMap, prelude::*};
+    use crate::{logic::FMap, prelude::*, std::iter::ExactSizeIteratorSpec};
     use std::collections::hash_map::{HashMap, IntoIter};
 
     impl<K: DeepModel, V, S> View for HashMap<K, V, S> {
@@ -213,4 +260,5 @@ mod impls {
         type ViewTy = FMap<K::DeepModelTy, V>;
     }
     impl<K: DeepModel, V> IteratorSpec for IntoIter<K, V> {}
+    impl<K: DeepModel, V> ExactSizeIteratorSpec for IntoIter<K, V> {}
 }

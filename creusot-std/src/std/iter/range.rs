@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
 #[cfg(feature = "nightly")]
 use core::iter::Step;
 use core::ops::{Range, RangeInclusive};
@@ -33,6 +33,38 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for Range<Idx> {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
+
+extern_spec! {
+    impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
+        #[ensures(self.start.deep_model() >= self.end.deep_model() ==>
+            result == (0usize, Some(0usize)))]
+        #[ensures({
+            let s = self.end.deep_model() - self.start.deep_model();
+            s >= 0 && s <= usize::MAX@ ==>
+            result.0@ == s && result.1 == Some(result.0)
+        })]
+        #[ensures(self.end.deep_model() - self.start.deep_model() > usize::MAX@ ==>
+            result == (usize::MAX, None))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+macro_rules! impl_exact_size_range {
+    ($($t:ty)*) => ($(
+        impl ExactSizeIteratorSpec for Range<$t> {
+            #[logic(law)]
+            #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+            fn size_is_exact(self) {}
+        }
+    )*)
+}
+
+impl_exact_size_range! { i8 u8 i16 u16 isize usize }
+
+// Apparently, `ExactSizeIterator` is not implemented for `Range<i64>` and `Range<u64>` even
+// on 64-bit platforms.
+#[cfg(any(target_pointer_width = "32", target_pointer_width = "64"))]
+impl_exact_size_range! { i32 u32 }
 
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range<Idx> {
@@ -97,6 +129,33 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for RangeInclusive<I
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
+
+extern_spec! {
+    impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> {
+        #[ensures({
+            let s = range_inclusive_len(*self);
+            s <= usize::MAX@ ==> result.0@ == s && result.1 == Some(result.0)
+        })]
+        #[ensures(range_inclusive_len(*self) > usize::MAX@ ==>
+            result == (usize::MAX, None))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+macro_rules! impl_exact_size_range_inclusive {
+    ($($t:ty)*) => ($(
+        impl ExactSizeIteratorSpec for RangeInclusive<$t> {
+            #[logic(law)]
+            #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+            fn size_is_exact(self) {}
+        }
+    )*)
+}
+
+impl_exact_size_range_inclusive! { i8 u8 }
+
+#[cfg(any(target_pointer_width = "32", target_pointer_width = "64"))]
+impl_exact_size_range_inclusive! { i16 u16 }
 
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for RangeInclusive<Idx> {

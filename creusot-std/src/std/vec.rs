@@ -1,3 +1,5 @@
+#[cfg(feature = "nightly")]
+use crate::std::iter::ExactSizeIteratorSpec;
 #[cfg(creusot)]
 use crate::{invariant::inv, resolve::structural_resolve, std::slice::SliceIndexSpec};
 use crate::{logic::ops::IndexLogic, prelude::*};
@@ -304,6 +306,21 @@ impl<T, A: Allocator> IteratorSpec for IntoIter<T, A> {
     }
 }
 
+extern_spec! {
+    impl<T, A: Allocator> Iterator for IntoIter<T, A> {
+        #[ensures(result.0@ == self@.len())]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<T, A: Allocator> ExactSizeIteratorSpec for IntoIter<T, A> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
+}
+
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> DoubleEndedIteratorSpec for IntoIter<T, A> {
     #[logic(open)]
@@ -333,7 +350,7 @@ impl<T, A: Allocator> DoubleEndedIteratorSpec for IntoIter<T, A> {
 /// Dummy impls that don't use the unstable trait Allocator
 #[cfg(not(feature = "nightly"))]
 mod impls {
-    use crate::prelude::*;
+    use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
     use std::vec::*;
 
     impl<T> View for Vec<T> {
@@ -350,6 +367,7 @@ mod impls {
     }
     impl<T> Resolve for IntoIter<T> {}
     impl<T> IteratorSpec for IntoIter<T> {}
+    impl<T> ExactSizeIteratorSpec for IntoIter<T> {}
 }
 
 /// Creusot-friendly replacement of `vec!`

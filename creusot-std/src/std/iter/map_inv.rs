@@ -1,4 +1,5 @@
-use crate::{invariant::Invariant, prelude::*};
+use crate::{invariant::Invariant, prelude::*, std::iter::ExactSizeIteratorSpec};
+use core::iter::Iterator;
 
 pub struct MapInv<I: Iterator, F> {
     pub iter: I,
@@ -57,14 +58,12 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invaria
     }
 }
 
-impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> core::iter::Iterator
-    for MapInv<I, F>
-{
+impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator for MapInv<I, F> {
     type Item = B;
 
     #[ensures(match result {
-      None => self.completed(),
-      Some(v) => (*self).produces_one(v, ^self)
+        None => self.completed(),
+        Some(v) => (*self).produces_one(v, ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
         let _old_self: Snapshot<Self> = snapshot! { *self };
@@ -85,6 +84,11 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> core::i
                 None
             }
         }
+    }
+
+    #[ensures(I::size_hint.postcondition((&self.iter,), result))]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
     }
 }
 
@@ -159,5 +163,27 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
                 && succ.produced.inner() == self.produced.push_back(e)
                 && (*f).postcondition_mut((e, self.produced), ^f, visited)
         }
+    }
+}
+
+impl<I: ExactSizeIteratorSpec + IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B>
+    ExactSizeIterator for MapInv<I, F>
+{
+    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+        self.produces(s, *i) && i.completed() ==> result@ == s.len())]
+    #[ensures(forall<s: Seq<Self::Item>, i: Self>
+        self.produces(s, i) ==> s.len() <= result@)]
+    fn len(&self) -> usize {
+        self.iter.len()
+    }
+}
+
+impl<I: ExactSizeIteratorSpec + IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B>
+    ExactSizeIteratorSpec for MapInv<I, F>
+{
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {
+        self.iter.size_is_exact()
     }
 }

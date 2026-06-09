@@ -1,6 +1,8 @@
 #[cfg(creusot)]
 use crate::logic::{Mapping, such_that};
-use crate::{ghost::Plain, logic::ord::ord_laws_impl, prelude::*};
+use crate::{
+    ghost::Plain, logic::ord::ord_laws_impl, prelude::*, std::iter::ExactSizeIteratorSpec,
+};
 use core::option::*;
 #[cfg(creusot)]
 use core::{cmp::Ordering, marker::Destruct};
@@ -687,6 +689,20 @@ impl<T> IteratorSpec for IntoIter<T> {
     }
 }
 
+extern_spec! {
+    impl<T> Iterator for IntoIter<T> {
+        #[ensures(result.0 == match self@ { Some(_) => 1usize, None => 0usize })]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<T> ExactSizeIteratorSpec for IntoIter<T> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
+}
+
 impl<'a, T> View for Iter<'a, T> {
     type ViewTy = Option<&'a T>;
 
@@ -721,6 +737,20 @@ impl<T> IteratorSpec for Iter<'_, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         let _ = Seq::<T>::concat_empty;
     }
+}
+
+extern_spec! {
+    impl<T> Iterator for Iter<'_, T> {
+        #[ensures(result.0 == match self@ { Some(_) => 1usize, None => 0usize })]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<T> ExactSizeIteratorSpec for Iter<'_, T> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
 }
 
 impl<'a, T> View for IterMut<'a, T> {
@@ -774,6 +804,20 @@ impl<T> IteratorSpec for IterMut<'_, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         let _ = Seq::<T>::concat_empty;
     }
+}
+
+extern_spec! {
+    impl<T> Iterator for IterMut<'_, T> {
+        #[ensures(result.0 == match self@ { Some(_) => 1usize, None => 0usize })]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<T> ExactSizeIteratorSpec for IterMut<'_, T> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
 }
 
 pub trait OptionExt<T> {

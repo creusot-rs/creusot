@@ -1,8 +1,8 @@
 extern crate creusot_std;
 use creusot_std::{invariant::Invariant, logic::Seq, prelude::*};
 
-mod common;
-use common::Iterator;
+pub mod common;
+use common::{ExactSizeIterator, Iterator};
 
 struct IterMut<'a, T> {
     pub inner: &'a mut [T],
@@ -52,6 +52,13 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     fn next(&mut self) -> Option<Self::Item> {
         (self.inner).split_off_first_mut()
     }
+
+    #[ensures(result.0@ == self.inner@.len())]
+    #[ensures(result.1 == Some(result.0))]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let l = self.inner.len();
+        (l, Some(l))
+    }
 }
 
 impl<'a, T> IterMut<'a, T> {
@@ -59,6 +66,17 @@ impl<'a, T> IterMut<'a, T> {
     fn into_iter(self) -> Self {
         self
     }
+}
+
+impl<'a, T> ExactSizeIterator for IterMut<'a, T> {
+    #[ensures(result@ == self.inner@.len())]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
 }
 
 #[ensures(result.inner@ == v@)]

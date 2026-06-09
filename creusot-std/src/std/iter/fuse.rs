@@ -1,4 +1,8 @@
-use crate::{prelude::*, std::iter::Fuse};
+use crate::{
+    prelude::*,
+    std::iter::{ExactSizeIteratorSpec, Fuse},
+};
+use core::iter::FusedIterator;
 
 impl<I: Iterator> View for Fuse<I> {
     type ViewTy = Option<I>;
@@ -49,7 +53,7 @@ impl<I: IteratorSpec> IteratorSpec for Fuse<I> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-pub trait FusedIterator: core::iter::FusedIterator + IteratorSpec {
+pub trait FusedIteratorSpec: FusedIterator + IteratorSpec {
     #[logic(law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
@@ -57,10 +61,28 @@ pub trait FusedIterator: core::iter::FusedIterator + IteratorSpec {
     fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self);
 }
 
-impl<I: IteratorSpec> FusedIterator for Fuse<I> {
+impl<I: IteratorSpec> FusedIteratorSpec for Fuse<I> {
     #[logic(law)]
     #[requires(self.completed())]
     #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::empty())]
     fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self) {}
+}
+
+extern_spec! {
+    impl<I: Iterator> Iterator for Fuse<I> {
+        #[ensures(match self@ {
+            Some(s) => I::size_hint.postcondition((&s,), result),
+            None => result == (0usize, Some(0usize))
+        })]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Fuse<I> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {
+        let _ = I::size_is_exact;
+    }
 }

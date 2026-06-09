@@ -23,7 +23,7 @@ pub use copied::CopiedExt;
 pub use enumerate::EnumerateExt;
 pub use filter::FilterExt;
 pub use filter_map::FilterMapExt;
-pub use fuse::FusedIterator;
+pub use fuse::FusedIteratorSpec;
 pub use map::MapExt;
 pub use map_inv::MapInv;
 pub use rev::RevExt;
@@ -61,6 +61,12 @@ pub trait IteratorSpec: Iterator {
     {
         MapInv { iter: self, func, produced: snapshot! {Seq::empty()} }
     }
+}
+
+pub trait ExactSizeIteratorSpec: ExactSizeIterator + IteratorSpec {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self);
 }
 
 extern_spec! {
@@ -149,7 +155,7 @@ extern_spec! {
 
                 #[check(ghost)]
                 // These two requirements are here only to prove the absence of overflows
-                #[requires(forall<i: &mut Self> (*i).completed() ==> (*i).produces(Seq::empty(), ^i))]
+                #[requires(forall<i: &mut Self> i.completed() ==> (*i).produces(Seq::empty(), ^i))]
                 #[requires(forall<s: Seq<Self::Item>, i: Self> self.produces(s, i) ==> s.len() < core::usize::MAX@)]
                 #[ensures(result.iter() == self && result.n()@ == 0)]
                 fn enumerate(self) -> Enumerate<Self>
@@ -180,12 +186,46 @@ extern_spec! {
                 #[ensures(result.iter() == self)]
                 fn rev(self) -> Rev<Self>
                     where Self: Sized + DoubleEndedIteratorSpec;
+
+                #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+                    self.produces(s, *i) && i.completed() ==> result.0@ <= s.len())]
+                #[ensures(match result.1 {
+                    Some(r) => {
+                        forall<s: Seq<Self::Item>, i: Self> self.produces(s, i) ==> s.len() <= r@
+                    }
+                    None => true
+                })]
+                fn size_hint(&self) -> (usize, Option<usize>) {
+                    (0, None)
+                }
             }
 
             trait FromIterator<A>: Sized {
                 #[requires(T::into_iter.precondition((iter,)))]
                 fn from_iter<T>(iter: T) -> Self
                     where T: IntoIterator<Item = A>;
+            }
+
+            trait ExactSizeIterator where Self: ExactSizeIteratorSpec {
+                #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+                    self.produces(s, *i) && i.completed() ==> result@ == s.len())]
+                #[ensures(forall<s: Seq<Self::Item>, i: Self>
+                    self.produces(s, i) ==> s.len() <= result@)]
+                fn len(&self) -> usize {
+                    // FIXME: self_
+                    snapshot!(self_.size_is_exact());
+                    let (lower, upper) = self.size_hint();
+                    assert_eq!(upper, Some(lower));
+                    lower
+                }
+
+                #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+                    self.produces(s, *i) && i.completed() ==> result == (s == Seq::empty()))]
+                #[ensures(forall<s: Seq<Self::Item>, i: Self>
+                    self.produces(s, i) && result ==> s == Seq::empty())]
+                fn is_empty(&self) -> bool {
+                    self.len() == 0
+                }
             }
 
             #[check(ghost)]
@@ -237,4 +277,19 @@ impl<I: IteratorSpec + ?Sized> IteratorSpec for &mut I {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+extern_spec! {
+    impl<I: Iterator + ?Sized> Iterator for &mut I {
+        #[ensures(I::size_hint.postcondition((&*self,), result))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<I: ExactSizeIteratorSpec + ?Sized> ExactSizeIteratorSpec for &mut I {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {
+        (*self).size_is_exact()
+    }
 }

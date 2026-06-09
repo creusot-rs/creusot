@@ -1,4 +1,8 @@
-use crate::{logic::FSet, prelude::*, std::iter::IteratorSpec};
+use crate::{
+    logic::FSet,
+    prelude::*,
+    std::iter::{ExactSizeIteratorSpec, IteratorSpec},
+};
 #[cfg(feature = "nightly")]
 use std::alloc::Allocator;
 #[cfg(creusot)]
@@ -105,7 +109,8 @@ pub fn set_produces_trans<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
     proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] };
 }
 
-impl<T: DeepModel> IteratorSpec for IntoIter<T> {
+#[cfg(feature = "nightly")]
+impl<T: DeepModel, A: Allocator> IteratorSpec for IntoIter<T, A> {
     #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         set_produces(self, visited, o)
@@ -127,6 +132,21 @@ impl<T: DeepModel> IteratorSpec for IntoIter<T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         set_produces_trans(a, ab, b, bc, c);
     }
+}
+
+extern_spec! {
+    impl<T: DeepModel, A: Allocator> Iterator for IntoIter<T, A>  {
+        #[ensures(result.0@ == self@.len())]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<T: DeepModel, A: Allocator> ExactSizeIteratorSpec for IntoIter<T, A> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
 }
 
 impl<'a, T: DeepModel> View for Iter<'a, T> {
@@ -160,6 +180,20 @@ impl<'a, T: DeepModel> IteratorSpec for Iter<'a, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         set_produces_trans(a, ab, b, bc, c);
     }
+}
+
+extern_spec! {
+    impl<'a, T: DeepModel> Iterator for Iter<'a, T>  {
+        #[ensures(result.0@ == self@.len())]
+        #[ensures(result.1 == Some(result.0))]
+        fn size_hint(&self) -> (usize, Option<usize>);
+    }
+}
+
+impl<'a, T: DeepModel> ExactSizeIteratorSpec for Iter<'a, T> {
+    #[logic(law)]
+    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
+    fn size_is_exact(self) {}
 }
 
 #[cfg(feature = "nightly")]
@@ -232,7 +266,7 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Difference<'
 
 #[cfg(not(feature = "nightly"))]
 mod impls {
-    use crate::{logic::FSet, prelude::*};
+    use crate::{logic::FSet, prelude::*, std::iter::ExactSizeIteratorSpec};
     use std::collections::hash_set::{Difference, HashSet, Intersection, IntoIter};
 
     impl<K: DeepModel, S> View for HashSet<K, S> {
@@ -241,6 +275,8 @@ mod impls {
     impl<K: DeepModel> View for IntoIter<K> {
         type ViewTy = FSet<K::DeepModelTy>;
     }
+    impl<K: DeepModel> IteratorSpec for IntoIter<K> {}
+    impl<K: DeepModel> ExactSizeIteratorSpec for IntoIter<K> {}
     impl<'a, T: DeepModel, S> View for Intersection<'a, T, S> {
         type ViewTy = FSet<T::DeepModelTy>;
     }

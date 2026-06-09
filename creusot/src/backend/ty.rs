@@ -422,8 +422,8 @@ pub(crate) fn floatty_to_prelude(fty: FloatTy) -> PreMod {
     }
 }
 
-pub fn ty_to_prelude(tcx: TyCtxt<'_>, ty: &TyKind) -> PreMod {
-    match ty {
+pub fn ty_to_prelude(tcx: TyCtxt<'_>, ty: Ty) -> PreMod {
+    match ty.kind() {
         TyKind::Int(ity) => ity_to_prelude(tcx, *ity),
         TyKind::Uint(uty) => uty_to_prelude(tcx, *uty),
         TyKind::Float(fty) => floatty_to_prelude(*fty),
