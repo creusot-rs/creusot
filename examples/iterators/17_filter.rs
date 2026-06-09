@@ -40,6 +40,18 @@ pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f1: F, f2: F, i> !(f1.postcondition_mut((i,), f2, true) && f1.postcondition_mut((i,), f2, false)) }
 }
 
+#[logic]
+#[variant(n)]
+#[requires(0 < n)]
+#[requires(forall<i> 0 <= i && i < n ==> 0 <= f.get(i))]
+#[requires(forall<i, j> 0 <= i && i < j && j < n ==> f.get(i) < f.get(j))]
+#[ensures(n - 1 <= f.get(n - 1))]
+fn monotone_mapping_le(f: Mapping<Int, Int>, n: Int) {
+    if n > 1 {
+        monotone_mapping_le(f, n - 1)
+    }
+}
+
 impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
     type Item = I::Item;
 
@@ -71,13 +83,12 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
             // Interestingly, Z3 guesses `f` quite readily but gives up *totally* on `s`. However, the addition of the final assertions on the correctness of the values
             // blocks z3's guess for `f`.
             exists<s: Seq<Self::Item>, f: Mapping<Int, Int>> self.iter.produces(s, succ.iter) &&
-                // F is a monotone mapping
-                (forall<i, j> 0 <= i && i <= j && j < visited.len() ==> 0 <= f.get(i) && f.get(i) <= f.get(j) && f.get(j) < s.len()) &&
+                (forall<i> 0 <= i && i < visited.len() ==> 0 <= f.get(i) && f.get(i) < s.len()) &&
+                // f is a monotone mapping
+                (forall<i, j> 0 <= i && i < j && j < visited.len() ==> f.get(i) < f.get(j)) &&
                 (forall<i> 0 <= i && i < visited.len() ==> visited[i] == s[f.get(i)]) &&
-
                 (forall<i> 0 <= i &&  i < s.len() ==>
-                    (exists<j> 0 <= j && j < visited.len() && f.get(j) == i) == self.func.postcondition_mut((&s[i],), self.func, true)
-                )
+                    (exists<j> 0 <= j && j < visited.len() && f.get(j) == i) == self.func.postcondition_mut((&s[i],), self.func, true))
         }
     }
 
@@ -113,6 +124,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
     })]
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
+        let _ = snapshot! { monotone_mapping_le };
         (0, upper) // can't know a lower bound, due to the predicate
     }
 }
