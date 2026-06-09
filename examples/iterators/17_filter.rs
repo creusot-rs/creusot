@@ -4,7 +4,7 @@ extern crate creusot_std;
 
 use creusot_std::{invariant::Invariant, logic::Mapping, prelude::*};
 
-mod common;
+pub mod common;
 use common::Iterator;
 
 pub struct Filter<I: Iterator, F: FnMut(&I::Item) -> bool> {
@@ -101,6 +101,19 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
         }
 
         None
+    }
+
+    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+        self.produces(s, *i) && i.completed() ==> result.0@ <= s.len())]
+    #[ensures(match result.1 {
+        Some(r) => {
+            forall<s: Seq<Self::Item>, i: Self> self.produces(s, i) ==> s.len() <= r@
+        }
+        None => true
+    })]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.iter.size_hint();
+        (0, upper) // can't know a lower bound, due to the predicate
     }
 }
 

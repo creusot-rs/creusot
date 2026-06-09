@@ -266,7 +266,7 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Difference<'
 
 #[cfg(not(feature = "nightly"))]
 mod impls {
-    use crate::{logic::FSet, prelude::*};
+    use crate::{logic::FSet, prelude::*, std::iter::ExactSizeIteratorSpec};
     use std::collections::hash_set::{Difference, HashSet, Intersection, IntoIter};
 
     impl<K: DeepModel, S> View for HashSet<K, S> {

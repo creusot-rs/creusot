@@ -1,7 +1,7 @@
 extern crate creusot_std;
 use creusot_std::prelude::*;
 
-mod common;
+pub mod common;
 pub use common::Iterator;
 
 pub struct Repeat<A> {
@@ -42,7 +42,7 @@ impl<A: Clone> Iterator for Repeat<A> {
         Some(self.element.clone())
     }
 
-    #[ensures(result = (usize::MAX, None))]
+    #[ensures(result == (usize::MAX, None))]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (usize::MAX, None)
     }

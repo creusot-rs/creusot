@@ -121,6 +121,7 @@ extern_spec! {
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<K: DeepModel, V, A: Allocator> ExactSizeIteratorSpec for IntoIter<K, V, A> {
     #[logic(law)]
     #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]

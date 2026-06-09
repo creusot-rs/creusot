@@ -1,6 +1,8 @@
+#[cfg(feature = "nightly")]
+use crate::std::iter::ExactSizeIteratorSpec;
 #[cfg(creusot)]
 use crate::{invariant::inv, resolve::structural_resolve, std::slice::SliceIndexSpec};
-use crate::{logic::ops::IndexLogic, prelude::*, std::iter::ExactSizeIteratorSpec};
+use crate::{logic::ops::IndexLogic, prelude::*};
 #[cfg(feature = "nightly")]
 use std::alloc::Allocator;
 #[cfg(creusot)]
@@ -348,7 +350,7 @@ impl<T, A: Allocator> DoubleEndedIteratorSpec for IntoIter<T, A> {
 /// Dummy impls that don't use the unstable trait Allocator
 #[cfg(not(feature = "nightly"))]
 mod impls {
-    use crate::prelude::*;
+    use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
     use std::vec::*;
 
     impl<T> View for Vec<T> {
