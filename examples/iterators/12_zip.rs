@@ -3,7 +3,7 @@ extern crate creusot_std;
 use creusot_std::{logic::Seq, prelude::*};
 
 pub mod common;
-use common::{Iterator, ExactSizeIterator};
+use common::{ExactSizeIterator, Iterator};
 
 #[allow(dead_code)]
 struct Zip<A: Iterator, B: Iterator> {

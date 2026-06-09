@@ -78,7 +78,9 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
     }
 }
 
-impl<I: ExactSizeIterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> ExactSizeIterator for Map<I, F> {
+impl<I: ExactSizeIterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> ExactSizeIterator
+    for Map<I, F>
+{
     #[logic(law)]
     #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
     fn size_is_exact(self) {

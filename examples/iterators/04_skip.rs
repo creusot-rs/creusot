@@ -2,7 +2,7 @@ extern crate creusot_std;
 use creusot_std::prelude::*;
 
 pub mod common;
-use common::{Iterator, ExactSizeIterator};
+use common::{ExactSizeIterator, Iterator};
 
 pub struct Skip<I: Iterator> {
     pub iter: I,
