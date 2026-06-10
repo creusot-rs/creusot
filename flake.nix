@@ -39,8 +39,8 @@
 
           pins = {
             why3 = {
-              version = "2c0f2992af85f82f3eda0f158dcf10e62e0db875";
-              sha256 = "sha256-9ReUqizS2Jmh2qqRmnygKmFCTaHrpvMGg+wiwrhONiE=";
+              version = "b4b42d7997d676884b962d966d6d6955739b9365";
+              sha256 = "sha256-9W9cXLBpopfUuYBFURK0keGVh13bZVWl9Q/PkN4gjac=";
             };
 
             why3find = {
