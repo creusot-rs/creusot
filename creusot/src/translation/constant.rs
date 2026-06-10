@@ -47,15 +47,17 @@ fn value_to_term<'tcx>(
     use mir::interpret::Scalar;
     let kind = match value {
         Scalar(Scalar::Int(scalar)) => TermKind::Lit(scalar_to_literal(scalar, ty, ctx, env, span)),
+        Scalar(Scalar::Ptr(ptr, _)) if let Some(size) = get_u8_slice_len(ctx.tcx, ty) => {
+            let (prov, start) = ptr.prov_and_relative_offset();
+            let alloc_id = prov.alloc_id();
+            let bytes = get_bytes(ctx.tcx, alloc_id, start, size);
+            TermKind::Lit(Literal::Bytes(bytes.into()))
+        }
         ZeroSized => TermKind::Lit(Literal::ZST),
         Slice { alloc_id, meta } if ty.peel_refs().is_str() => {
             let start = Size::from_bytes(0);
             let size = Size::from_bytes(meta);
-            let data = ctx.tcx.global_alloc(alloc_id).unwrap_memory();
-            let bytes = data
-                .inner()
-                .get_bytes_strip_provenance(&ctx.tcx, AllocRange { start, size })
-                .unwrap();
+            let bytes = get_bytes(ctx.tcx, alloc_id, start, size);
             let string = std::str::from_utf8(bytes).unwrap();
             TermKind::Lit(Literal::String(string.into()))
         }
@@ -63,6 +65,30 @@ fn value_to_term<'tcx>(
             .crash_and_error(span, format!("Unsupported constant value: {value:?} of type {ty:?}")),
     };
     Term { kind, ty, span }
+}
+
+fn get_bytes<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    alloc_id: mir::interpret::AllocId,
+    start: Size,
+    size: Size,
+) -> &'tcx [u8] {
+    let data = tcx.global_alloc(alloc_id).unwrap_memory();
+    data.inner().get_bytes_strip_provenance(&tcx, AllocRange { start, size }).unwrap()
+}
+
+/// Given `ty = &[u8; n]`, return `n`.
+fn get_u8_slice_len<'tcx>(tcx: ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Size> {
+    let ty::TyKind::Ref(_, ty, _) = ty.kind() else {
+        return None;
+    };
+    let ty::TyKind::Array(ety, n) = ty.kind() else {
+        return None;
+    };
+    if !matches!(ety.kind(), ty::TyKind::Uint(ty::UintTy::U8)) {
+        return None;
+    }
+    n.try_to_target_usize(tcx).map(|n| Size::from_bytes(n))
 }
 
 fn scalar_to_literal<'tcx>(

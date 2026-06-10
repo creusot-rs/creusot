@@ -298,6 +298,7 @@ pub enum Literal<'tcx> {
     MachUnsigned(u128, UintTy),
     Float(Float, FloatTy),
     String(String),
+    Bytes(Box<[u8]>),
     ZST,
     Function(DefId, GenericArgsRef<'tcx>),
 }
