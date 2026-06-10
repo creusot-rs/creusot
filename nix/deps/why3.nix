@@ -1,6 +1,7 @@
 {
   # Dependencies
   autoreconfHook,
+  dune,
   ocaml,
   ocamlPackages,
   wrapGAppsHook3,
@@ -33,6 +34,7 @@ stdenv.mkDerivation {
 
   nativeBuildInputs = [
     autoreconfHook
+    dune
     ocaml
     wrapGAppsHook3
   ]
