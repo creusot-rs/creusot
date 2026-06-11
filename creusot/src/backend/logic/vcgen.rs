@@ -237,12 +237,10 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     let rhs_ty = rhs.ty;
                     let lhs_ty = lhs.ty;
                     self.build_wp(lhs, &|lhs| {
-                        self.build_wp(rhs, &|rhs| {
-                        let rhs = if  matches!(*op, Shl | Shr) {
-                            cast_int(self.names, rhs_ty, lhs_ty, rhs)
-                        } else {
-                            rhs
-                        };
+                        self.build_wp(rhs, &|mut rhs| {
+                            if  matches!(*op, Shl | Shr) {
+                                rhs = cast_int(self.names, rhs_ty, lhs_ty, rhs)
+                            }
                             k(Exp::qvar(fun.clone()).app([lhs.clone(), rhs]))
                         })
                     })
