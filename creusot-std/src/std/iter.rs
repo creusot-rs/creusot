@@ -65,8 +65,10 @@ pub trait IteratorSpec: Iterator {
 
 pub trait ExactSizeIteratorSpec: ExactSizeIterator + IteratorSpec {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self);
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>));
 }
 
 extern_spec! {
@@ -83,6 +85,9 @@ pub trait DoubleEndedIteratorSpec: DoubleEndedIterator + IteratorSpec {
     #[logic(prophetic)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool;
 
+    #[logic(prophetic)]
+    fn completed_back(&mut self) -> bool;
+
     #[logic(law)]
     #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self);
@@ -92,6 +97,18 @@ pub trait DoubleEndedIteratorSpec: DoubleEndedIterator + IteratorSpec {
     #[requires(b.produces_back(bc, c))]
     #[ensures(a.produces_back(ab.concat(bc), c))]
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
+
+    #[logic(law)]
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+        self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
+    #[ensures(match r.1 {
+        Some(r) => {
+            forall<s: Seq<Self::Item>, i: Self> self.produces_back(s, i) ==> s.len() <= r@
+        }
+        None => true
+    })]
+    fn size_hint_back_spec(&self, r: (usize, Option<usize>));
 }
 
 extern_spec! {
@@ -207,22 +224,16 @@ extern_spec! {
             }
 
             trait ExactSizeIterator where Self: ExactSizeIteratorSpec {
-                #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
-                    self.produces(s, *i) && i.completed() ==> result@ == s.len())]
-                #[ensures(forall<s: Seq<Self::Item>, i: Self>
-                    self.produces(s, i) ==> s.len() <= result@)]
+                #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
                 fn len(&self) -> usize {
-                    // FIXME: self_
-                    snapshot!(self_.size_is_exact());
+                    // FIXME: Self_
+                    snapshot!(Self_::size_hint_exact);
                     let (lower, upper) = self.size_hint();
                     assert_eq!(upper, Some(lower));
                     lower
                 }
 
-                #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
-                    self.produces(s, *i) && i.completed() ==> result == (s == Seq::empty()))]
-                #[ensures(forall<s: Seq<Self::Item>, i: Self>
-                    self.produces(s, i) && result ==> s == Seq::empty())]
+                #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l))) && result == (l == 0usize))]
                 fn is_empty(&self) -> bool {
                     self.len() == 0
                 }
@@ -242,7 +253,7 @@ extern_spec! {
             trait DoubleEndedIterator
                 where Self: DoubleEndedIteratorSpec {
                 #[ensures(match result {
-                    None => self.completed(),
+                    None => self.completed_back(),
                     Some(v) => (*self).produces_back(Seq::singleton(v), ^self)
                 })]
                 fn next_back(&mut self) -> Option<Self::Item>;
@@ -288,8 +299,9 @@ extern_spec! {
 
 impl<I: ExactSizeIteratorSpec + ?Sized> ExactSizeIteratorSpec for &mut I {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {
-        (*self).size_is_exact()
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {
+        (**self).size_hint_exact(r)
     }
 }

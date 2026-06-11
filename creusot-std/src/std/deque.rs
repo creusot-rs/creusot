@@ -201,8 +201,10 @@ extern_spec! {
 
 impl<'a, T> ExactSizeIteratorSpec for Iter<'a, T> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {}
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
 
 impl<'a, T> DoubleEndedIteratorSpec for Iter<'a, T> {
@@ -211,6 +213,11 @@ impl<'a, T> DoubleEndedIteratorSpec for Iter<'a, T> {
         pearlite! {
           self@ == tl@.concat(visited.reverse())
         }
+    }
+
+    #[logic(open, prophetic)]
+    fn completed_back(&mut self) -> bool {
+        self.completed()
     }
 
     #[logic(law)]
@@ -228,6 +235,18 @@ impl<'a, T> DoubleEndedIteratorSpec for Iter<'a, T> {
         let _ = ab.reverse_concat(bc);
         let _ = Seq::<Self::Item>::concat_assoc;
     }
+
+    #[logic(law)]
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+        self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
+    #[ensures(match r.1 {
+        Some(r) => {
+            forall<s: Seq<Self::Item>, i: Self> self.produces_back(s, i) ==> s.len() <= r@
+        }
+        None => true
+    })]
+    fn size_hint_back_spec(&self, r: (usize, Option<usize>)) {}
 }
 
 /// Dummy impls that don't use the unstable trait Allocator

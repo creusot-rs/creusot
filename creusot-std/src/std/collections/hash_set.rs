@@ -145,8 +145,10 @@ extern_spec! {
 #[cfg(feature = "nightly")]
 impl<T: DeepModel, A: Allocator> ExactSizeIteratorSpec for IntoIter<T, A> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {}
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
 
 impl<'a, T: DeepModel> View for Iter<'a, T> {
@@ -192,8 +194,10 @@ extern_spec! {
 
 impl<'a, T: DeepModel> ExactSizeIteratorSpec for Iter<'a, T> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {}
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
 
 #[cfg(feature = "nightly")]
