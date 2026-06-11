@@ -124,8 +124,10 @@ extern_spec! {
 #[cfg(feature = "nightly")]
 impl<K: DeepModel, V, A: Allocator> ExactSizeIteratorSpec for IntoIter<K, V, A> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {}
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
 
 impl<'a, K: DeepModel, V> View for Iter<'a, K, V> {
@@ -184,8 +186,10 @@ extern_spec! {
 
 impl<'a, K: DeepModel, V> ExactSizeIteratorSpec for Iter<'a, K, V> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {}
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
 
 impl<'a, K: DeepModel, V> View for IterMut<'a, K, V> {
@@ -244,8 +248,10 @@ extern_spec! {
 
 impl<'a, K: DeepModel, V> ExactSizeIteratorSpec for IterMut<'a, K, V> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {}
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
 
 #[cfg(not(feature = "nightly"))]

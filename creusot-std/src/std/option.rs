@@ -699,8 +699,10 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for IntoIter<T> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {}
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
 
 impl<'a, T> View for Iter<'a, T> {
@@ -749,8 +751,10 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for Iter<'_, T> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {}
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
 
 impl<'a, T> View for IterMut<'a, T> {
@@ -816,8 +820,10 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for IterMut<'_, T> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {}
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
 
 pub trait OptionExt<T> {

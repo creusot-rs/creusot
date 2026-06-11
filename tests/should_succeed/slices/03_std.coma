@@ -56,6 +56,91 @@ module M_check_iter
   
   meta "rewrite_def" predicate inv_refmut_Iter_i32
   
+  type t_Option_usize = None'0 | Some'0 UInt64.t
+  
+  type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+  
+  predicate postcondition_once_size_hint (self: ()) (args: t_Iter_i32) (result: tup2_usize_Option_usize) =
+    let self_ = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_Iter_i32 self_))
+    /\ result.f1 = Some'0 (result.f0)
+  
+  meta "rewrite_def" predicate postcondition_once_size_hint
+  
+  predicate resolve_size_hint [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_size_hint
+  
+  predicate postcondition_mut_size_hint (self: ()) (args: t_Iter_i32) (result_state: ()) (result: tup2_usize_Option_usize) =
+    let self_ = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_Iter_i32 self_))
+    /\ result.f1 = Some'0 (result.f0)
+  
+  meta "rewrite_def" predicate postcondition_mut_size_hint
+  
+  function fn_mut_once_size_hint (self: ()) (args: t_Iter_i32) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_mut_once_size_hint_spec:
+    forall self: (), args: t_Iter_i32, res: tup2_usize_Option_usize [postcondition_once_size_hint self args res]. postcondition_once_size_hint self args res
+      = (exists res_state: (). postcondition_mut_size_hint self args res_state res /\ resolve_size_hint res_state)
+  
+  predicate hist_inv_size_hint (self: ()) (result_state: ()) = true
+  
+  function hist_inv_trans_size_hint (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_size_hint_spec:
+    forall self: (), b: (), c: () [hist_inv_size_hint self b, hist_inv_size_hint b c | hist_inv_size_hint self b, hist_inv_size_hint self c | hist_inv_size_hint b c, hist_inv_size_hint self c]. hist_inv_size_hint self b
+      -> hist_inv_size_hint b c -> hist_inv_size_hint self c
+  
+  function hist_inv_refl_size_hint (self: ()) : ()
+  
+  axiom hist_inv_refl_size_hint_spec: forall self: () [hist_inv_size_hint self self]. hist_inv_size_hint self self
+  
+  function postcondition_mut_hist_inv_size_hint (self: ()) (args: t_Iter_i32) (res_state: ()) (res: tup2_usize_Option_usize) : ()
+  
+  axiom postcondition_mut_hist_inv_size_hint_spec:
+    forall self: (), args: t_Iter_i32, res_state: (), res: tup2_usize_Option_usize [postcondition_mut_size_hint self args res_state res | hist_inv_size_hint self res_state]. postcondition_mut_size_hint self args res_state res
+      -> hist_inv_size_hint self res_state
+  
+  function fn_hist_inv_size_hint (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_size_hint_spec:
+    forall self: (), res_state: () [hist_inv_size_hint self res_state]. hist_inv_size_hint self res_state
+      = (self = res_state)
+  
+  predicate postcondition_size_hint (self: ()) (args: t_Iter_i32) (result: tup2_usize_Option_usize) =
+    let self_ = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_Iter_i32 self_))
+    /\ result.f1 = Some'0 (result.f0)
+  
+  meta "rewrite_def" predicate postcondition_size_hint
+  
+  function fn_once_size_hint (self: ()) (args: t_Iter_i32) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_once_size_hint_spec:
+    forall self: (), args: t_Iter_i32, res: tup2_usize_Option_usize [postcondition_once_size_hint self args res]. postcondition_once_size_hint self args res
+      = (postcondition_size_hint self args res /\ resolve_size_hint self)
+  
+  function fn_mut_size_hint (self: ()) (args: t_Iter_i32) (res_state: ()) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_mut_size_hint_spec:
+    forall self: (), args: t_Iter_i32, res_state: (), res: tup2_usize_Option_usize [postcondition_mut_size_hint self args res_state res]. postcondition_mut_size_hint self args res_state res
+      = (postcondition_size_hint self args res /\ self = res_state)
+  
+  predicate invariant_ref_Iter_i32 [@inline:trivial] (self: t_Iter_i32) = inv_Iter_i32 self
+  
+  meta "rewrite_def" predicate invariant_ref_Iter_i32
+  
+  predicate inv_ref_Iter_i32 [@inline:trivial] (_1: t_Iter_i32) = invariant_ref_Iter_i32 _1
+  
+  meta "rewrite_def" predicate inv_ref_Iter_i32
+  
+  let size_hint_Iter_i32 (self_: t_Iter_i32) (return (x: tup2_usize_Option_usize)) =
+  {[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Iter_i32 self_}
+    any
+    [ return (result: tup2_usize_Option_usize) ->
+    {[@stop_split] [@expl:size_hint_Iter_i32 ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.t'int result.f0
+        = Seq.length (Slice64.view (view_Iter_i32 self_)))
+      /\ ([@stop_split] [@expl:size_hint ensures #1] result.f1 = Some'0 (result.f0))}
+      (! return {result}) ]
+  
   function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
     Seq.get (Slice64.view self) ix
   
@@ -96,6 +181,23 @@ module M_check_iter
     to_ref_seq_slice_i32 (view_Iter_i32 self)
     = Seq.(++) (to_ref_seq_slice_i32 (view_Iter_i32 o)) (Reverse.reverse visited)
   
+  predicate completed_back_Iter_i32 (self: MutBorrow.t t_Iter_i32) = completed_Iter_i32 self
+  
+  function size_hint_back_spec_Iter_i32 (self: t_Iter_i32) (r: tup2_usize_Option_usize) : ()
+  
+  axiom size_hint_back_spec_Iter_i32_spec:
+    forall self: t_Iter_i32, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+      -> (forall s: Seq.seq Int32.t, i: MutBorrow.t t_Iter_i32. produces_back_Iter_i32 self s i.current
+          /\ completed_back_Iter_i32 i -> UInt64.t'int r.f0 <= Seq.length s)
+  
+  axiom size_hint_back_spec_Iter_i32_spec'0:
+    forall self: t_Iter_i32, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+      -> match r.f1 with
+        | Some'0 r'0 -> forall s: Seq.seq Int32.t, i: t_Iter_i32. produces_back_Iter_i32 self s i
+          -> Seq.length s <= UInt64.t'int r'0
+        | None'0 -> true
+        end
+  
   function produces_back_trans_Iter_i32 (a: t_Iter_i32) (ab: Seq.seq Int32.t) (b: t_Iter_i32) (bc: Seq.seq Int32.t) (c: t_Iter_i32) : ()
   
   axiom produces_back_trans_Iter_i32_spec:
@@ -111,7 +213,7 @@ module M_check_iter
   {[@stop_split] [@expl:next_back 'self_' type invariant] inv_refmut_Iter_i32 self_}
     any
     [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:next_back ensures] match result with
-        | None -> completed_Iter_i32 self_
+        | None -> completed_back_Iter_i32 self_
         | Some v -> produces_back_Iter_i32 self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
@@ -426,6 +528,91 @@ module M_check_iter_mut
   
   meta "rewrite_def" predicate inv_refmut_IterMut_i32
   
+  type t_Option_usize = None'0 | Some'0 UInt64.t
+  
+  type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+  
+  predicate postcondition_once_size_hint (self: ()) (args: t_IterMut_i32) (result: tup2_usize_Option_usize) =
+    let self_ = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_IterMut_i32 self_).current)
+    /\ result.f1 = Some'0 (result.f0)
+  
+  meta "rewrite_def" predicate postcondition_once_size_hint
+  
+  predicate resolve_size_hint [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_size_hint
+  
+  predicate postcondition_mut_size_hint (self: ()) (args: t_IterMut_i32) (result_state: ()) (result: tup2_usize_Option_usize) =
+    let self_ = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_IterMut_i32 self_).current)
+    /\ result.f1 = Some'0 (result.f0)
+  
+  meta "rewrite_def" predicate postcondition_mut_size_hint
+  
+  function fn_mut_once_size_hint (self: ()) (args: t_IterMut_i32) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_mut_once_size_hint_spec:
+    forall self: (), args: t_IterMut_i32, res: tup2_usize_Option_usize [postcondition_once_size_hint self args res]. postcondition_once_size_hint self args res
+      = (exists res_state: (). postcondition_mut_size_hint self args res_state res /\ resolve_size_hint res_state)
+  
+  predicate hist_inv_size_hint (self: ()) (result_state: ()) = true
+  
+  function hist_inv_trans_size_hint (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_size_hint_spec:
+    forall self: (), b: (), c: () [hist_inv_size_hint self b, hist_inv_size_hint b c | hist_inv_size_hint self b, hist_inv_size_hint self c | hist_inv_size_hint b c, hist_inv_size_hint self c]. hist_inv_size_hint self b
+      -> hist_inv_size_hint b c -> hist_inv_size_hint self c
+  
+  function hist_inv_refl_size_hint (self: ()) : ()
+  
+  axiom hist_inv_refl_size_hint_spec: forall self: () [hist_inv_size_hint self self]. hist_inv_size_hint self self
+  
+  function postcondition_mut_hist_inv_size_hint (self: ()) (args: t_IterMut_i32) (res_state: ()) (res: tup2_usize_Option_usize) : ()
+  
+  axiom postcondition_mut_hist_inv_size_hint_spec:
+    forall self: (), args: t_IterMut_i32, res_state: (), res: tup2_usize_Option_usize [postcondition_mut_size_hint self args res_state res | hist_inv_size_hint self res_state]. postcondition_mut_size_hint self args res_state res
+      -> hist_inv_size_hint self res_state
+  
+  function fn_hist_inv_size_hint (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_size_hint_spec:
+    forall self: (), res_state: () [hist_inv_size_hint self res_state]. hist_inv_size_hint self res_state
+      = (self = res_state)
+  
+  predicate postcondition_size_hint (self: ()) (args: t_IterMut_i32) (result: tup2_usize_Option_usize) =
+    let self_ = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_IterMut_i32 self_).current)
+    /\ result.f1 = Some'0 (result.f0)
+  
+  meta "rewrite_def" predicate postcondition_size_hint
+  
+  function fn_once_size_hint (self: ()) (args: t_IterMut_i32) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_once_size_hint_spec:
+    forall self: (), args: t_IterMut_i32, res: tup2_usize_Option_usize [postcondition_once_size_hint self args res]. postcondition_once_size_hint self args res
+      = (postcondition_size_hint self args res /\ resolve_size_hint self)
+  
+  function fn_mut_size_hint (self: ()) (args: t_IterMut_i32) (res_state: ()) (res: tup2_usize_Option_usize) : ()
+  
+  axiom fn_mut_size_hint_spec:
+    forall self: (), args: t_IterMut_i32, res_state: (), res: tup2_usize_Option_usize [postcondition_mut_size_hint self args res_state res]. postcondition_mut_size_hint self args res_state res
+      = (postcondition_size_hint self args res /\ self = res_state)
+  
+  predicate invariant_ref_IterMut_i32 [@inline:trivial] (self: t_IterMut_i32) = inv_IterMut_i32 self
+  
+  meta "rewrite_def" predicate invariant_ref_IterMut_i32
+  
+  predicate inv_ref_IterMut_i32 [@inline:trivial] (_1: t_IterMut_i32) = invariant_ref_IterMut_i32 _1
+  
+  meta "rewrite_def" predicate inv_ref_IterMut_i32
+  
+  let size_hint_IterMut_i32 (self_: t_IterMut_i32) (return (x: tup2_usize_Option_usize)) =
+  {[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_IterMut_i32 self_}
+    any
+    [ return (result: tup2_usize_Option_usize) ->
+    {[@stop_split] [@expl:size_hint_IterMut_i32 ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.t'int result.f0
+        = Seq.length (Slice64.view (view_IterMut_i32 self_).current))
+      /\ ([@stop_split] [@expl:size_hint ensures #1] result.f1 = Some'0 (result.f0))}
+      (! return {result}) ]
+  
   function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
     Seq.get (Slice64.view self) ix
   
@@ -469,6 +656,23 @@ module M_check_iter_mut
     to_mut_seq_slice_i32 (view_IterMut_i32 self)
     = Seq.(++) (to_mut_seq_slice_i32 (view_IterMut_i32 o)) (Reverse.reverse visited)
   
+  predicate completed_back_IterMut_i32 (self: MutBorrow.t t_IterMut_i32) = completed_IterMut_i32 self
+  
+  function size_hint_back_spec_IterMut_i32 (self: t_IterMut_i32) (r: tup2_usize_Option_usize) : ()
+  
+  axiom size_hint_back_spec_IterMut_i32_spec:
+    forall self: t_IterMut_i32, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+      -> (forall s: Seq.seq (MutBorrow.t Int32.t), i: MutBorrow.t t_IterMut_i32. produces_back_IterMut_i32 self s i.current
+          /\ completed_back_IterMut_i32 i -> UInt64.t'int r.f0 <= Seq.length s)
+  
+  axiom size_hint_back_spec_IterMut_i32_spec'0:
+    forall self: t_IterMut_i32, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+      -> match r.f1 with
+        | Some'0 r'0 -> forall s: Seq.seq (MutBorrow.t Int32.t), i: t_IterMut_i32. produces_back_IterMut_i32 self s i
+          -> Seq.length s <= UInt64.t'int r'0
+        | None'0 -> true
+        end
+  
   function produces_back_trans_IterMut_i32 (a: t_IterMut_i32) (ab: Seq.seq (MutBorrow.t Int32.t)) (b: t_IterMut_i32) (bc: Seq.seq (MutBorrow.t Int32.t)) (c: t_IterMut_i32) : ()
   
   axiom produces_back_trans_IterMut_i32_spec:
@@ -484,7 +688,7 @@ module M_check_iter_mut
   {[@stop_split] [@expl:next_back 'self_' type invariant] inv_refmut_IterMut_i32 self_}
     any
     [ return (result: t_Option_refmut_i32) -> {[@stop_split] [@expl:next_back ensures] match result with
-        | None -> completed_IterMut_i32 self_
+        | None -> completed_back_IterMut_i32 self_
         | Some v -> produces_back_IterMut_i32 self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
