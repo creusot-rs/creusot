@@ -45,12 +45,12 @@ stdenv.mkDerivation {
 
   buildInputs = with ocamlPackages; [
     lablgtk3-sourceview3
-    ocamlgraph
   ];
 
   propagatedBuildInputs = with ocamlPackages; [
     camlzip
     menhirLib
+    ocamlgraph
     re
     sexplib
     zarith
