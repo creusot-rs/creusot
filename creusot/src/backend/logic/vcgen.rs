@@ -122,7 +122,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                         if !t.ty.is_integral() {
                             unsupported_cast(self.ctx, t.span, argty, t.ty)
                         };
-                        self.build_wp(arg, &|arg| { cast_int(self.names, argty, t.ty, arg) })
+                        self.build_wp(arg, &|arg| k(cast_int(self.names, argty, t.ty, arg)))
                     }
                     // Pointer-to-pointer casts
                     TyKind::RawPtr(ty1, _) if let TyKind::RawPtr(ty2, _) = t.ty.kind() => {
