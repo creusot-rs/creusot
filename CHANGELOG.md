@@ -12,6 +12,8 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ## [Unreleased] - ReleaseDate
 
+## [0.12.0] - 2026-06-12
+
 ## cargo-creusot
 
 - [**Run provers by default, add `--only=(coma|prove)` option**](https://github.com/creusot-rs/creusot/pull/2056)
