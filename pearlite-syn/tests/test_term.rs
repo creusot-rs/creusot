@@ -403,7 +403,7 @@ fn test_pearlite() {
     TermPearlite {
         pearlite_token: Keyword [pearlite],
         bang_token: Not,
-        block: TBlock {
+        block: TermBlock {
             brace_token: Brace,
             stmts: [
                 Expr(

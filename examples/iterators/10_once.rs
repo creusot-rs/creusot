@@ -1,4 +1,3 @@
-// TACTIC +inline_goal
 extern crate creusot_std;
 use creusot_std::prelude::*;
 
@@ -15,7 +14,7 @@ impl<T> Iterator for Once<T> {
         pearlite! { *self == Once(None) && resolve(self) }
     }
 
-    #[logic(open, prophetic)]
+    #[logic(open, inline)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||

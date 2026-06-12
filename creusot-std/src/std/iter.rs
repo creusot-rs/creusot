@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use core::iter::*;
 
+mod chain;
 mod cloned;
 mod copied;
 mod empty;
@@ -18,6 +19,7 @@ mod skip;
 mod take;
 mod zip;
 
+pub use chain::ChainExt;
 pub use cloned::ClonedExt;
 pub use copied::CopiedExt;
 pub use enumerate::EnumerateExt;
@@ -38,11 +40,11 @@ pub trait IteratorSpec: Iterator {
     #[logic(prophetic)]
     fn completed(&mut self) -> bool;
 
-    #[logic(law)]
+    #[logic(law, prophetic)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self);
 
-    #[logic(law)]
+    #[logic(law, prophetic)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -88,11 +90,11 @@ pub trait DoubleEndedIteratorSpec: DoubleEndedIterator + IteratorSpec {
     #[logic(prophetic)]
     fn completed_back(&mut self) -> bool;
 
-    #[logic(law)]
+    #[logic(law, prophetic)]
     #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self);
 
-    #[logic(law)]
+    #[logic(law, prophetic)]
     #[requires(a.produces_back(ab, b))]
     #[requires(b.produces_back(bc, c))]
     #[ensures(a.produces_back(ab.concat(bc), c))]
@@ -132,6 +134,16 @@ extern_spec! {
                 #[ensures(result.iter() == self && result.n() == n)]
                 fn take(self, n: usize) -> Take<Self>
                     where Self: Sized;
+
+                #[check(ghost)]
+                #[requires(U::into_iter.precondition((other,)))]
+                #[ensures(result.iter_a() == Some(self))]
+                #[ensures(match result.iter_b() {
+                    Some(b) => U::into_iter.postcondition((other,), b),
+                    None => false
+                })]
+                fn chain<U>(self, other: U) -> Chain<Self, U::IntoIter>
+                    where Self: Sized, U: IntoIterator<Item = Self::Item>;
 
                 #[check(ghost)]
                 #[ensures(result.iter() == self)]
@@ -185,8 +197,8 @@ extern_spec! {
 
                 #[check(ghost)]
                 #[requires(U::into_iter.precondition((other,)))]
-                #[ensures(result.itera() == self)]
-                #[ensures(U::into_iter.postcondition((other,), result.iterb()))]
+                #[ensures(result.iter_a() == self)]
+                #[ensures(U::into_iter.postcondition((other,), result.iter_b()))]
                 fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U::IntoIter>
                     where Self: Sized, U::IntoIter: Iterator;
 

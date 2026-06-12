@@ -4353,3 +4353,29 @@ module M_impl_Iterator_for_Rev_I__size_hint__refines (* <Rev<I> as common::Itera
           | None -> true
           end)
 end
+module M_rev
+  use creusot.prelude.Any
+  
+  type t_I
+  
+  type t_Rev_I = { iter: t_I }
+  
+  predicate inv_I (_1: t_I)
+  
+  predicate inv_Rev_I (_1: t_Rev_I)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rev_I (iter'0: t_I) (return (x: t_Rev_I)) = {[@stop_split] [@expl:rev 'iter' type invariant] inv_I iter'0}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- { iter = iter'0 } ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_Rev_I = Any.any_l () | & iter'0: t_I = iter'0 ])
+    [ return (result: t_Rev_I) ->
+    {[@stop_split] [@expl:rev_I ensures] ([@stop_split] [@expl:rev result type invariant] inv_Rev_I result)
+      /\ ([@stop_split] [@expl:rev ensures] result = { iter = iter'0 })}
+      (! return {result}) ]
+end
