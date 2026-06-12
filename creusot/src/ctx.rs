@@ -204,34 +204,55 @@ impl<'tcx> Deref for TranslationCtx<'tcx> {
 }
 
 pub(crate) fn gather_params_open_inv(tcx: TyCtxt) -> HashMap<DefId, DenseBitSet<usize>> {
-    struct VisitFns<'tcx, 'a>(
-        TyCtxt<'tcx>,
-        HashMap<DefId, DenseBitSet<usize>>,
-        &'a ResolverAstLowering<'tcx>,
-    );
+    struct VisitFns<'tcx, 'a> {
+        tcx: TyCtxt<'tcx>,
+        resolver: &'a ResolverAstLowering<'tcx>,
+        parent_id: Option<NodeId>,
+        open_inv_params: HashMap<DefId, DenseBitSet<usize>>,
+    }
     impl<'a> Visitor<'a> for VisitFns<'_, 'a> {
+        fn visit_item(&mut self, item: &'a rustc_ast::Item) {
+            let old = std::mem::replace(&mut self.parent_id, Some(item.id));
+            rustc_ast::visit::walk_item(self, item);
+            self.parent_id = old;
+        }
+
+        fn visit_assoc_item(
+            &mut self,
+            item: &'a rustc_ast::AssocItem,
+            ctxt: rustc_ast::visit::AssocCtxt,
+        ) -> Self::Result {
+            let old = std::mem::replace(&mut self.parent_id, Some(item.id));
+            rustc_ast::visit::walk_assoc_item(self, item, ctxt);
+            self.parent_id = old;
+        }
+
         fn visit_fn(&mut self, fk: FnKind<'a>, _: &AttrVec, _: Span, node: NodeId) {
-            let (shift, decl) = match fk {
-                FnKind::Fn(_, _, Fn { sig: FnSig { decl, .. }, .. }) => (0, decl),
-                FnKind::Closure(_, _, decl, _) => (1, decl),
+            let data = &self.resolver.owners[&self.parent_id.unwrap()];
+            let (shift, decl, id) = match fk {
+                FnKind::Fn(_, _, Fn { sig: FnSig { decl, .. }, .. }) => (0, decl, data.def_id),
+                FnKind::Closure(_, _, decl, _) => {
+                    (1, decl, *data.node_id_to_def_id.get(&node).unwrap())
+                }
             };
             let mut open_inv_params = DenseBitSet::new_empty(shift + decl.inputs.len());
             for (i, p) in (shift..).zip(decl.inputs.iter()) {
-                if is_open_inv_param(self.0, p) {
+                if is_open_inv_param(self.tcx, p) {
                     open_inv_params.insert(i);
                 }
             }
-            let defid = self.2.node_id_to_def_id[&node].to_def_id();
-            assert!(self.1.insert(defid, open_inv_params).is_none());
+            assert!(self.open_inv_params.insert(id.to_def_id(), open_inv_params).is_none());
             walk_fn(self, fk)
         }
     }
 
-    let (resolver, cr) = &*tcx.resolver_for_lowering().borrow();
+    let (resolver, cr) = tcx.resolver_for_lowering();
+    let resolver = &*resolver.borrow();
+    let cr = &*cr.borrow();
 
-    let mut visit = VisitFns(tcx, HashMap::new(), resolver);
+    let mut visit = VisitFns { tcx, resolver, parent_id: None, open_inv_params: HashMap::new() };
     visit.visit_crate(cr);
-    visit.1
+    visit.open_inv_params
 }
 
 impl<'tcx> TranslationCtx<'tcx> {

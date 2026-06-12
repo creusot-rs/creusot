@@ -445,26 +445,25 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
             if self.body_specs.erased_locals.contains(pl.local) {
                 continue;
             }
-            let ty = pl.ty(&self.body().local_decls, self.tcx());
-            let ty = self.tcx().normalize_erasing_regions(self.typing_env, Unnormalized::new(ty));
+            let tcx = self.tcx();
+            let ty = pl.ty(&self.body().local_decls, tcx);
+            let ty = tcx.normalize_erasing_regions(self.typing_env, Unnormalized::new(ty));
             use TyKind::*;
             match ty.ty.kind() {
                 Adt(adt_def, subst) => {
                     if adt_def.is_box() {
-                        res_partial.push(All(self.tcx().mk_place_deref(pl)));
+                        res_partial.push(All(tcx.mk_place_deref(pl)));
                     } else if adt_def.is_enum() {
                         if let Some(vid) = ty.variant_index {
                             let var = adt_def.variant(vid);
                             for (fi, fd) in var.fields.iter_enumerated() {
-                                res_partial.push(All(self.tcx().mk_place_field(
-                                    pl,
-                                    fi,
-                                    fd.ty(self.tcx(), subst),
-                                )));
+                                let ty = tcx
+                                    .normalize_erasing_regions(self.typing_env, fd.ty(tcx, subst));
+                                res_partial.push(All(tcx.mk_place_field(pl, fi, ty)));
                             }
                         } else {
                             for (i, _var) in adt_def.variants().iter().enumerate() {
-                                res_partial.push(All(self.tcx().mk_place_downcast(
+                                res_partial.push(All(tcx.mk_place_downcast(
                                     pl,
                                     *adt_def,
                                     VariantIdx::new(i),
@@ -474,12 +473,10 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                     } else {
                         let mut has_priv = false;
                         for (fi, fd) in adt_def.non_enum_variant().fields.iter_enumerated() {
-                            if fd.vis.is_accessible_from(self.body().source.def_id(), self.tcx()) {
-                                res_partial.push(All(self.tcx().mk_place_field(
-                                    pl,
-                                    fi,
-                                    fd.ty(self.tcx(), subst),
-                                )));
+                            if fd.vis.is_accessible_from(self.body().source.def_id(), tcx) {
+                                let ty = tcx
+                                    .normalize_erasing_regions(self.typing_env, fd.ty(tcx, subst));
+                                res_partial.push(All(tcx.mk_place_field(pl, fi, ty)));
                             } else {
                                 has_priv = true;
                             }
@@ -492,13 +489,13 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
 
                 Tuple(tys) => {
                     for (i, ty) in tys.iter().enumerate() {
-                        res_partial.push(All(self.tcx().mk_place_field(pl, FieldIdx::new(i), ty)));
+                        res_partial.push(All(tcx.mk_place_field(pl, FieldIdx::new(i), ty)));
                     }
                 }
 
                 Closure(_did, substs) => {
                     for (i, ty) in substs.as_closure().upvar_tys().iter().enumerate() {
-                        res_partial.push(All(self.tcx().mk_place_field(pl, FieldIdx::new(i), ty)));
+                        res_partial.push(All(tcx.mk_place_field(pl, FieldIdx::new(i), ty)));
                     }
                 }
 
@@ -698,7 +695,6 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
             | StorageLive(_)
             | FakeRead(_)
             | AscribeUserType(_, _)
-            | Retag(_, _)
             | Coverage(_)
             | PlaceMention(_)
             | ConstEvalCounter

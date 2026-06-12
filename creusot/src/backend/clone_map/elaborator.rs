@@ -685,7 +685,8 @@ fn postcondition_once_term<'tcx>(
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
-            let closure_ty = def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner);
+            let closure_ty =
+                names.normalize(def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner));
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionOnce.get(ctx);
@@ -766,7 +767,8 @@ fn postcondition_mut_term<'tcx>(
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
-            let closure_ty = def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner);
+            let closure_ty =
+                names.normalize(def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner));
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionMut.get(ctx);
@@ -851,7 +853,8 @@ fn postcondition_term<'tcx>(
         }
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
-            let closure_ty = def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner);
+            let closure_ty =
+                names.normalize(def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner));
             let mut subst_postcond = subst.to_vec();
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
@@ -958,7 +961,8 @@ fn precondition_term<'tcx>(
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
-            let closure_ty = def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner);
+            let closure_ty =
+                names.normalize(def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner));
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let pre_fn = Intrinsic::Precondition.get(ctx);

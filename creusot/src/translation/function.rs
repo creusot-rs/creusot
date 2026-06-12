@@ -292,11 +292,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         }
         if let TyKind::Adt(adt_def, subst) = place_ty.ty.kind()
             && let Some(vi) = place_ty.variant_index
-            && adt_def
-                .variant(vi)
-                .fields
-                .iter()
-                .all(|f| self.skip_resolve_type(f.ty(self.tcx(), subst)))
+            && adt_def.variant(vi).fields.iter().all(|f| {
+                self.skip_resolve_type(
+                    self.tcx().normalize_erasing_regions(self.typing_env, f.ty(self.tcx(), subst)),
+                )
+            })
         {
             assert_matches!(rpl, ResolvedPlace::All(_));
             return;

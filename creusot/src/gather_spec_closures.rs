@@ -76,7 +76,7 @@ impl<'tcx> Visitor<'tcx> for Closures<'tcx> {
             Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) => {
                 self.closures.insert(*id);
             }
-            Rvalue::Use(Operand::Constant(box ck)) => {
+            Rvalue::Use(Operand::Constant(box ck), _) => {
                 if let Some(def_id) = snapshot_closure_id(self.tcx, ck.const_.ty()) {
                     self.closures.insert(def_id);
                 }

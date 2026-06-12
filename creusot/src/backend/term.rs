@@ -543,7 +543,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             Literal::ZST => Exp::unit(),
             Literal::String(ref string) => Constant::String(string.clone()).into(),
-            Literal::Bytes(ref bytes) => todo!(),
+            Literal::Bytes(ref _bytes) => todo!(),
         }
     }
 }
@@ -605,7 +605,9 @@ pub(crate) fn tyconst_to_term_final<'tcx>(
     use rustc_type_ir::ConstKind::*;
     match c.kind() {
         Value(ty::Value { ty, valtree }) => valtree_to_term(valtree, ctx, ty, env, span),
-        Unevaluated(ty::UnevaluatedConst { def, args }) => Some(Term::item(def, args, ty)),
+        Unevaluated(ty::UnevaluatedConst { kind, args, .. }) => {
+            Some(Term::item(kind.opt_def_id().unwrap(), args, ty))
+        }
         Param(p) => {
             let tcx = ctx.tcx;
             let def_id = tcx.generics_of(caller_id).const_param(p, tcx).def_id;

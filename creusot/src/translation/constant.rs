@@ -7,7 +7,7 @@ use rustc_abi::Size;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{self, ConstOperand, ConstValue, TerminatorKind, interpret::AllocRange},
-    ty::{self, ConstKind, Ty, TypingEnv},
+    ty::{self, ConstKind, Ty, TyCtxt, TypingEnv, UnevaluatedConstKind},
 };
 use rustc_span::Span;
 
@@ -169,7 +169,11 @@ pub fn try_const_to_term<'tcx>(
     let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
     let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
     let span = ctx.def_span(def_id);
-    let uneval = ty::UnevaluatedConst::new(def_id, subst);
+    let uneval = ty::UnevaluatedConst::new(
+        ctx.tcx,
+        ty::UnevaluatedConstKind::new_from_def_id(ctx.tcx, def_id),
+        subst,
+    );
     match ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
         Ok(Ok(val)) => valtree_to_term(val, ctx, ty, typing_env, span),
         _ => try_const_synonym(def_id, subst, ctx, typing_env),
@@ -232,23 +236,22 @@ fn try_const_synonym<'tcx>(
     let ty::Instance { def, args } =
         ty::Instance::try_resolve(ctx.tcx, typing_env, def_id, subst).ok()??;
     let body = ctx.instance_mir(def);
-    let (c, ty, span) = simple_body_const(body)?;
+    let (c, ty, span) = simple_body_const(ctx.tcx, body)?;
     match c {
         ConstKind::Param(p) => {
             let c = args.const_at(p.index as usize);
             Some(Term::const_(c, ty, span))
         }
         ConstKind::Unevaluated(u)
-            if matches!(
-                ctx.def_kind(u.def),
-                DefKind::Const { .. } | DefKind::AssocConst { .. }
-            ) =>
+            if let UnevaluatedConstKind::Projection { def_id }
+            | UnevaluatedConstKind::Free { def_id }
+            | UnevaluatedConstKind::Inherent { def_id } = u.kind =>
         {
             let (u, ty) = ctx.tcx.normalize_erasing_regions(
                 typing_env,
                 ty::EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args),
             );
-            Some(Term::item(u.def, u.args, ty).span(span))
+            Some(Term::item(def_id, u.args, ty).span(span))
         }
         _ => None,
     }
@@ -256,7 +259,10 @@ fn try_const_synonym<'tcx>(
 
 /// Extract constant from MIR body. It should be a single assignment `_0 = const M`.
 /// Otherwise return `None`.
-fn simple_body_const<'tcx>(body: &mir::Body<'tcx>) -> Option<(ConstKind<'tcx>, Ty<'tcx>, Span)> {
+fn simple_body_const<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+) -> Option<(ConstKind<'tcx>, Ty<'tcx>, Span)> {
     if body.basic_blocks.len() != 1 {
         return None;
     }
@@ -268,11 +274,11 @@ fn simple_body_const<'tcx>(body: &mir::Body<'tcx>) -> Option<(ConstKind<'tcx>, T
     if lhs.local != mir::Local::from_u32(0) || lhs.projection.len() != 0 {
         return None;
     }
-    let mir::Rvalue::Use(mir::Operand::Constant(rhs)) = rhs else { return None };
+    let mir::Rvalue::Use(mir::Operand::Constant(rhs), _) = rhs else { return None };
     match rhs.const_ {
         mir::Const::Ty(ty, c) => Some((c.kind(), ty, rhs.span)),
         mir::Const::Unevaluated(u, ty) => {
-            Some((rustc_type_ir::ConstKind::Unevaluated(u.shrink()), ty, rhs.span))
+            Some((rustc_type_ir::ConstKind::Unevaluated(u.shrink(tcx)), ty, rhs.span))
         }
         _ => return None,
     }
