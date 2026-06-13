@@ -227,7 +227,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                 _ => Ok(quote_spanned! {sp=> #left #op #right }.into()),
             }
         }
-        Term::Block(TermBlock { block, .. }) => Ok(encode_block_(block, locals).into()),
+        Term::Block(block) => Ok(encode_block_(block, locals).into()),
         Term::Call(TermCall { func, args, .. }) => {
             let args: Vec<_> = args
                 .into_iter()
@@ -359,10 +359,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
         }
         Term::Reference(TermReference { mutability, expr, .. }) => {
             let term = encode_term_(expr, locals)?.toks();
-            Ok(quote_spanned! {sp=>
-                & #mutability #term
-            }
-            .into())
+            Ok(quote_spanned! {sp=> & #mutability #term}.into())
         }
         Term::Repeat(_) => Err(EncodeError::Unsupported(term.span(), "Repeat".into())),
         Term::Struct(TermStruct { path, fields, rest, brace_token, dot2_token }) => {
@@ -423,10 +420,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
         },
         Term::Final(TermFinal { term, .. }) => {
             let term = encode_term_(term, locals)?.toks();
-            Ok(quote_spanned! {sp=>
-                (*::creusot_std::logic::ops::Fin::fin(#term))
-            }
-            .into())
+            Ok(quote_spanned! {sp=> (*::creusot_std::logic::ops::Fin::fin(#term))}.into())
         }
         Term::View(TermView { term, .. }) => {
             let term = match &**term {
@@ -446,10 +440,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
             };
             let hyp = encode_term_(hyp, locals)?.toks();
             let cons = encode_term_(cons, locals)?.toks();
-            Ok(quote_spanned! {sp=>
-                ::creusot_std::__stubs::implication(#hyp, #cons)
-            }
-            .into())
+            Ok(quote_spanned! {sp=> ::creusot_std::__stubs::implication(#hyp, #cons)}.into())
         }
         Term::Quant(TermQuant { quant_token, args, term, .. }) => {
             locals.open();
@@ -469,7 +460,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                 ::creusot_std::__stubs::#quant_token(
                     #[creusot::no_translate]
                     #[creusot::logic_closure]
-                    |#(#args_ref,)*| { #ts }
+                    |#(#args_ref,)*| #ts
                 )
             }
             .into())
@@ -617,7 +608,7 @@ fn encode_trigger_(
     Ok(ts)
 }
 
-fn encode_block_(block: &TBlock, locals: &mut Locals) -> TokenStream {
+fn encode_block_(block: &TermBlock, locals: &mut Locals) -> TokenStream {
     // If there are errors during encode_stmts_, still emit the braces
     // to allow the parser to skip over the body and discover more errors.
     let mut tokens = TokenStream::new();
@@ -629,7 +620,7 @@ fn encode_block_(block: &TBlock, locals: &mut Locals) -> TokenStream {
     tokens
 }
 
-pub fn encode_block(block: &TBlock) -> TokenStream {
+pub fn encode_block(block: &TermBlock) -> TokenStream {
     encode_stmts(&block.stmts, block.span())
 }
 
@@ -759,13 +750,13 @@ mod tests {
         let term: Term = syn::parse_str("forall<x: Int> x == x").unwrap();
         check_term(
             encode_term(&term),
-            ":: creusot_std :: __stubs :: forall (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | { :: creusot_std :: __stubs :: equal ((* x) , (* x)) })",
+            ":: creusot_std :: __stubs :: forall (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | :: creusot_std :: __stubs :: equal ((* x) , (* x)))",
         );
 
         let term: Term = syn::parse_str("forall<x: Int> forall<y: Int> true").unwrap();
         check_term(
             encode_term(&term),
-            ":: creusot_std :: __stubs :: forall (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | { :: creusot_std :: __stubs :: forall (# [creusot :: no_translate] # [creusot :: logic_closure] | y : & Int , | { true }) })",
+            ":: creusot_std :: __stubs :: forall (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | :: creusot_std :: __stubs :: forall (# [creusot :: no_translate] # [creusot :: logic_closure] | y : & Int , | true))",
         );
     }
 
@@ -774,13 +765,13 @@ mod tests {
         let term: Term = syn::parse_str("exists<x:Int> x == x").unwrap();
         check_term(
             encode_term(&term),
-            ":: creusot_std :: __stubs :: exists (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | { :: creusot_std :: __stubs :: equal ((* x) , (* x)) })",
+            ":: creusot_std :: __stubs :: exists (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | :: creusot_std :: __stubs :: equal ((* x) , (* x)))",
         );
 
         let term: Term = syn::parse_str("exists<x:Int> exists<y:Int> true").unwrap();
         check_term(
             encode_term(&term),
-            ":: creusot_std :: __stubs :: exists (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | { :: creusot_std :: __stubs :: exists (# [creusot :: no_translate] # [creusot :: logic_closure] | y : & Int , | { true }) })",
+            ":: creusot_std :: __stubs :: exists (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | :: creusot_std :: __stubs :: exists (# [creusot :: no_translate] # [creusot :: logic_closure] | y : & Int , | true))",
         );
     }
 

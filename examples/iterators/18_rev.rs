@@ -106,3 +106,8 @@ impl<I: ExactSizeIterator + DoubleEndedIterator> ExactSizeIterator for Rev<I> {
         self.iter.is_empty()
     }
 }
+
+#[ensures(result == Rev { iter })]
+pub fn rev<I: Iterator>(iter: I) -> Rev<I> {
+    Rev { iter }
+}

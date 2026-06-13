@@ -4,7 +4,7 @@ use crate::{
     common::{GhostLet, ghost_int_lit_suffix},
     creusot::{invariant::desugar_invariant, pretyping},
 };
-use pearlite_syn::TBlock;
+use pearlite_syn::TermBlock;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Delimiter, Group};
 use quote::{ToTokens, quote};
@@ -88,13 +88,13 @@ pub fn invariant(invariant: TS1, tokens: TS1) -> TS1 {
 
 /// An assertion is a sequence of statements (`Vec<Stmt>`).
 /// The `brace_token` is artificially generated from the span of the body.
-struct Assertion(TBlock);
+struct Assertion(TermBlock);
 
 impl Parse for Assertion {
     fn parse(input: parse::ParseStream) -> syn::Result<Self> {
         let brace_token = token::Brace(input.span());
-        let stmts = input.call(TBlock::parse_within)?;
-        Ok(Assertion(TBlock { brace_token, stmts }))
+        let stmts = input.call(TermBlock::parse_within)?;
+        Ok(Assertion(TermBlock { brace_token, stmts }))
     }
 }
 

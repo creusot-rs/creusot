@@ -159,6 +159,7 @@ contracts_items! {
     "perm_as_ref"               PermAsRef
     "perm_from_mut"             PermFromMut
     "perm_from_ref"             PermFromRef
+    "residual_into_try_type"    ResidualIntoTryType
     "resolve"                   Resolve
     "resolve_method"            ResolveMethod
     "seq_literal"               SeqLiteral

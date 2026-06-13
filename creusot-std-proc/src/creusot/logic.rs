@@ -7,7 +7,7 @@ use crate::{
         generate_unique_ident, pretyping,
     },
 };
-use pearlite_syn::TBlock;
+use pearlite_syn::TermBlock;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, TokenStreamExt as _, quote, quote_spanned};
@@ -25,7 +25,7 @@ struct LogicItem {
     attrs: Vec<Attribute>,
     vis: Visibility,
     sig: Signature,
-    body: Box<TBlock>,
+    body: Box<TermBlock>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -131,7 +131,7 @@ pub fn logic(in_tags: TS1, tokens: TS1) -> TS1 {
 }
 
 pub fn pearlite(tokens: TS1) -> TS1 {
-    let stmts = parse_macro_input!(tokens with TBlock::parse_within);
+    let stmts = parse_macro_input!(tokens with TermBlock::parse_within);
     TS1::from(pretyping::encode_stmts(
         &stmts,
         stmts.first().span().join(stmts.last().span()).unwrap(),
@@ -164,7 +164,8 @@ impl Parse for LogicInput {
         } else {
             let body;
             let brace_token = braced!(body in input);
-            let body = Box::new(TBlock { brace_token, stmts: body.call(TBlock::parse_within)? });
+            let body =
+                Box::new(TermBlock { brace_token, stmts: body.call(TermBlock::parse_within)? });
             Ok(LogicInput::Item(LogicItem { attrs, vis, sig, body }))
         }
     }

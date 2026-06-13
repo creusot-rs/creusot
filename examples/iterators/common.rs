@@ -10,11 +10,11 @@ pub trait Iterator {
     #[logic(prophetic)]
     fn completed(&mut self) -> bool;
 
-    #[logic(law)]
+    #[logic(law, prophetic)]
     #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self);
 
-    #[logic(law)]
+    #[logic(law, prophetic)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -65,17 +65,17 @@ pub trait DoubleEndedIterator: Iterator {
     #[logic(prophetic)]
     fn completed_back(&mut self) -> bool;
 
-    #[logic(law)]
+    #[logic(law, prophetic)]
     #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self);
 
-    #[logic(law)]
+    #[logic(law, prophetic)]
     #[requires(a.produces_back(ab, b))]
     #[requires(b.produces_back(bc, c))]
     #[ensures(a.produces_back(ab.concat(bc), c))]
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
-    #[logic(law)]
+    #[logic(law, prophetic)]
     #[requires(Self::size_hint.postcondition((self,), r))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]

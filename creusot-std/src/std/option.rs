@@ -60,7 +60,7 @@ extern_spec! {
         #[erasure]
         #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
         #[ensures(match self {
-            None => result == false,
+            None => resolve(f) && result == false,
             Some(t) => f.postcondition_once((t,), result),
         })]
         fn is_some_and(self, f: impl FnOnce(T) -> bool + Destruct) -> bool {
@@ -170,11 +170,9 @@ extern_spec! {
         #[requires(self == None ==> f.precondition(()))]
         #[ensures(match self {
             None => f.postcondition_once((), result),
-            Some(t) => result == t
+            Some(t) => resolve(f) && result == t
         })]
-        fn unwrap_or_else<F>(self, f: F) -> T
-        where
-            F: FnOnce() -> T {
+        fn unwrap_or_else<F: FnOnce() -> T>(self, f: F) -> T {
             match self {
                 Some(t) => t,
                 None => f(),
@@ -206,7 +204,7 @@ extern_spec! {
         #[erasure]
         #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
         #[ensures(match self {
-            None => result == None,
+            None => resolve(f) && result == None,
             Some(t) => exists<r> result == Some(r) && f.postcondition_once((t,), r),
         })]
         fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Option<U> {
@@ -219,7 +217,7 @@ extern_spec! {
         #[requires(match self { None => true, Some(t) => f.precondition((&t,)) })]
         #[ensures(result == self)]
         #[ensures(match self {
-            None => true,
+            None => resolve(f),
             Some(t) => f.postcondition_once((&t,), ()),
         })]
         fn inspect<F: FnOnce(&T)>(self, f: F) -> Option<T> {
@@ -231,7 +229,7 @@ extern_spec! {
 
         #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
         #[ensures(match self {
-            None => result == default,
+            None => resolve(f) && result == default,
             Some(t) => f.postcondition_once((t,), result)
         })]
         fn map_or<U, F: FnOnce(T) -> U>(self, default: U, f: F) -> U {
@@ -246,8 +244,8 @@ extern_spec! {
             Some(t) => f.precondition((t,)),
         })]
         #[ensures(match self {
-            None => default.postcondition_once((), result),
-            Some(t) => f.postcondition_once((t,), result),
+            None => resolve(f) && default.postcondition_once((), result),
+            Some(t) => resolve(default) && f.postcondition_once((t,), result),
         })]
         fn map_or_else<U, D: FnOnce() -> U, F: FnOnce(T) -> U>(self, default: D, f: F) -> U {
             match self {
@@ -271,7 +269,7 @@ extern_spec! {
         #[requires(self == None ==> err.precondition(()))]
         #[ensures(match self {
             None => exists<r> result == Err(r) && err.postcondition_once((), r),
-            Some(t) => result == Ok(t),
+            Some(t) => resolve(err) && result == Ok(t),
         })]
         fn ok_or_else<E, F: FnOnce() -> E>(self, err: F) -> Result<T, E> {
             match self {
@@ -346,7 +344,7 @@ extern_spec! {
 
         #[requires(match self { None => true, Some(t) => f.precondition((t,)) })]
         #[ensures(match self {
-            None => result == None,
+            None => resolve(f) &&result == None,
             Some(t) => f.postcondition_once((t,), result),
         })]
         fn and_then<U, F: FnOnce(T) -> Option<U>>(self, f: F) -> Option<U> {
@@ -358,7 +356,7 @@ extern_spec! {
 
         #[requires(match self { None => true, Some(t) => predicate.precondition((&t,)) })]
         #[ensures(match self {
-            None => result == None,
+            None => resolve(predicate) && result == None,
             Some(t) => match result {
                 None => predicate.postcondition_once((&t,), false) && resolve(t),
                 Some(r) => predicate.postcondition_once((&t,), true) && r == t,
@@ -384,7 +382,7 @@ extern_spec! {
         #[requires(self == None ==> f.precondition(()))]
         #[ensures(match self {
             None => f.postcondition_once((), result),
-            Some(t) => result == Some(t),
+            Some(t) => resolve(f) && result == Some(t),
         })]
         fn or_else<F: FnOnce() -> Option<T>>(self, f: F) -> Option<T> {
             match self {

@@ -154,8 +154,8 @@ ast_struct! {
 }
 
 ast_struct! {
-    /// A braced block containing Pearlite statements.
-    pub struct TBlock {
+    // A blocked scope: `{ ... }`.
+    pub struct TermBlock {
         pub brace_token: token::Brace,
         /// Statements in a block
         pub stmts: Vec<TermStmt>,
@@ -207,14 +207,6 @@ ast_struct! {
         pub left: Box<Term>,
         pub op: BinOp,
         pub right: Box<Term>,
-    }
-}
-
-ast_struct! {
-    /// A blocked scope: `{ ... }`.
-    pub struct TermBlock #full {
-        pub label: Option<Label>,
-        pub block: TBlock,
     }
 }
 
@@ -279,7 +271,7 @@ ast_struct! {
     pub struct TermIf #full {
         pub if_token: Token![if],
         pub cond: Box<Term>,
-        pub then_branch: TBlock,
+        pub then_branch: TermBlock,
         pub else_branch: Option<(Token![else], Box<Term>)>,
     }
 }
@@ -494,7 +486,7 @@ ast_struct! {
     pub struct TermPearlite {
         pub pearlite_token: kw::pearlite,
         pub bang_token: Token![!],
-        pub block: TBlock,
+        pub block: TermBlock,
     }
 }
 
@@ -502,7 +494,7 @@ ast_struct! {
     pub struct TermProofAssert {
         pub proof_assert_token: kw::proof_assert,
         pub bang_token: Token![!],
-        pub block: TBlock,
+        pub block: TermBlock,
     }
 }
 
@@ -701,7 +693,7 @@ pub(crate) mod parsing {
         }
     }
 
-    impl TBlock {
+    impl TermBlock {
         pub fn parse_within(input: ParseStream) -> Result<Vec<TermStmt>> {
             let mut stmts = Vec::new();
             loop {
@@ -725,12 +717,12 @@ pub(crate) mod parsing {
         }
     }
 
-    impl Parse for TBlock {
+    impl Parse for TermBlock {
         fn parse(input: ParseStream) -> Result<Self> {
             let content;
-            Ok(TBlock {
+            Ok(TermBlock {
                 brace_token: braced!(content in input),
-                stmts: content.call(TBlock::parse_within)?,
+                stmts: content.call(TermBlock::parse_within)?,
             })
         }
     }
@@ -822,7 +814,7 @@ pub(crate) mod parsing {
     }
 
     fn stmt_expr(input: ParseStream, allow_nosemi: bool) -> Result<TermStmt> {
-        let e = super::parsing::term_early(input)?;
+        let e = term_early(input)?;
 
         if input.peek(Token![;]) {
             return Ok(TermStmt::Semi(e, input.parse()?));
@@ -1010,7 +1002,7 @@ pub(crate) mod parsing {
                 .parse::<BinOp>()
                 .ok()
                 .is_some_and(|op| Precedence::of(&op) >= base)
-                && !(input.peek(Token![==]) && (input.peek3(Token![>]) || input.peek3(Token![=])))
+                && !(input.peek(Token![==]) && input.peek3(Token![>]))
             {
                 let op: BinOp = input.parse()?;
                 let precedence = Precedence::of(&op);
@@ -1041,9 +1033,7 @@ pub(crate) mod parsing {
     }
 
     fn peek_precedence(input: ParseStream) -> Precedence {
-        if input.peek(Token![==]) && input.peek3(Token![=]) {
-            Precedence::Compare
-        } else if input.peek(Token![==]) && input.peek3(Token![>]) {
+        if input.peek(Token![==]) && input.peek3(Token![>]) {
             Precedence::Impl
         } else if let Ok(op) = input.fork().parse() {
             Precedence::of(&op)
@@ -1224,18 +1214,6 @@ pub(crate) mod parsing {
             input.call(term_block).map(Term::Block)
         } else if input.peek(Token![..]) {
             term_range(input, allow_struct).map(Term::Range)
-        } else if input.peek(Lifetime) {
-            let the_label: Label = input.parse()?;
-            let mut expr = if input.peek(token::Brace) {
-                Term::Block(input.call(term_block)?)
-            } else {
-                return Err(input.error("expected loop or block term"));
-            };
-            match &mut expr {
-                Term::Block(TermBlock { label, .. }) => *label = Some(the_label),
-                _ => unreachable!(),
-            }
-            Ok(expr)
         } else {
             Err(input.error("expected term"))
         }
@@ -1266,18 +1244,18 @@ pub(crate) mod parsing {
                 return Ok(Term::ProofAssert(TermProofAssert {
                     proof_assert_token: kw::proof_assert(expr.inner.span()),
                     bang_token,
-                    block: TBlock {
+                    block: TermBlock {
                         brace_token: token::Brace(span_delim),
-                        stmts: TBlock::parse_within(&tokens)?,
+                        stmts: TermBlock::parse_within(&tokens)?,
                     },
                 }));
             } else if expr.inner.path.is_ident("pearlite") {
                 return Ok(Term::Pearlite(TermPearlite {
                     pearlite_token: kw::pearlite(expr.inner.span()),
                     bang_token,
-                    block: TBlock {
+                    block: TermBlock {
                         brace_token: token::Brace(span_delim),
-                        stmts: TBlock::parse_within(&tokens)?,
+                        stmts: TermBlock::parse_within(&tokens)?,
                     },
                 }));
             } else if expr.inner.path.is_ident("seq") {
@@ -1444,7 +1422,7 @@ pub(crate) mod parsing {
         let else_branch = if input.peek(Token![if]) {
             input.parse().map(Term::If)?
         } else if input.peek(token::Brace) {
-            Term::Block(TermBlock { label: None, block: input.parse()? })
+            Term::Block(input.parse()?)
         } else {
             return Err(lookahead.error());
         };
@@ -1674,13 +1652,11 @@ pub(crate) mod parsing {
     }
 
     pub fn term_block(input: ParseStream) -> Result<TermBlock> {
-        let label: Option<Label> = input.parse()?;
-
         let content;
         let brace_token = braced!(content in input);
-        let stmts = content.call(TBlock::parse_within)?;
+        let stmts = content.call(TermBlock::parse_within)?;
 
-        Ok(TermBlock { label, block: TBlock { brace_token, stmts } })
+        Ok(TermBlock { brace_token, stmts })
     }
 
     fn term_range(input: ParseStream, allow_struct: AllowStruct) -> Result<TermRange> {
@@ -1801,9 +1777,9 @@ pub(crate) mod parsing {
         let (output, body) = if input.peek(Token![->]) {
             let arrow_token: Token![->] = input.parse()?;
             let ty: Type = input.parse()?;
-            let body: TBlock = input.parse()?;
+            let body: TermBlock = input.parse()?;
             let output = ReturnType::Type(arrow_token, Box::new(ty));
-            let block = Term::Block(TermBlock { label: None, block: body });
+            let block = Term::Block(body);
             (output, block)
         } else {
             let body = ambiguous_term(input, allow_struct)?;
@@ -1876,7 +1852,7 @@ pub(crate) mod printing {
         }
     }
 
-    impl ToTokens for TBlock {
+    impl ToTokens for TermBlock {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.brace_token.surround(tokens, |tokens| {
                 tokens.append_all(&self.stmts);
@@ -2178,15 +2154,6 @@ pub(crate) mod printing {
                         <Token![,]>::default().to_tokens(tokens);
                     }
                 }
-            });
-        }
-    }
-
-    impl ToTokens for TermBlock {
-        fn to_tokens(&self, tokens: &mut TokenStream) {
-            self.label.to_tokens(tokens);
-            self.block.brace_token.surround(tokens, |tokens| {
-                tokens.append_all(&self.block.stmts);
             });
         }
     }
