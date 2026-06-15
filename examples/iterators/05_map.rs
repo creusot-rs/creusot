@@ -1,6 +1,6 @@
 #![feature(unboxed_closures)]
 extern crate creusot_std;
-use creusot_std::{invariant::Invariant, prelude::*};
+use creusot_std::{invariant::Invariant, logic::such_that, prelude::*};
 
 pub mod common;
 use common::{ExactSizeIterator, Iterator};
@@ -175,7 +175,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
         visited: Seq<B>,
         succ: Self,
     ) -> (Seq<&'a mut F>, Seq<I::Item>) {
-        creusot_std::logic::such_that(|(fs, s): (Seq<&mut F>, Seq<I::Item>)| {
+        such_that(|(fs, s): (Seq<&mut F>, Seq<I::Item>)| {
             pearlite! {
                 fs.len() == visited.len() && s.len() == visited.len()
                 && self.iter.produces(s, succ.iter)

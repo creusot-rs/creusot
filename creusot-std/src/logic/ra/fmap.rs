@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::logic::such_that;
+use crate::logic::any;
 use crate::{
     logic::{
         FMap,
@@ -167,7 +167,7 @@ impl<K, V: RA> FMap<K, V> {
     pub fn total_op(self, other: Self) -> Self {
         self.merge(other, |(x, y): (V, V)| match x.op(y) {
             Some(r) => r,
-            _ => such_that(|_| true),
+            _ => any(),
         })
     }
 }

@@ -1,5 +1,5 @@
 extern crate creusot_std;
-use creusot_std::prelude::*;
+use creusot_std::{logic::such_that, prelude::*};
 
 pub mod common;
 use common::{ExactSizeIterator, Iterator};
@@ -56,7 +56,7 @@ where
         if ab != Seq::empty() {
             proof_assert!(
                 // instantiate the existential in `b.produces(bc, c)`
-                let s = creusot_std::logic::such_that(|s: Seq<Self::Item>| {
+                let s = such_that(|s: Seq<Self::Item>| {
                     s.len() == 0 && b.iter.produces(s.concat(bc), c.iter)
                 });
                 s.concat(bc) == bc

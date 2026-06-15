@@ -9,7 +9,7 @@ pub use auth::{Authority, Fragment};
 // are opaque to the fmap_view module
 mod m {
     #[cfg(creusot)]
-    use crate::logic::such_that;
+    use crate::logic::{any, such_that};
     use crate::{
         logic::{
             Id, Set,
@@ -264,7 +264,7 @@ mod m {
         pub fn update<U: Update<R>>(&mut self, upd: U) -> Snapshot<U::Choice> {
             let v = snapshot!(self@);
             let target_s = snapshot!(Set::from_predicate(|r| exists<ch> upd.update(*v, ch) == r));
-            proof_assert!(target_s.contains(upd.update(*v, such_that(|_| true))));
+            proof_assert!(target_s.contains(upd.update(*v, any())));
             proof_assert!(
                 forall<f: R> v.op(f) != None ==>
                     upd.update(*v, upd.frame_preserving(*v, f)).op(f) != None

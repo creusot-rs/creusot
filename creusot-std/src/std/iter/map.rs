@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::resolve::structural_resolve;
+use crate::{logic::such_that, resolve::structural_resolve};
 use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
 use core::iter::Map;
 
@@ -135,7 +135,7 @@ fn produces_instantiate_existential<'a, I: IteratorSpec, B, F: FnMut(I::Item) ->
     visited: Seq<B>,
     succ: Map<I, F>,
 ) -> (Seq<&'a mut F>, Seq<I::Item>) {
-    creusot_std::logic::such_that(|(fs, s): (Seq<&mut F>, Seq<I::Item>)| {
+    such_that(|(fs, s): (Seq<&mut F>, Seq<I::Item>)| {
         pearlite! {
             fs.len() == visited.len() && s.len() == visited.len()
             && this.iter().produces(s, succ.iter())

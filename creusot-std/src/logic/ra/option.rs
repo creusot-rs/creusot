@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::logic::such_that;
+use crate::logic::any;
 use crate::{
     logic::ra::{
         RA, UnitRA,
@@ -192,7 +192,7 @@ impl<R: RA, U: Update<R>> Update<Option<R>> for OptionUpdate<U> {
     fn frame_preserving(self, from: Option<R>, frame: Option<R>) -> U::Choice {
         match frame {
             Some(frame) => self.0.frame_preserving(from.unwrap_logic(), frame),
-            None => such_that(|_| true),
+            None => any(),
         }
     }
 }

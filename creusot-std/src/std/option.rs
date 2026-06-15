@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::logic::{Mapping, such_that};
+use crate::logic::{Mapping, any};
 use crate::{
     ghost::Plain, logic::ord::ord_laws_impl, prelude::*, std::iter::ExactSizeIteratorSpec,
 };
@@ -845,7 +845,7 @@ impl<T> OptionExt<T> for Option<T> {
     fn unwrap_logic(self) -> T {
         match self {
             Some(x) => x,
-            None => such_that(|_| true),
+            None => any(),
         }
     }
 
