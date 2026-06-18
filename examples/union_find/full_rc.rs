@@ -3,7 +3,7 @@ extern crate creusot_std;
 // This proof is largely adapted from the one in Vocal (see https://github.com/ocaml-gospel/vocal/blob/main/proofs/why3/UnionFind_impl.mlw)
 mod implementation {
     #[cfg(creusot)]
-    use creusot_std::logic::such_that;
+    use creusot_std::logic::any;
     use creusot_std::{
         cell::PermCell,
         ghost::perm::Perm,
@@ -171,9 +171,9 @@ mod implementation {
                 UFInner {
                     domain: snapshot!(FSet::empty()),
                     perms: FMap::new().into_inner(),
-                    payloads: snapshot!(such_that(|_| true)),
-                    depth: snapshot!(such_that(|_| true)),
-                    roots: snapshot!(such_that(|_| true)),
+                    payloads: snapshot!(any()),
+                    depth: snapshot!(any()),
+                    roots: snapshot!(any()),
                     max_depth: snapshot!(0),
                 }
             )

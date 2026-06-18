@@ -38,18 +38,11 @@ module M_foo
     forall self: t_FMap_Int_Int, k: int, v: int [insert_Int self k v]. len_Int (insert_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
-  predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_Int_bool
-  
-  function such_that_Int (p: Map.map int bool) : int
-  
-  axiom such_that_Int_spec: forall p: Map.map int bool [such_that_Int p]. (exists x: int. index_Mapping_Int_bool p x)
-      -> index_Mapping_Int_bool p (such_that_Int p)
+  constant any_Int : int
   
   function unwrap_Option_Int (self: t_Option_Int) : int = match self with
       | Some x -> x
-      | None -> such_that_Int (fun (__0: int) -> true)
+      | None -> any_Int
       end
   
   function lookup_Int [@inline:trivial] (self: t_FMap_Int_Int) (k: int) : int = unwrap_Option_Int (get_Int self k)

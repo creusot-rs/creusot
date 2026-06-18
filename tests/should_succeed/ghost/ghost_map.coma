@@ -74,19 +74,11 @@ module M_ghost_map
   let len_ghost_i32 (self: t_FMap_i32_i32) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = len_i32 self} (! return {result}) ]
   
-  predicate index_Mapping_i32_bool [@inline:trivial] (self: Map.map Int32.t bool) (a: Int32.t) = Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_i32_bool
-  
-  function such_that_i32 (p: Map.map Int32.t bool) : Int32.t
-  
-  axiom such_that_i32_spec:
-    forall p: Map.map Int32.t bool [such_that_i32 p]. (exists x: Int32.t. index_Mapping_i32_bool p x)
-      -> index_Mapping_i32_bool p (such_that_i32 p)
+  constant any_i32 : Int32.t
   
   function unwrap_Option_i32 (self: t_Option_i32) : Int32.t = match self with
       | Some x -> x
-      | None -> such_that_i32 (fun (__0: Int32.t) -> true)
+      | None -> any_i32
       end
   
   function lookup_i32 [@inline:trivial] (self: t_FMap_i32_i32) (k: Int32.t) : Int32.t =

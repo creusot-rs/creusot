@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::resolve::structural_resolve;
+use crate::{logic::such_that, resolve::structural_resolve};
 use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
 use core::iter::Skip;
 
@@ -85,7 +85,7 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
         if ab != Seq::empty() {
             proof_assert!(
                 // instantiate the existential in `b.produces(bc, c)`
-                let s = creusot_std::logic::such_that(|s: Seq<Self::Item>| {
+                let s = such_that(|s: Seq<Self::Item>| {
                     s.len() == 0 && b.iter().produces(s.concat(bc), c.iter())
                 });
                 s.concat(bc) == bc
