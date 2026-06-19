@@ -34,7 +34,7 @@ impl Clone for SyncView {
 impl SyncView {
     #[check(ghost)]
     #[trusted]
-    pub fn new() -> Ghost<Self> {
+    pub const fn new() -> Ghost<Self> {
         panic!("Should not be called outside ghost code")
     }
 

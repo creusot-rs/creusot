@@ -87,7 +87,7 @@ macro_rules! impl_atomic {
             #[trusted]
             #[check(terminates)]
             #[allow(unused_variables)]
-            pub fn new(val: $type, sync_view: Ghost<&mut SyncView>) -> (Self, Ghost<Perm<$atomic_type $(< $T >)?>>) {
+            pub const fn new(val: $type, sync_view: Ghost<&mut SyncView>) -> (Self, Ghost<Perm<$atomic_type $(< $T >)?>>) {
                 (Self(core::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
             }
 
