@@ -230,8 +230,9 @@ module M_parallel_add
     {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new result type invariant] inv_tup2_AtomicI32_Ghost_Perm_AtomicI32 result)
       /\ ([@stop_split] [@expl:new ensures #0] val_AtomicI32 result.f1
         = singleton_Int (get_timestamp_AtomicI32 result.f0 (fin_Ghost_refmut_SyncView sync_view)) { f0'0 = val';
-                                                                                                    f1'0 = sync_view.current })
-      /\ ([@stop_split] [@expl:new ensures #1] ward_AtomicI32 result.f1 = result.f0)}
+                                                                                                    f1'0 = fin_Ghost_refmut_SyncView sync_view })
+      /\ ([@stop_split] [@expl:new ensures #1] le_log_SyncView sync_view.current (fin_Ghost_refmut_SyncView sync_view))
+      /\ ([@stop_split] [@expl:new ensures #2] ward_AtomicI32 result.f1 = result.f0)}
       (! return {result}) ]
   
   type tup2_fraction_1_fraction_add = { f0'1: (); f1'1: () }
@@ -2002,25 +2003,19 @@ module M_parallel_add
   let new_Perm_AtomicI32 (x: t_Perm_AtomicI32) (return (x'0: t_Perm_AtomicI32)) = any
     [ return (result: t_Perm_AtomicI32) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  let new_refmut_SyncView (x: MutBorrow.t t_SyncView) (return (x'0: MutBorrow.t t_SyncView)) = any
-    [ return (result: MutBorrow.t t_SyncView) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  type tup2_i32_Ghost_SyncView = { f0'15: Int32.t; f1'15: t_SyncView }
   
-  type tup2_i32_Ghost_Int = { f0'15: Int32.t; f1'15: int }
-  
-  let into_inner (self: t_AtomicI32) (own'0: t_Perm_AtomicI32) (sync_view: MutBorrow.t t_SyncView)
-    (return (x: tup2_i32_Ghost_Int)) =
+  let into_inner (self: t_AtomicI32) (own'0: t_Perm_AtomicI32) (return (x: tup2_i32_Ghost_SyncView)) =
   {[@stop_split] [@expl:into_inner requires] ([@stop_split] [@expl:into_inner 'self' type invariant] inv_AtomicI32 self)
     /\ ([@stop_split] [@expl:into_inner requires] self = ward_AtomicI32 own'0)}
     any
-    [ return (result: tup2_i32_Ghost_Int) ->
-    {[@stop_split] [@expl:into_inner ensures] ([@stop_split] [@expl:into_inner ensures #0] match get_Int (val_AtomicI32 own'0) result.f1'15 with
+    [ return (result: tup2_i32_Ghost_SyncView) ->
+    {[@stop_split] [@expl:into_inner ensures] ([@stop_split] [@expl:into_inner ensures #0] match get_Int (val_AtomicI32 own'0) (get_timestamp_AtomicI32 self result.f1'15) with
           | Some {f0'0 = v} -> result.f0'15 = v
           | None -> false
           end)
-      /\ ([@stop_split] [@expl:into_inner ensures #1] get_timestamp_AtomicI32 self (fin_Ghost_refmut_SyncView sync_view)
-        = result.f1'15)
-      /\ ([@stop_split] [@expl:into_inner ensures #2] forall t: int. match get_Int (val_AtomicI32 own'0) t with
-          | Some {f1'0 = view} -> t <= result.f1'15 /\ le_log_SyncView view (fin_Ghost_refmut_SyncView sync_view)
+      /\ ([@stop_split] [@expl:into_inner ensures #1] forall t: int. match get_Int (val_AtomicI32 own'0) t with
+          | Some {f1'0 = view} -> t <= get_timestamp_AtomicI32 self result.f1'15 /\ le_log_SyncView view result.f1'15
           | None -> true
           end)}
       (! return {result}) ]
@@ -2106,27 +2101,10 @@ module M_parallel_add
           (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_62 <- _x ] s42)
       | s42 = frag_lemma_Option_tup2_PositiveReal_Int {inv'0.auth} {_62} (fun (_x: ()) -> [ &_59 <- _x ] s43)
       | s43 = new_Perm_AtomicI32 {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s44)
-      | s44 = new (fun (_x: t_SyncView) -> [ &view <- _x ] s45)
-      | s45 = MutBorrow.borrow_mut <t_SyncView> {view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_76 <- _bor ] [ &view <- _bor.final ] s46)
-      | s46 = deref_mut_Ghost_SyncView {_76} (fun (_x: MutBorrow.t t_SyncView) -> [ &_75 <- _x ] s47)
-      | s47 = MutBorrow.borrow_final <t_SyncView> {_75.current} {MutBorrow.get_id _75}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_74 <- _bor ] [ &_75 <- { _75 with current = _bor.final } ] s48)
-      | s48 = MutBorrow.borrow_final <t_SyncView> {_74.current} {MutBorrow.get_id _74}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_73 <- _bor ] [ &_74 <- { _74 with current = _bor.final } ] s49)
-      | s49 = -{resolve_refmut_SyncView _75}- s50
-      | s50 = -{resolve_refmut_SyncView _74}- s51
-      | s51 = MutBorrow.borrow_final <t_SyncView> {_73.current} {MutBorrow.get_id _73}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_72 <- _bor ] [ &_73 <- { _73 with current = _bor.final } ] s52)
-      | s52 = -{resolve_refmut_SyncView _73}- s53
-      | s53 = MutBorrow.borrow_final <t_SyncView> {_72.current} {MutBorrow.get_id _72}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_71 <- _bor ] [ &_72 <- { _72 with current = _bor.final } ] s54)
-      | s54 = new_refmut_SyncView {_71} (fun (_x: MutBorrow.t t_SyncView) -> [ &_70 <- _x ] s55)
-      | s55 = -{resolve_refmut_SyncView _72}- s56
-      | s56 = into_inner {atomic} {own'1} {_70} (fun (_x: tup2_i32_Ghost_Int) -> [ &_67 <- _x ] s57)
-      | s57 = [ &x <- _67.f0'15 ] s58
-      | s58 = {[@expl:assertion] n = x} s59
-      | s59 = return {_ret} ] ]
+      | s44 = into_inner {atomic} {own'1} (fun (_x: tup2_i32_Ghost_SyncView) -> [ &_66 <- _x ] s45)
+      | s45 = [ &x <- _66.f0'15 ] s46
+      | s46 = {[@expl:assertion] n = x} s47
+      | s47 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & n: Int32.t = n
     | & atomic: t_AtomicI32 = Any.any_l ()
@@ -2168,14 +2146,6 @@ module M_parallel_add
     | & _59: () = Any.any_l ()
     | & _62: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & _64: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & view: t_SyncView = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
-    | & _67: tup2_i32_Ghost_Int = Any.any_l ()
-    | & _70: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _71: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _72: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _73: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _74: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _75: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _76: MutBorrow.t t_SyncView = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _66: tup2_i32_Ghost_SyncView = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

@@ -209,3 +209,59 @@ impl<K, V: RA> LocalUpdate<FMap<K, V>> for FMapInsertLocalUpdate<K, V> {
         });
     }
 }
+
+/// Modifies a key-value mapping in an authority/fragment pair of [`FMap`]s.
+///
+/// It requires that the key is in the fragment.
+pub struct FMapKeyLocalUpdate<K, U>(pub Snapshot<K>, pub U);
+
+impl<K, V: RA, U: LocalUpdate<V>> LocalUpdate<FMap<K, V>> for FMapKeyLocalUpdate<K, U> {
+    #[logic(open, inline)]
+    fn premise(self, from_auth: FMap<K, V>, from_frag: FMap<K, V>) -> bool {
+        pearlite! {
+            match (from_auth.get(*self.0), from_frag.get(*self.0)) {
+                (Some(auth_v), Some(frag_v)) => self.1.premise(auth_v, frag_v),
+                (_, None) => false,
+                _ => true,
+            }
+        }
+    }
+
+    #[logic(open, inline)]
+    fn update(self, from_auth: FMap<K, V>, from_frag: FMap<K, V>) -> (FMap<K, V>, FMap<K, V>) {
+        let (auth, frag) = self.1.update(from_auth[*self.0], from_frag[*self.0]);
+        (from_auth.insert(*self.0, auth), from_frag.insert(*self.0, frag))
+    }
+
+    #[logic]
+    #[allow(unused)]
+    #[requires(self.premise(from_auth, from_frag))]
+    #[requires(Some(from_frag).op(frame) == Some(Some(from_auth)))]
+    #[ensures({
+        let (to_auth, to_frag) = self.update(from_auth, from_frag);
+        Some(to_frag).op(frame) == Some(Some(to_auth))
+    })]
+    fn frame_preserving(
+        self,
+        from_auth: FMap<K, V>,
+        from_frag: FMap<K, V>,
+        frame: Option<FMap<K, V>>,
+    ) {
+        match (from_auth.get(*self.0), from_frag.get(*self.0)) {
+            (Some(auth_v), Some(frag_v)) => {
+                let frame_k = match frame {
+                    Some(frame) => frame.get(*self.0),
+                    None => None,
+                };
+                self.1.frame_preserving(auth_v, frag_v, frame_k);
+
+                let (to_auth, to_frag) = self.update(from_auth, from_frag);
+                proof_assert!(match Some(to_frag).op(frame) {
+                    Some(Some(x)) => to_auth.ext_eq(x),
+                    _ => false,
+                });
+            }
+            _ => (),
+        }
+    }
+}

@@ -149,8 +149,6 @@ pub fn parallel_add(n: i32) {
         inv.own
     };
 
-    let mut view = SyncView::new();
-    let (x, _) = atomic.into_inner(own, ghost!(&mut *view)); // Non-atomically read the atomic
-
+    let (x, _) = atomic.into_inner(own); // Non-atomically read the atomic
     proof_assert!(n == x);
 }
