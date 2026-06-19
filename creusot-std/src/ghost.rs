@@ -133,7 +133,7 @@ impl<T: ?Sized> Ghost<T> {
     #[erasure(_)]
     #[check(ghost)]
     #[ensures(**result == **self)]
-    pub fn borrow(&self) -> Ghost<&T> {
+    pub const fn borrow(&self) -> Ghost<&T> {
         Ghost::conjure()
     }
 
@@ -142,7 +142,7 @@ impl<T: ?Sized> Ghost<T> {
     #[erasure(_)]
     #[check(ghost)]
     #[ensures(*result == &mut **self)]
-    pub fn borrow_mut(&mut self) -> Ghost<&mut T> {
+    pub const fn borrow_mut(&mut self) -> Ghost<&mut T> {
         Ghost::conjure()
     }
 
@@ -156,7 +156,7 @@ impl<T: ?Sized> Ghost<T> {
     #[erasure(_)]
     #[check(ghost)]
     #[requires(false)]
-    pub fn conjure() -> Self {
+    pub const fn conjure() -> Self {
         Ghost(PhantomData)
     }
 
