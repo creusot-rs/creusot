@@ -156,11 +156,13 @@ fn select_method<'tcx>(
                 }
             }
 
-            unimplemented!(
-                "Cannot handle builtin implementation of `{}` for `{}`",
-                tcx.def_path_str(trait_ref.def_id),
-                substs.type_at(0)
-            )
+            // Builtin trait impls we don't model specifically — e.g. the
+            // compiler-synthesized `Clone`/`PartialEq`/`Hash`/... for tuples and
+            // arrays. Rather than ICE-ing, treat them as an unknown-but-present
+            // instance (opaque), mirroring the `Dynamic` case above. This is
+            // sound: an opaque resolution loses precision (the call is treated
+            // abstractly) but never correctness.
+            TraitResolved::UnknownFound
         }
     }
 }
