@@ -1,5 +1,6 @@
 mod contractless_external_function;
 mod experimental_types;
+mod opaque_builtin_impl;
 mod result_param;
 mod trusted;
 
@@ -9,6 +10,7 @@ use rustc_session::Session;
 use rustc_span::{Span, Symbol};
 
 pub(crate) use contractless_external_function::CONTRACTLESS_EXTERNAL_FUNCTION;
+pub(crate) use opaque_builtin_impl::OPAQUE_BUILTIN_IMPL;
 pub(crate) use result_param::RESULT_PARAM;
 
 use crate::validate;
@@ -36,6 +38,18 @@ pub(crate) enum Diagnostics {
     #[diag("support for trait objects (dyn) is limited and experimental")]
     DynExperimental,
     #[diag(
+        "call to `{$name}` on `{$ty}` resolves to an unmodeled builtin trait impl; its result is left unconstrained (you will not be able to prove properties of the result)"
+    )]
+    OpaqueBuiltinImpl {
+        /// Name of the trait method
+        name: Symbol,
+        /// The concrete self type the builtin impl is for
+        ty: String,
+        /// Location of the call
+        #[label("called here")]
+        span: Span,
+    },
+    #[diag(
         "`result` used as a parameter name. It is confusing because it is also the default name of the function's result"
     )]
     ResultParam,
@@ -45,6 +59,7 @@ pub fn register_lints(_sess: &Session, store: &mut LintStore) {
     store.register_lints(&[
         experimental_types::EXPERIMENTAL,
         contractless_external_function::CONTRACTLESS_EXTERNAL_FUNCTION,
+        opaque_builtin_impl::OPAQUE_BUILTIN_IMPL,
         trusted::TRUSTED_CODE,
         result_param::RESULT_PARAM,
     ]);

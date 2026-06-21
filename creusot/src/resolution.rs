@@ -156,13 +156,18 @@ fn select_method<'tcx>(
                 }
             }
 
-            // Builtin trait impls we don't model specifically — e.g. the
-            // compiler-synthesized `Clone`/`PartialEq`/`Hash`/... for tuples and
-            // arrays. Rather than ICE-ing, treat them as an unknown-but-present
-            // instance (opaque), mirroring the `Dynamic` case above. This is
-            // sound: an opaque resolution loses precision (the call is treated
-            // abstractly) but never correctness.
-            TraitResolved::UnknownFound
+            // Builtin trait impls we don't model specifically — the
+            // compiler-synthesized impls reaching here are tuple `Clone` and
+            // closure `Clone` (tuple `PartialEq`/`Ord`/`Hash` and array `Clone`
+            // have real `core` impls and resolve via `UserDefined` instead). Rather
+            // than ICE-ing, treat them as an unknown-but-present instance (opaque),
+            // mirroring the `Dynamic` case above. This is sound: an opaque
+            // resolution loses precision (the call is treated abstractly) but never
+            // correctness. `UnknownBuiltin` behaves exactly like `UnknownFound`
+            // downstream, but lets the caller pinpoint that the opacity comes from
+            // an unmodeled builtin impl (used to emit the `opaque_builtin_impl`
+            // lint, so the precision loss is not silent).
+            TraitResolved::UnknownBuiltin
         }
     }
 }
@@ -188,6 +193,18 @@ pub(crate) enum TraitResolved<'tcx> {
     },
     /// A known instance exists, but we don't know which one.
     UnknownFound,
+    /// A known instance exists but is an unmodeled compiler-builtin impl (tuple
+    /// `Clone` or closure `Clone`). Kept as a distinct variant only so the
+    /// translation can emit the `opaque_builtin_impl` lint at the call site (and
+    /// synthesize a law for tuple `Clone`, see `synthesizes_builtin_law`).
+    ///
+    /// Only arises when resolving a *program* function call (`Clone::clone` on a
+    /// tuple/closure). It is therefore unreachable when resolving logic functions,
+    /// constants, or the `Resolve`/`Invariant` traits (none of which have builtin
+    /// impls) — those sites treat it as `unreachable!()`. Where it is reachable, it
+    /// is treated like [`Self::UnknownFound`] (opaque, sound) except at the lint
+    /// emission in `terminator.rs`, the one site that discriminates the two.
+    UnknownBuiltin,
     /// No instance exists, we return extra data to query whether an instance might exist
     /// (via specialization or potentially defined in another crate).
     ///
@@ -238,7 +255,9 @@ impl<'tcx> TraitResolved<'tcx> {
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         match self {
             TraitResolved::Instance { def, impl_: _ } => Some(def),
-            TraitResolved::NotATraitItem | TraitResolved::UnknownFound => Some((did, substs)),
+            TraitResolved::NotATraitItem
+            | TraitResolved::UnknownFound
+            | TraitResolved::UnknownBuiltin => Some((did, substs)),
             _ => None,
         }
     }

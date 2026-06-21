@@ -139,7 +139,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             pre_sig.contract.requires.clear();
         }
 
-        if let TraitResolved::UnknownFound = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
+        if let TraitResolved::UnknownFound | TraitResolved::UnknownBuiltin = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
                 // These conditions are important to make sure the Fn trait familly is implemented
                 && ctx.fn_sig(def_id).skip_binder().is_fn_trait_compatible()
                 && ctx.codegen_fn_attrs(def_id).target_features.is_empty()
@@ -215,6 +215,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             TraitResolved::NotATraitItem
             | TraitResolved::Instance { .. } // The default impl is known to be the final instance
             | TraitResolved::UnknownFound // Unresolved trait method
+            // (no `UnknownBuiltin`: a builtin impl is never a logic function)
         );
         // The other case are impossible, because that would mean we are not guaranteed to have an instance
 
@@ -350,6 +351,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             TraitResolved::NotATraitItem
             | TraitResolved::Instance { .. } // The impl is known to be the final instance
             | TraitResolved::UnknownFound // Unresolved trait const
+            // (no `UnknownBuiltin`: there is no builtin constant)
         );
         let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
             || ctx.def_kind(def_id) == DefKind::ConstParam
@@ -721,6 +723,8 @@ fn postcondition_once_term<'tcx>(
                 TraitResolved::NotATraitItem => (),
                 TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
+                // Builtin `clone` (tuple/closure) has a spec, so proceed rather than bail.
+                TraitResolved::UnknownBuiltin => (),
                 TraitResolved::NoInstance(..) => unreachable!(),
             }
             post_fndef(ctx, names, did, subst, args, res)
@@ -814,6 +818,8 @@ fn postcondition_mut_term<'tcx>(
                 TraitResolved::NotATraitItem => (),
                 TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
+                // Builtin `clone` (tuple/closure) has a spec, so proceed rather than bail.
+                TraitResolved::UnknownBuiltin => (),
                 TraitResolved::NoInstance(..) => unreachable!(),
             }
             post_fndef(ctx, names, did, subst, args, res)
@@ -880,6 +886,8 @@ fn postcondition_term<'tcx>(
                 TraitResolved::NotATraitItem => (),
                 TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
+                // Builtin `clone` (tuple/closure) has a spec, so proceed rather than bail.
+                TraitResolved::UnknownBuiltin => (),
                 TraitResolved::NoInstance(..) => unreachable!(),
             }
             post_fndef(ctx, names, did, subst, args, res)
@@ -951,6 +959,8 @@ fn precondition_term<'tcx>(
                 TraitResolved::NotATraitItem => (),
                 TraitResolved::Instance { def, .. } => (did, subst) = def,
                 TraitResolved::UnknownFound => return None,
+                // Builtin `clone` (tuple/closure) has a spec, so proceed rather than bail.
+                TraitResolved::UnknownBuiltin => (),
                 TraitResolved::NoInstance(..) => unreachable!(),
             }
             pre_fndef(ctx, names, did, subst, args)

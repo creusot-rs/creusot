@@ -1,0 +1,98 @@
+module M_clone_generic
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate precondition_clone (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
+      -> precondition_clone () args
+  
+  predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T)
+  
+  axiom postcondition_fndef:
+    forall args: t_T, res: t_T [postcondition_once_clone () args res]. postcondition_once_clone () args res
+      -> (let self_ = args in inv_T res)
+  
+  let clone_T (self_: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+    any
+    [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let clone_generic_T (x: t_T) (return (x'0: t_T)) =
+  {[@stop_split] [@expl:clone_generic 'x' type invariant] inv_ref_T x}
+    (! bb0
+    [ bb0 = s0 [ s0 = clone_T {x} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l () | & x: t_T = x ])
+    [ return (result: t_T) -> {[@stop_split] [@expl:clone_generic result type invariant] inv_T result}
+      (! return {result}) ]
+end
+module M_clone_tuple
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  type t_W = { f0: UInt32.t }
+  
+  type tup2_W_W = { f0'0: t_W; f1'0: t_W }
+  
+  predicate precondition_clone (self: ()) (args: tup2_W_W)
+  
+  axiom precondition_fndef: forall args: tup2_W_W [precondition_clone () args]. (let self_ = args in true)
+      -> precondition_clone () args
+  
+  predicate postcondition_once_clone (self: ()) (args: tup2_W_W) (result: tup2_W_W)
+  
+  axiom postcondition_fndef:
+    forall args: tup2_W_W, res: tup2_W_W [postcondition_once_clone () args res]. postcondition_once_clone () args res
+      -> (let self_ = args in true)
+  
+  let clone_tup2_W_W (self_: tup2_W_W) (return (x: tup2_W_W)) =
+  {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+    any
+    [ return (result: tup2_W_W) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let clone_tuple (x: tup2_W_W) (return (x'0: tup2_W_W)) = (! bb0
+    [ bb0 = s0 [ s0 = clone_tup2_W_W {x} (fun (_x: tup2_W_W) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: tup2_W_W = Any.any_l () | & x: tup2_W_W = x ]) [ return (result: tup2_W_W) -> (! return {result}) ]
+end
+module M_impl_Clone_for_W__clone (* <W as std::clone::Clone> *)
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  type t_W = { f0: UInt32.t }
+  
+  let clone_u32 (self_: UInt32.t) (return (x: UInt32.t)) = any
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:clone ensures] result = self_} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let clone_W (self: t_W) (return (x: t_W)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_4 <- self.f0 ] s1
+      | s1 = clone_u32 {_4} (fun (_x: UInt32.t) -> [ &_2 <- _x ] s2)
+      | s2 = [ &_ret <- { f0 = _2 } ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_W = Any.any_l () | & self: t_W = self | & _2: UInt32.t = Any.any_l () | & _4: UInt32.t = Any.any_l () ])
+    [ return (result: t_W) -> (! return {result}) ]
+end

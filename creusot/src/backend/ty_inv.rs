@@ -133,6 +133,8 @@ pub(crate) fn elaborate_tyinv_def<'tcx>(
                 [subject.clone()],
             ))
         }
+        // `Invariant` has no builtin impl, so `UnknownBuiltin` cannot occur here.
+        TraitResolved::UnknownBuiltin => unreachable!(),
         TraitResolved::NoInstance(info) => use_impl = info.trait_ref_is_specializable(),
     }
 

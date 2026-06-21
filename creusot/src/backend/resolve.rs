@@ -235,6 +235,8 @@ pub(crate) fn elaborate_resolve_def<'tcx>(
                 [subject.clone()],
             ))
         }
+        // `Resolve` has no builtin impl, so `UnknownBuiltin` cannot occur here.
+        TraitResolved::UnknownBuiltin => unreachable!(),
         TraitResolved::NoInstance(info) => use_impl = info.trait_ref_is_specializable(),
     }
 

@@ -3,7 +3,7 @@ use crate::{
     backend::projections::projections_term,
     contracts_items::Intrinsic,
     ctx::{HasTyCtxt as _, TranslationCtx},
-    lints::{CONTRACTLESS_EXTERNAL_FUNCTION, Diagnostics},
+    lints::{CONTRACTLESS_EXTERNAL_FUNCTION, Diagnostics, OPAQUE_BUILTIN_IMPL},
     resolution::TraitResolved,
     translation::{
         fmir::{self, *},
@@ -98,9 +98,34 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             fun_def_id,
                             subst,
                         );
-                        let known = !matches!(tr_res, TraitResolved::UnknownFound);
+                        let known = !matches!(
+                            tr_res,
+                            TraitResolved::UnknownFound | TraitResolved::UnknownBuiltin
+                        );
+                        // The call resolved to an unmodeled compiler-builtin trait impl
+                        // (e.g. `Clone`/`Hash` for a tuple or array): it is translated
+                        // abstractly and its result is left unconstrained. Warn so this
+                        // precision loss is not silent. (Generic `T::clone` and `dyn` go
+                        // through other resolution paths and are not flagged here.)
+                        let opaque_builtin = matches!(tr_res, TraitResolved::UnknownBuiltin);
                         let (fun_def_id, subst) =
                             tr_res.to_opt(fun_def_id, subst).expect("could not find instance");
+                        if opaque_builtin
+                            && let Some(lint_root) =
+                                self.body.source_info(loc).scope.lint_root(&self.body.source_scopes)
+                        {
+                            let name = self.ctx.tcx.item_name(fun_def_id);
+                            self.ctx.emit_node_span_lint(
+                                OPAQUE_BUILTIN_IMPL,
+                                lint_root,
+                                span,
+                                Diagnostics::OpaqueBuiltinImpl {
+                                    name,
+                                    ty: format!("{}", subst.type_at(0)),
+                                    span,
+                                },
+                            );
+                        }
                         let sig = self.ctx.sig(fun_def_id);
                         if sig.contract.extern_no_spec
                             && let Some(lint_root) =
