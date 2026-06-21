@@ -263,12 +263,12 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         let bound: Box<[Ident]> = pre_sig.inputs.iter().map(|(ident, _, _)| ident.0).collect();
         let trait_resol = TraitResolved::resolve_item(self.tcx(), typing_env, def_id, subst);
+        // No `UnknownBuiltin` arm: a builtin impl is never a logic function.
         assert_matches!(
             trait_resol,
             TraitResolved::NotATraitItem
             | TraitResolved::Instance { .. } // The default impl is known to be the final instance
             | TraitResolved::UnknownFound // Unresolved trait method
-            // (no `UnknownBuiltin`: a builtin impl is never a logic function)
         );
         // The other case are impossible, because that would mean we are not guaranteed to have an instance
 
@@ -399,12 +399,12 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         let typing_env = self.typing_env;
         let ctx = self.ctx;
         let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
+        // No `UnknownBuiltin` arm: there is no builtin constant.
         assert_matches!(
             trait_resol,
             TraitResolved::NotATraitItem
             | TraitResolved::Instance { .. } // The impl is known to be the final instance
             | TraitResolved::UnknownFound // Unresolved trait const
-            // (no `UnknownBuiltin`: there is no builtin constant)
         );
         let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
             || ctx.def_kind(def_id) == DefKind::ConstParam

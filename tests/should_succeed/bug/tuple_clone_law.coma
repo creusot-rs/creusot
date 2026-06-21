@@ -4,16 +4,13 @@ module M_clone_flat
   
   type tup2_u32_bool = { f0: UInt32.t; f1: bool }
   
-  predicate precondition_clone (self: ()) (args: tup2_u32_bool)
+  predicate precondition_clone (self: ()) (args: tup2_u32_bool) = let self_ = args in true
   
-  axiom precondition_fndef: forall args: tup2_u32_bool [precondition_clone () args]. (let self_ = args in true)
-      -> precondition_clone () args
+  meta "rewrite_def" predicate precondition_clone
   
-  predicate postcondition_once_clone (self: ()) (args: tup2_u32_bool) (result: tup2_u32_bool)
+  predicate postcondition_once_clone (self: ()) (args: tup2_u32_bool) (result: tup2_u32_bool) = let self_ = args in true
   
-  axiom postcondition_fndef:
-    forall args: tup2_u32_bool, res: tup2_u32_bool [postcondition_once_clone () args res]. postcondition_once_clone () args res
-      -> (let self_ = args in true)
+  meta "rewrite_def" predicate postcondition_once_clone
   
   predicate postcondition_once_clone'0 (self: ()) (args: UInt32.t) (result: UInt32.t) =
     let self_ = args in result = self_
@@ -76,27 +73,24 @@ module M_clone_generic
   
   meta "rewrite_def" predicate inv_ref_tup2_T_U
   
-  predicate precondition_clone (self: ()) (args: tup2_T_U)
+  predicate precondition_clone (self: ()) (args: tup2_T_U) = let self_ = args in inv_ref_tup2_T_U self_
   
-  axiom precondition_fndef:
-    forall args: tup2_T_U [precondition_clone () args]. (let self_ = args in inv_ref_tup2_T_U self_)
-      -> precondition_clone () args
+  meta "rewrite_def" predicate precondition_clone
   
-  predicate postcondition_once_clone (self: ()) (args: tup2_T_U) (result: tup2_T_U)
+  predicate postcondition_once_clone (self: ()) (args: tup2_T_U) (result: tup2_T_U) =
+    let self_ = args in inv_tup2_T_U result
   
-  axiom postcondition_fndef:
-    forall args: tup2_T_U, res: tup2_T_U [postcondition_once_clone () args res]. postcondition_once_clone () args res
-      -> (let self_ = args in inv_tup2_T_U res)
+  meta "rewrite_def" predicate postcondition_once_clone
   
   predicate postcondition_once_clone'0 (self: ()) (args: t_T) (result: t_T)
   
-  axiom postcondition_fndef'0:
+  axiom postcondition_fndef:
     forall args: t_T, res: t_T [postcondition_once_clone'0 () args res]. postcondition_once_clone'0 () args res
       -> (let self_ = args in inv_T res)
   
   predicate postcondition_once_clone'1 (self: ()) (args: t_U) (result: t_U)
   
-  axiom postcondition_fndef'1:
+  axiom postcondition_fndef'0:
     forall args: t_U, res: t_U [postcondition_once_clone'1 () args res]. postcondition_once_clone'1 () args res
       -> (let self_ = args in inv_U res)
   
@@ -115,7 +109,7 @@ module M_clone_generic
   
   predicate postcondition_mut_clone (self: ()) (args: t_T) (result_state: ()) (result: t_T)
   
-  axiom postcondition_fndef'2:
+  axiom postcondition_fndef'1:
     forall args: t_T, res: t_T [postcondition_mut_clone () args () res]. postcondition_mut_clone () args () res
       -> (let self_ = args in inv_T res)
   
@@ -150,7 +144,7 @@ module M_clone_generic
   
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
-  axiom postcondition_fndef'3:
+  axiom postcondition_fndef'2:
     forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
       -> (let self_ = args in inv_T res)
   
@@ -176,7 +170,7 @@ module M_clone_generic
   
   predicate precondition_clone'0 (self: ()) (args: t_T)
   
-  axiom precondition_fndef'0: forall args: t_T [precondition_clone'0 () args]. (let self_ = args in inv_ref_T self_)
+  axiom precondition_fndef: forall args: t_T [precondition_clone'0 () args]. (let self_ = args in inv_ref_T self_)
       -> precondition_clone'0 () args
   
   let clone_T (self_: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone'0 () self_}
@@ -190,7 +184,7 @@ module M_clone_generic
   
   predicate postcondition_mut_clone'0 (self: ()) (args: t_U) (result_state: ()) (result: t_U)
   
-  axiom postcondition_fndef'4:
+  axiom postcondition_fndef'3:
     forall args: t_U, res: t_U [postcondition_mut_clone'0 () args () res]. postcondition_mut_clone'0 () args () res
       -> (let self_ = args in inv_U res)
   
@@ -226,7 +220,7 @@ module M_clone_generic
   
   predicate postcondition_clone'0 (self: ()) (args: t_U) (result: t_U)
   
-  axiom postcondition_fndef'5:
+  axiom postcondition_fndef'4:
     forall args: t_U, res: t_U [postcondition_clone'0 () args res]. postcondition_clone'0 () args res
       -> (let self_ = args in inv_U res)
   
@@ -252,7 +246,7 @@ module M_clone_generic
   
   predicate precondition_clone'1 (self: ()) (args: t_U)
   
-  axiom precondition_fndef'1: forall args: t_U [precondition_clone'1 () args]. (let self_ = args in inv_ref_U self_)
+  axiom precondition_fndef'0: forall args: t_U [precondition_clone'1 () args]. (let self_ = args in inv_ref_U self_)
       -> precondition_clone'1 () args
   
   let clone_U (self_: t_U) (return (x: t_U)) = {[@stop_split] [@expl:clone requires] precondition_clone'1 () self_}
@@ -287,16 +281,14 @@ module M_clone_nested
   
   type tup2_tup2_u32_bool_u8 = { f0'0: tup2_u32_bool; f1'0: UInt8.t }
   
-  predicate precondition_clone (self: ()) (args: tup2_tup2_u32_bool_u8)
+  predicate precondition_clone (self: ()) (args: tup2_tup2_u32_bool_u8) = let self_ = args in true
   
-  axiom precondition_fndef: forall args: tup2_tup2_u32_bool_u8 [precondition_clone () args]. (let self_ = args in true)
-      -> precondition_clone () args
+  meta "rewrite_def" predicate precondition_clone
   
-  predicate postcondition_once_clone (self: ()) (args: tup2_tup2_u32_bool_u8) (result: tup2_tup2_u32_bool_u8)
+  predicate postcondition_once_clone (self: ()) (args: tup2_tup2_u32_bool_u8) (result: tup2_tup2_u32_bool_u8) =
+    let self_ = args in true
   
-  axiom postcondition_fndef:
-    forall args: tup2_tup2_u32_bool_u8, res: tup2_tup2_u32_bool_u8 [postcondition_once_clone () args res]. postcondition_once_clone () args res
-      -> (let self_ = args in true)
+  meta "rewrite_def" predicate postcondition_once_clone
   
   predicate postcondition_once_clone'0 (self: ()) (args: UInt32.t) (result: UInt32.t) =
     let self_ = args in result = self_
@@ -337,16 +329,13 @@ module M_clone_one
   use creusot.int.UInt32
   use creusot.prelude.Any
   
-  predicate precondition_clone (self: ()) (args: UInt32.t)
+  predicate precondition_clone (self: ()) (args: UInt32.t) = let self_ = args in true
   
-  axiom precondition_fndef: forall args: UInt32.t [precondition_clone () args]. (let self_ = args in true)
-      -> precondition_clone () args
+  meta "rewrite_def" predicate precondition_clone
   
-  predicate postcondition_once_clone (self: ()) (args: UInt32.t) (result: UInt32.t)
+  predicate postcondition_once_clone (self: ()) (args: UInt32.t) (result: UInt32.t) = let self_ = args in true
   
-  axiom postcondition_fndef:
-    forall args: UInt32.t, res: UInt32.t [postcondition_once_clone () args res]. postcondition_once_clone () args res
-      -> (let self_ = args in true)
+  meta "rewrite_def" predicate postcondition_once_clone
   
   predicate postcondition_once_clone'0 (self: ()) (args: UInt32.t) (result: UInt32.t) =
     let self_ = args in result = self_
@@ -376,16 +365,14 @@ module M_clone_ref_leaf
   
   type tup2_bool_ref_u32 = { f0: bool; f1: UInt32.t }
   
-  predicate precondition_clone (self: ()) (args: tup2_bool_ref_u32)
+  predicate precondition_clone (self: ()) (args: tup2_bool_ref_u32) = let self_ = args in true
   
-  axiom precondition_fndef: forall args: tup2_bool_ref_u32 [precondition_clone () args]. (let self_ = args in true)
-      -> precondition_clone () args
+  meta "rewrite_def" predicate precondition_clone
   
-  predicate postcondition_once_clone (self: ()) (args: tup2_bool_ref_u32) (result: tup2_bool_ref_u32)
+  predicate postcondition_once_clone (self: ()) (args: tup2_bool_ref_u32) (result: tup2_bool_ref_u32) =
+    let self_ = args in true
   
-  axiom postcondition_fndef:
-    forall args: tup2_bool_ref_u32, res: tup2_bool_ref_u32 [postcondition_once_clone () args res]. postcondition_once_clone () args res
-      -> (let self_ = args in true)
+  meta "rewrite_def" predicate postcondition_once_clone
   
   predicate postcondition_once_clone'0 (self: ()) (args: bool) (result: bool) = let self_ = args in result = self_
   
@@ -421,26 +408,22 @@ module M_clone_unit_leaf
   
   type tup2_bool_unit = { f0: bool; f1: () }
   
-  predicate precondition_clone (self: ()) (args: tup2_bool_unit)
+  predicate precondition_clone (self: ()) (args: tup2_bool_unit) = let self_ = args in true
   
-  axiom precondition_fndef: forall args: tup2_bool_unit [precondition_clone () args]. (let self_ = args in true)
-      -> precondition_clone () args
+  meta "rewrite_def" predicate precondition_clone
   
-  predicate postcondition_once_clone (self: ()) (args: tup2_bool_unit) (result: tup2_bool_unit)
+  predicate postcondition_once_clone (self: ()) (args: tup2_bool_unit) (result: tup2_bool_unit) =
+    let self_ = args in true
   
-  axiom postcondition_fndef:
-    forall args: tup2_bool_unit, res: tup2_bool_unit [postcondition_once_clone () args res]. postcondition_once_clone () args res
-      -> (let self_ = args in true)
+  meta "rewrite_def" predicate postcondition_once_clone
   
   predicate postcondition_once_clone'0 (self: ()) (args: bool) (result: bool) = let self_ = args in result = self_
   
   meta "rewrite_def" predicate postcondition_once_clone'0
   
-  predicate postcondition_once_clone'1 (self: ()) (args: ()) (result: ())
+  predicate postcondition_once_clone'1 (self: ()) (args: ()) (result: ()) = let self_ = args in true
   
-  axiom postcondition_fndef'0:
-    forall args: (), res: () [postcondition_once_clone'1 () args res]. postcondition_once_clone'1 () args res
-      -> (let self_ = args in true)
+  meta "rewrite_def" predicate postcondition_once_clone'1
   
   let clone_tup2_bool_unit (self_: tup2_bool_unit) (return (x: tup2_bool_unit)) =
   {[@stop_split] [@expl:clone requires] precondition_clone () self_}
