@@ -130,6 +130,9 @@ pub(crate) fn elaborate_tyinv_def<'tcx>(
             ))
         }
         TraitResolved::NoInstance(info) => use_impl = info.trait_ref_is_specializable(),
+        TraitResolved::BuiltinClone | TraitResolved::BuiltinDyn | TraitResolved::BuiltinFn => {
+            unreachable!()
+        }
     }
 
     if let Some(sinv) = structural_invariant(ctx, names, subject.clone()) {

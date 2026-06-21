@@ -1,0 +1,26 @@
+module M_clone_not_cross_field
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  type tup2_u32_u32 = { f0: UInt32.t; f1: UInt32.t }
+  
+  predicate postcondition_once_clone (self: ()) (args: UInt32.t) (result: UInt32.t) = let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_once_clone
+  
+  let clone_tup2_u32_u32 (self_: tup2_u32_u32) (return (x: tup2_u32_u32)) = any
+    [ return (result: tup2_u32_u32) ->
+    {[@stop_split] [@expl:clone_tup2_u32_u32 ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self_.f0 result.f0)
+      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone () self_.f1 result.f1)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let clone_not_cross_field (x: tup2_u32_u32) (return (x'0: tup2_u32_u32)) = (! bb0
+    [ bb0 = s0 [ s0 = clone_tup2_u32_u32 {x} (fun (_x: tup2_u32_u32) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: tup2_u32_u32 = Any.any_l () | & x: tup2_u32_u32 = x ])
+    [ return (result: tup2_u32_u32) -> {[@stop_split] [@expl:clone_not_cross_field ensures] result.f0 = result.f1}
+      (! return {result}) ]
+end

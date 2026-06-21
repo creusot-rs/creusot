@@ -107,6 +107,39 @@ impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, '_, 'tcx> {
     }
 }
 
+/// The element-wise structural postcondition of a builtin `Clone` impl, for a tuple or closure.
+/// At each child it emits `<F as Clone>::clone.postcondition((&f,), result_f)`
+/// `self_val`/`result_val` are by-value terms of type `ty`.
+fn builtin_clone_posts<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    self_val: Term<'tcx>,
+    result_val: Term<'tcx>,
+) -> Vec<Term<'tcx>> {
+    let field_tys: Box<dyn Iterator<Item = Ty>> = match self_val.ty.kind() {
+        TyKind::Tuple(tys) => Box::new(tys.iter()),
+        TyKind::Closure(_, subst) => Box::new(subst.as_closure().upvar_tys().iter()),
+        _ => unreachable!("Builtin impls of Clone should be limited to tuples and closures"),
+    };
+
+    field_tys
+        .enumerate()
+        .map(|(i, field_ty)| {
+            let self_i = self_val.clone().proj(i.into(), field_ty);
+            let result_i = result_val.clone().proj(i.into(), field_ty);
+            let fndef_ty = Ty::new_fn_def(
+                ctx.tcx,
+                ctx.lang_items().clone_fn().unwrap(),
+                ctx.mk_args(&[GenericArg::from(field_ty)]),
+            );
+            let args = Term::tuple(ctx.tcx, [self_i.shr_ref(ctx.tcx)]);
+            let subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
+            let post_args = [Term::unit(ctx.tcx).coerce(fndef_ty), args, result_i];
+            Term::call(ctx.tcx, typing_env, Intrinsic::PostconditionOnce.get(ctx), subst, post_args)
+        })
+        .collect()
+}
+
 impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     fn expand_program(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
@@ -143,37 +176,65 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             pre_sig.contract.requires.clear();
         }
 
-        if let TraitResolved::UnknownFound = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst)
-                // These conditions are important to make sure the Fn trait familly is implemented
-                && ctx.fn_sig(def_id).skip_binder().is_fn_trait_compatible()
-                && ctx.codegen_fn_attrs(def_id).target_features.is_empty()
-        {
-            let fn_name = ctx.item_name(def_id);
+        match TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst) {
+            TraitResolved::UnknownFound
+                if ctx.fn_sig(def_id).skip_binder().is_fn_trait_compatible()
+                    && ctx.codegen_fn_attrs(def_id).target_features.is_empty() =>
+            {
+                let fn_name = ctx.item_name(def_id);
 
-            let args =
-                Term::tuple(ctx.tcx, pre_sig.inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)));
-            let fndef_ty = Ty::new_fn_def(ctx.tcx, def_id, subst);
+                let args = Term::tuple(
+                    ctx.tcx,
+                    pre_sig.inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)),
+                );
+                let fndef_ty = Ty::new_fn_def(ctx.tcx, def_id, subst);
 
-            let pre_post_subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
+                let pre_post_subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
 
-            let pre_did = Intrinsic::Precondition.get(ctx);
-            let pre_args = [Term::unit(ctx.tcx).coerce(fndef_ty), args.clone()];
-            let pre = Term::call(ctx.tcx, typing_env, pre_did, pre_post_subst, pre_args);
-            let expl_pre = format!("expl:{} requires", fn_name);
-            pre_sig.contract.requires = vec![Condition { term: pre, expl: expl_pre }];
+                let pre_did = Intrinsic::Precondition.get(ctx);
+                let pre_args = [Term::unit(ctx.tcx).coerce(fndef_ty), args.clone()];
+                let pre = Term::call(ctx.tcx, typing_env, pre_did, pre_post_subst, pre_args);
+                let expl_pre = format!("expl:{} requires", fn_name);
+                pre_sig.contract.requires = vec![Condition { term: pre, expl: expl_pre }];
 
-            let post_did = Intrinsic::PostconditionOnce.get(ctx);
-            let post_args = [
-                Term::unit(ctx.tcx).coerce(fndef_ty),
-                args,
-                Term::var(name::result(), pre_sig.output),
-            ];
-            let post = Term::call(ctx.tcx, typing_env, post_did, pre_post_subst, post_args);
-            let expl_post = format!("expl:{} ensures", fn_name);
-            pre_sig.contract.ensures =
-                vec![(Box::new([]), Condition { term: post, expl: expl_post })]
-        } else {
-            sig_add_type_invariant_spec(ctx, typing_env, names.source_id(), &mut pre_sig, def_id)
+                let post_did = Intrinsic::PostconditionOnce.get(ctx);
+                let post_args = [
+                    Term::unit(ctx.tcx).coerce(fndef_ty),
+                    args,
+                    Term::var(name::result(), pre_sig.output),
+                ];
+                let post = Term::call(ctx.tcx, typing_env, post_did, pre_post_subst, post_args);
+                let expl_post = format!("expl:{} ensures", fn_name);
+                pre_sig.contract.ensures =
+                    vec![(Box::new([]), Condition { term: post, expl: expl_post })]
+            }
+            TraitResolved::BuiltinClone => {
+                let (self_nm, _, self_ty) = pre_sig.inputs[0];
+                let self_val = Term::var(self_nm, self_ty).deref();
+                let result = Term::var(name::result(), pre_sig.output);
+                assert!(pre_sig.contract.ensures.is_empty());
+                pre_sig.contract.ensures = builtin_clone_posts(ctx, typing_env, self_val, result)
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, term)| {
+                        let trig: Box<[_]> = Box::new([]);
+                        let expl = format!("expl:{} ensures #{i}", ctx.item_name(def_id));
+                        (trig, Condition { term, expl })
+                    })
+                    .collect();
+            }
+            TraitResolved::Instance { .. }
+            | TraitResolved::UnknownFound
+            | TraitResolved::BuiltinDyn
+            | TraitResolved::BuiltinFn
+            | TraitResolved::NotATraitItem => sig_add_type_invariant_spec(
+                ctx,
+                typing_env,
+                names.source_id(),
+                &mut pre_sig,
+                def_id,
+            ),
+            TraitResolved::NoInstance(..) => unreachable!(),
         }
 
         let sig = lower_program_sig(ctx, &names, name, pre_sig, def_id, name::return_());
@@ -219,10 +280,12 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             TraitResolved::NotATraitItem
             | TraitResolved::Instance { .. } // The default impl is known to be the final instance
             | TraitResolved::UnknownFound // Unresolved trait method
+            | TraitResolved::BuiltinDyn // This is a logic method on a dyn type. There will be an error message,
+                                        // but we have to handle this for now
         );
         // The other case are impossible, because that would mean we are not guaranteed to have an instance
 
-        let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
+        let opaque = matches!(trait_resol, TraitResolved::UnknownFound | TraitResolved::BuiltinDyn)
             || !ctx.is_transparent_from(def_id, self.namer.source_id());
 
         let names = self.namer(dep);
@@ -274,7 +337,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 let trig = [Trigger(Box::new([call.clone()]))];
 
                 if Intrinsic::Precondition.is(ctx, def_id) {
-                    if let Some(pre) = pre_fndef(ctx, &names, did_f, subst_f, args_tup) {
+                    if let Some(pre) = pre_fndef(ctx, &names, did_f, subst_f, args_tup, false) {
                         let axiom =
                             pre.implies(call).forall_trig((args_id, subst.type_at(0)), trig);
                         decls.push(Decl::Axiom(Axiom {
@@ -283,7 +346,9 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                             axiom: lower_pure(ctx, &names, &axiom),
                         }))
                     }
-                } else if let Some(post) = post_fndef(ctx, &names, did_f, subst_f, args_tup, res) {
+                } else if let Some(post) =
+                    post_fndef(ctx, &names, did_f, subst_f, args_tup, res, false)
+                {
                     let axiom = call.implies(post).quant(
                         QuantKind::Forall,
                         Box::new([(args_id, subst.type_at(0)), (res_id, res_ty)]),
@@ -652,10 +717,13 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             return;
         }
 
-        for law in self.ctx.laws(item_container) {
-            let law_dep = self.namer(dep).resolve_dependency(Dependency::Item(*law, item_subst));
+        for &law in self.ctx.laws(item_container) {
+            let (def, args) =
+                TraitResolved::resolve_item(self.tcx(), self.typing_env, law, item_subst)
+                    .to_opt(law, item_subst)
+                    .unwrap();
             // We add a weak dep from `dep` to make sure it appears close to the triggering item
-            self.dep_graph.add_edge(dep, Strength::Weak, law_dep);
+            self.dep_graph.add_edge(dep, Strength::Weak, Dependency::Item(def, args));
         }
     }
 }
@@ -733,15 +801,7 @@ fn postcondition_once_term<'tcx>(
             let post_args = [self_.coerce(bsubst.type_at(0)), args, res];
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
-        &TyKind::FnDef(mut did, mut subst) => {
-            match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
-                TraitResolved::NotATraitItem => (),
-                TraitResolved::Instance { def, .. } => (did, subst) = def,
-                TraitResolved::UnknownFound => return None,
-                TraitResolved::NoInstance(..) => unreachable!(),
-            }
-            post_fndef(ctx, names, did, subst, args, res)
-        }
+        &TyKind::FnDef(did, subst) => post_fndef(ctx, names, did, subst, args, res, true),
         _ => None,
     }
 }
@@ -827,15 +887,7 @@ fn postcondition_mut_term<'tcx>(
             let post_args = [self_.coerce(closure_ty), args, result_state.coerce(closure_ty), res];
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
-        &TyKind::FnDef(mut did, mut subst) => {
-            match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
-                TraitResolved::NotATraitItem => (),
-                TraitResolved::Instance { def, .. } => (did, subst) = def,
-                TraitResolved::UnknownFound => return None,
-                TraitResolved::NoInstance(..) => unreachable!(),
-            }
-            post_fndef(ctx, names, did, subst, args, res)
-        }
+        &TyKind::FnDef(did, subst) => post_fndef(ctx, names, did, subst, args, res, true),
         _ => None,
     }
 }
@@ -894,15 +946,7 @@ fn postcondition_term<'tcx>(
             let post_fn = Intrinsic::Postcondition.get(ctx);
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
-        &TyKind::FnDef(mut did, mut subst) => {
-            match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
-                TraitResolved::NotATraitItem => (),
-                TraitResolved::Instance { def, .. } => (did, subst) = def,
-                TraitResolved::UnknownFound => return None,
-                TraitResolved::NoInstance(..) => unreachable!(),
-            }
-            post_fndef(ctx, names, did, subst, args, res)
-        }
+        &TyKind::FnDef(did, subst) => post_fndef(ctx, names, did, subst, args, res, true),
         _ => None,
     }
 }
@@ -910,14 +954,33 @@ fn postcondition_term<'tcx>(
 fn post_fndef<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
-    did: DefId,
-    subst: GenericArgsRef<'tcx>,
+    mut did: DefId,
+    mut subst: GenericArgsRef<'tcx>,
     args: Term<'tcx>,
     res: Term<'tcx>,
+    exact: bool,
 ) -> Option<Term<'tcx>> {
+    match TraitResolved::resolve_item(ctx.tcx, names.typing_env(), did, subst) {
+        TraitResolved::Instance { def, .. } => (did, subst) = def,
+        TraitResolved::BuiltinClone => {
+            let TyKind::Tuple(argsty) = args.ty.kind() else { unreachable!() };
+            assert_eq!((did, argsty.len()), (ctx.lang_items().clone_fn().unwrap(), 1));
+            let arg = args.proj(0usize.into(), argsty[0]);
+            let posts = builtin_clone_posts(ctx, names.typing_env(), arg.deref(), res);
+            return Some(posts.into_iter().fold(Term::true_(ctx.tcx), Term::conj));
+        }
+        TraitResolved::UnknownFound if exact => return None,
+        TraitResolved::UnknownFound
+        | TraitResolved::NotATraitItem
+        | TraitResolved::BuiltinFn
+        | TraitResolved::BuiltinDyn => (),
+        TraitResolved::NoInstance(..) => unreachable!(),
+    }
+
     if is_logic(ctx.tcx, did) {
         return None;
     }
+
     let mut sig = ctx.sig(did).clone().instantiate_and_normalize(ctx, subst, names.typing_env());
     sig_add_type_invariant_spec(ctx, names.typing_env(), names.source_id(), &mut sig, did);
     let mut post = sig.contract.ensures_conj(ctx.tcx);
@@ -965,15 +1028,6 @@ fn precondition_term<'tcx>(
             let pre_args = [self_.coerce(bsubst.type_at(0)), args];
             Some(Term::call(ctx.tcx, typing_env, pre_fn, subst_pre, pre_args))
         }
-        &TyKind::FnDef(mut did, mut subst) => {
-            match TraitResolved::resolve_item(ctx.tcx, typing_env, did, subst) {
-                TraitResolved::NotATraitItem => (),
-                TraitResolved::Instance { def, .. } => (did, subst) = def,
-                TraitResolved::UnknownFound => return None,
-                TraitResolved::NoInstance(..) => unreachable!(),
-            }
-            pre_fndef(ctx, names, did, subst, args)
-        }
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
@@ -985,6 +1039,7 @@ fn precondition_term<'tcx>(
             let pre_args = [self_.proj(0usize.into(), closure_ty), args];
             Some(Term::call(ctx.tcx, typing_env, pre_fn, subst_postcond, pre_args))
         }
+        &TyKind::FnDef(did, subst) => pre_fndef(ctx, names, did, subst, args, true),
         _ => None,
     }
 }
@@ -992,22 +1047,37 @@ fn precondition_term<'tcx>(
 fn pre_fndef<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
-    did: DefId,
-    subst: GenericArgsRef<'tcx>,
+    mut did: DefId,
+    mut subst: GenericArgsRef<'tcx>,
     args: Term<'tcx>,
+    exact: bool,
 ) -> Option<Term<'tcx>> {
+    match TraitResolved::resolve_item(ctx.tcx, names.typing_env(), did, subst) {
+        TraitResolved::Instance { def, .. } => (did, subst) = def,
+        TraitResolved::UnknownFound if exact => return None,
+        TraitResolved::UnknownFound
+        | TraitResolved::NotATraitItem
+        | TraitResolved::BuiltinClone
+        | TraitResolved::BuiltinFn
+        | TraitResolved::BuiltinDyn => (),
+        TraitResolved::NoInstance(..) => unreachable!(),
+    }
+
     if is_logic(ctx.tcx, did) {
         // This is especially important for Snapshot::deref, which should keep have a false
         // precondition if called in a program via a generic.
         return None;
     }
+
     let mut sig = ctx.sig(did).clone().instantiate_and_normalize(ctx, subst, names.typing_env());
+
     sig_add_type_invariant_spec(ctx, names.typing_env(), names.source_id(), &mut sig, did);
     let pre = sig.contract.requires_conj(ctx.tcx);
     let pattern = Pattern::tuple(
         sig.inputs.iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
         args.ty,
     );
+
     Some(Term::let_(pattern, args, pre).span(ctx.def_span(did)))
 }
 

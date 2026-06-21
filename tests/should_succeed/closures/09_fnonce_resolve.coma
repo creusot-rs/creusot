@@ -57,6 +57,22 @@ module M_f
       = 3}
       (! return {result}) ]
   
+  predicate precondition_closure0 (self: closure0) (args: ()) =
+    Int32.to_int self.c2.current = 1 /\ Int32.to_int self.c1.current = 1
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate postcondition_once_closure0 (self: closure0) (args: ()) (result: ()) =
+    Int32.to_int self.c2.final + Int32.to_int self.c1.final = 3
+  
+  meta "rewrite_def" predicate postcondition_once_closure0
+  
+  let call_once_closure0 (self_: closure0) (arg: ()) (return (x: ())) =
+  {[@stop_split] [@expl:call_once requires] precondition_closure0 self_ arg}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_closure0 self_ arg result}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -72,7 +88,7 @@ module M_f
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_8 <- _bor ] [ &y <- _bor.final ] s5)
       | s5 = [ &by' <- _8 ] s6
       | s6 = [ &f <- { c0 = c; c1 = by'; c2 = bx } ] s7
-      | s7 = closure0 {f} (fun (_x: ()) -> [ &_10 <- _x ] s8)
+      | s7 = call_once_closure0 {f} {_12} (fun (_x: ()) -> [ &_10 <- _x ] s8)
       | s8 = {[@expl:assertion] Int32.to_int x + Int32.to_int y = 3} s9
       | s9 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

@@ -4,6 +4,7 @@ use creusot_std::prelude::*;
 pub trait Tr {
     type A: Tr;
 
+    #[logic]
     fn f(self) -> Self::A;
 
     #[logic]
@@ -15,5 +16,7 @@ pub trait Tr {
 
 impl Tr for () {
     type A = ();
+
+    #[logic]
     fn f(self) -> () {}
 }

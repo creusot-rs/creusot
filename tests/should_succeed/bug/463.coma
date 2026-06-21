@@ -18,6 +18,77 @@ module M_test
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:closure ensures] UInt64.t'int result = UInt64.t'int x + 1}
       (! return {result}) ]
   
+  predicate precondition_closure0 (self: ()) (args: UInt64.t) = let x = args in UInt64.t'int x < 1000
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate postcondition_once_closure0 (self: ()) (args: UInt64.t) (result: UInt64.t) =
+    let x = args in UInt64.t'int result = UInt64.t'int x + 1
+  
+  meta "rewrite_def" predicate postcondition_once_closure0
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate hist_inv_closure0 (self: ()) (result_state: ()) = self = result_state
+  
+  predicate postcondition_mut_closure0 (self: ()) (args: UInt64.t) (result_state: ()) (result: UInt64.t) =
+    let x = args in UInt64.t'int result = UInt64.t'int x + 1 /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  function fn_mut_once_closure0 (self: ()) (args: UInt64.t) (res: UInt64.t) : ()
+  
+  axiom fn_mut_once_closure0_spec:
+    forall self: (), args: UInt64.t, res: UInt64.t [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
+      = (exists res_state: (). postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
+  
+  function hist_inv_trans_closure0 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_closure0_spec:
+    forall self: (), b: (), c: () [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
+      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
+  
+  function hist_inv_refl_closure0 (self: ()) : ()
+  
+  axiom hist_inv_refl_closure0_spec: forall self: () [hist_inv_closure0 self self]. hist_inv_closure0 self self
+  
+  function postcondition_mut_hist_inv_closure0 (self: ()) (args: UInt64.t) (res_state: ()) (res: UInt64.t) : ()
+  
+  axiom postcondition_mut_hist_inv_closure0_spec:
+    forall self: (), args: UInt64.t, res_state: (), res: UInt64.t [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
+      -> hist_inv_closure0 self res_state
+  
+  function fn_hist_inv_closure0 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_closure0_spec:
+    forall self: (), res_state: () [hist_inv_closure0 self res_state]. hist_inv_closure0 self res_state
+      = (self = res_state)
+  
+  predicate postcondition_closure0 (self: ()) (args: UInt64.t) (result: UInt64.t) =
+    let x = args in UInt64.t'int result = UInt64.t'int x + 1
+  
+  meta "rewrite_def" predicate postcondition_closure0
+  
+  function fn_once_closure0 (self: ()) (args: UInt64.t) (res: UInt64.t) : ()
+  
+  axiom fn_once_closure0_spec:
+    forall self: (), args: UInt64.t, res: UInt64.t [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
+      = (postcondition_closure0 self args res /\ resolve_closure0 self)
+  
+  function fn_mut_closure0 (self: ()) (args: UInt64.t) (res_state: ()) (res: UInt64.t) : ()
+  
+  axiom fn_mut_closure0_spec:
+    forall self: (), args: UInt64.t, res_state: (), res: UInt64.t [postcondition_mut_closure0 self args res_state res]. postcondition_mut_closure0 self args res_state res
+      = (postcondition_closure0 self args res /\ self = res_state)
+  
+  let call_closure0 (self_: ()) (arg: UInt64.t) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:call requires] precondition_closure0 self_ arg}
+    any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self_ arg result}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -26,7 +97,7 @@ module M_test
     [ bb0 = s0
       [ s0 = [ &c <- () ] s1
       | s1 = [ &_4 <- (2: UInt64.t) ] s2
-      | s2 = closure0 {c} {_4} (fun (_x: UInt64.t) -> [ &y <- _x ] s3)
+      | s2 = call_closure0 {c} {_4} (fun (_x: UInt64.t) -> [ &y <- _x ] s3)
       | s3 = {[@expl:assertion] UInt64.t'int y = 3} s4
       | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

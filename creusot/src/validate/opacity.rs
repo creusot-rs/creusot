@@ -11,7 +11,7 @@ use crate::{
     contracts_items::{is_logic, is_opaque},
     ctx::{HasTyCtxt, Opacity, TranslationCtx},
     translation::pearlite::{
-        Pattern, PatternKind, Scoped, Term, TermKind,
+        Literal, Pattern, PatternKind, Scoped, Term, TermKind,
         visit::{TermVisitor, super_visit_pattern, super_visit_term},
     },
 };
@@ -50,14 +50,22 @@ impl OpacityVisitor<'_, '_> {
 impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
     fn visit_term(&mut self, term: &Term<'tcx>) {
         match &term.kind {
-            &TermKind::Item(id, _) => {
-                if let TyKind::FnDef(_, _) = self.ctx.type_of(id).skip_binder().kind() {
-                    return;
-                }
-                if matches!(self.ctx.def_kind(id), DefKind::ConstParam) {
-                    return;
-                }
-                self.assert_visible(id, term.span);
+            TermKind::Let {
+                pattern: Pattern { kind: PatternKind::Wildcard, .. },
+                arg: box Term { kind: TermKind::Lit(Literal::ZST), .. },
+                ..
+            } => {
+                // Do not check the visibility in "let _ = <function literal>" because it is a
+                // common pattern for proof hints.
+                return;
+            }
+            TermKind::Lit(Literal::ZST) if let &TyKind::FnDef(id, _) = term.ty.kind() => {
+                self.assert_visible(id, term.span)
+            }
+            &TermKind::ConstItem { id, .. }
+                if !matches!(self.ctx.def_kind(id), DefKind::ConstParam) =>
+            {
+                self.assert_visible(id, term.span)
             }
             &TermKind::Call { id, .. } => self.assert_visible(id, term.span),
             &TermKind::Constructor { variant, .. } => {

@@ -129,38 +129,33 @@ fn select_method<'tcx>(
                 // These types are not supported, but we want to display a proper error message because
                 // they are rather common in real Rust code, and this is not the right place to emit
                 // such an error message.
-                return TraitResolved::UnknownFound;
-            }
-
-            if [
+                TraitResolved::BuiltinDyn
+            } else if [
                 tcx.lang_items().fn_trait(),
                 tcx.lang_items().fn_mut_trait(),
                 tcx.lang_items().fn_once_trait(),
             ]
             .contains(&Some(trait_ref.def_id))
             {
-                match *substs.type_at(0).kind() {
-                    TyKind::Closure(closure_def_id, closure_substs) => {
-                        return TraitResolved::Instance {
-                            def: (closure_def_id, closure_substs),
-                            impl_: ImplSource_::Fn,
-                        };
+                TraitResolved::BuiltinFn
+            } else if trait_ref.def_id == tcx.lang_items().clone_trait().unwrap() {
+                if trait_item_def_id == tcx.lang_items().clone_fn().unwrap() {
+                    TraitResolved::BuiltinClone
+                } else {
+                    // Clone::clone_from
+                    TraitResolved::Instance {
+                        def: (trait_item_def_id, substs),
+                        impl_: ImplSource_::Clone,
                     }
-                    TyKind::FnDef(did, subst) => {
-                        return TraitResolved::Instance {
-                            def: (did, subst),
-                            impl_: ImplSource_::Fn,
-                        };
-                    }
-                    _ => (),
                 }
+            } else {
+                // As far as I know, theses are the only builtin traits that have executable methods.
+                // But if we are missing some, then I'd prefer to have a bug reported.
+                unimplemented!(
+                    "Builtin implementation of trait {:?} is not supported. Please report.",
+                    trait_ref.def_id
+                )
             }
-
-            unimplemented!(
-                "Cannot handle builtin implementation of `{}` for `{}`",
-                tcx.def_path_str(trait_ref.def_id),
-                substs.type_at(0)
-            )
         }
     }
 }
@@ -169,13 +164,15 @@ fn select_method<'tcx>(
 pub(crate) enum ImplSource_<'tcx> {
     /// The id and substitution of the impl block, if any.
     Impl(DefId, GenericArgsRef<'tcx>),
+    /// This is a default implementation for an instance comming from a trait constraint
     Param,
-    Fn,
+    /// The clone_from default implementation of a builtin Clone impl
+    Clone,
 }
 
 /// The result of [`Self::resolve_assoc_item_opt`]: given the id of a trait item and some
 /// type parameters, we might find an actual implementation of the item.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) enum TraitResolved<'tcx> {
     NotATraitItem,
     /// An instance (like `impl Clone for i32 { ... }`) exists for the given type parameters.
@@ -186,6 +183,12 @@ pub(crate) enum TraitResolved<'tcx> {
     },
     /// A known instance exists, but we don't know which one.
     UnknownFound,
+    /// Builtin impl of one of the closure traits
+    BuiltinFn,
+    /// Builtin impl of the `Clone` trait (tuple or closure) -- for the `clone` method only
+    BuiltinClone,
+    /// Builtin impl of a `dyn` type
+    BuiltinDyn,
     /// No instance exists, we return extra data to query whether an instance might exist
     /// (via specialization or potentially defined in another crate).
     ///
@@ -236,8 +239,12 @@ impl<'tcx> TraitResolved<'tcx> {
     ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
         match self {
             TraitResolved::Instance { def, impl_: _ } => Some(def),
-            TraitResolved::NotATraitItem | TraitResolved::UnknownFound => Some((did, substs)),
-            _ => None,
+            TraitResolved::NotATraitItem
+            | TraitResolved::UnknownFound
+            | TraitResolved::BuiltinFn
+            | TraitResolved::BuiltinClone
+            | TraitResolved::BuiltinDyn => Some((did, substs)),
+            TraitResolved::NoInstance(_) => None,
         }
     }
 }
@@ -279,7 +286,7 @@ fn instantiate_params_with_infer<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
 
 /// Data for further examination when resolution returns `TraitResolved::NoInstance`
 /// This is used by `crate::backend::resolve` and `crate::backend::ty_inv`.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct NoInstance<'tcx> {
     tcx: TyCtxt<'tcx>,
     typing_env: TypingEnv<'tcx>,

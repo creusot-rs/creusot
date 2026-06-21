@@ -1,5 +1,3 @@
-// TME 2
-
 #![feature(type_ascription)]
 extern crate creusot_std;
 

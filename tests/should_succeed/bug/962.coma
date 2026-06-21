@@ -63,6 +63,17 @@ module M_disjoint_captures
       /\ ([@stop_split] [@expl:closure hist_inv post] hist_inv_closure2 self.current self.final)}
       (! return {result}) ]
   
+  predicate precondition_closure2 (self: closure2) (args: ()) = true
+  
+  meta "rewrite_def" predicate precondition_closure2
+  
+  let call_mut_closure2 (self_: MutBorrow.t closure2) (arg: ()) (return (x: ())) =
+  {[@stop_split] [@expl:call_mut requires] precondition_closure2 self_.current arg}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_closure2 self_.current arg self_.final result}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -77,7 +88,7 @@ module M_disjoint_captures
       | s2 = [ &clos <- { c0 = _7 } ] s3
       | s3 = MutBorrow.borrow_mut <closure2> {clos}
           (fun (_bor: MutBorrow.t closure2) -> [ &_9 <- _bor ] [ &clos <- _bor.final ] s4)
-      | s4 = closure2 {_9} (fun (_x: ()) -> [ &_8 <- _x ] s5)
+      | s4 = call_mut_closure2 {_9} {_10} (fun (_x: ()) -> [ &_8 <- _x ] s5)
       | s5 = -{resolve_closure2 clos}- s6
       | s6 = Int32.add {p0} {p.f1} (fun (_x: Int32.t) -> [ &_ret <- _x ] s7)
       | s7 = return {_ret} ] ]
