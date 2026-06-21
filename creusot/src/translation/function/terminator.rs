@@ -4,7 +4,7 @@ use crate::{
     contracts_items::Intrinsic,
     ctx::{HasTyCtxt as _, TranslationCtx},
     lints::{CONTRACTLESS_EXTERNAL_FUNCTION, Diagnostics, OPAQUE_BUILTIN_IMPL},
-    resolution::TraitResolved,
+    resolution::{TraitResolved, synthesizes_builtin_law},
     translation::{
         fmir::{self, *},
         pearlite::{Term, TermKind, UnOp},
@@ -103,14 +103,18 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             TraitResolved::UnknownFound | TraitResolved::UnknownBuiltin
                         );
                         // The call resolved to an unmodeled compiler-builtin trait impl
-                        // (e.g. `Clone`/`Hash` for a tuple or array): it is translated
-                        // abstractly and its result is left unconstrained. Warn so this
+                        // (`Clone` for a tuple or a closure): it is
+                        // translated abstractly and its result is left unconstrained. Warn so this
                         // precision loss is not silent. (Generic `T::clone` and `dyn` go
                         // through other resolution paths and are not flagged here.)
                         let opaque_builtin = matches!(tr_res, TraitResolved::UnknownBuiltin);
                         let (fun_def_id, subst) =
                             tr_res.to_opt(fun_def_id, subst).expect("could not find instance");
+                        // Suppress the warning for builtin calls we DO model with a
+                        // synthesized structural law (e.g. tuple `Clone`): those are no
+                        // longer unconstrained.
                         if opaque_builtin
+                            && !synthesizes_builtin_law(self.ctx.tcx, fun_def_id, subst)
                             && let Some(lint_root) =
                                 self.body.source_info(loc).scope.lint_root(&self.body.source_scopes)
                         {
@@ -121,7 +125,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 span,
                                 Diagnostics::OpaqueBuiltinImpl {
                                     name,
-                                    ty: format!("{}", subst.type_at(0)),
+                                    ty: subst.type_at(0).to_string(),
                                     span,
                                 },
                             );

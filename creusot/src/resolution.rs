@@ -42,6 +42,38 @@ pub fn select_trait_impl<'tcx>(
     }
 }
 
+/// Does Creusot synthesize a structural specification for this unmodeled
+/// compiler-builtin call, so its result is NOT left unconstrained?
+///
+/// Currently this is tuple `Clone`: the trait-level `Clone` contract is empty,
+/// so the opaque val carries no law; the backend instead synthesizes the
+/// element-wise postcondition, recursing through nested tuples to leaf types
+/// (see `elaborator::structural_clone_post`). When this holds, the
+/// `opaque_builtin_impl` lint is suppressed.
+///
+/// CAVEAT: suppression is per-tuple, but a leaf whose own `Clone` is itself
+/// unmodeled (a closure, or a user type with a contractless `Clone`) still
+/// contributes a vacuous conjunct — so for e.g. `(bool, closure)` the law
+/// constrains the modeled fields but leaves that one leaf unconstrained, a
+/// (now confined, but still silent) precision loss. The common case — tuples of
+/// modeled types at any depth — is fully constrained.
+///
+/// Only tuple `Clone` and closure `Clone` reach the builtin path. Tuple
+/// `PartialEq`/`Ord`/`Hash` and array `Clone` all resolve via real `core` impls
+/// (`ImplSource::UserDefined`) — they never reach this arm, so they neither ICE
+/// nor get a synthesized law here (tuple `==`/`<` already carry a `deep_model`
+/// law from their trait contract; tuple `Hash` is a contractless extern call).
+pub(crate) fn synthesizes_builtin_law<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    subst: GenericArgsRef<'tcx>,
+) -> bool {
+    // The `clone_fn` check short-circuits before `subst.type_at(0)`, which would
+    // panic for items called with an empty substitution.
+    tcx.lang_items().clone_fn() == Some(def_id)
+        && matches!(subst.type_at(0).kind(), TyKind::Tuple(tys) if !tys.is_empty())
+}
+
 fn select_method<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: TypingEnv<'tcx>,

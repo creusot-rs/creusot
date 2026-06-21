@@ -3,7 +3,7 @@ use rustc_session::declare_tool_lint;
 declare_tool_lint! {
     /// The `opaque_builtin_impl` lint warns when a call resolves to a
     /// compiler-synthesized builtin trait impl that Creusot does not model
-    /// (e.g. `Clone`/`Hash` for a tuple or array), on a *concrete* type.
+    /// (`Clone` for a tuple or a closure), on a *concrete* type.
     ///
     /// Such a call is translated abstractly: its result is left unconstrained.
     /// This is sound, but the precision loss is otherwise silent — a downstream
@@ -16,5 +16,5 @@ declare_tool_lint! {
     /// `experimental` lint).
     pub(crate) creusot::OPAQUE_BUILTIN_IMPL,
     Warn,
-    "call resolves to an unmodeled builtin trait impl; its result is left unconstrained"
+    "call resolves to an unmodeled builtin trait impl (result left abstract)"
 }

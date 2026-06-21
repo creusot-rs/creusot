@@ -1,16 +1,18 @@
-// Audit: the opaque_builtin_impl lint fires on an unmodeled builtin impl over a
-// concrete type (tuple Clone) but NOT on the ordinary generic `T::clone`.
+// Counter-examples for the `opaque_builtin_impl` lint.
 extern crate creusot_std;
 
-#[derive(Clone)]
-pub struct W(pub u32);
-
-// SHOULD warn: builtin Clone for the concrete tuple (W, W).
-pub fn clone_tuple(x: (W, W)) -> (W, W) {
-    x.clone()
+// (1) Cloning a closure resolves to the compiler-builtin `Clone` impl, which has
+// no synthesized law: the result is left unconstrained, so the lint WARNS.
+pub fn clone_closure(x: u32) -> impl Fn(u32) -> u32 {
+    let f = move |y: u32| x + y;
+    f.clone()
 }
 
-// SHOULD NOT warn: generic parameter, the ordinary unresolved case.
-pub fn clone_generic<T: Clone>(x: &T) -> T {
-    x.clone()
+// (2) A tuple containing a closure leaf: the call is tuple `Clone`, so the lint
+// is SUPPRESSED (a structural law is synthesized). The closure leaf's conjunct
+// is vacuous, but no second warning is emitted here — only `clone_closure`
+// above warns (see the .stderr).
+pub fn clone_tuple_with_closure(b: bool, x: u32) -> (bool, impl Fn(u32) -> u32) {
+    let t = (b, move |y: u32| x + y);
+    t.clone()
 }
