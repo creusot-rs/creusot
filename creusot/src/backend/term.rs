@@ -543,6 +543,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             Literal::ZST => Exp::unit(),
             Literal::String(ref string) => Constant::String(string.clone()).into(),
+            Literal::Bytes(ref bytes) => todo!(),
         }
     }
 }
