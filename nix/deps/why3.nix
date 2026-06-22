@@ -1,6 +1,7 @@
 {
   # Dependencies
   autoreconfHook,
+  dune,
   ocaml,
   ocamlPackages,
   wrapGAppsHook3,
@@ -33,6 +34,7 @@ stdenv.mkDerivation {
 
   nativeBuildInputs = [
     autoreconfHook
+    dune
     ocaml
     wrapGAppsHook3
   ]
@@ -43,12 +45,12 @@ stdenv.mkDerivation {
 
   buildInputs = with ocamlPackages; [
     lablgtk3-sourceview3
-    ocamlgraph
   ];
 
   propagatedBuildInputs = with ocamlPackages; [
     camlzip
     menhirLib
+    ocamlgraph
     re
     sexplib
     zarith
