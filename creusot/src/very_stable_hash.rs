@@ -1,4 +1,4 @@
-use rustc_data_structures::stable_hasher::StableHasher;
+use rustc_data_structures::stable_hash::StableHasher;
 use rustc_hashes::Hash64;
 use rustc_hir::{
     def_id::{CrateNum, DefId},

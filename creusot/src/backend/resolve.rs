@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use rustc_ast::Mutability;
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{GenericArg, Ty, TypingEnv, Unnormalized};
+use rustc_middle::ty::{GenericArg, Ty, TypingEnv};
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::TyKind;
 
@@ -60,14 +60,10 @@ pub fn is_resolve_trivial<'tcx>(
                     return false;
                 }
                 AdtKind::Box(ty) => stack.push(ty),
-                AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => {
-                    stack.extend(def.all_fields().map(|f| {
-                        ctx.normalize_erasing_regions(
-                            typing_env,
-                            Unnormalized::new(f.ty(ctx.tcx, subst)),
-                        )
-                    }))
-                }
+                AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => stack.extend(
+                    def.all_fields()
+                        .map(|f| ctx.normalize_erasing_regions(typing_env, f.ty(ctx.tcx, subst))),
+                ),
             },
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
             TyKind::Param(_)
@@ -123,7 +119,7 @@ pub(crate) fn structural_resolve<'tcx>(
                     let mut exp = Some(Term::true_(ctx.tcx));
                     let fields = var.fields.iter_enumerated().map(|(ix, f)| {
                         let sym = Ident::fresh_local(&format!("x{}", ix.as_usize()));
-                        let fty = f.ty(ctx.tcx, subst);
+                        let fty = names.normalize(f.ty(ctx.tcx, subst));
                         exp = Some(exp.take().unwrap().conj(ctx.resolve(
                             names.source_id(),
                             names.typing_env(),
@@ -139,7 +135,7 @@ pub(crate) fn structural_resolve<'tcx>(
                 let mut exp = Term::true_(ctx.tcx);
                 for (ix, f) in adt.non_enum_variant().fields.iter_enumerated() {
                     if f.vis.is_accessible_from(names.source_id(), ctx.tcx) {
-                        let fty = f.ty(ctx.tcx, subst);
+                        let fty = names.normalize(f.ty(ctx.tcx, subst));
                         exp = exp.conj(ctx.resolve(
                             names.source_id(),
                             names.typing_env(),

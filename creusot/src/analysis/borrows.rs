@@ -163,7 +163,6 @@ impl<'tcx> Analysis<'tcx> for Borrows<'_, '_, 'tcx> {
 
             mir::StatementKind::FakeRead(..)
             | mir::StatementKind::SetDiscriminant { .. }
-            | mir::StatementKind::Retag { .. }
             | mir::StatementKind::PlaceMention(..)
             | mir::StatementKind::AscribeUserType(..)
             | mir::StatementKind::Coverage(..)

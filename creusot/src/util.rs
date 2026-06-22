@@ -96,7 +96,7 @@ pub fn forge_def_id_from(
 }
 
 fn compute_stable_hash(key: DefKey, parent: DefPathHash) -> DefPathHash {
-    let mut hasher = rustc_data_structures::stable_hasher::StableHasher::new();
+    let mut hasher = rustc_data_structures::stable_hash::StableHasher::new();
 
     // The new path is in the same crate as `parent`, and will contain the stable_crate_id.
     // Therefore, we only need to include information of the parent's local hash.

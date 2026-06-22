@@ -81,7 +81,7 @@ pub(crate) fn infer_invariant<'tcx>(
         let mut unchanged_trms = vec![];
         for (&l, t) in changed.0.iter() {
             let trm = Term::var(l, body.locals[&l].ty);
-            t.to_unchanged_term_vec(ctx, scope, trm, &mut unchanged_trms);
+            t.to_unchanged_term_vec(ctx, scope, typing_env, trm, &mut unchanged_trms);
         }
 
         for u in unchanged_trms {
@@ -131,7 +131,7 @@ pub(crate) fn infer_invariant<'tcx>(
         let ty_inv_places = ty_inv_analysis_states
             .swap_remove(&k)
             .unwrap_or_default()
-            .to_tyinv_place_vec(&changed, ctx, body);
+            .to_tyinv_place_vec(&changed, ctx, body, typing_env);
         for pl in ty_inv_places {
             let inv = projections_term(
                 ctx,
@@ -183,6 +183,7 @@ impl ChangedPlacesTree {
         &self,
         ctx: &TranslationCtx<'tcx>,
         scope: DefId,
+        typing_env: TypingEnv<'tcx>,
         t: Term<'tcx>,
         acc: &mut Vec<Term<'tcx>>,
     ) {
@@ -192,14 +193,20 @@ impl ChangedPlacesTree {
                 if let TyKind::Ref(_, _, Mutability::Mut) = t.ty.kind() {
                     acc.push(t.clone().fin())
                 }
-                c.to_unchanged_term_vec(ctx, scope, t.deref(), acc);
+                c.to_unchanged_term_vec(ctx, scope, typing_env, t.deref(), acc);
             }
             Self::Fields(c) => match t.ty.kind() {
                 TyKind::Closure(_, subst) => {
                     for ((idx, c), ty) in c.iter_enumerated().zip_eq(subst.as_closure().upvar_tys())
                     {
                         if let Some(c) = c {
-                            c.to_unchanged_term_vec(ctx, scope, t.clone().proj(idx, ty), acc);
+                            c.to_unchanged_term_vec(
+                                ctx,
+                                scope,
+                                typing_env,
+                                t.clone().proj(idx, ty),
+                                acc,
+                            );
                         } else {
                             acc.push(t.clone().proj(idx, ty));
                         }
@@ -208,7 +215,13 @@ impl ChangedPlacesTree {
                 TyKind::Tuple(tys) => {
                     for ((idx, c), ty) in c.iter_enumerated().zip_eq(tys.iter()) {
                         if let Some(c) = c {
-                            c.to_unchanged_term_vec(ctx, scope, t.clone().proj(idx, ty), acc);
+                            c.to_unchanged_term_vec(
+                                ctx,
+                                scope,
+                                typing_env,
+                                t.clone().proj(idx, ty),
+                                acc,
+                            );
                         } else {
                             acc.push(t.clone().proj(idx, ty));
                         }
@@ -221,9 +234,16 @@ impl ChangedPlacesTree {
                     for ((idx, fdef), c) in
                         def.non_enum_variant().fields.iter_enumerated().zip_eq(c)
                     {
-                        let ty = fdef.ty(ctx.tcx, subst);
+                        let ty =
+                            ctx.tcx.normalize_erasing_regions(typing_env, fdef.ty(ctx.tcx, subst));
                         if let Some(c) = c {
-                            c.to_unchanged_term_vec(ctx, scope, t.clone().proj(idx, ty), acc);
+                            c.to_unchanged_term_vec(
+                                ctx,
+                                scope,
+                                typing_env,
+                                t.clone().proj(idx, ty),
+                                acc,
+                            );
                         } else if fdef.vis.is_accessible_from(scope, ctx.tcx) {
                             acc.push(t.clone().proj(idx, ty));
                         }
@@ -426,7 +446,9 @@ impl TyInvPlacesTree {
                         .variant(place_ty.variant_index.unwrap_or(VariantIdx::ZERO))
                         .fields
                         .iter()
-                        .map(|f| f.ty(ctx.tcx, subst))
+                        .map(|f| {
+                            ctx.tcx.normalize_erasing_regions(ctx.typing_env, f.ty(ctx.tcx, subst))
+                        })
                         .collect(),
                     _ => unreachable!(),
                 };
@@ -480,7 +502,12 @@ impl TyInvPlacesTree {
                         .variants()
                         .iter()
                         .map(|v| {
-                            if v.fields.iter().all(|f| is_tyinv_trivial(f.ty(ctx.tcx, subst))) {
+                            if v.fields.iter().all(|f| {
+                                is_tyinv_trivial(ctx.tcx.normalize_erasing_regions(
+                                    ctx.typing_env,
+                                    f.ty(ctx.tcx, subst),
+                                ))
+                            }) {
                                 Self::Top
                             } else {
                                 Self::TyInv
@@ -503,7 +530,12 @@ impl TyInvPlacesTree {
                 } else if has_no_user_invariant(ctx, place_ty.ty, ctx.typing_env)
                     && vs.iter().zip_eq(def.variants()).all(|(t, v)| {
                         matches!(t, Self::TyInv)
-                            || v.fields.iter().all(|f| is_tyinv_trivial(f.ty(ctx.tcx, subst)))
+                            || v.fields.iter().all(|f| {
+                                is_tyinv_trivial(ctx.tcx.normalize_erasing_regions(
+                                    ctx.typing_env,
+                                    f.ty(ctx.tcx, subst),
+                                ))
+                            })
                     })
                 {
                     *self = Self::TyInv
@@ -551,6 +583,7 @@ impl TyInvPlacesTree {
         changed: &ChangedPlacesTree,
         ctx: &TranslationCtx<'tcx>,
         local: Ident,
+        typing_env: TypingEnv<'tcx>,
         mut projection: Vec<ProjectionElem<'tcx>>,
         mut place_ty: PlaceTy<'tcx>,
         acc: &mut Vec<Place<'tcx>>,
@@ -567,7 +600,7 @@ impl TyInvPlacesTree {
                 projection.push(ProjectionElem::Deref);
                 assert_matches!(place_ty.variant_index, None);
                 place_ty.ty = place_ty.ty.builtin_deref(true).unwrap();
-                s.to_tyinv_place_vec(changed, ctx, local, projection, place_ty, acc)
+                s.to_tyinv_place_vec(changed, ctx, local, typing_env, projection, place_ty, acc)
             }
             Self::Fields(flds) => {
                 let changed: Box<dyn Iterator<Item = &Option<ChangedPlacesTree>>> = match changed {
@@ -579,10 +612,21 @@ impl TyInvPlacesTree {
                 };
                 for ((idx, s), changed) in flds.iter_enumerated().zip(changed) {
                     let Some(changed) = changed else { continue };
-                    let ty = PlaceTy::field_ty(ctx.tcx, place_ty.ty, place_ty.variant_index, idx);
+                    let ty = ctx.tcx.normalize_erasing_regions(
+                        typing_env,
+                        PlaceTy::field_ty(ctx.tcx, place_ty.ty, place_ty.variant_index, idx),
+                    );
                     let mut proj = projection.clone();
                     proj.push(ProjectionElem::Field(idx, ty));
-                    s.to_tyinv_place_vec(changed, ctx, local, proj, PlaceTy::from_ty(ty), acc);
+                    s.to_tyinv_place_vec(
+                        changed,
+                        ctx,
+                        local,
+                        typing_env,
+                        proj,
+                        PlaceTy::from_ty(ty),
+                        acc,
+                    );
                 }
             }
             Self::Downcasts(vs) => {
@@ -591,7 +635,7 @@ impl TyInvPlacesTree {
                     let mut proj = projection.clone();
                     proj.push(ProjectionElem::Downcast(None, idx));
                     place_ty.variant_index = Some(idx);
-                    s.to_tyinv_place_vec(changed, ctx, local, proj, place_ty, acc);
+                    s.to_tyinv_place_vec(changed, ctx, local, typing_env, proj, place_ty, acc);
                 }
             }
         }
@@ -694,12 +738,13 @@ impl TyInvState {
         changed: &ChangedPlaces,
         ctx: &TranslationCtx<'tcx>,
         body: &Body<'tcx>,
+        typing_env: TypingEnv<'tcx>,
     ) -> Vec<Place<'tcx>> {
         let mut acc = vec![];
         for (&local, state) in &self.0 {
             let Some(changed) = changed.0.get(&local) else { continue };
             let placety = PlaceTy::from_ty(body.locals[&local].ty);
-            state.to_tyinv_place_vec(changed, ctx, local, vec![], placety, &mut acc);
+            state.to_tyinv_place_vec(changed, ctx, local, typing_env, vec![], placety, &mut acc);
         }
         acc
     }

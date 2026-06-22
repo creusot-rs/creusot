@@ -22,7 +22,7 @@ use std::{
 
 pub struct MetadataEncoder<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
-    pub opaque: FileEncoder,
+    pub opaque: FileEncoder<'a>,
     type_shorthands: FxHashMap<Ty<'tcx>, usize>,
     predicate_shorthands: FxHashMap<PredicateKind<'tcx>, usize>,
     file_to_file_index: FxHashMap<*const SourceFile, SourceFileIndex>,

@@ -36,7 +36,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             | StatementKind::StorageLive(_)
             | StatementKind::FakeRead(_)
             | StatementKind::AscribeUserType(_, _)
-            | StatementKind::Retag(_, _)
             | StatementKind::Coverage(_)
             | StatementKind::PlaceMention(_)
             | StatementKind::ConstEvalCounter
@@ -60,7 +59,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         let ty = rvalue.ty(self.body, self.tcx());
         let span = si.span;
         let rval: RValue<'tcx> = match rvalue {
-            Rvalue::Use(op) => match op {
+            Rvalue::Use(op, _) => match op {
                 Move(_pl) | Copy(_pl) => RValue::Operand(self.translate_operand(op, span)),
                 Constant(box c) => {
                     if let TyKind::Closure(def_id, _) = c.const_.ty().peel_refs().kind()
@@ -209,6 +208,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 _,
             ) => self.ctx.crash_and_error(si.span, format!("Unsupported pointer cast: {rvalue:?}")),
             Rvalue::CopyForDeref(_)
+            | Rvalue::Reborrow(..)
             | Rvalue::ThreadLocalRef(_)
             | Rvalue::WrapUnsafeBinder(_, _) => self.ctx.crash_and_error(
                 si.span,

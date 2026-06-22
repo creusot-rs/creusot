@@ -69,14 +69,10 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                 AdtKind::Struct { partially_opaque: true }
                 | AdtKind::Opaque { always: false }
                 | AdtKind::Empty => return false,
-                AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => {
-                    stack.extend(def.all_fields().map(|f| {
-                        ctx.normalize_erasing_regions(
-                            typing_env,
-                            Unnormalized::new(f.ty(ctx.tcx, subst)),
-                        )
-                    }))
-                }
+                AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => stack.extend(
+                    def.all_fields()
+                        .map(|f| ctx.normalize_erasing_regions(typing_env, f.ty(ctx.tcx, subst))),
+                ),
                 AdtKind::Box(_) => unreachable!(),
             },
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
@@ -199,7 +195,7 @@ fn structural_invariant<'tcx>(
                     let mut exp = Term::true_(ctx.tcx);
                     let fields = var_def.fields.iter_enumerated().map(|(field_idx, field_def)| {
                         let field_name = Ident::fresh_local(field_name(field_def.name.as_str()));
-                        let field_ty = field_def.ty(ctx.tcx, subst);
+                        let field_ty = names.normalize(field_def.ty(ctx.tcx, subst));
                         conj_inv_call(ctx, names, &mut exp, Term::var(field_name, field_ty));
                         (field_idx, Pattern::binder(field_name, field_ty))
                     });
@@ -214,12 +210,8 @@ fn structural_invariant<'tcx>(
                 let mut exp = Term::true_(ctx.tcx);
                 for (field_idx, field_def) in def.non_enum_variant().fields.iter_enumerated() {
                     if field_def.vis.is_accessible_from(names.source_id(), ctx.tcx) {
-                        conj_inv_call(
-                            ctx,
-                            names,
-                            &mut exp,
-                            subject.clone().proj(field_idx, field_def.ty(ctx.tcx, subst)),
-                        )
+                        let ty = names.normalize(field_def.ty(ctx.tcx, subst));
+                        conj_inv_call(ctx, names, &mut exp, subject.clone().proj(field_idx, ty))
                     }
                 }
                 if partially_opaque {

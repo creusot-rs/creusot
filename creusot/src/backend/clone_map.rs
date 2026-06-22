@@ -138,8 +138,8 @@ pub(crate) trait Namer<'tcx> {
     /// Ideally we'd like to avoid caring about normalization in the backend,
     /// but we still need this for normalizing field types after instantiation.
     /// Also for normalizing RPITs but that seems easier to get rid of if we ever care to.
-    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ty: T) -> T {
-        self.tcx().normalize_erasing_regions(self.typing_env(), Unnormalized::new(ty))
+    fn normalize<T: TypeFoldable<TyCtxt<'tcx>>>(&self, ty: Unnormalized<'tcx, T>) -> T {
+        self.tcx().normalize_erasing_regions(self.typing_env(), ty)
     }
 
     fn import_prelude_module(&self, module: PreMod) {

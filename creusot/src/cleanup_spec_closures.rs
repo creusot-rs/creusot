@@ -166,6 +166,7 @@ pub(crate) fn make_loop<'tcx>() -> IndexVec<BasicBlock, BasicBlockData<'tcx>> {
     let mut body = IndexVec::new();
     body.push(BasicBlockData::new(
         Some(Terminator {
+            attributes: Default::default(),
             source_info: SourceInfo::outermost(rustc_span::DUMMY_SP),
             kind: TerminatorKind::Return,
         }),

@@ -342,7 +342,7 @@ fn build_type_graph(ctx: &TranslationCtx) -> TypeGraph {
             Struct(..) | Enum(..) | Union(..) => {
                 add_type(ctx, item.owner_id.to_def_id(), &mut graph)
             }
-            Trait(..) => add_trait(ctx, item.owner_id.to_def_id(), &mut graph),
+            Trait { .. } => add_trait(ctx, item.owner_id.to_def_id(), &mut graph),
             _ => {}
         }
     }

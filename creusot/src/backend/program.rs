@@ -43,7 +43,7 @@ use rustc_abi::VariantIdx;
 use rustc_hir::{Safety, def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{BasicBlock, BinOp, PlaceTy, ProjectionElem, START_BLOCK, UnOp},
-    ty::{self, AdtDef, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind},
+    ty::{self, AdtDef, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind, Unnormalized},
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::IntTy;
@@ -153,7 +153,7 @@ pub(crate) fn to_why_body<'tcx>(
     let (mut sig, variant) = {
         let mut sig = sig.clone();
         // normalize any RPITs away
-        sig.output = names.normalize(sig.output);
+        sig.output = names.normalize(Unnormalized::new(sig.output));
         let variant = sig.contract.variant.clone();
         sig_add_type_invariant_spec(ctx, names.typing_env(), names.source_id(), &mut sig, def_id);
         (lower_program_sig(ctx, names, name, sig, def_id, name::return_()), variant)

@@ -17,7 +17,7 @@ use rustc_middle::{
         self, AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, LocalVarId, Pat, PatKind,
         StmtId, StmtKind, Thir,
     },
-    ty::{CapturedPlace, Ty, TyKind, adjustment::PointerCoercion},
+    ty::{CapturedPlace, Ty, TyKind, TypingEnv, adjustment::PointerCoercion},
 };
 use rustc_span::{ErrorGuaranteed, Symbol, sym};
 use std::{
@@ -55,7 +55,8 @@ pub(crate) fn from_thir_with_triggers<'tcx>(
     let did = id.into();
     let (thir, expr) = ctx.thir_body(id);
     let thir = &thir.borrow();
-    let lower = ThirTerm { ctx, item_id: id, thir };
+    let typing_env = ctx.typing_env(did);
+    let lower = ThirTerm { ctx, item_id: id, thir, typing_env };
 
     let (triggers, body) = lower.body_term(expr)?;
 
@@ -132,6 +133,7 @@ struct ThirTerm<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     item_id: LocalDefId,
     thir: &'a Thir<'tcx>,
+    typing_env: TypingEnv<'tcx>,
 }
 
 // TODO: Ensure that types are correct during this translation, in particular
@@ -466,12 +468,13 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
 
                         for missing_field in missing {
                             let missing_field: FieldIdx = missing_field.into();
+                            let missing_field_ty = self.ctx.tcx.normalize_erasing_regions(
+                                self.typing_env,
+                                variant.fields[missing_field].ty(self.ctx.tcx, args),
+                            );
                             fields.push((
                                 missing_field,
-                                base.clone().proj(
-                                    missing_field,
-                                    variant.fields[missing_field].ty(self.ctx.tcx, args),
-                                ),
+                                base.clone().proj(missing_field, missing_field_ty),
                             ));
                         }
                     }

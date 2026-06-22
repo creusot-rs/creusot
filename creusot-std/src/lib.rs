@@ -64,7 +64,6 @@
         range_bounds_is_empty,
         bound_copied,
         auto_traits,
-        new_range_api_legacy,
         negative_impls,
         exact_size_is_empty,
     )
