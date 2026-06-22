@@ -599,7 +599,10 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for core::range::RangeI
 
 pub trait RangeInclusiveExt<Idx> {
     #[logic]
-    fn new_log(start: Idx, end: Idx) -> Self;
+    fn new_log(start: Idx, end: Idx) -> Self
+    where
+        Idx: DeepModel,
+        Idx::DeepModelTy: OrdLogic;
 
     #[logic]
     fn start_log(self) -> Idx;
@@ -617,8 +620,14 @@ pub trait RangeInclusiveExt<Idx> {
 impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
     #[logic(opaque)]
     #[trusted]
-    #[ensures(start == result.start_log() && end == result.end_log())]
-    fn new_log(start: Idx, end: Idx) -> Self {
+    #[ensures(start == result.start_log())]
+    #[ensures(end == result.end_log())]
+    #[ensures(start.deep_model() <= end.deep_model() ==> !result.is_empty_log())]
+    fn new_log(start: Idx, end: Idx) -> Self
+    where
+        Idx: DeepModel,
+        Idx::DeepModelTy: OrdLogic,
+    {
         dead
     }
 
@@ -668,6 +677,15 @@ extern_spec! {
 }
 
 extern_spec! {
+    mod core {
+        mod ops {
+            trait FromResidual<R> where Self: Sized {
+                #[requires(true)]
+                fn from_residual(residual: R) -> Self;
+            }
+        }
+    }
+
     impl<T> Try for Option<T> {
         #[ensures(result == Some(output))]
         fn from_output(output: T) -> Self {
@@ -724,6 +742,16 @@ extern_spec! {
             }
         }
     }
+}
+
+// Specification stub for `residual_into_try_type`, used by the `try` desugarization.
+#[cfg(creusot)]
+#[allow(dead_code)]
+#[ensures(FromResidual::from_residual.postcondition((r,), result))]
+#[intrinsic("residual_into_try_type")]
+#[creusot::extern_spec]
+fn residual_into_try_type<R: Residual<O>, O>(r: R) -> <R as Residual<O>>::TryType {
+    FromResidual::from_residual(r)
 }
 
 /// Dummy impls that don't use the unstable traits Tuple, FnOnce<Args>, FnMut<Args>, Fn<Args>

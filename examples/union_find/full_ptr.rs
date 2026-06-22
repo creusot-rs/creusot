@@ -3,9 +3,9 @@ extern crate creusot_std;
 // This proof is largely adapted from the one in Vocal (see https://github.com/ocaml-gospel/vocal/blob/main/proofs/why3/UnionFind_impl.mlw)
 mod implementation {
     #[cfg(creusot)]
-    use creusot_std::logic::such_that;
+    use creusot_std::logic::{any, try_such_that};
     use creusot_std::{
-        ghost::perm::Perm,
+        ghost::{Plain, perm::Perm},
         logic::{FMap, FSet, Mapping},
         peano::PeanoInt,
         prelude::*,
@@ -20,11 +20,20 @@ mod implementation {
             std::ptr::addr_eq(self.0, other.0)
         }
     }
+
     impl DeepModel for Element {
         type DeepModelTy = usize;
         #[logic(inline)]
         fn deep_model(self) -> usize {
             self.0.addr_logic()
+        }
+    }
+
+    impl Plain for Element {
+        #[ensures(*result == *snap)]
+        #[check(ghost)]
+        fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+            ghost! { Element(*snapshot!(snap.0).into_ghost()) }
         }
     }
 
@@ -111,8 +120,7 @@ mod implementation {
         #[logic]
         #[requires(inv(self))]
         #[ensures(forall<e: Element> self.in_domain(e) ==>
-            self.in_domain(result[e]) &&
-            result[e] == result[result[e]]
+            self.in_domain(result[e]) && result[e] == result[result[e]]
         )]
         pub fn roots_map(self) -> Mapping<Element, Element> {
             *self.0.roots
@@ -173,9 +181,9 @@ mod implementation {
                 UFInner {
                     domain: snapshot!(FSet::empty()),
                     perms: FMap::new().into_inner(),
-                    payloads: snapshot!(such_that(|_| true)),
-                    depth: snapshot!(such_that(|_| true)),
-                    roots: snapshot!(such_that(|_| true)),
+                    payloads: snapshot!(any()),
+                    depth: snapshot!(any()),
+                    roots: snapshot!(any()),
                     max_depth: snapshot!(0),
                 }
             )
@@ -194,15 +202,14 @@ mod implementation {
         ghost! {
             let (mut perm, uf) = (perm.into_inner(), uf.into_inner());
 
-            // In order to prove that the new element does not have the same address as
-            // an existing one, we use an oracle to find a potentially conflicting element,
+            // We prove a contradiction if the new element has the same address as
+            // an existing one by using an oracle to find a potentially conflicting element,
             // and then use `Perm::disjoint_lemma` to prove that they are different.
-            let other_elt_ptr_snap = snapshot!(such_that(|e|
-                uf.in_domain(e) && e.deep_model() == elt.deep_model()).0);
-            let other_elt = Element(other_elt_ptr_snap.into_ghost().into_inner());
-            match uf.0.perms.get_ghost(&other_elt) {
-                None => {},
-                Some(other_perm) => Perm::disjoint_lemma(&mut perm, other_perm),
+            let other_elt =
+                snapshot!(try_such_that(|e| uf.in_domain(e) && e.deep_model() == elt.deep_model()))
+                .into_ghost().into_inner();
+            if let Some(other_elt) = other_elt {
+                Perm::disjoint_lemma(&mut perm, uf.0.perms.get_ghost(&other_elt).unwrap())
             }
 
             uf.0.perms.insert_ghost(elt, perm);

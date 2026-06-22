@@ -38,19 +38,29 @@ pub use self::{
 #[logic(opaque)]
 #[requires(exists<x: T> p[x])]
 #[ensures(p[result])]
-pub fn such_that<T>(p: crate::logic::Mapping<T, bool>) -> T {
+pub fn such_that<T>(p: Mapping<T, bool>) -> T {
     dead
 }
 
-/// Indicates unreachable code in logic.
-///
-/// This function indicates a logical branch that should be impossible to reach.
-#[trusted]
-#[logic(opaque)]
-#[requires(false)]
-#[ensures(false)]
-#[variant(0)]
-#[allow(unconditional_recursion)]
-pub fn unreachable<T>() -> T {
-    unreachable()
+/// A variant of `such_that` that returns an `Option<T>`, returning `None` if no value satisfies
+/// the property.
+#[logic]
+#[ensures(match result {
+    Some(v) => p[v],
+    None => forall<x: T> !p[x],
+})]
+pub fn try_such_that<T>(p: Mapping<T, bool>) -> Option<T> {
+    pearlite! {
+        if exists<x: T> p[x] {
+            Some(such_that(p))
+        } else {
+            None
+        }
+    }
+}
+
+/// Return a logical value of type `T` without any constraints.
+#[logic]
+pub fn any<T>() -> T {
+    such_that(|_| true)
 }

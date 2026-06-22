@@ -1,5 +1,5 @@
 extern crate creusot_std;
-use creusot_std::prelude::*;
+use creusot_std::{logic::such_that, prelude::*};
 
 pub mod common;
 use common::{ExactSizeIterator, Iterator};
@@ -56,7 +56,7 @@ where
         if ab != Seq::empty() {
             proof_assert!(
                 // instantiate the existential in `b.produces(bc, c)`
-                let s = creusot_std::logic::such_that(|s: Seq<Self::Item>| {
+                let s = such_that(|s: Seq<Self::Item>| {
                     s.len() == 0 && b.iter.produces(s.concat(bc), c.iter)
                 });
                 s.concat(bc) == bc
@@ -114,8 +114,10 @@ where
 
 impl<I: ExactSizeIterator> ExactSizeIterator for Skip<I> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {
-        self.iter.size_is_exact()
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {
+        let _ = I::size_hint_exact;
     }
 }

@@ -376,16 +376,30 @@ extern_spec! {
         fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])>;
 
         #[check(ghost)]
+        #[ensures((^*self)@.len() == (**self)@.len())]
+        #[ensures((^^self)@.len() == (*^self)@.len())]
         #[ensures(match result {
             Some(r) => {
-                *r == (**self)[0] && ^r == (^*self)[0] &&
-                (**self)@.len() > 0 && (^*self)@.len() > 0 &&
-                (*^self)@ == (**self)@.tail() && (^^self)@ == (^*self)@.tail()
+                (**self)@.len() > 0 &&
+                r == &mut (**self)[0] &&
+                (^self).to_mut_seq() == (*self).to_mut_seq().tail()
             }
-            None => (*^self)@ == Seq::empty() && (^*self)@ == Seq::empty() &&
-                    (**self)@ == Seq::empty() && (^^self)@ == Seq::empty()
+            None => resolve(self) && (^*self)@ == Seq::empty() && (**self)@ == Seq::empty()
         })]
         fn split_off_first_mut<'a>(self: &mut &'a mut [T]) -> Option<&'a mut T>;
+
+        #[check(ghost)]
+        #[ensures((^*self)@.len() == (**self)@.len())]
+        #[ensures((^^self)@.len() == (*^self)@.len())]
+        #[ensures(match result {
+            Some(r) => {
+                (**self)@.len() > 0 &&
+                r == &mut (**self)[(**self)@.len()-1] &&
+                (^self).to_mut_seq() == (*self).to_mut_seq().subsequence(0, (*self).to_mut_seq().len()-1)
+            }
+            None => resolve(self) && (^*self)@ == Seq::empty() && (**self)@ == Seq::empty()
+        })]
+        fn split_off_last_mut<'a>(self: &mut &'a mut [T]) -> Option<&'a mut T>;
 
         #[check(ghost)]
         #[ensures(result@ == self)]
@@ -566,8 +580,10 @@ extern_spec! {
 
 impl<'a, T> ExactSizeIteratorSpec for Iter<'a, T> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {}
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
 
 impl<'a, T> DoubleEndedIteratorSpec for Iter<'a, T> {
@@ -576,6 +592,11 @@ impl<'a, T> DoubleEndedIteratorSpec for Iter<'a, T> {
         pearlite! {
           self@.to_ref_seq() == o@.to_ref_seq().concat(visited.reverse())
         }
+    }
+
+    #[logic(open, prophetic)]
+    fn completed_back(&mut self) -> bool {
+        self.completed()
     }
 
     #[logic(law)]
@@ -593,6 +614,18 @@ impl<'a, T> DoubleEndedIteratorSpec for Iter<'a, T> {
         let _ = ab.reverse_concat(bc);
         let _ = Seq::<Self::Item>::concat_assoc;
     }
+
+    #[logic(law)]
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+        self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
+    #[ensures(match r.1 {
+        Some(r) => {
+            forall<s: Seq<Self::Item>, i: Self> self.produces_back(s, i) ==> s.len() <= r@
+        }
+        None => true
+    })]
+    fn size_hint_back_spec(&self, r: (usize, Option<usize>)) {}
 }
 
 impl<'a, T> View for IterMut<'a, T> {
@@ -657,8 +690,10 @@ extern_spec! {
 
 impl<'a, T> ExactSizeIteratorSpec for IterMut<'a, T> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {}
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
 
 impl<'a, T> DoubleEndedIteratorSpec for IterMut<'a, T> {
@@ -667,6 +702,11 @@ impl<'a, T> DoubleEndedIteratorSpec for IterMut<'a, T> {
         pearlite! {
             self@.to_mut_seq() == o@.to_mut_seq().concat(visited.reverse())
         }
+    }
+
+    #[logic(open, prophetic)]
+    fn completed_back(&mut self) -> bool {
+        self.completed()
     }
 
     #[logic(law)]
@@ -684,6 +724,18 @@ impl<'a, T> DoubleEndedIteratorSpec for IterMut<'a, T> {
         let _ = ab.reverse_concat(bc);
         let _ = Seq::<Self::Item>::concat_assoc;
     }
+
+    #[logic(law)]
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+        self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
+    #[ensures(match r.1 {
+        Some(r) => {
+            forall<s: Seq<Self::Item>, i: Self> self.produces_back(s, i) ==> s.len() <= r@
+        }
+        None => true
+    })]
+    fn size_hint_back_spec(&self, r: (usize, Option<usize>)) {}
 }
 
 extern_spec! {

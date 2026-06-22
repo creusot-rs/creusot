@@ -3,20 +3,20 @@ use core::iter::Zip;
 
 pub trait ZipExt<A: Iterator, B: Iterator> {
     #[logic]
-    fn itera(self) -> A;
+    fn iter_a(self) -> A;
 
     #[logic]
-    fn iterb(self) -> B;
+    fn iter_b(self) -> B;
 }
 
 impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
     #[logic(opaque)]
-    fn itera(self) -> A {
+    fn iter_a(self) -> A {
         dead
     }
 
     #[logic(opaque)]
-    fn iterb(self) -> B {
+    fn iter_b(self) -> B {
         dead
     }
 }
@@ -24,7 +24,7 @@ impl<A: Iterator, B: Iterator> ZipExt<A, B> for Zip<A, B> {
 impl<A: Iterator, B: Iterator> Invariant for Zip<A, B> {
     #[logic(prophetic, open, inline)]
     fn invariant(self) -> bool {
-        inv(self.itera()) && inv(self.iterb())
+        inv(self.iter_a()) && inv(self.iter_b())
     }
 }
 
@@ -33,8 +33,8 @@ impl<A: IteratorSpec, B: IteratorSpec> IteratorSpec for Zip<A, B> {
     fn completed(&mut self) -> bool {
         pearlite! {
             exists<a: &mut A, b: &mut B>
-                   *a == (*self).itera() && *b == (*self).iterb()
-                && ^a == (^self).itera() && ^b == (^self).iterb()
+                   *a == (*self).iter_a() && *b == (*self).iter_b()
+                && ^a == (^self).iter_a() && ^b == (^self).iter_b()
                 && (a.completed() && resolve(b)
                     || exists<x: A::Item> inv(x) && (*a).produces(Seq::singleton(x), ^a) &&
                                           resolve(x) && (*b).completed())
@@ -48,7 +48,7 @@ impl<A: IteratorSpec, B: IteratorSpec> IteratorSpec for Zip<A, B> {
             exists<p1: Seq<_>, p2: Seq<_>>
                    p1.len() == p2.len() && p2.len() == visited.len()
                 && (forall<i> 0 <= i && i < visited.len() ==> visited[i] == (p1[i], p2[i]))
-                && self.itera().produces(p1, o.itera()) && self.iterb().produces(p2, o.iterb())
+                && self.iter_a().produces(p1, o.iter_a()) && self.iter_b().produces(p2, o.iter_b())
         }
     }
 
@@ -66,8 +66,8 @@ impl<A: IteratorSpec, B: IteratorSpec> IteratorSpec for Zip<A, B> {
 extern_spec! {
     impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
         #[ensures(exists<ra, rb>
-            A::size_hint.postcondition((&self.itera(),), ra) &&
-            B::size_hint.postcondition((&self.iterb(),), rb) &&
+            A::size_hint.postcondition((&self.iter_a(),), ra) &&
+            B::size_hint.postcondition((&self.iter_b(),), rb) &&
             (ra.0@ <= rb.0@ ==> result.0 == ra.0) &&
             (ra.0@ >= rb.0@ ==> result.0 == rb.0) &&
             match (ra.1, rb.1) {
@@ -85,9 +85,11 @@ extern_spec! {
 
 impl<A: ExactSizeIteratorSpec, B: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Zip<A, B> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {
-        self.itera().size_is_exact();
-        self.iterb().size_is_exact();
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {
+        let _ = A::size_hint_exact;
+        let _ = B::size_hint_exact;
     }
 }

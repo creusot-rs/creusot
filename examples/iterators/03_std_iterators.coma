@@ -973,12 +973,13 @@ module M_my_reverse
   
   meta "rewrite_def" predicate inv_Range_usize
   
-  function itera_Zip_Range_usize_Range_usize (self: t_Zip_Range_usize_Range_usize) : t_Range_usize
+  function iter_a_Zip_Range_usize_Range_usize (self: t_Zip_Range_usize_Range_usize) : t_Range_usize
   
-  function iterb_Zip_Range_usize_Range_usize (self: t_Zip_Range_usize_Range_usize) : t_Range_usize
+  function iter_b_Zip_Range_usize_Range_usize (self: t_Zip_Range_usize_Range_usize) : t_Range_usize
   
   predicate invariant_Zip_Range_usize_Range_usize [@inline:trivial] (self: t_Zip_Range_usize_Range_usize) =
-    inv_Range_usize (itera_Zip_Range_usize_Range_usize self) /\ inv_Range_usize (iterb_Zip_Range_usize_Range_usize self)
+    inv_Range_usize (iter_a_Zip_Range_usize_Range_usize self)
+    /\ inv_Range_usize (iter_b_Zip_Range_usize_Range_usize self)
   
   meta "rewrite_def" predicate invariant_Zip_Range_usize_Range_usize
   
@@ -1054,8 +1055,8 @@ module M_my_reverse
     any
     [ return (result: t_Zip_Range_usize_Range_usize) ->
     {[@stop_split] [@expl:zip_Range_usize ensures] ([@stop_split] [@expl:zip result type invariant] inv_Zip_Range_usize_Range_usize result)
-      /\ ([@stop_split] [@expl:zip ensures #0] itera_Zip_Range_usize_Range_usize result = self_)
-      /\ ([@stop_split] [@expl:zip ensures #1] postcondition_into_iter () other (iterb_Zip_Range_usize_Range_usize result))}
+      /\ ([@stop_split] [@expl:zip ensures #0] iter_a_Zip_Range_usize_Range_usize result = self_)
+      /\ ([@stop_split] [@expl:zip ensures #1] postcondition_into_iter () other (iter_b_Zip_Range_usize_Range_usize result))}
       (! return {result}) ]
   
   let into_iter_Zip_Range_usize_Range_usize (self_: t_Zip_Range_usize_Range_usize)
@@ -1109,8 +1110,8 @@ module M_my_reverse
       /\ Seq.length p2 = Seq.length visited
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited
           -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
-      /\ produces_Range_usize (itera_Zip_Range_usize_Range_usize self) p1 (itera_Zip_Range_usize_Range_usize o)
-      /\ produces_Range_usize (iterb_Zip_Range_usize_Range_usize self) p2 (iterb_Zip_Range_usize_Range_usize o)
+      /\ produces_Range_usize (iter_a_Zip_Range_usize_Range_usize self) p1 (iter_a_Zip_Range_usize_Range_usize o)
+      /\ produces_Range_usize (iter_b_Zip_Range_usize_Range_usize self) p2 (iter_b_Zip_Range_usize_Range_usize o)
   
   function produces_trans_Zip_Range_usize_Range_usize (a: t_Zip_Range_usize_Range_usize) (ab: Seq.seq tup2_usize_usize) (b: t_Zip_Range_usize_Range_usize) (bc: Seq.seq tup2_usize_usize) (c: t_Zip_Range_usize_Range_usize) : ()
   
@@ -1140,10 +1141,10 @@ module M_my_reverse
   
   predicate completed_Zip_Range_usize_Range_usize (self: MutBorrow.t t_Zip_Range_usize_Range_usize) =
     exists a: MutBorrow.t t_Range_usize, b: MutBorrow.t t_Range_usize. a.current
-        = itera_Zip_Range_usize_Range_usize self.current
-      /\ b.current = iterb_Zip_Range_usize_Range_usize self.current
-      /\ a.final = itera_Zip_Range_usize_Range_usize self.final
-      /\ b.final = iterb_Zip_Range_usize_Range_usize self.final
+        = iter_a_Zip_Range_usize_Range_usize self.current
+      /\ b.current = iter_b_Zip_Range_usize_Range_usize self.current
+      /\ a.final = iter_a_Zip_Range_usize_Range_usize self.final
+      /\ b.final = iter_b_Zip_Range_usize_Range_usize self.final
       /\ (completed_Range_usize a /\ resolve_refmut_Range_usize b
       \/ (exists x: UInt64.t. inv_usize x
         /\ produces_Range_usize a.current (Seq.singleton x) a.final /\ resolve_usize x /\ completed_Range_usize b))

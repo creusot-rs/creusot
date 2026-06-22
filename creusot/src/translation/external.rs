@@ -1,6 +1,6 @@
 use super::specification::inputs_and_output_from_thir;
 use crate::{
-    contracts_items::{ErasureKind, get_erasure, get_trusted_positive, is_trusted},
+    contracts_items::{ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_trusted},
     ctx::*,
     resolution::TraitResolved,
     translation::{
@@ -80,7 +80,14 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let thir = &thir.borrow();
     let span = ctx.def_span(def_id);
     let contract = contract_clauses_of(ctx, def_id).unwrap();
-    let (id, subst) = extract_extern_item(thir, expr).unwrap();
+    let (id, subst) = if Intrinsic::ResidualIntoTryType.is(ctx, def_id) {
+        // Special case for `residual_into_try_type`, which cannot be defined as a normal
+        // extern spec since it is private.
+        let id = ctx.lang_items().into_try_type_fn().unwrap();
+        (id, erased_identity_for_item(ctx.tcx, id))
+    } else {
+        extract_extern_item(thir, expr).unwrap()
+    };
     let (id, inner_subst) =
         TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id, subst).to_opt(id, subst).unwrap_or_else(|| {
             let mut err = ctx.fatal_error(

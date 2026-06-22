@@ -53,8 +53,10 @@ macro_rules! impl_exact_size_range {
     ($($t:ty)*) => ($(
         impl ExactSizeIteratorSpec for Range<$t> {
             #[logic(law)]
-            #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-            fn size_is_exact(self) {}
+            #[requires(Self::size_hint.postcondition((self,), r))]
+            #[ensures(r.1 == Some(r.0))]
+            #[allow(unused_variables)]
+            fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
         }
     )*)
 }
@@ -73,10 +75,15 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range
         pearlite! {
             self.start == o.start && self.end.deep_model() >= o.end.deep_model()
             && (visited.len() > 0 ==> o.end.deep_model() >= o.start.deep_model())
-            && visited.len() == o.end.deep_model() - self.end.deep_model()
+            && visited.len() == self.end.deep_model() - o.end.deep_model()
             && forall<i> 0 <= i && i < visited.len() ==>
-                visited[i].deep_model() == self.end.deep_model() - i
+                visited[i].deep_model() == self.end.deep_model() - i - 1
         }
+    }
+
+    #[logic(open, prophetic)]
+    fn completed_back(&mut self) -> bool {
+        self.completed()
     }
 
     #[logic(law)]
@@ -88,15 +95,24 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range
     #[requires(b.produces_back(bc, c))]
     #[ensures(a.produces_back(ab.concat(bc), c))]
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+
+    #[logic(law)]
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+        self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
+    #[ensures(match r.1 {
+        Some(r) => {
+            forall<s: Seq<Self::Item>, i: Self> self.produces_back(s, i) ==> s.len() <= r@
+        }
+        None => true
+    })]
+    fn size_hint_back_spec(&self, r: (usize, Option<usize>)) {}
 }
 
 #[logic(open)]
 #[ensures(r.is_empty_log() == (result == 0))]
 pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<Idx>) -> Int {
-    pearlite! {
-        if r.is_empty_log() { 0 }
-        else { r.end_log().deep_model() - r.start_log().deep_model() + 1 }
-    }
+    if r.is_empty_log() { 0 } else { r.end_log().deep_model() - r.start_log().deep_model() + 1 }
 }
 
 #[cfg(feature = "nightly")]
@@ -146,8 +162,10 @@ macro_rules! impl_exact_size_range_inclusive {
     ($($t:ty)*) => ($(
         impl ExactSizeIteratorSpec for RangeInclusive<$t> {
             #[logic(law)]
-            #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-            fn size_is_exact(self) {}
+            #[requires(Self::size_hint.postcondition((self,), r))]
+            #[ensures(r.1 == Some(r.0))]
+            #[allow(unused_variables)]
+            fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
         }
     )*)
 }
@@ -170,6 +188,11 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range
         }
     }
 
+    #[logic(open, prophetic)]
+    fn completed_back(&mut self) -> bool {
+        self.completed()
+    }
+
     #[logic(law)]
     #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self) {}
@@ -179,6 +202,18 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range
     #[requires(b.produces_back(bc, c))]
     #[ensures(a.produces_back(ab.concat(bc), c))]
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+
+    #[logic(law)]
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
+        self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
+    #[ensures(match r.1 {
+        Some(r) => {
+            forall<s: Seq<Self::Item>, i: Self> self.produces_back(s, i) ==> s.len() <= r@
+        }
+        None => true
+    })]
+    fn size_hint_back_spec(&self, r: (usize, Option<usize>)) {}
 }
 
 /// Dummy impls that don't use the unstable trait Step

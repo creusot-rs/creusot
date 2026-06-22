@@ -1,9 +1,8 @@
-// TACTIC +inline_goal
 extern crate creusot_std;
 use creusot_std::prelude::*;
 
-mod common;
-pub use common::{ExactSizeIterator, Iterator};
+pub mod common;
+use common::{ExactSizeIterator, Iterator};
 
 pub struct Once<T>(pub Option<T>);
 
@@ -15,7 +14,7 @@ impl<T> Iterator for Once<T> {
         pearlite! { *self == Once(None) && resolve(self) }
     }
 
-    #[logic(open, prophetic)]
+    #[logic(open, inline)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||
@@ -54,13 +53,12 @@ impl<T> Iterator for Once<T> {
 
 impl<T> ExactSizeIterator for Once<T> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {}
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    #[allow(unused_variables)]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 
-    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
-        self.produces(s, *i) && i.completed() ==> result@ == s.len())]
-    #[ensures(forall<s: Seq<Self::Item>, i: Self>
-        self.produces(s, i) ==> s.len() <= result@)]
+    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
     fn len(&self) -> usize {
         match self.0 {
             Some(_) => 1,

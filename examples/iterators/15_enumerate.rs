@@ -61,23 +61,18 @@ impl<I: Iterator> Iterator for Enumerate<I> {
 
 impl<I: ExactSizeIterator> ExactSizeIterator for Enumerate<I> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {
-        self.iter.size_is_exact()
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {
+        self.iter.size_hint_exact(r)
     }
 
-    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
-        self.produces(s, *i) && i.completed() ==> result@ == s.len())]
-    #[ensures(forall<s: Seq<Self::Item>, i: Self>
-        self.produces(s, i) ==> s.len() <= result@)]
+    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
     fn len(&self) -> usize {
         self.iter.len()
     }
 
-    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
-        self.produces(s, *i) && i.completed() ==> result == (s == Seq::empty()))]
-    #[ensures(forall<s: Seq<Self::Item>, i: Self>
-        self.produces(s, i) && result ==> s == Seq::empty())]
+    #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l))) && result == (l == 0usize))]
     fn is_empty(&self) -> bool {
         proof_assert!(forall<s: Seq<I::Item>> s.len() == 0 ==> s == Seq::empty());
         self.iter.is_empty()

@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::logic::{Mapping, such_that, unreachable};
+use crate::logic::{Mapping, any, try_such_that};
 use crate::prelude::*;
 
 /// Instances of this trait are types which are allowed as variants of recursive definitions.
@@ -170,11 +170,12 @@ macro_rules! wf_tuples {
             #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
             fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
                 pearlite! {
-                    if exists<r> r >= 0 && !Self::well_founded_relation(s[r], s[r + 1]) {
-                        such_that(|r| r >= 0 && !Self::well_founded_relation(s[r], s[r + 1]))
-                    } else {
-                        let _ = T0::no_infinite_decreasing_sequence(first_component_decr(|i| s[i].tuple_to_pair()));
-                        unreachable()
+                    match try_such_that(|r| r >= 0 && !Self::well_founded_relation(s[r], s[r + 1])) {
+                        Some(r) => r,
+                        None => {
+                            let _ = T0::no_infinite_decreasing_sequence(first_component_decr(|i| s[i].tuple_to_pair()));
+                            any()
+                        }
                     }
                 }
             }
@@ -236,5 +237,5 @@ fn extract_nth<T1: WellFounded, T2: WellFounded>(s: Mapping<Int, (T1, T2)>, i: I
 fn first_component_decr<T1: WellFounded, T2: WellFounded>(
     s: Mapping<Int, (T1, T2)>,
 ) -> Mapping<Int, T1> {
-    |i| if 0 <= i { s[extract_nth(s, i)].0 } else { such_that(|_| true) }
+    |i| if 0 <= i { s[extract_nth(s, i)].0 } else { any() }
 }

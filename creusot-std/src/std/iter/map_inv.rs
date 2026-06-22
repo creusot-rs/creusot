@@ -169,10 +169,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
 impl<I: ExactSizeIteratorSpec + IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B>
     ExactSizeIterator for MapInv<I, F>
 {
-    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
-        self.produces(s, *i) && i.completed() ==> result@ == s.len())]
-    #[ensures(forall<s: Seq<Self::Item>, i: Self>
-        self.produces(s, i) ==> s.len() <= result@)]
+    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
     fn len(&self) -> usize {
         self.iter.len()
     }
@@ -182,8 +179,9 @@ impl<I: ExactSizeIteratorSpec + IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<
     ExactSizeIteratorSpec for MapInv<I, F>
 {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {
-        self.iter.size_is_exact()
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {
+        self.iter.size_hint_exact(r)
     }
 }

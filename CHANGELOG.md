@@ -12,6 +12,76 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ## [Unreleased] - ReleaseDate
 
+## [0.12.0] - 2026-06-12
+
+## cargo-creusot
+
+- [**Run provers by default, add `--only=(coma|prove)` option**](https://github.com/creusot-rs/creusot/pull/2056)
+- [**New setup for dev versions of Creusot**](https://github.com/creusot-rs/creusot/pull/2116) (also [#2106](https://github.com/creusot-rs/creusot/pull/2106))
+- [Move solvers to separate Why3 conf file](https://github.com/creusot-rs/creusot/pull/2126)
+- [Fixes for verifying a static nostd library](https://github.com/creusot-rs/creusot/pull/2124)
+- [Pass `--no-autodetect-provers` to why3find](https://github.com/creusot-rs/creusot/pull/2107)
+- [Fix crash when verif doesn't exist](https://github.com/creusot-rs/creusot/pull/2079)
+- [Fix version parsing of Alt-Ergo for the free version](https://github.com/creusot-rs/creusot/pull/2130)
+
+## creusot
+
+- [**Support mutually recursive program functions**](https://github.com/creusot-rs/creusot/pull/2026)
+- [**Termination check: handle recursion through proof trees and add recursive types check**](https://github.com/creusot-rs/creusot/pull/2006)
+- [Fix vcgen of int casts](https://github.com/creusot-rs/creusot/pull/2143)
+- [Check traits that are recursive via bounds of their associated types](https://github.com/creusot-rs/creusot/pull/2131)
+- [Fix sorting of modules](https://github.com/creusot-rs/creusot/pull/2109) (also [#2087](https://github.com/creusot-rs/creusot/pull/2087))
+- [Do not error on trusted static declarations.](https://github.com/creusot-rs/creusot/pull/2084)
+- [Consider that items are trusted as soon as their parents are in more cases.](https://github.com/creusot-rs/creusot/pull/2083)
+- [New `#[builtin("identity")]` annotation for types, instructing Creusot to translate this type transparently.](https://github.com/creusot-rs/creusot/pull/2070)
+- [Exit when additional predicates from extern specs cannot be fulfilled](https://github.com/creusot-rs/creusot/pull/2060)
+- [Remove option `simple_trigger`. Use a trigger for the spec and def axiom of every logic function](https://github.com/creusot-rs/creusot/pull/2051)
+- [Fix translation of const](https://github.com/creusot-rs/creusot/pull/2054)
+- [Fix instantiation of types of consts](https://github.com/creusot-rs/creusot/pull/2053)
+- [Opacity check: make sure we traverse all subexpressions.](https://github.com/creusot-rs/creusot/pull/2049)
+
+## Dependencies
+
+- [**creusot-std: Use the same dependencies in Rust builds as in Creusot builds by default**](https://github.com/creusot-rs/creusot/pull/2137)
+- [**Do not depend on crate `alloc` in `no_std` mode**, by refactoring the use of the `Perm` type.](https://github.com/creusot-rs/creusot/pull/2088) (also [#2091](https://github.com/creusot-rs/creusot/pull/2091))
+- [Add version numbers in `creusot_why3.conf`](https://github.com/creusot-rs/creusot/pull/2142)
+- [Upgrade toolchain to nightly-2026-04-21](https://github.com/creusot-rs/creusot/pull/2052)
+- [Add Alt-Ergo Free in the flake](https://github.com/creusot-rs/creusot/pull/2035)
+
+## creusot-std
+
+### Iterators, ranges, sequences
+
+- [**New specification scheme for `FromIterator`**](https://github.com/creusot-rs/creusot/pull/2114)
+- [Cleanup `DoubleEndedIterator` and related specifications](https://github.com/creusot-rs/creusot/pull/2145)
+- [Add external specifications for `ExactSizeIterator` implementation of `Iter`](https://github.com/creusot-rs/creusot/pull/2119)
+- [`OrdLogic` for sequences, based on lexicographic ordering.](https://github.com/creusot-rs/creusot/pull/2122)
+- [Implement `SliceIndexSpec` for intervals](https://github.com/creusot-rs/creusot/pull/2112)
+- [Use fully qualified syntax with core for unfolding `a..=b` in Pearlite, to make it compatible with `no_std` mode and even if the prelude is not loaded.](https://github.com/creusot-rs/creusot/pull/2113)
+- [Add support for `as_slice` for `Iter` and `IterMut`](https://github.com/creusot-rs/creusot/pull/2092)
+- [Support `DoubleEndedIterator` slice](https://github.com/creusot-rs/creusot/pull/2086)
+- [Extern spec for `bool::then` and `bool::then_some`](https://github.com/creusot-rs/creusot/pull/2050)
+
+### Ghosts, pointers, atomics
+
+- [**Add lifetime logic to Creusot**](https://github.com/creusot-rs/creusot/pull/2059)
+- [A bit of refactoring in atomic orderings](https://github.com/creusot-rs/creusot/pull/2132)
+- [Implement `RA` for tuples of size <= 4](https://github.com/creusot-rs/creusot/pull/2123)
+- [split `Ghost` of tuples up to size 8](https://github.com/creusot-rs/creusot/pull/2108)
+- [Add the method `GhostShared::to_ref`](https://github.com/creusot-rs/creusot/pull/2101)
+- [Changes to `Rc`, to use it in `union_find`](https://github.com/creusot-rs/creusot/pull/2093)
+- [A few more primitives to `SyncView`](https://github.com/creusot-rs/creusot/pull/2090)
+- [`PermTarget::Value` is `Sized`. This avoids a lot of dereferencings in many places.](https://github.com/creusot-rs/creusot/pull/2089)
+- [Specify `NonNull<T>`](https://github.com/creusot-rs/creusot/pull/2081)
+- [Fixes for `FullBorrow` and `EndBorrow`](https://github.com/creusot-rs/creusot/pull/2082)
+- [Lifetime logic fixes](https://github.com/creusot-rs/creusot/pull/2073)
+- [Define the `GhostShared` type](https://github.com/creusot-rs/creusot/pull/2065)
+- [Fixes to the axiomatization of atomics.](https://github.com/creusot-rs/creusot/pull/2068)
+- [Trivial `Deref`/`DerefMut` extern specs.](https://github.com/creusot-rs/creusot/pull/2067)
+- [Enforce `#[trusted]` on `Send`/`Sync` instances.](https://github.com/creusot-rs/creusot/pull/2066)
+- [Atomic CAS operation + relaxed parallel add](https://github.com/creusot-rs/creusot/pull/2061)
+- [Changes to `Protocol`](https://github.com/creusot-rs/creusot/pull/2057)
+
 ## [0.11.0] - 2026-04-20
 
 ### Language/CLI features

@@ -1,6 +1,6 @@
 #![feature(unboxed_closures)]
 extern crate creusot_std;
-use creusot_std::{invariant::Invariant, prelude::*};
+use creusot_std::{invariant::Invariant, logic::such_that, prelude::*};
 
 pub mod common;
 use common::{ExactSizeIterator, Iterator};
@@ -85,23 +85,18 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
 
 impl<I: ExactSizeIterator, B, F: FnMut(I::Item) -> B> ExactSizeIterator for Map<I, F> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {
-        self.iter.size_is_exact()
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {
+        self.iter.size_hint_exact(r)
     }
 
-    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
-        self.produces(s, *i) && i.completed() ==> result@ == s.len())]
-    #[ensures(forall<s: Seq<Self::Item>, i: Self>
-        self.produces(s, i) ==> s.len() <= result@)]
+    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
     fn len(&self) -> usize {
         self.iter.len()
     }
 
-    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
-        self.produces(s, *i) && i.completed() ==> result == (s == Seq::empty()))]
-    #[ensures(forall<s: Seq<Self::Item>, i: Self>
-        self.produces(s, i) && result ==> s == Seq::empty())]
+    #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l))) && result == (l == 0usize))]
     fn is_empty(&self) -> bool {
         proof_assert!(forall<s: Seq<I::Item>> s.len() == 0 ==> s == Seq::empty());
         self.iter.is_empty()
@@ -180,7 +175,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
         visited: Seq<B>,
         succ: Self,
     ) -> (Seq<&'a mut F>, Seq<I::Item>) {
-        creusot_std::logic::such_that(|(fs, s): (Seq<&mut F>, Seq<I::Item>)| {
+        such_that(|(fs, s): (Seq<&mut F>, Seq<I::Item>)| {
             pearlite! {
                 fs.len() == visited.len() && s.len() == visited.len()
                 && self.iter.produces(s, succ.iter)

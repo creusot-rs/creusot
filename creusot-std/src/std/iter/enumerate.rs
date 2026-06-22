@@ -95,8 +95,9 @@ extern_spec! {
 
 impl<'a, I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Enumerate<I> {
     #[logic(law)]
-    #[ensures(forall<r> Self::size_hint.postcondition((&self,), r) ==> r.1 == Some(r.0))]
-    fn size_is_exact(self) {
-        self.iter().size_is_exact()
+    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[ensures(r.1 == Some(r.0))]
+    fn size_hint_exact(&self, r: (usize, Option<usize>)) {
+        self.iter().size_hint_exact(r)
     }
 }

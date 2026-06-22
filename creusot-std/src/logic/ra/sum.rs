@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::logic::such_that;
+use crate::logic::any;
 use crate::{
     logic::ra::{
         RA,
@@ -154,7 +154,7 @@ impl<R1: RA, R2: RA, U: Update<R1>> Update<Sum<R1, R2>> for SumUpdateL<U> {
     fn frame_preserving(self, from: Sum<R1, R2>, frame: Sum<R1, R2>) -> U::Choice {
         match (from, frame) {
             (Sum::Left(from), Sum::Left(frame)) => self.0.frame_preserving(from, frame),
-            _ => such_that(|_| true),
+            _ => any(),
         }
     }
 }
@@ -209,7 +209,7 @@ impl<R: RA, U: Update<R>, V: RA> Update<Sum<V, R>> for SumUpdateR<U> {
     fn frame_preserving(self, from: Sum<V, R>, frame: Sum<V, R>) -> U::Choice {
         match (from, frame) {
             (Sum::Right(from), Sum::Right(frame)) => self.0.frame_preserving(from, frame),
-            _ => such_that(|_| true),
+            _ => any(),
         }
     }
 }
@@ -238,7 +238,7 @@ impl<R1: RA, R2: RA, U: LocalUpdate<R1>> LocalUpdate<Sum<R1, R2>> for SumLocalUp
                 let (to_auth, to_frag) = self.0.update(from_auth, from_frag);
                 (Sum::Left(to_auth), Sum::Left(to_frag))
             }
-            _ => such_that(|_| true),
+            _ => any(),
         }
     }
 
@@ -291,7 +291,7 @@ impl<R1: RA, R2: RA, U: LocalUpdate<R2>> LocalUpdate<Sum<R1, R2>> for SumLocalUp
                 let (to_auth, to_frag) = self.0.update(from_auth, from_frag);
                 (Sum::Right(to_auth), Sum::Right(to_frag))
             }
-            _ => such_that(|_| true),
+            _ => any(),
         }
     }
 

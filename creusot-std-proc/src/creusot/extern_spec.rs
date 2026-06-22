@@ -485,7 +485,7 @@ fn escape_self_in_term(t: &mut Term, replacer: &mut SelfTypeEscaper) {
             escape_self_in_term(left, replacer);
             escape_self_in_term(right, replacer)
         }
-        Term::Block(TermBlock { block, .. }) => escape_self_in_tblock(block, replacer),
+        Term::Block(block) => escape_self_in_tblock(block, replacer),
         Term::Call(TermCall { func, args, .. }) => {
             escape_self_in_term(func, replacer);
             for arg in args {
@@ -624,7 +624,7 @@ fn escape_self_in_term_with_triggers(t: &mut TermWithTriggers, replacer: &mut Se
     escape_self_in_term(&mut t.term, replacer)
 }
 
-fn escape_self_in_tblock(t: &mut TBlock, replacer: &mut SelfTypeEscaper) {
+fn escape_self_in_tblock(t: &mut TermBlock, replacer: &mut SelfTypeEscaper) {
     for s in &mut t.stmts {
         match s {
             TermStmt::Local(TLocal { init: Some((_, t)), .. }) => escape_self_in_term(t, replacer),

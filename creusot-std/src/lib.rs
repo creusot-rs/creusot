@@ -56,6 +56,7 @@
         fmt_arguments_from_str,
         fmt_helpers_for_derive,
         try_trait_v2,
+        try_trait_v2_residual,
         panic_internals,
         ptr_metadata,
         hint_must_use,
