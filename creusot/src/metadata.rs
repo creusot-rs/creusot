@@ -88,11 +88,6 @@ impl<'tcx> Metadata<'tcx> {
         self.erased_defid.get(&id)
     }
 
-    /// Returns `true` if the crate has not been verified by Creusot.
-    pub(crate) fn is_external_crate(&self, cnum: CrateNum) -> bool {
-        self.get(cnum).is_none_or(|meta| meta.is_external_crate)
-    }
-
     pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, PathBuf>) {
         for &cnum in tcx.crates(()) {
             if cnum == LOCAL_CRATE {
@@ -133,7 +128,7 @@ pub struct CrateMetadata<'tcx> {
     creusot_items: HashMap<Symbol, DefId>,
     intrinsics: HashMap<Symbol, DefId>,
     params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
-    is_external_crate: bool,
+    non_creusot_crate: bool,
 }
 
 impl<'tcx> CrateMetadata<'tcx> {
@@ -163,6 +158,10 @@ impl<'tcx> CrateMetadata<'tcx> {
         self.intrinsics.get(&sym).cloned()
     }
 
+    pub(crate) fn non_creusot_crate(&self) -> bool {
+        self.non_creusot_crate
+    }
+
     fn load(
         tcx: TyCtxt<'tcx>,
         overrides: &HashMap<String, PathBuf>,
@@ -183,7 +182,7 @@ impl<'tcx> CrateMetadata<'tcx> {
             creusot_items: metadata.creusot_items,
             intrinsics: metadata.intrinsics,
             params_open_inv: metadata.params_open_inv,
-            is_external_crate: metadata.is_external_crate,
+            non_creusot_crate: metadata.non_creusot_crate,
         };
 
         Some((
@@ -211,7 +210,7 @@ pub(crate) struct BinaryMetadata<'tcx> {
     params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
     erased_thir: Vec<(DefId, AnfBlock<'tcx>)>,
     erased_defid: Vec<(DefId, Option<Erasure<'tcx>>)>,
-    is_external_crate: bool,
+    non_creusot_crate: bool,
 }
 
 impl<'tcx> BinaryMetadata<'tcx> {
@@ -248,7 +247,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
             params_open_inv,
             erased_thir,
             erased_defid,
-            is_external_crate: false,
+            non_creusot_crate: false,
         }
     }
 
@@ -263,7 +262,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
             params_open_inv: HashMap::new(),
             erased_thir,
             erased_defid: Vec::new(),
-            is_external_crate: true,
+            non_creusot_crate: true,
         }
     }
 }

@@ -35,7 +35,7 @@ use rustc_errors::{Diag, DiagMessage, FatalAbort};
 use rustc_hir::{
     HirId,
     def::DefKind,
-    def_id::{DefId, LOCAL_CRATE, LocalDefId},
+    def_id::{CrateNum, DefId, LOCAL_CRATE, LocalDefId},
 };
 use rustc_index::bit_set::DenseBitSet;
 use rustc_infer::traits::ObligationCause;
@@ -534,9 +534,11 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {
-        let (id, subst) = inherited_extern_spec(self, def_id)
-            .unwrap_or_else(|| (def_id, erased_identity_for_item(self.tcx, def_id)));
-        if let Some(es) = self.extern_spec(id) {
+        if let Some((es, subst)) = self
+            .extern_spec(def_id)
+            .map(|es| (es, erased_identity_for_item(self.tcx, def_id)))
+            .or_else(|| inherited_extern_spec(self, def_id))
+        {
             let base_predicates =
                 self.tcx.param_env(def_id).caller_bounds().into_iter().map(Clause::as_predicate);
             let additional_predicates = es.predicates_for(self.tcx, subst).into_iter();
@@ -579,6 +581,11 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
     }
 
+    /// Returns `true` if the crate is not verified by Creusot.
+    pub(crate) fn non_creusot_crate(&self, cnum: CrateNum) -> bool {
+        cnum != LOCAL_CRATE && self.externs.get(cnum).is_none_or(|meta| meta.non_creusot_crate())
+    }
+
     pub(crate) fn load_specs(&mut self) {
         self.load_extern_specs();
         self.load_trusted_positivity();
@@ -596,6 +603,13 @@ impl<'tcx> TranslationCtx<'tcx> {
                 }
 
                 let (i, es) = extract_extern_specs_from_item(self, def_id, thir);
+
+                if !self.non_creusot_crate(i.krate) {
+                    self.crash_and_error(
+                        self.def_span(def_id),
+                        format!("the extern_spec mechanism should not be used on items in crates verified by Creusot"),
+                    );
+                }
 
                 if self.extern_spec(i).is_some() {
                     self.crash_and_error(

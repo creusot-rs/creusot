@@ -7,7 +7,10 @@ use crate::{
     ctx::*,
     lints::{Diagnostics, RESULT_PARAM},
     naming::{lowercase_prefix, name},
-    translation::pearlite::{Ident, PIdent, Term, TermWithTriggers, Trigger, normalize},
+    translation::{
+        external::ExternSpec,
+        pearlite::{Ident, PIdent, Term, TermWithTriggers, Trigger, normalize},
+    },
     util::erased_identity_for_item,
 };
 use rustc_hir::{AttrArgs, HirId, Safety, def::DefKind, def_id::DefId};
@@ -18,7 +21,7 @@ use rustc_middle::{
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::ClosureKind;
-use std::iter::repeat;
+use std::{assert_matches, iter::repeat};
 
 #[derive(
     Eq,
@@ -267,29 +270,26 @@ pub(crate) fn contract_clauses_of(
     Ok(ContractClauses { requires, ensures, variant, purity })
 }
 
-pub(crate) fn inherited_extern_spec<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
+pub(crate) fn inherited_extern_spec<'tcx, 'a>(
+    ctx: &'a TranslationCtx<'tcx>,
     def_id: DefId,
-) -> Option<(DefId, GenericArgsRef<'tcx>)> {
-    if def_id.is_local() || ctx.extern_spec(def_id).is_some() {
+) -> Option<(&'a ExternSpec<'tcx>, GenericArgsRef<'tcx>)> {
+    if !ctx.non_creusot_crate(def_id.krate) {
         return None;
     }
 
     let assoc = ctx.opt_associated_item(def_id)?;
+    let spec = ctx.extern_spec(assoc.trait_item_def_id()?)?;
+
     let impl_id = assoc.impl_container(ctx.tcx)?;
     let trait_ref = ctx
         .impl_opt_trait_ref(impl_id)?
         .instantiate(ctx.tcx, erased_identity_for_item(ctx.tcx, impl_id))
         .skip_normalization();
-    let id = assoc.trait_item_def_id()?;
+    let subst =
+        erased_identity_for_item(ctx.tcx, def_id).rebase_onto(ctx.tcx, impl_id, trait_ref.args);
 
-    if ctx.extern_spec(id).is_none() {
-        return None;
-    }
-
-    let subst = erased_identity_for_item(ctx.tcx, def_id);
-    let subst = subst.rebase_onto(ctx.tcx, impl_id, trait_ref.args);
-    Some((id, subst))
+    Some((spec, subst))
 }
 
 pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
@@ -312,6 +312,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         .skip_normalization();
 
     if let Some(spec) = ctx.extern_spec(def_id).cloned() {
+        assert!(contract.is_empty());
         // We do NOT normalize the contract here. See below.
         let bound = spec.inputs.iter().map(|(ident, _, _)| ident.0);
         let contract = spec
@@ -329,10 +330,8 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
                 .skip_normalization(),
             contract,
         }
-    } else if contract.is_empty()
-        && let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id)
-    {
-        let spec = ctx.extern_spec(parent_id).cloned().unwrap();
+    } else if let Some((spec, subst)) = inherited_extern_spec(ctx, def_id) {
+        assert!(contract.is_empty());
         let bound = spec.inputs.iter().map(|(ident, _, _)| ident.0);
         // We do NOT normalize the contract here: indeed, we do not have a valid non-redundant param
         // env for doing this. This is still valid because this contract is going to be substituted
@@ -340,21 +339,24 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         // of a specific call).
         let contract = spec
             .contract
+            .clone()
             .get_pre(ctx, fn_name, bound)
             .instantiate(ctx.tcx, subst)
             .skip_normalization();
         contract.check_ensures_no_trigger(ctx);
         PreSignature {
-            inputs: EarlyBinder::bind(spec.inputs).instantiate(ctx.tcx, subst).skip_normalization(),
-            output: EarlyBinder::bind(spec.output).instantiate(ctx.tcx, subst).skip_normalization(),
+            inputs: EarlyBinder::bind(spec.inputs.clone())
+                .instantiate(ctx.tcx, subst)
+                .skip_normalization(),
+            output: EarlyBinder::bind(spec.output.clone())
+                .instantiate(ctx.tcx, subst)
+                .skip_normalization(),
             contract,
         }
     } else {
-        if contract.is_empty()
-            && !def_id.is_local()
-            && ctx.externs.is_external_crate(def_id.krate)
-            && ctx.item_type(def_id) == ItemType::Program
-        {
+        if ctx.non_creusot_crate(def_id.krate) {
+            assert!(contract.is_empty());
+            assert_matches!(ctx.item_type(def_id), ItemType::Program | ItemType::Constant);
             contract.extern_no_spec = true;
             contract.requires.push(Condition {
                 term: Term::false_(ctx.tcx),
