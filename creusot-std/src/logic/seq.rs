@@ -699,6 +699,41 @@ impl<T> Seq<T> {
         }
     }
 
+    /// Insert an element in the middle of the sequence.
+    ///
+    /// The new element is located at index `position`.
+    ///
+    /// # Example
+    ///
+    /// ```rust,creusot
+    /// use creusot_std::prelude::*;
+    ///
+    /// let mut s = Seq::new();
+    /// ghost! {
+    ///     s.push_back_ghost(0);
+    ///     s.push_back_ghost(1);
+    ///     s.push_back_ghost(2);
+    ///     // s = [0, 1, 2]
+    ///
+    ///     s.insert(0int, 10);
+    ///     // s = [10, 0, 1, 2]
+    ///     s.insert(2int, 11);
+    ///     // s = [10, 0, 11, 1, 2]
+    ///     s.insert(5int, 12);
+    ///     // s = [10, 0, 11, 1, 2, 12]
+    /// };
+    /// ```
+    #[check(ghost)]
+    #[requires(0 <= position && position <= self.len())]
+    #[ensures((^self)[position] == x)]
+    #[ensures(*self == (^self).removed(position))]
+    #[variant(position)]
+    pub fn insert(&mut self, position: Int, x: T) {
+        let after = self.split_off_ghost(position);
+        self.push_back_ghost(x);
+        self.extend(after);
+    }
+
     /// Remove an element and discard the rest of the sequence.
     ///
     /// This is sometimes preferable to `remove` because this avoids reasoning about subsequences.
