@@ -5,7 +5,10 @@ use crate::{
 };
 // Resolve links like [`i8::add`] in the generated documentation
 #[cfg(doc)]
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign};
+use core::ops::{
+    Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
+    Mul, MulAssign, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
+};
 
 macro_rules! mach_int {
     ($t:ty, $ty_nm:expr, $zero:expr, $to_int:literal) => {
@@ -131,11 +134,11 @@ mach_int!(isize, "creusot.int.Int16$BW$", 0isize, ".to_int");
 macro_rules! spec_type {
     ($type:ty) => {
         // Specify addition, subtraction and multiplication
-        spec_op_common!{$type, +, checked_add, wrapping_add, saturating_add, overflowing_add, unchecked_add}
-        spec_op_common!{$type, -, checked_sub, wrapping_sub, saturating_sub, overflowing_sub, unchecked_sub}
-        spec_op_common!{$type, *, checked_mul, wrapping_mul, saturating_mul, overflowing_mul, unchecked_mul}
-        spec_impl_common!{$type}
-        spec_div_rem!{$type}
+        spec_op_common! {$type}
+        spec_impl_common! {$type}
+        spec_div_rem! {$type}
+        spec_bits! {$type}
+        spec_shifts! {$type}
 
         extern_spec! {
             impl $type {
@@ -285,6 +288,11 @@ macro_rules! spec_unsized {
 /// operation on the given type. This only works for operations that have no additional pre- or
 /// postconditions.
 macro_rules! spec_op_common {
+    ($type:ty) => {
+        spec_op_common!{$type, +, checked_add, wrapping_add, saturating_add, overflowing_add, unchecked_add}
+        spec_op_common!{$type, -, checked_sub, wrapping_sub, saturating_sub, overflowing_sub, unchecked_sub}
+        spec_op_common!{$type, *, checked_mul, wrapping_mul, saturating_mul, overflowing_mul, unchecked_mul}
+    };
     (
         $type:ty,
         $op:tt,
@@ -441,6 +449,102 @@ macro_rules! spec_div_rem {
     };
 }
 
+macro_rules! spec_bits {
+    ($type:ty) => {
+        spec_bits! {$type, &, BitAnd, bitand, BitAndAssign, bitand_assign}
+        spec_bits! {$type, |, BitOr, bitor, BitOrAssign, bitor_assign}
+        spec_bits! {$type, ^, BitXor, bitxor, BitXorAssign, bitxor_assign}
+    };
+    ($type:ty, $op:tt, $tr:ident, $f:ident, $tr_assign:ident, $f_assign: ident) => {
+        extern_spec! {
+            impl core::ops::$tr for $type {
+                #[check(ghost)]
+                #[ensures(result == self $op rhs)]
+                fn $f(self, rhs: $type) -> $type;
+            }
+
+            impl core::ops::$tr for &$type {
+                #[check(ghost)]
+                #[ensures(result == *self $op *rhs)]
+                fn $f(self, rhs: &$type) -> $type;
+            }
+
+            impl core::ops::$tr<&$type> for $type {
+                #[check(ghost)]
+                #[ensures(result == self $op *rhs)]
+                fn $f(self, rhs: &$type) -> $type;
+            }
+
+            impl core::ops::$tr<$type> for &$type {
+                #[check(ghost)]
+                #[ensures(result == *self $op rhs)]
+                fn $f(self, rhs: $type) -> $type;
+            }
+
+            impl core::ops::$tr_assign for $type {
+                #[check(ghost)]
+                #[ensures(^self == *self $op rhs)]
+                fn $f_assign(&mut self, rhs: $type);
+            }
+
+            impl core::ops::$tr_assign<&$type> for $type {
+                #[check(ghost)]
+                #[ensures(^self == *self $op *rhs)]
+                fn $f_assign(&mut self, rhs: &$type);
+            }
+        }
+    };
+}
+
+macro_rules! spec_shifts {
+    ($type:ty) => {
+        spec_shifts! {$type, u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize}
+    };
+    ($type:ty, $($rhs:ty)*) => {
+        $(spec_shifts! {$type, $rhs, >>, Shr, shr, ShrAssign, shr_assign})*
+        $(spec_shifts! {$type, $rhs, <<, Shl, shl, ShlAssign, shl_assign})*
+    };
+    ($type:ty, $rhs:ty, $op:tt, $tr:ident, $f:ident, $tr_assign:ident, $f_assign:ident) => {
+        extern_spec! {
+            impl core::ops::$tr<$rhs> for $type {
+                #[requires((0usize as $rhs) <= rhs && rhs < $type::BITS as $rhs)]
+                #[ensures(result == self $op rhs)]
+                fn $f(self, rhs: $rhs) -> $type;
+            }
+
+            impl core::ops::$tr<&$rhs> for $type {
+                #[requires((0usize as $rhs) <= *rhs && *rhs < $type::BITS as $rhs)]
+                #[ensures(result == self $op *rhs)]
+                fn $f(self, rhs: &$rhs) -> $type;
+            }
+
+            impl core::ops::$tr<$rhs> for &$type {
+                #[requires((0usize as $rhs) <= rhs && rhs < $type::BITS as $rhs)]
+                #[ensures(result == *self $op rhs)]
+                fn $f(self, rhs: $rhs) -> $type;
+            }
+
+            impl core::ops::$tr<&$rhs> for &$type {
+                #[requires((0usize as $rhs) <= *rhs && *rhs < $type::BITS as $rhs)]
+                #[ensures(result == *self $op *rhs)]
+                fn $f(self, rhs: &$rhs) -> $type;
+            }
+
+            impl core::ops::$tr_assign<$rhs> for $type {
+                #[requires((0usize as $rhs) <= rhs && rhs < $type::BITS as $rhs)]
+                #[ensures(^self == *self $op rhs)]
+                fn $f_assign(&mut self, rhs: $rhs);
+            }
+
+            impl core::ops::$tr_assign<&$rhs> for $type {
+                #[requires((0usize as $rhs) <= *rhs && *rhs < $type::BITS as $rhs)]
+                #[ensures(^self == *self $op rhs)]
+                fn $f_assign(&mut self, rhs: &$rhs);
+            }
+        }
+    };
+}
+
 /// Adds specifications for the abs_diff operation on the given pair of signed
 /// and unsigned integer types
 macro_rules! spec_abs_diff {
@@ -462,6 +566,8 @@ macro_rules! spec_abs_diff {
         }
     };
 }
+
+spec_bits!(bool);
 
 spec_unsized!(u8, 0u8, 1u8);
 spec_unsized!(u16, 0u16, 1u16);
