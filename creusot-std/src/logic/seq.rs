@@ -723,8 +723,16 @@ impl<T> Seq<T> {
     /// ```
     #[check(ghost)]
     #[requires(0 <= position && position <= self.len())]
-    #[ensures((^self)[position] == x)]
-    #[ensures(*self == (^self).removed(position))]
+    #[ensures((^self).len() == self.len() + 1)]
+    #[ensures(forall<i> 0 <= i && i <= self.len() ==>
+        if i < position {
+            (^self)[i] == self[i]
+        } else if i == position {
+            (^self)[i] == x
+        } else {
+            (^self)[i] == self[i - 1]
+        }
+    )]
     #[variant(position)]
     pub fn insert(&mut self, position: Int, x: T) {
         let after = self.split_off_ghost(position);
