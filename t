@@ -189,8 +189,8 @@ if [ "$TEST_BUILD_NO_STD" ] || [ "$TEST_ALL" ] ; then
   echo "$TLC" > rust-toolchain
   cargo fmt --check
   cargo build
-  cargo build --target thumbv7em-none-eabi -Zbuild-std=core,alloc
+  cargo build --target thumbv7em-none-eabi -Zbuild-std=core
   cargo_creusot
-  cargo_creusot -- --target thumbv7em-none-eabi -Zbuild-std=core,alloc
+  cargo_creusot -- --target thumbv7em-none-eabi -Zbuild-std=core
   popd
 fi
