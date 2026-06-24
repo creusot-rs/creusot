@@ -1,0 +1,194 @@
+module M_id
+  use seq.Seq
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Vec_A_Global
+  
+  type t_IntoIter_A_Global
+  
+  type t_A
+  
+  predicate inv_A (_1: t_A)
+  
+  predicate invariant_ref_A [@inline:trivial] (self: t_A) = inv_A self
+  
+  meta "rewrite_def" predicate invariant_ref_A
+  
+  predicate inv_ref_A [@inline:trivial] (_1: t_A) = invariant_ref_A _1
+  
+  meta "rewrite_def" predicate inv_ref_A
+  
+  predicate invariant_Seq_A [@inline:trivial] (self: Seq.seq t_A) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_A (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_A
+  
+  predicate inv_Seq_A [@inline:trivial] (_1: Seq.seq t_A) = invariant_Seq_A _1
+  
+  meta "rewrite_def" predicate inv_Seq_A
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_A_Global (self: t_Vec_A_Global) : Seq.seq t_A
+  
+  axiom view_Vec_A_Global_spec:
+    forall self: t_Vec_A_Global [view_Vec_A_Global self]. Seq.length (view_Vec_A_Global self) <= UInt64.t'int const_MAX
+  
+  predicate invariant_Vec_A_Global (self: t_Vec_A_Global) = inv_Seq_A (view_Vec_A_Global self)
+  
+  predicate inv_Vec_A_Global (_1: t_Vec_A_Global)
+  
+  axiom inv_axiom: forall x: t_Vec_A_Global [inv_Vec_A_Global x]. inv_Vec_A_Global x -> invariant_Vec_A_Global x
+  
+  predicate inv_IntoIter_A_Global (_1: t_IntoIter_A_Global)
+  
+  function view_IntoIter_A_Global (self: t_IntoIter_A_Global) : Seq.seq t_A
+  
+  let into_iter_Vec_A_Global (self_: t_Vec_A_Global) (return (x: t_IntoIter_A_Global)) =
+  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Vec_A_Global self_}
+    any
+    [ return (result: t_IntoIter_A_Global) ->
+    {[@stop_split] [@expl:into_iter_Vec_A_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_IntoIter_A_Global result)
+      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_A_Global self_ = view_IntoIter_A_Global result)}
+      (! return {result}) ]
+  
+  predicate precondition_into_iter (self: ()) (args: t_IntoIter_A_Global) =
+    let self_ = args in inv_IntoIter_A_Global self_
+  
+  meta "rewrite_def" predicate precondition_into_iter
+  
+  let into_iter_IntoIter_A_Global (self_: t_IntoIter_A_Global) (return (x: t_IntoIter_A_Global)) =
+  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_IntoIter_A_Global self_}
+    any
+    [ return (result: t_IntoIter_A_Global) ->
+    {[@stop_split] [@expl:into_iter_IntoIter_A_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_IntoIter_A_Global result)
+      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
+      (! return {result}) ]
+  
+  predicate postcondition_once_into_iter (self: ()) (args: t_IntoIter_A_Global) (result: t_IntoIter_A_Global) =
+    let self_ = args in inv_IntoIter_A_Global result /\ result = self_
+  
+  meta "rewrite_def" predicate postcondition_once_into_iter
+  
+  predicate resolve_into_iter [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_into_iter
+  
+  predicate postcondition_mut_into_iter (self: ()) (args: t_IntoIter_A_Global) (result_state: ()) (result: t_IntoIter_A_Global) =
+    let self_ = args in inv_IntoIter_A_Global result /\ result = self_
+  
+  meta "rewrite_def" predicate postcondition_mut_into_iter
+  
+  function fn_mut_once_into_iter (self: ()) (args: t_IntoIter_A_Global) (res: t_IntoIter_A_Global) : ()
+  
+  axiom fn_mut_once_into_iter_spec:
+    forall self: (), args: t_IntoIter_A_Global, res: t_IntoIter_A_Global [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
+      = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
+  
+  predicate hist_inv_into_iter (self: ()) (result_state: ()) = true
+  
+  function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_into_iter_spec:
+    forall self: (), b: (), c: () [hist_inv_into_iter self b, hist_inv_into_iter b c | hist_inv_into_iter self b, hist_inv_into_iter self c | hist_inv_into_iter b c, hist_inv_into_iter self c]. hist_inv_into_iter self b
+      -> hist_inv_into_iter b c -> hist_inv_into_iter self c
+  
+  function hist_inv_refl_into_iter (self: ()) : ()
+  
+  axiom hist_inv_refl_into_iter_spec: forall self: () [hist_inv_into_iter self self]. hist_inv_into_iter self self
+  
+  function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_IntoIter_A_Global) (res_state: ()) (res: t_IntoIter_A_Global) : ()
+  
+  axiom postcondition_mut_hist_inv_into_iter_spec:
+    forall self: (), args: t_IntoIter_A_Global, res_state: (), res: t_IntoIter_A_Global [postcondition_mut_into_iter self args res_state res | hist_inv_into_iter self res_state]. postcondition_mut_into_iter self args res_state res
+      -> hist_inv_into_iter self res_state
+  
+  function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_into_iter_spec:
+    forall self: (), res_state: () [hist_inv_into_iter self res_state]. hist_inv_into_iter self res_state
+      = (self = res_state)
+  
+  predicate postcondition_into_iter (self: ()) (args: t_IntoIter_A_Global) (result: t_IntoIter_A_Global) =
+    let self_ = args in inv_IntoIter_A_Global result /\ result = self_
+  
+  meta "rewrite_def" predicate postcondition_into_iter
+  
+  function fn_once_into_iter (self: ()) (args: t_IntoIter_A_Global) (res: t_IntoIter_A_Global) : ()
+  
+  axiom fn_once_into_iter_spec:
+    forall self: (), args: t_IntoIter_A_Global, res: t_IntoIter_A_Global [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
+      = (postcondition_into_iter self args res /\ resolve_into_iter self)
+  
+  function fn_mut_into_iter (self: ()) (args: t_IntoIter_A_Global) (res_state: ()) (res: t_IntoIter_A_Global) : ()
+  
+  axiom fn_mut_into_iter_spec:
+    forall self: (), args: t_IntoIter_A_Global, res_state: (), res: t_IntoIter_A_Global [postcondition_mut_into_iter self args res_state res]. postcondition_mut_into_iter self args res_state res
+      = (postcondition_into_iter self args res /\ self = res_state)
+  
+  predicate produces_IntoIter_A_Global (self: t_IntoIter_A_Global) (visited: Seq.seq t_A) (rhs: t_IntoIter_A_Global) =
+    view_IntoIter_A_Global self = Seq.(++) visited (view_IntoIter_A_Global rhs)
+  
+  function produces_trans_IntoIter_A_Global (a: t_IntoIter_A_Global) (ab: Seq.seq t_A) (b: t_IntoIter_A_Global) (bc: Seq.seq t_A) (c: t_IntoIter_A_Global) : ()
+  
+  axiom produces_trans_IntoIter_A_Global_spec:
+    forall a: t_IntoIter_A_Global, ab: Seq.seq t_A, b: t_IntoIter_A_Global, bc: Seq.seq t_A, c: t_IntoIter_A_Global. produces_IntoIter_A_Global a ab b
+      -> produces_IntoIter_A_Global b bc c -> produces_IntoIter_A_Global a (Seq.(++) ab bc) c
+  
+  function produces_refl_IntoIter_A_Global (self: t_IntoIter_A_Global) : ()
+  
+  axiom produces_refl_IntoIter_A_Global_spec:
+    forall self: t_IntoIter_A_Global. produces_IntoIter_A_Global self (Seq.empty: Seq.seq t_A) self
+  
+  predicate resolve_refmut_IntoIter_A_Global [@inline:trivial] (_1: MutBorrow.t t_IntoIter_A_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_IntoIter_A_Global
+  
+  predicate completed_IntoIter_A_Global (self: MutBorrow.t t_IntoIter_A_Global) =
+    resolve_refmut_IntoIter_A_Global self /\ view_IntoIter_A_Global self.current = (Seq.empty: Seq.seq t_A)
+  
+  predicate resolve_A (_1: t_A)
+  
+  predicate resolve_IntoIter_A_Global [@inline:trivial] (self: t_IntoIter_A_Global) =
+    forall i: int. 0 <= i /\ i < Seq.length (view_IntoIter_A_Global self)
+      -> resolve_A (Seq.get (view_IntoIter_A_Global self) i)
+  
+  meta "rewrite_def" predicate resolve_IntoIter_A_Global
+  
+  predicate resolve_IntoIter_A_Global'0 (_1: t_IntoIter_A_Global)
+  
+  axiom resolve_axiom: forall x: t_IntoIter_A_Global [resolve_IntoIter_A_Global'0 x]. resolve_IntoIter_A_Global'0 x
+      -> resolve_IntoIter_A_Global x
+  
+  let from_iter_Vec_A_Global (iter: t_IntoIter_A_Global) (return (x: t_Vec_A_Global)) =
+  {[@stop_split] [@expl:from_iter_Vec_A_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_IntoIter_A_Global iter)
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    any
+    [ return (result: t_Vec_A_Global) ->
+    {[@stop_split] [@expl:from_iter_Vec_A_Global ensures] ([@stop_split] [@expl:from_iter result type invariant] inv_Vec_A_Global result)
+      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_IntoIter_A_Global, done': MutBorrow.t t_IntoIter_A_Global. postcondition_into_iter () iter into_iter
+        /\ produces_IntoIter_A_Global into_iter (view_Vec_A_Global result) done'.current
+        /\ completed_IntoIter_A_Global done' /\ resolve_IntoIter_A_Global'0 done'.final)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let id_A (x: t_Vec_A_Global) (return (x'0: t_Vec_A_Global)) =
+  {[@stop_split] [@expl:id 'x' type invariant] inv_Vec_A_Global x}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = into_iter_Vec_A_Global {x} (fun (_x: t_IntoIter_A_Global) -> [ &_4 <- _x ] s1)
+      | s1 = from_iter_Vec_A_Global {_4} (fun (_x: t_Vec_A_Global) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_Vec_A_Global = Any.any_l () | & x: t_Vec_A_Global = x | & _4: t_IntoIter_A_Global = Any.any_l () ])
+    [ return (result: t_Vec_A_Global) ->
+    {[@stop_split] [@expl:id_A ensures] ([@stop_split] [@expl:id result type invariant] inv_Vec_A_Global result)
+      /\ ([@stop_split] [@expl:id ensures] view_Vec_A_Global result = view_Vec_A_Global x)}
+      (! return {result}) ]
+end
