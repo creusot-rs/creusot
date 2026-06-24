@@ -136,6 +136,60 @@ extern_spec! {
             v.into_boxed_slice()
         }
     }
+
+    impl From<&String> for String {
+        #[check(ghost)]
+        #[ensures(result@ == s@)]
+        fn from(s: &String) -> Self;
+    }
+
+    impl From<Box<str>> for String {
+        #[check(ghost)]
+        #[ensures(result@ == s@)]
+        fn from(s: Box<str>) -> Self;
+    }
+
+    impl From<String> for Box<str> {
+        #[check(ghost)]
+        #[ensures(result@ == s@)]
+        fn from(s: String) -> Self;
+    }
+
+    impl From<&str> for String {
+        #[check(ghost)]
+        #[ensures(result@ == s@)]
+        fn from(s: &str) -> Self;
+    }
+
+    impl From<&mut str> for String {
+        #[check(ghost)]
+        #[ensures(result@ == s@ && ^s == *s)]
+        fn from(s: &mut String) -> Self;
+    }
+
+    impl From<&mut str> for Box<str> {
+        #[check(ghost)]
+        #[ensures(result@ == s@ && ^s == *s)]
+        fn from(s: &mut str) -> Self;
+    }
+
+    impl From<char> for String {
+        #[check(ghost)]
+        #[ensures(result@ == seq![c])]
+        fn from(c: char) -> Self;
+    }
+
+    impl From<String> for Vec<u8> {
+        #[check(ghost)]
+        #[ensures(result@ == s@.to_bytes())]
+        fn from(s: String) -> Self;
+    }
+
+    impl From<&str> for Vec<u8> {
+        #[check(ghost)]
+        #[ensures(result@ == s@.to_bytes())]
+        fn from(s: &str) -> Self;
+    }
 }
 
 macro_rules! spec_from {

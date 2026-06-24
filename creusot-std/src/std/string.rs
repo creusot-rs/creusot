@@ -58,6 +58,136 @@ extern_spec! {
         #[ensures(result@.to_bytes() == bytes@)]
         unsafe fn from_utf8_unchecked(bytes: Vec<u8>) -> String;
     }
+
+    impl Clone for Box<str> {
+        #[check(ghost)]
+        #[ensures((*result)@ == (**self)@)]
+        fn clone(&self) -> Box<str>;
+    }
+
+    impl ToOwned for str {
+        #[check(terminates)] // can OOM (?)
+        #[ensures(result@ == self@)]
+        fn to_owned(&self) -> String;
+    }
+
+    impl FromIterator<char> for String {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(result@, *done) && done.completed() && resolve(^done)
+        )]
+        fn from_iter<I>(iter: I) -> Self
+        where
+            I: IntoIterator<Item = char, IntoIter: IteratorSpec>;
+    }
+
+    impl FromIterator<char> for Box<str> {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(result@, *done) && done.completed() && resolve(^done)
+        )]
+        fn from_iter<I>(iter: I) -> Self
+        where
+            I: IntoIterator<Item = char, IntoIter: IteratorSpec>;
+    }
+
+    impl<'a> FromIterator<&'a char> for String {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
+            result@ == produced.map(|c: &char| *c)
+        )]
+        fn from_iter<I>(iter: I) -> Self
+        where
+            I: IntoIterator<Item = &'a char, IntoIter: IteratorSpec>;
+    }
+
+    impl<'a> FromIterator<&'a char> for Box<str> {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
+            result@ == produced.map(|c: &char| *c)
+        )]
+        fn from_iter<I>(iter: I) -> Self
+        where
+            I: IntoIterator<Item = &'a char, IntoIter: IteratorSpec>;
+    }
+
+    impl<'a> FromIterator<&'a str> for String {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
+            result@ == produced.flat_map(|s: I::Item| s@)
+        )]
+        fn from_iter<I>(iter: I) -> Self
+        where
+            I: IntoIterator<Item = &'a str, IntoIter: IteratorSpec>;
+    }
+
+    impl<'a> FromIterator<&'a str> for Box<str> {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
+            result@ == produced.flat_map(|s: &str| s@)
+        )]
+        fn from_iter<I>(iter: I) -> Self
+        where
+            I: IntoIterator<Item = &'a str, IntoIter: IteratorSpec>;
+    }
+
+    impl<A: std::alloc::Allocator> FromIterator<Box<str, A>> for String {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
+            result@ == produced.flat_map(|s: I::Item| s@)
+        )]
+        fn from_iter<I>(iter: I) -> Self
+        where
+            I: IntoIterator<Item = Box<str, A>, IntoIter: IteratorSpec>;
+    }
+
+    impl<A: std::alloc::Allocator> FromIterator<Box<str, A>> for Box<str> {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
+            result@ == produced.flat_map(|s: I::Item| s@)
+        )]
+        fn from_iter<I>(iter: I) -> Self
+        where
+            I: IntoIterator<Item = Box<str, A>, IntoIter: IteratorSpec>;
+    }
+
+    impl FromIterator<String> for Box<str> {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
+            result@ == produced.flat_map(|s: I::Item| s@)
+        )]
+        fn from_iter<I>(iter: I) -> Self
+        where
+            I: IntoIterator<Item = String, IntoIter: IteratorSpec>;
+    }
+
+    impl FromIterator<String> for String {
+        #[requires(I::into_iter.precondition((iter,)))]
+        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter) &&
+            into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
+            result@ == produced.flat_map(|s: I::Item| s@)
+        )]
+        fn from_iter<I>(iter: I) -> Self
+        where
+            I: IntoIterator<Item = String, IntoIter: IteratorSpec>;
+    }
 }
 
 extern_spec! {
@@ -71,21 +201,6 @@ extern_spec! {
         #[ensures(result.0@.concat(result.1@) == self@)]
         #[ensures(result.0@.to_bytes().len() == ix@)]
         fn split_at(&self, ix: usize) -> (&str, &str);
-    }
-}
-
-#[cfg(feature = "std")]
-extern_spec! {
-    impl Clone for Box<str> {
-        #[check(ghost)]
-        #[ensures((*result)@ == (**self)@)]
-        fn clone(&self) -> Box<str>;
-    }
-
-    impl ToOwned for str {
-        #[check(terminates)] // can OOM (?)
-        #[ensures(result@ == self@)]
-        fn to_owned(&self) -> String;
     }
 }
 
