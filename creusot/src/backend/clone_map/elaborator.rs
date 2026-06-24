@@ -30,7 +30,11 @@ use rustc_middle::ty::{
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_type_ir::{AliasTy, ClosureKind, ConstKind, EarlyBinder};
-use std::{assert_matches, cell::RefCell, collections::HashMap};
+use std::{
+    assert_matches,
+    cell::{LazyCell, RefCell},
+    collections::{HashMap, HashSet},
+};
 use why3::{
     Exp, Ident, Name,
     coma::{Defn, Expr, Param, Prototype},
@@ -476,21 +480,33 @@ fn is_logically_dyn_compatible<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
     traits: impl IntoIterator<Item = ty::Binder<'tcx, ty::ExistentialPredicate<'tcx>>>,
 ) -> bool {
-    traits.into_iter().any(|b| match b.skip_binder() {
+    // dyn is always applied to at most one non-auto trait,
+    // hence we can use `all` to check it if it exists
+    traits.into_iter().all(|b| match b.skip_binder() {
         ty::ExistentialPredicate::Trait(tr) => is_logically_dyn_compatible_trait(tcx, tr.def_id),
-        _ => false,
+        _ => true,
     })
 }
+
+const DYN_COMPATIBLE: LazyCell<HashSet<Box<[&'static str]>>> = LazyCell::new(|| {
+    [
+        ["core", "any", "Any"].into(),
+        ["core", "error", "Error"].into(),
+        ["core", "fmt", "Debug"].into(),
+        ["core", "fmt", "Display"].into(),
+        ["core", "fmt", "Write"].into(),
+        ["std", "io", "Write"].into(),
+    ]
+    .into_iter()
+    .collect()
+});
 
 /// Base trait for which `dyn` is supported by Creusot
 fn is_logically_dyn_compatible_trait<'tcx>(tcx: ty::TyCtxt<'tcx>, tr: DefId) -> bool {
     // TODO: support more traits
     let Some(path) = def_path(tcx, tr) else { return false };
-    [["core", "fmt", "Debug"], ["core", "fmt", "Write"]].iter().any(|p| equal_path(&*path, &*p))
-}
-
-fn equal_path(a: &[Symbol], b: &[&str]) -> bool {
-    a.len() == b.len() && a.iter().zip(b).all(|(a, b)| a.as_str() == *b)
+    let path = path.iter().map(|s| s.as_str()).collect::<Box<[&str]>>();
+    DYN_COMPATIBLE.contains(&path)
 }
 
 fn def_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Vec<Symbol>> {
