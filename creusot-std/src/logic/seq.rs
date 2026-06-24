@@ -339,6 +339,27 @@ impl<T> Seq<T> {
     #[ensures(Self::empty().reverse() == Self::empty())]
     pub fn reverse_empty() {}
 
+    #[logic]
+    #[requires(0 <= position && position <= self.len())]
+    #[ensures(result.len() == self.len() + 1)]
+    #[ensures(forall<i> 0 <= i && i <= self.len() ==>
+        if i < position {
+            result[i] == self[i]
+        } else if i == position {
+            result[i] == value
+        } else {
+            result[i] == self[i - 1]
+        }
+    )]
+    #[variant(position)]
+    pub fn insert(self, position: Int, value: T) -> Self {
+        if position == 0 {
+            self.push_front(value)
+        } else {
+            self.pop_front().insert(position - 1, value).push_front(self[0])
+        }
+    }
+
     /// Returns a new sequence, which is `self` with the element at the given `index` removed.
     ///
     /// See also the program function [`Seq::remove`].
@@ -713,28 +734,19 @@ impl<T> Seq<T> {
     ///     s.push_back_ghost(2);
     ///     // s = [0, 1, 2]
     ///
-    ///     s.insert(0int, 10);
+    ///     s.insert_ghost(0int, 10);
     ///     // s = [10, 0, 1, 2]
-    ///     s.insert(2int, 11);
+    ///     s.insert_ghost(2int, 11);
     ///     // s = [10, 0, 11, 1, 2]
-    ///     s.insert(5int, 12);
+    ///     s.insert_ghost(5int, 12);
     ///     // s = [10, 0, 11, 1, 2, 12]
     /// };
     /// ```
     #[check(ghost)]
     #[requires(0 <= position && position <= self.len())]
-    #[ensures((^self).len() == self.len() + 1)]
-    #[ensures(forall<i> 0 <= i && i <= self.len() ==>
-        if i < position {
-            (^self)[i] == self[i]
-        } else if i == position {
-            (^self)[i] == x
-        } else {
-            (^self)[i] == self[i - 1]
-        }
-    )]
+    #[ensures((^self) == self.insert(position, x))]
     #[variant(position)]
-    pub fn insert(&mut self, position: Int, x: T) {
+    pub fn insert_ghost(&mut self, position: Int, x: T) {
         let after = self.split_off_ghost(position);
         self.push_back_ghost(x);
         self.extend(after);
