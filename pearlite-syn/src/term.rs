@@ -2099,7 +2099,7 @@ pub(crate) mod printing {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.seq_token.to_tokens(tokens);
             self.bang_token.to_tokens(tokens);
-            self.terms.to_tokens(tokens);
+            self.bracket_token.surround(tokens, |tokens| self.terms.to_tokens(tokens));
         }
     }
 
