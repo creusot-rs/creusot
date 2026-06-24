@@ -24,7 +24,7 @@ mod shared;
 
 pub use self::{
     fn_ghost::{FnGhost, FnGhostWrapper},
-    perm::PermTarget,
+    perm::Perm,
     shared::GhostShared,
 };
 

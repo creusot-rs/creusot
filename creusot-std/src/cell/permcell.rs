@@ -4,10 +4,7 @@
 //! track of the logical value.
 
 use crate::{
-    ghost::{
-        NotObjective,
-        perm::{Perm, PermTarget},
-    },
+    ghost::{NotObjective, Perm, perm::PermTarget},
     prelude::*,
 };
 use core::{cell::UnsafeCell, marker::PhantomData};

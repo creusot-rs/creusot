@@ -4,10 +4,7 @@ pub use self::nonnull::NonNullExt;
 #[cfg(creusot)]
 use crate::std::mem::{align_of_logic, size_of_logic, size_of_val_logic};
 use crate::{
-    ghost::{
-        NotObjective,
-        perm::{Perm, PermTarget},
-    },
+    ghost::{NotObjective, Perm, perm::PermTarget},
     prelude::*,
 };
 use core::marker::PhantomData;
@@ -526,6 +523,10 @@ impl<T: ?Sized> PermTarget for *const T {
         Self: 'a;
     type PermPayload = (NotObjective, PhantomData<T>, [bool]);
 
+    /// Two pointers to distinct non-empty allocations are disjoint.
+    ///
+    /// Note that this definition also implies that a pointer to a ZST is
+    /// disjoint with itself.
     #[logic(open, inline)]
     fn is_disjoint(&self, self_val: &T, other: &Self, other_val: &T) -> bool {
         pearlite! {
