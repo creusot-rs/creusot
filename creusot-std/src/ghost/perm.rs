@@ -5,12 +5,27 @@ use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 
+/// Trait for the types that can be used in a [`Perm`].
 pub trait PermTarget {
+    /// Value managed by the type.
+    ///
+    /// For example, a pointer `*const T` manages a value of type `T`.
+    ///
+    /// In practice, you will use a borrow `&'a T` here, to allow for unsized
+    /// types.
     type Value<'a>
     where
         Self: 'a;
+
+    /// Variance, objectiveness and sizeness parametrization for the [`Perm`].
+    ///
+    /// This type is used to force certain auto-traits to be
+    /// implemented on the [`Perm`] object (or not!). See [this trait
+    /// implementation](crate::cell::PermCell::PermPayload) for `PermCell` for
+    /// an example. You may also add a type like `[bool]` to force unsizeness.
     type PermPayload: ?Sized;
 
+    /// Logical function that describes the behavior of [`Perm::disjoint_lemma`].
     #[logic(open, inline)]
     fn is_disjoint(
         &self,
