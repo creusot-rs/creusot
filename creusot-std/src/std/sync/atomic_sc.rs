@@ -1,5 +1,5 @@
 use crate::{
-    ghost::{FnGhost, PermTarget, perm::Perm},
+    ghost::{FnGhost, Perm, perm::PermTarget},
     prelude::*,
     std::sync::committer::Committer,
 };

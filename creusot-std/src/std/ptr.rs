@@ -4,10 +4,7 @@ pub use self::nonnull::NonNullExt;
 #[cfg(creusot)]
 use crate::std::mem::{align_of_logic, size_of_logic, size_of_val_logic};
 use crate::{
-    ghost::{
-        NotObjective,
-        perm::{Perm, PermTarget},
-    },
+    ghost::{NotObjective, Perm, perm::PermTarget},
     prelude::*,
 };
 use core::marker::PhantomData;

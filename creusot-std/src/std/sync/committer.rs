@@ -1,7 +1,7 @@
 #[cfg(feature = "sc-drf")]
 use crate::std::sync::atomic_sc::ordering::SeqCst;
 use crate::{
-    ghost::{PermTarget, perm::Perm},
+    ghost::{Perm, perm::PermTarget},
     logic::FMap,
     prelude::*,
     std::sync::{

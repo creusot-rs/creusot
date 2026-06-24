@@ -1,8 +1,5 @@
 use crate::{
-    ghost::{
-        FnGhost,
-        perm::{Perm, PermTarget},
-    },
+    ghost::{FnGhost, Perm, perm::PermTarget},
     logic::FMap,
     prelude::*,
     std::sync::{
