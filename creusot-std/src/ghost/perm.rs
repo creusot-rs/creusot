@@ -83,6 +83,49 @@ impl<C: ?Sized + PermTarget> Perm<C> {
         dead
     }
 
+    /// If two permissions have different values, then they must be disjoint.
+    ///
+    /// This is a ghost lemma: calling it has no operational effects, but allows
+    /// Creusot to deduce things based on the ownership of the arguments.
+    ///
+    /// Note that disjointness is defined with the `is_disjoint` logical
+    /// function. In particular, pointers to ZST are always disjoint, and may
+    /// indeed have different pointed-to values (for example, [`Snapshot`] or
+    /// [`Ghost`] values).
+    ///
+    /// If you have a mutable borrow to one of the permissions, you should use
+    /// [`Self::disjoint_lemma`] instead.
+    ///
+    /// This lemma can also be used the other way: if you have two pointer
+    /// permissions (with non-ZST values) with the same ward, then their values
+    /// are equal.
+    ///
+    /// # Example
+    ///
+    /// ```rust,creusot
+    /// use creusot_std::prelude::*;
+    /// use creusot_std::ghost::perm::Perm;
+    ///
+    /// #[requires(*perm1.ward() == p1 && *perm2.ward() == p2)]
+    /// fn foo(
+    ///     (p1, perm1): (*const i32, Ghost<&Perm<*const i32>>),
+    ///     (p2, perm2): (*const i32, Ghost<&Perm<*const i32>>)) {
+    ///     if p1 == p2 {
+    ///         let v1 = *unsafe { Perm::as_ref(p1, perm1) };
+    ///         let v2 = *unsafe { Perm::as_ref(p1, perm2) };
+    ///         // If both pointers are equal, it does not matter which permission
+    ///         // we read the value from
+    ///         ghost! { perm1.disjoint_lemma_shared(*perm2) };
+    ///         assert!(v1 == v2);
+    ///     }
+    /// }
+    /// ```
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(self.val() != other.val() ==> self.ward().is_disjoint(self.val(), other.ward(), other.val()))]
+    #[allow(unused_variables)]
+    pub fn disjoint_lemma_shared(&self, other: &Self) {}
+
     /// If one owns two permissions in ghost code, then they correspond to different containers.
     #[trusted]
     #[check(ghost)]

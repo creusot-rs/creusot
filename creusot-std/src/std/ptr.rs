@@ -526,6 +526,10 @@ impl<T: ?Sized> PermTarget for *const T {
         Self: 'a;
     type PermPayload = (NotObjective, PhantomData<T>, [bool]);
 
+    /// Two pointers to distinct non-empty allocations are disjoint.
+    ///
+    /// Note that this definition also implies that a pointer to a ZST is
+    /// disjoint with itself.
     #[logic(open, inline)]
     fn is_disjoint(&self, self_val: &T, other: &Self, other_val: &T) -> bool {
         pearlite! {
