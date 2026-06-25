@@ -1,5 +1,4 @@
 use crate::{
-    contracts_items::is_eval,
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{fmir::Operand, pearlite::Literal},
 };
@@ -12,6 +11,11 @@ use rustc_middle::{
 use rustc_span::Span;
 
 use super::pearlite::{Term, TermKind};
+
+fn is_eval(ctx: &TranslationCtx, def_id: DefId) -> bool {
+    crate::contracts_items::is_eval(ctx.tcx, def_id)
+        || ctx.extern_spec(def_id).is_some_and(|spec| spec.eval)
+}
 
 /// Translate constant MIR operands
 pub(crate) fn mirconst_to_operand<'tcx>(
@@ -168,7 +172,7 @@ pub fn try_const_to_term<'tcx>(
     if ctx.def_kind(def_id) == DefKind::ConstParam {
         return None;
     }
-    if is_eval(ctx.tcx, def_id) {
+    if is_eval(ctx, def_id) {
         let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
         let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
         let span = ctx.def_span(def_id);

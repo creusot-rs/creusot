@@ -106,7 +106,7 @@ struct ExternConst {
     span: Span,
     attrs: Vec<Attribute>,
     _const: Token![const],
-    path: Path,
+    path: ExprPath,
     _semi: Semi,
 }
 
@@ -323,6 +323,7 @@ impl FlatSpec {
                 quote_spanned! {span=>
                     #[creusot::no_translate]
                     #[creusot::extern_spec]
+                    #[allow(unused)]
                     #f
                 }
             }
@@ -787,18 +788,19 @@ fn flatten(
                 unsafety: None,
                 abi: None,
                 fn_token: Token![fn](cnst.span),
-                ident: cnst.path.segments.into_iter().next_back().unwrap().ident,
+                ident: cnst.path.path.segments.last().unwrap().ident.clone(),
                 generics: Default::default(),
                 paren_token: Paren::default(),
                 inputs: Default::default(),
                 variadic: None,
                 output: ReturnType::Default,
             };
+            check_const_attrs(&cnst.attrs)?;
             flat.push(FlatSpec {
                 span: cnst.span,
-                attrs: const_attrs(cnst.attrs)?,
+                attrs: cnst.attrs,
                 signature,
-                path: prefix,
+                path: cnst.path,
                 kind: FlatSpecKind::Const,
             })
         }
@@ -806,27 +808,23 @@ fn flatten(
     Ok(())
 }
 
-fn const_attrs(attrs: Vec<Attribute>) -> Result<Vec<Attribute>> {
-    attrs.into_iter().map(const_attr).collect()
-}
-
-// Recognize `#[ensures]` and `#[creusot::eval]`
-fn const_attr(attr: Attribute) -> Result<Attribute> {
-    match &attr.meta {
+// Accept only `#[ensures]` and `#[creusot::eval]`
+fn check_const_attrs(attrs: &Vec<Attribute>) -> Result<()> {
+    attrs.iter().try_for_each(|attr| match &attr.meta {
         Meta::Path(path)
             if path.segments.len() == 2
                 && path.segments[0].ident == "creusot"
                 && path.segments[1].ident == "eval" =>
         {
-            Ok(attr)
+            Ok(())
         }
         Meta::List(list)
             if list.path.segments.len() == 1 && list.path.segments[0].ident == "ensures" =>
         {
-            Ok(attr)
+            Ok(())
         }
         _ => Err(Error::new(attr.span(), "unrecognized attribute in extern spec for const")),
-    }
+    })
 }
 
 fn generic_arguments(sig: &Signature) -> PathArguments {
@@ -857,6 +855,27 @@ fn param_to_argument(t: &GenericParam) -> Option<GenericArgument> {
     }
 }
 
+impl ExternSpecItem {
+    fn set_attrs(&mut self, attrs: Vec<Attribute>) {
+        use ExternSpecItem::*;
+        match self {
+            Type(t) => t.attrs = attrs,
+            Fun(f) => f.set_attrs(attrs),
+        }
+    }
+}
+
+impl ExternSpec {
+    fn set_attrs(&mut self, attrs: Vec<Attribute>) {
+        use ExternSpec::*;
+        match self {
+            Fn(m) => m.attrs = attrs,
+            Const(c) => c.attrs = attrs,
+            Mod(_) | Trait(_) | Impl(_) => {}
+        }
+    }
+}
+
 impl Parse for ExternSpecs {
     fn parse(input: parse::ParseStream) -> Result<Self> {
         let mut externs = Vec::new();
@@ -873,17 +892,13 @@ impl Parse for ExternSpecItem {
         let attrs = input.call(Attribute::parse_outer)?;
 
         let lookahead = input.lookahead1();
-        if lookahead.peek(Token![type]) {
-            let mut ty = input.call(ExternType::parse)?;
-            ty.attrs = attrs;
-            Ok(ExternSpecItem::Type(ty))
+        let mut item = if lookahead.peek(Token![type]) {
+            ExternSpecItem::Type(input.call(ExternType::parse)?)
         } else {
-            let mut e = input.call(ExternSpec::parse)?;
-            if let ExternSpec::Fn(ref mut f) = e {
-                f.attrs = attrs
-            }
-            Ok(ExternSpecItem::Fun(e))
-        }
+            ExternSpecItem::Fun(input.call(ExternSpec::parse)?)
+        };
+        item.set_attrs(attrs);
+        Ok(item)
     }
 }
 
@@ -892,25 +907,23 @@ impl Parse for ExternSpec {
         let attrs = input.call(Attribute::parse_outer)?;
 
         let lookahead = input.lookahead1();
-        if lookahead.peek(Token![mod]) {
-            Ok(ExternSpec::Mod(input.parse()?))
+        let mut item = if lookahead.peek(Token![mod]) {
+            ExternSpec::Mod(input.parse()?)
         } else if lookahead.peek(Token![impl]) {
-            Ok(ExternSpec::Impl(input.parse()?))
+            ExternSpec::Impl(input.parse()?)
         } else if lookahead.peek(Token![trait]) {
-            Ok(ExternSpec::Trait(input.parse()?))
+            ExternSpec::Trait(input.parse()?)
         } else if lookahead.peek(Token![fn])
             || (lookahead.peek(Token![unsafe]) && input.peek2(Token![fn]))
         {
-            let mut f: ExternMethod = input.parse()?;
-            f.attrs = attrs;
-            Ok(ExternSpec::Fn(f))
+            ExternSpec::Fn(input.parse()?)
         } else if lookahead.peek(Token![const]) {
-            let mut c: ExternConst = input.parse()?;
-            c.attrs = attrs;
-            Ok(ExternSpec::Const(c))
+            ExternSpec::Const(input.parse()?)
         } else {
-            Err(lookahead.error())
-        }
+            return Err(lookahead.error());
+        };
+        item.set_attrs(attrs);
+        Ok(item)
     }
 }
 

@@ -1,6 +1,8 @@
 use super::specification::inputs_and_output_from_thir;
 use crate::{
-    contracts_items::{ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_trusted},
+    contracts_items::{
+        ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_eval, is_trusted,
+    },
     ctx::*,
     resolution::TraitResolved,
     translation::{
@@ -35,6 +37,7 @@ pub(crate) struct ExternSpec<'tcx> {
     pub(crate) output: Ty<'tcx>,
     // Additional predicates we must verify to call this function
     pub(crate) additional_predicates: Vec<Predicate<'tcx>>,
+    pub(crate) eval: bool,
 }
 
 impl<'tcx> ExternSpec<'tcx> {
@@ -80,13 +83,13 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let thir = &thir.borrow();
     let span = ctx.def_span(def_id);
     let contract = contract_clauses_of(ctx, def_id).unwrap();
-    let (id, subst) = if Intrinsic::ResidualIntoTryType.is(ctx, def_id) {
+    let (id, subst, kind) = if Intrinsic::ResidualIntoTryType.is(ctx, def_id) {
         // Special case for `residual_into_try_type`, which cannot be defined as a normal
         // extern spec since it is private.
         let id = ctx.lang_items().into_try_type_fn().unwrap();
-        (id, erased_identity_for_item(ctx.tcx, id))
+        (id, erased_identity_for_item(ctx.tcx, id), ItemKind::Fn)
     } else {
-        extract_extern_item(thir, expr).unwrap()
+        extract_extern_item(thir, expr)
     };
     let (id, inner_subst) =
         TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id, subst).to_opt(id, subst).unwrap_or_else(|| {
@@ -163,30 +166,37 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .map(|clause| clause.skip_normalization().as_predicate())
         .collect();
 
-    let (inputs, output) = inputs_and_output_from_thir(ctx, def_id, thir);
-    (id, ExternSpec { contract, additional_predicates, subst, inputs, output })
+    let ((inputs, output), eval) = match kind {
+        ItemKind::Fn => (inputs_and_output_from_thir(ctx, def_id, thir), false),
+        ItemKind::Const => (([].into(), ctx.type_of(id).skip_binder()), is_eval(ctx.tcx, def_id)),
+    };
+    (id, ExternSpec { contract, additional_predicates, subst, inputs, output, eval })
 }
 
 /// Extract a target item for `extern_spec!` or `#[erasure]`.
 /// The visited body should be just a function call.
-fn extract_extern_item<'tcx>(
-    thir: &Thir<'tcx>,
-    expr_id: thir::ExprId,
-) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+fn extract_extern_item<'tcx>(thir: &Thir<'tcx>, expr_id: thir::ExprId) -> ExternItem<'tcx> {
     let mut visitor = ExtractExternItem::new(thir);
     visitor.visit_expr(&thir[expr_id]);
-    visitor.item
+    visitor.item.unwrap()
 }
+
+type ExternItem<'tcx> = (DefId, GenericArgsRef<'tcx>, ItemKind);
 
 struct ExtractExternItem<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
-    item: Option<(DefId, GenericArgsRef<'tcx>)>,
+    item: Option<ExternItem<'tcx>>,
 }
 
 impl<'a, 'tcx> ExtractExternItem<'a, 'tcx> {
     pub fn new(thir: &'a Thir<'tcx>) -> Self {
         ExtractExternItem { thir, item: None }
     }
+}
+
+enum ItemKind {
+    Fn,
+    Const,
 }
 
 impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItem<'a, 'tcx> {
@@ -197,8 +207,10 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItem<'a, 'tcx> {
     fn visit_expr(&mut self, expr: &'a Expr<'tcx>) {
         if let ExprKind::Call { ty, .. } = expr.kind {
             if let TyKind::FnDef(id, subst) = ty.kind() {
-                self.item = Some((*id, subst));
+                self.item = Some((*id, subst, ItemKind::Fn));
             }
+        } else if let ExprKind::NamedConst { def_id, args, .. } = expr.kind {
+            self.item = Some((def_id, args, ItemKind::Const))
         } else {
             thir::visit::walk_expr(self, expr);
         }
@@ -222,7 +234,10 @@ pub(crate) fn extract_erasure_from_item<'tcx>(
         None => return None,
         Some(ErasureKind::Parent) => {
             let parent = ctx.tcx.parent(def_id);
-            let (id_erased, subst_erased) = extract_extern_item(&thir.borrow(), expr).unwrap();
+            let (id_erased, subst_erased, kind) = extract_extern_item(&thir.borrow(), expr);
+            let ItemKind::Fn = kind else {
+                ctx.crash_and_error(ctx.def_span(def_id), "erasure for const is not implemented")
+            };
             debug!("extract_erasure_from_item: {parent:?} erases to {id_erased:?}");
             let (id_resolved, subst_resolved) = TraitResolved::resolve_item(
                 ctx.tcx,

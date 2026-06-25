@@ -62,6 +62,12 @@ macro_rules! mach_int {
 
             #[creusot::eval]
             const $t::BITS;
+
+            #[creusot::eval]
+            const core::$t::MIN;
+
+            #[creusot::eval]
+            const core::$t::MAX;
         }
 
         impl AddLogic for $t {
