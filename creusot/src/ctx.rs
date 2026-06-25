@@ -2,9 +2,9 @@ use crate::{
     backend::resolve::is_resolve_trivial,
     callbacks,
     contracts_items::{
-        Intrinsic, creusot_clause_attrs, gather_intrinsics, get_creusot_item, is_extern_spec,
-        is_extern_type, is_logic, is_opaque, is_open_inv_param, is_prophetic, is_trusted,
-        opacity_witness_name,
+        Intrinsic, creusot_clause_attrs, gather_intrinsics, get_creusot_item, has_logic_alias,
+        is_extern_spec, is_extern_type, is_logic, is_opaque, is_open_inv_param, is_prophetic,
+        is_trusted, opacity_witness_name,
     },
     metadata::{BinaryMetadata, Metadata, encode_def_ids, get_erasure_required},
     naming::{ComaNames, ModulePath},
@@ -55,7 +55,7 @@ use rustc_trait_selection::traits::normalize_param_env_or_error;
 use rustc_type_ir::inherent::Ty as _;
 use std::{
     cell::{OnceCell, RefCell},
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     ops::Deref,
 };
 
@@ -182,7 +182,7 @@ pub struct TranslationCtx<'tcx> {
     pub(crate) variant_calls: RefCell<IndexMap<DefId, IndexSet<DefId>>>,
     erasure_required: RefCell<IndexSet<DefId>>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
-    extern_spec_items: HashMap<LocalDefId, DefId>,
+    extern_spec_items: HashMap<DefId, DefId>,
     trusted_positivity: HashMap<DefId, TrustedPositivity>,
     erased_local_defid: HashMap<LocalDefId, Option<Erasure<'tcx>>>,
     erasures_to_check: IndexSet<LocalDefId>,
@@ -198,6 +198,7 @@ pub struct TranslationCtx<'tcx> {
     crate_name: OnceCell<why3::Symbol>,
     inhabited_ty: RefCell<HashMap<Ty<'tcx>, bool>>,
     nonzero_sized_ty: RefCell<HashMap<Ty<'tcx>, bool>>,
+    aliased_items: HashSet<DefId>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -306,6 +307,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             crate_name: Default::default(),
             nonzero_sized_ty: Default::default(),
             inhabited_ty: Default::default(),
+            aliased_items: Default::default(),
         }
     }
 
@@ -402,7 +404,17 @@ impl<'tcx> TranslationCtx<'tcx> {
         {
             return sig;
         }
-        self.sig.insert(def_id, |&item| Box::new(pre_sig_of(self, item)))
+        let res = self.sig.insert(def_id, |&item| Box::new(pre_sig_of(self, item)));
+        res
+    }
+
+    pub(crate) fn is_aliased(&self, def_id: DefId) -> bool {
+        if !def_id.is_local()
+            && let Some(sig) = self.externs.sig(def_id)
+        {
+            return sig.contract.alias.is_some();
+        }
+        self.aliased_items.contains(&def_id)
     }
 
     pub(crate) fn body_with_facts(&self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
@@ -431,6 +443,10 @@ impl<'tcx> TranslationCtx<'tcx> {
     // TODO Make private
     pub(crate) fn extern_spec(&self, def_id: DefId) -> Option<&ExternSpec<'tcx>> {
         self.extern_specs.get(&def_id).or_else(|| self.externs.extern_spec(def_id))
+    }
+
+    pub(crate) fn extern_spec_items(&self, def_id: DefId) -> Option<DefId> {
+        self.extern_spec_items.get(&def_id).copied()
     }
 
     pub(crate) fn trusted_positivity(&self, def_id: DefId, index: usize) -> bool {
@@ -536,6 +552,19 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.creusot_items.get(&name).cloned().or_else(|| self.externs.creusot_item(name))
     }
 
+    pub(crate) fn logic_alias(&self, def_id: DefId) -> Option<(Span, DefId, bool)> {
+        //self.sig(def_id).contract.alias.as_ref().map(|alias| (alias.0, alias.2))
+        self.sig(def_id).contract.get_alias_info()
+    }
+
+    fn register_alias(&mut self, def_id: DefId) {
+        self.aliased_items.insert(def_id);
+
+        if let Some(real_def_id) = self.extern_spec_items(def_id) {
+            self.aliased_items.insert(real_def_id);
+        }
+    }
+
     pub(crate) fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {
         if let Some((es, subst)) = self
             .extern_spec(def_id)
@@ -593,6 +622,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.load_extern_specs();
         self.load_trusted_positivity();
         self.load_erasures();
+        self.load_aliases();
     }
 
     fn load_extern_specs(&mut self) {
@@ -623,7 +653,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
                 let _ = self.extern_specs.insert(i, es);
 
-                self.extern_spec_items.insert(def_id, i);
+                self.extern_spec_items.insert(def_id.to_def_id(), i);
             }
         }
 
@@ -705,6 +735,22 @@ impl<'tcx> TranslationCtx<'tcx> {
             if let Some(erasure) = extract_erasure_from_child(self, def_id) {
                 self.erased_local_defid.insert(def_id, Some(erasure));
                 self.erasures_to_check.insert(def_id);
+            }
+        }
+    }
+
+    fn load_aliases(&mut self) {
+        for id in self.hir_crate_items(()).definitions() {
+            let def_id = id.to_def_id();
+
+            if let Some((_, _, is_prophetic)) = has_logic_alias(self, def_id) {
+                trace!(
+                    "`{}` has {} alias",
+                    self.def_path_str(def_id),
+                    if is_prophetic { "a prophetic" } else { "a logic" }
+                );
+
+                self.register_alias(def_id);
             }
         }
     }

@@ -466,6 +466,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                             .iter()
                             .map(|arg| self.expr_term(*arg))
                             .collect::<Result<_, _>>()?;
+
                         Ok(Term::call_no_normalize(self.ctx.tcx, id, subst, args).span(span))
                     }
                 }

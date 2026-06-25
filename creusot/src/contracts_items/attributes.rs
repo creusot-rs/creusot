@@ -13,7 +13,7 @@ use why3::{
     declaration::{Attribute as WAttribute, Meta, MetaArg, MetaIdent},
 };
 
-use crate::ctx::HasTyCtxt as _;
+use crate::ctx::{HasTyCtxt as _, TranslationCtx};
 
 /// Helper macro, converts `creusot::foo::bar` into `["creusot", "foo", "bar"]`.
 macro_rules! path_to_str {
@@ -299,7 +299,7 @@ fn parse_trusted_positive(tokens: &TokenStream) -> Vec<Symbol> {
 }
 
 fn get_attrs<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Vec<&'tcx Attribute> {
-    let path = path.into_iter().map(|s| Symbol::intern(s)).collect::<Vec<_>>();
+    let path = path.iter().map(|s| Symbol::intern(s)).collect::<Vec<_>>();
     tcx.get_attrs_by_path(def_id, &path).collect::<Vec<_>>()
 }
 
@@ -310,4 +310,50 @@ fn get_attr<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Option<&'t
         1 => Some(matched[0]),
         _ => tcx.dcx().span_fatal(matched[0].span(), "Unexpected duplicate attribute.".to_string()),
     }
+}
+
+pub(crate) fn has_logic_alias(ctx: &TranslationCtx, def_id: DefId) -> Option<(Span, DefId, bool)> {
+    let lattrs = get_attrs(ctx.tcx(), def_id, &["creusot", "decl", "logic_alias"]);
+    let pattrs = get_attrs(ctx.tcx(), def_id, &["creusot", "decl", "prophetic_alias"]);
+
+    let (attr, is_prophetic) = match (lattrs.as_slice(), pattrs.as_slice()) {
+        ([], []) => return None,
+
+        ([a], []) => (a, false),
+        ([], [a]) => (a, true),
+
+        (_, []) | ([], _) => {
+            let (name, attrs) =
+                if lattrs.is_empty() { ("prophetic", &pattrs) } else { ("logic", &lattrs) };
+
+            ctx.dcx().span_err(
+                attrs.iter().map(|attr| attr.span()).collect::<Vec<_>>(),
+                format!("A function cannot have multiple {name} aliases"),
+            );
+
+            return None;
+        }
+
+        (_, _) => {
+            ctx.dcx().span_err(
+                lattrs
+                    .iter()
+                    .map(|attr| attr.span())
+                    .chain(pattrs.iter().map(|attr| attr.span()))
+                    .collect::<Vec<_>>(),
+                "Cannot use both `logic_alias` and `prophetic_alias` simultaneously",
+            );
+
+            return None;
+        }
+    };
+
+    let symbol = match &attr.get_normal_item().args {
+        AttrArgs::Eq { expr, .. } => expr.symbol,
+        _ => unreachable!(),
+    };
+
+    let ensures_def_id = ctx.creusot_item(symbol).unwrap();
+
+    Some((attr.span(), ensures_def_id, is_prophetic))
 }
