@@ -1,0 +1,172 @@
+module M_is_all_odd
+  use creusot.slice.Slice64
+  use creusot.int.Int64
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Iter_i64
+  
+  predicate inv_Iter_i64 (_1: t_Iter_i64)
+  
+  function view_Iter_i64 (self: t_Iter_i64) : Slice64.slice Int64.t
+  
+  let into_iter_ref_slice_i64 (self_: Slice64.slice Int64.t) (return (x: t_Iter_i64)) = any
+    [ return (result: t_Iter_i64) ->
+    {[@stop_split] [@expl:into_iter_ref_slice_i64 ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_i64 result)
+      /\ ([@stop_split] [@expl:into_iter ensures] self_ = view_Iter_i64 result)}
+      (! return {result}) ]
+  
+  type t_Option_ref_i64 = None | Some Int64.t
+  
+  predicate invariant_refmut_Iter_i64 [@inline:trivial] (self: MutBorrow.t t_Iter_i64) =
+    inv_Iter_i64 self.current /\ inv_Iter_i64 self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Iter_i64
+  
+  predicate inv_refmut_Iter_i64 [@inline:trivial] (_1: MutBorrow.t t_Iter_i64) = invariant_refmut_Iter_i64 _1
+  
+  meta "rewrite_def" predicate inv_refmut_Iter_i64
+  
+  function index_slice_i64 [@inline:trivial] (self: Slice64.slice Int64.t) (ix: int) : Int64.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_i64
+  
+  function to_ref_seq_slice_i64 (self: Slice64.slice Int64.t) : Seq.seq Int64.t
+  
+  axiom to_ref_seq_slice_i64_spec:
+    forall self: Slice64.slice Int64.t [to_ref_seq_slice_i64 self]. Seq.length (to_ref_seq_slice_i64 self)
+      = Seq.length (Slice64.view self)
+  
+  axiom to_ref_seq_slice_i64_spec'0: forall self: Slice64.slice Int64.t [to_ref_seq_slice_i64 self]. forall i: int. 0
+            <= i
+          /\ i < Seq.length (to_ref_seq_slice_i64 self)
+        -> Seq.get (to_ref_seq_slice_i64 self) i = index_slice_i64 self i
+  
+  predicate produces_Iter_i64 (self: t_Iter_i64) (visited: Seq.seq Int64.t) (tl: t_Iter_i64) =
+    to_ref_seq_slice_i64 (view_Iter_i64 self) = Seq.(++) visited (to_ref_seq_slice_i64 (view_Iter_i64 tl))
+  
+  function produces_trans_Iter_i64 (a: t_Iter_i64) (ab: Seq.seq Int64.t) (b: t_Iter_i64) (bc: Seq.seq Int64.t) (c: t_Iter_i64) : ()
+  
+  axiom produces_trans_Iter_i64_spec:
+    forall a: t_Iter_i64, ab: Seq.seq Int64.t, b: t_Iter_i64, bc: Seq.seq Int64.t, c: t_Iter_i64. produces_Iter_i64 a ab b
+      -> produces_Iter_i64 b bc c -> produces_Iter_i64 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Iter_i64 (self: t_Iter_i64) : ()
+  
+  axiom produces_refl_Iter_i64_spec: forall self: t_Iter_i64. produces_Iter_i64 self (Seq.empty: Seq.seq Int64.t) self
+  
+  predicate resolve_refmut_Iter_i64 [@inline:trivial] (_1: MutBorrow.t t_Iter_i64) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Iter_i64
+  
+  predicate completed_Iter_i64 (self: MutBorrow.t t_Iter_i64) =
+    resolve_refmut_Iter_i64 self /\ Slice64.view (view_Iter_i64 self.current) = (Seq.empty: Seq.seq Int64.t)
+  
+  let next_Iter_i64 (self_: MutBorrow.t t_Iter_i64) (return (x: t_Option_ref_i64)) =
+  {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_i64 self_}
+    any
+    [ return (result: t_Option_ref_i64) -> {[@stop_split] [@expl:next ensures] match result with
+        | None -> completed_Iter_i64 self_
+        | Some v -> produces_Iter_i64 self_.current (Seq.singleton v) self_.final
+        end}
+      (! return {result}) ]
+  
+  predicate is_odd (a: Int64.t) = Int64.bw_and a (1: Int64.t) <> (0: Int64.t)
+  
+  predicate inv_Seq_ref_i64 [@inline:trivial] (_1: Seq.seq Int64.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_ref_i64
+  
+  let elim_Some (_x: t_Option_ref_i64) (return (f0: Int64.t)) = any
+    [ _k (f0: Int64.t) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  let is_odd'0 (x: Int64.t) (return (x'0: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_odd ensures] result = is_odd x} (! return {result}) ]
+  
+  predicate resolve_Iter_i64 (_1: t_Iter_i64)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_all_odd (values: Slice64.slice Int64.t) (return (x: bool)) = (! bb0
+    [ bb0 = s0
+      [ s0 = into_iter_ref_slice_i64 {values} (fun (_x: t_Iter_i64) -> [ &iter <- _x ] s1)
+      | s1 = [ &iter_old <- iter ] s2
+      | s2 = [ &produced <- Seq.empty: Seq.seq Int64.t ] s3
+      | s3 = bb4 ]
+    | bb4 = bb4
+      [ bb4 = {[@expl:inferred invariant: type invariant] inv_Iter_i64 iter}
+        {[@expl:for invariant] inv_Seq_ref_i64 produced}
+        {[@expl:for invariant] produces_Iter_i64 iter_old produced iter}
+        {[@expl:loop invariant] forall v: int. 0 <= v /\ v < Seq.length produced -> is_odd (Seq.get produced v)}
+        (! s0)
+        [ s0 = MutBorrow.borrow_mut <t_Iter_i64> {iter}
+            (fun (_bor: MutBorrow.t t_Iter_i64) ->
+              [ &_26 <- _bor ] -{inv_Iter_i64 _bor.final}-
+              [ &iter <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Iter_i64 iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Iter_i64> {_26.current} {MutBorrow.get_id _26}
+            (fun (_bor: MutBorrow.t t_Iter_i64) ->
+              [ &_25 <- _bor ] -{inv_Iter_i64 _bor.final}-
+              [ &_26 <- { _26 with current = _bor.final } ] s2)
+          [ _ck -> (! {[@expl:type invariant] inv_Iter_i64 _26.current} any) ]
+        | s2 = next_Iter_i64 {_25} (fun (_x: t_Option_ref_i64) -> [ &_24 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_i64 _26} any) ]
+        | s4 = -{resolve_refmut_Iter_i64 _26}- s5
+        | s5 = any [ br0 -> {_24 = None} (! bb9) | br1 (x0: Int64.t) -> {_24 = Some x0} (! bb10) ] ]
+        [ bb10 = s0
+          [ s0 = elim_Some {_24} (fun (r0: Int64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &i <- __creusot_proc_iter_elem ] s3
+          | s3 = is_odd'0 {i} (fun (_x: bool) -> [ &_35 <- _x ] s4)
+          | s4 = any [ br0 -> {_35 = false} (! bb14) | br1 -> {_35} (! bb4) ] ] ] ]
+    | bb14 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_i64 iter} any) ]
+      | s1 = -{resolve_Iter_i64 iter}- s2
+      | s2 = [ &_ret <- false ] s3
+      | s3 = return {_ret} ]
+    | bb9 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_i64 iter} any) ]
+      | s1 = -{resolve_Iter_i64 iter}- s2
+      | s2 = [ &_ret <- true ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l ()
+    | & values: Slice64.slice Int64.t = values
+    | & iter: t_Iter_i64 = Any.any_l ()
+    | & iter_old: t_Iter_i64 = Any.any_l ()
+    | & produced: Seq.seq Int64.t = Any.any_l ()
+    | & _24: t_Option_ref_i64 = Any.any_l ()
+    | & _25: MutBorrow.t t_Iter_i64 = Any.any_l ()
+    | & _26: MutBorrow.t t_Iter_i64 = Any.any_l ()
+    | & __creusot_proc_iter_elem: Int64.t = Any.any_l ()
+    | & i: Int64.t = Any.any_l ()
+    | & _35: bool = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:is_all_odd ensures] result
+      = (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view values) -> is_odd (Seq.get (Slice64.view values) i))}
+      (! return {result}) ]
+end
+module M_is_odd
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  
+  predicate is_odd (a: Int64.t) = Int64.bw_and a (1: Int64.t) <> (0: Int64.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_odd'0 (x: Int64.t) (return (x'0: bool)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_4 <- Int64.bw_and x (1: Int64.t) ] s1
+      | s1 = [ &_ret <- _4 <> (0: Int64.t) ] s2
+      | s2 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & x: Int64.t = x | & _4: Int64.t = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:is_odd ensures] result = is_odd x} (! return {result}) ]
+end
