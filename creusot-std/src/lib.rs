@@ -366,6 +366,11 @@ pub mod macros {
     /// quantifier or interpreted function calls.
     pub use base_macros::logic;
 
+    /// TODO(mael) Document this
+    pub use base_macros::logic_alias;
+
+    pub use base_macros::prophetic_alias;
+
     /// Inserts a *logical* assertion into the code
     ///
     /// This assertion will not be checked at runtime but only during proofs. However,

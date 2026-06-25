@@ -95,6 +95,7 @@ impl<'tcx> Metadata<'tcx> {
             else {
                 continue;
             };
+
             self.crates.insert(cnum, cmeta);
             for (id, spec) in ext_specs.into_iter() {
                 if self.extern_specs.insert(id, spec).is_some() {

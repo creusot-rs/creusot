@@ -5,6 +5,7 @@ use crate::{
         is_snapshot_closure, is_spec, is_trusted_ghost, is_trusted_terminates,
     },
     ctx::{HasTyCtxt, TranslationCtx},
+    logic_alias::{self, get_logic_id},
     resolution::TraitResolved,
     translation::specification::ProgramPurity,
 };
@@ -130,6 +131,15 @@ pub(crate) fn validate_purity<'tcx>(
     }
     let is_trusted_ghost = is_trusted_ghost(ctx.tcx, def_id);
     let is_trusted_terminates = is_trusted_ghost || is_trusted_terminates(ctx.tcx, def_id);
+    let typing_env = ctx.typing_env(def_id);
+    let mut purity_visitor = PurityVisitor {
+        ctx,
+        thir,
+        context: LocalPurity::of_def_id(ctx, def_id),
+        from_alias: false,
+        typing_env,
+    };
+
     if is_trusted_terminates && (is_logic(ctx.tcx, def_id) || is_spec(ctx.tcx, def_id)) {
         ctx.error(
             ctx.def_span(def_id),
@@ -142,15 +152,42 @@ pub(crate) fn validate_purity<'tcx>(
         .emit();
         return;
     }
-    let typing_env = ctx.typing_env(def_id);
-    PurityVisitor { ctx, thir, context: LocalPurity::of_def_id(ctx, def_id), typing_env }
-        .visit_expr(&thir[expr]);
+    if let Some((span, alias_id, is_prophetic)) = ctx.logic_alias(def_id) {
+        if is_logic(ctx.tcx, def_id) {
+            let name = if is_prophetic { "prophetic_alias" } else { "logic_alias" };
+            ctx.dcx()
+                .struct_span_err(
+                    ctx.def_ident_span(def_id).unwrap_or_default(),
+                    format!("Only program functions can use `#[{name}]`"),
+                )
+                .with_span_label(span, "alias defined here")
+                .emit()
+                .raise_fatal();
+        }
+        if let Some(logic_id) = logic_alias::get_logic_id(ctx, def_id)
+            && !is_logic(ctx.tcx, logic_id)
+        {
+            ctx.dcx()
+                .struct_span_err(span, "Only logic functions can be aliased")
+                .with_note(format!("`{}` is not a logic function", ctx.def_path_str(logic_id)))
+                .emit()
+                .raise_fatal();
+        }
+
+        if let Some(local_id) = alias_id.as_local() {
+            trace!("checking purity for alias {alias_id:#?} in {def_id:#?}");
+            purity_visitor.validate_spec_purity(local_id, is_prophetic, true);
+        }
+    }
+    purity_visitor.visit_expr(&thir[expr]);
 }
 
 struct PurityVisitor<'a, 'tcx> {
     ctx: &'a TranslationCtx<'tcx>,
     thir: &'a Thir<'tcx>,
     context: LocalPurity,
+    /// For better error messages
+    from_alias: bool,
     /// Typing environment of the caller function
     typing_env: TypingEnv<'tcx>,
 }
@@ -220,10 +257,10 @@ impl PurityVisitor<'_, '_> {
     }
 
     /// Validate the body of a spec closure.
-    fn validate_spec_purity(&mut self, closure_id: LocalDefId, prophetic: bool) {
+    fn validate_spec_purity(&mut self, closure_id: LocalDefId, prophetic: bool, from_alias: bool) {
         let (thir, expr) = self.ctx.thir_body(closure_id);
         let thir = &thir.borrow();
-        PurityVisitor { thir, context: LocalPurity::logic(prophetic), ..*self }
+        PurityVisitor { thir, context: LocalPurity::logic(prophetic), from_alias, ..*self }
             .visit_expr(&thir[expr]);
     }
 
@@ -245,7 +282,7 @@ impl PurityVisitor<'_, '_> {
                 if else_block.is_some() {
                     self.ctx.dcx().span_fatal(span, "expected no else block in spec statement")
                 };
-                self.validate_spec_purity(closure_id, true);
+                self.validate_spec_purity(closure_id, true, self.from_alias);
                 true
             }
             Some(ClosureKind::Erasure) => true,
@@ -271,7 +308,16 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             .to_opt(func_did, subst)
                             .unwrap();
 
-                    let fn_purity = self.purity(func_did, args);
+                    let fn_purity = if self.context.is_logic()
+                        && let Some((_, _alias_id, prophetic)) = self.ctx.logic_alias(func_did)
+                    {
+                        get_logic_id(self.ctx, func_did)
+                            .map(|logic_id| self.purity(logic_id, args))
+                            .unwrap_or(Purity::Logic { prophetic })
+                    } else {
+                        self.purity(func_did, args)
+                    };
+
                     if self.context.is_logic()
                         && (
                             // These methods are allowed to cheat the purity restrictions
@@ -311,6 +357,17 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                     .emit(),
                                 _ => unreachable!(),
                             };
+                        } else if self.from_alias {
+                            match (self.context, fn_purity) {
+                                (
+                                    LocalPurity::Purity(Purity::Logic { prophetic: false }),
+                                    Purity::Logic { prophetic: true },
+                                ) => {
+                                    self.ctx.dcx().span_err(self.thir[fun].span,
+                                        "Used prophetic expression in logic alias. You may want to use #[prophetic_alias] instead");
+                                }
+                                _ => unreachable!("Error when dealing with alias purity"),
+                            };
                         } else {
                             let (caller, callee) = match (self.context, fn_purity) {
                                 (
@@ -343,7 +400,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 "expected a spec closure as argument to `snapshot_from_fn`",
                             );
                         };
-                        self.validate_spec_purity(closure_id, false);
+                        self.validate_spec_purity(closure_id, false, self.from_alias);
                         return;
                     }
                 } else if self.context.is_logic() {

@@ -65,6 +65,8 @@ proc_macro_attributes! {
     maintains
     erasure
     constant
+    logic_alias
+    prophetic_alias
 }
 
 macro_rules! proc_macros {

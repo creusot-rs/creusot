@@ -1,6 +1,7 @@
 use crate::{
     contracts_items::{Intrinsic, get_builtin},
     ctx::{HasTyCtxt as _, TranslationCtx},
+    logic_alias::subst_call as subst_alias,
     resolution::TraitResolved,
     translation::pearlite::{
         BinOp, Literal, Term, TermKind, UnOp,
@@ -32,26 +33,32 @@ struct NormalizeTerm<'a, 'tcx> {
 impl<'a, 'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'a, 'tcx> {
     fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
         super_visit_mut_term(term, self);
-        match &mut term.kind {
-            TermKind::Call { id, subst, args } => {
-                let Some(resolved) =
-                    TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, *id, subst)
-                        .to_opt(*id, subst)
-                else {
-                    self.ctx.crash_and_error(
-                        term.span,
-                        format!(
-                            "could not resolve trait instance for {}{}",
-                            self.ctx.def_path_str(*id),
-                            subst.print_as_list()
-                        ),
-                    )
-                };
-                (*id, *subst) = resolved;
+        if let TermKind::Call { id, subst, args } = &mut term.kind {
+            let Some(resolved) =
+                TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, *id, subst)
+                    .to_opt(*id, subst)
+            else {
+                self.ctx.crash_and_error(
+                    term.span,
+                    format!(
+                        "could not resolve trait instance for {}{}",
+                        self.ctx.def_path_str(*id),
+                        subst.print_as_list()
+                    ),
+                )
+            };
+
+            (*id, *subst) = resolved;
+
+            if let Some(mut new_term) =
+                subst_alias(self.ctx, self.typing_env, *id, subst, args.clone())
+            {
+                self.visit_mut_term(&mut new_term); 
+                *term = new_term;
+            } else {
                 term.kind =
                     optimize_builtin(self.ctx, *id, subst, std::mem::replace(args, Box::new([])));
             }
-            _ => {}
         }
     }
 }
