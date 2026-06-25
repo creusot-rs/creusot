@@ -3,6 +3,8 @@
 //! See [`Resource`].
 
 mod auth;
+pub mod fmap_view;
+
 pub use auth::{Authority, Fragment};
 
 // We use a nested module that we re-export, to make sure that the definitions
