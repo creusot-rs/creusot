@@ -130,14 +130,20 @@ struct FlatSpec {
     span: Span,
     signature: Signature,
     attrs: Vec<Attribute>,
-    /// Expression that can be used to refer to the function being specified
+    /// Path to the function or const being specified
     path: ExprPath,
     kind: FlatSpecKind,
 }
 
 #[derive(Clone, Debug)]
 enum FlatSpecKind {
-    Fn { doc_item_name: DocItemName, impl_data: Option<ImplData>, body: Option<Block> },
+    Fn {
+        doc_item_name: DocItemName,
+        impl_data: Option<ImplData>,
+        /// Body to check against the extern spec, with a name for the fake function.
+        body: Option<Block>,
+    },
+    Const,
 }
 
 impl ExternSpec {
@@ -284,17 +290,18 @@ impl FlatSpec {
                     }),
                 };
                 Some(quote_spanned! {span =>
-                #[cfg(doc)]
-                #[doc = #doc]
-                #[doc = ""]
-                #[doc = "This is not a real function: its only use is for documentation."]
-                #[doc = ""]
-                #f_doc
+                    #[cfg(doc)]
+                    #[doc = #doc]
+                    #[doc = ""]
+                    #[doc = "This is not a real function: its only use is for documentation."]
+                    #[doc = ""]
+                    #f_doc
 
-                #f_with_body})
+                    #f_with_body
+                })
             }
+            FlatSpecKind::Const => None,
         };
-
         let block = Block {
             brace_token: Brace(span), // This sets the span of the function's DefId
             stmts: vec![Stmt::Expr(call, None)],
@@ -311,7 +318,7 @@ impl FlatSpec {
     }
 
     fn replace_self(&mut self) -> std::result::Result<(), Error> {
-        let FlatSpecKind::Fn { impl_data, body, .. } = &mut self.kind;
+        let FlatSpecKind::Fn { impl_data, body, .. } = &mut self.kind else { return Ok(()) };
         let Some(data) = std::mem::take(impl_data) else {
             return Ok(());
         };
@@ -762,7 +769,16 @@ fn flatten(
         }
         ExternSpec::Const(cnst) => {
             assert!(prefix.path.segments.is_empty());
-            todo!();
+            flat.push(FlatSpec {
+                span: cnst.span,
+                signature: todo!(),
+                attrs: parse_quote_spanned! {cnst.span=>
+                    #[creusot::no_translate]
+                    #[creusot::extern_spec]
+                },
+                path: prefix,
+                kind: FlatSpecKind::Const,
+            })
         }
     }
     Ok(())
