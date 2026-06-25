@@ -9,7 +9,7 @@ use syn::{
     parse::Parse,
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
-    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Trait, Unsafe},
+    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Semi, Trait, Unsafe},
     visit_mut::VisitMut,
     *,
 };
@@ -58,6 +58,7 @@ enum ExternSpec {
     Trait(ExternTrait),
     Impl(ExternImpl),
     Fn(ExternMethod),
+    Const(ExternConst),
 }
 
 #[derive(Debug)]
@@ -98,6 +99,15 @@ struct ExternMethod {
     attrs: Vec<Attribute>,
     sig: Signature,
     body: std::result::Result<Block, Token![;]>,
+}
+
+#[derive(Debug)]
+struct ExternConst {
+    span: Span,
+    attrs: Vec<Attribute>,
+    _const: Token![const],
+    path: Path,
+    _semi: Semi,
 }
 
 // Information related to desugaring.
@@ -750,6 +760,10 @@ fn flatten(
                 kind: FlatSpecKind::Fn { impl_data, body: fun.body.ok(), doc_item_name: item_name },
             })
         }
+        ExternSpec::Const(cnst) => {
+            assert!(prefix.path.segments.is_empty());
+            todo!();
+        }
     }
     Ok(())
 }
@@ -829,6 +843,10 @@ impl Parse for ExternSpec {
             let mut f: ExternMethod = input.parse()?;
             f.attrs = attrs;
             Ok(ExternSpec::Fn(f))
+        } else if lookahead.peek(Token![const]) {
+            let mut c: ExternConst = input.parse()?;
+            c.attrs = attrs;
+            Ok(ExternSpec::Const(c))
         } else {
             Err(lookahead.error())
         }
@@ -1031,5 +1049,16 @@ impl ToTokens for ExternType {
             #(#attrs)*
             struct #ident #generics (#path);
         })
+    }
+}
+
+impl Parse for ExternConst {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let span = input.span();
+        let attrs = vec![];
+        let _const = input.parse()?;
+        let path = input.parse()?;
+        let _semi = input.parse()?;
+        Ok(ExternConst { span, attrs, _const, path, _semi })
     }
 }
