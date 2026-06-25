@@ -220,7 +220,7 @@ impl FlatSpec {
             args,
         });
 
-        let extras = match self.kind {
+        match self.kind {
             FlatSpecKind::Fn { body, doc_item_name, .. } => {
                 // If the function was given a body to check, it is generated here.
                 let f_with_body = if let Some(mut b) = body {
@@ -289,7 +289,18 @@ impl FlatSpec {
                         stmts: vec![parse_quote!(loop {})],
                     }),
                 };
-                Some(quote_spanned! {span =>
+
+                let block = Block {
+                    brace_token: Brace(span), // This sets the span of the function's DefId
+                    stmts: vec![Stmt::Expr(call, None)],
+                };
+                let f = ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(block) };
+
+                quote_spanned! {span=>
+                    #[creusot::no_translate]
+                    #[creusot::extern_spec]
+                    #f
+
                     #[cfg(doc)]
                     #[doc = #doc]
                     #[doc = ""]
@@ -298,22 +309,15 @@ impl FlatSpec {
                     #f_doc
 
                     #f_with_body
-                })
+                }
             }
-            FlatSpecKind::Const => None,
-        };
-        let block = Block {
-            brace_token: Brace(span), // This sets the span of the function's DefId
-            stmts: vec![Stmt::Expr(call, None)],
-        };
-        let f = ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(block) };
-
-        quote_spanned! {span=>
-            #[creusot::no_translate]
-            #[creusot::extern_spec]
-            #f
-
-            #extras
+            FlatSpecKind::Const => {
+                quote_spanned! {span=>
+                    #[creusot::no_translate]
+                    #[creusot::extern_spec]
+                    #f
+                }
+            }
         }
     }
 
@@ -769,19 +773,37 @@ fn flatten(
         }
         ExternSpec::Const(cnst) => {
             assert!(prefix.path.segments.is_empty());
+            let signature = Signature {
+                constness: None,
+                asyncness: None,
+                unsafety: None,
+                abi: None,
+                fn_token: Token![fn](cnst.span),
+                ident: cnst.path.segments.last().unwrap(),
+                generics: Default::default(),
+                paren_token: Paren::default(),
+                inputs: Default::default(),
+                variadic: None,
+                output: ReturnType::Default,
+            };
             flat.push(FlatSpec {
                 span: cnst.span,
-                signature: todo!(),
-                attrs: parse_quote_spanned! {cnst.span=>
-                    #[creusot::no_translate]
-                    #[creusot::extern_spec]
-                },
+                attrs: const_attrs(cnst.attrs)?,
+                signature,
                 path: prefix,
                 kind: FlatSpecKind::Const,
             })
         }
     }
     Ok(())
+}
+
+fn const_attrs(attrs: Vec<Attribute>) -> Result<Vec<Attribute>> {
+    attrs.into_iter().map(const_attr).collect()
+}
+
+fn const_attr(attr: Attribute) -> Result<Attribute> {
+    todo!()
 }
 
 fn generic_arguments(sig: &Signature) -> PathArguments {
