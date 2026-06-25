@@ -432,7 +432,9 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         if opaque {
             val(sig, DeclKind::Constant)
-        } else if let Some(term) = try_const_to_term(def_id, subst, ctx, typing_env, names.source_id()) {
+        } else if let Some(term) =
+            try_const_to_term(def_id, subst, ctx, typing_env, names.source_id())
+        {
             lower_logical_defn(ctx, &names, sig, DeclKind::Constant, term, def_id)
         } else {
             // Generate a constant setter.

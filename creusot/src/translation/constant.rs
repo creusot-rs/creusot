@@ -149,8 +149,8 @@ fn try_scalar_to_literal<'tcx>(
 /// the logical fragment of Why3, or its body is just a variable.
 /// `None` if it does not match these cases.
 ///
-/// We try to normalize consts by default because there are really silly
-/// definitions out there that are best hidden from users:
+/// const definitions can be annotated with `#[creusot::eval]` to
+/// force evaluation, hiding silly definitions that are best hidden from users:
 ///
 /// ```
 /// const MAX: usize = !0;
@@ -180,7 +180,38 @@ pub fn try_const_to_term<'tcx>(
             ctx.warn(ctx.def_span(source_id), format!("could not evaluate const `{}` (which is marked `#[creusot::eval]`) when translating `{}`", ctx.def_path_str(def_id), ctx.def_path_str(source_id)));
         }
     }
-    try_const_synonym(def_id, subst, ctx, typing_env)
+    // Calling `trivial_const` here (and it returning None) makes `mir_for_ctfe` available in
+    // `instance_mir` and prevents it from panicking, idk why.
+    // I just found this from reverse engineering `const_eval_resolve_for_typeck`
+    if let Some((val, ty)) = ctx.trivial_const(def_id) {
+        return Some(value_to_term(val, ty, ctx, typing_env, ctx.def_span(source_id)));
+    } else if !matches!(ctx.def_kind(def_id), rustc_hir::def::DefKind::AssocConst { .. }) {
+        return None;
+    }
+    // Handle const definitions of the form `const N = M;` where `M` is another constant.
+    // We can generate a simple definition `constant N = M` instead of a Coma setter.
+    let ty::Instance { def, args } =
+        ty::Instance::try_resolve(ctx.tcx, typing_env, def_id, subst).ok()??;
+    let body = ctx.instance_mir(def);
+    let (c, ty, span) = simple_body_const(ctx.tcx, body)?;
+    match c {
+        ConstKind::Param(p) => {
+            let c = args.const_at(p.index as usize);
+            Some(Term::const_(c, ty, span))
+        }
+        ConstKind::Unevaluated(u)
+            if let UnevaluatedConstKind::Projection { def_id }
+            | UnevaluatedConstKind::Free { def_id }
+            | UnevaluatedConstKind::Inherent { def_id } = u.kind =>
+        {
+            let (u, ty) = ctx.tcx.normalize_erasing_regions(
+                typing_env,
+                ty::EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args),
+            );
+            Some(Term::item(def_id, u.args, ty).span(span))
+        }
+        _ => None,
+    }
 }
 
 pub(crate) fn valtree_to_term<'tcx>(
@@ -224,40 +255,6 @@ pub(crate) fn valtree_to_term<'tcx>(
         _ => return None,
     };
     Some(Term { kind, ty, span })
-}
-
-/// Handle const definitions of the form `const N = M;` where `M` is another constant.
-fn try_const_synonym<'tcx>(
-    def_id: DefId,
-    subst: ty::GenericArgsRef<'tcx>,
-    ctx: &TranslationCtx<'tcx>,
-    typing_env: TypingEnv<'tcx>,
-) -> Option<Term<'tcx>> {
-    if !matches!(ctx.def_kind(def_id), rustc_hir::def::DefKind::AssocConst { .. }) {
-        return None;
-    }
-    let ty::Instance { def, args } =
-        ty::Instance::try_resolve(ctx.tcx, typing_env, def_id, subst).ok()??;
-    let body = ctx.instance_mir(def);
-    let (c, ty, span) = simple_body_const(ctx.tcx, body)?;
-    match c {
-        ConstKind::Param(p) => {
-            let c = args.const_at(p.index as usize);
-            Some(Term::const_(c, ty, span))
-        }
-        ConstKind::Unevaluated(u)
-            if let UnevaluatedConstKind::Projection { def_id }
-            | UnevaluatedConstKind::Free { def_id }
-            | UnevaluatedConstKind::Inherent { def_id } = u.kind =>
-        {
-            let (u, ty) = ctx.tcx.normalize_erasing_regions(
-                typing_env,
-                ty::EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args),
-            );
-            Some(Term::const_item(def_id, u.args, ty).span(span))
-        }
-        _ => None,
-    }
 }
 
 /// Extract constant from MIR body. It should be a single assignment `_0 = const M`.
