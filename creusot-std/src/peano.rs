@@ -26,7 +26,7 @@
 //! not applicable.
 
 use crate::{
-    logic::ord::ord_laws_impl,
+    logic::ord::partial_ord_laws_impl,
     prelude::{Clone, Default, *},
 };
 use core::cmp::Ordering;
@@ -47,28 +47,39 @@ impl DeepModel for PeanoInt {
     }
 }
 
-impl OrdLogic for PeanoInt {
+impl PartialOrdLogic for PeanoInt {
     #[logic(open, inline)]
-    fn cmp_log(self, o: Self) -> Ordering {
-        self.0.cmp_log(o.0)
+    fn partial_cmp_log(self, o: Self) -> Option<Ordering> {
+        self.0.partial_cmp_log(o.0)
     }
+
     #[logic(open, inline)]
     fn le_log(self, o: Self) -> bool {
         self.0.le_log(o.0)
     }
+
     #[logic(open, inline)]
     fn lt_log(self, o: Self) -> bool {
         self.0.lt_log(o.0)
     }
+
     #[logic(open, inline)]
     fn ge_log(self, o: Self) -> bool {
         self.0.ge_log(o.0)
     }
+
     #[logic(open, inline)]
     fn gt_log(self, o: Self) -> bool {
         self.0.gt_log(o.0)
     }
-    ord_laws_impl! {}
+
+    partial_ord_laws_impl! {}
+}
+
+impl OrdLogic for PeanoInt {
+    #[logic(law)]
+    #[ensures(self.partial_cmp_log(other) != None)]
+    fn partial_cmp_log_total(self, other: Self) {}
 }
 
 impl View for PeanoInt {

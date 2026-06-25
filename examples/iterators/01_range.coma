@@ -257,48 +257,56 @@ module M_impl_DoubleEndedIterator_for_Range__next_back (* <Range as common::Doub
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
+      -> partial_cmp_log_isize y x = Some'0 (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
+      -> partial_cmp_log_isize y x = Some'0 (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some'0 (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
@@ -366,48 +374,56 @@ module M_impl_DoubleEndedIterator_for_Range__next_back__refines (* <Range as com
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
+      -> partial_cmp_log_isize y x = Some'0 (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
+      -> partial_cmp_log_isize y x = Some'0 (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some'0 (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
@@ -467,48 +483,56 @@ module M_impl_DoubleEndedIterator_for_Range__produces_back_refl (* <Range as com
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
+      -> partial_cmp_log_isize y x = Some (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
+      -> partial_cmp_log_isize y x = Some (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
   
   predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.start = o.start
@@ -538,48 +562,56 @@ module M_impl_DoubleEndedIterator_for_Range__produces_back_refl__refines (* <Ran
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
+      -> partial_cmp_log_isize y x = Some (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
+      -> partial_cmp_log_isize y x = Some (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
   
   predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.start = o.start
@@ -605,48 +637,56 @@ module M_impl_DoubleEndedIterator_for_Range__produces_back_trans (* <Range as co
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
+      -> partial_cmp_log_isize y x = Some (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
+      -> partial_cmp_log_isize y x = Some (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
   
   predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.start = o.start
@@ -685,48 +725,56 @@ module M_impl_DoubleEndedIterator_for_Range__produces_back_trans__refines (* <Ra
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
+      -> partial_cmp_log_isize y x = Some (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
+      -> partial_cmp_log_isize y x = Some (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
   
   predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.start = o.start
@@ -778,48 +826,56 @@ module M_impl_DoubleEndedIterator_for_Range__size_hint_back_spec (* <Range as co
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
+      -> partial_cmp_log_isize y x = Some'0 (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
+      -> partial_cmp_log_isize y x = Some'0 (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some'0 (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
@@ -918,48 +974,56 @@ module M_impl_DoubleEndedIterator_for_Range__size_hint_back_spec__refines (* <Ra
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
+      -> partial_cmp_log_isize y x = Some'0 (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
+      -> partial_cmp_log_isize y x = Some'0 (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some'0 (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
@@ -1040,48 +1104,56 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusi
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -1092,7 +1164,7 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusi
   
   meta "rewrite_def" predicate resolve_refmut_RangeInclusive
   
-  type t_Option_i32 = None | Some Int32.t
+  type t_Option_i32 = None'0 | Some'0 Int32.t
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -1139,7 +1211,7 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusi
     [ bb0 = s0
       [ s0 = is_empty {self.current} (fun (_x: bool) -> [ &_5 <- _x ] s1)
       | s1 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ] ]
-    | bb2 = s0 [ s0 = -{resolve_refmut_RangeInclusive self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ]
+    | bb2 = s0 [ s0 = -{resolve_refmut_RangeInclusive self}- s1 | s1 = [ &_ret <- None'0 ] s2 | s2 = return {_ret} ]
     | bb3 = s0
       [ s0 = [ &is_iterating <- Int32.lt self.current.start self.current.end' ] s1
       | s1 = any [ br0 -> {is_iterating = false} (! bb5) | br1 -> {is_iterating} (! bb4) ] ]
@@ -1155,7 +1227,7 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusi
       | s1 = -{resolve_refmut_RangeInclusive self}- s2
       | s2 = [ &_11 <- self.current.end' ] s3
       | s3 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_ret <- Some _11 ] s1 | s1 = return {_ret} ] ]
+    | bb6 = s0 [ s0 = [ &_ret <- Some'0 _11 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_i32 = Any.any_l ()
     | & self: MutBorrow.t t_RangeInclusive = self
     | & _5: bool = Any.any_l ()
@@ -1163,8 +1235,8 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusi
     | & _11: Int32.t = Any.any_l ()
     | & r: Int32.t = Any.any_l () ])
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next_back ensures] match result with
-        | None -> completed_back_RangeInclusive self
-        | Some v -> produces_back_RangeInclusive self.current (Seq.singleton v) self.final
+        | None'0 -> completed_back_RangeInclusive self
+        | Some'0 v -> produces_back_RangeInclusive self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
 end
@@ -1180,48 +1252,56 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back__refines (* <Ran
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
+      -> partial_cmp_log_i32 y x = Some'0 (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
+      -> partial_cmp_log_i32 y x = Some'0 (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -1284,48 +1364,56 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_refl (* <Ran
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -1362,48 +1450,56 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_refl__refine
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -1437,48 +1533,56 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_trans (* <Ra
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -1524,48 +1628,56 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_trans__refin
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -1609,48 +1721,56 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__size_hint_back_spec (* <Ra
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
+      -> partial_cmp_log_i32 y x = Some'0 (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
+      -> partial_cmp_log_i32 y x = Some'0 (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -1742,48 +1862,56 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__size_hint_back_spec__refin
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
+      -> partial_cmp_log_i32 y x = Some'0 (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
+      -> partial_cmp_log_i32 y x = Some'0 (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -1892,48 +2020,56 @@ module M_impl_ExactSizeIterator_for_Range__size_hint_exact (* <Range as common::
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
+      -> partial_cmp_log_isize y x = Some'0 (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
+      -> partial_cmp_log_isize y x = Some'0 (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some'0 (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
@@ -2008,48 +2144,56 @@ module M_impl_ExactSizeIterator_for_Range__size_hint_exact__refines (* <Range as
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
+      -> partial_cmp_log_isize y x = Some'0 (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
+      -> partial_cmp_log_isize y x = Some'0 (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some'0 (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
@@ -2102,48 +2246,56 @@ module M_impl_ExactSizeIterator_for_RangeInclusive__size_hint_exact (* <RangeInc
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
+      -> partial_cmp_log_i32 y x = Some'0 (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
+      -> partial_cmp_log_i32 y x = Some'0 (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -2216,48 +2368,56 @@ module M_impl_ExactSizeIterator_for_RangeInclusive__size_hint_exact__refines (* 
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
+      -> partial_cmp_log_i32 y x = Some'0 (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
+      -> partial_cmp_log_i32 y x = Some'0 (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -2327,48 +2487,56 @@ module M_impl_Iterator_for_Range__next (* <Range as common::Iterator> *)
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
+      -> partial_cmp_log_isize y x = Some'0 (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
+      -> partial_cmp_log_isize y x = Some'0 (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some'0 (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
   predicate completed_Range (self: MutBorrow.t t_Range) =
     resolve_refmut_Range self /\ Int64.ge self.current.start self.current.end'
@@ -2423,48 +2591,56 @@ module M_impl_Iterator_for_Range__next__refines (* <Range as common::Iterator> *
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
+      -> partial_cmp_log_isize y x = Some'0 (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
+      -> partial_cmp_log_isize y x = Some'0 (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some'0 (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
   predicate completed_Range (self: MutBorrow.t t_Range) =
     resolve_refmut_Range self /\ Int64.ge self.current.start self.current.end'
@@ -2499,48 +2675,56 @@ module M_impl_Iterator_for_Range__produces_refl (* <Range as common::Iterator> *
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
+      -> partial_cmp_log_isize y x = Some (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
+      -> partial_cmp_log_isize y x = Some (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
@@ -2570,48 +2754,56 @@ module M_impl_Iterator_for_Range__produces_refl__refines (* <Range as common::It
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
+      -> partial_cmp_log_isize y x = Some (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
+      -> partial_cmp_log_isize y x = Some (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
@@ -2637,48 +2829,56 @@ module M_impl_Iterator_for_Range__produces_trans (* <Range as common::Iterator> 
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
+      -> partial_cmp_log_isize y x = Some (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
+      -> partial_cmp_log_isize y x = Some (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
@@ -2716,48 +2916,56 @@ module M_impl_Iterator_for_Range__produces_trans__refines (* <Range as common::I
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
+      -> partial_cmp_log_isize y x = Some (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
+      -> partial_cmp_log_isize y x = Some (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
@@ -2856,48 +3064,58 @@ module M_impl_Iterator_for_Range__size_hint__refines (* <Range as common::Iterat
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64BW.t) (o: Int64BW.t) : t_Ordering = if Int64BW.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64BW.t) (o: Int64BW.t) : t_Option_Ordering = if Int64BW.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  function eq_partial_cmp_isize (x: Int64BW.t) (y: Int64BW.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64BW.t, y: Int64BW.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64BW.t, y: Int64BW.t. (x = y)
+      = (partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function antisym2_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  function asymetric2_isize (x: Int64BW.t) (y: Int64BW.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64BW.t, y: Int64BW.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64BW.t, y: Int64BW.t. partial_cmp_log_isize x y = Some'0 (Greater)
+      -> partial_cmp_log_isize y x = Some'0 (Less)
   
-  function antisym1_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  function asymetric1_isize (x: Int64BW.t) (y: Int64BW.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64BW.t, y: Int64BW.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64BW.t, y: Int64BW.t. partial_cmp_log_isize x y = Some'0 (Less)
+      -> partial_cmp_log_isize y x = Some'0 (Greater)
   
-  function trans_isize (x: Int64BW.t) (y: Int64BW.t) (z: Int64BW.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64BW.t) (y: Int64BW.t) (z: Int64BW.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64BW.t, y: Int64BW.t, z: Int64BW.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec:
+    forall x: Int64BW.t, y: Int64BW.t, z: Int64BW.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64BW.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64BW.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64BW.t. partial_cmp_log_isize x x = Some'0 (Equal)
   
-  function cmp_gt_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.gt x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater))
   
-  function cmp_ge_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.ge x y
+      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
-  function cmp_lt_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.lt x y
+      = (partial_cmp_log_isize x y = Some'0 (Less))
   
-  function cmp_le_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
+  function partial_cmp_le_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.le x y
+      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64BW.t) (o: t_Range) =
     self.end' = o.end'
@@ -2943,48 +3161,56 @@ module M_impl_Iterator_for_RangeInclusive__next (* <RangeInclusive as common::It
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -2995,7 +3221,7 @@ module M_impl_Iterator_for_RangeInclusive__next (* <RangeInclusive as common::It
   
   meta "rewrite_def" predicate resolve_refmut_RangeInclusive
   
-  type t_Option_i32 = None | Some Int32.t
+  type t_Option_i32 = None'0 | Some'0 Int32.t
   
   predicate completed_RangeInclusive (self: MutBorrow.t t_RangeInclusive) =
     is_empty_log self.current /\ is_empty_log self.final
@@ -3021,7 +3247,7 @@ module M_impl_Iterator_for_RangeInclusive__next (* <RangeInclusive as common::It
     [ bb0 = s0
       [ s0 = is_empty {self.current} (fun (_x: bool) -> [ &_5 <- _x ] s1)
       | s1 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ] ]
-    | bb2 = s0 [ s0 = -{resolve_refmut_RangeInclusive self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ]
+    | bb2 = s0 [ s0 = -{resolve_refmut_RangeInclusive self}- s1 | s1 = [ &_ret <- None'0 ] s2 | s2 = return {_ret} ]
     | bb3 = s0
       [ s0 = [ &is_iterating <- Int32.lt self.current.start self.current.end' ] s1
       | s1 = any [ br0 -> {is_iterating = false} (! bb5) | br1 -> {is_iterating} (! bb4) ] ]
@@ -3037,7 +3263,7 @@ module M_impl_Iterator_for_RangeInclusive__next (* <RangeInclusive as common::It
       | s1 = -{resolve_refmut_RangeInclusive self}- s2
       | s2 = [ &_11 <- self.current.start ] s3
       | s3 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_ret <- Some _11 ] s1 | s1 = return {_ret} ] ]
+    | bb6 = s0 [ s0 = [ &_ret <- Some'0 _11 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_i32 = Any.any_l ()
     | & self: MutBorrow.t t_RangeInclusive = self
     | & _5: bool = Any.any_l ()
@@ -3045,8 +3271,8 @@ module M_impl_Iterator_for_RangeInclusive__next (* <RangeInclusive as common::It
     | & _11: Int32.t = Any.any_l ()
     | & r: Int32.t = Any.any_l () ])
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_RangeInclusive self
-        | Some v -> produces_RangeInclusive self.current (Seq.singleton v) self.final
+        | None'0 -> completed_RangeInclusive self
+        | Some'0 v -> produces_RangeInclusive self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
 end
@@ -3062,48 +3288,56 @@ module M_impl_Iterator_for_RangeInclusive__next__refines (* <RangeInclusive as c
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
+      -> partial_cmp_log_i32 y x = Some'0 (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
+      -> partial_cmp_log_i32 y x = Some'0 (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -3145,48 +3379,56 @@ module M_impl_Iterator_for_RangeInclusive__produces_refl (* <RangeInclusive as c
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -3223,48 +3465,56 @@ module M_impl_Iterator_for_RangeInclusive__produces_refl__refines (* <RangeInclu
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -3298,48 +3548,56 @@ module M_impl_Iterator_for_RangeInclusive__produces_trans (* <RangeInclusive as 
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -3385,48 +3643,56 @@ module M_impl_Iterator_for_RangeInclusive__produces_trans__refines (* <RangeIncl
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -3467,55 +3733,63 @@ module M_impl_Iterator_for_RangeInclusive__size_hint (* <RangeInclusive as commo
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32BW.t) (o: Int32BW.t) : t_Ordering = if Int32BW.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32BW.t) (o: Int32BW.t) : t_Option_Ordering = if Int32BW.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function eq_partial_cmp_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32BW.t, y: Int32BW.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32BW.t, y: Int32BW.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function asymetric2_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32BW.t, y: Int32BW.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32BW.t, y: Int32BW.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function asymetric1_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32BW.t, y: Int32BW.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32BW.t, y: Int32BW.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32BW.t) (y: Int32BW.t) (z: Int32BW.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32BW.t) (y: Int32BW.t) (z: Int32BW.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32BW.t, y: Int32BW.t, z: Int32BW.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32BW.t, y: Int32BW.t, z: Int32BW.t, o: t_Option_Ordering. partial_cmp_log_i32 x y
+        = o -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32BW.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32BW.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32BW.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32BW.gt self.start self.end' \/ self.exhausted
   
   let is_empty (self: t_RangeInclusive) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_empty ensures] result = is_empty_log self} (! return {result}) ]
   
-  type t_Option_usize = None | Some UInt64BW.t
+  type t_Option_usize = None'0 | Some'0 UInt64BW.t
   
   type tup2_usize_Option_usize = { f0: UInt64BW.t; f1: t_Option_usize }
   
@@ -3540,7 +3814,7 @@ module M_impl_Iterator_for_RangeInclusive__size_hint (* <RangeInclusive as commo
       [ s0 = is_empty {self} (fun (_x: bool) -> [ &_7 <- _x ] s1)
       | s1 = any [ br0 -> {_7 = false} (! bb3) | br1 -> {_7} (! bb2) ] ]
     | bb2 = s0
-      [ s0 = [ &_10 <- Some (0: UInt64BW.t) ] s1
+      [ s0 = [ &_10 <- Some'0 (0: UInt64BW.t) ] s1
       | s1 = [ &_ret <- { f0 = (0: UInt64BW.t); f1 = _10 } ] s2
       | s2 = return {_ret} ]
     | bb3 = s0
@@ -3552,7 +3826,7 @@ module M_impl_Iterator_for_RangeInclusive__size_hint (* <RangeInclusive as commo
       | s5 = {[@expl:assertion] Int64BW.of_BV256 (UInt32BW.to_BV256 (Int32BW.sub self.end' self.start))
         = Int64BW.sub (Int64BW.of_BV256 (Int32BW.to_BV256 self.end')) (Int64BW.of_BV256 (Int32BW.to_BV256 self.start))}
         s6
-      | s6 = [ &_22 <- Some steps ] s7
+      | s6 = [ &_22 <- Some'0 steps ] s7
       | s7 = [ &_ret <- { f0 = steps; f1 = _22 } ] s8
       | s8 = return {_ret} ] ]
     [ & _ret: tup2_usize_Option_usize = Any.any_l ()
@@ -3567,9 +3841,9 @@ module M_impl_Iterator_for_RangeInclusive__size_hint (* <RangeInclusive as commo
     | & _22: t_Option_usize = Any.any_l () ])
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint_RangeInclusive ensures] ([@stop_split] [@expl:size_hint ensures #0] len_log self
-          <= UInt64BW.t'int const_MAX -> UInt64BW.t'int result.f0 = len_log self /\ result.f1 = Some (result.f0))
+          <= UInt64BW.t'int const_MAX -> UInt64BW.t'int result.f0 = len_log self /\ result.f1 = Some'0 (result.f0))
       /\ ([@stop_split] [@expl:size_hint ensures #1] len_log self > UInt64BW.t'int const_MAX
-      -> result = { f0 = const_MAX; f1 = None })}
+      -> result = { f0 = const_MAX; f1 = None'0 })}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_RangeInclusive__size_hint__refines (* <RangeInclusive as common::Iterator> *)
@@ -3583,48 +3857,56 @@ module M_impl_Iterator_for_RangeInclusive__size_hint__refines (* <RangeInclusive
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32BW.t) (o: Int32BW.t) : t_Ordering = if Int32BW.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32BW.t) (o: Int32BW.t) : t_Option_Ordering = if Int32BW.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function eq_partial_cmp_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32BW.t, y: Int32BW.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32BW.t, y: Int32BW.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function asymetric2_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32BW.t, y: Int32BW.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32BW.t, y: Int32BW.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function asymetric1_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32BW.t, y: Int32BW.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32BW.t, y: Int32BW.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32BW.t) (y: Int32BW.t) (z: Int32BW.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32BW.t) (y: Int32BW.t) (z: Int32BW.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32BW.t, y: Int32BW.t, z: Int32BW.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32BW.t, y: Int32BW.t, z: Int32BW.t, o: t_Option_Ordering. partial_cmp_log_i32 x y
+        = o -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32BW.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32BW.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32BW.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32BW.gt self.start self.end' \/ self.exhausted
   
@@ -3636,7 +3918,7 @@ module M_impl_Iterator_for_RangeInclusive__size_hint__refines (* <RangeInclusive
   
   constant const_MAX: UInt64BW.t = (18446744073709551615: UInt64BW.t)
   
-  type t_Option_usize = None | Some UInt64BW.t
+  type t_Option_usize = None'0 | Some'0 UInt64BW.t
   
   type tup2_usize_Option_usize = { f0: UInt64BW.t; f1: t_Option_usize }
   
@@ -3655,14 +3937,14 @@ module M_impl_Iterator_for_RangeInclusive__size_hint__refines (* <RangeInclusive
   meta "select_lsinst" "all"
   
   goal refines: forall self: t_RangeInclusive. forall result: tup2_usize_Option_usize. (len_log self
-              <= UInt64BW.t'int const_MAX -> UInt64BW.t'int result.f0 = len_log self /\ result.f1 = Some (result.f0))
-          /\ (len_log self > UInt64BW.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })
+              <= UInt64BW.t'int const_MAX -> UInt64BW.t'int result.f0 = len_log self /\ result.f1 = Some'0 (result.f0))
+          /\ (len_log self > UInt64BW.t'int const_MAX -> result = { f0 = const_MAX; f1 = None'0 })
         -> (forall s: Seq.seq Int32BW.t, i: MutBorrow.t t_RangeInclusive. produces_RangeInclusive self s i.current
               /\ completed_RangeInclusive i -> UInt64BW.t'int result.f0 <= Seq.length s)
         /\ match result.f1 with
-          | Some r -> forall s: Seq.seq Int32BW.t, i: t_RangeInclusive. produces_RangeInclusive self s i
+          | Some'0 r -> forall s: Seq.seq Int32BW.t, i: t_RangeInclusive. produces_RangeInclusive self s i
             -> Seq.length s <= UInt64BW.t'int r
-          | None -> true
+          | None'0 -> true
           end
 end
 module M_impl_Range__into_iter (* Range *)
@@ -3688,48 +3970,56 @@ module M_impl_RangeInclusive__is_empty (* RangeInclusive *)
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -3752,48 +4042,56 @@ module M_impl_RangeInclusive__new (* RangeInclusive *)
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -3827,48 +4125,56 @@ module M_impl_RangeInclusive__new_log (* RangeInclusive *)
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
   
@@ -3918,48 +4224,56 @@ module M_sum_range
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
+  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
+  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
   
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
+  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
+      -> partial_cmp_log_isize y x = Some (Less)
   
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
+  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
+  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
+      -> partial_cmp_log_isize y x = Some (Greater)
   
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
+  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
+  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
+      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
   
   function refl_isize (x: Int64.t) : ()
   
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
+  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
   
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
+  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
+      = (partial_cmp_log_isize x y = Some (Greater))
   
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
+  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
+      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
   
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
+  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
+      = (partial_cmp_log_isize x y = Some (Less))
   
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
+  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
   
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
+  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
+      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
@@ -3980,7 +4294,7 @@ module M_sum_range
   
   axiom produces_refl_Range_spec: forall self: t_Range. produces_Range self (Seq.empty: Seq.seq Int64.t) self
   
-  type t_Option_isize = None | Some Int64.t
+  type t_Option_isize = None'0 | Some'0 Int64.t
   
   predicate resolve_refmut_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
@@ -3991,15 +4305,15 @@ module M_sum_range
   
   let next_Range (self: MutBorrow.t t_Range) (return (x: t_Option_isize)) = any
     [ return (result: t_Option_isize) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Range self
-        | Some v -> produces_Range self.current (Seq.singleton v) self.final
+        | None'0 -> completed_Range self
+        | Some'0 v -> produces_Range self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
   let elim_Some (_x: t_Option_isize) (return (f0: Int64.t)) = any
-    [ _k (f0: Int64.t) -> {Some f0 = _x} (! return {f0})
+    [ _k (f0: Int64.t) -> {Some'0 f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Some] match _x with
-        | Some _ -> true
+        | Some'0 _ -> true
         | _ -> false
         end}
       any) ]
@@ -4024,7 +4338,7 @@ module M_sum_range
         [ s0 = MutBorrow.borrow_mut <t_Range> {it}
             (fun (_bor: MutBorrow.t t_Range) -> [ &_27 <- _bor ] [ &it <- _bor.final ] s1)
         | s1 = next_Range {_27} (fun (_x: t_Option_isize) -> [ &_26 <- _x ] s2)
-        | s2 = any [ br0 -> {_26 = None} (! bb9) | br1 (x0: Int64.t) -> {_26 = Some x0} (! bb10) ] ]
+        | s2 = any [ br0 -> {_26 = None'0} (! bb9) | br1 (x0: Int64.t) -> {_26 = Some'0 x0} (! bb10) ] ]
         [ bb10 = s0
           [ s0 = elim_Some {_26} (fun (r0: Int64.t) -> [ &x <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton x) ] s2

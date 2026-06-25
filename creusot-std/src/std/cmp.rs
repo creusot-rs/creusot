@@ -1,4 +1,4 @@
-use crate::{logic::OrdLogic, prelude::*};
+use crate::{partial_ord_laws_impl, prelude::*};
 use core::cmp::*;
 
 #[cfg(creusot)]
@@ -26,13 +26,12 @@ extern_spec! {
                 }
             }
 
-            // TODO: for now, we only support total orders
             trait PartialOrd<Rhs>
                 where Self: DeepModel,
                       Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>,
-                      Self::DeepModelTy: OrdLogic
+                      Self::DeepModelTy: PartialOrdLogic
             {
-                #[ensures(result == Some((*self).deep_model().cmp_log((*rhs).deep_model())))]
+                #[ensures(result == (*self).deep_model().partial_cmp_log((*rhs).deep_model()))]
                 fn partial_cmp(&self, rhs: &Rhs) -> Option<Ordering>;
 
                 #[ensures(result == (self.deep_model() < other.deep_model()))]
@@ -151,7 +150,7 @@ extern_spec! {
     impl PartialOrd<$t> for $t
     {
         #[check(ghost)]
-        #[ensures(result == Some((*self).deep_model().cmp_log((*rhs).deep_model())))]
+        #[ensures(result == (*self).deep_model().partial_cmp_log((*rhs).deep_model()))]
         fn partial_cmp(&self, rhs: &$t) -> Option<Ordering>;
 
         #[check(ghost)]
@@ -247,53 +246,16 @@ impl<T: DeepModel> DeepModel for Reverse<T> {
     }
 }
 
-impl<T: OrdLogic> OrdLogic for Reverse<T> {
+impl<T: PartialOrdLogic> PartialOrdLogic for Reverse<T> {
     #[logic(open)]
-    fn cmp_log(self, o: Self) -> Ordering {
-        match self.0.cmp_log(o.0) {
-            Ordering::Equal => Ordering::Equal,
-            Ordering::Less => Ordering::Greater,
-            Ordering::Greater => Ordering::Less,
+    fn partial_cmp_log(self, o: Self) -> Option<Ordering> {
+        match self.0.partial_cmp_log(o.0) {
+            None => None,
+            Some(Ordering::Equal) => Some(Ordering::Equal),
+            Some(Ordering::Less) => Some(Ordering::Greater),
+            Some(Ordering::Greater) => Some(Ordering::Less),
         }
     }
 
-    #[logic(law)]
-    #[ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
-    fn cmp_le_log(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
-    fn cmp_lt_log(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
-    fn cmp_ge_log(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
-    fn cmp_gt_log(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures(x.cmp_log(x) == Ordering::Equal)]
-    fn refl(x: Self) {}
-
-    #[logic(law)]
-    #[requires(x.cmp_log(y) == o)]
-    #[requires(y.cmp_log(z) == o)]
-    #[ensures(x.cmp_log(z) == o)]
-    fn trans(x: Self, y: Self, z: Self, o: Ordering) {}
-
-    #[logic(law)]
-    #[requires(x.cmp_log(y) == Ordering::Less)]
-    #[ensures(y.cmp_log(x) == Ordering::Greater)]
-    fn antisym1(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[requires(x.cmp_log(y) == Ordering::Greater)]
-    #[ensures(y.cmp_log(x) == Ordering::Less)]
-    fn antisym2(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
-    fn eq_cmp(x: Self, y: Self) {}
+    partial_ord_laws_impl! {}
 }

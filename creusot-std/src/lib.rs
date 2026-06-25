@@ -543,7 +543,7 @@ mod base_prelude {
     pub use crate::{
         ghost::Ghost,
         invariant::Invariant,
-        logic::{Int, OrdLogic, Seq, ops::IndexLogic as _},
+        logic::{Int, OrdLogic, PartialOrdLogic, Seq, ops::IndexLogic as _},
         model::{DeepModel, View},
         resolve::Resolve,
         snapshot::Snapshot,

@@ -2,7 +2,7 @@ use crate::{
     ghost::Plain,
     invariant::{InhabitedInvariant, Subset},
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, RemLogic, SubLogic},
-    ord_laws_impl,
+    partial_ord_laws_impl,
     prelude::*,
 };
 use core::{
@@ -466,6 +466,7 @@ impl Clone for Nat {
         *self
     }
 }
+
 impl Plain for Nat {
     #[check(ghost)]
     #[ensures(*result == *s)]
@@ -519,13 +520,19 @@ impl MulLogic for Nat {
     }
 }
 
-impl OrdLogic for Nat {
+impl PartialOrdLogic for Nat {
     #[logic(open)]
-    fn cmp_log(self, other: Self) -> cmp::Ordering {
-        self.to_int().cmp_log(other.to_int())
+    fn partial_cmp_log(self, other: Self) -> Option<cmp::Ordering> {
+        self.to_int().partial_cmp_log(other.to_int())
     }
 
-    ord_laws_impl! { let _ = Nat::ext_eq; }
+    partial_ord_laws_impl! { let _ = Nat::ext_eq; }
+}
+
+impl OrdLogic for Nat {
+    #[logic(law)]
+    #[ensures(self.partial_cmp_log(other) != None)]
+    fn partial_cmp_log_total(self, other: Self) {}
 }
 
 /// Positive numbers, i.e. numbers that are strictly greater than 0.
@@ -628,11 +635,17 @@ impl MulLogic for Positive {
     }
 }
 
-impl OrdLogic for Positive {
+impl PartialOrdLogic for Positive {
     #[logic(open)]
-    fn cmp_log(self, other: Self) -> cmp::Ordering {
-        self.to_int().cmp_log(other.to_int())
+    fn partial_cmp_log(self, other: Self) -> Option<cmp::Ordering> {
+        self.to_int().partial_cmp_log(other.to_int())
     }
 
-    ord_laws_impl! { let _ = Positive::ext_eq; }
+    partial_ord_laws_impl! { let _ = Positive::ext_eq; }
+}
+
+impl OrdLogic for Positive {
+    #[logic(law)]
+    #[ensures(self.partial_cmp_log(other) != None)]
+    fn partial_cmp_log_total(self, other: Self) {}
 }

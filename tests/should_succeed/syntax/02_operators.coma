@@ -148,48 +148,56 @@ module M_primitive_comparison
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_partial_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
+  axiom eq_partial_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (partial_cmp_log_usize x y = Some (Equal))
   
-  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
+  axiom asymetric2_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Greater)
+      -> partial_cmp_log_usize y x = Some (Less)
   
-  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
+  axiom asymetric1_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Less)
+      -> partial_cmp_log_usize y x = Some (Greater)
   
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_usize x y
+        = o -> partial_cmp_log_usize y z = o -> partial_cmp_log_usize x z = o
   
   function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
+  axiom refl_usize_spec: forall x: UInt64.t. partial_cmp_log_usize x x = Some (Equal)
   
-  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
+  axiom partial_cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
+      = (partial_cmp_log_usize x y = Some (Greater))
   
-  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
+  axiom partial_cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
+      = (partial_cmp_log_usize x y = Some (Greater) \/ partial_cmp_log_usize x y = Some (Equal))
   
-  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
+  axiom partial_cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
+      = (partial_cmp_log_usize x y = Some (Less))
   
-  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
+  axiom partial_cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
+      = (partial_cmp_log_usize x y = Some (Less) \/ partial_cmp_log_usize x y = Some (Equal))
   
   meta "compute_max_steps" 1000000
   

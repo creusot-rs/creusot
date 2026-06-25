@@ -9,52 +9,58 @@ module M_heap_frag_max
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_T (self: t_T) (other: t_T) : t_Ordering
+  type t_Option_Ordering = None | Some t_Ordering
   
-  function eq_cmp_T (x: t_T) (y: t_T) : ()
+  function partial_cmp_log_T (self: t_T) (other: t_T) : t_Option_Ordering
   
-  axiom eq_cmp_T_spec: forall x: t_T, y: t_T. (x = y) = (cmp_log_T x y = Equal)
+  function eq_partial_cmp_T (x: t_T) (y: t_T) : ()
   
-  function antisym2_T (x: t_T) (y: t_T) : ()
+  axiom eq_partial_cmp_T_spec: forall x: t_T, y: t_T. (x = y) = (partial_cmp_log_T x y = Some (Equal))
   
-  axiom antisym2_T_spec: forall x: t_T, y: t_T. cmp_log_T x y = Greater -> cmp_log_T y x = Less
+  function asymetric2_T (x: t_T) (y: t_T) : ()
   
-  function antisym1_T (x: t_T) (y: t_T) : ()
+  axiom asymetric2_T_spec: forall x: t_T, y: t_T. partial_cmp_log_T x y = Some (Greater)
+      -> partial_cmp_log_T y x = Some (Less)
   
-  axiom antisym1_T_spec: forall x: t_T, y: t_T. cmp_log_T x y = Less -> cmp_log_T y x = Greater
+  function asymetric1_T (x: t_T) (y: t_T) : ()
   
-  function trans_T (x: t_T) (y: t_T) (z: t_T) (o: t_Ordering) : ()
+  axiom asymetric1_T_spec: forall x: t_T, y: t_T. partial_cmp_log_T x y = Some (Less)
+      -> partial_cmp_log_T y x = Some (Greater)
   
-  axiom trans_T_spec: forall x: t_T, y: t_T, z: t_T, o: t_Ordering. cmp_log_T x y = o
-      -> cmp_log_T y z = o -> cmp_log_T x z = o
+  function trans_T (x: t_T) (y: t_T) (z: t_T) (o: t_Option_Ordering) : ()
+  
+  axiom trans_T_spec: forall x: t_T, y: t_T, z: t_T, o: t_Option_Ordering. partial_cmp_log_T x y = o
+      -> partial_cmp_log_T y z = o -> partial_cmp_log_T x z = o
   
   function refl_T (x: t_T) : ()
   
-  axiom refl_T_spec: forall x: t_T. cmp_log_T x x = Equal
+  axiom refl_T_spec: forall x: t_T. partial_cmp_log_T x x = Some (Equal)
   
   predicate gt_log_T (self: t_T) (o: t_T)
   
-  function cmp_gt_log_T (x: t_T) (y: t_T) : ()
+  function partial_cmp_gt_log_T (x: t_T) (y: t_T) : ()
   
-  axiom cmp_gt_log_T_spec: forall x: t_T, y: t_T. gt_log_T x y = (cmp_log_T x y = Greater)
+  axiom partial_cmp_gt_log_T_spec: forall x: t_T, y: t_T. gt_log_T x y = (partial_cmp_log_T x y = Some (Greater))
   
   predicate ge_log_T (self: t_T) (o: t_T)
   
-  function cmp_ge_log_T (x: t_T) (y: t_T) : ()
+  function partial_cmp_ge_log_T (x: t_T) (y: t_T) : ()
   
-  axiom cmp_ge_log_T_spec: forall x: t_T, y: t_T. ge_log_T x y = (cmp_log_T x y <> Less)
+  axiom partial_cmp_ge_log_T_spec: forall x: t_T, y: t_T. ge_log_T x y
+      = (partial_cmp_log_T x y = Some (Greater) \/ partial_cmp_log_T x y = Some (Equal))
   
   predicate lt_log_T (self: t_T) (o: t_T)
   
-  function cmp_lt_log_T (x: t_T) (y: t_T) : ()
+  function partial_cmp_lt_log_T (x: t_T) (y: t_T) : ()
   
-  axiom cmp_lt_log_T_spec: forall x: t_T, y: t_T. lt_log_T x y = (cmp_log_T x y = Less)
+  axiom partial_cmp_lt_log_T_spec: forall x: t_T, y: t_T. lt_log_T x y = (partial_cmp_log_T x y = Some (Less))
   
   predicate le_log_T (self: t_T) (o: t_T)
   
-  function cmp_le_log_T (x: t_T) (y: t_T) : ()
+  function partial_cmp_le_log_T (x: t_T) (y: t_T) : ()
   
-  axiom cmp_le_log_T_spec: forall x: t_T, y: t_T. le_log_T x y = (cmp_log_T x y <> Greater)
+  axiom partial_cmp_le_log_T_spec: forall x: t_T, y: t_T. le_log_T x y
+      = (partial_cmp_log_T x y = Some (Less) \/ partial_cmp_log_T x y = Some (Equal))
   
   predicate heap_frag_T (s: Seq.seq t_T) (start: int) (end': int) =
     forall i: int. start <= parent i /\ i < end' -> le_log_T (Seq.get s i) (Seq.get s (parent i))
@@ -154,59 +160,62 @@ module M_heap_sort
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  type t_Option_Ordering = None | Some t_Ordering
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function partial_cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Option_Ordering
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  function eq_partial_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom eq_partial_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y)
+      = (partial_cmp_log_DeepModelTy x y = Some (Equal))
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  function asymetric2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom asymetric2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. partial_cmp_log_DeepModelTy x y
+        = Some (Greater) -> partial_cmp_log_DeepModelTy y x = Some (Less)
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
+  function asymetric1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
+  axiom asymetric1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. partial_cmp_log_DeepModelTy x y
+        = Some (Less) -> partial_cmp_log_DeepModelTy y x = Some (Greater)
+  
+  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Option_Ordering) : ()
   
   axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
+    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Option_Ordering. partial_cmp_log_DeepModelTy x y
+        = o -> partial_cmp_log_DeepModelTy y z = o -> partial_cmp_log_DeepModelTy x z = o
   
   function refl_DeepModelTy (x: t_DeepModelTy) : ()
   
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
+  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. partial_cmp_log_DeepModelTy x x = Some (Equal)
   
   predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
   
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function partial_cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
+  axiom partial_cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
+      = (partial_cmp_log_DeepModelTy x y = Some (Greater))
   
   predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
   
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function partial_cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
+  axiom partial_cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
+      = (partial_cmp_log_DeepModelTy x y = Some (Greater) \/ partial_cmp_log_DeepModelTy x y = Some (Equal))
   
   predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
   
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function partial_cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
+  axiom partial_cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
+      = (partial_cmp_log_DeepModelTy x y = Some (Less))
   
   predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
   
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function partial_cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom partial_cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
+      = (partial_cmp_log_DeepModelTy x y = Some (Less) \/ partial_cmp_log_DeepModelTy x y = Some (Equal))
   
   predicate heap_frag_DeepModelTy (s: Seq.seq t_DeepModelTy) (start: int) (end': int) =
     forall i: int. start <= parent i /\ i < end' -> le_log_DeepModelTy (Seq.get s i) (Seq.get s (parent i))
@@ -448,59 +457,62 @@ module M_sift_down
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  type t_Option_Ordering = None | Some t_Ordering
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function partial_cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Option_Ordering
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  function eq_partial_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom eq_partial_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y)
+      = (partial_cmp_log_DeepModelTy x y = Some (Equal))
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  function asymetric2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom asymetric2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. partial_cmp_log_DeepModelTy x y
+        = Some (Greater) -> partial_cmp_log_DeepModelTy y x = Some (Less)
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
+  function asymetric1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
+  axiom asymetric1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. partial_cmp_log_DeepModelTy x y
+        = Some (Less) -> partial_cmp_log_DeepModelTy y x = Some (Greater)
+  
+  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Option_Ordering) : ()
   
   axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
+    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Option_Ordering. partial_cmp_log_DeepModelTy x y
+        = o -> partial_cmp_log_DeepModelTy y z = o -> partial_cmp_log_DeepModelTy x z = o
   
   function refl_DeepModelTy (x: t_DeepModelTy) : ()
   
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
+  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. partial_cmp_log_DeepModelTy x x = Some (Equal)
   
   predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
   
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function partial_cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
+  axiom partial_cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
+      = (partial_cmp_log_DeepModelTy x y = Some (Greater))
   
   predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
   
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function partial_cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
+  axiom partial_cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
+      = (partial_cmp_log_DeepModelTy x y = Some (Greater) \/ partial_cmp_log_DeepModelTy x y = Some (Equal))
   
   predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
   
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function partial_cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
+  axiom partial_cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
+      = (partial_cmp_log_DeepModelTy x y = Some (Less))
   
   predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
   
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function partial_cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
   
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom partial_cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
+      = (partial_cmp_log_DeepModelTy x y = Some (Less) \/ partial_cmp_log_DeepModelTy x y = Some (Equal))
   
   type t_Vec_T_Global
   

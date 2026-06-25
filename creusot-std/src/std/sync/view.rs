@@ -51,60 +51,60 @@ impl SyncView {
     }
 }
 
-impl OrdLogic for SyncView {
+impl PartialOrdLogic for SyncView {
     #[logic(opaque)]
-    fn cmp_log(self, _: Self) -> Ordering {
+    fn partial_cmp_log(self, _: Self) -> Option<Ordering> {
         dead
     }
 
     #[logic(law)]
-    #[ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
+    #[ensures(x.le_log(y) == (x.partial_cmp_log(y) == Some(Ordering::Less) || x.partial_cmp_log(y) == Some(Ordering::Equal)))]
     #[trusted]
-    fn cmp_le_log(x: Self, y: Self) {}
+    fn partial_cmp_le_log(x: Self, y: Self) {}
 
     #[logic(law)]
-    #[ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
+    #[ensures(x.lt_log(y) == (x.partial_cmp_log(y) == Some(Ordering::Less)))]
     #[trusted]
-    fn cmp_lt_log(x: Self, y: Self) {}
+    fn partial_cmp_lt_log(x: Self, y: Self) {}
 
     #[logic(law)]
-    #[ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
+    #[ensures(x.ge_log(y) == (x.partial_cmp_log(y) == Some(Ordering::Greater) || x.partial_cmp_log(y) == Some(Ordering::Equal)))]
     #[trusted]
-    fn cmp_ge_log(x: Self, y: Self) {}
+    fn partial_cmp_ge_log(x: Self, y: Self) {}
 
     #[logic(law)]
-    #[ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
+    #[ensures(x.gt_log(y) == (x.partial_cmp_log(y) == Some(Ordering::Greater)))]
     #[trusted]
-    fn cmp_gt_log(x: Self, y: Self) {}
+    fn partial_cmp_gt_log(x: Self, y: Self) {}
 
     #[logic(law)]
-    #[ensures(x.cmp_log(x) == Ordering::Equal)]
+    #[ensures(x.partial_cmp_log(x) == Some(Ordering::Equal))]
     #[trusted]
     fn refl(x: Self) {}
 
     #[logic(law)]
-    #[requires(x.cmp_log(y) == o)]
-    #[requires(y.cmp_log(z) == o)]
-    #[ensures(x.cmp_log(z) == o)]
+    #[requires(x.partial_cmp_log(y) == o)]
+    #[requires(y.partial_cmp_log(z) == o)]
+    #[ensures(x.partial_cmp_log(z) == o)]
     #[trusted]
-    fn trans(x: Self, y: Self, z: Self, o: Ordering) {}
+    fn trans(x: Self, y: Self, z: Self, o: Option<Ordering>) {}
 
     #[logic(law)]
-    #[requires(x.cmp_log(y) == Ordering::Less)]
-    #[ensures(y.cmp_log(x) == Ordering::Greater)]
+    #[requires(x.partial_cmp_log(y) == Some(Ordering::Less))]
+    #[ensures(y.partial_cmp_log(x) == Some(Ordering::Greater))]
     #[trusted]
-    fn antisym1(x: Self, y: Self) {}
+    fn asymetric1(x: Self, y: Self) {}
 
     #[logic(law)]
-    #[requires(x.cmp_log(y) == Ordering::Greater)]
-    #[ensures(y.cmp_log(x) == Ordering::Less)]
+    #[requires(x.partial_cmp_log(y) == Some(Ordering::Greater))]
+    #[ensures(y.partial_cmp_log(x) == Some(Ordering::Less))]
     #[trusted]
-    fn antisym2(x: Self, y: Self) {}
+    fn asymetric2(x: Self, y: Self) {}
 
     #[logic(law)]
-    #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
+    #[ensures((x == y) == (x.partial_cmp_log(y) == Some(Ordering::Equal)))]
     #[trusted]
-    fn eq_cmp(x: Self, y: Self) {}
+    fn eq_partial_cmp(x: Self, y: Self) {}
 }
 
 /// A witness to the _release view_, containing all the events observed by this thread at its last release fence.

@@ -3,7 +3,7 @@ use crate::resolve::structural_resolve;
 use crate::{
     ghost::Plain,
     logic::{Mapping, ops::IndexLogic},
-    ord_laws_impl,
+    partial_ord_laws_impl,
     prelude::*,
     std::ops::RangeInclusiveExt as _,
 };
@@ -1018,33 +1018,39 @@ impl<T: OrdLogic> Seq<T> {
     }
 }
 
-impl<T: OrdLogic> OrdLogic for Seq<T> {
+impl<T: OrdLogic> PartialOrdLogic for Seq<T> {
     #[logic]
     #[ensures(match result {
-        cmp::Ordering::Equal => self == other,
+        Some(cmp::Ordering::Equal) => self == other,
         _ => {
             (exists<i: Int> 0 <= i && i < self.len() && i < other.len() &&
                 (forall<j: Int> 0 <= j && j < i ==> self[j] == other[j]) &&
-                result == self[i].cmp_log(other[i]))
+                result == Some(self[i].cmp_log(other[i])))
             ||
-            result == self.len().cmp_log(other.len()) &&
+            result == Some(self.len().cmp_log(other.len())) &&
             (forall<i: Int> 0 <= i && i < self.len() && i < other.len() ==> self[i] == other[i])
     }})]
-    fn cmp_log(self, other: Self) -> cmp::Ordering {
+    fn partial_cmp_log(self, other: Self) -> Option<cmp::Ordering> {
         if self.lexico_lt_log(other) {
-            cmp::Ordering::Less
+            Some(cmp::Ordering::Less)
         } else if other.lexico_lt_log(self) {
-            cmp::Ordering::Greater
+            Some(cmp::Ordering::Greater)
         } else {
             proof_assert!(self.lexico_lt_log_total(other); true);
-            cmp::Ordering::Equal
+            Some(cmp::Ordering::Equal)
         }
     }
 
-    ord_laws_impl! {
+    partial_ord_laws_impl! {
         let _ = Self::lexico_lt_log_trans;
         let _ = Self::lexico_lt_log_irreflexive;
     }
+}
+
+impl<T: OrdLogic> OrdLogic for Seq<T> {
+    #[logic(law)]
+    #[ensures(self.partial_cmp_log(other) != None)]
+    fn partial_cmp_log_total(self, other: Self) {}
 }
 
 // =========

@@ -101,109 +101,120 @@ module M_test_instant
   
   type t_Ordering = Less | Equal | Greater
   
+  type t_Option_Ordering = None'1 | Some'1 t_Ordering
+  
   type tup2_Option_Int_Option_Int = { f0: t_Option_Int; f1: t_Option_Int }
   
-  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
-      Less
+  function partial_cmp_log_Int (self: int) (o: int) : t_Option_Ordering = if self < o then
+      Some'1 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'1 (Equal) else Some'1 (Greater)
   
   
-  function eq_cmp_Int (x: int) (y: int) : ()
+  function eq_partial_cmp_Int (x: int) (y: int) : ()
   
-  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
+  axiom eq_partial_cmp_Int_spec: forall x: int, y: int. (x = y) = (partial_cmp_log_Int x y = Some'1 (Equal))
   
-  function antisym2_Int (x: int) (y: int) : ()
+  function asymetric2_Int (x: int) (y: int) : ()
   
-  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
+  axiom asymetric2_Int_spec: forall x: int, y: int. partial_cmp_log_Int x y = Some'1 (Greater)
+      -> partial_cmp_log_Int y x = Some'1 (Less)
   
-  function antisym1_Int (x: int) (y: int) : ()
+  function asymetric1_Int (x: int) (y: int) : ()
   
-  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
+  axiom asymetric1_Int_spec: forall x: int, y: int. partial_cmp_log_Int x y = Some'1 (Less)
+      -> partial_cmp_log_Int y x = Some'1 (Greater)
   
-  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
+  function trans_Int (x: int) (y: int) (z: int) (o: t_Option_Ordering) : ()
   
-  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
-      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
+  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Option_Ordering. partial_cmp_log_Int x y = o
+      -> partial_cmp_log_Int y z = o -> partial_cmp_log_Int x z = o
   
   function refl_Int (x: int) : ()
   
-  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
+  axiom refl_Int_spec: forall x: int. partial_cmp_log_Int x x = Some'1 (Equal)
   
-  function cmp_gt_log_Int (x: int) (y: int) : ()
+  function partial_cmp_gt_log_Int (x: int) (y: int) : ()
   
-  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
+  axiom partial_cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (partial_cmp_log_Int x y = Some'1 (Greater))
   
-  function cmp_ge_log_Int (x: int) (y: int) : ()
+  function partial_cmp_ge_log_Int (x: int) (y: int) : ()
   
-  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
+  axiom partial_cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y)
+      = (partial_cmp_log_Int x y = Some'1 (Greater) \/ partial_cmp_log_Int x y = Some'1 (Equal))
   
-  function cmp_lt_log_Int (x: int) (y: int) : ()
+  function partial_cmp_lt_log_Int (x: int) (y: int) : ()
   
-  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
+  axiom partial_cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (partial_cmp_log_Int x y = Some'1 (Less))
   
-  function cmp_le_log_Int (x: int) (y: int) : ()
+  function partial_cmp_le_log_Int (x: int) (y: int) : ()
   
-  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
+  axiom partial_cmp_le_log_Int_spec: forall x: int, y: int. (x <= y)
+      = (partial_cmp_log_Int x y = Some'1 (Less) \/ partial_cmp_log_Int x y = Some'1 (Equal))
   
-  function cmp_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) : t_Ordering = match { f0 = self; f1 = o } with
-      | {f0 = None'0; f1 = None'0} -> Equal
-      | {f0 = None'0; f1 = Some'0 _} -> Less
-      | {f0 = Some'0 _; f1 = None'0} -> Greater
-      | {f0 = Some'0 x; f1 = Some'0 y} -> cmp_log_Int x y
+  function partial_cmp_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) : t_Option_Ordering = match { f0 = self;
+                                                                                                           f1 = o } with
+      | {f0 = None'0; f1 = None'0} -> Some'1 (Equal)
+      | {f0 = None'0; f1 = Some'0 _} -> Some'1 (Less)
+      | {f0 = Some'0 _; f1 = None'0} -> Some'1 (Greater)
+      | {f0 = Some'0 x; f1 = Some'0 y} -> partial_cmp_log_Int x y
       end
   
-  function eq_cmp_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
+  function eq_partial_cmp_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
   
-  axiom eq_cmp_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. (x = y) = (cmp_log_Option_Int x y = Equal)
+  axiom eq_partial_cmp_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. (x = y)
+      = (partial_cmp_log_Option_Int x y = Some'1 (Equal))
   
-  function antisym2_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
+  function asymetric2_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
   
-  axiom antisym2_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. cmp_log_Option_Int x y = Greater
-      -> cmp_log_Option_Int y x = Less
+  axiom asymetric2_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. partial_cmp_log_Option_Int x y
+        = Some'1 (Greater) -> partial_cmp_log_Option_Int y x = Some'1 (Less)
   
-  function antisym1_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
+  function asymetric1_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
   
-  axiom antisym1_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. cmp_log_Option_Int x y = Less
-      -> cmp_log_Option_Int y x = Greater
+  axiom asymetric1_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. partial_cmp_log_Option_Int x y
+        = Some'1 (Less) -> partial_cmp_log_Option_Int y x = Some'1 (Greater)
   
-  function trans_Option_Int (x: t_Option_Int) (y: t_Option_Int) (z: t_Option_Int) (o: t_Ordering) : ()
+  function trans_Option_Int (x: t_Option_Int) (y: t_Option_Int) (z: t_Option_Int) (o: t_Option_Ordering) : ()
   
   axiom trans_Option_Int_spec:
-    forall x: t_Option_Int, y: t_Option_Int, z: t_Option_Int, o: t_Ordering. cmp_log_Option_Int x y = o
-      -> cmp_log_Option_Int y z = o -> cmp_log_Option_Int x z = o
+    forall x: t_Option_Int, y: t_Option_Int, z: t_Option_Int, o: t_Option_Ordering. partial_cmp_log_Option_Int x y = o
+      -> partial_cmp_log_Option_Int y z = o -> partial_cmp_log_Option_Int x z = o
   
   function refl_Option_Int (x: t_Option_Int) : ()
   
-  axiom refl_Option_Int_spec: forall x: t_Option_Int. cmp_log_Option_Int x x = Equal
+  axiom refl_Option_Int_spec: forall x: t_Option_Int. partial_cmp_log_Option_Int x x = Some'1 (Equal)
   
-  predicate gt_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) = cmp_log_Option_Int self o = Greater
+  predicate gt_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) =
+    partial_cmp_log_Option_Int self o = Some'1 (Greater)
   
-  function cmp_gt_log_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
+  function partial_cmp_gt_log_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
   
-  axiom cmp_gt_log_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. gt_log_Option_Int x y
-      = (cmp_log_Option_Int x y = Greater)
+  axiom partial_cmp_gt_log_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. gt_log_Option_Int x y
+      = (partial_cmp_log_Option_Int x y = Some'1 (Greater))
   
-  predicate ge_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) = cmp_log_Option_Int self o <> Less
+  predicate ge_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) =
+    partial_cmp_log_Option_Int self o = Some'1 (Greater) \/ partial_cmp_log_Option_Int self o = Some'1 (Equal)
   
-  function cmp_ge_log_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
+  function partial_cmp_ge_log_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
   
-  axiom cmp_ge_log_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. ge_log_Option_Int x y
-      = (cmp_log_Option_Int x y <> Less)
+  axiom partial_cmp_ge_log_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. ge_log_Option_Int x y
+      = (partial_cmp_log_Option_Int x y = Some'1 (Greater) \/ partial_cmp_log_Option_Int x y = Some'1 (Equal))
   
-  predicate lt_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) = cmp_log_Option_Int self o = Less
+  predicate lt_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) = partial_cmp_log_Option_Int self o = Some'1 (Less)
   
-  function cmp_lt_log_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
+  function partial_cmp_lt_log_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
   
-  axiom cmp_lt_log_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. lt_log_Option_Int x y
-      = (cmp_log_Option_Int x y = Less)
+  axiom partial_cmp_lt_log_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. lt_log_Option_Int x y
+      = (partial_cmp_log_Option_Int x y = Some'1 (Less))
   
-  predicate le_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) = cmp_log_Option_Int self o <> Greater
+  predicate le_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) =
+    partial_cmp_log_Option_Int self o = Some'1 (Less) \/ partial_cmp_log_Option_Int self o = Some'1 (Equal)
   
-  function cmp_le_log_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
+  function partial_cmp_le_log_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
   
-  axiom cmp_le_log_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. le_log_Option_Int x y
-      = (cmp_log_Option_Int x y <> Greater)
+  axiom partial_cmp_le_log_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. le_log_Option_Int x y
+      = (partial_cmp_log_Option_Int x y = Some'1 (Less) \/ partial_cmp_log_Option_Int x y = Some'1 (Equal))
   
   let checked_add (self_: t_Instant) (duration: t_Duration) (return (x: t_Option_Instant)) =
   {[@stop_split] [@expl:checked_add requires] ([@stop_split] [@expl:checked_add 'self_' type invariant] inv_ref_Instant self_)
@@ -308,14 +319,14 @@ module M_test_instant
       -> view_Duration result = 0)}
       (! return {result}) ]
   
-  type t_Option_Duration = None'1 | Some'1 t_Duration
+  type t_Option_Duration = None'2 | Some'2 t_Duration
   
   predicate inv_Option_Duration (_1: t_Option_Duration)
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Duration [inv_Option_Duration x]. inv_Option_Duration x
       = match x with
-        | None'1 -> true
-        | Some'1 f0'0 -> inv_Duration f0'0
+        | None'2 -> true
+        | Some'2 f0'0 -> inv_Duration f0'0
         end
   
   let checked_duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Option_Duration)) =
@@ -325,9 +336,9 @@ module M_test_instant
     [ return (result: t_Option_Duration) ->
     {[@stop_split] [@expl:checked_duration_since ensures] ([@stop_split] [@expl:checked_duration_since result type invariant] inv_Option_Duration result)
       /\ ([@stop_split] [@expl:checked_duration_since ensures #0] view_Instant self_ >= view_Instant earlier
-        -> result <> None'1)
+        -> result <> None'2)
       /\ ([@stop_split] [@expl:checked_duration_since ensures #1] view_Instant self_ < view_Instant earlier
-      -> result = None'1)}
+      -> result = None'2)}
       (! return {result}) ]
   
   predicate invariant_ref_Option_Duration [@inline:trivial] (self: t_Option_Duration) = inv_Option_Duration self
@@ -341,12 +352,12 @@ module M_test_instant
   let is_some_Duration (self_: t_Option_Duration) (return (x: bool)) =
   {[@stop_split] [@expl:is_some 'self_' type invariant] inv_ref_Option_Duration self_}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_some ensures] result = (self_ <> None'1)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_some ensures] result = (self_ <> None'2)} (! return {result}) ]
   
   let is_none_Duration (self_: t_Option_Duration) (return (x: bool)) =
   {[@stop_split] [@expl:is_none 'self_' type invariant] inv_ref_Option_Duration self_}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None'1)} (! return {result}) ]
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None'2)} (! return {result}) ]
   
   let saturating_duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Duration)) =
   {[@stop_split] [@expl:saturating_duration_since requires] ([@stop_split] [@expl:saturating_duration_since 'self_' type invariant] inv_ref_Instant self_)

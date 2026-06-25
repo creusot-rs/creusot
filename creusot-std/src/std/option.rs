@@ -1,7 +1,7 @@
 #[cfg(creusot)]
 use crate::logic::{Mapping, any};
 use crate::{
-    ghost::Plain, logic::ord::ord_laws_impl, prelude::*, std::iter::ExactSizeIteratorSpec,
+    ghost::Plain, logic::ord::partial_ord_laws_impl, prelude::*, std::iter::ExactSizeIteratorSpec,
 };
 use core::option::*;
 #[cfg(creusot)]
@@ -637,18 +637,24 @@ extern_spec! {
     }
 }
 
-impl<T: OrdLogic> OrdLogic for Option<T> {
+impl<T: PartialOrdLogic> PartialOrdLogic for Option<T> {
     #[logic(open)]
-    fn cmp_log(self, o: Self) -> Ordering {
+    fn partial_cmp_log(self, o: Self) -> Option<Ordering> {
         match (self, o) {
-            (None, None) => Ordering::Equal,
-            (None, Some(_)) => Ordering::Less,
-            (Some(_), None) => Ordering::Greater,
-            (Some(x), Some(y)) => x.cmp_log(y),
+            (None, None) => Some(Ordering::Equal),
+            (None, Some(_)) => Some(Ordering::Less),
+            (Some(_), None) => Some(Ordering::Greater),
+            (Some(x), Some(y)) => x.partial_cmp_log(y),
         }
     }
 
-    ord_laws_impl! {}
+    partial_ord_laws_impl! {}
+}
+
+impl<T: OrdLogic> OrdLogic for Option<T> {
+    #[logic(law)]
+    #[ensures(self.partial_cmp_log(other) != None)]
+    fn partial_cmp_log_total(self, other: Self) {}
 }
 
 impl<T> View for IntoIter<T> {

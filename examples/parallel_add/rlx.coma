@@ -76,58 +76,64 @@ module M_parallel_add
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_SyncView (self: t_SyncView) (_2: t_SyncView) : t_Ordering
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
   
-  function eq_cmp_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  function partial_cmp_log_SyncView (self: t_SyncView) (_2: t_SyncView) : t_Option_Ordering
   
-  axiom eq_cmp_SyncView_spec: forall x: t_SyncView, y: t_SyncView. (x = y) = (cmp_log_SyncView x y = Equal)
+  function eq_partial_cmp_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  function antisym2_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  axiom eq_partial_cmp_SyncView_spec: forall x: t_SyncView, y: t_SyncView. (x = y)
+      = (partial_cmp_log_SyncView x y = Some'0 (Equal))
   
-  axiom antisym2_SyncView_spec: forall x: t_SyncView, y: t_SyncView. cmp_log_SyncView x y = Greater
-      -> cmp_log_SyncView y x = Less
+  function asymetric2_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  function antisym1_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  axiom asymetric2_SyncView_spec: forall x: t_SyncView, y: t_SyncView. partial_cmp_log_SyncView x y = Some'0 (Greater)
+      -> partial_cmp_log_SyncView y x = Some'0 (Less)
   
-  axiom antisym1_SyncView_spec: forall x: t_SyncView, y: t_SyncView. cmp_log_SyncView x y = Less
-      -> cmp_log_SyncView y x = Greater
+  function asymetric1_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  function trans_SyncView (x: t_SyncView) (y: t_SyncView) (z: t_SyncView) (o: t_Ordering) : ()
+  axiom asymetric1_SyncView_spec: forall x: t_SyncView, y: t_SyncView. partial_cmp_log_SyncView x y = Some'0 (Less)
+      -> partial_cmp_log_SyncView y x = Some'0 (Greater)
   
-  axiom trans_SyncView_spec: forall x: t_SyncView, y: t_SyncView, z: t_SyncView, o: t_Ordering. cmp_log_SyncView x y = o
-      -> cmp_log_SyncView y z = o -> cmp_log_SyncView x z = o
+  function trans_SyncView (x: t_SyncView) (y: t_SyncView) (z: t_SyncView) (o: t_Option_Ordering) : ()
+  
+  axiom trans_SyncView_spec:
+    forall x: t_SyncView, y: t_SyncView, z: t_SyncView, o: t_Option_Ordering. partial_cmp_log_SyncView x y = o
+      -> partial_cmp_log_SyncView y z = o -> partial_cmp_log_SyncView x z = o
   
   function refl_SyncView (x: t_SyncView) : ()
   
-  axiom refl_SyncView_spec: forall x: t_SyncView. cmp_log_SyncView x x = Equal
+  axiom refl_SyncView_spec: forall x: t_SyncView. partial_cmp_log_SyncView x x = Some'0 (Equal)
   
-  predicate gt_log_SyncView (self: t_SyncView) (o: t_SyncView) = cmp_log_SyncView self o = Greater
+  predicate gt_log_SyncView (self: t_SyncView) (o: t_SyncView) = partial_cmp_log_SyncView self o = Some'0 (Greater)
   
-  function cmp_gt_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  function partial_cmp_gt_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  axiom cmp_gt_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. gt_log_SyncView x y
-      = (cmp_log_SyncView x y = Greater)
+  axiom partial_cmp_gt_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. gt_log_SyncView x y
+      = (partial_cmp_log_SyncView x y = Some'0 (Greater))
   
-  predicate ge_log_SyncView (self: t_SyncView) (o: t_SyncView) = cmp_log_SyncView self o <> Less
+  predicate ge_log_SyncView (self: t_SyncView) (o: t_SyncView) =
+    partial_cmp_log_SyncView self o = Some'0 (Greater) \/ partial_cmp_log_SyncView self o = Some'0 (Equal)
   
-  function cmp_ge_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  function partial_cmp_ge_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  axiom cmp_ge_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. ge_log_SyncView x y
-      = (cmp_log_SyncView x y <> Less)
+  axiom partial_cmp_ge_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. ge_log_SyncView x y
+      = (partial_cmp_log_SyncView x y = Some'0 (Greater) \/ partial_cmp_log_SyncView x y = Some'0 (Equal))
   
-  predicate lt_log_SyncView (self: t_SyncView) (o: t_SyncView) = cmp_log_SyncView self o = Less
+  predicate lt_log_SyncView (self: t_SyncView) (o: t_SyncView) = partial_cmp_log_SyncView self o = Some'0 (Less)
   
-  function cmp_lt_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  function partial_cmp_lt_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  axiom cmp_lt_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. lt_log_SyncView x y
-      = (cmp_log_SyncView x y = Less)
+  axiom partial_cmp_lt_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. lt_log_SyncView x y
+      = (partial_cmp_log_SyncView x y = Some'0 (Less))
   
-  predicate le_log_SyncView (self: t_SyncView) (o: t_SyncView) = cmp_log_SyncView self o <> Greater
+  predicate le_log_SyncView (self: t_SyncView) (o: t_SyncView) =
+    partial_cmp_log_SyncView self o = Some'0 (Less) \/ partial_cmp_log_SyncView self o = Some'0 (Equal)
   
-  function cmp_le_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  function partial_cmp_le_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
   
-  axiom cmp_le_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. le_log_SyncView x y
-      = (cmp_log_SyncView x y <> Greater)
+  axiom partial_cmp_le_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. le_log_SyncView x y
+      = (partial_cmp_log_SyncView x y = Some'0 (Less) \/ partial_cmp_log_SyncView x y = Some'0 (Equal))
   
   function get_timestamp_AtomicI32 (self: t_AtomicI32) (_2: t_SyncView) : int
   
@@ -174,21 +180,21 @@ module M_parallel_add
   
   type t_Excl_bool = { f0'1: bool }
   
-  type t_Option_Excl_bool = None'0 | Some'0 t_Excl_bool
+  type t_Option_Excl_bool = None'1 | Some'1 t_Excl_bool
   
   function view_Authority_Option_Excl_bool (self: t_Authority_Option_Excl_bool) : t_Option_Excl_bool
   
-  type t_Option_Option_Excl_bool = None'1 | Some'1 t_Option_Excl_bool
+  type t_Option_Option_Excl_bool = None'2 | Some'2 t_Option_Excl_bool
   
   type tup2_Option_Excl_bool_Option_Excl_bool = { f0'2: t_Option_Excl_bool; f1'2: t_Option_Excl_bool }
   
   function map_Option_Excl_bool (self: t_Option_Excl_bool) (f: Map.map t_Excl_bool t_Option_Excl_bool) : t_Option_Option_Excl_bool
    = match self with
-      | None'0 -> None'1
-      | Some'0 x -> Some'1 (Map.get f x)
+      | None'1 -> None'2
+      | Some'1 x -> Some'2 (Map.get f x)
       end
   
-  function op_Excl_bool (self: t_Excl_bool) (_other: t_Excl_bool) : t_Option_Excl_bool = None'0
+  function op_Excl_bool (self: t_Excl_bool) (_other: t_Excl_bool) : t_Option_Excl_bool = None'1
   
   function commutative_Excl_bool (a: t_Excl_bool) (b: t_Excl_bool) : ()
   
@@ -196,9 +202,9 @@ module M_parallel_add
   
   function op_Option_Excl_bool (self: t_Option_Excl_bool) (other: t_Option_Excl_bool) : t_Option_Option_Excl_bool =
     match { f0'2 = self; f1'2 = other } with
-      | {f0'2 = None'0} -> Some'1 other
-      | {f1'2 = None'0} -> Some'1 self
-      | {f0'2 = Some'0 x; f1'2 = Some'0 y} -> map_Option_Excl_bool (op_Excl_bool x y) (fun (z: t_Excl_bool) -> Some'0 z)
+      | {f0'2 = None'1} -> Some'2 other
+      | {f1'2 = None'1} -> Some'2 self
+      | {f0'2 = Some'1 x; f1'2 = Some'1 y} -> map_Option_Excl_bool (op_Excl_bool x y) (fun (z: t_Excl_bool) -> Some'1 z)
       end
   
   function commutative_Option_Excl_bool (a: t_Option_Excl_bool) (b: t_Option_Excl_bool) : ()
@@ -206,11 +212,11 @@ module M_parallel_add
   axiom commutative_Option_Excl_bool_spec: forall a: t_Option_Excl_bool, b: t_Option_Excl_bool. op_Option_Excl_bool a b
       = op_Option_Excl_bool b a
   
-  constant unit_Option_Excl_bool: t_Option_Excl_bool = None'0
+  constant unit_Option_Excl_bool: t_Option_Excl_bool = None'1
   
   axiom unit_Option_Excl_bool_spec:
     forall x: t_Option_Excl_bool [op_Option_Excl_bool x unit_Option_Excl_bool]. op_Option_Excl_bool x unit_Option_Excl_bool
-      = Some'1 x
+      = Some'2 x
   
   let alloc_Option_Excl_bool (return (x: t_Authority_Option_Excl_bool)) = any
     [ return (result: t_Authority_Option_Excl_bool) ->
@@ -263,32 +269,32 @@ module M_parallel_add
   
   type t_View_AuthViewRel_Option_Excl_bool
   
-  function factor_Excl_bool (self: t_Excl_bool) (factor: t_Excl_bool) : t_Option_Excl_bool = None'0
+  function factor_Excl_bool (self: t_Excl_bool) (factor: t_Excl_bool) : t_Option_Excl_bool = None'1
   
   axiom factor_Excl_bool_spec:
     forall self: t_Excl_bool, factor: t_Excl_bool [factor_Excl_bool self factor]. match factor_Excl_bool self factor with
-        | Some'0 c -> op_Excl_bool factor c = Some'0 self
-        | None'0 -> forall c: t_Excl_bool. op_Excl_bool factor c <> Some'0 self
+        | Some'1 c -> op_Excl_bool factor c = Some'1 self
+        | None'1 -> forall c: t_Excl_bool. op_Excl_bool factor c <> Some'1 self
         end
   
   function factor_Option_Excl_bool (self: t_Option_Excl_bool) (factor: t_Option_Excl_bool) : t_Option_Option_Excl_bool =
     match { f0'2 = self; f1'2 = factor } with
-      | {f0'2 = x; f1'2 = None'0} -> Some'1 x
-      | {f0'2 = None'0} -> None'1
-      | {f0'2 = Some'0 x; f1'2 = Some'0 y} -> match factor_Excl_bool x y with
-        | Some'0 z -> Some'1 (Some'0 z)
-        | None'0 -> if x = y then Some'1 (None'0) else None'1
+      | {f0'2 = x; f1'2 = None'1} -> Some'2 x
+      | {f0'2 = None'1} -> None'2
+      | {f0'2 = Some'1 x; f1'2 = Some'1 y} -> match factor_Excl_bool x y with
+        | Some'1 z -> Some'2 (Some'1 z)
+        | None'1 -> if x = y then Some'2 (None'1) else None'2
         end
       end
   
   axiom factor_Option_Excl_bool_spec:
     forall self: t_Option_Excl_bool, factor: t_Option_Excl_bool [factor_Option_Excl_bool self factor]. match factor_Option_Excl_bool self factor with
-        | Some'1 c -> op_Option_Excl_bool factor c = Some'1 self
-        | None'1 -> forall c: t_Option_Excl_bool. op_Option_Excl_bool factor c <> Some'1 self
+        | Some'2 c -> op_Option_Excl_bool factor c = Some'2 self
+        | None'2 -> forall c: t_Option_Excl_bool. op_Option_Excl_bool factor c <> Some'2 self
         end
   
   predicate incl_Option_Excl_bool (self: t_Option_Excl_bool) (other: t_Option_Excl_bool) =
-    factor_Option_Excl_bool other self <> None'1
+    factor_Option_Excl_bool other self <> None'2
   
   function incl_transitive_Option_Excl_bool (a: t_Option_Excl_bool) (b: t_Option_Excl_bool) (c: t_Option_Excl_bool) : ()
   
@@ -300,24 +306,24 @@ module M_parallel_add
   
   axiom associative_some_Option_Excl_bool_spec:
     forall a: t_Option_Excl_bool, b: t_Option_Excl_bool, c: t_Option_Excl_bool, ab: t_Option_Excl_bool, bc: t_Option_Excl_bool. op_Option_Excl_bool a b
-        = Some'1 ab -> op_Option_Excl_bool b c = Some'1 bc -> op_Option_Excl_bool a bc = op_Option_Excl_bool ab c
+        = Some'2 ab -> op_Option_Excl_bool b c = Some'2 bc -> op_Option_Excl_bool a bc = op_Option_Excl_bool ab c
   
   function associative_none_Option_Excl_bool (a: t_Option_Excl_bool) (b: t_Option_Excl_bool) (c: t_Option_Excl_bool) (bc: t_Option_Excl_bool) : ()
   
   axiom associative_none_Option_Excl_bool_spec:
     forall a: t_Option_Excl_bool, b: t_Option_Excl_bool, c: t_Option_Excl_bool, bc: t_Option_Excl_bool. op_Option_Excl_bool a b
-        = None'1 -> op_Option_Excl_bool b c = Some'1 bc -> op_Option_Excl_bool a bc = None'1
+        = None'2 -> op_Option_Excl_bool b c = Some'2 bc -> op_Option_Excl_bool a bc = None'2
   
   function incl_op_Option_Excl_bool (self: t_Option_Excl_bool) (other: t_Option_Excl_bool) (comb: t_Option_Excl_bool) : ()
   
   axiom incl_op_Option_Excl_bool_spec:
     forall self: t_Option_Excl_bool, other: t_Option_Excl_bool, comb: t_Option_Excl_bool. op_Option_Excl_bool self other
-        = Some'1 comb -> incl_Option_Excl_bool self comb
+        = Some'2 comb -> incl_Option_Excl_bool self comb
   
   predicate rel_AuthViewRel_Option_Excl_bool (a: t_Option_Option_Excl_bool) (f: t_Option_Excl_bool) =
     match a with
-      | Some'1 a'0 -> incl_Option_Excl_bool f a'0
-      | None'1 -> true
+      | Some'2 a'0 -> incl_Option_Excl_bool f a'0
+      | None'2 -> true
       end
   
   function rel_unit_AuthViewRel_Option_Excl_bool (a: t_Option_Option_Excl_bool) : ()
@@ -328,7 +334,7 @@ module M_parallel_add
   function rel_none_AuthViewRel_Option_Excl_bool (a: t_Option_Option_Excl_bool) (f: t_Option_Excl_bool) : ()
   
   axiom rel_none_AuthViewRel_Option_Excl_bool_spec:
-    forall a: t_Option_Option_Excl_bool, f: t_Option_Excl_bool. rel_AuthViewRel_Option_Excl_bool (None'1) f
+    forall a: t_Option_Option_Excl_bool, f: t_Option_Excl_bool. rel_AuthViewRel_Option_Excl_bool (None'2) f
   
   function rel_mono_AuthViewRel_Option_Excl_bool (a: t_Option_Option_Excl_bool) (f1'1: t_Option_Excl_bool) (f2: t_Option_Excl_bool) : ()
   
@@ -403,7 +409,7 @@ module M_parallel_add
       = self}
       (! return {result}) ]
   
-  type t_Option_Option_Option_Excl_bool = None'2 | Some'2 t_Option_Option_Excl_bool
+  type t_Option_Option_Option_Excl_bool = None'3 | Some'3 t_Option_Option_Excl_bool
   
   type tup2_Option_Option_Excl_bool_Option_Option_Excl_bool = {
     f0'4: t_Option_Option_Excl_bool;
@@ -411,15 +417,15 @@ module M_parallel_add
   
   function map_Option_Option_Excl_bool (self: t_Option_Option_Excl_bool) (f: Map.map t_Option_Excl_bool t_Option_Option_Excl_bool) : t_Option_Option_Option_Excl_bool
    = match self with
-      | None'1 -> None'2
-      | Some'1 x -> Some'2 (Map.get f x)
+      | None'2 -> None'3
+      | Some'2 x -> Some'3 (Map.get f x)
       end
   
   function op_Option_Option_Excl_bool (self: t_Option_Option_Excl_bool) (other: t_Option_Option_Excl_bool) : t_Option_Option_Option_Excl_bool
    = match { f0'4 = self; f1'4 = other } with
-      | {f0'4 = None'1} -> Some'2 other
-      | {f1'4 = None'1} -> Some'2 self
-      | {f0'4 = Some'1 x; f1'4 = Some'1 y} -> map_Option_Option_Excl_bool (op_Option_Excl_bool x y) (fun (z: t_Option_Excl_bool) -> Some'1 z)
+      | {f0'4 = None'2} -> Some'3 other
+      | {f1'4 = None'2} -> Some'3 self
+      | {f0'4 = Some'2 x; f1'4 = Some'2 y} -> map_Option_Option_Excl_bool (op_Option_Excl_bool x y) (fun (z: t_Option_Excl_bool) -> Some'2 z)
       end
   
   function commutative_Option_Option_Excl_bool (a: t_Option_Option_Excl_bool) (b: t_Option_Option_Excl_bool) : ()
@@ -429,8 +435,8 @@ module M_parallel_add
       = op_Option_Option_Excl_bool b a
   
   predicate premise_Snapshot_tup2_Option_Excl_bool_Option_Excl_bool [@inline:trivial] (self: tup2_Option_Excl_bool_Option_Excl_bool) (from_auth: t_Option_Excl_bool) (from_frag: t_Option_Excl_bool) =
-    forall f: t_Option_Option_Excl_bool. op_Option_Option_Excl_bool (Some'1 from_frag) f = Some'2 (Some'1 from_auth)
-      -> op_Option_Option_Excl_bool (Some'1 (self.f1'2)) f = Some'2 (Some'1 (self.f0'2))
+    forall f: t_Option_Option_Excl_bool. op_Option_Option_Excl_bool (Some'2 from_frag) f = Some'3 (Some'2 from_auth)
+      -> op_Option_Option_Excl_bool (Some'2 (self.f1'2)) f = Some'3 (Some'2 (self.f0'2))
   
   meta "rewrite_def" predicate premise_Snapshot_tup2_Option_Excl_bool_Option_Excl_bool
   
@@ -538,8 +544,8 @@ module M_parallel_add
         -> t = self.t_last \/ contains_Int (val_AtomicI32 self.own) (t + 1))
     /\ match get_Int (val_AtomicI32 self.own) self.t_last with
       | Some {f0'0 = v} -> Int32.to_int v
-      = (if view_Authority_Option_Excl_bool self.auth1 = Some'0 { f0'1 = true } then 2 else 0)
-      + (if view_Authority_Option_Excl_bool self.auth2 = Some'0 { f0'1 = true } then 2 else 0)
+      = (if view_Authority_Option_Excl_bool self.auth1 = Some'1 { f0'1 = true } then 2 else 0)
+      + (if view_Authority_Option_Excl_bool self.auth2 = Some'1 { f0'1 = true } then 2 else 0)
       | None -> false
       end
   
@@ -751,7 +757,7 @@ module M_parallel_add
       | s3 = MutBorrow.borrow_mut <t_Fragment_Option_Excl_bool> {_6.current.current}
           (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) ->
             [ &_5 <- _bor ] [ &_6 <- { _6 with current = { _6.current with current = _bor.final } } ] s4)
-      | s4 = update_Option_Excl_bool {_4} {_5} {{ f0'2 = Some'0 { f0'1 = true }; f1'2 = Some'0 { f0'1 = true } }}
+      | s4 = update_Option_Excl_bool {_4} {_5} {{ f0'2 = Some'1 { f0'1 = true }; f1'2 = Some'1 { f0'1 = true } }}
           (fun (_x: ()) -> [ &_3 <- _x ] s5)
       | s5 = -{resolve_refmut_refmut_Fragment_Option_Excl_bool _6}- s6
       | s6 = [ &_13 <- inv.current.own ] s7
@@ -1136,7 +1142,7 @@ module M_parallel_add
       | s3 = MutBorrow.borrow_mut <t_Fragment_Option_Excl_bool> {_6.current.current}
           (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) ->
             [ &_5 <- _bor ] [ &_6 <- { _6 with current = { _6.current with current = _bor.final } } ] s4)
-      | s4 = update_Option_Excl_bool {_4} {_5} {{ f0'2 = Some'0 { f0'1 = true }; f1'2 = Some'0 { f0'1 = true } }}
+      | s4 = update_Option_Excl_bool {_4} {_5} {{ f0'2 = Some'1 { f0'1 = true }; f1'2 = Some'1 { f0'1 = true } }}
           (fun (_x: ()) -> [ &_3 <- _x ] s5)
       | s5 = -{resolve_refmut_refmut_Fragment_Option_Excl_bool _6}- s6
       | s6 = [ &_13 <- inv.current.own ] s7
@@ -1626,7 +1632,7 @@ module M_parallel_add
       | s22 = MutBorrow.borrow_final <t_Fragment_Option_Excl_bool> {_28.current} {MutBorrow.get_id _28}
           (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) ->
             [ &_27 <- _bor ] [ &_28 <- { _28 with current = _bor.final } ] s23)
-      | s23 = update_Option_Excl_bool {_24} {_27} {{ f0'2 = Some'0 { f0'1 = false }; f1'2 = Some'0 { f0'1 = false } }}
+      | s23 = update_Option_Excl_bool {_24} {_27} {{ f0'2 = Some'1 { f0'1 = false }; f1'2 = Some'1 { f0'1 = false } }}
           (fun (_x: ()) -> [ &_23 <- _x ] s24)
       | s24 = -{resolve_refmut_Ghost_Fragment_Option_Excl_bool _30}- s25
       | s25 = -{resolve_refmut_Fragment_Option_Excl_bool _28}- s26
@@ -1654,7 +1660,7 @@ module M_parallel_add
       | s34 = MutBorrow.borrow_final <t_Fragment_Option_Excl_bool> {_38.current} {MutBorrow.get_id _38}
           (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) ->
             [ &_37 <- _bor ] [ &_38 <- { _38 with current = _bor.final } ] s35)
-      | s35 = update_Option_Excl_bool {_34} {_37} {{ f0'2 = Some'0 { f0'1 = false }; f1'2 = Some'0 { f0'1 = false } }}
+      | s35 = update_Option_Excl_bool {_34} {_37} {{ f0'2 = Some'1 { f0'1 = false }; f1'2 = Some'1 { f0'1 = false } }}
           (fun (_x: ()) -> [ &_33 <- _x ] s36)
       | s36 = -{resolve_refmut_Ghost_Fragment_Option_Excl_bool _40}- s37
       | s37 = -{resolve_refmut_Fragment_Option_Excl_bool _38}- s38

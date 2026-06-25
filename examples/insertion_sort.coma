@@ -64,48 +64,56 @@ module M_insertion_sort
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Ordering = if Int32.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
+  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function antisym2_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
+      -> partial_cmp_log_i32 y x = Some'0 (Less)
   
-  function antisym1_i32 (x: Int32.t) (y: Int32.t) : ()
+  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32.t, y: Int32.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
+      -> partial_cmp_log_i32 y x = Some'0 (Greater)
   
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
+      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
   
-  function cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater))
   
-  function cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
+      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
-  function cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less))
   
-  function cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
+      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
   
   predicate sorted_range_i32 (s: Seq.seq Int32.t) (l: int) (u: int) =
     forall i: int, j: int. l <= i /\ i < j /\ j < u -> Int32.le (Seq.get s i) (Seq.get s j)
@@ -132,48 +140,55 @@ module M_insertion_sort
   
   meta "rewrite_def" function index_slice_i32'0
   
-  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
+  function partial_cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_partial_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
+  axiom eq_partial_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y)
+      = (partial_cmp_log_usize x y = Some'0 (Equal))
   
-  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
+  axiom asymetric2_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some'0 (Greater)
+      -> partial_cmp_log_usize y x = Some'0 (Less)
   
-  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
+  axiom asymetric1_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some'0 (Less)
+      -> partial_cmp_log_usize y x = Some'0 (Greater)
   
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_usize x y
+        = o -> partial_cmp_log_usize y z = o -> partial_cmp_log_usize x z = o
   
   function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
+  axiom refl_usize_spec: forall x: UInt64.t. partial_cmp_log_usize x x = Some'0 (Equal)
   
-  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
+  axiom partial_cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
+      = (partial_cmp_log_usize x y = Some'0 (Greater))
   
-  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
+  axiom partial_cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
+      = (partial_cmp_log_usize x y = Some'0 (Greater) \/ partial_cmp_log_usize x y = Some'0 (Equal))
   
-  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
+  axiom partial_cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
+      = (partial_cmp_log_usize x y = Some'0 (Less))
   
-  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
+  axiom partial_cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
+      = (partial_cmp_log_usize x y = Some'0 (Less) \/ partial_cmp_log_usize x y = Some'0 (Equal))
   
   let swap_i32 (self_: MutBorrow.t (Slice64.slice Int32.t)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:swap_i32 requires] ([@stop_split] [@expl:swap requires #0] UInt64.t'int i

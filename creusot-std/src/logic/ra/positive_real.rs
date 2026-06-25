@@ -39,6 +39,12 @@ impl RA for PositiveReal {
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {
         let _ = PositiveReal::ext_eq;
+
+        let ab = a.op(b).unwrap_logic();
+        let bc = b.op(c).unwrap_logic();
+        let ab_c = ab.op(c).unwrap_logic();
+        let a_bc = a.op(bc).unwrap_logic();
+        proof_assert!(ab_c == a_bc)
     }
 
     #[logic(open, inline)]

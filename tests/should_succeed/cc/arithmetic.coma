@@ -30,48 +30,56 @@ module M_shr_ref
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_i32 (self: Int32BW.t) (o: Int32BW.t) : t_Ordering = if Int32BW.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_i32 (self: Int32BW.t) (o: Int32BW.t) : t_Option_Ordering = if Int32BW.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function eq_partial_cmp_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom eq_cmp_i32_spec: forall x: Int32BW.t, y: Int32BW.t. (x = y) = (cmp_log_i32 x y = Equal)
+  axiom eq_partial_cmp_i32_spec: forall x: Int32BW.t, y: Int32BW.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
   
-  function antisym2_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function asymetric2_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom antisym2_i32_spec: forall x: Int32BW.t, y: Int32BW.t. cmp_log_i32 x y = Greater -> cmp_log_i32 y x = Less
+  axiom asymetric2_i32_spec: forall x: Int32BW.t, y: Int32BW.t. partial_cmp_log_i32 x y = Some (Greater)
+      -> partial_cmp_log_i32 y x = Some (Less)
   
-  function antisym1_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function asymetric1_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom antisym1_i32_spec: forall x: Int32BW.t, y: Int32BW.t. cmp_log_i32 x y = Less -> cmp_log_i32 y x = Greater
+  axiom asymetric1_i32_spec: forall x: Int32BW.t, y: Int32BW.t. partial_cmp_log_i32 x y = Some (Less)
+      -> partial_cmp_log_i32 y x = Some (Greater)
   
-  function trans_i32 (x: Int32BW.t) (y: Int32BW.t) (z: Int32BW.t) (o: t_Ordering) : ()
+  function trans_i32 (x: Int32BW.t) (y: Int32BW.t) (z: Int32BW.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_i32_spec: forall x: Int32BW.t, y: Int32BW.t, z: Int32BW.t, o: t_Ordering. cmp_log_i32 x y = o
-      -> cmp_log_i32 y z = o -> cmp_log_i32 x z = o
+  axiom trans_i32_spec: forall x: Int32BW.t, y: Int32BW.t, z: Int32BW.t, o: t_Option_Ordering. partial_cmp_log_i32 x y
+        = o -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
   
   function refl_i32 (x: Int32BW.t) : ()
   
-  axiom refl_i32_spec: forall x: Int32BW.t. cmp_log_i32 x x = Equal
+  axiom refl_i32_spec: forall x: Int32BW.t. partial_cmp_log_i32 x x = Some (Equal)
   
-  function cmp_gt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function partial_cmp_gt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom cmp_gt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.gt x y = (cmp_log_i32 x y = Greater)
+  axiom partial_cmp_gt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.gt x y
+      = (partial_cmp_log_i32 x y = Some (Greater))
   
-  function cmp_ge_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function partial_cmp_ge_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom cmp_ge_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.ge x y = (cmp_log_i32 x y <> Less)
+  axiom partial_cmp_ge_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.ge x y
+      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
   
-  function cmp_lt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function partial_cmp_lt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom cmp_lt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.lt x y = (cmp_log_i32 x y = Less)
+  axiom partial_cmp_lt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.lt x y
+      = (partial_cmp_log_i32 x y = Some (Less))
   
-  function cmp_le_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
+  function partial_cmp_le_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
   
-  axiom cmp_le_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.le x y = (cmp_log_i32 x y <> Greater)
+  axiom partial_cmp_le_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.le x y
+      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
   
   constant const_BITS: UInt32BW.t = (8: UInt32BW.t)
   

@@ -2799,48 +2799,56 @@ module M_implementation__link
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
+  type t_Option_Ordering = None'1 | Some'1 t_Ordering
+  
+  function partial_cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
+      Some'1 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'1 (Equal) else Some'1 (Greater)
   
   
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_partial_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
+  axiom eq_partial_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (partial_cmp_log_u64 x y = Some'1 (Equal))
   
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric2_u64 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
+  axiom asymetric2_u64_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_u64 x y = Some'1 (Greater)
+      -> partial_cmp_log_u64 y x = Some'1 (Less)
   
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric1_u64 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
+  axiom asymetric1_u64_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_u64 x y = Some'1 (Less)
+      -> partial_cmp_log_u64 y x = Some'1 (Greater)
   
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
+  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_u64 x y = o
+      -> partial_cmp_log_u64 y z = o -> partial_cmp_log_u64 x z = o
   
   function refl_u64 (x: UInt64.t) : ()
   
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
+  axiom refl_u64_spec: forall x: UInt64.t. partial_cmp_log_u64 x x = Some'1 (Equal)
   
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
+  axiom partial_cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
+      = (partial_cmp_log_u64 x y = Some'1 (Greater))
   
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
+  axiom partial_cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
+      = (partial_cmp_log_u64 x y = Some'1 (Greater) \/ partial_cmp_log_u64 x y = Some'1 (Equal))
   
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
+  axiom partial_cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
+      = (partial_cmp_log_u64 x y = Some'1 (Less))
   
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  axiom partial_cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
+      = (partial_cmp_log_u64 x y = Some'1 (Less) \/ partial_cmp_log_u64 x y = Some'1 (Equal))
   
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'1
   

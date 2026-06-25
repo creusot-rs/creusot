@@ -29,15 +29,15 @@ impl Real {
     }
 }
 
-impl OrdLogic for Real {
+impl PartialOrdLogic for Real {
     #[logic(open)]
-    fn cmp_log(self, o: Self) -> Ordering {
+    fn partial_cmp_log(self, o: Self) -> Option<Ordering> {
         if self < o {
-            Ordering::Less
+            Some(Ordering::Less)
         } else if self == o {
-            Ordering::Equal
+            Some(Ordering::Equal)
         } else {
-            Ordering::Greater
+            Some(Ordering::Greater)
         }
     }
 
@@ -65,7 +65,13 @@ impl OrdLogic for Real {
         true
     }
 
-    crate::logic::ord::ord_laws_impl! {}
+    crate::logic::ord::partial_ord_laws_impl! {}
+}
+
+impl OrdLogic for Real {
+    #[logic(law)]
+    #[ensures(self.partial_cmp_log(other) != None)]
+    fn partial_cmp_log_total(self, other: Self) {}
 }
 
 impl AddLogic for Real {
@@ -164,10 +170,10 @@ impl PositiveReal {
     }
 }
 
-impl OrdLogic for PositiveReal {
+impl PartialOrdLogic for PositiveReal {
     #[logic(open)]
-    fn cmp_log(self, o: Self) -> Ordering {
-        self.to_real().cmp_log(o.to_real())
+    fn partial_cmp_log(self, o: Self) -> Option<Ordering> {
+        self.to_real().partial_cmp_log(o.to_real())
     }
 
     #[logic(open)]
@@ -190,7 +196,13 @@ impl OrdLogic for PositiveReal {
         self.to_real().gt_log(o.to_real())
     }
 
-    crate::logic::ord::ord_laws_impl! { let _ = PositiveReal::ext_eq; }
+    crate::logic::ord::partial_ord_laws_impl! { let _ = PositiveReal::ext_eq; }
+}
+
+impl OrdLogic for PositiveReal {
+    #[logic(law)]
+    #[ensures(self.partial_cmp_log(other) != None)]
+    fn partial_cmp_log_total(self, other: Self) {}
 }
 
 impl AddLogic for PositiveReal {

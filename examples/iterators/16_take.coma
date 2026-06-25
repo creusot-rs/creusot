@@ -256,48 +256,57 @@ module M_impl_ExactSizeIterator_for_Take_I__size_hint_exact (* <Take<I> as commo
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_partial_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
+  axiom eq_partial_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y)
+      = (partial_cmp_log_usize x y = Some'0 (Equal))
   
-  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
+  axiom asymetric2_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some'0 (Greater)
+      -> partial_cmp_log_usize y x = Some'0 (Less)
   
-  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
+  axiom asymetric1_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some'0 (Less)
+      -> partial_cmp_log_usize y x = Some'0 (Greater)
   
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_usize x y
+        = o -> partial_cmp_log_usize y z = o -> partial_cmp_log_usize x z = o
   
   function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
+  axiom refl_usize_spec: forall x: UInt64.t. partial_cmp_log_usize x x = Some'0 (Equal)
   
-  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
+  axiom partial_cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
+      = (partial_cmp_log_usize x y = Some'0 (Greater))
   
-  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
+  axiom partial_cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
+      = (partial_cmp_log_usize x y = Some'0 (Greater) \/ partial_cmp_log_usize x y = Some'0 (Equal))
   
-  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
+  axiom partial_cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
+      = (partial_cmp_log_usize x y = Some'0 (Less))
   
-  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
+  axiom partial_cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
+      = (partial_cmp_log_usize x y = Some'0 (Less) \/ partial_cmp_log_usize x y = Some'0 (Equal))
   
   type t_Item
   
@@ -443,48 +452,57 @@ module M_impl_ExactSizeIterator_for_Take_I__size_hint_exact__refines (* <Take<I>
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_partial_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
+  axiom eq_partial_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y)
+      = (partial_cmp_log_usize x y = Some'0 (Equal))
   
-  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
+  axiom asymetric2_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some'0 (Greater)
+      -> partial_cmp_log_usize y x = Some'0 (Less)
   
-  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
+  axiom asymetric1_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some'0 (Less)
+      -> partial_cmp_log_usize y x = Some'0 (Greater)
   
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_usize x y
+        = o -> partial_cmp_log_usize y z = o -> partial_cmp_log_usize x z = o
   
   function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
+  axiom refl_usize_spec: forall x: UInt64.t. partial_cmp_log_usize x x = Some'0 (Equal)
   
-  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
+  axiom partial_cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
+      = (partial_cmp_log_usize x y = Some'0 (Greater))
   
-  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
+  axiom partial_cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
+      = (partial_cmp_log_usize x y = Some'0 (Greater) \/ partial_cmp_log_usize x y = Some'0 (Equal))
   
-  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
+  axiom partial_cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
+      = (partial_cmp_log_usize x y = Some'0 (Less))
   
-  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
+  axiom partial_cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
+      = (partial_cmp_log_usize x y = Some'0 (Less) \/ partial_cmp_log_usize x y = Some'0 (Equal))
   
   type t_Item
   
@@ -1077,48 +1095,57 @@ module M_impl_Iterator_for_Take_I__size_hint (* <Take<I> as common::Iterator> *)
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
+  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  
+  function partial_cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
+      Some'0 (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some'0 (Equal) else Some'0 (Greater)
   
   
-  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_partial_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
+  axiom eq_partial_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y)
+      = (partial_cmp_log_usize x y = Some'0 (Equal))
   
-  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
+  axiom asymetric2_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some'0 (Greater)
+      -> partial_cmp_log_usize y x = Some'0 (Less)
   
-  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
+  axiom asymetric1_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some'0 (Less)
+      -> partial_cmp_log_usize y x = Some'0 (Greater)
   
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_usize x y
+        = o -> partial_cmp_log_usize y z = o -> partial_cmp_log_usize x z = o
   
   function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
+  axiom refl_usize_spec: forall x: UInt64.t. partial_cmp_log_usize x x = Some'0 (Equal)
   
-  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
+  axiom partial_cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
+      = (partial_cmp_log_usize x y = Some'0 (Greater))
   
-  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
+  axiom partial_cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
+      = (partial_cmp_log_usize x y = Some'0 (Greater) \/ partial_cmp_log_usize x y = Some'0 (Equal))
   
-  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
+  axiom partial_cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
+      = (partial_cmp_log_usize x y = Some'0 (Less))
   
-  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
+  axiom partial_cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
+      = (partial_cmp_log_usize x y = Some'0 (Less) \/ partial_cmp_log_usize x y = Some'0 (Equal))
   
   meta "compute_max_steps" 1000000
   
@@ -1199,50 +1226,58 @@ module M_impl_Iterator_for_Take_I__size_hint__refines (* <Take<I> as common::Ite
   
   type t_Ordering = Less | Equal | Greater
   
-  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
+  type t_Option_Ordering = None | Some t_Ordering
+  
+  function partial_cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
+      Some (Less)
     else
-      if self = o then Equal else Greater
+      if self = o then Some (Equal) else Some (Greater)
   
   
-  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function eq_partial_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
+  axiom eq_partial_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (partial_cmp_log_usize x y = Some (Equal))
   
-  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric2_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
+  axiom asymetric2_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Greater)
+      -> partial_cmp_log_usize y x = Some (Less)
   
-  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function asymetric1_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
+  axiom asymetric1_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Less)
+      -> partial_cmp_log_usize y x = Some (Greater)
   
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
+  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
   
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
+  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_usize x y
+        = o -> partial_cmp_log_usize y z = o -> partial_cmp_log_usize x z = o
   
   function refl_usize (x: UInt64.t) : ()
   
-  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
+  axiom refl_usize_spec: forall x: UInt64.t. partial_cmp_log_usize x x = Some (Equal)
   
-  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
+  axiom partial_cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
+      = (partial_cmp_log_usize x y = Some (Greater))
   
-  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
+  axiom partial_cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
+      = (partial_cmp_log_usize x y = Some (Greater) \/ partial_cmp_log_usize x y = Some (Equal))
   
-  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
+  axiom partial_cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
+      = (partial_cmp_log_usize x y = Some (Less))
   
-  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
+  function partial_cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
   
-  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
+  axiom partial_cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
+      = (partial_cmp_log_usize x y = Some (Less) \/ partial_cmp_log_usize x y = Some (Equal))
   
-  type t_Option_usize = None | Some UInt64.t
+  type t_Option_usize = None'0 | Some'0 UInt64.t
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
@@ -1268,8 +1303,8 @@ module M_impl_Iterator_for_Take_I__size_hint__refines (* <Take<I> as common::Ite
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
           -> UInt64.t'int res.f0 <= Seq.length s)
       /\ match res.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
-        | None -> true
+        | Some'0 r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
+        | None'0 -> true
         end)
   
   predicate invariant_ref_I [@inline:trivial] (self: t_I) = inv_I self
@@ -1321,15 +1356,16 @@ module M_impl_Iterator_for_Take_I__size_hint__refines (* <Take<I> as common::Ite
               /\ (UInt64.le r.f0 self.n -> result.f0 = r.f0)
               /\ (UInt64.ge r.f0 self.n -> result.f0 = self.n)
               /\ match r.f1 with
-                | Some ub -> (UInt64.le ub self.n -> result.f1 = Some ub)
-                /\ (UInt64.ge ub self.n -> result.f1 = Some (self.n))
-                | None -> result.f1 = Some (self.n)
+                | Some'0 ub -> (UInt64.le ub self.n -> result.f1 = Some'0 ub)
+                /\ (UInt64.ge ub self.n -> result.f1 = Some'0 (self.n))
+                | None'0 -> result.f1 = Some'0 (self.n)
                 end))
-          /\ (self.n = (0: UInt64.t) -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+          /\ (self.n = (0: UInt64.t) -> result = { f0 = (0: UInt64.t); f1 = Some'0 (0: UInt64.t) })
         -> (forall s: Seq.seq t_Item, i: MutBorrow.t t_Take_I. produces_Take_I self s i.current /\ completed_Take_I i
             -> UInt64.t'int result.f0 <= Seq.length s)
         /\ match result.f1 with
-          | Some r -> forall s: Seq.seq t_Item, i: t_Take_I. produces_Take_I self s i -> Seq.length s <= UInt64.t'int r
-          | None -> true
+          | Some'0 r -> forall s: Seq.seq t_Item, i: t_Take_I. produces_Take_I self s i
+            -> Seq.length s <= UInt64.t'int r
+          | None'0 -> true
           end)
 end
