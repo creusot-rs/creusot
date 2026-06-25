@@ -184,7 +184,7 @@ pub fn try_const_to_term<'tcx>(
     // `instance_mir` and prevents it from panicking, idk why.
     // I just found this from reverse engineering `const_eval_resolve_for_typeck`
     if let Some((val, ty)) = ctx.trivial_const(def_id) {
-        return Some(value_to_term(val, ty, ctx, typing_env, ctx.def_span(source_id)));
+        return Some(value_to_term(val, ty, ctx, ctx.def_span(source_id)));
     } else if !matches!(ctx.def_kind(def_id), rustc_hir::def::DefKind::AssocConst { .. }) {
         return None;
     }
@@ -208,7 +208,7 @@ pub fn try_const_to_term<'tcx>(
                 typing_env,
                 ty::EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args),
             );
-            Some(Term::item(def_id, u.args, ty).span(span))
+            Some(Term::const_item(def_id, u.args, ty).span(span))
         }
         _ => None,
     }

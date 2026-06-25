@@ -312,6 +312,14 @@ impl FlatSpec {
                 }
             }
             FlatSpecKind::Const => {
+                let path = self.path;
+                let block = parse_quote_spanned! {span=> { let _ = #path; } };
+                let f = ItemFn {
+                    attrs: self.attrs,
+                    vis: Visibility::Inherited,
+                    sig,
+                    block: Box::new(block),
+                };
                 quote_spanned! {span=>
                     #[creusot::no_translate]
                     #[creusot::extern_spec]
@@ -779,7 +787,7 @@ fn flatten(
                 unsafety: None,
                 abi: None,
                 fn_token: Token![fn](cnst.span),
-                ident: cnst.path.segments.last().unwrap(),
+                ident: cnst.path.segments.into_iter().next_back().unwrap().ident,
                 generics: Default::default(),
                 paren_token: Paren::default(),
                 inputs: Default::default(),
@@ -802,8 +810,23 @@ fn const_attrs(attrs: Vec<Attribute>) -> Result<Vec<Attribute>> {
     attrs.into_iter().map(const_attr).collect()
 }
 
+// Recognize `#[ensures]` and `#[creusot::eval]`
 fn const_attr(attr: Attribute) -> Result<Attribute> {
-    todo!()
+    match &attr.meta {
+        Meta::Path(path)
+            if path.segments.len() == 2
+                && path.segments[0].ident == "creusot"
+                && path.segments[1].ident == "eval" =>
+        {
+            Ok(attr)
+        }
+        Meta::List(list)
+            if list.path.segments.len() == 1 && list.path.segments[0].ident == "ensures" =>
+        {
+            Ok(attr)
+        }
+        _ => Err(Error::new(attr.span(), "unrecognized attribute in extern spec for const")),
+    }
 }
 
 fn generic_arguments(sig: &Signature) -> PathArguments {
