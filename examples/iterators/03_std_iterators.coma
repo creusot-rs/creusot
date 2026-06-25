@@ -264,16 +264,6 @@ module M_counter
   
   meta "rewrite_def" predicate resolve_refmut_closure0
   
-  type tup2_ref_u32_Snapshot_Seq_ref_u32 = { f0: UInt32.t; f1: Seq.seq UInt32.t }
-  
-  predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_usize
-  
-  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_refmut_usize _1.c0
-  
-  meta "rewrite_def" predicate resolve_closure0
-  
   predicate hist_inv_closure0 (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
   
   let closure0 [@coma:extspec] (self: MutBorrow.t closure0) (x: UInt32.t) (_prod: Seq.seq UInt32.t)
@@ -296,43 +286,6 @@ module M_counter
   meta "rewrite_def" predicate closure0'pre
   
   meta "rewrite_def" predicate closure0'post'return
-  
-  predicate postcondition_once_closure0 (self: closure0) (args: tup2_ref_u32_Snapshot_Seq_ref_u32) (result: UInt32.t) =
-    let {f0 = x; f1 = _prod} = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current
-            = self
-          /\ bor_self.final = e /\ closure0'post'return bor_self x _prod result /\ hist_inv_closure0 self e)
-      /\ resolve_closure0 e
-  
-  meta "rewrite_def" predicate postcondition_once_closure0
-  
-  predicate postcondition_mut_closure0 (self: closure0) (args: tup2_ref_u32_Snapshot_Seq_ref_u32) (result_state: closure0) (result: UInt32.t) =
-    let {f0 = x; f1 = _prod} = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
-      /\ bor_self.final = result_state
-      /\ closure0'post'return bor_self x _prod result /\ hist_inv_closure0 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure0
-  
-  function fn_mut_once_closure0 (self: closure0) (args: tup2_ref_u32_Snapshot_Seq_ref_u32) (res: UInt32.t) : ()
-  
-  axiom fn_mut_once_closure0_spec:
-    forall self: closure0, args: tup2_ref_u32_Snapshot_Seq_ref_u32, res: UInt32.t [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
-      = (exists res_state: closure0. postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
-  
-  function hist_inv_trans_closure0 (self: closure0) (b: closure0) (c: closure0) : ()
-  
-  axiom hist_inv_trans_closure0_spec:
-    forall self: closure0, b: closure0, c: closure0 [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
-      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
-  
-  function hist_inv_refl_closure0 (self: closure0) : ()
-  
-  axiom hist_inv_refl_closure0_spec: forall self: closure0 [hist_inv_closure0 self self]. hist_inv_closure0 self self
-  
-  function postcondition_mut_hist_inv_closure0 (self: closure0) (args: tup2_ref_u32_Snapshot_Seq_ref_u32) (res_state: closure0) (res: UInt32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_closure0_spec:
-    forall self: closure0, args: tup2_ref_u32_Snapshot_Seq_ref_u32, res_state: closure0, res: UInt32.t [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
-      -> hist_inv_closure0 self res_state
   
   function index_slice_u32 [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
     Seq.get (Slice64.view self) ix
@@ -380,6 +333,8 @@ module M_counter
   
   meta "rewrite_def" predicate inv_ref_u32
   
+  type tup2_ref_u32_Snapshot_Seq_ref_u32 = { f0: UInt32.t; f1: Seq.seq UInt32.t }
+  
   predicate precondition_closure0 (self: closure0) (args: tup2_ref_u32_Snapshot_Seq_ref_u32) =
     let {f0 = x; f1 = _prod} = args in forall bor_self: MutBorrow.t closure0. bor_self.current = self
       -> closure0'pre bor_self x _prod
@@ -406,6 +361,13 @@ module M_counter
   predicate inv_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = true
   
   meta "rewrite_def" predicate inv_refmut_closure0
+  
+  predicate postcondition_mut_closure0 (self: closure0) (args: tup2_ref_u32_Snapshot_Seq_ref_u32) (result_state: closure0) (result: UInt32.t) =
+    let {f0 = x; f1 = _prod} = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
+      /\ bor_self.final = result_state
+      /\ closure0'post'return bor_self x _prod result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
   
   predicate preservation_Iter_u32 [@inline:trivial] (iter'0: t_Iter_u32) (func'0: closure0) =
     forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t closure0, b: UInt32.t, i: t_Iter_u32. hist_inv_closure0 func'0 f.current
@@ -472,66 +434,10 @@ module M_counter
       /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
-  predicate postcondition_once_into_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (result: t_MapInv_Iter_u32_closure0) =
-    let self_ = args in inv_MapInv_Iter_u32_closure0 result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_into_iter
-  
-  predicate resolve_into_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_into_iter
-  
-  predicate postcondition_mut_into_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (result_state: ()) (result: t_MapInv_Iter_u32_closure0) =
-    let self_ = args in inv_MapInv_Iter_u32_closure0 result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_into_iter
-  
-  function fn_mut_once_into_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (res: t_MapInv_Iter_u32_closure0) : ()
-  
-  axiom fn_mut_once_into_iter_spec:
-    forall self: (), args: t_MapInv_Iter_u32_closure0, res: t_MapInv_Iter_u32_closure0 [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
-  
-  predicate hist_inv_into_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_into_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_into_iter self b, hist_inv_into_iter b c | hist_inv_into_iter self b, hist_inv_into_iter self c | hist_inv_into_iter b c, hist_inv_into_iter self c]. hist_inv_into_iter self b
-      -> hist_inv_into_iter b c -> hist_inv_into_iter self c
-  
-  function hist_inv_refl_into_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_into_iter_spec: forall self: () [hist_inv_into_iter self self]. hist_inv_into_iter self self
-  
-  function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (res_state: ()) (res: t_MapInv_Iter_u32_closure0) : ()
-  
-  axiom postcondition_mut_hist_inv_into_iter_spec:
-    forall self: (), args: t_MapInv_Iter_u32_closure0, res_state: (), res: t_MapInv_Iter_u32_closure0 [postcondition_mut_into_iter self args res_state res | hist_inv_into_iter self res_state]. postcondition_mut_into_iter self args res_state res
-      -> hist_inv_into_iter self res_state
-  
-  function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_into_iter_spec:
-    forall self: (), res_state: () [hist_inv_into_iter self res_state]. hist_inv_into_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_into_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (result: t_MapInv_Iter_u32_closure0) =
     let self_ = args in inv_MapInv_Iter_u32_closure0 result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
-  
-  function fn_once_into_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (res: t_MapInv_Iter_u32_closure0) : ()
-  
-  axiom fn_once_into_iter_spec:
-    forall self: (), args: t_MapInv_Iter_u32_closure0, res: t_MapInv_Iter_u32_closure0 [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (postcondition_into_iter self args res /\ resolve_into_iter self)
-  
-  function fn_mut_into_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (res_state: ()) (res: t_MapInv_Iter_u32_closure0) : ()
-  
-  axiom fn_mut_into_iter_spec:
-    forall self: (), args: t_MapInv_Iter_u32_closure0, res_state: (), res: t_MapInv_Iter_u32_closure0 [postcondition_mut_into_iter self args res_state res]. postcondition_mut_into_iter self args res_state res
-      = (postcondition_into_iter self args res /\ self = res_state)
   
   predicate produces_MapInv_Iter_u32_closure0 [@inline:trivial] (self: t_MapInv_Iter_u32_closure0) (visited: Seq.seq UInt32.t) (succ: t_MapInv_Iter_u32_closure0) =
     hist_inv_closure0 self.func succ.func
@@ -570,6 +476,14 @@ module M_counter
   
   predicate resolve_Iter_u32 (_1: t_Iter_u32)
   
+  predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_usize
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_refmut_usize _1.c0
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
   predicate resolve_MapInv_Iter_u32_closure0 (_1: t_MapInv_Iter_u32_closure0)
   
   axiom resolve_axiom [@rewrite]:
@@ -586,72 +500,12 @@ module M_counter
         /\ completed_MapInv_Iter_u32_closure0 done' /\ resolve_MapInv_Iter_u32_closure0 done'.final}
       (! return {result}) ]
   
-  predicate postcondition_once_from_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (result: t_Vec_u32_Global) =
-    let iter'0 = args in exists into_iter: t_MapInv_Iter_u32_closure0, done': MutBorrow.t t_MapInv_Iter_u32_closure0. postcondition_into_iter () iter'0 into_iter
-      /\ produces_MapInv_Iter_u32_closure0 into_iter (view_Vec_u32_Global result) done'.current
-      /\ completed_MapInv_Iter_u32_closure0 done' /\ resolve_MapInv_Iter_u32_closure0 done'.final
-  
-  meta "rewrite_def" predicate postcondition_once_from_iter
-  
-  predicate resolve_from_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_from_iter
-  
-  predicate postcondition_mut_from_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (result_state: ()) (result: t_Vec_u32_Global) =
-    let iter'0 = args in exists into_iter: t_MapInv_Iter_u32_closure0, done': MutBorrow.t t_MapInv_Iter_u32_closure0. postcondition_into_iter () iter'0 into_iter
-      /\ produces_MapInv_Iter_u32_closure0 into_iter (view_Vec_u32_Global result) done'.current
-      /\ completed_MapInv_Iter_u32_closure0 done' /\ resolve_MapInv_Iter_u32_closure0 done'.final
-  
-  meta "rewrite_def" predicate postcondition_mut_from_iter
-  
-  function fn_mut_once_from_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (res: t_Vec_u32_Global) : ()
-  
-  axiom fn_mut_once_from_iter_spec:
-    forall self: (), args: t_MapInv_Iter_u32_closure0, res: t_Vec_u32_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (exists res_state: (). postcondition_mut_from_iter self args res_state res /\ resolve_from_iter res_state)
-  
-  predicate hist_inv_from_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_from_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_from_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_from_iter self b, hist_inv_from_iter b c | hist_inv_from_iter self b, hist_inv_from_iter self c | hist_inv_from_iter b c, hist_inv_from_iter self c]. hist_inv_from_iter self b
-      -> hist_inv_from_iter b c -> hist_inv_from_iter self c
-  
-  function hist_inv_refl_from_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_from_iter_spec: forall self: () [hist_inv_from_iter self self]. hist_inv_from_iter self self
-  
-  function postcondition_mut_hist_inv_from_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (res_state: ()) (res: t_Vec_u32_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_from_iter_spec:
-    forall self: (), args: t_MapInv_Iter_u32_closure0, res_state: (), res: t_Vec_u32_Global [postcondition_mut_from_iter self args res_state res | hist_inv_from_iter self res_state]. postcondition_mut_from_iter self args res_state res
-      -> hist_inv_from_iter self res_state
-  
-  function fn_hist_inv_from_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_from_iter_spec:
-    forall self: (), res_state: () [hist_inv_from_iter self res_state]. hist_inv_from_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_from_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (result: t_Vec_u32_Global) =
     let iter'0 = args in exists into_iter: t_MapInv_Iter_u32_closure0, done': MutBorrow.t t_MapInv_Iter_u32_closure0. postcondition_into_iter () iter'0 into_iter
       /\ produces_MapInv_Iter_u32_closure0 into_iter (view_Vec_u32_Global result) done'.current
       /\ completed_MapInv_Iter_u32_closure0 done' /\ resolve_MapInv_Iter_u32_closure0 done'.final
   
   meta "rewrite_def" predicate postcondition_from_iter
-  
-  function fn_once_from_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (res: t_Vec_u32_Global) : ()
-  
-  axiom fn_once_from_iter_spec:
-    forall self: (), args: t_MapInv_Iter_u32_closure0, res: t_Vec_u32_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (postcondition_from_iter self args res /\ resolve_from_iter self)
-  
-  function fn_mut_from_iter (self: ()) (args: t_MapInv_Iter_u32_closure0) (res_state: ()) (res: t_Vec_u32_Global) : ()
-  
-  axiom fn_mut_from_iter_spec:
-    forall self: (), args: t_MapInv_Iter_u32_closure0, res_state: (), res: t_Vec_u32_Global [postcondition_mut_from_iter self args res_state res]. postcondition_mut_from_iter self args res_state res
-      = (postcondition_from_iter self args res /\ self = res_state)
   
   let collect_MapInv_Iter_u32_closure0 (self_: t_MapInv_Iter_u32_closure0) (return (x: t_Vec_u32_Global)) =
   {[@stop_split] [@expl:collect_MapInv_Iter_u32_closure0 requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_MapInv_Iter_u32_closure0 self_)
@@ -989,66 +843,10 @@ module M_my_reverse
     forall x: t_Zip_Range_usize_Range_usize [inv_Zip_Range_usize_Range_usize x]. inv_Zip_Range_usize_Range_usize x
       -> invariant_Zip_Range_usize_Range_usize x
   
-  predicate postcondition_once_into_iter (self: ()) (args: t_Range_usize) (result: t_Range_usize) =
-    let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_into_iter
-  
-  predicate resolve_into_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_into_iter
-  
-  predicate postcondition_mut_into_iter (self: ()) (args: t_Range_usize) (result_state: ()) (result: t_Range_usize) =
-    let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_into_iter
-  
-  function fn_mut_once_into_iter (self: ()) (args: t_Range_usize) (res: t_Range_usize) : ()
-  
-  axiom fn_mut_once_into_iter_spec:
-    forall self: (), args: t_Range_usize, res: t_Range_usize [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
-  
-  predicate hist_inv_into_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_into_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_into_iter self b, hist_inv_into_iter b c | hist_inv_into_iter self b, hist_inv_into_iter self c | hist_inv_into_iter b c, hist_inv_into_iter self c]. hist_inv_into_iter self b
-      -> hist_inv_into_iter b c -> hist_inv_into_iter self c
-  
-  function hist_inv_refl_into_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_into_iter_spec: forall self: () [hist_inv_into_iter self self]. hist_inv_into_iter self self
-  
-  function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_Range_usize) (res_state: ()) (res: t_Range_usize) : ()
-  
-  axiom postcondition_mut_hist_inv_into_iter_spec:
-    forall self: (), args: t_Range_usize, res_state: (), res: t_Range_usize [postcondition_mut_into_iter self args res_state res | hist_inv_into_iter self res_state]. postcondition_mut_into_iter self args res_state res
-      -> hist_inv_into_iter self res_state
-  
-  function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_into_iter_spec:
-    forall self: (), res_state: () [hist_inv_into_iter self res_state]. hist_inv_into_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_into_iter (self: ()) (args: t_Range_usize) (result: t_Range_usize) =
     let self_ = args in result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
-  
-  function fn_once_into_iter (self: ()) (args: t_Range_usize) (res: t_Range_usize) : ()
-  
-  axiom fn_once_into_iter_spec:
-    forall self: (), args: t_Range_usize, res: t_Range_usize [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (postcondition_into_iter self args res /\ resolve_into_iter self)
-  
-  function fn_mut_into_iter (self: ()) (args: t_Range_usize) (res_state: ()) (res: t_Range_usize) : ()
-  
-  axiom fn_mut_into_iter_spec:
-    forall self: (), args: t_Range_usize, res_state: (), res: t_Range_usize [postcondition_mut_into_iter self args res_state res]. postcondition_mut_into_iter self args res_state res
-      = (postcondition_into_iter self args res /\ self = res_state)
   
   let zip_Range_usize (self_: t_Range_usize) (other: t_Range_usize) (return (x: t_Zip_Range_usize_Range_usize)) =
   {[@stop_split] [@expl:zip requires] precondition_into_iter () other}
@@ -1348,11 +1146,16 @@ module M_skip_take
   
   function n_Take_I (self: t_Take_I) : UInt64.t
   
-  predicate postcondition_once_take (self: ()) (args: tup2_I_usize) (result: t_Take_I)
+  predicate postcondition_take (self: ()) (args: tup2_I_usize) (result: t_Take_I)
   
   axiom postcondition_fndef:
-    forall args: tup2_I_usize, res: t_Take_I [postcondition_once_take () args res]. postcondition_once_take () args res
+    forall args: tup2_I_usize, res: t_Take_I [postcondition_take () args res]. postcondition_take () args res
       -> (let {f0 = self_; f1 = n} = args in inv_Take_I res /\ iter_Take_I res = self_ /\ n_Take_I res = n)
+  
+  predicate postcondition_once_take (self: ()) (args: tup2_I_usize) (result: t_Take_I) =
+    postcondition_take self args result
+  
+  meta "rewrite_def" predicate postcondition_once_take
   
   let take_I (self_: t_I) (n: UInt64.t) (return (x: t_Take_I)) =
   {[@stop_split] [@expl:take requires] precondition_take () { f0 = self_; f1 = n }}

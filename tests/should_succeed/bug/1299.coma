@@ -14,10 +14,6 @@ module M_count_paths
   let count_paths (i: Int64.t) (return (x: ())) = {[@stop_split] [@expl:count_paths requires] Int64.to_int i >= 0}
     any [ return (result: ()) -> (! return {result}) ]
   
-  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_closure0
-  
   predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
   
   let closure0 [@coma:extspec] (self: MutBorrow.t ()) (j: Int64.t) (return (x: ())) = bb0
@@ -31,40 +27,6 @@ module M_count_paths
   meta "rewrite_def" predicate closure0'pre
   
   meta "rewrite_def" predicate closure0'post'return
-  
-  predicate postcondition_once_closure0 (self: ()) (args: Int64.t) (result: ()) =
-    let j = args in exists e: (). exists bor_self: MutBorrow.t (). bor_self.current = self
-        /\ bor_self.final = e /\ closure0'post'return bor_self j result /\ hist_inv_closure0 self e
-  
-  meta "rewrite_def" predicate postcondition_once_closure0
-  
-  predicate postcondition_mut_closure0 (self: ()) (args: Int64.t) (result_state: ()) (result: ()) =
-    let j = args in exists bor_self: MutBorrow.t (). bor_self.current = self
-      /\ bor_self.final = result_state /\ closure0'post'return bor_self j result /\ hist_inv_closure0 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure0
-  
-  function fn_mut_once_closure0 (self: ()) (args: Int64.t) (res: ()) : ()
-  
-  axiom fn_mut_once_closure0_spec:
-    forall self: (), args: Int64.t, res: () [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
-      = (exists res_state: (). postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
-  
-  function hist_inv_trans_closure0 (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_closure0_spec:
-    forall self: (), b: (), c: () [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
-      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
-  
-  function hist_inv_refl_closure0 (self: ()) : ()
-  
-  axiom hist_inv_refl_closure0_spec: forall self: () [hist_inv_closure0 self self]. hist_inv_closure0 self self
-  
-  function postcondition_mut_hist_inv_closure0 (self: ()) (args: Int64.t) (res_state: ()) (res: ()) : ()
-  
-  axiom postcondition_mut_hist_inv_closure0_spec:
-    forall self: (), args: Int64.t, res_state: (), res: () [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
-      -> hist_inv_closure0 self res_state
   
   type t_Map_Range_isize_closure0
   
@@ -121,6 +83,12 @@ module M_count_paths
   
   meta "rewrite_def" predicate inv_refmut_closure0
   
+  predicate postcondition_mut_closure0 (self: ()) (args: Int64.t) (result_state: ()) (result: ()) =
+    let j = args in exists bor_self: MutBorrow.t (). bor_self.current = self
+      /\ bor_self.final = result_state /\ closure0'post'return bor_self j result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
   predicate preservation_Range_isize [@inline:trivial] (iter: t_Range_isize) (func: ()) =
     forall s: Seq.seq Int64.t, e1: Int64.t, e2: Int64.t, f: MutBorrow.t (), b: (), i: t_Range_isize [produces_Range_isize iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current e1 f.final b]. hist_inv_closure0 func f.current
       -> inv_Seq_isize s /\ inv_isize e1 /\ inv_isize e2 /\ inv_refmut_closure0 f
@@ -173,6 +141,10 @@ module M_count_paths
   predicate resolve_Range_isize [@inline:trivial] (_1: t_Range_isize) = true
   
   meta "rewrite_def" predicate resolve_Range_isize
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_closure0
   
   predicate resolve_Map_Range_isize_closure0 [@inline:trivial] (self: t_Map_Range_isize_closure0) =
     resolve_Range_isize (iter_Map_Range_isize_closure0 self) /\ resolve_closure0 (func_Map_Range_isize_closure0 self)

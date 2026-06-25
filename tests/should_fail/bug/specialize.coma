@@ -64,11 +64,15 @@ module M_g
     forall args: t_Vec_T_Global [precondition_x () args]. (let self = args in inv_Vec_T_Global self)
       -> precondition_x () args
   
-  predicate postcondition_once_x (self: ()) (args: t_Vec_T_Global) (result: ())
+  predicate postcondition_x (self: ()) (args: t_Vec_T_Global) (result: ())
   
   axiom postcondition_fndef:
-    forall args: t_Vec_T_Global, res: () [postcondition_once_x () args res]. postcondition_once_x () args res
+    forall args: t_Vec_T_Global, res: () [postcondition_x () args res]. postcondition_x () args res
       -> (let self = args in true)
+  
+  predicate postcondition_once_x (self: ()) (args: t_Vec_T_Global) (result: ()) = postcondition_x self args result
+  
+  meta "rewrite_def" predicate postcondition_once_x
   
   let x_Vec_T_Global (self: t_Vec_T_Global) (return (x: ())) = {[@stop_split] [@expl:x requires] precondition_x () self}
     any

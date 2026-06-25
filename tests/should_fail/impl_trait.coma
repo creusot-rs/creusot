@@ -35,11 +35,14 @@ module M_main
   axiom precondition_fndef: forall args: opaque [precondition_a () args]. (let self = args in inv_ref_opaque self)
       -> precondition_a () args
   
-  predicate postcondition_once_a (self: ()) (args: opaque) (result: bool)
+  predicate postcondition_a (self: ()) (args: opaque) (result: bool)
   
-  axiom postcondition_fndef:
-    forall args: opaque, res: bool [postcondition_once_a () args res]. postcondition_once_a () args res
+  axiom postcondition_fndef: forall args: opaque, res: bool [postcondition_a () args res]. postcondition_a () args res
       -> (let self = args in true)
+  
+  predicate postcondition_once_a (self: ()) (args: opaque) (result: bool) = postcondition_a self args result
+  
+  meta "rewrite_def" predicate postcondition_once_a
   
   let a_opaque (self: opaque) (return (x: bool)) = {[@stop_split] [@expl:a requires] precondition_a () self}
     any

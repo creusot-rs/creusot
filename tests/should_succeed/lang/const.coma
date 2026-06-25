@@ -314,63 +314,9 @@ module M_impl_Clone_for_Peano__clone (* <Peano as std::clone::Clone> *)
   
   type tup2_Peano_Peano = { f0: t_Peano; f1: t_Peano }
   
-  predicate postcondition_once_clone (self: ()) (args: t_Peano) (result: t_Peano) = let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_clone
-  
-  predicate resolve_clone [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_clone
-  
-  predicate postcondition_mut_clone (self: ()) (args: t_Peano) (result_state: ()) (result: t_Peano) =
-    let self_ = args in result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_clone
-  
-  function fn_mut_once_clone (self: ()) (args: t_Peano) (res: t_Peano) : ()
-  
-  axiom fn_mut_once_clone_spec:
-    forall self: (), args: t_Peano, res: t_Peano [postcondition_once_clone self args res]. postcondition_once_clone self args res
-      = (exists res_state: (). postcondition_mut_clone self args res_state res /\ resolve_clone res_state)
-  
-  predicate hist_inv_clone (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_clone (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_clone_spec:
-    forall self: (), b: (), c: () [hist_inv_clone self b, hist_inv_clone b c | hist_inv_clone self b, hist_inv_clone self c | hist_inv_clone b c, hist_inv_clone self c]. hist_inv_clone self b
-      -> hist_inv_clone b c -> hist_inv_clone self c
-  
-  function hist_inv_refl_clone (self: ()) : ()
-  
-  axiom hist_inv_refl_clone_spec: forall self: () [hist_inv_clone self self]. hist_inv_clone self self
-  
-  function postcondition_mut_hist_inv_clone (self: ()) (args: t_Peano) (res_state: ()) (res: t_Peano) : ()
-  
-  axiom postcondition_mut_hist_inv_clone_spec:
-    forall self: (), args: t_Peano, res_state: (), res: t_Peano [postcondition_mut_clone self args res_state res | hist_inv_clone self res_state]. postcondition_mut_clone self args res_state res
-      -> hist_inv_clone self res_state
-  
-  function fn_hist_inv_clone (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_clone_spec:
-    forall self: (), res_state: () [hist_inv_clone self res_state]. hist_inv_clone self res_state = (self = res_state)
-  
   predicate postcondition_clone (self: ()) (args: t_Peano) (result: t_Peano) = let self_ = args in result = self_
   
   meta "rewrite_def" predicate postcondition_clone
-  
-  function fn_once_clone (self: ()) (args: t_Peano) (res: t_Peano) : ()
-  
-  axiom fn_once_clone_spec:
-    forall self: (), args: t_Peano, res: t_Peano [postcondition_once_clone self args res]. postcondition_once_clone self args res
-      = (postcondition_clone self args res /\ resolve_clone self)
-  
-  function fn_mut_clone (self: ()) (args: t_Peano) (res_state: ()) (res: t_Peano) : ()
-  
-  axiom fn_mut_clone_spec:
-    forall self: (), args: t_Peano, res_state: (), res: t_Peano [postcondition_mut_clone self args res_state res]. postcondition_mut_clone self args res_state res
-      = (postcondition_clone self args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   

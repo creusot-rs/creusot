@@ -4,56 +4,7 @@ module M_bad
   
   predicate precondition_deref (self: ()) (args: Int32.t)
   
-  predicate postcondition_once_deref (self: ()) (args: Int32.t) (result: Int32.t)
-  
-  predicate resolve_deref [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_deref
-  
-  predicate postcondition_mut_deref (self: ()) (args: Int32.t) (result_state: ()) (result: Int32.t)
-  
-  function fn_mut_once_deref (self: ()) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_mut_once_deref_spec:
-    forall self: (), args: Int32.t, res: Int32.t [postcondition_once_deref self args res]. postcondition_once_deref self args res
-      = (exists res_state: (). postcondition_mut_deref self args res_state res /\ resolve_deref res_state)
-  
-  predicate hist_inv_deref (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_deref (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_deref_spec:
-    forall self: (), b: (), c: () [hist_inv_deref self b, hist_inv_deref b c | hist_inv_deref self b, hist_inv_deref self c | hist_inv_deref b c, hist_inv_deref self c]. hist_inv_deref self b
-      -> hist_inv_deref b c -> hist_inv_deref self c
-  
-  function hist_inv_refl_deref (self: ()) : ()
-  
-  axiom hist_inv_refl_deref_spec: forall self: () [hist_inv_deref self self]. hist_inv_deref self self
-  
-  function postcondition_mut_hist_inv_deref (self: ()) (args: Int32.t) (res_state: ()) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_deref_spec:
-    forall self: (), args: Int32.t, res_state: (), res: Int32.t [postcondition_mut_deref self args res_state res | hist_inv_deref self res_state]. postcondition_mut_deref self args res_state res
-      -> hist_inv_deref self res_state
-  
-  function fn_hist_inv_deref (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_deref_spec:
-    forall self: (), res_state: () [hist_inv_deref self res_state]. hist_inv_deref self res_state = (self = res_state)
-  
   predicate postcondition_deref (self: ()) (args: Int32.t) (result: Int32.t)
-  
-  function fn_once_deref (self: ()) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_once_deref_spec:
-    forall self: (), args: Int32.t, res: Int32.t [postcondition_once_deref self args res]. postcondition_once_deref self args res
-      = (postcondition_deref self args res /\ resolve_deref self)
-  
-  function fn_mut_deref (self: ()) (args: Int32.t) (res_state: ()) (res: Int32.t) : ()
-  
-  axiom fn_mut_deref_spec:
-    forall self: (), args: Int32.t, res_state: (), res: Int32.t [postcondition_mut_deref self args res_state res]. postcondition_mut_deref self args res_state res
-      = (postcondition_deref self args res /\ self = res_state)
   
   let deref_wrap_Snapshot_i32 (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:deref_wrap requires] precondition_deref () x}
@@ -96,11 +47,15 @@ module M_deref_wrap
   
   meta "rewrite_def" predicate inv_ref_Target
   
-  predicate postcondition_once_deref (self: ()) (args: t_T) (result: t_Target)
+  predicate postcondition_deref (self: ()) (args: t_T) (result: t_Target)
   
   axiom postcondition_fndef:
-    forall args: t_T, res: t_Target [postcondition_once_deref () args res]. postcondition_once_deref () args res
+    forall args: t_T, res: t_Target [postcondition_deref () args res]. postcondition_deref () args res
       -> (let self_ = args in inv_ref_Target res)
+  
+  predicate postcondition_once_deref (self: ()) (args: t_T) (result: t_Target) = postcondition_deref self args result
+  
+  meta "rewrite_def" predicate postcondition_once_deref
   
   let deref_T (self_: t_T) (return (x: t_Target)) = {[@stop_split] [@expl:deref requires] precondition_deref () self_}
     any
@@ -116,63 +71,6 @@ module M_deref_wrap
   predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
   
   meta "rewrite_def" predicate inv_ref_T
-  
-  predicate resolve_deref [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_deref
-  
-  predicate postcondition_mut_deref (self: ()) (args: t_T) (result_state: ()) (result: t_Target)
-  
-  axiom postcondition_fndef'0:
-    forall args: t_T, res: t_Target [postcondition_mut_deref () args () res]. postcondition_mut_deref () args () res
-      -> (let self_ = args in inv_ref_Target res)
-  
-  function fn_mut_once_deref (self: ()) (args: t_T) (res: t_Target) : ()
-  
-  axiom fn_mut_once_deref_spec:
-    forall self: (), args: t_T, res: t_Target [postcondition_once_deref self args res]. postcondition_once_deref self args res
-      = (exists res_state: (). postcondition_mut_deref self args res_state res /\ resolve_deref res_state)
-  
-  predicate hist_inv_deref (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_deref (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_deref_spec:
-    forall self: (), b: (), c: () [hist_inv_deref self b, hist_inv_deref b c | hist_inv_deref self b, hist_inv_deref self c | hist_inv_deref b c, hist_inv_deref self c]. hist_inv_deref self b
-      -> hist_inv_deref b c -> hist_inv_deref self c
-  
-  function hist_inv_refl_deref (self: ()) : ()
-  
-  axiom hist_inv_refl_deref_spec: forall self: () [hist_inv_deref self self]. hist_inv_deref self self
-  
-  function postcondition_mut_hist_inv_deref (self: ()) (args: t_T) (res_state: ()) (res: t_Target) : ()
-  
-  axiom postcondition_mut_hist_inv_deref_spec:
-    forall self: (), args: t_T, res_state: (), res: t_Target [postcondition_mut_deref self args res_state res | hist_inv_deref self res_state]. postcondition_mut_deref self args res_state res
-      -> hist_inv_deref self res_state
-  
-  function fn_hist_inv_deref (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_deref_spec:
-    forall self: (), res_state: () [hist_inv_deref self res_state]. hist_inv_deref self res_state = (self = res_state)
-  
-  predicate postcondition_deref (self: ()) (args: t_T) (result: t_Target)
-  
-  axiom postcondition_fndef'1:
-    forall args: t_T, res: t_Target [postcondition_deref () args res]. postcondition_deref () args res
-      -> (let self_ = args in inv_ref_Target res)
-  
-  function fn_once_deref (self: ()) (args: t_T) (res: t_Target) : ()
-  
-  axiom fn_once_deref_spec:
-    forall self: (), args: t_T, res: t_Target [postcondition_once_deref self args res]. postcondition_once_deref self args res
-      = (postcondition_deref self args res /\ resolve_deref self)
-  
-  function fn_mut_deref (self: ()) (args: t_T) (res_state: ()) (res: t_Target) : ()
-  
-  axiom fn_mut_deref_spec:
-    forall self: (), args: t_T, res_state: (), res: t_Target [postcondition_mut_deref self args res_state res]. postcondition_mut_deref self args res_state res
-      = (postcondition_deref self args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   

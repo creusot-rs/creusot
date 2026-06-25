@@ -83,66 +83,10 @@ module M_hashset_difference
       /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
-  predicate postcondition_once_into_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (result: t_Copied_Difference_T_RandomState_Global) =
-    let self_ = args in inv_Copied_Difference_T_RandomState_Global result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_into_iter
-  
-  predicate resolve_into_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_into_iter
-  
-  predicate postcondition_mut_into_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (result_state: ()) (result: t_Copied_Difference_T_RandomState_Global) =
-    let self_ = args in inv_Copied_Difference_T_RandomState_Global result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_into_iter
-  
-  function fn_mut_once_into_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (res: t_Copied_Difference_T_RandomState_Global) : ()
-  
-  axiom fn_mut_once_into_iter_spec:
-    forall self: (), args: t_Copied_Difference_T_RandomState_Global, res: t_Copied_Difference_T_RandomState_Global [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
-  
-  predicate hist_inv_into_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_into_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_into_iter self b, hist_inv_into_iter b c | hist_inv_into_iter self b, hist_inv_into_iter self c | hist_inv_into_iter b c, hist_inv_into_iter self c]. hist_inv_into_iter self b
-      -> hist_inv_into_iter b c -> hist_inv_into_iter self c
-  
-  function hist_inv_refl_into_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_into_iter_spec: forall self: () [hist_inv_into_iter self self]. hist_inv_into_iter self self
-  
-  function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (res_state: ()) (res: t_Copied_Difference_T_RandomState_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_into_iter_spec:
-    forall self: (), args: t_Copied_Difference_T_RandomState_Global, res_state: (), res: t_Copied_Difference_T_RandomState_Global [postcondition_mut_into_iter self args res_state res | hist_inv_into_iter self res_state]. postcondition_mut_into_iter self args res_state res
-      -> hist_inv_into_iter self res_state
-  
-  function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_into_iter_spec:
-    forall self: (), res_state: () [hist_inv_into_iter self res_state]. hist_inv_into_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_into_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (result: t_Copied_Difference_T_RandomState_Global) =
     let self_ = args in inv_Copied_Difference_T_RandomState_Global result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
-  
-  function fn_once_into_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (res: t_Copied_Difference_T_RandomState_Global) : ()
-  
-  axiom fn_once_into_iter_spec:
-    forall self: (), args: t_Copied_Difference_T_RandomState_Global, res: t_Copied_Difference_T_RandomState_Global [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (postcondition_into_iter self args res /\ resolve_into_iter self)
-  
-  function fn_mut_into_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (res_state: ()) (res: t_Copied_Difference_T_RandomState_Global) : ()
-  
-  axiom fn_mut_into_iter_spec:
-    forall self: (), args: t_Copied_Difference_T_RandomState_Global, res_state: (), res: t_Copied_Difference_T_RandomState_Global [postcondition_mut_into_iter self args res_state res]. postcondition_mut_into_iter self args res_state res
-      = (postcondition_into_iter self args res /\ self = res_state)
   
   type t_T
   
@@ -254,62 +198,6 @@ module M_hashset_difference
           = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))}
       (! return {result}) ]
   
-  predicate postcondition_once_from_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (result: t_HashSet_T_RandomState_Global) =
-    let iter = args in inv_HashSet_T_RandomState_Global result
-    /\ (exists into_iter: t_Copied_Difference_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Difference_T_RandomState_Global. postcondition_into_iter () iter into_iter
-      /\ produces_Copied_Difference_T_RandomState_Global into_iter prod done'.current
-      /\ completed_Copied_Difference_T_RandomState_Global done'
-      /\ resolve_Copied_Difference_T_RandomState_Global'0 done'.final
-      /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState_Global result) x
-        = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))
-  
-  meta "rewrite_def" predicate postcondition_once_from_iter
-  
-  predicate resolve_from_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_from_iter
-  
-  predicate postcondition_mut_from_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (result_state: ()) (result: t_HashSet_T_RandomState_Global) =
-    let iter = args in inv_HashSet_T_RandomState_Global result
-    /\ (exists into_iter: t_Copied_Difference_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Difference_T_RandomState_Global. postcondition_into_iter () iter into_iter
-      /\ produces_Copied_Difference_T_RandomState_Global into_iter prod done'.current
-      /\ completed_Copied_Difference_T_RandomState_Global done'
-      /\ resolve_Copied_Difference_T_RandomState_Global'0 done'.final
-      /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState_Global result) x
-        = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))
-  
-  meta "rewrite_def" predicate postcondition_mut_from_iter
-  
-  function fn_mut_once_from_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (res: t_HashSet_T_RandomState_Global) : ()
-  
-  axiom fn_mut_once_from_iter_spec:
-    forall self: (), args: t_Copied_Difference_T_RandomState_Global, res: t_HashSet_T_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (exists res_state: (). postcondition_mut_from_iter self args res_state res /\ resolve_from_iter res_state)
-  
-  predicate hist_inv_from_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_from_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_from_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_from_iter self b, hist_inv_from_iter b c | hist_inv_from_iter self b, hist_inv_from_iter self c | hist_inv_from_iter b c, hist_inv_from_iter self c]. hist_inv_from_iter self b
-      -> hist_inv_from_iter b c -> hist_inv_from_iter self c
-  
-  function hist_inv_refl_from_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_from_iter_spec: forall self: () [hist_inv_from_iter self self]. hist_inv_from_iter self self
-  
-  function postcondition_mut_hist_inv_from_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (res_state: ()) (res: t_HashSet_T_RandomState_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_from_iter_spec:
-    forall self: (), args: t_Copied_Difference_T_RandomState_Global, res_state: (), res: t_HashSet_T_RandomState_Global [postcondition_mut_from_iter self args res_state res | hist_inv_from_iter self res_state]. postcondition_mut_from_iter self args res_state res
-      -> hist_inv_from_iter self res_state
-  
-  function fn_hist_inv_from_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_from_iter_spec:
-    forall self: (), res_state: () [hist_inv_from_iter self res_state]. hist_inv_from_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_from_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (result: t_HashSet_T_RandomState_Global) =
     let iter = args in inv_HashSet_T_RandomState_Global result
     /\ (exists into_iter: t_Copied_Difference_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Difference_T_RandomState_Global. postcondition_into_iter () iter into_iter
@@ -320,18 +208,6 @@ module M_hashset_difference
         = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))
   
   meta "rewrite_def" predicate postcondition_from_iter
-  
-  function fn_once_from_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (res: t_HashSet_T_RandomState_Global) : ()
-  
-  axiom fn_once_from_iter_spec:
-    forall self: (), args: t_Copied_Difference_T_RandomState_Global, res: t_HashSet_T_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (postcondition_from_iter self args res /\ resolve_from_iter self)
-  
-  function fn_mut_from_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (res_state: ()) (res: t_HashSet_T_RandomState_Global) : ()
-  
-  axiom fn_mut_from_iter_spec:
-    forall self: (), args: t_Copied_Difference_T_RandomState_Global, res_state: (), res: t_HashSet_T_RandomState_Global [postcondition_mut_from_iter self args res_state res]. postcondition_mut_from_iter self args res_state res
-      = (postcondition_from_iter self args res /\ self = res_state)
   
   let collect_Copied_Difference_T_RandomState_Global (self_: t_Copied_Difference_T_RandomState_Global)
     (return (x: t_HashSet_T_RandomState_Global)) =
@@ -455,66 +331,10 @@ module M_hashset_intersection
       /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
-  predicate postcondition_once_into_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (result: t_Copied_Intersection_T_RandomState_Global) =
-    let self_ = args in inv_Copied_Intersection_T_RandomState_Global result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_into_iter
-  
-  predicate resolve_into_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_into_iter
-  
-  predicate postcondition_mut_into_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (result_state: ()) (result: t_Copied_Intersection_T_RandomState_Global) =
-    let self_ = args in inv_Copied_Intersection_T_RandomState_Global result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_into_iter
-  
-  function fn_mut_once_into_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (res: t_Copied_Intersection_T_RandomState_Global) : ()
-  
-  axiom fn_mut_once_into_iter_spec:
-    forall self: (), args: t_Copied_Intersection_T_RandomState_Global, res: t_Copied_Intersection_T_RandomState_Global [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
-  
-  predicate hist_inv_into_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_into_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_into_iter self b, hist_inv_into_iter b c | hist_inv_into_iter self b, hist_inv_into_iter self c | hist_inv_into_iter b c, hist_inv_into_iter self c]. hist_inv_into_iter self b
-      -> hist_inv_into_iter b c -> hist_inv_into_iter self c
-  
-  function hist_inv_refl_into_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_into_iter_spec: forall self: () [hist_inv_into_iter self self]. hist_inv_into_iter self self
-  
-  function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (res_state: ()) (res: t_Copied_Intersection_T_RandomState_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_into_iter_spec:
-    forall self: (), args: t_Copied_Intersection_T_RandomState_Global, res_state: (), res: t_Copied_Intersection_T_RandomState_Global [postcondition_mut_into_iter self args res_state res | hist_inv_into_iter self res_state]. postcondition_mut_into_iter self args res_state res
-      -> hist_inv_into_iter self res_state
-  
-  function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_into_iter_spec:
-    forall self: (), res_state: () [hist_inv_into_iter self res_state]. hist_inv_into_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_into_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (result: t_Copied_Intersection_T_RandomState_Global) =
     let self_ = args in inv_Copied_Intersection_T_RandomState_Global result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
-  
-  function fn_once_into_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (res: t_Copied_Intersection_T_RandomState_Global) : ()
-  
-  axiom fn_once_into_iter_spec:
-    forall self: (), args: t_Copied_Intersection_T_RandomState_Global, res: t_Copied_Intersection_T_RandomState_Global [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (postcondition_into_iter self args res /\ resolve_into_iter self)
-  
-  function fn_mut_into_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (res_state: ()) (res: t_Copied_Intersection_T_RandomState_Global) : ()
-  
-  axiom fn_mut_into_iter_spec:
-    forall self: (), args: t_Copied_Intersection_T_RandomState_Global, res_state: (), res: t_Copied_Intersection_T_RandomState_Global [postcondition_mut_into_iter self args res_state res]. postcondition_mut_into_iter self args res_state res
-      = (postcondition_into_iter self args res /\ self = res_state)
   
   type t_T
   
@@ -626,62 +446,6 @@ module M_hashset_intersection
           = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))}
       (! return {result}) ]
   
-  predicate postcondition_once_from_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (result: t_HashSet_T_RandomState_Global) =
-    let iter = args in inv_HashSet_T_RandomState_Global result
-    /\ (exists into_iter: t_Copied_Intersection_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Intersection_T_RandomState_Global. postcondition_into_iter () iter into_iter
-      /\ produces_Copied_Intersection_T_RandomState_Global into_iter prod done'.current
-      /\ completed_Copied_Intersection_T_RandomState_Global done'
-      /\ resolve_Copied_Intersection_T_RandomState_Global'0 done'.final
-      /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState_Global result) x
-        = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))
-  
-  meta "rewrite_def" predicate postcondition_once_from_iter
-  
-  predicate resolve_from_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_from_iter
-  
-  predicate postcondition_mut_from_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (result_state: ()) (result: t_HashSet_T_RandomState_Global) =
-    let iter = args in inv_HashSet_T_RandomState_Global result
-    /\ (exists into_iter: t_Copied_Intersection_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Intersection_T_RandomState_Global. postcondition_into_iter () iter into_iter
-      /\ produces_Copied_Intersection_T_RandomState_Global into_iter prod done'.current
-      /\ completed_Copied_Intersection_T_RandomState_Global done'
-      /\ resolve_Copied_Intersection_T_RandomState_Global'0 done'.final
-      /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState_Global result) x
-        = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))
-  
-  meta "rewrite_def" predicate postcondition_mut_from_iter
-  
-  function fn_mut_once_from_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (res: t_HashSet_T_RandomState_Global) : ()
-  
-  axiom fn_mut_once_from_iter_spec:
-    forall self: (), args: t_Copied_Intersection_T_RandomState_Global, res: t_HashSet_T_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (exists res_state: (). postcondition_mut_from_iter self args res_state res /\ resolve_from_iter res_state)
-  
-  predicate hist_inv_from_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_from_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_from_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_from_iter self b, hist_inv_from_iter b c | hist_inv_from_iter self b, hist_inv_from_iter self c | hist_inv_from_iter b c, hist_inv_from_iter self c]. hist_inv_from_iter self b
-      -> hist_inv_from_iter b c -> hist_inv_from_iter self c
-  
-  function hist_inv_refl_from_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_from_iter_spec: forall self: () [hist_inv_from_iter self self]. hist_inv_from_iter self self
-  
-  function postcondition_mut_hist_inv_from_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (res_state: ()) (res: t_HashSet_T_RandomState_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_from_iter_spec:
-    forall self: (), args: t_Copied_Intersection_T_RandomState_Global, res_state: (), res: t_HashSet_T_RandomState_Global [postcondition_mut_from_iter self args res_state res | hist_inv_from_iter self res_state]. postcondition_mut_from_iter self args res_state res
-      -> hist_inv_from_iter self res_state
-  
-  function fn_hist_inv_from_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_from_iter_spec:
-    forall self: (), res_state: () [hist_inv_from_iter self res_state]. hist_inv_from_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_from_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (result: t_HashSet_T_RandomState_Global) =
     let iter = args in inv_HashSet_T_RandomState_Global result
     /\ (exists into_iter: t_Copied_Intersection_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Intersection_T_RandomState_Global. postcondition_into_iter () iter into_iter
@@ -692,18 +456,6 @@ module M_hashset_intersection
         = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))
   
   meta "rewrite_def" predicate postcondition_from_iter
-  
-  function fn_once_from_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (res: t_HashSet_T_RandomState_Global) : ()
-  
-  axiom fn_once_from_iter_spec:
-    forall self: (), args: t_Copied_Intersection_T_RandomState_Global, res: t_HashSet_T_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (postcondition_from_iter self args res /\ resolve_from_iter self)
-  
-  function fn_mut_from_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (res_state: ()) (res: t_HashSet_T_RandomState_Global) : ()
-  
-  axiom fn_mut_from_iter_spec:
-    forall self: (), args: t_Copied_Intersection_T_RandomState_Global, res_state: (), res: t_HashSet_T_RandomState_Global [postcondition_mut_from_iter self args res_state res]. postcondition_mut_from_iter self args res_state res
-      = (postcondition_from_iter self args res /\ self = res_state)
   
   let collect_Copied_Intersection_T_RandomState_Global (self_: t_Copied_Intersection_T_RandomState_Global)
     (return (x: t_HashSet_T_RandomState_Global)) =
@@ -792,66 +544,10 @@ module M_roundtrip_hashmap_into_iter
       /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
-  predicate postcondition_once_into_iter (self: ()) (args: t_IntoIter_K_V_Global) (result: t_IntoIter_K_V_Global) =
-    let self_ = args in inv_IntoIter_K_V_Global result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_into_iter
-  
-  predicate resolve_into_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_into_iter
-  
-  predicate postcondition_mut_into_iter (self: ()) (args: t_IntoIter_K_V_Global) (result_state: ()) (result: t_IntoIter_K_V_Global) =
-    let self_ = args in inv_IntoIter_K_V_Global result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_into_iter
-  
-  function fn_mut_once_into_iter (self: ()) (args: t_IntoIter_K_V_Global) (res: t_IntoIter_K_V_Global) : ()
-  
-  axiom fn_mut_once_into_iter_spec:
-    forall self: (), args: t_IntoIter_K_V_Global, res: t_IntoIter_K_V_Global [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
-  
-  predicate hist_inv_into_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_into_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_into_iter self b, hist_inv_into_iter b c | hist_inv_into_iter self b, hist_inv_into_iter self c | hist_inv_into_iter b c, hist_inv_into_iter self c]. hist_inv_into_iter self b
-      -> hist_inv_into_iter b c -> hist_inv_into_iter self c
-  
-  function hist_inv_refl_into_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_into_iter_spec: forall self: () [hist_inv_into_iter self self]. hist_inv_into_iter self self
-  
-  function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_IntoIter_K_V_Global) (res_state: ()) (res: t_IntoIter_K_V_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_into_iter_spec:
-    forall self: (), args: t_IntoIter_K_V_Global, res_state: (), res: t_IntoIter_K_V_Global [postcondition_mut_into_iter self args res_state res | hist_inv_into_iter self res_state]. postcondition_mut_into_iter self args res_state res
-      -> hist_inv_into_iter self res_state
-  
-  function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_into_iter_spec:
-    forall self: (), res_state: () [hist_inv_into_iter self res_state]. hist_inv_into_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_into_iter (self: ()) (args: t_IntoIter_K_V_Global) (result: t_IntoIter_K_V_Global) =
     let self_ = args in inv_IntoIter_K_V_Global result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
-  
-  function fn_once_into_iter (self: ()) (args: t_IntoIter_K_V_Global) (res: t_IntoIter_K_V_Global) : ()
-  
-  axiom fn_once_into_iter_spec:
-    forall self: (), args: t_IntoIter_K_V_Global, res: t_IntoIter_K_V_Global [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (postcondition_into_iter self args res /\ resolve_into_iter self)
-  
-  function fn_mut_into_iter (self: ()) (args: t_IntoIter_K_V_Global) (res_state: ()) (res: t_IntoIter_K_V_Global) : ()
-  
-  axiom fn_mut_into_iter_spec:
-    forall self: (), args: t_IntoIter_K_V_Global, res_state: (), res: t_IntoIter_K_V_Global [postcondition_mut_into_iter self args res_state res]. postcondition_mut_into_iter self args res_state res
-      = (postcondition_into_iter self args res /\ self = res_state)
   
   type t_K
   
@@ -952,70 +648,6 @@ module M_roundtrip_hashmap_into_iter
             /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_K (Seq.get prod j).f0 <> k))))}
       (! return {result}) ]
   
-  predicate postcondition_once_from_iter (self: ()) (args: t_IntoIter_K_V_Global) (result: t_HashMap_K_V_RandomState_Global) =
-    let iter = args in inv_HashMap_K_V_RandomState_Global result
-    /\ (exists into_iter: t_IntoIter_K_V_Global, prod: Seq.seq tup2_K_V, done': MutBorrow.t t_IntoIter_K_V_Global. postcondition_into_iter () iter into_iter
-      /\ produces_IntoIter_K_V_Global into_iter prod done'.current
-      /\ completed_IntoIter_K_V_Global done'
-      /\ resolve_IntoIter_K_V_Global done'.final
-      /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy (view_HashMap_K_V_RandomState_Global result) k = Some v)
-        = (exists i: int, k1: t_K. 0 <= i
-          /\ i < Seq.length prod
-          /\ deep_model_K k1 = k
-          /\ Seq.get prod i = { f0 = k1; f1 = v }
-          /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_K (Seq.get prod j).f0 <> k))))
-  
-  meta "rewrite_def" predicate postcondition_once_from_iter
-  
-  predicate resolve_from_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_from_iter
-  
-  predicate postcondition_mut_from_iter (self: ()) (args: t_IntoIter_K_V_Global) (result_state: ()) (result: t_HashMap_K_V_RandomState_Global) =
-    let iter = args in inv_HashMap_K_V_RandomState_Global result
-    /\ (exists into_iter: t_IntoIter_K_V_Global, prod: Seq.seq tup2_K_V, done': MutBorrow.t t_IntoIter_K_V_Global. postcondition_into_iter () iter into_iter
-      /\ produces_IntoIter_K_V_Global into_iter prod done'.current
-      /\ completed_IntoIter_K_V_Global done'
-      /\ resolve_IntoIter_K_V_Global done'.final
-      /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy (view_HashMap_K_V_RandomState_Global result) k = Some v)
-        = (exists i: int, k1: t_K. 0 <= i
-          /\ i < Seq.length prod
-          /\ deep_model_K k1 = k
-          /\ Seq.get prod i = { f0 = k1; f1 = v }
-          /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_K (Seq.get prod j).f0 <> k))))
-  
-  meta "rewrite_def" predicate postcondition_mut_from_iter
-  
-  function fn_mut_once_from_iter (self: ()) (args: t_IntoIter_K_V_Global) (res: t_HashMap_K_V_RandomState_Global) : ()
-  
-  axiom fn_mut_once_from_iter_spec:
-    forall self: (), args: t_IntoIter_K_V_Global, res: t_HashMap_K_V_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (exists res_state: (). postcondition_mut_from_iter self args res_state res /\ resolve_from_iter res_state)
-  
-  predicate hist_inv_from_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_from_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_from_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_from_iter self b, hist_inv_from_iter b c | hist_inv_from_iter self b, hist_inv_from_iter self c | hist_inv_from_iter b c, hist_inv_from_iter self c]. hist_inv_from_iter self b
-      -> hist_inv_from_iter b c -> hist_inv_from_iter self c
-  
-  function hist_inv_refl_from_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_from_iter_spec: forall self: () [hist_inv_from_iter self self]. hist_inv_from_iter self self
-  
-  function postcondition_mut_hist_inv_from_iter (self: ()) (args: t_IntoIter_K_V_Global) (res_state: ()) (res: t_HashMap_K_V_RandomState_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_from_iter_spec:
-    forall self: (), args: t_IntoIter_K_V_Global, res_state: (), res: t_HashMap_K_V_RandomState_Global [postcondition_mut_from_iter self args res_state res | hist_inv_from_iter self res_state]. postcondition_mut_from_iter self args res_state res
-      -> hist_inv_from_iter self res_state
-  
-  function fn_hist_inv_from_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_from_iter_spec:
-    forall self: (), res_state: () [hist_inv_from_iter self res_state]. hist_inv_from_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_from_iter (self: ()) (args: t_IntoIter_K_V_Global) (result: t_HashMap_K_V_RandomState_Global) =
     let iter = args in inv_HashMap_K_V_RandomState_Global result
     /\ (exists into_iter: t_IntoIter_K_V_Global, prod: Seq.seq tup2_K_V, done': MutBorrow.t t_IntoIter_K_V_Global. postcondition_into_iter () iter into_iter
@@ -1030,18 +662,6 @@ module M_roundtrip_hashmap_into_iter
           /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_K (Seq.get prod j).f0 <> k))))
   
   meta "rewrite_def" predicate postcondition_from_iter
-  
-  function fn_once_from_iter (self: ()) (args: t_IntoIter_K_V_Global) (res: t_HashMap_K_V_RandomState_Global) : ()
-  
-  axiom fn_once_from_iter_spec:
-    forall self: (), args: t_IntoIter_K_V_Global, res: t_HashMap_K_V_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (postcondition_from_iter self args res /\ resolve_from_iter self)
-  
-  function fn_mut_from_iter (self: ()) (args: t_IntoIter_K_V_Global) (res_state: ()) (res: t_HashMap_K_V_RandomState_Global) : ()
-  
-  axiom fn_mut_from_iter_spec:
-    forall self: (), args: t_IntoIter_K_V_Global, res_state: (), res: t_HashMap_K_V_RandomState_Global [postcondition_mut_from_iter self args res_state res]. postcondition_mut_from_iter self args res_state res
-      = (postcondition_from_iter self args res /\ self = res_state)
   
   let collect_IntoIter_K_V_Global (self_: t_IntoIter_K_V_Global) (return (x: t_HashMap_K_V_RandomState_Global)) =
   {[@stop_split] [@expl:collect_IntoIter_K_V_Global requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_IntoIter_K_V_Global self_)
@@ -1178,66 +798,10 @@ module M_roundtrip_hashmap_iter
   
   predicate inv_HashMap_ref_K_ref_V_RandomState_Global (_1: t_HashMap_ref_K_ref_V_RandomState_Global)
   
-  predicate postcondition_once_into_iter (self: ()) (args: t_Iter_K_V) (result: t_Iter_K_V) =
-    let self_ = args in inv_Iter_K_V result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_into_iter
-  
-  predicate resolve_into_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_into_iter
-  
-  predicate postcondition_mut_into_iter (self: ()) (args: t_Iter_K_V) (result_state: ()) (result: t_Iter_K_V) =
-    let self_ = args in inv_Iter_K_V result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_into_iter
-  
-  function fn_mut_once_into_iter (self: ()) (args: t_Iter_K_V) (res: t_Iter_K_V) : ()
-  
-  axiom fn_mut_once_into_iter_spec:
-    forall self: (), args: t_Iter_K_V, res: t_Iter_K_V [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
-  
-  predicate hist_inv_into_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_into_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_into_iter self b, hist_inv_into_iter b c | hist_inv_into_iter self b, hist_inv_into_iter self c | hist_inv_into_iter b c, hist_inv_into_iter self c]. hist_inv_into_iter self b
-      -> hist_inv_into_iter b c -> hist_inv_into_iter self c
-  
-  function hist_inv_refl_into_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_into_iter_spec: forall self: () [hist_inv_into_iter self self]. hist_inv_into_iter self self
-  
-  function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_Iter_K_V) (res_state: ()) (res: t_Iter_K_V) : ()
-  
-  axiom postcondition_mut_hist_inv_into_iter_spec:
-    forall self: (), args: t_Iter_K_V, res_state: (), res: t_Iter_K_V [postcondition_mut_into_iter self args res_state res | hist_inv_into_iter self res_state]. postcondition_mut_into_iter self args res_state res
-      -> hist_inv_into_iter self res_state
-  
-  function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_into_iter_spec:
-    forall self: (), res_state: () [hist_inv_into_iter self res_state]. hist_inv_into_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_into_iter (self: ()) (args: t_Iter_K_V) (result: t_Iter_K_V) =
     let self_ = args in inv_Iter_K_V result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
-  
-  function fn_once_into_iter (self: ()) (args: t_Iter_K_V) (res: t_Iter_K_V) : ()
-  
-  axiom fn_once_into_iter_spec:
-    forall self: (), args: t_Iter_K_V, res: t_Iter_K_V [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (postcondition_into_iter self args res /\ resolve_into_iter self)
-  
-  function fn_mut_into_iter (self: ()) (args: t_Iter_K_V) (res_state: ()) (res: t_Iter_K_V) : ()
-  
-  axiom fn_mut_into_iter_spec:
-    forall self: (), args: t_Iter_K_V, res_state: (), res: t_Iter_K_V [postcondition_mut_into_iter self args res_state res]. postcondition_mut_into_iter self args res_state res
-      = (postcondition_into_iter self args res /\ self = res_state)
   
   type t_K
   
@@ -1356,72 +920,6 @@ module M_roundtrip_hashmap_iter
             /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_ref_K (Seq.get prod j).f0 <> k))))}
       (! return {result}) ]
   
-  predicate postcondition_once_from_iter (self: ()) (args: t_Iter_K_V) (result: t_HashMap_ref_K_ref_V_RandomState_Global) =
-    let iter = args in inv_HashMap_ref_K_ref_V_RandomState_Global result
-    /\ (exists into_iter: t_Iter_K_V, prod: Seq.seq tup2_ref_K_ref_V, done': MutBorrow.t t_Iter_K_V. postcondition_into_iter () iter into_iter
-      /\ produces_Iter_K_V into_iter prod done'.current
-      /\ completed_Iter_K_V done'
-      /\ resolve_Iter_K_V done'.final
-      /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState_Global result) k
-          = Some'0 v)
-        = (exists i: int, k1: t_K. 0 <= i
-          /\ i < Seq.length prod
-          /\ deep_model_ref_K k1 = k
-          /\ Seq.get prod i = { f0 = k1; f1 = v }
-          /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_ref_K (Seq.get prod j).f0 <> k))))
-  
-  meta "rewrite_def" predicate postcondition_once_from_iter
-  
-  predicate resolve_from_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_from_iter
-  
-  predicate postcondition_mut_from_iter (self: ()) (args: t_Iter_K_V) (result_state: ()) (result: t_HashMap_ref_K_ref_V_RandomState_Global) =
-    let iter = args in inv_HashMap_ref_K_ref_V_RandomState_Global result
-    /\ (exists into_iter: t_Iter_K_V, prod: Seq.seq tup2_ref_K_ref_V, done': MutBorrow.t t_Iter_K_V. postcondition_into_iter () iter into_iter
-      /\ produces_Iter_K_V into_iter prod done'.current
-      /\ completed_Iter_K_V done'
-      /\ resolve_Iter_K_V done'.final
-      /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState_Global result) k
-          = Some'0 v)
-        = (exists i: int, k1: t_K. 0 <= i
-          /\ i < Seq.length prod
-          /\ deep_model_ref_K k1 = k
-          /\ Seq.get prod i = { f0 = k1; f1 = v }
-          /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_ref_K (Seq.get prod j).f0 <> k))))
-  
-  meta "rewrite_def" predicate postcondition_mut_from_iter
-  
-  function fn_mut_once_from_iter (self: ()) (args: t_Iter_K_V) (res: t_HashMap_ref_K_ref_V_RandomState_Global) : ()
-  
-  axiom fn_mut_once_from_iter_spec:
-    forall self: (), args: t_Iter_K_V, res: t_HashMap_ref_K_ref_V_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (exists res_state: (). postcondition_mut_from_iter self args res_state res /\ resolve_from_iter res_state)
-  
-  predicate hist_inv_from_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_from_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_from_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_from_iter self b, hist_inv_from_iter b c | hist_inv_from_iter self b, hist_inv_from_iter self c | hist_inv_from_iter b c, hist_inv_from_iter self c]. hist_inv_from_iter self b
-      -> hist_inv_from_iter b c -> hist_inv_from_iter self c
-  
-  function hist_inv_refl_from_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_from_iter_spec: forall self: () [hist_inv_from_iter self self]. hist_inv_from_iter self self
-  
-  function postcondition_mut_hist_inv_from_iter (self: ()) (args: t_Iter_K_V) (res_state: ()) (res: t_HashMap_ref_K_ref_V_RandomState_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_from_iter_spec:
-    forall self: (), args: t_Iter_K_V, res_state: (), res: t_HashMap_ref_K_ref_V_RandomState_Global [postcondition_mut_from_iter self args res_state res | hist_inv_from_iter self res_state]. postcondition_mut_from_iter self args res_state res
-      -> hist_inv_from_iter self res_state
-  
-  function fn_hist_inv_from_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_from_iter_spec:
-    forall self: (), res_state: () [hist_inv_from_iter self res_state]. hist_inv_from_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_from_iter (self: ()) (args: t_Iter_K_V) (result: t_HashMap_ref_K_ref_V_RandomState_Global) =
     let iter = args in inv_HashMap_ref_K_ref_V_RandomState_Global result
     /\ (exists into_iter: t_Iter_K_V, prod: Seq.seq tup2_ref_K_ref_V, done': MutBorrow.t t_Iter_K_V. postcondition_into_iter () iter into_iter
@@ -1437,18 +935,6 @@ module M_roundtrip_hashmap_iter
           /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_ref_K (Seq.get prod j).f0 <> k))))
   
   meta "rewrite_def" predicate postcondition_from_iter
-  
-  function fn_once_from_iter (self: ()) (args: t_Iter_K_V) (res: t_HashMap_ref_K_ref_V_RandomState_Global) : ()
-  
-  axiom fn_once_from_iter_spec:
-    forall self: (), args: t_Iter_K_V, res: t_HashMap_ref_K_ref_V_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (postcondition_from_iter self args res /\ resolve_from_iter self)
-  
-  function fn_mut_from_iter (self: ()) (args: t_Iter_K_V) (res_state: ()) (res: t_HashMap_ref_K_ref_V_RandomState_Global) : ()
-  
-  axiom fn_mut_from_iter_spec:
-    forall self: (), args: t_Iter_K_V, res_state: (), res: t_HashMap_ref_K_ref_V_RandomState_Global [postcondition_mut_from_iter self args res_state res]. postcondition_mut_from_iter self args res_state res
-      = (postcondition_from_iter self args res /\ self = res_state)
   
   let collect_Iter_K_V (self_: t_Iter_K_V) (return (x: t_HashMap_ref_K_ref_V_RandomState_Global)) =
   {[@stop_split] [@expl:collect_Iter_K_V requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_Iter_K_V self_)
@@ -1629,66 +1115,10 @@ module M_roundtrip_hashmap_iter_mut
   
   predicate inv_HashMap_ref_K_refmut_V_RandomState_Global (_1: t_HashMap_ref_K_refmut_V_RandomState_Global)
   
-  predicate postcondition_once_into_iter (self: ()) (args: t_IterMut_K_V) (result: t_IterMut_K_V) =
-    let self_ = args in inv_IterMut_K_V result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_into_iter
-  
-  predicate resolve_into_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_into_iter
-  
-  predicate postcondition_mut_into_iter (self: ()) (args: t_IterMut_K_V) (result_state: ()) (result: t_IterMut_K_V) =
-    let self_ = args in inv_IterMut_K_V result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_into_iter
-  
-  function fn_mut_once_into_iter (self: ()) (args: t_IterMut_K_V) (res: t_IterMut_K_V) : ()
-  
-  axiom fn_mut_once_into_iter_spec:
-    forall self: (), args: t_IterMut_K_V, res: t_IterMut_K_V [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
-  
-  predicate hist_inv_into_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_into_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_into_iter self b, hist_inv_into_iter b c | hist_inv_into_iter self b, hist_inv_into_iter self c | hist_inv_into_iter b c, hist_inv_into_iter self c]. hist_inv_into_iter self b
-      -> hist_inv_into_iter b c -> hist_inv_into_iter self c
-  
-  function hist_inv_refl_into_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_into_iter_spec: forall self: () [hist_inv_into_iter self self]. hist_inv_into_iter self self
-  
-  function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_IterMut_K_V) (res_state: ()) (res: t_IterMut_K_V) : ()
-  
-  axiom postcondition_mut_hist_inv_into_iter_spec:
-    forall self: (), args: t_IterMut_K_V, res_state: (), res: t_IterMut_K_V [postcondition_mut_into_iter self args res_state res | hist_inv_into_iter self res_state]. postcondition_mut_into_iter self args res_state res
-      -> hist_inv_into_iter self res_state
-  
-  function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_into_iter_spec:
-    forall self: (), res_state: () [hist_inv_into_iter self res_state]. hist_inv_into_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_into_iter (self: ()) (args: t_IterMut_K_V) (result: t_IterMut_K_V) =
     let self_ = args in inv_IterMut_K_V result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
-  
-  function fn_once_into_iter (self: ()) (args: t_IterMut_K_V) (res: t_IterMut_K_V) : ()
-  
-  axiom fn_once_into_iter_spec:
-    forall self: (), args: t_IterMut_K_V, res: t_IterMut_K_V [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (postcondition_into_iter self args res /\ resolve_into_iter self)
-  
-  function fn_mut_into_iter (self: ()) (args: t_IterMut_K_V) (res_state: ()) (res: t_IterMut_K_V) : ()
-  
-  axiom fn_mut_into_iter_spec:
-    forall self: (), args: t_IterMut_K_V, res_state: (), res: t_IterMut_K_V [postcondition_mut_into_iter self args res_state res]. postcondition_mut_into_iter self args res_state res
-      = (postcondition_into_iter self args res /\ self = res_state)
   
   type t_K
   
@@ -1783,72 +1213,6 @@ module M_roundtrip_hashmap_iter_mut
             /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_ref_K (Seq.get prod j).f0 <> k))))}
       (! return {result}) ]
   
-  predicate postcondition_once_from_iter (self: ()) (args: t_IterMut_K_V) (result: t_HashMap_ref_K_refmut_V_RandomState_Global) =
-    let iter = args in inv_HashMap_ref_K_refmut_V_RandomState_Global result
-    /\ (exists into_iter: t_IterMut_K_V, prod: Seq.seq tup2_ref_K_refmut_V, done': MutBorrow.t t_IterMut_K_V. postcondition_into_iter () iter into_iter
-      /\ produces_IterMut_K_V into_iter prod done'.current
-      /\ completed_IterMut_K_V done'
-      /\ resolve_IterMut_K_V done'.final
-      /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState_Global result) k
-          = Some'0 v)
-        = (exists i: int, k1: t_K. 0 <= i
-          /\ i < Seq.length prod
-          /\ deep_model_ref_K k1 = k
-          /\ Seq.get prod i = { f0 = k1; f1 = v }
-          /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_ref_K (Seq.get prod j).f0 <> k))))
-  
-  meta "rewrite_def" predicate postcondition_once_from_iter
-  
-  predicate resolve_from_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_from_iter
-  
-  predicate postcondition_mut_from_iter (self: ()) (args: t_IterMut_K_V) (result_state: ()) (result: t_HashMap_ref_K_refmut_V_RandomState_Global) =
-    let iter = args in inv_HashMap_ref_K_refmut_V_RandomState_Global result
-    /\ (exists into_iter: t_IterMut_K_V, prod: Seq.seq tup2_ref_K_refmut_V, done': MutBorrow.t t_IterMut_K_V. postcondition_into_iter () iter into_iter
-      /\ produces_IterMut_K_V into_iter prod done'.current
-      /\ completed_IterMut_K_V done'
-      /\ resolve_IterMut_K_V done'.final
-      /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState_Global result) k
-          = Some'0 v)
-        = (exists i: int, k1: t_K. 0 <= i
-          /\ i < Seq.length prod
-          /\ deep_model_ref_K k1 = k
-          /\ Seq.get prod i = { f0 = k1; f1 = v }
-          /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_ref_K (Seq.get prod j).f0 <> k))))
-  
-  meta "rewrite_def" predicate postcondition_mut_from_iter
-  
-  function fn_mut_once_from_iter (self: ()) (args: t_IterMut_K_V) (res: t_HashMap_ref_K_refmut_V_RandomState_Global) : ()
-  
-  axiom fn_mut_once_from_iter_spec:
-    forall self: (), args: t_IterMut_K_V, res: t_HashMap_ref_K_refmut_V_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (exists res_state: (). postcondition_mut_from_iter self args res_state res /\ resolve_from_iter res_state)
-  
-  predicate hist_inv_from_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_from_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_from_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_from_iter self b, hist_inv_from_iter b c | hist_inv_from_iter self b, hist_inv_from_iter self c | hist_inv_from_iter b c, hist_inv_from_iter self c]. hist_inv_from_iter self b
-      -> hist_inv_from_iter b c -> hist_inv_from_iter self c
-  
-  function hist_inv_refl_from_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_from_iter_spec: forall self: () [hist_inv_from_iter self self]. hist_inv_from_iter self self
-  
-  function postcondition_mut_hist_inv_from_iter (self: ()) (args: t_IterMut_K_V) (res_state: ()) (res: t_HashMap_ref_K_refmut_V_RandomState_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_from_iter_spec:
-    forall self: (), args: t_IterMut_K_V, res_state: (), res: t_HashMap_ref_K_refmut_V_RandomState_Global [postcondition_mut_from_iter self args res_state res | hist_inv_from_iter self res_state]. postcondition_mut_from_iter self args res_state res
-      -> hist_inv_from_iter self res_state
-  
-  function fn_hist_inv_from_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_from_iter_spec:
-    forall self: (), res_state: () [hist_inv_from_iter self res_state]. hist_inv_from_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_from_iter (self: ()) (args: t_IterMut_K_V) (result: t_HashMap_ref_K_refmut_V_RandomState_Global) =
     let iter = args in inv_HashMap_ref_K_refmut_V_RandomState_Global result
     /\ (exists into_iter: t_IterMut_K_V, prod: Seq.seq tup2_ref_K_refmut_V, done': MutBorrow.t t_IterMut_K_V. postcondition_into_iter () iter into_iter
@@ -1864,18 +1228,6 @@ module M_roundtrip_hashmap_iter_mut
           /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_ref_K (Seq.get prod j).f0 <> k))))
   
   meta "rewrite_def" predicate postcondition_from_iter
-  
-  function fn_once_from_iter (self: ()) (args: t_IterMut_K_V) (res: t_HashMap_ref_K_refmut_V_RandomState_Global) : ()
-  
-  axiom fn_once_from_iter_spec:
-    forall self: (), args: t_IterMut_K_V, res: t_HashMap_ref_K_refmut_V_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (postcondition_from_iter self args res /\ resolve_from_iter self)
-  
-  function fn_mut_from_iter (self: ()) (args: t_IterMut_K_V) (res_state: ()) (res: t_HashMap_ref_K_refmut_V_RandomState_Global) : ()
-  
-  axiom fn_mut_from_iter_spec:
-    forall self: (), args: t_IterMut_K_V, res_state: (), res: t_HashMap_ref_K_refmut_V_RandomState_Global [postcondition_mut_from_iter self args res_state res]. postcondition_mut_from_iter self args res_state res
-      = (postcondition_from_iter self args res /\ self = res_state)
   
   let collect_IterMut_K_V (self_: t_IterMut_K_V) (return (x: t_HashMap_ref_K_refmut_V_RandomState_Global)) =
   {[@stop_split] [@expl:collect_IterMut_K_V requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_IterMut_K_V self_)
@@ -1989,66 +1341,10 @@ module M_roundtrip_hashset_into_iter
       /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
-  predicate postcondition_once_into_iter (self: ()) (args: t_IntoIter_T_Global) (result: t_IntoIter_T_Global) =
-    let self_ = args in inv_IntoIter_T_Global result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_into_iter
-  
-  predicate resolve_into_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_into_iter
-  
-  predicate postcondition_mut_into_iter (self: ()) (args: t_IntoIter_T_Global) (result_state: ()) (result: t_IntoIter_T_Global) =
-    let self_ = args in inv_IntoIter_T_Global result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_into_iter
-  
-  function fn_mut_once_into_iter (self: ()) (args: t_IntoIter_T_Global) (res: t_IntoIter_T_Global) : ()
-  
-  axiom fn_mut_once_into_iter_spec:
-    forall self: (), args: t_IntoIter_T_Global, res: t_IntoIter_T_Global [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
-  
-  predicate hist_inv_into_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_into_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_into_iter self b, hist_inv_into_iter b c | hist_inv_into_iter self b, hist_inv_into_iter self c | hist_inv_into_iter b c, hist_inv_into_iter self c]. hist_inv_into_iter self b
-      -> hist_inv_into_iter b c -> hist_inv_into_iter self c
-  
-  function hist_inv_refl_into_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_into_iter_spec: forall self: () [hist_inv_into_iter self self]. hist_inv_into_iter self self
-  
-  function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_IntoIter_T_Global) (res_state: ()) (res: t_IntoIter_T_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_into_iter_spec:
-    forall self: (), args: t_IntoIter_T_Global, res_state: (), res: t_IntoIter_T_Global [postcondition_mut_into_iter self args res_state res | hist_inv_into_iter self res_state]. postcondition_mut_into_iter self args res_state res
-      -> hist_inv_into_iter self res_state
-  
-  function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_into_iter_spec:
-    forall self: (), res_state: () [hist_inv_into_iter self res_state]. hist_inv_into_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_into_iter (self: ()) (args: t_IntoIter_T_Global) (result: t_IntoIter_T_Global) =
     let self_ = args in inv_IntoIter_T_Global result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
-  
-  function fn_once_into_iter (self: ()) (args: t_IntoIter_T_Global) (res: t_IntoIter_T_Global) : ()
-  
-  axiom fn_once_into_iter_spec:
-    forall self: (), args: t_IntoIter_T_Global, res: t_IntoIter_T_Global [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (postcondition_into_iter self args res /\ resolve_into_iter self)
-  
-  function fn_mut_into_iter (self: ()) (args: t_IntoIter_T_Global) (res_state: ()) (res: t_IntoIter_T_Global) : ()
-  
-  axiom fn_mut_into_iter_spec:
-    forall self: (), args: t_IntoIter_T_Global, res_state: (), res: t_IntoIter_T_Global [postcondition_mut_into_iter self args res_state res]. postcondition_mut_into_iter self args res_state res
-      = (postcondition_into_iter self args res /\ self = res_state)
   
   type t_T
   
@@ -2109,62 +1405,6 @@ module M_roundtrip_hashset_into_iter
           = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))}
       (! return {result}) ]
   
-  predicate postcondition_once_from_iter (self: ()) (args: t_IntoIter_T_Global) (result: t_HashSet_T_RandomState_Global) =
-    let iter = args in inv_HashSet_T_RandomState_Global result
-    /\ (exists into_iter: t_IntoIter_T_Global, prod: Seq.seq t_T, done': MutBorrow.t t_IntoIter_T_Global. postcondition_into_iter () iter into_iter
-      /\ produces_IntoIter_T_Global into_iter prod done'.current
-      /\ completed_IntoIter_T_Global done'
-      /\ resolve_IntoIter_T_Global done'.final
-      /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState_Global result) x
-        = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))
-  
-  meta "rewrite_def" predicate postcondition_once_from_iter
-  
-  predicate resolve_from_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_from_iter
-  
-  predicate postcondition_mut_from_iter (self: ()) (args: t_IntoIter_T_Global) (result_state: ()) (result: t_HashSet_T_RandomState_Global) =
-    let iter = args in inv_HashSet_T_RandomState_Global result
-    /\ (exists into_iter: t_IntoIter_T_Global, prod: Seq.seq t_T, done': MutBorrow.t t_IntoIter_T_Global. postcondition_into_iter () iter into_iter
-      /\ produces_IntoIter_T_Global into_iter prod done'.current
-      /\ completed_IntoIter_T_Global done'
-      /\ resolve_IntoIter_T_Global done'.final
-      /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_T_RandomState_Global result) x
-        = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))
-  
-  meta "rewrite_def" predicate postcondition_mut_from_iter
-  
-  function fn_mut_once_from_iter (self: ()) (args: t_IntoIter_T_Global) (res: t_HashSet_T_RandomState_Global) : ()
-  
-  axiom fn_mut_once_from_iter_spec:
-    forall self: (), args: t_IntoIter_T_Global, res: t_HashSet_T_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (exists res_state: (). postcondition_mut_from_iter self args res_state res /\ resolve_from_iter res_state)
-  
-  predicate hist_inv_from_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_from_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_from_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_from_iter self b, hist_inv_from_iter b c | hist_inv_from_iter self b, hist_inv_from_iter self c | hist_inv_from_iter b c, hist_inv_from_iter self c]. hist_inv_from_iter self b
-      -> hist_inv_from_iter b c -> hist_inv_from_iter self c
-  
-  function hist_inv_refl_from_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_from_iter_spec: forall self: () [hist_inv_from_iter self self]. hist_inv_from_iter self self
-  
-  function postcondition_mut_hist_inv_from_iter (self: ()) (args: t_IntoIter_T_Global) (res_state: ()) (res: t_HashSet_T_RandomState_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_from_iter_spec:
-    forall self: (), args: t_IntoIter_T_Global, res_state: (), res: t_HashSet_T_RandomState_Global [postcondition_mut_from_iter self args res_state res | hist_inv_from_iter self res_state]. postcondition_mut_from_iter self args res_state res
-      -> hist_inv_from_iter self res_state
-  
-  function fn_hist_inv_from_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_from_iter_spec:
-    forall self: (), res_state: () [hist_inv_from_iter self res_state]. hist_inv_from_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_from_iter (self: ()) (args: t_IntoIter_T_Global) (result: t_HashSet_T_RandomState_Global) =
     let iter = args in inv_HashSet_T_RandomState_Global result
     /\ (exists into_iter: t_IntoIter_T_Global, prod: Seq.seq t_T, done': MutBorrow.t t_IntoIter_T_Global. postcondition_into_iter () iter into_iter
@@ -2175,18 +1415,6 @@ module M_roundtrip_hashset_into_iter
         = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))
   
   meta "rewrite_def" predicate postcondition_from_iter
-  
-  function fn_once_from_iter (self: ()) (args: t_IntoIter_T_Global) (res: t_HashSet_T_RandomState_Global) : ()
-  
-  axiom fn_once_from_iter_spec:
-    forall self: (), args: t_IntoIter_T_Global, res: t_HashSet_T_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (postcondition_from_iter self args res /\ resolve_from_iter self)
-  
-  function fn_mut_from_iter (self: ()) (args: t_IntoIter_T_Global) (res_state: ()) (res: t_HashSet_T_RandomState_Global) : ()
-  
-  axiom fn_mut_from_iter_spec:
-    forall self: (), args: t_IntoIter_T_Global, res_state: (), res: t_HashSet_T_RandomState_Global [postcondition_mut_from_iter self args res_state res]. postcondition_mut_from_iter self args res_state res
-      = (postcondition_from_iter self args res /\ self = res_state)
   
   let collect_IntoIter_T_Global (self_: t_IntoIter_T_Global) (return (x: t_HashSet_T_RandomState_Global)) =
   {[@stop_split] [@expl:collect_IntoIter_T_Global requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_IntoIter_T_Global self_)
@@ -2277,66 +1505,10 @@ module M_roundtrip_hashset_iter
   
   predicate inv_HashSet_ref_T_RandomState_Global (_1: t_HashSet_ref_T_RandomState_Global)
   
-  predicate postcondition_once_into_iter (self: ()) (args: t_Iter_T) (result: t_Iter_T) =
-    let self_ = args in inv_Iter_T result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_once_into_iter
-  
-  predicate resolve_into_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_into_iter
-  
-  predicate postcondition_mut_into_iter (self: ()) (args: t_Iter_T) (result_state: ()) (result: t_Iter_T) =
-    let self_ = args in inv_Iter_T result /\ result = self_
-  
-  meta "rewrite_def" predicate postcondition_mut_into_iter
-  
-  function fn_mut_once_into_iter (self: ()) (args: t_Iter_T) (res: t_Iter_T) : ()
-  
-  axiom fn_mut_once_into_iter_spec:
-    forall self: (), args: t_Iter_T, res: t_Iter_T [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (exists res_state: (). postcondition_mut_into_iter self args res_state res /\ resolve_into_iter res_state)
-  
-  predicate hist_inv_into_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_into_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_into_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_into_iter self b, hist_inv_into_iter b c | hist_inv_into_iter self b, hist_inv_into_iter self c | hist_inv_into_iter b c, hist_inv_into_iter self c]. hist_inv_into_iter self b
-      -> hist_inv_into_iter b c -> hist_inv_into_iter self c
-  
-  function hist_inv_refl_into_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_into_iter_spec: forall self: () [hist_inv_into_iter self self]. hist_inv_into_iter self self
-  
-  function postcondition_mut_hist_inv_into_iter (self: ()) (args: t_Iter_T) (res_state: ()) (res: t_Iter_T) : ()
-  
-  axiom postcondition_mut_hist_inv_into_iter_spec:
-    forall self: (), args: t_Iter_T, res_state: (), res: t_Iter_T [postcondition_mut_into_iter self args res_state res | hist_inv_into_iter self res_state]. postcondition_mut_into_iter self args res_state res
-      -> hist_inv_into_iter self res_state
-  
-  function fn_hist_inv_into_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_into_iter_spec:
-    forall self: (), res_state: () [hist_inv_into_iter self res_state]. hist_inv_into_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_into_iter (self: ()) (args: t_Iter_T) (result: t_Iter_T) =
     let self_ = args in inv_Iter_T result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
-  
-  function fn_once_into_iter (self: ()) (args: t_Iter_T) (res: t_Iter_T) : ()
-  
-  axiom fn_once_into_iter_spec:
-    forall self: (), args: t_Iter_T, res: t_Iter_T [postcondition_once_into_iter self args res]. postcondition_once_into_iter self args res
-      = (postcondition_into_iter self args res /\ resolve_into_iter self)
-  
-  function fn_mut_into_iter (self: ()) (args: t_Iter_T) (res_state: ()) (res: t_Iter_T) : ()
-  
-  axiom fn_mut_into_iter_spec:
-    forall self: (), args: t_Iter_T, res_state: (), res: t_Iter_T [postcondition_mut_into_iter self args res_state res]. postcondition_mut_into_iter self args res_state res
-      = (postcondition_into_iter self args res /\ self = res_state)
   
   type t_T
   
@@ -2402,62 +1574,6 @@ module M_roundtrip_hashset_iter
           = (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T prod x1)))}
       (! return {result}) ]
   
-  predicate postcondition_once_from_iter (self: ()) (args: t_Iter_T) (result: t_HashSet_ref_T_RandomState_Global) =
-    let iter = args in inv_HashSet_ref_T_RandomState_Global result
-    /\ (exists into_iter: t_Iter_T, prod: Seq.seq t_T, done': MutBorrow.t t_Iter_T. postcondition_into_iter () iter into_iter
-      /\ produces_Iter_T into_iter prod done'.current
-      /\ completed_Iter_T done'
-      /\ resolve_Iter_T done'.final
-      /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_ref_T_RandomState_Global result) x
-        = (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T prod x1)))
-  
-  meta "rewrite_def" predicate postcondition_once_from_iter
-  
-  predicate resolve_from_iter [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_from_iter
-  
-  predicate postcondition_mut_from_iter (self: ()) (args: t_Iter_T) (result_state: ()) (result: t_HashSet_ref_T_RandomState_Global) =
-    let iter = args in inv_HashSet_ref_T_RandomState_Global result
-    /\ (exists into_iter: t_Iter_T, prod: Seq.seq t_T, done': MutBorrow.t t_Iter_T. postcondition_into_iter () iter into_iter
-      /\ produces_Iter_T into_iter prod done'.current
-      /\ completed_Iter_T done'
-      /\ resolve_Iter_T done'.final
-      /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_HashSet_ref_T_RandomState_Global result) x
-        = (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T prod x1)))
-  
-  meta "rewrite_def" predicate postcondition_mut_from_iter
-  
-  function fn_mut_once_from_iter (self: ()) (args: t_Iter_T) (res: t_HashSet_ref_T_RandomState_Global) : ()
-  
-  axiom fn_mut_once_from_iter_spec:
-    forall self: (), args: t_Iter_T, res: t_HashSet_ref_T_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (exists res_state: (). postcondition_mut_from_iter self args res_state res /\ resolve_from_iter res_state)
-  
-  predicate hist_inv_from_iter (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_from_iter (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_from_iter_spec:
-    forall self: (), b: (), c: () [hist_inv_from_iter self b, hist_inv_from_iter b c | hist_inv_from_iter self b, hist_inv_from_iter self c | hist_inv_from_iter b c, hist_inv_from_iter self c]. hist_inv_from_iter self b
-      -> hist_inv_from_iter b c -> hist_inv_from_iter self c
-  
-  function hist_inv_refl_from_iter (self: ()) : ()
-  
-  axiom hist_inv_refl_from_iter_spec: forall self: () [hist_inv_from_iter self self]. hist_inv_from_iter self self
-  
-  function postcondition_mut_hist_inv_from_iter (self: ()) (args: t_Iter_T) (res_state: ()) (res: t_HashSet_ref_T_RandomState_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_from_iter_spec:
-    forall self: (), args: t_Iter_T, res_state: (), res: t_HashSet_ref_T_RandomState_Global [postcondition_mut_from_iter self args res_state res | hist_inv_from_iter self res_state]. postcondition_mut_from_iter self args res_state res
-      -> hist_inv_from_iter self res_state
-  
-  function fn_hist_inv_from_iter (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_from_iter_spec:
-    forall self: (), res_state: () [hist_inv_from_iter self res_state]. hist_inv_from_iter self res_state
-      = (self = res_state)
-  
   predicate postcondition_from_iter (self: ()) (args: t_Iter_T) (result: t_HashSet_ref_T_RandomState_Global) =
     let iter = args in inv_HashSet_ref_T_RandomState_Global result
     /\ (exists into_iter: t_Iter_T, prod: Seq.seq t_T, done': MutBorrow.t t_Iter_T. postcondition_into_iter () iter into_iter
@@ -2468,18 +1584,6 @@ module M_roundtrip_hashset_iter
         = (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T prod x1)))
   
   meta "rewrite_def" predicate postcondition_from_iter
-  
-  function fn_once_from_iter (self: ()) (args: t_Iter_T) (res: t_HashSet_ref_T_RandomState_Global) : ()
-  
-  axiom fn_once_from_iter_spec:
-    forall self: (), args: t_Iter_T, res: t_HashSet_ref_T_RandomState_Global [postcondition_once_from_iter self args res]. postcondition_once_from_iter self args res
-      = (postcondition_from_iter self args res /\ resolve_from_iter self)
-  
-  function fn_mut_from_iter (self: ()) (args: t_Iter_T) (res_state: ()) (res: t_HashSet_ref_T_RandomState_Global) : ()
-  
-  axiom fn_mut_from_iter_spec:
-    forall self: (), args: t_Iter_T, res_state: (), res: t_HashSet_ref_T_RandomState_Global [postcondition_mut_from_iter self args res_state res]. postcondition_mut_from_iter self args res_state res
-      = (postcondition_from_iter self args res /\ self = res_state)
   
   let collect_Iter_T (self_: t_Iter_T) (return (x: t_HashSet_ref_T_RandomState_Global)) =
   {[@stop_split] [@expl:collect_Iter_T requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_Iter_T self_)

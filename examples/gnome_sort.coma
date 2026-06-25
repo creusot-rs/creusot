@@ -184,12 +184,16 @@ module M_gnome_sort
   
   meta "rewrite_def" function deep_model_ref_T
   
-  predicate postcondition_once_le (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
+  predicate postcondition_le (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_T_ref_T, res: bool [postcondition_once_le () args res]. postcondition_once_le () args res
+    forall args: tup2_ref_T_ref_T, res: bool [postcondition_le () args res]. postcondition_le () args res
       -> (let {f0 = self_; f1 = other} = args in res
       = le_log_DeepModelTy (deep_model_ref_T self_) (deep_model_ref_T other))
+  
+  predicate postcondition_once_le (self: ()) (args: tup2_ref_T_ref_T) (result: bool) = postcondition_le self args result
+  
+  meta "rewrite_def" predicate postcondition_once_le
   
   let le_T (self_: t_T) (other: t_T) (return (x: bool)) =
   {[@stop_split] [@expl:le requires] precondition_le () { f0 = self_; f1 = other }}

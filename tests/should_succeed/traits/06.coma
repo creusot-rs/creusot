@@ -26,11 +26,16 @@ module M_test
   
   predicate inv_Tgt (_1: t_Tgt)
   
-  predicate postcondition_once_ix (self: ()) (args: tup2_ref_T_usize) (result: t_Tgt)
+  predicate postcondition_ix (self: ()) (args: tup2_ref_T_usize) (result: t_Tgt)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_T_usize, res: t_Tgt [postcondition_once_ix () args res]. postcondition_once_ix () args res
+    forall args: tup2_ref_T_usize, res: t_Tgt [postcondition_ix () args res]. postcondition_ix () args res
       -> (let {f0 = self; f1 = ix} = args in inv_Tgt res)
+  
+  predicate postcondition_once_ix (self: ()) (args: tup2_ref_T_usize) (result: t_Tgt) =
+    postcondition_ix self args result
+  
+  meta "rewrite_def" predicate postcondition_once_ix
   
   let ix_T (self: t_T) (ix: UInt64.t) (return (x: t_Tgt)) =
   {[@stop_split] [@expl:ix requires] precondition_ix () { f0 = self; f1 = ix }}

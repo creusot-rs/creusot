@@ -38,11 +38,16 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
         | Some f0 -> inv_A f0
         end
   
-  predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_A)
+  predicate postcondition_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_A)
   
   axiom postcondition_fndef:
-    forall args: MutBorrow.t t_I, res: t_Option_A [postcondition_once_next () args res]. postcondition_once_next () args res
+    forall args: MutBorrow.t t_I, res: t_Option_A [postcondition_next () args res]. postcondition_next () args res
       -> (let self = args in inv_Option_A res)
+  
+  predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_A) =
+    postcondition_next self args result
+  
+  meta "rewrite_def" predicate postcondition_once_next
   
   let next_I (self: MutBorrow.t t_I) (return (x: t_Option_A)) =
   {[@stop_split] [@expl:next requires] precondition_next () self}

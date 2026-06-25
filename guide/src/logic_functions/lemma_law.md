@@ -82,3 +82,5 @@ fn foo<T: Commutative>(x: T, y: T) {
     proof_assert!(z == y.op(x)); // Works!
 }
 ```
+
+Note that the `law` attribute may not be specified when implementing a trait. In the case where it is not specified when instantiating the trait, the autoloading mechanism is disabled as soon as Creusot is able to resolve the trait reference to this specific implementation. This can be useful if the statement of the law is trivial when instantiated and would pollute the context rather than guiding the proofs.

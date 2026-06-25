@@ -279,63 +279,9 @@ module M_test1
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
       = (postcondition_F self args res /\ self = res_state)
   
-  predicate postcondition_once_ref_F (self: t_F) (args: Int32.t) (result: Int32.t) = postcondition_F self args result
-  
-  meta "rewrite_def" predicate postcondition_once_ref_F
-  
-  predicate resolve_ref_F [@inline:trivial] (_1: t_F) = true
-  
-  meta "rewrite_def" predicate resolve_ref_F
-  
-  predicate postcondition_mut_ref_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t) =
-    postcondition_F self args result /\ self = result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_ref_F
-  
-  function fn_mut_once_ref_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_mut_once_ref_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_ref_F self args res]. postcondition_once_ref_F self args res
-      = (exists res_state: t_F. postcondition_mut_ref_F self args res_state res /\ resolve_ref_F res_state)
-  
-  predicate hist_inv_ref_F (self: t_F) (result_state: t_F) = self = result_state
-  
-  function hist_inv_trans_ref_F (self: t_F) (b: t_F) (c: t_F) : ()
-  
-  axiom hist_inv_trans_ref_F_spec:
-    forall self: t_F, b: t_F, c: t_F [hist_inv_ref_F self b, hist_inv_ref_F b c | hist_inv_ref_F self b, hist_inv_ref_F self c | hist_inv_ref_F b c, hist_inv_ref_F self c]. hist_inv_ref_F self b
-      -> hist_inv_ref_F b c -> hist_inv_ref_F self c
-  
-  function hist_inv_refl_ref_F (self: t_F) : ()
-  
-  axiom hist_inv_refl_ref_F_spec: forall self: t_F [hist_inv_ref_F self self]. hist_inv_ref_F self self
-  
-  function postcondition_mut_hist_inv_ref_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_ref_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_ref_F self args res_state res | hist_inv_ref_F self res_state]. postcondition_mut_ref_F self args res_state res
-      -> hist_inv_ref_F self res_state
-  
-  function fn_hist_inv_ref_F (self: t_F) (res_state: t_F) : ()
-  
-  axiom fn_hist_inv_ref_F_spec:
-    forall self: t_F, res_state: t_F [hist_inv_ref_F self res_state]. hist_inv_ref_F self res_state = (self = res_state)
-  
   predicate postcondition_ref_F (self: t_F) (args: Int32.t) (result: Int32.t) = postcondition_F self args result
   
   meta "rewrite_def" predicate postcondition_ref_F
-  
-  function fn_once_ref_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_once_ref_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_ref_F self args res]. postcondition_once_ref_F self args res
-      = (postcondition_ref_F self args res /\ resolve_ref_F self)
-  
-  function fn_mut_ref_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom fn_mut_ref_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_ref_F self args res_state res]. postcondition_mut_ref_F self args res_state res
-      = (postcondition_ref_F self args res /\ self = res_state)
   
   let call_fn_ref_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fn_ref_F requires] ([@stop_split] [@expl:call_fn 'f' type invariant] inv_ref_F f)
@@ -412,46 +358,14 @@ module M_test10
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_once_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_mut_F self.current args self.final result
-  
-  meta "rewrite_def" predicate postcondition_once_refmut_F
-  
-  predicate resolve_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_F
-  
   predicate postcondition_mut_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (result_state: MutBorrow.t t_F) (result: Int32.t) =
     postcondition_mut_F self.current args result_state.current result /\ self.final = result_state.final
   
   meta "rewrite_def" predicate postcondition_mut_refmut_F
   
-  function fn_mut_once_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (res: Int32.t) : ()
+  predicate resolve_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
   
-  axiom fn_mut_once_refmut_F_spec:
-    forall self: MutBorrow.t t_F, args: Int32.t, res: Int32.t [postcondition_once_refmut_F self args res]. postcondition_once_refmut_F self args res
-      = (exists res_state: MutBorrow.t t_F. postcondition_mut_refmut_F self args res_state res
-        /\ resolve_refmut_F res_state)
-  
-  predicate hist_inv_refmut_F (self: MutBorrow.t t_F) (result_state: MutBorrow.t t_F) =
-    hist_inv_F self.current result_state.current /\ self.final = result_state.final
-  
-  function hist_inv_trans_refmut_F (self: MutBorrow.t t_F) (b: MutBorrow.t t_F) (c: MutBorrow.t t_F) : ()
-  
-  axiom hist_inv_trans_refmut_F_spec:
-    forall self: MutBorrow.t t_F, b: MutBorrow.t t_F, c: MutBorrow.t t_F [hist_inv_refmut_F self b, hist_inv_refmut_F b c | hist_inv_refmut_F self b, hist_inv_refmut_F self c | hist_inv_refmut_F b c, hist_inv_refmut_F self c]. hist_inv_refmut_F self b
-      -> hist_inv_refmut_F b c -> hist_inv_refmut_F self c
-  
-  function hist_inv_refl_refmut_F (self: MutBorrow.t t_F) : ()
-  
-  axiom hist_inv_refl_refmut_F_spec:
-    forall self: MutBorrow.t t_F [hist_inv_refmut_F self self]. hist_inv_refmut_F self self
-  
-  function postcondition_mut_hist_inv_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (res_state: MutBorrow.t t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_refmut_F_spec:
-    forall self: MutBorrow.t t_F, args: Int32.t, res_state: MutBorrow.t t_F, res: Int32.t [postcondition_mut_refmut_F self args res_state res | hist_inv_refmut_F self res_state]. postcondition_mut_refmut_F self args res_state res
-      -> hist_inv_refmut_F self res_state
+  meta "rewrite_def" predicate resolve_refmut_F
   
   let call_fnmut_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnmut_refmut_F requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_refmut_F f)
@@ -936,11 +850,6 @@ module M_test2
   
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
-  predicate postcondition_once_Box_F_Global (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once_F self args result
-  
-  meta "rewrite_def" predicate postcondition_once_Box_F_Global
-  
   predicate resolve_F (_1: t_F)
   
   predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
@@ -969,41 +878,6 @@ module M_test2
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate resolve_Box_F_Global [@inline:trivial] (_1: t_F) = resolve_F _1
-  
-  meta "rewrite_def" predicate resolve_Box_F_Global
-  
-  predicate postcondition_mut_Box_F_Global (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t) =
-    postcondition_mut_F self args result_state result
-  
-  meta "rewrite_def" predicate postcondition_mut_Box_F_Global
-  
-  function fn_mut_once_Box_F_Global (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_mut_once_Box_F_Global_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_Box_F_Global self args res]. postcondition_once_Box_F_Global self args res
-      = (exists res_state: t_F. postcondition_mut_Box_F_Global self args res_state res
-        /\ resolve_Box_F_Global res_state)
-  
-  predicate hist_inv_Box_F_Global (self: t_F) (result_state: t_F) = hist_inv_F self result_state
-  
-  function hist_inv_trans_Box_F_Global (self: t_F) (b: t_F) (c: t_F) : ()
-  
-  axiom hist_inv_trans_Box_F_Global_spec:
-    forall self: t_F, b: t_F, c: t_F [hist_inv_Box_F_Global self b, hist_inv_Box_F_Global b c | hist_inv_Box_F_Global self b, hist_inv_Box_F_Global self c | hist_inv_Box_F_Global b c, hist_inv_Box_F_Global self c]. hist_inv_Box_F_Global self b
-      -> hist_inv_Box_F_Global b c -> hist_inv_Box_F_Global self c
-  
-  function hist_inv_refl_Box_F_Global (self: t_F) : ()
-  
-  axiom hist_inv_refl_Box_F_Global_spec:
-    forall self: t_F [hist_inv_Box_F_Global self self]. hist_inv_Box_F_Global self self
-  
-  function postcondition_mut_hist_inv_Box_F_Global (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_Box_F_Global_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_Box_F_Global self args res_state res | hist_inv_Box_F_Global self res_state]. postcondition_mut_Box_F_Global self args res_state res
-      -> hist_inv_Box_F_Global self res_state
-  
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
   
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
@@ -1023,27 +897,9 @@ module M_test2
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
       = (postcondition_F self args res /\ self = res_state)
   
-  function fn_hist_inv_Box_F_Global (self: t_F) (res_state: t_F) : ()
-  
-  axiom fn_hist_inv_Box_F_Global_spec:
-    forall self: t_F, res_state: t_F [hist_inv_Box_F_Global self res_state]. hist_inv_Box_F_Global self res_state
-      = (self = res_state)
-  
   predicate postcondition_Box_F_Global (self: t_F) (args: Int32.t) (result: Int32.t) = postcondition_F self args result
   
   meta "rewrite_def" predicate postcondition_Box_F_Global
-  
-  function fn_once_Box_F_Global (self: t_F) (args: Int32.t) (res: Int32.t) : ()
-  
-  axiom fn_once_Box_F_Global_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_Box_F_Global self args res]. postcondition_once_Box_F_Global self args res
-      = (postcondition_Box_F_Global self args res /\ resolve_Box_F_Global self)
-  
-  function fn_mut_Box_F_Global (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom fn_mut_Box_F_Global_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_Box_F_Global self args res_state res]. postcondition_mut_Box_F_Global self args res_state res
-      = (postcondition_Box_F_Global self args res /\ self = res_state)
   
   let call_fn_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fn_Box_F_Global requires] ([@stop_split] [@expl:call_fn 'f' type invariant] inv_Box_F_Global f)
@@ -1135,42 +991,14 @@ module M_test3
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
       = (postcondition_F self args res /\ self = res_state)
   
-  predicate postcondition_once_ref_F (self: t_F) (args: Int32.t) (result: Int32.t) = postcondition_F self args result
-  
-  meta "rewrite_def" predicate postcondition_once_ref_F
-  
-  predicate resolve_ref_F [@inline:trivial] (_1: t_F) = true
-  
-  meta "rewrite_def" predicate resolve_ref_F
-  
   predicate postcondition_mut_ref_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t) =
     postcondition_F self args result /\ self = result_state
   
   meta "rewrite_def" predicate postcondition_mut_ref_F
   
-  function fn_mut_once_ref_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  predicate resolve_ref_F [@inline:trivial] (_1: t_F) = true
   
-  axiom fn_mut_once_ref_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_ref_F self args res]. postcondition_once_ref_F self args res
-      = (exists res_state: t_F. postcondition_mut_ref_F self args res_state res /\ resolve_ref_F res_state)
-  
-  predicate hist_inv_ref_F (self: t_F) (result_state: t_F) = self = result_state
-  
-  function hist_inv_trans_ref_F (self: t_F) (b: t_F) (c: t_F) : ()
-  
-  axiom hist_inv_trans_ref_F_spec:
-    forall self: t_F, b: t_F, c: t_F [hist_inv_ref_F self b, hist_inv_ref_F b c | hist_inv_ref_F self b, hist_inv_ref_F self c | hist_inv_ref_F b c, hist_inv_ref_F self c]. hist_inv_ref_F self b
-      -> hist_inv_ref_F b c -> hist_inv_ref_F self c
-  
-  function hist_inv_refl_ref_F (self: t_F) : ()
-  
-  axiom hist_inv_refl_ref_F_spec: forall self: t_F [hist_inv_ref_F self self]. hist_inv_ref_F self self
-  
-  function postcondition_mut_hist_inv_ref_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_ref_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_ref_F self args res_state res | hist_inv_ref_F self res_state]. postcondition_mut_ref_F self args res_state res
-      -> hist_inv_ref_F self res_state
+  meta "rewrite_def" predicate resolve_ref_F
   
   let call_fnmut_ref_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnmut_ref_F requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_ref_F f)
@@ -1217,16 +1045,7 @@ module M_test4
   
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
-  predicate postcondition_once_Box_F_Global (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once_F self args result
-  
-  meta "rewrite_def" predicate postcondition_once_Box_F_Global
-  
   predicate resolve_F (_1: t_F)
-  
-  predicate resolve_Box_F_Global [@inline:trivial] (_1: t_F) = resolve_F _1
-  
-  meta "rewrite_def" predicate resolve_Box_F_Global
   
   predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
@@ -1259,31 +1078,9 @@ module M_test4
   
   meta "rewrite_def" predicate postcondition_mut_Box_F_Global
   
-  function fn_mut_once_Box_F_Global (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  predicate resolve_Box_F_Global [@inline:trivial] (_1: t_F) = resolve_F _1
   
-  axiom fn_mut_once_Box_F_Global_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_Box_F_Global self args res]. postcondition_once_Box_F_Global self args res
-      = (exists res_state: t_F. postcondition_mut_Box_F_Global self args res_state res
-        /\ resolve_Box_F_Global res_state)
-  
-  predicate hist_inv_Box_F_Global (self: t_F) (result_state: t_F) = hist_inv_F self result_state
-  
-  function hist_inv_trans_Box_F_Global (self: t_F) (b: t_F) (c: t_F) : ()
-  
-  axiom hist_inv_trans_Box_F_Global_spec:
-    forall self: t_F, b: t_F, c: t_F [hist_inv_Box_F_Global self b, hist_inv_Box_F_Global b c | hist_inv_Box_F_Global self b, hist_inv_Box_F_Global self c | hist_inv_Box_F_Global b c, hist_inv_Box_F_Global self c]. hist_inv_Box_F_Global self b
-      -> hist_inv_Box_F_Global b c -> hist_inv_Box_F_Global self c
-  
-  function hist_inv_refl_Box_F_Global (self: t_F) : ()
-  
-  axiom hist_inv_refl_Box_F_Global_spec:
-    forall self: t_F [hist_inv_Box_F_Global self self]. hist_inv_Box_F_Global self self
-  
-  function postcondition_mut_hist_inv_Box_F_Global (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_Box_F_Global_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_Box_F_Global self args res_state res | hist_inv_Box_F_Global self res_state]. postcondition_mut_Box_F_Global self args res_state res
-      -> hist_inv_Box_F_Global self res_state
+  meta "rewrite_def" predicate resolve_Box_F_Global
   
   let call_fnmut_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnmut_Box_F_Global requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_Box_F_Global f)
@@ -1378,46 +1175,14 @@ module M_test5
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_once_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_mut_F self.current args self.final result
-  
-  meta "rewrite_def" predicate postcondition_once_refmut_F
-  
-  predicate resolve_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_F
-  
   predicate postcondition_mut_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (result_state: MutBorrow.t t_F) (result: Int32.t) =
     postcondition_mut_F self.current args result_state.current result /\ self.final = result_state.final
   
   meta "rewrite_def" predicate postcondition_mut_refmut_F
   
-  function fn_mut_once_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (res: Int32.t) : ()
+  predicate resolve_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = _1.final = _1.current
   
-  axiom fn_mut_once_refmut_F_spec:
-    forall self: MutBorrow.t t_F, args: Int32.t, res: Int32.t [postcondition_once_refmut_F self args res]. postcondition_once_refmut_F self args res
-      = (exists res_state: MutBorrow.t t_F. postcondition_mut_refmut_F self args res_state res
-        /\ resolve_refmut_F res_state)
-  
-  predicate hist_inv_refmut_F (self: MutBorrow.t t_F) (result_state: MutBorrow.t t_F) =
-    hist_inv_F self.current result_state.current /\ self.final = result_state.final
-  
-  function hist_inv_trans_refmut_F (self: MutBorrow.t t_F) (b: MutBorrow.t t_F) (c: MutBorrow.t t_F) : ()
-  
-  axiom hist_inv_trans_refmut_F_spec:
-    forall self: MutBorrow.t t_F, b: MutBorrow.t t_F, c: MutBorrow.t t_F [hist_inv_refmut_F self b, hist_inv_refmut_F b c | hist_inv_refmut_F self b, hist_inv_refmut_F self c | hist_inv_refmut_F b c, hist_inv_refmut_F self c]. hist_inv_refmut_F self b
-      -> hist_inv_refmut_F b c -> hist_inv_refmut_F self c
-  
-  function hist_inv_refl_refmut_F (self: MutBorrow.t t_F) : ()
-  
-  axiom hist_inv_refl_refmut_F_spec:
-    forall self: MutBorrow.t t_F [hist_inv_refmut_F self self]. hist_inv_refmut_F self self
-  
-  function postcondition_mut_hist_inv_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (res_state: MutBorrow.t t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_refmut_F_spec:
-    forall self: MutBorrow.t t_F, args: Int32.t, res_state: MutBorrow.t t_F, res: Int32.t [postcondition_mut_refmut_F self args res_state res | hist_inv_refmut_F self res_state]. postcondition_mut_refmut_F self args res_state res
-      -> hist_inv_refmut_F self res_state
+  meta "rewrite_def" predicate resolve_refmut_F
   
   let call_fnmut_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnmut_refmut_F requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_refmut_F f)
@@ -1782,16 +1547,7 @@ module M_test9
   
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
-  predicate postcondition_once_Box_F_Global (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once_F self args result
-  
-  meta "rewrite_def" predicate postcondition_once_Box_F_Global
-  
   predicate resolve_F (_1: t_F)
-  
-  predicate resolve_Box_F_Global [@inline:trivial] (_1: t_F) = resolve_F _1
-  
-  meta "rewrite_def" predicate resolve_Box_F_Global
   
   predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
@@ -1824,31 +1580,9 @@ module M_test9
   
   meta "rewrite_def" predicate postcondition_mut_Box_F_Global
   
-  function fn_mut_once_Box_F_Global (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  predicate resolve_Box_F_Global [@inline:trivial] (_1: t_F) = resolve_F _1
   
-  axiom fn_mut_once_Box_F_Global_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_Box_F_Global self args res]. postcondition_once_Box_F_Global self args res
-      = (exists res_state: t_F. postcondition_mut_Box_F_Global self args res_state res
-        /\ resolve_Box_F_Global res_state)
-  
-  predicate hist_inv_Box_F_Global (self: t_F) (result_state: t_F) = hist_inv_F self result_state
-  
-  function hist_inv_trans_Box_F_Global (self: t_F) (b: t_F) (c: t_F) : ()
-  
-  axiom hist_inv_trans_Box_F_Global_spec:
-    forall self: t_F, b: t_F, c: t_F [hist_inv_Box_F_Global self b, hist_inv_Box_F_Global b c | hist_inv_Box_F_Global self b, hist_inv_Box_F_Global self c | hist_inv_Box_F_Global b c, hist_inv_Box_F_Global self c]. hist_inv_Box_F_Global self b
-      -> hist_inv_Box_F_Global b c -> hist_inv_Box_F_Global self c
-  
-  function hist_inv_refl_Box_F_Global (self: t_F) : ()
-  
-  axiom hist_inv_refl_Box_F_Global_spec:
-    forall self: t_F [hist_inv_Box_F_Global self self]. hist_inv_Box_F_Global self self
-  
-  function postcondition_mut_hist_inv_Box_F_Global (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
-  
-  axiom postcondition_mut_hist_inv_Box_F_Global_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_Box_F_Global self args res_state res | hist_inv_Box_F_Global self res_state]. postcondition_mut_Box_F_Global self args res_state res
-      -> hist_inv_Box_F_Global self res_state
+  meta "rewrite_def" predicate resolve_Box_F_Global
   
   let call_fnmut_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnmut_Box_F_Global requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_Box_F_Global f)

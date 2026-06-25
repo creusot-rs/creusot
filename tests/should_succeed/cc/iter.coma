@@ -22,42 +22,7 @@ module M_test_filter
   
   meta "rewrite_def" predicate resolve_refmut_closure0
   
-  predicate postcondition_once_closure0 (self: ()) (args: bool) (result: bool) = let b = args in result = b
-  
-  meta "rewrite_def" predicate postcondition_once_closure0
-  
-  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_closure0
-  
   predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
-  
-  predicate postcondition_mut_closure0 (self: ()) (args: bool) (result_state: ()) (result: bool) =
-    let b = args in result = b /\ hist_inv_closure0 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure0
-  
-  function fn_mut_once_closure0 (self: ()) (args: bool) (res: bool) : ()
-  
-  axiom fn_mut_once_closure0_spec:
-    forall self: (), args: bool, res: bool [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
-      = (exists res_state: (). postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
-  
-  function hist_inv_trans_closure0 (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_closure0_spec:
-    forall self: (), b: (), c: () [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
-      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
-  
-  function hist_inv_refl_closure0 (self: ()) : ()
-  
-  axiom hist_inv_refl_closure0_spec: forall self: () [hist_inv_closure0 self self]. hist_inv_closure0 self self
-  
-  function postcondition_mut_hist_inv_closure0 (self: ()) (args: bool) (res_state: ()) (res: bool) : ()
-  
-  axiom postcondition_mut_hist_inv_closure0_spec:
-    forall self: (), args: bool, res_state: (), res: bool [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
-      -> hist_inv_closure0 self res_state
   
   let closure0 (self: MutBorrow.t ()) (b: bool) (return (x: bool)) = (! bb0
     [ bb0 = s0
@@ -89,6 +54,11 @@ module M_test_filter
   
   predicate no_precondition_ref_ref_bool (_1: ()) =
     forall f: (), i: bool. inv_closure0 f /\ inv_ref_ref_bool i -> precondition_closure0 f i
+  
+  predicate postcondition_mut_closure0 (self: ()) (args: bool) (result_state: ()) (result: bool) =
+    let b = args in result = b /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
   
   predicate precise_ref_ref_bool (_1: ()) =
     forall f1: (), f2: (), i: bool. not (postcondition_mut_closure0 f1 i f2 true
@@ -425,43 +395,7 @@ module M_test_filter_map
   
   type t_Option_bool = None | Some bool
   
-  predicate postcondition_once_closure0 (self: ()) (args: bool) (result: t_Option_bool) =
-    let b = args in result = (if b then Some false else None)
-  
-  meta "rewrite_def" predicate postcondition_once_closure0
-  
-  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_closure0
-  
   predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
-  
-  predicate postcondition_mut_closure0 (self: ()) (args: bool) (result_state: ()) (result: t_Option_bool) =
-    let b = args in result = (if b then Some false else None) /\ hist_inv_closure0 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure0
-  
-  function fn_mut_once_closure0 (self: ()) (args: bool) (res: t_Option_bool) : ()
-  
-  axiom fn_mut_once_closure0_spec:
-    forall self: (), args: bool, res: t_Option_bool [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
-      = (exists res_state: (). postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
-  
-  function hist_inv_trans_closure0 (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_closure0_spec:
-    forall self: (), b: (), c: () [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
-      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
-  
-  function hist_inv_refl_closure0 (self: ()) : ()
-  
-  axiom hist_inv_refl_closure0_spec: forall self: () [hist_inv_closure0 self self]. hist_inv_closure0 self self
-  
-  function postcondition_mut_hist_inv_closure0 (self: ()) (args: bool) (res_state: ()) (res: t_Option_bool) : ()
-  
-  axiom postcondition_mut_hist_inv_closure0_spec:
-    forall self: (), args: bool, res_state: (), res: t_Option_bool [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
-      -> hist_inv_closure0 self res_state
   
   let closure0 (self: MutBorrow.t ()) (b: bool) (return (x: t_Option_bool)) = (! bb0
     [ bb0 = s0
@@ -492,6 +426,11 @@ module M_test_filter_map
   meta "rewrite_def" predicate precondition_closure0
   
   predicate no_precondition_ref_bool (f: ()) = forall i: bool. inv_ref_bool i -> precondition_closure0 f i
+  
+  predicate postcondition_mut_closure0 (self: ()) (args: bool) (result_state: ()) (result: t_Option_bool) =
+    let b = args in result = (if b then Some false else None) /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
   
   predicate precise_ref_bool (f1: ()) =
     forall f2: (), i: bool. not ((exists b: bool. postcondition_mut_closure0 f1 i f2 (Some b))

@@ -218,14 +218,6 @@ module M_fetch_add
     [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
       (! return {result}) ]
   
-  predicate resolve_refmut_Ghost_Option_F [@inline:trivial] (_1: MutBorrow.t t_Option_F) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Ghost_Option_F
-  
-  predicate resolve_closure6 [@inline:trivial] (_1: closure6) = resolve_refmut_Ghost_Option_F _1.c0
-  
-  meta "rewrite_def" predicate resolve_closure6
-  
   predicate hist_inv_closure6 (self: closure6) (result_state: closure6) = result_state.c0.final = self.c0.final
   
   let closure6 [@coma:extspec] (self: MutBorrow.t closure6)
@@ -288,41 +280,6 @@ module M_fetch_add
   
   meta "rewrite_def" predicate closure6'post'return
   
-  predicate postcondition_once_closure6 (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (result: ()) =
-    let c = args in exists e: closure6. (exists bor_self: MutBorrow.t closure6. bor_self.current = self
-          /\ bor_self.final = e /\ closure6'post'return bor_self c result /\ hist_inv_closure6 self e)
-      /\ resolve_closure6 e
-  
-  meta "rewrite_def" predicate postcondition_once_closure6
-  
-  predicate postcondition_mut_closure6 (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (result_state: closure6) (result: ()) =
-    let c = args in exists bor_self: MutBorrow.t closure6. bor_self.current = self
-      /\ bor_self.final = result_state /\ closure6'post'return bor_self c result /\ hist_inv_closure6 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure6
-  
-  function fn_mut_once_closure6 (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (res: ()) : ()
-  
-  axiom fn_mut_once_closure6_spec:
-    forall self: closure6, args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None, res: () [postcondition_once_closure6 self args res]. postcondition_once_closure6 self args res
-      = (exists res_state: closure6. postcondition_mut_closure6 self args res_state res /\ resolve_closure6 res_state)
-  
-  function hist_inv_trans_closure6 (self: closure6) (b: closure6) (c: closure6) : ()
-  
-  axiom hist_inv_trans_closure6_spec:
-    forall self: closure6, b: closure6, c: closure6 [hist_inv_closure6 self b, hist_inv_closure6 b c | hist_inv_closure6 self b, hist_inv_closure6 self c | hist_inv_closure6 b c, hist_inv_closure6 self c]. hist_inv_closure6 self b
-      -> hist_inv_closure6 b c -> hist_inv_closure6 self c
-  
-  function hist_inv_refl_closure6 (self: closure6) : ()
-  
-  axiom hist_inv_refl_closure6_spec: forall self: closure6 [hist_inv_closure6 self self]. hist_inv_closure6 self self
-  
-  function postcondition_mut_hist_inv_closure6 (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (res_state: closure6) (res: ()) : ()
-  
-  axiom postcondition_mut_hist_inv_closure6_spec:
-    forall self: closure6, args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None, res_state: closure6, res: () [postcondition_mut_closure6 self args res_state res | hist_inv_closure6 self res_state]. postcondition_mut_closure6 self args res_state res
-      -> hist_inv_closure6 self res_state
-  
   type t_FnGhostWrapper_closure6 = { f0'0: closure6 }
   
   predicate inv_FnGhostWrapper_closure6 (_1: t_FnGhostWrapper_closure6)
@@ -381,6 +338,21 @@ module M_fetch_add
     precondition_closure6 self.f0'0 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure6
+  
+  predicate resolve_refmut_Ghost_Option_F [@inline:trivial] (_1: MutBorrow.t t_Option_F) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_Option_F
+  
+  predicate resolve_closure6 [@inline:trivial] (_1: closure6) = resolve_refmut_Ghost_Option_F _1.c0
+  
+  meta "rewrite_def" predicate resolve_closure6
+  
+  predicate postcondition_once_closure6 (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (result: ()) =
+    let c = args in exists e: closure6. (exists bor_self: MutBorrow.t closure6. bor_self.current = self
+          /\ bor_self.final = e /\ closure6'post'return bor_self c result /\ hist_inv_closure6 self e)
+      /\ resolve_closure6 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure6
   
   predicate postcondition_once_FnGhostWrapper_closure6 (self: t_FnGhostWrapper_closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (result: ()) =
     postcondition_once_closure6 self.f0'0 args result

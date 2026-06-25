@@ -97,6 +97,8 @@ pub trait FnExt<Args: Tuple>: FnMutExt<Args> {
 pub trait FnExt<Args>: FnMutExt<Args> {}
 
 #[cfg(feature = "nightly")]
+#[intrinsic("fn_once_ext")]
+// We rely in `elaborator.rs` on the fact that `F` is at position 1
 impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
     type Output = <Self as FnOnce<Args>>::Output;
 
@@ -116,6 +118,8 @@ impl<Args: Tuple, F: ?Sized + FnOnce<Args>> FnOnceExt<Args> for F {
 }
 
 #[cfg(feature = "nightly")]
+#[intrinsic("fn_mut_ext")]
+// We rely in `elaborator.rs` on the fact that `F` is at position 1
 impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
     #[logic(open, prophetic)]
     #[allow(unused_variables)]
@@ -165,6 +169,8 @@ impl<Args: Tuple, F: ?Sized + FnMut<Args>> FnMutExt<Args> for F {
 }
 
 #[cfg(feature = "nightly")]
+#[intrinsic("fn_ext")]
+// We rely in `elaborator.rs` on the fact that `F` is at position 1
 impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
     #[logic(open, prophetic)]
     #[allow(unused_variables)]
