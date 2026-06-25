@@ -171,7 +171,8 @@ pub fn try_const_to_term<'tcx>(
         let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
         let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
         let span = ctx.def_span(def_id);
-        let uneval = ty::UnevaluatedConst::new(def_id, subst);
+        let kind = ty::UnevaluatedConstKind::new_from_def_id(ctx.tcx, def_id);
+        let uneval = ty::UnevaluatedConst::new(ctx.tcx, kind, subst);
         if let Ok(Ok(val)) = ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
             return valtree_to_term(val, ctx, ty, typing_env, span);
         }
