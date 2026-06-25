@@ -197,6 +197,17 @@ module M_test_fnmut
       /\ ([@stop_split] [@expl:closure hist_inv post] hist_inv_closure1 self.current self.final)}
       (! return {result}) ]
   
+  predicate precondition_closure1 (self: closure1) (args: ()) = UInt32.t'int self.c0.current < 1000000
+  
+  meta "rewrite_def" predicate precondition_closure1
+  
+  let call_mut_closure1 (self_: MutBorrow.t closure1) (arg: ()) (return (x: Int32.t)) =
+  {[@stop_split] [@expl:call_mut requires] precondition_closure1 self_.current arg}
+    any
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_closure1 self_.current arg self_.final result}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -209,10 +220,10 @@ module M_test_fnmut
       | s1 = [ &c <- { c0 = _5 } ] s2
       | s2 = MutBorrow.borrow_mut <closure1> {c}
           (fun (_bor: MutBorrow.t closure1) -> [ &_7 <- _bor ] [ &c <- _bor.final ] s3)
-      | s3 = closure1 {_7} (fun (_x: Int32.t) -> [ &_6 <- _x ] s4)
+      | s3 = call_mut_closure1 {_7} {_8} (fun (_x: Int32.t) -> [ &_6 <- _x ] s4)
       | s4 = MutBorrow.borrow_mut <closure1> {c}
           (fun (_bor: MutBorrow.t closure1) -> [ &_10 <- _bor ] [ &c <- _bor.final ] s5)
-      | s5 = closure1 {_10} (fun (_x: Int32.t) -> [ &_9 <- _x ] s6)
+      | s5 = call_mut_closure1 {_10} {_11} (fun (_x: Int32.t) -> [ &_9 <- _x ] s6)
       | s6 = -{resolve_closure1 c}- s7
       | s7 = {[@expl:assertion] UInt32.t'int x = 100002} s8
       | s8 = return {_ret} ] ]

@@ -136,7 +136,7 @@ impl<T: Encoder> Encodable<T> for PIdent {
 pub enum TermKind<'tcx> {
     Var(PIdent),
     Capture(FieldIdx),
-    Lit(Literal<'tcx>),
+    Lit(Literal),
     /// Will compile to `Seq.create $n [| $e0; ...; $e(n-1) |]`
     SeqLiteral(Box<[Term<'tcx>]>),
     Cast {
@@ -145,7 +145,6 @@ pub enum TermKind<'tcx> {
     Coerce {
         arg: Box<Term<'tcx>>,
     },
-    Item(DefId, GenericArgsRef<'tcx>),
     /// Constants. May get substituted using `instantiate` (via `TypeFoldable`).
     Const(Const<'tcx>),
     Assert {
@@ -165,7 +164,10 @@ pub enum TermKind<'tcx> {
         binder: QuantBinder<'tcx>,
         body: TermWithTriggers<'tcx>,
     },
-    // TODO: Get rid of (id, subst).
+    ConstItem {
+        id: DefId,
+        subst: GenericArgsRef<'tcx>,
+    },
     Call {
         id: DefId,
         subst: GenericArgsRef<'tcx>,
@@ -247,7 +249,7 @@ pub struct TermWithTriggers<'tcx> {
     pub term: Box<Term<'tcx>>,
 }
 
-impl<I: Interner> TypeFoldable<I> for Literal<'_> {
+impl<I: Interner> TypeFoldable<I> for Literal {
     fn try_fold_with<F: rustc_middle::ty::FallibleTypeFolder<I>>(
         self,
         _: &mut F,
@@ -260,7 +262,7 @@ impl<I: Interner> TypeFoldable<I> for Literal<'_> {
     }
 }
 
-impl<I: Interner> TypeVisitable<I> for Literal<'_> {
+impl<I: Interner> TypeVisitable<I> for Literal {
     fn visit_with<V: rustc_middle::ty::TypeVisitor<I>>(&self, _: &mut V) -> V::Result {
         V::Result::output()
     }
@@ -288,7 +290,7 @@ impl From<f64> for Float {
 
 // FIXME: Clean up this type: clarify use of ZST, Function, Integer types
 #[derive(Clone, Debug, TyDecodable, TyEncodable)]
-pub enum Literal<'tcx> {
+pub enum Literal {
     Char(char),
     Bool(bool),
     // TODO: Find a way to make this a BigInt type
@@ -300,7 +302,6 @@ pub enum Literal<'tcx> {
     String(String),
     Bytes(Box<[u8]>),
     ZST,
-    Function(DefId, GenericArgsRef<'tcx>),
 }
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
@@ -664,8 +665,8 @@ impl<'tcx> Term<'tcx> {
         Term { ty: int_ty, kind: TermKind::Lit(Literal::Integer(int)), span: DUMMY_SP }
     }
 
-    pub(crate) fn item(def_id: DefId, subst: GenericArgsRef<'tcx>, ty: Ty<'tcx>) -> Self {
-        Term { ty, kind: TermKind::Item(def_id, subst), span: DUMMY_SP }
+    pub(crate) fn const_item(id: DefId, subst: GenericArgsRef<'tcx>, ty: Ty<'tcx>) -> Self {
+        Term { ty, kind: TermKind::ConstItem { id, subst }, span: DUMMY_SP }
     }
 
     pub(crate) fn const_(c: Const<'tcx>, ty: Ty<'tcx>, span: Span) -> Self {
@@ -704,11 +705,13 @@ impl<'tcx> Term<'tcx> {
                 None if let Some(t) = subst.subst(v.0) => self.kind = t,
                 None => {}
             },
-            TermKind::Lit(_) | TermKind::Capture(_) => {}
+            TermKind::Lit(_)
+            | TermKind::Capture(_)
+            | TermKind::Const(_)
+            | TermKind::ConstItem { .. } => {}
             TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| a.subst_(bound, subst)),
             TermKind::Cast { arg } => arg.subst_(bound, subst),
             TermKind::Coerce { arg } => arg.subst_(bound, subst),
-            TermKind::Item(_, _) | TermKind::Const(_) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.subst_(bound, subst);
                 rhs.subst_(bound, subst)
@@ -789,13 +792,15 @@ impl<'tcx> Term<'tcx> {
                     free.insert(v.0);
                 }
             }
-            TermKind::Lit(_) | TermKind::Capture(_) => {}
+            TermKind::Lit(_)
+            | TermKind::Capture(_)
+            | TermKind::Const(_)
+            | TermKind::ConstItem { .. } => {}
             TermKind::SeqLiteral(fields) => {
                 fields.iter().for_each(|a| a.free_vars_inner(bound, free))
             }
             TermKind::Cast { arg } => arg.free_vars_inner(bound, free),
             TermKind::Coerce { arg } => arg.free_vars_inner(bound, free),
-            TermKind::Item(_, _) | TermKind::Const(_) => {}
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.free_vars_inner(bound, free);
                 rhs.free_vars_inner(bound, free)

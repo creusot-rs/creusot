@@ -431,7 +431,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         use Operand::*;
         match operand {
             &Copy(pl) | &Move(pl) => fmir::Operand::Place(self.translate_place(pl, span)),
-            Constant(c) => mirconst_to_operand(c, self.ctx, self.typing_env(), self.body_id.def_id),
+            Constant(c) => mirconst_to_operand(c, self.ctx, self.body_id.def_id),
             RuntimeChecks(_) => self.crash_and_error(span, "unimplemented operand"),
         }
     }

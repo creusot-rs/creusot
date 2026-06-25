@@ -13,10 +13,79 @@ module M_nested_closure
   
   type closure0'0 = { c0'0: bool }
   
+  predicate precondition_closure0 (self: closure0) (args: ()) = closure0'pre self
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate postcondition_once_closure0 (self: closure0) (args: ()) (result: bool) = closure0'post'return self result
+  
+  meta "rewrite_def" predicate postcondition_once_closure0
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = true
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate postcondition_mut_closure0 (self: closure0) (args: ()) (result_state: closure0) (result: bool) =
+    closure0'post'return self result /\ self = result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  function fn_mut_once_closure0 (self: closure0) (args: ()) (res: bool) : ()
+  
+  axiom fn_mut_once_closure0_spec:
+    forall self: closure0, args: (), res: bool [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
+      = (exists res_state: closure0. postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
+  
+  predicate hist_inv_closure0 (self: closure0) (result_state: closure0) = self = result_state
+  
+  function hist_inv_trans_closure0 (self: closure0) (b: closure0) (c: closure0) : ()
+  
+  axiom hist_inv_trans_closure0_spec:
+    forall self: closure0, b: closure0, c: closure0 [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
+      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
+  
+  function hist_inv_refl_closure0 (self: closure0) : ()
+  
+  axiom hist_inv_refl_closure0_spec: forall self: closure0 [hist_inv_closure0 self self]. hist_inv_closure0 self self
+  
+  function postcondition_mut_hist_inv_closure0 (self: closure0) (args: ()) (res_state: closure0) (res: bool) : ()
+  
+  axiom postcondition_mut_hist_inv_closure0_spec:
+    forall self: closure0, args: (), res_state: closure0, res: bool [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
+      -> hist_inv_closure0 self res_state
+  
+  function fn_hist_inv_closure0 (self: closure0) (res_state: closure0) : ()
+  
+  axiom fn_hist_inv_closure0_spec:
+    forall self: closure0, res_state: closure0 [hist_inv_closure0 self res_state]. hist_inv_closure0 self res_state
+      = (self = res_state)
+  
+  predicate postcondition_closure0 (self: closure0) (args: ()) (result: bool) = closure0'post'return self result
+  
+  meta "rewrite_def" predicate postcondition_closure0
+  
+  function fn_once_closure0 (self: closure0) (args: ()) (res: bool) : ()
+  
+  axiom fn_once_closure0_spec:
+    forall self: closure0, args: (), res: bool [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
+      = (postcondition_closure0 self args res /\ resolve_closure0 self)
+  
+  function fn_mut_closure0 (self: closure0) (args: ()) (res_state: closure0) (res: bool) : ()
+  
+  axiom fn_mut_closure0_spec:
+    forall self: closure0, args: (), res_state: closure0, res: bool [postcondition_mut_closure0 self args res_state res]. postcondition_mut_closure0 self args res_state res
+      = (postcondition_closure0 self args res /\ self = res_state)
+  
+  let call_closure0 (self_: closure0) (arg: ()) (return (x: bool)) =
+  {[@stop_split] [@expl:call requires] precondition_closure0 self_ arg}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self_ arg result}
+      (! return {result}) ]
+  
   let closure0'0 [@coma:extspec] (self: closure0'0) (return (x: bool)) = bb0
     [ bb0 = s0
       [ s0 = [ &omg <- { c0 = self.c0'0 } ] s1
-      | s1 = closure0 {omg} (fun (_x: bool) -> [ &_ret <- _x ] s2)
+      | s1 = call_closure0 {omg} {_5} (fun (_x: bool) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self: closure0'0 = self
@@ -27,6 +96,78 @@ module M_nested_closure
   
   meta "rewrite_def" predicate closure0'0'post'return
   
+  predicate precondition_closure0'0 (self: closure0'0) (args: ()) = closure0'0'pre self
+  
+  meta "rewrite_def" predicate precondition_closure0'0
+  
+  predicate postcondition_once_closure0'0 (self: closure0'0) (args: ()) (result: bool) =
+    closure0'0'post'return self result
+  
+  meta "rewrite_def" predicate postcondition_once_closure0'0
+  
+  predicate resolve_closure0'0 [@inline:trivial] (_1: closure0'0) = true
+  
+  meta "rewrite_def" predicate resolve_closure0'0
+  
+  predicate postcondition_mut_closure0'0 (self: closure0'0) (args: ()) (result_state: closure0'0) (result: bool) =
+    closure0'0'post'return self result /\ self = result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0'0
+  
+  function fn_mut_once_closure0'0 (self: closure0'0) (args: ()) (res: bool) : ()
+  
+  axiom fn_mut_once_closure0_spec'0:
+    forall self: closure0'0, args: (), res: bool [postcondition_once_closure0'0 self args res]. postcondition_once_closure0'0 self args res
+      = (exists res_state: closure0'0. postcondition_mut_closure0'0 self args res_state res
+        /\ resolve_closure0'0 res_state)
+  
+  predicate hist_inv_closure0'0 (self: closure0'0) (result_state: closure0'0) = self = result_state
+  
+  function hist_inv_trans_closure0'0 (self: closure0'0) (b: closure0'0) (c: closure0'0) : ()
+  
+  axiom hist_inv_trans_closure0_spec'0:
+    forall self: closure0'0, b: closure0'0, c: closure0'0 [hist_inv_closure0'0 self b, hist_inv_closure0'0 b c | hist_inv_closure0'0 self b, hist_inv_closure0'0 self c | hist_inv_closure0'0 b c, hist_inv_closure0'0 self c]. hist_inv_closure0'0 self b
+      -> hist_inv_closure0'0 b c -> hist_inv_closure0'0 self c
+  
+  function hist_inv_refl_closure0'0 (self: closure0'0) : ()
+  
+  axiom hist_inv_refl_closure0_spec'0:
+    forall self: closure0'0 [hist_inv_closure0'0 self self]. hist_inv_closure0'0 self self
+  
+  function postcondition_mut_hist_inv_closure0'0 (self: closure0'0) (args: ()) (res_state: closure0'0) (res: bool) : ()
+  
+  axiom postcondition_mut_hist_inv_closure0_spec'0:
+    forall self: closure0'0, args: (), res_state: closure0'0, res: bool [postcondition_mut_closure0'0 self args res_state res | hist_inv_closure0'0 self res_state]. postcondition_mut_closure0'0 self args res_state res
+      -> hist_inv_closure0'0 self res_state
+  
+  function fn_hist_inv_closure0'0 (self: closure0'0) (res_state: closure0'0) : ()
+  
+  axiom fn_hist_inv_closure0_spec'0:
+    forall self: closure0'0, res_state: closure0'0 [hist_inv_closure0'0 self res_state]. hist_inv_closure0'0 self res_state
+      = (self = res_state)
+  
+  predicate postcondition_closure0'0 (self: closure0'0) (args: ()) (result: bool) = closure0'0'post'return self result
+  
+  meta "rewrite_def" predicate postcondition_closure0'0
+  
+  function fn_once_closure0'0 (self: closure0'0) (args: ()) (res: bool) : ()
+  
+  axiom fn_once_closure0_spec'0:
+    forall self: closure0'0, args: (), res: bool [postcondition_once_closure0'0 self args res]. postcondition_once_closure0'0 self args res
+      = (postcondition_closure0'0 self args res /\ resolve_closure0'0 self)
+  
+  function fn_mut_closure0'0 (self: closure0'0) (args: ()) (res_state: closure0'0) (res: bool) : ()
+  
+  axiom fn_mut_closure0_spec'0:
+    forall self: closure0'0, args: (), res_state: closure0'0, res: bool [postcondition_mut_closure0'0 self args res_state res]. postcondition_mut_closure0'0 self args res_state res
+      = (postcondition_closure0'0 self args res /\ self = res_state)
+  
+  let call_closure0'0 (self_: closure0'0) (arg: ()) (return (x: bool)) =
+  {[@stop_split] [@expl:call requires] precondition_closure0'0 self_ arg}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:call ensures] postcondition_closure0'0 self_ arg result}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -35,7 +176,7 @@ module M_nested_closure
     [ bb0 = s0
       [ s0 = [ &a <- true ] s1
       | s1 = [ &_4 <- { c0'0 = a } ] s2
-      | s2 = closure0'0 {_4} (fun (_x: bool) -> [ &_a <- _x ] s3)
+      | s2 = call_closure0'0 {_4} {_6} (fun (_x: bool) -> [ &_a <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & a: bool = Any.any_l ()

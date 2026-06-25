@@ -232,6 +232,9 @@ pub(crate) fn elaborate_resolve_def<'tcx>(
             ))
         }
         TraitResolved::NoInstance(info) => use_impl = info.trait_ref_is_specializable(),
+        TraitResolved::BuiltinClone | TraitResolved::BuiltinDyn | TraitResolved::BuiltinFn => {
+            unreachable!()
+        }
     }
 
     match structural_resolve(ctx, names, subject.clone(), span) {

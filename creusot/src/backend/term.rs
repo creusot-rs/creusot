@@ -11,6 +11,7 @@ use crate::{
     contracts_items::{is_builtin_ascription, is_new_namespace},
     ctx::*,
     naming::name,
+    resolution::TraitResolved,
     translation::{
         constant::valtree_to_term,
         pearlite::{
@@ -91,9 +92,10 @@ pub(crate) fn lower_pat<'tcx>(
 pub(crate) fn lower_literal<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
-    lit: &Literal<'tcx>,
+    lit: &Literal,
+    ty: Ty<'tcx>,
 ) -> Exp {
-    Lower { ctx, names, weakdep: false }.lower_literal(lit)
+    Lower { ctx, names, weakdep: false }.lower_literal(lit, ty)
 }
 
 pub(crate) fn unsupported_cast<'tcx>(
@@ -153,7 +155,14 @@ where
 impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     fn lower_term(&self, term: &Term<'tcx>) -> Exp {
         match &term.kind {
-            TermKind::Lit(l) => self.lower_literal(l),
+            TermKind::Lit(Literal::ZST)
+                if self.weakdep
+                    && let TyKind::FnDef(..) = term.ty.kind() =>
+            {
+                // Do not pull dependencies on function literals that are here just as proof hints.
+                Exp::unit()
+            }
+            TermKind::Lit(l) => self.lower_literal(l, term.ty),
             TermKind::SeqLiteral(elts) => {
                 let elts: Box<[Exp]> = elts.iter().map(|elt| self.lower_term(elt)).collect();
                 Exp::qvar(name::seq_create())
@@ -197,15 +206,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             TermKind::Coerce { arg } => self.lower_term(arg),
-            &TermKind::Item(id, subst)
-                if let TyKind::FnDef(_, _) = self.ctx.type_of(id).skip_binder().kind() =>
-            {
-                if !self.weakdep {
-                    self.names.item(id, subst);
-                }
-                Exp::unit()
-            }
-            &TermKind::Item(id, subst) => Exp::Var(self.names.item(id, subst)),
+            &TermKind::ConstItem { id, subst } => Exp::Var(self.names.item(id, subst)),
             TermKind::Const(c) => self.lower_term(&tyconst_to_term_final(
                 *c,
                 term.ty,
@@ -506,7 +507,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             .collect()
     }
 
-    pub(crate) fn lower_literal(&self, lit: &Literal<'tcx>) -> Exp {
+    pub(crate) fn lower_literal(&self, lit: &Literal, ty: Ty<'tcx>) -> Exp {
         match *lit {
             Literal::Integer(i) => Constant::Int(i, None).into(),
             Literal::UInteger(i) => Constant::Uint(i, None).into(),
@@ -533,15 +534,21 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             Literal::Bool(false) => Constant::const_false().into(),
             Literal::Char(c) => Exp::qvar(self.names.in_pre(PreMod::Char, "of_int"))
                 .app([Constant::Int(c as u32 as i128, None).into()]),
-            Literal::Function(id, subst) => {
-                self.names.item(id, subst);
-                Exp::unit()
-            }
             Literal::Float(ref f, fty) => {
                 let why_ty = Type::qconstructor(self.names.in_pre(floatty_to_prelude(fty), "t"));
                 Constant::Float(f.0, Some(why_ty)).into()
             }
-            Literal::ZST => Exp::unit(),
+            Literal::ZST => {
+                if let &TyKind::FnDef(id, subst) = ty.kind() {
+                    let (id, subst) =
+                        TraitResolved::resolve_item(self.tcx(), self.names.typing_env(), id, subst)
+                            .to_opt(id, subst)
+                            .unwrap();
+                    // We pull (id, subst) as a dependency, because it may be useful for the proof
+                    self.names.item(id, subst);
+                }
+                Exp::unit()
+            }
             Literal::String(ref string) => Constant::String(string.clone()).into(),
             Literal::Bytes(ref _bytes) => todo!(),
         }
@@ -606,12 +613,12 @@ pub(crate) fn tyconst_to_term_final<'tcx>(
     match c.kind() {
         Value(ty::Value { ty, valtree }) => valtree_to_term(valtree, ctx, ty, env, span),
         Unevaluated(ty::UnevaluatedConst { kind, args, .. }) => {
-            Some(Term::item(kind.opt_def_id().unwrap(), args, ty))
+            Some(Term::const_item(kind.opt_def_id().unwrap(), args, ty))
         }
         Param(p) => {
             let tcx = ctx.tcx;
             let def_id = tcx.generics_of(caller_id).const_param(p, tcx).def_id;
-            Some(Term::item(def_id, ty::GenericArgs::empty(), ty))
+            Some(Term::const_item(def_id, ty::GenericArgs::empty(), ty))
         }
         _ => None,
     }

@@ -98,11 +98,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             fun_def_id,
                             subst,
                         );
-                        let known = !matches!(tr_res, TraitResolved::UnknownFound);
                         let (fun_def_id, subst) =
                             tr_res.to_opt(fun_def_id, subst).expect("could not find instance");
-                        let sig = self.ctx.sig(fun_def_id);
-                        if sig.contract.extern_no_spec
+                        let contract = &self.ctx.sig(fun_def_id).contract;
+                        if contract.extern_no_spec
                             && let Some(lint_root) =
                                 self.body.source_info(loc).scope.lint_root(&self.body.source_scopes)
                         {
@@ -114,12 +113,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 Diagnostics::ContractlessExternalFunction { name, span },
                             );
                         }
-                        if sig.contract.is_requires_false()
+                        if contract.is_requires_false()
                             && !matches!(
                                 self.ctx.intrinsic(fun_def_id),
                                 Intrinsic::GhostDerefMut | Intrinsic::GhostDeref,
                             )
-                            && known
+                            && !matches!(tr_res, TraitResolved::UnknownFound)
                         {
                             target = None
                         } else {

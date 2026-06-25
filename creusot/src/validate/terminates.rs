@@ -43,7 +43,7 @@ use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
     resolution::{ImplSelection, ImplSource_, TraitResolved, select_trait_impl},
     translation::pearlite::{
-        Ident, PIdent, Pattern, Scoped, Term, TermKind,
+        Ident, Literal, PIdent, Pattern, Scoped, Term, TermKind,
         visit::{TermVisitor, super_visit_term},
     },
     util::erased_identity_for_item,
@@ -59,14 +59,15 @@ use rustc_infer::{infer::TyCtxtInferExt as _, traits::ImplSource};
 use rustc_middle::{
     thir::{self, visit::Visitor},
     ty::{
-        self, Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, ParamEnv, TyCtxt,
-        TypingEnv, TypingMode, Unnormalized,
+        self, ClauseKind, Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, ParamEnv,
+        PredicateKind, TraitRef, TyCtxt, TyKind, TypingEnv, TypingMode, Unnormalized,
     },
 };
 use rustc_span::Span;
 use rustc_trait_selection::traits::{
     normalize_param_env_or_error, specialization_graph, translate_args,
 };
+use rustc_type_ir::{Binder, PredicatePolarity, TraitPredicate};
 use std::collections::{HashMap, HashSet};
 
 pub(crate) type RecursiveCalls = IndexMap<DefId, IndexSet<DefId>>;
@@ -312,44 +313,67 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         node: graph::NodeIndex,
         typing_env: TypingEnv<'tcx>,
         mut called_id: DefId,
-        subst: GenericArgsRef<'tcx>,
+        mut subst: GenericArgsRef<'tcx>,
         call_span: Span,
     ) {
         // WARNING: `subst`` is not normalized (but we don't seem to use the fact that it should be)
         let res = TraitResolved::resolve_item(ctx.tcx, typing_env, called_id, subst);
-
-        let (called_node, bounds);
-
-        // If we are calling a known method, and this method has been defined in an ancestor of the impl
-        // we found, and this method is logic and transparent from this impl and this impl is local, then use a
-        // specialized default node
-        if let TraitResolved::Instance { def, impl_: ImplSource_::Impl(impl_defid, impl_args)} = res &&
-            ctx.impl_of_assoc(def.0) != Some(impl_defid) && // The method is defined in an ancestor
-            is_pearlite(ctx.tcx, def.0) && // The method is logic
-            let Some(impl_ldid) = impl_defid.as_local() && // The impl is local
-            ctx.is_transparent_from(def.0, impl_defid)
-        {
-            called_id = def.0;
-            let bnds;
-            (called_node, bnds) =
-                self.visit_specialized_default_function(ctx, impl_ldid, called_id);
-            bounds = EarlyBinder::bind(bnds)
-                .instantiate(ctx.tcx, def.1.rebase_onto(ctx.tcx, ctx.parent(def.0), impl_args))
-                .skip_normalization()
-        } else {
-            let subst_r;
-            // Note: we may get `NoInstance` here because termination checking of trait methods happens in a modified context (see `CallGraph::build`)
-            (called_id, subst_r) = if let TraitResolved::Instance { def, .. } = res {
-                def
-            } else {
-                (called_id, subst)
-            };
-            called_node = self.insert_node(GraphNode::function(called_id));
-            bounds = EarlyBinder::bind(ctx.param_env(called_id).caller_bounds())
-                .instantiate(ctx.tcx, subst_r)
-                .skip_normalization()
+        if let TraitResolved::Instance { def, .. } = res {
+            (called_id, subst) = def;
         }
-        self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
+
+        let called_node: Option<graph::NodeIndex>;
+        let mut bounds: Box<dyn Iterator<Item = ty::Clause<'tcx>>> = Box::new(
+            EarlyBinder::bind(ctx.param_env(called_id).caller_bounds())
+                .instantiate(ctx.tcx, subst)
+                .skip_normalization()
+                .iter(),
+        );
+        match res {
+            TraitResolved::Instance { impl_: ImplSource_::Impl(impl_defid, impl_args), .. }
+                if ctx.impl_of_assoc(called_id) != Some(impl_defid) && // The method is defined in an ancestor
+                    is_pearlite(ctx.tcx, called_id) && // The method is logic
+                    let Some(impl_ldid) = impl_defid.as_local() && // The impl is local
+                    ctx.is_transparent_from(called_id, impl_defid) =>
+            {
+                // If we are calling a known method, and this method has been defined in an ancestor of the impl
+                // we found, and this method is logic and transparent from this impl and this impl is local, then use a
+                // specialized default node
+                let (node, bnds) =
+                    self.visit_specialized_default_function(ctx, impl_ldid, called_id);
+                called_node = Some(node);
+                bounds = Box::new(
+                    EarlyBinder::bind(bnds)
+                        .instantiate(
+                            ctx.tcx,
+                            subst.rebase_onto(ctx.tcx, ctx.parent(called_id), impl_args),
+                        )
+                        .skip_normalization()
+                        .iter(),
+                );
+            }
+            TraitResolved::Instance { .. } | TraitResolved::NotATraitItem => {
+                called_node = Some(self.insert_node(GraphNode::function(called_id)))
+            }
+            TraitResolved::UnknownFound => called_node = None,
+            TraitResolved::BuiltinFn | TraitResolved::BuiltinClone | TraitResolved::BuiltinDyn => {
+                called_node = None;
+                let trait_ref =
+                    TraitRef::from_assoc(ctx.tcx, ctx.trait_of_assoc(called_id).unwrap(), subst);
+                let clause = ctx
+                    .tcx
+                    .mk_predicate(Binder::dummy(PredicateKind::Clause(ClauseKind::Trait(
+                        TraitPredicate { trait_ref, polarity: PredicatePolarity::Positive },
+                    ))))
+                    .expect_clause();
+                bounds = Box::new(std::iter::once(clause));
+            }
+            TraitResolved::NoInstance(_) => unreachable!(),
+        }
+
+        if let Some(called_node) = called_node {
+            self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
+        }
         for impl_id in proof_tree_nodes(ctx.tcx, typing_env, bounds) {
             let item_node = self.insert_node(GraphNode::impl_(impl_id));
             self.graph.update_edge(node, item_node, CallKind::GenericBound(called_id, call_span));
@@ -548,10 +572,10 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
 
     fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
         match expr.kind {
-            thir::ExprKind::Call { fun, fn_span, .. } => {
-                if let &FnDef(def_id, generic_args) = self.thir[fun].ty.kind() {
-                    self.calls.insert((def_id, generic_args, fn_span));
-                }
+            thir::ExprKind::ZstLiteral { .. }
+                if let &FnDef(def_id, generic_args) = expr.ty.kind() =>
+            {
+                self.calls.insert((def_id, generic_args, expr.span));
             }
             thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
                 let (thir, expr) = self.ctx.thir_body(closure_id);
@@ -671,8 +695,14 @@ struct TermCalls<'tcx> {
 impl<'tcx> TermVisitor<'tcx> for TermCalls<'tcx> {
     fn visit_term(&mut self, term: &Term<'tcx>) {
         super_visit_term(term, self);
-        if let TermKind::Call { id, subst, args: _ } = &term.kind {
-            self.results.insert((*id, subst, term.span));
+        match term.kind {
+            TermKind::Call { id, subst, args: _ } => {
+                self.results.insert((id, subst, term.span));
+            }
+            TermKind::Lit(Literal::ZST) if let &TyKind::FnDef(id, subst) = term.ty.kind() => {
+                self.results.insert((id, subst, term.span));
+            }
+            _ => (),
         }
     }
 }
@@ -818,13 +848,37 @@ pub(crate) fn proof_tree_nodes<'tcx>(
         let ImplSelection::Found(source) = select_trait_impl(tcx, typing_env, trait_ref) else {
             continue;
         };
-        // FIXME: handle builtin impls
-        let ImplSource::UserDefined(source) = source else { continue };
-        nodes.push(source.impl_def_id);
-        let bounds = EarlyBinder::bind(tcx.param_env(source.impl_def_id).caller_bounds())
-            .instantiate(tcx, source.args)
-            .skip_normalization();
-        predicates.extend(trait_refs_of_clauses(tcx, bounds));
+        match source {
+            ImplSource::UserDefined(source) => {
+                nodes.push(source.impl_def_id);
+                let bounds = EarlyBinder::bind(tcx.param_env(source.impl_def_id).caller_bounds())
+                    .instantiate(tcx, source.args)
+                    .skip_normalization();
+                predicates.extend(trait_refs_of_clauses(tcx, bounds));
+            }
+            ImplSource::Param(_) => (),
+            ImplSource::Builtin(..)
+                if trait_ref.def_id == tcx.lang_items().clone_trait().unwrap() =>
+            {
+                let field_tys: Box<dyn Iterator<Item = _>> = match trait_ref.self_ty().kind() {
+                    TyKind::Tuple(tys) => Box::new(tys.iter()),
+                    TyKind::Closure(_, subst) => Box::new(subst.as_closure().upvar_tys().iter()),
+                    _ => unreachable!(
+                        "Builtin impls of Clone should be limited to tuples and closures"
+                    ),
+                };
+                predicates.extend(field_tys.map(|field_ty| {
+                    TraitRef::from_assoc(
+                        tcx,
+                        tcx.lang_items().clone_trait().unwrap(),
+                        tcx.mk_args_trait(field_ty, []),
+                    )
+                }));
+            }
+            ImplSource::Builtin(..) => {
+                // The other builtin impls have no dependencies (as far as I understand)
+            }
+        }
     }
     nodes
 }

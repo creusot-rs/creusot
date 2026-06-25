@@ -78,8 +78,8 @@ pub(super) fn wp<'tcx>(
 type PostCont<'a, 'tcx, A, R = Exp> = &'a dyn Fn(A) -> R;
 
 impl<'tcx> VCGen<'_, 'tcx> {
-    fn lower_literal(&self, lit: &Literal<'tcx>) -> Exp {
-        lower_literal(self.ctx, self.names, lit)
+    fn lower_literal(&self, lit: &Literal, ty: Ty<'tcx>) -> Exp {
+        lower_literal(self.ctx, self.names, lit, ty)
     }
 
     fn lower_pure(&self, lit: &Term<'tcx>) -> Exp {
@@ -92,11 +92,16 @@ impl<'tcx> VCGen<'_, 'tcx> {
 
     fn build_wp(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Exp {
         use BinOp::*;
+        if let &TyKind::FnDef(id, _) = t.ty.kind()
+            && id == self.self_id
+        {
+            self.ctx.crash_and_error(t.span, "cannot refer to the function in its own definition.")
+        }
         match &t.kind {
             // VC(v, Q) = Q(v)
             TermKind::Var(v) => k(Exp::var(v.0)),
             // VC(l, Q) = Q(l)
-            TermKind::Lit(l) => k(self.lower_literal(l)),
+            TermKind::Lit(l) => k(self.lower_literal(l, t.ty)),
             TermKind::SeqLiteral(elts) => self.build_wp_slice(elts, &|elts: Box<[Exp]>| {
                 k(Exp::qvar(name::seq_create())
                     .app([Exp::int(elts.len() as i128), Exp::FunLiteral(elts)]))
@@ -140,18 +145,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Coerce { arg } => self.build_wp(arg, k),
             // Items are just global names so
             // VC(i, Q) = Q(i)
-            &TermKind::Item(id, subst) => {
-                if id == self.self_id {
-                    self.ctx.crash_and_error(t.span, "cannot refer to the function in its own definition.")
-                }
-                // We pull (id, subst) as a dependency, because it may be useful for the proof
-                let item_name = self.names.item(id, subst);
-                if let TyKind::FnDef(_, _) = self.ctx.type_of(id).instantiate_identity().skip_normalization().kind() {
-                    k(Exp::unit())
-                } else {
-                    k(Exp::Var(item_name))
-                }
-            }
+            &TermKind::ConstItem{ id, subst } => k(Exp::Var(self.names.item(id, subst))),
             TermKind::Const(c) => self.build_wp(
                 &tyconst_to_term_final(
                     *c,

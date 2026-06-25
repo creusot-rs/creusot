@@ -15,11 +15,14 @@ pub trait TermVisitor<'tcx>: Sized {
 
 pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: &mut V) {
     match &term.kind {
-        TermKind::Var(_) | TermKind::Lit(_) | TermKind::Capture(_) => (),
+        TermKind::Var(_)
+        | TermKind::Lit(_)
+        | TermKind::Capture(_)
+        | TermKind::Const(_)
+        | TermKind::ConstItem { .. } => (),
         TermKind::SeqLiteral(fields) => fields.iter().for_each(|a| visitor.visit_term(a)),
         TermKind::Cast { arg } => visitor.visit_term(arg),
         TermKind::Coerce { arg } => visitor.visit_term(arg),
-        TermKind::Item(_, _) | TermKind::Const(_) => {}
         TermKind::Binary { op: _, lhs, rhs } => {
             visitor.visit_term(lhs);
             visitor.visit_term(rhs);
@@ -93,11 +96,14 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
     visitor: &mut V,
 ) {
     match &mut term.kind {
-        TermKind::Var(_) | TermKind::Lit(_) | TermKind::Capture(_) => (),
+        TermKind::Var(_)
+        | TermKind::Lit(_)
+        | TermKind::Capture(_)
+        | TermKind::Const(_)
+        | TermKind::ConstItem { .. } => (),
         TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| visitor.visit_mut_term(a)),
         TermKind::Cast { arg } => visitor.visit_mut_term(arg),
         TermKind::Coerce { arg } => visitor.visit_mut_term(arg),
-        TermKind::Item(..) | TermKind::Const(_) => {}
         TermKind::Binary { lhs, rhs, .. } => {
             visitor.visit_mut_term(lhs);
             visitor.visit_mut_term(rhs);

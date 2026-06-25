@@ -9,7 +9,6 @@ use crate::{
     contracts_items::{Intrinsic, get_builtin, is_bitwise},
     ctx::*,
     naming::name,
-    resolution::TraitResolved,
     util::{erased_identity_for_item, path_of_span},
 };
 use creusot_args::options::SpanMode;
@@ -203,18 +202,6 @@ pub(crate) trait Namer<'tcx> {
 
     fn dependency(&self, dep: Dependency<'tcx>) -> &Kind {
         self.raw_dependency(dep.erase_and_anonymize_regions(self.tcx()))
-    }
-
-    fn resolve_dependency(&self, dep: Dependency<'tcx>) -> Dependency<'tcx> {
-        let ctx = self.tcx();
-        if let Dependency::Item(def, args) = dep {
-            let (def, args) = TraitResolved::resolve_item(ctx, self.typing_env(), def, args)
-                .to_opt(def, args)
-                .unwrap();
-            Dependency::Item(def, args)
-        } else {
-            dep
-        }
     }
 
     fn register_constant_setter(&mut self, setter: Ident);

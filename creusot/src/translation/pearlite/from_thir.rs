@@ -545,15 +545,11 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             }
             ExprKind::Use { source } => self.expr_term(source),
             ExprKind::ValueTypeAscription { source, .. } => self.expr_term(source),
-            ExprKind::NonHirLiteral { .. } => match ty.kind() {
-                TyKind::FnDef(id, substs) => Ok(Term::item(*id, substs, ty).span(span)),
-                _ => Err(self.ctx.dcx().span_err(span, "unhandled literal expression")),
-            },
-            ExprKind::NamedConst { def_id, args, .. } => Ok(Term::item(def_id, args, ty)),
-            ExprKind::ZstLiteral { .. } => match ty.kind() {
-                TyKind::FnDef(def_id, subst) => Ok(Term::item(*def_id, subst, ty)),
-                _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
-            },
+            ExprKind::NonHirLiteral { .. } => {
+                Err(self.ctx.dcx().span_err(span, "unhandled literal expression"))
+            }
+            ExprKind::NamedConst { def_id, args, .. } => Ok(Term::const_item(def_id, args, ty)),
+            ExprKind::ZstLiteral { .. } => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 let (bound, term) = from_thir(self.ctx, closure_id)?;
 

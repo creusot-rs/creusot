@@ -1,6 +1,5 @@
 use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
-    resolution::TraitResolved,
     translation::{fmir::Operand, pearlite::Literal},
 };
 use rustc_abi::Size;
@@ -17,7 +16,6 @@ use super::pearlite::{Term, TermKind};
 pub(crate) fn mirconst_to_operand<'tcx>(
     c: &ConstOperand<'tcx>,
     ctx: &TranslationCtx<'tcx>,
-    env: TypingEnv<'tcx>,
     caller_id: DefId,
 ) -> Operand<'tcx> {
     use mir::Const::*;
@@ -29,10 +27,10 @@ pub(crate) fn mirconst_to_operand<'tcx>(
             } else if matches!(ctx.def_kind(u.def), DefKind::InlineConst) {
                 Operand::inline_const(u.def, u.args, ty)
             } else {
-                Operand::term(Term::item(u.def, u.args, ty).span(c.span))
+                Operand::term(Term::const_item(u.def, u.args, ty).span(c.span))
             }
         }
-        Val(const_value, ty) => Operand::term(value_to_term(const_value, ty, ctx, env, c.span)),
+        Val(const_value, ty) => Operand::term(value_to_term(const_value, ty, ctx, c.span)),
     }
 }
 
@@ -40,13 +38,12 @@ fn value_to_term<'tcx>(
     value: ConstValue,
     ty: Ty<'tcx>,
     ctx: &TranslationCtx<'tcx>,
-    env: TypingEnv<'tcx>,
     span: Span,
 ) -> Term<'tcx> {
     use ConstValue::*;
     use mir::interpret::Scalar;
     let kind = match value {
-        Scalar(Scalar::Int(scalar)) => TermKind::Lit(scalar_to_literal(scalar, ty, ctx, env, span)),
+        Scalar(Scalar::Int(scalar)) => TermKind::Lit(scalar_to_literal(scalar, ty, ctx, span)),
         Scalar(Scalar::Ptr(ptr, _)) if let Some(size) = get_u8_slice_len(ctx.tcx, ty) => {
             let (prov, start) = ptr.prov_and_relative_offset();
             let alloc_id = prov.alloc_id();
@@ -95,10 +92,9 @@ fn scalar_to_literal<'tcx>(
     scalar: ty::ScalarInt,
     ty: Ty<'tcx>,
     ctx: &TranslationCtx<'tcx>,
-    env: TypingEnv<'tcx>,
     span: Span,
-) -> Literal<'tcx> {
-    try_scalar_to_literal(scalar, ty, ctx, env, span).unwrap_or_else(|| {
+) -> Literal {
+    try_scalar_to_literal(scalar, ty, ctx, span).unwrap_or_else(|| {
         ctx.crash_and_error(span, format!("Could not convert scalar to literal for type: {:?}", ty))
     })
 }
@@ -107,9 +103,8 @@ fn try_scalar_to_literal<'tcx>(
     scalar: ty::ScalarInt,
     ty: Ty<'tcx>,
     ctx: &TranslationCtx<'tcx>,
-    env: TypingEnv<'tcx>,
     span: Span,
-) -> Option<Literal<'tcx>> {
+) -> Option<Literal> {
     use rustc_middle::ty::FloatTy;
     use rustc_type_ir::TyKind::*;
     let target_width = ctx.tcx.sess.target.pointer_width;
@@ -144,12 +139,7 @@ fn try_scalar_to_literal<'tcx>(
                 Literal::Float(float.into(), FloatTy::F64)
             }
         }
-        FnDef(def_id, subst) => {
-            let method = TraitResolved::resolve_item(ctx.tcx, env, *def_id, subst)
-                .to_opt(*def_id, subst)
-                .unwrap();
-            Literal::Function(method.0, method.1)
-        }
+        FnDef(..) => Literal::ZST,
         kind => ctx.crash_and_error(span, format!("unsupported constant expression {kind:?}")),
     })
 }
@@ -190,7 +180,7 @@ pub(crate) fn valtree_to_term<'tcx>(
     let kind = match (*valtree, ty.kind()) {
         (ty::ValTreeKind::Leaf(_), ty::Ref(..)) => return None,
         (ty::ValTreeKind::Leaf(scalar), _) => {
-            TermKind::Lit(scalar_to_literal(*scalar, ty, ctx, env, span))
+            TermKind::Lit(scalar_to_literal(*scalar, ty, ctx, span))
         }
         (ty::ValTreeKind::Branch(fields), ty::Tuple(..)) => {
             let fields = fields
@@ -251,7 +241,7 @@ fn try_const_synonym<'tcx>(
                 typing_env,
                 ty::EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args),
             );
-            Some(Term::item(def_id, u.args, ty).span(span))
+            Some(Term::const_item(def_id, u.args, ty).span(span))
         }
         _ => None,
     }

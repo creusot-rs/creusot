@@ -42,6 +42,149 @@ module M_test_closure
   
   type tup2_i32_tup2_i32_i32 = { f0'0: Int32.t; f1'0: tup2_i32_i32 }
   
+  predicate precondition_closure0 (self: ()) (args: tup2_i32_tup2_i32_i32) = let {f0'0 = _c; f1'0 = _1} = args in true
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate postcondition_once_closure0 (self: ()) (args: tup2_i32_tup2_i32_i32) (result: Int32.t) =
+    let {f0'0 = _c; f1'0 = _1} = args in let {f0 = _a; f1 = b} = _1 in result = b
+  
+  meta "rewrite_def" predicate postcondition_once_closure0
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate hist_inv_closure0 (self: ()) (result_state: ()) = self = result_state
+  
+  predicate postcondition_mut_closure0 (self: ()) (args: tup2_i32_tup2_i32_i32) (result_state: ()) (result: Int32.t) =
+    let {f0'0 = _c; f1'0 = _1} = args in (let {f0 = _a; f1 = b} = _1 in result = b)
+    /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  function fn_mut_once_closure0 (self: ()) (args: tup2_i32_tup2_i32_i32) (res: Int32.t) : ()
+  
+  axiom fn_mut_once_closure0_spec:
+    forall self: (), args: tup2_i32_tup2_i32_i32, res: Int32.t [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
+      = (exists res_state: (). postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
+  
+  function hist_inv_trans_closure0 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_closure0_spec:
+    forall self: (), b: (), c: () [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
+      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
+  
+  function hist_inv_refl_closure0 (self: ()) : ()
+  
+  axiom hist_inv_refl_closure0_spec: forall self: () [hist_inv_closure0 self self]. hist_inv_closure0 self self
+  
+  function postcondition_mut_hist_inv_closure0 (self: ()) (args: tup2_i32_tup2_i32_i32) (res_state: ()) (res: Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_closure0_spec:
+    forall self: (), args: tup2_i32_tup2_i32_i32, res_state: (), res: Int32.t [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
+      -> hist_inv_closure0 self res_state
+  
+  function fn_hist_inv_closure0 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_closure0_spec:
+    forall self: (), res_state: () [hist_inv_closure0 self res_state]. hist_inv_closure0 self res_state
+      = (self = res_state)
+  
+  predicate postcondition_closure0 (self: ()) (args: tup2_i32_tup2_i32_i32) (result: Int32.t) =
+    let {f0'0 = _c; f1'0 = _1} = args in let {f0 = _a; f1 = b} = _1 in result = b
+  
+  meta "rewrite_def" predicate postcondition_closure0
+  
+  function fn_once_closure0 (self: ()) (args: tup2_i32_tup2_i32_i32) (res: Int32.t) : ()
+  
+  axiom fn_once_closure0_spec:
+    forall self: (), args: tup2_i32_tup2_i32_i32, res: Int32.t [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
+      = (postcondition_closure0 self args res /\ resolve_closure0 self)
+  
+  function fn_mut_closure0 (self: ()) (args: tup2_i32_tup2_i32_i32) (res_state: ()) (res: Int32.t) : ()
+  
+  axiom fn_mut_closure0_spec:
+    forall self: (), args: tup2_i32_tup2_i32_i32, res_state: (), res: Int32.t [postcondition_mut_closure0 self args res_state res]. postcondition_mut_closure0 self args res_state res
+      = (postcondition_closure0 self args res /\ self = res_state)
+  
+  let call_closure0 (self_: ()) (arg: tup2_i32_tup2_i32_i32) (return (x: Int32.t)) =
+  {[@stop_split] [@expl:call requires] precondition_closure0 self_ arg}
+    any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self_ arg result}
+      (! return {result}) ]
+  
+  predicate precondition_closure1 (self: ()) (args: tup2_i32_i32) = let _0 = args in true
+  
+  meta "rewrite_def" predicate precondition_closure1
+  
+  predicate postcondition_once_closure1 (self: ()) (args: tup2_i32_i32) (result: Int32.t) =
+    let _0 = args in let {f0 = _a; f1 = b} = _0 in result = b
+  
+  meta "rewrite_def" predicate postcondition_once_closure1
+  
+  predicate resolve_closure1 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_closure1
+  
+  predicate hist_inv_closure1 (self: ()) (result_state: ()) = self = result_state
+  
+  predicate postcondition_mut_closure1 (self: ()) (args: tup2_i32_i32) (result_state: ()) (result: Int32.t) =
+    let _0 = args in (let {f0 = _a; f1 = b} = _0 in result = b) /\ hist_inv_closure1 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure1
+  
+  function fn_mut_once_closure1 (self: ()) (args: tup2_i32_i32) (res: Int32.t) : ()
+  
+  axiom fn_mut_once_closure1_spec:
+    forall self: (), args: tup2_i32_i32, res: Int32.t [postcondition_once_closure1 self args res]. postcondition_once_closure1 self args res
+      = (exists res_state: (). postcondition_mut_closure1 self args res_state res /\ resolve_closure1 res_state)
+  
+  function hist_inv_trans_closure1 (self: ()) (b: ()) (c: ()) : ()
+  
+  axiom hist_inv_trans_closure1_spec:
+    forall self: (), b: (), c: () [hist_inv_closure1 self b, hist_inv_closure1 b c | hist_inv_closure1 self b, hist_inv_closure1 self c | hist_inv_closure1 b c, hist_inv_closure1 self c]. hist_inv_closure1 self b
+      -> hist_inv_closure1 b c -> hist_inv_closure1 self c
+  
+  function hist_inv_refl_closure1 (self: ()) : ()
+  
+  axiom hist_inv_refl_closure1_spec: forall self: () [hist_inv_closure1 self self]. hist_inv_closure1 self self
+  
+  function postcondition_mut_hist_inv_closure1 (self: ()) (args: tup2_i32_i32) (res_state: ()) (res: Int32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_closure1_spec:
+    forall self: (), args: tup2_i32_i32, res_state: (), res: Int32.t [postcondition_mut_closure1 self args res_state res | hist_inv_closure1 self res_state]. postcondition_mut_closure1 self args res_state res
+      -> hist_inv_closure1 self res_state
+  
+  function fn_hist_inv_closure1 (self: ()) (res_state: ()) : ()
+  
+  axiom fn_hist_inv_closure1_spec:
+    forall self: (), res_state: () [hist_inv_closure1 self res_state]. hist_inv_closure1 self res_state
+      = (self = res_state)
+  
+  predicate postcondition_closure1 (self: ()) (args: tup2_i32_i32) (result: Int32.t) =
+    let _0 = args in let {f0 = _a; f1 = b} = _0 in result = b
+  
+  meta "rewrite_def" predicate postcondition_closure1
+  
+  function fn_once_closure1 (self: ()) (args: tup2_i32_i32) (res: Int32.t) : ()
+  
+  axiom fn_once_closure1_spec:
+    forall self: (), args: tup2_i32_i32, res: Int32.t [postcondition_once_closure1 self args res]. postcondition_once_closure1 self args res
+      = (postcondition_closure1 self args res /\ resolve_closure1 self)
+  
+  function fn_mut_closure1 (self: ()) (args: tup2_i32_i32) (res_state: ()) (res: Int32.t) : ()
+  
+  axiom fn_mut_closure1_spec:
+    forall self: (), args: tup2_i32_i32, res_state: (), res: Int32.t [postcondition_mut_closure1 self args res_state res]. postcondition_mut_closure1 self args res_state res
+      = (postcondition_closure1 self args res /\ self = res_state)
+  
+  let call_closure1 (self_: ()) (arg: tup2_i32_i32) (return (x: Int32.t)) =
+  {[@stop_split] [@expl:call requires] precondition_closure1 self_ arg}
+    any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call ensures] postcondition_closure1 self_ arg result}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -52,10 +195,10 @@ module M_test_closure
       | s1 = [ &cl2 <- () ] s2
       | s2 = [ &_6 <- { f0 = (0: Int32.t); f1 = (3: Int32.t) } ] s3
       | s3 = [ &_5 <- { f0'0 = (4: Int32.t); f1'0 = _6 } ] s4
-      | s4 = closure0 {cl1} {_5.f0'0} {_5.f1'0} (fun (_x: Int32.t) -> [ &_a <- _x ] s5)
+      | s4 = call_closure0 {cl1} {_5} (fun (_x: Int32.t) -> [ &_a <- _x ] s5)
       | s5 = [ &_10 <- { f0 = (0: Int32.t); f1 = (4: Int32.t) } ] s6
       | s6 = [ &_9 <- _10 ] s7
-      | s7 = closure1 {cl2} {_9} (fun (_x: Int32.t) -> [ &_b <- _x ] s8)
+      | s7 = call_closure1 {cl2} {_9} (fun (_x: Int32.t) -> [ &_b <- _x ] s8)
       | s8 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & cl1: () = Any.any_l ()

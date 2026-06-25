@@ -12,6 +12,12 @@ extern_spec! {
             trait Clone {
                 #[requires(true)]
                 fn clone(&self) -> Self;
+
+                #[ensures(resolve(*self))]
+                #[ensures(Self::clone.postcondition((source,), ^self))]
+                fn clone_from(&mut self, source: &Self) {
+                    *self = source.clone()
+                }
             }
         }
     }
