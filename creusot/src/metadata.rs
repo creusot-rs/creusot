@@ -14,7 +14,7 @@ use rustc_index::bit_set::DenseBitSet;
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::ty::TyCtxt;
 use rustc_session::config::OutputType;
-use rustc_span::Symbol;
+use rustc_span::{Span, Symbol};
 use std::{
     collections::{HashMap, HashSet},
     fs::File,
@@ -33,6 +33,7 @@ pub struct Metadata<'tcx> {
     trusted_positivity: ExternTypes<'tcx>,
     erased_thir: HashMap<DefId, AnfBlock<'tcx>>,
     erased_defid: HashMap<DefId, Option<Erasure<'tcx>>>,
+    logic_aliases: HashMap<DefId, (Span, DefId)>,
 }
 
 impl<'tcx> Metadata<'tcx> {
@@ -51,6 +52,11 @@ impl<'tcx> Metadata<'tcx> {
     ) -> Option<&Scoped<TermWithTriggers<'tcx>>> {
         assert!(!def_id.is_local());
         self.get(def_id.krate)?.term_with_triggers(def_id)
+    }
+
+    pub(crate) fn raw_term(&self, def_id: DefId) -> Option<&Scoped<Term<'tcx>>> {
+        assert!(!def_id.is_local());
+        self.get(def_id.krate)?.raw_term(def_id)
     }
 
     pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&DenseBitSet<usize>> {
@@ -88,6 +94,10 @@ impl<'tcx> Metadata<'tcx> {
         self.erased_defid.get(&id)
     }
 
+    pub(crate) fn logic_alias(&self, id: DefId) -> Option<&(Span, DefId)> {
+        self.logic_aliases.get(&id)
+    }
+
     pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, PathBuf>) {
         for &cnum in tcx.crates(()) {
             if cnum == LOCAL_CRATE {
@@ -98,6 +108,11 @@ impl<'tcx> Metadata<'tcx> {
             else {
                 continue;
             };
+
+            for (id, alias) in &cmeta.logic_aliases {
+                self.logic_aliases.insert(*id, *alias);
+            }
+
             self.crates.insert(cnum, cmeta);
             for (id, spec) in ext_specs.into_iter() {
                 if self.extern_specs.insert(id, spec).is_some() {
@@ -125,9 +140,11 @@ impl<'tcx> Metadata<'tcx> {
 pub struct CrateMetadata<'tcx> {
     terms: IndexMap<DefId, Scoped<Term<'tcx>>>,
     terms_with_triggers: IndexMap<DefId, Scoped<TermWithTriggers<'tcx>>>,
+    raw_terms: IndexMap<DefId, Scoped<Term<'tcx>>>,
     creusot_items: HashMap<Symbol, DefId>,
     intrinsics: HashMap<Symbol, DefId>,
     params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
+    logic_aliases: HashMap<DefId, (Span, DefId)>,
     non_creusot_crate: bool,
 }
 
@@ -143,6 +160,11 @@ impl<'tcx> CrateMetadata<'tcx> {
     ) -> Option<&Scoped<TermWithTriggers<'tcx>>> {
         assert!(!def_id.is_local());
         self.terms_with_triggers.get(&def_id)
+    }
+
+    pub(crate) fn raw_term(&self, def_id: DefId) -> Option<&Scoped<Term<'tcx>>> {
+        assert!(!def_id.is_local());
+        self.raw_terms.get(&def_id)
     }
 
     pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&DenseBitSet<usize>> {
@@ -179,9 +201,11 @@ impl<'tcx> CrateMetadata<'tcx> {
         let meta = CrateMetadata {
             terms: metadata.terms.into_iter().collect(),
             terms_with_triggers: metadata.terms_with_triggers.into_iter().collect(),
+            raw_terms: metadata.raw_terms.into_iter().collect(),
             creusot_items: metadata.creusot_items,
             intrinsics: metadata.intrinsics,
             params_open_inv: metadata.params_open_inv,
+            logic_aliases: metadata.logic_aliases,
             non_creusot_crate: metadata.non_creusot_crate,
         };
 
@@ -203,6 +227,7 @@ impl<'tcx> CrateMetadata<'tcx> {
 pub(crate) struct BinaryMetadata<'tcx> {
     terms: Vec<(DefId, Scoped<Term<'tcx>>)>,
     terms_with_triggers: Vec<(DefId, Scoped<TermWithTriggers<'tcx>>)>,
+    raw_terms: Vec<(DefId, Scoped<Term<'tcx>>)>,
     creusot_items: HashMap<Symbol, DefId>,
     intrinsics: HashMap<Symbol, DefId>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
@@ -210,6 +235,7 @@ pub(crate) struct BinaryMetadata<'tcx> {
     params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
     erased_thir: Vec<(DefId, AnfBlock<'tcx>)>,
     erased_defid: Vec<(DefId, Option<Erasure<'tcx>>)>,
+    logic_aliases: HashMap<DefId, (Span, DefId)>,
     non_creusot_crate: bool,
 }
 
@@ -217,6 +243,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
         mut terms: OnceMap<DefId, Box<Option<Scoped<Term<'tcx>>>>>,
         mut terms_with_triggers: OnceMap<DefId, Box<Option<Scoped<TermWithTriggers<'tcx>>>>>,
+        mut raw_terms: OnceMap<DefId, Box<Option<Scoped<Term<'tcx>>>>>,
         creusot_items: HashMap<Symbol, DefId>,
         intrinsics: HashMap<Symbol, DefId>,
         extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
@@ -224,6 +251,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
         params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
         erased_thir: Vec<(DefId, AnfBlock<'tcx>)>,
         erased_local_defid: HashMap<LocalDefId, Option<Erasure<'tcx>>>,
+        logic_aliases: HashMap<DefId, (Span, DefId)>,
     ) -> Self {
         let terms = terms
             .iter_mut()
@@ -235,11 +263,17 @@ impl<'tcx> BinaryMetadata<'tcx> {
             .filter(|(def_id, t)| def_id.is_local() && t.is_some())
             .map(|(id, t)| (*id, t.clone().unwrap()))
             .collect();
+        let raw_terms = raw_terms
+            .iter_mut()
+            .filter(|(def_id, t)| def_id.is_local() && t.is_some())
+            .map(|(id, t)| (*id, t.clone().unwrap()))
+            .collect();
         let erased_defid =
             erased_local_defid.into_iter().map(|(id, erased)| (id.to_def_id(), erased)).collect();
         BinaryMetadata {
             terms,
             terms_with_triggers,
+            raw_terms,
             creusot_items,
             intrinsics,
             extern_specs,
@@ -247,6 +281,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
             params_open_inv,
             erased_thir,
             erased_defid,
+            logic_aliases,
             non_creusot_crate: false,
         }
     }
@@ -255,6 +290,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
         BinaryMetadata {
             terms: Vec::new(),
             terms_with_triggers: Vec::new(),
+            raw_terms: Vec::new(),
             creusot_items: HashMap::new(),
             intrinsics: HashMap::new(),
             extern_specs: HashMap::new(),
@@ -262,6 +298,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
             params_open_inv: HashMap::new(),
             erased_thir,
             erased_defid: Vec::new(),
+            logic_aliases: HashMap::new(),
             non_creusot_crate: true,
         }
     }

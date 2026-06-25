@@ -3,6 +3,7 @@
 use crate::{
     common::ContractSubject,
     creusot::{
+        FnOrMethod,
         doc::{self, document_spec},
         pretyping,
     },
@@ -10,7 +11,7 @@ use crate::{
 use pearlite_syn::{EnsuresTerm, Term, TermPath};
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
-use quote::quote;
+use quote::{quote, quote_spanned};
 use syn::{
     Attribute, Block, Expr, Ident, Item, Pat, Path, ReturnType, Stmt, Token, Type, parenthesized,
     parse::{self, Parse},
@@ -86,6 +87,10 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 }
 
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
+    ensures_inner(attr, tokens, false)
+}
+
+fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: bool) -> TS1 {
     const ENSURES_LEN: usize = "#[ensures(".len();
     let documentation = document_spec("ensures", doc::LogicBody::term(ENSURES_LEN, attr.clone()));
 
@@ -111,7 +116,9 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
 
     let ens_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
     let name_tag = ens_name.clone().to_string();
+
     use ContractSubject::*;
+
     match item {
         FnOrMethod(mut fn_or_meth) => {
             let ty_result = match fn_or_meth.sig.output {
@@ -123,7 +130,14 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                 FnSpecResultKind::Typed(result, ty_result.clone()),
                 ens_body,
             );
+
             let attrs = std::mem::take(&mut fn_or_meth.attrs);
+
+            let logic_alias = if has_logic_alias {
+                quote_spanned! { ensures_tokens.span() => #[creusot::decl::logic_alias = #name_tag] }
+            } else {
+                quote!()
+            };
 
             let mut companion = TokenStream::new();
             if let Some(b) = fn_or_meth.body.as_mut() {
@@ -149,10 +163,10 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
 
             TS1::from(quote! {
                 #companion
-
                 #[creusot::clause::ensures=#name_tag]
                 #(#attrs)*
                 #documentation
+                #logic_alias
                 #fn_or_meth
             })
         }
@@ -180,6 +194,15 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             })
         }
         Closure(mut clos) => {
+            if has_logic_alias {
+                return syn::Error::new(
+                    Span::call_site(),
+                    "`logic_alias` cannot be applied to a closure.",
+                )
+                .to_compile_error()
+                .into();
+            }
+
             let res_id = Ident::new("res", Span::mixed_site());
             let ensures_tokens =
                 fn_spec_item(ens_name, FnSpecResultKind::Unified(result, res_id.clone()), ens_body);
@@ -259,6 +282,48 @@ pub fn bitwise_proof(_: TS1, tokens: TS1) -> TS1 {
         #[creusot::bitwise]
         #tokens
     })
+}
+
+pub fn logic_alias(attr: TS1, tokens: TS1) -> TS1 {
+    let ensures_contract = {
+        match syn::parse::<Term>(attr.clone()) {
+            Ok(Term::Path(logic_path)) => {
+                let tokens = tokens.clone();
+                let func = parse_macro_input!(tokens as FnOrMethod);
+
+                let args = func.sig.inputs.iter().map(|a| match a {
+                    syn::FnArg::Receiver(receiver) => {
+                        let self_t = receiver.self_token;
+                        quote!(#self_t)
+                    }
+                    syn::FnArg::Typed(pat_type) => {
+                        let pat = &pat_type.pat;
+                        quote!(#pat)
+                    }
+                });
+                quote!(result == #logic_path(#(#args), *)).into()
+            }
+            Ok(Term::Call(term_call)) => {
+                quote!(result == #term_call)
+            }
+            Ok(invalid_term) => {
+                return syn::Error::new(
+                   invalid_term.span(),
+                   "`logic_alias` should contain a path to a logic function with the same signature, or \
+                   a logic function call with same return type"
+               ).to_compile_error().into();
+            }
+            Err(err) => {
+                return syn::Error::new(
+                    err.span(),
+                    "`logic_alias` should contain a path to a logic function with the same signature, or \
+                    a logic function call with same return type"
+                ).to_compile_error().into();
+            }
+        }
+    };
+
+    ensures_inner(ensures_contract.into(), tokens, true)
 }
 
 pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
