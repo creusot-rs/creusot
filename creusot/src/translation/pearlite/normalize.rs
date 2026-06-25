@@ -32,26 +32,25 @@ struct NormalizeTerm<'a, 'tcx> {
 impl<'a, 'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'a, 'tcx> {
     fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
         super_visit_mut_term(term, self);
-        match &mut term.kind {
-            TermKind::Call { id, subst, args } => {
-                let Some(resolved) =
-                    TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, *id, subst)
-                        .to_opt(*id, subst)
-                else {
-                    self.ctx.crash_and_error(
-                        term.span,
-                        format!(
-                            "could not resolve trait instance for {}{}",
-                            self.ctx.def_path_str(*id),
-                            subst.print_as_list()
-                        ),
-                    )
-                };
-                (*id, *subst) = resolved;
-                term.kind =
-                    optimize_builtin(self.ctx, *id, subst, std::mem::replace(args, Box::new([])));
-            }
-            _ => {}
+        if let TermKind::Call { id, subst, args } = &mut term.kind {
+            let Some(resolved) =
+                TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, *id, subst)
+                    .to_opt(*id, subst)
+            else {
+                self.ctx.crash_and_error(
+                    term.span,
+                    format!(
+                        "could not resolve trait instance for {}{}",
+                        self.ctx.def_path_str(*id),
+                        subst.print_as_list()
+                    ),
+                )
+            };
+
+            (*id, *subst) = resolved;
+
+            term.kind =
+                optimize_builtin(self.ctx, *id, subst, std::mem::replace(args, Box::new([])));
         }
     }
 }
