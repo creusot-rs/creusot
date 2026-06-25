@@ -20,11 +20,15 @@ module M_omg
   axiom precondition_fndef: forall args: t_T [precondition_is_true () args]. (let self = args in inv_ref_T self)
       -> precondition_is_true () args
   
-  predicate postcondition_once_is_true (self: ()) (args: t_T) (result: bool)
+  predicate postcondition_is_true (self: ()) (args: t_T) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: t_T, res: bool [postcondition_once_is_true () args res]. postcondition_once_is_true () args res
+    forall args: t_T, res: bool [postcondition_is_true () args res]. postcondition_is_true () args res
       -> (let self = args in res = true)
+  
+  predicate postcondition_once_is_true (self: ()) (args: t_T) (result: bool) = postcondition_is_true self args result
+  
+  meta "rewrite_def" predicate postcondition_once_is_true
   
   let is_true_T (self: t_T) (return (x: bool)) = {[@stop_split] [@expl:is_true requires] precondition_is_true () self}
     any

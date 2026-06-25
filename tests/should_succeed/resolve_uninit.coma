@@ -68,11 +68,15 @@ module M_maybe_uninit
   
   predicate inv_T (_1: t_T)
   
-  predicate postcondition_once_default (self: ()) (args: ()) (result: t_T)
+  predicate postcondition_default (self: ()) (args: ()) (result: t_T)
   
   axiom postcondition_fndef:
-    forall args: (), res: t_T [postcondition_once_default () args res]. postcondition_once_default () args res
+    forall args: (), res: t_T [postcondition_default () args res]. postcondition_default () args res
       -> (let () = args in inv_T res)
+  
+  predicate postcondition_once_default (self: ()) (args: ()) (result: t_T) = postcondition_default self args result
+  
+  meta "rewrite_def" predicate postcondition_once_default
   
   let default_T (return (x: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
     any

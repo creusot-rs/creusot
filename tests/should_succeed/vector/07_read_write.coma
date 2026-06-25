@@ -127,11 +127,15 @@ module M_read_write
   
   meta "rewrite_def" function deep_model_ref_T
   
-  predicate postcondition_once_eq (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
+  predicate postcondition_eq (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_T_ref_T, res: bool [postcondition_once_eq () args res]. postcondition_once_eq () args res
+    forall args: tup2_ref_T_ref_T, res: bool [postcondition_eq () args res]. postcondition_eq () args res
       -> (let {f0 = self_; f1 = rhs} = args in res = (deep_model_ref_T self_ = deep_model_ref_T rhs))
+  
+  predicate postcondition_once_eq (self: ()) (args: tup2_ref_T_ref_T) (result: bool) = postcondition_eq self args result
+  
+  meta "rewrite_def" predicate postcondition_once_eq
   
   let eq_T (self_: t_T) (rhs: t_T) (return (x: bool)) =
   {[@stop_split] [@expl:eq requires] precondition_eq () { f0 = self_; f1 = rhs }}

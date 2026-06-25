@@ -175,47 +175,7 @@ module M_foo1
   
   meta "rewrite_def" predicate resolve_refmut_closure9
   
-  predicate postcondition_once_closure9 (self: closure9) (args: ()) (result: ()) =
-    Int32.to_int self.c0.current + 1 = Int32.to_int self.c0.final
-  
-  meta "rewrite_def" predicate postcondition_once_closure9
-  
-  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_i32
-  
-  predicate resolve_closure9 [@inline:trivial] (_1: closure9) = resolve_refmut_i32 _1.c0
-  
-  meta "rewrite_def" predicate resolve_closure9
-  
   predicate hist_inv_closure9 (self: closure9) (result_state: closure9) = result_state.c0.final = self.c0.final
-  
-  predicate postcondition_mut_closure9 (self: closure9) (args: ()) (result_state: closure9) (result: ()) =
-    Int32.to_int self.c0.current + 1 = Int32.to_int result_state.c0.current /\ hist_inv_closure9 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure9
-  
-  function fn_mut_once_closure9 (self: closure9) (args: ()) (res: ()) : ()
-  
-  axiom fn_mut_once_closure9_spec:
-    forall self: closure9, args: (), res: () [postcondition_once_closure9 self args res]. postcondition_once_closure9 self args res
-      = (exists res_state: closure9. postcondition_mut_closure9 self args res_state res /\ resolve_closure9 res_state)
-  
-  function hist_inv_trans_closure9 (self: closure9) (b: closure9) (c: closure9) : ()
-  
-  axiom hist_inv_trans_closure9_spec:
-    forall self: closure9, b: closure9, c: closure9 [hist_inv_closure9 self b, hist_inv_closure9 b c | hist_inv_closure9 self b, hist_inv_closure9 self c | hist_inv_closure9 b c, hist_inv_closure9 self c]. hist_inv_closure9 self b
-      -> hist_inv_closure9 b c -> hist_inv_closure9 self c
-  
-  function hist_inv_refl_closure9 (self: closure9) : ()
-  
-  axiom hist_inv_refl_closure9_spec: forall self: closure9 [hist_inv_closure9 self self]. hist_inv_closure9 self self
-  
-  function postcondition_mut_hist_inv_closure9 (self: closure9) (args: ()) (res_state: closure9) (res: ()) : ()
-  
-  axiom postcondition_mut_hist_inv_closure9_spec:
-    forall self: closure9, args: (), res_state: closure9, res: () [postcondition_mut_closure9 self args res_state res | hist_inv_closure9 self res_state]. postcondition_mut_closure9 self args res_state res
-      -> hist_inv_closure9 self res_state
   
   let closure9 (self: MutBorrow.t closure9) (return (x: ())) =
   {[@stop_split] [@expl:closure requires] Int32.to_int self.current.c0.current < 42}
@@ -235,6 +195,19 @@ module M_foo1
   predicate precondition_closure9 (self: closure9) (args: ()) = Int32.to_int self.c0.current < 42
   
   meta "rewrite_def" predicate precondition_closure9
+  
+  predicate postcondition_mut_closure9 (self: closure9) (args: ()) (result_state: closure9) (result: ()) =
+    Int32.to_int self.c0.current + 1 = Int32.to_int result_state.c0.current /\ hist_inv_closure9 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure9
+  
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_i32
+  
+  predicate resolve_closure9 [@inline:trivial] (_1: closure9) = resolve_refmut_i32 _1.c0
+  
+  meta "rewrite_def" predicate resolve_closure9
   
   let apply_mut_closure9 (f: closure9) (return (x: ())) =
   {[@stop_split] [@expl:apply_mut requires] precondition_closure9 f ()}
@@ -372,49 +345,7 @@ module M_foo2
   
   meta "rewrite_def" predicate resolve_refmut_closure9
   
-  predicate postcondition_once_closure9 (self: closure9) (args: ()) (result: ()) =
-    Int32.to_int self.c0.current.current + 1 = Int32.to_int self.c0.final.current
-    /\ self.c0.current.final = self.c0.final.final
-  
-  meta "rewrite_def" predicate postcondition_once_closure9
-  
-  predicate resolve_refmut_refmut_i32 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t Int32.t)) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_refmut_i32
-  
-  predicate resolve_closure9 [@inline:trivial] (_1: closure9) = resolve_refmut_refmut_i32 _1.c0
-  
-  meta "rewrite_def" predicate resolve_closure9
-  
   predicate hist_inv_closure9 (self: closure9) (result_state: closure9) = result_state.c0.final = self.c0.final
-  
-  predicate postcondition_mut_closure9 (self: closure9) (args: ()) (result_state: closure9) (result: ()) =
-    Int32.to_int self.c0.current.current + 1 = Int32.to_int result_state.c0.current.current
-    /\ self.c0.current.final = result_state.c0.current.final /\ hist_inv_closure9 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure9
-  
-  function fn_mut_once_closure9 (self: closure9) (args: ()) (res: ()) : ()
-  
-  axiom fn_mut_once_closure9_spec:
-    forall self: closure9, args: (), res: () [postcondition_once_closure9 self args res]. postcondition_once_closure9 self args res
-      = (exists res_state: closure9. postcondition_mut_closure9 self args res_state res /\ resolve_closure9 res_state)
-  
-  function hist_inv_trans_closure9 (self: closure9) (b: closure9) (c: closure9) : ()
-  
-  axiom hist_inv_trans_closure9_spec:
-    forall self: closure9, b: closure9, c: closure9 [hist_inv_closure9 self b, hist_inv_closure9 b c | hist_inv_closure9 self b, hist_inv_closure9 self c | hist_inv_closure9 b c, hist_inv_closure9 self c]. hist_inv_closure9 self b
-      -> hist_inv_closure9 b c -> hist_inv_closure9 self c
-  
-  function hist_inv_refl_closure9 (self: closure9) : ()
-  
-  axiom hist_inv_refl_closure9_spec: forall self: closure9 [hist_inv_closure9 self self]. hist_inv_closure9 self self
-  
-  function postcondition_mut_hist_inv_closure9 (self: closure9) (args: ()) (res_state: closure9) (res: ()) : ()
-  
-  axiom postcondition_mut_hist_inv_closure9_spec:
-    forall self: closure9, args: (), res_state: closure9, res: () [postcondition_mut_closure9 self args res_state res | hist_inv_closure9 self res_state]. postcondition_mut_closure9 self args res_state res
-      -> hist_inv_closure9 self res_state
   
   let closure9 (self: MutBorrow.t closure9) (return (x: ())) =
   {[@stop_split] [@expl:closure requires] Int32.to_int self.current.c0.current.current < 42}
@@ -437,6 +368,20 @@ module M_foo2
   predicate precondition_closure9 (self: closure9) (args: ()) = Int32.to_int self.c0.current.current < 42
   
   meta "rewrite_def" predicate precondition_closure9
+  
+  predicate postcondition_mut_closure9 (self: closure9) (args: ()) (result_state: closure9) (result: ()) =
+    Int32.to_int self.c0.current.current + 1 = Int32.to_int result_state.c0.current.current
+    /\ self.c0.current.final = result_state.c0.current.final /\ hist_inv_closure9 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure9
+  
+  predicate resolve_refmut_refmut_i32 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t Int32.t)) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_refmut_i32
+  
+  predicate resolve_closure9 [@inline:trivial] (_1: closure9) = resolve_refmut_refmut_i32 _1.c0
+  
+  meta "rewrite_def" predicate resolve_closure9
   
   let apply_mut_closure9 (f: closure9) (return (x: ())) =
   {[@stop_split] [@expl:apply_mut requires] precondition_closure9 f ()}
@@ -575,14 +520,6 @@ module M_foo3
   
   meta "rewrite_def" predicate resolve_refmut_closure1
   
-  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_i32
-  
-  predicate resolve_closure1 [@inline:trivial] (_1: closure1) = resolve_refmut_i32 _1.c0
-  
-  meta "rewrite_def" predicate resolve_closure1
-  
   predicate hist_inv_closure1 (self: closure1) (result_state: closure1) = result_state.c0.final = self.c0.final
   
   let closure1 [@coma:extspec] (self: MutBorrow.t closure1) (return (x: ())) = bb0
@@ -598,12 +535,10 @@ module M_foo3
   
   meta "rewrite_def" predicate closure1'post'return
   
-  predicate postcondition_once_closure1 (self: closure1) (args: ()) (result: ()) =
-    exists e: closure1. (exists bor_self: MutBorrow.t closure1. bor_self.current = self
-          /\ bor_self.final = e /\ closure1'post'return bor_self result /\ hist_inv_closure1 self e)
-      /\ resolve_closure1 e
+  predicate precondition_closure1 (self: closure1) (args: ()) =
+    forall bor_self: MutBorrow.t closure1. bor_self.current = self -> closure1'pre bor_self
   
-  meta "rewrite_def" predicate postcondition_once_closure1
+  meta "rewrite_def" predicate precondition_closure1
   
   predicate postcondition_mut_closure1 (self: closure1) (args: ()) (result_state: closure1) (result: ()) =
     exists bor_self: MutBorrow.t closure1. bor_self.current = self
@@ -611,32 +546,13 @@ module M_foo3
   
   meta "rewrite_def" predicate postcondition_mut_closure1
   
-  function fn_mut_once_closure1 (self: closure1) (args: ()) (res: ()) : ()
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
-  axiom fn_mut_once_closure1_spec:
-    forall self: closure1, args: (), res: () [postcondition_once_closure1 self args res]. postcondition_once_closure1 self args res
-      = (exists res_state: closure1. postcondition_mut_closure1 self args res_state res /\ resolve_closure1 res_state)
+  meta "rewrite_def" predicate resolve_refmut_i32
   
-  function hist_inv_trans_closure1 (self: closure1) (b: closure1) (c: closure1) : ()
+  predicate resolve_closure1 [@inline:trivial] (_1: closure1) = resolve_refmut_i32 _1.c0
   
-  axiom hist_inv_trans_closure1_spec:
-    forall self: closure1, b: closure1, c: closure1 [hist_inv_closure1 self b, hist_inv_closure1 b c | hist_inv_closure1 self b, hist_inv_closure1 self c | hist_inv_closure1 b c, hist_inv_closure1 self c]. hist_inv_closure1 self b
-      -> hist_inv_closure1 b c -> hist_inv_closure1 self c
-  
-  function hist_inv_refl_closure1 (self: closure1) : ()
-  
-  axiom hist_inv_refl_closure1_spec: forall self: closure1 [hist_inv_closure1 self self]. hist_inv_closure1 self self
-  
-  function postcondition_mut_hist_inv_closure1 (self: closure1) (args: ()) (res_state: closure1) (res: ()) : ()
-  
-  axiom postcondition_mut_hist_inv_closure1_spec:
-    forall self: closure1, args: (), res_state: closure1, res: () [postcondition_mut_closure1 self args res_state res | hist_inv_closure1 self res_state]. postcondition_mut_closure1 self args res_state res
-      -> hist_inv_closure1 self res_state
-  
-  predicate precondition_closure1 (self: closure1) (args: ()) =
-    forall bor_self: MutBorrow.t closure1. bor_self.current = self -> closure1'pre bor_self
-  
-  meta "rewrite_def" predicate precondition_closure1
+  meta "rewrite_def" predicate resolve_closure1
   
   let apply_mut_closure1 (f: closure1) (return (x: ())) =
   {[@stop_split] [@expl:apply_mut requires] precondition_closure1 f ()}

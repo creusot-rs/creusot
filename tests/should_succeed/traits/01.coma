@@ -11,11 +11,15 @@ module M_uses_generic
   axiom precondition_fndef: forall args: t_T [precondition_from_b () args]. (let x = args in inv_T x)
       -> precondition_from_b () args
   
-  predicate postcondition_once_from_b (self: ()) (args: t_T) (result: UInt32.t)
+  predicate postcondition_from_b (self: ()) (args: t_T) (result: UInt32.t)
   
   axiom postcondition_fndef:
-    forall args: t_T, res: UInt32.t [postcondition_once_from_b () args res]. postcondition_once_from_b () args res
+    forall args: t_T, res: UInt32.t [postcondition_from_b () args res]. postcondition_from_b () args res
       -> (let x = args in true)
+  
+  predicate postcondition_once_from_b (self: ()) (args: t_T) (result: UInt32.t) = postcondition_from_b self args result
+  
+  meta "rewrite_def" predicate postcondition_once_from_b
   
   let from_b_T (x: t_T) (return (x'0: UInt32.t)) = {[@stop_split] [@expl:from_b requires] precondition_from_b () x}
     any

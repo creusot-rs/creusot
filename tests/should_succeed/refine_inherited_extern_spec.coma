@@ -88,11 +88,16 @@ module M_impl_FromIterator_for_S__from_iter__refines (* <S as std::iter::FromIte
   
   predicate inv_IntoIter (_1: t_IntoIter)
   
-  predicate postcondition_once_into_iter (self: ()) (args: t_I) (result: t_IntoIter)
+  predicate postcondition_into_iter (self: ()) (args: t_I) (result: t_IntoIter)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: t_IntoIter [postcondition_once_into_iter () args res]. postcondition_once_into_iter () args res
+    forall args: t_I, res: t_IntoIter [postcondition_into_iter () args res]. postcondition_into_iter () args res
       -> (let self = args in inv_IntoIter res)
+  
+  predicate postcondition_once_into_iter (self: ()) (args: t_I) (result: t_IntoIter) =
+    postcondition_into_iter self args result
+  
+  meta "rewrite_def" predicate postcondition_once_into_iter
   
   let into_iter_I (self: t_I) (return (x: t_IntoIter)) =
   {[@stop_split] [@expl:into_iter requires] precondition_into_iter () self}

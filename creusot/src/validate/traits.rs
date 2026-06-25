@@ -158,15 +158,6 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
                         ),
                     )
                     .emit();
-                } else if !is_law(ctx.tcx, impl_item) && is_law(ctx.tcx, trait_item) {
-                    ctx.error(
-                        ctx.def_span(impl_item),
-                        format!(
-                            "Expected `{}` to be a `#[logic(law)]` as specified by the trait declaration",
-                            ctx.item_name(impl_item),
-                        ),
-                    )
-                    .emit();
                 }
             }
         }

@@ -213,12 +213,16 @@ module M_binary_search
   
   meta "rewrite_def" function deep_model_ref_T
   
-  predicate postcondition_once_gt (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
+  predicate postcondition_gt (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_T_ref_T, res: bool [postcondition_once_gt () args res]. postcondition_once_gt () args res
+    forall args: tup2_ref_T_ref_T, res: bool [postcondition_gt () args res]. postcondition_gt () args res
       -> (let {f0 = self_; f1 = other} = args in res
       = gt_log_DeepModelTy (deep_model_ref_T self_) (deep_model_ref_T other))
+  
+  predicate postcondition_once_gt (self: ()) (args: tup2_ref_T_ref_T) (result: bool) = postcondition_gt self args result
+  
+  meta "rewrite_def" predicate postcondition_once_gt
   
   let gt_T (self_: t_T) (other: t_T) (return (x: bool)) =
   {[@stop_split] [@expl:gt requires] precondition_gt () { f0 = self_; f1 = other }}
@@ -233,11 +237,16 @@ module M_binary_search
     forall args: tup2_ref_T_ref_T [precondition_cmp () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_T self_
         /\ inv_ref_T rhs) -> precondition_cmp () args
   
-  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_T_ref_T) (result: t_Ordering)
+  predicate postcondition_cmp (self: ()) (args: tup2_ref_T_ref_T) (result: t_Ordering)
   
   axiom postcondition_fndef'0:
-    forall args: tup2_ref_T_ref_T, res: t_Ordering [postcondition_once_cmp () args res]. postcondition_once_cmp () args res
+    forall args: tup2_ref_T_ref_T, res: t_Ordering [postcondition_cmp () args res]. postcondition_cmp () args res
       -> (let {f0 = self_; f1 = rhs} = args in res = cmp_log_DeepModelTy (deep_model_T self_) (deep_model_T rhs))
+  
+  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_T_ref_T) (result: t_Ordering) =
+    postcondition_cmp self args result
+  
+  meta "rewrite_def" predicate postcondition_once_cmp
   
   let cmp_T (self_: t_T) (rhs: t_T) (return (x: t_Ordering)) =
   {[@stop_split] [@expl:cmp requires] precondition_cmp () { f0 = self_; f1 = rhs }}

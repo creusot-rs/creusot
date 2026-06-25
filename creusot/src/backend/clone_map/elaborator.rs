@@ -700,7 +700,6 @@ fn traitref_of_item<'tcx>(
 
 impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     fn expand_laws(&mut self, dep: Dependency<'tcx>) {
-        let (self_did, self_subst) = (self.namer.source_id(), self.namer.source_subst());
         let Some((item_did, item_subst)) = dep.did() else {
             return;
         };
@@ -708,10 +707,30 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         let Some(item_ai) = self.ctx.opt_associated_item(item_did) else { return };
         let item_container = item_ai.container_id(self.tcx());
 
+        if Intrinsic::FnExt.is(self.ctx, item_container)
+            || Intrinsic::FnMutExt.is(self.ctx, item_container)
+            || Intrinsic::FnOnceExt.is(self.ctx, item_container)
+        {
+            let ty = item_subst.type_at(1);
+            if ty.is_closure()
+                || ty.is_box()
+                || ty.is_ref()
+                || matches!(ty.kind(), TyKind::Adt(def, _) if Intrinsic::FnGhostWrapper.is(self.ctx, def.did()))
+                || matches!(ty.kind(), TyKind::FnDef(_, _))
+            {
+                // For buitin implementations of FnOnce/FnMut/Fn, we do not exand laws.
+                return;
+            }
+        }
+
         // Dont clone laws into the trait / impl which defines them.
         if let Some(tr_item) = traitref_of_item(self.tcx(), self.typing_env, item_did, item_subst)
-            && let Some(tr_self) =
-                traitref_of_item(self.tcx(), self.typing_env, self_did, self_subst)
+            && let Some(tr_self) = traitref_of_item(
+                self.tcx(),
+                self.typing_env,
+                self.namer.source_id(),
+                self.namer.source_subst(),
+            )
             && tr_item == tr_self
         {
             return;
@@ -801,7 +820,11 @@ fn postcondition_once_term<'tcx>(
             let post_args = [self_.coerce(bsubst.type_at(0)), args, res];
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
-        &TyKind::FnDef(did, subst) => post_fndef(ctx, names, did, subst, args, res, true),
+        TyKind::FnDef(..) => {
+            let post_args = [self_, args, res];
+            let post_fn = Intrinsic::Postcondition.get(ctx);
+            Some(Term::call(ctx.tcx, typing_env, post_fn, subst, post_args))
+        }
         _ => None,
     }
 }
@@ -887,7 +910,11 @@ fn postcondition_mut_term<'tcx>(
             let post_args = [self_.coerce(closure_ty), args, result_state.coerce(closure_ty), res];
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
-        &TyKind::FnDef(did, subst) => post_fndef(ctx, names, did, subst, args, res, true),
+        TyKind::FnDef(..) => {
+            let post_args = [self_, args, res];
+            let post_fn = Intrinsic::Postcondition.get(ctx);
+            Some(Term::call(ctx.tcx, typing_env, post_fn, subst, post_args))
+        }
         _ => None,
     }
 }

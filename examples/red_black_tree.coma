@@ -1782,11 +1782,16 @@ module M_impl_Map_K_V__get (* Map<K, V> *)
     forall args: tup2_ref_K_ref_K [precondition_cmp () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K self_
         /\ inv_ref_K rhs) -> precondition_cmp () args
   
-  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
+  predicate postcondition_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_K_ref_K, res: t_Ordering [postcondition_once_cmp () args res]. postcondition_once_cmp () args res
+    forall args: tup2_ref_K_ref_K, res: t_Ordering [postcondition_cmp () args res]. postcondition_cmp () args res
       -> (let {f0'0 = self_; f1'0 = rhs} = args in res = cmp_log_DeepModelTy (deep_model_K self_) (deep_model_K rhs))
+  
+  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering) =
+    postcondition_cmp self args result
+  
+  meta "rewrite_def" predicate postcondition_once_cmp
   
   let cmp_K (self_: t_K) (rhs: t_K) (return (x: t_Ordering)) =
   {[@stop_split] [@expl:cmp requires] precondition_cmp () { f0'0 = self_; f1'0 = rhs }}
@@ -2155,11 +2160,16 @@ module M_impl_Map_K_V__get_mut (* Map<K, V> *)
     forall args: tup2_ref_K_ref_K [precondition_cmp () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K self_
         /\ inv_ref_K rhs) -> precondition_cmp () args
   
-  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
+  predicate postcondition_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_K_ref_K, res: t_Ordering [postcondition_once_cmp () args res]. postcondition_once_cmp () args res
+    forall args: tup2_ref_K_ref_K, res: t_Ordering [postcondition_cmp () args res]. postcondition_cmp () args res
       -> (let {f0'0 = self_; f1'0 = rhs} = args in res = cmp_log_DeepModelTy (deep_model_K self_) (deep_model_K rhs))
+  
+  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering) =
+    postcondition_cmp self args result
+  
+  meta "rewrite_def" predicate postcondition_once_cmp
   
   let cmp_K (self_: t_K) (rhs: t_K) (return (x: t_Ordering)) =
   {[@stop_split] [@expl:cmp requires] precondition_cmp () { f0'0 = self_; f1'0 = rhs }}
@@ -4788,66 +4798,10 @@ module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
   
   meta "rewrite_def" predicate inv_refmut_Option_Box_Node_K_V_Global
   
-  predicate postcondition_once_default (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_once_default
-  
-  predicate resolve_default [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_default
-  
-  predicate postcondition_mut_default (self: ()) (args: ()) (result_state: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_mut_default
-  
-  function fn_mut_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_mut_once_default_spec:
-    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global [postcondition_once_default self args res]. postcondition_once_default self args res
-      = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
-  
-  predicate hist_inv_default (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_default_spec:
-    forall self: (), b: (), c: () [hist_inv_default self b, hist_inv_default b c | hist_inv_default self b, hist_inv_default self c | hist_inv_default b c, hist_inv_default self c]. hist_inv_default self b
-      -> hist_inv_default b c -> hist_inv_default self c
-  
-  function hist_inv_refl_default (self: ()) : ()
-  
-  axiom hist_inv_refl_default_spec: forall self: () [hist_inv_default self self]. hist_inv_default self self
-  
-  function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_default_spec:
-    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global [postcondition_mut_default self args res_state res | hist_inv_default self res_state]. postcondition_mut_default self args res_state res
-      -> hist_inv_default self res_state
-  
-  function fn_hist_inv_default (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_default_spec:
-    forall self: (), res_state: () [hist_inv_default self res_state]. hist_inv_default self res_state
-      = (self = res_state)
-  
   predicate postcondition_default (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
     let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
   
   meta "rewrite_def" predicate postcondition_default
-  
-  function fn_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_once_default_spec:
-    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global [postcondition_once_default self args res]. postcondition_once_default self args res
-      = (postcondition_default self args res /\ resolve_default self)
-  
-  function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_mut_default_spec:
-    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global [postcondition_mut_default self args res_state res]. postcondition_mut_default self args res_state res
-      = (postcondition_default self args res /\ self = res_state)
   
   let default_Option_Box_Node_K_V_Global (return (x: t_Option_Box_Node_K_V_Global)) = any
     [ return (result: t_Option_Box_Node_K_V_Global) ->
@@ -5287,66 +5241,10 @@ module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
   
   meta "rewrite_def" predicate inv_refmut_Option_Box_Node_K_V_Global
   
-  predicate postcondition_once_default (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_once_default
-  
-  predicate resolve_default [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_default
-  
-  predicate postcondition_mut_default (self: ()) (args: ()) (result_state: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_mut_default
-  
-  function fn_mut_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_mut_once_default_spec:
-    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global [postcondition_once_default self args res]. postcondition_once_default self args res
-      = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
-  
-  predicate hist_inv_default (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_default_spec:
-    forall self: (), b: (), c: () [hist_inv_default self b, hist_inv_default b c | hist_inv_default self b, hist_inv_default self c | hist_inv_default b c, hist_inv_default self c]. hist_inv_default self b
-      -> hist_inv_default b c -> hist_inv_default self c
-  
-  function hist_inv_refl_default (self: ()) : ()
-  
-  axiom hist_inv_refl_default_spec: forall self: () [hist_inv_default self self]. hist_inv_default self self
-  
-  function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_default_spec:
-    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global [postcondition_mut_default self args res_state res | hist_inv_default self res_state]. postcondition_mut_default self args res_state res
-      -> hist_inv_default self res_state
-  
-  function fn_hist_inv_default (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_default_spec:
-    forall self: (), res_state: () [hist_inv_default self res_state]. hist_inv_default self res_state
-      = (self = res_state)
-  
   predicate postcondition_default (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
     let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
   
   meta "rewrite_def" predicate postcondition_default
-  
-  function fn_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_once_default_spec:
-    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global [postcondition_once_default self args res]. postcondition_once_default self args res
-      = (postcondition_default self args res /\ resolve_default self)
-  
-  function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_mut_default_spec:
-    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global [postcondition_mut_default self args res_state res]. postcondition_mut_default self args res_state res
-      = (postcondition_default self args res /\ self = res_state)
   
   let default_Option_Box_Node_K_V_Global (return (x: t_Option_Box_Node_K_V_Global)) = any
     [ return (result: t_Option_Box_Node_K_V_Global) ->
@@ -7404,66 +7302,10 @@ module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate resolve_refmut_Node_K_V
   
-  predicate postcondition_once_default (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_once_default
-  
-  predicate resolve_default [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_default
-  
-  predicate postcondition_mut_default (self: ()) (args: ()) (result_state: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_mut_default
-  
-  function fn_mut_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_mut_once_default_spec:
-    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global [postcondition_once_default self args res]. postcondition_once_default self args res
-      = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
-  
-  predicate hist_inv_default (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_default_spec:
-    forall self: (), b: (), c: () [hist_inv_default self b, hist_inv_default b c | hist_inv_default self b, hist_inv_default self c | hist_inv_default b c, hist_inv_default self c]. hist_inv_default self b
-      -> hist_inv_default b c -> hist_inv_default self c
-  
-  function hist_inv_refl_default (self: ()) : ()
-  
-  axiom hist_inv_refl_default_spec: forall self: () [hist_inv_default self self]. hist_inv_default self self
-  
-  function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_default_spec:
-    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global [postcondition_mut_default self args res_state res | hist_inv_default self res_state]. postcondition_mut_default self args res_state res
-      -> hist_inv_default self res_state
-  
-  function fn_hist_inv_default (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_default_spec:
-    forall self: (), res_state: () [hist_inv_default self res_state]. hist_inv_default self res_state
-      = (self = res_state)
-  
   predicate postcondition_default (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
     let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
   
   meta "rewrite_def" predicate postcondition_default
-  
-  function fn_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_once_default_spec:
-    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global [postcondition_once_default self args res]. postcondition_once_default self args res
-      = (postcondition_default self args res /\ resolve_default self)
-  
-  function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_mut_default_spec:
-    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global [postcondition_mut_default self args res_state res]. postcondition_mut_default self args res_state res
-      = (postcondition_default self args res /\ self = res_state)
   
   let default_Option_Box_Node_K_V_Global (return (x: t_Option_Box_Node_K_V_Global)) = any
     [ return (result: t_Option_Box_Node_K_V_Global) ->
@@ -7954,66 +7796,10 @@ module M_impl_Tree_K_V_6__delete_min_rec (* Tree<K, V> *)
   
   meta "rewrite_def" predicate resolve_refmut_Node_K_V
   
-  predicate postcondition_once_default (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_once_default
-  
-  predicate resolve_default [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_default
-  
-  predicate postcondition_mut_default (self: ()) (args: ()) (result_state: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_mut_default
-  
-  function fn_mut_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_mut_once_default_spec:
-    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global [postcondition_once_default self args res]. postcondition_once_default self args res
-      = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
-  
-  predicate hist_inv_default (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_default_spec:
-    forall self: (), b: (), c: () [hist_inv_default self b, hist_inv_default b c | hist_inv_default self b, hist_inv_default self c | hist_inv_default b c, hist_inv_default self c]. hist_inv_default self b
-      -> hist_inv_default b c -> hist_inv_default self c
-  
-  function hist_inv_refl_default (self: ()) : ()
-  
-  axiom hist_inv_refl_default_spec: forall self: () [hist_inv_default self self]. hist_inv_default self self
-  
-  function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_default_spec:
-    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global [postcondition_mut_default self args res_state res | hist_inv_default self res_state]. postcondition_mut_default self args res_state res
-      -> hist_inv_default self res_state
-  
-  function fn_hist_inv_default (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_default_spec:
-    forall self: (), res_state: () [hist_inv_default self res_state]. hist_inv_default self res_state
-      = (self = res_state)
-  
   predicate postcondition_default (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
     let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
   
   meta "rewrite_def" predicate postcondition_default
-  
-  function fn_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_once_default_spec:
-    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global [postcondition_once_default self args res]. postcondition_once_default self args res
-      = (postcondition_default self args res /\ resolve_default self)
-  
-  function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_mut_default_spec:
-    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global [postcondition_mut_default self args res_state res]. postcondition_mut_default self args res_state res
-      = (postcondition_default self args res /\ self = res_state)
   
   let default_Option_Box_Node_K_V_Global (return (x: t_Option_Box_Node_K_V_Global)) = any
     [ return (result: t_Option_Box_Node_K_V_Global) ->
@@ -8666,11 +8452,16 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   
   function deep_model_K (self: t_K) : t_DeepModelTy
   
-  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
+  predicate postcondition_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_K_ref_K, res: t_Ordering [postcondition_once_cmp () args res]. postcondition_once_cmp () args res
+    forall args: tup2_ref_K_ref_K, res: t_Ordering [postcondition_cmp () args res]. postcondition_cmp () args res
       -> (let {f0 = self_; f1 = rhs} = args in res = cmp_log_DeepModelTy (deep_model_K self_) (deep_model_K rhs))
+  
+  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering) =
+    postcondition_cmp self args result
+  
+  meta "rewrite_def" predicate postcondition_once_cmp
   
   let cmp_K (self_: t_K) (rhs: t_K) (return (x: t_Ordering)) =
   {[@stop_split] [@expl:cmp requires] precondition_cmp () { f0 = self_; f1 = rhs }}
@@ -9006,66 +8797,10 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
         /\ (color_K result.current.left = Black -> result.final.color = Black) -> color_invariant_K'0 self.final)}
       (! return {result}) ]
   
-  predicate postcondition_once_default (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_once_default
-  
-  predicate resolve_default [@inline:trivial] (_1: ()) = true
-  
-  meta "rewrite_def" predicate resolve_default
-  
-  predicate postcondition_mut_default (self: ()) (args: ()) (result_state: ()) (result: t_Option_Box_Node_K_V_Global) =
-    let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
-  
-  meta "rewrite_def" predicate postcondition_mut_default
-  
-  function fn_mut_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_mut_once_default_spec:
-    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global [postcondition_once_default self args res]. postcondition_once_default self args res
-      = (exists res_state: (). postcondition_mut_default self args res_state res /\ resolve_default res_state)
-  
-  predicate hist_inv_default (self: ()) (result_state: ()) = true
-  
-  function hist_inv_trans_default (self: ()) (b: ()) (c: ()) : ()
-  
-  axiom hist_inv_trans_default_spec:
-    forall self: (), b: (), c: () [hist_inv_default self b, hist_inv_default b c | hist_inv_default self b, hist_inv_default self c | hist_inv_default b c, hist_inv_default self c]. hist_inv_default self b
-      -> hist_inv_default b c -> hist_inv_default self c
-  
-  function hist_inv_refl_default (self: ()) : ()
-  
-  axiom hist_inv_refl_default_spec: forall self: () [hist_inv_default self self]. hist_inv_default self self
-  
-  function postcondition_mut_hist_inv_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom postcondition_mut_hist_inv_default_spec:
-    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global [postcondition_mut_default self args res_state res | hist_inv_default self res_state]. postcondition_mut_default self args res_state res
-      -> hist_inv_default self res_state
-  
-  function fn_hist_inv_default (self: ()) (res_state: ()) : ()
-  
-  axiom fn_hist_inv_default_spec:
-    forall self: (), res_state: () [hist_inv_default self res_state]. hist_inv_default self res_state
-      = (self = res_state)
-  
   predicate postcondition_default (self: ()) (args: ()) (result: t_Option_Box_Node_K_V_Global) =
     let () = args in inv_Option_Box_Node_K_V_Global result /\ result = None
   
   meta "rewrite_def" predicate postcondition_default
-  
-  function fn_once_default (self: ()) (args: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_once_default_spec:
-    forall self: (), args: (), res: t_Option_Box_Node_K_V_Global [postcondition_once_default self args res]. postcondition_once_default self args res
-      = (postcondition_default self args res /\ resolve_default self)
-  
-  function fn_mut_default (self: ()) (args: ()) (res_state: ()) (res: t_Option_Box_Node_K_V_Global) : ()
-  
-  axiom fn_mut_default_spec:
-    forall self: (), args: (), res_state: (), res: t_Option_Box_Node_K_V_Global [postcondition_mut_default self args res_state res]. postcondition_mut_default self args res_state res
-      = (postcondition_default self args res /\ self = res_state)
   
   let default_Option_Box_Node_K_V_Global (return (x: t_Option_Box_Node_K_V_Global)) = any
     [ return (result: t_Option_Box_Node_K_V_Global) ->
@@ -9850,11 +9585,16 @@ module M_impl_Tree_K_V_6__insert_rec (* Tree<K, V> *)
   axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
       = (cmp_log_DeepModelTy x y <> Greater)
   
-  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
+  predicate postcondition_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_K_ref_K, res: t_Ordering [postcondition_once_cmp () args res]. postcondition_once_cmp () args res
+    forall args: tup2_ref_K_ref_K, res: t_Ordering [postcondition_cmp () args res]. postcondition_cmp () args res
       -> (let {f0 = self_; f1 = rhs} = args in res = cmp_log_DeepModelTy (deep_model_K self_) (deep_model_K rhs))
+  
+  predicate postcondition_once_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering) =
+    postcondition_cmp self args result
+  
+  meta "rewrite_def" predicate postcondition_once_cmp
   
   let cmp_K (self_: t_K) (rhs: t_K) (return (x: t_Ordering)) =
   {[@stop_split] [@expl:cmp requires] precondition_cmp () { f0 = self_; f1 = rhs }}

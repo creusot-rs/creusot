@@ -666,21 +666,6 @@ module M_message_passing
         end}
       any) ]
   
-  predicate resolve_refmut_Ghost_Option_Perm_PermCell_i32 [@inline:trivial] (_1: MutBorrow.t t_Option_Perm_PermCell_i32) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Ghost_Option_Perm_PermCell_i32
-  
-  predicate resolve_refmut_Ghost_Option_Resource_Excl_unit [@inline:trivial] (_1: MutBorrow.t t_Option_Resource_Excl_unit) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Ghost_Option_Resource_Excl_unit
-  
-  predicate resolve_closure0 [@inline:trivial] (_1: closure0'3) =
-    resolve_refmut_Ghost_Option_Perm_PermCell_i32 _1.c2'5 /\ resolve_refmut_Ghost_Option_Resource_Excl_unit _1.c1'5
-  
-  meta "rewrite_def" predicate resolve_closure0
-  
   predicate hist_inv_closure0 (self: closure0'3) (result_state: closure0'3) =
     result_state.c0'5 = self.c0'5
     /\ result_state.c1'5.final = self.c1'5.final /\ result_state.c2'5.final = self.c2'5.final
@@ -795,42 +780,6 @@ module M_message_passing
   
   meta "rewrite_def" predicate closure0'2'post'return
   
-  predicate postcondition_once_closure0'2 (self: closure0'3) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
-    let inv = args in exists e: closure0'3. (exists bor_self: MutBorrow.t closure0'3. bor_self.current = self
-          /\ bor_self.final = e /\ closure0'2'post'return bor_self inv result /\ hist_inv_closure0 self e)
-      /\ resolve_closure0 e
-  
-  meta "rewrite_def" predicate postcondition_once_closure0'2
-  
-  predicate postcondition_mut_closure0 (self: closure0'3) (args: MutBorrow.t t_MessagePassingAtomicInv) (result_state: closure0'3) (result: ()) =
-    let inv = args in exists bor_self: MutBorrow.t closure0'3. bor_self.current = self
-      /\ bor_self.final = result_state
-      /\ closure0'2'post'return bor_self inv result /\ hist_inv_closure0 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure0
-  
-  function fn_mut_once_closure0 (self: closure0'3) (args: MutBorrow.t t_MessagePassingAtomicInv) (res: ()) : ()
-  
-  axiom fn_mut_once_closure0_spec:
-    forall self: closure0'3, args: MutBorrow.t t_MessagePassingAtomicInv, res: () [postcondition_once_closure0'2 self args res]. postcondition_once_closure0'2 self args res
-      = (exists res_state: closure0'3. postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
-  
-  function hist_inv_trans_closure0 (self: closure0'3) (b: closure0'3) (c: closure0'3) : ()
-  
-  axiom hist_inv_trans_closure0_spec:
-    forall self: closure0'3, b: closure0'3, c: closure0'3 [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
-      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
-  
-  function hist_inv_refl_closure0 (self: closure0'3) : ()
-  
-  axiom hist_inv_refl_closure0_spec: forall self: closure0'3 [hist_inv_closure0 self self]. hist_inv_closure0 self self
-  
-  function postcondition_mut_hist_inv_closure0 (self: closure0'3) (args: MutBorrow.t t_MessagePassingAtomicInv) (res_state: closure0'3) (res: ()) : ()
-  
-  axiom postcondition_mut_hist_inv_closure0_spec:
-    forall self: closure0'3, args: MutBorrow.t t_MessagePassingAtomicInv, res_state: closure0'3, res: () [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
-      -> hist_inv_closure0 self res_state
-  
   type t_FnGhostWrapper_closure0'1 = { f0'6: closure0'3 }
   
   let __new_closure0'1 (f: closure0'3) (return (x: t_FnGhostWrapper_closure0'1)) = any
@@ -846,6 +795,28 @@ module M_message_passing
     precondition_closure0'2 self.f0'6 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'1
+  
+  predicate resolve_refmut_Ghost_Option_Perm_PermCell_i32 [@inline:trivial] (_1: MutBorrow.t t_Option_Perm_PermCell_i32) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_Option_Perm_PermCell_i32
+  
+  predicate resolve_refmut_Ghost_Option_Resource_Excl_unit [@inline:trivial] (_1: MutBorrow.t t_Option_Resource_Excl_unit) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_Option_Resource_Excl_unit
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0'3) =
+    resolve_refmut_Ghost_Option_Perm_PermCell_i32 _1.c2'5 /\ resolve_refmut_Ghost_Option_Resource_Excl_unit _1.c1'5
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate postcondition_once_closure0'2 (self: closure0'3) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
+    let inv = args in exists e: closure0'3. (exists bor_self: MutBorrow.t closure0'3. bor_self.current = self
+          /\ bor_self.final = e /\ closure0'2'post'return bor_self inv result /\ hist_inv_closure0 self e)
+      /\ resolve_closure0 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure0'2
   
   predicate postcondition_once_FnGhostWrapper_closure0'1 (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
     postcondition_once_closure0'2 self.f0'6 args result
@@ -877,16 +848,6 @@ module M_message_passing
   predicate resolve_refmut_closure4 [@inline:trivial] (_1: MutBorrow.t closure4) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_closure4
-  
-  predicate resolve_refmut_Ghost_Tokens [@inline:trivial] (_1: MutBorrow.t t_Tokens) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Ghost_Tokens
-  
-  predicate resolve_closure4 [@inline:trivial] (_1: closure4) =
-    resolve_refmut_Ghost_Option_Perm_PermCell_i32 _1.c3'4
-    /\ resolve_refmut_Ghost_Option_Resource_Excl_unit _1.c2'4 /\ resolve_refmut_Ghost_Tokens _1.c1'4
-  
-  meta "rewrite_def" predicate resolve_closure4
   
   predicate hist_inv_closure4 (self: closure4) (result_state: closure4) =
     result_state.c0'4 = self.c0'4
@@ -942,41 +903,6 @@ module M_message_passing
   
   meta "rewrite_def" predicate closure4'post'return
   
-  predicate postcondition_once_closure4 (self: closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) (result: ()) =
-    let c = args in exists e: closure4. (exists bor_self: MutBorrow.t closure4. bor_self.current = self
-          /\ bor_self.final = e /\ closure4'post'return bor_self c result /\ hist_inv_closure4 self e)
-      /\ resolve_closure4 e
-  
-  meta "rewrite_def" predicate postcondition_once_closure4
-  
-  predicate postcondition_mut_closure4 (self: closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) (result_state: closure4) (result: ()) =
-    let c = args in exists bor_self: MutBorrow.t closure4. bor_self.current = self
-      /\ bor_self.final = result_state /\ closure4'post'return bor_self c result /\ hist_inv_closure4 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure4
-  
-  function fn_mut_once_closure4 (self: closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) (res: ()) : ()
-  
-  axiom fn_mut_once_closure4_spec:
-    forall self: closure4, args: t_Committer_AtomicBool_bool_SeqCst_None, res: () [postcondition_once_closure4 self args res]. postcondition_once_closure4 self args res
-      = (exists res_state: closure4. postcondition_mut_closure4 self args res_state res /\ resolve_closure4 res_state)
-  
-  function hist_inv_trans_closure4 (self: closure4) (b: closure4) (c: closure4) : ()
-  
-  axiom hist_inv_trans_closure4_spec:
-    forall self: closure4, b: closure4, c: closure4 [hist_inv_closure4 self b, hist_inv_closure4 b c | hist_inv_closure4 self b, hist_inv_closure4 self c | hist_inv_closure4 b c, hist_inv_closure4 self c]. hist_inv_closure4 self b
-      -> hist_inv_closure4 b c -> hist_inv_closure4 self c
-  
-  function hist_inv_refl_closure4 (self: closure4) : ()
-  
-  axiom hist_inv_refl_closure4_spec: forall self: closure4 [hist_inv_closure4 self self]. hist_inv_closure4 self self
-  
-  function postcondition_mut_hist_inv_closure4 (self: closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) (res_state: closure4) (res: ()) : ()
-  
-  axiom postcondition_mut_hist_inv_closure4_spec:
-    forall self: closure4, args: t_Committer_AtomicBool_bool_SeqCst_None, res_state: closure4, res: () [postcondition_mut_closure4 self args res_state res | hist_inv_closure4 self res_state]. postcondition_mut_closure4 self args res_state res
-      -> hist_inv_closure4 self res_state
-  
   type t_FnGhostWrapper_closure4 = { f0'7: closure4 }
   
   let __new_closure4 (f: closure4) (return (x: t_FnGhostWrapper_closure4)) = any
@@ -995,6 +921,23 @@ module M_message_passing
     precondition_closure4 self.f0'7 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure4
+  
+  predicate resolve_refmut_Ghost_Tokens [@inline:trivial] (_1: MutBorrow.t t_Tokens) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_Tokens
+  
+  predicate resolve_closure4 [@inline:trivial] (_1: closure4) =
+    resolve_refmut_Ghost_Option_Perm_PermCell_i32 _1.c3'4
+    /\ resolve_refmut_Ghost_Option_Resource_Excl_unit _1.c2'4 /\ resolve_refmut_Ghost_Tokens _1.c1'4
+  
+  meta "rewrite_def" predicate resolve_closure4
+  
+  predicate postcondition_once_closure4 (self: closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) (result: ()) =
+    let c = args in exists e: closure4. (exists bor_self: MutBorrow.t closure4. bor_self.current = self
+          /\ bor_self.final = e /\ closure4'post'return bor_self c result /\ hist_inv_closure4 self e)
+      /\ resolve_closure4 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure4
   
   predicate postcondition_once_FnGhostWrapper_closure4 (self: t_FnGhostWrapper_closure4) (args: t_Committer_AtomicBool_bool_SeqCst_None) (result: ()) =
     postcondition_once_closure4 self.f0'7 args result

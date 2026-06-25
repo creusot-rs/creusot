@@ -26,11 +26,15 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   axiom precondition_fndef: forall args: t_K [precondition_clone () args]. (let self_ = args in inv_ref_K self_)
       -> precondition_clone () args
   
-  predicate postcondition_once_clone (self: ()) (args: t_K) (result: t_K)
+  predicate postcondition_clone (self: ()) (args: t_K) (result: t_K)
   
   axiom postcondition_fndef:
-    forall args: t_K, res: t_K [postcondition_once_clone () args res]. postcondition_once_clone () args res
+    forall args: t_K, res: t_K [postcondition_clone () args res]. postcondition_clone () args res
       -> (let self_ = args in inv_K res)
+  
+  predicate postcondition_once_clone (self: ()) (args: t_K) (result: t_K) = postcondition_clone self args result
+  
+  meta "rewrite_def" predicate postcondition_once_clone
   
   let clone_K (self_: t_K) (return (x: t_K)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
     any

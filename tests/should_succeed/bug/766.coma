@@ -30,11 +30,15 @@ module M_trait_Trait__goo
   
   meta "rewrite_def" function deep_model_refmut_Self
   
-  predicate postcondition_once_f (self: ()) (args: MutBorrow.t t_Self) (result: ())
+  predicate postcondition_f (self: ()) (args: MutBorrow.t t_Self) (result: ())
   
   axiom postcondition_fndef:
-    forall args: MutBorrow.t t_Self, res: () [postcondition_once_f () args res]. postcondition_once_f () args res
+    forall args: MutBorrow.t t_Self, res: () [postcondition_f () args res]. postcondition_f () args res
       -> (let self = args in deep_model_refmut_Self self = deep_model_refmut_Self self)
+  
+  predicate postcondition_once_f (self: ()) (args: MutBorrow.t t_Self) (result: ()) = postcondition_f self args result
+  
+  meta "rewrite_def" predicate postcondition_once_f
   
   let f_Self (self: MutBorrow.t t_Self) (return (x: ())) = {[@stop_split] [@expl:f requires] precondition_f () self}
     any

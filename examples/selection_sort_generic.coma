@@ -244,12 +244,16 @@ module M_selection_sort
   
   meta "rewrite_def" function deep_model_ref_T
   
-  predicate postcondition_once_lt (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
+  predicate postcondition_lt (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_T_ref_T, res: bool [postcondition_once_lt () args res]. postcondition_once_lt () args res
+    forall args: tup2_ref_T_ref_T, res: bool [postcondition_lt () args res]. postcondition_lt () args res
       -> (let {f0 = self_; f1 = other} = args in res
       = lt_log_DeepModelTy (deep_model_ref_T self_) (deep_model_ref_T other))
+  
+  predicate postcondition_once_lt (self: ()) (args: tup2_ref_T_ref_T) (result: bool) = postcondition_lt self args result
+  
+  meta "rewrite_def" predicate postcondition_once_lt
   
   let lt_T (self_: t_T) (other: t_T) (return (x: bool)) =
   {[@stop_split] [@expl:lt requires] precondition_lt () { f0 = self_; f1 = other }}

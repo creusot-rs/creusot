@@ -1346,17 +1346,6 @@ module M_parallel_add
   
   meta "rewrite_def" predicate resolve_refmut_ParallelAddAtomicInv
   
-  predicate resolve_refmut_Committer_AtomicI32_i32_Relaxed_Relaxed [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicI32_i32_Relaxed_Relaxed) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Committer_AtomicI32_i32_Relaxed_Relaxed
-  
-  predicate resolve_closure0 [@inline:trivial] (_1: closure0'2) =
-    resolve_refmut_Committer_AtomicI32_i32_Relaxed_Relaxed _1.c1'2
-    /\ resolve_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int _1.c0'2
-  
-  meta "rewrite_def" predicate resolve_closure0
-  
   predicate hist_inv_closure0 (self: closure0'2) (result_state: closure0'2) =
     result_state.c0'2.final = self.c0'2.final /\ result_state.c1'2.final = self.c1'2.final
   
@@ -1482,42 +1471,6 @@ module M_parallel_add
   
   meta "rewrite_def" predicate closure0'post'return
   
-  predicate postcondition_once_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
-    let inv = args in exists e: closure0'2. (exists bor_self: MutBorrow.t closure0'2. bor_self.current = self
-          /\ bor_self.final = e /\ closure0'post'return bor_self inv result /\ hist_inv_closure0 self e)
-      /\ resolve_closure0 e
-  
-  meta "rewrite_def" predicate postcondition_once_closure0
-  
-  predicate postcondition_mut_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (result_state: closure0'2) (result: ()) =
-    let inv = args in exists bor_self: MutBorrow.t closure0'2. bor_self.current = self
-      /\ bor_self.final = result_state
-      /\ closure0'post'return bor_self inv result /\ hist_inv_closure0 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure0
-  
-  function fn_mut_once_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (res: ()) : ()
-  
-  axiom fn_mut_once_closure0_spec:
-    forall self: closure0'2, args: MutBorrow.t t_ParallelAddAtomicInv, res: () [postcondition_once_closure0 self args res]. postcondition_once_closure0 self args res
-      = (exists res_state: closure0'2. postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
-  
-  function hist_inv_trans_closure0 (self: closure0'2) (b: closure0'2) (c: closure0'2) : ()
-  
-  axiom hist_inv_trans_closure0_spec:
-    forall self: closure0'2, b: closure0'2, c: closure0'2 [hist_inv_closure0 self b, hist_inv_closure0 b c | hist_inv_closure0 self b, hist_inv_closure0 self c | hist_inv_closure0 b c, hist_inv_closure0 self c]. hist_inv_closure0 self b
-      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
-  
-  function hist_inv_refl_closure0 (self: closure0'2) : ()
-  
-  axiom hist_inv_refl_closure0_spec: forall self: closure0'2 [hist_inv_closure0 self self]. hist_inv_closure0 self self
-  
-  function postcondition_mut_hist_inv_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (res_state: closure0'2) (res: ()) : ()
-  
-  axiom postcondition_mut_hist_inv_closure0_spec:
-    forall self: closure0'2, args: MutBorrow.t t_ParallelAddAtomicInv, res_state: closure0'2, res: () [postcondition_mut_closure0 self args res_state res | hist_inv_closure0 self res_state]. postcondition_mut_closure0 self args res_state res
-      -> hist_inv_closure0 self res_state
-  
   type t_FnGhostWrapper_closure0 = { f0'13: closure0'2 }
   
   let __new_closure0 (f: closure0'2) (return (x: t_FnGhostWrapper_closure0)) = any
@@ -1541,6 +1494,24 @@ module M_parallel_add
     precondition_closure0 self.f0'13 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0
+  
+  predicate resolve_refmut_Committer_AtomicI32_i32_Relaxed_Relaxed [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicI32_i32_Relaxed_Relaxed) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Committer_AtomicI32_i32_Relaxed_Relaxed
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0'2) =
+    resolve_refmut_Committer_AtomicI32_i32_Relaxed_Relaxed _1.c1'2
+    /\ resolve_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int _1.c0'2
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate postcondition_once_closure0 (self: closure0'2) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
+    let inv = args in exists e: closure0'2. (exists bor_self: MutBorrow.t closure0'2. bor_self.current = self
+          /\ bor_self.final = e /\ closure0'post'return bor_self inv result /\ hist_inv_closure0 self e)
+      /\ resolve_closure0 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure0
   
   predicate postcondition_once_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_ParallelAddAtomicInv) (result: ()) =
     postcondition_once_closure0 self.f0'13 args result

@@ -183,49 +183,7 @@ module M_valid
   
   meta "rewrite_def" predicate resolve_refmut_closure2
   
-  predicate postcondition_once_closure2 (self: closure2) (args: bool) (result: ()) =
-    let b = args in b /\ self.c0'0.final = (2: UInt32.t) \/ not b /\ self.c0'0.final = (1: UInt32.t)
-  
-  meta "rewrite_def" predicate postcondition_once_closure2
-  
-  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_u32
-  
-  predicate resolve_closure2 [@inline:trivial] (_1: closure2) = resolve_refmut_u32 _1.c0'0
-  
-  meta "rewrite_def" predicate resolve_closure2
-  
   predicate hist_inv_closure2 (self: closure2) (result_state: closure2) = result_state.c0'0.final = self.c0'0.final
-  
-  predicate postcondition_mut_closure2 (self: closure2) (args: bool) (result_state: closure2) (result: ()) =
-    let b = args in (b /\ result_state.c0'0.current = (2: UInt32.t)
-      \/ not b /\ result_state.c0'0.current = (1: UInt32.t))
-    /\ hist_inv_closure2 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure2
-  
-  function fn_mut_once_closure2 (self: closure2) (args: bool) (res: ()) : ()
-  
-  axiom fn_mut_once_closure2_spec:
-    forall self: closure2, args: bool, res: () [postcondition_once_closure2 self args res]. postcondition_once_closure2 self args res
-      = (exists res_state: closure2. postcondition_mut_closure2 self args res_state res /\ resolve_closure2 res_state)
-  
-  function hist_inv_trans_closure2 (self: closure2) (b: closure2) (c: closure2) : ()
-  
-  axiom hist_inv_trans_closure2_spec:
-    forall self: closure2, b: closure2, c: closure2 [hist_inv_closure2 self b, hist_inv_closure2 b c | hist_inv_closure2 self b, hist_inv_closure2 self c | hist_inv_closure2 b c, hist_inv_closure2 self c]. hist_inv_closure2 self b
-      -> hist_inv_closure2 b c -> hist_inv_closure2 self c
-  
-  function hist_inv_refl_closure2 (self: closure2) : ()
-  
-  axiom hist_inv_refl_closure2_spec: forall self: closure2 [hist_inv_closure2 self self]. hist_inv_closure2 self self
-  
-  function postcondition_mut_hist_inv_closure2 (self: closure2) (args: bool) (res_state: closure2) (res: ()) : ()
-  
-  axiom postcondition_mut_hist_inv_closure2_spec:
-    forall self: closure2, args: bool, res_state: closure2, res: () [postcondition_mut_closure2 self args res_state res | hist_inv_closure2 self res_state]. postcondition_mut_closure2 self args res_state res
-      -> hist_inv_closure2 self res_state
   
   let closure2 (self: MutBorrow.t closure2) (b: bool) (return (x: ())) = (! bb0
     [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ]
@@ -250,65 +208,14 @@ module M_valid
   
   meta "rewrite_def" predicate precondition_closure2
   
-  predicate postcondition_once_closure1 (self: closure1) (args: ()) (result: bool) =
-    result = UInt32.gt self.c0 (7: UInt32.t)
-  
-  meta "rewrite_def" predicate postcondition_once_closure1
-  
-  predicate resolve_closure1 [@inline:trivial] (_1: closure1) = true
-  
-  meta "rewrite_def" predicate resolve_closure1
-  
-  predicate hist_inv_closure1 (self: closure1) (result_state: closure1) = self = result_state
-  
-  predicate postcondition_mut_closure1 (self: closure1) (args: ()) (result_state: closure1) (result: bool) =
-    result = UInt32.gt result_state.c0 (7: UInt32.t) /\ hist_inv_closure1 self result_state
-  
-  meta "rewrite_def" predicate postcondition_mut_closure1
-  
-  function fn_mut_once_closure1 (self: closure1) (args: ()) (res: bool) : ()
-  
-  axiom fn_mut_once_closure1_spec:
-    forall self: closure1, args: (), res: bool [postcondition_once_closure1 self args res]. postcondition_once_closure1 self args res
-      = (exists res_state: closure1. postcondition_mut_closure1 self args res_state res /\ resolve_closure1 res_state)
-  
-  function hist_inv_trans_closure1 (self: closure1) (b: closure1) (c: closure1) : ()
-  
-  axiom hist_inv_trans_closure1_spec:
-    forall self: closure1, b: closure1, c: closure1 [hist_inv_closure1 self b, hist_inv_closure1 b c | hist_inv_closure1 self b, hist_inv_closure1 self c | hist_inv_closure1 b c, hist_inv_closure1 self c]. hist_inv_closure1 self b
-      -> hist_inv_closure1 b c -> hist_inv_closure1 self c
-  
-  function hist_inv_refl_closure1 (self: closure1) : ()
-  
-  axiom hist_inv_refl_closure1_spec: forall self: closure1 [hist_inv_closure1 self self]. hist_inv_closure1 self self
-  
-  function postcondition_mut_hist_inv_closure1 (self: closure1) (args: ()) (res_state: closure1) (res: bool) : ()
-  
-  axiom postcondition_mut_hist_inv_closure1_spec:
-    forall self: closure1, args: (), res_state: closure1, res: bool [postcondition_mut_closure1 self args res_state res | hist_inv_closure1 self res_state]. postcondition_mut_closure1 self args res_state res
-      -> hist_inv_closure1 self res_state
-  
-  function fn_hist_inv_closure1 (self: closure1) (res_state: closure1) : ()
-  
-  axiom fn_hist_inv_closure1_spec:
-    forall self: closure1, res_state: closure1 [hist_inv_closure1 self res_state]. hist_inv_closure1 self res_state
-      = (self = res_state)
-  
   predicate postcondition_closure1 (self: closure1) (args: ()) (result: bool) = result = UInt32.gt self.c0 (7: UInt32.t)
   
   meta "rewrite_def" predicate postcondition_closure1
   
-  function fn_once_closure1 (self: closure1) (args: ()) (res: bool) : ()
+  predicate postcondition_once_closure2 (self: closure2) (args: bool) (result: ()) =
+    let b = args in b /\ self.c0'0.final = (2: UInt32.t) \/ not b /\ self.c0'0.final = (1: UInt32.t)
   
-  axiom fn_once_closure1_spec:
-    forall self: closure1, args: (), res: bool [postcondition_once_closure1 self args res]. postcondition_once_closure1 self args res
-      = (postcondition_closure1 self args res /\ resolve_closure1 self)
-  
-  function fn_mut_closure1 (self: closure1) (args: ()) (res_state: closure1) (res: bool) : ()
-  
-  axiom fn_mut_closure1_spec:
-    forall self: closure1, args: (), res_state: closure1, res: bool [postcondition_mut_closure1 self args res_state res]. postcondition_mut_closure1 self args res_state res
-      = (postcondition_closure1 self args res /\ self = res_state)
+  meta "rewrite_def" predicate postcondition_once_closure2
   
   let inversed_if_closure1 (cond: closure1) (branch: closure2) (return (x: ())) =
   {[@stop_split] [@expl:inversed_if requires] precondition_closure1 cond ()

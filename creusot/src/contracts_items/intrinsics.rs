@@ -38,7 +38,8 @@ macro_rules! contracts_items {
                         DefKind::Enum |
                         DefKind::Fn |
                         DefKind::AssocFn |
-                        DefKind::Trait => (),
+                        DefKind::Trait |
+                        DefKind::Impl { .. } => (),
                         _ => return None
                     }
 
@@ -129,6 +130,9 @@ contracts_items! {
     "exists"                    Exists
     "fn_ghost"                  FnGhost
     "fn_ghost_wrapper"          FnGhostWrapper
+    "fn_ext"                    FnExt
+    "fn_mut_ext"                FnMutExt
+    "fn_once_ext"               FnOnceExt
     "forall"                    Forall
     "ghost"                     Ghost
     "ghost_deref"               GhostDeref
