@@ -58,6 +58,10 @@ pub fn ensures(_: TS1, tokens: TS1) -> TS1 {
     TS1::from(item.into_token_stream())
 }
 
+pub fn logic_alias(_: TS1, tokens: TS1) -> TS1 {
+    tokens
+}
+
 pub fn variant(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }

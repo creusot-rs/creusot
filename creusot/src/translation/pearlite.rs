@@ -168,6 +168,8 @@ pub enum TermKind<'tcx> {
         id: DefId,
         subst: GenericArgsRef<'tcx>,
     },
+    /// Be careful when building this case, that it respects
+    /// [logic aliases](TranslationCtx::logical_alias)
     Call {
         id: DefId,
         subst: GenericArgsRef<'tcx>,

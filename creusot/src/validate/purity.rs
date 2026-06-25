@@ -5,6 +5,7 @@ use crate::{
         is_snapshot_closure, is_spec, is_trusted_ghost, is_trusted_terminates,
     },
     ctx::{HasTyCtxt, TranslationCtx},
+    logic_alias,
     resolution::TraitResolved,
     translation::specification::ProgramPurity,
 };
@@ -272,6 +273,13 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             .unwrap();
 
                     let fn_purity = self.purity(func_did, args);
+                    let fn_purity = match self.ctx.logic_alias(func_did) {
+                        Some((_, alias_id)) if !self.context.can_call(fn_purity) => {
+                            // TODO MAEL println!("Found logic_alias: {:?}", alias_id);
+                            self.purity(logic_alias::get_logic_id(self.ctx, alias_id), args)
+                        }
+                        _ => fn_purity,
+                    };
                     if self.context.is_logic()
                         && (
                             // These methods are allowed to cheat the purity restrictions
