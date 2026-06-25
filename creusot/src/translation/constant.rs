@@ -1,5 +1,5 @@
 use crate::{
-    contracts_items::is_no_simp,
+    contracts_items::is_eval,
     ctx::{HasTyCtxt as _, TranslationCtx},
     translation::{fmir::Operand, pearlite::Literal},
 };
@@ -163,11 +163,12 @@ pub fn try_const_to_term<'tcx>(
     subst: ty::GenericArgsRef<'tcx>,
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
+    source_id: DefId,
 ) -> Option<Term<'tcx>> {
     if ctx.def_kind(def_id) == DefKind::ConstParam {
         return None;
     }
-    if !is_no_simp(ctx.tcx, def_id) {
+    if is_eval(ctx.tcx, def_id) {
         let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
         let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
         let span = ctx.def_span(def_id);
@@ -175,6 +176,8 @@ pub fn try_const_to_term<'tcx>(
         let uneval = ty::UnevaluatedConst::new(ctx.tcx, kind, subst);
         if let Ok(Ok(val)) = ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
             return valtree_to_term(val, ctx, ty, typing_env, span);
+        } else {
+            ctx.warn(ctx.def_span(source_id), format!("could not evaluate const `{}` (which is marked `#[creusot::eval]`) when translating `{}`", ctx.def_path_str(def_id), ctx.def_path_str(source_id)));
         }
     }
     try_const_synonym(def_id, subst, ctx, typing_env)
