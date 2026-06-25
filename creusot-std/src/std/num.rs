@@ -54,13 +54,13 @@ macro_rules! mach_int {
                 }
             }
 
-            #[simp]
+            #[creusot::eval]
             const $t::MIN;
 
-            #[simp]
+            #[creusot::eval]
             const $t::MAX;
 
-            #[simp]
+            #[creusot::eval]
             const $t::BITS;
         }
 

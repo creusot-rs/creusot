@@ -173,7 +173,6 @@ pub mod p {
 
     pub struct S(());
 
-    #[creusot::no_simp]
     pub const C: S = S::s();
 
     impl S {
@@ -189,7 +188,6 @@ pub mod p {
     }
 }
 
-#[creusot::no_simp]
 pub const D: p::S = p::C;
 
 #[ensures(result == p::S::s_logic())]
