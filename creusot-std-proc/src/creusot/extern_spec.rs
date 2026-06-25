@@ -119,12 +119,15 @@ struct ImplData {
 struct FlatSpec {
     span: Span,
     signature: Signature,
-    doc_item_name: DocItemName,
     attrs: Vec<Attribute>,
     /// Expression that can be used to refer to the function being specified
     path: ExprPath,
-    impl_data: Option<ImplData>,
-    body: Option<Block>,
+    kind: FlatSpecKind,
+}
+
+#[derive(Clone, Debug)]
+enum FlatSpecKind {
+    Fn { doc_item_name: DocItemName, impl_data: Option<ImplData>, body: Option<Block> },
 }
 
 impl ExternSpec {
@@ -155,6 +158,9 @@ fn self_type_escape<T: Parse>(span: Span) -> T {
 
 impl FlatSpec {
     fn into_tokens(mut self) -> TokenStream {
+        if let Err(e) = self.replace_self() {
+            return e.into_compile_error();
+        }
         let span = self.span;
         let args: Punctuated<Expr, Comma> = self
             .signature
@@ -173,79 +179,6 @@ impl FlatSpec {
             .collect();
 
         let ident = crate::creusot::generate_unique_ident("extern_spec", span);
-
-        let mut replacer;
-        if let Some(mut data) = self.impl_data {
-            data.params.extend(self.signature.generics.params);
-            self.signature.generics.params = data.params;
-
-            if self.signature.generics.where_clause.is_none() {
-                self.signature.generics.where_clause = Some(WhereClause {
-                    where_token: Default::default(),
-                    predicates: Default::default(),
-                });
-            }
-
-            let where_clause = self.signature.generics.where_clause.as_mut().unwrap();
-
-            if let Some(p) = data.where_clause {
-                where_clause.predicates.extend(p)
-            };
-
-            let escape = match &data.self_ty {
-                TraitOrImpl::Trait(_, _) => SelfTypeKind::Self_,
-                TraitOrImpl::Impl(ty) => SelfTypeKind::Type(ty.clone()),
-            };
-            replacer = SelfTypeEscaper { escape, err: Ok(()) };
-
-            self.signature.inputs.iter_mut().for_each(|input| match input {
-                FnArg::Receiver(Receiver { self_token, ty, .. }) => {
-                    // An `impl` block may have a `self` reciever, but we should replace it with the actual
-                    // underlying type. This constructs the correct replacement for those cases.
-
-                    let mut ty = ty.clone();
-                    replacer.visit_type_mut(&mut ty);
-
-                    let self_: Ident = self_escape(self_token.span());
-
-                    *input = FnArg::Typed(PatType {
-                        attrs: Vec::new(),
-                        pat: parse_quote!(#self_),
-                        colon_token: Default::default(),
-                        ty,
-                    });
-                }
-                FnArg::Typed(PatType { ty, .. }) => replacer.visit_type_mut(ty),
-            });
-
-            replacer.visit_return_type_mut(&mut self.signature.output);
-
-            if let TraitOrImpl::Trait(trait_name, generics) = data.self_ty {
-                let selfty = self_type_escape(span);
-                where_clause
-                    .predicates
-                    .push(parse_quote_spanned! {span=> #selfty : ?::core::marker::Sized + #trait_name #generics });
-
-                self.signature.generics.params.insert(0, selfty);
-
-                where_clause.predicates.iter_mut().for_each(|pred| {
-                    replacer.visit_where_predicate_mut(pred);
-                });
-            }
-
-            if let Some(block) = &mut self.body {
-                replacer.visit_block_mut(block)
-            }
-        } else {
-            replacer = SelfTypeEscaper { escape: SelfTypeKind::None, err: Ok(()) };
-        }
-
-        if let Err(e) = escape_self_in_contracts(&mut self.attrs, &mut replacer) {
-            return e.into_compile_error();
-        }
-        if let Err(e) = replacer.err {
-            return e.into_compile_error();
-        }
 
         let sig = Signature {
             constness: None,
@@ -271,69 +204,85 @@ impl FlatSpec {
             args,
         });
 
-        // If the function was given a body to check, it is generated here.
-        let f_with_body = if let Some(mut b) = self.body {
-            let attrs = attrs.clone();
-            if has_erasure {
-                let erasure_stmt = parse_quote! {
-                    let _ =
-                        #[creusot::no_translate]
-                        #[creusot::spec::erasure]
-                        || #call;
-                };
-                b.stmts.insert(0, erasure_stmt);
-            }
-            escape_self_in_block(&mut b);
-            let mut sig = sig.clone();
-            sig.ident = Ident::new(&format!("{}_body", self.doc_item_name.0), sig.ident.span());
-            Some(ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(b) })
-        } else {
-            None
-        };
-
-        let doc = {
-            let path = if let Some(qself) = &self.path.qself {
-                if let Type::Reference(_) = *qself.ty {
-                    // Unsupported self types by rustdoc, we might as well print out the fully qualified path.
-                    let trait_ = display::DisplayPath(&Path {
-                        leading_colon: None,
-                        segments: self
-                            .path
-                            .path
-                            .segments
-                            .iter()
-                            .take(qself.position)
-                            .cloned()
-                            .collect(),
-                    });
-                    format!(
-                        "`<{} as {}>::{}`",
-                        display::DisplayType(&qself.ty),
-                        trait_,
-                        self.path.path.segments[qself.position].ident
-                    )
+        let extras = match self.kind {
+            FlatSpecKind::Fn { body, doc_item_name, .. } => {
+                // If the function was given a body to check, it is generated here.
+                let f_with_body = if let Some(mut b) = body {
+                    let attrs = attrs.clone();
+                    if has_erasure {
+                        let erasure_stmt = parse_quote! {
+                            let _ =
+                                #[creusot::no_translate]
+                                #[creusot::spec::erasure]
+                                || #call;
+                        };
+                        b.stmts.insert(0, erasure_stmt);
+                    }
+                    escape_self_in_block(&mut b);
+                    let mut sig = sig.clone();
+                    sig.ident = Ident::new(&format!("{}_body", doc_item_name.0), sig.ident.span());
+                    Some(ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(b) })
                 } else {
-                    format!(
-                        "[`{}::{}`]",
-                        display::DisplayType(&qself.ty),
-                        self.path.path.segments[qself.position].ident
-                    )
-                }
-            } else {
-                format!("[`{}`]", display::DisplayPath(&self.path.path))
-            };
-            format!("extern spec for {path}")
-        };
-        // only used in documentation
-        let f_doc = ItemFn {
-            attrs: attrs.clone(),
-            vis: parse_quote!(pub),
-            sig: {
-                let mut sig = sig.clone();
-                sig.ident = Ident::new(&self.doc_item_name.0.to_string(), sig.ident.span());
-                sig
-            },
-            block: Box::new(Block { brace_token: Brace(span), stmts: vec![parse_quote!(loop {})] }),
+                    None
+                };
+
+                let doc = {
+                    let path = if let Some(qself) = &self.path.qself {
+                        if let Type::Reference(_) = *qself.ty {
+                            // Unsupported self types by rustdoc, we might as well print out the fully qualified path.
+                            let trait_ = display::DisplayPath(&Path {
+                                leading_colon: None,
+                                segments: self
+                                    .path
+                                    .path
+                                    .segments
+                                    .iter()
+                                    .take(qself.position)
+                                    .cloned()
+                                    .collect(),
+                            });
+                            format!(
+                                "`<{} as {}>::{}`",
+                                display::DisplayType(&qself.ty),
+                                trait_,
+                                self.path.path.segments[qself.position].ident
+                            )
+                        } else {
+                            format!(
+                                "[`{}::{}`]",
+                                display::DisplayType(&qself.ty),
+                                self.path.path.segments[qself.position].ident
+                            )
+                        }
+                    } else {
+                        format!("[`{}`]", display::DisplayPath(&self.path.path))
+                    };
+                    format!("extern spec for {path}")
+                };
+                // only used in documentation
+                let f_doc = ItemFn {
+                    attrs: attrs.clone(),
+                    vis: parse_quote!(pub),
+                    sig: {
+                        let mut sig = sig.clone();
+                        sig.ident = Ident::new(&doc_item_name.0, sig.ident.span());
+                        sig
+                    },
+                    block: Box::new(Block {
+                        brace_token: Brace(span),
+                        stmts: vec![parse_quote!(loop {})],
+                    }),
+                };
+                Some(quote_spanned! {span =>
+                #[cfg(doc)]
+                #[doc = #doc]
+                #[doc = ""]
+                #[doc = "This is not a real function: its only use is for documentation."]
+                #[doc = ""]
+                #f_doc
+
+                #f_with_body})
+            }
         };
 
         let block = Block {
@@ -347,15 +296,78 @@ impl FlatSpec {
             #[creusot::extern_spec]
             #f
 
-            #[cfg(doc)]
-            #[doc = #doc]
-            #[doc = ""]
-            #[doc = "This is not a real function: its only use is for documentation."]
-            #[doc = ""]
-            #f_doc
-
-            #f_with_body
+            #extras
         }
+    }
+
+    fn replace_self(&mut self) -> std::result::Result<(), Error> {
+        let FlatSpecKind::Fn { impl_data, body, .. } = &mut self.kind;
+        let Some(data) = std::mem::take(impl_data) else {
+            return Ok(());
+        };
+
+        let inner_params = std::mem::replace(&mut self.signature.generics.params, data.params);
+        self.signature.generics.params.extend(inner_params);
+
+        if self.signature.generics.where_clause.is_none() {
+            self.signature.generics.where_clause = Some(WhereClause {
+                where_token: Default::default(),
+                predicates: Default::default(),
+            });
+        }
+
+        let where_clause = self.signature.generics.where_clause.as_mut().unwrap();
+
+        if let Some(p) = data.where_clause {
+            where_clause.predicates.extend(p)
+        };
+
+        let escape = match &data.self_ty {
+            TraitOrImpl::Trait(_, _) => SelfTypeKind::Self_,
+            TraitOrImpl::Impl(ty) => SelfTypeKind::Type(ty.clone()),
+        };
+        let mut replacer = SelfTypeEscaper { escape, err: Ok(()) };
+
+        self.signature.inputs.iter_mut().for_each(|input| match input {
+            FnArg::Receiver(Receiver { self_token, ty, .. }) => {
+                // An `impl` block may have a `self` reciever, but we should replace it with the actual
+                // underlying type. This constructs the correct replacement for those cases.
+
+                let mut ty = ty.clone();
+                replacer.visit_type_mut(&mut ty);
+
+                let self_: Ident = self_escape(self_token.span());
+
+                *input = FnArg::Typed(PatType {
+                    attrs: Vec::new(),
+                    pat: parse_quote!(#self_),
+                    colon_token: Default::default(),
+                    ty,
+                });
+            }
+            FnArg::Typed(PatType { ty, .. }) => replacer.visit_type_mut(ty),
+        });
+
+        replacer.visit_return_type_mut(&mut self.signature.output);
+
+        if let TraitOrImpl::Trait(trait_name, generics) = data.self_ty {
+            let selfty = self_type_escape(self.span);
+            where_clause
+                    .predicates
+                    .push(parse_quote_spanned! {self.span=> #selfty : ?::core::marker::Sized + #trait_name #generics });
+
+            self.signature.generics.params.insert(0, selfty);
+
+            where_clause.predicates.iter_mut().for_each(|pred| {
+                replacer.visit_where_predicate_mut(pred);
+            });
+        }
+
+        if let Some(block) = body {
+            replacer.visit_block_mut(block)
+        }
+        escape_self_in_contracts(&mut self.attrs, &mut replacer)?;
+        replacer.err
     }
 }
 
@@ -381,7 +393,6 @@ fn filter_erasure(attrs: &[Attribute]) -> Vec<Attribute> {
 enum SelfTypeKind {
     Self_,
     Type(Box<Type>),
-    None,
 }
 
 struct SelfTypeEscaper {
@@ -393,7 +404,6 @@ impl SelfTypeEscaper {
     fn visit_struct_path(&mut self, path: &mut Path) {
         if path.segments[0].ident == "Self" {
             match &self.escape {
-                SelfTypeKind::None => (),
                 SelfTypeKind::Type(box Type::Path(TypePath { path: pathty, .. }))
                     if path.segments.len() == 1 =>
                 {
@@ -414,7 +424,6 @@ impl syn::visit_mut::VisitMut for SelfTypeEscaper {
             && path.segments[0].ident == "Self"
         {
             match &self.escape {
-                SelfTypeKind::None => (),
                 SelfTypeKind::Type(box escty) if path.segments.len() == 1 => *ty = escty.clone(),
                 SelfTypeKind::Type(_) => {
                     self.err = Err(Error::new(path.segments[0].span(), "Cannot use Self here."))
@@ -435,7 +444,6 @@ impl syn::visit_mut::VisitMut for SelfTypeEscaper {
         if expr.path.segments[0].ident == "Self" {
             let span = expr.path.segments[0].span();
             match &self.escape {
-                SelfTypeKind::None => (),
                 SelfTypeKind::Type(_) => self.err = Err(Error::new(span, "Cannot use Self here.")),
                 SelfTypeKind::Self_ => expr.path.segments[0] = self_type_escape(span),
             }
@@ -737,11 +745,9 @@ fn flatten(
             flat.push(FlatSpec {
                 span: fun.span,
                 signature: fun.sig,
-                doc_item_name: item_name,
                 attrs: fun.attrs,
                 path: prefix,
-                impl_data,
-                body: fun.body.ok(),
+                kind: FlatSpecKind::Fn { impl_data, body: fun.body.ok(), doc_item_name: item_name },
             })
         }
     }
