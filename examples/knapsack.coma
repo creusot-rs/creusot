@@ -111,6 +111,14 @@ module M_knapsack01_dyn
         -> index_Vec_Vec_usize_Global_Global result i = elem)}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function m_Name (items: Seq.seq t_Item_Name) (i: int) (w: int) : int
   
   axiom m_Name_def: forall items: Seq.seq t_Item_Name, i: int, w: int [m_Name items i w]. 0 <= i
@@ -120,7 +128,7 @@ module M_knapsack01_dyn
       = (if i = 0 then
         0
       else
-        if UInt64.t'int (Seq.get items (i - 1)).weight > w then
+        if gt_log_Int (UInt64.t'int (Seq.get items (i - 1)).weight) w then
           m_Name items (i - 1) w
         else
           MinMax.max (m_Name items (i - 1) w) (m_Name items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).weight)
@@ -129,7 +137,7 @@ module M_knapsack01_dyn
       )
   
   axiom m_Name_spec: forall items: Seq.seq t_Item_Name, i: int, w: int [m_Name items i w]. 0 <= i
-        /\ i <= Seq.length items -> 0 <= w -> m_Name items i w >= 0
+        /\ i <= Seq.length items -> 0 <= w -> ge_log_Int (m_Name items i w) 0
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_Item_Name) =
     UInt64.t'int self < Seq.length seq
@@ -496,7 +504,16 @@ module M_m
   
   type t_Item_Name = { name: t_Name; weight: UInt64.t; value: UInt64.t }
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -515,29 +532,28 @@ module M_m
   goal vc_m_Name: 0 <= i /\ i <= Seq.length items
     -> 0 <= w
     -> (if i = 0 then
-      [@stop_split] [@expl:m ensures] 0 >= 0
+      [@stop_split] [@expl:m ensures] ge_log_Int 0 0
     else
-      if UInt64.t'int (Seq.get items (i - 1)).weight > w then
+      if gt_log_Int (UInt64.t'int (Seq.get items (i - 1)).weight) w then
         (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
             /\ ([@stop_split] [@expl:m requires #1] 0 <= w))
           /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
-        /\ (([@stop_split] [@expl:m ensures] m_Name items (i - 1) w >= 0)
-        -> ([@stop_split] [@expl:m ensures] m_Name items (i - 1) w >= 0))
+        /\ (([@stop_split] [@expl:m ensures] ge_log_Int (m_Name items (i - 1) w) 0)
+        -> ([@stop_split] [@expl:m ensures] ge_log_Int (m_Name items (i - 1) w) 0))
       else
         (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1 /\ i - 1 <= Seq.length items)
             /\ ([@stop_split] [@expl:m requires #1] 0 <= w))
           /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
-        /\ (([@stop_split] [@expl:m ensures] m_Name items (i - 1) w >= 0)
+        /\ (([@stop_split] [@expl:m ensures] ge_log_Int (m_Name items (i - 1) w) 0)
         -> (([@stop_split] [@expl:m requires] ([@stop_split] [@expl:m requires #0] 0 <= i - 1
               /\ i - 1 <= Seq.length items)
             /\ ([@stop_split] [@expl:m requires #1] 0 <= w - UInt64.t'int (Seq.get items (i - 1)).weight))
           /\ ([@expl:variant decreases] well_founded_relation_Int i (i - 1)))
-        /\ (([@stop_split] [@expl:m ensures] m_Name items (i - 1) (w - UInt64.t'int (Seq.get items (i - 1)).weight)
-          >= 0)
-        -> ([@stop_split] [@expl:m ensures] MinMax.max (m_Name items (i - 1) w) (m_Name items (i - 1) (w
-            - UInt64.t'int (Seq.get items (i - 1)).weight)
-          + UInt64.t'int (Seq.get items (i - 1)).value)
-        >= 0)))
+        /\ (([@stop_split] [@expl:m ensures] ge_log_Int (m_Name items (i - 1) (w
+          - UInt64.t'int (Seq.get items (i - 1)).weight)) 0)
+        -> ([@stop_split] [@expl:m ensures] ge_log_Int (MinMax.max (m_Name items (i - 1) w) (m_Name items (i - 1) (w
+          - UInt64.t'int (Seq.get items (i - 1)).weight)
+        + UInt64.t'int (Seq.get items (i - 1)).value)) 0)))
     
     )
 end

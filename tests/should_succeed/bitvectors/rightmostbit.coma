@@ -7,58 +7,13 @@ module M_rightmost_bit_64
     [ return (result: Int64BW.t) -> {[@stop_split] [@expl:wrapping_neg ensures] result = Int64BW.neg self_}
       (! return {result}) ]
   
-  type t_Ordering = Less | Equal | Greater
+  predicate ge_log_i64 [@inline:trivial] (self: Int64BW.t) (other: Int64BW.t) = Int64BW.le other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate ge_log_i64
   
-  function partial_cmp_log_i64 (self: Int64BW.t) (o: Int64BW.t) : t_Option_Ordering = if Int64BW.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
+  predicate gt_log_i64 [@inline:trivial] (self: Int64BW.t) (other: Int64BW.t) = Int64BW.lt other self
   
-  
-  function eq_partial_cmp_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom eq_partial_cmp_i64_spec: forall x: Int64BW.t, y: Int64BW.t. (x = y) = (partial_cmp_log_i64 x y = Some (Equal))
-  
-  function asymetric2_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom asymetric2_i64_spec: forall x: Int64BW.t, y: Int64BW.t. partial_cmp_log_i64 x y = Some (Greater)
-      -> partial_cmp_log_i64 y x = Some (Less)
-  
-  function asymetric1_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom asymetric1_i64_spec: forall x: Int64BW.t, y: Int64BW.t. partial_cmp_log_i64 x y = Some (Less)
-      -> partial_cmp_log_i64 y x = Some (Greater)
-  
-  function trans_i64 (x: Int64BW.t) (y: Int64BW.t) (z: Int64BW.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i64_spec: forall x: Int64BW.t, y: Int64BW.t, z: Int64BW.t, o: t_Option_Ordering. partial_cmp_log_i64 x y
-        = o -> partial_cmp_log_i64 y z = o -> partial_cmp_log_i64 x z = o
-  
-  function refl_i64 (x: Int64BW.t) : ()
-  
-  axiom refl_i64_spec: forall x: Int64BW.t. partial_cmp_log_i64 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom partial_cmp_gt_log_i64_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.gt x y
-      = (partial_cmp_log_i64 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom partial_cmp_ge_log_i64_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.ge x y
-      = (partial_cmp_log_i64 x y = Some (Greater) \/ partial_cmp_log_i64 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom partial_cmp_lt_log_i64_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.lt x y
-      = (partial_cmp_log_i64 x y = Some (Less))
-  
-  function partial_cmp_le_log_i64 (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom partial_cmp_le_log_i64_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.le x y
-      = (partial_cmp_log_i64 x y = Some (Less) \/ partial_cmp_log_i64 x y = Some (Equal))
+  meta "rewrite_def" predicate gt_log_i64
   
   constant const_MIN: Int64BW.t = (9223372036854775808: Int64BW.t)
   
@@ -73,9 +28,9 @@ module M_rightmost_bit_64
       | s2 = return {_ret} ] ]
     [ & _ret: Int64BW.t = Any.any_l () | & x: Int64BW.t = x | & _11: Int64BW.t = Any.any_l () ])
     [ return (result: Int64BW.t) ->
-    {[@stop_split] [@expl:rightmost_bit_64 ensures] ([@stop_split] [@expl:rightmost_bit_64 ensures #0] Int64BW.ge x (0: Int64BW.t)
+    {[@stop_split] [@expl:rightmost_bit_64 ensures] ([@stop_split] [@expl:rightmost_bit_64 ensures #0] ge_log_i64 x (0: Int64BW.t)
         -> Int64BW.le (0: Int64BW.t) result /\ Int64BW.le result x)
-      /\ ([@stop_split] [@expl:rightmost_bit_64 ensures #1] Int64BW.le x (0: Int64BW.t) /\ Int64BW.gt x const_MIN
+      /\ ([@stop_split] [@expl:rightmost_bit_64 ensures #1] Int64BW.le x (0: Int64BW.t) /\ gt_log_i64 x const_MIN
         -> Int64BW.le (0: Int64BW.t) result /\ Int64BW.to_int result <= - Int64BW.to_int x)
       /\ ([@stop_split] [@expl:rightmost_bit_64 ensures #2] (x = const_MIN) = (result = const_MIN))
       /\ ([@stop_split] [@expl:rightmost_bit_64 ensures #3] forall i: Int64BW.t. Int64BW.le (0: Int64BW.t) i
@@ -91,58 +46,13 @@ module M_rightmost_bit_8
     [ return (result: Int8BW.t) -> {[@stop_split] [@expl:wrapping_neg ensures] result = Int8BW.neg self_}
       (! return {result}) ]
   
-  type t_Ordering = Less | Equal | Greater
+  predicate ge_log_i8 [@inline:trivial] (self: Int8BW.t) (other: Int8BW.t) = Int8BW.le other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate ge_log_i8
   
-  function partial_cmp_log_i8 (self: Int8BW.t) (o: Int8BW.t) : t_Option_Ordering = if Int8BW.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
+  predicate gt_log_i8 [@inline:trivial] (self: Int8BW.t) (other: Int8BW.t) = Int8BW.lt other self
   
-  
-  function eq_partial_cmp_i8 (x: Int8BW.t) (y: Int8BW.t) : ()
-  
-  axiom eq_partial_cmp_i8_spec: forall x: Int8BW.t, y: Int8BW.t. (x = y) = (partial_cmp_log_i8 x y = Some (Equal))
-  
-  function asymetric2_i8 (x: Int8BW.t) (y: Int8BW.t) : ()
-  
-  axiom asymetric2_i8_spec: forall x: Int8BW.t, y: Int8BW.t. partial_cmp_log_i8 x y = Some (Greater)
-      -> partial_cmp_log_i8 y x = Some (Less)
-  
-  function asymetric1_i8 (x: Int8BW.t) (y: Int8BW.t) : ()
-  
-  axiom asymetric1_i8_spec: forall x: Int8BW.t, y: Int8BW.t. partial_cmp_log_i8 x y = Some (Less)
-      -> partial_cmp_log_i8 y x = Some (Greater)
-  
-  function trans_i8 (x: Int8BW.t) (y: Int8BW.t) (z: Int8BW.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i8_spec: forall x: Int8BW.t, y: Int8BW.t, z: Int8BW.t, o: t_Option_Ordering. partial_cmp_log_i8 x y = o
-      -> partial_cmp_log_i8 y z = o -> partial_cmp_log_i8 x z = o
-  
-  function refl_i8 (x: Int8BW.t) : ()
-  
-  axiom refl_i8_spec: forall x: Int8BW.t. partial_cmp_log_i8 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i8 (x: Int8BW.t) (y: Int8BW.t) : ()
-  
-  axiom partial_cmp_gt_log_i8_spec: forall x: Int8BW.t, y: Int8BW.t. Int8BW.gt x y
-      = (partial_cmp_log_i8 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i8 (x: Int8BW.t) (y: Int8BW.t) : ()
-  
-  axiom partial_cmp_ge_log_i8_spec: forall x: Int8BW.t, y: Int8BW.t. Int8BW.ge x y
-      = (partial_cmp_log_i8 x y = Some (Greater) \/ partial_cmp_log_i8 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i8 (x: Int8BW.t) (y: Int8BW.t) : ()
-  
-  axiom partial_cmp_lt_log_i8_spec: forall x: Int8BW.t, y: Int8BW.t. Int8BW.lt x y
-      = (partial_cmp_log_i8 x y = Some (Less))
-  
-  function partial_cmp_le_log_i8 (x: Int8BW.t) (y: Int8BW.t) : ()
-  
-  axiom partial_cmp_le_log_i8_spec: forall x: Int8BW.t, y: Int8BW.t. Int8BW.le x y
-      = (partial_cmp_log_i8 x y = Some (Less) \/ partial_cmp_log_i8 x y = Some (Equal))
+  meta "rewrite_def" predicate gt_log_i8
   
   constant const_MIN: Int8BW.t = (128: Int8BW.t)
   
@@ -165,9 +75,9 @@ module M_rightmost_bit_8
       | s1 = [ &_ret <- Int8BW.bw_and x _13 ] s2
       | s2 = return {_ret} ] ] [ & _ret: Int8BW.t = Any.any_l () | & x: Int8BW.t = x | & _13: Int8BW.t = Any.any_l () ])
     [ return (result: Int8BW.t) ->
-    {[@stop_split] [@expl:rightmost_bit_8 ensures] ([@stop_split] [@expl:rightmost_bit_8 ensures #0] Int8BW.ge x (0: Int8BW.t)
+    {[@stop_split] [@expl:rightmost_bit_8 ensures] ([@stop_split] [@expl:rightmost_bit_8 ensures #0] ge_log_i8 x (0: Int8BW.t)
         -> Int8BW.le (0: Int8BW.t) result /\ Int8BW.le result x)
-      /\ ([@stop_split] [@expl:rightmost_bit_8 ensures #1] Int8BW.le x (0: Int8BW.t) /\ Int8BW.gt x const_MIN
+      /\ ([@stop_split] [@expl:rightmost_bit_8 ensures #1] Int8BW.le x (0: Int8BW.t) /\ gt_log_i8 x const_MIN
         -> Int8BW.le (0: Int8BW.t) result /\ Int8BW.to_int result <= - Int8BW.to_int x)
       /\ ([@stop_split] [@expl:rightmost_bit_8 ensures #2] (x = const_MIN) = (result = const_MIN))
       /\ ([@stop_split] [@expl:rightmost_bit_8 ensures #3] forall i: Int8BW.t. Int8BW.le (0: Int8BW.t) i

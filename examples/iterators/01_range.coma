@@ -255,63 +255,14 @@ module M_impl_DoubleEndedIterator_for_Range__next_back (* <Range as common::Doub
   
   type t_Option_isize = None | Some Int64.t
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
-      -> partial_cmp_log_isize y x = Some'0 (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
-      -> partial_cmp_log_isize y x = Some'0 (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -327,15 +278,19 @@ module M_impl_DoubleEndedIterator_for_Range__next_back (* <Range as common::Doub
   
   axiom produces_refl_Range_spec: forall self: t_Range. produces_Range self (Seq.empty: Seq.seq Int64.t) self
   
+  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
+  
+  meta "rewrite_def" predicate ge_log_isize
+  
   predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_refmut_Range self /\ Int64.ge self.current.start self.current.end'
+    resolve_refmut_Range self /\ ge_log_isize self.current.start self.current.end'
   
   predicate completed_back_Range (self: MutBorrow.t t_Range) = completed_Range self
   
   predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.start = o.start
-    /\ Int64.ge self.end' o.end'
-    /\ (Seq.length visited > 0 -> Int64.ge o.end' o.start)
+    /\ ge_log_isize self.end' o.end'
+    /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_isize o.end' o.start)
     /\ Seq.length visited = Int64.to_int self.end' - Int64.to_int o.end'
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.end' - i - 1)
@@ -372,63 +327,14 @@ module M_impl_DoubleEndedIterator_for_Range__next_back__refines (* <Range as com
   
   type t_Option_isize = None | Some Int64.t
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
-      -> partial_cmp_log_isize y x = Some'0 (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
-      -> partial_cmp_log_isize y x = Some'0 (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -448,15 +354,19 @@ module M_impl_DoubleEndedIterator_for_Range__next_back__refines (* <Range as com
   
   meta "rewrite_def" predicate resolve_refmut_Range
   
+  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
+  
+  meta "rewrite_def" predicate ge_log_isize
+  
   predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_refmut_Range self /\ Int64.ge self.current.start self.current.end'
+    resolve_refmut_Range self /\ ge_log_isize self.current.start self.current.end'
   
   predicate completed_back_Range (self: MutBorrow.t t_Range) = completed_Range self
   
   predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.start = o.start
-    /\ Int64.ge self.end' o.end'
-    /\ (Seq.length visited > 0 -> Int64.ge o.end' o.start)
+    /\ ge_log_isize self.end' o.end'
+    /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_isize o.end' o.start)
     /\ Seq.length visited = Int64.to_int self.end' - Int64.to_int o.end'
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.end' - i - 1)
@@ -481,63 +391,18 @@ module M_impl_DoubleEndedIterator_for_Range__produces_back_refl (* <Range as com
   
   type t_Range = { start: Int64.t; end': Int64.t }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate ge_log_isize
   
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
-      -> partial_cmp_log_isize y x = Some (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
-      -> partial_cmp_log_isize y x = Some (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.start = o.start
-    /\ Int64.ge self.end' o.end'
-    /\ (Seq.length visited > 0 -> Int64.ge o.end' o.start)
+    /\ ge_log_isize self.end' o.end'
+    /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_isize o.end' o.start)
     /\ Seq.length visited = Int64.to_int self.end' - Int64.to_int o.end'
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.end' - i - 1)
@@ -560,63 +425,18 @@ module M_impl_DoubleEndedIterator_for_Range__produces_back_refl__refines (* <Ran
   
   type t_Range = { start: Int64.t; end': Int64.t }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate ge_log_isize
   
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
-      -> partial_cmp_log_isize y x = Some (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
-      -> partial_cmp_log_isize y x = Some (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.start = o.start
-    /\ Int64.ge self.end' o.end'
-    /\ (Seq.length visited > 0 -> Int64.ge o.end' o.start)
+    /\ ge_log_isize self.end' o.end'
+    /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_isize o.end' o.start)
     /\ Seq.length visited = Int64.to_int self.end' - Int64.to_int o.end'
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.end' - i - 1)
@@ -635,63 +455,18 @@ module M_impl_DoubleEndedIterator_for_Range__produces_back_trans (* <Range as co
   
   type t_Range = { start: Int64.t; end': Int64.t }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate ge_log_isize
   
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
-      -> partial_cmp_log_isize y x = Some (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
-      -> partial_cmp_log_isize y x = Some (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.start = o.start
-    /\ Int64.ge self.end' o.end'
-    /\ (Seq.length visited > 0 -> Int64.ge o.end' o.start)
+    /\ ge_log_isize self.end' o.end'
+    /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_isize o.end' o.start)
     /\ Seq.length visited = Int64.to_int self.end' - Int64.to_int o.end'
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.end' - i - 1)
@@ -723,63 +498,18 @@ module M_impl_DoubleEndedIterator_for_Range__produces_back_trans__refines (* <Ra
   
   type t_Range = { start: Int64.t; end': Int64.t }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate ge_log_isize
   
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
-      -> partial_cmp_log_isize y x = Some (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
-      -> partial_cmp_log_isize y x = Some (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.start = o.start
-    /\ Int64.ge self.end' o.end'
-    /\ (Seq.length visited > 0 -> Int64.ge o.end' o.start)
+    /\ ge_log_isize self.end' o.end'
+    /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_isize o.end' o.start)
     /\ Seq.length visited = Int64.to_int self.end' - Int64.to_int o.end'
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.end' - i - 1)
@@ -808,79 +538,34 @@ module M_impl_DoubleEndedIterator_for_Range__size_hint_back_spec (* <Range as co
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function deep_model_isize [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
   
   meta "rewrite_def" function deep_model_isize
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate postcondition_size_hint (self: ()) (args: t_Range) (result: tup2_usize_Option_usize) =
-    let self'0 = args in (deep_model_isize self'0.start >= deep_model_isize self'0.end'
+    let self'0 = args in (ge_log_Int (deep_model_isize self'0.start) (deep_model_isize self'0.end')
       -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in s >= 0 /\ s <= UInt64.t'int const_MAX
-      -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-    /\ (deep_model_isize self'0.end' - deep_model_isize self'0.start > UInt64.t'int const_MAX
+    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in ge_log_Int s 0
+        /\ s <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ (gt_log_Int (deep_model_isize self'0.end' - deep_model_isize self'0.start) (UInt64.t'int const_MAX)
     -> result = { f0 = const_MAX; f1 = None })
   
   meta "rewrite_def" predicate postcondition_size_hint
   
-  type t_Ordering = Less | Equal | Greater
-  
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
-      -> partial_cmp_log_isize y x = Some'0 (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
-      -> partial_cmp_log_isize y x = Some'0 (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -898,19 +583,23 @@ module M_impl_DoubleEndedIterator_for_Range__size_hint_back_spec (* <Range as co
   
   let size_hint_Range (self: t_Range) (return (x: tup2_usize_Option_usize)) = any
     [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] deep_model_isize self.start
-          >= deep_model_isize self.end' -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_isize self.start) (deep_model_isize self.end')
+        -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
       /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_isize self.end'
-        - deep_model_isize self.start in s >= 0 /\ s <= UInt64.t'int const_MAX
+        - deep_model_isize self.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
         -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #2] deep_model_isize self.end' - deep_model_isize self.start
-        > UInt64.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })}
+      /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_isize self.end'
+        - deep_model_isize self.start) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
       (! return {result}) ]
+  
+  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
+  
+  meta "rewrite_def" predicate ge_log_isize
   
   predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.start = o.start
-    /\ Int64.ge self.end' o.end'
-    /\ (Seq.length visited > 0 -> Int64.ge o.end' o.start)
+    /\ ge_log_isize self.end' o.end'
+    /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_isize o.end' o.start)
     /\ Seq.length visited = Int64.to_int self.end' - Int64.to_int o.end'
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.end' - i - 1)
@@ -920,7 +609,7 @@ module M_impl_DoubleEndedIterator_for_Range__size_hint_back_spec (* <Range as co
   meta "rewrite_def" predicate resolve_refmut_Range
   
   predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_refmut_Range self /\ Int64.ge self.current.start self.current.end'
+    resolve_refmut_Range self /\ ge_log_isize self.current.start self.current.end'
   
   predicate completed_back_Range (self: MutBorrow.t t_Range) = completed_Range self
   
@@ -956,79 +645,34 @@ module M_impl_DoubleEndedIterator_for_Range__size_hint_back_spec__refines (* <Ra
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function deep_model_isize [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
   
   meta "rewrite_def" function deep_model_isize
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate postcondition_size_hint (self: ()) (args: t_Range) (result: tup2_usize_Option_usize) =
-    let self'0 = args in (deep_model_isize self'0.start >= deep_model_isize self'0.end'
+    let self'0 = args in (ge_log_Int (deep_model_isize self'0.start) (deep_model_isize self'0.end')
       -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in s >= 0 /\ s <= UInt64.t'int const_MAX
-      -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-    /\ (deep_model_isize self'0.end' - deep_model_isize self'0.start > UInt64.t'int const_MAX
+    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in ge_log_Int s 0
+        /\ s <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ (gt_log_Int (deep_model_isize self'0.end' - deep_model_isize self'0.start) (UInt64.t'int const_MAX)
     -> result = { f0 = const_MAX; f1 = None })
   
   meta "rewrite_def" predicate postcondition_size_hint
   
-  type t_Ordering = Less | Equal | Greater
-  
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
-      -> partial_cmp_log_isize y x = Some'0 (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
-      -> partial_cmp_log_isize y x = Some'0 (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -1046,19 +690,23 @@ module M_impl_DoubleEndedIterator_for_Range__size_hint_back_spec__refines (* <Ra
   
   let size_hint_Range (self: t_Range) (return (x: tup2_usize_Option_usize)) = any
     [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] deep_model_isize self.start
-          >= deep_model_isize self.end' -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_isize self.start) (deep_model_isize self.end')
+        -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
       /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_isize self.end'
-        - deep_model_isize self.start in s >= 0 /\ s <= UInt64.t'int const_MAX
+        - deep_model_isize self.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
         -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #2] deep_model_isize self.end' - deep_model_isize self.start
-        > UInt64.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })}
+      /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_isize self.end'
+        - deep_model_isize self.start) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
       (! return {result}) ]
+  
+  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
+  
+  meta "rewrite_def" predicate ge_log_isize
   
   predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.start = o.start
-    /\ Int64.ge self.end' o.end'
-    /\ (Seq.length visited > 0 -> Int64.ge o.end' o.start)
+    /\ ge_log_isize self.end' o.end'
+    /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_isize o.end' o.start)
     /\ Seq.length visited = Int64.to_int self.end' - Int64.to_int o.end'
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.end' - i - 1)
@@ -1068,7 +716,7 @@ module M_impl_DoubleEndedIterator_for_Range__size_hint_back_spec__refines (* <Ra
   meta "rewrite_def" predicate resolve_refmut_Range
   
   predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_refmut_Range self /\ Int64.ge self.current.start self.current.end'
+    resolve_refmut_Range self /\ ge_log_isize self.current.start self.current.end'
   
   predicate completed_back_Range (self: MutBorrow.t t_Range) = completed_Range self
   
@@ -1102,60 +750,11 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusi
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   let is_empty (self: t_RangeInclusive) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_empty ensures] result = is_empty_log self} (! return {result}) ]
@@ -1164,7 +763,7 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusi
   
   meta "rewrite_def" predicate resolve_refmut_RangeInclusive
   
-  type t_Option_i32 = None'0 | Some'0 Int32.t
+  type t_Option_i32 = None | Some Int32.t
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -1211,7 +810,7 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusi
     [ bb0 = s0
       [ s0 = is_empty {self.current} (fun (_x: bool) -> [ &_5 <- _x ] s1)
       | s1 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ] ]
-    | bb2 = s0 [ s0 = -{resolve_refmut_RangeInclusive self}- s1 | s1 = [ &_ret <- None'0 ] s2 | s2 = return {_ret} ]
+    | bb2 = s0 [ s0 = -{resolve_refmut_RangeInclusive self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ]
     | bb3 = s0
       [ s0 = [ &is_iterating <- Int32.lt self.current.start self.current.end' ] s1
       | s1 = any [ br0 -> {is_iterating = false} (! bb5) | br1 -> {is_iterating} (! bb4) ] ]
@@ -1227,7 +826,7 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusi
       | s1 = -{resolve_refmut_RangeInclusive self}- s2
       | s2 = [ &_11 <- self.current.end' ] s3
       | s3 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_ret <- Some'0 _11 ] s1 | s1 = return {_ret} ] ]
+    | bb6 = s0 [ s0 = [ &_ret <- Some _11 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_i32 = Any.any_l ()
     | & self: MutBorrow.t t_RangeInclusive = self
     | & _5: bool = Any.any_l ()
@@ -1235,8 +834,8 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusi
     | & _11: Int32.t = Any.any_l ()
     | & r: Int32.t = Any.any_l () ])
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next_back ensures] match result with
-        | None'0 -> completed_back_RangeInclusive self
-        | Some'0 v -> produces_back_RangeInclusive self.current (Seq.singleton v) self.final
+        | None -> completed_back_RangeInclusive self
+        | Some v -> produces_back_RangeInclusive self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
 end
@@ -1250,60 +849,11 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back__refines (* <Ran
   
   type t_Option_i32 = None | Some Int32.t
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
-      -> partial_cmp_log_i32 y x = Some'0 (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
-      -> partial_cmp_log_i32 y x = Some'0 (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -1362,60 +912,11 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_refl (* <Ran
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -1448,60 +949,11 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_refl__refine
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -1531,60 +983,11 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_trans (* <Ra
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -1626,60 +1029,11 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_trans__refin
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -1719,60 +1073,11 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__size_hint_back_spec (* <Ra
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
-      -> partial_cmp_log_i32 y x = Some'0 (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
-      -> partial_cmp_log_i32 y x = Some'0 (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -1782,10 +1087,14 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__size_hint_back_spec (* <Ra
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate postcondition_size_hint (self: ()) (args: t_RangeInclusive) (result: tup2_usize_Option_usize) =
     let self'0 = args in (len_log self'0 <= UInt64.t'int const_MAX
       -> UInt64.t'int result.f0 = len_log self'0 /\ result.f1 = Some (result.f0))
-    /\ (len_log self'0 > UInt64.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })
+    /\ (gt_log_Int (len_log self'0) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })
   
   meta "rewrite_def" predicate postcondition_size_hint
   
@@ -1812,7 +1121,7 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__size_hint_back_spec (* <Ra
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint_RangeInclusive ensures] ([@stop_split] [@expl:size_hint ensures #0] len_log self
           <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = len_log self /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #1] len_log self > UInt64.t'int const_MAX
+      /\ ([@stop_split] [@expl:size_hint ensures #1] gt_log_Int (len_log self) (UInt64.t'int const_MAX)
       -> result = { f0 = const_MAX; f1 = None })}
       (! return {result}) ]
   
@@ -1860,60 +1169,11 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__size_hint_back_spec__refin
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
-      -> partial_cmp_log_i32 y x = Some'0 (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
-      -> partial_cmp_log_i32 y x = Some'0 (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -1923,10 +1183,14 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__size_hint_back_spec__refin
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate postcondition_size_hint (self: ()) (args: t_RangeInclusive) (result: tup2_usize_Option_usize) =
     let self'0 = args in (len_log self'0 <= UInt64.t'int const_MAX
       -> UInt64.t'int result.f0 = len_log self'0 /\ result.f1 = Some (result.f0))
-    /\ (len_log self'0 > UInt64.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })
+    /\ (gt_log_Int (len_log self'0) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })
   
   meta "rewrite_def" predicate postcondition_size_hint
   
@@ -1953,7 +1217,7 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__size_hint_back_spec__refin
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint_RangeInclusive ensures] ([@stop_split] [@expl:size_hint ensures #0] len_log self
           <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = len_log self /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #1] len_log self > UInt64.t'int const_MAX
+      /\ ([@stop_split] [@expl:size_hint ensures #1] gt_log_Int (len_log self) (UInt64.t'int const_MAX)
       -> result = { f0 = const_MAX; f1 = None })}
       (! return {result}) ]
   
@@ -2002,79 +1266,34 @@ module M_impl_ExactSizeIterator_for_Range__size_hint_exact (* <Range as common::
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function deep_model_isize [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
   
   meta "rewrite_def" function deep_model_isize
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate postcondition_size_hint (self: ()) (args: t_Range) (result: tup2_usize_Option_usize) =
-    let self'0 = args in (deep_model_isize self'0.start >= deep_model_isize self'0.end'
+    let self'0 = args in (ge_log_Int (deep_model_isize self'0.start) (deep_model_isize self'0.end')
       -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in s >= 0 /\ s <= UInt64.t'int const_MAX
-      -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-    /\ (deep_model_isize self'0.end' - deep_model_isize self'0.start > UInt64.t'int const_MAX
+    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in ge_log_Int s 0
+        /\ s <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ (gt_log_Int (deep_model_isize self'0.end' - deep_model_isize self'0.start) (UInt64.t'int const_MAX)
     -> result = { f0 = const_MAX; f1 = None })
   
   meta "rewrite_def" predicate postcondition_size_hint
   
-  type t_Ordering = Less | Equal | Greater
-  
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
-      -> partial_cmp_log_isize y x = Some'0 (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
-      -> partial_cmp_log_isize y x = Some'0 (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -2092,13 +1311,13 @@ module M_impl_ExactSizeIterator_for_Range__size_hint_exact (* <Range as common::
   
   let size_hint_Range (self: t_Range) (return (x: tup2_usize_Option_usize)) = any
     [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] deep_model_isize self.start
-          >= deep_model_isize self.end' -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_isize self.start) (deep_model_isize self.end')
+        -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
       /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_isize self.end'
-        - deep_model_isize self.start in s >= 0 /\ s <= UInt64.t'int const_MAX
+        - deep_model_isize self.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
         -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #2] deep_model_isize self.end' - deep_model_isize self.start
-        > UInt64.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })}
+      /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_isize self.end'
+        - deep_model_isize self.start) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -2126,79 +1345,34 @@ module M_impl_ExactSizeIterator_for_Range__size_hint_exact__refines (* <Range as
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function deep_model_isize [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
   
   meta "rewrite_def" function deep_model_isize
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate postcondition_size_hint (self: ()) (args: t_Range) (result: tup2_usize_Option_usize) =
-    let self'0 = args in (deep_model_isize self'0.start >= deep_model_isize self'0.end'
+    let self'0 = args in (ge_log_Int (deep_model_isize self'0.start) (deep_model_isize self'0.end')
       -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in s >= 0 /\ s <= UInt64.t'int const_MAX
-      -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-    /\ (deep_model_isize self'0.end' - deep_model_isize self'0.start > UInt64.t'int const_MAX
+    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in ge_log_Int s 0
+        /\ s <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ (gt_log_Int (deep_model_isize self'0.end' - deep_model_isize self'0.start) (UInt64.t'int const_MAX)
     -> result = { f0 = const_MAX; f1 = None })
   
   meta "rewrite_def" predicate postcondition_size_hint
   
-  type t_Ordering = Less | Equal | Greater
-  
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
-      -> partial_cmp_log_isize y x = Some'0 (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
-      -> partial_cmp_log_isize y x = Some'0 (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -2216,13 +1390,13 @@ module M_impl_ExactSizeIterator_for_Range__size_hint_exact__refines (* <Range as
   
   let size_hint_Range (self: t_Range) (return (x: tup2_usize_Option_usize)) = any
     [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] deep_model_isize self.start
-          >= deep_model_isize self.end' -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_isize self.start) (deep_model_isize self.end')
+        -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
       /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_isize self.end'
-        - deep_model_isize self.start in s >= 0 /\ s <= UInt64.t'int const_MAX
+        - deep_model_isize self.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
         -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #2] deep_model_isize self.end' - deep_model_isize self.start
-        > UInt64.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })}
+      /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_isize self.end'
+        - deep_model_isize self.start) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -2244,60 +1418,11 @@ module M_impl_ExactSizeIterator_for_RangeInclusive__size_hint_exact (* <RangeInc
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
-      -> partial_cmp_log_i32 y x = Some'0 (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
-      -> partial_cmp_log_i32 y x = Some'0 (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -2307,10 +1432,14 @@ module M_impl_ExactSizeIterator_for_RangeInclusive__size_hint_exact (* <RangeInc
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate postcondition_size_hint (self: ()) (args: t_RangeInclusive) (result: tup2_usize_Option_usize) =
     let self'0 = args in (len_log self'0 <= UInt64.t'int const_MAX
       -> UInt64.t'int result.f0 = len_log self'0 /\ result.f1 = Some (result.f0))
-    /\ (len_log self'0 > UInt64.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })
+    /\ (gt_log_Int (len_log self'0) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })
   
   meta "rewrite_def" predicate postcondition_size_hint
   
@@ -2337,7 +1466,7 @@ module M_impl_ExactSizeIterator_for_RangeInclusive__size_hint_exact (* <RangeInc
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint_RangeInclusive ensures] ([@stop_split] [@expl:size_hint ensures #0] len_log self
           <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = len_log self /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #1] len_log self > UInt64.t'int const_MAX
+      /\ ([@stop_split] [@expl:size_hint ensures #1] gt_log_Int (len_log self) (UInt64.t'int const_MAX)
       -> result = { f0 = const_MAX; f1 = None })}
       (! return {result}) ]
   
@@ -2366,60 +1495,11 @@ module M_impl_ExactSizeIterator_for_RangeInclusive__size_hint_exact__refines (* 
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
-      -> partial_cmp_log_i32 y x = Some'0 (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
-      -> partial_cmp_log_i32 y x = Some'0 (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -2429,10 +1509,14 @@ module M_impl_ExactSizeIterator_for_RangeInclusive__size_hint_exact__refines (* 
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate postcondition_size_hint (self: ()) (args: t_RangeInclusive) (result: tup2_usize_Option_usize) =
     let self'0 = args in (len_log self'0 <= UInt64.t'int const_MAX
       -> UInt64.t'int result.f0 = len_log self'0 /\ result.f1 = Some (result.f0))
-    /\ (len_log self'0 > UInt64.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })
+    /\ (gt_log_Int (len_log self'0) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })
   
   meta "rewrite_def" predicate postcondition_size_hint
   
@@ -2459,7 +1543,7 @@ module M_impl_ExactSizeIterator_for_RangeInclusive__size_hint_exact__refines (* 
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint_RangeInclusive ensures] ([@stop_split] [@expl:size_hint ensures #0] len_log self
           <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = len_log self /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #1] len_log self > UInt64.t'int const_MAX
+      /\ ([@stop_split] [@expl:size_hint ensures #1] gt_log_Int (len_log self) (UInt64.t'int const_MAX)
       -> result = { f0 = const_MAX; f1 = None })}
       (! return {result}) ]
   
@@ -2485,66 +1569,21 @@ module M_impl_Iterator_for_Range__next (* <Range as common::Iterator> *)
   
   type t_Option_isize = None | Some Int64.t
   
-  type t_Ordering = Less | Equal | Greater
+  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
-      -> partial_cmp_log_isize y x = Some'0 (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
-      -> partial_cmp_log_isize y x = Some'0 (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
+  meta "rewrite_def" predicate ge_log_isize
   
   predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_refmut_Range self /\ Int64.ge self.current.start self.current.end'
+    resolve_refmut_Range self /\ ge_log_isize self.current.start self.current.end'
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -2589,66 +1628,21 @@ module M_impl_Iterator_for_Range__next__refines (* <Range as common::Iterator> *
   
   meta "rewrite_def" predicate resolve_refmut_Range
   
-  type t_Ordering = Less | Equal | Greater
+  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Greater)
-      -> partial_cmp_log_isize y x = Some'0 (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some'0 (Less)
-      -> partial_cmp_log_isize y x = Some'0 (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
+  meta "rewrite_def" predicate ge_log_isize
   
   predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_refmut_Range self /\ Int64.ge self.current.start self.current.end'
+    resolve_refmut_Range self /\ ge_log_isize self.current.start self.current.end'
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -2673,63 +1667,14 @@ module M_impl_Iterator_for_Range__produces_refl (* <Range as common::Iterator> *
   
   type t_Range = { start: Int64.t; end': Int64.t }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
-      -> partial_cmp_log_isize y x = Some (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
-      -> partial_cmp_log_isize y x = Some (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -2752,63 +1697,14 @@ module M_impl_Iterator_for_Range__produces_refl__refines (* <Range as common::It
   
   type t_Range = { start: Int64.t; end': Int64.t }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
-      -> partial_cmp_log_isize y x = Some (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
-      -> partial_cmp_log_isize y x = Some (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -2827,63 +1723,14 @@ module M_impl_Iterator_for_Range__produces_trans (* <Range as common::Iterator> 
   
   type t_Range = { start: Int64.t; end': Int64.t }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
-      -> partial_cmp_log_isize y x = Some (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
-      -> partial_cmp_log_isize y x = Some (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -2914,63 +1761,14 @@ module M_impl_Iterator_for_Range__produces_trans__refines (* <Range as common::I
   
   type t_Range = { start: Int64.t; end': Int64.t }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
-      -> partial_cmp_log_isize y x = Some (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
-      -> partial_cmp_log_isize y x = Some (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -3002,11 +1800,19 @@ module M_impl_Iterator_for_Range__size_hint (* <Range as common::Iterator> *)
   
   type tup2_usize_Option_usize = { f0: UInt64BW.t; f1: t_Option_usize }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function deep_model_isize [@inline:trivial] (self: Int64BW.t) : int = Int64BW.to_int self
   
   meta "rewrite_def" function deep_model_isize
   
   constant const_MAX: UInt64BW.t = (18446744073709551615: UInt64BW.t)
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
   
   meta "compute_max_steps" 1000000
   
@@ -3034,13 +1840,13 @@ module M_impl_Iterator_for_Range__size_hint (* <Range as common::Iterator> *)
     | & _16: t_Option_usize = Any.any_l ()
     | & _18: t_Option_usize = Any.any_l () ])
     [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] deep_model_isize self.start
-          >= deep_model_isize self.end' -> result = { f0 = (0: UInt64BW.t); f1 = Some (0: UInt64BW.t) })
+    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_isize self.start) (deep_model_isize self.end')
+        -> result = { f0 = (0: UInt64BW.t); f1 = Some (0: UInt64BW.t) })
       /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_isize self.end'
-        - deep_model_isize self.start in s >= 0 /\ s <= UInt64BW.t'int const_MAX
+        - deep_model_isize self.start in ge_log_Int s 0 /\ s <= UInt64BW.t'int const_MAX
         -> UInt64BW.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #2] deep_model_isize self.end' - deep_model_isize self.start
-        > UInt64BW.t'int const_MAX -> result = { f0 = const_MAX; f1 = None })}
+      /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_isize self.end'
+        - deep_model_isize self.start) (UInt64BW.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_Range__size_hint__refines (* <Range as common::Iterator> *)
@@ -3052,6 +1858,10 @@ module M_impl_Iterator_for_Range__size_hint__refines (* <Range as common::Iterat
   
   type t_Range = { start: Int64BW.t; end': Int64BW.t }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function deep_model_isize [@inline:trivial] (self: Int64BW.t) : int = Int64BW.to_int self
   
   meta "rewrite_def" function deep_model_isize
@@ -3062,65 +1872,14 @@ module M_impl_Iterator_for_Range__size_hint__refines (* <Range as common::Iterat
   
   constant const_MAX: UInt64BW.t = (18446744073709551615: UInt64BW.t)
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64BW.t) (o: Int64BW.t) : t_Option_Ordering = if Int64BW.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64BW.t, y: Int64BW.t. (x = y)
-      = (partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function asymetric2_isize (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64BW.t, y: Int64BW.t. partial_cmp_log_isize x y = Some'0 (Greater)
-      -> partial_cmp_log_isize y x = Some'0 (Less)
-  
-  function asymetric1_isize (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64BW.t, y: Int64BW.t. partial_cmp_log_isize x y = Some'0 (Less)
-      -> partial_cmp_log_isize y x = Some'0 (Greater)
-  
-  function trans_isize (x: Int64BW.t) (y: Int64BW.t) (z: Int64BW.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec:
-    forall x: Int64BW.t, y: Int64BW.t, z: Int64BW.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64BW.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64BW.t. partial_cmp_log_isize x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.gt x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.ge x y
-      = (partial_cmp_log_isize x y = Some'0 (Greater) \/ partial_cmp_log_isize x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.lt x y
-      = (partial_cmp_log_isize x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64BW.t) (y: Int64BW.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64BW.t, y: Int64BW.t. Int64BW.le x y
-      = (partial_cmp_log_isize x y = Some'0 (Less) \/ partial_cmp_log_isize x y = Some'0 (Equal))
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64BW.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64BW.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64BW.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64BW.le o.start o.end')
     /\ Seq.length visited = Int64BW.to_int o.start - Int64BW.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64BW.to_int (Seq.get visited i) = Int64BW.to_int self.start + i)
@@ -3129,18 +1888,23 @@ module M_impl_Iterator_for_Range__size_hint__refines (* <Range as common::Iterat
   
   meta "rewrite_def" predicate resolve_refmut_Range
   
+  predicate ge_log_isize [@inline:trivial] (self: Int64BW.t) (other: Int64BW.t) = Int64BW.le other self
+  
+  meta "rewrite_def" predicate ge_log_isize
+  
   predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_refmut_Range self /\ Int64BW.ge self.current.start self.current.end'
+    resolve_refmut_Range self /\ ge_log_isize self.current.start self.current.end'
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Range. forall result: tup2_usize_Option_usize. (deep_model_isize self.start
-              >= deep_model_isize self.end' -> result = { f0 = (0: UInt64BW.t); f1 = Some (0: UInt64BW.t) })
-          /\ (let s = deep_model_isize self.end' - deep_model_isize self.start in s >= 0
+  goal refines:
+    forall self: t_Range. forall result: tup2_usize_Option_usize. (ge_log_Int (deep_model_isize self.start) (deep_model_isize self.end')
+            -> result = { f0 = (0: UInt64BW.t); f1 = Some (0: UInt64BW.t) })
+          /\ (let s = deep_model_isize self.end' - deep_model_isize self.start in ge_log_Int s 0
               /\ s <= UInt64BW.t'int const_MAX -> UInt64BW.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-          /\ (deep_model_isize self.end' - deep_model_isize self.start > UInt64BW.t'int const_MAX
+          /\ (gt_log_Int (deep_model_isize self.end' - deep_model_isize self.start) (UInt64BW.t'int const_MAX)
           -> result = { f0 = const_MAX; f1 = None })
         -> (forall s: Seq.seq Int64BW.t, i: MutBorrow.t t_Range. produces_Range self s i.current /\ completed_Range i
             -> UInt64BW.t'int result.f0 <= Seq.length s)
@@ -3159,60 +1923,11 @@ module M_impl_Iterator_for_RangeInclusive__next (* <RangeInclusive as common::It
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   let is_empty (self: t_RangeInclusive) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_empty ensures] result = is_empty_log self} (! return {result}) ]
@@ -3221,7 +1936,7 @@ module M_impl_Iterator_for_RangeInclusive__next (* <RangeInclusive as common::It
   
   meta "rewrite_def" predicate resolve_refmut_RangeInclusive
   
-  type t_Option_i32 = None'0 | Some'0 Int32.t
+  type t_Option_i32 = None | Some Int32.t
   
   predicate completed_RangeInclusive (self: MutBorrow.t t_RangeInclusive) =
     is_empty_log self.current /\ is_empty_log self.final
@@ -3247,7 +1962,7 @@ module M_impl_Iterator_for_RangeInclusive__next (* <RangeInclusive as common::It
     [ bb0 = s0
       [ s0 = is_empty {self.current} (fun (_x: bool) -> [ &_5 <- _x ] s1)
       | s1 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ] ]
-    | bb2 = s0 [ s0 = -{resolve_refmut_RangeInclusive self}- s1 | s1 = [ &_ret <- None'0 ] s2 | s2 = return {_ret} ]
+    | bb2 = s0 [ s0 = -{resolve_refmut_RangeInclusive self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ]
     | bb3 = s0
       [ s0 = [ &is_iterating <- Int32.lt self.current.start self.current.end' ] s1
       | s1 = any [ br0 -> {is_iterating = false} (! bb5) | br1 -> {is_iterating} (! bb4) ] ]
@@ -3263,7 +1978,7 @@ module M_impl_Iterator_for_RangeInclusive__next (* <RangeInclusive as common::It
       | s1 = -{resolve_refmut_RangeInclusive self}- s2
       | s2 = [ &_11 <- self.current.start ] s3
       | s3 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_ret <- Some'0 _11 ] s1 | s1 = return {_ret} ] ]
+    | bb6 = s0 [ s0 = [ &_ret <- Some _11 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_i32 = Any.any_l ()
     | & self: MutBorrow.t t_RangeInclusive = self
     | & _5: bool = Any.any_l ()
@@ -3271,8 +1986,8 @@ module M_impl_Iterator_for_RangeInclusive__next (* <RangeInclusive as common::It
     | & _11: Int32.t = Any.any_l ()
     | & r: Int32.t = Any.any_l () ])
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None'0 -> completed_RangeInclusive self
-        | Some'0 v -> produces_RangeInclusive self.current (Seq.singleton v) self.final
+        | None -> completed_RangeInclusive self
+        | Some v -> produces_RangeInclusive self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
 end
@@ -3286,60 +2001,11 @@ module M_impl_Iterator_for_RangeInclusive__next__refines (* <RangeInclusive as c
   
   type t_Option_i32 = None | Some Int32.t
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Greater)
-      -> partial_cmp_log_i32 y x = Some'0 (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some'0 (Less)
-      -> partial_cmp_log_i32 y x = Some'0 (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some'0 (Greater) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some'0 (Less) \/ partial_cmp_log_i32 x y = Some'0 (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   predicate completed_RangeInclusive (self: MutBorrow.t t_RangeInclusive) =
     is_empty_log self.current /\ is_empty_log self.final
@@ -3377,60 +2043,11 @@ module M_impl_Iterator_for_RangeInclusive__produces_refl (* <RangeInclusive as c
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -3463,60 +2080,11 @@ module M_impl_Iterator_for_RangeInclusive__produces_refl__refines (* <RangeInclu
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -3546,60 +2114,11 @@ module M_impl_Iterator_for_RangeInclusive__produces_trans (* <RangeInclusive as 
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -3641,60 +2160,11 @@ module M_impl_Iterator_for_RangeInclusive__produces_trans__refines (* <RangeIncl
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -3731,65 +2201,16 @@ module M_impl_Iterator_for_RangeInclusive__size_hint (* <RangeInclusive as commo
   
   type t_RangeInclusive = { start: Int32BW.t; end': Int32BW.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32BW.t) (other: Int32BW.t) = Int32BW.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32BW.t) (o: Int32BW.t) : t_Option_Ordering = if Int32BW.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32BW.t, y: Int32BW.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32BW.t, y: Int32BW.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32BW.t, y: Int32BW.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32BW.t) (y: Int32BW.t) (z: Int32BW.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32BW.t, y: Int32BW.t, z: Int32BW.t, o: t_Option_Ordering. partial_cmp_log_i32 x y
-        = o -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32BW.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32BW.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32BW.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   let is_empty (self: t_RangeInclusive) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_empty ensures] result = is_empty_log self} (! return {result}) ]
   
-  type t_Option_usize = None'0 | Some'0 UInt64BW.t
+  type t_Option_usize = None | Some UInt64BW.t
   
   type tup2_usize_Option_usize = { f0: UInt64BW.t; f1: t_Option_usize }
   
@@ -3805,6 +2226,10 @@ module M_impl_Iterator_for_RangeInclusive__size_hint (* <RangeInclusive as commo
   
   constant const_MAX: UInt64BW.t = (18446744073709551615: UInt64BW.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -3814,7 +2239,7 @@ module M_impl_Iterator_for_RangeInclusive__size_hint (* <RangeInclusive as commo
       [ s0 = is_empty {self} (fun (_x: bool) -> [ &_7 <- _x ] s1)
       | s1 = any [ br0 -> {_7 = false} (! bb3) | br1 -> {_7} (! bb2) ] ]
     | bb2 = s0
-      [ s0 = [ &_10 <- Some'0 (0: UInt64BW.t) ] s1
+      [ s0 = [ &_10 <- Some (0: UInt64BW.t) ] s1
       | s1 = [ &_ret <- { f0 = (0: UInt64BW.t); f1 = _10 } ] s2
       | s2 = return {_ret} ]
     | bb3 = s0
@@ -3826,7 +2251,7 @@ module M_impl_Iterator_for_RangeInclusive__size_hint (* <RangeInclusive as commo
       | s5 = {[@expl:assertion] Int64BW.of_BV256 (UInt32BW.to_BV256 (Int32BW.sub self.end' self.start))
         = Int64BW.sub (Int64BW.of_BV256 (Int32BW.to_BV256 self.end')) (Int64BW.of_BV256 (Int32BW.to_BV256 self.start))}
         s6
-      | s6 = [ &_22 <- Some'0 steps ] s7
+      | s6 = [ &_22 <- Some steps ] s7
       | s7 = [ &_ret <- { f0 = steps; f1 = _22 } ] s8
       | s8 = return {_ret} ] ]
     [ & _ret: tup2_usize_Option_usize = Any.any_l ()
@@ -3841,9 +2266,9 @@ module M_impl_Iterator_for_RangeInclusive__size_hint (* <RangeInclusive as commo
     | & _22: t_Option_usize = Any.any_l () ])
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint_RangeInclusive ensures] ([@stop_split] [@expl:size_hint ensures #0] len_log self
-          <= UInt64BW.t'int const_MAX -> UInt64BW.t'int result.f0 = len_log self /\ result.f1 = Some'0 (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #1] len_log self > UInt64BW.t'int const_MAX
-      -> result = { f0 = const_MAX; f1 = None'0 })}
+          <= UInt64BW.t'int const_MAX -> UInt64BW.t'int result.f0 = len_log self /\ result.f1 = Some (result.f0))
+      /\ ([@stop_split] [@expl:size_hint ensures #1] gt_log_Int (len_log self) (UInt64BW.t'int const_MAX)
+      -> result = { f0 = const_MAX; f1 = None })}
       (! return {result}) ]
 end
 module M_impl_Iterator_for_RangeInclusive__size_hint__refines (* <RangeInclusive as common::Iterator> *)
@@ -3855,60 +2280,11 @@ module M_impl_Iterator_for_RangeInclusive__size_hint__refines (* <RangeInclusive
   
   type t_RangeInclusive = { start: Int32BW.t; end': Int32BW.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32BW.t) (other: Int32BW.t) = Int32BW.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32BW.t) (o: Int32BW.t) : t_Option_Ordering = if Int32BW.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32BW.t, y: Int32BW.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32BW.t, y: Int32BW.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32BW.t, y: Int32BW.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32BW.t) (y: Int32BW.t) (z: Int32BW.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32BW.t, y: Int32BW.t, z: Int32BW.t, o: t_Option_Ordering. partial_cmp_log_i32 x y
-        = o -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32BW.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32BW.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32BW.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
       0
@@ -3918,9 +2294,13 @@ module M_impl_Iterator_for_RangeInclusive__size_hint__refines (* <RangeInclusive
   
   constant const_MAX: UInt64BW.t = (18446744073709551615: UInt64BW.t)
   
-  type t_Option_usize = None'0 | Some'0 UInt64BW.t
+  type t_Option_usize = None | Some UInt64BW.t
   
   type tup2_usize_Option_usize = { f0: UInt64BW.t; f1: t_Option_usize }
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_RangeInclusive (self: t_RangeInclusive) (visited: Seq.seq Int32BW.t) (o: t_RangeInclusive) =
     Seq.length visited = len_log self - len_log o
@@ -3937,14 +2317,14 @@ module M_impl_Iterator_for_RangeInclusive__size_hint__refines (* <RangeInclusive
   meta "select_lsinst" "all"
   
   goal refines: forall self: t_RangeInclusive. forall result: tup2_usize_Option_usize. (len_log self
-              <= UInt64BW.t'int const_MAX -> UInt64BW.t'int result.f0 = len_log self /\ result.f1 = Some'0 (result.f0))
-          /\ (len_log self > UInt64BW.t'int const_MAX -> result = { f0 = const_MAX; f1 = None'0 })
+              <= UInt64BW.t'int const_MAX -> UInt64BW.t'int result.f0 = len_log self /\ result.f1 = Some (result.f0))
+          /\ (gt_log_Int (len_log self) (UInt64BW.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })
         -> (forall s: Seq.seq Int32BW.t, i: MutBorrow.t t_RangeInclusive. produces_RangeInclusive self s i.current
               /\ completed_RangeInclusive i -> UInt64BW.t'int result.f0 <= Seq.length s)
         /\ match result.f1 with
-          | Some'0 r -> forall s: Seq.seq Int32BW.t, i: t_RangeInclusive. produces_RangeInclusive self s i
+          | Some r -> forall s: Seq.seq Int32BW.t, i: t_RangeInclusive. produces_RangeInclusive self s i
             -> Seq.length s <= UInt64BW.t'int r
-          | None'0 -> true
+          | None -> true
           end
 end
 module M_impl_Range__into_iter (* Range *)
@@ -3968,60 +2348,11 @@ module M_impl_RangeInclusive__is_empty (* RangeInclusive *)
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   meta "compute_max_steps" 1000000
   
@@ -4040,60 +2371,11 @@ module M_impl_RangeInclusive__new (* RangeInclusive *)
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   function new_log (start'0: Int32.t) (end''0: Int32.t) : t_RangeInclusive = { start = start'0;
                                                                                end' = end''0;
@@ -4123,60 +2405,11 @@ module M_impl_RangeInclusive__new_log (* RangeInclusive *)
   
   type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate is_empty_log (self: t_RangeInclusive) = Int32.gt self.start self.end' \/ self.exhausted
+  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
   
   meta "compute_max_steps" 1000000
   
@@ -4222,63 +2455,14 @@ module M_sum_range
   let into_iter (self: t_Range) (return (x: t_Range)) = any
     [ return (result: t_Range) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Option_Ordering = if Int64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_partial_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (partial_cmp_log_isize x y = Some (Equal))
-  
-  function asymetric2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric2_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Greater)
-      -> partial_cmp_log_isize y x = Some (Less)
-  
-  function asymetric1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom asymetric1_isize_spec: forall x: Int64.t, y: Int64.t. partial_cmp_log_isize x y = Some (Less)
-      -> partial_cmp_log_isize y x = Some (Greater)
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Option_Ordering. partial_cmp_log_isize x y = o
-      -> partial_cmp_log_isize y z = o -> partial_cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. partial_cmp_log_isize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y
-      = (partial_cmp_log_isize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y
-      = (partial_cmp_log_isize x y = Some (Greater) \/ partial_cmp_log_isize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y
-      = (partial_cmp_log_isize x y = Some (Less))
-  
-  function partial_cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom partial_cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y
-      = (partial_cmp_log_isize x y = Some (Less) \/ partial_cmp_log_isize x y = Some (Equal))
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
     self.end' = o.end'
     /\ Int64.le self.start o.start
-    /\ (Seq.length visited > 0 -> Int64.le o.start o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
     /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
@@ -4294,35 +2478,44 @@ module M_sum_range
   
   axiom produces_refl_Range_spec: forall self: t_Range. produces_Range self (Seq.empty: Seq.seq Int64.t) self
   
-  type t_Option_isize = None'0 | Some'0 Int64.t
+  type t_Option_isize = None | Some Int64.t
   
   predicate resolve_refmut_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_Range
   
+  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
+  
+  meta "rewrite_def" predicate ge_log_isize
+  
   predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_refmut_Range self /\ Int64.ge self.current.start self.current.end'
+    resolve_refmut_Range self /\ ge_log_isize self.current.start self.current.end'
   
   let next_Range (self: MutBorrow.t t_Range) (return (x: t_Option_isize)) = any
     [ return (result: t_Option_isize) -> {[@stop_split] [@expl:next ensures] match result with
-        | None'0 -> completed_Range self
-        | Some'0 v -> produces_Range self.current (Seq.singleton v) self.final
+        | None -> completed_Range self
+        | Some v -> produces_Range self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
   let elim_Some (_x: t_Option_isize) (return (f0: Int64.t)) = any
-    [ _k (f0: Int64.t) -> {Some'0 f0 = _x} (! return {f0})
+    [ _k (f0: Int64.t) -> {Some f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Some] match _x with
-        | Some'0 _ -> true
+        | Some _ -> true
         | _ -> false
         end}
       any) ]
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let sum_range (n: Int64.t) (return (x: Int64.t)) = {[@stop_split] [@expl:sum_range requires] Int64.to_int n >= 0}
+  let sum_range (n: Int64.t) (return (x: Int64.t)) =
+  {[@stop_split] [@expl:sum_range requires] ge_log_Int (Int64.to_int n) 0}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &i <- (0: Int64.t) ] s1
@@ -4338,7 +2531,7 @@ module M_sum_range
         [ s0 = MutBorrow.borrow_mut <t_Range> {it}
             (fun (_bor: MutBorrow.t t_Range) -> [ &_27 <- _bor ] [ &it <- _bor.final ] s1)
         | s1 = next_Range {_27} (fun (_x: t_Option_isize) -> [ &_26 <- _x ] s2)
-        | s2 = any [ br0 -> {_26 = None'0} (! bb9) | br1 (x0: Int64.t) -> {_26 = Some'0 x0} (! bb10) ] ]
+        | s2 = any [ br0 -> {_26 = None} (! bb9) | br1 (x0: Int64.t) -> {_26 = Some x0} (! bb10) ] ]
         [ bb10 = s0
           [ s0 = elim_Some {_26} (fun (r0: Int64.t) -> [ &x <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton x) ] s2

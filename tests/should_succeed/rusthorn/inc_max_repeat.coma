@@ -16,10 +16,14 @@ module M_inc_max_repeat
   
   meta "rewrite_def" function deep_model_u32
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Range_u32 (self: t_Range_u32) (visited: Seq.seq UInt32.t) (o: t_Range_u32) =
     self.end' = o.end'
     /\ deep_model_u32 self.start <= deep_model_u32 o.start
-    /\ (Seq.length visited > 0 -> deep_model_u32 o.start <= deep_model_u32 o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_u32 o.start <= deep_model_u32 o.end')
     /\ Seq.length visited = deep_model_u32 o.start - deep_model_u32 self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_u32 (Seq.get visited i) = deep_model_u32 self.start + i)
@@ -39,8 +43,12 @@ module M_inc_max_repeat
   
   meta "rewrite_def" predicate resolve_refmut_Range_u32
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate completed_Range_u32 (self: MutBorrow.t t_Range_u32) =
-    resolve_refmut_Range_u32 self /\ deep_model_u32 self.current.start >= deep_model_u32 self.current.end'
+    resolve_refmut_Range_u32 self /\ ge_log_Int (deep_model_u32 self.current.start) (deep_model_u32 self.current.end')
   
   let next_Range_u32 (self_: MutBorrow.t t_Range_u32) (return (x: t_Option_u32)) = any
     [ return (result: t_Option_u32) -> {[@stop_split] [@expl:next ensures] match result with
@@ -61,62 +69,13 @@ module M_inc_max_repeat
         end}
       any) ]
   
-  type t_Ordering = Less | Equal | Greater
+  predicate ge_log_u32 [@inline:trivial] (self: UInt32.t) (other: UInt32.t) = UInt32.le other self
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
-  
-  function partial_cmp_log_u32 (self: UInt32.t) (o: UInt32.t) : t_Option_Ordering = if UInt32.lt self o then
-      Some'0 (Less)
-    else
-      if self = o then Some'0 (Equal) else Some'0 (Greater)
-  
-  
-  function eq_partial_cmp_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom eq_partial_cmp_u32_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (partial_cmp_log_u32 x y = Some'0 (Equal))
-  
-  function asymetric2_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom asymetric2_u32_spec: forall x: UInt32.t, y: UInt32.t. partial_cmp_log_u32 x y = Some'0 (Greater)
-      -> partial_cmp_log_u32 y x = Some'0 (Less)
-  
-  function asymetric1_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom asymetric1_u32_spec: forall x: UInt32.t, y: UInt32.t. partial_cmp_log_u32 x y = Some'0 (Less)
-      -> partial_cmp_log_u32 y x = Some'0 (Greater)
-  
-  function trans_u32 (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_u32_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Option_Ordering. partial_cmp_log_u32 x y = o
-      -> partial_cmp_log_u32 y z = o -> partial_cmp_log_u32 x z = o
-  
-  function refl_u32 (x: UInt32.t) : ()
-  
-  axiom refl_u32_spec: forall x: UInt32.t. partial_cmp_log_u32 x x = Some'0 (Equal)
-  
-  function partial_cmp_gt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_gt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y
-      = (partial_cmp_log_u32 x y = Some'0 (Greater))
-  
-  function partial_cmp_ge_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_ge_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y
-      = (partial_cmp_log_u32 x y = Some'0 (Greater) \/ partial_cmp_log_u32 x y = Some'0 (Equal))
-  
-  function partial_cmp_lt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_lt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y
-      = (partial_cmp_log_u32 x y = Some'0 (Less))
-  
-  function partial_cmp_le_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y
-      = (partial_cmp_log_u32 x y = Some'0 (Less) \/ partial_cmp_log_u32 x y = Some'0 (Equal))
+  meta "rewrite_def" predicate ge_log_u32
   
   let take_max (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (return (x: MutBorrow.t UInt32.t)) = any
     [ return (result: MutBorrow.t UInt32.t) ->
-    {[@stop_split] [@expl:take_max ensures] if UInt32.ge ma.current mb.current then
+    {[@stop_split] [@expl:take_max ensures] if ge_log_u32 ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb
@@ -146,8 +105,8 @@ module M_inc_max_repeat
         {[@expl:for invariant] produces_Range_u32 iter_old produced iter}
         {[@expl:loop invariant #0] UInt32.t'int a <= 1000000 + Seq.length produced
         /\ UInt32.t'int b <= 1000000 + Seq.length produced}
-        {[@expl:loop invariant #1] UInt32.t'int a >= UInt32.t'int b + Seq.length produced
-        \/ UInt32.t'int b >= UInt32.t'int a + Seq.length produced}
+        {[@expl:loop invariant #1] ge_log_Int (UInt32.t'int a) (UInt32.t'int b + Seq.length produced)
+        \/ ge_log_Int (UInt32.t'int b) (UInt32.t'int a + Seq.length produced)}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_u32> {iter}
             (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_37 <- _bor ] [ &iter <- _bor.final ] s1)
@@ -214,58 +173,9 @@ module M_take_max
   
   meta "rewrite_def" predicate resolve_refmut_u32
   
-  type t_Ordering = Less | Equal | Greater
+  predicate ge_log_u32 [@inline:trivial] (self: UInt32.t) (other: UInt32.t) = UInt32.le other self
   
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_u32 (self: UInt32.t) (o: UInt32.t) : t_Option_Ordering = if UInt32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom eq_partial_cmp_u32_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (partial_cmp_log_u32 x y = Some (Equal))
-  
-  function asymetric2_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom asymetric2_u32_spec: forall x: UInt32.t, y: UInt32.t. partial_cmp_log_u32 x y = Some (Greater)
-      -> partial_cmp_log_u32 y x = Some (Less)
-  
-  function asymetric1_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom asymetric1_u32_spec: forall x: UInt32.t, y: UInt32.t. partial_cmp_log_u32 x y = Some (Less)
-      -> partial_cmp_log_u32 y x = Some (Greater)
-  
-  function trans_u32 (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_u32_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Option_Ordering. partial_cmp_log_u32 x y = o
-      -> partial_cmp_log_u32 y z = o -> partial_cmp_log_u32 x z = o
-  
-  function refl_u32 (x: UInt32.t) : ()
-  
-  axiom refl_u32_spec: forall x: UInt32.t. partial_cmp_log_u32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_gt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y
-      = (partial_cmp_log_u32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_ge_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y
-      = (partial_cmp_log_u32 x y = Some (Greater) \/ partial_cmp_log_u32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_lt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y
-      = (partial_cmp_log_u32 x y = Some (Less))
-  
-  function partial_cmp_le_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y
-      = (partial_cmp_log_u32 x y = Some (Less) \/ partial_cmp_log_u32 x y = Some (Equal))
+  meta "rewrite_def" predicate ge_log_u32
   
   meta "compute_max_steps" 1000000
   
@@ -306,7 +216,7 @@ module M_take_max
     | & _8: bool = Any.any_l ()
     | & _11: MutBorrow.t UInt32.t = Any.any_l () ])
     [ return (result: MutBorrow.t UInt32.t) ->
-    {[@stop_split] [@expl:take_max ensures] if UInt32.ge ma.current mb.current then
+    {[@stop_split] [@expl:take_max ensures] if ge_log_u32 ma.current mb.current then
         mb.current = mb.final /\ result = ma
       else
         ma.current = ma.final /\ result = mb

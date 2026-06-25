@@ -30,6 +30,7 @@ pub fn selection_sort<T: Ord + DeepModel>(v: &mut Vec<T>)
 where
     T::DeepModelTy: OrdLogic,
 {
+    snapshot! { T::DeepModelTy::lt_log_total }; // FIXME: enable laws autoloading  even for subtraits
     let old_v = snapshot! { v };
 
     #[invariant(v@.permutation_of(old_v@))]

@@ -61,64 +61,23 @@ module M_binary_search
   
   type t_DeepModelTy
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  type t_Option_Ordering = None | Some t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function partial_cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Option_Ordering
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  function eq_partial_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  axiom eq_partial_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y)
-      = (partial_cmp_log_DeepModelTy x y = Some (Equal))
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  function asymetric2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  axiom asymetric2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. partial_cmp_log_DeepModelTy x y
-        = Some (Greater) -> partial_cmp_log_DeepModelTy y x = Some (Less)
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  function asymetric1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom asymetric1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. partial_cmp_log_DeepModelTy x y
-        = Some (Less) -> partial_cmp_log_DeepModelTy y x = Some (Greater)
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Option_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Option_Ordering. partial_cmp_log_DeepModelTy x y
-        = o -> partial_cmp_log_DeepModelTy y z = o -> partial_cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. partial_cmp_log_DeepModelTy x x = Some (Equal)
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function partial_cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom partial_cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (partial_cmp_log_DeepModelTy x y = Some (Greater))
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function partial_cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom partial_cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (partial_cmp_log_DeepModelTy x y = Some (Greater) \/ partial_cmp_log_DeepModelTy x y = Some (Equal))
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function partial_cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom partial_cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (partial_cmp_log_DeepModelTy x y = Some (Less))
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function partial_cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom partial_cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (partial_cmp_log_DeepModelTy x y = Some (Less) \/ partial_cmp_log_DeepModelTy x y = Some (Equal))
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   function deep_model_T (self: t_T) : t_DeepModelTy
   
@@ -142,55 +101,6 @@ module M_binary_search
     deep_model_Vec_T_Global self
   
   meta "rewrite_def" function deep_model_ref_Vec_T_Global
-  
-  function partial_cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_partial_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (partial_cmp_log_usize x y = Some (Equal))
-  
-  function asymetric2_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom asymetric2_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Greater)
-      -> partial_cmp_log_usize y x = Some (Less)
-  
-  function asymetric1_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom asymetric1_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Less)
-      -> partial_cmp_log_usize y x = Some (Greater)
-  
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_usize x y
-        = o -> partial_cmp_log_usize y z = o -> partial_cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64.t. partial_cmp_log_usize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
-      = (partial_cmp_log_usize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
-      = (partial_cmp_log_usize x y = Some (Greater) \/ partial_cmp_log_usize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
-      = (partial_cmp_log_usize x y = Some (Less))
-  
-  function partial_cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
-      = (partial_cmp_log_usize x y = Some (Less) \/ partial_cmp_log_usize x y = Some (Equal))
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_T) = UInt64.t'int self < Seq.length seq
   
@@ -218,6 +128,11 @@ module M_binary_search
     forall args: tup2_ref_T_ref_T [precondition_gt () args]. (let {f0 = self_; f1 = other} = args in inv_ref_T self_
         /\ inv_ref_T other) -> precondition_gt () args
   
+  predicate gt_log_DeepModelTy [@inline:trivial] (self: t_DeepModelTy) (other: t_DeepModelTy) =
+    lt_log_DeepModelTy other self
+  
+  meta "rewrite_def" predicate gt_log_DeepModelTy
+  
   function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
   
   meta "rewrite_def" function deep_model_ref_T
@@ -240,28 +155,24 @@ module M_binary_search
                                                                                             f1 = other } result}
       (! return {result}) ]
   
+  type t_Ordering = Less | Equal | Greater
+  
   predicate precondition_cmp (self: ()) (args: tup2_ref_T_ref_T)
   
   axiom precondition_fndef'0:
     forall args: tup2_ref_T_ref_T [precondition_cmp () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_T self_
         /\ inv_ref_T rhs) -> precondition_cmp () args
   
-  function partial_cmp_log_total_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
+  function lt_log_total_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom partial_cmp_log_total_DeepModelTy_spec:
-    forall self: t_DeepModelTy, other: t_DeepModelTy. partial_cmp_log_DeepModelTy self other <> None
+  axiom lt_log_total_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. lt_log_DeepModelTy self other
+      \/ self = other \/ lt_log_DeepModelTy other self
   
-  constant any_Ordering : t_Ordering
+  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering = if self = other then
+      Equal
+    else
+      if lt_log_DeepModelTy self other then Less else Greater
   
-  function unwrap_Option_Ordering (self: t_Option_Ordering) : t_Ordering = match self with
-      | Some x -> x
-      | None -> any_Ordering
-      end
-  
-  function cmp_log_DeepModelTy [@inline:trivial] (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering =
-    unwrap_Option_Ordering (partial_cmp_log_DeepModelTy self other)
-  
-  meta "rewrite_def" function cmp_log_DeepModelTy
   
   predicate postcondition_cmp (self: ()) (args: tup2_ref_T_ref_T) (result: t_Ordering)
   

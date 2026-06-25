@@ -10,7 +10,16 @@ module M_set_max
   
   meta "rewrite_def" function remove_Int
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -31,7 +40,7 @@ module M_set_max
         /\ ([@expl:variant decreases] well_founded_relation_Int (Fset.cardinal s) (Fset.cardinal s'0)))
       /\ (([@stop_split] [@expl:set_max ensures] ([@stop_split] [@expl:set_max ensures #0] contains_Int s'0 (set_max s'0))
         /\ ([@stop_split] [@expl:set_max ensures #1] forall o: int. contains_Int s'0 o -> o <= set_max s'0))
-      -> (let rec' = set_max s'0 in if x >= rec' then
+      -> (let rec' = set_max s'0 in if ge_log_Int x rec' then
         let result = x in [@stop_split] [@expl:set_max ensures] ([@stop_split] [@expl:set_max ensures #0] contains_Int s result)
         /\ ([@stop_split] [@expl:set_max ensures #1] forall o: int. contains_Int s o -> o <= result)
       else

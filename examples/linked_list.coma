@@ -98,9 +98,13 @@ module M_impl_List_T__new (* List<T> *)
   
   type t_List_T = { first: Opaque.ptr; last: Opaque.ptr; seq: Seq.seq t_Perm_ptr_Link_T }
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
-    \/ Seq.length self.seq > 0
+    \/ gt_log_Int (Seq.length self.seq) 0
     /\ self.first = ward_ptr_Link_T (Seq.get self.seq 0)
     /\ self.last = ward_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
@@ -175,6 +179,10 @@ module M_impl_List_T__pop_front (* List<T> *)
     [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Link_T self_}
       (! return {result}) ]
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function ward_ptr_Link_T (self: t_Perm_ptr_Link_T) : Opaque.ptr
   
   type t_T
@@ -185,7 +193,7 @@ module M_impl_List_T__pop_front (* List<T> *)
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
-    \/ Seq.length self.seq > 0
+    \/ gt_log_Int (Seq.length self.seq) 0
     /\ self.first = ward_ptr_Link_T (Seq.get self.seq 0)
     /\ self.last = ward_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
@@ -332,7 +340,7 @@ module M_impl_List_T__pop_front (* List<T> *)
     {[@stop_split] [@expl:pop_front_ghost_Box_Perm_ptr_Link_T_Global ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_Box_Perm_ptr_Link_T_Global result)
       /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
         | None'0 -> self.current = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ self.current = self.final
-        | Some'0 r -> Seq.length self.current > 0
+        | Some'0 r -> gt_log_Int (Seq.length self.current) 0
         /\ r = Seq.get self.current 0 /\ self.final = tail_Box_Perm_ptr_Link_T_Global self.current
         end)}
       (! return {result}) ]
@@ -494,7 +502,7 @@ module M_impl_List_T__pop_front (* List<T> *)
       /\ ([@stop_split] [@expl:pop_front ensures] match result with
         | None -> view_List_T self.current = (Seq.empty: Seq.seq t_T)
         /\ view_List_T self.final = (Seq.empty: Seq.seq t_T)
-        | Some x -> Seq.length (view_List_T self.current) > 0
+        | Some x -> gt_log_Int (Seq.length (view_List_T self.current)) 0
         /\ x = Seq.get (view_List_T self.current) 0 /\ view_List_T self.final = pop_front_T (view_List_T self.current)
         end)}
       (! return {result}) ]
@@ -843,9 +851,13 @@ module M_impl_List_T__push_back (* List<T> *)
     [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
       (! return {result}) ]
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
-    \/ Seq.length self.seq > 0
+    \/ gt_log_Int (Seq.length self.seq) 0
     /\ self.first = ward_ptr_Link_T (Seq.get self.seq 0)
     /\ self.last = ward_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
@@ -1213,9 +1225,13 @@ module M_impl_List_T__push_front (* List<T> *)
   
   meta "rewrite_def" predicate resolve_refmut_Seq_Box_Perm_ptr_Link_T_Global
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
-    \/ Seq.length self.seq > 0
+    \/ gt_log_Int (Seq.length self.seq) 0
     /\ self.first = ward_ptr_Link_T (Seq.get self.seq 0)
     /\ self.last = ward_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))
     /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1

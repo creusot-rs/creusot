@@ -6,7 +6,7 @@ use crate::{
     prelude::*,
 };
 use core::{
-    cmp,
+    cmp::Ordering,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign},
 };
 
@@ -275,13 +275,13 @@ impl PartialOrd for Int {
     #[check(ghost)]
     #[ensures(result == Some((*self).cmp_log(*other)))]
     #[allow(unused_variables)]
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         panic!()
     }
 
     #[trusted]
     #[check(ghost)]
-    #[ensures(result == (*self).lt_log(*other))]
+    #[ensures(result == (*self < *other))]
     #[allow(unused_variables)]
     fn lt(&self, other: &Self) -> bool {
         panic!()
@@ -289,7 +289,7 @@ impl PartialOrd for Int {
 
     #[trusted]
     #[check(ghost)]
-    #[ensures(result == (*self).le_log(*other))]
+    #[ensures(result == (*self <= *other))]
     #[allow(unused_variables)]
     fn le(&self, other: &Self) -> bool {
         panic!()
@@ -297,7 +297,7 @@ impl PartialOrd for Int {
 
     #[trusted]
     #[check(ghost)]
-    #[ensures(result == (*self).gt_log(*other))]
+    #[ensures(result == (*self > *other))]
     #[allow(unused_variables)]
     fn gt(&self, other: &Self) -> bool {
         panic!()
@@ -305,7 +305,7 @@ impl PartialOrd for Int {
 
     #[trusted]
     #[check(ghost)]
-    #[ensures(result == (*self).ge_log(*other))]
+    #[ensures(result == (*self >= *other))]
     #[allow(unused_variables)]
     fn ge(&self, other: &Self) -> bool {
         panic!()
@@ -522,8 +522,13 @@ impl MulLogic for Nat {
 
 impl PartialOrdLogic for Nat {
     #[logic(open)]
-    fn partial_cmp_log(self, other: Self) -> Option<cmp::Ordering> {
-        self.to_int().partial_cmp_log(other.to_int())
+    fn lt_log(self, other: Self) -> bool {
+        self.to_int() < other.to_int()
+    }
+
+    #[logic(open)]
+    fn le_log(self, other: Self) -> bool {
+        self.to_int() <= other.to_int()
     }
 
     partial_ord_laws_impl! { let _ = Nat::ext_eq; }
@@ -531,8 +536,8 @@ impl PartialOrdLogic for Nat {
 
 impl OrdLogic for Nat {
     #[logic(law)]
-    #[ensures(self.partial_cmp_log(other) != None)]
-    fn partial_cmp_log_total(self, other: Self) {}
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {}
 }
 
 /// Positive numbers, i.e. numbers that are strictly greater than 0.
@@ -637,8 +642,13 @@ impl MulLogic for Positive {
 
 impl PartialOrdLogic for Positive {
     #[logic(open)]
-    fn partial_cmp_log(self, other: Self) -> Option<cmp::Ordering> {
-        self.to_int().partial_cmp_log(other.to_int())
+    fn lt_log(self, other: Self) -> bool {
+        self.to_int() < other.to_int()
+    }
+
+    #[logic(open)]
+    fn le_log(self, other: Self) -> bool {
+        self.to_int() <= other.to_int()
     }
 
     partial_ord_laws_impl! { let _ = Positive::ext_eq; }
@@ -646,6 +656,6 @@ impl PartialOrdLogic for Positive {
 
 impl OrdLogic for Positive {
     #[logic(law)]
-    #[ensures(self.partial_cmp_log(other) != None)]
-    fn partial_cmp_log_total(self, other: Self) {}
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {}
 }

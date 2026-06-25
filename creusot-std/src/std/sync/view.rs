@@ -2,9 +2,6 @@ use crate::{ghost::NotObjective, prelude::*};
 use core::{marker::PhantomData, panic};
 
 #[cfg(creusot)]
-use core::cmp::Ordering;
-
-#[cfg(creusot)]
 use crate::ghost::Objective;
 
 pub type Timestamp = Int;
@@ -53,58 +50,25 @@ impl SyncView {
 
 impl PartialOrdLogic for SyncView {
     #[logic(opaque)]
-    fn partial_cmp_log(self, _: Self) -> Option<Ordering> {
+    fn lt_log(self, _: Self) -> bool {
         dead
     }
 
     #[logic(law)]
-    #[ensures(x.le_log(y) == (x.partial_cmp_log(y) == Some(Ordering::Less) || x.partial_cmp_log(y) == Some(Ordering::Equal)))]
+    #[ensures(!(self < self))]
     #[trusted]
-    fn partial_cmp_le_log(x: Self, y: Self) {}
+    fn irreflexive(self) {}
 
     #[logic(law)]
-    #[ensures(x.lt_log(y) == (x.partial_cmp_log(y) == Some(Ordering::Less)))]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
     #[trusted]
-    fn partial_cmp_lt_log(x: Self, y: Self) {}
+    fn transitive(x: Self, y: Self, z: Self) {}
 
     #[logic(law)]
-    #[ensures(x.ge_log(y) == (x.partial_cmp_log(y) == Some(Ordering::Greater) || x.partial_cmp_log(y) == Some(Ordering::Equal)))]
-    #[trusted]
-    fn partial_cmp_ge_log(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures(x.gt_log(y) == (x.partial_cmp_log(y) == Some(Ordering::Greater)))]
-    #[trusted]
-    fn partial_cmp_gt_log(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures(x.partial_cmp_log(x) == Some(Ordering::Equal))]
-    #[trusted]
-    fn refl(x: Self) {}
-
-    #[logic(law)]
-    #[requires(x.partial_cmp_log(y) == o)]
-    #[requires(y.partial_cmp_log(z) == o)]
-    #[ensures(x.partial_cmp_log(z) == o)]
-    #[trusted]
-    fn trans(x: Self, y: Self, z: Self, o: Option<Ordering>) {}
-
-    #[logic(law)]
-    #[requires(x.partial_cmp_log(y) == Some(Ordering::Less))]
-    #[ensures(y.partial_cmp_log(x) == Some(Ordering::Greater))]
-    #[trusted]
-    fn asymetric1(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[requires(x.partial_cmp_log(y) == Some(Ordering::Greater))]
-    #[ensures(y.partial_cmp_log(x) == Some(Ordering::Less))]
-    #[trusted]
-    fn asymetric2(x: Self, y: Self) {}
-
-    #[logic(law)]
-    #[ensures((x == y) == (x.partial_cmp_log(y) == Some(Ordering::Equal)))]
-    #[trusted]
-    fn eq_partial_cmp(x: Self, y: Self) {}
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {}
 }
 
 /// A witness to the _release view_, containing all the events observed by this thread at its last release fence.

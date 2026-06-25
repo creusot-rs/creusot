@@ -1042,6 +1042,10 @@ module M_implementation__find
   
   meta "rewrite_def" function fin_Ghost_refmut_UnionFind_T
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (return (x: t_Element)) =
   {[@stop_split] [@expl:find_inner_T requires] ([@stop_split] [@expl:find_inner 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:find_inner requires] in_domain_T uf.current elem)}
@@ -1052,8 +1056,7 @@ module M_implementation__find
       /\ ([@stop_split] [@expl:find_inner ensures #1] unchanged_T uf)
       /\ ([@stop_split] [@expl:find_inner ensures #2] (fin_Ghost_refmut_UnionFind_T uf).f0'0.depth
         = uf.current.f0'0.depth)
-      /\ ([@stop_split] [@expl:find_inner ensures #3] index_Mapping_Element_Int uf.current.f0'0.depth result
-      >= index_Mapping_Element_Int uf.current.f0'0.depth elem)}
+      /\ ([@stop_split] [@expl:find_inner ensures #3] ge_log_Int (index_Mapping_Element_Int uf.current.f0'0.depth result) (index_Mapping_Element_Int uf.current.f0'0.depth elem))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -1475,6 +1478,10 @@ module M_implementation__find_inner
   
   meta "rewrite_def" function fin_Ghost_refmut_UnionFind_T
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element) (return (x: t_Element)) =
   {[@stop_split] [@expl:find_inner_T requires] ([@stop_split] [@expl:find_inner 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:find_inner requires] in_domain_T uf.current elem)}
@@ -1485,8 +1492,7 @@ module M_implementation__find_inner
       /\ ([@stop_split] [@expl:find_inner ensures #1] unchanged_T uf)
       /\ ([@stop_split] [@expl:find_inner ensures #2] (fin_Ghost_refmut_UnionFind_T uf).f0'0.depth
         = uf.current.f0'0.depth)
-      /\ ([@stop_split] [@expl:find_inner ensures #3] index_Mapping_Element_Int uf.current.f0'0.depth result
-      >= index_Mapping_Element_Int uf.current.f0'0.depth elem)}
+      /\ ([@stop_split] [@expl:find_inner ensures #3] ge_log_Int (index_Mapping_Element_Int uf.current.f0'0.depth result) (index_Mapping_Element_Int uf.current.f0'0.depth elem))}
       (! return {result}) ]
   
   predicate invariant_refmut_UFInner_T [@inline:trivial] (self: MutBorrow.t t_UFInner_T) =
@@ -1578,8 +1584,8 @@ module M_implementation__find_inner
   
   function len_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : int
   
-  axiom len_Element_spec: forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global [len_Element self]. len_Element self
-      >= 0
+  axiom len_Element_spec:
+    forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global [len_Element self]. ge_log_Int (len_Element self) 0
   
   let get_mut_ghost_Element (self: MutBorrow.t t_FMap_Element_Box_Perm_ptr_Node_T_Global) (key: t_Element)
     (return (x: t_Option_refmut_Box_Perm_ptr_Node_T_Global)) =
@@ -1718,7 +1724,12 @@ module M_implementation__find_inner
   
   meta "rewrite_def" predicate resolve_Ghost_refmut_UnionFind_T'0
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -1905,8 +1916,7 @@ module M_implementation__find_inner
       /\ ([@stop_split] [@expl:find_inner ensures #1] unchanged_T uf)
       /\ ([@stop_split] [@expl:find_inner ensures #2] (fin_Ghost_refmut_UnionFind_T uf).f0'0.depth
         = uf.current.f0'0.depth)
-      /\ ([@stop_split] [@expl:find_inner ensures #3] index_Mapping_Element_Int uf.current.f0'0.depth result
-      >= index_Mapping_Element_Int uf.current.f0'0.depth elem)}
+      /\ ([@stop_split] [@expl:find_inner ensures #3] ge_log_Int (index_Mapping_Element_Int uf.current.f0'0.depth result) (index_Mapping_Element_Int uf.current.f0'0.depth elem))}
       (! return {result}) ]
 end
 module M_implementation__get
@@ -3153,10 +3163,14 @@ module M_implementation__link
   
   meta "rewrite_def" predicate inv_tup2_refmut_Box_Perm_ptr_Node_T_Global_refmut_FMap_Element_Box_Perm_ptr_Node_T_Global
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : int
   
-  axiom len_Element_spec: forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global [len_Element self]. len_Element self
-      >= 0
+  axiom len_Element_spec:
+    forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global [len_Element self]. ge_log_Int (len_Element self) 0
   
   function remove_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) : t_FMap_Element_Box_Perm_ptr_Node_T_Global
   
@@ -3449,59 +3463,6 @@ module M_implementation__link
   predicate resolve_refmut_PeanoInt [@inline:trivial] (_1: MutBorrow.t t_PeanoInt) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_PeanoInt
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  type t_Option_Ordering = None'1 | Some'1 t_Ordering
-  
-  function partial_cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
-      Some'1 (Less)
-    else
-      if self = o then Some'1 (Equal) else Some'1 (Greater)
-  
-  
-  function eq_partial_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_partial_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (partial_cmp_log_u64 x y = Some'1 (Equal))
-  
-  function asymetric2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom asymetric2_u64_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_u64 x y = Some'1 (Greater)
-      -> partial_cmp_log_u64 y x = Some'1 (Less)
-  
-  function asymetric1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom asymetric1_u64_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_u64 x y = Some'1 (Less)
-      -> partial_cmp_log_u64 y x = Some'1 (Greater)
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_u64 x y = o
-      -> partial_cmp_log_u64 y z = o -> partial_cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. partial_cmp_log_u64 x x = Some'1 (Equal)
-  
-  function partial_cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
-      = (partial_cmp_log_u64 x y = Some'1 (Greater))
-  
-  function partial_cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
-      = (partial_cmp_log_u64 x y = Some'1 (Greater) \/ partial_cmp_log_u64 x y = Some'1 (Equal))
-  
-  function partial_cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
-      = (partial_cmp_log_u64 x y = Some'1 (Less))
-  
-  function partial_cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
-      = (partial_cmp_log_u64 x y = Some'1 (Less) \/ partial_cmp_log_u64 x y = Some'1 (Equal))
   
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'1
   
@@ -4441,10 +4402,14 @@ module M_implementation__make
         | Some f0'4 -> inv_Box_Perm_ptr_Node_T_Global f0'4
         end
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : int
   
-  axiom len_Element_spec: forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global [len_Element self]. len_Element self
-      >= 0
+  axiom len_Element_spec:
+    forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global [len_Element self]. ge_log_Int (len_Element self) 0
   
   function insert_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) (k: t_Element) (v: t_Perm_ptr_Node_T) : t_FMap_Element_Box_Perm_ptr_Node_T_Global
   
@@ -4739,10 +4704,14 @@ module M_implementation__new
     forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global, other: t_FMap_Element_Box_Perm_ptr_Node_T_Global [self
       = other]. ext_eq_Element self other = (self = other)
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_Element (self: t_FMap_Element_Box_Perm_ptr_Node_T_Global) : int
   
-  axiom len_Element_spec: forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global [len_Element self]. len_Element self
-      >= 0
+  axiom len_Element_spec:
+    forall self: t_FMap_Element_Box_Perm_ptr_Node_T_Global [len_Element self]. ge_log_Int (len_Element self) 0
   
   constant empty_Element : t_FMap_Element_Box_Perm_ptr_Node_T_Global
   

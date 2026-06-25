@@ -104,6 +104,10 @@ module M_take_first_mut
   
   meta "rewrite_def" function index_slice_T
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
   let split_first_mut_T (self_: MutBorrow.t (Slice64.slice t_T)) (return (x: t_Option_tup2_refmut_T_refmut_slice_T)) =
@@ -114,8 +118,8 @@ module M_take_first_mut
       /\ ([@stop_split] [@expl:split_first_mut ensures] match result with
         | Some {f0 = first; f1 = tail} -> first.current = index_slice_T self_.current 0
         /\ first.final = index_slice_T self_.final 0
-        /\ Seq.length (Slice64.view self_.current) > 0
-        /\ Seq.length (Slice64.view self_.final) > 0
+        /\ gt_log_Int (Seq.length (Slice64.view self_.current)) 0
+        /\ gt_log_Int (Seq.length (Slice64.view self_.final)) 0
         /\ Slice64.view tail.current = tail_T (Slice64.view self_.current)
         /\ Slice64.view tail.final = tail_T (Slice64.view self_.final)
         | None -> Seq.length (Slice64.view self_.current) = 0
@@ -223,8 +227,8 @@ module M_take_first_mut
       /\ ([@stop_split] [@expl:take_first_mut ensures] match result with
         | Some'0 r -> r.current = index_slice_T self_.current.current 0
         /\ r.final = index_slice_T self_.current.final 0
-        /\ Seq.length (Slice64.view self_.current.current) > 0
-        /\ Seq.length (Slice64.view self_.current.final) > 0
+        /\ gt_log_Int (Seq.length (Slice64.view self_.current.current)) 0
+        /\ gt_log_Int (Seq.length (Slice64.view self_.current.final)) 0
         /\ Slice64.view self_.final.current = tail_T (Slice64.view self_.current.current)
         /\ Slice64.view self_.final.final = tail_T (Slice64.view self_.current.final)
         | None'0 -> Slice64.view self_.final.current = (Seq.empty: Seq.seq t_T)

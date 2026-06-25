@@ -81,13 +81,17 @@ module M_vec
     forall x: t_Vec_refmut_SumTo10_Global [resolve_Vec_refmut_SumTo10_Global'0 x]. resolve_Vec_refmut_SumTo10_Global'0 x
       -> resolve_Vec_refmut_SumTo10_Global x
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let vec (x: t_Vec_refmut_SumTo10_Global) (return (x'0: ())) =
   {[@stop_split] [@expl:vec requires] ([@stop_split] [@expl:vec 'x' type invariant] inv_Vec_refmut_SumTo10_Global x)
-    /\ ([@stop_split] [@expl:vec requires] Seq.length (view_Vec_refmut_SumTo10_Global x) > 0)}
+    /\ ([@stop_split] [@expl:vec requires] gt_log_Int (Seq.length (view_Vec_refmut_SumTo10_Global x)) 0)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Vec_refmut_SumTo10_Global x} any) ]

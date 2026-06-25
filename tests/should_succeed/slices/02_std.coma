@@ -42,59 +42,6 @@ module M_binary_search
   
   meta "rewrite_def" function deep_model_ref_u32
   
-  type t_Ordering = Less | Equal | Greater
-  
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_partial_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (partial_cmp_log_usize x y = Some (Equal))
-  
-  function asymetric2_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom asymetric2_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Greater)
-      -> partial_cmp_log_usize y x = Some (Less)
-  
-  function asymetric1_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom asymetric1_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Less)
-      -> partial_cmp_log_usize y x = Some (Greater)
-  
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_usize x y
-        = o -> partial_cmp_log_usize y z = o -> partial_cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64.t. partial_cmp_log_usize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
-      = (partial_cmp_log_usize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
-      = (partial_cmp_log_usize x y = Some (Greater) \/ partial_cmp_log_usize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
-      = (partial_cmp_log_usize x y = Some (Less))
-  
-  function partial_cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
-      = (partial_cmp_log_usize x y = Some (Less) \/ partial_cmp_log_usize x y = Some (Equal))
-  
   let binary_search_u32 (self_: Slice64.slice UInt32.t) (x: UInt32.t) (return (x'0: t_Result_usize_usize)) =
   {[@stop_split] [@expl:binary_search requires] sorted_Int (deep_model_ref_slice_u32 self_)}
     any

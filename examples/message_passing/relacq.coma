@@ -42,9 +42,13 @@ module M_message_passing
   
   function to_mapping_Int (self: t_FMap_Int_tup2_bool_SyncView) : Map.map int t_Option_tup2_bool_SyncView
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_Int (self: t_FMap_Int_tup2_bool_SyncView) : int
   
-  axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_SyncView [len_Int self]. len_Int self >= 0
+  axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
   function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
     Map.get (to_mapping_Int self) k
@@ -73,66 +77,26 @@ module M_message_passing
   
   function singleton_Int (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView = insert_Int empty_Int k v
   
-  type t_Ordering = Less | Equal | Greater
+  predicate lt_log_SyncView (self: t_SyncView) (_2: t_SyncView)
   
-  type t_Option_Ordering = None'0 | Some'0 t_Ordering
+  predicate le_log_SyncView [@inline:trivial] (self: t_SyncView) (other: t_SyncView) =
+    lt_log_SyncView self other \/ self = other
   
-  function partial_cmp_log_SyncView (self: t_SyncView) (_2: t_SyncView) : t_Option_Ordering
+  meta "rewrite_def" predicate le_log_SyncView
   
-  function eq_partial_cmp_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  function le_lt_log_SyncView (self: t_SyncView) (other: t_SyncView) : ()
   
-  axiom eq_partial_cmp_SyncView_spec: forall x: t_SyncView, y: t_SyncView. (x = y)
-      = (partial_cmp_log_SyncView x y = Some'0 (Equal))
+  axiom le_lt_log_SyncView_spec: forall self: t_SyncView, other: t_SyncView. le_log_SyncView self other
+      = (lt_log_SyncView self other \/ self = other)
   
-  function asymetric2_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  function transitive_SyncView (x: t_SyncView) (y: t_SyncView) (z: t_SyncView) : ()
   
-  axiom asymetric2_SyncView_spec: forall x: t_SyncView, y: t_SyncView. partial_cmp_log_SyncView x y = Some'0 (Greater)
-      -> partial_cmp_log_SyncView y x = Some'0 (Less)
+  axiom transitive_SyncView_spec: forall x: t_SyncView, y: t_SyncView, z: t_SyncView. lt_log_SyncView x y
+      -> lt_log_SyncView y z -> lt_log_SyncView x z
   
-  function asymetric1_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  function irreflexive_SyncView (self: t_SyncView) : ()
   
-  axiom asymetric1_SyncView_spec: forall x: t_SyncView, y: t_SyncView. partial_cmp_log_SyncView x y = Some'0 (Less)
-      -> partial_cmp_log_SyncView y x = Some'0 (Greater)
-  
-  function trans_SyncView (x: t_SyncView) (y: t_SyncView) (z: t_SyncView) (o: t_Option_Ordering) : ()
-  
-  axiom trans_SyncView_spec:
-    forall x: t_SyncView, y: t_SyncView, z: t_SyncView, o: t_Option_Ordering. partial_cmp_log_SyncView x y = o
-      -> partial_cmp_log_SyncView y z = o -> partial_cmp_log_SyncView x z = o
-  
-  function refl_SyncView (x: t_SyncView) : ()
-  
-  axiom refl_SyncView_spec: forall x: t_SyncView. partial_cmp_log_SyncView x x = Some'0 (Equal)
-  
-  predicate gt_log_SyncView (self: t_SyncView) (o: t_SyncView) = partial_cmp_log_SyncView self o = Some'0 (Greater)
-  
-  function partial_cmp_gt_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
-  
-  axiom partial_cmp_gt_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. gt_log_SyncView x y
-      = (partial_cmp_log_SyncView x y = Some'0 (Greater))
-  
-  predicate ge_log_SyncView (self: t_SyncView) (o: t_SyncView) =
-    partial_cmp_log_SyncView self o = Some'0 (Greater) \/ partial_cmp_log_SyncView self o = Some'0 (Equal)
-  
-  function partial_cmp_ge_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
-  
-  axiom partial_cmp_ge_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. ge_log_SyncView x y
-      = (partial_cmp_log_SyncView x y = Some'0 (Greater) \/ partial_cmp_log_SyncView x y = Some'0 (Equal))
-  
-  predicate lt_log_SyncView (self: t_SyncView) (o: t_SyncView) = partial_cmp_log_SyncView self o = Some'0 (Less)
-  
-  function partial_cmp_lt_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
-  
-  axiom partial_cmp_lt_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. lt_log_SyncView x y
-      = (partial_cmp_log_SyncView x y = Some'0 (Less))
-  
-  predicate le_log_SyncView (self: t_SyncView) (o: t_SyncView) =
-    partial_cmp_log_SyncView self o = Some'0 (Less) \/ partial_cmp_log_SyncView self o = Some'0 (Equal)
-  
-  function partial_cmp_le_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
-  
-  axiom partial_cmp_le_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. le_log_SyncView x y
-      = (partial_cmp_log_SyncView x y = Some'0 (Less) \/ partial_cmp_log_SyncView x y = Some'0 (Equal))
+  axiom irreflexive_SyncView_spec: forall self: t_SyncView. not lt_log_SyncView self self
   
   function get_timestamp_AtomicBool (self: t_AtomicBool) (_2: t_SyncView) : int
   
@@ -448,9 +412,9 @@ module M_message_passing
     [ return (result: MutBorrow.t t_Resource_Excl_unit) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
   
-  type t_Option_Excl_unit = None'1 | Some'1 t_Excl_unit
+  type t_Option_Excl_unit = None'0 | Some'0 t_Excl_unit
   
-  function op_Excl_unit (self: t_Excl_unit) (_other: t_Excl_unit) : t_Option_Excl_unit = None'1
+  function op_Excl_unit (self: t_Excl_unit) (_other: t_Excl_unit) : t_Option_Excl_unit = None'0
   
   function commutative_Excl_unit (a: t_Excl_unit) (b: t_Excl_unit) : ()
   
@@ -463,7 +427,7 @@ module M_message_passing
     {[@stop_split] [@expl:valid_op_lemma_Excl_unit ensures] ([@stop_split] [@expl:valid_op_lemma ensures #0] self.final
         = self.current)
       /\ ([@stop_split] [@expl:valid_op_lemma ensures #1] op_Excl_unit (view_Resource_Excl_unit self.current) (view_Resource_Excl_unit other)
-      <> None'1)}
+      <> None'0)}
       (! return {result}) ]
   
   predicate resolve_refmut_Resource_Excl_unit [@inline:trivial] (_1: MutBorrow.t t_Resource_Excl_unit) =
@@ -889,13 +853,13 @@ module M_message_passing
     c2'3: t_AtomicInvariant_MessagePassingAtomicInv;
     c3'3: t_PermCell_i32 }
   
-  type t_Option_Resource_Excl_unit = None'2 | Some'2 t_Resource_Excl_unit
+  type t_Option_Resource_Excl_unit = None'1 | Some'1 t_Resource_Excl_unit
   
   let new_Option_Resource_Excl_unit (x: t_Option_Resource_Excl_unit) (return (x'0: t_Option_Resource_Excl_unit)) = any
     [ return (result: t_Option_Resource_Excl_unit) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
   
-  type t_Option_Perm_PermCell_i32 = None'3 | Some'3 t_Perm_PermCell_i32
+  type t_Option_Perm_PermCell_i32 = None'2 | Some'2 t_Perm_PermCell_i32
   
   let new_Option_Perm_PermCell_i32 (x: t_Option_Perm_PermCell_i32) (return (x'0: t_Option_Perm_PermCell_i32)) = any
     [ return (result: t_Option_Perm_PermCell_i32) -> {[@stop_split] [@expl:new ensures] result = x}
@@ -937,22 +901,22 @@ module M_message_passing
       = self}
       (! return {result}) ]
   
-  type t_Option_refmut_Resource_Excl_unit = None'4 | Some'4 (MutBorrow.t t_Resource_Excl_unit)
+  type t_Option_refmut_Resource_Excl_unit = None'3 | Some'3 (MutBorrow.t t_Resource_Excl_unit)
   
   let as_mut_Resource_Excl_unit (self_: MutBorrow.t t_Option_Resource_Excl_unit)
     (return (x: t_Option_refmut_Resource_Excl_unit)) = any
     [ return (result: t_Option_refmut_Resource_Excl_unit) ->
     {[@stop_split] [@expl:as_mut_Resource_Excl_unit ensures] ([@stop_split] [@expl:as_mut ensures #0] self_.current
-          = None'2 -> result = None'4 /\ self_.final = None'2)
-      /\ ([@stop_split] [@expl:as_mut ensures #1] self_.current = None'2
-      \/ (exists r: MutBorrow.t t_Resource_Excl_unit. result = Some'4 r
-        /\ self_.current = Some'2 (r.current) /\ self_.final = Some'2 (r.final)))}
+          = None'1 -> result = None'3 /\ self_.final = None'1)
+      /\ ([@stop_split] [@expl:as_mut ensures #1] self_.current = None'1
+      \/ (exists r: MutBorrow.t t_Resource_Excl_unit. result = Some'3 r
+        /\ self_.current = Some'1 (r.current) /\ self_.final = Some'1 (r.final)))}
       (! return {result}) ]
   
   let unwrap_refmut_Resource_Excl_unit (self_: t_Option_refmut_Resource_Excl_unit)
-    (return (x: MutBorrow.t t_Resource_Excl_unit)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'4}
+    (return (x: MutBorrow.t t_Resource_Excl_unit)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'3}
     any
-    [ return (result: MutBorrow.t t_Resource_Excl_unit) -> {[@stop_split] [@expl:unwrap ensures] Some'4 result = self_}
+    [ return (result: MutBorrow.t t_Resource_Excl_unit) -> {[@stop_split] [@expl:unwrap ensures] Some'3 result = self_}
       (! return {result}) ]
   
   predicate resolve_refmut_Option_Resource_Excl_unit [@inline:trivial] (_1: MutBorrow.t t_Option_Resource_Excl_unit) =
@@ -1016,13 +980,13 @@ module M_message_passing
   let take_Resource_Excl_unit (self_: MutBorrow.t t_Option_Resource_Excl_unit)
     (return (x: t_Option_Resource_Excl_unit)) = any
     [ return (result: t_Option_Resource_Excl_unit) -> {[@stop_split] [@expl:take ensures] result = self_.current
-      /\ self_.final = None'2}
+      /\ self_.final = None'1}
       (! return {result}) ]
   
   let unwrap_Resource_Excl_unit (self_: t_Option_Resource_Excl_unit) (return (x: t_Resource_Excl_unit)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None'2}
+  {[@stop_split] [@expl:unwrap requires] self_ <> None'1}
     any
-    [ return (result: t_Resource_Excl_unit) -> {[@stop_split] [@expl:unwrap ensures] Some'2 result = self_}
+    [ return (result: t_Resource_Excl_unit) -> {[@stop_split] [@expl:unwrap ensures] Some'1 result = self_}
       (! return {result}) ]
   
   let sync_Perm_PermCell_i32 (self: t_AtView_Perm_PermCell_i32) (sync_view: t_SyncView)
@@ -1145,7 +1109,7 @@ module M_message_passing
       | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_MessagePassingAtomicInv inv} any) ]
       | s13 = -{resolve_refmut_MessagePassingAtomicInv inv}- s14
       | s14 = sync_Perm_PermCell_i32 {at_view} {sync_view} (fun (_x: t_Perm_PermCell_i32) -> [ &_52 <- _x ] s15)
-      | s15 = [ &_51 <- Some'3 _52 ] s16
+      | s15 = [ &_51 <- Some'2 _52 ] s16
       | s16 = new_Option_Perm_PermCell_i32 {_51} (fun (_x: t_Option_Perm_PermCell_i32) -> [ &_50 <- _x ] s17)
       | s17 = [ &self <- { self with current = { self.current with c2'5 = { self.current.c2'5 with current = _50 } } } ]
         s18
@@ -1379,20 +1343,20 @@ module M_message_passing
     [ return (result: t_Option_Perm_PermCell_i32) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  type t_Option_ref_Perm_PermCell_i32 = None'5 | Some'5 t_Perm_PermCell_i32
+  type t_Option_ref_Perm_PermCell_i32 = None'4 | Some'4 t_Perm_PermCell_i32
   
   let as_ref_Perm_PermCell_i32 (self_: t_Option_Perm_PermCell_i32) (return (x: t_Option_ref_Perm_PermCell_i32)) = any
     [ return (result: t_Option_ref_Perm_PermCell_i32) ->
-    {[@stop_split] [@expl:as_ref_Perm_PermCell_i32 ensures] ([@stop_split] [@expl:as_ref ensures #0] self_ = None'3
-        -> result = None'5)
-      /\ ([@stop_split] [@expl:as_ref ensures #1] self_ = None'3
-      \/ (exists r: t_Perm_PermCell_i32. result = Some'5 r /\ self_ = Some'3 r))}
+    {[@stop_split] [@expl:as_ref_Perm_PermCell_i32 ensures] ([@stop_split] [@expl:as_ref ensures #0] self_ = None'2
+        -> result = None'4)
+      /\ ([@stop_split] [@expl:as_ref ensures #1] self_ = None'2
+      \/ (exists r: t_Perm_PermCell_i32. result = Some'4 r /\ self_ = Some'2 r))}
       (! return {result}) ]
   
   let unwrap_ref_Perm_PermCell_i32 (self_: t_Option_ref_Perm_PermCell_i32) (return (x: t_Perm_PermCell_i32)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None'5}
+  {[@stop_split] [@expl:unwrap requires] self_ <> None'4}
     any
-    [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:unwrap ensures] Some'5 result = self_}
+    [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:unwrap ensures] Some'4 result = self_}
       (! return {result}) ]
   
   let new_ref_Perm_PermCell_i32 (x: t_Perm_PermCell_i32) (return (x'0: t_Perm_PermCell_i32)) = any
@@ -1414,10 +1378,10 @@ module M_message_passing
     bb0
     [ bb0 = s0
       [ s0 = into_inner_Resource_Excl_unit {self.c0'3} (fun (_x: t_Resource_Excl_unit) -> [ &_5 <- _x ] s1)
-      | s1 = [ &_4 <- Some'2 _5 ] s2
+      | s1 = [ &_4 <- Some'1 _5 ] s2
       | s2 = new_Option_Resource_Excl_unit {_4} (fun (_x: t_Option_Resource_Excl_unit) -> [ &excl <- _x ] s3)
       | s3 = [ &excl_snap <- excl ] s4
-      | s4 = [ &_11 <- None'3 ] s5
+      | s4 = [ &_11 <- None'2 ] s5
       | s5 = new_Option_Perm_PermCell_i32 {_11} (fun (_x: t_Option_Perm_PermCell_i32) -> [ &data_own <- _x ] s6)
       | s6 = bb5 ]
     | bb5 = bb5

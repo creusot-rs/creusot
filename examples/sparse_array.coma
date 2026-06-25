@@ -700,11 +700,20 @@ module M_impl_Sparse_T__bounded_fset_len (* Sparse<T, SIZE> *)
   
   meta "rewrite_def" predicate contains_Int
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function remove_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.remove e self
   
   meta "rewrite_def" function remove_Int
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -719,11 +728,11 @@ module M_impl_Sparse_T__bounded_fset_len (* Sparse<T, SIZE> *)
   function bounded_fset_len_T (s: Fset.fset int) (bnd: int) : ()
   
   goal vc_bounded_fset_len_T: (forall x: int. contains_Int s x -> 0 <= x /\ x < bnd)
-    -> bnd >= 0
-    -> (if bnd > 0 then
+    -> ge_log_Int bnd 0
+    -> (if gt_log_Int bnd 0 then
       (([@stop_split] [@expl:bounded_fset_len requires] ([@stop_split] [@expl:bounded_fset_len requires #0] forall x: int. contains_Int (remove_Int s (bnd
                 - 1)) x -> 0 <= x /\ x < bnd - 1)
-          /\ ([@stop_split] [@expl:bounded_fset_len requires #1] bnd - 1 >= 0))
+          /\ ([@stop_split] [@expl:bounded_fset_len requires #1] ge_log_Int (bnd - 1) 0))
         /\ ([@expl:variant decreases] well_founded_relation_Int bnd (bnd - 1)))
       /\ (([@stop_split] [@expl:bounded_fset_len ensures] Fset.cardinal (remove_Int s (bnd - 1)) <= bnd - 1)
       -> ([@stop_split] [@expl:bounded_fset_len ensures] Fset.cardinal s <= bnd))
@@ -974,6 +983,14 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
   
   meta "rewrite_def" predicate contains_Int
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function remove_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.remove e self
   
   meta "rewrite_def" function remove_Int
@@ -982,11 +999,12 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
   
   axiom bounded_fset_len_T_def:
     forall s: Fset.fset int, bnd: int [bounded_fset_len_T s bnd]. (forall x: int. contains_Int s x -> 0 <= x /\ x < bnd)
-      -> bnd >= 0
-      -> bounded_fset_len_T s bnd = (if bnd > 0 then bounded_fset_len_T (remove_Int s (bnd - 1)) (bnd - 1) else ())
+      -> ge_log_Int bnd 0
+      -> bounded_fset_len_T s bnd
+      = (if gt_log_Int bnd 0 then bounded_fset_len_T (remove_Int s (bnd - 1)) (bnd - 1) else ())
   
   axiom bounded_fset_len_T_spec: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int s x
-          -> 0 <= x /\ x < bnd) -> bnd >= 0 -> Fset.cardinal s <= bnd
+          -> 0 <= x /\ x < bnd) -> ge_log_Int bnd 0 -> Fset.cardinal s <= bnd
   
   function insert_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.add e self
   
@@ -1141,6 +1159,14 @@ module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
   
   meta "rewrite_def" predicate contains_Int
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function remove_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.remove e self
   
   meta "rewrite_def" function remove_Int
@@ -1149,17 +1175,19 @@ module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
   
   axiom bounded_fset_len_T_def:
     forall s: Fset.fset int, bnd: int [bounded_fset_len_T s bnd]. (forall x: int. contains_Int s x -> 0 <= x /\ x < bnd)
-      -> bnd >= 0
-      -> bounded_fset_len_T s bnd = (if bnd > 0 then bounded_fset_len_T (remove_Int s (bnd - 1)) (bnd - 1) else ())
+      -> ge_log_Int bnd 0
+      -> bounded_fset_len_T s bnd
+      = (if gt_log_Int bnd 0 then bounded_fset_len_T (remove_Int s (bnd - 1)) (bnd - 1) else ())
   
   axiom bounded_fset_len_T_spec: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int s x
-          -> 0 <= x /\ x < bnd) -> bnd >= 0 -> Fset.cardinal s <= bnd
+          -> 0 <= x /\ x < bnd) -> ge_log_Int bnd 0 -> Fset.cardinal s <= bnd
   
   function insert_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.add e self
   
   meta "rewrite_def" function insert_Int
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -1194,7 +1222,7 @@ module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
     else
       ([@stop_split] [@expl:bounded_fset_len requires] ([@stop_split] [@expl:bounded_fset_len requires #0] forall x: int. contains_Int seen x
             -> 0 <= x /\ x < UInt64.t'int const_SIZE)
-        /\ ([@stop_split] [@expl:bounded_fset_len requires #1] UInt64.t'int const_SIZE >= 0))
+        /\ ([@stop_split] [@expl:bounded_fset_len requires #1] ge_log_Int (UInt64.t'int const_SIZE) 0))
       /\ (([@stop_split] [@expl:bounded_fset_len ensures] Fset.cardinal seen <= UInt64.t'int const_SIZE)
       -> (let _ = bounded_fset_len_T seen (UInt64.t'int const_SIZE) in (([@stop_split] [@expl:lemma_permutation_aux requires] ([@stop_split] [@expl:lemma_permutation_aux requires #0] inv_Sparse_T self)
           /\ ([@stop_split] [@expl:lemma_permutation_aux requires #1] self.n = const_SIZE)
@@ -1326,6 +1354,14 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
   
   meta "rewrite_def" predicate contains_Int
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function remove_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.remove e self
   
   meta "rewrite_def" function remove_Int
@@ -1334,11 +1370,12 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
   
   axiom bounded_fset_len_T_def:
     forall s: Fset.fset int, bnd: int [bounded_fset_len_T s bnd]. (forall x: int. contains_Int s x -> 0 <= x /\ x < bnd)
-      -> bnd >= 0
-      -> bounded_fset_len_T s bnd = (if bnd > 0 then bounded_fset_len_T (remove_Int s (bnd - 1)) (bnd - 1) else ())
+      -> ge_log_Int bnd 0
+      -> bounded_fset_len_T s bnd
+      = (if gt_log_Int bnd 0 then bounded_fset_len_T (remove_Int s (bnd - 1)) (bnd - 1) else ())
   
   axiom bounded_fset_len_T_spec: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int s x
-          -> 0 <= x /\ x < bnd) -> bnd >= 0 -> Fset.cardinal s <= bnd
+          -> 0 <= x /\ x < bnd) -> ge_log_Int bnd 0 -> Fset.cardinal s <= bnd
   
   function insert_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.add e self
   

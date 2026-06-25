@@ -6,59 +6,6 @@ module M_main
   use creusot.prelude.Any
   use int.Int
   
-  type t_Ordering = Less | Equal | Greater
-  
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_partial_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (partial_cmp_log_usize x y = Some (Equal))
-  
-  function asymetric2_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom asymetric2_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Greater)
-      -> partial_cmp_log_usize y x = Some (Less)
-  
-  function asymetric1_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom asymetric1_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Less)
-      -> partial_cmp_log_usize y x = Some (Greater)
-  
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_usize x y
-        = o -> partial_cmp_log_usize y z = o -> partial_cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64.t. partial_cmp_log_usize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
-      = (partial_cmp_log_usize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
-      = (partial_cmp_log_usize x y = Some (Greater) \/ partial_cmp_log_usize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
-      = (partial_cmp_log_usize x y = Some (Less))
-  
-  function partial_cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
-      = (partial_cmp_log_usize x y = Some (Less) \/ partial_cmp_log_usize x y = Some (Equal))
-  
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
   let into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
@@ -72,10 +19,14 @@ module M_main
   
   meta "rewrite_def" function deep_model_i32
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Range_i32 (self: t_Range_i32) (visited: Seq.seq Int32.t) (o: t_Range_i32) =
     self.end' = o.end'
     /\ deep_model_i32 self.start <= deep_model_i32 o.start
-    /\ (Seq.length visited > 0 -> deep_model_i32 o.start <= deep_model_i32 o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_i32 o.start <= deep_model_i32 o.end')
     /\ Seq.length visited = deep_model_i32 o.start - deep_model_i32 self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_i32 (Seq.get visited i) = deep_model_i32 self.start + i)
@@ -91,26 +42,30 @@ module M_main
   axiom produces_refl_Range_i32_spec:
     forall self: t_Range_i32. produces_Range_i32 self (Seq.empty: Seq.seq Int32.t) self
   
-  type t_Option_i32 = None'0 | Some'0 Int32.t
+  type t_Option_i32 = None | Some Int32.t
   
   predicate resolve_refmut_Range_i32 [@inline:trivial] (_1: MutBorrow.t t_Range_i32) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_Range_i32
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
-    resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
+    resolve_refmut_Range_i32 self /\ ge_log_Int (deep_model_i32 self.current.start) (deep_model_i32 self.current.end')
   
   let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None'0 -> completed_Range_i32 self_
-        | Some'0 v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_Range_i32 self_
+        | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
   
   let elim_Some (_x: t_Option_i32) (return (f0: Int32.t)) = any
-    [ _k (f0: Int32.t) -> {Some'0 f0 = _x} (! return {f0})
+    [ _k (f0: Int32.t) -> {Some f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Some] match _x with
-        | Some'0 _ -> true
+        | Some _ -> true
         | _ -> false
         end}
       any) ]
@@ -167,7 +122,7 @@ module M_main
           (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_81 <- _bor ] [ &_82 <- { _82 with current = _bor.final } ] s9)
       | s9 = next_Range_i32 {_81} (fun (_x: t_Option_i32) -> [ &_80 <- _x ] s10)
       | s10 = -{resolve_refmut_Range_i32 _82}- s11
-      | s11 = any [ br0 -> {_80 = None'0} (! bb44) | br1 (x0: Int32.t) -> {_80 = Some'0 x0} (! bb42) ] ]
+      | s11 = any [ br0 -> {_80 = None} (! bb44) | br1 (x0: Int32.t) -> {_80 = Some x0} (! bb42) ] ]
     | bb42 = s0
       [ s0 = elim_Some {_80} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
       | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2

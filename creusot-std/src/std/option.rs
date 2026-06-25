@@ -3,9 +3,9 @@ use crate::logic::{Mapping, any};
 use crate::{
     ghost::Plain, logic::ord::partial_ord_laws_impl, prelude::*, std::iter::ExactSizeIteratorSpec,
 };
-use core::option::*;
 #[cfg(creusot)]
-use core::{cmp::Ordering, marker::Destruct};
+use core::marker::Destruct;
+use core::option::*;
 
 impl<T: DeepModel> DeepModel for Option<T> {
     type DeepModelTy = Option<T::DeepModelTy>;
@@ -639,12 +639,24 @@ extern_spec! {
 
 impl<T: PartialOrdLogic> PartialOrdLogic for Option<T> {
     #[logic(open)]
-    fn partial_cmp_log(self, o: Self) -> Option<Ordering> {
-        match (self, o) {
-            (None, None) => Some(Ordering::Equal),
-            (None, Some(_)) => Some(Ordering::Less),
-            (Some(_), None) => Some(Ordering::Greater),
-            (Some(x), Some(y)) => x.partial_cmp_log(y),
+    fn lt_log(self, o: Self) -> bool {
+        match o {
+            None => false,
+            Some(o) => match self {
+                None => true,
+                Some(s) => s < o,
+            },
+        }
+    }
+
+    #[logic(open)]
+    fn le_log(self, o: Self) -> bool {
+        match self {
+            None => true,
+            Some(s) => match o {
+                None => false,
+                Some(o) => s <= o,
+            },
         }
     }
 
@@ -653,8 +665,10 @@ impl<T: PartialOrdLogic> PartialOrdLogic for Option<T> {
 
 impl<T: OrdLogic> OrdLogic for Option<T> {
     #[logic(law)]
-    #[ensures(self.partial_cmp_log(other) != None)]
-    fn partial_cmp_log_total(self, other: Self) {}
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {
+        let _ = T::lt_log_total;
+    }
 }
 
 impl<T> View for IntoIter<T> {

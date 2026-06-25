@@ -7,116 +7,25 @@ module M_uses_concrete_instance
   
   type tup2_Int_Int = { f0'0: int; f1'0: int }
   
-  type t_Ordering = Less | Equal | Greater
-  
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_Int (self: int) (o: int) : t_Option_Ordering = if self < o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_Int (x: int) (y: int) : ()
-  
-  axiom eq_partial_cmp_Int_spec: forall x: int, y: int. (x = y) = (partial_cmp_log_Int x y = Some (Equal))
-  
-  function asymetric2_Int (x: int) (y: int) : ()
-  
-  axiom asymetric2_Int_spec: forall x: int, y: int. partial_cmp_log_Int x y = Some (Greater)
-      -> partial_cmp_log_Int y x = Some (Less)
-  
-  function asymetric1_Int (x: int) (y: int) : ()
-  
-  axiom asymetric1_Int_spec: forall x: int, y: int. partial_cmp_log_Int x y = Some (Less)
-      -> partial_cmp_log_Int y x = Some (Greater)
-  
-  function trans_Int (x: int) (y: int) (z: int) (o: t_Option_Ordering) : ()
-  
-  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Option_Ordering. partial_cmp_log_Int x y = o
-      -> partial_cmp_log_Int y z = o -> partial_cmp_log_Int x z = o
-  
-  function refl_Int (x: int) : ()
-  
-  axiom refl_Int_spec: forall x: int. partial_cmp_log_Int x x = Some (Equal)
-  
-  function partial_cmp_gt_log_Int (x: int) (y: int) : ()
-  
-  axiom partial_cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (partial_cmp_log_Int x y = Some (Greater))
-  
-  function partial_cmp_ge_log_Int (x: int) (y: int) : ()
-  
-  axiom partial_cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y)
-      = (partial_cmp_log_Int x y = Some (Greater) \/ partial_cmp_log_Int x y = Some (Equal))
-  
-  function partial_cmp_lt_log_Int (x: int) (y: int) : ()
-  
-  axiom partial_cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (partial_cmp_log_Int x y = Some (Less))
-  
-  function partial_cmp_le_log_Int (x: int) (y: int) : ()
-  
-  axiom partial_cmp_le_log_Int_spec: forall x: int, y: int. (x <= y)
-      = (partial_cmp_log_Int x y = Some (Less) \/ partial_cmp_log_Int x y = Some (Equal))
-  
-  function partial_cmp_log_tup2_Int_Int (self: tup2_Int_Int) (o: tup2_Int_Int) : t_Option_Ordering =
-    let r = partial_cmp_log_Int self.f0'0 o.f0'0 in if r = Some (Equal) then partial_cmp_log_Int self.f1'0 o.f1'0 else r
-  
-  function eq_partial_cmp_tup2_Int_Int (x: tup2_Int_Int) (y: tup2_Int_Int) : ()
-  
-  axiom eq_partial_cmp_tup2_Int_Int_spec: forall x: tup2_Int_Int, y: tup2_Int_Int. (x = y)
-      = (partial_cmp_log_tup2_Int_Int x y = Some (Equal))
-  
-  function asymetric2_tup2_Int_Int (x: tup2_Int_Int) (y: tup2_Int_Int) : ()
-  
-  axiom asymetric2_tup2_Int_Int_spec: forall x: tup2_Int_Int, y: tup2_Int_Int. partial_cmp_log_tup2_Int_Int x y
-        = Some (Greater) -> partial_cmp_log_tup2_Int_Int y x = Some (Less)
-  
-  function asymetric1_tup2_Int_Int (x: tup2_Int_Int) (y: tup2_Int_Int) : ()
-  
-  axiom asymetric1_tup2_Int_Int_spec: forall x: tup2_Int_Int, y: tup2_Int_Int. partial_cmp_log_tup2_Int_Int x y
-        = Some (Less) -> partial_cmp_log_tup2_Int_Int y x = Some (Greater)
-  
-  function trans_tup2_Int_Int (x: tup2_Int_Int) (y: tup2_Int_Int) (z: tup2_Int_Int) (o: t_Option_Ordering) : ()
-  
-  axiom trans_tup2_Int_Int_spec:
-    forall x: tup2_Int_Int, y: tup2_Int_Int, z: tup2_Int_Int, o: t_Option_Ordering. partial_cmp_log_tup2_Int_Int x y = o
-      -> partial_cmp_log_tup2_Int_Int y z = o -> partial_cmp_log_tup2_Int_Int x z = o
-  
-  function refl_tup2_Int_Int (x: tup2_Int_Int) : ()
-  
-  axiom refl_tup2_Int_Int_spec: forall x: tup2_Int_Int. partial_cmp_log_tup2_Int_Int x x = Some (Equal)
-  
-  predicate gt_log_tup2_Int_Int (self: tup2_Int_Int) (o: tup2_Int_Int) =
-    self.f0'0 = o.f0'0 /\ self.f1'0 > o.f1'0 \/ self.f0'0 > o.f0'0
-  
-  function partial_cmp_gt_log_tup2_Int_Int (x: tup2_Int_Int) (y: tup2_Int_Int) : ()
-  
-  axiom partial_cmp_gt_log_tup2_Int_Int_spec: forall x: tup2_Int_Int, y: tup2_Int_Int. gt_log_tup2_Int_Int x y
-      = (partial_cmp_log_tup2_Int_Int x y = Some (Greater))
-  
-  predicate ge_log_tup2_Int_Int (self: tup2_Int_Int) (o: tup2_Int_Int) =
-    self.f0'0 = o.f0'0 /\ self.f1'0 >= o.f1'0 \/ self.f0'0 > o.f0'0
-  
-  function partial_cmp_ge_log_tup2_Int_Int (x: tup2_Int_Int) (y: tup2_Int_Int) : ()
-  
-  axiom partial_cmp_ge_log_tup2_Int_Int_spec: forall x: tup2_Int_Int, y: tup2_Int_Int. ge_log_tup2_Int_Int x y
-      = (partial_cmp_log_tup2_Int_Int x y = Some (Greater) \/ partial_cmp_log_tup2_Int_Int x y = Some (Equal))
+  predicate le_log_tup2_Int_Int (self: tup2_Int_Int) (o: tup2_Int_Int) =
+    self.f0'0 = o.f0'0 /\ self.f1'0 <= o.f1'0 \/ self.f0'0 < o.f0'0
   
   predicate lt_log_tup2_Int_Int (self: tup2_Int_Int) (o: tup2_Int_Int) =
     self.f0'0 = o.f0'0 /\ self.f1'0 < o.f1'0 \/ self.f0'0 < o.f0'0
   
-  function partial_cmp_lt_log_tup2_Int_Int (x: tup2_Int_Int) (y: tup2_Int_Int) : ()
+  function le_lt_log_tup2_Int_Int (self: tup2_Int_Int) (other: tup2_Int_Int) : ()
   
-  axiom partial_cmp_lt_log_tup2_Int_Int_spec: forall x: tup2_Int_Int, y: tup2_Int_Int. lt_log_tup2_Int_Int x y
-      = (partial_cmp_log_tup2_Int_Int x y = Some (Less))
+  axiom le_lt_log_tup2_Int_Int_spec: forall self: tup2_Int_Int, other: tup2_Int_Int. le_log_tup2_Int_Int self other
+      = (lt_log_tup2_Int_Int self other \/ self = other)
   
-  predicate le_log_tup2_Int_Int (self: tup2_Int_Int) (o: tup2_Int_Int) =
-    self.f0'0 = o.f0'0 /\ self.f1'0 <= o.f1'0 \/ self.f0'0 < o.f0'0
+  function transitive_tup2_Int_Int (x: tup2_Int_Int) (y: tup2_Int_Int) (z: tup2_Int_Int) : ()
   
-  function partial_cmp_le_log_tup2_Int_Int (x: tup2_Int_Int) (y: tup2_Int_Int) : ()
+  axiom transitive_tup2_Int_Int_spec: forall x: tup2_Int_Int, y: tup2_Int_Int, z: tup2_Int_Int. lt_log_tup2_Int_Int x y
+      -> lt_log_tup2_Int_Int y z -> lt_log_tup2_Int_Int x z
   
-  axiom partial_cmp_le_log_tup2_Int_Int_spec: forall x: tup2_Int_Int, y: tup2_Int_Int. le_log_tup2_Int_Int x y
-      = (partial_cmp_log_tup2_Int_Int x y = Some (Less) \/ partial_cmp_log_tup2_Int_Int x y = Some (Equal))
+  function irreflexive_tup2_Int_Int (self: tup2_Int_Int) : ()
+  
+  axiom irreflexive_tup2_Int_Int_spec: forall self: tup2_Int_Int. not lt_log_tup2_Int_Int self self
   
   function deep_model_u32 [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
   

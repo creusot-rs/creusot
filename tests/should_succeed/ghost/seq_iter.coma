@@ -62,7 +62,16 @@ module M_reverse_ghost
       /\ ([@stop_split] [@expl:into_iter ensures] self = view_Iter_T result)}
       (! return {result}) ]
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -145,21 +154,8 @@ module M_reverse_ghost
   
   predicate resolve_T (_1: t_T)
   
-  predicate resolve_Option_T (_1: t_Option_T)
-  
-  axiom resolve_axiom [@rewrite]: forall x: t_Option_T [resolve_Option_T x]. resolve_Option_T x
-      = match x with
-        | None -> true
-        | Some x0 -> resolve_T x0
-        end
-  
-  function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
-      Some (Seq.get self ix)
-    else
-      None
-  
-  
-  predicate resolve_Seq_T (self: Seq.seq t_T) = forall i: int. resolve_Option_T (get_T self i)
+  predicate resolve_Seq_T (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> resolve_T (Seq.get self i)
   
   predicate resolve_Seq_T'0 [@inline:trivial] (_1: Seq.seq t_T) = resolve_Seq_T _1
   
@@ -171,7 +167,7 @@ module M_reverse_ghost
   
   predicate resolve_Iter_T'0 (_1: t_Iter_T)
   
-  axiom resolve_axiom'0: forall x: t_Iter_T [resolve_Iter_T'0 x]. resolve_Iter_T'0 x -> resolve_Iter_T x
+  axiom resolve_axiom: forall x: t_Iter_T [resolve_Iter_T'0 x]. resolve_Iter_T'0 x -> resolve_Iter_T x
   
   let new_Seq_T (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_Seq_T x}
@@ -359,7 +355,16 @@ module M_reverse_ghost_ref
       /\ ([@stop_split] [@expl:into_iter ensures] self = view_Iter_ref_T result)}
       (! return {result}) ]
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   

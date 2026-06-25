@@ -76,15 +76,23 @@ module M_fulcrum
         end}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function sum_range (seq: Seq.seq UInt32.t) (from: int) (to': int) : int
   
   axiom sum_range_def: forall seq: Seq.seq UInt32.t, from: int, to': int [sum_range seq from to']. 0 <= from
         /\ from <= to' /\ to' <= Seq.length seq
       -> sum_range seq from to'
-      = (if to' - from > 0 then UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' else 0)
+      = (if gt_log_Int (to' - from) 0 then UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' else 0)
   
   axiom sum_range_spec: forall seq: Seq.seq UInt32.t, from: int, to': int [sum_range seq from to']. 0 <= from
-        /\ from <= to' /\ to' <= Seq.length seq -> sum_range seq from to' >= 0
+        /\ from <= to' /\ to' <= Seq.length seq -> ge_log_Int (sum_range seq from to') 0
   
   predicate inv_Seq_ref_u32 [@inline:trivial] (_1: Seq.seq UInt32.t) = true
   
@@ -119,7 +127,7 @@ module M_fulcrum
   predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
     self.end' = o.end'
     /\ deep_model_usize self.start <= deep_model_usize o.start
-    /\ (Seq.length visited > 0 -> deep_model_usize o.start <= deep_model_usize o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_usize o.start <= deep_model_usize o.end')
     /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
@@ -140,7 +148,8 @@ module M_fulcrum
   meta "rewrite_def" predicate resolve_refmut_Range_usize
   
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+    resolve_refmut_Range_usize self
+    /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
   let next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
@@ -154,7 +163,8 @@ module M_fulcrum
   axiom sum_range_split_def:
     forall seq: Seq.seq UInt32.t, from: int, to': int, i: int [sum_range_split seq from to' i]. 0 <= from
         /\ from <= i /\ i <= to' /\ to' <= Seq.length seq
-      -> sum_range_split seq from to' i = (if i > from then let _ = sum_range_split seq (from + 1) to' i in () else ())
+      -> sum_range_split seq from to' i
+      = (if gt_log_Int i from then let _ = sum_range_split seq (from + 1) to' i in () else ())
   
   axiom sum_range_split_spec: forall seq: Seq.seq UInt32.t, from: int, to': int, i: int. 0 <= from
         /\ from <= i /\ i <= to' /\ to' <= Seq.length seq
@@ -195,7 +205,7 @@ module M_fulcrum
   let fulcrum (s: Slice64.slice UInt32.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:fulcrum requires] ([@stop_split] [@expl:fulcrum requires #0] sum_range (Slice64.view s) 0 (Seq.length (Slice64.view s))
       <= 1000)
-    /\ ([@stop_split] [@expl:fulcrum requires #1] Seq.length (Slice64.view s) > 0)}
+    /\ ([@stop_split] [@expl:fulcrum requires #1] gt_log_Int (Seq.length (Slice64.view s)) 0)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &total <- (0: UInt32.t) ] s1
@@ -742,6 +752,10 @@ module M_left_pad
   
   meta "rewrite_def" function index_Vec_T_Global
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate invariant_refmut_Vec_T_Global [@inline:trivial] (self: MutBorrow.t t_Vec_T_Global) =
     inv_Vec_T_Global self.current /\ inv_Vec_T_Global self.final
   
@@ -771,6 +785,10 @@ module M_left_pad
   
   meta "rewrite_def" predicate resolve_refmut_Vec_T_Global
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -787,7 +805,7 @@ module M_left_pad
         <= Seq.length (view_Vec_T_Global str.current)}
         {[@expl:loop invariant #1] Seq.length (view_Vec_T_Global old_str.current) < UInt64.t'int len
         -> Seq.length (view_Vec_T_Global str.current) <= UInt64.t'int len}
-        {[@expl:loop invariant #2] Seq.length (view_Vec_T_Global str.current) > UInt64.t'int len
+        {[@expl:loop invariant #2] gt_log_Int (Seq.length (view_Vec_T_Global str.current)) (UInt64.t'int len)
         -> Seq.length (view_Vec_T_Global str.current) = Seq.length (view_Vec_T_Global old_str.current)}
         {[@expl:loop invariant #3] c
         = Seq.length (view_Vec_T_Global str.current) - Seq.length (view_Vec_T_Global old_str.current)}
@@ -823,9 +841,8 @@ module M_left_pad
     | & _50: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & _old: t_Vec_T_Global = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:left_pad_T ensures] ([@stop_split] [@expl:left_pad ensures #0] Seq.length (view_Vec_T_Global str.final)
-          >= UInt64.t'int len
-        /\ Seq.length (view_Vec_T_Global str.final) >= Seq.length (view_Vec_T_Global str.current))
+    {[@stop_split] [@expl:left_pad_T ensures] ([@stop_split] [@expl:left_pad ensures #0] ge_log_Int (Seq.length (view_Vec_T_Global str.final)) (UInt64.t'int len)
+        /\ ge_log_Int (Seq.length (view_Vec_T_Global str.final)) (Seq.length (view_Vec_T_Global str.current)))
       /\ ([@stop_split] [@expl:left_pad ensures #1] Seq.length (view_Vec_T_Global str.final) = UInt64.t'int len
         \/ Seq.length (view_Vec_T_Global str.final) = Seq.length (view_Vec_T_Global str.current))
       /\ ([@stop_split] [@expl:left_pad ensures #2] forall i: int. 0 <= i
@@ -901,6 +918,10 @@ module M_right_pad
   
   meta "rewrite_def" function index_Vec_T_Global
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate invariant_refmut_Vec_T_Global [@inline:trivial] (self: MutBorrow.t t_Vec_T_Global) =
     inv_Vec_T_Global self.current /\ inv_Vec_T_Global self.final
   
@@ -923,6 +944,10 @@ module M_right_pad
   
   meta "rewrite_def" predicate resolve_refmut_Vec_T_Global
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -939,7 +964,7 @@ module M_right_pad
         <= Seq.length (view_Vec_T_Global str.current)}
         {[@expl:loop invariant #1] Seq.length (view_Vec_T_Global old_str.current) < UInt64.t'int len
         -> Seq.length (view_Vec_T_Global str.current) <= UInt64.t'int len}
-        {[@expl:loop invariant #2] Seq.length (view_Vec_T_Global str.current) > UInt64.t'int len
+        {[@expl:loop invariant #2] gt_log_Int (Seq.length (view_Vec_T_Global str.current)) (UInt64.t'int len)
         -> Seq.length (view_Vec_T_Global str.current) = Seq.length (view_Vec_T_Global old_str.current)}
         {[@expl:loop invariant #3] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_T_Global old_str.current)
           -> index_Vec_T_Global str.current i = index_Vec_T_Global old_str.current i}
@@ -972,14 +997,13 @@ module M_right_pad
     | & _50: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & _old: t_Vec_T_Global = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:right_pad_T ensures] ([@stop_split] [@expl:right_pad ensures #0] Seq.length (view_Vec_T_Global str.final)
-          >= UInt64.t'int len
-        /\ Seq.length (view_Vec_T_Global str.final) >= Seq.length (view_Vec_T_Global str.current))
+    {[@stop_split] [@expl:right_pad_T ensures] ([@stop_split] [@expl:right_pad ensures #0] ge_log_Int (Seq.length (view_Vec_T_Global str.final)) (UInt64.t'int len)
+        /\ ge_log_Int (Seq.length (view_Vec_T_Global str.final)) (Seq.length (view_Vec_T_Global str.current)))
       /\ ([@stop_split] [@expl:right_pad ensures #1] Seq.length (view_Vec_T_Global str.final) = UInt64.t'int len
         \/ Seq.length (view_Vec_T_Global str.final) = Seq.length (view_Vec_T_Global str.current))
       /\ ([@stop_split] [@expl:right_pad ensures #2] UInt64.t'int len <= Seq.length (view_Vec_T_Global str.current)
         -> Seq.length (view_Vec_T_Global str.final) = Seq.length (view_Vec_T_Global str.current))
-      /\ ([@stop_split] [@expl:right_pad ensures #3] UInt64.t'int len > Seq.length (view_Vec_T_Global str.current)
+      /\ ([@stop_split] [@expl:right_pad ensures #3] gt_log_Int (UInt64.t'int len) (Seq.length (view_Vec_T_Global str.current))
         -> Seq.length (view_Vec_T_Global str.final) = UInt64.t'int len)
       /\ ([@stop_split] [@expl:right_pad ensures #4] forall i: int. 0 <= i
             /\ i < Seq.length (view_Vec_T_Global str.current)
@@ -993,22 +1017,31 @@ module M_score
   use seq.Seq
   use int.Int
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function sum_range (seq: Seq.seq UInt32.t) (from: int) (to': int) : int
   
   axiom sum_range_def: forall seq: Seq.seq UInt32.t, from: int, to': int [sum_range seq from to']. 0 <= from
         /\ from <= to' /\ to' <= Seq.length seq
       -> sum_range seq from to'
-      = (if to' - from > 0 then UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' else 0)
+      = (if gt_log_Int (to' - from) 0 then UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' else 0)
   
   axiom sum_range_spec: forall seq: Seq.seq UInt32.t, from: int, to': int [sum_range seq from to']. 0 <= from
-        /\ from <= to' /\ to' <= Seq.length seq -> sum_range seq from to' >= 0
+        /\ from <= to' /\ to' <= Seq.length seq -> ge_log_Int (sum_range seq from to') 0
   
   function sum_range_split (seq: Seq.seq UInt32.t) (from: int) (to': int) (i: int) : ()
   
   axiom sum_range_split_def:
     forall seq: Seq.seq UInt32.t, from: int, to': int, i: int [sum_range_split seq from to' i]. 0 <= from
         /\ from <= i /\ i <= to' /\ to' <= Seq.length seq
-      -> sum_range_split seq from to' i = (if i > from then let _ = sum_range_split seq (from + 1) to' i in () else ())
+      -> sum_range_split seq from to' i
+      = (if gt_log_Int i from then let _ = sum_range_split seq (from + 1) to' i in () else ())
   
   axiom sum_range_split_spec: forall seq: Seq.seq UInt32.t, from: int, to': int, i: int. 0 <= from
         /\ from <= i /\ i <= to' /\ to' <= Seq.length seq
@@ -1033,9 +1066,9 @@ module M_score
       = sum_range seq 0 i + sum_range seq i (Seq.length seq))
     -> (let _ = sum_range_split seq 0 (Seq.length seq) i in ([@stop_split] [@expl:sum_range requires] 0 <= 0
       /\ 0 <= i /\ i <= Seq.length seq)
-    /\ (([@stop_split] [@expl:sum_range ensures] sum_range seq 0 i >= 0)
+    /\ (([@stop_split] [@expl:sum_range ensures] ge_log_Int (sum_range seq 0 i) 0)
     -> ([@stop_split] [@expl:sum_range requires] 0 <= i /\ i <= Seq.length seq /\ Seq.length seq <= Seq.length seq)
-    /\ (([@stop_split] [@expl:sum_range ensures] sum_range seq i (Seq.length seq) >= 0)
+    /\ (([@stop_split] [@expl:sum_range ensures] ge_log_Int (sum_range seq i (Seq.length seq)) 0)
     -> (let result = abs_diff (sum_range seq 0 i) (sum_range seq i (Seq.length seq)) in [@stop_split] [@expl:score ensures] ([@stop_split] [@expl:score ensures #0] 0
         <= result
       /\ result <= sum_range seq 0 (Seq.length seq))
@@ -1071,7 +1104,16 @@ module M_sum_range
   use seq.Seq
   use int.Int
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -1088,13 +1130,14 @@ module M_sum_range
   function sum_range (seq: Seq.seq UInt32.t) (from: int) (to': int) : int
   
   goal vc_sum_range: 0 <= from /\ from <= to' /\ to' <= Seq.length seq
-    -> (if to' - from > 0 then
+    -> (if gt_log_Int (to' - from) 0 then
       (([@stop_split] [@expl:sum_range requires] 0 <= from + 1 /\ from + 1 <= to' /\ to' <= Seq.length seq)
         /\ ([@expl:variant decreases] well_founded_relation_Int (to' - from) (to' - (from + 1))))
-      /\ (([@stop_split] [@expl:sum_range ensures] sum_range seq (from + 1) to' >= 0)
-      -> ([@stop_split] [@expl:sum_range ensures] UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' >= 0))
+      /\ (([@stop_split] [@expl:sum_range ensures] ge_log_Int (sum_range seq (from + 1) to') 0)
+      -> ([@stop_split] [@expl:sum_range ensures] ge_log_Int (UInt32.t'int (Seq.get seq from)
+      + sum_range seq (from + 1) to') 0))
     else
-      [@stop_split] [@expl:sum_range ensures] 0 >= 0
+      [@stop_split] [@expl:sum_range ensures] ge_log_Int 0 0
     )
 end
 module M_sum_range_split
@@ -1102,17 +1145,26 @@ module M_sum_range_split
   use seq.Seq
   use int.Int
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function sum_range (seq: Seq.seq UInt32.t) (from: int) (to': int) : int
   
   axiom sum_range_def: forall seq: Seq.seq UInt32.t, from: int, to': int [sum_range seq from to']. 0 <= from
         /\ from <= to' /\ to' <= Seq.length seq
       -> sum_range seq from to'
-      = (if to' - from > 0 then UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' else 0)
+      = (if gt_log_Int (to' - from) 0 then UInt32.t'int (Seq.get seq from) + sum_range seq (from + 1) to' else 0)
   
   axiom sum_range_spec: forall seq: Seq.seq UInt32.t, from: int, to': int [sum_range seq from to']. 0 <= from
-        /\ from <= to' /\ to' <= Seq.length seq -> sum_range seq from to' >= 0
+        /\ from <= to' /\ to' <= Seq.length seq -> ge_log_Int (sum_range seq from to') 0
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -1131,7 +1183,7 @@ module M_sum_range_split
   function sum_range_split (seq: Seq.seq UInt32.t) (from: int) (to': int) (i: int) : ()
   
   goal vc_sum_range_split: 0 <= from /\ from <= i /\ i <= to' /\ to' <= Seq.length seq
-    -> (if i > from then
+    -> (if gt_log_Int i from then
       (([@stop_split] [@expl:sum_range_split requires] 0 <= from + 1
           /\ from + 1 <= i /\ i <= to' /\ to' <= Seq.length seq)
         /\ ([@expl:variant decreases] well_founded_relation_Int (i - from) (i - (from + 1))))
@@ -1227,10 +1279,14 @@ module M_unique
   
   meta "rewrite_def" function deep_model_usize
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
     self.end' = o.end'
     /\ deep_model_usize self.start <= deep_model_usize o.start
-    /\ (Seq.length visited > 0 -> deep_model_usize o.start <= deep_model_usize o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_usize o.start <= deep_model_usize o.end')
     /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
@@ -1250,8 +1306,13 @@ module M_unique
   
   meta "rewrite_def" predicate resolve_refmut_Range_usize
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+    resolve_refmut_Range_usize self
+    /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
   let next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with

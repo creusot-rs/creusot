@@ -503,6 +503,10 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__next_back (* <IterMut<'a, T> as
         | Some f0 -> inv_refmut_T f0
         end
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_slice_T
@@ -534,7 +538,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__next_back (* <IterMut<'a, T> as
       /\ ([@stop_split] [@expl:split_off_last_mut ensures #1] Seq.length (Slice64.view self_.final.final)
         = Seq.length (Slice64.view self_.final.current))
       /\ ([@stop_split] [@expl:split_off_last_mut ensures #2] match result with
-        | Some r -> Seq.length (Slice64.view self_.current.current) > 0
+        | Some r -> gt_log_Int (Seq.length (Slice64.view self_.current.current)) 0
         /\ r
           = MutBorrow.borrow_logic (index_slice_T self_.current.current (Seq.length (Slice64.view self_.current.current)
           - 1)) (index_slice_T self_.current.final (Seq.length (Slice64.view self_.current.current)
@@ -1875,6 +1879,10 @@ module M_impl_Iterator_for_IterMut_T__next (* <IterMut<'a, T> as common::Iterato
         | Some f0 -> inv_refmut_T f0
         end
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_slice_T
@@ -1909,7 +1917,7 @@ module M_impl_Iterator_for_IterMut_T__next (* <IterMut<'a, T> as common::Iterato
       /\ ([@stop_split] [@expl:split_off_first_mut ensures #1] Seq.length (Slice64.view self_.final.final)
         = Seq.length (Slice64.view self_.final.current))
       /\ ([@stop_split] [@expl:split_off_first_mut ensures #2] match result with
-        | Some r -> Seq.length (Slice64.view self_.current.current) > 0
+        | Some r -> gt_log_Int (Seq.length (Slice64.view self_.current.current)) 0
         /\ r
           = MutBorrow.borrow_logic (index_slice_T self_.current.current 0) (index_slice_T self_.current.final 0) (MutBorrow.inherit_id (MutBorrow.get_id self_.current) 0)
         /\ to_mut_seq_slice_T self_.final = tail_refmut_T (to_mut_seq_slice_T self_.current)

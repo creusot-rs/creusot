@@ -130,10 +130,14 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone (* <implementat
     forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
       = op_FMap_PermCell_Inner_T_Ag_Seq_T b a
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) : int
   
   axiom len_PermCell_Inner_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T [len_PermCell_Inner_T self]. len_PermCell_Inner_T self >= 0
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T [len_PermCell_Inner_T self]. ge_log_Int (len_PermCell_Inner_T self) 0
   
   constant empty_PermCell_Inner_T : t_FMap_PermCell_Inner_T_Ag_Seq_T
   
@@ -538,10 +542,14 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone__refines (* <im
     forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
       = op_FMap_PermCell_Inner_T_Ag_Seq_T b a
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) : int
   
   axiom len_PermCell_Inner_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T [len_PermCell_Inner_T self]. len_PermCell_Inner_T self >= 0
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T [len_PermCell_Inner_T self]. ge_log_Int (len_PermCell_Inner_T self) 0
   
   constant empty_PermCell_Inner_T : t_FMap_PermCell_Inner_T_Ag_Seq_T
   
@@ -1087,10 +1095,14 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   type t_View_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) : int
   
   axiom len_PermCell_Inner_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T [len_PermCell_Inner_T self]. len_PermCell_Inner_T self >= 0
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T [len_PermCell_Inner_T self]. ge_log_Int (len_PermCell_Inner_T self) 0
   
   constant empty_PermCell_Inner_T : t_FMap_PermCell_Inner_T_Ag_Seq_T
   
@@ -1289,6 +1301,10 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   function view_Rc_PermCell_Inner_T_Global (self: t_Rc_PermCell_Inner_T_Global) : t_PermCell_Inner_T
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function index_Mapping_PermCell_Inner_T_Int [@inline:trivial] (self: Map.map t_PermCell_Inner_T int) (a: t_PermCell_Inner_T) : int
    = Map.get self a
   
@@ -1302,8 +1318,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
         | Direct v -> (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0'0
         = view_Vec_T_Global v
         | Link index value next -> contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)
-        /\ index_Mapping_PermCell_Inner_T_Int self.depth pc
-          > index_Mapping_PermCell_Inner_T_Int self.depth (view_Rc_PermCell_Inner_T_Global next)
+        /\ gt_log_Int (index_Mapping_PermCell_Inner_T_Int self.depth pc) (index_Mapping_PermCell_Inner_T_Int self.depth (view_Rc_PermCell_Inner_T_Global next))
         /\ UInt64.t'int index
           < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0'0
         /\ (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0'0
@@ -1329,8 +1344,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     [ return (result: ()) ->
     {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa))
       /\ ([@stop_split] [@expl:reroot ensures #1] (fin_Ghost_refmut_PA_T pa).auth = pa.current.auth)
-      /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PermCell_Inner_T. index_Mapping_PermCell_Inner_T_Int pa.current.depth id
-            > index_Mapping_PermCell_Inner_T_Int pa.current.depth (view_Rc_PermCell_Inner_T_Global cur)
+      /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PermCell_Inner_T. gt_log_Int (index_Mapping_PermCell_Inner_T_Int pa.current.depth id) (index_Mapping_PermCell_Inner_T_Int pa.current.depth (view_Rc_PermCell_Inner_T_Global cur))
           -> get_Snapshot_PermCell_Inner_T pa.current.perms id
             = get_Snapshot_PermCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
           /\ index_Mapping_PermCell_Inner_T_Int pa.current.depth id
@@ -2082,6 +2096,10 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   
   function view_Rc_PermCell_Inner_T_Global (self: t_Rc_PermCell_Inner_T_Global) : t_PermCell_Inner_T
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function index_Mapping_PermCell_Inner_T_Int [@inline:trivial] (self: Map.map t_PermCell_Inner_T int) (a: t_PermCell_Inner_T) : int
    = Map.get self a
   
@@ -2095,8 +2113,7 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
         | Direct v -> (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0'0
         = view_Vec_T_Global v
         | Link index value next -> contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)
-        /\ index_Mapping_PermCell_Inner_T_Int self.depth pc
-          > index_Mapping_PermCell_Inner_T_Int self.depth (view_Rc_PermCell_Inner_T_Global next)
+        /\ gt_log_Int (index_Mapping_PermCell_Inner_T_Int self.depth pc) (index_Mapping_PermCell_Inner_T_Int self.depth (view_Rc_PermCell_Inner_T_Global next))
         /\ UInt64.t'int index
           < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0'0
         /\ (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0'0
@@ -2351,10 +2368,14 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   
   type t_View_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) : int
   
   axiom len_PermCell_Inner_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T [len_PermCell_Inner_T self]. len_PermCell_Inner_T self >= 0
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T [len_PermCell_Inner_T self]. ge_log_Int (len_PermCell_Inner_T self) 0
   
   constant empty_PermCell_Inner_T : t_FMap_PermCell_Inner_T_Ag_Seq_T
   
@@ -2801,6 +2822,10 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
   
   meta "rewrite_def" function index_FMap_PermCell_Inner_T_Ag_Seq_T
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function index_Mapping_PermCell_Inner_T_Int [@inline:trivial] (self: Map.map t_PermCell_Inner_T int) (a: t_PermCell_Inner_T) : int
    = Map.get self a
   
@@ -2814,8 +2839,7 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
         | Direct v -> (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0
         = view_Vec_T_Global v
         | Link index value next -> contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)
-        /\ index_Mapping_PermCell_Inner_T_Int self.depth pc
-          > index_Mapping_PermCell_Inner_T_Int self.depth (view_Rc_PermCell_Inner_T_Global next)
+        /\ gt_log_Int (index_Mapping_PermCell_Inner_T_Int self.depth pc) (index_Mapping_PermCell_Inner_T_Int self.depth (view_Rc_PermCell_Inner_T_Global next))
         /\ UInt64.t'int index
           < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0
         /\ (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0
@@ -3127,10 +3151,14 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
     forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
       = op_FMap_PermCell_Inner_T_Ag_Seq_T b a
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) : int
   
   axiom len_PermCell_Inner_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T [len_PermCell_Inner_T self]. len_PermCell_Inner_T self >= 0
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T [len_PermCell_Inner_T self]. ge_log_Int (len_PermCell_Inner_T self) 0
   
   constant empty_PermCell_Inner_T : t_FMap_PermCell_Inner_T_Ag_Seq_T
   
@@ -3494,8 +3522,7 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   function len_Snapshot_PermCell_Inner_T (self: t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T) : int
   
   axiom len_Snapshot_PermCell_Inner_T_spec:
-    forall self: t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T [len_Snapshot_PermCell_Inner_T self]. len_Snapshot_PermCell_Inner_T self
-      >= 0
+    forall self: t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T [len_Snapshot_PermCell_Inner_T self]. ge_log_Int (len_Snapshot_PermCell_Inner_T self) 0
   
   constant empty_Snapshot_PermCell_Inner_T : t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T
   
@@ -3635,6 +3662,10 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   
   function view_Rc_PermCell_Inner_T_Global (self: t_Rc_PermCell_Inner_T_Global) : t_PermCell_Inner_T
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function index_Mapping_PermCell_Inner_T_Int [@inline:trivial] (self: Map.map t_PermCell_Inner_T int) (a: t_PermCell_Inner_T) : int
    = Map.get self a
   
@@ -3648,8 +3679,7 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
         | Direct v -> (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0
         = view_Vec_T_Global v
         | Link index value next -> contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)
-        /\ index_Mapping_PermCell_Inner_T_Int self.depth pc
-          > index_Mapping_PermCell_Inner_T_Int self.depth (view_Rc_PermCell_Inner_T_Global next)
+        /\ gt_log_Int (index_Mapping_PermCell_Inner_T_Int self.depth pc) (index_Mapping_PermCell_Inner_T_Int self.depth (view_Rc_PermCell_Inner_T_Global next))
         /\ UInt64.t'int index
           < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0
         /\ (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0
@@ -3968,11 +3998,14 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
   
   function to_mapping_Snapshot_PermCell_Inner_T (self: t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T) : Map.map t_PermCell_Inner_T t_Option_Perm_PermCell_Inner_T
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_Snapshot_PermCell_Inner_T (self: t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T) : int
   
   axiom len_Snapshot_PermCell_Inner_T_spec:
-    forall self: t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T [len_Snapshot_PermCell_Inner_T self]. len_Snapshot_PermCell_Inner_T self
-      >= 0
+    forall self: t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T [len_Snapshot_PermCell_Inner_T self]. ge_log_Int (len_Snapshot_PermCell_Inner_T self) 0
   
   function get_Snapshot_PermCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T) (k: t_PermCell_Inner_T) : t_Option_Perm_PermCell_Inner_T
    = Map.get (to_mapping_Snapshot_PermCell_Inner_T self) k
@@ -4254,6 +4287,10 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
   
   meta "rewrite_def" function index_FMap_PermCell_Inner_T_Ag_Seq_T
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function index_Mapping_PermCell_Inner_T_Int [@inline:trivial] (self: Map.map t_PermCell_Inner_T int) (a: t_PermCell_Inner_T) : int
    = Map.get self a
   
@@ -4267,8 +4304,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
         | Direct v -> (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0
         = view_Vec_T_Global v
         | Link index value next -> contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)
-        /\ index_Mapping_PermCell_Inner_T_Int self.depth pc
-          > index_Mapping_PermCell_Inner_T_Int self.depth (view_Rc_PermCell_Inner_T_Global next)
+        /\ gt_log_Int (index_Mapping_PermCell_Inner_T_Int self.depth pc) (index_Mapping_PermCell_Inner_T_Int self.depth (view_Rc_PermCell_Inner_T_Global next))
         /\ UInt64.t'int index
           < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0
         /\ (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0
@@ -4294,8 +4330,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
     [ return (result: ()) ->
     {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa))
       /\ ([@stop_split] [@expl:reroot ensures #1] (fin_Ghost_refmut_PA_T pa).auth = pa.current.auth)
-      /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PermCell_Inner_T. index_Mapping_PermCell_Inner_T_Int pa.current.depth id
-            > index_Mapping_PermCell_Inner_T_Int pa.current.depth (view_Rc_PermCell_Inner_T_Global cur)
+      /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PermCell_Inner_T. gt_log_Int (index_Mapping_PermCell_Inner_T_Int pa.current.depth id) (index_Mapping_PermCell_Inner_T_Int pa.current.depth (view_Rc_PermCell_Inner_T_Global cur))
           -> get_Snapshot_PermCell_Inner_T pa.current.perms id
             = get_Snapshot_PermCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
           /\ index_Mapping_PermCell_Inner_T_Int pa.current.depth id
@@ -4832,8 +4867,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
     [ return (result: ()) ->
     {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa))
       /\ ([@stop_split] [@expl:reroot ensures #1] (fin_Ghost_refmut_PA_T pa).auth = pa.current.auth)
-      /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PermCell_Inner_T. index_Mapping_PermCell_Inner_T_Int pa.current.depth id
-            > index_Mapping_PermCell_Inner_T_Int pa.current.depth (view_Rc_PermCell_Inner_T_Global cur)
+      /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PermCell_Inner_T. gt_log_Int (index_Mapping_PermCell_Inner_T_Int pa.current.depth id) (index_Mapping_PermCell_Inner_T_Int pa.current.depth (view_Rc_PermCell_Inner_T_Global cur))
           -> get_Snapshot_PermCell_Inner_T pa.current.perms id
             = get_Snapshot_PermCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
           /\ index_Mapping_PermCell_Inner_T_Int pa.current.depth id
@@ -4955,10 +4989,14 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
     forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
       = op_FMap_PermCell_Inner_T_Ag_Seq_T b a
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) : int
   
   axiom len_PermCell_Inner_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T [len_PermCell_Inner_T self]. len_PermCell_Inner_T self >= 0
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T [len_PermCell_Inner_T self]. ge_log_Int (len_PermCell_Inner_T self) 0
   
   constant empty_PermCell_Inner_T : t_FMap_PermCell_Inner_T_Ag_Seq_T
   
@@ -5382,8 +5420,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   function len_Snapshot_PermCell_Inner_T (self: t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T) : int
   
   axiom len_Snapshot_PermCell_Inner_T_spec:
-    forall self: t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T [len_Snapshot_PermCell_Inner_T self]. len_Snapshot_PermCell_Inner_T self
-      >= 0
+    forall self: t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T [len_Snapshot_PermCell_Inner_T self]. ge_log_Int (len_Snapshot_PermCell_Inner_T self) 0
   
   let get_mut_ghost_Snapshot_PermCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T)
     (key: t_PermCell_Inner_T) (return (x: t_Option_refmut_Perm_PermCell_Inner_T)) = any
@@ -5846,6 +5883,10 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   meta "rewrite_def" function index_FMap_PermCell_Inner_T_Ag_Seq_T
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate partial_invariant_T [@inline:trivial] (self: t_PA_T) =
     forall pc: t_PermCell_Inner_T. contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc
         /\ contains_Snapshot_PermCell_Inner_T self.perms pc
@@ -5854,8 +5895,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
         | Direct v -> (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0'0
         = view_Vec_T_Global v
         | Link index value next -> contains_PermCell_Inner_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)
-        /\ index_Mapping_PermCell_Inner_T_Int self.depth pc
-          > index_Mapping_PermCell_Inner_T_Int self.depth (view_Rc_PermCell_Inner_T_Global next)
+        /\ gt_log_Int (index_Mapping_PermCell_Inner_T_Int self.depth pc) (index_Mapping_PermCell_Inner_T_Int self.depth (view_Rc_PermCell_Inner_T_Global next))
         /\ UInt64.t'int index
           < Seq.length (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PermCell_Inner_T_Global next)).f0'0
         /\ (index_FMap_PermCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.auth) pc).f0'0

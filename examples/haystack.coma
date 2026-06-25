@@ -140,10 +140,14 @@ module M_search
   let into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
     [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
     self.end' = o.end'
     /\ deep_model_usize self.start <= deep_model_usize o.start
-    /\ (Seq.length visited > 0 -> deep_model_usize o.start <= deep_model_usize o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_usize o.start <= deep_model_usize o.end')
     /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
@@ -163,8 +167,13 @@ module M_search
   
   meta "rewrite_def" predicate resolve_refmut_Range_usize
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+    resolve_refmut_Range_usize self
+    /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
   let next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
@@ -197,7 +206,7 @@ module M_search
   meta "select_lsinst" "all"
   
   let search (needle: t_Vec_u8_Global) (haystack: t_Vec_u8_Global) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:search requires] Seq.length (view_Vec_u8_Global needle) >= 1
+  {[@stop_split] [@expl:search requires] ge_log_Int (Seq.length (view_Vec_u8_Global needle)) 1
     /\ Seq.length (view_Vec_u8_Global needle) <= Seq.length (view_Vec_u8_Global haystack)}
     (! bb0
     [ bb0 = s0

@@ -3,62 +3,13 @@ module M_mc91
   use creusot.prelude.Any
   use int.Int
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_u32 [@inline:trivial] (self: UInt32.t) (other: UInt32.t) = UInt32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_u32 (self: UInt32.t) (o: UInt32.t) : t_Option_Ordering = if UInt32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom eq_partial_cmp_u32_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (partial_cmp_log_u32 x y = Some (Equal))
-  
-  function asymetric2_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom asymetric2_u32_spec: forall x: UInt32.t, y: UInt32.t. partial_cmp_log_u32 x y = Some (Greater)
-      -> partial_cmp_log_u32 y x = Some (Less)
-  
-  function asymetric1_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom asymetric1_u32_spec: forall x: UInt32.t, y: UInt32.t. partial_cmp_log_u32 x y = Some (Less)
-      -> partial_cmp_log_u32 y x = Some (Greater)
-  
-  function trans_u32 (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_u32_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Option_Ordering. partial_cmp_log_u32 x y = o
-      -> partial_cmp_log_u32 y z = o -> partial_cmp_log_u32 x z = o
-  
-  function refl_u32 (x: UInt32.t) : ()
-  
-  axiom refl_u32_spec: forall x: UInt32.t. partial_cmp_log_u32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_gt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y
-      = (partial_cmp_log_u32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_ge_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y
-      = (partial_cmp_log_u32 x y = Some (Greater) \/ partial_cmp_log_u32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_lt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y
-      = (partial_cmp_log_u32 x y = Some (Less))
-  
-  function partial_cmp_le_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y
-      = (partial_cmp_log_u32 x y = Some (Less) \/ partial_cmp_log_u32 x y = Some (Equal))
+  meta "rewrite_def" predicate gt_log_u32
   
   let mc91 (x: UInt32.t) (return (x'0: UInt32.t)) = any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:mc91 ensures] UInt32.le x (100: UInt32.t)
-      -> UInt32.t'int result = 91 /\ UInt32.gt x (100: UInt32.t) -> UInt32.t'int result = UInt32.t'int x - 10}
+      -> UInt32.t'int result = 91 /\ gt_log_u32 x (100: UInt32.t) -> UInt32.t'int result = UInt32.t'int x - 10}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -81,6 +32,6 @@ module M_mc91
     | & _7: UInt32.t = Any.any_l ()
     | & _8: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:mc91 ensures] UInt32.le x (100: UInt32.t)
-      -> UInt32.t'int result = 91 /\ UInt32.gt x (100: UInt32.t) -> UInt32.t'int result = UInt32.t'int x - 10}
+      -> UInt32.t'int result = 91 /\ gt_log_u32 x (100: UInt32.t) -> UInt32.t'int result = UInt32.t'int x - 10}
       (! return {result}) ]
 end

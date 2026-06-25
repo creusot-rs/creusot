@@ -3,60 +3,11 @@ module M_incorrect_loop_variant
   use creusot.prelude.Bool
   use creusot.prelude.Any
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate well_founded_relation_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.gt self other
+  predicate well_founded_relation_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = gt_log_i32 self other
   
   meta "rewrite_def" predicate well_founded_relation_i32
   
@@ -107,60 +58,11 @@ module M_incorrect_recursion
   
   let incorrect_recursion (x: Int32.t) (return (x'0: ())) = any [ return (result: ()) -> (! return {result}) ]
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
   
-  type t_Option_Ordering = None | Some t_Ordering
+  meta "rewrite_def" predicate gt_log_i32
   
-  function partial_cmp_log_i32 (self: Int32.t) (o: Int32.t) : t_Option_Ordering = if Int32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32.t, y: Int32.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32.t, y: Int32.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32.t) (y: Int32.t) (z: Int32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32.t, y: Int32.t, z: Int32.t, o: t_Option_Ordering. partial_cmp_log_i32 x y = o
-      -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32.t) (y: Int32.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32.t, y: Int32.t. Int32.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  predicate well_founded_relation_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.gt self other
+  predicate well_founded_relation_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = gt_log_i32 self other
   
   meta "rewrite_def" predicate well_founded_relation_i32
   
@@ -214,7 +116,16 @@ module M_incorrect_recursion_logic
   use int.ComputerDivision
   use int.Int
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   

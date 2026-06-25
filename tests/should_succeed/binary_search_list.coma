@@ -6,140 +6,46 @@ module M_binary_search
   
   type t_List_u32 = Cons UInt32.t t_List_u32 | Nil
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_u32 (self: t_List_u32) : int = match self with
       | Cons _ ls -> 1 + len_u32 ls
       | Nil -> 0
       end
   
-  axiom len_u32_spec: forall self: t_List_u32 [len_u32 self]. len_u32 self >= 0
+  axiom len_u32_spec: forall self: t_List_u32 [len_u32 self]. ge_log_Int (len_u32 self) 0
   
-  type t_Ordering = Less | Equal | Greater
+  predicate ge_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.le other self
   
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_partial_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (partial_cmp_log_usize x y = Some (Equal))
-  
-  function asymetric2_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom asymetric2_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Greater)
-      -> partial_cmp_log_usize y x = Some (Less)
-  
-  function asymetric1_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom asymetric1_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Less)
-      -> partial_cmp_log_usize y x = Some (Greater)
-  
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_usize x y
-        = o -> partial_cmp_log_usize y z = o -> partial_cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64.t. partial_cmp_log_usize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
-      = (partial_cmp_log_usize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
-      = (partial_cmp_log_usize x y = Some (Greater) \/ partial_cmp_log_usize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
-      = (partial_cmp_log_usize x y = Some (Less))
-  
-  function partial_cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
-      = (partial_cmp_log_usize x y = Some (Less) \/ partial_cmp_log_usize x y = Some (Equal))
+  meta "rewrite_def" predicate ge_log_usize
   
   let len_u32'0 (self: t_List_u32) (return (x: UInt64.t)) = {[@stop_split] [@expl:len requires] len_u32 self <= 1000000}
     any
     [ return (result: UInt64.t) ->
-    {[@stop_split] [@expl:len_u32 ensures] ([@stop_split] [@expl:len ensures #0] UInt64.ge result (0: UInt64.t))
+    {[@stop_split] [@expl:len_u32 ensures] ([@stop_split] [@expl:len ensures #0] ge_log_usize result (0: UInt64.t))
       /\ ([@stop_split] [@expl:len ensures #1] UInt64.t'int result = len_u32 self)}
       (! return {result}) ]
   
   type t_Result_usize_usize = Ok UInt64.t | Err UInt64.t
   
-  function partial_cmp_log_u32 (self: UInt32.t) (o: UInt32.t) : t_Option_Ordering = if UInt32.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom eq_partial_cmp_u32_spec: forall x: UInt32.t, y: UInt32.t. (x = y) = (partial_cmp_log_u32 x y = Some (Equal))
-  
-  function asymetric2_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom asymetric2_u32_spec: forall x: UInt32.t, y: UInt32.t. partial_cmp_log_u32 x y = Some (Greater)
-      -> partial_cmp_log_u32 y x = Some (Less)
-  
-  function asymetric1_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom asymetric1_u32_spec: forall x: UInt32.t, y: UInt32.t. partial_cmp_log_u32 x y = Some (Less)
-      -> partial_cmp_log_u32 y x = Some (Greater)
-  
-  function trans_u32 (x: UInt32.t) (y: UInt32.t) (z: UInt32.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_u32_spec: forall x: UInt32.t, y: UInt32.t, z: UInt32.t, o: t_Option_Ordering. partial_cmp_log_u32 x y = o
-      -> partial_cmp_log_u32 y z = o -> partial_cmp_log_u32 x z = o
-  
-  function refl_u32 (x: UInt32.t) : ()
-  
-  axiom refl_u32_spec: forall x: UInt32.t. partial_cmp_log_u32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_gt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.gt x y
-      = (partial_cmp_log_u32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_ge_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.ge x y
-      = (partial_cmp_log_u32 x y = Some (Greater) \/ partial_cmp_log_u32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_lt_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.lt x y
-      = (partial_cmp_log_u32 x y = Some (Less))
-  
-  function partial_cmp_le_log_u32 (x: UInt32.t) (y: UInt32.t) : ()
-  
-  axiom partial_cmp_le_log_u32_spec: forall x: UInt32.t, y: UInt32.t. UInt32.le x y
-      = (partial_cmp_log_u32 x y = Some (Less) \/ partial_cmp_log_u32 x y = Some (Equal))
-  
-  type t_Option_u32 = None'0 | Some'0 UInt32.t
+  type t_Option_u32 = None | Some UInt32.t
   
   function get_u32 (self: t_List_u32) (ix: int) : t_Option_u32 = match self with
-      | Cons t ls -> if ix = 0 then Some'0 t else get_u32 ls (ix - 1)
-      | Nil -> None'0
+      | Cons t ls -> if ix = 0 then Some t else get_u32 ls (ix - 1)
+      | Nil -> None
       end
   
   function get_default_u32 (self: t_List_u32) (ix: int) (def: UInt32.t) : UInt32.t = match get_u32 self ix with
-      | Some'0 v -> v
-      | None'0 -> def
+      | Some v -> v
+      | None -> def
       end
   
   let index_u32 (self: t_List_u32) (ix: UInt64.t) (return (x: UInt32.t)) =
   {[@stop_split] [@expl:index requires] UInt64.t'int ix < len_u32 self}
     any
-    [ return (result: UInt32.t) -> {[@stop_split] [@expl:index ensures] Some'0 result = get_u32 self (UInt64.t'int ix)}
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:index ensures] Some result = get_u32 self (UInt64.t'int ix)}
       (! return {result}) ]
   
   type tup2_Option_u32_Option_u32 = { f0: t_Option_u32; f1: t_Option_u32 }
@@ -147,8 +53,8 @@ module M_binary_search
   predicate is_sorted (self: t_List_u32) =
     forall x1: int, x2: int. x1 <= x2
       -> match { f0 = get_u32 self x1; f1 = get_u32 self x2 } with
-        | {f0 = Some'0 v1; f1 = Some'0 v2} -> UInt32.le v1 v2
-        | {f0 = None'0; f1 = None'0} -> true
+        | {f0 = Some v1; f1 = Some v2} -> UInt32.le v1 v2
+        | {f0 = None; f1 = None} -> true
         | _ -> false
         end
   
@@ -226,7 +132,7 @@ module M_binary_search
     | & _68: UInt64.t = Any.any_l () ])
     [ return (result: t_Result_usize_usize) ->
     {[@stop_split] [@expl:binary_search ensures] ([@stop_split] [@expl:binary_search ensures #0] forall x: UInt64.t. result
-            = Ok x -> get_u32 arr (UInt64.t'int x) = Some'0 elem)
+            = Ok x -> get_u32 arr (UInt64.t'int x) = Some elem)
       /\ ([@stop_split] [@expl:binary_search ensures #1] forall x: UInt64.t. result = Err x
           -> (forall i: UInt64.t. 0 <= UInt64.t'int i /\ UInt64.t'int i < UInt64.t'int x
             -> UInt32.le (get_default_u32 arr (UInt64.t'int i) (0: UInt32.t)) elem))
@@ -251,12 +157,16 @@ module M_impl_List_T__index (* List<T> *)
       | Nil -> None
       end
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_T (self: t_List_T) : int = match self with
       | Cons _ ls -> 1 + len_T ls
       | Nil -> 0
       end
   
-  axiom len_T_spec: forall self: t_List_T [len_T self]. len_T self >= 0
+  axiom len_T_spec: forall self: t_List_T [len_T self]. ge_log_Int (len_T self) 0
   
   predicate inv_T (_1: t_T)
   
@@ -348,12 +258,16 @@ module M_impl_List_T__len (* List<T> *)
   
   type t_List_T = Cons t_T t_List_T | Nil
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_T (self: t_List_T) : int = match self with
       | Cons _ ls -> 1 + len_T ls
       | Nil -> 0
       end
   
-  axiom len_T_spec: forall self: t_List_T [len_T self]. len_T self >= 0
+  axiom len_T_spec: forall self: t_List_T [len_T self]. ge_log_Int (len_T self) 0
   
   predicate inv_T (_1: t_T)
   
@@ -387,58 +301,9 @@ module M_impl_List_T__len (* List<T> *)
         end}
       any) ]
   
-  type t_Ordering = Less | Equal | Greater
+  predicate ge_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.le other self
   
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Option_Ordering = if UInt64.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_partial_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (partial_cmp_log_usize x y = Some (Equal))
-  
-  function asymetric2_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom asymetric2_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Greater)
-      -> partial_cmp_log_usize y x = Some (Less)
-  
-  function asymetric1_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom asymetric1_usize_spec: forall x: UInt64.t, y: UInt64.t. partial_cmp_log_usize x y = Some (Less)
-      -> partial_cmp_log_usize y x = Some (Greater)
-  
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Option_Ordering. partial_cmp_log_usize x y
-        = o -> partial_cmp_log_usize y z = o -> partial_cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64.t. partial_cmp_log_usize x x = Some (Equal)
-  
-  function partial_cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y
-      = (partial_cmp_log_usize x y = Some (Greater))
-  
-  function partial_cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y
-      = (partial_cmp_log_usize x y = Some (Greater) \/ partial_cmp_log_usize x y = Some (Equal))
-  
-  function partial_cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y
-      = (partial_cmp_log_usize x y = Some (Less))
-  
-  function partial_cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom partial_cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y
-      = (partial_cmp_log_usize x y = Some (Less) \/ partial_cmp_log_usize x y = Some (Equal))
+  meta "rewrite_def" predicate ge_log_usize
   
   meta "compute_max_steps" 1000000
   
@@ -466,7 +331,7 @@ module M_impl_List_T__len (* List<T> *)
     | & l: t_List_T = Any.any_l ()
     | & ls: t_List_T = Any.any_l () ])
     [ return (result: UInt64.t) ->
-    {[@stop_split] [@expl:len_T ensures] ([@stop_split] [@expl:len ensures #0] UInt64.ge result (0: UInt64.t))
+    {[@stop_split] [@expl:len_T ensures] ([@stop_split] [@expl:len ensures #0] ge_log_usize result (0: UInt64.t))
       /\ ([@stop_split] [@expl:len ensures #1] UInt64.t'int result = len_T self)}
       (! return {result}) ]
 end
@@ -477,6 +342,10 @@ module M_impl_List_T__len_logic (* List<T> *)
   
   type t_List_T = Cons t_T t_List_T | Nil
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -486,8 +355,8 @@ module M_impl_List_T__len_logic (* List<T> *)
   function len_T (self: t_List_T) : int
   
   goal vc_len_T: match self with
-      | Cons _ ls -> ([@stop_split] [@expl:len_logic ensures] len_T ls >= 0)
-      -> ([@stop_split] [@expl:len_logic ensures] 1 + len_T ls >= 0)
-      | Nil -> [@stop_split] [@expl:len_logic ensures] 0 >= 0
+      | Cons _ ls -> ([@stop_split] [@expl:len_logic ensures] ge_log_Int (len_T ls) 0)
+      -> ([@stop_split] [@expl:len_logic ensures] ge_log_Int (1 + len_T ls) 0)
+      | Nil -> [@stop_split] [@expl:len_logic ensures] ge_log_Int 0 0
       end
 end

@@ -25,10 +25,14 @@ module M_resolves
     forall self: t_FMap_refmut_usize_refmut_usize, other: t_FMap_refmut_usize_refmut_usize [self
       = other]. ext_eq_refmut_usize self other = (self = other)
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_refmut_usize (self: t_FMap_refmut_usize_refmut_usize) : int
   
   axiom len_refmut_usize_spec:
-    forall self: t_FMap_refmut_usize_refmut_usize [len_refmut_usize self]. len_refmut_usize self >= 0
+    forall self: t_FMap_refmut_usize_refmut_usize [len_refmut_usize self]. ge_log_Int (len_refmut_usize self) 0
   
   constant empty_refmut_usize : t_FMap_refmut_usize_refmut_usize
   
@@ -103,7 +107,12 @@ module M_resolves
   
   type tup2_refmut_usize_refmut_usize = { f0: MutBorrow.t UInt64.t; f1: MutBorrow.t UInt64.t }
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   

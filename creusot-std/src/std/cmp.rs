@@ -80,6 +80,7 @@ extern_spec! {
                 #[ensures(self.deep_model() <= o.deep_model() ==> result == o)]
                 #[ensures(o.deep_model() < self.deep_model() ==> result == self)]
                 fn max(self, o: Self) -> Self where Self: Sized {
+                    let _ = snapshot!(Self_::DeepModelTy::lt_log_total);
                     if self <= o { o } else { self }
                 }
 
@@ -89,6 +90,7 @@ extern_spec! {
                 #[ensures(self.deep_model() < o.deep_model() ==> result == self)]
                 #[ensures(o.deep_model() <= self.deep_model() ==> result == o)]
                 fn min(self, o: Self) -> Self where Self: Sized {
+                    let _ = snapshot!(Self_::DeepModelTy::lt_log_total);
                     if self < o { self } else { o }
                 }
 
@@ -102,6 +104,7 @@ extern_spec! {
                     result == min
                 } else { result == self })]
                 fn clamp(self, min: Self, max: Self) -> Self where Self: Sized {
+                    let _ = snapshot!(Self_::DeepModelTy::lt_log_total);
                     if self > max { max } else if self < min { min } else { self }
                 }
             }
@@ -247,14 +250,14 @@ impl<T: DeepModel> DeepModel for Reverse<T> {
 }
 
 impl<T: PartialOrdLogic> PartialOrdLogic for Reverse<T> {
-    #[logic(open)]
-    fn partial_cmp_log(self, o: Self) -> Option<Ordering> {
-        match self.0.partial_cmp_log(o.0) {
-            None => None,
-            Some(Ordering::Equal) => Some(Ordering::Equal),
-            Some(Ordering::Less) => Some(Ordering::Greater),
-            Some(Ordering::Greater) => Some(Ordering::Less),
-        }
+    #[logic(open, inline)]
+    fn lt_log(self, o: Self) -> bool {
+        o.0 < self.0
+    }
+
+    #[logic(open, inline)]
+    fn le_log(self, o: Self) -> bool {
+        o.0 <= self.0
     }
 
     partial_ord_laws_impl! {}

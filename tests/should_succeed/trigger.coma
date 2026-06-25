@@ -21,11 +21,15 @@ module M_test
   
   axiom id_mono_spec: forall i: int, j: int [id i, id j]. i <= j -> id i <= id j
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let test (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &_2 <- () ] s1 | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _2: () = Any.any_l () ])
-    [ return (result: ()) -> {[@stop_split] [@expl:test ensures] id 5 >= id 2} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:test ensures] ge_log_Int (id 5) (id 2)} (! return {result}) ]
 end

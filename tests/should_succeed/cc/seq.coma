@@ -71,17 +71,8 @@ module M_f
   
   meta "rewrite_def" predicate resolve_refmut_usize
   
-  predicate resolve_Option_refmut_usize (_1: t_Option_refmut_usize)
-  
-  axiom resolve_axiom [@rewrite]:
-    forall x: t_Option_refmut_usize [resolve_Option_refmut_usize x]. resolve_Option_refmut_usize x
-      = match x with
-        | None'0 -> true
-        | Some'0 x0 -> resolve_refmut_usize x0
-        end
-  
   predicate resolve_Seq_refmut_usize (self: Seq.seq (MutBorrow.t UInt64.t)) =
-    forall i: int. resolve_Option_refmut_usize (get_refmut_usize self i)
+    forall i: int. 0 <= i /\ i < Seq.length self -> resolve_refmut_usize (Seq.get self i)
   
   predicate resolve_Seq_refmut_usize'0 [@inline:trivial] (_1: Seq.seq (MutBorrow.t UInt64.t)) =
     resolve_Seq_refmut_usize _1
@@ -134,6 +125,10 @@ module M_g
   use creusot.prelude.Any
   use seq.Seq
   use int.Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
   
   type t_Range_Int = { start: int; end': int }
   
@@ -206,7 +201,7 @@ module M_g
   
   meta "select_lsinst" "all"
   
-  let g (s: Seq.seq int) (return (x: ())) = {[@stop_split] [@expl:g requires] Seq.length s >= 1}
+  let g (s: Seq.seq int) (return (x: ())) = {[@stop_split] [@expl:g requires] ge_log_Int (Seq.length s) 1}
     (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) ->

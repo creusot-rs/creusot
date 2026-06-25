@@ -24,11 +24,15 @@ module M_call_omg
   
   axiom inv_axiom [@rewrite]: forall x: t_UsesArray [inv_UsesArray x]. inv_UsesArray x = inv_array_i64_5 x.f0
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   let omg (x: t_UsesArray) (return (x'0: ())) =
   {[@stop_split] [@expl:omg requires] ([@stop_split] [@expl:omg 'x' type invariant] inv_UsesArray x)
-    /\ ([@stop_split] [@expl:omg requires] Seq.length (Slice64.view x.f0) > 0
+    /\ ([@stop_split] [@expl:omg requires] gt_log_Int (Seq.length (Slice64.view x.f0)) 0
     /\ Seq.length (Slice64.view x.f0) < UInt64.t'int const_MAX)}
     any [ return (result: ()) -> (! return {result}) ]
   
@@ -77,6 +81,10 @@ module M_omg
   
   axiom inv_axiom [@rewrite]: forall x: t_UsesArray [inv_UsesArray x]. inv_UsesArray x = inv_array_i64_5 x.f0
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   meta "compute_max_steps" 1000000
@@ -85,7 +93,7 @@ module M_omg
   
   let omg (x: t_UsesArray) (return (x'0: ())) =
   {[@stop_split] [@expl:omg requires] ([@stop_split] [@expl:omg 'x' type invariant] inv_UsesArray x)
-    /\ ([@stop_split] [@expl:omg requires] Seq.length (Slice64.view x.f0) > 0
+    /\ ([@stop_split] [@expl:omg requires] gt_log_Int (Seq.length (Slice64.view x.f0)) 0
     /\ Seq.length (Slice64.view x.f0) < UInt64.t'int const_MAX)}
     (! bb0
     [ bb0 = s0

@@ -3,12 +3,10 @@ use crate::resolve::structural_resolve;
 use crate::{
     ghost::Plain,
     logic::{Mapping, ops::IndexLogic},
-    partial_ord_laws_impl,
     prelude::*,
     std::ops::RangeInclusiveExt as _,
 };
 use core::{
-    cmp,
     marker::PhantomData,
     ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
 };
@@ -976,9 +974,9 @@ impl<T> Invariant for Seq<T> {
     }
 }
 
-impl<T: OrdLogic> Seq<T> {
-    #[logic]
-    fn lexico_lt_log(self, other: Self) -> bool {
+impl<T: PartialOrdLogic> PartialOrdLogic for Seq<T> {
+    #[logic(open)]
+    fn lt_log(self, other: Self) -> bool {
         pearlite! {
             (exists<i: Int> 0 <= i && i < self.len() && i < other.len() &&
                 (forall<j: Int> 0 <= j && j < i ==> self[j] == other[j]) &&
@@ -989,68 +987,46 @@ impl<T: OrdLogic> Seq<T> {
         }
     }
 
-    #[logic]
-    #[requires(x.lexico_lt_log(y) && y.lexico_lt_log(z))]
-    #[ensures(x.lexico_lt_log(z))]
-    fn lexico_lt_log_trans(x: Self, y: Self, z: Self) {}
+    #[logic(law)]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
 
-    #[logic]
-    #[ensures(!self.lexico_lt_log(self))]
-    fn lexico_lt_log_irreflexive(self) {}
+    #[logic(law)]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
 
+    #[logic(law)]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {}
+}
+
+impl<T: OrdLogic> Seq<T> {
     #[logic]
     #[requires(self.len() > 0 && other.len() > 0)]
     #[requires(self[0] == other[0])]
-    #[ensures(self.lexico_lt_log(other) == self[1..].lexico_lt_log(other[1..]))]
-    fn lexico_lt_log_tail(self, other: Self) {}
-
-    #[logic]
-    #[ensures(self.lexico_lt_log(other) || self == other || other.lexico_lt_log(self))]
-    #[variant(self.len())]
-    fn lexico_lt_log_total(self, other: Self) {
-        if self.len() > 0 && other.len() > 0 && self[0] == other[0] {
-            self[1..].lexico_lt_log_total(other[1..]);
-            self.lexico_lt_log_tail(other);
-            other.lexico_lt_log_tail(self);
-            proof_assert!(forall<i> 0 < i && i < self.len() ==> self[i] == self[1..][i-1]);
-            proof_assert!(forall<i> 0 < i && i < other.len() ==> other[i] == other[1..][i-1]);
-        }
-    }
-}
-
-impl<T: OrdLogic> PartialOrdLogic for Seq<T> {
-    #[logic]
-    #[ensures(match result {
-        Some(cmp::Ordering::Equal) => self == other,
-        _ => {
-            (exists<i: Int> 0 <= i && i < self.len() && i < other.len() &&
-                (forall<j: Int> 0 <= j && j < i ==> self[j] == other[j]) &&
-                result == Some(self[i].cmp_log(other[i])))
-            ||
-            result == Some(self.len().cmp_log(other.len())) &&
-            (forall<i: Int> 0 <= i && i < self.len() && i < other.len() ==> self[i] == other[i])
-    }})]
-    fn partial_cmp_log(self, other: Self) -> Option<cmp::Ordering> {
-        if self.lexico_lt_log(other) {
-            Some(cmp::Ordering::Less)
-        } else if other.lexico_lt_log(self) {
-            Some(cmp::Ordering::Greater)
-        } else {
-            proof_assert!(self.lexico_lt_log_total(other); true);
-            Some(cmp::Ordering::Equal)
-        }
-    }
-
-    partial_ord_laws_impl! {
-        let _ = Self::lexico_lt_log_trans;
-        let _ = Self::lexico_lt_log_irreflexive;
-    }
+    #[ensures((self < other) == (self[1..] < other[1..]))]
+    fn lt_log_tail(self, other: Self) {}
 }
 
 impl<T: OrdLogic> OrdLogic for Seq<T> {
     #[logic(law)]
-    #[ensures(self.partial_cmp_log(other) != None)]
-    fn partial_cmp_log_total(self, other: Self) {}
+    #[ensures(self < other || self == other || other < self)]
+    #[variant(self.len())]
+    fn lt_log_total(self, other: Self) {
+        if self.len() > 0 && other.len() > 0 {
+            if self[0] == other[0] {
+                self[1..].lt_log_total(other[1..]);
+                self.lt_log_tail(other);
+                other.lt_log_tail(self);
+                proof_assert!(forall<i> 0 < i && i < self.len() ==> self[i] == self[1..][i-1]);
+                proof_assert!(forall<i> 0 < i && i < other.len() ==> other[i] == other[1..][i-1]);
+            } else {
+                self[0].lt_log_total(other[0]);
+            }
+        }
+    }
 }
 
 // =========
@@ -1166,7 +1142,7 @@ impl<T> Resolve for Seq<T> {
     #[logic(open, prophetic)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
-        pearlite! { forall<i : Int> resolve(self.get(i)) }
+        pearlite! { forall<i : Int> 0 <= i && i < self.len() ==> resolve(self[i]) }
     }
 
     #[trusted]

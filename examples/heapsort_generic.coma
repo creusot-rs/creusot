@@ -7,65 +7,35 @@ module M_heap_frag_max
   
   function parent (i: int) : int = ComputerDivision.div (i + 1) 2 - 1
   
-  type t_Ordering = Less | Equal | Greater
+  predicate lt_log_T (self: t_T) (other: t_T)
   
-  type t_Option_Ordering = None | Some t_Ordering
+  predicate le_log_T (self: t_T) (other: t_T)
   
-  function partial_cmp_log_T (self: t_T) (other: t_T) : t_Option_Ordering
+  function le_lt_log_T (self: t_T) (other: t_T) : ()
   
-  function eq_partial_cmp_T (x: t_T) (y: t_T) : ()
+  axiom le_lt_log_T_spec: forall self: t_T, other: t_T. le_log_T self other = (lt_log_T self other \/ self = other)
   
-  axiom eq_partial_cmp_T_spec: forall x: t_T, y: t_T. (x = y) = (partial_cmp_log_T x y = Some (Equal))
+  function transitive_T (x: t_T) (y: t_T) (z: t_T) : ()
   
-  function asymetric2_T (x: t_T) (y: t_T) : ()
+  axiom transitive_T_spec: forall x: t_T, y: t_T, z: t_T. lt_log_T x y -> lt_log_T y z -> lt_log_T x z
   
-  axiom asymetric2_T_spec: forall x: t_T, y: t_T. partial_cmp_log_T x y = Some (Greater)
-      -> partial_cmp_log_T y x = Some (Less)
+  function irreflexive_T (self: t_T) : ()
   
-  function asymetric1_T (x: t_T) (y: t_T) : ()
-  
-  axiom asymetric1_T_spec: forall x: t_T, y: t_T. partial_cmp_log_T x y = Some (Less)
-      -> partial_cmp_log_T y x = Some (Greater)
-  
-  function trans_T (x: t_T) (y: t_T) (z: t_T) (o: t_Option_Ordering) : ()
-  
-  axiom trans_T_spec: forall x: t_T, y: t_T, z: t_T, o: t_Option_Ordering. partial_cmp_log_T x y = o
-      -> partial_cmp_log_T y z = o -> partial_cmp_log_T x z = o
-  
-  function refl_T (x: t_T) : ()
-  
-  axiom refl_T_spec: forall x: t_T. partial_cmp_log_T x x = Some (Equal)
-  
-  predicate gt_log_T (self: t_T) (o: t_T)
-  
-  function partial_cmp_gt_log_T (x: t_T) (y: t_T) : ()
-  
-  axiom partial_cmp_gt_log_T_spec: forall x: t_T, y: t_T. gt_log_T x y = (partial_cmp_log_T x y = Some (Greater))
-  
-  predicate ge_log_T (self: t_T) (o: t_T)
-  
-  function partial_cmp_ge_log_T (x: t_T) (y: t_T) : ()
-  
-  axiom partial_cmp_ge_log_T_spec: forall x: t_T, y: t_T. ge_log_T x y
-      = (partial_cmp_log_T x y = Some (Greater) \/ partial_cmp_log_T x y = Some (Equal))
-  
-  predicate lt_log_T (self: t_T) (o: t_T)
-  
-  function partial_cmp_lt_log_T (x: t_T) (y: t_T) : ()
-  
-  axiom partial_cmp_lt_log_T_spec: forall x: t_T, y: t_T. lt_log_T x y = (partial_cmp_log_T x y = Some (Less))
-  
-  predicate le_log_T (self: t_T) (o: t_T)
-  
-  function partial_cmp_le_log_T (x: t_T) (y: t_T) : ()
-  
-  axiom partial_cmp_le_log_T_spec: forall x: t_T, y: t_T. le_log_T x y
-      = (partial_cmp_log_T x y = Some (Less) \/ partial_cmp_log_T x y = Some (Equal))
+  axiom irreflexive_T_spec: forall self: t_T. not lt_log_T self self
   
   predicate heap_frag_T (s: Seq.seq t_T) (start: int) (end': int) =
     forall i: int. start <= parent i /\ i < end' -> le_log_T (Seq.get s i) (Seq.get s (parent i))
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -83,7 +53,7 @@ module M_heap_frag_max
   
   goal vc_heap_frag_max_T: heap_frag_T s 0 end'
     -> 0 <= i /\ i < end'
-    -> (if i > 0 then
+    -> (if gt_log_Int i 0 then
       (([@stop_split] [@expl:heap_frag_max requires] ([@stop_split] [@expl:heap_frag_max requires #0] heap_frag_T s 0 end')
           /\ ([@stop_split] [@expl:heap_frag_max requires #1] 0 <= parent i /\ parent i < end'))
         /\ ([@expl:variant decreases] well_founded_relation_Int i (parent i)))
@@ -158,64 +128,23 @@ module M_heap_sort
   
   function parent (i: int) : int = ComputerDivision.div (i + 1) 2 - 1
   
-  type t_Ordering = Less | Equal | Greater
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  type t_Option_Ordering = None | Some t_Ordering
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function partial_cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Option_Ordering
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  function eq_partial_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  axiom eq_partial_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y)
-      = (partial_cmp_log_DeepModelTy x y = Some (Equal))
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  function asymetric2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  axiom asymetric2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. partial_cmp_log_DeepModelTy x y
-        = Some (Greater) -> partial_cmp_log_DeepModelTy y x = Some (Less)
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  function asymetric1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom asymetric1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. partial_cmp_log_DeepModelTy x y
-        = Some (Less) -> partial_cmp_log_DeepModelTy y x = Some (Greater)
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Option_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Option_Ordering. partial_cmp_log_DeepModelTy x y
-        = o -> partial_cmp_log_DeepModelTy y z = o -> partial_cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. partial_cmp_log_DeepModelTy x x = Some (Equal)
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function partial_cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom partial_cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (partial_cmp_log_DeepModelTy x y = Some (Greater))
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function partial_cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom partial_cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (partial_cmp_log_DeepModelTy x y = Some (Greater) \/ partial_cmp_log_DeepModelTy x y = Some (Equal))
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function partial_cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom partial_cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (partial_cmp_log_DeepModelTy x y = Some (Less))
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function partial_cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom partial_cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (partial_cmp_log_DeepModelTy x y = Some (Less) \/ partial_cmp_log_DeepModelTy x y = Some (Equal))
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate heap_frag_DeepModelTy (s: Seq.seq t_DeepModelTy) (start: int) (end': int) =
     forall i: int. start <= parent i /\ i < end' -> le_log_DeepModelTy (Seq.get s i) (Seq.get s (parent i))
@@ -316,12 +245,17 @@ module M_heap_sort
   
   meta "rewrite_def" predicate resolve_refmut_slice_T
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function heap_frag_max_DeepModelTy (s: Seq.seq t_DeepModelTy) (i: int) (end': int) : ()
   
   axiom heap_frag_max_DeepModelTy_def:
     forall s: Seq.seq t_DeepModelTy, i: int, end': int [heap_frag_max_DeepModelTy s i end']. heap_frag_DeepModelTy s 0 end'
       -> 0 <= i /\ i < end'
-      -> heap_frag_max_DeepModelTy s i end' = (if i > 0 then heap_frag_max_DeepModelTy s (parent i) end' else ())
+      -> heap_frag_max_DeepModelTy s i end'
+      = (if gt_log_Int i 0 then heap_frag_max_DeepModelTy s (parent i) end' else ())
   
   axiom heap_frag_max_DeepModelTy_spec:
     forall s: Seq.seq t_DeepModelTy, i: int, end': int. heap_frag_DeepModelTy s 0 end'
@@ -451,68 +385,32 @@ module M_sift_down
   use creusot.prelude.Any
   use int.Int
   
-  function parent (i: int) : int = ComputerDivision.div (i + 1) 2 - 1
-  
   type t_DeepModelTy
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  type t_Option_Ordering = None | Some t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function partial_cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Option_Ordering
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  function eq_partial_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  axiom eq_partial_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y)
-      = (partial_cmp_log_DeepModelTy x y = Some (Equal))
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  function asymetric2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  axiom asymetric2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. partial_cmp_log_DeepModelTy x y
-        = Some (Greater) -> partial_cmp_log_DeepModelTy y x = Some (Less)
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  function asymetric1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
-  axiom asymetric1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. partial_cmp_log_DeepModelTy x y
-        = Some (Less) -> partial_cmp_log_DeepModelTy y x = Some (Greater)
+  function lt_log_total_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Option_Ordering) : ()
+  axiom lt_log_total_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. lt_log_DeepModelTy self other
+      \/ self = other \/ lt_log_DeepModelTy other self
   
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Option_Ordering. partial_cmp_log_DeepModelTy x y
-        = o -> partial_cmp_log_DeepModelTy y z = o -> partial_cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. partial_cmp_log_DeepModelTy x x = Some (Equal)
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function partial_cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom partial_cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (partial_cmp_log_DeepModelTy x y = Some (Greater))
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function partial_cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom partial_cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (partial_cmp_log_DeepModelTy x y = Some (Greater) \/ partial_cmp_log_DeepModelTy x y = Some (Equal))
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function partial_cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom partial_cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (partial_cmp_log_DeepModelTy x y = Some (Less))
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function partial_cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom partial_cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (partial_cmp_log_DeepModelTy x y = Some (Less) \/ partial_cmp_log_DeepModelTy x y = Some (Equal))
+  function parent (i: int) : int = ComputerDivision.div (i + 1) 2 - 1
   
   type t_Vec_T_Global
   
@@ -722,9 +620,14 @@ module M_sift_down
     /\ ([@stop_split] [@expl:sift_down requires #1] UInt64.t'int start < UInt64.t'int end')
     /\ ([@stop_split] [@expl:sift_down requires #2] UInt64.t'int end' <= Seq.length (view_Vec_T_Global v.current))}
     (! bb0
-    [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = [ &i <- start ] s2 | s2 = [ &_old <- v.final ] s3 | s3 = bb2 ]
-    | bb2 = bb2
-      [ bb2 = {[@expl:inferred invariant: type invariant] inv_refmut_Vec_T_Global v}
+    [ bb0 = s0
+      [ s0 = [ &_28 <- () ] s1
+      | s1 = [ &old_v <- v ] s2
+      | s2 = [ &i <- start ] s3
+      | s3 = [ &_old <- v.final ] s4
+      | s4 = bb3 ]
+    | bb3 = bb3
+      [ bb3 = {[@expl:inferred invariant: type invariant] inv_refmut_Vec_T_Global v}
         {[@expl:inferred invariant: unchanged value] _old = v.final}
         {[@expl:loop invariant #0] permutation_of_T (view_Vec_T_Global v.current) (view_Vec_T_Global old_v.current)}
         {[@expl:loop invariant #1] UInt64.t'int start <= UInt64.t'int i /\ UInt64.t'int i < UInt64.t'int end'}
@@ -745,51 +648,51 @@ module M_sift_down
           /\ UInt64.t'int start <= parent (UInt64.t'int i)
         -> le_log_DeepModelTy (Seq.get (deep_model_refmut_Vec_T_Global v) c) (Seq.get (deep_model_refmut_Vec_T_Global v) (parent (parent c)))}
         (! s0)
-        [ s0 = [ &_72 <- (2: UInt64.t) = (0: UInt64.t) ] s1
-        | s1 = {[@expl:division by zero] not _72} s2
-        | s2 = UInt64.div {end'} {(2: UInt64.t)} (fun (_x: UInt64.t) -> [ &_70 <- _x ] s3)
-        | s3 = [ &_68 <- UInt64.ge i _70 ] s4
-        | s4 = any [ br0 -> {_68 = false} (! bb6) | br1 -> {_68} (! bb5) ] ]
-        [ bb6 = s0
-          [ s0 = UInt64.mul {(2: UInt64.t)} {i} (fun (_x: UInt64.t) -> [ &_75 <- _x ] s1)
-          | s1 = UInt64.add {_75} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &child <- _x ] s2)
-          | s2 = UInt64.add {child} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_79 <- _x ] s3)
-          | s3 = [ &_78 <- UInt64.lt _79 end' ] s4
-          | s4 = any [ br0 -> {_78 = false} (! bb15) | br1 -> {_78} (! bb7) ] ]
-        | bb7 = s0
-          [ s0 = index_Vec_T_Global'0 {v.current} {child} (fun (_x: t_T) -> [ &_84 <- _x ] s1)
-          | s1 = UInt64.add {child} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_90 <- _x ] s2)
-          | s2 = index_Vec_T_Global'0 {v.current} {_90} (fun (_x: t_T) -> [ &_88 <- _x ] s3)
-          | s3 = lt_T {_84} {_88} (fun (_x: bool) -> [ &_82 <- _x ] s4)
-          | s4 = any [ br0 -> {_82 = false} (! bb15) | br1 -> {_82} (! bb12) ] ]
-        | bb12 = s0 [ s0 = UInt64.add {child} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &child <- _x ] s1) | s1 = bb15 ]
-        | bb15 = s0
-          [ s0 = index_Vec_T_Global'0 {v.current} {child} (fun (_x: t_T) -> [ &_95 <- _x ] s1)
-          | s1 = index_Vec_T_Global'0 {v.current} {i} (fun (_x: t_T) -> [ &_99 <- _x ] s2)
-          | s2 = le_T {_95} {_99} (fun (_x: bool) -> [ &_93 <- _x ] s3)
-          | s3 = any [ br0 -> {_93 = false} (! bb20) | br1 -> {_93} (! bb19) ] ]
-        | bb20 = s0
+        [ s0 = [ &_74 <- (2: UInt64.t) = (0: UInt64.t) ] s1
+        | s1 = {[@expl:division by zero] not _74} s2
+        | s2 = UInt64.div {end'} {(2: UInt64.t)} (fun (_x: UInt64.t) -> [ &_72 <- _x ] s3)
+        | s3 = [ &_70 <- UInt64.ge i _72 ] s4
+        | s4 = any [ br0 -> {_70 = false} (! bb7) | br1 -> {_70} (! bb6) ] ]
+        [ bb7 = s0
+          [ s0 = UInt64.mul {(2: UInt64.t)} {i} (fun (_x: UInt64.t) -> [ &_77 <- _x ] s1)
+          | s1 = UInt64.add {_77} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &child <- _x ] s2)
+          | s2 = UInt64.add {child} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_81 <- _x ] s3)
+          | s3 = [ &_80 <- UInt64.lt _81 end' ] s4
+          | s4 = any [ br0 -> {_80 = false} (! bb16) | br1 -> {_80} (! bb8) ] ]
+        | bb8 = s0
+          [ s0 = index_Vec_T_Global'0 {v.current} {child} (fun (_x: t_T) -> [ &_86 <- _x ] s1)
+          | s1 = UInt64.add {child} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_92 <- _x ] s2)
+          | s2 = index_Vec_T_Global'0 {v.current} {_92} (fun (_x: t_T) -> [ &_90 <- _x ] s3)
+          | s3 = lt_T {_86} {_90} (fun (_x: bool) -> [ &_84 <- _x ] s4)
+          | s4 = any [ br0 -> {_84 = false} (! bb16) | br1 -> {_84} (! bb13) ] ]
+        | bb13 = s0 [ s0 = UInt64.add {child} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &child <- _x ] s1) | s1 = bb16 ]
+        | bb16 = s0
+          [ s0 = index_Vec_T_Global'0 {v.current} {child} (fun (_x: t_T) -> [ &_97 <- _x ] s1)
+          | s1 = index_Vec_T_Global'0 {v.current} {i} (fun (_x: t_T) -> [ &_101 <- _x ] s2)
+          | s2 = le_T {_97} {_101} (fun (_x: bool) -> [ &_95 <- _x ] s3)
+          | s3 = any [ br0 -> {_95 = false} (! bb21) | br1 -> {_95} (! bb20) ] ]
+        | bb21 = s0
           [ s0 = MutBorrow.borrow_mut <t_Vec_T_Global> {v.current}
               (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
-                [ &_106 <- _bor ] -{inv_Vec_T_Global _bor.final}-
+                [ &_108 <- _bor ] -{inv_Vec_T_Global _bor.final}-
                 [ &v <- { v with current = _bor.final } ] s1)
             [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global v.current} any) ]
-          | s1 = deref_mut_Vec_T_Global {_106} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_105 <- _x ] s2)
-          | s2 = MutBorrow.borrow_final <Slice64.slice t_T> {_105.current} {MutBorrow.get_id _105}
+          | s1 = deref_mut_Vec_T_Global {_108} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_107 <- _x ] s2)
+          | s2 = MutBorrow.borrow_final <Slice64.slice t_T> {_107.current} {MutBorrow.get_id _107}
               (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
-                [ &_104 <- _bor ] -{inv_slice_T _bor.final}-
-                [ &_105 <- { _105 with current = _bor.final } ] s3)
-            [ _ck -> (! {[@expl:type invariant] inv_slice_T _105.current} any) ]
-          | s3 = swap_T {_104} {i} {child} (fun (_x: ()) -> [ &_103 <- _x ] s4)
-          | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T _105} any) ]
-          | s5 = -{resolve_refmut_slice_T _105}- s6
+                [ &_106 <- _bor ] -{inv_slice_T _bor.final}-
+                [ &_107 <- { _107 with current = _bor.final } ] s3)
+            [ _ck -> (! {[@expl:type invariant] inv_slice_T _107.current} any) ]
+          | s3 = swap_T {_106} {i} {child} (fun (_x: ()) -> [ &_105 <- _x ] s4)
+          | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T _107} any) ]
+          | s5 = -{resolve_refmut_slice_T _107}- s6
           | s6 = [ &i <- child ] s7
-          | s7 = bb2 ] ] ]
-    | bb5 = s0
+          | s7 = bb3 ] ] ]
+    | bb6 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T_Global v} any) ]
       | s1 = -{resolve_refmut_Vec_T_Global v}- s2
       | s2 = return {_ret} ]
-    | bb19 = s0
+    | bb20 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T_Global v} any) ]
       | s1 = -{resolve_refmut_Vec_T_Global v}- s2
       | s2 = return {_ret} ] ]
@@ -797,26 +700,27 @@ module M_sift_down
     | & v: MutBorrow.t t_Vec_T_Global = v
     | & start: UInt64.t = start
     | & end': UInt64.t = end'
+    | & _28: () = Any.any_l ()
     | & old_v: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & i: UInt64.t = Any.any_l ()
-    | & _68: bool = Any.any_l ()
-    | & _70: UInt64.t = Any.any_l ()
-    | & _72: bool = Any.any_l ()
+    | & _70: bool = Any.any_l ()
+    | & _72: UInt64.t = Any.any_l ()
+    | & _74: bool = Any.any_l ()
     | & child: UInt64.t = Any.any_l ()
-    | & _75: UInt64.t = Any.any_l ()
-    | & _78: bool = Any.any_l ()
-    | & _79: UInt64.t = Any.any_l ()
-    | & _82: bool = Any.any_l ()
-    | & _84: t_T = Any.any_l ()
-    | & _88: t_T = Any.any_l ()
-    | & _90: UInt64.t = Any.any_l ()
-    | & _93: bool = Any.any_l ()
-    | & _95: t_T = Any.any_l ()
-    | & _99: t_T = Any.any_l ()
-    | & _103: () = Any.any_l ()
-    | & _104: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
-    | & _105: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
-    | & _106: MutBorrow.t t_Vec_T_Global = Any.any_l ()
+    | & _77: UInt64.t = Any.any_l ()
+    | & _80: bool = Any.any_l ()
+    | & _81: UInt64.t = Any.any_l ()
+    | & _84: bool = Any.any_l ()
+    | & _86: t_T = Any.any_l ()
+    | & _90: t_T = Any.any_l ()
+    | & _92: UInt64.t = Any.any_l ()
+    | & _95: bool = Any.any_l ()
+    | & _97: t_T = Any.any_l ()
+    | & _101: t_T = Any.any_l ()
+    | & _105: () = Any.any_l ()
+    | & _106: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
+    | & _107: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
+    | & _108: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & _old: t_Vec_T_Global = Any.any_l () ])
     [ return (result: ()) ->
     {[@stop_split] [@expl:sift_down_T ensures] ([@stop_split] [@expl:sift_down ensures #0] heap_frag_DeepModelTy (deep_model_Vec_T_Global v.final) (UInt64.t'int start) (UInt64.t'int end'))

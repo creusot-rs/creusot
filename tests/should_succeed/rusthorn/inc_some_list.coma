@@ -4,6 +4,10 @@ module M_impl_List__lemma_sum_nonneg (* List *)
   
   type t_List = Cons UInt32.t t_List | Nil
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function sum (self: t_List) : int = match self with
       | Cons a l -> UInt32.t'int a + sum l
       | Nil -> 0
@@ -18,9 +22,9 @@ module M_impl_List__lemma_sum_nonneg (* List *)
   function lemma_sum_nonneg (self: t_List) : ()
   
   goal vc_lemma_sum_nonneg: match self with
-      | Cons _ l -> ([@stop_split] [@expl:lemma_sum_nonneg ensures] sum l >= 0)
-      -> ([@stop_split] [@expl:lemma_sum_nonneg ensures] sum self >= 0)
-      | Nil -> [@stop_split] [@expl:lemma_sum_nonneg ensures] sum self >= 0
+      | Cons _ l -> ([@stop_split] [@expl:lemma_sum_nonneg ensures] ge_log_Int (sum l) 0)
+      -> ([@stop_split] [@expl:lemma_sum_nonneg ensures] ge_log_Int (sum self) 0)
+      | Nil -> [@stop_split] [@expl:lemma_sum_nonneg ensures] ge_log_Int (sum self) 0
       end
 end
 module M_impl_List__sum_x (* List *)
@@ -90,6 +94,10 @@ module M_impl_List__take_some (* List *)
         end}
       any) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function sum (self: t_List) : int = match self with
       | Cons a l -> UInt32.t'int a + sum l
       | Nil -> 0
@@ -100,7 +108,7 @@ module M_impl_List__take_some (* List *)
       | Nil -> ()
       end
   
-  axiom lemma_sum_nonneg_spec: forall self: t_List. sum self >= 0
+  axiom lemma_sum_nonneg_spec: forall self: t_List. ge_log_Int (sum self) 0
   
   let random (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
   

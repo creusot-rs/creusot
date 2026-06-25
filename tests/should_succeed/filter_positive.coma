@@ -3,16 +3,25 @@ module M_lemma_num_of_pos_increasing
   use seq.Seq
   use int.Int
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
   
   axiom num_of_pos_def: forall i: int, j: int, t: Seq.seq Int32.t [num_of_pos i j t]. num_of_pos i j t
-      = (if i >= j then
+      = (if ge_log_Int i j then
         0
       else
-        if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
+        if gt_log_Int (Int32.to_int (Seq.get t (j - 1))) 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
       )
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -45,13 +54,21 @@ module M_lemma_num_of_pos_strictly_increasing
   use seq.Seq
   use int.Int
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
   
   axiom num_of_pos_def: forall i: int, j: int, t: Seq.seq Int32.t [num_of_pos i j t]. num_of_pos i j t
-      = (if i >= j then
+      = (if ge_log_Int i j then
         0
       else
-        if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
+        if gt_log_Int (Int32.to_int (Seq.get t (j - 1))) 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
       )
   
   meta "compute_max_steps" 1000000
@@ -65,7 +82,7 @@ module M_lemma_num_of_pos_strictly_increasing
   function lemma_num_of_pos_strictly_increasing (i: int) (t: Seq.seq Int32.t) : ()
   
   goal vc_lemma_num_of_pos_strictly_increasing: 0 <= i /\ i < Seq.length t
-    -> Int32.to_int (Seq.get t i) > 0
+    -> gt_log_Int (Int32.to_int (Seq.get t i)) 0
     -> ([@stop_split] [@expl:lemma_num_of_pos_strictly_increasing ensures] num_of_pos 0 i t < num_of_pos 0 (i + 1) t)
 end
 module M_m
@@ -91,13 +108,21 @@ module M_m
       = Seq.length (view_Vec_i32_Global self_)}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
   
   axiom num_of_pos_def: forall i: int, j: int, t: Seq.seq Int32.t [num_of_pos i j t]. num_of_pos i j t
-      = (if i >= j then
+      = (if ge_log_Int i j then
         0
       else
-        if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
+        if gt_log_Int (Int32.to_int (Seq.get t (j - 1))) 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
       )
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
@@ -133,7 +158,7 @@ module M_m
   function lemma_num_of_pos_strictly_increasing (i: int) (t: Seq.seq Int32.t) : () = ()
   
   axiom lemma_num_of_pos_strictly_increasing_spec: forall i: int, t: Seq.seq Int32.t. 0 <= i /\ i < Seq.length t
-      -> Int32.to_int (Seq.get t i) > 0 -> num_of_pos 0 i t < num_of_pos 0 (i + 1) t
+      -> gt_log_Int (Int32.to_int (Seq.get t i)) 0 -> num_of_pos 0 i t < num_of_pos 0 (i + 1) t
   
   function lemma_num_of_pos_increasing (i: int) (j: int) (k: int) (t: Seq.seq Int32.t) : ()
   
@@ -242,7 +267,16 @@ module M_num_of_pos
   use seq.Seq
   use int.Int
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -258,10 +292,10 @@ module M_num_of_pos
   
   function num_of_pos (i: int) (j: int) (t: Seq.seq Int32.t) : int
   
-  goal vc_num_of_pos: if i >= j then
+  goal vc_num_of_pos: if ge_log_Int i j then
       true
     else
-      if Int32.to_int (Seq.get t (j - 1)) > 0 then
+      if gt_log_Int (Int32.to_int (Seq.get t (j - 1))) 0 then
         [@expl:variant decreases] well_founded_relation_Int (j - i) (j - 1 - i)
       else
         [@expl:variant decreases] well_founded_relation_Int (j - i) (j - 1 - i)

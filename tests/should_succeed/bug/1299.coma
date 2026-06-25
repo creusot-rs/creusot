@@ -11,7 +11,12 @@ module M_count_paths
   
   meta "rewrite_def" predicate resolve_refmut_closure0
   
-  let count_paths (i: Int64.t) (return (x: ())) = {[@stop_split] [@expl:count_paths requires] Int64.to_int i >= 0}
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  let count_paths (i: Int64.t) (return (x: ())) =
+  {[@stop_split] [@expl:count_paths requires] ge_log_Int (Int64.to_int i) 0}
     any [ return (result: ()) -> (! return {result}) ]
   
   predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
@@ -34,10 +39,14 @@ module M_count_paths
   
   meta "rewrite_def" function deep_model_isize
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Range_isize (self: t_Range_isize) (visited: Seq.seq Int64.t) (o: t_Range_isize) =
     self.end' = o.end'
     /\ deep_model_isize self.start <= deep_model_isize o.start
-    /\ (Seq.length visited > 0 -> deep_model_isize o.start <= deep_model_isize o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_isize o.start <= deep_model_isize o.end')
     /\ Seq.length visited = deep_model_isize o.start - deep_model_isize self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_isize (Seq.get visited i) = deep_model_isize self.start + i)
@@ -67,7 +76,8 @@ module M_count_paths
   meta "rewrite_def" predicate resolve_refmut_Range_isize
   
   predicate completed_Range_isize (self: MutBorrow.t t_Range_isize) =
-    resolve_refmut_Range_isize self /\ deep_model_isize self.current.start >= deep_model_isize self.current.end'
+    resolve_refmut_Range_isize self
+    /\ ge_log_Int (deep_model_isize self.current.start) (deep_model_isize self.current.end')
   
   predicate next_precondition_Range_isize [@inline:trivial] (iter: t_Range_isize) (func: ()) =
     forall e: Int64.t, i: t_Range_isize [produces_Range_isize iter (Seq.singleton e) i]. inv_isize e
@@ -161,7 +171,8 @@ module M_count_paths
   
   meta "select_lsinst" "all"
   
-  let count_paths'0 (i: Int64.t) (return (x: ())) = {[@stop_split] [@expl:count_paths requires] Int64.to_int i >= 0}
+  let count_paths'0 (i: Int64.t) (return (x: ())) =
+  {[@stop_split] [@expl:count_paths requires] ge_log_Int (Int64.to_int i) 0}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_5 <- { start = (0: Int64.t); end' = i } ] s1

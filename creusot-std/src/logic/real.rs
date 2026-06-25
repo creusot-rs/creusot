@@ -2,9 +2,9 @@
 use crate::{
     invariant::{InhabitedInvariant, Subset},
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, SubLogic},
+    partial_ord_laws_impl,
     prelude::*,
 };
-use core::cmp::Ordering;
 #[cfg(all(creusot, feature = "std"))]
 use num_rational::BigRational;
 
@@ -30,39 +30,16 @@ impl Real {
 }
 
 impl PartialOrdLogic for Real {
-    #[logic(open)]
-    fn partial_cmp_log(self, o: Self) -> Option<Ordering> {
-        if self < o {
-            Some(Ordering::Less)
-        } else if self == o {
-            Some(Ordering::Equal)
-        } else {
-            Some(Ordering::Greater)
-        }
+    #[logic]
+    #[builtin("real.Real.(<)")]
+    fn lt_log(self, _: Self) -> bool {
+        dead
     }
 
     #[logic]
     #[builtin("real.Real.(<=)")]
     fn le_log(self, _: Self) -> bool {
-        true
-    }
-
-    #[logic]
-    #[builtin("real.Real.(<)")]
-    fn lt_log(self, _: Self) -> bool {
-        true
-    }
-
-    #[logic]
-    #[builtin("real.Real.(>=)")]
-    fn ge_log(self, _: Self) -> bool {
-        true
-    }
-
-    #[logic]
-    #[builtin("real.Real.(>)")]
-    fn gt_log(self, _: Self) -> bool {
-        true
+        dead
     }
 
     crate::logic::ord::partial_ord_laws_impl! {}
@@ -70,8 +47,8 @@ impl PartialOrdLogic for Real {
 
 impl OrdLogic for Real {
     #[logic(law)]
-    #[ensures(self.partial_cmp_log(other) != None)]
-    fn partial_cmp_log_total(self, other: Self) {}
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {}
 }
 
 impl AddLogic for Real {
@@ -172,37 +149,22 @@ impl PositiveReal {
 
 impl PartialOrdLogic for PositiveReal {
     #[logic(open)]
-    fn partial_cmp_log(self, o: Self) -> Option<Ordering> {
-        self.to_real().partial_cmp_log(o.to_real())
-    }
-
-    #[logic(open)]
     fn le_log(self, o: Self) -> bool {
-        self.to_real().le_log(o.to_real())
+        self.to_real() <= o.to_real()
     }
 
     #[logic(open)]
     fn lt_log(self, o: Self) -> bool {
-        self.to_real().lt_log(o.to_real())
+        self.to_real() < o.to_real()
     }
 
-    #[logic(open)]
-    fn ge_log(self, o: Self) -> bool {
-        self.to_real().ge_log(o.to_real())
-    }
-
-    #[logic(open)]
-    fn gt_log(self, o: Self) -> bool {
-        self.to_real().gt_log(o.to_real())
-    }
-
-    crate::logic::ord::partial_ord_laws_impl! { let _ = PositiveReal::ext_eq; }
+    partial_ord_laws_impl! { let _ = PositiveReal::ext_eq; }
 }
 
 impl OrdLogic for PositiveReal {
     #[logic(law)]
-    #[ensures(self.partial_cmp_log(other) != None)]
-    fn partial_cmp_log_total(self, other: Self) {}
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {}
 }
 
 impl AddLogic for PositiveReal {

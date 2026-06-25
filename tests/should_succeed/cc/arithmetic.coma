@@ -28,59 +28,6 @@ module M_shr_ref
   use creusot.int.UInt32BW
   use creusot.prelude.Any
   
-  type t_Ordering = Less | Equal | Greater
-  
-  type t_Option_Ordering = None | Some t_Ordering
-  
-  function partial_cmp_log_i32 (self: Int32BW.t) (o: Int32BW.t) : t_Option_Ordering = if Int32BW.lt self o then
-      Some (Less)
-    else
-      if self = o then Some (Equal) else Some (Greater)
-  
-  
-  function eq_partial_cmp_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom eq_partial_cmp_i32_spec: forall x: Int32BW.t, y: Int32BW.t. (x = y) = (partial_cmp_log_i32 x y = Some (Equal))
-  
-  function asymetric2_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom asymetric2_i32_spec: forall x: Int32BW.t, y: Int32BW.t. partial_cmp_log_i32 x y = Some (Greater)
-      -> partial_cmp_log_i32 y x = Some (Less)
-  
-  function asymetric1_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom asymetric1_i32_spec: forall x: Int32BW.t, y: Int32BW.t. partial_cmp_log_i32 x y = Some (Less)
-      -> partial_cmp_log_i32 y x = Some (Greater)
-  
-  function trans_i32 (x: Int32BW.t) (y: Int32BW.t) (z: Int32BW.t) (o: t_Option_Ordering) : ()
-  
-  axiom trans_i32_spec: forall x: Int32BW.t, y: Int32BW.t, z: Int32BW.t, o: t_Option_Ordering. partial_cmp_log_i32 x y
-        = o -> partial_cmp_log_i32 y z = o -> partial_cmp_log_i32 x z = o
-  
-  function refl_i32 (x: Int32BW.t) : ()
-  
-  axiom refl_i32_spec: forall x: Int32BW.t. partial_cmp_log_i32 x x = Some (Equal)
-  
-  function partial_cmp_gt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom partial_cmp_gt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.gt x y
-      = (partial_cmp_log_i32 x y = Some (Greater))
-  
-  function partial_cmp_ge_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom partial_cmp_ge_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.ge x y
-      = (partial_cmp_log_i32 x y = Some (Greater) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
-  function partial_cmp_lt_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom partial_cmp_lt_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.lt x y
-      = (partial_cmp_log_i32 x y = Some (Less))
-  
-  function partial_cmp_le_log_i32 (x: Int32BW.t) (y: Int32BW.t) : ()
-  
-  axiom partial_cmp_le_log_i32_spec: forall x: Int32BW.t, y: Int32BW.t. Int32BW.le x y
-      = (partial_cmp_log_i32 x y = Some (Less) \/ partial_cmp_log_i32 x y = Some (Equal))
-  
   constant const_BITS: UInt32BW.t = (8: UInt32BW.t)
   
   let shr_ref_u8 (self_: UInt8BW.t) (rhs: Int32BW.t) (return (x: UInt8BW.t)) =

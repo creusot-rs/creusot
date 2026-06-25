@@ -18,15 +18,18 @@ module M_impl_Tree__height (* Tree *)
   
   let height (self: t_Tree) (return (x: UInt64.t)) = any [ return (result: UInt64.t) -> (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
   meta "rewrite_def" function deep_model_u64
   
   let max_u64 (self_: UInt64.t) (o: UInt64.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) ->
-    {[@stop_split] [@expl:max_u64 ensures] ([@stop_split] [@expl:max ensures #0] deep_model_u64 result
-        >= deep_model_u64 self_)
-      /\ ([@stop_split] [@expl:max ensures #1] deep_model_u64 result >= deep_model_u64 o)
+    {[@stop_split] [@expl:max_u64 ensures] ([@stop_split] [@expl:max ensures #0] ge_log_Int (deep_model_u64 result) (deep_model_u64 self_))
+      /\ ([@stop_split] [@expl:max ensures #1] ge_log_Int (deep_model_u64 result) (deep_model_u64 o))
       /\ ([@stop_split] [@expl:max ensures #2] result = self_ \/ result = o)
       /\ ([@stop_split] [@expl:max ensures #3] deep_model_u64 self_ <= deep_model_u64 o -> result = o)
       /\ ([@stop_split] [@expl:max ensures #4] deep_model_u64 o < deep_model_u64 self_ -> result = self_)}
