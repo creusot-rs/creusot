@@ -1,0 +1,109 @@
+module M_f
+  use creusot.slice.Slice64
+  use seq.Seq
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  type t_IntoIter_unit
+  
+  predicate inv_Seq_unit [@inline:trivial] (_1: Seq.seq ()) = true
+  
+  meta "rewrite_def" predicate inv_Seq_unit
+  
+  predicate invariant_array_unit_1 (self: Slice64.array ()) =
+    inv_Seq_unit (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (1: UInt64.t)
+  
+  predicate inv_array_unit_1 [@inline:trivial] (_1: Slice64.array ()) = invariant_array_unit_1 _1
+  
+  meta "rewrite_def" predicate inv_array_unit_1
+  
+  predicate inv_IntoIter_unit (_1: t_IntoIter_unit)
+  
+  function view_IntoIter_unit (self: t_IntoIter_unit) : Seq.seq ()
+  
+  let into_iter_array_unit_1 (self_: Slice64.array ()) (return (x: t_IntoIter_unit)) =
+  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_array_unit_1 self_}
+    any
+    [ return (result: t_IntoIter_unit) ->
+    {[@stop_split] [@expl:into_iter_array_unit_1 ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_IntoIter_unit result)
+      /\ ([@stop_split] [@expl:into_iter ensures] Slice64.view self_ = view_IntoIter_unit result)}
+      (! return {result}) ]
+  
+  let from_iter_S (_1: t_IntoIter_unit) (return (x: ())) =
+  {[@stop_split] [@expl:from_iter '_1' type invariant] inv_IntoIter_unit _1}
+    any [ return (result: ()) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let f (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp: Slice64.array ()) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = _4
+          /\ Seq.length __arr_temp.Slice64.elts = 1}-
+          [ &_3 <- __arr_temp ] s1) ]
+      | s1 = into_iter_array_unit_1 {_3} (fun (_x: t_IntoIter_unit) -> [ &_2 <- _x ] s2)
+      | s2 = from_iter_S {_2} (fun (_x: ()) -> [ &_1 <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & _1: () = Any.any_l ()
+    | & _2: t_IntoIter_unit = Any.any_l ()
+    | & _3: Slice64.array () = Any.any_l ()
+    | & _4: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_impl_FromIterator_for_S__from_iter (* <S as std::iter::FromIterator<()>> *)
+  use creusot.prelude.Any
+  
+  type t_I
+  
+  predicate inv_I (_1: t_I)
+  
+  predicate resolve_I (_1: t_I)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let from_iter_S (_1: t_I) (return (x: ())) = {[@stop_split] [@expl:from_iter '_1' type invariant] inv_I _1}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_I _1} any) ]
+      | s1 = -{resolve_I _1}- s2
+      | s2 = [ &_ret <- () ] s3
+      | s3 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _1: t_I = _1 ])
+    [ return (result: ()) -> (! return {result}) ]
+end
+module M_impl_FromIterator_for_S__from_iter__refines (* <S as std::iter::FromIterator<()>> *)
+  type t_I
+  
+  predicate inv_I (_1: t_I)
+  
+  predicate precondition_into_iter (self: ()) (args: t_I)
+  
+  axiom precondition_fndef: forall args: t_I [precondition_into_iter () args]. (let self = args in false)
+      -> precondition_into_iter () args
+  
+  type t_IntoIter
+  
+  predicate inv_IntoIter (_1: t_IntoIter)
+  
+  predicate postcondition_once_into_iter (self: ()) (args: t_I) (result: t_IntoIter)
+  
+  axiom postcondition_fndef:
+    forall args: t_I, res: t_IntoIter [postcondition_once_into_iter () args res]. postcondition_once_into_iter () args res
+      -> (let self = args in inv_IntoIter res)
+  
+  let into_iter_I (self: t_I) (return (x: t_IntoIter)) =
+  {[@stop_split] [@expl:into_iter requires] precondition_into_iter () self}
+    any
+    [ return (result: t_IntoIter) ->
+    {[@stop_split] [@expl:into_iter ensures] postcondition_once_into_iter () self result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall iter: t_I. inv_I iter -> precondition_into_iter () iter -> inv_I iter
+end
