@@ -16,15 +16,6 @@ pub mod p {
         }
     }
 
-    // Must fail to prove the invariant
+    // Error: exposes constructor
     pub const C: S = S(0);
-}
-
-// Don't translate non-visible constructor of S:
-// replace with an opaque constant and emit a warning.
-pub const D: p::S = p::C;
-
-#[ensures(result == D)]
-pub fn f() -> p::S {
-    D
 }
