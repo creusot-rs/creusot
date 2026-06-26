@@ -520,6 +520,27 @@ pub mod macros {
     /// ```
     pub use base_macros::erasure;
 
+    /// Modifier for `const` declarations.
+    ///
+    /// # `#[constant(eval)]`
+    ///
+    /// Try to evaluate the constant before translating it.
+    ///
+    /// # In extern specs
+    ///
+    /// This attribute can also be used in `extern_spec!` to modify external constants:
+    ///
+    /// ```ignore
+    /// extern_spec! {
+    ///     #[constant(eval)]
+    ///     const u64::MAX;
+    /// }
+    /// ```
+    ///
+    /// Note that the syntax of `const` in `extern_spec!` does not have a body
+    /// (this is not quite Rust syntax).
+    pub use base_macros::constant;
+
     pub(crate) use base_macros::intrinsic;
 }
 

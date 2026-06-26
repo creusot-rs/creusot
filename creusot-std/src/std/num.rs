@@ -53,6 +53,21 @@ macro_rules! mach_int {
                     *self
                 }
             }
+
+            #[constant(eval)]
+            const $t::MIN;
+
+            #[constant(eval)]
+            const $t::MAX;
+
+            #[constant(eval)]
+            const $t::BITS;
+
+            #[constant(eval)]
+            const core::$t::MIN;
+
+            #[constant(eval)]
+            const core::$t::MAX;
         }
 
         impl AddLogic for $t {

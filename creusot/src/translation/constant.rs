@@ -12,6 +12,11 @@ use rustc_span::Span;
 
 use super::pearlite::{Term, TermKind};
 
+fn is_eval(ctx: &TranslationCtx, def_id: DefId) -> bool {
+    crate::contracts_items::is_eval_constant(ctx.tcx, def_id)
+        || ctx.extern_spec(def_id).is_some_and(|spec| spec.eval_constant)
+}
+
 /// Translate constant MIR operands
 pub(crate) fn mirconst_to_operand<'tcx>(
     c: &ConstOperand<'tcx>,
@@ -147,26 +152,69 @@ fn try_scalar_to_literal<'tcx>(
 /// Translate constant with a simple body: it can be reduced to a value expressible in
 /// the logical fragment of Why3, or its body is just a variable.
 /// `None` if it does not match these cases.
+///
+/// const definitions can be annotated with `#[constant(eval)]` to
+/// force evaluation, hiding silly definitions that are best hidden from users:
+///
+/// ```
+/// const MAX: usize = !0;
+///
+/// const MIN: isize = !isize::MAX
+/// const MAX: isize = (usize::MAX >> 1) as isize;
+/// ```
 pub fn try_const_to_term<'tcx>(
     def_id: DefId,
     subst: ty::GenericArgsRef<'tcx>,
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
+    source_id: DefId,
 ) -> Option<Term<'tcx>> {
-    if ctx.def_kind(def_id) == DefKind::ConstParam {
+    let kind = ctx.def_kind(def_id);
+    if matches!(kind, DefKind::ConstParam) {
         return None;
     }
-    let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
-    let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
-    let span = ctx.def_span(def_id);
-    let uneval = ty::UnevaluatedConst::new(
-        ctx.tcx,
-        ty::UnevaluatedConstKind::new_from_def_id(ctx.tcx, def_id),
-        subst,
-    );
-    match ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
-        Ok(Ok(val)) => valtree_to_term(val, ctx, ty, typing_env, span),
-        _ => try_const_synonym(def_id, subst, ctx, typing_env),
+    if is_eval(ctx, def_id) {
+        let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
+        let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
+        let span = ctx.def_span(def_id);
+        let kind = ty::UnevaluatedConstKind::new_from_def_id(ctx.tcx, def_id);
+        let uneval = ty::UnevaluatedConst::new(ctx.tcx, kind, subst);
+        if let Ok(Ok(val)) = ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
+            return valtree_to_term(val, ctx, ty, typing_env, span);
+        }
+    }
+    if matches!(kind, DefKind::AssocConst { .. }) {
+        return None;
+    }
+    // Calling `trivial_const` here (and it returning None) makes `mir_for_ctfe` available in
+    // `instance_mir` and prevents it from panicking, idk why.
+    // I just found this from reverse engineering `const_eval_resolve_for_typeck`
+    if let Some((val, ty)) = ctx.trivial_const(def_id) {
+        return Some(value_to_term(val, ty, ctx, ctx.def_span(source_id)));
+    }
+    // Handle const definitions of the form `const N = M;` where `M` is another constant.
+    // We can generate a simple definition `constant N = M` instead of a Coma setter.
+    let ty::Instance { def, args } =
+        ty::Instance::try_resolve(ctx.tcx, typing_env, def_id, subst).ok()??;
+    let body = ctx.instance_mir(def);
+    let (c, ty, span) = simple_body_const(ctx.tcx, body)?;
+    match c {
+        ConstKind::Param(p) => {
+            let c = args.const_at(p.index as usize);
+            Some(Term::const_(c, ty, span))
+        }
+        ConstKind::Unevaluated(u)
+            if let UnevaluatedConstKind::Projection { def_id }
+            | UnevaluatedConstKind::Free { def_id }
+            | UnevaluatedConstKind::Inherent { def_id } = u.kind =>
+        {
+            let (u, ty) = ctx.tcx.normalize_erasing_regions(
+                typing_env,
+                ty::EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args),
+            );
+            Some(Term::const_item(def_id, u.args, ty).span(span))
+        }
+        _ => None,
     }
 }
 
@@ -211,40 +259,6 @@ pub(crate) fn valtree_to_term<'tcx>(
         _ => return None,
     };
     Some(Term { kind, ty, span })
-}
-
-/// Handle const definitions of the form `const N = M;` where `M` is another constant.
-fn try_const_synonym<'tcx>(
-    def_id: DefId,
-    subst: ty::GenericArgsRef<'tcx>,
-    ctx: &TranslationCtx<'tcx>,
-    typing_env: TypingEnv<'tcx>,
-) -> Option<Term<'tcx>> {
-    if !matches!(ctx.def_kind(def_id), rustc_hir::def::DefKind::AssocConst { .. }) {
-        return None;
-    }
-    let ty::Instance { def, args } =
-        ty::Instance::try_resolve(ctx.tcx, typing_env, def_id, subst).ok()??;
-    let body = ctx.instance_mir(def);
-    let (c, ty, span) = simple_body_const(ctx.tcx, body)?;
-    match c {
-        ConstKind::Param(p) => {
-            let c = args.const_at(p.index as usize);
-            Some(Term::const_(c, ty, span))
-        }
-        ConstKind::Unevaluated(u)
-            if let UnevaluatedConstKind::Projection { def_id }
-            | UnevaluatedConstKind::Free { def_id }
-            | UnevaluatedConstKind::Inherent { def_id } = u.kind =>
-        {
-            let (u, ty) = ctx.tcx.normalize_erasing_regions(
-                typing_env,
-                ty::EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args),
-            );
-            Some(Term::const_item(def_id, u.args, ty).span(span))
-        }
-        _ => None,
-    }
 }
 
 /// Extract constant from MIR body. It should be a single assignment `_0 = const M`.

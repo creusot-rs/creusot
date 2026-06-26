@@ -1,3 +1,4 @@
+mod constant;
 mod derive;
 pub(crate) mod doc;
 mod erasure;
@@ -9,6 +10,7 @@ mod proof;
 mod specs;
 
 pub(crate) use self::{
+    constant::constant,
     derive::*,
     erasure::erasure,
     extern_spec::extern_spec,

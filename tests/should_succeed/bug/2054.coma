@@ -39,3 +39,32 @@ module M_f
       /\ ([@stop_split] [@expl:f ensures] result = const_C'0)}
       (! return {result}) ]
 end
+module M_impl_F_for_S_T__C (* <S<T> as F> *)
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  constant const_C : t_T
+  
+  axiom const_C_spec: inv_T const_C
+  
+  type t_S_T = { f0: t_T }
+  
+  predicate inv_S_T (_1: t_S_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_S_T [inv_S_T x]. inv_S_T x = inv_T x.f0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let const_C'0 (return (x: t_S_T)) = (! bb0
+    [ bb0 = s0
+      [ s0 = bb0'0
+        [ bb0'0 = s0'0 [ s0'0 = [ &_ret'0 <- { f0 = const_C } ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: t_S_T = Any.any_l () ] [ _const_ret (_const: t_S_T) -> [ &_ret <- _const ] s1 ]
+      | s1 = return {_ret} ] ] [ & _ret: t_S_T = Any.any_l () ])
+    [ return (result: t_S_T) -> {[@stop_split] [@expl:C result type invariant] inv_S_T result} (! return {result}) ]
+end

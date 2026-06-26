@@ -1,15 +1,15 @@
 mod display;
 
-use crate::creusot::doc::DocItemName;
+use crate::creusot::{constant::ConstantArg, doc::DocItemName};
 use pearlite_syn::term::*;
 use proc_macro::{Diagnostic, Level, TokenStream as TS1};
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, quote, quote_spanned};
 use syn::{
-    parse::Parse,
+    parse::{Parse, ParseStream},
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
-    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Trait, Unsafe},
+    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Semi, Token, Trait, Unsafe},
     visit_mut::VisitMut,
     *,
 };
@@ -58,6 +58,7 @@ enum ExternSpec {
     Trait(ExternTrait),
     Impl(ExternImpl),
     Fn(ExternMethod),
+    Const(ExternConst),
 }
 
 #[derive(Debug)]
@@ -100,6 +101,15 @@ struct ExternMethod {
     body: std::result::Result<Block, Token![;]>,
 }
 
+#[derive(Debug)]
+struct ExternConst {
+    span: Span,
+    attrs: Vec<Attribute>,
+    _const: Token![const],
+    path: ExprPath,
+    _semi: Semi,
+}
+
 // Information related to desugaring.
 
 #[derive(Clone, Debug)]
@@ -119,12 +129,21 @@ struct ImplData {
 struct FlatSpec {
     span: Span,
     signature: Signature,
-    doc_item_name: DocItemName,
     attrs: Vec<Attribute>,
-    /// Expression that can be used to refer to the function being specified
+    /// Path to the function or const being specified
     path: ExprPath,
-    impl_data: Option<ImplData>,
-    body: Option<Block>,
+    kind: FlatSpecKind,
+}
+
+#[derive(Clone, Debug)]
+enum FlatSpecKind {
+    Fn {
+        doc_item_name: DocItemName,
+        impl_data: Option<ImplData>,
+        /// Body to check against the extern spec, with a name for the fake function.
+        body: Option<Block>,
+    },
+    Const,
 }
 
 impl ExternSpec {
@@ -155,6 +174,9 @@ fn self_type_escape<T: Parse>(span: Span) -> T {
 
 impl FlatSpec {
     fn into_tokens(mut self) -> TokenStream {
+        if let Err(e) = self.replace_self() {
+            return e.into_compile_error();
+        }
         let span = self.span;
         let args: Punctuated<Expr, Comma> = self
             .signature
@@ -173,79 +195,6 @@ impl FlatSpec {
             .collect();
 
         let ident = crate::creusot::generate_unique_ident("extern_spec", span);
-
-        let mut replacer;
-        if let Some(mut data) = self.impl_data {
-            data.params.extend(self.signature.generics.params);
-            self.signature.generics.params = data.params;
-
-            if self.signature.generics.where_clause.is_none() {
-                self.signature.generics.where_clause = Some(WhereClause {
-                    where_token: Default::default(),
-                    predicates: Default::default(),
-                });
-            }
-
-            let where_clause = self.signature.generics.where_clause.as_mut().unwrap();
-
-            if let Some(p) = data.where_clause {
-                where_clause.predicates.extend(p)
-            };
-
-            let escape = match &data.self_ty {
-                TraitOrImpl::Trait(_, _) => SelfTypeKind::Self_,
-                TraitOrImpl::Impl(ty) => SelfTypeKind::Type(ty.clone()),
-            };
-            replacer = SelfTypeEscaper { escape, err: Ok(()) };
-
-            self.signature.inputs.iter_mut().for_each(|input| match input {
-                FnArg::Receiver(Receiver { self_token, ty, .. }) => {
-                    // An `impl` block may have a `self` reciever, but we should replace it with the actual
-                    // underlying type. This constructs the correct replacement for those cases.
-
-                    let mut ty = ty.clone();
-                    replacer.visit_type_mut(&mut ty);
-
-                    let self_: Ident = self_escape(self_token.span());
-
-                    *input = FnArg::Typed(PatType {
-                        attrs: Vec::new(),
-                        pat: parse_quote!(#self_),
-                        colon_token: Default::default(),
-                        ty,
-                    });
-                }
-                FnArg::Typed(PatType { ty, .. }) => replacer.visit_type_mut(ty),
-            });
-
-            replacer.visit_return_type_mut(&mut self.signature.output);
-
-            if let TraitOrImpl::Trait(trait_name, generics) = data.self_ty {
-                let selfty = self_type_escape(span);
-                where_clause
-                    .predicates
-                    .push(parse_quote_spanned! {span=> #selfty : ?::core::marker::Sized + #trait_name #generics });
-
-                self.signature.generics.params.insert(0, selfty);
-
-                where_clause.predicates.iter_mut().for_each(|pred| {
-                    replacer.visit_where_predicate_mut(pred);
-                });
-            }
-
-            if let Some(block) = &mut self.body {
-                replacer.visit_block_mut(block)
-            }
-        } else {
-            replacer = SelfTypeEscaper { escape: SelfTypeKind::None, err: Ok(()) };
-        }
-
-        if let Err(e) = escape_self_in_contracts(&mut self.attrs, &mut replacer) {
-            return e.into_compile_error();
-        }
-        if let Err(e) = replacer.err {
-            return e.into_compile_error();
-        }
 
         let sig = Signature {
             constness: None,
@@ -271,91 +220,184 @@ impl FlatSpec {
             args,
         });
 
-        // If the function was given a body to check, it is generated here.
-        let f_with_body = if let Some(mut b) = self.body {
-            let attrs = attrs.clone();
-            if has_erasure {
-                let erasure_stmt = parse_quote! {
-                    let _ =
-                        #[creusot::no_translate]
-                        #[creusot::spec::erasure]
-                        || #call;
-                };
-                b.stmts.insert(0, erasure_stmt);
-            }
-            escape_self_in_block(&mut b);
-            let mut sig = sig.clone();
-            sig.ident = Ident::new(&format!("{}_body", self.doc_item_name.0), sig.ident.span());
-            Some(ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(b) })
-        } else {
-            None
-        };
-
-        let doc = {
-            let path = if let Some(qself) = &self.path.qself {
-                if let Type::Reference(_) = *qself.ty {
-                    // Unsupported self types by rustdoc, we might as well print out the fully qualified path.
-                    let trait_ = display::DisplayPath(&Path {
-                        leading_colon: None,
-                        segments: self
-                            .path
-                            .path
-                            .segments
-                            .iter()
-                            .take(qself.position)
-                            .cloned()
-                            .collect(),
-                    });
-                    format!(
-                        "`<{} as {}>::{}`",
-                        display::DisplayType(&qself.ty),
-                        trait_,
-                        self.path.path.segments[qself.position].ident
-                    )
+        match self.kind {
+            FlatSpecKind::Fn { body, doc_item_name, .. } => {
+                // If the function was given a body to check, it is generated here.
+                let f_with_body = if let Some(mut b) = body {
+                    let attrs = attrs.clone();
+                    if has_erasure {
+                        let erasure_stmt = parse_quote! {
+                            let _ =
+                                #[creusot::no_translate]
+                                #[creusot::spec::erasure]
+                                || #call;
+                        };
+                        b.stmts.insert(0, erasure_stmt);
+                    }
+                    escape_self_in_block(&mut b);
+                    let mut sig = sig.clone();
+                    sig.ident = Ident::new(&format!("{}_body", doc_item_name.0), sig.ident.span());
+                    Some(ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(b) })
                 } else {
-                    format!(
-                        "[`{}::{}`]",
-                        display::DisplayType(&qself.ty),
-                        self.path.path.segments[qself.position].ident
-                    )
+                    None
+                };
+
+                let doc = {
+                    let path = if let Some(qself) = &self.path.qself {
+                        if let Type::Reference(_) = *qself.ty {
+                            // Unsupported self types by rustdoc, we might as well print out the fully qualified path.
+                            let trait_ = display::DisplayPath(&Path {
+                                leading_colon: None,
+                                segments: self
+                                    .path
+                                    .path
+                                    .segments
+                                    .iter()
+                                    .take(qself.position)
+                                    .cloned()
+                                    .collect(),
+                            });
+                            format!(
+                                "`<{} as {}>::{}`",
+                                display::DisplayType(&qself.ty),
+                                trait_,
+                                self.path.path.segments[qself.position].ident
+                            )
+                        } else {
+                            format!(
+                                "[`{}::{}`]",
+                                display::DisplayType(&qself.ty),
+                                self.path.path.segments[qself.position].ident
+                            )
+                        }
+                    } else {
+                        format!("[`{}`]", display::DisplayPath(&self.path.path))
+                    };
+                    format!("extern spec for {path}")
+                };
+                // only used in documentation
+                let f_doc = ItemFn {
+                    attrs: attrs.clone(),
+                    vis: parse_quote!(pub),
+                    sig: {
+                        let mut sig = sig.clone();
+                        sig.ident = Ident::new(&doc_item_name.0, sig.ident.span());
+                        sig
+                    },
+                    block: Box::new(Block {
+                        brace_token: Brace(span),
+                        stmts: vec![parse_quote!(loop {})],
+                    }),
+                };
+
+                let block = Block {
+                    brace_token: Brace(span), // This sets the span of the function's DefId
+                    stmts: vec![Stmt::Expr(call, None)],
+                };
+                let f = ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(block) };
+
+                quote_spanned! {span=>
+                    #[creusot::no_translate]
+                    #[creusot::extern_spec]
+                    #f
+
+                    #[cfg(doc)]
+                    #[doc = #doc]
+                    #[doc = ""]
+                    #[doc = "This is not a real function: its only use is for documentation."]
+                    #[doc = ""]
+                    #f_doc
+
+                    #f_with_body
                 }
-            } else {
-                format!("[`{}`]", display::DisplayPath(&self.path.path))
-            };
-            format!("extern spec for {path}")
-        };
-        // only used in documentation
-        let f_doc = ItemFn {
-            attrs: attrs.clone(),
-            vis: parse_quote!(pub),
-            sig: {
-                let mut sig = sig.clone();
-                sig.ident = Ident::new(&self.doc_item_name.0.to_string(), sig.ident.span());
-                sig
-            },
-            block: Box::new(Block { brace_token: Brace(span), stmts: vec![parse_quote!(loop {})] }),
-        };
-
-        let block = Block {
-            brace_token: Brace(span), // This sets the span of the function's DefId
-            stmts: vec![Stmt::Expr(call, None)],
-        };
-        let f = ItemFn { attrs, vis: Visibility::Inherited, sig, block: Box::new(block) };
-
-        quote_spanned! {span=>
-            #[creusot::no_translate]
-            #[creusot::extern_spec]
-            #f
-
-            #[cfg(doc)]
-            #[doc = #doc]
-            #[doc = ""]
-            #[doc = "This is not a real function: its only use is for documentation."]
-            #[doc = ""]
-            #f_doc
-
-            #f_with_body
+            }
+            FlatSpecKind::Const => {
+                let path = self.path;
+                let block = parse_quote_spanned! {span=> { let _ = #path; } };
+                let f = ItemFn {
+                    attrs: self.attrs,
+                    vis: Visibility::Inherited,
+                    sig,
+                    block: Box::new(block),
+                };
+                quote_spanned! {span=>
+                    #[creusot::no_translate]
+                    #[creusot::extern_spec]
+                    #[allow(unused)]
+                    #f
+                }
+            }
         }
+    }
+
+    fn replace_self(&mut self) -> std::result::Result<(), Error> {
+        let FlatSpecKind::Fn { impl_data, body, .. } = &mut self.kind else { return Ok(()) };
+        let Some(data) = std::mem::take(impl_data) else {
+            return Ok(());
+        };
+
+        let inner_params = std::mem::replace(&mut self.signature.generics.params, data.params);
+        self.signature.generics.params.extend(inner_params);
+
+        if self.signature.generics.where_clause.is_none() {
+            self.signature.generics.where_clause = Some(WhereClause {
+                where_token: Default::default(),
+                predicates: Default::default(),
+            });
+        }
+
+        let where_clause = self.signature.generics.where_clause.as_mut().unwrap();
+
+        if let Some(p) = data.where_clause {
+            where_clause.predicates.extend(p)
+        };
+
+        let escape = match &data.self_ty {
+            TraitOrImpl::Trait(_, _) => SelfTypeKind::Self_,
+            TraitOrImpl::Impl(ty) => SelfTypeKind::Type(ty.clone()),
+        };
+        let mut replacer = SelfTypeEscaper { escape, err: Ok(()) };
+
+        self.signature.inputs.iter_mut().for_each(|input| match input {
+            FnArg::Receiver(Receiver { self_token, ty, .. }) => {
+                // An `impl` block may have a `self` reciever, but we should replace it with the actual
+                // underlying type. This constructs the correct replacement for those cases.
+
+                let mut ty = ty.clone();
+                replacer.visit_type_mut(&mut ty);
+
+                let self_: Ident = self_escape(self_token.span());
+
+                *input = FnArg::Typed(PatType {
+                    attrs: Vec::new(),
+                    pat: parse_quote!(#self_),
+                    colon_token: Default::default(),
+                    ty,
+                });
+            }
+            FnArg::Typed(PatType { ty, .. }) => replacer.visit_type_mut(ty),
+        });
+
+        replacer.visit_return_type_mut(&mut self.signature.output);
+
+        if let TraitOrImpl::Trait(trait_name, generics) = data.self_ty {
+            let selfty = self_type_escape(self.span);
+            where_clause
+                    .predicates
+                    .push(parse_quote_spanned! {self.span=> #selfty : ?::core::marker::Sized + #trait_name #generics });
+
+            self.signature.generics.params.insert(0, selfty);
+
+            where_clause.predicates.iter_mut().for_each(|pred| {
+                replacer.visit_where_predicate_mut(pred);
+            });
+        }
+
+        if let Some(block) = body {
+            replacer.visit_block_mut(block)
+        }
+        escape_self_in_contracts(&mut self.attrs, &mut replacer)?;
+        replacer.err
     }
 }
 
@@ -381,7 +423,6 @@ fn filter_erasure(attrs: &[Attribute]) -> Vec<Attribute> {
 enum SelfTypeKind {
     Self_,
     Type(Box<Type>),
-    None,
 }
 
 struct SelfTypeEscaper {
@@ -393,7 +434,6 @@ impl SelfTypeEscaper {
     fn visit_struct_path(&mut self, path: &mut Path) {
         if path.segments[0].ident == "Self" {
             match &self.escape {
-                SelfTypeKind::None => (),
                 SelfTypeKind::Type(box Type::Path(TypePath { path: pathty, .. }))
                     if path.segments.len() == 1 =>
                 {
@@ -414,7 +454,6 @@ impl syn::visit_mut::VisitMut for SelfTypeEscaper {
             && path.segments[0].ident == "Self"
         {
             match &self.escape {
-                SelfTypeKind::None => (),
                 SelfTypeKind::Type(box escty) if path.segments.len() == 1 => *ty = escty.clone(),
                 SelfTypeKind::Type(_) => {
                     self.err = Err(Error::new(path.segments[0].span(), "Cannot use Self here."))
@@ -435,7 +474,6 @@ impl syn::visit_mut::VisitMut for SelfTypeEscaper {
         if expr.path.segments[0].ident == "Self" {
             let span = expr.path.segments[0].span();
             match &self.escape {
-                SelfTypeKind::None => (),
                 SelfTypeKind::Type(_) => self.err = Err(Error::new(span, "Cannot use Self here.")),
                 SelfTypeKind::Self_ => expr.path.segments[0] = self_type_escape(span),
             }
@@ -737,15 +775,67 @@ fn flatten(
             flat.push(FlatSpec {
                 span: fun.span,
                 signature: fun.sig,
-                doc_item_name: item_name,
                 attrs: fun.attrs,
                 path: prefix,
-                impl_data,
-                body: fun.body.ok(),
+                kind: FlatSpecKind::Fn { impl_data, body: fun.body.ok(), doc_item_name: item_name },
+            })
+        }
+        ExternSpec::Const(cnst) => {
+            assert!(prefix.path.segments.is_empty());
+            let signature = Signature {
+                constness: None,
+                asyncness: None,
+                unsafety: None,
+                abi: None,
+                fn_token: Token![fn](cnst.span),
+                ident: cnst.path.path.segments.last().unwrap().ident.clone(),
+                generics: Default::default(),
+                paren_token: Paren::default(),
+                inputs: Default::default(),
+                variadic: None,
+                output: ReturnType::Default,
+            };
+            flat.push(FlatSpec {
+                span: cnst.span,
+                attrs: parse_const_attrs(cnst.attrs)?,
+                signature,
+                path: cnst.path,
+                kind: FlatSpecKind::Const,
             })
         }
     }
     Ok(())
+}
+
+// Wrapper to implement Parse, using `parse_separated_nonempty`.
+struct PunctNonempty<T, P>(Punctuated<T, P>);
+
+impl<T: Parse, P: Token + Parse> Parse for PunctNonempty<T, P> {
+    fn parse(input: ParseStream) -> Result<Self> {
+        Punctuated::parse_separated_nonempty(input).map(PunctNonempty)
+    }
+}
+
+// Accept only `#[ensures]` and `#[constant]`
+fn parse_const_attrs(attrs: Vec<Attribute>) -> Result<Vec<Attribute>> {
+    let mut r = vec![];
+    attrs.into_iter().try_for_each(|attr: Attribute| match attr.meta {
+        Meta::List(ref list)
+            if list.path.segments.len() == 1 && list.path.segments[0].ident == "ensures" =>
+        {
+            r.push(attr);
+            Ok(())
+        }
+        Meta::List(list)
+            if list.path.segments.len() == 1 && list.path.segments[0].ident == "constant" =>
+        {
+            let args = parse::<PunctNonempty<_, Token![,]>>(list.tokens.into())?;
+            r.extend(args.0.into_iter().map(ConstantArg::to_attr));
+            Ok(())
+        }
+        _ => Err(Error::new(attr.span(), "unrecognized attribute in extern spec for const")),
+    })?;
+    Ok(r)
 }
 
 fn generic_arguments(sig: &Signature) -> PathArguments {
@@ -776,6 +866,27 @@ fn param_to_argument(t: &GenericParam) -> Option<GenericArgument> {
     }
 }
 
+impl ExternSpecItem {
+    fn set_attrs(&mut self, attrs: Vec<Attribute>) {
+        use ExternSpecItem::*;
+        match self {
+            Type(t) => t.attrs = attrs,
+            Fun(f) => f.set_attrs(attrs),
+        }
+    }
+}
+
+impl ExternSpec {
+    fn set_attrs(&mut self, attrs: Vec<Attribute>) {
+        use ExternSpec::*;
+        match self {
+            Fn(m) => m.attrs = attrs,
+            Const(c) => c.attrs = attrs,
+            Mod(_) | Trait(_) | Impl(_) => {}
+        }
+    }
+}
+
 impl Parse for ExternSpecs {
     fn parse(input: parse::ParseStream) -> Result<Self> {
         let mut externs = Vec::new();
@@ -792,17 +903,13 @@ impl Parse for ExternSpecItem {
         let attrs = input.call(Attribute::parse_outer)?;
 
         let lookahead = input.lookahead1();
-        if lookahead.peek(Token![type]) {
-            let mut ty = input.call(ExternType::parse)?;
-            ty.attrs = attrs;
-            Ok(ExternSpecItem::Type(ty))
+        let mut item = if lookahead.peek(Token![type]) {
+            ExternSpecItem::Type(input.call(ExternType::parse)?)
         } else {
-            let mut e = input.call(ExternSpec::parse)?;
-            if let ExternSpec::Fn(ref mut f) = e {
-                f.attrs = attrs
-            }
-            Ok(ExternSpecItem::Fun(e))
-        }
+            ExternSpecItem::Fun(input.call(ExternSpec::parse)?)
+        };
+        item.set_attrs(attrs);
+        Ok(item)
     }
 }
 
@@ -811,21 +918,23 @@ impl Parse for ExternSpec {
         let attrs = input.call(Attribute::parse_outer)?;
 
         let lookahead = input.lookahead1();
-        if lookahead.peek(Token![mod]) {
-            Ok(ExternSpec::Mod(input.parse()?))
+        let mut item = if lookahead.peek(Token![mod]) {
+            ExternSpec::Mod(input.parse()?)
         } else if lookahead.peek(Token![impl]) {
-            Ok(ExternSpec::Impl(input.parse()?))
+            ExternSpec::Impl(input.parse()?)
         } else if lookahead.peek(Token![trait]) {
-            Ok(ExternSpec::Trait(input.parse()?))
+            ExternSpec::Trait(input.parse()?)
         } else if lookahead.peek(Token![fn])
             || (lookahead.peek(Token![unsafe]) && input.peek2(Token![fn]))
         {
-            let mut f: ExternMethod = input.parse()?;
-            f.attrs = attrs;
-            Ok(ExternSpec::Fn(f))
+            ExternSpec::Fn(input.parse()?)
+        } else if lookahead.peek(Token![const]) {
+            ExternSpec::Const(input.parse()?)
         } else {
-            Err(lookahead.error())
-        }
+            return Err(lookahead.error());
+        };
+        item.set_attrs(attrs);
+        Ok(item)
     }
 }
 
@@ -1025,5 +1134,16 @@ impl ToTokens for ExternType {
             #(#attrs)*
             struct #ident #generics (#path);
         })
+    }
+}
+
+impl Parse for ExternConst {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let span = input.span();
+        let attrs = vec![];
+        let _const = input.parse()?;
+        let path = input.parse()?;
+        let _semi = input.parse()?;
+        Ok(ExternConst { span, attrs, _const, path, _semi })
     }
 }
