@@ -182,7 +182,8 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for ThirOpacityVisitor<'thir, 'tcx> {
 /// Validates that a private function is not made visible in a public one which is open.
 pub(crate) fn validate_opacity<'tcx>(ctx: &TranslationCtx<'tcx>, item: DefId) {
     // FIXME: validate extern specs and contracts of trait method declarations
-    if ctx.tcx.is_closure_like(item) {
+    // FIXME: validate inline const
+    if matches!(ctx.tcx.def_kind(item), DefKind::Closure | DefKind::InlineConst) {
         return;
     }
     let is_logic = is_logic(ctx.tcx, item);
