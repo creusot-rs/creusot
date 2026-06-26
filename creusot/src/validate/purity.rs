@@ -143,6 +143,26 @@ pub(crate) fn validate_purity<'tcx>(
         .emit();
         return;
     }
+    if let Some((span, alias_id)) = ctx.logic_alias(def_id) {
+        if is_logic(ctx.tcx, def_id) {
+            ctx.dcx()
+                .struct_span_err(
+                    ctx.def_ident_span(def_id).unwrap_or_default(),
+                    "Only program functions can use `#[logic_alias]`",
+                )
+                .with_span_label(span, "alias defined here")
+                .emit()
+                .raise_fatal();
+        }
+        let logic_id = logic_alias::get_logic_id(ctx, alias_id);
+        if !is_logic(ctx.tcx, logic_id) {
+            ctx.dcx()
+                .struct_span_err(span, "Only logic functions can be aliased")
+                .with_note(format!("`{}` is not a logic function", ctx.def_path_str(logic_id)))
+                .emit()
+                .raise_fatal();
+        }
+    }
     let typing_env = ctx.typing_env(def_id);
     PurityVisitor { ctx, thir, context: LocalPurity::of_def_id(ctx, def_id), typing_env }
         .visit_expr(&thir[expr]);
@@ -273,9 +293,9 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             .unwrap();
 
                     let fn_purity = self.purity(func_did, args);
+                    let base_purity = fn_purity; // backup to get more consistent error messages
                     let fn_purity = match self.ctx.logic_alias(func_did) {
                         Some((_, alias_id)) if !self.context.can_call(fn_purity) => {
-                            // TODO MAEL println!("Found logic_alias: {:?}", alias_id);
                             self.purity(logic_alias::get_logic_id(self.ctx, alias_id), args)
                         }
                         _ => fn_purity,
@@ -292,7 +312,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     {
                     } else if !self.context.can_call(fn_purity) {
                         // Emit a nicer error specifically for calls of ghost functions.
-                        if fn_purity == Purity::Ghost && self.context.is_program() {
+                        if base_purity == Purity::Ghost && self.context.is_program() {
                             match self.ctx.intrinsic(func_did) {
                                 Intrinsic::GhostIntoInner => self
                                     .error(expr.span, "trying to access the contents of a ghost variable in program context").emit(),
@@ -320,7 +340,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 _ => unreachable!(),
                             };
                         } else {
-                            let (caller, callee) = match (self.context, fn_purity) {
+                            let (caller, callee) = match (self.context, base_purity) {
                                 (
                                     LocalPurity::Purity(Purity::Program { .. } | Purity::Ghost),
                                     Purity::Logic { .. },
