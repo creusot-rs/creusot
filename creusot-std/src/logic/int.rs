@@ -2,7 +2,6 @@ use crate::{
     ghost::Plain,
     invariant::{InhabitedInvariant, Subset},
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, RemLogic, SubLogic},
-    partial_ord_laws_impl,
     prelude::*,
 };
 use core::{
@@ -531,7 +530,21 @@ impl PartialOrdLogic for Nat {
         self.to_int() <= other.to_int()
     }
 
-    partial_ord_laws_impl! { let _ = Nat::ext_eq; }
+    #[logic]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
+
+    #[logic]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
+
+    #[logic(law)]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {
+        let _ = Nat::ext_eq;
+    }
 }
 
 impl OrdLogic for Nat {
@@ -651,11 +664,27 @@ impl PartialOrdLogic for Positive {
         self.to_int() <= other.to_int()
     }
 
-    partial_ord_laws_impl! { let _ = Positive::ext_eq; }
+    #[logic]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
+
+    #[logic]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
+
+    #[logic(law)]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {
+        let _ = Positive::ext_eq;
+    }
 }
 
 impl OrdLogic for Positive {
     #[logic(law)]
     #[ensures(self < other || self == other || other < self)]
-    fn lt_log_total(self, other: Self) {}
+    fn lt_log_total(self, other: Self) {
+        let _ = Positive::ext_eq;
+    }
 }

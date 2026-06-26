@@ -2,7 +2,6 @@
 use crate::{
     invariant::{InhabitedInvariant, Subset},
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, SubLogic},
-    partial_ord_laws_impl,
     prelude::*,
 };
 #[cfg(all(creusot, feature = "std"))]
@@ -42,11 +41,23 @@ impl PartialOrdLogic for Real {
         dead
     }
 
-    crate::logic::ord::partial_ord_laws_impl! {}
+    #[logic]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
+
+    #[logic]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
+
+    #[logic]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {}
 }
 
 impl OrdLogic for Real {
-    #[logic(law)]
+    #[logic]
     #[ensures(self < other || self == other || other < self)]
     fn lt_log_total(self, other: Self) {}
 }
@@ -158,13 +169,29 @@ impl PartialOrdLogic for PositiveReal {
         self.to_real() < o.to_real()
     }
 
-    partial_ord_laws_impl! { let _ = PositiveReal::ext_eq; }
+    #[logic]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
+
+    #[logic]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
+
+    #[logic(law)]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {
+        let _ = PositiveReal::ext_eq;
+    }
 }
 
 impl OrdLogic for PositiveReal {
     #[logic(law)]
     #[ensures(self < other || self == other || other < self)]
-    fn lt_log_total(self, other: Self) {}
+    fn lt_log_total(self, other: Self) {
+        let _ = PositiveReal::ext_eq;
+    }
 }
 
 impl AddLogic for PositiveReal {

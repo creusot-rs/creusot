@@ -25,10 +25,7 @@
 //! overflow the backing integer. Since ghost code is not executed, the time argument is
 //! not applicable.
 
-use crate::{
-    logic::ord::partial_ord_laws_impl,
-    prelude::{Clone, Default, *},
-};
+use crate::prelude::{Clone, Default, *};
 use core::cmp::Ordering;
 
 /// A peano integer wrapping a 64-bits integer.
@@ -58,11 +55,23 @@ impl PartialOrdLogic for PeanoInt {
         self.0 <= o.0
     }
 
-    partial_ord_laws_impl! {}
+    #[logic]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
+
+    #[logic]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
+
+    #[logic]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {}
 }
 
 impl OrdLogic for PeanoInt {
-    #[logic(law)]
+    #[logic]
     #[ensures(self < other || self == other || other < self)]
     fn lt_log_total(self, other: Self) {}
 }
