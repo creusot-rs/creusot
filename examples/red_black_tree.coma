@@ -49,61 +49,23 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -275,13 +237,17 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
         end}
       any) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -703,61 +669,23 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -770,13 +698,17 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
       /\ bst_invariant_K left'0 /\ bst_invariant_K right'0
       end
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -1096,61 +1028,23 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -1322,13 +1216,17 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
         end}
       any) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -1611,61 +1509,23 @@ module M_impl_Map_K_V__get (* Map<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -1766,6 +1626,8 @@ module M_impl_Map_K_V__get (* Map<K, V> *)
         end}
       any) ]
   
+  type t_Ordering = Less | Equal | Greater
+  
   type tup2_ref_K_ref_K = { f0'0: t_K; f1'0: t_K }
   
   predicate invariant_ref_K [@inline:trivial] (self: t_K) = inv_K self
@@ -1781,6 +1643,17 @@ module M_impl_Map_K_V__get (* Map<K, V> *)
   axiom precondition_fndef:
     forall args: tup2_ref_K_ref_K [precondition_cmp () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K self_
         /\ inv_ref_K rhs) -> precondition_cmp () args
+  
+  function lt_log_total_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
+  
+  axiom lt_log_total_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. lt_log_DeepModelTy self other
+      \/ self = other \/ lt_log_DeepModelTy other self
+  
+  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering = if self = other then
+      Equal
+    else
+      if lt_log_DeepModelTy self other then Less else Greater
+  
   
   predicate postcondition_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
   
@@ -1802,13 +1675,17 @@ module M_impl_Map_K_V__get (* Map<K, V> *)
   
   type t_Option_ref_V = None'1 | Some'1 t_V
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -1945,61 +1822,23 @@ module M_impl_Map_K_V__get_mut (* Map<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -2106,13 +1945,17 @@ module M_impl_Map_K_V__get_mut (* Map<K, V> *)
         end
       end
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -2144,6 +1987,8 @@ module M_impl_Map_K_V__get_mut (* Map<K, V> *)
         end}
       any) ]
   
+  type t_Ordering = Less | Equal | Greater
+  
   type tup2_ref_K_ref_K = { f0'0: t_K; f1'0: t_K }
   
   predicate invariant_ref_K [@inline:trivial] (self: t_K) = inv_K self
@@ -2159,6 +2004,17 @@ module M_impl_Map_K_V__get_mut (* Map<K, V> *)
   axiom precondition_fndef:
     forall args: tup2_ref_K_ref_K [precondition_cmp () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K self_
         /\ inv_ref_K rhs) -> precondition_cmp () args
+  
+  function lt_log_total_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
+  
+  axiom lt_log_total_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. lt_log_DeepModelTy self other
+      \/ self = other \/ lt_log_DeepModelTy other self
+  
+  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering = if self = other then
+      Equal
+    else
+      if lt_log_DeepModelTy self other then Less else Greater
+  
   
   predicate postcondition_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
   
@@ -2439,61 +2295,23 @@ module M_impl_Map_K_V__insert (* Map<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -2583,13 +2401,17 @@ module M_impl_Map_K_V__insert (* Map<K, V> *)
   
   meta "rewrite_def" predicate inv_refmut_Tree_K_V
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -2806,61 +2628,23 @@ module M_impl_Map_K_V__new (* Map<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -2873,13 +2657,17 @@ module M_impl_Map_K_V__new (* Map<K, V> *)
       /\ bst_invariant_K left'0 /\ bst_invariant_K right'0
       end
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -3039,13 +2827,17 @@ module M_impl_Node_K_V_2__height (* Node<K, V> *)
   with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
   with t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   meta "compute_max_steps" 1000000
   
@@ -3056,10 +2848,10 @@ module M_impl_Node_K_V_2__height (* Node<K, V> *)
   function height_K'0 (self: t_Node_K_V) : int
   
   goal vc_height_K: match self.color with
-      | Red -> ([@stop_split] [@expl:height ensures] height_K self.left >= 0)
+      | Red -> ([@stop_split] [@expl:height ensures] ge_log_Int (height_K self.left) 0)
       -> ([@stop_split] [@expl:height ensures] forall node'0: t_Node_K_V. self = node'0
         -> height_K self.left = height_K { node = Some node'0 })
-      | Black -> ([@stop_split] [@expl:height ensures] height_K self.left >= 0)
+      | Black -> ([@stop_split] [@expl:height ensures] ge_log_Int (height_K self.left) 0)
       -> ([@stop_split] [@expl:height ensures] forall node'0: t_Node_K_V. self = node'0
         -> height_K self.left + 1 = height_K { node = Some node'0 })
       end
@@ -3147,61 +2939,23 @@ module M_impl_Node_K_V_4__balance (* Node<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -3217,13 +2971,17 @@ module M_impl_Node_K_V_4__balance (* Node<K, V> *)
   predicate bst_invariant_K'0 (self: t_Node_K_V) =
     bst_invariant_here_K self /\ bst_invariant_K self.left /\ bst_invariant_K self.right
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -3644,61 +3402,23 @@ module M_impl_Node_K_V_4__flip_colors (* Node<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -3714,13 +3434,17 @@ module M_impl_Node_K_V_4__flip_colors (* Node<K, V> *)
   predicate bst_invariant_K'0 (self: t_Node_K_V) =
     bst_invariant_here_K self /\ bst_invariant_K self.left /\ bst_invariant_K self.right
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -3905,61 +3629,23 @@ module M_impl_Node_K_V_4__move_red_left (* Node<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -3975,13 +3661,17 @@ module M_impl_Node_K_V_4__move_red_left (* Node<K, V> *)
   predicate bst_invariant_K'0 (self: t_Node_K_V) =
     bst_invariant_here_K self /\ bst_invariant_K self.left /\ bst_invariant_K self.right
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -4376,61 +4066,23 @@ module M_impl_Node_K_V_4__move_red_right (* Node<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -4446,13 +4098,17 @@ module M_impl_Node_K_V_4__move_red_right (* Node<K, V> *)
   predicate bst_invariant_K'0 (self: t_Node_K_V) =
     bst_invariant_here_K self /\ bst_invariant_K self.left /\ bst_invariant_K self.right
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -4952,61 +4608,23 @@ module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
   
   meta "rewrite_def" predicate resolve_refmut_Node_K_V
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -5022,13 +4640,17 @@ module M_impl_Node_K_V_4__rotate_left (* Node<K, V> *)
   predicate bst_invariant_K'0 (self: t_Node_K_V) =
     bst_invariant_here_K self /\ bst_invariant_K self.left /\ bst_invariant_K self.right
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -5395,61 +5017,23 @@ module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
   
   meta "rewrite_def" predicate resolve_refmut_Node_K_V
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -5465,13 +5049,17 @@ module M_impl_Node_K_V_4__rotate_right (* Node<K, V> *)
   predicate bst_invariant_K'0 (self: t_Node_K_V) =
     bst_invariant_here_K self /\ bst_invariant_K self.left /\ bst_invariant_K self.right
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -5722,61 +5310,23 @@ module M_impl_Resolve_for_Map_K_V__resolve_coherence (* <Map<K, V> as creusot_st
   predicate resolve_Map_K_V (self: t_Map_K_V) =
     forall k: t_DeepModelTy. resolve_Option_V (Map.get (view_Map_K_V self) k)
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -5855,61 +5405,23 @@ module M_impl_Resolve_for_Map_K_V__resolve_coherence__refines (* <Map<K, V> as c
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -5922,13 +5434,17 @@ module M_impl_Resolve_for_Map_K_V__resolve_coherence__refines (* <Map<K, V> as c
       /\ bst_invariant_K left'0 /\ bst_invariant_K right'0
       end
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -6503,61 +6019,23 @@ module M_impl_Tree_K_V_0__has_mapping_inj (* Tree<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -6653,61 +6131,23 @@ module M_impl_Tree_K_V_0__has_mapping_model (* Tree<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -6797,61 +6237,23 @@ module M_impl_Tree_K_V_0__has_mapping_model_acc (* Tree<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -6923,6 +6325,10 @@ module M_impl_Tree_K_V_3__height (* Tree<K, V> *)
   with t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
   with t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -6932,11 +6338,11 @@ module M_impl_Tree_K_V_3__height (* Tree<K, V> *)
   function height_K (self: t_Tree_K_V) : int
   
   goal vc_height_K: match self with
-      | {node = None} -> [@stop_split] [@expl:height ensures] 0 >= 0
-      | {node = Some {left = left'0; color = Red}} -> ([@stop_split] [@expl:height ensures] height_K left'0 >= 0)
-      -> ([@stop_split] [@expl:height ensures] height_K left'0 >= 0)
-      | {node = Some {left = left'0; color = Black}} -> ([@stop_split] [@expl:height ensures] height_K left'0 >= 0)
-      -> ([@stop_split] [@expl:height ensures] height_K left'0 + 1 >= 0)
+      | {node = None} -> [@stop_split] [@expl:height ensures] ge_log_Int 0 0
+      | {node = Some {left = left'0; color = Red}} -> ([@stop_split] [@expl:height ensures] ge_log_Int (height_K left'0) 0)
+      -> ([@stop_split] [@expl:height ensures] ge_log_Int (height_K left'0) 0)
+      | {node = Some {left = left'0; color = Black}} -> ([@stop_split] [@expl:height ensures] ge_log_Int (height_K left'0) 0)
+      -> ([@stop_split] [@expl:height ensures] ge_log_Int (height_K left'0 + 1) 0)
       end
 end
 module M_impl_Tree_K_V_5__is_red (* Tree<K, V> *)
@@ -7167,61 +6573,23 @@ module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
       \/ has_mapping_K right'0 k v \/ k = deep_model_K key'0 /\ v = val''0
       end
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -7237,13 +6605,17 @@ module M_impl_Tree_K_V_6__delete_max_rec (* Tree<K, V> *)
   predicate bst_invariant_K'0 (self: t_Node_K_V) =
     bst_invariant_here_K self /\ bst_invariant_K self.left /\ bst_invariant_K self.right
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -7905,61 +7277,23 @@ module M_impl_Tree_K_V_6__delete_min_rec (* Tree<K, V> *)
         end}
       any) ]
   
-  type t_Ordering = Less | Equal | Greater
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
-  
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
-  
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
-  
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
-  
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
-  
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
   predicate bst_invariant_here_K (self: t_Node_K_V) =
     (forall k: t_DeepModelTy, v: t_V. has_mapping_K self.left k v -> lt_log_DeepModelTy k (deep_model_K self.key))
@@ -7975,13 +7309,17 @@ module M_impl_Tree_K_V_6__delete_min_rec (* Tree<K, V> *)
   predicate bst_invariant_K'0 (self: t_Node_K_V) =
     bst_invariant_here_K self /\ bst_invariant_K self.left /\ bst_invariant_K self.right
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -8396,59 +7734,34 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   
   type t_DeepModelTy
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
+  function lt_log_total_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
+  axiom lt_log_total_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. lt_log_DeepModelTy self other
+      \/ self = other \/ lt_log_DeepModelTy other self
   
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
+  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering = if self = other then
+      Equal
+    else
+      if lt_log_DeepModelTy self other then Less else Greater
   
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
   
   function deep_model_K (self: t_K) : t_DeepModelTy
   
@@ -8510,13 +7823,17 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
   predicate bst_invariant_K'0 (self: t_Node_K_V) =
     bst_invariant_here_K self /\ bst_invariant_K self.left /\ bst_invariant_K self.right
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   
@@ -9531,59 +8848,34 @@ module M_impl_Tree_K_V_6__insert_rec (* Tree<K, V> *)
     forall args: tup2_ref_K_ref_K [precondition_cmp () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_K self_
         /\ inv_ref_K rhs) -> precondition_cmp () args
   
-  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering
+  predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  function eq_cmp_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
   
-  axiom eq_cmp_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. (x = y) = (cmp_log_DeepModelTy x y = Equal)
+  function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  function antisym2_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+      = (lt_log_DeepModelTy self other \/ self = other)
   
-  axiom antisym2_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Greater
-      -> cmp_log_DeepModelTy y x = Less
+  function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
   
-  function antisym1_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
+  axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+      -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
   
-  axiom antisym1_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. cmp_log_DeepModelTy x y = Less
-      -> cmp_log_DeepModelTy y x = Greater
+  function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
   
-  function trans_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) (o: t_Ordering) : ()
+  axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
   
-  axiom trans_DeepModelTy_spec:
-    forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy, o: t_Ordering. cmp_log_DeepModelTy x y = o
-      -> cmp_log_DeepModelTy y z = o -> cmp_log_DeepModelTy x z = o
+  function lt_log_total_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
-  function refl_DeepModelTy (x: t_DeepModelTy) : ()
+  axiom lt_log_total_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. lt_log_DeepModelTy self other
+      \/ self = other \/ lt_log_DeepModelTy other self
   
-  axiom refl_DeepModelTy_spec: forall x: t_DeepModelTy. cmp_log_DeepModelTy x x = Equal
+  function cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Ordering = if self = other then
+      Equal
+    else
+      if lt_log_DeepModelTy self other then Less else Greater
   
-  predicate gt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_gt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_gt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. gt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Greater)
-  
-  predicate ge_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_ge_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_ge_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. ge_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Less)
-  
-  predicate lt_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_lt_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_lt_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. lt_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y = Less)
-  
-  predicate le_log_DeepModelTy (self: t_DeepModelTy) (o: t_DeepModelTy)
-  
-  function cmp_le_log_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) : ()
-  
-  axiom cmp_le_log_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy. le_log_DeepModelTy x y
-      = (cmp_log_DeepModelTy x y <> Greater)
   
   predicate postcondition_cmp (self: ()) (args: tup2_ref_K_ref_K) (result: t_Ordering)
   
@@ -9614,13 +8906,17 @@ module M_impl_Tree_K_V_6__insert_rec (* Tree<K, V> *)
       /\ bst_invariant_K left'0 /\ bst_invariant_K right'0
       end
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function height_K (self: t_Tree_K_V) : int = match self with
       | {node = None} -> 0
       | {node = Some {left = left'0; color = Red}} -> height_K left'0
       | {node = Some {left = left'0; color = Black}} -> height_K left'0 + 1
       end
   
-  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. height_K self >= 0
+  axiom height_K_spec: forall self: t_Tree_K_V [height_K self]. ge_log_Int (height_K self) 0
   
   predicate height_invariant_here_K (self: t_Node_K_V) = height_K self.left = height_K self.right
   

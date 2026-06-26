@@ -6,51 +6,6 @@ module M_main
   use creusot.prelude.Any
   use int.Int
   
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
-  
-  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
-  
-  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
-  
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
-  
-  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
-  
-  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
-  
-  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
-  
-  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
-  
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
   let into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
@@ -64,10 +19,14 @@ module M_main
   
   meta "rewrite_def" function deep_model_i32
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Range_i32 (self: t_Range_i32) (visited: Seq.seq Int32.t) (o: t_Range_i32) =
     self.end' = o.end'
     /\ deep_model_i32 self.start <= deep_model_i32 o.start
-    /\ (Seq.length visited > 0 -> deep_model_i32 o.start <= deep_model_i32 o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_i32 o.start <= deep_model_i32 o.end')
     /\ Seq.length visited = deep_model_i32 o.start - deep_model_i32 self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_i32 (Seq.get visited i) = deep_model_i32 self.start + i)
@@ -89,8 +48,12 @@ module M_main
   
   meta "rewrite_def" predicate resolve_refmut_Range_i32
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
-    resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
+    resolve_refmut_Range_i32 self /\ ge_log_Int (deep_model_i32 self.current.start) (deep_model_i32 self.current.end')
   
   let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with

@@ -1,5 +1,6 @@
 //! Logical models of types: [`View`] and [`DeepModel`]
 use crate::prelude::*;
+use core::cmp::Ordering;
 
 /// The view of a type is its logical model as typically used to specify a data
 /// structure. It is typically "shallow", and does not involve the model of
@@ -63,8 +64,8 @@ impl DeepModel for Int {
     }
 }
 
-impl DeepModel for core::cmp::Ordering {
-    type DeepModelTy = core::cmp::Ordering;
+impl DeepModel for Ordering {
+    type DeepModelTy = Ordering;
 
     #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {

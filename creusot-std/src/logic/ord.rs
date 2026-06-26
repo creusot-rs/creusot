@@ -1,121 +1,109 @@
-//! Definition for using orderings in pearlite.
+//! Definition for using orderings in Pearlite.
 
 use crate::prelude::*;
 use core::cmp::Ordering;
 
-/// Trait for comparison operations (`<`, `>`, `<=`, `>=`) in pearlite.
+/// Trait for comparison operations (`<`, `>`, `<=`, `>=`) in Pearlite.
 ///
-/// Types that implement this trait must have a total order. In particular, the order
-/// must be:
-/// - [reflexive](Self::refl)
-/// - [transitive](Self::trans)
-/// - antisymmetric ([part1](Self::antisym1), [part2](Self::antisym2))
-#[allow(unused)]
-pub trait OrdLogic {
-    /// The comparison operation. Returns:
-    /// - [`Ordering::Less`] if `self` is smaller than `other`
-    /// - [`Ordering::Equal`] if `self` is equal to `other`
-    /// - [`Ordering::Greater`] if `self` is greater than `other`
-    #[logic]
-    fn cmp_log(self, other: Self) -> Ordering;
-
-    /// The logical `<=` operation.
-    #[logic(open)]
-    fn le_log(self, o: Self) -> bool {
-        pearlite! { self.cmp_log(o) != Ordering::Greater }
-    }
-
-    #[logic(law)]
-    #[ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
-    fn cmp_le_log(x: Self, y: Self);
-
+/// Types that implement this trait must satisfy some properties (see [`PartialOrd`] trait in Rust).
+///
+/// In particular, the order must be:
+/// - [irreflexive](Self::irreflexive)
+/// - [transitive](Self::transitive)
+///
+pub trait PartialOrdLogic {
     /// The logical `<` operation.
-    #[logic(open)]
-    fn lt_log(self, o: Self) -> bool {
-        pearlite! { self.cmp_log(o) == Ordering::Less }
-    }
-
-    #[logic(law)]
-    #[ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
-    fn cmp_lt_log(x: Self, y: Self);
-
-    /// The logical `>=` operation.
-    #[logic(open)]
-    fn ge_log(self, o: Self) -> bool {
-        pearlite! { self.cmp_log(o) != Ordering::Less }
-    }
-
-    #[logic(law)]
-    #[ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
-    fn cmp_ge_log(x: Self, y: Self);
+    #[logic]
+    fn lt_log(self, other: Self) -> bool;
 
     /// The logical `>` operation.
-    #[logic(open)]
-    fn gt_log(self, o: Self) -> bool {
-        pearlite! { self.cmp_log(o) == Ordering::Greater }
+    #[logic(open, inline, sealed)]
+    fn gt_log(self, other: Self) -> bool {
+        other < self
+    }
+
+    /// The logical `<=` operation.
+    #[logic(open, inline)]
+    fn le_log(self, other: Self) -> bool {
+        pearlite! { self < other || self == other }
+    }
+
+    /// The logical `>=` operation.
+    #[logic(open, inline, sealed)]
+    fn ge_log(self, other: Self) -> bool {
+        other <= self
     }
 
     #[logic(law)]
-    #[ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
-    fn cmp_gt_log(x: Self, y: Self);
+    #[ensures(!(self < self))]
+    fn irreflexive(self);
 
-    /// Reflexivity of the order
     #[logic(law)]
-    #[ensures(x.cmp_log(x) == Ordering::Equal)]
-    fn refl(x: Self);
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self);
 
-    /// Transitivity of the order
     #[logic(law)]
-    #[requires(x.cmp_log(y) == o)]
-    #[requires(y.cmp_log(z) == o)]
-    #[ensures(x.cmp_log(z) == o)]
-    fn trans(x: Self, y: Self, z: Self, o: Ordering);
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self);
 
-    /// Antisymmetry of the order (`x < y ==> !(y < x)`)
-    ///
-    /// The antisymmetry is in two part; here is the [second](Self::antisym2) part.
-    #[logic(law)]
-    #[requires(x.cmp_log(y) == Ordering::Less)]
-    #[ensures(y.cmp_log(x) == Ordering::Greater)]
-    fn antisym1(x: Self, y: Self);
-
-    /// Antisymmetry of the order (`x > y ==> !(y > x)`)
-    ///
-    /// The antisymmetry is in two part; here is the [first](Self::antisym1) part.
-    #[logic(law)]
-    #[requires(x.cmp_log(y) == Ordering::Greater)]
-    #[ensures(y.cmp_log(x) == Ordering::Less)]
-    fn antisym2(x: Self, y: Self);
-
-    /// Compatibility between [`Ordering::Equal`] and equality (`==`).
-    #[logic(law)]
-    #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
-    fn eq_cmp(x: Self, y: Self);
+    #[logic(open, sealed)]
+    fn partial_cmp_log(self, other: Self) -> Option<Ordering> {
+        if self == other {
+            Some(Ordering::Equal)
+        } else if self < other {
+            Some(Ordering::Less)
+        } else if other < self {
+            Some(Ordering::Greater)
+        } else {
+            None
+        }
+    }
 }
 
-/// A macro to easily implements the various `#[logic(law)]`s of [`OrdLogic`].
+/// Types that implement this trait must have a total order ([`Ord`] trait in Rust).
+#[allow(unused)]
+pub trait OrdLogic: PartialOrdLogic {
+    /// The order is total
+    #[logic(law)]
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self);
+
+    /// The comparison operation.
+    #[logic(open, sealed)]
+    fn cmp_log(self, other: Self) -> Ordering {
+        if self == other {
+            Ordering::Equal
+        } else if self < other {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        }
+    }
+}
+
+/// A macro to easily implements the various `#[logic(law)]`s of [`PartialOrdLogic`].
 ///
 /// # Usage
 ///
 /// Simply use this macro in the trait impl:
 /// ```
-/// # use creusot_std::{logic::ord::{OrdLogic, ord_laws_impl}, prelude::*};
+/// # use creusot_std::{logic::ord::{PartialOrdLogic, partial_ord_laws_impl}, prelude::*};
 /// use std::cmp::Ordering;
 /// struct MyInt(Int);
 ///
-/// impl OrdLogic for MyInt {
-///     #[logic]
-///     fn cmp_log(self, other: Self) -> Ordering { todo!() }
-///     #[logic]
-///     fn le_log(self, other: Self) -> bool { todo!() }
-///     #[logic]
+/// impl PartialOrdLogic for MyInt {
+///     #[logic(open)]
 ///     fn lt_log(self, other: Self) -> bool { todo!() }
-///     #[logic]
-///     fn ge_log(self, other: Self) -> bool { todo!() }
-///     #[logic]
-///     fn gt_log(self, other: Self) -> bool { todo!() }
 ///
-///     ord_laws_impl! {}
+///     partial_ord_laws_impl! {}
+/// }
+///
+/// impl OrdLogic for MyInt {
+///     #[logic(law)]
+///     #[ensures(self < other || self == other || other < self)]
+///     fn lt_log_total(self, other: Self) {}
 /// }
 /// ```
 ///
@@ -123,7 +111,7 @@ pub trait OrdLogic {
 /// law's body. This can be useful to apply a lemma to every law:
 ///
 /// ```
-/// # use creusot_std::{logic::ord::{OrdLogic, ord_laws_impl}, prelude::*};
+/// # use creusot_std::{logic::ord::{PartialOrdLogic, partial_ord_laws_impl}, prelude::*};
 /// #[opaque]
 /// pub struct MyInt(());
 ///
@@ -139,128 +127,63 @@ pub trait OrdLogic {
 ///     fn view_inj(self, other: Self) {}
 /// }
 ///
-/// impl OrdLogic for MyInt {
+/// impl PartialOrdLogic for MyInt {
 ///     #[logic(open)]
-///     fn cmp_log(self, other: Self) -> Ordering { pearlite! { self@.cmp_log(other@) } }
-/// #    #[logic]
-/// #    fn le_log(self, other: Self) -> bool { todo!() }
-/// #    #[logic]
-/// #    fn lt_log(self, other: Self) -> bool { todo!() }
-/// #    #[logic]
-/// #    fn ge_log(self, other: Self) -> bool { todo!() }
-/// #    #[logic]
-/// #    fn gt_log(self, other: Self) -> bool { todo!() }
-///     // ...
+///     fn lt_log(self, other: Self) -> bool { todo!() }
 ///
-///     ord_laws_impl! { let _ = MyInt::view_inj; }
+///     partial_ord_laws_impl! { let _ = MyInt::view_inj; }
 /// }
 /// ```
 #[macro_export]
-macro_rules! ord_laws_impl {
+macro_rules! partial_ord_laws_impl {
     ( $($lemma:stmt)* ) => {
-        #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::ensures(x.le_log(y) == (x.cmp_log(y) != core::cmp::Ordering::Greater))]
-        fn cmp_le_log(x: Self, y: Self) {
+        #[::creusot_std::macros::logic(law)]
+        #[::creusot_std::macros::ensures(!(self < self))]
+        fn irreflexive(self) {
             $($lemma)*
         }
 
-        #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::ensures(x.lt_log(y) == (x.cmp_log(y) == core::cmp::Ordering::Less))]
-        fn cmp_lt_log(x: Self, y: Self) {
+        #[::creusot_std::macros::logic(law)]
+        #[::creusot_std::macros::requires(x < y)]
+        #[::creusot_std::macros::requires(y < z)]
+        #[::creusot_std::macros::ensures(x < z)]
+        fn transitive(x: Self, y: Self, z: Self) {
             $($lemma)*
         }
 
-        #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::ensures(x.ge_log(y) == (x.cmp_log(y) != core::cmp::Ordering::Less))]
-        fn cmp_ge_log(x: Self, y: Self) {
-            $($lemma)*
-        }
-
-        #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::ensures(x.gt_log(y) == (x.cmp_log(y) == core::cmp::Ordering::Greater))]
-        fn cmp_gt_log(x: Self, y: Self) {
-            $($lemma)*
-        }
-
-        #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::ensures(x.cmp_log(x) == core::cmp::Ordering::Equal)]
-        fn refl(x: Self) {
-            $($lemma)*
-        }
-
-        #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::requires(x.cmp_log(y) == o)]
-        #[::creusot_std::macros::requires(y.cmp_log(z) == o)]
-        #[::creusot_std::macros::ensures(x.cmp_log(z) == o)]
-        fn trans(x: Self, y: Self, z: Self, o: core::cmp::Ordering) {
-            $($lemma)*
-        }
-
-        #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::requires(x.cmp_log(y) == core::cmp::Ordering::Less)]
-        #[::creusot_std::macros::ensures(y.cmp_log(x) == core::cmp::Ordering::Greater)]
-        fn antisym1(x: Self, y: Self) {
-            $($lemma)*
-        }
-
-        #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::requires(x.cmp_log(y) == core::cmp::Ordering::Greater)]
-        #[::creusot_std::macros::ensures(y.cmp_log(x) == core::cmp::Ordering::Less)]
-        fn antisym2(x: Self, y: Self) {
-            $($lemma)*
-        }
-
-        #[::creusot_std::macros::logic(open(self), law)]
-        #[::creusot_std::macros::ensures((x == y) == (x.cmp_log(y) == core::cmp::Ordering::Equal))]
-        fn eq_cmp(x: Self, y: Self) {
+        #[::creusot_std::macros::logic(law)]
+        #[::creusot_std::macros::ensures((self <= other) == (self < other || self == other))]
+        fn le_lt_log(self, other: Self) {
             $($lemma)*
         }
     };
 }
 
-pub use ord_laws_impl;
+pub use partial_ord_laws_impl;
 
-impl<T: OrdLogic> OrdLogic for &T {
-    #[logic(open)]
-    fn cmp_log(self, o: Self) -> Ordering {
-        T::cmp_log(*self, *o)
-    }
-
-    #[logic]
-    fn le_log(self, other: Self) -> bool {
-        T::le_log(*self, *other)
-    }
-
-    #[logic]
+impl<T: PartialOrdLogic> PartialOrdLogic for &T {
+    #[logic(open, inline)]
     fn lt_log(self, other: Self) -> bool {
-        T::lt_log(*self, *other)
+        *self < *other
     }
 
-    #[logic]
-    fn ge_log(self, other: Self) -> bool {
-        T::ge_log(*self, *other)
+    #[logic(open, inline)]
+    fn le_log(self, other: Self) -> bool {
+        *self <= *other
     }
 
-    #[logic]
-    fn gt_log(self, other: Self) -> bool {
-        T::gt_log(*self, *other)
-    }
-
-    ord_laws_impl! {}
+    partial_ord_laws_impl! {}
 }
 
-impl OrdLogic for Int {
-    #[logic(open)]
-    fn cmp_log(self, o: Self) -> Ordering {
-        if self < o {
-            Ordering::Less
-        } else if self == o {
-            Ordering::Equal
-        } else {
-            Ordering::Greater
-        }
+impl<T: OrdLogic> OrdLogic for &T {
+    #[logic]
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {
+        let _ = T::lt_log_total;
     }
+}
 
+impl PartialOrdLogic for Int {
     #[logic]
     #[builtin("int.Int.(<=)")]
     fn le_log(self, _: Self) -> bool {
@@ -274,61 +197,110 @@ impl OrdLogic for Int {
     }
 
     #[logic]
-    #[builtin("int.Int.(>=)")]
-    fn ge_log(self, _: Self) -> bool {
-        dead
-    }
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
 
     #[logic]
-    #[builtin("int.Int.(>)")]
-    fn gt_log(self, _: Self) -> bool {
-        dead
-    }
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
 
-    ord_laws_impl! {}
+    #[logic]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {}
+}
+
+impl OrdLogic for Int {
+    #[logic]
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {}
 }
 
 macro_rules! ord_logic_impl {
     ($t:ty, $module:literal) => {
-        impl OrdLogic for $t {
-            #[logic(open)]
-            fn cmp_log(self, o: Self) -> Ordering {
-                if self < o {
-                    Ordering::Less
-                } else if self == o {
-                    Ordering::Equal
-                } else {
-                    Ordering::Greater
-                }
-            }
-
+        impl PartialOrdLogic for $t {
             #[logic]
             #[builtin(concat!($module, ".le"))]
             fn le_log(self, _: Self) -> bool {
-                true
+                dead
             }
 
             #[logic]
             #[builtin(concat!($module, ".lt"))]
             fn lt_log(self, _: Self) -> bool {
-                true
+                dead
             }
 
             #[logic]
-            #[builtin(concat!($module, ".ge"))]
-            fn ge_log(self, _: Self) -> bool {
-                true
-            }
+            #[ensures(!(self < self))]
+            fn irreflexive(self) {}
 
             #[logic]
-            #[builtin(concat!($module, ".gt"))]
-            fn gt_log(self, _: Self) -> bool {
-                true
-            }
+            #[requires(x < y)]
+            #[requires(y < z)]
+            #[ensures(x < z)]
+            fn transitive(x: Self, y: Self, z: Self) {}
 
-            ord_laws_impl! {}
+            #[logic]
+            #[ensures((self <= other) == (self < other || self == other))]
+            fn le_lt_log(self, other: Self) {}
+        }
+
+        impl OrdLogic for $t {
+            #[logic]
+            #[ensures(self < other || self == other || other < self)]
+            fn lt_log_total(self, other: Self) {}
         }
     };
+}
+
+impl PartialOrdLogic for f32 {
+    /// Note: the implementation of `f32::le_log` is not the `<=` operator in Rust,
+    /// because it is reflexive.
+    #[logic]
+    #[builtin("creusot.float.Float32.lt")]
+    fn lt_log(self, _: Self) -> bool {
+        dead
+    }
+
+    #[logic]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
+
+    #[logic]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
+
+    #[logic]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {}
+}
+
+impl PartialOrdLogic for f64 {
+    /// Note: the implementation of `f64::le_log` is not the `<=` operator in Rust,
+    /// because it is reflexive.
+    #[logic]
+    #[builtin("creusot.float.Float64.lt")]
+    fn lt_log(self, _: Self) -> bool {
+        dead
+    }
+
+    #[logic]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
+
+    #[logic]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
+
+    #[logic]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {}
 }
 
 ord_logic_impl!(u8, "creusot.int.UInt8$BW$");
@@ -358,38 +330,16 @@ ord_logic_impl!(isize, "creusot.int.Int16$BW$");
 ord_logic_impl!(char, "creusot.prelude.Char");
 ord_logic_impl!(bool, "creusot.prelude.Bool");
 
-impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
+impl<A: PartialOrdLogic, B: PartialOrdLogic> PartialOrdLogic for (A, B) {
     #[logic(open)]
-    fn cmp_log(self, o: Self) -> Ordering {
-        pearlite! { {
-            let r = self.0.cmp_log(o.0);
-            if r == Ordering::Equal {
-                self.1.cmp_log(o.1)
-            } else {
-                r
-            }
-        } }
+    fn lt_log(self, o: Self) -> bool {
+        self.0 == o.0 && self.1 < o.1 || self.0 < o.0
     }
 
     #[logic(open)]
     fn le_log(self, o: Self) -> bool {
-        pearlite! { (self.0 == o.0 && self.1 <= o.1) || self.0 < o.0 }
+        self.0 == o.0 && self.1 <= o.1 || self.0 < o.0
     }
 
-    #[logic(open)]
-    fn lt_log(self, o: Self) -> bool {
-        pearlite! { (self.0 == o.0 && self.1 < o.1) || self.0 < o.0 }
-    }
-
-    #[logic(open)]
-    fn ge_log(self, o: Self) -> bool {
-        pearlite! { (self.0 == o.0 && self.1 >= o.1) || self.0 > o.0 }
-    }
-
-    #[logic(open)]
-    fn gt_log(self, o: Self) -> bool {
-        pearlite! { (self.0 == o.0 && self.1 > o.1) || self.0 > o.0 }
-    }
-
-    ord_laws_impl! {}
+    partial_ord_laws_impl! {}
 }

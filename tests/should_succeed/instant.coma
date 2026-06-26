@@ -7,14 +7,18 @@ module M_test_instant
   
   predicate inv_Instant (_1: t_Instant)
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function view_Instant (self: t_Instant) : int
   
-  axiom view_Instant_spec: forall self: t_Instant [view_Instant self]. view_Instant self >= 0
+  axiom view_Instant_spec: forall self: t_Instant [view_Instant self]. ge_log_Int (view_Instant self) 0
   
   let now (return (x: t_Instant)) = any
     [ return (result: t_Instant) ->
     {[@stop_split] [@expl:now ensures] ([@stop_split] [@expl:now result type invariant] inv_Instant result)
-      /\ ([@stop_split] [@expl:now ensures] view_Instant result >= 0)}
+      /\ ([@stop_split] [@expl:now ensures] ge_log_Int (view_Instant result) 0)}
       (! return {result}) ]
   
   type t_Duration
@@ -27,7 +31,7 @@ module M_test_instant
   
   function view_Duration (self: t_Duration) : int
   
-  axiom view_Duration_spec: forall self: t_Duration [view_Duration self]. view_Duration self >= 0
+  axiom view_Duration_spec: forall self: t_Duration [view_Duration self]. ge_log_Int (view_Duration self) 0
       /\ view_Duration self <= secs_to_nanos (UInt64.t'int const_MAX) + 999999999
   
   let from_secs (secs: UInt64.t) (return (x: t_Duration)) = any
@@ -49,7 +53,7 @@ module M_test_instant
     any
     [ return (result: t_Duration) ->
     {[@stop_split] [@expl:elapsed ensures] ([@stop_split] [@expl:elapsed result type invariant] inv_Duration result)
-      /\ ([@stop_split] [@expl:elapsed ensures] view_Duration result >= 0)}
+      /\ ([@stop_split] [@expl:elapsed ensures] ge_log_Int (view_Duration result) 0)}
       (! return {result}) ]
   
   predicate invariant_ref_Duration [@inline:trivial] (self: t_Duration) = inv_Duration self
@@ -73,7 +77,7 @@ module M_test_instant
     /\ ([@stop_split] [@expl:ge 'other' type invariant] inv_ref_Duration other)}
     any
     [ return (result: bool) -> {[@stop_split] [@expl:ge ensures] result
-      = (deep_model_ref_Duration self_ >= deep_model_ref_Duration other)}
+      = ge_log_Int (deep_model_ref_Duration self_) (deep_model_ref_Duration other)}
       (! return {result}) ]
   
   type t_Option_Instant = None | Some t_Instant
@@ -99,111 +103,41 @@ module M_test_instant
   
   meta "rewrite_def" function deep_model_Option_Instant
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
-  type tup2_Option_Int_Option_Int = { f0: t_Option_Int; f1: t_Option_Int }
+  meta "rewrite_def" predicate gt_log_Int
   
-  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_Int (x: int) (y: int) : ()
-  
-  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
-  
-  function antisym2_Int (x: int) (y: int) : ()
-  
-  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
-  
-  function antisym1_Int (x: int) (y: int) : ()
-  
-  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
-  
-  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
-  
-  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
-      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
-  
-  function refl_Int (x: int) : ()
-  
-  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
-  
-  function cmp_gt_log_Int (x: int) (y: int) : ()
-  
-  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
-  
-  function cmp_ge_log_Int (x: int) (y: int) : ()
-  
-  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
-  
-  function cmp_lt_log_Int (x: int) (y: int) : ()
-  
-  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
-  
-  function cmp_le_log_Int (x: int) (y: int) : ()
-  
-  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
-  
-  function cmp_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) : t_Ordering = match { f0 = self; f1 = o } with
-      | {f0 = None'0; f1 = None'0} -> Equal
-      | {f0 = None'0; f1 = Some'0 _} -> Less
-      | {f0 = Some'0 _; f1 = None'0} -> Greater
-      | {f0 = Some'0 x; f1 = Some'0 y} -> cmp_log_Int x y
+  predicate le_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) =
+    match self with
+      | None'0 -> true
+      | Some'0 s -> match o with
+        | None'0 -> false
+        | Some'0 o'0 -> s <= o'0
+        end
       end
   
-  function eq_cmp_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
+  predicate lt_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) =
+    match o with
+      | None'0 -> false
+      | Some'0 o'0 -> match self with
+        | None'0 -> true
+        | Some'0 s -> s < o'0
+        end
+      end
   
-  axiom eq_cmp_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. (x = y) = (cmp_log_Option_Int x y = Equal)
+  function le_lt_log_Option_Int (self: t_Option_Int) (other: t_Option_Int) : ()
   
-  function antisym2_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
+  axiom le_lt_log_Option_Int_spec: forall self: t_Option_Int, other: t_Option_Int. le_log_Option_Int self other
+      = (lt_log_Option_Int self other \/ self = other)
   
-  axiom antisym2_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. cmp_log_Option_Int x y = Greater
-      -> cmp_log_Option_Int y x = Less
+  function transitive_Option_Int (x: t_Option_Int) (y: t_Option_Int) (z: t_Option_Int) : ()
   
-  function antisym1_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
+  axiom transitive_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int, z: t_Option_Int. lt_log_Option_Int x y
+      -> lt_log_Option_Int y z -> lt_log_Option_Int x z
   
-  axiom antisym1_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. cmp_log_Option_Int x y = Less
-      -> cmp_log_Option_Int y x = Greater
+  function irreflexive_Option_Int (self: t_Option_Int) : ()
   
-  function trans_Option_Int (x: t_Option_Int) (y: t_Option_Int) (z: t_Option_Int) (o: t_Ordering) : ()
-  
-  axiom trans_Option_Int_spec:
-    forall x: t_Option_Int, y: t_Option_Int, z: t_Option_Int, o: t_Ordering. cmp_log_Option_Int x y = o
-      -> cmp_log_Option_Int y z = o -> cmp_log_Option_Int x z = o
-  
-  function refl_Option_Int (x: t_Option_Int) : ()
-  
-  axiom refl_Option_Int_spec: forall x: t_Option_Int. cmp_log_Option_Int x x = Equal
-  
-  predicate gt_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) = cmp_log_Option_Int self o = Greater
-  
-  function cmp_gt_log_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
-  
-  axiom cmp_gt_log_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. gt_log_Option_Int x y
-      = (cmp_log_Option_Int x y = Greater)
-  
-  predicate ge_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) = cmp_log_Option_Int self o <> Less
-  
-  function cmp_ge_log_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
-  
-  axiom cmp_ge_log_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. ge_log_Option_Int x y
-      = (cmp_log_Option_Int x y <> Less)
-  
-  predicate lt_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) = cmp_log_Option_Int self o = Less
-  
-  function cmp_lt_log_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
-  
-  axiom cmp_lt_log_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. lt_log_Option_Int x y
-      = (cmp_log_Option_Int x y = Less)
-  
-  predicate le_log_Option_Int (self: t_Option_Int) (o: t_Option_Int) = cmp_log_Option_Int self o <> Greater
-  
-  function cmp_le_log_Option_Int (x: t_Option_Int) (y: t_Option_Int) : ()
-  
-  axiom cmp_le_log_Option_Int_spec: forall x: t_Option_Int, y: t_Option_Int. le_log_Option_Int x y
-      = (cmp_log_Option_Int x y <> Greater)
+  axiom irreflexive_Option_Int_spec: forall self: t_Option_Int. not lt_log_Option_Int self self
   
   let checked_add (self_: t_Instant) (duration: t_Duration) (return (x: t_Option_Instant)) =
   {[@stop_split] [@expl:checked_add requires] ([@stop_split] [@expl:checked_add 'self_' type invariant] inv_ref_Instant self_)
@@ -213,7 +147,7 @@ module M_test_instant
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add result type invariant] inv_Option_Instant result)
       /\ ([@stop_split] [@expl:checked_add ensures #0] view_Duration duration = 0
         -> deep_model_Option_Instant result = Some'0 (view_Instant self_))
-      /\ ([@stop_split] [@expl:checked_add ensures #1] view_Duration duration > 0 /\ result <> None
+      /\ ([@stop_split] [@expl:checked_add ensures #1] gt_log_Int (view_Duration duration) 0 /\ result <> None
       -> lt_log_Option_Int (Some'0 (view_Instant self_)) (deep_model_Option_Instant result))}
       (! return {result}) ]
   
@@ -245,8 +179,14 @@ module M_test_instant
     [ return (result: t_Instant) ->
     {[@stop_split] [@expl:add_Instant ensures] ([@stop_split] [@expl:add result type invariant] inv_Instant result)
       /\ ([@stop_split] [@expl:add ensures #0] view_Duration rhs = 0 -> view_Instant self_ = view_Instant result)
-      /\ ([@stop_split] [@expl:add ensures #1] view_Duration rhs > 0 -> view_Instant self_ < view_Instant result)}
+      /\ ([@stop_split] [@expl:add ensures #1] gt_log_Int (view_Duration rhs) 0
+      -> view_Instant self_ < view_Instant result)}
       (! return {result}) ]
+  
+  predicate gt_log_Option_Int [@inline:trivial] (self: t_Option_Int) (other: t_Option_Int) =
+    lt_log_Option_Int other self
+  
+  meta "rewrite_def" predicate gt_log_Option_Int
   
   let checked_sub (self_: t_Instant) (duration: t_Duration) (return (x: t_Option_Instant)) =
   {[@stop_split] [@expl:checked_sub requires] ([@stop_split] [@expl:checked_sub 'self_' type invariant] inv_ref_Instant self_)
@@ -256,7 +196,7 @@ module M_test_instant
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub result type invariant] inv_Option_Instant result)
       /\ ([@stop_split] [@expl:checked_sub ensures #0] view_Duration duration = 0
         -> deep_model_Option_Instant result = Some'0 (view_Instant self_))
-      /\ ([@stop_split] [@expl:checked_sub ensures #1] view_Duration duration > 0 /\ result <> None
+      /\ ([@stop_split] [@expl:checked_sub ensures #1] gt_log_Int (view_Duration duration) 0 /\ result <> None
       -> gt_log_Option_Int (Some'0 (view_Instant self_)) (deep_model_Option_Instant result))}
       (! return {result}) ]
   
@@ -267,7 +207,8 @@ module M_test_instant
     [ return (result: t_Instant) ->
     {[@stop_split] [@expl:sub_Instant ensures] ([@stop_split] [@expl:sub result type invariant] inv_Instant result)
       /\ ([@stop_split] [@expl:sub ensures #0] view_Duration rhs = 0 -> view_Instant self_ = view_Instant result)
-      /\ ([@stop_split] [@expl:sub ensures #1] view_Duration rhs > 0 -> view_Instant self_ > view_Instant result)}
+      /\ ([@stop_split] [@expl:sub ensures #1] gt_log_Int (view_Duration rhs) 0
+      -> gt_log_Int (view_Instant self_) (view_Instant result))}
       (! return {result}) ]
   
   let sub_Instant'0 (self_: t_Instant) (other: t_Instant) (return (x: t_Duration)) =
@@ -276,7 +217,8 @@ module M_test_instant
     any
     [ return (result: t_Duration) ->
     {[@stop_split] [@expl:sub_Instant ensures] ([@stop_split] [@expl:sub result type invariant] inv_Duration result)
-      /\ ([@stop_split] [@expl:sub ensures #0] view_Instant self_ > view_Instant other -> view_Duration result > 0)
+      /\ ([@stop_split] [@expl:sub ensures #0] gt_log_Int (view_Instant self_) (view_Instant other)
+        -> gt_log_Int (view_Duration result) 0)
       /\ ([@stop_split] [@expl:sub ensures #1] view_Instant self_ <= view_Instant other -> view_Duration result = 0)}
       (! return {result}) ]
   
@@ -293,7 +235,7 @@ module M_test_instant
     /\ ([@stop_split] [@expl:gt 'other' type invariant] inv_ref_Duration other)}
     any
     [ return (result: bool) -> {[@stop_split] [@expl:gt ensures] result
-      = (deep_model_ref_Duration self_ > deep_model_ref_Duration other)}
+      = gt_log_Int (deep_model_ref_Duration self_) (deep_model_ref_Duration other)}
       (! return {result}) ]
   
   let duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Duration)) =
@@ -302,8 +244,8 @@ module M_test_instant
     any
     [ return (result: t_Duration) ->
     {[@stop_split] [@expl:duration_since ensures] ([@stop_split] [@expl:duration_since result type invariant] inv_Duration result)
-      /\ ([@stop_split] [@expl:duration_since ensures #0] view_Instant self_ > view_Instant earlier
-        -> view_Duration result > 0)
+      /\ ([@stop_split] [@expl:duration_since ensures #0] gt_log_Int (view_Instant self_) (view_Instant earlier)
+        -> gt_log_Int (view_Duration result) 0)
       /\ ([@stop_split] [@expl:duration_since ensures #1] view_Instant self_ <= view_Instant earlier
       -> view_Duration result = 0)}
       (! return {result}) ]
@@ -315,7 +257,7 @@ module M_test_instant
   axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Duration [inv_Option_Duration x]. inv_Option_Duration x
       = match x with
         | None'1 -> true
-        | Some'1 f0'0 -> inv_Duration f0'0
+        | Some'1 f0 -> inv_Duration f0
         end
   
   let checked_duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Option_Duration)) =
@@ -324,7 +266,7 @@ module M_test_instant
     any
     [ return (result: t_Option_Duration) ->
     {[@stop_split] [@expl:checked_duration_since ensures] ([@stop_split] [@expl:checked_duration_since result type invariant] inv_Option_Duration result)
-      /\ ([@stop_split] [@expl:checked_duration_since ensures #0] view_Instant self_ >= view_Instant earlier
+      /\ ([@stop_split] [@expl:checked_duration_since ensures #0] ge_log_Int (view_Instant self_) (view_Instant earlier)
         -> result <> None'1)
       /\ ([@stop_split] [@expl:checked_duration_since ensures #1] view_Instant self_ < view_Instant earlier
       -> result = None'1)}
@@ -354,8 +296,8 @@ module M_test_instant
     any
     [ return (result: t_Duration) ->
     {[@stop_split] [@expl:saturating_duration_since ensures] ([@stop_split] [@expl:saturating_duration_since result type invariant] inv_Duration result)
-      /\ ([@stop_split] [@expl:saturating_duration_since ensures #0] view_Instant self_ > view_Instant earlier
-        -> view_Duration result > 0)
+      /\ ([@stop_split] [@expl:saturating_duration_since ensures #0] gt_log_Int (view_Instant self_) (view_Instant earlier)
+        -> gt_log_Int (view_Duration result) 0)
       /\ ([@stop_split] [@expl:saturating_duration_since ensures #1] view_Instant self_ <= view_Instant earlier
       -> view_Duration result = 0)}
       (! return {result}) ]
@@ -396,7 +338,7 @@ module M_test_instant
       | s2 = any [ br0 -> {_52 = false} (! bb27) | br1 -> {_52} (! bb26) ] ]
     | bb26 = s0
       [ s0 = sub_Instant {instant} {three_seconds} (fun (_x: t_Instant) -> [ &lesser_instant <- _x ] s1)
-      | s1 = {[@expl:assertion] view_Instant instant > view_Instant lesser_instant} s2
+      | s1 = {[@expl:assertion] gt_log_Int (view_Instant instant) (view_Instant lesser_instant)} s2
       | s2 = sub_Instant'0 {instant} {instant} (fun (_x: t_Duration) -> [ &_69 <- _x ] s3)
       | s3 = eq_Duration {_69} {zero_dur} (fun (_x: bool) -> [ &_67 <- _x ] s4)
       | s4 = any [ br0 -> {_67 = false} (! bb32) | br1 -> {_67} (! bb31) ] ]

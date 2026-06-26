@@ -98,12 +98,17 @@ module M_ghost_vec
     [ return (result: ()) -> {[@stop_split] [@expl:push_front_ghost ensures] self.final = push_front_i32 self.current x}
       (! return {result}) ]
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function tail_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = Seq.([..]) self 1 (Seq.length self)
   
   let pop_front_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:pop_front_ghost ensures] match result with
         | None -> self.current = (Seq.empty: Seq.seq Int32.t) /\ self.current = self.final
-        | Some r -> Seq.length self.current > 0 /\ r = Seq.get self.current 0 /\ self.final = tail_i32 self.current
+        | Some r -> gt_log_Int (Seq.length self.current) 0
+        /\ r = Seq.get self.current 0 /\ self.final = tail_i32 self.current
         end}
       (! return {result}) ]
   

@@ -16,10 +16,14 @@ module M_bar
   
   meta "rewrite_def" function deep_model_i32
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Range_i32 (self: t_Range_i32) (visited: Seq.seq Int32.t) (o: t_Range_i32) =
     self.end' = o.end'
     /\ deep_model_i32 self.start <= deep_model_i32 o.start
-    /\ (Seq.length visited > 0 -> deep_model_i32 o.start <= deep_model_i32 o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_i32 o.start <= deep_model_i32 o.end')
     /\ Seq.length visited = deep_model_i32 o.start - deep_model_i32 self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_i32 (Seq.get visited i) = deep_model_i32 self.start + i)
@@ -39,8 +43,12 @@ module M_bar
   
   meta "rewrite_def" predicate resolve_refmut_Range_i32
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
-    resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
+    resolve_refmut_Range_i32 self /\ ge_log_Int (deep_model_i32 self.current.start) (deep_model_i32 self.current.end')
   
   let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with

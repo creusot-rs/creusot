@@ -4,7 +4,6 @@ use crate::{
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, SubLogic},
     prelude::*,
 };
-use core::cmp::Ordering;
 #[cfg(all(creusot, feature = "std"))]
 use num_rational::BigRational;
 
@@ -29,43 +28,38 @@ impl Real {
     }
 }
 
-impl OrdLogic for Real {
-    #[logic(open)]
-    fn cmp_log(self, o: Self) -> Ordering {
-        if self < o {
-            Ordering::Less
-        } else if self == o {
-            Ordering::Equal
-        } else {
-            Ordering::Greater
-        }
+impl PartialOrdLogic for Real {
+    #[logic]
+    #[builtin("real.Real.(<)")]
+    fn lt_log(self, _: Self) -> bool {
+        dead
     }
 
     #[logic]
     #[builtin("real.Real.(<=)")]
     fn le_log(self, _: Self) -> bool {
-        true
+        dead
     }
 
     #[logic]
-    #[builtin("real.Real.(<)")]
-    fn lt_log(self, _: Self) -> bool {
-        true
-    }
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
 
     #[logic]
-    #[builtin("real.Real.(>=)")]
-    fn ge_log(self, _: Self) -> bool {
-        true
-    }
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
 
     #[logic]
-    #[builtin("real.Real.(>)")]
-    fn gt_log(self, _: Self) -> bool {
-        true
-    }
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {}
+}
 
-    crate::logic::ord::ord_laws_impl! {}
+impl OrdLogic for Real {
+    #[logic]
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {}
 }
 
 impl AddLogic for Real {
@@ -164,33 +158,40 @@ impl PositiveReal {
     }
 }
 
-impl OrdLogic for PositiveReal {
-    #[logic(open)]
-    fn cmp_log(self, o: Self) -> Ordering {
-        self.to_real().cmp_log(o.to_real())
-    }
-
+impl PartialOrdLogic for PositiveReal {
     #[logic(open)]
     fn le_log(self, o: Self) -> bool {
-        self.to_real().le_log(o.to_real())
+        self.to_real() <= o.to_real()
     }
 
     #[logic(open)]
     fn lt_log(self, o: Self) -> bool {
-        self.to_real().lt_log(o.to_real())
+        self.to_real() < o.to_real()
     }
 
-    #[logic(open)]
-    fn ge_log(self, o: Self) -> bool {
-        self.to_real().ge_log(o.to_real())
-    }
+    #[logic]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
 
-    #[logic(open)]
-    fn gt_log(self, o: Self) -> bool {
-        self.to_real().gt_log(o.to_real())
-    }
+    #[logic]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
 
-    crate::logic::ord::ord_laws_impl! { let _ = PositiveReal::ext_eq; }
+    #[logic(law)]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {
+        let _ = PositiveReal::ext_eq;
+    }
+}
+
+impl OrdLogic for PositiveReal {
+    #[logic(law)]
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {
+        let _ = PositiveReal::ext_eq;
+    }
 }
 
 impl AddLogic for PositiveReal {

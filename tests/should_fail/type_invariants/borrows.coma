@@ -8,14 +8,18 @@ module M_dec
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MIN: Int32.t = (-2147483648: Int32.t)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let dec (x: MutBorrow.t Int32.t) (return (x'0: ())) = {[@stop_split] [@expl:dec requires] Int32.to_int x.current
-    > Int32.to_int const_MIN}
+  let dec (x: MutBorrow.t Int32.t) (return (x'0: ())) =
+  {[@stop_split] [@expl:dec requires] gt_log_Int (Int32.to_int x.current) (Int32.to_int const_MIN)}
     (! bb0
     [ bb0 = s0
       [ s0 = Int32.sub {x.current} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &x <- { x with current = _x } ] s1)
@@ -361,10 +365,14 @@ module M_impl_SumTo10__foo (* SumTo10 *)
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MIN: Int32.t = (-2147483648: Int32.t)
   
-  let dec (x: MutBorrow.t Int32.t) (return (x'0: ())) = {[@stop_split] [@expl:dec requires] Int32.to_int x.current
-    > Int32.to_int const_MIN}
+  let dec (x: MutBorrow.t Int32.t) (return (x'0: ())) =
+  {[@stop_split] [@expl:dec requires] gt_log_Int (Int32.to_int x.current) (Int32.to_int const_MIN)}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:dec ensures] Int32.to_int x.final = Int32.to_int x.current - 1}
       (! return {result}) ]

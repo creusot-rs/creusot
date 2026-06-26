@@ -221,6 +221,10 @@ module M_impl_Bdd__size (* Bdd<'arena> *)
   type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
   with t_Bdd = { f0: t_Node; f1: UInt64.t }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -230,11 +234,11 @@ module M_impl_Bdd__size (* Bdd<'arena> *)
   function size (self: t_Bdd) : int
   
   goal vc_size: match self with
-      | {f0 = True'; f1 = _} -> [@stop_split] [@expl:size ensures] 0 >= 0
-      | {f0 = False'; f1 = _} -> [@stop_split] [@expl:size ensures] 0 >= 0
-      | {f0 = If _ childt childf; f1 = _} -> ([@stop_split] [@expl:size ensures] size childt >= 0)
-      -> (let ht = size childt in ([@stop_split] [@expl:size ensures] size childf >= 0)
-      -> (let hf = size childf in [@stop_split] [@expl:size ensures] 1 + ht + hf >= 0))
+      | {f0 = True'; f1 = _} -> [@stop_split] [@expl:size ensures] ge_log_Int 0 0
+      | {f0 = False'; f1 = _} -> [@stop_split] [@expl:size ensures] ge_log_Int 0 0
+      | {f0 = If _ childt childf; f1 = _} -> ([@stop_split] [@expl:size ensures] ge_log_Int (size childt) 0)
+      -> (let ht = size childt in ([@stop_split] [@expl:size ensures] ge_log_Int (size childf) 0)
+      -> (let hf = size childf in [@stop_split] [@expl:size ensures] ge_log_Int (1 + ht + hf) 0))
       end
 end
 module M_impl_Clone_for_Bdd__clone (* <Bdd<'arena> as std::clone::Clone> *)
@@ -390,51 +394,6 @@ module M_impl_Context__bdd_canonical (* Context<'arena> *)
       /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
       end
   
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
   
   meta "rewrite_def" function view_PeanoInt
@@ -482,13 +441,21 @@ module M_impl_Context__bdd_canonical (* Context<'arena> *)
   
   axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function size (self: t_Bdd) : int = match self with
       | {f0 = True'; f1 = _} -> 0
       | {f0 = False'; f1 = _} -> 0
       | {f0 = If _ childt childf; f1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
       end
   
-  axiom size_spec: forall self: t_Bdd [size self]. size self >= 0
+  axiom size_spec: forall self: t_Bdd [size self]. ge_log_Int (size self) 0
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
   
   function discr_valuation (self: t_Context) (a: t_Bdd) (b: t_Bdd) : Map.map UInt64.t bool
   
@@ -507,7 +474,7 @@ module M_impl_Context__bdd_canonical (* Context<'arena> *)
           | _ -> Const.const true
           end
       else
-        if leastvar a > leastvar b then
+        if gt_log_Int (leastvar a) (leastvar b) then
           match b with
             | {f0 = If v childt childf; f1 = _} -> if childf <> a then
               Map.set (discr_valuation self a childf) v false
@@ -590,13 +557,17 @@ module M_impl_Context__discr_valuation (* Context<'arena> *)
     and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
     cnt: t_PeanoInt }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function size (self: t_Bdd) : int = match self with
       | {f0 = True'; f1 = _} -> 0
       | {f0 = False'; f1 = _} -> 0
       | {f0 = If _ childt childf; f1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
       end
   
-  axiom size_spec: forall self: t_Bdd [size self]. size self >= 0
+  axiom size_spec: forall self: t_Bdd [size self]. ge_log_Int (size self) 0
   
   type t_Option_Bdd = None | Some t_Bdd
   
@@ -633,51 +604,6 @@ module M_impl_Context__discr_valuation (* Context<'arena> *)
       /\ is_valid_bdd self childt
       /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
       end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
   
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
   
@@ -736,7 +662,12 @@ module M_impl_Context__discr_valuation (* Context<'arena> *)
     forall self: t_Context, a: t_Bdd, x: UInt64.t, v: Map.map UInt64.t bool, b: bool. inv_Context self
       -> is_valid_bdd self a -> UInt64.t'int x < leastvar a -> interp a v = interp a (Map.set v x b)
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -783,7 +714,7 @@ module M_impl_Context__discr_valuation (* Context<'arena> *)
         <> interp b result
         end
     else
-      if leastvar a > leastvar b then
+      if gt_log_Int (leastvar a) (leastvar b) then
         match b with
           | {f0 = If v childt childf; f1 = _} -> if childf <> a then
             (([@stop_split] [@expl:discr_valuation requires] ([@stop_split] [@expl:discr_valuation requires #0] inv_Context self)
@@ -870,51 +801,6 @@ module M_impl_Context__grows_is_valid_bdd (* Context<'arena> *)
     and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
     cnt: t_PeanoInt }
   
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
   
   meta "rewrite_def" function view_PeanoInt
@@ -983,51 +869,6 @@ module M_impl_Context__grows_trans (* Context<'arena> *)
     not_memo: t_MyHashMap_Bdd_Bdd;
     and_memo: t_MyHashMap_tup2_Bdd_Bdd_Bdd;
     cnt: t_PeanoInt }
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
   
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
   
@@ -1124,51 +965,6 @@ module M_impl_Context__set_irrelevent_var (* Context<'arena> *)
       /\ is_valid_bdd self childt
       /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
       end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
   
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
   
@@ -1345,51 +1141,6 @@ module M_impl_Context_0__and (* Context<'arena> *)
       /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
       end
   
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'1
   
   meta "rewrite_def" function view_PeanoInt
@@ -1454,48 +1205,13 @@ module M_impl_Context_0__and (* Context<'arena> *)
         end}
       any) ]
   
-  function cmp_log_Int (self: int) (o: int) : t_Ordering = if self < o then
-      Less
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Int (self: int) (other: int) : t_Ordering = if self = other then
+      Equal
     else
-      if self = o then Equal else Greater
+      if self < other then Less else Greater
   
-  
-  function eq_cmp_Int (x: int) (y: int) : ()
-  
-  axiom eq_cmp_Int_spec: forall x: int, y: int. (x = y) = (cmp_log_Int x y = Equal)
-  
-  function antisym2_Int (x: int) (y: int) : ()
-  
-  axiom antisym2_Int_spec: forall x: int, y: int. cmp_log_Int x y = Greater -> cmp_log_Int y x = Less
-  
-  function antisym1_Int (x: int) (y: int) : ()
-  
-  axiom antisym1_Int_spec: forall x: int, y: int. cmp_log_Int x y = Less -> cmp_log_Int y x = Greater
-  
-  function trans_Int (x: int) (y: int) (z: int) (o: t_Ordering) : ()
-  
-  axiom trans_Int_spec: forall x: int, y: int, z: int, o: t_Ordering. cmp_log_Int x y = o
-      -> cmp_log_Int y z = o -> cmp_log_Int x z = o
-  
-  function refl_Int (x: int) : ()
-  
-  axiom refl_Int_spec: forall x: int. cmp_log_Int x x = Equal
-  
-  function cmp_gt_log_Int (x: int) (y: int) : ()
-  
-  axiom cmp_gt_log_Int_spec: forall x: int, y: int. (x > y) = (cmp_log_Int x y = Greater)
-  
-  function cmp_ge_log_Int (x: int) (y: int) : ()
-  
-  axiom cmp_ge_log_Int_spec: forall x: int, y: int. (x >= y) = (cmp_log_Int x y <> Less)
-  
-  function cmp_lt_log_Int (x: int) (y: int) : ()
-  
-  axiom cmp_lt_log_Int_spec: forall x: int, y: int. (x < y) = (cmp_log_Int x y = Less)
-  
-  function cmp_le_log_Int (x: int) (y: int) : ()
-  
-  axiom cmp_le_log_Int_spec: forall x: int, y: int. (x <= y) = (cmp_log_Int x y <> Greater)
   
   function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
   
@@ -1506,13 +1222,17 @@ module M_impl_Context_0__and (* Context<'arena> *)
       = cmp_log_Int (deep_model_u64 self_) (deep_model_u64 rhs)}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function size (self: t_Bdd) : int = match self with
       | {f0 = True'; f1 = _} -> 0
       | {f0 = False'; f1 = _} -> 0
       | {f0 = If _ childt childf; f1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
       end
   
-  axiom size_spec: forall self: t_Bdd [size self]. size self >= 0
+  axiom size_spec: forall self: t_Bdd [size self]. ge_log_Int (size self) 0
   
   predicate grows (self: MutBorrow.t t_Context) =
     UInt64.le (view_PeanoInt self.current.cnt) (view_PeanoInt self.final.cnt)
@@ -1575,7 +1295,12 @@ module M_impl_Context_0__and (* Context<'arena> *)
         end}
       any) ]
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -1827,51 +1552,6 @@ module M_impl_Context_0__false (* Context<'arena> *)
       /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
       end
   
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
   
   meta "rewrite_def" function view_PeanoInt
@@ -2073,51 +1753,6 @@ module M_impl_Context_0__hashcons (* Context<'arena> *)
       /\ is_valid_bdd self childt
       /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
       end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
   
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
   
@@ -2337,51 +1972,6 @@ module M_impl_Context_0__new (* Context<'arena> *)
       /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
       end
   
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'1
   
   meta "rewrite_def" function view_PeanoInt
@@ -2524,51 +2114,6 @@ module M_impl_Context_0__node (* Context<'arena> *)
       /\ is_valid_bdd self childt
       /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
       end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
   
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
   
@@ -2782,51 +2327,6 @@ module M_impl_Context_0__not (* Context<'arena> *)
       /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
       end
   
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
-  
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
   
   meta "rewrite_def" function view_PeanoInt
@@ -2872,13 +2372,17 @@ module M_impl_Context_0__not (* Context<'arena> *)
   
   axiom inv_axiom [@rewrite]: forall x: t_Context [inv_Context x]. inv_Context x = invariant_Context x
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function size (self: t_Bdd) : int = match self with
       | {f0 = True'; f1 = _} -> 0
       | {f0 = False'; f1 = _} -> 0
       | {f0 = If _ childt childf; f1 = _} -> let ht = size childt in let hf = size childf in 1 + ht + hf
       end
   
-  axiom size_spec: forall self: t_Bdd [size self]. size self >= 0
+  axiom size_spec: forall self: t_Bdd [size self]. ge_log_Int (size self) 0
   
   predicate invariant_refmut_Context [@inline:trivial] (self: MutBorrow.t t_Context) =
     inv_Context self.current /\ inv_Context self.final
@@ -2956,7 +2460,12 @@ module M_impl_Context_0__not (* Context<'arena> *)
         end}
       any) ]
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -3122,51 +2631,6 @@ module M_impl_Context_0__true (* Context<'arena> *)
       /\ is_valid_bdd self childt
       /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
       end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
   
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
   
@@ -3336,51 +2800,6 @@ module M_impl_Context_0__v (* Context<'arena> *)
       /\ is_valid_bdd self childt
       /\ is_valid_bdd self childf /\ UInt64.t'int v < leastvar childt /\ UInt64.t'int v < leastvar childf
       end
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
   
   function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0'0
   

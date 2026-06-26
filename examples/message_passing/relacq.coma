@@ -42,9 +42,13 @@ module M_message_passing
   
   function to_mapping_Int (self: t_FMap_Int_tup2_bool_SyncView) : Map.map int t_Option_tup2_bool_SyncView
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function len_Int (self: t_FMap_Int_tup2_bool_SyncView) : int
   
-  axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_SyncView [len_Int self]. len_Int self >= 0
+  axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
   function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
     Map.get (to_mapping_Int self) k
@@ -73,60 +77,26 @@ module M_message_passing
   
   function singleton_Int (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView = insert_Int empty_Int k v
   
-  type t_Ordering = Less | Equal | Greater
+  predicate lt_log_SyncView (self: t_SyncView) (_2: t_SyncView)
   
-  function cmp_log_SyncView (self: t_SyncView) (_2: t_SyncView) : t_Ordering
+  predicate le_log_SyncView [@inline:trivial] (self: t_SyncView) (other: t_SyncView) =
+    lt_log_SyncView self other \/ self = other
   
-  function eq_cmp_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  meta "rewrite_def" predicate le_log_SyncView
   
-  axiom eq_cmp_SyncView_spec: forall x: t_SyncView, y: t_SyncView. (x = y) = (cmp_log_SyncView x y = Equal)
+  function le_lt_log_SyncView (self: t_SyncView) (other: t_SyncView) : ()
   
-  function antisym2_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  axiom le_lt_log_SyncView_spec: forall self: t_SyncView, other: t_SyncView. le_log_SyncView self other
+      = (lt_log_SyncView self other \/ self = other)
   
-  axiom antisym2_SyncView_spec: forall x: t_SyncView, y: t_SyncView. cmp_log_SyncView x y = Greater
-      -> cmp_log_SyncView y x = Less
+  function transitive_SyncView (x: t_SyncView) (y: t_SyncView) (z: t_SyncView) : ()
   
-  function antisym1_SyncView (x: t_SyncView) (y: t_SyncView) : ()
+  axiom transitive_SyncView_spec: forall x: t_SyncView, y: t_SyncView, z: t_SyncView. lt_log_SyncView x y
+      -> lt_log_SyncView y z -> lt_log_SyncView x z
   
-  axiom antisym1_SyncView_spec: forall x: t_SyncView, y: t_SyncView. cmp_log_SyncView x y = Less
-      -> cmp_log_SyncView y x = Greater
+  function irreflexive_SyncView (self: t_SyncView) : ()
   
-  function trans_SyncView (x: t_SyncView) (y: t_SyncView) (z: t_SyncView) (o: t_Ordering) : ()
-  
-  axiom trans_SyncView_spec: forall x: t_SyncView, y: t_SyncView, z: t_SyncView, o: t_Ordering. cmp_log_SyncView x y = o
-      -> cmp_log_SyncView y z = o -> cmp_log_SyncView x z = o
-  
-  function refl_SyncView (x: t_SyncView) : ()
-  
-  axiom refl_SyncView_spec: forall x: t_SyncView. cmp_log_SyncView x x = Equal
-  
-  predicate gt_log_SyncView (self: t_SyncView) (o: t_SyncView) = cmp_log_SyncView self o = Greater
-  
-  function cmp_gt_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
-  
-  axiom cmp_gt_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. gt_log_SyncView x y
-      = (cmp_log_SyncView x y = Greater)
-  
-  predicate ge_log_SyncView (self: t_SyncView) (o: t_SyncView) = cmp_log_SyncView self o <> Less
-  
-  function cmp_ge_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
-  
-  axiom cmp_ge_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. ge_log_SyncView x y
-      = (cmp_log_SyncView x y <> Less)
-  
-  predicate lt_log_SyncView (self: t_SyncView) (o: t_SyncView) = cmp_log_SyncView self o = Less
-  
-  function cmp_lt_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
-  
-  axiom cmp_lt_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. lt_log_SyncView x y
-      = (cmp_log_SyncView x y = Less)
-  
-  predicate le_log_SyncView (self: t_SyncView) (o: t_SyncView) = cmp_log_SyncView self o <> Greater
-  
-  function cmp_le_log_SyncView (x: t_SyncView) (y: t_SyncView) : ()
-  
-  axiom cmp_le_log_SyncView_spec: forall x: t_SyncView, y: t_SyncView. le_log_SyncView x y
-      = (cmp_log_SyncView x y <> Greater)
+  axiom irreflexive_SyncView_spec: forall self: t_SyncView. not lt_log_SyncView self self
   
   function get_timestamp_AtomicBool (self: t_AtomicBool) (_2: t_SyncView) : int
   

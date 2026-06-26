@@ -2,11 +2,15 @@ module M_negative_is_negative
   use creusot.prelude.Any
   use int.Int
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let negative_is_negative (return (x: ())) = (! bb0
-    [ bb0 = s0 [ s0 = {[@expl:assertion] 0 > - 100} s1 | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+    [ bb0 = s0 [ s0 = {[@expl:assertion] gt_log_Int 0 (- 100)} s1 | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

@@ -11,50 +11,9 @@ module M_add_some
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_u64 [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.lt other self
   
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  meta "rewrite_def" predicate gt_log_u64
   
   meta "compute_max_steps" 1000000
   
@@ -67,7 +26,7 @@ module M_add_some
       [ s0 = UInt64.add {a.current} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &a <- { a with current = _x } ] s1)
       | s1 = -{resolve_refmut_u64 a}- s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & a: MutBorrow.t UInt64.t = a ])
-    [ return (result: ()) -> {[@stop_split] [@expl:add_some ensures] UInt64.gt a.final a.current} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:add_some ensures] gt_log_u64 a.final a.current} (! return {result}) ]
 end
 module M_foo
   use creusot.prelude.MutBorrow
@@ -78,55 +37,14 @@ module M_foo
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_u64 [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.lt other self
   
-  function cmp_log_u64 (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_u64_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_u64 x y = Equal)
-  
-  function antisym2_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Greater -> cmp_log_u64 y x = Less
-  
-  function antisym1_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_u64_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_u64 x y = Less -> cmp_log_u64 y x = Greater
-  
-  function trans_u64 (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_u64_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_u64 x y = o
-      -> cmp_log_u64 y z = o -> cmp_log_u64 x z = o
-  
-  function refl_u64 (x: UInt64.t) : ()
-  
-  axiom refl_u64_spec: forall x: UInt64.t. cmp_log_u64 x x = Equal
-  
-  function cmp_gt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_u64 x y = Greater)
-  
-  function cmp_ge_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_u64 x y <> Less)
-  
-  function cmp_lt_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_u64 x y = Less)
-  
-  function cmp_le_log_u64 (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_u64_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_u64 x y <> Greater)
+  meta "rewrite_def" predicate gt_log_u64
   
   let add_some (a: MutBorrow.t UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:add_some requires] UInt64.t'int a.current <= ComputerDivision.div (UInt64.t'int const_MAX) 2}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:add_some ensures] UInt64.gt a.final a.current} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:add_some ensures] gt_log_u64 a.final a.current} (! return {result}) ]
   
   predicate resolve_refmut_u64 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
   
@@ -144,12 +62,12 @@ module M_foo
           (fun (_bor: MutBorrow.t UInt64.t) -> [ &_10 <- _bor ] [ &a <- { a with current = _bor.final } ] s2)
       | s2 = add_some {_10} (fun (_x: ()) -> [ &_9 <- _x ] s3)
       | s3 = -{resolve_refmut_u64 a}- s4
-      | s4 = {[@expl:assertion] UInt64.gt a.current a_p} s5
+      | s4 = {[@expl:assertion] gt_log_u64 a.current a_p} s5
       | s5 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & a: MutBorrow.t UInt64.t = a
     | & a_p: UInt64.t = Any.any_l ()
     | & _9: () = Any.any_l ()
     | & _10: MutBorrow.t UInt64.t = Any.any_l () ])
-    [ return (result: ()) -> {[@stop_split] [@expl:foo ensures] UInt64.gt a.final a.current} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:foo ensures] gt_log_u64 a.final a.current} (! return {result}) ]
 end

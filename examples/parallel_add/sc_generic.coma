@@ -5,54 +5,13 @@ module M_fraction_1
   
   type t_PositiveReal
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
   
-  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
-  
-  function antisym2_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
-  
-  function antisym1_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
-  
-  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
-  
-  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
-      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
-  
-  function refl_Real (x: Real.real) : ()
-  
-  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
-  
-  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
-  
-  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
-  
-  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
-  
-  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  meta "rewrite_def" predicate gt_log_Real
   
   function to_real (self: t_PositiveReal) : Real.real
   
-  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. gt_log_Real (to_real self) (FromInt.from_int 0)
   
   function div_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
   
@@ -62,7 +21,7 @@ module M_fraction_1
   
   function new (n: Real.real) : t_PositiveReal
   
-  axiom new_spec: forall n: Real.real [new n]. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  axiom new_spec: forall n: Real.real [new n]. gt_log_Real n (FromInt.from_int 0) -> to_real (new n) = n
   
   function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
   
@@ -90,56 +49,19 @@ module M_fraction_add
   use real.FromInt
   use int.Int
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   type t_PositiveReal
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
   
-  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
-  
-  function antisym2_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
-  
-  function antisym1_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
-  
-  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
-  
-  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
-      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
-  
-  function refl_Real (x: Real.real) : ()
-  
-  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
-  
-  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
-  
-  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
-  
-  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
-  
-  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  meta "rewrite_def" predicate gt_log_Real
   
   function to_real (self: t_PositiveReal) : Real.real
   
-  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. gt_log_Real (to_real self) (FromInt.from_int 0)
   
   function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
   
@@ -155,7 +77,7 @@ module M_fraction_add
   
   function new (n: Real.real) : t_PositiveReal
   
-  axiom new_spec: forall n: Real.real [new n]. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  axiom new_spec: forall n: Real.real [new n]. gt_log_Real n (FromInt.from_int 0) -> to_real (new n) = n
   
   function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
   
@@ -180,7 +102,7 @@ module M_fraction_add
   
   function fraction_add (a: int) (b: int) (n: int) : ()
   
-  goal vc_fraction_add: a > 0 /\ b > 0
+  goal vc_fraction_add: gt_log_Int a 0 /\ gt_log_Int b 0
     -> ([@stop_split] [@expl:fraction_add ensures] add_PositiveReal (fraction a n) (fraction b n) = fraction (a + b) n)
 end
 module M_parallel_add
@@ -229,54 +151,13 @@ module M_parallel_add
   
   type t_PositiveReal
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
   
-  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
-  
-  function antisym2_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
-  
-  function antisym1_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
-  
-  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
-  
-  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
-      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
-  
-  function refl_Real (x: Real.real) : ()
-  
-  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
-  
-  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
-  
-  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
-  
-  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
-  
-  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
-  
-  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  meta "rewrite_def" predicate gt_log_Real
   
   function to_real (self: t_PositiveReal) : Real.real
   
-  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. gt_log_Real (to_real self) (FromInt.from_int 0)
   
   function div_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
   
@@ -286,7 +167,7 @@ module M_parallel_add
   
   function new'0 (n: Real.real) : t_PositiveReal
   
-  axiom new_spec: forall n: Real.real [new'0 n]. Real.(>) n (FromInt.from_int 0) -> to_real (new'0 n) = n
+  axiom new_spec: forall n: Real.real [new'0 n]. gt_log_Real n (FromInt.from_int 0) -> to_real (new'0 n) = n
   
   function from_int [@inline:trivial] (i: int) : t_PositiveReal = new'0 (FromInt.from_int i)
   
@@ -298,6 +179,10 @@ module M_parallel_add
   
   axiom fraction_1_spec: forall n: int. fraction (n + 1) n = from_int 1
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
   
   axiom add_PositiveReal_spec:
@@ -306,7 +191,7 @@ module M_parallel_add
   
   function fraction_add (a: int) (b: int) (n: int) : () = ()
   
-  axiom fraction_add_spec: forall a: int, b: int, n: int. a > 0 /\ b > 0
+  axiom fraction_add_spec: forall a: int, b: int, n: int. gt_log_Int a 0 /\ gt_log_Int b 0
       -> add_PositiveReal (fraction a n) (fraction b n) = fraction (a + b) n
   
   type t_Authority_Option_tup2_PositiveReal_Int
@@ -455,7 +340,7 @@ module M_parallel_add
   type t_View_AuthViewRel_Option_tup2_PositiveReal_Int
   
   function factor_PositiveReal [@inline:trivial] (self: t_PositiveReal) (factor: t_PositiveReal) : t_Option_PositiveReal
-   = if Real.(>) (to_real self) (to_real factor) then
+   = if gt_log_Real (to_real self) (to_real factor) then
       Some'1 (new'0 (Real.(-) (to_real self) (to_real factor)))
     else
       None'1
@@ -849,7 +734,7 @@ module M_parallel_add
   predicate produces_Range_i32 (self: t_Range_i32) (visited: Seq.seq Int32.t) (o: t_Range_i32) =
     self.end' = o.end'
     /\ deep_model_i32 self.start <= deep_model_i32 o.start
-    /\ (Seq.length visited > 0 -> deep_model_i32 o.start <= deep_model_i32 o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_i32 o.start <= deep_model_i32 o.end')
     /\ Seq.length visited = deep_model_i32 o.start - deep_model_i32 self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_i32 (Seq.get visited i) = deep_model_i32 self.start + i)
@@ -869,8 +754,12 @@ module M_parallel_add
   
   meta "rewrite_def" predicate resolve_refmut_Range_i32
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
-    resolve_refmut_Range_i32 self /\ deep_model_i32 self.current.start >= deep_model_i32 self.current.end'
+    resolve_refmut_Range_i32 self /\ ge_log_Int (deep_model_i32 self.current.start) (deep_model_i32 self.current.end')
   
   let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
@@ -1939,7 +1828,8 @@ module M_parallel_add
   
   meta "select_lsinst" "all"
   
-  let parallel_add (n: Int32.t) (return (x: ())) = {[@stop_split] [@expl:parallel_add requires] Int32.to_int n >= 0}
+  let parallel_add (n: Int32.t) (return (x: ())) =
+  {[@stop_split] [@expl:parallel_add requires] ge_log_Int (Int32.to_int n) 0}
     (! bb0
     [ bb0 = s0
       [ s0 = new {(0: Int32.t)} (fun (_x: tup2_AtomicI32_Ghost_Perm_AtomicI32) -> [ &_6 <- _x ] s1)

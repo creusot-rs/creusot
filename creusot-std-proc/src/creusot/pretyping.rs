@@ -189,19 +189,19 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                     Ok(quote_spanned! {sp=> ::creusot_std::__stubs::neq(#left, #right) }.into())
                 }
                 Lt(_) => {
-                    Ok(quote_spanned! {sp=> ::creusot_std::logic::OrdLogic::lt_log(#left, #right) }
+                    Ok(quote_spanned! {sp=> ::creusot_std::logic::PartialOrdLogic::lt_log(#left, #right) }
                         .into())
                 }
                 Le(_) => {
-                    Ok(quote_spanned! {sp=> ::creusot_std::logic::OrdLogic::le_log(#left, #right) }
+                    Ok(quote_spanned! {sp=> ::creusot_std::logic::PartialOrdLogic::le_log(#left, #right) }
                         .into())
                 }
                 Ge(_) => {
-                    Ok(quote_spanned! {sp=> ::creusot_std::logic::OrdLogic::ge_log(#left, #right) }
+                    Ok(quote_spanned! {sp=> ::creusot_std::logic::PartialOrdLogic::ge_log(#left, #right) }
                         .into())
                 }
                 Gt(_) => {
-                    Ok(quote_spanned! {sp=> ::creusot_std::logic::OrdLogic::gt_log(#left, #right) }
+                    Ok(quote_spanned! {sp=> ::creusot_std::logic::PartialOrdLogic::gt_log(#left, #right) }
                         .into())
                 }
                 Add(_) => Ok(

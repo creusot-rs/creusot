@@ -7,13 +7,17 @@ module M_test_i8_add_example
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
-        \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))
+        \/ gt_log_Int (Int8.to_int self_ + Int8.to_int rhs) (Int8.to_int const_MAX)))
       /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs)}
       (! return {result}) ]
@@ -28,33 +32,35 @@ module M_test_i8_add_example
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
-    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] Int8.to_int self_
-              + Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] ge_log_Int (Int8.to_int self_
+            + Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ + Int8.to_int rhs)
       /\ ([@stop_split] [@expl:saturating_add ensures #1] Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_add ensures #2] Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX
-      -> Int8.to_int result = Int8.to_int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_add ensures #2] gt_log_Int (Int8.to_int self_
+        + Int8.to_int rhs) (Int8.to_int const_MAX) -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
-    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] Int8.to_int self_
-              + Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (Int8.to_int self_
+            + Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ + Int8.to_int rhs)
       /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ + Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
-      \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))}
+      \/ gt_log_Int (Int8.to_int self_ + Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -167,13 +173,17 @@ module M_test_i8_add_overflow_neg
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
-        \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))
+        \/ gt_log_Int (Int8.to_int self_ + Int8.to_int rhs) (Int8.to_int const_MAX)))
       /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs)}
       (! return {result}) ]
@@ -185,33 +195,35 @@ module M_test_i8_add_overflow_neg
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
-    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] Int8.to_int self_
-              + Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] ge_log_Int (Int8.to_int self_
+            + Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ + Int8.to_int rhs)
       /\ ([@stop_split] [@expl:saturating_add ensures #1] Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_add ensures #2] Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX
-      -> Int8.to_int result = Int8.to_int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_add ensures #2] gt_log_Int (Int8.to_int self_
+        + Int8.to_int rhs) (Int8.to_int const_MAX) -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
-    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] Int8.to_int self_
-              + Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (Int8.to_int self_
+            + Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ + Int8.to_int rhs)
       /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ + Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
-      \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))}
+      \/ gt_log_Int (Int8.to_int self_ + Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -272,13 +284,17 @@ module M_test_i8_add_overflow_pos
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
-        \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))
+        \/ gt_log_Int (Int8.to_int self_ + Int8.to_int rhs) (Int8.to_int const_MAX)))
       /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs)}
       (! return {result}) ]
@@ -290,33 +306,35 @@ module M_test_i8_add_overflow_pos
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
-    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] Int8.to_int self_
-              + Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] ge_log_Int (Int8.to_int self_
+            + Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ + Int8.to_int rhs)
       /\ ([@stop_split] [@expl:saturating_add ensures #1] Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_add ensures #2] Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX
-      -> Int8.to_int result = Int8.to_int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_add ensures #2] gt_log_Int (Int8.to_int self_
+        + Int8.to_int rhs) (Int8.to_int const_MAX) -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
-    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] Int8.to_int self_
-              + Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (Int8.to_int self_
+            + Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ + Int8.to_int rhs)
       /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ + Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
-      \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))}
+      \/ gt_log_Int (Int8.to_int self_ + Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -324,7 +342,7 @@ module M_test_i8_add_overflow_pos
   meta "select_lsinst" "all"
   
   let test_i8_add_overflow_pos (a: Int8.t) (return (x: ())) =
-  {[@stop_split] [@expl:test_i8_add_overflow_pos requires] Int8.to_int a > 0}
+  {[@stop_split] [@expl:test_i8_add_overflow_pos requires] gt_log_Int (Int8.to_int a) 0}
     (! bb0
     [ bb0 = s0
       [ s0 = checked_add {(127: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
@@ -759,13 +777,17 @@ module M_test_i8_mul_example
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let checked_mul (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
-        \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX))
+        \/ gt_log_Int (Int8.to_int self_ * Int8.to_int rhs) (Int8.to_int const_MAX)))
       /\ ([@stop_split] [@expl:checked_mul ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ * Int8.to_int rhs)}
       (! return {result}) ]
@@ -780,33 +802,35 @@ module M_test_i8_mul_example
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = Int8.mul self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
-    {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] Int8.to_int self_
-              * Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] ge_log_Int (Int8.to_int self_
+            * Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ * Int8.to_int rhs)
       /\ ([@stop_split] [@expl:saturating_mul ensures #1] Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_mul ensures #2] Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX
-      -> Int8.to_int result = Int8.to_int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_mul ensures #2] gt_log_Int (Int8.to_int self_
+        * Int8.to_int rhs) (Int8.to_int const_MAX) -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
-    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] Int8.to_int self_
-              * Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] ge_log_Int (Int8.to_int self_
+            * Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ * Int8.to_int rhs)
       /\ ([@stop_split] [@expl:overflowing_mul ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ * Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_mul ensures #2] result.f1
       = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
-      \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX))}
+      \/ gt_log_Int (Int8.to_int self_ * Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -919,13 +943,17 @@ module M_test_i8_mul_zero
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let checked_mul (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
-        \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX))
+        \/ gt_log_Int (Int8.to_int self_ * Int8.to_int rhs) (Int8.to_int const_MAX)))
       /\ ([@stop_split] [@expl:checked_mul ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ * Int8.to_int rhs)}
       (! return {result}) ]
@@ -937,33 +965,35 @@ module M_test_i8_mul_zero
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = Int8.mul self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
-    {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] Int8.to_int self_
-              * Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] ge_log_Int (Int8.to_int self_
+            * Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ * Int8.to_int rhs)
       /\ ([@stop_split] [@expl:saturating_mul ensures #1] Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_mul ensures #2] Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX
-      -> Int8.to_int result = Int8.to_int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_mul ensures #2] gt_log_Int (Int8.to_int self_
+        * Int8.to_int rhs) (Int8.to_int const_MAX) -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
-    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] Int8.to_int self_
-              * Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] ge_log_Int (Int8.to_int self_
+            * Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ * Int8.to_int rhs)
       /\ ([@stop_split] [@expl:overflowing_mul ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ * Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_mul ensures #2] result.f1
       = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
-      \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX))}
+      \/ gt_log_Int (Int8.to_int self_ * Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -1015,22 +1045,29 @@ module M_test_i8_overflowing_add
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   constant const_MIN: Int8.t = (-128: Int8.t)
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   let overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
-    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] Int8.to_int self_
-              + Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (Int8.to_int self_
+            + Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ + Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ + Int8.to_int rhs)
       /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ + Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
-      \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))}
+      \/ gt_log_Int (Int8.to_int self_ + Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
   let wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
@@ -1043,7 +1080,7 @@ module M_test_i8_overflowing_add
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
-        \/ Int8.to_int self_ + Int8.to_int rhs > Int8.to_int const_MAX))
+        \/ gt_log_Int (Int8.to_int self_ + Int8.to_int rhs) (Int8.to_int const_MAX)))
       /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs)}
       (! return {result}) ]
@@ -1088,22 +1125,29 @@ module M_test_i8_overflowing_mul
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   constant const_MIN: Int8.t = (-128: Int8.t)
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   let overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
-    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] Int8.to_int self_
-              * Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] ge_log_Int (Int8.to_int self_
+            * Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ * Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ * Int8.to_int rhs)
       /\ ([@stop_split] [@expl:overflowing_mul ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ * Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_mul ensures #2] result.f1
       = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
-      \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX))}
+      \/ gt_log_Int (Int8.to_int self_ * Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
   let wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
@@ -1116,7 +1160,7 @@ module M_test_i8_overflowing_mul
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
-        \/ Int8.to_int self_ * Int8.to_int rhs > Int8.to_int const_MAX))
+        \/ gt_log_Int (Int8.to_int self_ * Int8.to_int rhs) (Int8.to_int const_MAX)))
       /\ ([@stop_split] [@expl:checked_mul ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ * Int8.to_int rhs)}
       (! return {result}) ]
@@ -1161,22 +1205,29 @@ module M_test_i8_overflowing_sub
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   constant const_MIN: Int8.t = (-128: Int8.t)
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   let overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
-    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] Int8.to_int self_
-              - Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (Int8.to_int self_
+            - Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ - Int8.to_int rhs)
       /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ - Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
-      \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))}
+      \/ gt_log_Int (Int8.to_int self_ - Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
   let wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
@@ -1189,7 +1240,7 @@ module M_test_i8_overflowing_sub
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
-        \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))
+        \/ gt_log_Int (Int8.to_int self_ - Int8.to_int rhs) (Int8.to_int const_MAX)))
       /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs)}
       (! return {result}) ]
@@ -1236,13 +1287,17 @@ module M_test_i8_sub_example
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
-        \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))
+        \/ gt_log_Int (Int8.to_int self_ - Int8.to_int rhs) (Int8.to_int const_MAX)))
       /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs)}
       (! return {result}) ]
@@ -1257,33 +1312,35 @@ module M_test_i8_sub_example
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
-    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] Int8.to_int self_
-              - Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] ge_log_Int (Int8.to_int self_
+            - Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ - Int8.to_int rhs)
       /\ ([@stop_split] [@expl:saturating_sub ensures #1] Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_sub ensures #2] Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX
-      -> Int8.to_int result = Int8.to_int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_sub ensures #2] gt_log_Int (Int8.to_int self_
+        - Int8.to_int rhs) (Int8.to_int const_MAX) -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
-    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] Int8.to_int self_
-              - Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (Int8.to_int self_
+            - Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ - Int8.to_int rhs)
       /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ - Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
-      \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))}
+      \/ gt_log_Int (Int8.to_int self_ - Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -1399,13 +1456,17 @@ module M_test_i8_sub_overflow_neg
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
-        \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))
+        \/ gt_log_Int (Int8.to_int self_ - Int8.to_int rhs) (Int8.to_int const_MAX)))
       /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs)}
       (! return {result}) ]
@@ -1417,33 +1478,35 @@ module M_test_i8_sub_overflow_neg
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
-    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] Int8.to_int self_
-              - Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] ge_log_Int (Int8.to_int self_
+            - Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ - Int8.to_int rhs)
       /\ ([@stop_split] [@expl:saturating_sub ensures #1] Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_sub ensures #2] Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX
-      -> Int8.to_int result = Int8.to_int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_sub ensures #2] gt_log_Int (Int8.to_int self_
+        - Int8.to_int rhs) (Int8.to_int const_MAX) -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
-    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] Int8.to_int self_
-              - Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (Int8.to_int self_
+            - Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ - Int8.to_int rhs)
       /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ - Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
-      \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))}
+      \/ gt_log_Int (Int8.to_int self_ - Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -1508,13 +1571,17 @@ module M_test_i8_sub_overflow_pos
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: Int8.t = (127: Int8.t)
   
   let checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
-        \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))
+        \/ gt_log_Int (Int8.to_int self_ - Int8.to_int rhs) (Int8.to_int const_MAX)))
       /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: Int8.t. result = Some r
         -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs)}
       (! return {result}) ]
@@ -1526,33 +1593,35 @@ module M_test_i8_sub_overflow_pos
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
-    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] Int8.to_int self_
-              - Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] ge_log_Int (Int8.to_int self_
+            - Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result = Int8.to_int self_ - Int8.to_int rhs)
       /\ ([@stop_split] [@expl:saturating_sub ensures #1] Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
         -> Int8.to_int result = Int8.to_int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_sub ensures #2] Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX
-      -> Int8.to_int result = Int8.to_int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_sub ensures #2] gt_log_Int (Int8.to_int self_
+        - Int8.to_int rhs) (Int8.to_int const_MAX) -> Int8.to_int result = Int8.to_int const_MAX)}
       (! return {result}) ]
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
   let overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
-    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] Int8.to_int self_
-              - Int8.to_int rhs
-            >= Int8.to_int const_MIN
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (Int8.to_int self_
+            - Int8.to_int rhs) (Int8.to_int const_MIN)
           /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX
         -> Int8.to_int result.f0 = Int8.to_int self_ - Int8.to_int rhs)
       /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. Int8.to_int result.f0
           = Int8.to_int self_ - Int8.to_int rhs + k * (Int8.to_int const_MAX - Int8.to_int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
-      \/ Int8.to_int self_ - Int8.to_int rhs > Int8.to_int const_MAX))}
+      \/ gt_log_Int (Int8.to_int self_ - Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -1560,7 +1629,7 @@ module M_test_i8_sub_overflow_pos
   meta "select_lsinst" "all"
   
   let test_i8_sub_overflow_pos (a: Int8.t) (return (x: ())) =
-  {[@stop_split] [@expl:test_i8_sub_overflow_pos requires] Int8.to_int a > 0}
+  {[@stop_split] [@expl:test_i8_sub_overflow_pos requires] gt_log_Int (Int8.to_int a) 0}
     (! bb0
     [ bb0 = s0
       [ s0 = checked_sub {(-128: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
@@ -1657,13 +1726,17 @@ module M_test_u8_add_example
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let checked_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
-        \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX))
+        \/ gt_log_Int (UInt8.t'int self_ + UInt8.t'int rhs) (UInt8.t'int const_MAX)))
       /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ + UInt8.t'int rhs)}
       (! return {result}) ]
@@ -1678,33 +1751,35 @@ module M_test_u8_add_example
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt8.add self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) ->
-    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] UInt8.t'int self_
-              + UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] ge_log_Int (UInt8.t'int self_
+            + UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result = UInt8.t'int self_ + UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:saturating_add ensures #1] UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
         -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_add ensures #2] UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX
-      -> UInt8.t'int result = UInt8.t'int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_add ensures #2] gt_log_Int (UInt8.t'int self_
+        + UInt8.t'int rhs) (UInt8.t'int const_MAX) -> UInt8.t'int result = UInt8.t'int const_MAX)}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
-    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] UInt8.t'int self_
-              + UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (UInt8.t'int self_
+            + UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ + UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ + UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
-      \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX))}
+      \/ gt_log_Int (UInt8.t'int self_ + UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -1787,13 +1862,17 @@ module M_test_u8_add_overflow
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let checked_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
-        \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX))
+        \/ gt_log_Int (UInt8.t'int self_ + UInt8.t'int rhs) (UInt8.t'int const_MAX)))
       /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ + UInt8.t'int rhs)}
       (! return {result}) ]
@@ -1805,33 +1884,35 @@ module M_test_u8_add_overflow
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt8.add self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) ->
-    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] UInt8.t'int self_
-              + UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] ge_log_Int (UInt8.t'int self_
+            + UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result = UInt8.t'int self_ + UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:saturating_add ensures #1] UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
         -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_add ensures #2] UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX
-      -> UInt8.t'int result = UInt8.t'int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_add ensures #2] gt_log_Int (UInt8.t'int self_
+        + UInt8.t'int rhs) (UInt8.t'int const_MAX) -> UInt8.t'int result = UInt8.t'int const_MAX)}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
-    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] UInt8.t'int self_
-              + UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (UInt8.t'int self_
+            + UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ + UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ + UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
-      \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX))}
+      \/ gt_log_Int (UInt8.t'int self_ + UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -2169,13 +2250,17 @@ module M_test_u8_mul_example
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
-        \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX))
+        \/ gt_log_Int (UInt8.t'int self_ * UInt8.t'int rhs) (UInt8.t'int const_MAX)))
       /\ ([@stop_split] [@expl:checked_mul ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ * UInt8.t'int rhs)}
       (! return {result}) ]
@@ -2190,33 +2275,35 @@ module M_test_u8_mul_example
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt8.mul self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) ->
-    {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] UInt8.t'int self_
-              * UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] ge_log_Int (UInt8.t'int self_
+            * UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result = UInt8.t'int self_ * UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:saturating_mul ensures #1] UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
         -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_mul ensures #2] UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX
-      -> UInt8.t'int result = UInt8.t'int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_mul ensures #2] gt_log_Int (UInt8.t'int self_
+        * UInt8.t'int rhs) (UInt8.t'int const_MAX) -> UInt8.t'int result = UInt8.t'int const_MAX)}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
-    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] UInt8.t'int self_
-              * UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] ge_log_Int (UInt8.t'int self_
+            * UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ * UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:overflowing_mul ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ * UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_mul ensures #2] result.f1
       = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
-      \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX))}
+      \/ gt_log_Int (UInt8.t'int self_ * UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -2299,13 +2386,17 @@ module M_test_u8_mul_zero
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
-        \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX))
+        \/ gt_log_Int (UInt8.t'int self_ * UInt8.t'int rhs) (UInt8.t'int const_MAX)))
       /\ ([@stop_split] [@expl:checked_mul ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ * UInt8.t'int rhs)}
       (! return {result}) ]
@@ -2317,33 +2408,35 @@ module M_test_u8_mul_zero
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt8.mul self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) ->
-    {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] UInt8.t'int self_
-              * UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] ge_log_Int (UInt8.t'int self_
+            * UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result = UInt8.t'int self_ * UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:saturating_mul ensures #1] UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
         -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_mul ensures #2] UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX
-      -> UInt8.t'int result = UInt8.t'int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_mul ensures #2] gt_log_Int (UInt8.t'int self_
+        * UInt8.t'int rhs) (UInt8.t'int const_MAX) -> UInt8.t'int result = UInt8.t'int const_MAX)}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
-    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] UInt8.t'int self_
-              * UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] ge_log_Int (UInt8.t'int self_
+            * UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ * UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:overflowing_mul ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ * UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_mul ensures #2] result.f1
       = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
-      \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX))}
+      \/ gt_log_Int (UInt8.t'int self_ * UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -2395,22 +2488,29 @@ module M_test_u8_overflowing_add
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   let overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
-    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] UInt8.t'int self_
-              + UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (UInt8.t'int self_
+            + UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ + UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ + UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:overflowing_add ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ + UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_add ensures #2] result.f1
       = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
-      \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX))}
+      \/ gt_log_Int (UInt8.t'int self_ + UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
   let wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
@@ -2423,7 +2523,7 @@ module M_test_u8_overflowing_add
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
-        \/ UInt8.t'int self_ + UInt8.t'int rhs > UInt8.t'int const_MAX))
+        \/ gt_log_Int (UInt8.t'int self_ + UInt8.t'int rhs) (UInt8.t'int const_MAX)))
       /\ ([@stop_split] [@expl:checked_add ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ + UInt8.t'int rhs)}
       (! return {result}) ]
@@ -2468,22 +2568,29 @@ module M_test_u8_overflowing_mul
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   let overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
-    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] UInt8.t'int self_
-              * UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] ge_log_Int (UInt8.t'int self_
+            * UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ * UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:overflowing_mul ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ * UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_mul ensures #2] result.f1
       = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
-      \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX))}
+      \/ gt_log_Int (UInt8.t'int self_ * UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
   let wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
@@ -2496,7 +2603,7 @@ module M_test_u8_overflowing_mul
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
-        \/ UInt8.t'int self_ * UInt8.t'int rhs > UInt8.t'int const_MAX))
+        \/ gt_log_Int (UInt8.t'int self_ * UInt8.t'int rhs) (UInt8.t'int const_MAX)))
       /\ ([@stop_split] [@expl:checked_mul ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ * UInt8.t'int rhs)}
       (! return {result}) ]
@@ -2541,22 +2648,29 @@ module M_test_u8_overflowing_sub
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   let overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
-    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] UInt8.t'int self_
-              - UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (UInt8.t'int self_
+            - UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ - UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ - UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
-      \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX))}
+      \/ gt_log_Int (UInt8.t'int self_ - UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
   let wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
@@ -2569,7 +2683,7 @@ module M_test_u8_overflowing_sub
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
-        \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX))
+        \/ gt_log_Int (UInt8.t'int self_ - UInt8.t'int rhs) (UInt8.t'int const_MAX)))
       /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ - UInt8.t'int rhs)}
       (! return {result}) ]
@@ -2616,13 +2730,17 @@ module M_test_u8_sub_example
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
-        \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX))
+        \/ gt_log_Int (UInt8.t'int self_ - UInt8.t'int rhs) (UInt8.t'int const_MAX)))
       /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ - UInt8.t'int rhs)}
       (! return {result}) ]
@@ -2637,33 +2755,35 @@ module M_test_u8_sub_example
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) ->
-    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] UInt8.t'int self_
-              - UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] ge_log_Int (UInt8.t'int self_
+            - UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result = UInt8.t'int self_ - UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:saturating_sub ensures #1] UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
         -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_sub ensures #2] UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX
-      -> UInt8.t'int result = UInt8.t'int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_sub ensures #2] gt_log_Int (UInt8.t'int self_
+        - UInt8.t'int rhs) (UInt8.t'int const_MAX) -> UInt8.t'int result = UInt8.t'int const_MAX)}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
-    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] UInt8.t'int self_
-              - UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (UInt8.t'int self_
+            - UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ - UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ - UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
-      \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX))}
+      \/ gt_log_Int (UInt8.t'int self_ - UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -2746,13 +2866,17 @@ module M_test_u8_sub_overflow
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
   let checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
-        \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX))
+        \/ gt_log_Int (UInt8.t'int self_ - UInt8.t'int rhs) (UInt8.t'int const_MAX)))
       /\ ([@stop_split] [@expl:checked_sub ensures #1] forall r: UInt8.t. result = Some r
         -> UInt8.t'int r = UInt8.t'int self_ - UInt8.t'int rhs)}
       (! return {result}) ]
@@ -2764,33 +2888,35 @@ module M_test_u8_sub_overflow
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   let saturating_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) ->
-    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] UInt8.t'int self_
-              - UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] ge_log_Int (UInt8.t'int self_
+            - UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result = UInt8.t'int self_ - UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:saturating_sub ensures #1] UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
         -> UInt8.t'int result = UInt8.t'int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_sub ensures #2] UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX
-      -> UInt8.t'int result = UInt8.t'int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_sub ensures #2] gt_log_Int (UInt8.t'int self_
+        - UInt8.t'int rhs) (UInt8.t'int const_MAX) -> UInt8.t'int result = UInt8.t'int const_MAX)}
       (! return {result}) ]
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
   let overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
-    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] UInt8.t'int self_
-              - UInt8.t'int rhs
-            >= UInt8.t'int const_MIN
+    {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (UInt8.t'int self_
+            - UInt8.t'int rhs) (UInt8.t'int const_MIN)
           /\ UInt8.t'int self_ - UInt8.t'int rhs <= UInt8.t'int const_MAX
         -> UInt8.t'int result.f0 = UInt8.t'int self_ - UInt8.t'int rhs)
       /\ ([@stop_split] [@expl:overflowing_sub ensures #1] exists k: int. UInt8.t'int result.f0
           = UInt8.t'int self_ - UInt8.t'int rhs + k * (UInt8.t'int const_MAX - UInt8.t'int const_MIN + 1))
       /\ ([@stop_split] [@expl:overflowing_sub ensures #2] result.f1
       = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
-      \/ UInt8.t'int self_ - UInt8.t'int rhs > UInt8.t'int const_MAX))}
+      \/ gt_log_Int (UInt8.t'int self_ - UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

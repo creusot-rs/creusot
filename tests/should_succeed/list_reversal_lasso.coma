@@ -217,8 +217,12 @@ module M_impl_Memory_0__find_lasso (* Memory *)
   predicate list (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) =
     list_seg self first s const_NULL 0 (Seq.length s)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate lasso (self: t_Memory) (first: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t) =
-    let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
+    let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in gt_log_Int (Seq.length s1) 0
     /\ (forall i: int, j: int. 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
         -> Seq.get s1 i <> Seq.get s2 j)
     /\ list_seg self first s1 mid 0 (Seq.length s1)
@@ -373,8 +377,12 @@ module M_impl_Memory_0__find_lasso_aux (* Memory *)
   predicate list (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) =
     list_seg self first s const_NULL 0 (Seq.length s)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate lasso (self: t_Memory) (first: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t) =
-    let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
+    let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in gt_log_Int (Seq.length s1) 0
     /\ (forall i: int, j: int. 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
         -> Seq.get s1 i <> Seq.get s2 j)
     /\ list_seg self first s1 mid 0 (Seq.length s1)
@@ -429,7 +437,12 @@ module M_impl_Memory_0__find_lasso_aux (* Memory *)
       -> (forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s /\ i <> j
           -> Seq.get s i <> Seq.get s j) -> pigeon s n
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -510,7 +523,16 @@ module M_impl_Memory_0__find_ptr_in_seq (* Memory *)
   
   type t_Option_Int = None | Some int
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -619,8 +641,12 @@ module M_impl_Memory_0__list_reversal_lasso (* Memory *)
   
   meta "rewrite_def" predicate resolve_refmut_Memory
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate lasso (self: t_Memory) (first: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t) =
-    let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in Seq.length s1 > 0
+    let mid = if Seq.length s2 = 0 then Seq.get s1 (Seq.length s1 - 1) else Seq.get s2 0 in gt_log_Int (Seq.length s1) 0
     /\ (forall i: int, j: int. 0 <= i /\ i < Seq.length s1 /\ 0 <= j /\ j < Seq.length s2
         -> Seq.get s1 i <> Seq.get s2 j)
     /\ list_seg self first s1 mid 0 (Seq.length s1)
@@ -903,6 +929,10 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
   
   meta "rewrite_def" function push_front_usize
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate loop_ (self: t_Memory) (first: UInt64.t) (s: Seq.seq UInt64.t) =
     list_seg self first s (Seq.get s 0) 0 (Seq.length s)
   
@@ -911,8 +941,7 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
   meta "select_lsinst" "all"
   
   let list_reversal_loop (self: MutBorrow.t t_Memory) (l: UInt64.t) (s: Seq.seq UInt64.t) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:list_reversal_loop requires] ([@stop_split] [@expl:list_reversal_loop requires #0] Seq.length s
-      > 0)
+  {[@stop_split] [@expl:list_reversal_loop requires] ([@stop_split] [@expl:list_reversal_loop requires #0] gt_log_Int (Seq.length s) 0)
     /\ ([@stop_split] [@expl:list_reversal_loop requires #1] loop_ self.current l s)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1 | s1 = [ &n <- 0 ] s2 | s2 = [ &_old <- self.final ] s3 | s3 = bb2 ]
@@ -1105,7 +1134,16 @@ module M_impl_Memory_0__pigeon (* Memory *)
         | Some j -> i <= j /\ j < Seq.length s /\ UInt64.t'int (Seq.get s j) = p
         end
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   

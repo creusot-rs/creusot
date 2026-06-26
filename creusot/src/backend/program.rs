@@ -616,11 +616,12 @@ impl<'tcx> RValue<'tcx> {
                 }
                 use BinOp::*;
                 use OpKind::*;
+                let arithkind = if l_ty.is_floating_point() { Logic } else { Program };
                 let (opname, opkind) = match op {
-                    Add | AddUnchecked => ("add", Program),
-                    Sub | SubUnchecked => ("sub", Program),
-                    Mul | MulUnchecked => ("mul", Program),
-                    Div => ("div", Program),
+                    Add | AddUnchecked => ("add", arithkind),
+                    Sub | SubUnchecked => ("sub", arithkind),
+                    Mul | MulUnchecked => ("mul", arithkind),
+                    Div => ("div", arithkind),
                     Rem => ("rem", Program),
                     Shl | ShlUnchecked => ("shl", Program),
                     Shr | ShrUnchecked => ("shr", Program),
@@ -699,14 +700,8 @@ impl<'tcx> RValue<'tcx> {
                     _ => unreachable!("the not operator is not supported for {ty:?}"),
                 }
             }
-            RValue::UnaryOp(UnOp::Neg, arg) => {
-                let prelude: PreMod = match ty.kind() {
-                    TyKind::Int(ity) => ity_to_prelude(lower.ctx.tcx, *ity),
-                    TyKind::Float(fty) => floatty_to_prelude(*fty),
-                    _ => unreachable!("non-primitive type for negation {ty:?}"),
-                };
-
-                let neg = lower.names.in_pre(prelude, "neg");
+            RValue::UnaryOp(UnOp::Neg, arg) if let TyKind::Int(ity) = ty.kind() => {
+                let neg = lower.names.in_pre(ity_to_prelude(lower.ctx.tcx, *ity), "neg");
                 let ret_ident = Ident::fresh_local("_x");
                 let arg = Arg::Term(arg.into_why(lower, istmts, span));
                 istmts.push(IntermediateStmt::call(
@@ -717,6 +712,11 @@ impl<'tcx> RValue<'tcx> {
                 ));
                 Exp::var(ret_ident)
             }
+            RValue::UnaryOp(UnOp::Neg, arg) if let TyKind::Float(fty) = ty.kind() => {
+                Exp::qvar(lower.names.in_pre(floatty_to_prelude(*fty), "neg"))
+                    .app([arg.into_why(lower, istmts, span)])
+            }
+            RValue::UnaryOp(UnOp::Neg, _) => unreachable!("non-primitive type for negation {ty:?}"),
             RValue::Constructor(id, subst, args) => {
                 if lower.ctx.def_kind(id) == DefKind::Closure {
                     lower.names.dependency(Dependency::Item(id, subst));

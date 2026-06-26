@@ -24,7 +24,7 @@ pub use self::{
     id::Id,
     int::{Int, Nat, Positive},
     mapping::Mapping,
-    ord::OrdLogic,
+    ord::{OrdLogic, PartialOrdLogic},
     seq::Seq,
     set::Set,
     well_founded::WellFounded,

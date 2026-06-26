@@ -280,24 +280,32 @@ module M_impl_ExactSizeIterator_for_Skip_I__size_hint_exact (* <Skip<I> as commo
         | None -> true
         end)
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate postcondition_size_hint'0 (self: ()) (args: t_Skip_I) (result: tup2_usize_Option_usize) =
     let self'0 = args in exists r: tup2_usize_Option_usize. postcondition_size_hint () self'0.iter r
       /\ (UInt64.t'int r.f0 <= UInt64.t'int self'0.n -> result.f0 = (0: UInt64.t))
-      /\ (UInt64.t'int r.f0 >= UInt64.t'int self'0.n -> result.f0 = UInt64.sub r.f0 self'0.n)
+      /\ (ge_log_Int (UInt64.t'int r.f0) (UInt64.t'int self'0.n) -> result.f0 = UInt64.sub r.f0 self'0.n)
       /\ match r.f1 with
         | Some ub -> (UInt64.t'int ub <= UInt64.t'int self'0.n -> result.f1 = Some (0: UInt64.t))
-        /\ (UInt64.t'int ub >= UInt64.t'int self'0.n -> result.f1 = Some (UInt64.sub ub self'0.n))
+        /\ (ge_log_Int (UInt64.t'int ub) (UInt64.t'int self'0.n) -> result.f1 = Some (UInt64.sub ub self'0.n))
         | None -> result.f1 = None
         end
   
   meta "rewrite_def" predicate postcondition_size_hint'0
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate resolve_Item (_1: t_Item)
   
   predicate produces_Skip_I (self: t_Skip_I) (visited: Seq.seq t_Item) (o: t_Skip_I) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
     \/ UInt64.t'int o.n = 0
-    /\ Seq.length visited > 0
+    /\ gt_log_Int (Seq.length visited) 0
     /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int self.n
       /\ produces_I self.iter (Seq.(++) s visited) o.iter
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
@@ -358,10 +366,10 @@ module M_impl_ExactSizeIterator_for_Skip_I__size_hint_exact (* <Skip<I> as commo
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint ensures] exists r: tup2_usize_Option_usize. postcondition_size_hint () self.iter r
         /\ (UInt64.t'int r.f0 <= UInt64.t'int self.n -> result.f0 = (0: UInt64.t))
-        /\ (UInt64.t'int r.f0 >= UInt64.t'int self.n -> result.f0 = UInt64.sub r.f0 self.n)
+        /\ (ge_log_Int (UInt64.t'int r.f0) (UInt64.t'int self.n) -> result.f0 = UInt64.sub r.f0 self.n)
         /\ match r.f1 with
           | Some ub -> (UInt64.t'int ub <= UInt64.t'int self.n -> result.f1 = Some (0: UInt64.t))
-          /\ (UInt64.t'int ub >= UInt64.t'int self.n -> result.f1 = Some (UInt64.sub ub self.n))
+          /\ (ge_log_Int (UInt64.t'int ub) (UInt64.t'int self.n) -> result.f1 = Some (UInt64.sub ub self.n))
           | None -> result.f1 = None
           end}
       (! return {result}) ]
@@ -424,24 +432,32 @@ module M_impl_ExactSizeIterator_for_Skip_I__size_hint_exact__refines (* <Skip<I>
         | None -> true
         end)
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate postcondition_size_hint'0 (self: ()) (args: t_Skip_I) (result: tup2_usize_Option_usize) =
     let self'0 = args in exists r: tup2_usize_Option_usize. postcondition_size_hint () self'0.iter r
       /\ (UInt64.t'int r.f0 <= UInt64.t'int self'0.n -> result.f0 = (0: UInt64.t))
-      /\ (UInt64.t'int r.f0 >= UInt64.t'int self'0.n -> result.f0 = UInt64.sub r.f0 self'0.n)
+      /\ (ge_log_Int (UInt64.t'int r.f0) (UInt64.t'int self'0.n) -> result.f0 = UInt64.sub r.f0 self'0.n)
       /\ match r.f1 with
         | Some ub -> (UInt64.t'int ub <= UInt64.t'int self'0.n -> result.f1 = Some (0: UInt64.t))
-        /\ (UInt64.t'int ub >= UInt64.t'int self'0.n -> result.f1 = Some (UInt64.sub ub self'0.n))
+        /\ (ge_log_Int (UInt64.t'int ub) (UInt64.t'int self'0.n) -> result.f1 = Some (UInt64.sub ub self'0.n))
         | None -> result.f1 = None
         end
   
   meta "rewrite_def" predicate postcondition_size_hint'0
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
   
   predicate resolve_Item (_1: t_Item)
   
   predicate produces_Skip_I (self: t_Skip_I) (visited: Seq.seq t_Item) (o: t_Skip_I) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
     \/ UInt64.t'int o.n = 0
-    /\ Seq.length visited > 0
+    /\ gt_log_Int (Seq.length visited) 0
     /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int self.n
       /\ produces_I self.iter (Seq.(++) s visited) o.iter
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
@@ -502,10 +518,10 @@ module M_impl_ExactSizeIterator_for_Skip_I__size_hint_exact__refines (* <Skip<I>
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint ensures] exists r: tup2_usize_Option_usize. postcondition_size_hint () self.iter r
         /\ (UInt64.t'int r.f0 <= UInt64.t'int self.n -> result.f0 = (0: UInt64.t))
-        /\ (UInt64.t'int r.f0 >= UInt64.t'int self.n -> result.f0 = UInt64.sub r.f0 self.n)
+        /\ (ge_log_Int (UInt64.t'int r.f0) (UInt64.t'int self.n) -> result.f0 = UInt64.sub r.f0 self.n)
         /\ match r.f1 with
           | Some ub -> (UInt64.t'int ub <= UInt64.t'int self.n -> result.f1 = Some (0: UInt64.t))
-          /\ (UInt64.t'int ub >= UInt64.t'int self.n -> result.f1 = Some (UInt64.sub ub self.n))
+          /\ (ge_log_Int (UInt64.t'int ub) (UInt64.t'int self.n) -> result.f1 = Some (UInt64.sub ub self.n))
           | None -> result.f1 = None
           end}
       (! return {result}) ]
@@ -643,10 +659,14 @@ module M_impl_Iterator_for_Skip_I__next (* <Skip<I> as common::Iterator> *)
       /\ (forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length s -> resolve_Item (Seq.get s i'0))
       /\ completed_I i /\ i.final = self.final.iter)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Skip_I (self: t_Skip_I) (visited: Seq.seq t_Item) (o: t_Skip_I) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
     \/ UInt64.t'int o.n = 0
-    /\ Seq.length visited > 0
+    /\ gt_log_Int (Seq.length visited) 0
     /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int self.n
       /\ produces_I self.iter (Seq.(++) s visited) o.iter
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
@@ -787,10 +807,14 @@ module M_impl_Iterator_for_Skip_I__next__refines (* <Skip<I> as common::Iterator
       /\ (forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length s -> resolve_Item (Seq.get s i'0))
       /\ completed_I i /\ i.final = self.final.iter)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Skip_I (self: t_Skip_I) (visited: Seq.seq t_Item) (o: t_Skip_I) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
     \/ UInt64.t'int o.n = 0
-    /\ Seq.length visited > 0
+    /\ gt_log_Int (Seq.length visited) 0
     /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int self.n
       /\ produces_I self.iter (Seq.(++) s visited) o.iter
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
@@ -834,12 +858,16 @@ module M_impl_Iterator_for_Skip_I__produces_refl (* <Skip<I> as common::Iterator
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate resolve_Item (_1: t_Item)
   
   predicate produces_Skip_I (self: t_Skip_I) (visited: Seq.seq t_Item) (o: t_Skip_I) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
     \/ UInt64.t'int o.n = 0
-    /\ Seq.length visited > 0
+    /\ gt_log_Int (Seq.length visited) 0
     /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int self.n
       /\ produces_I self.iter (Seq.(++) s visited) o.iter
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
@@ -877,12 +905,16 @@ module M_impl_Iterator_for_Skip_I__produces_refl__refines (* <Skip<I> as common:
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate resolve_Item (_1: t_Item)
   
   predicate produces_Skip_I (self: t_Skip_I) (visited: Seq.seq t_Item) (o: t_Skip_I) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
     \/ UInt64.t'int o.n = 0
-    /\ Seq.length visited > 0
+    /\ gt_log_Int (Seq.length visited) 0
     /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int self.n
       /\ produces_I self.iter (Seq.(++) s visited) o.iter
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
@@ -917,12 +949,16 @@ module M_impl_Iterator_for_Skip_I__produces_trans (* <Skip<I> as common::Iterato
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate resolve_Item (_1: t_Item)
   
   predicate produces_Skip_I (self: t_Skip_I) (visited: Seq.seq t_Item) (o: t_Skip_I) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
     \/ UInt64.t'int o.n = 0
-    /\ Seq.length visited > 0
+    /\ gt_log_Int (Seq.length visited) 0
     /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int self.n
       /\ produces_I self.iter (Seq.(++) s visited) o.iter
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
@@ -996,12 +1032,16 @@ module M_impl_Iterator_for_Skip_I__produces_trans__refines (* <Skip<I> as common
   
   axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate resolve_Item (_1: t_Item)
   
   predicate produces_Skip_I (self: t_Skip_I) (visited: Seq.seq t_Item) (o: t_Skip_I) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
     \/ UInt64.t'int o.n = 0
-    /\ Seq.length visited > 0
+    /\ gt_log_Int (Seq.length visited) 0
     /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int self.n
       /\ produces_I self.iter (Seq.(++) s visited) o.iter
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
@@ -1085,21 +1125,28 @@ module M_impl_Iterator_for_Skip_I__size_hint (* <Skip<I> as common::Iterator> *)
     {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   constant const_MIN: UInt64.t = (0: UInt64.t)
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   let saturating_sub (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) ->
-    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] UInt64.t'int self_
-              - UInt64.t'int rhs
-            >= UInt64.t'int const_MIN
+    {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] ge_log_Int (UInt64.t'int self_
+            - UInt64.t'int rhs) (UInt64.t'int const_MIN)
           /\ UInt64.t'int self_ - UInt64.t'int rhs <= UInt64.t'int const_MAX
         -> UInt64.t'int result = UInt64.t'int self_ - UInt64.t'int rhs)
       /\ ([@stop_split] [@expl:saturating_sub ensures #1] UInt64.t'int self_ - UInt64.t'int rhs < UInt64.t'int const_MIN
         -> UInt64.t'int result = UInt64.t'int const_MIN)
-      /\ ([@stop_split] [@expl:saturating_sub ensures #2] UInt64.t'int self_ - UInt64.t'int rhs > UInt64.t'int const_MAX
-      -> UInt64.t'int result = UInt64.t'int const_MAX)}
+      /\ ([@stop_split] [@expl:saturating_sub ensures #2] gt_log_Int (UInt64.t'int self_
+        - UInt64.t'int rhs) (UInt64.t'int const_MAX) -> UInt64.t'int result = UInt64.t'int const_MAX)}
       (! return {result}) ]
   
   let elim_Some (_x: t_Option_usize) (return (f0'0: UInt64.t)) = any
@@ -1154,10 +1201,10 @@ module M_impl_Iterator_for_Skip_I__size_hint (* <Skip<I> as common::Iterator> *)
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint ensures] exists r: tup2_usize_Option_usize. postcondition_size_hint () self.iter r
         /\ (UInt64.t'int r.f0 <= UInt64.t'int self.n -> result.f0 = (0: UInt64.t))
-        /\ (UInt64.t'int r.f0 >= UInt64.t'int self.n -> result.f0 = UInt64.sub r.f0 self.n)
+        /\ (ge_log_Int (UInt64.t'int r.f0) (UInt64.t'int self.n) -> result.f0 = UInt64.sub r.f0 self.n)
         /\ match r.f1 with
           | Some ub -> (UInt64.t'int ub <= UInt64.t'int self.n -> result.f1 = Some (0: UInt64.t))
-          /\ (UInt64.t'int ub >= UInt64.t'int self.n -> result.f1 = Some (UInt64.sub ub self.n))
+          /\ (ge_log_Int (UInt64.t'int ub) (UInt64.t'int self.n) -> result.f1 = Some (UInt64.sub ub self.n))
           | None -> result.f1 = None
           end}
       (! return {result}) ]
@@ -1241,12 +1288,20 @@ module M_impl_Iterator_for_Skip_I__size_hint__refines (* <Skip<I> as common::Ite
     {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate resolve_Item (_1: t_Item)
   
   predicate produces_Skip_I (self: t_Skip_I) (visited: Seq.seq t_Item) (o: t_Skip_I) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
     \/ UInt64.t'int o.n = 0
-    /\ Seq.length visited > 0
+    /\ gt_log_Int (Seq.length visited) 0
     /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int self.n
       /\ produces_I self.iter (Seq.(++) s visited) o.iter
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
@@ -1266,10 +1321,10 @@ module M_impl_Iterator_for_Skip_I__size_hint__refines (* <Skip<I> as common::Ite
       -> inv_ref_Skip_I self
       /\ (forall result: tup2_usize_Option_usize. (exists r: tup2_usize_Option_usize. postcondition_size_hint () self.iter r
             /\ (UInt64.t'int r.f0 <= UInt64.t'int self.n -> result.f0 = (0: UInt64.t))
-            /\ (UInt64.t'int r.f0 >= UInt64.t'int self.n -> result.f0 = UInt64.sub r.f0 self.n)
+            /\ (ge_log_Int (UInt64.t'int r.f0) (UInt64.t'int self.n) -> result.f0 = UInt64.sub r.f0 self.n)
             /\ match r.f1 with
               | Some ub -> (UInt64.t'int ub <= UInt64.t'int self.n -> result.f1 = Some (0: UInt64.t))
-              /\ (UInt64.t'int ub >= UInt64.t'int self.n -> result.f1 = Some (UInt64.sub ub self.n))
+              /\ (ge_log_Int (UInt64.t'int ub) (UInt64.t'int self.n) -> result.f1 = Some (UInt64.sub ub self.n))
               | None -> result.f1 = None
               end)
         -> (forall s: Seq.seq t_Item, i: MutBorrow.t t_Skip_I. produces_Skip_I self s i.current /\ completed_Skip_I i

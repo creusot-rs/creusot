@@ -16,10 +16,14 @@ module M_compute_sum_of_odd
   
   meta "rewrite_def" function deep_model_u32
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Range_u32 (self: t_Range_u32) (visited: Seq.seq UInt32.t) (o: t_Range_u32) =
     self.end' = o.end'
     /\ deep_model_u32 self.start <= deep_model_u32 o.start
-    /\ (Seq.length visited > 0 -> deep_model_u32 o.start <= deep_model_u32 o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_u32 o.start <= deep_model_u32 o.end')
     /\ Seq.length visited = deep_model_u32 o.start - deep_model_u32 self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_u32 (Seq.get visited i) = deep_model_u32 self.start + i)
@@ -39,8 +43,12 @@ module M_compute_sum_of_odd
   
   meta "rewrite_def" predicate resolve_refmut_Range_u32
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate completed_Range_u32 (self: MutBorrow.t t_Range_u32) =
-    resolve_refmut_Range_u32 self /\ deep_model_u32 self.current.start >= deep_model_u32 self.current.end'
+    resolve_refmut_Range_u32 self /\ ge_log_Int (deep_model_u32 self.current.start) (deep_model_u32 self.current.end')
   
   let next_Range_u32 (self_: MutBorrow.t t_Range_u32) (return (x: t_Option_u32)) = any
     [ return (result: t_Option_u32) -> {[@stop_split] [@expl:next ensures] match result with
@@ -70,10 +78,10 @@ module M_compute_sum_of_odd
   
   function sum_of_odd_is_sqr (x: int) : ()
   
-  axiom sum_of_odd_is_sqr_def: forall x: int [sum_of_odd_is_sqr x]. x >= 0
-      -> sum_of_odd_is_sqr x = (if x > 0 then sum_of_odd_is_sqr (x - 1) else ())
+  axiom sum_of_odd_is_sqr_def: forall x: int [sum_of_odd_is_sqr x]. ge_log_Int x 0
+      -> sum_of_odd_is_sqr x = (if gt_log_Int x 0 then sum_of_odd_is_sqr (x - 1) else ())
   
-  axiom sum_of_odd_is_sqr_spec: forall x: int. x >= 0 -> sum_of_odd x = sqr x
+  axiom sum_of_odd_is_sqr_spec: forall x: int. ge_log_Int x 0 -> sum_of_odd x = sqr x
   
   meta "compute_max_steps" 1000000
   
@@ -132,7 +140,16 @@ end
 module M_sum_of_odd
   use int.Int
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -149,6 +166,10 @@ end
 module M_sum_of_odd_is_sqr
   use int.Int
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function sum_of_odd (x: int) : int
   
   axiom sum_of_odd_def: forall x: int [sum_of_odd x]. sum_of_odd x
@@ -156,7 +177,12 @@ module M_sum_of_odd_is_sqr
   
   function sqr (x: int) : int = x * x
   
-  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) = self >= 0 /\ self > other
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
@@ -168,9 +194,9 @@ module M_sum_of_odd_is_sqr
   
   function sum_of_odd_is_sqr (x: int) : ()
   
-  goal vc_sum_of_odd_is_sqr: x >= 0
-    -> (if x > 0 then
-      (([@stop_split] [@expl:sum_of_odd_is_sqr requires] x - 1 >= 0)
+  goal vc_sum_of_odd_is_sqr: ge_log_Int x 0
+    -> (if gt_log_Int x 0 then
+      (([@stop_split] [@expl:sum_of_odd_is_sqr requires] ge_log_Int (x - 1) 0)
         /\ ([@expl:variant decreases] well_founded_relation_Int x (x - 1)))
       /\ (([@stop_split] [@expl:sum_of_odd_is_sqr ensures] sum_of_odd (x - 1) = sqr (x - 1))
       -> ([@stop_split] [@expl:sum_of_odd_is_sqr ensures] sum_of_odd x = sqr x))
@@ -195,14 +221,22 @@ module M_test
       = sum_of_odd (UInt32.t'int x)}
       (! return {result}) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function sqr (x: int) : int = x * x
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
   
   function sum_of_odd_is_sqr (x: int) : ()
   
-  axiom sum_of_odd_is_sqr_def: forall x: int [sum_of_odd_is_sqr x]. x >= 0
-      -> sum_of_odd_is_sqr x = (if x > 0 then sum_of_odd_is_sqr (x - 1) else ())
+  axiom sum_of_odd_is_sqr_def: forall x: int [sum_of_odd_is_sqr x]. ge_log_Int x 0
+      -> sum_of_odd_is_sqr x = (if gt_log_Int x 0 then sum_of_odd_is_sqr (x - 1) else ())
   
-  axiom sum_of_odd_is_sqr_spec: forall x: int. x >= 0 -> sum_of_odd x = sqr x
+  axiom sum_of_odd_is_sqr_spec: forall x: int. ge_log_Int x 0 -> sum_of_odd x = sqr x
   
   predicate is_square (y: int) = exists z: int. y = sqr z
   

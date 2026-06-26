@@ -254,50 +254,9 @@ module M_impl_ExactSizeIterator_for_Take_I__size_hint_exact (* <Take<I> as commo
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.lt other self
   
-  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
-  
-  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
-  
-  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
-  
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
-  
-  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
-  
-  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
-  
-  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
-  
-  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
+  meta "rewrite_def" predicate gt_log_usize
   
   type t_Item
   
@@ -325,14 +284,18 @@ module M_impl_ExactSizeIterator_for_Take_I__size_hint_exact (* <Take<I> as commo
         | None -> true
         end)
   
+  predicate ge_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.le other self
+  
+  meta "rewrite_def" predicate ge_log_usize
+  
   predicate postcondition_size_hint'0 (self: ()) (args: t_Take_I) (result: tup2_usize_Option_usize) =
-    let self'0 = args in (UInt64.gt self'0.n (0: UInt64.t)
+    let self'0 = args in (gt_log_usize self'0.n (0: UInt64.t)
       -> (exists r: tup2_usize_Option_usize. postcondition_size_hint () self'0.iter r
         /\ (UInt64.le r.f0 self'0.n -> result.f0 = r.f0)
-        /\ (UInt64.ge r.f0 self'0.n -> result.f0 = self'0.n)
+        /\ (ge_log_usize r.f0 self'0.n -> result.f0 = self'0.n)
         /\ match r.f1 with
           | Some ub -> (UInt64.le ub self'0.n -> result.f1 = Some ub)
-          /\ (UInt64.ge ub self'0.n -> result.f1 = Some (self'0.n))
+          /\ (ge_log_usize ub self'0.n -> result.f1 = Some (self'0.n))
           | None -> result.f1 = Some (self'0.n)
           end))
     /\ (self'0.n = (0: UInt64.t) -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
@@ -396,13 +359,13 @@ module M_impl_ExactSizeIterator_for_Take_I__size_hint_exact (* <Take<I> as commo
   {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_Take_I self}
     any
     [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_Take_I ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.gt self.n (0: UInt64.t)
+    {[@stop_split] [@expl:size_hint_Take_I ensures] ([@stop_split] [@expl:size_hint ensures #0] gt_log_usize self.n (0: UInt64.t)
         -> (exists r: tup2_usize_Option_usize. postcondition_size_hint () self.iter r
           /\ (UInt64.le r.f0 self.n -> result.f0 = r.f0)
-          /\ (UInt64.ge r.f0 self.n -> result.f0 = self.n)
+          /\ (ge_log_usize r.f0 self.n -> result.f0 = self.n)
           /\ match r.f1 with
             | Some ub -> (UInt64.le ub self.n -> result.f1 = Some ub)
-            /\ (UInt64.ge ub self.n -> result.f1 = Some (self.n))
+            /\ (ge_log_usize ub self.n -> result.f1 = Some (self.n))
             | None -> result.f1 = Some (self.n)
             end))
       /\ ([@stop_split] [@expl:size_hint ensures #1] self.n = (0: UInt64.t)
@@ -441,50 +404,9 @@ module M_impl_ExactSizeIterator_for_Take_I__size_hint_exact__refines (* <Take<I>
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.lt other self
   
-  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
-  
-  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
-  
-  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
-  
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
-  
-  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
-  
-  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
-  
-  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
-  
-  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
+  meta "rewrite_def" predicate gt_log_usize
   
   type t_Item
   
@@ -512,14 +434,18 @@ module M_impl_ExactSizeIterator_for_Take_I__size_hint_exact__refines (* <Take<I>
         | None -> true
         end)
   
+  predicate ge_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.le other self
+  
+  meta "rewrite_def" predicate ge_log_usize
+  
   predicate postcondition_size_hint'0 (self: ()) (args: t_Take_I) (result: tup2_usize_Option_usize) =
-    let self'0 = args in (UInt64.gt self'0.n (0: UInt64.t)
+    let self'0 = args in (gt_log_usize self'0.n (0: UInt64.t)
       -> (exists r: tup2_usize_Option_usize. postcondition_size_hint () self'0.iter r
         /\ (UInt64.le r.f0 self'0.n -> result.f0 = r.f0)
-        /\ (UInt64.ge r.f0 self'0.n -> result.f0 = self'0.n)
+        /\ (ge_log_usize r.f0 self'0.n -> result.f0 = self'0.n)
         /\ match r.f1 with
           | Some ub -> (UInt64.le ub self'0.n -> result.f1 = Some ub)
-          /\ (UInt64.ge ub self'0.n -> result.f1 = Some (self'0.n))
+          /\ (ge_log_usize ub self'0.n -> result.f1 = Some (self'0.n))
           | None -> result.f1 = Some (self'0.n)
           end))
     /\ (self'0.n = (0: UInt64.t) -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
@@ -583,13 +509,13 @@ module M_impl_ExactSizeIterator_for_Take_I__size_hint_exact__refines (* <Take<I>
   {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_Take_I self}
     any
     [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_Take_I ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.gt self.n (0: UInt64.t)
+    {[@stop_split] [@expl:size_hint_Take_I ensures] ([@stop_split] [@expl:size_hint ensures #0] gt_log_usize self.n (0: UInt64.t)
         -> (exists r: tup2_usize_Option_usize. postcondition_size_hint () self.iter r
           /\ (UInt64.le r.f0 self.n -> result.f0 = r.f0)
-          /\ (UInt64.ge r.f0 self.n -> result.f0 = self.n)
+          /\ (ge_log_usize r.f0 self.n -> result.f0 = self.n)
           /\ match r.f1 with
             | Some ub -> (UInt64.le ub self.n -> result.f1 = Some ub)
-            /\ (UInt64.ge ub self.n -> result.f1 = Some (self.n))
+            /\ (ge_log_usize ub self.n -> result.f1 = Some (self.n))
             | None -> result.f1 = Some (self.n)
             end))
       /\ ([@stop_split] [@expl:size_hint ensures #1] self.n = (0: UInt64.t)
@@ -695,9 +621,13 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
   
   meta "rewrite_def" predicate resolve_refmut_Take_I
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate completed_Take_I (self: MutBorrow.t t_Take_I) =
     UInt64.t'int self.current.n = 0 /\ resolve_refmut_Take_I self
-    \/ UInt64.t'int self.current.n > 0
+    \/ gt_log_Int (UInt64.t'int self.current.n) 0
     /\ UInt64.t'int self.current.n = UInt64.t'int self.final.n + 1
     /\ completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
   
@@ -797,11 +727,15 @@ module M_impl_Iterator_for_Take_I__next__refines (* <Take<I> as common::Iterator
   
   meta "rewrite_def" predicate resolve_refmut_Take_I
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate completed_I (self: MutBorrow.t t_I)
   
   predicate completed_Take_I (self: MutBorrow.t t_Take_I) =
     UInt64.t'int self.current.n = 0 /\ resolve_refmut_Take_I self
-    \/ UInt64.t'int self.current.n > 0
+    \/ gt_log_Int (UInt64.t'int self.current.n) 0
     /\ UInt64.t'int self.current.n = UInt64.t'int self.final.n + 1
     /\ completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
   
@@ -1075,50 +1009,13 @@ module M_impl_Iterator_for_Take_I__size_hint (* <Take<I> as common::Iterator> *)
   
   meta "rewrite_def" predicate inv_ref_Take_I
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.lt other self
   
-  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
+  meta "rewrite_def" predicate gt_log_usize
   
+  predicate ge_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.le other self
   
-  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
-  
-  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
-  
-  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
-  
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
-  
-  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
-  
-  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
-  
-  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
-  
-  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
+  meta "rewrite_def" predicate ge_log_usize
   
   meta "compute_max_steps" 1000000
   
@@ -1160,13 +1057,13 @@ module M_impl_Iterator_for_Take_I__size_hint (* <Take<I> as common::Iterator> *)
     | & x'0: UInt64.t = Any.any_l ()
     | & _23: bool = Any.any_l () ])
     [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_Take_I ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.gt self.n (0: UInt64.t)
+    {[@stop_split] [@expl:size_hint_Take_I ensures] ([@stop_split] [@expl:size_hint ensures #0] gt_log_usize self.n (0: UInt64.t)
         -> (exists r: tup2_usize_Option_usize. postcondition_size_hint () self.iter r
           /\ (UInt64.le r.f0 self.n -> result.f0 = r.f0)
-          /\ (UInt64.ge r.f0 self.n -> result.f0 = self.n)
+          /\ (ge_log_usize r.f0 self.n -> result.f0 = self.n)
           /\ match r.f1 with
             | Some ub -> (UInt64.le ub self.n -> result.f1 = Some ub)
-            /\ (UInt64.ge ub self.n -> result.f1 = Some (self.n))
+            /\ (ge_log_usize ub self.n -> result.f1 = Some (self.n))
             | None -> result.f1 = Some (self.n)
             end))
       /\ ([@stop_split] [@expl:size_hint ensures #1] self.n = (0: UInt64.t)
@@ -1197,50 +1094,9 @@ module M_impl_Iterator_for_Take_I__size_hint__refines (* <Take<I> as common::Ite
   
   meta "rewrite_def" predicate inv_ref_Take_I
   
-  type t_Ordering = Less | Equal | Greater
+  predicate gt_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.lt other self
   
-  function cmp_log_usize (self: UInt64.t) (o: UInt64.t) : t_Ordering = if UInt64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom eq_cmp_usize_spec: forall x: UInt64.t, y: UInt64.t. (x = y) = (cmp_log_usize x y = Equal)
-  
-  function antisym2_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym2_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Greater -> cmp_log_usize y x = Less
-  
-  function antisym1_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom antisym1_usize_spec: forall x: UInt64.t, y: UInt64.t. cmp_log_usize x y = Less -> cmp_log_usize y x = Greater
-  
-  function trans_usize (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (o: t_Ordering) : ()
-  
-  axiom trans_usize_spec: forall x: UInt64.t, y: UInt64.t, z: UInt64.t, o: t_Ordering. cmp_log_usize x y = o
-      -> cmp_log_usize y z = o -> cmp_log_usize x z = o
-  
-  function refl_usize (x: UInt64.t) : ()
-  
-  axiom refl_usize_spec: forall x: UInt64.t. cmp_log_usize x x = Equal
-  
-  function cmp_gt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_gt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.gt x y = (cmp_log_usize x y = Greater)
-  
-  function cmp_ge_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_ge_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.ge x y = (cmp_log_usize x y <> Less)
-  
-  function cmp_lt_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_lt_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.lt x y = (cmp_log_usize x y = Less)
-  
-  function cmp_le_log_usize (x: UInt64.t) (y: UInt64.t) : ()
-  
-  axiom cmp_le_log_usize_spec: forall x: UInt64.t, y: UInt64.t. UInt64.le x y = (cmp_log_usize x y <> Greater)
+  meta "rewrite_def" predicate gt_log_usize
   
   type t_Option_usize = None | Some UInt64.t
   
@@ -1297,6 +1153,10 @@ module M_impl_Iterator_for_Take_I__size_hint__refines (* <Take<I> as common::Ite
     {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
       (! return {result}) ]
   
+  predicate ge_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.le other self
+  
+  meta "rewrite_def" predicate ge_log_usize
+  
   predicate produces_Take_I (self: t_Take_I) (visited: Seq.seq t_Item) (o: t_Take_I) =
     UInt64.t'int self.n = UInt64.t'int o.n + Seq.length visited /\ produces_I self.iter visited o.iter
   
@@ -1304,9 +1164,13 @@ module M_impl_Iterator_for_Take_I__size_hint__refines (* <Take<I> as common::Ite
   
   meta "rewrite_def" predicate resolve_refmut_Take_I
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate completed_Take_I (self: MutBorrow.t t_Take_I) =
     UInt64.t'int self.current.n = 0 /\ resolve_refmut_Take_I self
-    \/ UInt64.t'int self.current.n > 0
+    \/ gt_log_Int (UInt64.t'int self.current.n) 0
     /\ UInt64.t'int self.current.n = UInt64.t'int self.final.n + 1
     /\ completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
   
@@ -1316,13 +1180,13 @@ module M_impl_Iterator_for_Take_I__size_hint__refines (* <Take<I> as common::Ite
   
   goal refines: forall self: t_Take_I. inv_ref_Take_I self
       -> inv_ref_Take_I self
-      /\ (forall result: tup2_usize_Option_usize. (UInt64.gt self.n (0: UInt64.t)
+      /\ (forall result: tup2_usize_Option_usize. (gt_log_usize self.n (0: UInt64.t)
             -> (exists r: tup2_usize_Option_usize. postcondition_size_hint () self.iter r
               /\ (UInt64.le r.f0 self.n -> result.f0 = r.f0)
-              /\ (UInt64.ge r.f0 self.n -> result.f0 = self.n)
+              /\ (ge_log_usize r.f0 self.n -> result.f0 = self.n)
               /\ match r.f1 with
                 | Some ub -> (UInt64.le ub self.n -> result.f1 = Some ub)
-                /\ (UInt64.ge ub self.n -> result.f1 = Some (self.n))
+                /\ (ge_log_usize ub self.n -> result.f1 = Some (self.n))
                 | None -> result.f1 = Some (self.n)
                 end))
           /\ (self.n = (0: UInt64.t) -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })

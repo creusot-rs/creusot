@@ -13,7 +13,7 @@ use crate::{
         },
         ty_inv::{TyInvDef, elaborate_tyinv_def, sig_add_type_invariant_spec},
     },
-    contracts_items::{Intrinsic, get_builtin, is_logic, why3_metas},
+    contracts_items::{Intrinsic, get_builtin, is_law, is_logic, why3_metas},
     ctx::{BodyId, HasTyCtxt, ItemType},
     naming::name,
     resolution::TraitResolved,
@@ -741,8 +741,11 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 TraitResolved::resolve_item(self.tcx(), self.typing_env, law, item_subst)
                     .to_opt(law, item_subst)
                     .unwrap();
-            // We add a weak dep from `dep` to make sure it appears close to the triggering item
-            self.dep_graph.add_edge(dep, Strength::Weak, Dependency::Item(def, args));
+            // The lemma may be a law at the trait level but not at the impl level.
+            if is_law(self.tcx(), def) {
+                // We add a weak dep from `dep` to make sure it appears close to the triggering item
+                self.dep_graph.add_edge(dep, Strength::Weak, Dependency::Item(def, args));
+            }
         }
     }
 }

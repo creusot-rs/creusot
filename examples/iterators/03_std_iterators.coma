@@ -558,10 +558,14 @@ module M_enumerate_range
   
   meta "rewrite_def" function deep_model_usize
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
     self.end' = o.end'
     /\ deep_model_usize self.start <= deep_model_usize o.start
-    /\ (Seq.length visited > 0 -> deep_model_usize o.start <= deep_model_usize o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_usize o.start <= deep_model_usize o.end')
     /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
@@ -581,8 +585,13 @@ module M_enumerate_range
   
   meta "rewrite_def" predicate resolve_refmut_Range_usize
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+    resolve_refmut_Range_usize self
+    /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -884,10 +893,14 @@ module M_my_reverse
   
   meta "rewrite_def" function deep_model_usize
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
     self.end' = o.end'
     /\ deep_model_usize self.start <= deep_model_usize o.start
-    /\ (Seq.length visited > 0 -> deep_model_usize o.start <= deep_model_usize o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_usize o.start <= deep_model_usize o.end')
     /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
@@ -926,8 +939,13 @@ module M_my_reverse
   
   meta "rewrite_def" predicate resolve_refmut_Range_usize
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate completed_Range_usize (self: MutBorrow.t t_Range_usize) =
-    resolve_refmut_Range_usize self /\ deep_model_usize self.current.start >= deep_model_usize self.current.end'
+    resolve_refmut_Range_usize self
+    /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
   predicate inv_usize [@inline:trivial] (_1: UInt64.t) = true
   
@@ -1209,6 +1227,10 @@ module M_skip_take
         | Some f0'0 -> inv_Item f0'0
         end
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
   
   function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
@@ -1239,7 +1261,7 @@ module M_skip_take
   predicate produces_Skip_Take_I (self: t_Skip_Take_I) (visited: Seq.seq t_Item) (o: t_Skip_Take_I) =
     visited = (Seq.empty: Seq.seq t_Item) /\ self = o
     \/ UInt64.t'int (n_Skip_Take_I o) = 0
-    /\ Seq.length visited > 0
+    /\ gt_log_Int (Seq.length visited) 0
     /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int (n_Skip_Take_I self)
       /\ produces_Take_I (iter_Skip_Take_I self) (Seq.(++) s visited) (iter_Skip_Take_I o)
       /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
@@ -1269,7 +1291,7 @@ module M_skip_take
   
   predicate completed_Take_I (self: MutBorrow.t t_Take_I) =
     UInt64.t'int (n_Take_I self.current) = 0 /\ resolve_refmut_Take_I self
-    \/ UInt64.t'int (n_Take_I self.current) > 0
+    \/ gt_log_Int (UInt64.t'int (n_Take_I self.current)) 0
     /\ UInt64.t'int (n_Take_I self.current) = UInt64.t'int (n_Take_I self.final) + 1
     /\ completed_I (iter_mut_Take_I self)
   
@@ -1578,10 +1600,14 @@ module M_sum_range
   
   meta "rewrite_def" function deep_model_isize
   
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
   predicate produces_Range_isize (self: t_Range_isize) (visited: Seq.seq Int64.t) (o: t_Range_isize) =
     self.end' = o.end'
     /\ deep_model_isize self.start <= deep_model_isize o.start
-    /\ (Seq.length visited > 0 -> deep_model_isize o.start <= deep_model_isize o.end')
+    /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_isize o.start <= deep_model_isize o.end')
     /\ Seq.length visited = deep_model_isize o.start - deep_model_isize self.start
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> deep_model_isize (Seq.get visited i) = deep_model_isize self.start + i)
@@ -1601,8 +1627,13 @@ module M_sum_range
   
   meta "rewrite_def" predicate resolve_refmut_Range_isize
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   predicate completed_Range_isize (self: MutBorrow.t t_Range_isize) =
-    resolve_refmut_Range_isize self /\ deep_model_isize self.current.start >= deep_model_isize self.current.end'
+    resolve_refmut_Range_isize self
+    /\ ge_log_Int (deep_model_isize self.current.start) (deep_model_isize self.current.end')
   
   let next_Range_isize (self_: MutBorrow.t t_Range_isize) (return (x: t_Option_isize)) = any
     [ return (result: t_Option_isize) -> {[@stop_split] [@expl:next ensures] match result with
@@ -1610,51 +1641,6 @@ module M_sum_range
         | Some v -> produces_Range_isize self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
-  
-  type t_Ordering = Less | Equal | Greater
-  
-  function cmp_log_isize (self: Int64.t) (o: Int64.t) : t_Ordering = if Int64.lt self o then
-      Less
-    else
-      if self = o then Equal else Greater
-  
-  
-  function eq_cmp_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom eq_cmp_isize_spec: forall x: Int64.t, y: Int64.t. (x = y) = (cmp_log_isize x y = Equal)
-  
-  function antisym2_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom antisym2_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Greater -> cmp_log_isize y x = Less
-  
-  function antisym1_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom antisym1_isize_spec: forall x: Int64.t, y: Int64.t. cmp_log_isize x y = Less -> cmp_log_isize y x = Greater
-  
-  function trans_isize (x: Int64.t) (y: Int64.t) (z: Int64.t) (o: t_Ordering) : ()
-  
-  axiom trans_isize_spec: forall x: Int64.t, y: Int64.t, z: Int64.t, o: t_Ordering. cmp_log_isize x y = o
-      -> cmp_log_isize y z = o -> cmp_log_isize x z = o
-  
-  function refl_isize (x: Int64.t) : ()
-  
-  axiom refl_isize_spec: forall x: Int64.t. cmp_log_isize x x = Equal
-  
-  function cmp_gt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom cmp_gt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.gt x y = (cmp_log_isize x y = Greater)
-  
-  function cmp_ge_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom cmp_ge_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.ge x y = (cmp_log_isize x y <> Less)
-  
-  function cmp_lt_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom cmp_lt_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.lt x y = (cmp_log_isize x y = Less)
-  
-  function cmp_le_log_isize (x: Int64.t) (y: Int64.t) : ()
-  
-  axiom cmp_le_log_isize_spec: forall x: Int64.t, y: Int64.t. Int64.le x y = (cmp_log_isize x y <> Greater)
   
   predicate inv_Seq_isize [@inline:trivial] (_1: Seq.seq Int64.t) = true
   
@@ -1672,7 +1658,8 @@ module M_sum_range
   
   meta "select_lsinst" "all"
   
-  let sum_range (n: Int64.t) (return (x: Int64.t)) = {[@stop_split] [@expl:sum_range requires] Int64.to_int n >= 0}
+  let sum_range (n: Int64.t) (return (x: Int64.t)) =
+  {[@stop_split] [@expl:sum_range requires] ge_log_Int (Int64.to_int n) 0}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &i <- (0: Int64.t) ] s1

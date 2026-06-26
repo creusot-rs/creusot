@@ -4,6 +4,10 @@ module M_impl_Tree__lemma_sum_nonneg (* Tree *)
   
   type t_Tree = Node t_Tree UInt32.t t_Tree | Leaf
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function sum (self: t_Tree) : int = match self with
       | Node tl a tr -> sum tl + UInt32.t'int a + sum tr
       | Leaf -> 0
@@ -18,10 +22,10 @@ module M_impl_Tree__lemma_sum_nonneg (* Tree *)
   function lemma_sum_nonneg (self: t_Tree) : ()
   
   goal vc_lemma_sum_nonneg: match self with
-      | Node tl _ tr -> ([@stop_split] [@expl:lemma_sum_nonneg ensures] sum tl >= 0)
-      -> (let _ = lemma_sum_nonneg tl in ([@stop_split] [@expl:lemma_sum_nonneg ensures] sum tr >= 0)
-      -> (let _ = lemma_sum_nonneg tr in [@stop_split] [@expl:lemma_sum_nonneg ensures] sum self >= 0))
-      | Leaf -> [@stop_split] [@expl:lemma_sum_nonneg ensures] sum self >= 0
+      | Node tl _ tr -> ([@stop_split] [@expl:lemma_sum_nonneg ensures] ge_log_Int (sum tl) 0)
+      -> (let _ = lemma_sum_nonneg tl in ([@stop_split] [@expl:lemma_sum_nonneg ensures] ge_log_Int (sum tr) 0)
+      -> (let _ = lemma_sum_nonneg tr in [@stop_split] [@expl:lemma_sum_nonneg ensures] ge_log_Int (sum self) 0))
+      | Leaf -> [@stop_split] [@expl:lemma_sum_nonneg ensures] ge_log_Int (sum self) 0
       end
 end
 module M_impl_Tree__sum_x (* Tree *)
@@ -39,6 +43,10 @@ module M_impl_Tree__sum_x (* Tree *)
         end}
       any) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function sum (self: t_Tree) : int = match self with
       | Node tl a tr -> sum tl + UInt32.t'int a + sum tr
       | Leaf -> 0
@@ -49,7 +57,7 @@ module M_impl_Tree__sum_x (* Tree *)
       | Leaf -> ()
       end
   
-  axiom lemma_sum_nonneg_spec: forall self: t_Tree. sum self >= 0
+  axiom lemma_sum_nonneg_spec: forall self: t_Tree. ge_log_Int (sum self) 0
   
   let sum_x (self: t_Tree) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
     any
@@ -106,6 +114,10 @@ module M_impl_Tree__take_some_rest (* Tree *)
         end}
       any) ]
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
   function sum (self: t_Tree) : int = match self with
       | Node tl a tr -> sum tl + UInt32.t'int a + sum tr
       | Leaf -> 0
@@ -116,7 +128,7 @@ module M_impl_Tree__take_some_rest (* Tree *)
       | Leaf -> ()
       end
   
-  axiom lemma_sum_nonneg_spec: forall self: t_Tree. sum self >= 0
+  axiom lemma_sum_nonneg_spec: forall self: t_Tree. ge_log_Int (sum self) 0
   
   let random (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
   
