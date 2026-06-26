@@ -54,19 +54,19 @@ macro_rules! mach_int {
                 }
             }
 
-            #[creusot::eval]
+            #[constant(eval)]
             const $t::MIN;
 
-            #[creusot::eval]
+            #[constant(eval)]
             const $t::MAX;
 
-            #[creusot::eval]
+            #[constant(eval)]
             const $t::BITS;
 
-            #[creusot::eval]
+            #[constant(eval)]
             const core::$t::MIN;
 
-            #[creusot::eval]
+            #[constant(eval)]
             const core::$t::MAX;
         }
 

@@ -1,15 +1,15 @@
 mod display;
 
-use crate::creusot::doc::DocItemName;
+use crate::creusot::{constant::ConstantArg, doc::DocItemName};
 use pearlite_syn::term::*;
 use proc_macro::{Diagnostic, Level, TokenStream as TS1};
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, quote, quote_spanned};
 use syn::{
-    parse::Parse,
+    parse::{Parse, ParseStream},
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
-    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Semi, Trait, Unsafe},
+    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Semi, Token, Trait, Unsafe},
     visit_mut::VisitMut,
     *,
 };
@@ -795,10 +795,9 @@ fn flatten(
                 variadic: None,
                 output: ReturnType::Default,
             };
-            check_const_attrs(&cnst.attrs)?;
             flat.push(FlatSpec {
                 span: cnst.span,
-                attrs: cnst.attrs,
+                attrs: parse_const_attrs(cnst.attrs)?,
                 signature,
                 path: cnst.path,
                 kind: FlatSpecKind::Const,
@@ -808,23 +807,35 @@ fn flatten(
     Ok(())
 }
 
-// Accept only `#[ensures]` and `#[creusot::eval]`
-fn check_const_attrs(attrs: &Vec<Attribute>) -> Result<()> {
-    attrs.iter().try_for_each(|attr| match &attr.meta {
-        Meta::Path(path)
-            if path.segments.len() == 2
-                && path.segments[0].ident == "creusot"
-                && path.segments[1].ident == "eval" =>
+// Wrapper to implement Parse, using `parse_separated_nonempty`.
+struct PunctNonempty<T, P>(Punctuated<T, P>);
+
+impl<T: Parse, P: Token + Parse> Parse for PunctNonempty<T, P> {
+    fn parse(input: ParseStream) -> Result<Self> {
+        Punctuated::parse_separated_nonempty(input).map(PunctNonempty)
+    }
+}
+
+// Accept only `#[ensures]` and `#[constant]`
+fn parse_const_attrs(attrs: Vec<Attribute>) -> Result<Vec<Attribute>> {
+    let mut r = vec![];
+    attrs.into_iter().try_for_each(|attr: Attribute| match attr.meta {
+        Meta::List(ref list)
+            if list.path.segments.len() == 1 && list.path.segments[0].ident == "ensures" =>
         {
+            r.push(attr);
             Ok(())
         }
         Meta::List(list)
-            if list.path.segments.len() == 1 && list.path.segments[0].ident == "ensures" =>
+            if list.path.segments.len() == 1 && list.path.segments[0].ident == "constant" =>
         {
+            let args = parse::<PunctNonempty<_, Token![,]>>(list.tokens.into())?;
+            r.extend(args.0.into_iter().map(ConstantArg::to_attr));
             Ok(())
         }
         _ => Err(Error::new(attr.span(), "unrecognized attribute in extern spec for const")),
-    })
+    })?;
+    Ok(r)
 }
 
 fn generic_arguments(sig: &Signature) -> PathArguments {

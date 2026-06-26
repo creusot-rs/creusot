@@ -1,14 +1,14 @@
 use proc_macro::TokenStream as TS1;
 use proc_macro2::TokenStream as TS2;
-use quote::quote;
+use quote::{ToTokens as _, quote};
 use syn::{
-    self, ItemConst, Token,
+    self, Attribute, ItemConst, Token,
     parse::{Error, Parse, ParseStream},
-    parse_macro_input,
+    parse_macro_input, parse_quote,
     punctuated::Punctuated,
 };
 
-enum ConstantArg {
+pub enum ConstantArg {
     Eval,
     Open,
 }
@@ -44,10 +44,14 @@ impl Parse for ConstantArg {
 }
 
 impl ConstantArg {
-    fn to_tokens(self) -> TS2 {
+    pub fn to_attr(self) -> Attribute {
         match self {
-            ConstantArg::Eval => quote! { #[creusot::eval_constant] },
-            ConstantArg::Open => quote! { #[creusot::open_constant] },
+            ConstantArg::Eval => parse_quote! { #[creusot::eval_constant] },
+            ConstantArg::Open => parse_quote! { #[creusot::open_constant] },
         }
+    }
+
+    fn to_tokens(self) -> TS2 {
+        self.to_attr().to_token_stream()
     }
 }

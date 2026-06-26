@@ -153,7 +153,7 @@ fn try_scalar_to_literal<'tcx>(
 /// the logical fragment of Why3, or its body is just a variable.
 /// `None` if it does not match these cases.
 ///
-/// const definitions can be annotated with `#[creusot::eval]` to
+/// const definitions can be annotated with `#[constant(eval)]` to
 /// force evaluation, hiding silly definitions that are best hidden from users:
 ///
 /// ```
@@ -181,7 +181,7 @@ pub fn try_const_to_term<'tcx>(
         if let Ok(Ok(val)) = ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
             return valtree_to_term(val, ctx, ty, typing_env, span);
         } else {
-            ctx.warn(ctx.def_span(source_id), format!("could not evaluate const `{}` (which is marked `#[creusot::eval]`) when translating `{}`", ctx.def_path_str(def_id), ctx.def_path_str(source_id)));
+            ctx.warn(ctx.def_span(source_id), format!("could not evaluate const `{}` (which is marked `#[constant(eval)]`) when translating `{}`", ctx.def_path_str(def_id), ctx.def_path_str(source_id)));
         }
     }
     // Calling `trivial_const` here (and it returning None) makes `mir_for_ctfe` available in
