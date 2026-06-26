@@ -3,6 +3,7 @@ extern crate creusot_std;
 
 use creusot_std::prelude::{Clone, *};
 
+#[constant(eval)]
 const FOO: usize = 42;
 
 // Top-level const
@@ -87,6 +88,7 @@ pub const fn nat_i2<T: Nat>() -> usize {
     const { <I2<T> as Nat>::VALUE }
 }
 
+#[constant(eval)]
 pub const TUP: (usize, i32) = (42, 24);
 
 #[requires(TUP.0 == 42usize)]
@@ -96,6 +98,7 @@ pub const fn tuple() -> (usize, i32) {
 }
 
 pub const fn inline_tuple() {
+    #[constant(eval)]
     const ITUP: (usize, i32) = (42, 24);
     proof_assert!(ITUP == TUP);
 }
@@ -123,6 +126,7 @@ pub enum Peano {
     S(&'static Peano),
 }
 
+#[constant(eval)]
 const PEANOS: [Peano; 2] = [Peano::Z, Peano::S(&Peano::Z)];
 
 #[ensures(result == Peano::Z)]
@@ -130,6 +134,7 @@ pub fn zero() -> Peano {
     PEANOS[0]
 }
 
+#[constant(eval)]
 pub const STR: &'static str = "Hello";
 
 #[ensures(result == STR)]
@@ -151,6 +156,7 @@ pub const fn is_zst_z() -> bool {
     const { is_zst::<Z>() }
 }
 
+#[constant(eval)]
 pub const MAX_ENTRIES_CAPACITY: usize = (isize::MAX as usize) / ::std::mem::size_of::<usize>();
 
 pub fn max_entries_capacity() {
@@ -168,7 +174,7 @@ pub fn fn_pointer_test() {
     proof_assert!(y@ == 2);
 }
 
-pub mod p {
+pub mod s {
     use creusot_std::prelude::*;
 
     pub struct S(());
@@ -182,15 +188,15 @@ pub mod p {
         }
 
         #[ensures(result == S::s_logic())]
-        const fn s() -> Self {
+        pub const fn s() -> Self {
             S(())
         }
     }
 }
 
-pub const D: p::S = p::C;
+pub const D: s::S = s::C;
 
-#[ensures(result == p::S::s_logic())]
-pub fn abstract_const() -> p::S {
+#[ensures(result == s::S::s_logic())]
+pub fn abstract_const() -> s::S {
     D
 }

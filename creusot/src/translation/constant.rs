@@ -169,7 +169,8 @@ pub fn try_const_to_term<'tcx>(
     typing_env: TypingEnv<'tcx>,
     source_id: DefId,
 ) -> Option<Term<'tcx>> {
-    if ctx.def_kind(def_id) == DefKind::ConstParam {
+    let kind = ctx.def_kind(def_id);
+    if matches!(kind, DefKind::ConstParam) {
         return None;
     }
     if is_eval(ctx, def_id) {
@@ -180,17 +181,16 @@ pub fn try_const_to_term<'tcx>(
         let uneval = ty::UnevaluatedConst::new(ctx.tcx, kind, subst);
         if let Ok(Ok(val)) = ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
             return valtree_to_term(val, ctx, ty, typing_env, span);
-        } else {
-            ctx.warn(ctx.def_span(source_id), format!("could not evaluate const `{}` (which is marked `#[constant(eval)]`) when translating `{}`", ctx.def_path_str(def_id), ctx.def_path_str(source_id)));
         }
+    }
+    if matches!(kind, DefKind::AssocConst {..}) {
+        return None;
     }
     // Calling `trivial_const` here (and it returning None) makes `mir_for_ctfe` available in
     // `instance_mir` and prevents it from panicking, idk why.
     // I just found this from reverse engineering `const_eval_resolve_for_typeck`
     if let Some((val, ty)) = ctx.trivial_const(def_id) {
         return Some(value_to_term(val, ty, ctx, ctx.def_span(source_id)));
-    } else if !matches!(ctx.def_kind(def_id), rustc_hir::def::DefKind::AssocConst { .. }) {
-        return None;
     }
     // Handle const definitions of the form `const N = M;` where `M` is another constant.
     // We can generate a simple definition `constant N = M` instead of a Coma setter.
