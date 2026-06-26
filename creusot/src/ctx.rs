@@ -773,6 +773,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                     self.def_path_str(def_id),
                     self.def_path_str(logic_alias::get_logic_id(self, alias.1)),
                 );
+                logic_alias::check_validity(self, def_id, alias.1, alias.0);
                 self.logic_aliases.insert(def_id, alias);
 
                 if let Some(real_id) = self.extern_spec_items(def_id) {
