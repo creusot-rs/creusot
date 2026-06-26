@@ -5,6 +5,7 @@ pub mod auth;
 pub mod excl;
 pub mod fmap;
 mod int;
+pub mod lattice;
 mod nat;
 pub mod option;
 mod positive;
