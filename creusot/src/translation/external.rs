@@ -1,7 +1,8 @@
 use super::specification::inputs_and_output_from_thir;
 use crate::{
     contracts_items::{
-        ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_eval_constant,is_open_constant, is_trusted,
+        ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_eval_constant,
+        is_open_constant, is_trusted,
     },
     ctx::*,
     resolution::TraitResolved,
@@ -169,9 +170,24 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     let ((inputs, output), eval_constant, open_constant) = match kind {
         ItemKind::Fn => (inputs_and_output_from_thir(ctx, def_id, thir), false, false),
-        ItemKind::Const => (([].into(), ctx.type_of(id).skip_binder()), is_eval_constant(ctx.tcx, def_id), is_open_constant(ctx.tcx, def_id)),
+        ItemKind::Const => (
+            ([].into(), ctx.type_of(id).skip_binder()),
+            is_eval_constant(ctx.tcx, def_id),
+            is_open_constant(ctx.tcx, def_id),
+        ),
     };
-    (id, ExternSpec { contract, additional_predicates, subst, inputs, output, eval_constant, open_constant })
+    (
+        id,
+        ExternSpec {
+            contract,
+            additional_predicates,
+            subst,
+            inputs,
+            output,
+            eval_constant,
+            open_constant,
+        },
+    )
 }
 
 /// Extract a target item for `extern_spec!` or `#[erasure]`.
