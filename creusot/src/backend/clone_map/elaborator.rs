@@ -428,7 +428,8 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
 
         let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
-            || ctx.def_kind(def_id) == DefKind::ConstParam;
+            || ctx.def_kind(def_id) == DefKind::ConstParam
+            || !sig.contract.ensures.is_empty();
 
         if opaque {
             val(sig, DeclKind::Constant)
