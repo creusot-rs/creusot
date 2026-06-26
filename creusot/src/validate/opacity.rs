@@ -1,127 +1,15 @@
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
-    mir::{PlaceTy, ProjectionElem},
     thir::{self, Thir, visit::Visitor},
     ty::{self, TyKind},
 };
 use rustc_span::Span;
 
 use crate::{
-    backend::{is_trusted_item, projections::iter_projections_ty},
+    backend::is_trusted_item,
     contracts_items::{is_logic, is_opaque},
     ctx::{HasTyCtxt, ItemType, Opacity, TranslationCtx},
-    translation::pearlite::{
-        Literal, Pattern, PatternKind, Scoped, Term, TermKind,
-        visit::{TermVisitor, super_visit_pattern, super_visit_term},
-    },
 };
-
-struct OpacityVisitor<'a, 'tcx> {
-    ctx: &'a TranslationCtx<'tcx>,
-    opacity: Opacity,
-    item: DefId,
-}
-
-impl OpacityVisitor<'_, '_> {
-    /// Assert that `id` is visible from the body of `self.item` with opacity `self.opacity`.
-    fn assert_visible(&self, id: DefId, span: Span) {
-        if !self.is_visible(id) {
-            self.error(id, span)
-        }
-    }
-
-    fn is_visible(&self, id: DefId) -> bool {
-        use std::cmp::Ordering::{Equal, Greater};
-        let Opacity::Transparent(self_vis) = self.opacity else { return true };
-        matches!(self.ctx.visibility(id).partial_cmp(self_vis, self.ctx.tcx), Some(Greater | Equal))
-    }
-
-    fn error(&self, id: DefId, span: Span) {
-        self.ctx.error(
-                span,
-                format!(
-                    "Cannot make `{:?}` transparent in `{:?}` as it would call a less-visible item.",
-                    self.ctx.def_path_str(id), self.ctx.def_path_str(self.item)
-                ),
-            ).emit();
-    }
-}
-
-impl<'tcx> TermVisitor<'tcx> for OpacityVisitor<'_, 'tcx> {
-    fn visit_term(&mut self, term: &Term<'tcx>) {
-        match &term.kind {
-            TermKind::Let {
-                pattern: Pattern { kind: PatternKind::Wildcard, .. },
-                arg: box Term { kind: TermKind::Lit(Literal::ZST), .. },
-                ..
-            } => {
-                // Do not check the visibility in "let _ = <function literal>" because it is a
-                // common pattern for proof hints.
-                return;
-            }
-            TermKind::Lit(Literal::ZST) if let &TyKind::FnDef(id, _) = term.ty.kind() => {
-                self.assert_visible(id, term.span)
-            }
-            &TermKind::ConstItem { id, .. }
-                if !matches!(self.ctx.def_kind(id), DefKind::ConstParam) =>
-            {
-                self.assert_visible(id, term.span)
-            }
-            &TermKind::Call { id, .. } => self.assert_visible(id, term.span),
-            &TermKind::Constructor { variant, .. } => {
-                if let Some(adt) = term.ty.ty_adt_def() {
-                    self.assert_visible(adt.did(), term.span);
-                    for fld in &adt.variant(variant).fields {
-                        self.assert_visible(fld.did, term.span);
-                    }
-                }
-            }
-            &TermKind::Projection { idx, ref lhs } => {
-                if let Some(adt) = lhs.ty.ty_adt_def() {
-                    let fdid = adt.non_enum_variant().fields[idx].did;
-                    self.assert_visible(fdid, term.span);
-                }
-            }
-            &TermKind::Reborrow { ref projections, ref inner } => {
-                let ty = inner.ty.builtin_deref(false).unwrap();
-                for (elem, place_ty) in
-                    iter_projections_ty(self.ctx, projections, &mut PlaceTy::from_ty(ty))
-                {
-                    match elem {
-                        ProjectionElem::Field(field_idx, _) => {
-                            if let Some(adt) = place_ty.ty.ty_adt_def()
-                                && adt.is_struct()
-                            {
-                                let fdid = adt.non_enum_variant().fields[*field_idx].did;
-
-                                self.assert_visible(fdid, term.span);
-                            }
-                        }
-                        ProjectionElem::Deref | ProjectionElem::Index(_) => (),
-                        _ => unreachable!(),
-                    }
-                }
-            }
-            &TermKind::Assert { .. } => return, /* Body of proof_assert is not visible from outside */
-            _ => (),
-        }
-        super_visit_term(term, self);
-    }
-
-    fn visit_pattern(&mut self, pat: &Pattern<'tcx>) {
-        match &pat.kind {
-            PatternKind::Constructor(variant_idx, patterns) => {
-                let fields_def = &pat.ty.ty_adt_def().unwrap().variants()[*variant_idx].fields;
-                for (fld, _) in patterns {
-                    let fdid = fields_def[*fld].did;
-                    self.assert_visible(fdid, pat.span);
-                }
-            }
-            _ => (),
-        }
-        super_visit_pattern(pat, self);
-    }
-}
 
 /// Opacity check in THIR. Check two things:
 /// 1. Forbid use of opaque type constructors and fields (in logic and non-trusted program definitions)
@@ -213,7 +101,26 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for ThirOpacityVisitor<'thir, 'tcx> {
             {
                 self.assert_visible(id, expr.span)
             }
-            thir::ExprKind::Closure(ref closure_expr) => {} // TODO?
+            thir::ExprKind::Closure(ref closure_expr) => {
+                let (thir, expr) = self.ctx.thir_body(closure_expr.closure_id);
+                let thir = &thir.borrow();
+                use crate::contracts_items::get_creusot_item;
+                let is_requires_or_ensures =
+                    get_creusot_item(self.ctx.tcx, closure_expr.closure_id.to_def_id()).is_some();
+                // Change the opacity for requires and ensures
+                // Note: we consider variants as private, because we don't support mutual recursion for now
+                let opacity;
+                let item_type;
+                if is_requires_or_ensures {
+                    opacity = Some(Opacity::Transparent(self.ctx.visibility(self.item)));
+                    item_type = ItemType::Logic { prophetic: true };
+                } else {
+                    opacity = self.opacity;
+                    item_type = self.item_type;
+                }
+                ThirOpacityVisitor { thir, opacity, item_type, ctx: self.ctx, item: self.item }
+                    .visit_expr(&thir[expr])
+            }
             thir::ExprKind::ZstLiteral { .. }
                 if self.visible_body()
                     && let &TyKind::FnDef(id, _) = expr.ty.kind() =>
@@ -274,27 +181,24 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for ThirOpacityVisitor<'thir, 'tcx> {
 
 /// Validates that a private function is not made visible in a public one which is open.
 pub(crate) fn validate_opacity<'tcx>(ctx: &TranslationCtx<'tcx>, item: DefId) {
+    // FIXME: validate extern specs and contracts of trait method declarations
+    if ctx.tcx.is_closure_like(item) {
+        return;
+    }
     let is_logic = is_logic(ctx.tcx, item);
     let opaque = if is_logic { is_opaque(ctx.tcx, item) } else { is_trusted_item(ctx.tcx, item) };
+    if is_logic && !opaque {
+        let _ = ctx.term(item); // ???
+    }
     if !opaque {
         let (thir, expr) = ctx.thir_body(item.expect_local());
         let thir = &thir.borrow();
-        let item_type = ctx.item_type(item);
+        let item_type = ctx.item_type(item).into();
         let opacity = match item_type {
             ItemType::Constant | ItemType::Logic { .. } => Some(*ctx.opacity(item)),
             _ => None,
         };
         ThirOpacityVisitor { ctx, thir, item, opacity, item_type }.visit_expr(&thir[expr])
     }
-    let contract = &ctx.sig(item).contract;
-    // We consider variants as private, because we don't support mutual recursion for now
-    for term in contract.requires.iter().map(|cond| &cond.term).chain(
-        contract
-            .ensures
-            .iter()
-            .flat_map(|req| std::iter::once(&req.1.term).chain(req.0.iter().flat_map(|t| &t.0))),
-    ) {
-        let opacity = Opacity::Transparent(ctx.visibility(item));
-        OpacityVisitor { opacity, ctx, item }.visit_term(term);
-    }
+    let _ = ctx.sig(item); // ???
 }
