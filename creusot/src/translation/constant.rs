@@ -183,7 +183,7 @@ pub fn try_const_to_term<'tcx>(
             return valtree_to_term(val, ctx, ty, typing_env, span);
         }
     }
-    if matches!(kind, DefKind::AssocConst {..}) {
+    if matches!(kind, DefKind::AssocConst { .. }) {
         return None;
     }
     // Calling `trivial_const` here (and it returning None) makes `mir_for_ctfe` available in

@@ -32,10 +32,7 @@ impl Parse for ConstantArg {
         if ident == "eval" {
             Ok(ConstantArg::Eval)
         } else {
-            Err(Error::new(
-                ident.span(),
-                "Unexpected `#[constant]` argument: expected `eval`",
-            ))
+            Err(Error::new(ident.span(), "Unexpected `#[constant]` argument: expected `eval`"))
         }
     }
 }

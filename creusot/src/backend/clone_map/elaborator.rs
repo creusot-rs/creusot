@@ -420,15 +420,15 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             | TraitResolved::Instance { .. } // The impl is known to be the final instance
             | TraitResolved::UnknownFound // Unresolved trait const
         );
-        let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
-            || ctx.def_kind(def_id) == DefKind::ConstParam
-            || !ctx.is_transparent_from(def_id, self.namer.source_id());
 
         let mut names = self.namer(dep);
         let name = names.dependency(dep).ident();
         let mut pre_sig = ctx.sig(def_id).clone().instantiate_and_normalize(ctx, subst, typing_env);
         sig_add_type_invariant_spec(ctx, typing_env, names.source_id(), &mut pre_sig, def_id);
         let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
+
+        let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
+            || ctx.def_kind(def_id) == DefKind::ConstParam;
 
         if opaque {
             val(sig, DeclKind::Constant)
