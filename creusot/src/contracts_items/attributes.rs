@@ -76,7 +76,8 @@ attribute_functions! {
     [creusot::clause::check_ghost]              => is_check_ghost
     [creusot::bitwise]                          => is_bitwise
     [creusot::builtin_ascription]               => is_builtin_ascription
-    [creusot::eval]                             => is_eval
+    [creusot::eval_constant]                    => is_eval_constant
+    [creusot::open_constant]                    => is_open_constant
 }
 
 pub(crate) fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {

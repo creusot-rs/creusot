@@ -13,8 +13,8 @@ use rustc_span::Span;
 use super::pearlite::{Term, TermKind};
 
 fn is_eval(ctx: &TranslationCtx, def_id: DefId) -> bool {
-    crate::contracts_items::is_eval(ctx.tcx, def_id)
-        || ctx.extern_spec(def_id).is_some_and(|spec| spec.eval)
+    crate::contracts_items::is_eval_constant(ctx.tcx, def_id)
+        || ctx.extern_spec(def_id).is_some_and(|spec| spec.eval_constant)
 }
 
 /// Translate constant MIR operands

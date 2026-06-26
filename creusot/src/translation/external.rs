@@ -1,7 +1,7 @@
 use super::specification::inputs_and_output_from_thir;
 use crate::{
     contracts_items::{
-        ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_eval, is_trusted,
+        ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_eval_constant,is_open_constant, is_trusted,
     },
     ctx::*,
     resolution::TraitResolved,
@@ -37,7 +37,8 @@ pub(crate) struct ExternSpec<'tcx> {
     pub(crate) output: Ty<'tcx>,
     // Additional predicates we must verify to call this function
     pub(crate) additional_predicates: Vec<Predicate<'tcx>>,
-    pub(crate) eval: bool,
+    pub(crate) eval_constant: bool,
+    pub(crate) open_constant: bool,
 }
 
 impl<'tcx> ExternSpec<'tcx> {
@@ -166,11 +167,11 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .map(|clause| clause.skip_normalization().as_predicate())
         .collect();
 
-    let ((inputs, output), eval) = match kind {
-        ItemKind::Fn => (inputs_and_output_from_thir(ctx, def_id, thir), false),
-        ItemKind::Const => (([].into(), ctx.type_of(id).skip_binder()), is_eval(ctx.tcx, def_id)),
+    let ((inputs, output), eval_constant, open_constant) = match kind {
+        ItemKind::Fn => (inputs_and_output_from_thir(ctx, def_id, thir), false, false),
+        ItemKind::Const => (([].into(), ctx.type_of(id).skip_binder()), is_eval_constant(ctx.tcx, def_id), is_open_constant(ctx.tcx, def_id)),
     };
-    (id, ExternSpec { contract, additional_predicates, subst, inputs, output, eval })
+    (id, ExternSpec { contract, additional_predicates, subst, inputs, output, eval_constant, open_constant })
 }
 
 /// Extract a target item for `extern_spec!` or `#[erasure]`.

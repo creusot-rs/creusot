@@ -645,7 +645,8 @@ impl<'tcx> TranslationCtx<'tcx> {
                     inputs: Box::new([]),
                     output: Ty::new_bool(self.tcx), // dummy
                     additional_predicates,
-                    eval: false,
+                    eval_constant: false,
+                    open_constant: false,
                 },
             );
         }
