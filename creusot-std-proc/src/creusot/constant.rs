@@ -10,7 +10,6 @@ use syn::{
 
 pub enum ConstantArg {
     Eval,
-    Open,
 }
 
 pub fn constant(args: TS1, decl: TS1) -> TS1 {
@@ -32,12 +31,10 @@ impl Parse for ConstantArg {
         let ident = src.parse::<syn::Ident>()?;
         if ident == "eval" {
             Ok(ConstantArg::Eval)
-        } else if ident == "open" {
-            Ok(ConstantArg::Open)
         } else {
             Err(Error::new(
                 ident.span(),
-                "Unexpected `#[constant]` argument: expected `eval` or `open`",
+                "Unexpected `#[constant]` argument: expected `eval`",
             ))
         }
     }
@@ -47,7 +44,6 @@ impl ConstantArg {
     pub fn to_attr(self) -> Attribute {
         match self {
             ConstantArg::Eval => parse_quote! { #[creusot::eval_constant] },
-            ConstantArg::Open => parse_quote! { #[creusot::open_constant] },
         }
     }
 
