@@ -1,15 +1,24 @@
 //! This implementation is an adaption from:
 //! https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
+#![allow(unused)]
+
 // use core::marker::PhantomData;
 
+use core::cmp::Ordering;
 use creusot_std::{
     cell::PermCell,
     ghost::{
         invariant::{AtomicInvariant, Protocol, declare_namespace},
         perm::Perm,
-        resource::Authority,
+        resource::{Authority, Fragment, fmap_view},
     },
+    logic::{
+        FMap, Id,
+        ra::{excl::Excl, lattice::SemiLattice, sum::Sum},
+        seq::Seq,
+    },
+    ord_laws_impl,
     prelude::*,
     std::sync::{
         atomic::{
@@ -28,20 +37,100 @@ struct QueueInv<T> {
     tail_own: Perm<AtomicUsize>,
     items_own: Seq<Perm<PermCell<Option<T>>>>,
     statuses_own: Seq<Perm<AtomicUsize>>,
+
+    state_auth: Authority<Option<Excl<(SyncView, SyncView, Seq<(usize, SyncView)>)>>>,
+    statuses_auth: Authority<FMap<Int, StatusWithView>>,
+    tokens_auth: fmap_view::Authority<Int, Excl<Sum<(), (usize, SyncView)>>>,
+    // tokens_frag: fmap_view::Fragment<Int, Excl<Sum<(), (usize, SyncView)>>>,
 }
 
 impl<T> Protocol for QueueInv<T> {
-    type Public = (AtomicUsize, AtomicUsize);
+    type Public = (AtomicUsize, AtomicUsize /*, Seq?, Seq? */, Id, Id, Id);
 
     #[logic]
     fn public(self) -> Self::Public {
-        (*self.head_own.ward(), *self.tail_own.ward())
+        (
+            *self.head_own.ward(),
+            *self.tail_own.ward(),
+            /*, ..., ... */
+            self.state_auth.id(),
+            self.statuses_auth.id(),
+            self.tokens_auth.id(),
+        )
     }
 
     #[logic(inline)]
     fn protocol(self) -> bool {
-        true
+        pearlite! {
+            let C = self.statuses_own.len();
+            forall<t_head, t_tail, t_statuses: Seq<_>>
+            exists<h, H, t, T, values: Seq<_>, statuses: Seq<_>>
+                // 0 <= t <= h <= t + C
+                (0 <= t && t <= h && h <= t + C) &&
+
+                // tail ~> (t, T) * head ~> (h, H)
+                (match (self.head_own.val().get(t_head), self.tail_own.val().get(t_tail)) {
+                    (Some((h2, H2)), Some((t2, T2))) => h == h2@ && t == t2@ && H == H2 && T == T2,
+                    _ => true
+                }) &&
+
+                // statuses ~>* [(s_0, S_0), ..., (s_C - 1, S_C - 1)]
+                (forall<i> 0 <= i && i < C ==>
+                     match (self.statuses_own[i].val().get(t_statuses[i])) {
+                         Some(s) => statuses[i] == s,
+                         _ => true
+                     }) &&
+
+                // •(T, H, [(v_t, V_t), ..., (v_h - 1, V_h - 1)])
+                (self.state_auth@ == Some(Excl((H, T, values)))) &&
+
+                // { i -> •(s_i, S_i) | 0 <= i < C }
+                // TODO
+
+                // •({ k -> ()         | h - C <= k < t }
+                //   { k -> (v_k, V_k) |     t <= k < h })
+                (forall<k>
+                    (h - C <= k && k < t ==> self.tokens_auth@.get(k) == Some(Excl(Sum::Left(())))) &&
+                    (t <= k && k < h ==> self.tokens_auth@.get(k) == Some(Excl(Sum::Right(values[k])))))
+
+                // TODO: Available
+                // TODO: Occupied
+        }
     }
+}
+
+struct StatusWithView {
+    pub status: Int,
+    pub view: SyncView,
+}
+
+impl SemiLattice for StatusWithView {
+    #[logic]
+    #[ensures(self <= result)]
+    #[ensures(other <= result)]
+    #[ensures(forall<r> self <= r ==> other <= r ==> result <= r)]
+    fn join(self, other: Self) -> Self {
+        match self.status.cmp_log(other.status) {
+            Ordering::Less => other,
+            Ordering::Greater => self,
+            Ordering::Equal => {
+                StatusWithView { status: self.status, view: self.view.meet(other.view) }
+            }
+        }
+    }
+}
+
+impl OrdLogic for StatusWithView {
+    #[logic(open)]
+    fn cmp_log(self, other: Self) -> Ordering {
+        if self.status.cmp_log(other.status) == Ordering::Equal {
+            other.view.cmp_log(self.view)
+        } else {
+            self.status.cmp_log(other.status)
+        }
+    }
+
+    ord_laws_impl! {}
 }
 
 struct Queue<T, const N: usize> {
@@ -91,6 +180,10 @@ impl<T, const N: usize> Queue<T, N> {
                 tail_own: tail_own.into_inner(),
                 items_own: items_own.into_inner(),
                 statuses_own: statuses_own.into_inner(),
+
+                state_auth: Authority::alloc().into_inner(),
+                statuses_auth: Authority::alloc().into_inner(),
+                tokens_auth: fmap_view::Authority::new().into_inner(),
             }),
             snapshot!(BOUNDED_MPMC_QUEUE()),
         );
