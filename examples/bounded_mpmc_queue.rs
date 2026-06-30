@@ -3,9 +3,7 @@
 
 #![allow(unused)]
 
-// use core::marker::PhantomData;
-
-use core::cmp::Ordering;
+use core::{cmp::Ordering, mem::MaybeUninit};
 use creusot_std::{
     cell::PermCell,
     ghost::{
@@ -35,13 +33,17 @@ declare_namespace! { BOUNDED_MPMC_QUEUE }
 struct QueueInv<T> {
     head_own: Perm<AtomicUsize>,
     tail_own: Perm<AtomicUsize>,
-    items_own: Seq<Perm<PermCell<Option<T>>>>,
+    items_own: Seq<Perm<PermCell<MaybeUninit<T>>>>, // = N [0; N]
     statuses_own: Seq<Perm<AtomicUsize>>,
 
-    state_auth: Authority<Option<Excl<(SyncView, SyncView, Seq<(usize, SyncView)>)>>>,
+    state_auth: Authority<Option<Excl<Seq<(usize, SyncView)>>>>,
     statuses_auth: Authority<FMap<Int, StatusWithView>>,
-    tokens_auth: fmap_view::Authority<Int, Excl<Sum<(), (usize, SyncView)>>>,
-    // tokens_frag: fmap_view::Fragment<Int, Excl<Sum<(), (usize, SyncView)>>>,
+    tokens_auth: fmap_view::Authority<Int, Excl<Option<(usize, SyncView)>>>,
+
+    head: Snapshot<Int>,
+    tail: Snapshot<Int>,
+    values: Snapshot<Seq<(usize, SyncView)>>, // = self.head - self.tail
+    items: Snapshot<Seq<Option<(Perm<PermCell<MaybeUninit<T>>>)>>>, // Fragment<...>
 }
 
 impl<T> Protocol for QueueInv<T> {
@@ -62,46 +64,63 @@ impl<T> Protocol for QueueInv<T> {
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
-            let C = self.statuses_own.len();
-            forall<t_head, t_tail, t_statuses: Seq<_>>
-            exists<h, H, t, T, values: Seq<_>, statuses: Seq<_>>
-                // 0 <= t <= h <= t + C
-                (0 <= t && t <= h && h <= t + C) &&
+            let len = self.statuses_own.len();
 
-                // tail ~> (t, T) * head ~> (h, H)
-                (match (self.head_own.val().get(t_head), self.tail_own.val().get(t_tail)) {
-                    (Some((h2, H2)), Some((t2, T2))) => h == h2@ && t == t2@ && H == H2 && T == T2,
-                    _ => true
-                }) &&
+            // 0 <= t <= h <= t + len
+            (0 <= *self.tail && *self.tail <= *self.head && *self.head <= *self.tail + len) &&
 
-                // statuses ~>* [(s_0, S_0), ..., (s_C - 1, S_C - 1)]
-                (forall<i> 0 <= i && i < C ==>
-                     match (self.statuses_own[i].val().get(t_statuses[i])) {
-                         Some(s) => statuses[i] == s,
-                         _ => true
-                     }) &&
+            // head ~> (h, H)
+            (forall<ts>
+                self.head_own.val().contains(ts) ==>
+                    self.head_own.val()[ts].0@ == *self.head ||
+                    self.head_own.val().contains(ts + 1)
+            ) &&
 
-                // •(T, H, [(v_t, V_t), ..., (v_h - 1, V_h - 1)])
-                (self.state_auth@ == Some(Excl((H, T, values)))) &&
+            // tail ~> (t, T)
+            (forall<ts>
+                self.tail_own.val().contains(ts) ==>
+                    self.tail_own.val()[ts].0@ == *self.tail ||
+                    self.tail_own.val().contains(ts + 1)
+            ) &&
 
-                // { i -> •(s_i, S_i) | 0 <= i < C }
-                // TODO
+            // statuses ~>* [(s_0, S_0), ..., (s_len - 1, S_len - 1)]
+            (forall<i> 0 <= i && i < len ==> self.statuses_auth@.get(i) != None &&
+             forall<ts>
+                 match (self.statuses_own[i].val().get(ts)) {
+                     Some((status, view)) => StatusWithView { status, view } <= self.statuses_auth@[i],
+                     _ => true
+                 }) &&
 
-                // •({ k -> ()         | h - C <= k < t }
-                //   { k -> (v_k, V_k) |     t <= k < h })
-                (forall<k>
-                    (h - C <= k && k < t ==> self.tokens_auth@.get(k) == Some(Excl(Sum::Left(())))) &&
-                    (t <= k && k < h ==> self.tokens_auth@.get(k) == Some(Excl(Sum::Right(values[k])))))
+            self.state_auth@ == Some(Excl(*self.values)) &&
+            self.values.len() == *self.head - *self.tail &&
 
-                // TODO: Available
-                // TODO: Occupied
+            // •({ k -> ()         | h - len <= k < t }
+            //   { k -> (v_k, V_k) |       t <= k < h })
+            (forall<k> *self.head - len <= k && k < *self.tail ==> self.tokens_auth@.get(k) == Some(Excl(None))) &&
+            (forall<k> *self.tail <= k && k < *self.head ==> self.tokens_auth@.get(k) == Some(Excl(Some(self.values[k - *self.tail]))))
+
+            // TODO: Available
+            // TODO: Occupied
         }
     }
 }
 
 struct StatusWithView {
-    pub status: Int,
+    pub status: usize,
     pub view: SyncView,
+}
+
+impl OrdLogic for StatusWithView {
+    #[logic(open)]
+    fn cmp_log(self, other: Self) -> Ordering {
+        if self.status.cmp_log(other.status) == Ordering::Equal {
+            other.view.cmp_log(self.view)
+        } else {
+            self.status.cmp_log(other.status)
+        }
+    }
+
+    ord_laws_impl! {}
 }
 
 impl SemiLattice for StatusWithView {
@@ -120,19 +139,6 @@ impl SemiLattice for StatusWithView {
     }
 }
 
-impl OrdLogic for StatusWithView {
-    #[logic(open)]
-    fn cmp_log(self, other: Self) -> Ordering {
-        if self.status.cmp_log(other.status) == Ordering::Equal {
-            other.view.cmp_log(self.view)
-        } else {
-            self.status.cmp_log(other.status)
-        }
-    }
-
-    ord_laws_impl! {}
-}
-
 struct Queue<T, const N: usize> {
     items: [QueueCell<T>; N],
     head: AtomicUsize,
@@ -140,20 +146,20 @@ struct Queue<T, const N: usize> {
     inv: Ghost<AtomicInvariant<QueueInv<T>>>,
 }
 
+// TODO: [VL] Invariant on Queue that links public part of the invariant to items/head/tail/N
 struct QueueCell<T> {
-    item: PermCell<Option<T>>,
+    item: PermCell<MaybeUninit<T>>,
     status: AtomicUsize,
 }
 
 impl<T> QueueCell<T> {
-    // TODO: [VL] const
     fn new(
         init: usize,
-    ) -> (QueueCell<T>, Ghost<Perm<AtomicUsize>>, Ghost<Perm<PermCell<Option<T>>>>) {
+    ) -> (QueueCell<T>, Ghost<Perm<AtomicUsize>>, Ghost<Perm<PermCell<MaybeUninit<T>>>>) {
         let (status, at_own) = AtomicUsize::new(init, SyncView::new().borrow_mut());
 
-        let (v, own) = PermCell::new(None);
-        (QueueCell { item: v, status }, at_own, own)
+        let (item, own) = PermCell::new(MaybeUninit::uninit());
+        (QueueCell { item, status }, at_own, own)
     }
 }
 
@@ -184,6 +190,11 @@ impl<T, const N: usize> Queue<T, N> {
                 state_auth: Authority::alloc().into_inner(),
                 statuses_auth: Authority::alloc().into_inner(),
                 tokens_auth: fmap_view::Authority::new().into_inner(),
+
+                head: snapshot!(1),
+                tail: snapshot!(0),
+                values: snapshot!(Seq::empty()),
+                items: snapshot!(Seq::empty())
             }),
             snapshot!(BOUNDED_MPMC_QUEUE()),
         );
@@ -191,6 +202,8 @@ impl<T, const N: usize> Queue<T, N> {
         Queue { items, head, tail, inv }
     }
 
+    // TODO [VL]: Add a user committer at the serialisation point
+    // It might only contains •([(v_t, V_t), ..., [(v_h-1, V_h-1)]])
     pub fn try_enqueue(&self, item: T) -> bool {
         let head = self.head.load(ghost! { |c: &Committer<_, _, Relaxed, _>| {} });
 
@@ -211,7 +224,7 @@ impl<T, const N: usize> Queue<T, N> {
             return false;
         }
 
-        *unsafe { cell.item.borrow_mut(Ghost::conjure()) } = Some(item);
+        unsafe { cell.item.set(Ghost::conjure(), MaybeUninit::new(item)) };
         cell.status.store(head + 1, ghost! { |c: &mut Committer<_, _, _, Release>| {} });
 
         true
@@ -237,9 +250,12 @@ impl<T, const N: usize> Queue<T, N> {
             return None;
         }
 
-        let item = unsafe { cell.item.borrow_mut(Ghost::conjure()) }.take();
+        let item = unsafe {
+            let v = cell.item.replace(Ghost::conjure(), MaybeUninit::uninit());
+            v.assume_init()
+        };
         cell.status.store(tail + N, ghost! { |c: &mut Committer<_, _, _, Release>| {} });
 
-        item
+        Some(item)
     }
 }
