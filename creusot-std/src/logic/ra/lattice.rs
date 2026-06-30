@@ -1,6 +1,3 @@
-#[cfg(creusot)]
-use crate::logic::try_such_that;
-
 use crate::{logic::ra::RA, prelude::*};
 
 /// The 'lattice' Resource Algebra.
@@ -25,7 +22,7 @@ impl<T: SemiLattice> RA for T {
         None => forall<c: Self> factor.op(c) != Some(self),
     })]
     fn factor(self, factor: Self) -> Option<Self> {
-        try_such_that(|c| factor.op(c) == Some(self))
+        if factor <= self { Some(self) } else { None }
     }
 
     #[logic(law)]
