@@ -102,6 +102,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             tr_res.to_opt(fun_def_id, subst).expect("could not find instance");
                         let contract = &self.ctx.sig(fun_def_id).contract;
                         if contract.extern_no_spec
+                            && !matches!(tr_res, TraitResolved::UnknownFound)
                             && let Some(lint_root) =
                                 self.body.source_info(loc).scope.lint_root(&self.body.source_scopes)
                         {

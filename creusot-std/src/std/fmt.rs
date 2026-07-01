@@ -127,9 +127,7 @@ extern_spec! {
             values: &[&dyn Debug],
         ) -> Result;
     }
-}
 
-extern_spec! {
     impl<'a> core::fmt::Arguments<'a> {
         #[check(ghost)]
         fn from_str(s: &'static str) -> Self;
