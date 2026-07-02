@@ -861,15 +861,20 @@ fn is_nonzero_const<'tcx>(tcx: TyCtxt<'tcx>, len: ty::Const<'tcx>) -> bool {
     }
 }
 
-/// Determining whether a user-defined type is zero-sized is tricky because
-/// Rust makes very few guarantees about layout. For example, the compiler
-/// is free to omit constructors if it can determine that they are uninhabited.
+/// Determining whether a user-defined type is zero-sized is tricky because Rust
+/// makes very few guarantees about layout. For example, the compiler is free to
+/// omit constructors of `enum`s if it can determine that they are uninhabited.
 /// We use heuristics to find cases where some bits are definitely needed to
 /// represent this type.
 ///
-/// A `struct` or `enum` is non-zero sized if either:
-/// - there are two inhabited constructors;
-/// - there is one inhabited constructor with at least one non-zero sized field.
+/// An `enum` is non-zero sized if:
+/// - It has at least two inhabited constructors, or
+/// - It has an _inhabited_ constructor with at least one non-zero sized field.
+///
+/// A `struct` or a `union` is non-zero sized if it has
+/// at least one non-zero sized field. Note that since
+/// <https://github.com/rust-lang/reference/pull/2166>, this holds even if one
+/// of the fields is uninhabited.
 fn is_nonzero_sized_adt<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: TypingEnv<'tcx>,
@@ -879,40 +884,41 @@ fn is_nonzero_sized_adt<'tcx>(
     args: GenericArgsRef<'tcx>,
 ) -> bool {
     use rustc_type_ir::inherent::AdtDef;
-    if def.is_struct() || def.is_enum() {
-        let inhabiteds = def
-            .variants()
-            .into_iter()
-            .filter(|variant| {
-                variant.fields.iter().all(|field| {
-                    is_inhabited(
-                        tcx,
+    if def.is_enum() {
+        let mut inhabiteds = 0;
+        for variant in def.variants() {
+            let inhabited = variant.fields.iter().all(|field| {
+                is_inhabited(
+                    tcx,
+                    typing_env,
+                    inhabited_cache,
+                    tcx.normalize_erasing_regions(
                         typing_env,
-                        inhabited_cache,
-                        tcx.normalize_erasing_regions(
-                            typing_env,
-                            tcx.type_of(field.did).instantiate(tcx, args),
-                        ),
-                    )
-                })
-            })
-            .collect::<Vec<_>>();
-        inhabiteds.len() >= 2
-            || inhabiteds.into_iter().any(|variant| {
-                variant.fields.iter().any(|field| {
-                    is_nonzero_sized(
-                        tcx,
+                        tcx.type_of(field.did).instantiate(tcx, args),
+                    ),
+                )
+            });
+            let nonzero = variant.fields.iter().any(|field| {
+                is_nonzero_sized(
+                    tcx,
+                    typing_env,
+                    nonzero_sized_cache,
+                    inhabited_cache,
+                    tcx.normalize_erasing_regions(
                         typing_env,
-                        nonzero_sized_cache,
-                        inhabited_cache,
-                        tcx.normalize_erasing_regions(
-                            typing_env,
-                            tcx.type_of(field.did).instantiate(tcx, args),
-                        ),
-                    )
-                })
-            })
-    } else if def.is_union() {
+                        tcx.type_of(field.did).instantiate(tcx, args),
+                    ),
+                )
+            });
+            if inhabited {
+                inhabiteds += 1;
+                if inhabiteds >= 2 || nonzero {
+                    return true;
+                }
+            }
+        }
+        false
+    } else if def.is_struct() || def.is_union() {
         def.all_field_tys(tcx).iter_instantiated(tcx, args).any(|ty| {
             is_nonzero_sized(
                 tcx,
