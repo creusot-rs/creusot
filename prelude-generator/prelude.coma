@@ -42,23 +42,23 @@ module Char
   type t
 
   function to_int (x : t) : int
-  axiom to_int: forall c. 0 <= to_int c < 0x10FFFF /\ not(0xD800 <= to_int c < 0xE000)
+  axiom to_int: forall c. 0 <= to_int c <= 0x10FFFF /\ not(0xD800 <= to_int c < 0xE000)
   axiom extensionality:
     forall x y: t [to_int x, to_int y]. to_int x = to_int y -> x = y
 
   function of_int (n: int) : t
-  axiom to_of_int: forall n [of_int n]. 0 <= n < 0x10FFFF /\ not(0xD800 <= n < 0xE000) -> to_int (of_int n) = n
+  axiom to_of_int: forall n [of_int n]. 0 <= n <= 0x10FFFF /\ not(0xD800 <= n < 0xE000) -> to_int (of_int n) = n
 
   predicate le [@inline:trivial] (a:t) (b:t) = to_int a <= to_int b
   predicate lt [@inline:trivial] (a:t) (b:t) = to_int a < to_int b
   predicate ge [@inline:trivial] (a:t) (b:t) = to_int a >= to_int b
   predicate gt [@inline:trivial] (a:t) (b:t) = to_int a > to_int b
 
-  let of_int (n : int) { 0 <= n < 0x10FFFF } { not(0xD800 <= n < 0xE000) }
+  let of_int (n : int) { 0 <= n <= 0x10FFFF } { not(0xD800 <= n < 0xE000) }
     (ret (result : t) { to_int result = n }) = any
 
   let of_BV256 (n: BV256.t)
-    { [@expl:arithmetic overflow] BV256.t'int n >= 0 /\ BV256.t'int n < 0x10FFFF }
+    { [@expl:arithmetic overflow] BV256.t'int n >= 0 /\ BV256.t'int n <= 0x10FFFF }
     { not(0xD800 <= BV256.t'int n < 0xE000) }
     (ret (result: t)  { to_int result = BV256.t'int n}) = any
 end
