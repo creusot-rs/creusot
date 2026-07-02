@@ -104,8 +104,8 @@ extern_spec! {
 
 /// [`size_of`] as a logic `Int` value.
 ///
-/// The definition of `size_of_logic` guarantees at least the following,
-/// based on the documentation of [`size_of`]:
+/// The definition of `size_of_logic` guarantees at least the following, based
+/// on the documentation of [`size_of`]:
 ///
 /// - `()`, `bool`, `char`, primitive integers and floats are known constants.
 /// - For `T: Sized`, the pointer and reference types `*const T`, `*mut T`,
@@ -113,12 +113,16 @@ extern_spec! {
 ///   `Option<Box<T>>` have the same size as `usize`.
 /// - `[T; N]` has size `N * size_of_logic::<T>()`.
 ///
-/// `size_of_logic` for `repr(C)` types is not yet implemented.
-///
 /// See also [the Rust Reference section on Type Layout][RRTL].
 ///
-/// Note that the value of `size_of`/`size_of_logic` may depend on the version of rustc, notably
-/// for ADTs with the default representation `repr(Rust)`.
+/// # Stability of `size_of_logic`
+///
+/// Note that the size of `usize`, references, pointers… is platform-dependent:
+/// if you want to verify your code against a specific architecture, you need to
+/// use Creusot with the exact same architecture.
+///
+/// Additionally, for `repr(Rust)` types, the value of `size_of`/`size_of_logic`
+/// is not guaranteed to stay the same across compilations.
 ///
 /// [`size_of`]: https://doc.rust-lang.org/std/mem/fn.size_of.html
 /// [RRTL]: https://doc.rust-lang.org/stable/reference/type-layout.html
