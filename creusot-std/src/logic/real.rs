@@ -4,13 +4,13 @@ use crate::{
     logic::ops::{AddLogic, DivLogic, MulLogic, NegLogic, SubLogic},
     prelude::*,
 };
-#[cfg(all(creusot, feature = "std"))]
+#[cfg(all(creusot, feature = "num-rational"))]
 use num_rational::BigRational;
 
 #[builtin("real.Real.real")]
 pub struct Real;
 
-#[cfg(all(creusot, feature = "std"))]
+#[cfg(all(creusot, feature = "num-rational"))]
 impl DeepModel for BigRational {
     type DeepModelTy = Real;
 
