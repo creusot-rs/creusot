@@ -20,18 +20,6 @@ impl<T: DeepModel> DeepModel for Option<T> {
 }
 
 extern_spec! {
-    impl<T: PartialEq + DeepModel> PartialEq for Option<T> {
-        #[allow(unstable_name_collisions)]
-        #[ensures(result == (self.deep_model() == rhs.deep_model()))]
-        fn eq(&self, rhs: &Self) -> bool {
-            match (self, rhs) {
-                (None, None) => true,
-                (Some(x), Some(y)) => x == y,
-                _ => false,
-            }
-        }
-    }
-
     impl<T: Clone> Clone for Option<T> {
         #[ensures(match (*self, result) {
             (None, None) => true,
