@@ -1,14 +1,91 @@
 use crate::prelude::*;
+#[cfg(creusot)]
+use core::marker::PointeeSized;
 #[cfg(all(creusot, feature = "std"))]
 use std::alloc::Allocator;
 
 extern_spec! {
     mod core {
         mod convert {
+            trait AsRef<T>: PointeeSized where T: PointeeSized {
+                fn as_ref(&self) -> &T;
+            }
+
+            trait AsMut<T>: PointeeSized where T: PointeeSized {
+                fn as_mut(&mut self) -> &mut T;
+            }
+
             trait From<T> where Self: From<T> {
                 // #[requires(true)]
                 fn from(value: T) -> Self;
             }
+        }
+    }
+
+    impl<'a, T: ?Sized, U: ?Sized> AsRef<U> for &'a T
+    where
+        T: AsRef<U>,
+    {
+        #[requires(<T as AsRef<U>>::as_ref.precondition((*self,)))]
+        #[ensures(<T as AsRef<U>>::as_ref.postcondition((*self,), result))]
+        fn as_ref<'b>(&'b self) -> &'b U {
+            <T as AsRef<U>>::as_ref(*self)
+        }
+    }
+
+    impl<'a, T: ?Sized, U: ?Sized> AsRef<U> for &'a mut T
+    where
+        T: AsRef<U>,
+    {
+        #[requires(<T as AsRef<U>>::as_ref.precondition((*self,)))]
+        #[ensures(<T as AsRef<U>>::as_ref.postcondition((*self,), result))]
+        fn as_ref<'b>(&'b self) -> &'b U {
+            <T as AsRef<U>>::as_ref(*self)
+        }
+    }
+
+    impl<T> AsRef<[T]> for [T] {
+        #[check(ghost)]
+        #[ensures(result == self)]
+        fn as_ref(&self) -> &[T] {
+            self
+        }
+    }
+
+    impl AsRef<str> for str {
+        #[check(ghost)]
+        #[ensures(result == self)]
+        fn as_ref(&self) -> &str {
+            self
+        }
+    }
+
+    impl<'a, T: ?Sized, U: ?Sized> AsMut<U> for &'a mut T
+    where
+        T: AsMut<U>,
+    {
+        #[requires(<T as AsMut<U>>::as_mut.precondition((*self,)))]
+        #[ensures(^self == *self)]
+        #[ensures(<T as AsMut<U>>::as_mut.postcondition((*self,), result))]
+        fn as_mut<'b>(&'b mut self) -> &'b mut U {
+            //(*self).as_mut()
+            <T as AsMut<U>>::as_mut(*self)
+        }
+    }
+
+    impl<T> AsMut<[T]> for [T] {
+        #[check(ghost)]
+        #[ensures(result == self && ^self == *self)]
+        fn as_mut(&mut self) -> &mut [T] {
+            self
+        }
+    }
+
+    impl AsMut<str> for str {
+        #[check(ghost)]
+        #[ensures(result == self && ^self == *self)]
+        fn as_mut(&mut self) -> &mut str {
+            self
         }
     }
 
