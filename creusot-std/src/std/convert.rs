@@ -65,17 +65,18 @@ extern_spec! {
         T: AsMut<U>,
     {
         #[requires(<T as AsMut<U>>::as_mut.precondition((*self,)))]
-        #[ensures(^self == *self)]
-        #[ensures(<T as AsMut<U>>::as_mut.postcondition((*self,), result))]
+        #[ensures(^*self == ^^self)]
+        #[ensures(exists<s: &mut T> *s == **self && ^s == *^self &&
+            <T as AsMut<U>>::as_mut.postcondition((s,), result)
+        )]
         fn as_mut<'b>(&'b mut self) -> &'b mut U {
-            //(*self).as_mut()
-            <T as AsMut<U>>::as_mut(*self)
+            (*self).as_mut()
         }
     }
 
     impl<T> AsMut<[T]> for [T] {
         #[check(ghost)]
-        #[ensures(result == self && ^self == *self)]
+        #[ensures(result == self)]
         fn as_mut(&mut self) -> &mut [T] {
             self
         }
@@ -83,7 +84,7 @@ extern_spec! {
 
     impl AsMut<str> for str {
         #[check(ghost)]
-        #[ensures(result == self && ^self == *self)]
+        #[ensures(result == self)]
         fn as_mut(&mut self) -> &mut str {
             self
         }

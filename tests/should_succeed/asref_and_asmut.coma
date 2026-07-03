@@ -8,8 +8,7 @@ module M_get_len_of_mut_slice
   
   let as_mut_slice_u8 (self_: MutBorrow.t (Slice64.slice UInt8.t)) (return (x: MutBorrow.t (Slice64.slice UInt8.t))) =
   any
-    [ return (result: MutBorrow.t (Slice64.slice UInt8.t)) -> {[@stop_split] [@expl:as_mut ensures] result = self_
-      /\ self_.final = self_.current}
+    [ return (result: MutBorrow.t (Slice64.slice UInt8.t)) -> {[@stop_split] [@expl:as_mut ensures] result = self_}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
@@ -57,12 +56,11 @@ module M_get_len_of_mut_slice_with_ref_mut
   
   let as_mut_slice_u8 (self_: MutBorrow.t (Slice64.slice UInt8.t)) (return (x: MutBorrow.t (Slice64.slice UInt8.t))) =
   any
-    [ return (result: MutBorrow.t (Slice64.slice UInt8.t)) -> {[@stop_split] [@expl:as_mut ensures] result = self_
-      /\ self_.final = self_.current}
+    [ return (result: MutBorrow.t (Slice64.slice UInt8.t)) -> {[@stop_split] [@expl:as_mut ensures] result = self_}
       (! return {result}) ]
   
   predicate postcondition_as_mut (self: ()) (args: MutBorrow.t (Slice64.slice UInt8.t)) (result: MutBorrow.t (Slice64.slice UInt8.t)) =
-    let self_ = args in result = self_ /\ self_.final = self_.current
+    let self_ = args in result = self_
   
   meta "rewrite_def" predicate postcondition_as_mut
   
@@ -71,9 +69,11 @@ module M_get_len_of_mut_slice_with_ref_mut
   {[@stop_split] [@expl:as_mut requires] precondition_as_mut () self_.current}
     any
     [ return (result: MutBorrow.t (Slice64.slice UInt8.t)) ->
-    {[@stop_split] [@expl:as_mut_refmut_slice_u8 ensures] ([@stop_split] [@expl:as_mut ensures #0] self_.final
-        = self_.current)
-      /\ ([@stop_split] [@expl:as_mut ensures #1] postcondition_as_mut () self_.current result)}
+    {[@stop_split] [@expl:as_mut_refmut_slice_u8 ensures] ([@stop_split] [@expl:as_mut ensures #0] self_.current.final
+        = self_.final.final)
+      /\ ([@stop_split] [@expl:as_mut ensures #1] exists s: MutBorrow.t (Slice64.slice UInt8.t). s.current
+          = self_.current.current
+        /\ s.final = self_.final.current /\ postcondition_as_mut () s result)}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
