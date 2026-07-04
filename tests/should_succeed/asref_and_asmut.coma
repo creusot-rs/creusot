@@ -1,0 +1,244 @@
+module M_get_len_of_mut_slice
+  use creusot.prelude.MutBorrow
+  use creusot.slice.Slice64
+  use creusot.int.UInt8
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.Any
+  
+  let as_mut_slice_u8 (self_: MutBorrow.t (Slice64.slice UInt8.t)) (return (x: MutBorrow.t (Slice64.slice UInt8.t))) =
+  any
+    [ return (result: MutBorrow.t (Slice64.slice UInt8.t)) -> {[@stop_split] [@expl:as_mut ensures] result = self_}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_slice_u8
+  
+  let len_u8 (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
+      = UInt64.t'int result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let get_len_of_mut_slice (bytes: MutBorrow.t (Slice64.slice UInt8.t)) (return (x: UInt64.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <Slice64.slice UInt8.t> {bytes.current} {MutBorrow.get_id bytes}
+          (fun (_bor: MutBorrow.t (Slice64.slice UInt8.t)) ->
+            [ &_6 <- _bor ] [ &bytes <- { bytes with current = _bor.final } ] s1)
+      | s1 = as_mut_slice_u8 {_6} (fun (_x: MutBorrow.t (Slice64.slice UInt8.t)) -> [ &_5 <- _x ] s2)
+      | s2 = -{resolve_refmut_slice_u8 _5}- s3
+      | s3 = len_u8 {_5.current} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
+      | s4 = -{resolve_refmut_slice_u8 bytes}- s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
+    | & bytes: MutBorrow.t (Slice64.slice UInt8.t) = bytes
+    | & _5: MutBorrow.t (Slice64.slice UInt8.t) = Any.any_l ()
+    | & _6: MutBorrow.t (Slice64.slice UInt8.t) = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:get_len_of_mut_slice ensures] UInt64.t'int result
+      = Seq.length (Slice64.view bytes.current)}
+      (! return {result}) ]
+end
+module M_get_len_of_mut_slice_with_ref_mut
+  use creusot.prelude.MutBorrow
+  use creusot.slice.Slice64
+  use creusot.int.UInt8
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.Any
+  
+  predicate precondition_as_mut (self: ()) (args: MutBorrow.t (Slice64.slice UInt8.t)) = let self_ = args in true
+  
+  meta "rewrite_def" predicate precondition_as_mut
+  
+  let as_mut_slice_u8 (self_: MutBorrow.t (Slice64.slice UInt8.t)) (return (x: MutBorrow.t (Slice64.slice UInt8.t))) =
+  any
+    [ return (result: MutBorrow.t (Slice64.slice UInt8.t)) -> {[@stop_split] [@expl:as_mut ensures] result = self_}
+      (! return {result}) ]
+  
+  predicate postcondition_as_mut (self: ()) (args: MutBorrow.t (Slice64.slice UInt8.t)) (result: MutBorrow.t (Slice64.slice UInt8.t)) =
+    let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_as_mut
+  
+  let as_mut_refmut_slice_u8 (self_: MutBorrow.t (MutBorrow.t (Slice64.slice UInt8.t)))
+    (return (x: MutBorrow.t (Slice64.slice UInt8.t))) =
+  {[@stop_split] [@expl:as_mut requires] precondition_as_mut () self_.current}
+    any
+    [ return (result: MutBorrow.t (Slice64.slice UInt8.t)) ->
+    {[@stop_split] [@expl:as_mut_refmut_slice_u8 ensures] ([@stop_split] [@expl:as_mut ensures #0] self_.current.final
+        = self_.final.final)
+      /\ ([@stop_split] [@expl:as_mut ensures #1] exists s: MutBorrow.t (Slice64.slice UInt8.t). s.current
+          = self_.current.current
+        /\ s.final = self_.final.current /\ postcondition_as_mut () s result)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt8.t)) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_slice_u8
+  
+  let len_u8 (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
+      = UInt64.t'int result}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t (Slice64.slice UInt8.t))) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_refmut_slice_u8
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let get_len_of_mut_slice_with_ref_mut (bytes: MutBorrow.t (Slice64.slice UInt8.t)) (return (x: UInt64.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <MutBorrow.t (Slice64.slice UInt8.t)> {bytes}
+          (fun (_bor: MutBorrow.t (MutBorrow.t (Slice64.slice UInt8.t))) -> [ &_7 <- _bor ] [ &bytes <- _bor.final ] s1)
+      | s1 = MutBorrow.borrow_final <MutBorrow.t (Slice64.slice UInt8.t)> {_7.current} {MutBorrow.get_id _7}
+          (fun (_bor: MutBorrow.t (MutBorrow.t (Slice64.slice UInt8.t))) ->
+            [ &_6 <- _bor ] [ &_7 <- { _7 with current = _bor.final } ] s2)
+      | s2 = as_mut_refmut_slice_u8 {_6} (fun (_x: MutBorrow.t (Slice64.slice UInt8.t)) -> [ &_5 <- _x ] s3)
+      | s3 = -{resolve_refmut_slice_u8 _5}- s4
+      | s4 = len_u8 {_5.current} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s5)
+      | s5 = -{resolve_refmut_refmut_slice_u8 _7}- s6
+      | s6 = -{resolve_refmut_slice_u8 bytes}- s7
+      | s7 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
+    | & bytes: MutBorrow.t (Slice64.slice UInt8.t) = bytes
+    | & _5: MutBorrow.t (Slice64.slice UInt8.t) = Any.any_l ()
+    | & _6: MutBorrow.t (MutBorrow.t (Slice64.slice UInt8.t)) = Any.any_l ()
+    | & _7: MutBorrow.t (MutBorrow.t (Slice64.slice UInt8.t)) = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:get_len_of_mut_slice_with_ref_mut ensures] UInt64.t'int result
+      = Seq.length (Slice64.view bytes.current)}
+      (! return {result}) ]
+end
+module M_get_len_of_slice
+  use creusot.slice.Slice64
+  use creusot.int.UInt8
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.Any
+  
+  predicate precondition_as_ref (self: ()) (args: Slice64.slice UInt8.t) = let self_ = args in true
+  
+  meta "rewrite_def" predicate precondition_as_ref
+  
+  predicate precondition_as_ref'0 (self: ()) (args: Slice64.slice UInt8.t) =
+    let self_ = args in precondition_as_ref () self_
+  
+  meta "rewrite_def" predicate precondition_as_ref'0
+  
+  let as_ref_slice_u8 (self_: Slice64.slice UInt8.t) (return (x: Slice64.slice UInt8.t)) = any
+    [ return (result: Slice64.slice UInt8.t) -> {[@stop_split] [@expl:as_ref ensures] result = self_}
+      (! return {result}) ]
+  
+  predicate postcondition_as_ref (self: ()) (args: Slice64.slice UInt8.t) (result: Slice64.slice UInt8.t) =
+    let self_ = args in result = self_
+  
+  meta "rewrite_def" predicate postcondition_as_ref
+  
+  let as_ref_ref_slice_u8 (self_: Slice64.slice UInt8.t) (return (x: Slice64.slice UInt8.t)) =
+  {[@stop_split] [@expl:as_ref requires] precondition_as_ref () self_}
+    any
+    [ return (result: Slice64.slice UInt8.t) ->
+    {[@stop_split] [@expl:as_ref ensures] postcondition_as_ref () self_ result}
+      (! return {result}) ]
+  
+  predicate postcondition_as_ref'0 (self: ()) (args: Slice64.slice UInt8.t) (result: Slice64.slice UInt8.t) =
+    let self_ = args in postcondition_as_ref () self_ result
+  
+  meta "rewrite_def" predicate postcondition_as_ref'0
+  
+  let get_len_through_as_ref_ref_slice_u8 (bytes: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:get_len_through_as_ref requires] precondition_as_ref'0 () bytes}
+    any
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:get_len_through_as_ref ensures] exists s: Slice64.slice UInt8.t. postcondition_as_ref'0 () bytes s
+        /\ UInt64.t'int result = Seq.length (Slice64.view s)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let get_len_of_slice (bytes: Slice64.slice UInt8.t) (return (x: UInt64.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = get_len_through_as_ref_ref_slice_u8 {bytes} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1)
+      | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () | & bytes: Slice64.slice UInt8.t = bytes ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:get_len_of_slice ensures] UInt64.t'int result
+      = Seq.length (Slice64.view bytes)}
+      (! return {result}) ]
+end
+module M_get_len_through_as_ref
+  use creusot.slice.Slice64
+  use creusot.int.UInt8
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate resolve_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate precondition_as_ref (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition_as_ref () args]. (let self_ = args in inv_ref_T self_)
+      -> precondition_as_ref () args
+  
+  predicate postcondition_as_ref (self: ()) (args: t_T) (result: Slice64.slice UInt8.t)
+  
+  axiom postcondition_fndef:
+    forall args: t_T, res: Slice64.slice UInt8.t [postcondition_as_ref () args res]. postcondition_as_ref () args res
+      -> (let self_ = args in true)
+  
+  predicate postcondition_once_as_ref (self: ()) (args: t_T) (result: Slice64.slice UInt8.t) =
+    postcondition_as_ref self args result
+  
+  meta "rewrite_def" predicate postcondition_once_as_ref
+  
+  let as_ref_T (self_: t_T) (return (x: Slice64.slice UInt8.t)) =
+  {[@stop_split] [@expl:as_ref requires] precondition_as_ref () self_}
+    any
+    [ return (result: Slice64.slice UInt8.t) ->
+    {[@stop_split] [@expl:as_ref ensures] postcondition_once_as_ref () self_ result}
+      (! return {result}) ]
+  
+  let len_u8 (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
+      = UInt64.t'int result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let get_len_through_as_ref_T (bytes: t_T) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:get_len_through_as_ref_T requires] ([@stop_split] [@expl:get_len_through_as_ref 'bytes' type invariant] inv_T bytes)
+    /\ ([@stop_split] [@expl:get_len_through_as_ref requires] precondition_as_ref () bytes)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_T bytes} any) ]
+      | s1 = -{resolve_T bytes}- s2
+      | s2 = as_ref_T {bytes} (fun (_x: Slice64.slice UInt8.t) -> [ &_7 <- _x ] s3)
+      | s3 = len_u8 {_7} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & bytes: t_T = bytes | & _7: Slice64.slice UInt8.t = Any.any_l () ])
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:get_len_through_as_ref ensures] exists s: Slice64.slice UInt8.t. postcondition_as_ref () bytes s
+        /\ UInt64.t'int result = Seq.length (Slice64.view s)}
+      (! return {result}) ]
+end
