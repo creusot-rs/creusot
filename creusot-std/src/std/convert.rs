@@ -7,16 +7,15 @@ use std::alloc::Allocator;
 extern_spec! {
     mod core {
         mod convert {
-            trait AsRef<T>: PointeeSized where T: PointeeSized {
+            trait AsRef<T: PointeeSized>: PointeeSized {
                 fn as_ref(&self) -> &T;
             }
 
-            trait AsMut<T>: PointeeSized where T: PointeeSized {
+            trait AsMut<T: PointeeSized>: PointeeSized {
                 fn as_mut(&mut self) -> &mut T;
             }
 
-            trait From<T> where Self: From<T> {
-                // #[requires(true)]
+            trait From<T> {
                 fn from(value: T) -> Self;
             }
         }
@@ -96,10 +95,7 @@ extern_spec! {
         fn from(self) -> T;
     }
 
-    impl<T, U> Into<U> for T
-    where
-        U: From<T>,
-    {
+    impl<T, U: From<T>> Into<U> for T {
         // FIXME: inherit terminates/ghost status
         #[requires(<U as From<T>>::from.precondition((self,)))]
         #[ensures(<U as From<T>>::from.postcondition((self,), result))]

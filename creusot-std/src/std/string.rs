@@ -77,9 +77,7 @@ extern_spec! {
             I::into_iter.postcondition((iter,), into_iter) &&
             into_iter.produces(result@, *done) && done.completed() && resolve(^done)
         )]
-        fn from_iter<I>(iter: I) -> Self
-        where
-            I: IntoIterator<Item = char, IntoIter: IteratorSpec>;
+        fn from_iter<I: IntoIterator<Item = char, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 
     impl FromIterator<char> for Box<str> {
@@ -88,9 +86,7 @@ extern_spec! {
             I::into_iter.postcondition((iter,), into_iter) &&
             into_iter.produces(result@, *done) && done.completed() && resolve(^done)
         )]
-        fn from_iter<I>(iter: I) -> Self
-        where
-            I: IntoIterator<Item = char, IntoIter: IteratorSpec>;
+        fn from_iter<I: IntoIterator<Item = char, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 
     impl<'a> FromIterator<&'a char> for String {
@@ -100,9 +96,7 @@ extern_spec! {
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.map(|c: &char| *c)
         )]
-        fn from_iter<I>(iter: I) -> Self
-        where
-            I: IntoIterator<Item = &'a char, IntoIter: IteratorSpec>;
+        fn from_iter<I: IntoIterator<Item = &'a char, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 
     impl<'a> FromIterator<&'a char> for Box<str> {
@@ -112,9 +106,7 @@ extern_spec! {
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.map(|c: &char| *c)
         )]
-        fn from_iter<I>(iter: I) -> Self
-        where
-            I: IntoIterator<Item = &'a char, IntoIter: IteratorSpec>;
+        fn from_iter<I: IntoIterator<Item = &'a char, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 
     impl<'a> FromIterator<&'a str> for String {
@@ -124,9 +116,7 @@ extern_spec! {
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.flat_map(|s: I::Item| s@)
         )]
-        fn from_iter<I>(iter: I) -> Self
-        where
-            I: IntoIterator<Item = &'a str, IntoIter: IteratorSpec>;
+        fn from_iter<I: IntoIterator<Item = &'a str, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 
     impl<'a> FromIterator<&'a str> for Box<str> {
@@ -136,9 +126,7 @@ extern_spec! {
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.flat_map(|s: &str| s@)
         )]
-        fn from_iter<I>(iter: I) -> Self
-        where
-            I: IntoIterator<Item = &'a str, IntoIter: IteratorSpec>;
+        fn from_iter<I: IntoIterator<Item = &'a str, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 
     impl<A: std::alloc::Allocator> FromIterator<Box<str, A>> for String {
@@ -148,9 +136,7 @@ extern_spec! {
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.flat_map(|s: I::Item| s@)
         )]
-        fn from_iter<I>(iter: I) -> Self
-        where
-            I: IntoIterator<Item = Box<str, A>, IntoIter: IteratorSpec>;
+        fn from_iter<I: IntoIterator<Item = Box<str, A>, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 
     impl<A: std::alloc::Allocator> FromIterator<Box<str, A>> for Box<str> {
@@ -160,9 +146,7 @@ extern_spec! {
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.flat_map(|s: I::Item| s@)
         )]
-        fn from_iter<I>(iter: I) -> Self
-        where
-            I: IntoIterator<Item = Box<str, A>, IntoIter: IteratorSpec>;
+        fn from_iter<I: IntoIterator<Item = Box<str, A>, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 
     impl FromIterator<String> for Box<str> {
@@ -172,9 +156,7 @@ extern_spec! {
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.flat_map(|s: I::Item| s@)
         )]
-        fn from_iter<I>(iter: I) -> Self
-        where
-            I: IntoIterator<Item = String, IntoIter: IteratorSpec>;
+        fn from_iter<I: IntoIterator<Item = String, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 
     impl FromIterator<String> for String {
@@ -184,9 +166,7 @@ extern_spec! {
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.flat_map(|s: I::Item| s@)
         )]
-        fn from_iter<I>(iter: I) -> Self
-        where
-            I: IntoIterator<Item = String, IntoIter: IteratorSpec>;
+        fn from_iter<I: IntoIterator<Item = String, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 }
 

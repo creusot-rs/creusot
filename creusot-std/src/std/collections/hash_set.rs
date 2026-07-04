@@ -25,11 +25,7 @@ extern_spec! {
         fn iter(&self) -> Iter<'_, T>;
     }
 
-    impl<T, S, A: Allocator> HashSet<T, S, A>
-    where
-        T: Eq + Hash + DeepModel,
-        S: BuildHasher,
-    {
+    impl<T: Eq + Hash + DeepModel, S: BuildHasher, A: Allocator> HashSet<T, S, A> {
         #[ensures(result@ == self@.intersection(other@))]
         fn intersection<'a>(&'a self, other: &'a HashSet<T, S, A>) -> Intersection<'a, T, S, A>;
 
@@ -37,10 +33,9 @@ extern_spec! {
         fn difference<'a>(&'a self, other: &'a HashSet<T, S, A>) -> Difference<'a, T, S, A>;
 
         #[ensures(result == self@.contains(value.deep_model()))]
-        fn contains<Q: ?Sized>(&self, value: &Q) -> bool
+        fn contains<Q: ?Sized + Eq + Hash + DeepModel<DeepModelTy = T::DeepModelTy>>(&self, value: &Q) -> bool
         where
-            T: Borrow<Q>,
-            Q: Eq + Hash + DeepModel<DeepModelTy = T::DeepModelTy>;
+            T: Borrow<Q>;
     }
 
     impl<T: DeepModel, S, A: Allocator> IntoIterator for HashSet<T, S, A> {

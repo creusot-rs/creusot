@@ -10,7 +10,6 @@ extern_spec! {
     mod core {
         mod clone {
             trait Clone {
-                #[requires(true)]
                 fn clone(&self) -> Self;
 
                 #[ensures(resolve(*self))]

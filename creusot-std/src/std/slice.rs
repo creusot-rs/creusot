@@ -517,8 +517,8 @@ extern_spec! {
 extern_spec! {
     impl<T> [T] {
         #[check(ghost)]
-        #[ensures(result@ == self_@)]
-        fn into_vec<A: Allocator>(self_: Box<Self, A>) -> Vec<T, A>;
+        #[ensures(result@ == self@)]
+        fn into_vec<A: Allocator>(self: Box<Self, A>) -> Vec<T, A>;
 
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == self@.len())]

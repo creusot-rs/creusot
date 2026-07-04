@@ -14,8 +14,6 @@ extern_spec! {
             }
 
             #[check(ghost)]
-            #[requires(true)]
-            #[ensures(true)]
             fn spin_loop() {}
 
             #[check(ghost)]

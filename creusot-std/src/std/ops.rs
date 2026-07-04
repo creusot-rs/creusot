@@ -200,19 +200,19 @@ impl<Args: Tuple, F: ?Sized + Fn<Args>> FnExt<Args> for F {
 extern_spec! {
     mod core {
         mod ops {
-            trait FnOnce<Args> where Args: Tuple {
+            trait FnOnce<Args: Tuple> {
                 #[requires(self.precondition(arg))]
                 #[ensures(self.postcondition_once(arg, result))]
                 fn call_once(self, arg: Args) -> Self::Output;
             }
 
-            trait FnMut<Args> where Args: Tuple {
+            trait FnMut<Args: Tuple> {
                 #[requires((*self).precondition(arg))]
                 #[ensures((*self).postcondition_mut(arg, ^self, result))]
                 fn call_mut(&mut self, arg: Args) -> Self::Output;
             }
 
-            trait Fn<Args> where Args: Tuple {
+            trait Fn<Args: Tuple> {
                 #[requires((*self).precondition(arg))]
                 #[ensures((*self).postcondition(arg, result))]
                 fn call(&self, arg: Args) -> Self::Output;
@@ -273,9 +273,7 @@ impl<T: DeepModel> DeepModel for Bound<T> {
 }
 
 /// Methods for the specification of [`std::ops::RangeBounds`].
-pub trait RangeBounds<T: ?Sized + DeepModel<DeepModelTy: OrdLogic>>:
-    core::ops::RangeBounds<T>
-{
+pub trait RangeBoundsSpec<T: ?Sized + DeepModel<DeepModelTy: OrdLogic>>: RangeBounds<T> {
     #[logic]
     fn start_bound_logic(&self) -> Bound<&T>;
 
@@ -316,12 +314,7 @@ pub fn upper_bound<T: OrdLogic>(item: T, hi: Bound<T>) -> bool {
 extern_spec! {
     mod core {
         mod ops {
-            trait RangeBounds<T>
-            where
-                Self: RangeBounds<T>,
-                T: ?Sized + DeepModel,
-                T::DeepModelTy: OrdLogic,
-            {
+            trait RangeBounds<T: ?Sized + DeepModel<DeepModelTy: OrdLogic>>: RangeBoundsSpec<T> {
                 #[ensures(result == self.start_bound_logic())]
                 fn start_bound(&self) -> Bound<&T>;
 
@@ -329,14 +322,11 @@ extern_spec! {
                 fn end_bound(&self) -> Bound<&T>;
 
                 #[ensures(result == between(self.start_bound_logic().deep_model(), item.deep_model(), self.end_bound_logic().deep_model()))]
-                fn contains<U>(&self, item: &U) -> bool
-                where
-                    T: PartialOrd<U>,
-                    U: ?Sized + PartialOrd<T> + DeepModel<DeepModelTy = T::DeepModelTy>;
+                fn contains<U: ?Sized + PartialOrd<T> + DeepModel<DeepModelTy = T::DeepModelTy>>(&self, item: &U) -> bool
+                    where T: PartialOrd<U>;
 
                 #[ensures(result == !exists<item: T::DeepModelTy> between(self.start_bound_logic().deep_model(), item, self.end_bound_logic().deep_model()))]
-                fn is_empty(&self) -> bool
-                where T: PartialOrd;
+                fn is_empty(&self) -> bool where T: PartialOrd;
             }
         }
     }
@@ -358,7 +348,7 @@ extern_spec! {
     }
 }
 
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeFull {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for RangeFull {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Unbounded
@@ -370,7 +360,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeFull {
     }
 }
 
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeFrom<T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for RangeFrom<T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(&self.start)
@@ -382,7 +372,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeFrom<T> {
     }
 }
 
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeTo<T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for RangeTo<T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Unbounded
@@ -394,7 +384,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeTo<T> {
     }
 }
 
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for Range<T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for Range<T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(&self.start)
@@ -406,7 +396,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for Range<T> {
     }
 }
 
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeInclusive<T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for RangeInclusive<T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(&self.start_log())
@@ -418,7 +408,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeInclusive<T> {
     }
 }
 
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeToInclusive<T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for RangeToInclusive<T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Unbounded
@@ -430,7 +420,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeToInclusive<T>
     }
 }
 
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for (Bound<T>, Bound<T>) {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for (Bound<T>, Bound<T>) {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         match *self {
@@ -450,7 +440,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for (Bound<T>, Bound<T>
     }
 }
 
-impl<'a, T: ?Sized + 'a + DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T>
+impl<'a, T: ?Sized + 'a + DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T>
     for (Bound<&'a T>, Bound<&'a T>)
 {
     #[logic(open)]
@@ -464,7 +454,7 @@ impl<'a, T: ?Sized + 'a + DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T>
     }
 }
 
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeFrom<&T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for RangeFrom<&T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(self.start)
@@ -476,7 +466,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeFrom<&T> {
     }
 }
 
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeTo<&T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for RangeTo<&T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Unbounded
@@ -488,7 +478,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeTo<&T> {
     }
 }
 
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for Range<&T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for Range<&T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(self.start)
@@ -501,7 +491,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for Range<&T> {
 }
 
 // I don't know why this impl is different from the one for `RangeInclusive<T>`.
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeInclusive<&T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for RangeInclusive<&T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(&self.start_log())
@@ -513,7 +503,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeInclusive<&T> 
     }
 }
 
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeToInclusive<&T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for RangeToInclusive<&T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Unbounded
@@ -526,7 +516,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for RangeToInclusive<&T
 }
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for core::range::Range<T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for core::range::Range<T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(&self.start)
@@ -539,7 +529,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for core::range::Range<
 }
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for core::range::Range<&T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for core::range::Range<&T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(self.start)
@@ -552,7 +542,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for core::range::Range<
 }
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for core::range::RangeFrom<T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for core::range::RangeFrom<T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(&self.start)
@@ -565,7 +555,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for core::range::RangeF
 }
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for core::range::RangeFrom<&T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for core::range::RangeFrom<&T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(self.start)
@@ -578,7 +568,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for core::range::RangeF
 }
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for core::range::RangeInclusive<T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for core::range::RangeInclusive<T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(&self.start)
@@ -591,7 +581,7 @@ impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for core::range::RangeI
 }
 
 #[cfg(feature = "nightly")]
-impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBounds<T> for core::range::RangeInclusive<&T> {
+impl<T: DeepModel<DeepModelTy: OrdLogic>> RangeBoundsSpec<T> for core::range::RangeInclusive<&T> {
     #[logic(open)]
     fn start_bound_logic(&self) -> Bound<&T> {
         Bound::Included(self.start)
@@ -665,7 +655,7 @@ extern_spec! {
         #[ensures(result.end_log() == end)]
         #[ensures(start.deep_model() <= end.deep_model() ==> !result.is_empty_log())]
         fn new(start: Idx, end: Idx) -> Self
-            where Idx: DeepModel, Idx::DeepModelTy: OrdLogic;
+            where Idx: DeepModel<DeepModelTy: OrdLogic>;
 
         #[ensures(*result == self.start_log())]
         fn start(&self) -> &Idx;
@@ -674,9 +664,7 @@ extern_spec! {
         fn end(&self) -> &Idx;
     }
 
-    impl<Idx: PartialOrd<Idx> + DeepModel> RangeInclusive<Idx>
-    where Idx::DeepModelTy: OrdLogic
-    {
+    impl<Idx: PartialOrd<Idx> + DeepModel<DeepModelTy: OrdLogic>> RangeInclusive<Idx> {
         #[ensures(result == self.is_empty_log())]
         fn is_empty(&self) -> bool;
     }
@@ -685,8 +673,7 @@ extern_spec! {
 extern_spec! {
     mod core {
         mod ops {
-            trait FromResidual<R> where Self: Sized {
-                #[requires(true)]
+            trait FromResidual<R>: Sized {
                 fn from_residual(residual: R) -> Self;
             }
         }

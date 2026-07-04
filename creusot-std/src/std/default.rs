@@ -10,7 +10,6 @@ extern_spec! {
     mod core {
         mod default {
             trait Default {
-                // #[requires(true)]
                 fn default() -> Self;
             }
         }
