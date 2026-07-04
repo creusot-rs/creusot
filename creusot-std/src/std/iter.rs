@@ -116,9 +116,7 @@ pub trait DoubleEndedIteratorSpec: DoubleEndedIterator + IteratorSpec {
 extern_spec! {
     mod core {
         mod iter {
-            trait Iterator
-                where Self: IteratorSpec {
-
+            trait Iterator: IteratorSpec {
                 #[ensures(match result {
                     None => self.completed(),
                     Some(v) => (*self).produces(Seq::singleton(v), ^self)
@@ -142,20 +140,18 @@ extern_spec! {
                     Some(b) => U::into_iter.postcondition((other,), b),
                     None => false
                 })]
-                fn chain<U>(self, other: U) -> Chain<Self, U::IntoIter>
-                    where Self: Sized, U: IntoIterator<Item = Self::Item>;
+                fn chain<U: IntoIterator<Item = Self::Item>>(self, other: U) -> Chain<Self, U::IntoIter>
+                    where Self: Sized;
 
                 #[check(ghost)]
                 #[ensures(result.iter() == self)]
-                fn cloned<'a, T>(self) -> Cloned<Self>
-                    where T: 'a + Clone,
-                        Self: Sized + Iterator<Item = &'a T>;
+                fn cloned<'a, T: 'a + Clone>(self) -> Cloned<Self>
+                    where Self: Sized + Iterator<Item = &'a T>;
 
                 #[check(ghost)]
                 #[ensures(result.iter() == self)]
-                fn copied<'a, T>(self) -> Copied<Self>
-                    where T: 'a + Copy,
-                        Self: Sized + Iterator<Item = &'a T>;
+                fn copied<'a, T: 'a + Copy>(self) -> Copied<Self>
+                    where Self: Sized + Iterator<Item = &'a T>;
 
                 #[check(ghost)]
                 #[requires(forall<e, i2> self.produces(Seq::singleton(e), i2) && inv(e) ==>
@@ -163,24 +159,24 @@ extern_spec! {
                 #[requires(map::reinitialize::<Self, B, F>())]
                 #[requires(map::preservation::<Self, B, F>(self, f))]
                 #[ensures(result.iter() == self && result.func() == f)]
-                fn map<B, F>(self, f: F) -> Map<Self, F>
-                    where Self: Sized, F: FnMut(Self::Item) -> B;
+                fn map<B, F: FnMut(Self::Item) -> B>(self, f: F) -> Map<Self, F>
+                    where Self: Sized;
 
                 #[check(ghost)]
                 #[requires(filter::immutable(f))]
                 #[requires(filter::no_precondition(f))]
                 #[requires(filter::precise(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
-                fn filter<P>(self, f: P) -> Filter<Self, P>
-                    where Self: Sized, P: for<'a> FnMut(&Self::Item) -> bool;
+                fn filter<P: for<'a> FnMut(&Self::Item) -> bool>(self, f: P) -> Filter<Self, P>
+                    where Self: Sized;
 
                 #[check(ghost)]
                 #[requires(filter_map::immutable(f))]
                 #[requires(filter_map::no_precondition(f))]
                 #[requires(filter_map::precise(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
-                fn filter_map<B, F>(self, f: F) -> FilterMap<Self, F>
-                    where Self: Sized, F: for<'a> FnMut(Self::Item) -> Option<B>;
+                fn filter_map<B, F: for<'a> FnMut(Self::Item) -> Option<B>>(self, f: F) -> FilterMap<Self, F>
+                    where Self: Sized;
 
                 #[check(ghost)]
                 // These two requirements are here only to prove the absence of overflows
@@ -200,12 +196,11 @@ extern_spec! {
                 #[ensures(result.iter_a() == self)]
                 #[ensures(U::into_iter.postcondition((other,), result.iter_b()))]
                 fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U::IntoIter>
-                    where Self: Sized, U::IntoIter: Iterator;
+                    where Self: Sized;
 
                 #[requires(B::from_iter.precondition((self,)))]
                 #[ensures(B::from_iter.postcondition((self,), result))]
-                // FIXME: Self_
-                fn collect<B: FromIterator<Self_::Item>>(self) -> B
+                fn collect<B: FromIterator<Self::Item>>(self) -> B
                     where Self: Sized
                 {
                     FromIterator::from_iter(self)
@@ -235,11 +230,10 @@ extern_spec! {
                     where T: IntoIterator<Item = A>;
             }
 
-            trait ExactSizeIterator where Self: ExactSizeIteratorSpec {
+            trait ExactSizeIterator: ExactSizeIteratorSpec {
                 #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
                 fn len(&self) -> usize {
-                    // FIXME: Self_
-                    snapshot!(Self_::size_hint_exact);
+                    snapshot!(Self::size_hint_exact);
                     let (lower, upper) = self.size_hint();
                     assert_eq!(upper, Some(lower));
                     lower
@@ -262,8 +256,7 @@ extern_spec! {
             #[ensures(result@ == elt)]
             fn repeat<T: Clone>(elt: T) -> Repeat<T>;
 
-            trait DoubleEndedIterator
-                where Self: DoubleEndedIteratorSpec {
+            trait DoubleEndedIterator: DoubleEndedIteratorSpec {
                 #[ensures(match result {
                     None => self.completed_back(),
                     Some(v) => (*self).produces_back(Seq::singleton(v), ^self)

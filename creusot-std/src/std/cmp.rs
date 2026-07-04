@@ -10,26 +10,18 @@ pub use core::cmp::PartialEq;
 extern_spec! {
     mod core {
         mod cmp {
-            trait PartialEq<Rhs> {
+            trait PartialEq<Rhs: ?Sized + DeepModel<DeepModelTy = Self::DeepModelTy>>: DeepModel {
                 #[ensures(result == (self.deep_model() == rhs.deep_model()))]
-                fn eq(&self, rhs: &Rhs) -> bool
-                where
-                    Self: DeepModel,
-                    Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>;
+                fn eq(&self, rhs: &Rhs) -> bool;
 
                 #[ensures(result == (self.deep_model() != rhs.deep_model()))]
-                fn ne(&self, rhs: &Rhs) -> bool
-                where
-                    Self: DeepModel,
-                    Rhs: DeepModel<DeepModelTy = Self::DeepModelTy> {
+                fn ne(&self, rhs: &Rhs) -> bool {
                     !(self == rhs)
                 }
             }
 
-            trait PartialOrd<Rhs>
-                where Self: DeepModel,
-                      Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>,
-                      Self::DeepModelTy: PartialOrdLogic
+            trait PartialOrd<Rhs: ?Sized + DeepModel<DeepModelTy = Self::DeepModelTy>>:
+                DeepModel<DeepModelTy: PartialOrdLogic>
             {
                 #[ensures(result == (*self).deep_model().partial_cmp_log((*rhs).deep_model()))]
                 fn partial_cmp(&self, rhs: &Rhs) -> Option<Ordering>;
@@ -67,10 +59,7 @@ extern_spec! {
                 }
             }
 
-            trait Ord
-                where Self: DeepModel,
-                      Self::DeepModelTy: OrdLogic
-            {
+            trait Ord: DeepModel<DeepModelTy: OrdLogic> {
                 #[ensures(result == (*self).deep_model().cmp_log((*rhs).deep_model()))]
                 fn cmp(&self, rhs: &Self) -> Ordering;
 
@@ -80,7 +69,7 @@ extern_spec! {
                 #[ensures(self.deep_model() <= o.deep_model() ==> result == o)]
                 #[ensures(o.deep_model() < self.deep_model() ==> result == self)]
                 fn max(self, o: Self) -> Self where Self: Sized {
-                    let _ = snapshot!(Self_::DeepModelTy::lt_log_total);
+                    let _ = snapshot!(Self::DeepModelTy::lt_log_total);
                     if self <= o { o } else { self }
                 }
 
@@ -90,7 +79,7 @@ extern_spec! {
                 #[ensures(self.deep_model() < o.deep_model() ==> result == self)]
                 #[ensures(o.deep_model() <= self.deep_model() ==> result == o)]
                 fn min(self, o: Self) -> Self where Self: Sized {
-                    let _ = snapshot!(Self_::DeepModelTy::lt_log_total);
+                    let _ = snapshot!(Self::DeepModelTy::lt_log_total);
                     if self < o { self } else { o }
                 }
 
@@ -104,7 +93,7 @@ extern_spec! {
                     result == min
                 } else { result == self })]
                 fn clamp(self, min: Self, max: Self) -> Self where Self: Sized {
-                    let _ = snapshot!(Self_::DeepModelTy::lt_log_total);
+                    let _ = snapshot!(Self::DeepModelTy::lt_log_total);
                     if self > max { max } else if self < min { min } else { self }
                 }
             }
@@ -114,9 +103,7 @@ extern_spec! {
             #[ensures(result == v1 || result == v2)]
             #[ensures(v1.deep_model() <= v2.deep_model() ==> result == v2)]
             #[ensures(v2.deep_model() < v1.deep_model() ==> result == v1)]
-            fn max<T>(v1: T, v2: T) -> T
-                where T: Ord + DeepModel, T::DeepModelTy: OrdLogic
-            {
+            fn max<T: Ord + DeepModel<DeepModelTy: OrdLogic>>(v1: T, v2: T) -> T {
                 <T as Ord>::max(v1, v2)
             }
 
@@ -125,9 +112,7 @@ extern_spec! {
             #[ensures(result == v1 || result == v2)]
             #[ensures(v1.deep_model() < v2.deep_model() ==> result == v1)]
             #[ensures(v2.deep_model() <= v1.deep_model() ==> result == v2)]
-            fn min<T>(v1: T, v2: T) -> T
-                where T: Ord + DeepModel, T::DeepModelTy: OrdLogic
-            {
+            fn min<T: Ord + DeepModel<DeepModelTy: OrdLogic>>(v1: T, v2: T) -> T {
                 <T as Ord>::min(v1, v2)
             }
         }

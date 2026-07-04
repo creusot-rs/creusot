@@ -465,21 +465,15 @@ extern_spec! {
         mod ptr {
             #[check(ghost)]
             #[ensures(result.is_null_logic())]
-            fn null<T>() -> *const T
-            where
-                T: core::ptr::Thin + ?Sized;
+            fn null<T: core::ptr::Thin + ?Sized>() -> *const T;
 
             #[check(ghost)]
             #[ensures(result.is_null_logic())]
-            fn null_mut<T>() -> *mut T
-            where
-                T: core::ptr::Thin + ?Sized;
+            fn null_mut<T: core::ptr::Thin + ?Sized>() -> *mut T;
 
             #[check(ghost)]
             #[ensures(result == (p.addr_logic() == q.addr_logic()))]
-            fn addr_eq<T, U>(p: *const T, q: *const U) -> bool
-            where
-                T: ?Sized, U: ?Sized;
+            fn addr_eq<T: ?Sized, U: ?Sized>(p: *const T, q: *const U) -> bool;
 
             #[check(ghost)]
             #[ensures(result == metadata_logic(ptr))]

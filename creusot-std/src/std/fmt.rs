@@ -1,13 +1,11 @@
 use crate::prelude::*;
 #[cfg(creusot)]
-use core::fmt::{Debug, Result};
+use core::fmt::{Debug, Formatter, Result};
 
 extern_spec! {
-    impl<'a> core::fmt::Formatter<'a> {
-        #[requires(true)]
+    impl<'a> Formatter<'a> {
         fn write_str(&mut self, data: &str) -> Result;
 
-        #[requires(true)]
         fn debug_struct_field1_finish<'b>(
             &'b mut self,
             name: &str,
@@ -15,7 +13,6 @@ extern_spec! {
             value1: &dyn Debug,
         ) -> Result;
 
-        #[requires(true)]
         fn debug_struct_field2_finish<'b>(
             &'b mut self,
             name: &str,
@@ -25,7 +22,6 @@ extern_spec! {
             value2: &dyn Debug,
         ) -> Result;
 
-        #[requires(true)]
         fn debug_struct_field3_finish<'b>(
             &'b mut self,
             name: &str,
@@ -37,7 +33,6 @@ extern_spec! {
             value3: &dyn Debug,
         ) -> Result;
 
-        #[requires(true)]
         fn debug_struct_field4_finish<'b>(
             &'b mut self,
             name: &str,
@@ -51,7 +46,6 @@ extern_spec! {
             value4: &dyn Debug,
         ) -> Result;
 
-        #[requires(true)]
         fn debug_struct_field5_finish<'b>(
             &'b mut self,
             name: &str,
@@ -67,7 +61,6 @@ extern_spec! {
             value5: &dyn Debug,
         ) -> Result;
 
-        #[requires(true)]
         fn debug_struct_fields_finish<'b>(
             &'b mut self,
             name: &str,
@@ -75,14 +68,12 @@ extern_spec! {
             values: &[&dyn Debug],
         ) -> Result;
 
-        #[requires(true)]
         fn debug_tuple_field1_finish<'b>(
             &'b mut self,
             name: &str,
             value1: &dyn Debug,
         ) -> Result;
 
-        #[requires(true)]
         fn debug_tuple_field2_finish<'b>(
             &'b mut self,
             name: &str,
@@ -90,7 +81,6 @@ extern_spec! {
             value2: &dyn Debug,
         ) -> Result;
 
-        #[requires(true)]
         fn debug_tuple_field3_finish<'b>(
             &'b mut self,
             name: &str,
@@ -99,7 +89,6 @@ extern_spec! {
             value3: &dyn Debug,
         ) -> Result;
 
-        #[requires(true)]
         fn debug_tuple_field4_finish<'b>(
             &'b mut self,
             name: &str,
@@ -109,7 +98,6 @@ extern_spec! {
             value4: &dyn Debug,
         ) -> Result;
 
-        #[requires(true)]
         fn debug_tuple_field5_finish<'b>(
             &'b mut self,
             name: &str,
@@ -120,7 +108,6 @@ extern_spec! {
             value5: &dyn Debug,
         ) -> Result;
 
-        #[requires(true)]
         fn debug_tuple_fields_finish<'b>(
             &'b mut self,
             name: &str,

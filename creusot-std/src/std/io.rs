@@ -1,6 +1,6 @@
 use crate::prelude::*;
 #[cfg(creusot)]
-use core::fmt;
+use core::fmt::Arguments;
 
 extern_spec! {
     mod std {
@@ -9,13 +9,13 @@ extern_spec! {
             /// `print!` and `println!`.
             #[check(terminates)]
             #[ensures(true)]
-            fn _print(args: fmt::Arguments<'_>) {}
+            fn _print(args: Arguments<'_>) {}
 
             /// This is an implementation detail of `std`: we specify it so that we can use
             /// `eprint!` and `eprintln!`.
             #[check(terminates)]
             #[ensures(true)]
-            fn _eprint(args: fmt::Arguments<'_>) {}
+            fn _eprint(args: Arguments<'_>) {}
         }
     }
 }

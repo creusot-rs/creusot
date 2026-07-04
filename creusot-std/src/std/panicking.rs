@@ -2,7 +2,10 @@ use crate::prelude::*;
 #[cfg(all(creusot, feature = "std"))]
 use core::any::Any;
 #[cfg(creusot)]
-use core::{fmt, panicking::AssertKind};
+use core::{
+    fmt::{Arguments, Debug, Display},
+    panicking::AssertKind,
+};
 
 extern_spec! {
     mod core {
@@ -13,11 +16,11 @@ extern_spec! {
 
             #[check(ghost)]
             #[requires(false)]
-            fn panic_display<T: fmt::Display>(x: &T) -> !;
+            fn panic_display<T: Display>(x: &T) -> !;
 
             #[check(ghost)]
             #[requires(false)]
-            fn panic_fmt(fmt: fmt::Arguments<'_>) -> !;
+            fn panic_fmt(fmt: Arguments<'_>) -> !;
 
             #[check(ghost)]
             #[requires(false)]
@@ -25,7 +28,7 @@ extern_spec! {
 
             #[check(ghost)]
             #[requires(false)]
-            fn panic_nounwind_fmt(fmt: fmt::Arguments<'_>, force_no_backtrace: bool) -> !;
+            fn panic_nounwind_fmt(fmt: Arguments<'_>, force_no_backtrace: bool) -> !;
 
             #[check(ghost)]
             #[requires(false)]
@@ -33,15 +36,16 @@ extern_spec! {
 
             #[check(ghost)]
             #[requires(false)]
-            fn unreachable_display<T: fmt::Display>(x: &T) -> !;
+            fn unreachable_display<T: Display>(x: &T) -> !;
 
             #[check(ghost)]
             #[requires(false)]
-            fn assert_failed<T, U>(kind: AssertKind, left: &T, right: &U, args: Option<fmt::Arguments<'_>>) -> !
-            where
-                T: fmt::Debug + ?Sized,
-                U: fmt::Debug + ?Sized;
-
+            fn assert_failed<T: Debug + ?Sized, U: Debug + ?Sized>(
+                kind: AssertKind,
+                left: &T,
+                right: &U,
+                args: Option<Arguments<'_>>
+            ) -> !;
         }
     }
 }
