@@ -4,8 +4,8 @@ use crate::{
         program::{PtrCastKind, ptr_cast_kind},
         projections::{borrow_generated_id, projections_term},
         ty::{
-            constructor, floatty_to_prelude, ity_to_prelude, translate_ty, ty_to_prelude,
-            uty_to_prelude,
+            classify_adt, constructor, floatty_to_prelude, ity_to_prelude, translate_ty,
+            ty_to_prelude, uty_to_prelude,
         },
     },
     contracts_items::{is_builtin_ascription, is_new_namespace},
@@ -279,6 +279,31 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Constructor { variant, fields, .. } => {
                 let TyKind::Adt(adt, subst) = term.ty.kind() else { unreachable!() };
+                use crate::backend::ty::AdtKind::*;
+                if let Opaque { .. } | Struct { partially_opaque: true } =
+                    classify_adt(self.ctx, self.names.source_id(), *adt, subst)
+                {
+                    // This can happen (bypassing the opacity check) due to translating
+                    // an external constant, or evaluating a constant with private fields
+                    // (that would not be exposed if it weren't evaluated).
+                    let source_id = self.names.source_id();
+                    self.ctx
+                        .struct_error(
+                            term.span,
+                            format!(
+                                "encountered non-visible constructor {}",
+                                self.tcx().def_path_str(adt.did())
+                            ),
+                        )
+                        .with_span_note(
+                            self.tcx().def_span(source_id),
+                            format!(
+                                "during the translation of {}",
+                                self.tcx().def_path_str(source_id)
+                            ),
+                        )
+                        .emit();
+                }
                 let fields = fields.into_iter().map(|f| self.lower_term(f)).collect();
                 constructor(self.names, fields, adt.variant(*variant).def_id, subst)
             }

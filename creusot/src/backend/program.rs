@@ -60,19 +60,39 @@ pub(crate) fn translate_function<'tcx>(
     ctx: &Why3Generator<'tcx>,
     def_id: DefId,
 ) -> Option<FileModule> {
-    let names = Dependencies::new(ctx, def_id);
-    let namespace_ty = names.namespace_ty();
-
     if !ctx.has_body(def_id) {
         return None;
     }
 
-    let name = Ident::fresh_local(names.source_item().base_ident(&ctx.ctx).unwrap().as_str());
+    let names = Dependencies::new(ctx, def_id);
+    let namespace_ty = names.namespace_ty();
+
+    use DefKind::*;
+    let const_name = match ctx.tcx().def_kind(def_id) {
+        AssocConst { .. } | Const { .. } => {
+            // Translate const only if there is a non-trivial invariant or postcondition
+            let sig = ctx.sig(def_id);
+            let span = ctx.tcx().def_span(def_id);
+            if is_tyinv_trivial(&ctx.ctx, def_id, names.typing_env(), sig.output, span)
+                && !sig.contract.has_user_contract
+            {
+                return None;
+            }
+            Some(names.source_ident())
+        }
+        InlineConst { .. } => return None,
+        _ => None,
+    };
+
+    let name = match const_name {
+        None => Ident::fresh_local(names.source_item().base_ident(&ctx.ctx).unwrap().as_str()),
+        Some(const_name) => Ident::fresh_local(format!("{}_def", const_name.name().to_string())),
+    };
     let (body, sig) = to_why_body(ctx, &names, name, def_id);
 
     let (mut decls, setters) = names.provide_deps(ctx);
     let body = setters.call_setters(body);
-    let mut defn = to_why_defn(ctx, def_id, body, sig);
+    let mut defn = to_why_defn(ctx, def_id, body, sig, const_name);
     // Refresh the name of the function. The previous name is already used for recursive calls,
     // which are translated to a separate abstract function.
     defn.prototype.name = defn.prototype.name.refresh();
@@ -129,7 +149,7 @@ pub(crate) fn to_why<'tcx>(
     def_id: DefId,
 ) -> Defn {
     let (body, sig) = to_why_body(ctx, names, name, def_id);
-    to_why_defn(ctx, def_id, body, sig)
+    to_why_defn(ctx, def_id, body, sig, None)
 }
 
 pub(crate) fn to_why_body<'tcx>(
@@ -247,6 +267,7 @@ fn to_why_defn<'tcx>(
     def_id: DefId,
     mut body: Expr,
     mut sig: ProgramSignature,
+    const_name: Option<Ident>,
 ) -> Defn {
     let mut ret = Expr::var(name::return_()).app([Arg::Term(Exp::var(name::result()))]);
 
@@ -260,7 +281,10 @@ fn to_why_defn<'tcx>(
     }
 
     let name = sig.prototype.name.name().to_string();
-    let postcond = Expr::assert(sig.contract.ensures_conj(&name), ret);
+    let mut postcond = Expr::assert(sig.contract.ensures_conj(&name), ret);
+    if let Some(name) = const_name {
+        postcond = Expr::assume(Exp::var(name).eq(Exp::var(name::result())), postcond);
+    }
     body = Expr::Defn(
         body.boxed(),
         false,

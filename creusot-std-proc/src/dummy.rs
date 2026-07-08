@@ -110,6 +110,10 @@ pub fn bitwise_proof(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }
 
+pub fn constant(_: TS1, tokens: TS1) -> TS1 {
+    tokens
+}
+
 pub fn derive_deep_model(_: TS1) -> TS1 {
     TS1::new()
 }
@@ -190,14 +194,19 @@ fn delete_trusted_attrs(attrs: &mut Vec<syn::Attribute>) {
 
 // Also delete other contracts to avoid redundant passes
 fn delete_invariants(item: &mut ContractSubject) {
+    use ContractSubject::*;
     match item {
-        ContractSubject::FnOrMethod(fn_or_method) => {
+        FnOrMethod(fn_or_method) => {
             delete_contracts(&mut fn_or_method.attrs);
             fn_or_method.body.iter_mut().for_each(|body| DeleteInvariants.visit_block_mut(body));
         }
-        ContractSubject::Closure(expr) => {
+        Closure(expr) => {
             delete_contracts(&mut expr.attrs);
             DeleteInvariants.visit_expr_closure_mut(expr);
+        }
+        Const(item) => {
+            delete_contracts(&mut item.attrs);
+            DeleteInvariants.visit_expr_mut(&mut item.expr);
         }
     }
 }

@@ -25,10 +25,3 @@ pub struct One(());
 pub fn one(_x: One) {
     _x.0
 }
-
-// It never makes sense for a logic function to use constructors and fields of opaque types
-#[trusted]
-#[logic(opaque)]
-pub fn un(_x: One) {
-    _x.0
-}

@@ -414,25 +414,33 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         let typing_env = self.typing_env;
         let ctx = self.ctx;
         let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
-        assert_matches!(
-            trait_resol,
-            TraitResolved::NotATraitItem
-            | TraitResolved::Instance { .. } // The impl is known to be the final instance
-            | TraitResolved::UnknownFound // Unresolved trait const
-        );
-        let opaque = matches!(trait_resol, TraitResolved::UnknownFound)
-            || ctx.def_kind(def_id) == DefKind::ConstParam
-            || !ctx.is_transparent_from(def_id, self.namer.source_id());
+        let (def_id, subst) = match trait_resol {
+            TraitResolved::Instance { def, .. } => def,
+            TraitResolved::UnknownFound | TraitResolved::NotATraitItem => (def_id, subst),
+            _ => unreachable!(),
+        };
 
         let mut names = self.namer(dep);
         let name = names.dependency(dep).ident();
         let mut pre_sig = ctx.sig(def_id).clone().instantiate_and_normalize(ctx, subst, typing_env);
+        // don't generate setter and don't assume contract if this const is the source_item
+        let is_self = Dependency::Item(def_id, subst) == names.source_item();
+        if is_self {
+            pre_sig.contract.ensures = vec![];
+        }
+        let has_user_contract = pre_sig.contract.has_user_contract;
         sig_add_type_invariant_spec(ctx, typing_env, names.source_id(), &mut pre_sig, def_id);
         let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
 
+        let opaque = is_self
+            || has_user_contract
+            || matches!(trait_resol, TraitResolved::UnknownFound)
+            || ctx.def_kind(def_id) == DefKind::ConstParam;
         if opaque {
             val(sig, DeclKind::Constant)
-        } else if let Some(term) = try_const_to_term(def_id, subst, ctx, typing_env) {
+        } else if let Some(term) =
+            try_const_to_term(def_id, subst, ctx, typing_env, names.source_id())
+        {
             lower_logical_defn(ctx, &names, sig, DeclKind::Constant, term, def_id)
         } else {
             // Generate a constant setter.

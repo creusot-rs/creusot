@@ -12,7 +12,7 @@ use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
-    Attribute, Ident, Item, Pat, Path, ReturnType, Stmt, Token, Type, parenthesized,
+    Attribute, Block, Expr, Ident, Item, Pat, Path, ReturnType, Stmt, Token, Type, parenthesized,
     parse::{self, Parse},
     parse_macro_input, parse_quote,
     punctuated::Punctuated,
@@ -31,8 +31,9 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     let req_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
     let name_tag = req_name.to_string();
     let requires_tokens = fn_spec_item(req_name.clone(), FnSpecResultKind::NoResult, req_body);
+    use ContractSubject::*;
     match item {
-        ContractSubject::FnOrMethod(mut fn_or_meth) => {
+        FnOrMethod(mut fn_or_meth) => {
             let ty_result = match fn_or_meth.sig.output {
                 ReturnType::Default => parse_quote! { () },
                 ReturnType::Type(_, ref ty) => (**ty).clone(),
@@ -70,7 +71,10 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
                 #fn_or_meth
             })
         }
-        ContractSubject::Closure(mut clos) => {
+        Const(item) => syn::Error::new(item.span(), "Unexpected `requires` on `const` item")
+            .to_compile_error()
+            .into(),
+        Closure(mut clos) => {
             let body = &clos.body;
             *clos.body = parse_quote!({let res = #body; #requires_tokens res});
             TS1::from(quote! {
@@ -107,8 +111,9 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
 
     let ens_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
     let name_tag = ens_name.clone().to_string();
+    use ContractSubject::*;
     match item {
-        ContractSubject::FnOrMethod(mut fn_or_meth) => {
+        FnOrMethod(mut fn_or_meth) => {
             let ty_result = match fn_or_meth.sig.output {
                 ReturnType::Default => parse_quote! { () },
                 ReturnType::Type(_, ref ty) => (**ty).clone(),
@@ -151,7 +156,30 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                 #fn_or_meth
             })
         }
-        ContractSubject::Closure(mut clos) => {
+        Const(mut item) => {
+            let ensures_tokens =
+                fn_spec_item(ens_name.clone(), FnSpecResultKind::NoResult, ens_body);
+            let attrs = std::mem::take(&mut item.attrs);
+            let dummy = Expr::Tuple(syn::ExprTuple {
+                attrs: vec![],
+                paren_token: Default::default(),
+                elems: Default::default(),
+            });
+            let expr = std::mem::replace(&mut *item.expr, dummy);
+            let stmts = vec![Stmt::Item(Item::Verbatim(ensures_tokens)), Stmt::Expr(expr, None)];
+            *item.expr = Expr::Block(syn::ExprBlock {
+                attrs: vec![],
+                label: None,
+                block: Block { brace_token: Default::default(), stmts },
+            });
+            TS1::from(quote! {
+                #[creusot::clause::ensures=#name_tag]
+                #(#attrs)*
+                #documentation
+                #item
+            })
+        }
+        Closure(mut clos) => {
             let res_id = Ident::new("res", Span::mixed_site());
             let ensures_tokens =
                 fn_spec_item(ens_name, FnSpecResultKind::Unified(result, res_id.clone()), ens_body);

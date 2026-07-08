@@ -8,6 +8,7 @@ pub trait F {
 pub struct S<T>(T);
 
 impl<T: F> F for S<T> {
+    #[ensures(true)]
     const C: Self = const { S(T::C) };
 }
 

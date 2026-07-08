@@ -1,10 +1,33 @@
 module M_empty
   use creusot.int.UInt64BW
   use creusot.int.UInt32BW
-  use creusot.int.UInt8BW
   use creusot.prelude.Any
+  use creusot.int.UInt8BW
+  use int.Int
   
-  constant const_USIZE_BITS: UInt64BW.t = (64: UInt64BW.t)
+  constant size_of_usize: int = 8
+  
+  meta "rewrite_def" constant size_of_usize
+  
+  axiom size_of_usize_spec: 0 <= size_of_usize
+  
+  let size_of_usize'0 (return (x: UInt64BW.t)) = any
+    [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:size_of ensures] UInt64BW.t'int result = size_of_usize}
+      (! return {result}) ]
+  
+  type tup2_usize_bool = { f0: UInt64BW.t; f1: bool }
+  
+  constant const_USIZE_BITS : UInt64BW.t
+  
+  let set_USIZE_BITS (return) = bb0
+    [ bb0 = s0
+      [ s0 = size_of_usize'0 (fun (_x: UInt64BW.t) -> [ &_1 <- _x ] s1)
+      | s1 = [ &_2 <- let (_fst, _snd) = UInt64BW.mul_with_overflow _1 (8: UInt64BW.t) in { f0 = _fst; f1 = _snd } ] s2
+      | s2 = {[@expl:Mul overflow] not _2.f1} s3
+      | s3 = [ &_ret <- _2.f0 ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: UInt64BW.t = Any.any_l () | & _1: UInt64BW.t = Any.any_l () | & _2: tup2_usize_bool = Any.any_l () ]
+    [ return (_const: UInt64BW.t) -> -{const_USIZE_BITS = _const}- return ]
   
   constant const_BITS: UInt32BW.t = (64: UInt32BW.t)
   
@@ -32,27 +55,28 @@ module M_empty
   
   meta "select_lsinst" "all"
   
-  let empty (val': UInt64BW.t) (return (x: UInt64BW.t)) = (! bb0
-    [ bb0 = s0
-      [ s0 = ffs'0 {val'} (fun (_x: UInt32BW.t) -> [ &rq_ffs <- _x ] s1)
-      | s1 = [ &_8 <- rq_ffs = (0: UInt32BW.t) ] s2
-      | s2 = any [ br0 -> {_8 = false} (! bb3) | br1 -> {_8} (! bb2) ] ]
-    | bb2 = s0 [ s0 = [ &_ret <- (0: UInt64BW.t) ] s1 | s1 = return {_ret} ]
-    | bb3 = s0
-      [ s0 = UInt32BW.sub {rq_ffs} {(1: UInt32BW.t)} (fun (_x: UInt32BW.t) -> [ &_11 <- _x ] s1)
-      | s1 = [ &rq <- UInt8BW.of_BV256 (UInt32BW.to_BV256 _11) ] s2
-      | s2 = UInt64BW.shl {(1: UInt64BW.t)} {UInt8BW.to_BV256 rq} (fun (_x: UInt64BW.t) -> [ &_15 <- _x ] s3)
-      | s3 = [ &_14 <- UInt64BW.bw_not _15 ] s4
-      | s4 = [ &_ret <- UInt64BW.bw_and val' _14 ] s5
-      | s5 = return {_ret} ] ]
-    [ & _ret: UInt64BW.t = Any.any_l ()
-    | & val': UInt64BW.t = val'
-    | & rq_ffs: UInt32BW.t = Any.any_l ()
-    | & _8: bool = Any.any_l ()
-    | & rq: UInt8BW.t = Any.any_l ()
-    | & _11: UInt32BW.t = Any.any_l ()
-    | & _14: UInt64BW.t = Any.any_l ()
-    | & _15: UInt64BW.t = Any.any_l () ])
+  let empty (val': UInt64BW.t) (return (x: UInt64BW.t)) = (! set_USIZE_BITS
+      (bb0
+      [ bb0 = s0
+        [ s0 = ffs'0 {val'} (fun (_x: UInt32BW.t) -> [ &rq_ffs <- _x ] s1)
+        | s1 = [ &_8 <- rq_ffs = (0: UInt32BW.t) ] s2
+        | s2 = any [ br0 -> {_8 = false} (! bb3) | br1 -> {_8} (! bb2) ] ]
+      | bb2 = s0 [ s0 = [ &_ret <- (0: UInt64BW.t) ] s1 | s1 = return {_ret} ]
+      | bb3 = s0
+        [ s0 = UInt32BW.sub {rq_ffs} {(1: UInt32BW.t)} (fun (_x: UInt32BW.t) -> [ &_11 <- _x ] s1)
+        | s1 = [ &rq <- UInt8BW.of_BV256 (UInt32BW.to_BV256 _11) ] s2
+        | s2 = UInt64BW.shl {(1: UInt64BW.t)} {UInt8BW.to_BV256 rq} (fun (_x: UInt64BW.t) -> [ &_15 <- _x ] s3)
+        | s3 = [ &_14 <- UInt64BW.bw_not _15 ] s4
+        | s4 = [ &_ret <- UInt64BW.bw_and val' _14 ] s5
+        | s5 = return {_ret} ] ]
+      [ & _ret: UInt64BW.t = Any.any_l ()
+      | & val': UInt64BW.t = val'
+      | & rq_ffs: UInt32BW.t = Any.any_l ()
+      | & _8: bool = Any.any_l ()
+      | & rq: UInt8BW.t = Any.any_l ()
+      | & _11: UInt32BW.t = Any.any_l ()
+      | & _14: UInt64BW.t = Any.any_l ()
+      | & _15: UInt64BW.t = Any.any_l () ]))
     [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:empty ensures] ([@stop_split] [@expl:empty ensures #0] val'
           = (0: UInt64BW.t) -> result = val')
       /\ ([@stop_split] [@expl:empty ensures #1] val' <> (0: UInt64BW.t)
@@ -62,10 +86,33 @@ module M_empty
 end
 module M_ffs
   use creusot.int.UInt64
-  use creusot.int.UInt32
   use creusot.prelude.Any
+  use creusot.int.UInt32
+  use int.Int
   
-  constant const_USIZE_BITS: UInt64.t = (64: UInt64.t)
+  constant size_of_usize: int = 8
+  
+  meta "rewrite_def" constant size_of_usize
+  
+  axiom size_of_usize_spec: 0 <= size_of_usize
+  
+  let size_of_usize'0 (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:size_of ensures] UInt64.t'int result = size_of_usize}
+      (! return {result}) ]
+  
+  type tup2_usize_bool = { f0: UInt64.t; f1: bool }
+  
+  constant const_USIZE_BITS : UInt64.t
+  
+  let set_USIZE_BITS (return) = bb0
+    [ bb0 = s0
+      [ s0 = size_of_usize'0 (fun (_x: UInt64.t) -> [ &_1 <- _x ] s1)
+      | s1 = [ &_2 <- let (_fst, _snd) = UInt64.mul_with_overflow _1 (8: UInt64.t) in { f0 = _fst; f1 = _snd } ] s2
+      | s2 = {[@expl:Mul overflow] not _2.f1} s3
+      | s3 = [ &_ret <- _2.f0 ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & _1: UInt64.t = Any.any_l () | & _2: tup2_usize_bool = Any.any_l () ]
+    [ return (_const: UInt64.t) -> -{const_USIZE_BITS = _const}- return ]
   
   constant const_BITS: UInt32.t = (64: UInt32.t)
   
@@ -94,16 +141,17 @@ module M_ffs
   
   meta "select_lsinst" "all"
   
-  let ffs'0 (val': UInt64.t) (return (x: UInt32.t)) = (! bb0
-    [ bb0 = s0
-      [ s0 = [ &_4 <- UInt32.of_int (UInt64.t'int const_USIZE_BITS) ] s1
-      | s1 = leading_zeros {val'} (fun (_x: UInt32.t) -> [ &_5 <- _x ] s2)
-      | s2 = UInt32.sub {_4} {_5} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s3)
-      | s3 = return {_ret} ] ]
-    [ & _ret: UInt32.t = Any.any_l ()
-    | & val': UInt64.t = val'
-    | & _4: UInt32.t = Any.any_l ()
-    | & _5: UInt32.t = Any.any_l () ])
+  let ffs'0 (val': UInt64.t) (return (x: UInt32.t)) = (! set_USIZE_BITS
+      (bb0
+      [ bb0 = s0
+        [ s0 = [ &_4 <- UInt32.of_int (UInt64.t'int const_USIZE_BITS) ] s1
+        | s1 = leading_zeros {val'} (fun (_x: UInt32.t) -> [ &_5 <- _x ] s2)
+        | s2 = UInt32.sub {_4} {_5} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s3)
+        | s3 = return {_ret} ] ]
+      [ & _ret: UInt32.t = Any.any_l ()
+      | & val': UInt64.t = val'
+      | & _4: UInt32.t = Any.any_l ()
+      | & _5: UInt32.t = Any.any_l () ]))
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:ffs ensures] result = ffs val'} (! return {result}) ]
 end
 module M_merge_bvs
@@ -133,7 +181,29 @@ module M_set_bit
   use creusot.prelude.Any
   use int.Int
   
-  constant const_USIZE_BITS: UInt64BW.t = (64: UInt64BW.t)
+  constant size_of_usize: int = 8
+  
+  meta "rewrite_def" constant size_of_usize
+  
+  axiom size_of_usize_spec: 0 <= size_of_usize
+  
+  let size_of_usize'0 (return (x: UInt64BW.t)) = any
+    [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:size_of ensures] UInt64BW.t'int result = size_of_usize}
+      (! return {result}) ]
+  
+  type tup2_usize_bool = { f0: UInt64BW.t; f1: bool }
+  
+  constant const_USIZE_BITS : UInt64BW.t
+  
+  let set_USIZE_BITS (return) = bb0
+    [ bb0 = s0
+      [ s0 = size_of_usize'0 (fun (_x: UInt64BW.t) -> [ &_1 <- _x ] s1)
+      | s1 = [ &_2 <- let (_fst, _snd) = UInt64BW.mul_with_overflow _1 (8: UInt64BW.t) in { f0 = _fst; f1 = _snd } ] s2
+      | s2 = {[@expl:Mul overflow] not _2.f1} s3
+      | s3 = [ &_ret <- _2.f0 ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: UInt64BW.t = Any.any_l () | & _1: UInt64BW.t = Any.any_l () | & _2: tup2_usize_bool = Any.any_l () ]
+    [ return (_const: UInt64BW.t) -> -{const_USIZE_BITS = _const}- return ]
   
   predicate has_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) =
     UInt64BW.bw_and bitvec (UInt64BW.shl (1: UInt64BW.t) (UInt64BW.of_BV256 (UInt8BW.to_BV256 bit))) <> (0: UInt64BW.t)
@@ -144,15 +214,16 @@ module M_set_bit
   
   let set_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) (return (x: UInt64BW.t)) =
   {[@stop_split] [@expl:set_bit requires] UInt8BW.t'int bit < UInt64BW.t'int const_USIZE_BITS}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = UInt64BW.shl {(1: UInt64BW.t)} {UInt8BW.to_BV256 bit} (fun (_x: UInt64BW.t) -> [ &_10 <- _x ] s1)
-      | s1 = [ &_ret <- UInt64BW.bw_or bitvec _10 ] s2
-      | s2 = return {_ret} ] ]
-    [ & _ret: UInt64BW.t = Any.any_l ()
-    | & bitvec: UInt64BW.t = bitvec
-    | & bit: UInt8BW.t = bit
-    | & _10: UInt64BW.t = Any.any_l () ])
+    (! set_USIZE_BITS
+      (bb0
+      [ bb0 = s0
+        [ s0 = UInt64BW.shl {(1: UInt64BW.t)} {UInt8BW.to_BV256 bit} (fun (_x: UInt64BW.t) -> [ &_10 <- _x ] s1)
+        | s1 = [ &_ret <- UInt64BW.bw_or bitvec _10 ] s2
+        | s2 = return {_ret} ] ]
+      [ & _ret: UInt64BW.t = Any.any_l ()
+      | & bitvec: UInt64BW.t = bitvec
+      | & bit: UInt8BW.t = bit
+      | & _10: UInt64BW.t = Any.any_l () ]))
     [ return (result: UInt64BW.t) ->
     {[@stop_split] [@expl:set_bit ensures] ([@stop_split] [@expl:set_bit ensures #0] has_bit result bit)
       /\ ([@stop_split] [@expl:set_bit ensures #1] forall b: UInt8BW.t. has_bit bitvec b -> has_bit result b)}
@@ -164,7 +235,29 @@ module M_unset_bit
   use creusot.prelude.Any
   use int.Int
   
-  constant const_USIZE_BITS: UInt64BW.t = (64: UInt64BW.t)
+  constant size_of_usize: int = 8
+  
+  meta "rewrite_def" constant size_of_usize
+  
+  axiom size_of_usize_spec: 0 <= size_of_usize
+  
+  let size_of_usize'0 (return (x: UInt64BW.t)) = any
+    [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:size_of ensures] UInt64BW.t'int result = size_of_usize}
+      (! return {result}) ]
+  
+  type tup2_usize_bool = { f0: UInt64BW.t; f1: bool }
+  
+  constant const_USIZE_BITS : UInt64BW.t
+  
+  let set_USIZE_BITS (return) = bb0
+    [ bb0 = s0
+      [ s0 = size_of_usize'0 (fun (_x: UInt64BW.t) -> [ &_1 <- _x ] s1)
+      | s1 = [ &_2 <- let (_fst, _snd) = UInt64BW.mul_with_overflow _1 (8: UInt64BW.t) in { f0 = _fst; f1 = _snd } ] s2
+      | s2 = {[@expl:Mul overflow] not _2.f1} s3
+      | s3 = [ &_ret <- _2.f0 ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: UInt64BW.t = Any.any_l () | & _1: UInt64BW.t = Any.any_l () | & _2: tup2_usize_bool = Any.any_l () ]
+    [ return (_const: UInt64BW.t) -> -{const_USIZE_BITS = _const}- return ]
   
   predicate has_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) =
     UInt64BW.bw_and bitvec (UInt64BW.shl (1: UInt64BW.t) (UInt64BW.of_BV256 (UInt8BW.to_BV256 bit))) <> (0: UInt64BW.t)
@@ -175,17 +268,18 @@ module M_unset_bit
   
   let unset_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) (return (x: UInt64BW.t)) =
   {[@stop_split] [@expl:unset_bit requires] UInt8BW.t'int bit < UInt64BW.t'int const_USIZE_BITS}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = UInt64BW.shl {(1: UInt64BW.t)} {UInt8BW.to_BV256 bit} (fun (_x: UInt64BW.t) -> [ &_12 <- _x ] s1)
-      | s1 = [ &_11 <- UInt64BW.bw_not _12 ] s2
-      | s2 = [ &_ret <- UInt64BW.bw_and bitvec _11 ] s3
-      | s3 = return {_ret} ] ]
-    [ & _ret: UInt64BW.t = Any.any_l ()
-    | & bitvec: UInt64BW.t = bitvec
-    | & bit: UInt8BW.t = bit
-    | & _11: UInt64BW.t = Any.any_l ()
-    | & _12: UInt64BW.t = Any.any_l () ])
+    (! set_USIZE_BITS
+      (bb0
+      [ bb0 = s0
+        [ s0 = UInt64BW.shl {(1: UInt64BW.t)} {UInt8BW.to_BV256 bit} (fun (_x: UInt64BW.t) -> [ &_12 <- _x ] s1)
+        | s1 = [ &_11 <- UInt64BW.bw_not _12 ] s2
+        | s2 = [ &_ret <- UInt64BW.bw_and bitvec _11 ] s3
+        | s3 = return {_ret} ] ]
+      [ & _ret: UInt64BW.t = Any.any_l ()
+      | & bitvec: UInt64BW.t = bitvec
+      | & bit: UInt8BW.t = bit
+      | & _11: UInt64BW.t = Any.any_l ()
+      | & _12: UInt64BW.t = Any.any_l () ]))
     [ return (result: UInt64BW.t) ->
     {[@stop_split] [@expl:unset_bit ensures] ([@stop_split] [@expl:unset_bit ensures #0] not has_bit result bit)
       /\ ([@stop_split] [@expl:unset_bit ensures #1] forall b: UInt8BW.t. b <> bit /\ has_bit bitvec b

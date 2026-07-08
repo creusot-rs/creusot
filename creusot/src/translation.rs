@@ -62,6 +62,7 @@ pub(crate) fn after_analysis<'tcx>(
     let mut ctx = TranslationCtx::new(tcx, opts.clone(), params_open_inv);
     ctx.load_specs();
     validate(&ctx);
+    force_translation(&ctx);
     debug!("after_analysis_validate: {:?}", start.elapsed());
     if let Some(err) = tcx.dcx().has_errors_or_delayed_bugs() {
         err.raise_fatal()
@@ -114,6 +115,24 @@ pub(crate) fn after_analysis<'tcx>(
     debug!("after_analysis_dump: {:?}", start.elapsed());
 
     Ok(())
+}
+
+/// Force translation of signatures and terms to populate metadata for export
+fn force_translation(ctx: &TranslationCtx) {
+    use crate::contracts_items::{get_builtin, is_extern_spec, is_logic, is_opaque};
+    for local_id in ctx.tcx.hir_body_owners() {
+        let def_id = local_id.to_def_id();
+        if get_builtin(ctx.tcx, def_id).is_some() || ctx.intrinsic(def_id).synthetic() {
+            continue;
+        }
+        if is_no_translate(ctx.tcx, def_id) && !is_extern_spec(ctx.tcx, def_id) {
+            continue;
+        }
+        let _ = ctx.sig(def_id);
+        if is_logic(ctx.tcx, def_id) && !is_opaque(ctx.tcx, def_id) {
+            let _ = ctx.term(def_id);
+        }
+    }
 }
 
 fn silence_unused_features_warnings(tcx: TyCtxt) {

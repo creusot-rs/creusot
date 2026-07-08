@@ -115,6 +115,26 @@ pub mod macros {
     /// #[ensures(|one| one@ == 1)] // Explicitly name the result variable `one`
     /// fn foo() -> i32 { 1 }
     /// ```
+    ///
+    /// # Constants
+    ///
+    /// Constants may also have `ensures` clauses:
+    ///
+    /// ```ignore
+    /// #[ensures(C@ > 24)]
+    /// const C: usize = 42;
+    /// ```
+    ///
+    /// The `#[ensures]` clause must use the actual name of the constant,
+    /// and not `result`.
+    ///
+    /// The presence of `#[ensures]` hides the definition of the constant from
+    /// the translation of callers, so that the given specification is the
+    /// only fact known to callers about the constant.
+    ///
+    /// By default, the body of the constant is inlined in the
+    /// translation of callers. However, this is not possible if it
+    /// exposes private fields. You must use `#[ensures]` in that case.
     pub use base_macros::ensures;
 
     /// Create a new [`Snapshot`](crate::snapshot::Snapshot) object.
@@ -520,6 +540,29 @@ pub mod macros {
     /// }
     /// ```
     pub use base_macros::erasure;
+
+    /// Modifier for `const` declarations.
+    ///
+    /// # `#[constant(eval)]`
+    ///
+    /// Try to evaluate the constant before translating it.
+    ///
+    /// Do not use this if the constant contains constructors with private fields.
+    ///
+    /// # In extern specs
+    ///
+    /// This attribute can also be used in `extern_spec!` to modify external constants:
+    ///
+    /// ```ignore
+    /// extern_spec! {
+    ///     #[constant(eval)]
+    ///     const u64::MAX;
+    /// }
+    /// ```
+    ///
+    /// Note that the syntax of `const` in `extern_spec!` does not have a body
+    /// (this is not quite Rust syntax).
+    pub use base_macros::constant;
 
     pub(crate) use base_macros::intrinsic;
 }
