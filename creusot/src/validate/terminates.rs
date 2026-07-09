@@ -37,8 +37,8 @@
 use crate::{
     backend::is_trusted_item,
     contracts_items::{
-        has_variant_clause, is_logic, is_loop_variant, is_no_translate, is_pearlite,
-        is_trusted_ghost, is_trusted_terminates,
+        has_variant_clause, is_check_terminates, is_logic, is_loop_variant, is_no_translate,
+        is_pearlite, is_trusted_ghost, is_trusted_terminates,
     },
     ctx::{HasTyCtxt as _, TranslationCtx},
     resolution::{ImplSelection, ImplSource_, TraitResolved, select_trait_impl},
@@ -111,14 +111,28 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
             continue;
         };
         assert!(def_id.is_local());
-        let call = call_graph[self_edge];
-        let CallKind::Direct(span) = call else { continue };
-        call_graph.remove_edge(self_edge);
+        let span = match call_graph.remove_edge(self_edge).unwrap() {
+            DepKind::Call(span) => span,
+            DepKind::NonCall(span) => {
+                let mut err = ctx.error(
+                    ctx.def_span(def_id),
+                    "Recursive function occurrence which is not a function call",
+                );
+                err.span_note(span, "Recursive occurrence");
+                err.emit();
+                continue;
+            }
+            _ => unreachable!(),
+        };
+        let pearlite = is_pearlite(ctx.tcx, def_id);
+        if !pearlite && !ctx.sig(def_id).contract.purity.is_terminates() {
+            // We don't care about termination
+            continue;
+        }
         if has_variant_clause(ctx.tcx, def_id) {
             recursive_calls.entry(def_id).or_default().insert(def_id);
             continue;
         }
-        let pearlite = is_pearlite(ctx.tcx, def_id);
         if pearlite && is_structurally_recursive(ctx, def_id) {
             // Termination is guaranteed, we can forget that this function is recursive.
             continue;
@@ -175,29 +189,39 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
                 continue;
             };
             let call = call_graph[e];
-            let adverb = if last && cycle.len() > 1 { "finally" } else { "then" };
+            let adverb = if index == 0 {
+                ""
+            } else if last && cycle.len() > 1 {
+                "finally "
+            } else {
+                "then "
+            };
             let punct = if last { "." } else { "..." };
             let f1 = ctx.def_path_str(call_graph[current_node].def_id());
             let next_node = call_graph[next_node].def_id();
             let f2 = ctx.def_path_str(next_node);
 
+            use DepKind::*;
             match call {
-                CallKind::Direct(span) => {
-                    error.span_note(span, format!("{adverb} `{f1}` calls `{f2}`{punct}"));
+                Call(span) => {
+                    error.span_note(span, format!("{adverb}`{f1}` calls `{f2}`{punct}"));
                 }
-                CallKind::GenericBound(indirect_id, span) => {
+                NonCall(span) => {
+                    error.span_note(span, format!("{adverb}`{f1}` uses `{f2}`{punct}"));
+                }
+                GenericBound(indirect_id, span) => {
                     let f3 = ctx.def_path_str(indirect_id);
                     error.span_note(
                         span,
                         format!(
-                            "{adverb} `{f1}` uses the impl `{f2}` via the call to `{f3}`{punct}"
+                            "{adverb}`{f1}` uses the impl `{f2}` via the call to `{f3}`{punct}"
                         ),
                     );
                 }
-                CallKind::ImplMember => {
+                ImplMember => {
                     error.span_note(
                         ctx.def_span(next_node),
-                        format!("{adverb} the method `{f2}` might be called"),
+                        format!("{adverb}the method `{f2}` might be called"),
                     );
                 }
             }
@@ -209,12 +233,12 @@ pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
 }
 
 struct CallGraph {
-    graph: graph::DiGraph<GraphNode, CallKind>,
+    graph: graph::DiGraph<GraphNode, DepKind>,
 }
 
 #[derive(Default)]
 struct BuildFunctionsGraph<'tcx> {
-    graph: graph::DiGraph<GraphNode, CallKind>,
+    graph: graph::DiGraph<GraphNode, DepKind>,
     graph_node_to_index: IndexMap<GraphNode, graph::NodeIndex>,
     /// Stores the generic bounds that are left when instantiating the default method in
     /// the impl block.
@@ -281,9 +305,13 @@ impl GraphNode {
 }
 
 #[derive(Clone, Copy, Debug)]
-enum CallKind {
+enum DepKind {
     /// Call of a function.
-    Direct(Span),
+    Call(Span),
+    /// Occurrence of a function that's not a call.
+    ///
+    /// Cycles involving `NonCall` are never allowed since they lose track of the variant.
+    NonCall(Span),
     /// 'Indirect' call, this is an egde going inside an `impl` block. This happens when
     /// calling a generic function while specializing a type. For example:
     /// ```rust
@@ -306,60 +334,60 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             .or_insert_with(|| self.graph.add_node(graph_node))
     }
 
-    /// Process the call from `node` to `called_id`.
-    fn function_call(
+    /// Process the dependency from `node` to `fun_id`.
+    fn function_dep(
         &mut self,
         ctx: &TranslationCtx<'tcx>,
         node: graph::NodeIndex,
         typing_env: TypingEnv<'tcx>,
-        mut called_id: DefId,
+        mut fun_id: DefId,
         mut subst: GenericArgsRef<'tcx>,
-        call_span: Span,
+        span: Span,
+        is_call: bool,
     ) {
         // WARNING: `subst`` is not normalized (but we don't seem to use the fact that it should be)
-        let res = TraitResolved::resolve_item(ctx.tcx, typing_env, called_id, subst);
+        let res = TraitResolved::resolve_item(ctx.tcx, typing_env, fun_id, subst);
         if let TraitResolved::Instance { def, .. } = res {
-            (called_id, subst) = def;
+            (fun_id, subst) = def;
         }
 
         let called_node: Option<graph::NodeIndex>;
         let mut bounds: Box<dyn Iterator<Item = ty::Clause<'tcx>>> = Box::new(
-            EarlyBinder::bind(ctx.param_env(called_id).caller_bounds())
+            EarlyBinder::bind(ctx.param_env(fun_id).caller_bounds())
                 .instantiate(ctx.tcx, subst)
                 .skip_normalization()
                 .iter(),
         );
         match res {
             TraitResolved::Instance { impl_: ImplSource_::Impl(impl_defid, impl_args), .. }
-                if ctx.impl_of_assoc(called_id) != Some(impl_defid) && // The method is defined in an ancestor
-                    is_pearlite(ctx.tcx, called_id) && // The method is logic
+                if ctx.impl_of_assoc(fun_id) != Some(impl_defid) && // The method is defined in an ancestor
+                    is_pearlite(ctx.tcx, fun_id) && // The method is logic
                     let Some(impl_ldid) = impl_defid.as_local() && // The impl is local
-                    ctx.is_transparent_from(called_id, impl_defid) =>
+                    ctx.is_transparent_from(fun_id, impl_defid) =>
             {
                 // If we are calling a known method, and this method has been defined in an ancestor of the impl
                 // we found, and this method is logic and transparent from this impl and this impl is local, then use a
                 // specialized default node
-                let (node, bnds) =
-                    self.visit_specialized_default_function(ctx, impl_ldid, called_id);
+                let (node, bnds) = self.visit_specialized_default_function(ctx, impl_ldid, fun_id);
                 called_node = Some(node);
                 bounds = Box::new(
                     EarlyBinder::bind(bnds)
                         .instantiate(
                             ctx.tcx,
-                            subst.rebase_onto(ctx.tcx, ctx.parent(called_id), impl_args),
+                            subst.rebase_onto(ctx.tcx, ctx.parent(fun_id), impl_args),
                         )
                         .skip_normalization()
                         .iter(),
                 );
             }
             TraitResolved::Instance { .. } | TraitResolved::NotATraitItem => {
-                called_node = Some(self.insert_node(GraphNode::function(called_id)))
+                called_node = Some(self.insert_node(GraphNode::function(fun_id)))
             }
             TraitResolved::UnknownFound => called_node = None,
             TraitResolved::BuiltinFn | TraitResolved::BuiltinClone | TraitResolved::BuiltinDyn => {
                 called_node = None;
                 let trait_ref =
-                    TraitRef::from_assoc(ctx.tcx, ctx.trait_of_assoc(called_id).unwrap(), subst);
+                    TraitRef::from_assoc(ctx.tcx, ctx.trait_of_assoc(fun_id).unwrap(), subst);
                 let clause = ctx
                     .tcx
                     .mk_predicate(Binder::dummy(PredicateKind::Clause(ClauseKind::Trait(
@@ -372,12 +400,28 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         }
 
         if let Some(called_node) = called_node {
-            self.graph.update_edge(node, called_node, CallKind::Direct(call_span));
+            let kind = if is_call { DepKind::Call(span) } else { DepKind::NonCall(span) };
+            self.update_edge(node, called_node, kind);
         }
         for impl_id in proof_tree_nodes(ctx.tcx, typing_env, bounds) {
             let item_node = self.insert_node(GraphNode::impl_(impl_id));
-            self.graph.update_edge(node, item_node, CallKind::GenericBound(called_id, call_span));
+            self.graph.update_edge(node, item_node, DepKind::GenericBound(fun_id, span));
         }
+    }
+
+    /// If an edge exists, only overwrite from `CallKind::Direct` to `NonCall`.
+    fn update_edge(&mut self, a: graph::NodeIndex, b: graph::NodeIndex, e: DepKind) {
+        if let Some(ix) = self.graph.find_edge(a, b)
+            && let Some(ed) = self.graph.edge_weight_mut(ix)
+        {
+            if let DepKind::Call(_) = *ed
+                && let DepKind::NonCall(_) = e
+            {
+                *ed = e;
+            }
+            return;
+        }
+        self.graph.add_edge(a, b, e);
     }
 
     /// This visits the special function that is called when calling:
@@ -460,7 +504,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             let actual_args = EarlyBinder::bind(generic_args)
                 .instantiate(ctx.tcx, func_impl_args)
                 .skip_normalization();
-            self.function_call(ctx, node, typing_env, called_id, actual_args, call_span);
+            self.function_dep(ctx, node, typing_env, called_id, actual_args, call_span, true);
         }
         (node, bounds)
     }
@@ -487,15 +531,14 @@ impl CallGraph {
             }
 
             let contract = &ctx.sig(def_id).contract;
-            if !is_pearlite(ctx.tcx, def_id) && !contract.purity.is_terminates() {
-                // Only consider functions marked with `terminates`: we already ensured
-                // that a `terminates` functions only calls other `terminates` functions.
-                if let Some(variant) = &contract.variant {
-                    ctx.dcx().struct_span_warn(variant.span, "variant will be ignored")
-                        .with_span_note(ctx.def_span(def_id), "This function is not a logical function, and is not marked with `#[terminates]`.")
-                        .emit();
-                }
-                continue;
+            let terminates = contract.purity.is_terminates();
+            if let Some(variant) = &contract.variant
+                && !is_pearlite(ctx.tcx, def_id)
+                && !terminates
+            {
+                ctx.dcx().struct_span_warn(variant.span, "variant will be ignored")
+                    .with_span_note(ctx.def_span(def_id), "This function is not a logical function, and is not marked with `#[terminates]`.")
+                    .emit();
             }
             let node = build_call_graph.insert_node(GraphNode::function(def_id));
 
@@ -510,18 +553,11 @@ impl CallGraph {
             let thir = &thir.borrow();
 
             // Collect functions called by this function
-            let calls = &mut IndexSet::new();
-            FunctionCalls { def_id, thir, ctx, calls }.visit_expr(&thir[expr]);
+            let deps = &mut vec![];
+            FunctionDeps { def_id, thir, ctx, terminates, deps }.visit_expr(&thir[expr]);
 
-            for &(called_id, generic_args, call_span) in calls.iter() {
-                build_call_graph.function_call(
-                    ctx,
-                    node,
-                    typing_env,
-                    called_id,
-                    generic_args,
-                    call_span,
-                );
+            for &(fun_id, args, span, is_call) in deps.iter() {
+                build_call_graph.function_dep(ctx, node, typing_env, fun_id, args, span, is_call);
             }
         }
 
@@ -540,7 +576,7 @@ impl CallGraph {
                         build_call_graph.graph.update_edge(
                             impl_node,
                             item_node,
-                            CallKind::ImplMember,
+                            DepKind::ImplMember,
                         );
                     }
                 }
@@ -551,38 +587,51 @@ impl CallGraph {
     }
 }
 
-/// Gather the functions calls that appear in a particular function, and store them in `calls`.
+/// Gather the functions that occur in a particular function, and store them in `deps`.
 ///
 /// This will also flag loops without variants in `#[check(terminates)]` functions.
-struct FunctionCalls<'a, 'tcx> {
+struct FunctionDeps<'a, 'tcx> {
     def_id: DefId,
     thir: &'a thir::Thir<'tcx>,
     ctx: &'a TranslationCtx<'tcx>,
+    terminates: bool,
     /// Contains:
-    /// - The id of the _called_ function.
+    /// - The id of the function.
     /// - The generic args for this call.
     /// - The span of the call (for error messages).
-    calls: &'a mut IndexSet<(DefId, &'tcx GenericArgs<'tcx>, Span)>,
+    /// - Whether the occurrence is a function call.
+    deps: &'a mut Vec<(DefId, &'tcx GenericArgs<'tcx>, Span, bool)>,
 }
 
-impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
+impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionDeps<'a, 'tcx> {
     fn thir(&self) -> &'a thir::Thir<'tcx> {
         self.thir
     }
 
     fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
+        use thir::ExprKind::*;
         match expr.kind {
-            thir::ExprKind::ZstLiteral { .. }
-                if let &FnDef(def_id, generic_args) = expr.ty.kind() =>
-            {
-                self.calls.insert((def_id, generic_args, expr.span));
+            ZstLiteral { .. } if let &FnDef(def_id, generic_args) = expr.ty.kind() => {
+                self.deps.push((def_id, generic_args, expr.span, false));
             }
-            thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
+            Call { ty, fun, ref args, .. }
+                if let fun = &self.thir[fun]
+                    && self.is_trivial_fun(fun)
+                    && let &FnDef(def_id, generic_args) = ty.kind() =>
+            {
+                self.deps.push((def_id, generic_args, fun.span, true));
+                for &arg in &**args {
+                    self.visit_expr(&self.thir()[arg]);
+                }
+                // Don't visit `fun` recursively, to avoid flagging it as a non-call
+                return;
+            }
+            Closure(box thir::ClosureExpr { closure_id, .. }) => {
                 let (thir, expr) = self.ctx.thir_body(closure_id);
                 let thir = &thir.borrow();
-                FunctionCalls { thir, calls: self.calls, ..*self }.visit_expr(&thir[expr]);
+                FunctionDeps { thir, deps: self.deps, ..*self }.visit_expr(&thir[expr]);
             }
-            thir::ExprKind::Loop { body } => {
+            Loop { body } if self.terminates => {
                 let body = &self.thir.exprs[body];
                 let block = match body.kind {
                     thir::ExprKind::Block { block } => block,
@@ -617,9 +666,24 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionCalls<'a, 'tcx> {
                         .emit();
                 }
             }
+            NamedConst { def_id, args, .. } => {
+                self.deps.push((def_id, args, expr.span, true));
+            }
             _ => {}
         }
         thir::visit::walk_expr(self, expr);
+    }
+}
+
+impl<'tcx> FunctionDeps<'_, 'tcx> {
+    /// Is a function name
+    fn is_trivial_fun(&self, fun: &thir::Expr<'tcx>) -> bool {
+        use thir::ExprKind::*;
+        match fun.kind {
+            Scope { value, .. } => self.is_trivial_fun(&self.thir[value]),
+            ZstLiteral { .. } => true,
+            _ => false,
+        }
     }
 }
 
