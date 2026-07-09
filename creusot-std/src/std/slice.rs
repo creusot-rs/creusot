@@ -39,9 +39,9 @@ impl<T> View for [T] {
     type ViewTy = Seq<T>;
 
     #[logic]
-    #[cfg_attr(target_pointer_width = "16", builtin("creusot.slice.Slice16.view"))]
-    #[cfg_attr(target_pointer_width = "32", builtin("creusot.slice.Slice32.view"))]
-    #[cfg_attr(target_pointer_width = "64", builtin("creusot.slice.Slice64.view"))]
+    #[cfg_attr(target_pointer_width = "16", builtin("creusot.slice.Slice16$BW$.view"))]
+    #[cfg_attr(target_pointer_width = "32", builtin("creusot.slice.Slice32$BW$.view"))]
+    #[cfg_attr(target_pointer_width = "64", builtin("creusot.slice.Slice64$BW$.view"))]
     fn view(self) -> Self::ViewTy {
         dead
     }

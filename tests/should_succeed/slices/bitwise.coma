@@ -1,14 +1,13 @@
 module M_all_ldz
   use creusot.int.UInt64BW
-  use creusot.slice.Slice64
+  use creusot.slice.Slice64BW
   use seq.Seq
   use creusot.int.UInt32BW
-  use creusot.slice.Slice64OpsBW
   use creusot.prelude.Any
   use int.Int
   
-  let len_u64 (self_: Slice64.slice UInt64BW.t) (return (x: UInt64BW.t)) = any
-    [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
+  let len_u64 (self_: Slice64BW.slice UInt64BW.t) (return (x: UInt64BW.t)) = any
+    [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64BW.view self_)
       = UInt64BW.t'int result}
       (! return {result}) ]
   
@@ -36,10 +35,10 @@ module M_all_ldz
   
   meta "rewrite_def" predicate inv_Seq_u64
   
-  predicate invariant_array_u64_25 (self: Slice64.array UInt64BW.t) =
-    inv_Seq_u64 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64BW.t'int (25: UInt64BW.t)
+  predicate invariant_array_u64_25 (self: Slice64BW.array UInt64BW.t) =
+    inv_Seq_u64 (Slice64BW.view self) /\ Seq.length (Slice64BW.view self) = UInt64BW.t'int (25: UInt64BW.t)
   
-  predicate inv_array_u64_25 [@inline:trivial] (_1: Slice64.array UInt64BW.t) = invariant_array_u64_25 _1
+  predicate inv_array_u64_25 [@inline:trivial] (_1: Slice64BW.array UInt64BW.t) = invariant_array_u64_25 _1
   
   meta "rewrite_def" predicate inv_array_u64_25
   
@@ -47,13 +46,13 @@ module M_all_ldz
   
   meta "select_lsinst" "all"
   
-  let all_ldz (values: Slice64.array UInt64BW.t) (max: UInt32BW.t) (return (x: bool)) =
+  let all_ldz (values: Slice64BW.array UInt64BW.t) (max: UInt32BW.t) (return (x: bool)) =
   {[@stop_split] [@expl:all_ldz 'values' type invariant] inv_array_u64_25 values}
     (! bb0
     [ bb0 = s0 [ s0 = [ &i <- (0: UInt64BW.t) ] s1 | s1 = bb1 ]
     | bb1 = bb1
       [ bb1 = {[@expl:loop invariant] forall j: int. 0 <= j /\ j < UInt64BW.t'int i
-          -> UInt32BW.lt (leading_zeros_u64 (Seq.get (Slice64.view values) j)) max}
+          -> UInt32BW.lt (leading_zeros_u64 (Seq.get (Slice64BW.view values) j)) max}
         (! s0)
         [ s0 = len_u64 {values} (fun (_x: UInt64BW.t) -> [ &_16 <- _x ] s1)
         | s1 = [ &_14 <- UInt64BW.lt i _16 ] s2
@@ -62,7 +61,7 @@ module M_all_ldz
           [ s0 = [ &_23 <- i ] s1
           | s1 = [ &_24 <- UInt64BW.lt _23 (25: UInt64BW.t) ] s2
           | s2 = {[@expl:index in bounds] _24} s3
-          | s3 = Slice64OpsBW.get <UInt64BW.t> {values} {_23} (fun (r: UInt64BW.t) -> [ &_22 <- r ] s4)
+          | s3 = Slice64BW.get <UInt64BW.t> {values} {_23} (fun (r: UInt64BW.t) -> [ &_22 <- r ] s4)
           | s4 = leading_zeros {_22} (fun (_x: UInt32BW.t) -> [ &_21 <- _x ] s5)
           | s5 = [ &_20 <- UInt32BW.ge _21 max ] s6
           | s6 = any [ br0 -> {_20 = false} (! bb8) | br1 -> {_20} (! bb7) ] ]
@@ -70,7 +69,7 @@ module M_all_ldz
     | bb7 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
     | bb9 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
-    | & values: Slice64.array UInt64BW.t = values
+    | & values: Slice64BW.array UInt64BW.t = values
     | & max: UInt32BW.t = max
     | & i: UInt64BW.t = Any.any_l ()
     | & _14: bool = Any.any_l ()
@@ -81,21 +80,20 @@ module M_all_ldz
     | & _23: UInt64BW.t = Any.any_l ()
     | & _24: bool = Any.any_l () ])
     [ return (result: bool) -> {[@stop_split] [@expl:all_ldz ensures] result
-      = (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view values)
-        -> UInt32BW.lt (leading_zeros_u64 (Seq.get (Slice64.view values) i)) max)}
+      = (forall i: int. 0 <= i /\ i < Seq.length (Slice64BW.view values)
+        -> UInt32BW.lt (leading_zeros_u64 (Seq.get (Slice64BW.view values) i)) max)}
       (! return {result}) ]
 end
 module M_boolvec_to_bitvec
   use creusot.int.UInt64BW
   use creusot.prelude.MutBorrow
-  use creusot.slice.Slice64
+  use creusot.slice.Slice64BW
   use seq.Seq
-  use creusot.slice.Slice64OpsBW
   use creusot.prelude.Any
   use int.Int
   
-  let len_bool (self_: Slice64.slice bool) (return (x: UInt64BW.t)) = any
-    [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
+  let len_bool (self_: Slice64BW.slice bool) (return (x: UInt64BW.t)) = any
+    [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64BW.view self_)
       = UInt64BW.t'int result}
       (! return {result}) ]
   
@@ -107,25 +105,25 @@ module M_boolvec_to_bitvec
   
   meta "select_lsinst" "all"
   
-  let boolvec_to_bitvec (boolvec: Slice64.slice bool) (bitvec: MutBorrow.t UInt64BW.t) (return (x: ())) =
-  {[@stop_split] [@expl:boolvec_to_bitvec requires] Seq.length (Slice64.view boolvec) < 64}
+  let boolvec_to_bitvec (boolvec: Slice64BW.slice bool) (bitvec: MutBorrow.t UInt64BW.t) (return (x: ())) =
+  {[@stop_split] [@expl:boolvec_to_bitvec requires] Seq.length (Slice64BW.view boolvec) < 64}
     (! bb0
     [ bb0 = s0 [ s0 = [ &i <- (0: UInt64BW.t) ] s1 | s1 = [ &_old <- bitvec.final ] s2 | s2 = bb1 ]
     | bb1 = bb1
       [ bb1 = {[@expl:inferred invariant: unchanged value] _old = bitvec.final}
         {[@expl:loop invariant] forall j: UInt64BW.t. 0 <= UInt64BW.t'int j /\ UInt64BW.t'int j < UInt64BW.t'int i
           -> (UInt64BW.bw_and bitvec.current (UInt64BW.shl (1: UInt64BW.t) j) <> (0: UInt64BW.t))
-          = Seq.get (Slice64.view boolvec) (UInt64BW.t'int j)}
+          = Seq.get (Slice64BW.view boolvec) (UInt64BW.t'int j)}
         (! s0)
         [ s0 = len_bool {boolvec} (fun (_x: UInt64BW.t) -> [ &_17 <- _x ] s1)
         | s1 = [ &_15 <- UInt64BW.lt i _17 ] s2
         | s2 = any [ br0 -> {_15 = false} (! bb9) | br1 -> {_15} (! bb4) ] ]
         [ bb4 = s0
           [ s0 = [ &_21 <- i ] s1
-          | s1 = [ &_22 <- Slice64OpsBW.length boolvec ] s2
+          | s1 = [ &_22 <- Slice64BW.length boolvec ] s2
           | s2 = [ &_23 <- UInt64BW.lt _21 _22 ] s3
           | s3 = {[@expl:index in bounds] _23} s4
-          | s4 = Slice64OpsBW.get <bool> {boolvec} {_21} (fun (r: bool) -> [ &_20 <- r ] s5)
+          | s4 = Slice64BW.get <bool> {boolvec} {_21} (fun (r: bool) -> [ &_20 <- r ] s5)
           | s5 = any [ br0 -> {_20 = false} (! bb7) | br1 -> {_20} (! bb6) ] ]
         | bb6 = s0
           [ s0 = UInt64BW.shl {(1: UInt64BW.t)} {UInt64BW.to_BV256 i} (fun (_x: UInt64BW.t) -> [ &_24 <- _x ] s1)
@@ -139,7 +137,7 @@ module M_boolvec_to_bitvec
         | bb8 = s0 [ s0 = UInt64BW.add {i} {(1: UInt64BW.t)} (fun (_x: UInt64BW.t) -> [ &i <- _x ] s1) | s1 = bb1 ] ] ]
     | bb9 = s0 [ s0 = -{resolve_refmut_u64 bitvec}- s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
-    | & boolvec: Slice64.slice bool = boolvec
+    | & boolvec: Slice64BW.slice bool = boolvec
     | & bitvec: MutBorrow.t UInt64BW.t = bitvec
     | & i: UInt64BW.t = Any.any_l ()
     | & _15: bool = Any.any_l ()
@@ -154,8 +152,8 @@ module M_boolvec_to_bitvec
     | & _old: UInt64BW.t = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:boolvec_to_bitvec ensures] forall i: UInt64BW.t. 0
             <= UInt64BW.t'int i
-          /\ UInt64BW.t'int i < Seq.length (Slice64.view boolvec)
+          /\ UInt64BW.t'int i < Seq.length (Slice64BW.view boolvec)
         -> (UInt64BW.bw_and bitvec.final (UInt64BW.shl (1: UInt64BW.t) i) <> (0: UInt64BW.t))
-        = Seq.get (Slice64.view boolvec) (UInt64BW.t'int i)}
+        = Seq.get (Slice64BW.view boolvec) (UInt64BW.t'int i)}
       (! return {result}) ]
 end

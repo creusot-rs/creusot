@@ -54,7 +54,6 @@ pub enum PreMod {
     Bool,
     MutBor,
     Slice,
-    SliceOps,
     Opaque,
     Any,
 }
@@ -175,17 +174,12 @@ pub(crate) trait Namer<'tcx> {
             (PreMod::Opaque, _) => &["creusot", "prelude", "Opaque"],
             (PreMod::Bool, _) => &["creusot", "prelude", "Bool"],
             (PreMod::MutBor, _) => &["creusot", "prelude", "MutBorrow"],
-            (PreMod::Slice, _) => {
+            (PreMod::Slice, false) => {
                 &["creusot", "slice", &format!("Slice{}", self.tcx().sess.target.pointer_width)]
             }
-            (PreMod::SliceOps, false) => {
-                &["creusot", "slice", &format!("Slice{}Ops", self.tcx().sess.target.pointer_width)]
+            (PreMod::Slice, true) => {
+                &["creusot", "slice", &format!("Slice{}BW", self.tcx().sess.target.pointer_width)]
             }
-            (PreMod::SliceOps, true) => &[
-                "creusot",
-                "slice",
-                &format!("Slice{}OpsBW", self.tcx().sess.target.pointer_width),
-            ],
             (PreMod::Any, _) => &["creusot", "prelude", "Any"],
         };
         name.into_iter().copied().map(Symbol::intern).collect()
