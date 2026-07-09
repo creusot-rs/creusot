@@ -37,8 +37,8 @@
 use crate::{
     backend::is_trusted_item,
     contracts_items::{
-        has_variant_clause, is_check_terminates, is_logic, is_loop_variant, is_no_translate,
-        is_pearlite, is_trusted_ghost, is_trusted_terminates,
+        has_variant_clause, is_logic, is_loop_variant, is_no_translate, is_pearlite,
+        is_trusted_ghost, is_trusted_terminates,
     },
     ctx::{HasTyCtxt as _, TranslationCtx},
     resolution::{ImplSelection, ImplSource_, TraitResolved, select_trait_impl},

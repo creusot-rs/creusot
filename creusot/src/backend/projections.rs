@@ -213,7 +213,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                     let result = Ident::fresh_local("r");
                     is.push(IntermediateStmt::Call(
                         Box::new([Param::Term(result, elt_ty1.clone())]),
-                        Name::Global(names.in_pre(PreMod::SliceOps, "get")),
+                        Name::Global(names.in_pre(PreMod::Slice, "get")),
                         Box::new([Arg::Ty(elt_ty1), Arg::Term(foc), Arg::Term(Exp::var(ix))]),
                         Some(span),
                     ));
@@ -226,7 +226,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                     let foc = focus1.call(is);
                     is.push(IntermediateStmt::Call(
                         Box::new([Param::Term(out, ty)]),
-                        Name::Global(names.in_pre(PreMod::SliceOps, "set")),
+                        Name::Global(names.in_pre(PreMod::Slice, "set")),
                         Box::new([
                             Arg::Ty(elt_ty),
                             Arg::Term(foc),
