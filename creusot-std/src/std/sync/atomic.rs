@@ -110,13 +110,12 @@ macro_rules! impl_atomic {
 
             #[doc = "Clear the old unusable history, thanks to the full ownership of the atomic."]
             #[requires(*self == *own.ward())]
-            #[ensures(**sync_view <= ^sync_view)]
-            #[ensures(match (*own).val().get(self.get_timestamp(^sync_view)) {
-                Some((v, _)) => (^own).val() == FMap::singleton(self.get_timestamp(^sync_view), (v, **sync_view)),
+            #[ensures(match (*own).val().get(self.get_timestamp(*result)) {
+                Some((v, _)) => (^own).val() == FMap::singleton(self.get_timestamp(*result), (v, *result)),
                 None => false
             })]
             #[ensures(forall<t> match own.val().get(t) {
-                Some((_, view)) => t <= self.get_timestamp(^sync_view) && view <= ^sync_view,
+                Some((_, view)) => t <= self.get_timestamp(*result) && view <= *result ,
                 None => true
             })]
             #[ensures(*self == ^self)]
@@ -124,7 +123,9 @@ macro_rules! impl_atomic {
             #[trusted]
             #[check(terminates)]
             #[allow(unused_variables)]
-            pub fn refresh(&mut self, own: Ghost<&mut Perm<$atomic_type $(< $T >)?>>, sync_view: Ghost<&mut SyncView>) {}
+            pub fn refresh(&mut self, own: Ghost<&mut Perm<$atomic_type $(< $T >)?>>) -> Ghost<SyncView> {
+                 Ghost::conjure()
+            }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange`].")]
             #[doc = ""]

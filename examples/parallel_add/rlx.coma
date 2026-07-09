@@ -35,12 +35,7 @@ module M_parallel_add
   
   type t_FMap_Int_tup2_i32_SyncView
   
-  function val_unsized_AtomicI32 (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView
-  
-  function val_AtomicI32 [@inline:trivial] (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView =
-    val_unsized_AtomicI32 self
-  
-  meta "rewrite_def" function val_AtomicI32
+  function val_AtomicI32 (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView
   
   type tup2_i32_SyncView = { f0'0: Int32.t; f1'0: t_SyncView }
   
@@ -124,8 +119,7 @@ module M_parallel_add
       /\ ([@stop_split] [@expl:new ensures #0] val_AtomicI32 result.f1
         = singleton_Int (get_timestamp_AtomicI32 result.f0 (fin_Ghost_refmut_SyncView sync_view)) { f0'0 = val';
                                                                                                     f1'0 = fin_Ghost_refmut_SyncView sync_view })
-      /\ ([@stop_split] [@expl:new ensures #1] le_log_SyncView sync_view.current (fin_Ghost_refmut_SyncView sync_view))
-      /\ ([@stop_split] [@expl:new ensures #2] ward_AtomicI32 result.f1 = result.f0)}
+      /\ ([@stop_split] [@expl:new ensures #1] ward_AtomicI32 result.f1 = result.f0)}
       (! return {result}) ]
   
   type t_Authority_Option_Excl_bool
@@ -135,8 +129,8 @@ module M_parallel_add
   predicate inv_Authority_Option_Excl_bool (_1: t_Authority_Option_Excl_bool)
   
   axiom inv_axiom:
-    forall _1: t_Authority_Option_Excl_bool [inv_Authority_Option_Excl_bool _1]. inv_Authority_Option_Excl_bool _1
-      -> invariant_Authority_Option_Excl_bool _1
+    forall x: t_Authority_Option_Excl_bool [inv_Authority_Option_Excl_bool x]. inv_Authority_Option_Excl_bool x
+      -> invariant_Authority_Option_Excl_bool x
   
   predicate invariant_Ghost_Authority_Option_Excl_bool [@inline:trivial] (self: t_Authority_Option_Excl_bool) =
     inv_Authority_Option_Excl_bool self
@@ -355,54 +349,56 @@ module M_parallel_add
   
   meta "rewrite_def" predicate premise_Snapshot_tup2_Option_Excl_bool_Option_Excl_bool
   
-  predicate incl_Excl_bool (self: t_Excl_bool) (other: t_Excl_bool) = false
+  function factor_Excl_bool (self: t_Excl_bool) (factor: t_Excl_bool) : t_Option_Excl_bool = None'0
   
-  axiom incl_Excl_bool_spec:
-    forall self: t_Excl_bool, other: t_Excl_bool [incl_Excl_bool self other]. incl_Excl_bool self other
-      = (exists factor: t_Excl_bool. op_Excl_bool self factor = Some'0 other)
+  axiom factor_Excl_bool_spec:
+    forall self: t_Excl_bool, factor: t_Excl_bool [factor_Excl_bool self factor]. match factor_Excl_bool self factor with
+        | Some'0 c -> op_Excl_bool factor c = Some'0 self
+        | None'0 -> forall c: t_Excl_bool. op_Excl_bool factor c <> Some'0 self
+        end
   
-  function incl_transitive_Excl_bool (a: t_Excl_bool) (b: t_Excl_bool) (c: t_Excl_bool) : ()
-  
-  axiom incl_transitive_Excl_bool_spec: forall a: t_Excl_bool, b: t_Excl_bool, c: t_Excl_bool. incl_Excl_bool a b
-      -> incl_Excl_bool b c -> incl_Excl_bool a c
-  
-  function associative_some_Excl_bool (a: t_Excl_bool) (b: t_Excl_bool) (c: t_Excl_bool) (ab: t_Excl_bool) (bc: t_Excl_bool) : ()
-  
-  axiom associative_some_Excl_bool_spec:
-    forall a: t_Excl_bool, b: t_Excl_bool, c: t_Excl_bool, ab: t_Excl_bool, bc: t_Excl_bool. op_Excl_bool a b
-        = Some'0 ab -> op_Excl_bool b c = Some'0 bc -> op_Excl_bool a bc = op_Excl_bool ab c
-  
-  function associative_none_Excl_bool (a: t_Excl_bool) (b: t_Excl_bool) (c: t_Excl_bool) (bc: t_Excl_bool) : ()
-  
-  axiom associative_none_Excl_bool_spec:
-    forall a: t_Excl_bool, b: t_Excl_bool, c: t_Excl_bool, bc: t_Excl_bool. op_Excl_bool a b = None'0
-      -> op_Excl_bool b c = Some'0 bc -> op_Excl_bool a bc = None'0
-  
-  function incl_op_Excl_bool (self: t_Excl_bool) (other: t_Excl_bool) (comb: t_Excl_bool) : ()
-  
-  axiom incl_op_Excl_bool_spec: forall self: t_Excl_bool, other: t_Excl_bool, comb: t_Excl_bool. op_Excl_bool self other
-        = Some'0 comb -> incl_Excl_bool self comb
-  
-  predicate eq_Excl_bool [@inline:trivial] (self: t_Excl_bool) (other: t_Excl_bool) = self = other
-  
-  meta "rewrite_def" predicate eq_Excl_bool
-  
-  axiom eq_Excl_bool_spec:
-    forall self: t_Excl_bool, other: t_Excl_bool [eq_Excl_bool self other]. eq_Excl_bool self other = (self = other)
-  
-  predicate incl_eq_Excl_bool (self: t_Excl_bool) (other: t_Excl_bool) =
-    eq_Excl_bool self other \/ incl_Excl_bool self other
-  
-  predicate incl_Option_Excl_bool (self: t_Option_Excl_bool) (other: t_Option_Excl_bool) =
-    match { f0'2 = self; f1'2 = other } with
-      | {f0'2 = None'0} -> true
-      | {f1'2 = None'0} -> false
-      | {f0'2 = Some'0 x; f1'2 = Some'0 y} -> incl_eq_Excl_bool x y
+  function factor_Option_Excl_bool (self: t_Option_Excl_bool) (factor: t_Option_Excl_bool) : t_Option_Option_Excl_bool =
+    match { f0'2 = self; f1'2 = factor } with
+      | {f0'2 = x; f1'2 = None'0} -> Some'1 x
+      | {f0'2 = None'0} -> None'1
+      | {f0'2 = Some'0 x; f1'2 = Some'0 y} -> match factor_Excl_bool x y with
+        | Some'0 z -> Some'1 (Some'0 z)
+        | None'0 -> if x = y then Some'1 (None'0) else None'1
+        end
       end
   
-  axiom incl_Option_Excl_bool_spec:
-    forall self: t_Option_Excl_bool, other: t_Option_Excl_bool [incl_Option_Excl_bool self other]. incl_Option_Excl_bool self other
-      = (exists factor: t_Option_Excl_bool. op_Option_Excl_bool self factor = Some'1 other)
+  axiom factor_Option_Excl_bool_spec:
+    forall self: t_Option_Excl_bool, factor: t_Option_Excl_bool [factor_Option_Excl_bool self factor]. match factor_Option_Excl_bool self factor with
+        | Some'1 c -> op_Option_Excl_bool factor c = Some'1 self
+        | None'1 -> forall c: t_Option_Excl_bool. op_Option_Excl_bool factor c <> Some'1 self
+        end
+  
+  predicate incl_Option_Excl_bool (self: t_Option_Excl_bool) (other: t_Option_Excl_bool) =
+    factor_Option_Excl_bool other self <> None'1
+  
+  function incl_transitive_Option_Excl_bool (a: t_Option_Excl_bool) (b: t_Option_Excl_bool) (c: t_Option_Excl_bool) : ()
+  
+  axiom incl_transitive_Option_Excl_bool_spec:
+    forall a: t_Option_Excl_bool, b: t_Option_Excl_bool, c: t_Option_Excl_bool. incl_Option_Excl_bool a b
+      -> incl_Option_Excl_bool b c -> incl_Option_Excl_bool a c
+  
+  function associative_some_Option_Excl_bool (a: t_Option_Excl_bool) (b: t_Option_Excl_bool) (c: t_Option_Excl_bool) (ab: t_Option_Excl_bool) (bc: t_Option_Excl_bool) : ()
+  
+  axiom associative_some_Option_Excl_bool_spec:
+    forall a: t_Option_Excl_bool, b: t_Option_Excl_bool, c: t_Option_Excl_bool, ab: t_Option_Excl_bool, bc: t_Option_Excl_bool. op_Option_Excl_bool a b
+        = Some'1 ab -> op_Option_Excl_bool b c = Some'1 bc -> op_Option_Excl_bool a bc = op_Option_Excl_bool ab c
+  
+  function associative_none_Option_Excl_bool (a: t_Option_Excl_bool) (b: t_Option_Excl_bool) (c: t_Option_Excl_bool) (bc: t_Option_Excl_bool) : ()
+  
+  axiom associative_none_Option_Excl_bool_spec:
+    forall a: t_Option_Excl_bool, b: t_Option_Excl_bool, c: t_Option_Excl_bool, bc: t_Option_Excl_bool. op_Option_Excl_bool a b
+        = None'1 -> op_Option_Excl_bool b c = Some'1 bc -> op_Option_Excl_bool a bc = None'1
+  
+  function incl_op_Option_Excl_bool (self: t_Option_Excl_bool) (other: t_Option_Excl_bool) (comb: t_Option_Excl_bool) : ()
+  
+  axiom incl_op_Option_Excl_bool_spec:
+    forall self: t_Option_Excl_bool, other: t_Option_Excl_bool, comb: t_Option_Excl_bool. op_Option_Excl_bool self other
+        = Some'1 comb -> incl_Option_Excl_bool self comb
   
   function update_Snapshot_tup2_Option_Excl_bool_Option_Excl_bool [@inline:trivial] (self: tup2_Option_Excl_bool_Option_Excl_bool) (_2: t_Option_Excl_bool) (_3: t_Option_Excl_bool) : tup2_Option_Excl_bool_Option_Excl_bool
    = self
@@ -467,12 +463,8 @@ module M_parallel_add
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  predicate inv_Int [@inline:trivial] (_1: int) = true
-  
-  meta "rewrite_def" predicate inv_Int
-  
-  let into_ghost_Int (self: int) (return (x: int)) = {[@stop_split] [@expl:into_ghost requires] inv_Int self}
-    any [ return (result: int) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+  let into_ghost_Int (self: int) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
   
   let deref_Ghost_Int (self: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
@@ -486,8 +478,8 @@ module M_parallel_add
   predicate inv_ParallelAddAtomicInv (_1: t_ParallelAddAtomicInv)
   
   axiom inv_axiom'0 [@rewrite]:
-    forall _1: t_ParallelAddAtomicInv [inv_ParallelAddAtomicInv _1]. inv_ParallelAddAtomicInv _1
-      = (inv_Authority_Option_Excl_bool _1.auth1 /\ inv_Authority_Option_Excl_bool _1.auth2)
+    forall x: t_ParallelAddAtomicInv [inv_ParallelAddAtomicInv x]. inv_ParallelAddAtomicInv x
+      = (inv_Authority_Option_Excl_bool x.auth1 /\ inv_Authority_Option_Excl_bool x.auth2)
   
   predicate invariant_Ghost_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) =
     inv_ParallelAddAtomicInv self

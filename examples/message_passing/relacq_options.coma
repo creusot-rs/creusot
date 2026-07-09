@@ -34,12 +34,7 @@ module M_message_passing
   
   type t_FMap_Int_tup2_bool_SyncView
   
-  function val_unsized_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
-  
-  function val_AtomicBool [@inline:trivial] (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView =
-    val_unsized_AtomicBool self
-  
-  meta "rewrite_def" function val_AtomicBool
+  function val_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
   
   type tup2_bool_SyncView = { f0'0: bool; f1'0: t_SyncView }
   
@@ -123,8 +118,7 @@ module M_message_passing
       /\ ([@stop_split] [@expl:new ensures #0] val_AtomicBool result.f1
         = singleton_Int (get_timestamp_AtomicBool result.f0 (fin_Ghost_refmut_SyncView sync_view)) { f0'0 = val';
                                                                                                      f1'0 = fin_Ghost_refmut_SyncView sync_view })
-      /\ ([@stop_split] [@expl:new ensures #1] le_log_SyncView sync_view.current (fin_Ghost_refmut_SyncView sync_view))
-      /\ ([@stop_split] [@expl:new ensures #2] ward_AtomicBool result.f1 = result.f0)}
+      /\ ([@stop_split] [@expl:new ensures #1] ward_AtomicBool result.f1 = result.f0)}
       (! return {result}) ]
   
   type t_PCell_i32
@@ -135,11 +129,7 @@ module M_message_passing
   
   function ward_PCell_i32 (self: t_Perm_PCell_i32) : t_PCell_i32
   
-  function val_unsized_PCell_i32 (self: t_Perm_PCell_i32) : Int32.t
-  
-  function val_PCell_i32 [@inline:trivial] (self: t_Perm_PCell_i32) : Int32.t = val_unsized_PCell_i32 self
-  
-  meta "rewrite_def" function val_PCell_i32
+  function val_PermCell_i32 (self: t_Perm_PermCell_i32) : Int32.t
   
   let new_i32 (value: Int32.t) (return (x: tup2_PCell_i32_Ghost_Perm_PCell_i32)) = any
     [ return (result: tup2_PCell_i32_Ghost_Perm_PCell_i32) ->
@@ -239,8 +229,8 @@ module M_message_passing
   predicate inv_Option_AtView_Perm_PCell_i32 (_1: t_Option_AtView_Perm_PCell_i32)
   
   axiom inv_axiom [@rewrite]:
-    forall _1: t_Option_AtView_Perm_PCell_i32 [inv_Option_AtView_Perm_PCell_i32 _1]. inv_Option_AtView_Perm_PCell_i32 _1
-      = match _1 with
+    forall x: t_Option_AtView_Perm_PermCell_i32 [inv_Option_AtView_Perm_PermCell_i32 x]. inv_Option_AtView_Perm_PermCell_i32 x
+      = match x with
         | None'1 -> true
         | Some'1 f0'4 -> inv_AtView_Perm_PCell_i32 f0'4
         end
@@ -248,8 +238,8 @@ module M_message_passing
   predicate inv_MessagePassingAtomicInv (_1: t_MessagePassingAtomicInv)
   
   axiom inv_axiom'0 [@rewrite]:
-    forall _1: t_MessagePassingAtomicInv [inv_MessagePassingAtomicInv _1]. inv_MessagePassingAtomicInv _1
-      = inv_Option_AtView_Perm_PCell_i32 _1.at_view
+    forall x: t_MessagePassingAtomicInv [inv_MessagePassingAtomicInv x]. inv_MessagePassingAtomicInv x
+      = inv_Option_AtView_Perm_PermCell_i32 x.at_view
   
   predicate invariant_Ghost_MessagePassingAtomicInv [@inline:trivial] (self: t_MessagePassingAtomicInv) =
     inv_MessagePassingAtomicInv self
@@ -370,10 +360,10 @@ module M_message_passing
     any
     [ return (result: MutBorrow.t Int32.t) ->
     {[@stop_split] [@expl:borrow_mut_i32 ensures] ([@stop_split] [@expl:borrow_mut ensures #0] self
-        = ward_PCell_i32 (fin_Ghost_refmut_Perm_PCell_i32 perm))
-      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = val_unsized_PCell_i32 perm.current)
+        = ward_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm))
+      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = val_PermCell_i32 perm.current)
       /\ ([@stop_split] [@expl:borrow_mut ensures #2] result.final
-      = val_unsized_PCell_i32 (fin_Ghost_refmut_Perm_PCell_i32 perm))}
+      = val_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm))}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
@@ -478,8 +468,8 @@ module M_message_passing
   predicate resolve_Option_AtView_Perm_PCell_i32 (_1: t_Option_AtView_Perm_PCell_i32)
   
   axiom resolve_axiom [@rewrite]:
-    forall _1: t_Option_AtView_Perm_PCell_i32 [resolve_Option_AtView_Perm_PCell_i32 _1]. resolve_Option_AtView_Perm_PCell_i32 _1
-      = match _1 with
+    forall x: t_Option_AtView_Perm_PermCell_i32 [resolve_Option_AtView_Perm_PermCell_i32 x]. resolve_Option_AtView_Perm_PermCell_i32 x
+      = match x with
         | None'1 -> true
         | Some'1 x0 -> resolve_AtView_Perm_PCell_i32 x0
         end
@@ -953,12 +943,8 @@ module M_message_passing
   
   predicate val_load_AtomicBool'0 (self: t_Committer_AtomicBool_bool_Acquire_None)
   
-  predicate inv_bool [@inline:trivial] (_1: bool) = true
-  
-  meta "rewrite_def" predicate inv_bool
-  
-  let into_ghost_bool (self: bool) (return (x: bool)) = {[@stop_split] [@expl:into_ghost requires] inv_bool self}
-    any [ return (result: bool) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+  let into_ghost_bool (self: bool) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
   
   let deref_Ghost_bool (self: bool) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
@@ -999,22 +985,23 @@ module M_message_passing
   
   meta "rewrite_def" predicate inv_refmut_Option_AtView_Perm_PCell_i32
   
-  let take_AtView_Perm_PCell_i32 (self: MutBorrow.t t_Option_AtView_Perm_PCell_i32)
-    (return (x: t_Option_AtView_Perm_PCell_i32)) =
-  {[@stop_split] [@expl:take 'self' type invariant] inv_refmut_Option_AtView_Perm_PCell_i32 self}
+  let take_AtView_Perm_PermCell_i32 (self_: MutBorrow.t t_Option_AtView_Perm_PermCell_i32)
+    (return (x: t_Option_AtView_Perm_PermCell_i32)) =
+  {[@stop_split] [@expl:take 'self_' type invariant] inv_refmut_Option_AtView_Perm_PermCell_i32 self_}
     any
-    [ return (result: t_Option_AtView_Perm_PCell_i32) ->
-    {[@stop_split] [@expl:take_AtView_Perm_PCell_i32 ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_AtView_Perm_PCell_i32 result)
-      /\ ([@stop_split] [@expl:take ensures] result = self.current /\ self.final = None'1)}
+    [ return (result: t_Option_AtView_Perm_PermCell_i32) ->
+    {[@stop_split] [@expl:take_AtView_Perm_PermCell_i32 ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_AtView_Perm_PermCell_i32 result)
+      /\ ([@stop_split] [@expl:take ensures] result = self_.current /\ self_.final = None'1)}
       (! return {result}) ]
   
-  let unwrap_AtView_Perm_PCell_i32 (self: t_Option_AtView_Perm_PCell_i32) (return (x: t_AtView_Perm_PCell_i32)) =
-  {[@stop_split] [@expl:unwrap_AtView_Perm_PCell_i32 requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_AtView_Perm_PCell_i32 self)
-    /\ ([@stop_split] [@expl:unwrap requires] self <> None'1)}
+  let unwrap_AtView_Perm_PermCell_i32 (self_: t_Option_AtView_Perm_PermCell_i32)
+    (return (x: t_AtView_Perm_PermCell_i32)) =
+  {[@stop_split] [@expl:unwrap_AtView_Perm_PermCell_i32 requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_AtView_Perm_PermCell_i32 self_)
+    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None'1)}
     any
-    [ return (result: t_AtView_Perm_PCell_i32) ->
-    {[@stop_split] [@expl:unwrap_AtView_Perm_PCell_i32 ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_AtView_Perm_PCell_i32 result)
-      /\ ([@stop_split] [@expl:unwrap ensures] Some'1 result = self)}
+    [ return (result: t_AtView_Perm_PermCell_i32) ->
+    {[@stop_split] [@expl:unwrap_AtView_Perm_PermCell_i32 ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_AtView_Perm_PermCell_i32 result)
+      /\ ([@stop_split] [@expl:unwrap ensures] Some'1 result = self_)}
       (! return {result}) ]
   
   let sync_Perm_PCell_i32 (self: t_AtView_Perm_PCell_i32) (sync_view: t_SyncView) (return (x: t_Perm_PCell_i32)) =
@@ -1324,18 +1311,18 @@ module M_message_passing
   
   type t_Option_ref_Perm_PCell_i32 = None'4 | Some'4 t_Perm_PCell_i32
   
-  let as_ref_Perm_PCell_i32 (self: t_Option_Perm_PCell_i32) (return (x: t_Option_ref_Perm_PCell_i32)) = any
-    [ return (result: t_Option_ref_Perm_PCell_i32) ->
-    {[@stop_split] [@expl:as_ref_Perm_PCell_i32 ensures] ([@stop_split] [@expl:as_ref ensures #0] self = None'3
+  let as_ref_Perm_PermCell_i32 (self_: t_Option_Perm_PermCell_i32) (return (x: t_Option_ref_Perm_PermCell_i32)) = any
+    [ return (result: t_Option_ref_Perm_PermCell_i32) ->
+    {[@stop_split] [@expl:as_ref_Perm_PermCell_i32 ensures] ([@stop_split] [@expl:as_ref ensures #0] self_ = None'3
         -> result = None'4)
-      /\ ([@stop_split] [@expl:as_ref ensures #1] self = None'3
-      \/ (exists r: t_Perm_PCell_i32. result = Some'4 r /\ self = Some'3 r))}
+      /\ ([@stop_split] [@expl:as_ref ensures #1] self_ = None'3
+      \/ (exists r: t_Perm_PermCell_i32. result = Some'4 r /\ self_ = Some'3 r))}
       (! return {result}) ]
   
-  let unwrap_ref_Perm_PCell_i32 (self: t_Option_ref_Perm_PCell_i32) (return (x: t_Perm_PCell_i32)) =
-  {[@stop_split] [@expl:unwrap requires] self <> None'4}
+  let unwrap_ref_Perm_PermCell_i32 (self_: t_Option_ref_Perm_PermCell_i32) (return (x: t_Perm_PermCell_i32)) =
+  {[@stop_split] [@expl:unwrap requires] self_ <> None'4}
     any
-    [ return (result: t_Perm_PCell_i32) -> {[@stop_split] [@expl:unwrap ensures] Some'4 result = self}
+    [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:unwrap ensures] Some'4 result = self_}
       (! return {result}) ]
   
   let new_ref_Perm_PCell_i32 (x: t_Perm_PCell_i32) (return (x'0: t_Perm_PCell_i32)) = any
