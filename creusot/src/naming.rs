@@ -364,5 +364,6 @@ pub mod name {
         seq_get => ["Seq", "get"],
         seq_length => ["Seq", "length"],
         seq_create => ["Seq", "create"],
+        seq_empty => ["Seq", "empty"],
     }
 }
