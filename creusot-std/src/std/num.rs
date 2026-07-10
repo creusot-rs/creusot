@@ -3,8 +3,7 @@ use crate::{
     logic::ops::{AddLogic, MulLogic, NegLogic, NthBitLogic, SubLogic},
     prelude::*,
 };
-// Resolve links like [`i8::add`] in the generated documentation
-#[cfg(doc)]
+#[cfg(creusot)]
 use core::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
@@ -399,7 +398,7 @@ macro_rules! spec_impl_common {
     };
     (@ $op_trait:ident, $op_method:ident, $op:tt, $type:ty, $lhs:ty, $rhs:ty) => {
         extern_spec! {
-            impl core::ops::$op_trait<$rhs> for $lhs {
+            impl $op_trait<$rhs> for $lhs {
                 #[requires($type::MIN@ <= self@ $op rhs@ && self@ $op rhs@ <= $type::MAX@)]
                 #[ensures(result@ == self@ $op rhs@)]
                 fn $op_method(self, rhs: $rhs) -> $type {
@@ -410,7 +409,7 @@ macro_rules! spec_impl_common {
     };
     (@assign $op_assign_trait:ident, $op_assign_method:ident, $op_assign:tt, $op:tt, $type:ty, $rhs:ty) => {
         extern_spec! {
-            impl core::ops::$op_assign_trait<$rhs> for $type {
+            impl $op_assign_trait<$rhs> for $type {
                 #[requires($type::MIN@ <= self@ $op rhs@ && self@ $op rhs@ <= $type::MAX@)]
                 #[ensures((^self)@ == self@ $op rhs@)]
                 fn $op_assign_method(&mut self, rhs: $rhs) {
@@ -436,7 +435,7 @@ macro_rules! spec_div_rem {
     };
     (@ $divrem_trait:ident, $divrem_method:ident, $op:tt, $type:ty, $lhs:ty, $rhs:ty) => {
         extern_spec! {
-            impl core::ops::$divrem_trait<$rhs> for $lhs {
+            impl $divrem_trait<$rhs> for $lhs {
                 #[requires(rhs@ != 0)]
                 #[requires(!(self@ == $type::MIN@ && rhs@ == -1))]
                 #[ensures(result@ == self@ $op rhs@)]
@@ -452,7 +451,7 @@ macro_rules! spec_div_rem {
     };
     (@assign $divrem_assign_trait:ident, $divrem_assign_method:ident, $op_assign:tt, $op:tt, $type:ty, $rhs:ty) => {
         extern_spec! {
-            impl core::ops::$divrem_assign_trait<$rhs> for $type {
+            impl $divrem_assign_trait<$rhs> for $type {
                 #[requires(rhs@ != 0)]
                 #[requires(!(*self == $type::MIN && rhs@ == -1))]
                 #[ensures((^self)@ == self@ $op rhs@)]
@@ -472,37 +471,37 @@ macro_rules! spec_bits {
     };
     ($type:ty, $op:tt, $tr:ident, $f:ident, $tr_assign:ident, $f_assign: ident) => {
         extern_spec! {
-            impl core::ops::$tr for $type {
+            impl $tr for $type {
                 #[check(ghost)]
                 #[ensures(result == self $op rhs)]
                 fn $f(self, rhs: $type) -> $type;
             }
 
-            impl core::ops::$tr for &$type {
+            impl $tr for &$type {
                 #[check(ghost)]
                 #[ensures(result == *self $op *rhs)]
                 fn $f(self, rhs: &$type) -> $type;
             }
 
-            impl core::ops::$tr<&$type> for $type {
+            impl $tr<&$type> for $type {
                 #[check(ghost)]
                 #[ensures(result == self $op *rhs)]
                 fn $f(self, rhs: &$type) -> $type;
             }
 
-            impl core::ops::$tr<$type> for &$type {
+            impl $tr<$type> for &$type {
                 #[check(ghost)]
                 #[ensures(result == *self $op rhs)]
                 fn $f(self, rhs: $type) -> $type;
             }
 
-            impl core::ops::$tr_assign for $type {
+            impl $tr_assign for $type {
                 #[check(ghost)]
                 #[ensures(^self == *self $op rhs)]
                 fn $f_assign(&mut self, rhs: $type);
             }
 
-            impl core::ops::$tr_assign<&$type> for $type {
+            impl $tr_assign<&$type> for $type {
                 #[check(ghost)]
                 #[ensures(^self == *self $op *rhs)]
                 fn $f_assign(&mut self, rhs: &$type);
@@ -521,37 +520,37 @@ macro_rules! spec_shifts {
     };
     ($type:ty, $rhs:ty, $op:tt, $tr:ident, $f:ident, $tr_assign:ident, $f_assign:ident) => {
         extern_spec! {
-            impl core::ops::$tr<$rhs> for $type {
+            impl $tr<$rhs> for $type {
                 #[requires((0usize as $rhs) <= rhs && rhs < $type::BITS as $rhs)]
                 #[ensures(result == self $op rhs)]
                 fn $f(self, rhs: $rhs) -> $type;
             }
 
-            impl core::ops::$tr<&$rhs> for $type {
+            impl $tr<&$rhs> for $type {
                 #[requires((0usize as $rhs) <= *rhs && *rhs < $type::BITS as $rhs)]
                 #[ensures(result == self $op *rhs)]
                 fn $f(self, rhs: &$rhs) -> $type;
             }
 
-            impl core::ops::$tr<$rhs> for &$type {
+            impl $tr<$rhs> for &$type {
                 #[requires((0usize as $rhs) <= rhs && rhs < $type::BITS as $rhs)]
                 #[ensures(result == *self $op rhs)]
                 fn $f(self, rhs: $rhs) -> $type;
             }
 
-            impl core::ops::$tr<&$rhs> for &$type {
+            impl $tr<&$rhs> for &$type {
                 #[requires((0usize as $rhs) <= *rhs && *rhs < $type::BITS as $rhs)]
                 #[ensures(result == *self $op *rhs)]
                 fn $f(self, rhs: &$rhs) -> $type;
             }
 
-            impl core::ops::$tr_assign<$rhs> for $type {
+            impl $tr_assign<$rhs> for $type {
                 #[requires((0usize as $rhs) <= rhs && rhs < $type::BITS as $rhs)]
                 #[ensures(^self == *self $op rhs)]
                 fn $f_assign(&mut self, rhs: $rhs);
             }
 
-            impl core::ops::$tr_assign<&$rhs> for $type {
+            impl $tr_assign<&$rhs> for $type {
                 #[requires((0usize as $rhs) <= *rhs && *rhs < $type::BITS as $rhs)]
                 #[ensures(^self == *self $op rhs)]
                 fn $f_assign(&mut self, rhs: &$rhs);
