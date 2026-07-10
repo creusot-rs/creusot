@@ -1,3 +1,333 @@
+module M_TEST_BYTES
+  use creusot.slice.Slice64
+  use creusot.int.UInt8
+  use seq.Seq
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  predicate inv_Seq_u8 [@inline:trivial] (_1: Seq.seq UInt8.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_u8
+  
+  predicate invariant_array_u8_10 (self: Slice64.array UInt8.t) =
+    inv_Seq_u8 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (10: UInt64.t)
+  
+  predicate inv_array_u8_10 [@inline:trivial] (_1: Slice64.array UInt8.t) = invariant_array_u8_10 _1
+  
+  meta "rewrite_def" predicate inv_array_u8_10
+  
+  predicate invariant_ref_array_u8_10 [@inline:trivial] (self: Slice64.array UInt8.t) = inv_array_u8_10 self
+  
+  meta "rewrite_def" predicate invariant_ref_array_u8_10
+  
+  predicate inv_ref_array_u8_10 [@inline:trivial] (_1: Slice64.array UInt8.t) = invariant_ref_array_u8_10 _1
+  
+  meta "rewrite_def" predicate inv_ref_array_u8_10
+  
+  constant const_TEST_BYTES : Slice64.array UInt8.t
+  
+  axiom const_TEST_BYTES_spec: inv_ref_array_u8_10 const_TEST_BYTES
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let const_TEST_BYTES_def (return (x: Slice64.array UInt8.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 =
+        [ &_ret <- Slice64.of_seq (Seq.create 10 [|(99: UInt8.t);(111: UInt8.t);(110: UInt8.t);(115: UInt8.t);(116: UInt8.t);(32: UInt8.t);(116: UInt8.t);(101: UInt8.t);(115: UInt8.t);(116: UInt8.t)|]) ]
+        s1
+      | s1 = return {_ret} ] ] [ & _ret: Slice64.array UInt8.t = Any.any_l () ])
+    [ return (result: Slice64.array UInt8.t) -> -{const_TEST_BYTES = result}-
+      {[@stop_split] [@expl:TEST_BYTES result type invariant] inv_ref_array_u8_10 result}
+      (! return {result}) ]
+end
+module M_bytes_as_array
+  use creusot.slice.Slice64
+  use creusot.int.UInt8
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let bytes_as_array (return (x: UInt8.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp: Slice64.array UInt8.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (65: UInt8.t)
+          /\ Seq.get __arr_temp.Slice64.elts 1 = (32: UInt8.t)
+          /\ Seq.get __arr_temp.Slice64.elts 2 = (116: UInt8.t)
+          /\ Seq.get __arr_temp.Slice64.elts 3 = (101: UInt8.t)
+          /\ Seq.get __arr_temp.Slice64.elts 4 = (115: UInt8.t)
+          /\ Seq.get __arr_temp.Slice64.elts 5 = (116: UInt8.t) /\ Seq.length __arr_temp.Slice64.elts = 6}-
+          [ &my_bytes <- __arr_temp ] s1) ]
+      | s1 = [ &_3 <- (3: UInt64.t) ] s2
+      | s2 = [ &_4 <- UInt64.lt _3 (6: UInt64.t) ] s3
+      | s3 = {[@expl:index in bounds] _4} s4
+      | s4 = Slice64.get <UInt8.t> {my_bytes} {_3} (fun (r: UInt8.t) -> [ &_ret <- r ] s5)
+      | s5 = return {_ret} ] ]
+    [ & _ret: UInt8.t = Any.any_l ()
+    | & my_bytes: Slice64.array UInt8.t = Any.any_l ()
+    | & _3: UInt64.t = Any.any_l ()
+    | & _4: bool = Any.any_l () ])
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:bytes_as_array ensures] result = (101: UInt8.t)}
+      (! return {result}) ]
+end
+module M_bytes_as_array_slice
+  use creusot.slice.Slice64
+  use creusot.int.UInt8
+  use creusot.prelude.Any
+  use creusot.int.UInt64
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let bytes_as_array_slice (return (x: UInt8.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = bb0'0
+        [ bb0'0 = s0'0
+          [ s0'0 = any
+            [ any_ (__arr_temp: Slice64.array UInt8.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (65: UInt8.t)
+              /\ Seq.get __arr_temp.Slice64.elts 1 = (32: UInt8.t)
+              /\ Seq.get __arr_temp.Slice64.elts 2 = (116: UInt8.t)
+              /\ Seq.get __arr_temp.Slice64.elts 3 = (101: UInt8.t)
+              /\ Seq.get __arr_temp.Slice64.elts 4 = (115: UInt8.t)
+              /\ Seq.get __arr_temp.Slice64.elts 5 = (116: UInt8.t) /\ Seq.length __arr_temp.Slice64.elts = 6}-
+              [ &_1 <- __arr_temp ] s1'0) ]
+          | s1'0 = [ &_ret'0 <- _1 ] s2'0
+          | s2'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: Slice64.array UInt8.t = Any.any_l () | & _1: Slice64.array UInt8.t = Any.any_l () ]
+        [ _const_ret (_const: Slice64.array UInt8.t) -> [ &_7 <- _const ] s1 ]
+      | s1 = [ &_3 <- _7 ] s2
+      | s2 = [ &my_bytes <- _3 ] s3
+      | s3 = [ &_5 <- (3: UInt64.t) ] s4
+      | s4 = [ &_6 <- UInt64.lt _5 (6: UInt64.t) ] s5
+      | s5 = {[@expl:index in bounds] _6} s6
+      | s6 = Slice64.get <UInt8.t> {my_bytes} {_5} (fun (r: UInt8.t) -> [ &_ret <- r ] s7)
+      | s7 = return {_ret} ] ]
+    [ & _ret: UInt8.t = Any.any_l ()
+    | & my_bytes: Slice64.array UInt8.t = Any.any_l ()
+    | & _3: Slice64.array UInt8.t = Any.any_l ()
+    | & _5: UInt64.t = Any.any_l ()
+    | & _6: bool = Any.any_l ()
+    | & _7: Slice64.array UInt8.t = Any.any_l () ])
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:bytes_as_array_slice ensures] result = (101: UInt8.t)}
+      (! return {result}) ]
+end
+module M_bytes_literal
+  use creusot.int.UInt8
+  use creusot.slice.Slice64
+  use creusot.prelude.Any
+  use seq.Seq
+  use creusot.int.UInt64
+  
+  predicate inv_Seq_u8 [@inline:trivial] (_1: Seq.seq UInt8.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_u8
+  
+  predicate invariant_array_u8_4 (self: Slice64.array UInt8.t) =
+    inv_Seq_u8 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (4: UInt64.t)
+  
+  predicate inv_array_u8_4 [@inline:trivial] (_1: Slice64.array UInt8.t) = invariant_array_u8_4 _1
+  
+  meta "rewrite_def" predicate inv_array_u8_4
+  
+  predicate invariant_ref_array_u8_4 [@inline:trivial] (self: Slice64.array UInt8.t) = inv_array_u8_4 self
+  
+  meta "rewrite_def" predicate invariant_ref_array_u8_4
+  
+  predicate inv_ref_array_u8_4 [@inline:trivial] (_1: Slice64.array UInt8.t) = invariant_ref_array_u8_4 _1
+  
+  meta "rewrite_def" predicate inv_ref_array_u8_4
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let bytes_literal (return (x: Slice64.array UInt8.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_ret <- Slice64.of_seq (Seq.create 4 [|(116: UInt8.t);(101: UInt8.t);(115: UInt8.t);(116: UInt8.t)|]) ]
+        s1
+      | s1 = return {_ret} ] ] [ & _ret: Slice64.array UInt8.t = Any.any_l () ])
+    [ return (result: Slice64.array UInt8.t) ->
+    {[@stop_split] [@expl:bytes_literal ensures] ([@stop_split] [@expl:bytes_literal result type invariant] inv_ref_array_u8_4 result)
+      /\ ([@stop_split] [@expl:bytes_literal ensures #0] Seq.length (Slice64.view result) = 4)
+      /\ ([@stop_split] [@expl:bytes_literal ensures #1] Slice64.view result
+      = Seq.create 4 [|(116: UInt8.t);(101: UInt8.t);(115: UInt8.t);(116: UInt8.t)|])}
+      (! return {result}) ]
+end
+module M_bytes_literal_bw
+  use creusot.int.UInt8BW
+  use creusot.slice.Slice64BW
+  use creusot.int.UInt64BW
+  use creusot.prelude.Any
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let bytes_literal_bw (return (x: UInt8BW.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 =
+        [ &_3 <- Slice64BW.of_seq (Seq.create 6 [|(65: UInt8BW.t);(32: UInt8BW.t);(116: UInt8BW.t);(101: UInt8BW.t);(115: UInt8BW.t);(116: UInt8BW.t)|]) ]
+        s1
+      | s1 = [ &my_bytes <- _3 ] s2
+      | s2 = [ &_4 <- (3: UInt64BW.t) ] s3
+      | s3 = [ &_5 <- UInt64BW.lt _4 (6: UInt64BW.t) ] s4
+      | s4 = {[@expl:index in bounds] _5} s5
+      | s5 = Slice64BW.get <UInt8BW.t> {my_bytes} {_4} (fun (r: UInt8BW.t) -> [ &_ret <- r ] s6)
+      | s6 = return {_ret} ] ]
+    [ & _ret: UInt8BW.t = Any.any_l ()
+    | & my_bytes: Slice64BW.array UInt8BW.t = Any.any_l ()
+    | & _3: Slice64BW.array UInt8BW.t = Any.any_l ()
+    | & _4: UInt64BW.t = Any.any_l ()
+    | & _5: bool = Any.any_l () ])
+    [ return (result: UInt8BW.t) -> {[@stop_split] [@expl:bytes_literal_bw ensures] result = (101: UInt8BW.t)}
+      (! return {result}) ]
+end
+module M_bytes_literal_empty
+  use creusot.slice.Slice64
+  use creusot.int.UInt8
+  use creusot.prelude.Any
+  use seq.Seq
+  use creusot.int.UInt64
+  
+  predicate inv_Seq_u8 [@inline:trivial] (_1: Seq.seq UInt8.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_u8
+  
+  predicate invariant_array_u8_0 (self: Slice64.array UInt8.t) =
+    inv_Seq_u8 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (0: UInt64.t)
+  
+  predicate inv_array_u8_0 [@inline:trivial] (_1: Slice64.array UInt8.t) = invariant_array_u8_0 _1
+  
+  meta "rewrite_def" predicate inv_array_u8_0
+  
+  predicate invariant_ref_array_u8_0 [@inline:trivial] (self: Slice64.array UInt8.t) = inv_array_u8_0 self
+  
+  meta "rewrite_def" predicate invariant_ref_array_u8_0
+  
+  predicate inv_ref_array_u8_0 [@inline:trivial] (_1: Slice64.array UInt8.t) = invariant_ref_array_u8_0 _1
+  
+  meta "rewrite_def" predicate inv_ref_array_u8_0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let bytes_literal_empty (return (x: Slice64.array UInt8.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- Slice64.of_seq Seq.empty ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: Slice64.array UInt8.t = Any.any_l () ])
+    [ return (result: Slice64.array UInt8.t) ->
+    {[@stop_split] [@expl:bytes_literal_empty ensures] ([@stop_split] [@expl:bytes_literal_empty result type invariant] inv_ref_array_u8_0 result)
+      /\ ([@stop_split] [@expl:bytes_literal_empty ensures] Seq.length (Slice64.view result) = 0)}
+      (! return {result}) ]
+end
+module M_bytes_literal_in_body
+  use creusot.int.UInt8
+  use creusot.slice.Slice64
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.Any
+  
+  let len_u8 (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
+      = UInt64.t'int result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let bytes_literal_in_body (return (x: UInt64.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_3 <- Slice64.of_seq (Seq.create 4 [|(116: UInt8.t);(101: UInt8.t);(115: UInt8.t);(116: UInt8.t)|]) ] s1
+      | s1 = [ &msg <- _3 ] s2
+      | s2 = len_u8 {msg} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l ()
+    | & msg: Slice64.array UInt8.t = Any.any_l ()
+    | & _3: Slice64.array UInt8.t = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:bytes_literal_in_body ensures] result = (4: UInt64.t)}
+      (! return {result}) ]
+end
+module M_bytes_literal_in_const
+  use creusot.slice.Slice64
+  use creusot.int.UInt8
+  use seq.Seq
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  predicate inv_Seq_u8 [@inline:trivial] (_1: Seq.seq UInt8.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_u8
+  
+  predicate invariant_array_u8_10 (self: Slice64.array UInt8.t) =
+    inv_Seq_u8 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (10: UInt64.t)
+  
+  predicate inv_array_u8_10 [@inline:trivial] (_1: Slice64.array UInt8.t) = invariant_array_u8_10 _1
+  
+  meta "rewrite_def" predicate inv_array_u8_10
+  
+  predicate invariant_ref_array_u8_10 [@inline:trivial] (self: Slice64.array UInt8.t) = inv_array_u8_10 self
+  
+  meta "rewrite_def" predicate invariant_ref_array_u8_10
+  
+  predicate inv_ref_array_u8_10 [@inline:trivial] (_1: Slice64.array UInt8.t) = invariant_ref_array_u8_10 _1
+  
+  meta "rewrite_def" predicate inv_ref_array_u8_10
+  
+  constant const_TEST_BYTES: Slice64.array UInt8.t = Slice64.of_seq (Seq.create 10 [|(99: UInt8.t);(111: UInt8.t);(110: UInt8.t);(115: UInt8.t);(116: UInt8.t);(32: UInt8.t);(116: UInt8.t);(101: UInt8.t);(115: UInt8.t);(116: UInt8.t)|])
+  
+  axiom const_TEST_BYTES_spec: inv_ref_array_u8_10 const_TEST_BYTES
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let bytes_literal_in_const (return (x: UInt8.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_2 <- const_TEST_BYTES ] s1
+      | s1 = [ &_3 <- (9: UInt64.t) ] s2
+      | s2 = [ &_4 <- UInt64.lt _3 (10: UInt64.t) ] s3
+      | s3 = {[@expl:index in bounds] _4} s4
+      | s4 = Slice64.get <UInt8.t> {_2} {_3} (fun (r: UInt8.t) -> [ &_ret <- r ] s5)
+      | s5 = return {_ret} ] ]
+    [ & _ret: UInt8.t = Any.any_l ()
+    | & _2: Slice64.array UInt8.t = Any.any_l ()
+    | & _3: UInt64.t = Any.any_l ()
+    | & _4: bool = Any.any_l () ])
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:bytes_literal_in_const ensures] result = (116: UInt8.t)}
+      (! return {result}) ]
+end
+module M_empty_array
+  use creusot.slice.Slice64
+  use creusot.int.UInt32
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.Any
+  
+  let len_u32 (self_: Slice64.slice UInt32.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
+      = UInt64.t'int result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let empty_array (return (x: UInt64.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp: Slice64.array UInt32.t) -> (! -{Seq.length __arr_temp.Slice64.elts = 0}-
+          [ &empty <- __arr_temp ] s1) ]
+      | s1 = len_u32 {empty} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () | & empty: Slice64.array UInt32.t = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:empty_array ensures] result = (0: UInt64.t)}
+      (! return {result}) ]
+end
 module M_float_operation
   use creusot.float.Float32
   use creusot.prelude.Any
