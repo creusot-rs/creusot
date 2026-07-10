@@ -1,6 +1,6 @@
 module M_can_extend
-  use creusot.slice.Slice64
   use creusot.int.Int32
+  use creusot.slice.Slice64
   use seq.Seq
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
@@ -103,29 +103,16 @@ module M_can_extend
   
   let can_extend (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = any
-        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
-          /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t)
-          /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 3}-
-          [ &_4 <- __arr_temp ] s1) ]
+      [ s0 = [ &_4 <- Slice64.of_seq (Seq.create 3 [|(1: Int32.t);(2: Int32.t);(3: Int32.t)|]) ] s1
       | s1 = into_vec_i32 {_4} (fun (_x: t_Vec_i32_Global) -> [ &v <- _x ] s2)
-      | s2 = any
-        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (4: Int32.t)
-          /\ Seq.get __arr_temp.Slice64.elts 1 = (5: Int32.t)
-          /\ Seq.get __arr_temp.Slice64.elts 2 = (6: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 3}-
-          [ &_8 <- __arr_temp ] s3) ]
+      | s2 = [ &_8 <- Slice64.of_seq (Seq.create 3 [|(4: Int32.t);(5: Int32.t);(6: Int32.t)|]) ] s3
       | s3 = into_vec_i32 {_8} (fun (_x: t_Vec_i32_Global) -> [ &w <- _x ] s4)
       | s4 = MutBorrow.borrow_mut <t_Vec_i32_Global> {v}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_10 <- _bor ] [ &v <- _bor.final ] s5)
       | s5 = extend_Vec_i32_Global {_10} {w} (fun (_x: ()) -> [ &_9 <- _x ] s6)
-      | s6 = any
-        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
-          /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t)
-          /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t)
-          /\ Seq.get __arr_temp.Slice64.elts 3 = (4: Int32.t)
-          /\ Seq.get __arr_temp.Slice64.elts 4 = (5: Int32.t)
-          /\ Seq.get __arr_temp.Slice64.elts 5 = (6: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 6}-
-          [ &_15 <- __arr_temp ] s7) ]
+      | s6 =
+        [ &_15 <- Slice64.of_seq (Seq.create 6 [|(1: Int32.t);(2: Int32.t);(3: Int32.t);(4: Int32.t);(5: Int32.t);(6: Int32.t)|]) ]
+        s7
       | s7 = into_vec_i32 {_15} (fun (_x: t_Vec_i32_Global) -> [ &z <- _x ] s8)
       | s8 = {[@expl:assertion] Seq.(==) (view_Vec_i32_Global z) (view_Vec_i32_Global v)} s9
       | s9 = return {_ret} ] ]

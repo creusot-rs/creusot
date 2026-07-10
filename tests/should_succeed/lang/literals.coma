@@ -43,8 +43,8 @@ module M_TEST_BYTES
       (! return {result}) ]
 end
 module M_bytes_as_array
-  use creusot.slice.Slice64
   use creusot.int.UInt8
+  use creusot.slice.Slice64
   use creusot.int.UInt64
   use creusot.prelude.Any
   
@@ -54,14 +54,9 @@ module M_bytes_as_array
   
   let bytes_as_array (return (x: UInt8.t)) = (! bb0
     [ bb0 = s0
-      [ s0 = any
-        [ any_ (__arr_temp: Slice64.array UInt8.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (65: UInt8.t)
-          /\ Seq.get __arr_temp.Slice64.elts 1 = (32: UInt8.t)
-          /\ Seq.get __arr_temp.Slice64.elts 2 = (116: UInt8.t)
-          /\ Seq.get __arr_temp.Slice64.elts 3 = (101: UInt8.t)
-          /\ Seq.get __arr_temp.Slice64.elts 4 = (115: UInt8.t)
-          /\ Seq.get __arr_temp.Slice64.elts 5 = (116: UInt8.t) /\ Seq.length __arr_temp.Slice64.elts = 6}-
-          [ &my_bytes <- __arr_temp ] s1) ]
+      [ s0 =
+        [ &my_bytes <- Slice64.of_seq (Seq.create 6 [|(65: UInt8.t);(32: UInt8.t);(116: UInt8.t);(101: UInt8.t);(115: UInt8.t);(116: UInt8.t)|]) ]
+        s1
       | s1 = [ &_3 <- (3: UInt64.t) ] s2
       | s2 = [ &_4 <- UInt64.lt _3 (6: UInt64.t) ] s3
       | s3 = {[@expl:index in bounds] _4} s4
@@ -75,8 +70,8 @@ module M_bytes_as_array
       (! return {result}) ]
 end
 module M_bytes_as_array_slice
-  use creusot.slice.Slice64
   use creusot.int.UInt8
+  use creusot.slice.Slice64
   use creusot.prelude.Any
   use creusot.int.UInt64
   
@@ -88,14 +83,9 @@ module M_bytes_as_array_slice
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
-          [ s0'0 = any
-            [ any_ (__arr_temp: Slice64.array UInt8.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (65: UInt8.t)
-              /\ Seq.get __arr_temp.Slice64.elts 1 = (32: UInt8.t)
-              /\ Seq.get __arr_temp.Slice64.elts 2 = (116: UInt8.t)
-              /\ Seq.get __arr_temp.Slice64.elts 3 = (101: UInt8.t)
-              /\ Seq.get __arr_temp.Slice64.elts 4 = (115: UInt8.t)
-              /\ Seq.get __arr_temp.Slice64.elts 5 = (116: UInt8.t) /\ Seq.length __arr_temp.Slice64.elts = 6}-
-              [ &_1 <- __arr_temp ] s1'0) ]
+          [ s0'0 =
+            [ &_1 <- Slice64.of_seq (Seq.create 6 [|(65: UInt8.t);(32: UInt8.t);(116: UInt8.t);(101: UInt8.t);(115: UInt8.t);(116: UInt8.t)|]) ]
+            s1'0
           | s1'0 = [ &_ret'0 <- _1 ] s2'0
           | s2'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: Slice64.array UInt8.t = Any.any_l () | & _1: Slice64.array UInt8.t = Any.any_l () ]
@@ -320,9 +310,7 @@ module M_empty_array
   
   let empty_array (return (x: UInt64.t)) = (! bb0
     [ bb0 = s0
-      [ s0 = any
-        [ any_ (__arr_temp: Slice64.array UInt32.t) -> (! -{Seq.length __arr_temp.Slice64.elts = 0}-
-          [ &empty <- __arr_temp ] s1) ]
+      [ s0 = [ &empty <- Slice64.of_seq Seq.empty ] s1
       | s1 = len_u32 {empty} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () | & empty: Slice64.array UInt32.t = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:empty_array ensures] result = (0: UInt64.t)}
