@@ -834,33 +834,17 @@ impl<'tcx> RValue<'tcx> {
                 }
             }
             RValue::Array(fields) => {
-                let id = Ident::fresh_local("__arr_temp");
-                let ty = lower.ty(ty);
-
-                let len = fields.len();
-
-                let record = Exp::var(id).boxed();
-                let label = Name::Global(lower.names.in_pre(PreMod::Slice, "elts"));
-                let arr_elts = Exp::RecField { record, label };
-
-                istmts.push(IntermediateStmt::Any(id, ty.clone()));
-                let mut assumptions = fields
-                    .into_iter()
-                    .enumerate()
-                    .map(|(ix, f)| {
-                        Exp::qvar(name::seq_get())
-                            .app([arr_elts.clone(), Exp::Const(Constant::Int(ix as i128, None))])
-                            .eq(f.into_why(lower, istmts, span))
-                    })
-                    .chain([Exp::qvar(name::seq_length())
-                        .app([arr_elts.clone()])
-                        .eq(Exp::Const(Constant::Int(len as i128, None)))])
-                    .reduce(Exp::log_and)
-                    .expect("array literal missing assumption");
-                assumptions.reassociate();
-
-                istmts.push(IntermediateStmt::Assume(assumptions));
-                Exp::var(id)
+                assert!(ty.is_array());
+                let seq_exp = if fields.is_empty() {
+                    Exp::qvar(name::seq_empty())
+                } else {
+                    let len = fields.len();
+                    let field_exps: Box<[Exp]> =
+                        fields.into_iter().map(|f| f.into_why(lower, istmts, span)).collect();
+                    Exp::qvar(name::seq_create())
+                        .app([Exp::int(len as i128), Exp::FunLiteral(field_exps)])
+                };
+                Exp::qvar(lower.names.in_pre(PreMod::Slice, "of_seq")).app([seq_exp])
             }
             RValue::Repeat(e, len) => {
                 let args = [
@@ -1174,15 +1158,6 @@ where
             false,
             [Defn { prototype: Prototype::new(k, [Param::Term(x, ty)]), body: tail }].into(),
         ),
-        IntermediateStmt::Any(id, ty) => Expr::Defn(
-            Expr::Any.boxed(),
-            false,
-            [Defn {
-                prototype: Prototype::new(Ident::fresh_local("any_"), [Param::Term(id, ty)]),
-                body: tail.black_box(),
-            }]
-            .into(),
-        ),
     })
 }
 
@@ -1200,8 +1175,6 @@ pub(crate) enum IntermediateStmt {
     Assert(Exp),
     // K [ _ck -> ! {E} any ]
     Check(Exp),
-
-    Any(Ident, Type),
 }
 
 impl IntermediateStmt {

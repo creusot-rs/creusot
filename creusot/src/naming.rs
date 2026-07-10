@@ -361,8 +361,7 @@ pub mod name {
         string => ["string"],
         current => ["current"],
         final_ => ["final"],
-        seq_get => ["Seq", "get"],
-        seq_length => ["Seq", "length"],
         seq_create => ["Seq", "create"],
+        seq_empty => ["Seq", "empty"],
     }
 }

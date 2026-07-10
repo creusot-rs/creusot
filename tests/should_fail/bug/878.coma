@@ -1,6 +1,6 @@
 module M_test
-  use creusot.slice.Slice64
   use creusot.int.Int32
+  use creusot.slice.Slice64
   use seq.Seq
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
@@ -33,12 +33,7 @@ module M_test
   
   let test (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = any
-        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
-          /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t)
-          /\ Seq.get __arr_temp.Slice64.elts 2 = (2: Int32.t)
-          /\ Seq.get __arr_temp.Slice64.elts 3 = (3: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 4}-
-          [ &_4 <- __arr_temp ] s1) ]
+      [ s0 = [ &_4 <- Slice64.of_seq (Seq.create 4 [|(1: Int32.t);(2: Int32.t);(2: Int32.t);(3: Int32.t)|]) ] s1
       | s1 = into_vec_i32 {_4} (fun (_x: t_Vec_i32_Global) -> [ &v <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_Vec_i32_Global> {v}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_6 <- _bor ] [ &v <- _bor.final ] s3)
@@ -127,10 +122,7 @@ module M_test2
   let test2 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_5 <- { f0 = (0: UInt32.t) } ] s1
-      | s1 = any
-        [ any_ (__arr_temp: Slice64.array t_S) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = _5
-          /\ Seq.length __arr_temp.Slice64.elts = 1}-
-          [ &_4 <- __arr_temp ] s2) ]
+      | s1 = [ &_4 <- Slice64.of_seq (Seq.create 1 [|_5|]) ] s2
       | s2 = into_vec_S {_4} (fun (_x: t_Vec_S_Global) -> [ &v <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Vec_S_Global v} any) ]
       | s4 = {false} any ] ]
@@ -220,10 +212,7 @@ module M_test3
   let test3 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_5 <- { f0 = (0: UInt32.t) } ] s1
-      | s1 = any
-        [ any_ (__arr_temp: Slice64.array t_S) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = _5
-          /\ Seq.length __arr_temp.Slice64.elts = 1}-
-          [ &_4 <- __arr_temp ] s2) ]
+      | s1 = [ &_4 <- Slice64.of_seq (Seq.create 1 [|_5|]) ] s2
       | s2 = into_vec_S {_4} (fun (_x: t_Vec_S_Global) -> [ &v <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Vec_S_Global v} any) ]
       | s4 = {[@expl:assertion] (Seq.get (view_Vec_S_Global v) 0).f0 = (0: UInt32.t)} s5

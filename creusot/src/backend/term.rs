@@ -27,7 +27,7 @@ use rustc_middle::{
     ty::{self, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Span;
-use rustc_type_ir::IntTy;
+use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     Ident, Name,
     declaration::Condition as WCondition,
@@ -575,7 +575,22 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::unit()
             }
             Literal::String(ref string) => Constant::String(string.clone()).into(),
-            Literal::Bytes(ref _bytes) => todo!(),
+            Literal::Bytes(ref bytes) => {
+                let seq_exp = if bytes.is_empty() {
+                    Exp::qvar(name::seq_empty())
+                } else {
+                    let u8_ty = Type::qconstructor(
+                        self.names.in_pre(uty_to_prelude(self.tcx(), UintTy::U8), "t"),
+                    );
+                    let byte_exps: Box<[Exp]> = bytes
+                        .iter()
+                        .map(|&b| Constant::Uint(b as u128, Some(u8_ty.clone())).into())
+                        .collect();
+                    Exp::qvar(name::seq_create())
+                        .app([Exp::int(bytes.len() as i128), Exp::FunLiteral(byte_exps)])
+                };
+                Exp::qvar(self.names.in_pre(PreMod::Slice, "of_seq")).app([seq_exp])
+            }
         }
     }
 }
