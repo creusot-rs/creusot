@@ -1,4 +1,5 @@
 pub mod atomic;
+pub mod atomic_no_LA;
 #[cfg(feature = "sc-drf")]
 pub mod atomic_sc;
 pub mod committer;
