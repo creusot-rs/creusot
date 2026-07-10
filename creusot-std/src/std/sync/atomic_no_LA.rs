@@ -6,7 +6,7 @@ use crate::{
     std::sync::{
         committer::Committer,
         view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
-        atomic::{ordering::{Ordering, LoadOrdering, StoreOrdering, UpdateOrdering, Relaxed, Acquire, Release, AcqRel}, AtomicBool},
+        atomic::{ordering::{Ordering, LoadOrdering, StoreOrdering, UpdateOrdering, Relaxed, Acquire, Release, AcqRel}, AtomicBool, AtomicPtr, AtomicI8, AtomicU8, AtomicI16, AtomicI32, AtomicI64, AtomicIsize, AtomicU16, AtomicU32, AtomicU64, AtomicUsize},
     },
 };
 use core::sync::atomic::{Ordering as OrderingTy};
@@ -164,3 +164,19 @@ macro_rules! extend_atomic {
 
 #[cfg(target_has_atomic = "8")]
 extend_atomic!((bool, AtomicBool));
+// FIXME the compiler rejects this because of issues with T's lifetime
+// #[cfg(target_has_atomic = "ptr")]
+// extend_atomic!((*mut T, AtomicPtr<T>));
+
+#[cfg(target_has_atomic = "8")]
+extend_atomic!((i8, AtomicI8));
+extend_atomic!((u8, AtomicU8));
+#[cfg(target_has_atomic = "16")]
+extend_atomic!((i16, AtomicI16));
+extend_atomic!((u16, AtomicU16));
+#[cfg(target_has_atomic = "32")]
+extend_atomic!((i32, AtomicI32));
+extend_atomic!((u32, AtomicU32));
+#[cfg(target_has_atomic = "64")]
+extend_atomic!((i64, AtomicI64));
+extend_atomic!((u64, AtomicU64));
