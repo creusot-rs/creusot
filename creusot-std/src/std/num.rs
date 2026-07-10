@@ -3,6 +3,7 @@ use crate::{
     logic::ops::{AddLogic, MulLogic, NegLogic, NthBitLogic, SubLogic},
     prelude::*,
 };
+use core::num::Wrapping;
 // Resolve links like [`i8::add`] in the generated documentation
 #[cfg(doc)]
 use core::ops::{
@@ -589,3 +590,62 @@ spec_abs_diff!(u32, i32);
 spec_abs_diff!(u64, i64);
 spec_abs_diff!(u128, i128);
 spec_abs_diff!(usize, isize);
+
+// `Wrapping<T>` is a transparent newtype whose arithmetic operators wrap around on overflow,
+// i.e. `Wrapping(a) + Wrapping(b) == Wrapping(a.wrapping_add(b))`, and likewise for `-`, `*` and
+// unary `-`. Its model is the model of the wrapped value.
+impl<T: DeepModel> DeepModel for Wrapping<T> {
+    type DeepModelTy = Wrapping<T::DeepModelTy>;
+
+    #[logic(open, inline)]
+    fn deep_model(self) -> Self::DeepModelTy {
+        pearlite! { Wrapping(self.0.deep_model()) }
+    }
+}
+
+/// Adds specifications for the wrapping arithmetic operators (`+`, `-`, `*`, unary `-`) of
+/// [`Wrapping`] on the given integer type. Each operator performs the operation on the wrapped
+/// value and wraps around on overflow, matching the corresponding `wrapping_*` method.
+macro_rules! spec_wrapping {
+    ($($type:ty)*) => {$(
+        extern_spec! {
+            impl core::ops::Add<Wrapping<$type>> for Wrapping<$type> {
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[ensures(result.0 == self.0 + rhs.0)]
+                fn add(self, rhs: Wrapping<$type>) -> Wrapping<$type> {
+                    Wrapping(self.0.wrapping_add(rhs.0))
+                }
+            }
+
+            impl core::ops::Sub<Wrapping<$type>> for Wrapping<$type> {
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[ensures(result.0 == self.0 - rhs.0)]
+                fn sub(self, rhs: Wrapping<$type>) -> Wrapping<$type> {
+                    Wrapping(self.0.wrapping_sub(rhs.0))
+                }
+            }
+
+            impl core::ops::Mul<Wrapping<$type>> for Wrapping<$type> {
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[ensures(result.0 == self.0 * rhs.0)]
+                fn mul(self, rhs: Wrapping<$type>) -> Wrapping<$type> {
+                    Wrapping(self.0.wrapping_mul(rhs.0))
+                }
+            }
+
+            impl core::ops::Neg for Wrapping<$type> {
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[ensures(result.0 == -self.0)]
+                fn neg(self) -> Wrapping<$type> {
+                    Wrapping(self.0.wrapping_neg())
+                }
+            }
+        }
+    )*};
+}
+
+spec_wrapping!(u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize);
