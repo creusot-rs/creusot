@@ -204,8 +204,10 @@ impl ContractClauses {
                 if n_ensures > 1 {
                     expl.push_str(&format!(" #{i}"))
                 }
-                let TermWithTriggers { triggers, box term } =
-                    ctx.term_with_triggers(ens_id).unwrap().rename(bound_with_result);
+                let term = ctx.term_with_triggers(ens_id).unwrap();
+                // ensures does not have a result argument in `const` items
+                let bound = if term.0.len() == bound.len() { bound } else { bound_with_result };
+                let TermWithTriggers { triggers, box term } = term.rename(bound);
                 (triggers, Condition { term, expl })
             })
             .collect();

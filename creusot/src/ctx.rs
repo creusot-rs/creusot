@@ -2,8 +2,9 @@ use crate::{
     backend::resolve::is_resolve_trivial,
     callbacks,
     contracts_items::{
-        Intrinsic, gather_intrinsics, get_creusot_item, is_extern_spec, is_extern_type, is_logic,
-        is_opaque, is_open_inv_param, is_prophetic, is_trusted, opacity_witness_name,
+        Intrinsic, creusot_clause_attrs, gather_intrinsics, get_creusot_item, is_extern_spec,
+        is_extern_type, is_logic, is_opaque, is_open_inv_param, is_prophetic, is_trusted,
+        opacity_witness_name,
     },
     metadata::{BinaryMetadata, Metadata, encode_def_ids, get_erasure_required},
     naming::{ComaNames, ModulePath, lowercase_prefix},
@@ -76,7 +77,7 @@ impl BodyId {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub(crate) enum Opacity {
     Opaque,
     Transparent(Visibility<DefId>),
@@ -146,6 +147,10 @@ pub trait HasTyCtxt<'tcx> {
 
     fn warn(&self, span: Span, msg: impl Into<DiagMessage>) {
         self.tcx().dcx().span_warn(span, msg)
+    }
+
+    fn struct_error(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx, FatalAbort> {
+        self.tcx().dcx().struct_span_fatal(span, msg)
     }
 
     fn span_bug(&self, span: Span, msg: impl Into<String>) -> ! {
@@ -458,8 +463,10 @@ impl<'tcx> TranslationCtx<'tcx> {
     /// We encodes the opacity of functions using 'witnesses', functions that have the target opacity
     /// set as their *visibility*.
     fn mk_opacity(&self, item: DefId) -> Opacity {
+        let has_ensures = || creusot_clause_attrs(self.tcx, item, "ensures").next().is_some();
         match self.item_type(item) {
-            ItemType::Constant => Opacity::Transparent(Visibility::Public),
+            ItemType::Constant if has_ensures() => Opacity::Opaque,
+            ItemType::Constant => Opacity::Transparent(self.visibility(item)),
             ItemType::Logic { .. } if is_opaque(self.tcx, item) => Opacity::Opaque,
             ItemType::Logic { .. } => {
                 let vis = opacity_witness_name(self.tcx, item).map_or_else(
@@ -641,6 +648,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                     inputs: Box::new([]),
                     output: Ty::new_bool(self.tcx), // dummy
                     additional_predicates,
+                    eval_constant: false,
                 },
             );
         }

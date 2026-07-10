@@ -64,6 +64,7 @@ proc_macro_attributes! {
     bitwise_proof
     maintains
     erasure
+    constant
 }
 
 macro_rules! proc_macros {

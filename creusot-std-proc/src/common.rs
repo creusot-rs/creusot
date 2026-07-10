@@ -83,6 +83,7 @@ impl Parse for FnOrMethod {
 pub enum ContractSubject {
     FnOrMethod(FnOrMethod),
     Closure(ExprClosure),
+    Const(ItemConst),
 }
 
 impl Parse for ContractSubject {
@@ -97,6 +98,12 @@ impl Parse for ContractSubject {
             let _: Option<Token![,]> = input.parse()?;
             closure.attrs.extend(attrs);
             return Ok(ContractSubject::Closure(closure));
+        } else if input.peek(Token![const]) && input.peek2(syn::Ident)
+            || input.peek2(Token![const]) && input.peek3(syn::Ident)
+        {
+            let mut item = ItemConst::parse(input)?;
+            item.attrs = attrs;
+            return Ok(ContractSubject::Const(item));
         }
         let mut item = FnOrMethod::parse(input)?;
         item.attrs = attrs;
@@ -106,9 +113,11 @@ impl Parse for ContractSubject {
 
 impl ToTokens for ContractSubject {
     fn to_tokens(&self, tokens: &mut TokenStream) {
+        use ContractSubject::*;
         match self {
-            ContractSubject::FnOrMethod(tr) => tr.to_tokens(tokens),
-            ContractSubject::Closure(closure) => closure.to_tokens(tokens),
+            FnOrMethod(tr) => tr.to_tokens(tokens),
+            Closure(closure) => closure.to_tokens(tokens),
+            Const(item) => item.to_tokens(tokens),
         }
     }
 }

@@ -1,3 +1,4 @@
+mod constant;
 mod derive;
 pub(crate) mod doc;
 mod erasure;
@@ -9,6 +10,7 @@ mod proof;
 mod specs;
 
 pub(crate) use self::{
+    constant::constant,
     derive::*,
     erasure::erasure,
     extern_spec::extern_spec,
@@ -216,9 +218,11 @@ impl FnOrMethod {
 
 impl ContractSubject {
     fn name(&self) -> String {
+        use ContractSubject::*;
         match self {
-            ContractSubject::FnOrMethod(tr) => tr.sig.ident.to_string(),
-            ContractSubject::Closure(_) => "closure".to_string(),
+            FnOrMethod(tr) => tr.sig.ident.to_string(),
+            Closure(_) => "closure".to_string(),
+            Const(item) => item.ident.to_string(),
         }
     }
 
