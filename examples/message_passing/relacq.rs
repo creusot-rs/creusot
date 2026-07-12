@@ -18,7 +18,7 @@ use creusot_std::{
                 ordering::{Acquire, Release},
             },
             committer::Committer,
-            view::{AtView, SyncView},
+            view::{AtView, SyncView, ReleaseSyncView},
         },
         thread::{self, JoinHandleExt},
     },
@@ -103,7 +103,8 @@ pub fn message_passing() {
                         }
 
                         inv.state = State::Synchronisation(at_view, excl.into_inner());
-                        c.shoot_store(&mut inv.atomic_own, &mut sync_view);
+                        let rel_view = *ReleaseSyncView::new();
+                        c.shoot_store(&mut inv.atomic_own, &mut sync_view, rel_view);
                     })
                 }},
             );
