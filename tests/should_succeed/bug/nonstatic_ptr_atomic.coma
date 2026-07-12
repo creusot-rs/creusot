@@ -1,0 +1,390 @@
+module M_f
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Opaque
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_AtomicPtr_T
+  
+  predicate inv_AtomicPtr_T (_1: t_AtomicPtr_T)
+  
+  predicate resolve_AtomicPtr_T (_1: t_AtomicPtr_T)
+  
+  type t_Perm_AtomicPtr_T
+  
+  type t_FMap_Int_tup2_ptr_T_SyncView
+  
+  predicate resolve_FMap_Int_tup2_ptr_T_SyncView [@inline:trivial] (_1: t_FMap_Int_tup2_ptr_T_SyncView) = true
+  
+  meta "rewrite_def" predicate resolve_FMap_Int_tup2_ptr_T_SyncView
+  
+  function val_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
+  
+  predicate resolve_Perm_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) =
+    resolve_FMap_Int_tup2_ptr_T_SyncView (val_AtomicPtr_T self)
+  
+  meta "rewrite_def" predicate resolve_Perm_AtomicPtr_T
+  
+  predicate resolve_Perm_AtomicPtr_T'0 (_1: t_Perm_AtomicPtr_T)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall x: t_Perm_AtomicPtr_T [resolve_Perm_AtomicPtr_T'0 x]. resolve_Perm_AtomicPtr_T'0 x
+      = resolve_Perm_AtomicPtr_T x
+  
+  predicate resolve_Ghost_Perm_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) =
+    resolve_Perm_AtomicPtr_T'0 self
+  
+  meta "rewrite_def" predicate resolve_Ghost_Perm_AtomicPtr_T
+  
+  predicate resolve_Ghost_Perm_AtomicPtr_T'0 [@inline:trivial] (_1: t_Perm_AtomicPtr_T) =
+    resolve_Ghost_Perm_AtomicPtr_T _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_Perm_AtomicPtr_T'0
+  
+  type closure1 = { c0: t_Perm_AtomicPtr_T }
+  
+  let deref_Ghost_Perm_AtomicPtr_T (self: t_Perm_AtomicPtr_T) (return (x: t_Perm_AtomicPtr_T)) = any
+    [ return (result: t_Perm_AtomicPtr_T) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
+  
+  type t_SyncView
+  
+  let new (return (x: t_SyncView)) = any [ return (result: t_SyncView) -> (! return {result}) ]
+  
+  let deref_mut_Ghost_SyncView (self: MutBorrow.t t_SyncView) (return (x: MutBorrow.t t_SyncView)) = any
+    [ return (result: MutBorrow.t t_SyncView) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
+      (! return {result}) ]
+  
+  type t_Committer_AtomicPtr_T_ptr_T_Acquire_None
+  
+  predicate shot_store_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Acquire_None)
+  
+  function ward_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) : t_AtomicPtr_T
+  
+  function ward_AtomicPtr_T'0 (self: t_Perm_AtomicPtr_T) : t_AtomicPtr_T
+  
+  predicate lt_log_SyncView (self: t_SyncView) (_2: t_SyncView)
+  
+  predicate le_log_SyncView [@inline:trivial] (self: t_SyncView) (other: t_SyncView) =
+    lt_log_SyncView self other \/ self = other
+  
+  meta "rewrite_def" predicate le_log_SyncView
+  
+  function le_lt_log_SyncView (self: t_SyncView) (other: t_SyncView) : ()
+  
+  axiom le_lt_log_SyncView_spec: forall self: t_SyncView, other: t_SyncView. le_log_SyncView self other
+      = (lt_log_SyncView self other \/ self = other)
+  
+  function transitive_SyncView (x: t_SyncView) (y: t_SyncView) (z: t_SyncView) : ()
+  
+  axiom transitive_SyncView_spec: forall x: t_SyncView, y: t_SyncView, z: t_SyncView. lt_log_SyncView x y
+      -> lt_log_SyncView y z -> lt_log_SyncView x z
+  
+  function irreflexive_SyncView (self: t_SyncView) : ()
+  
+  axiom irreflexive_SyncView_spec: forall self: t_SyncView. not lt_log_SyncView self self
+  
+  function get_timestamp_AtomicPtr_T (self: t_AtomicPtr_T) (_2: t_SyncView) : int
+  
+  function get_timestamp_monotonic_AtomicPtr_T (self: t_AtomicPtr_T) (x: t_SyncView) (y: t_SyncView) : ()
+  
+  axiom get_timestamp_monotonic_AtomicPtr_T_spec:
+    forall self: t_AtomicPtr_T, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
+      -> get_timestamp_AtomicPtr_T self x <= get_timestamp_AtomicPtr_T self y
+  
+  function timestamp_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) : int
+  
+  type tup2_ptr_T_SyncView = { f0: Opaque.ptr; f1: t_SyncView }
+  
+  type t_Option_tup2_ptr_T_SyncView = None | Some tup2_ptr_T_SyncView
+  
+  function to_mapping_Int (self: t_FMap_Int_tup2_ptr_T_SyncView) : Map.map int t_Option_tup2_ptr_T_SyncView
+  
+  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_ptr_T_SyncView) (k: int) : t_Option_tup2_ptr_T_SyncView =
+    Map.get (to_mapping_Int self) k
+  
+  meta "rewrite_def" function get_Int
+  
+  function val_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) : Opaque.ptr
+  
+  let shoot_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) (own: t_Perm_AtomicPtr_T)
+    (sync_view: MutBorrow.t t_SyncView) (return (x: ())) =
+  {[@stop_split] [@expl:shoot_load_AtomicPtr_T requires] ([@stop_split] [@expl:shoot_load requires #0] not shot_store_AtomicPtr_T self)
+    /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicPtr_T self = ward_AtomicPtr_T'0 own)}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:shoot_load_AtomicPtr_T ensures] ([@stop_split] [@expl:shoot_load ensures #0] le_log_SyncView sync_view.current sync_view.final)
+      /\ ([@stop_split] [@expl:shoot_load ensures #1] get_timestamp_AtomicPtr_T (ward_AtomicPtr_T self) sync_view.current
+        <= timestamp_AtomicPtr_T self)
+      /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicPtr_T self
+        <= get_timestamp_AtomicPtr_T (ward_AtomicPtr_T self) sync_view.final)
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicPtr_T own) (timestamp_AtomicPtr_T self) with
+        | Some {f0 = v; f1 = v_view} -> v = val_load_AtomicPtr_T self /\ le_log_SyncView v_view sync_view.final
+        | None -> false
+        end)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Ghost_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_SyncView
+  
+  predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_SyncView
+  
+  let closure1 [@coma:extspec] (self: closure1) (c: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = [ &_8 <- self.c0 ] s1
+      | s1 = deref_Ghost_Perm_AtomicPtr_T {_8} (fun (_x: t_Perm_AtomicPtr_T) -> [ &_6 <- _x ] s2)
+      | s2 = new (fun (_x: t_SyncView) -> [ &_13 <- _x ] s3)
+      | s3 = MutBorrow.borrow_mut <t_SyncView> {_13}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_12 <- _bor ] [ &_13 <- _bor.final ] s4)
+      | s4 = MutBorrow.borrow_final <t_SyncView> {_12.current} {MutBorrow.get_id _12}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_11 <- _bor ] [ &_12 <- { _12 with current = _bor.final } ] s5)
+      | s5 = deref_mut_Ghost_SyncView {_11} (fun (_x: MutBorrow.t t_SyncView) -> [ &_10 <- _x ] s6)
+      | s6 = MutBorrow.borrow_final <t_SyncView> {_10.current} {MutBorrow.get_id _10}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_9 <- _bor ] [ &_10 <- { _10 with current = _bor.final } ] s7)
+      | s7 = shoot_load_AtomicPtr_T {c} {_6} {_9} (fun (_x: ()) -> [ &_3 <- _x ] s8)
+      | s8 = -{resolve_refmut_Ghost_SyncView _12}- s9
+      | s9 = -{resolve_refmut_SyncView _10}- s10
+      | s10 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: closure1 = self
+    | & c: t_Committer_AtomicPtr_T_ptr_T_Acquire_None = c
+    | & _3: () = Any.any_l ()
+    | & _6: t_Perm_AtomicPtr_T = Any.any_l ()
+    | & _8: t_Perm_AtomicPtr_T = Any.any_l ()
+    | & _9: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _10: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _11: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _12: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _13: t_SyncView = Any.any_l () ] [ return (result: ()) -> return {result} ]
+  
+  meta "rewrite_def" predicate closure1'pre
+  
+  meta "rewrite_def" predicate closure1'post'return
+  
+  type t_FnGhostWrapper_closure1 = { f0'0: closure1 }
+  
+  let __new_closure1 (f: closure1) (return (x: t_FnGhostWrapper_closure1)) = any
+    [ return (result: t_FnGhostWrapper_closure1) -> {[@stop_split] [@expl:__new ensures] result.f0'0 = f}
+      (! return {result}) ]
+  
+  let new_FnGhostWrapper_closure1 (x: t_FnGhostWrapper_closure1) (return (x'0: t_FnGhostWrapper_closure1)) = any
+    [ return (result: t_FnGhostWrapper_closure1) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  predicate invariant_ref_AtomicPtr_T [@inline:trivial] (self: t_AtomicPtr_T) = inv_AtomicPtr_T self
+  
+  meta "rewrite_def" predicate invariant_ref_AtomicPtr_T
+  
+  predicate inv_ref_AtomicPtr_T [@inline:trivial] (_1: t_AtomicPtr_T) = invariant_ref_AtomicPtr_T _1
+  
+  meta "rewrite_def" predicate inv_ref_AtomicPtr_T
+  
+  predicate precondition_closure1 (self: closure1) (args: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) =
+    let c = args in closure1'pre self c
+  
+  meta "rewrite_def" predicate precondition_closure1
+  
+  predicate precondition_FnGhostWrapper_closure1 (self: t_FnGhostWrapper_closure1) (args: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) =
+    precondition_closure1 self.f0'0 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure1
+  
+  predicate postcondition_once_closure1 (self: closure1) (args: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) (result: ()) =
+    let c = args in closure1'post'return self c result
+  
+  meta "rewrite_def" predicate postcondition_once_closure1
+  
+  predicate postcondition_once_FnGhostWrapper_closure1 (self: t_FnGhostWrapper_closure1) (args: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) (result: ()) =
+    postcondition_once_closure1 self.f0'0 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure1
+  
+  let load_T (self: t_AtomicPtr_T) (f: t_FnGhostWrapper_closure1) (return (x: Opaque.ptr)) =
+  {[@stop_split] [@expl:load_T requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicPtr_T self)
+    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicPtr_T_ptr_T_Acquire_None. not shot_store_AtomicPtr_T c
+      -> ward_AtomicPtr_T c = self -> precondition_FnGhostWrapper_closure1 f c)}
+    any
+    [ return (result: Opaque.ptr) ->
+    {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicPtr_T_ptr_T_Acquire_None. not shot_store_AtomicPtr_T c
+        /\ ward_AtomicPtr_T c = self
+        /\ val_load_AtomicPtr_T c = result /\ postcondition_once_FnGhostWrapper_closure1 f c ()}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let f_T (x: t_AtomicPtr_T) (p: t_Perm_AtomicPtr_T) (return (x'0: ())) =
+  {[@stop_split] [@expl:f_T requires] ([@stop_split] [@expl:f 'x' type invariant] inv_AtomicPtr_T x)
+    /\ ([@stop_split] [@expl:f requires] ward_AtomicPtr_T'0 p = x)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_AtomicPtr_T x} any) ]
+      | s1 = -{resolve_AtomicPtr_T x}- s2
+      | s2 = -{resolve_Ghost_Perm_AtomicPtr_T'0 p}- s3
+      | s3 = [ &_10 <- { c0 = p } ] s4
+      | s4 = __new_closure1 {_10} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_9 <- _x ] s5)
+      | s5 = new_FnGhostWrapper_closure1 {_9} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_8 <- _x ] s6)
+      | s6 = load_T {x} {_8} (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s7)
+      | s7 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & x: t_AtomicPtr_T = x
+    | & p: t_Perm_AtomicPtr_T = p
+    | & _6: Opaque.ptr = Any.any_l ()
+    | & _8: t_FnGhostWrapper_closure1 = Any.any_l ()
+    | & _9: t_FnGhostWrapper_closure1 = Any.any_l ()
+    | & _10: closure1 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_g
+  use creusot.prelude.Opaque
+  use creusot.prelude.Any
+  
+  type t_AtomicPtr_T
+  
+  predicate inv_AtomicPtr_T (_1: t_AtomicPtr_T)
+  
+  predicate resolve_AtomicPtr_T (_1: t_AtomicPtr_T)
+  
+  type t_Perm_AtomicPtr_T
+  
+  predicate resolve_ptr_T [@inline:trivial] (_1: Opaque.ptr) = true
+  
+  meta "rewrite_def" predicate resolve_ptr_T
+  
+  function val_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : Opaque.ptr
+  
+  predicate resolve_Perm_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) = resolve_ptr_T (val_AtomicPtr_T self)
+  
+  meta "rewrite_def" predicate resolve_Perm_AtomicPtr_T
+  
+  predicate resolve_Perm_AtomicPtr_T'0 (_1: t_Perm_AtomicPtr_T)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall x: t_Perm_AtomicPtr_T [resolve_Perm_AtomicPtr_T'0 x]. resolve_Perm_AtomicPtr_T'0 x
+      = resolve_Perm_AtomicPtr_T x
+  
+  predicate resolve_Ghost_Perm_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) =
+    resolve_Perm_AtomicPtr_T'0 self
+  
+  meta "rewrite_def" predicate resolve_Ghost_Perm_AtomicPtr_T
+  
+  predicate resolve_Ghost_Perm_AtomicPtr_T'0 [@inline:trivial] (_1: t_Perm_AtomicPtr_T) =
+    resolve_Ghost_Perm_AtomicPtr_T _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_Perm_AtomicPtr_T'0
+  
+  type closure1 = { c0: t_Perm_AtomicPtr_T }
+  
+  let deref_Ghost_Perm_AtomicPtr_T (self: t_Perm_AtomicPtr_T) (return (x: t_Perm_AtomicPtr_T)) = any
+    [ return (result: t_Perm_AtomicPtr_T) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
+  
+  type t_Committer_AtomicPtr_T_ptr_T_SeqCst_None
+  
+  predicate shot_store_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None)
+  
+  function ward_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None) : t_AtomicPtr_T
+  
+  function ward_AtomicPtr_T'0 (self: t_Perm_AtomicPtr_T) : t_AtomicPtr_T
+  
+  function val_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None) : Opaque.ptr
+  
+  let shoot_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None) (own: t_Perm_AtomicPtr_T)
+    (return (x: ())) =
+  {[@stop_split] [@expl:shoot_load_AtomicPtr_T requires] ([@stop_split] [@expl:shoot_load requires #0] not shot_store_AtomicPtr_T self)
+    /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicPtr_T self = ward_AtomicPtr_T'0 own)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:shoot_load ensures] val_load_AtomicPtr_T self = val_AtomicPtr_T own}
+      (! return {result}) ]
+  
+  let closure1 [@coma:extspec] (self: closure1) (c: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None) (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = [ &_8 <- self.c0 ] s1
+      | s1 = deref_Ghost_Perm_AtomicPtr_T {_8} (fun (_x: t_Perm_AtomicPtr_T) -> [ &_6 <- _x ] s2)
+      | s2 = shoot_load_AtomicPtr_T {c} {_6} (fun (_x: ()) -> [ &_3 <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: closure1 = self
+    | & c: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None = c
+    | & _3: () = Any.any_l ()
+    | & _6: t_Perm_AtomicPtr_T = Any.any_l ()
+    | & _8: t_Perm_AtomicPtr_T = Any.any_l () ] [ return (result: ()) -> return {result} ]
+  
+  meta "rewrite_def" predicate closure1'pre
+  
+  meta "rewrite_def" predicate closure1'post'return
+  
+  type t_FnGhostWrapper_closure1 = { f0: closure1 }
+  
+  let __new_closure1 (f: closure1) (return (x: t_FnGhostWrapper_closure1)) = any
+    [ return (result: t_FnGhostWrapper_closure1) -> {[@stop_split] [@expl:__new ensures] result.f0 = f}
+      (! return {result}) ]
+  
+  let new_FnGhostWrapper_closure1 (x: t_FnGhostWrapper_closure1) (return (x'0: t_FnGhostWrapper_closure1)) = any
+    [ return (result: t_FnGhostWrapper_closure1) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  predicate invariant_ref_AtomicPtr_T [@inline:trivial] (self: t_AtomicPtr_T) = inv_AtomicPtr_T self
+  
+  meta "rewrite_def" predicate invariant_ref_AtomicPtr_T
+  
+  predicate inv_ref_AtomicPtr_T [@inline:trivial] (_1: t_AtomicPtr_T) = invariant_ref_AtomicPtr_T _1
+  
+  meta "rewrite_def" predicate inv_ref_AtomicPtr_T
+  
+  predicate precondition_closure1 (self: closure1) (args: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None) =
+    let c = args in closure1'pre self c
+  
+  meta "rewrite_def" predicate precondition_closure1
+  
+  predicate precondition_FnGhostWrapper_closure1 (self: t_FnGhostWrapper_closure1) (args: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None) =
+    precondition_closure1 self.f0 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure1
+  
+  predicate postcondition_once_closure1 (self: closure1) (args: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None) (result: ()) =
+    let c = args in closure1'post'return self c result
+  
+  meta "rewrite_def" predicate postcondition_once_closure1
+  
+  predicate postcondition_once_FnGhostWrapper_closure1 (self: t_FnGhostWrapper_closure1) (args: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None) (result: ()) =
+    postcondition_once_closure1 self.f0 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure1
+  
+  let load_T (self: t_AtomicPtr_T) (f: t_FnGhostWrapper_closure1) (return (x: Opaque.ptr)) =
+  {[@stop_split] [@expl:load_T requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicPtr_T self)
+    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None. not shot_store_AtomicPtr_T c
+      -> ward_AtomicPtr_T c = self -> precondition_FnGhostWrapper_closure1 f c)}
+    any
+    [ return (result: Opaque.ptr) ->
+    {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None. not shot_store_AtomicPtr_T c
+        /\ ward_AtomicPtr_T c = self
+        /\ val_load_AtomicPtr_T c = result /\ postcondition_once_FnGhostWrapper_closure1 f c ()}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let g_T (x: t_AtomicPtr_T) (p: t_Perm_AtomicPtr_T) (return (x'0: ())) =
+  {[@stop_split] [@expl:g_T requires] ([@stop_split] [@expl:g 'x' type invariant] inv_AtomicPtr_T x)
+    /\ ([@stop_split] [@expl:g requires] ward_AtomicPtr_T'0 p = x)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_AtomicPtr_T x} any) ]
+      | s1 = -{resolve_AtomicPtr_T x}- s2
+      | s2 = -{resolve_Ghost_Perm_AtomicPtr_T'0 p}- s3
+      | s3 = [ &_10 <- { c0 = p } ] s4
+      | s4 = __new_closure1 {_10} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_9 <- _x ] s5)
+      | s5 = new_FnGhostWrapper_closure1 {_9} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_8 <- _x ] s6)
+      | s6 = load_T {x} {_8} (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s7)
+      | s7 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & x: t_AtomicPtr_T = x
+    | & p: t_Perm_AtomicPtr_T = p
+    | & _6: Opaque.ptr = Any.any_l ()
+    | & _8: t_FnGhostWrapper_closure1 = Any.any_l ()
+    | & _9: t_FnGhostWrapper_closure1 = Any.any_l ()
+    | & _10: closure1 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end

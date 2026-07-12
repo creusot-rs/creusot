@@ -64,9 +64,9 @@ impl<C: PermTarget, T, Load, Store> Committer<C, T, Load, Store> {
     }
 }
 
-impl<C, T, Store> Committer<C, T, Relaxed, Store>
+impl<'a, C, T, Store> Committer<C, T, Relaxed, Store>
 where
-    C: PermTarget<Value<'static> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'static,
+    C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
 {
     /// 'Shoot' the committer
     ///
@@ -85,9 +85,9 @@ where
     }
 }
 
-impl<C, T, Store> Committer<C, T, Acquire, Store>
+impl<'a, C, T, Store> Committer<C, T, Acquire, Store>
 where
-    C: PermTarget<Value<'static> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'static,
+    C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
 {
     /// 'Shoot' the committer
     ///
@@ -110,7 +110,7 @@ where
 }
 
 #[cfg(feature = "sc-drf")]
-impl<C, Store> Committer<C, C::Value<'static>, SeqCst, Store>
+impl<'a, C, Store> Committer<C, C::Value<'a>, SeqCst, Store>
 where
     C: PermTarget,
 {
@@ -128,9 +128,9 @@ where
     }
 }
 
-impl<C, T, Load> Committer<C, T, Load, Relaxed>
+impl<'a, C, T, Load> Committer<C, T, Load, Relaxed>
 where
-    C: PermTarget<Value<'static> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'static,
+    C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
 {
     /// 'Shoot' the committer (Relaxed)
     ///
@@ -158,9 +158,9 @@ where
     }
 }
 
-impl<C, T, Load> Committer<C, T, Load, Release>
+impl<'a, C, T, Load> Committer<C, T, Load, Release>
 where
-    C: PermTarget<Value<'static> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'static,
+    C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
 {
     /// 'Shoot' the committer
     ///
@@ -184,7 +184,7 @@ where
 }
 
 #[cfg(feature = "sc-drf")]
-impl<C, Load> Committer<C, C::Value<'static>, Load, SeqCst>
+impl<'a, C, Load> Committer<C, C::Value<'a>, Load, SeqCst>
 where
     C: PermTarget,
 {
