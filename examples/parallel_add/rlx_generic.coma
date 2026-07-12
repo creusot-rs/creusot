@@ -1112,7 +1112,11 @@ module M_parallel_add
   
   type t_Ordering = Relaxed | Release | Acquire | AcqRel | SeqCst
   
-  constant const_ORDERING: t_Ordering = Relaxed
+  constant const_ORDERING : t_Ordering
+  
+  let set_ORDERING (return) = bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- Relaxed ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
+    [ return (_const: t_Ordering) -> -{const_ORDERING = _const}- return ]
   
   predicate load_timestamp_in_view_AtomicI32 (atomic: t_AtomicI32) (sync_view: MutBorrow.t t_SyncView) (t: int) =
     let old_t = get_timestamp_AtomicI32 atomic sync_view.current in let new_t = get_timestamp_AtomicI32 atomic sync_view.final in old_t
@@ -2062,126 +2066,127 @@ module M_parallel_add
   
   let parallel_add (n: Int32.t) (return (x: ())) =
   {[@stop_split] [@expl:parallel_add requires] ge_log_Int (Int32.to_int n) 0}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = new (fun (_x: t_SyncView) -> [ &_9 <- _x ] s1)
-      | s1 = MutBorrow.borrow_mut <t_SyncView> {_9}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_8 <- _bor ] [ &_9 <- _bor.final ] s2)
-      | s2 = borrow_mut_SyncView {_8} (fun (_x: MutBorrow.t t_SyncView) -> [ &_7 <- _x ] s3)
-      | s3 = new'0 {(0: Int32.t)} {_7} (fun (_x: tup2_AtomicI32_Ghost_Perm_AtomicI32) -> [ &_6 <- _x ] s4)
-      | s4 = [ &atomic <- _6.f0 ] s5
-      | s5 = [ &own'0 <- _6.f1 ] s6
-      | s6 = [ &_10 <- { f0'1 = (); f1'1 = () } ] s7
-      | s7 = alloc_Option_tup2_PositiveReal_Int
-          (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &auth'0 <- _x ] s8)
-      | s8 = deref_Ghost_Authority_Option_tup2_PositiveReal_Int {auth'0}
-          (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &_17 <- _x ] s9)
-      | s9 = id_ghost_Option_tup2_PositiveReal_Int {_17} (fun (_x: t_Id) -> [ &_15 <- _x ] s10)
-      | s10 = new_unit_Option_tup2_PositiveReal_Int {_15}
-          (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_14 <- _x ] s11)
-      | s11 = new_Fragment_Option_tup2_PositiveReal_Int {_14}
-          (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &frag <- _x ] s12)
-      | s12 = MutBorrow.borrow_mut <t_Authority_Option_tup2_PositiveReal_Int> {auth'0}
-          (fun (_bor: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) ->
-            [ &_24 <- _bor ] -{inv_Ghost_Authority_Option_tup2_PositiveReal_Int _bor.final}-
-            [ &auth'0 <- _bor.final ] s13)
-        [ _ck -> (! {[@expl:type invariant] inv_Ghost_Authority_Option_tup2_PositiveReal_Int auth'0} any) ]
-      | s13 = deref_mut_Ghost_Authority_Option_tup2_PositiveReal_Int {_24}
-          (fun (_x: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) -> [ &_23 <- _x ] s14)
-      | s14 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {frag}
-          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
-            [ &_28 <- _bor ] [ &frag <- _bor.final ] s15)
-      | s15 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_28.current} {MutBorrow.get_id _28}
-          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
-            [ &_27 <- _bor ] [ &_28 <- { _28 with current = _bor.final } ] s16)
-      | s16 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_27}
-          (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_26 <- _x ] s17)
-      | s17 = MutBorrow.borrow_final <t_Authority_Option_tup2_PositiveReal_Int> {_23.current} {MutBorrow.get_id _23}
-          (fun (_bor: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) ->
-            [ &_22 <- _bor ] -{inv_Authority_Option_tup2_PositiveReal_Int _bor.final}-
-            [ &_23 <- { _23 with current = _bor.final } ] s18)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_tup2_PositiveReal_Int _23.current} any) ]
-      | s18 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_26.current} {MutBorrow.get_id _26}
-          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
-            [ &_25 <- _bor ] [ &_26 <- { _26 with current = _bor.final } ] s19)
-      | s19 = update_Option_tup2_PositiveReal_Int {_22} {_25} {{ f0'3 = Some'0 { f0'2 = from_int 1; f1'2 = 0 };
-                                                                 f1'3 = Some'0 { f0'2 = from_int 1; f1'2 = 0 } }}
-          (fun (_x: ()) -> [ &_21 <- _x ] s20)
-      | s20 = -{resolve_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int _28}- s21
-      | s21 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _26}- s22
-      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Option_tup2_PositiveReal_Int _23} any) ]
-      | s23 = -{resolve_refmut_Authority_Option_tup2_PositiveReal_Int _23}- s24
-      | s24 = new_unit {_20} (fun (_x: ()) -> [ &_19 <- _x ] s25)
-      | s25 = [ &timestamp <- such_that_Int (fun (t: int) -> contains_Int (val_AtomicI32 own'0) t) ] s26
-      | s26 = into_inner_Perm_AtomicI32 {own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_37 <- _x ] s27)
-      | s27 = into_inner_Authority_Option_tup2_PositiveReal_Int {auth'0}
-          (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &_39 <- _x ] s28)
-      | s28 = into_ghost_Int {timestamp} (fun (_x: int) -> [ &_44 <- _x ] s29)
-      | s29 = deref_Ghost_Int {_44} (fun (_x: int) -> [ &_42 <- _x ] s30)
-      | s30 = [ &_36 <- { own = _37; auth = _39; t_last = _42 } ] s31
-      | s31 = new_ParallelAddAtomicInv {_36} (fun (_x: t_ParallelAddAtomicInv) -> [ &_35 <- _x ] s32)
-      | s32 = new_ParallelAddAtomicInv'0 {_35} {Namespace_PARALLEL_ADD 0}
-          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &inv <- _x ] s33)
-      | s33 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {frag}
-          (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
-            [ &_53 <- _bor ] [ &frag <- _bor.final ] s34)
-      | s34 = [ &_49 <- { c0 = inv; c1 = atomic; c2 = n; c3 = _53 } ] s35
-      | s35 = scope_closure0 {_49} (fun (_x: ()) -> [ &_48 <- _x ] s36)
-      | s36 = into_inner_AtomicInvariant_ParallelAddAtomicInv {inv}
-          (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &_57 <- _x ] s37)
-      | s37 = into_inner_ParallelAddAtomicInv {_57} (fun (_x: t_ParallelAddAtomicInv) -> [ &inv'0 <- _x ] s38)
-      | s38 = s39 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_tup2_PositiveReal_Int inv'0.auth} any) ]
-      | s39 = -{resolve_Authority_Option_tup2_PositiveReal_Int inv'0.auth}- s40
-      | s40 = [ &_64 <- frag ] s41
-      | s41 = deref_Ghost_Fragment_Option_tup2_PositiveReal_Int {_64}
-          (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_62 <- _x ] s42)
-      | s42 = frag_lemma_Option_tup2_PositiveReal_Int {inv'0.auth} {_62} (fun (_x: ()) -> [ &_59 <- _x ] s43)
-      | s43 = new_Perm_AtomicI32 {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s44)
-      | s44 = into_inner {atomic} {own'1} (fun (_x: tup2_i32_Ghost_SyncView) -> [ &_66 <- _x ] s45)
-      | s45 = [ &x <- _66.f0'15 ] s46
-      | s46 = {[@expl:assertion] n = x} s47
-      | s47 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & n: Int32.t = n
-    | & atomic: t_AtomicI32 = Any.any_l ()
-    | & own'0: t_Perm_AtomicI32 = Any.any_l ()
-    | & _6: tup2_AtomicI32_Ghost_Perm_AtomicI32 = Any.any_l ()
-    | & _7: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _8: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _9: t_SyncView = Any.any_l ()
-    | & _10: tup2_fraction_1_fraction_add = Any.any_l ()
-    | & auth'0: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & frag: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _14: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _15: t_Id = Any.any_l ()
-    | & _17: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _19: () = Any.any_l ()
-    | & _20: () = Any.any_l ()
-    | & _21: () = Any.any_l ()
-    | & _22: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _23: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _24: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _25: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _26: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _27: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _28: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & timestamp: int = Any.any_l ()
-    | & inv: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
-    | & _35: t_ParallelAddAtomicInv = Any.any_l ()
-    | & _36: t_ParallelAddAtomicInv = Any.any_l ()
-    | & _37: t_Perm_AtomicI32 = Any.any_l ()
-    | & _39: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _42: int = Any.any_l ()
-    | & _44: int = Any.any_l ()
-    | & _48: () = Any.any_l ()
-    | & _49: closure0 = Any.any_l ()
-    | & _53: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & own'1: t_Perm_AtomicI32 = Any.any_l ()
-    | & inv'0: t_ParallelAddAtomicInv = Any.any_l ()
-    | & _57: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
-    | & _59: () = Any.any_l ()
-    | & _62: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _64: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & x: Int32.t = Any.any_l ()
-    | & _66: tup2_i32_Ghost_SyncView = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    (! set_ORDERING
+      (bb0
+      [ bb0 = s0
+        [ s0 = new (fun (_x: t_SyncView) -> [ &_9 <- _x ] s1)
+        | s1 = MutBorrow.borrow_mut <t_SyncView> {_9}
+            (fun (_bor: MutBorrow.t t_SyncView) -> [ &_8 <- _bor ] [ &_9 <- _bor.final ] s2)
+        | s2 = borrow_mut_SyncView {_8} (fun (_x: MutBorrow.t t_SyncView) -> [ &_7 <- _x ] s3)
+        | s3 = new'0 {(0: Int32.t)} {_7} (fun (_x: tup2_AtomicI32_Ghost_Perm_AtomicI32) -> [ &_6 <- _x ] s4)
+        | s4 = [ &atomic <- _6.f0 ] s5
+        | s5 = [ &own'0 <- _6.f1 ] s6
+        | s6 = [ &_10 <- { f0'1 = (); f1'1 = () } ] s7
+        | s7 = alloc_Option_tup2_PositiveReal_Int
+            (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &auth'0 <- _x ] s8)
+        | s8 = deref_Ghost_Authority_Option_tup2_PositiveReal_Int {auth'0}
+            (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &_17 <- _x ] s9)
+        | s9 = id_ghost_Option_tup2_PositiveReal_Int {_17} (fun (_x: t_Id) -> [ &_15 <- _x ] s10)
+        | s10 = new_unit_Option_tup2_PositiveReal_Int {_15}
+            (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_14 <- _x ] s11)
+        | s11 = new_Fragment_Option_tup2_PositiveReal_Int {_14}
+            (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &frag <- _x ] s12)
+        | s12 = MutBorrow.borrow_mut <t_Authority_Option_tup2_PositiveReal_Int> {auth'0}
+            (fun (_bor: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) ->
+              [ &_24 <- _bor ] -{inv_Ghost_Authority_Option_tup2_PositiveReal_Int _bor.final}-
+              [ &auth'0 <- _bor.final ] s13)
+          [ _ck -> (! {[@expl:type invariant] inv_Ghost_Authority_Option_tup2_PositiveReal_Int auth'0} any) ]
+        | s13 = deref_mut_Ghost_Authority_Option_tup2_PositiveReal_Int {_24}
+            (fun (_x: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) -> [ &_23 <- _x ] s14)
+        | s14 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {frag}
+            (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+              [ &_28 <- _bor ] [ &frag <- _bor.final ] s15)
+        | s15 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_28.current} {MutBorrow.get_id _28}
+            (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+              [ &_27 <- _bor ] [ &_28 <- { _28 with current = _bor.final } ] s16)
+        | s16 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_27}
+            (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_26 <- _x ] s17)
+        | s17 = MutBorrow.borrow_final <t_Authority_Option_tup2_PositiveReal_Int> {_23.current} {MutBorrow.get_id _23}
+            (fun (_bor: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) ->
+              [ &_22 <- _bor ] -{inv_Authority_Option_tup2_PositiveReal_Int _bor.final}-
+              [ &_23 <- { _23 with current = _bor.final } ] s18)
+          [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_tup2_PositiveReal_Int _23.current} any) ]
+        | s18 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_26.current} {MutBorrow.get_id _26}
+            (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+              [ &_25 <- _bor ] [ &_26 <- { _26 with current = _bor.final } ] s19)
+        | s19 = update_Option_tup2_PositiveReal_Int {_22} {_25} {{ f0'3 = Some'0 { f0'2 = from_int 1; f1'2 = 0 };
+                                                                   f1'3 = Some'0 { f0'2 = from_int 1; f1'2 = 0 } }}
+            (fun (_x: ()) -> [ &_21 <- _x ] s20)
+        | s20 = -{resolve_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int _28}- s21
+        | s21 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _26}- s22
+        | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Option_tup2_PositiveReal_Int _23} any) ]
+        | s23 = -{resolve_refmut_Authority_Option_tup2_PositiveReal_Int _23}- s24
+        | s24 = new_unit {_20} (fun (_x: ()) -> [ &_19 <- _x ] s25)
+        | s25 = [ &timestamp <- such_that_Int (fun (t: int) -> contains_Int (val_AtomicI32 own'0) t) ] s26
+        | s26 = into_inner_Perm_AtomicI32 {own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_37 <- _x ] s27)
+        | s27 = into_inner_Authority_Option_tup2_PositiveReal_Int {auth'0}
+            (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &_39 <- _x ] s28)
+        | s28 = into_ghost_Int {timestamp} (fun (_x: int) -> [ &_44 <- _x ] s29)
+        | s29 = deref_Ghost_Int {_44} (fun (_x: int) -> [ &_42 <- _x ] s30)
+        | s30 = [ &_36 <- { own = _37; auth = _39; t_last = _42 } ] s31
+        | s31 = new_ParallelAddAtomicInv {_36} (fun (_x: t_ParallelAddAtomicInv) -> [ &_35 <- _x ] s32)
+        | s32 = new_ParallelAddAtomicInv'0 {_35} {Namespace_PARALLEL_ADD 0}
+            (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &inv <- _x ] s33)
+        | s33 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {frag}
+            (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
+              [ &_53 <- _bor ] [ &frag <- _bor.final ] s34)
+        | s34 = [ &_49 <- { c0 = inv; c1 = atomic; c2 = n; c3 = _53 } ] s35
+        | s35 = scope_closure0 {_49} (fun (_x: ()) -> [ &_48 <- _x ] s36)
+        | s36 = into_inner_AtomicInvariant_ParallelAddAtomicInv {inv}
+            (fun (_x: t_AtomicInvariant_ParallelAddAtomicInv) -> [ &_57 <- _x ] s37)
+        | s37 = into_inner_ParallelAddAtomicInv {_57} (fun (_x: t_ParallelAddAtomicInv) -> [ &inv'0 <- _x ] s38)
+        | s38 = s39 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_tup2_PositiveReal_Int inv'0.auth} any) ]
+        | s39 = -{resolve_Authority_Option_tup2_PositiveReal_Int inv'0.auth}- s40
+        | s40 = [ &_64 <- frag ] s41
+        | s41 = deref_Ghost_Fragment_Option_tup2_PositiveReal_Int {_64}
+            (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_62 <- _x ] s42)
+        | s42 = frag_lemma_Option_tup2_PositiveReal_Int {inv'0.auth} {_62} (fun (_x: ()) -> [ &_59 <- _x ] s43)
+        | s43 = new_Perm_AtomicI32 {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s44)
+        | s44 = into_inner {atomic} {own'1} (fun (_x: tup2_i32_Ghost_SyncView) -> [ &_66 <- _x ] s45)
+        | s45 = [ &x <- _66.f0'15 ] s46
+        | s46 = {[@expl:assertion] n = x} s47
+        | s47 = return {_ret} ] ]
+      [ & _ret: () = Any.any_l ()
+      | & n: Int32.t = n
+      | & atomic: t_AtomicI32 = Any.any_l ()
+      | & own'0: t_Perm_AtomicI32 = Any.any_l ()
+      | & _6: tup2_AtomicI32_Ghost_Perm_AtomicI32 = Any.any_l ()
+      | & _7: MutBorrow.t t_SyncView = Any.any_l ()
+      | & _8: MutBorrow.t t_SyncView = Any.any_l ()
+      | & _9: t_SyncView = Any.any_l ()
+      | & _10: tup2_fraction_1_fraction_add = Any.any_l ()
+      | & auth'0: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & frag: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & _14: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & _15: t_Id = Any.any_l ()
+      | & _17: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & _19: () = Any.any_l ()
+      | & _20: () = Any.any_l ()
+      | & _21: () = Any.any_l ()
+      | & _22: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & _23: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & _24: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & _25: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & _26: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & _27: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & _28: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & timestamp: int = Any.any_l ()
+      | & inv: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+      | & _35: t_ParallelAddAtomicInv = Any.any_l ()
+      | & _36: t_ParallelAddAtomicInv = Any.any_l ()
+      | & _37: t_Perm_AtomicI32 = Any.any_l ()
+      | & _39: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & _42: int = Any.any_l ()
+      | & _44: int = Any.any_l ()
+      | & _48: () = Any.any_l ()
+      | & _49: closure0 = Any.any_l ()
+      | & _53: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & own'1: t_Perm_AtomicI32 = Any.any_l ()
+      | & inv'0: t_ParallelAddAtomicInv = Any.any_l ()
+      | & _57: t_AtomicInvariant_ParallelAddAtomicInv = Any.any_l ()
+      | & _59: () = Any.any_l ()
+      | & _62: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & _64: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+      | & x: Int32.t = Any.any_l ()
+      | & _66: tup2_i32_Ghost_SyncView = Any.any_l () ])) [ return (result: ()) -> (! return {result}) ]
 end

@@ -502,7 +502,11 @@ module M_message_passing
   
   type t_Ordering = Relaxed | Release | Acquire | AcqRel | SeqCst
   
-  constant const_ORDERING: t_Ordering = Release
+  constant const_ORDERING : t_Ordering
+  
+  let set_ORDERING (return) = bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- Release ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
+    [ return (_const: t_Ordering) -> -{const_ORDERING = _const}- return ]
   
   predicate store_timestamp_in_view_AtomicBool (atomic: t_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (t: int) =
     let old_t = get_timestamp_AtomicBool atomic sync_view.current in let new_t = get_timestamp_AtomicBool atomic sync_view.final in old_t
@@ -998,7 +1002,11 @@ module M_message_passing
   
   function ward_AtomicBool'1 (self: t_Committer_AtomicBool_bool_Acquire_None) : t_AtomicBool
   
-  constant const_ORDERING'0: t_Ordering = Acquire
+  constant const_ORDERING'0 : t_Ordering
+  
+  let set_ORDERING'0 (return) = bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- Acquire ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
+    [ return (_const: t_Ordering) -> -{const_ORDERING'0 = _const}- return ]
   
   predicate load_timestamp_in_view_AtomicBool (atomic: t_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (t: int) =
     let old_t = get_timestamp_AtomicBool atomic sync_view.current in let new_t = get_timestamp_AtomicBool atomic sync_view.final in old_t
@@ -1564,64 +1572,66 @@ module M_message_passing
   
   meta "select_lsinst" "all"
   
-  let message_passing (return (x: ())) = (! bb0
-    [ bb0 = s0
-      [ s0 = new (fun (_x: t_SyncView) -> [ &_6 <- _x ] s1)
-      | s1 = MutBorrow.borrow_mut <t_SyncView> {_6}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_5 <- _bor ] [ &_6 <- _bor.final ] s2)
-      | s2 = borrow_mut_SyncView {_5} (fun (_x: MutBorrow.t t_SyncView) -> [ &_4 <- _x ] s3)
-      | s3 = new'0 {false} {_4} (fun (_x: tup2_AtomicBool_Ghost_Perm_AtomicBool) -> [ &_3 <- _x ] s4)
-      | s4 = [ &atomic <- _3.f0 ] s5
-      | s5 = [ &atomic_own'0 <- _3.f1 ] s6
-      | s6 = new_i32 {(0: Int32.t)} (fun (_x: tup2_PermCell_i32_Ghost_Perm_PermCell_i32) -> [ &_9 <- _x ] s7)
-      | s7 = [ &data'0 <- _9.f0'1 ] s8
-      | s8 = [ &data_own <- _9.f1'1 ] s9
-      | s9 = alloc_Option_Excl_unit {Some'0 { f0'2 = () }}
-          (fun (_x: t_Resource_Option_Excl_unit) -> [ &excl_write <- _x ] s10)
-      | s10 = alloc_Option_Excl_unit {Some'0 { f0'2 = () }}
-          (fun (_x: t_Resource_Option_Excl_unit) -> [ &excl_read <- _x ] s11)
-      | s11 = into_inner_Perm_AtomicBool {atomic_own'0} (fun (_x: t_Perm_AtomicBool) -> [ &_19 <- _x ] s12)
-      | s12 = [ &_21 <- None'1 ] s13
-      | s13 = deref_Ghost_Resource_Option_Excl_unit {excl_write}
-          (fun (_x: t_Resource_Option_Excl_unit) -> [ &_25 <- _x ] s14)
-      | s14 = id_ghost_Option_Excl_unit {_25} (fun (_x: t_Id) -> [ &_23 <- _x ] s15)
-      | s15 = new_unit_Option_Excl_unit {_23} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_22 <- _x ] s16)
-      | s16 = deref_Ghost_Resource_Option_Excl_unit {excl_read}
-          (fun (_x: t_Resource_Option_Excl_unit) -> [ &_30 <- _x ] s17)
-      | s17 = id_ghost_Option_Excl_unit {_30} (fun (_x: t_Id) -> [ &_28 <- _x ] s18)
-      | s18 = new_unit_Option_Excl_unit {_28} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_27 <- _x ] s19)
-      | s19 = [ &_18 <- { atomic_own = _19; at_view = _21; tok_write = _22; tok_read = _27; data = data'0 } ] s20
-      | s20 = new_MessagePassingAtomicInv {_18} (fun (_x: t_MessagePassingAtomicInv) -> [ &_17 <- _x ] s21)
-      | s21 = new_MessagePassingAtomicInv'0 {_17} {Namespace_MESSAGE_PASSING 0}
-          (fun (_x: t_AtomicInvariant_MessagePassingAtomicInv) -> [ &inv <- _x ] s22)
-      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_AtomicBool atomic} any) ]
-      | s23 = -{resolve_AtomicBool atomic}- s24
-      | s24 = [ &_38 <- { c0 = inv; c1 = data'0; c2 = atomic; c3 = excl_write; c4 = data_own; c5 = excl_read } ] s25
-      | s25 = scope_closure0 {_38} (fun (_x: ()) -> [ &_37 <- _x ] s26)
-      | s26 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & atomic: t_AtomicBool = Any.any_l ()
-    | & atomic_own'0: t_Perm_AtomicBool = Any.any_l ()
-    | & _3: tup2_AtomicBool_Ghost_Perm_AtomicBool = Any.any_l ()
-    | & _4: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _5: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _6: t_SyncView = Any.any_l ()
-    | & data'0: t_PermCell_i32 = Any.any_l ()
-    | & data_own: t_Perm_PermCell_i32 = Any.any_l ()
-    | & _9: tup2_PermCell_i32_Ghost_Perm_PermCell_i32 = Any.any_l ()
-    | & excl_write: t_Resource_Option_Excl_unit = Any.any_l ()
-    | & excl_read: t_Resource_Option_Excl_unit = Any.any_l ()
-    | & inv: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l ()
-    | & _17: t_MessagePassingAtomicInv = Any.any_l ()
-    | & _18: t_MessagePassingAtomicInv = Any.any_l ()
-    | & _19: t_Perm_AtomicBool = Any.any_l ()
-    | & _21: t_Option_AtView_Perm_PermCell_i32 = Any.any_l ()
-    | & _22: t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _23: t_Id = Any.any_l ()
-    | & _25: t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _27: t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _28: t_Id = Any.any_l ()
-    | & _30: t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _37: () = Any.any_l ()
-    | & _38: closure0 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+  let message_passing (return (x: ())) = (! set_ORDERING'0
+      (set_ORDERING
+        (bb0
+        [ bb0 = s0
+          [ s0 = new (fun (_x: t_SyncView) -> [ &_6 <- _x ] s1)
+          | s1 = MutBorrow.borrow_mut <t_SyncView> {_6}
+              (fun (_bor: MutBorrow.t t_SyncView) -> [ &_5 <- _bor ] [ &_6 <- _bor.final ] s2)
+          | s2 = borrow_mut_SyncView {_5} (fun (_x: MutBorrow.t t_SyncView) -> [ &_4 <- _x ] s3)
+          | s3 = new'0 {false} {_4} (fun (_x: tup2_AtomicBool_Ghost_Perm_AtomicBool) -> [ &_3 <- _x ] s4)
+          | s4 = [ &atomic <- _3.f0 ] s5
+          | s5 = [ &atomic_own'0 <- _3.f1 ] s6
+          | s6 = new_i32 {(0: Int32.t)} (fun (_x: tup2_PermCell_i32_Ghost_Perm_PermCell_i32) -> [ &_9 <- _x ] s7)
+          | s7 = [ &data'0 <- _9.f0'1 ] s8
+          | s8 = [ &data_own <- _9.f1'1 ] s9
+          | s9 = alloc_Option_Excl_unit {Some'0 { f0'2 = () }}
+              (fun (_x: t_Resource_Option_Excl_unit) -> [ &excl_write <- _x ] s10)
+          | s10 = alloc_Option_Excl_unit {Some'0 { f0'2 = () }}
+              (fun (_x: t_Resource_Option_Excl_unit) -> [ &excl_read <- _x ] s11)
+          | s11 = into_inner_Perm_AtomicBool {atomic_own'0} (fun (_x: t_Perm_AtomicBool) -> [ &_19 <- _x ] s12)
+          | s12 = [ &_21 <- None'1 ] s13
+          | s13 = deref_Ghost_Resource_Option_Excl_unit {excl_write}
+              (fun (_x: t_Resource_Option_Excl_unit) -> [ &_25 <- _x ] s14)
+          | s14 = id_ghost_Option_Excl_unit {_25} (fun (_x: t_Id) -> [ &_23 <- _x ] s15)
+          | s15 = new_unit_Option_Excl_unit {_23} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_22 <- _x ] s16)
+          | s16 = deref_Ghost_Resource_Option_Excl_unit {excl_read}
+              (fun (_x: t_Resource_Option_Excl_unit) -> [ &_30 <- _x ] s17)
+          | s17 = id_ghost_Option_Excl_unit {_30} (fun (_x: t_Id) -> [ &_28 <- _x ] s18)
+          | s18 = new_unit_Option_Excl_unit {_28} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_27 <- _x ] s19)
+          | s19 = [ &_18 <- { atomic_own = _19; at_view = _21; tok_write = _22; tok_read = _27; data = data'0 } ] s20
+          | s20 = new_MessagePassingAtomicInv {_18} (fun (_x: t_MessagePassingAtomicInv) -> [ &_17 <- _x ] s21)
+          | s21 = new_MessagePassingAtomicInv'0 {_17} {Namespace_MESSAGE_PASSING 0}
+              (fun (_x: t_AtomicInvariant_MessagePassingAtomicInv) -> [ &inv <- _x ] s22)
+          | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_AtomicBool atomic} any) ]
+          | s23 = -{resolve_AtomicBool atomic}- s24
+          | s24 = [ &_38 <- { c0 = inv; c1 = data'0; c2 = atomic; c3 = excl_write; c4 = data_own; c5 = excl_read } ] s25
+          | s25 = scope_closure0 {_38} (fun (_x: ()) -> [ &_37 <- _x ] s26)
+          | s26 = return {_ret} ] ]
+        [ & _ret: () = Any.any_l ()
+        | & atomic: t_AtomicBool = Any.any_l ()
+        | & atomic_own'0: t_Perm_AtomicBool = Any.any_l ()
+        | & _3: tup2_AtomicBool_Ghost_Perm_AtomicBool = Any.any_l ()
+        | & _4: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _5: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _6: t_SyncView = Any.any_l ()
+        | & data'0: t_PermCell_i32 = Any.any_l ()
+        | & data_own: t_Perm_PermCell_i32 = Any.any_l ()
+        | & _9: tup2_PermCell_i32_Ghost_Perm_PermCell_i32 = Any.any_l ()
+        | & excl_write: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & excl_read: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & inv: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l ()
+        | & _17: t_MessagePassingAtomicInv = Any.any_l ()
+        | & _18: t_MessagePassingAtomicInv = Any.any_l ()
+        | & _19: t_Perm_AtomicBool = Any.any_l ()
+        | & _21: t_Option_AtView_Perm_PermCell_i32 = Any.any_l ()
+        | & _22: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _23: t_Id = Any.any_l ()
+        | & _25: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _27: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _28: t_Id = Any.any_l ()
+        | & _30: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _37: () = Any.any_l ()
+        | & _38: closure0 = Any.any_l () ]))) [ return (result: ()) -> (! return {result}) ]
 end
