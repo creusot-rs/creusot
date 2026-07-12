@@ -118334,6 +118334,746 @@ module M_std__sync__atomic_no_LA__impl_AtomicI8__wrap_store (* std::sync::atomic
       -> store_rlx_post_AtomicI8 self own sync_view val' result rel_view)}
       (! return {result}) ]
 end
+module M_std__sync__atomic_no_LA__impl_AtomicPtr_T__wrap_load (* std::sync::atomic::AtomicPtr<T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Opaque
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_AcquireSyncView
+  
+  type t_Option_AcquireSyncView = None | Some t_AcquireSyncView
+  
+  let new_Option_AcquireSyncView (x: t_Option_AcquireSyncView) (return (x'0: t_Option_AcquireSyncView)) = any
+    [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  type t_SyncView
+  
+  type t_Perm_AtomicPtr_T
+  
+  type closure4 = {
+    c0: t_Perm_AtomicPtr_T;
+    c1: MutBorrow.t (MutBorrow.t t_SyncView);
+    c2: MutBorrow.t int;
+    c3: MutBorrow.t t_Option_AcquireSyncView }
+  
+  let deref_Ghost_ref_Perm_AtomicPtr_T (self: t_Perm_AtomicPtr_T) (return (x: t_Perm_AtomicPtr_T)) = any
+    [ return (result: t_Perm_AtomicPtr_T) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
+  
+  let deref_mut_Ghost_refmut_SyncView (self: MutBorrow.t (MutBorrow.t t_SyncView))
+    (return (x: MutBorrow.t (MutBorrow.t t_SyncView))) = any
+    [ return (result: MutBorrow.t (MutBorrow.t t_SyncView)) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
+      (! return {result}) ]
+  
+  type t_Committer_AtomicPtr_T_ptr_T_Load_None
+  
+  predicate shot_store_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Load_None)
+  
+  type t_AtomicPtr_T
+  
+  function ward_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Load_None) : t_AtomicPtr_T
+  
+  function ward_AtomicPtr_T'0 (self: t_Perm_AtomicPtr_T) : t_AtomicPtr_T
+  
+  type t_Ordering = Relaxed | Release | Acquire | AcqRel | SeqCst
+  
+  constant const_ORDERING : t_Ordering
+  
+  predicate lt_log_SyncView (self: t_SyncView) (_2: t_SyncView)
+  
+  predicate le_log_SyncView [@inline:trivial] (self: t_SyncView) (other: t_SyncView) =
+    lt_log_SyncView self other \/ self = other
+  
+  meta "rewrite_def" predicate le_log_SyncView
+  
+  function le_lt_log_SyncView (self: t_SyncView) (other: t_SyncView) : ()
+  
+  axiom le_lt_log_SyncView_spec: forall self: t_SyncView, other: t_SyncView. le_log_SyncView self other
+      = (lt_log_SyncView self other \/ self = other)
+  
+  function transitive_SyncView (x: t_SyncView) (y: t_SyncView) (z: t_SyncView) : ()
+  
+  axiom transitive_SyncView_spec: forall x: t_SyncView, y: t_SyncView, z: t_SyncView. lt_log_SyncView x y
+      -> lt_log_SyncView y z -> lt_log_SyncView x z
+  
+  function irreflexive_SyncView (self: t_SyncView) : ()
+  
+  axiom irreflexive_SyncView_spec: forall self: t_SyncView. not lt_log_SyncView self self
+  
+  function get_timestamp_AtomicPtr_T (self: t_AtomicPtr_T) (_2: t_SyncView) : int
+  
+  function get_timestamp_monotonic_AtomicPtr_T (self: t_AtomicPtr_T) (x: t_SyncView) (y: t_SyncView) : ()
+  
+  axiom get_timestamp_monotonic_AtomicPtr_T_spec:
+    forall self: t_AtomicPtr_T, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
+      -> get_timestamp_AtomicPtr_T self x <= get_timestamp_AtomicPtr_T self y
+  
+  predicate load_timestamp_in_view_AtomicPtr_T (atomic: t_AtomicPtr_T) (sync_view: MutBorrow.t t_SyncView) (t: int) =
+    let old_t = get_timestamp_AtomicPtr_T atomic sync_view.current in let new_t = get_timestamp_AtomicPtr_T atomic sync_view.final in old_t
+      <= t
+    /\ t <= new_t
+  
+  type tup2_ptr_T_SyncView = { f0: Opaque.ptr; f1: t_SyncView }
+  
+  type t_Option_tup2_ptr_T_SyncView = None'0 | Some'0 tup2_ptr_T_SyncView
+  
+  type t_FMap_Int_tup2_ptr_T_SyncView
+  
+  function to_mapping_Int (self: t_FMap_Int_tup2_ptr_T_SyncView) : Map.map int t_Option_tup2_ptr_T_SyncView
+  
+  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_ptr_T_SyncView) (k: int) : t_Option_tup2_ptr_T_SyncView =
+    Map.get (to_mapping_Int self) k
+  
+  meta "rewrite_def" function get_Int
+  
+  function val_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
+  
+  predicate load_reads_from_history_AtomicPtr_T (own: t_Perm_AtomicPtr_T) (thread_view: t_SyncView) (val': Opaque.ptr) (t: int) =
+    match get_Int (val_AtomicPtr_T own) t with
+      | Some'0 {f0 = v; f1 = v_view} -> v = val' /\ le_log_SyncView v_view thread_view
+      | None'0 -> false
+      end
+  
+  predicate view_mono (sync_view: MutBorrow.t t_SyncView) = le_log_SyncView sync_view.current sync_view.final
+  
+  predicate load_acq_post_AtomicPtr_T (atomic: t_AtomicPtr_T) (own: t_Perm_AtomicPtr_T) (sync_view: MutBorrow.t t_SyncView) (val': Opaque.ptr) (t: int) =
+    load_timestamp_in_view_AtomicPtr_T atomic sync_view t
+    /\ load_reads_from_history_AtomicPtr_T own sync_view.final val' t /\ view_mono sync_view
+  
+  function val_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Load_None) : Opaque.ptr
+  
+  function timestamp_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Load_None) : int
+  
+  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
+  
+  predicate load_rlx_post_AtomicPtr_T (atomic: t_AtomicPtr_T) (own: t_Perm_AtomicPtr_T) (sync_view: MutBorrow.t t_SyncView) (val': Opaque.ptr) (t: int) (acq_sync_view: t_AcquireSyncView) =
+    load_timestamp_in_view_AtomicPtr_T atomic sync_view t
+    /\ load_reads_from_history_AtomicPtr_T own (view_AcquireSyncView acq_sync_view) val' t /\ view_mono sync_view
+  
+  let shoot_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Load_None) (own: t_Perm_AtomicPtr_T)
+    (sync_view: MutBorrow.t t_SyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:shoot_load_AtomicPtr_T requires] ([@stop_split] [@expl:shoot_load requires #0] not shot_store_AtomicPtr_T self)
+    /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicPtr_T self = ward_AtomicPtr_T'0 own)}
+    any
+    [ return (result: t_AcquireSyncView) ->
+    {[@stop_split] [@expl:shoot_load_AtomicPtr_T ensures] ([@stop_split] [@expl:shoot_load ensures #0] const_ORDERING
+          = Acquire
+        -> load_acq_post_AtomicPtr_T (ward_AtomicPtr_T self) own sync_view (val_load_AtomicPtr_T self) (timestamp_AtomicPtr_T self))
+      /\ ([@stop_split] [@expl:shoot_load ensures #1] const_ORDERING = Relaxed
+      -> load_rlx_post_AtomicPtr_T (ward_AtomicPtr_T self) own sync_view (val_load_AtomicPtr_T self) (timestamp_AtomicPtr_T self) result)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_SyncView)) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_refmut_SyncView
+  
+  predicate resolve_refmut_closure4 [@inline:trivial] (_1: MutBorrow.t closure4) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure4
+  
+  predicate hist_inv_closure4 (self: closure4) (result_state: closure4) =
+    result_state.c0 = self.c0
+    /\ result_state.c1.final = self.c1.final
+    /\ result_state.c2.final = self.c2.final /\ result_state.c3.final = self.c3.final
+  
+  let closure4 [@coma:extspec] (self: MutBorrow.t closure4) (c: t_Committer_AtomicPtr_T_ptr_T_Load_None)
+    (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = deref_Ghost_ref_Perm_AtomicPtr_T {self.current.c0} (fun (_x: t_Perm_AtomicPtr_T) -> [ &_6 <- _x ] s1)
+      | s1 = MutBorrow.borrow_mut <MutBorrow.t t_SyncView> {self.current.c1.current}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_SyncView)) ->
+            [ &_10 <- _bor ]
+            [ &self <- { self with current = { self.current with c1 = { self.current.c1 with current = _bor.final } } } ]
+            s2)
+      | s2 = deref_mut_Ghost_refmut_SyncView {_10} (fun (_x: MutBorrow.t (MutBorrow.t t_SyncView)) -> [ &_9 <- _x ] s3)
+      | s3 = MutBorrow.borrow_mut <t_SyncView> {_9.current.current}
+          (fun (_bor: MutBorrow.t t_SyncView) ->
+            [ &_8 <- _bor ] [ &_9 <- { _9 with current = { _9.current with current = _bor.final } } ] s4)
+      | s4 = shoot_load_AtomicPtr_T {c} {_6} {_8} (fun (_x: t_AcquireSyncView) -> [ &acq_sync_view <- _x ] s5)
+      | s5 = -{resolve_refmut_refmut_SyncView _9}- s6
+      | s6 =
+        [ &self <- { self with current = { self.current with c2 = { self.current.c2 with current = timestamp_AtomicPtr_T c } } } ]
+        s7
+      | s7 = [ &_15 <- Some acq_sync_view ] s8
+      | s8 = new_Option_AcquireSyncView {_15} (fun (_x: t_Option_AcquireSyncView) -> [ &_14 <- _x ] s9)
+      | s9 = [ &self <- { self with current = { self.current with c3 = { self.current.c3 with current = _14 } } } ] s10
+      | s10 = -{resolve_refmut_closure4 self}- s11
+      | s11 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t closure4 = self
+    | & c: t_Committer_AtomicPtr_T_ptr_T_Load_None = c
+    | & acq_sync_view: t_AcquireSyncView = Any.any_l ()
+    | & _6: t_Perm_AtomicPtr_T = Any.any_l ()
+    | & _8: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _9: MutBorrow.t (MutBorrow.t t_SyncView) = Any.any_l ()
+    | & _10: MutBorrow.t (MutBorrow.t t_SyncView) = Any.any_l ()
+    | & _14: t_Option_AcquireSyncView = Any.any_l ()
+    | & _15: t_Option_AcquireSyncView = Any.any_l () ]
+    [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure4 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure4'pre
+  
+  meta "rewrite_def" predicate closure4'post'return
+  
+  type t_FnGhostWrapper_closure4 = { f0'0: closure4 }
+  
+  let __new_closure4 (f: closure4) (return (x: t_FnGhostWrapper_closure4)) = any
+    [ return (result: t_FnGhostWrapper_closure4) -> {[@stop_split] [@expl:__new ensures] result.f0'0 = f}
+      (! return {result}) ]
+  
+  let new_FnGhostWrapper_closure4 (x: t_FnGhostWrapper_closure4) (return (x'0: t_FnGhostWrapper_closure4)) = any
+    [ return (result: t_FnGhostWrapper_closure4) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  predicate inv_AtomicPtr_T (_1: t_AtomicPtr_T)
+  
+  predicate invariant_ref_AtomicPtr_T [@inline:trivial] (self: t_AtomicPtr_T) = inv_AtomicPtr_T self
+  
+  meta "rewrite_def" predicate invariant_ref_AtomicPtr_T
+  
+  predicate inv_ref_AtomicPtr_T [@inline:trivial] (_1: t_AtomicPtr_T) = invariant_ref_AtomicPtr_T _1
+  
+  meta "rewrite_def" predicate inv_ref_AtomicPtr_T
+  
+  predicate precondition_closure4 (self: closure4) (args: t_Committer_AtomicPtr_T_ptr_T_Load_None) =
+    let c = args in forall bor_self: MutBorrow.t closure4. bor_self.current = self -> closure4'pre bor_self c
+  
+  meta "rewrite_def" predicate precondition_closure4
+  
+  predicate precondition_FnGhostWrapper_closure4 (self: t_FnGhostWrapper_closure4) (args: t_Committer_AtomicPtr_T_ptr_T_Load_None) =
+    precondition_closure4 self.f0'0 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure4
+  
+  predicate resolve_refmut_Ghost_Option_AcquireSyncView [@inline:trivial] (_1: MutBorrow.t t_Option_AcquireSyncView) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_Option_AcquireSyncView
+  
+  predicate resolve_refmut_Snapshot_Int [@inline:trivial] (_1: MutBorrow.t int) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Snapshot_Int
+  
+  predicate resolve_refmut_Ghost_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_SyncView)) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_refmut_SyncView
+  
+  predicate resolve_closure4 [@inline:trivial] (_1: closure4) =
+    resolve_refmut_Ghost_Option_AcquireSyncView _1.c3
+    /\ resolve_refmut_Snapshot_Int _1.c2 /\ resolve_refmut_Ghost_refmut_SyncView _1.c1
+  
+  meta "rewrite_def" predicate resolve_closure4
+  
+  predicate postcondition_once_closure4 (self: closure4) (args: t_Committer_AtomicPtr_T_ptr_T_Load_None) (result: ()) =
+    let c = args in exists e: closure4. (exists bor_self: MutBorrow.t closure4. bor_self.current = self
+          /\ bor_self.final = e /\ closure4'post'return bor_self c result /\ hist_inv_closure4 self e)
+      /\ resolve_closure4 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure4
+  
+  predicate postcondition_once_FnGhostWrapper_closure4 (self: t_FnGhostWrapper_closure4) (args: t_Committer_AtomicPtr_T_ptr_T_Load_None) (result: ()) =
+    postcondition_once_closure4 self.f0'0 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure4
+  
+  let load_T (self: t_AtomicPtr_T) (f: t_FnGhostWrapper_closure4) (return (x: Opaque.ptr)) =
+  {[@stop_split] [@expl:load_T requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicPtr_T self)
+    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicPtr_T_ptr_T_Load_None. not shot_store_AtomicPtr_T c
+      -> ward_AtomicPtr_T c = self -> precondition_FnGhostWrapper_closure4 f c)}
+    any
+    [ return (result: Opaque.ptr) ->
+    {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicPtr_T_ptr_T_Load_None. not shot_store_AtomicPtr_T c
+        /\ ward_AtomicPtr_T c = self
+        /\ val_load_AtomicPtr_T c = result /\ postcondition_once_FnGhostWrapper_closure4 f c ()}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_SyncView
+  
+  predicate resolve_Ghost_refmut_SyncView [@inline:trivial] (self: MutBorrow.t t_SyncView) =
+    resolve_refmut_SyncView self
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_SyncView
+  
+  predicate resolve_Ghost_refmut_SyncView'0 [@inline:trivial] (_1: MutBorrow.t t_SyncView) =
+    resolve_Ghost_refmut_SyncView _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_SyncView'0
+  
+  let deref_Ghost_Option_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_Option_AcquireSyncView)) = any
+    [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
+      (! return {result}) ]
+  
+  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+      (! return {result}) ]
+  
+  let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  type tup3_ptr_T_Snapshot_Int_Ghost_AcquireSyncView = { f0'1: Opaque.ptr; f1'1: int; f2'1: t_AcquireSyncView }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let wrap_load_T (self: t_AtomicPtr_T) (own: t_Perm_AtomicPtr_T) (sync_view: MutBorrow.t t_SyncView)
+    (return (x: tup3_ptr_T_Snapshot_Int_Ghost_AcquireSyncView)) =
+  {[@stop_split] [@expl:wrap_load_T requires] ([@stop_split] [@expl:wrap_load 'self' type invariant] inv_ref_AtomicPtr_T self)
+    /\ ([@stop_split] [@expl:wrap_load requires] self = ward_AtomicPtr_T'0 own)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &ts <- 0 ] s1
+      | s1 = [ &_18 <- None ] s2
+      | s2 = new_Option_AcquireSyncView {_18} (fun (_x: t_Option_AcquireSyncView) -> [ &acq_sync_view_opt <- _x ] s3)
+      | s3 = MutBorrow.borrow_mut <MutBorrow.t t_SyncView> {sync_view}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_SyncView)) -> [ &_25 <- _bor ] [ &sync_view <- _bor.final ] s4)
+      | s4 = MutBorrow.borrow_mut <int> {ts} (fun (_bor: MutBorrow.t int) -> [ &_26 <- _bor ] [ &ts <- _bor.final ] s5)
+      | s5 = MutBorrow.borrow_mut <t_Option_AcquireSyncView> {acq_sync_view_opt}
+          (fun (_bor: MutBorrow.t t_Option_AcquireSyncView) -> [ &_27 <- _bor ] [ &acq_sync_view_opt <- _bor.final ] s6)
+      | s6 = [ &_23 <- { c0 = own; c1 = _25; c2 = _26; c3 = _27 } ] s7
+      | s7 = __new_closure4 {_23} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_22 <- _x ] s8)
+      | s8 = new_FnGhostWrapper_closure4 {_22} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_21 <- _x ] s9)
+      | s9 = load_T {self} {_21} (fun (_x: Opaque.ptr) -> [ &val' <- _x ] s10)
+      | s10 = -{resolve_Ghost_refmut_SyncView'0 sync_view}- s11
+      | s11 = deref_Ghost_Option_AcquireSyncView {acq_sync_view_opt}
+          (fun (_x: t_Option_AcquireSyncView) -> [ &_33 <- _x ] s12)
+      | s12 = unwrap_AcquireSyncView {_33} (fun (_x: t_AcquireSyncView) -> [ &_31 <- _x ] s13)
+      | s13 = new_AcquireSyncView {_31} (fun (_x: t_AcquireSyncView) -> [ &_30 <- _x ] s14)
+      | s14 = [ &_ret <- { f0'1 = val'; f1'1 = ts; f2'1 = _30 } ] s15
+      | s15 = return {_ret} ] ]
+    [ & _ret: tup3_ptr_T_Snapshot_Int_Ghost_AcquireSyncView = Any.any_l ()
+    | & self: t_AtomicPtr_T = self
+    | & own: t_Perm_AtomicPtr_T = own
+    | & sync_view: MutBorrow.t t_SyncView = sync_view
+    | & ts: int = Any.any_l ()
+    | & acq_sync_view_opt: t_Option_AcquireSyncView = Any.any_l ()
+    | & _18: t_Option_AcquireSyncView = Any.any_l ()
+    | & val': Opaque.ptr = Any.any_l ()
+    | & _21: t_FnGhostWrapper_closure4 = Any.any_l ()
+    | & _22: t_FnGhostWrapper_closure4 = Any.any_l ()
+    | & _23: closure4 = Any.any_l ()
+    | & _25: MutBorrow.t (MutBorrow.t t_SyncView) = Any.any_l ()
+    | & _26: MutBorrow.t int = Any.any_l ()
+    | & _27: MutBorrow.t t_Option_AcquireSyncView = Any.any_l ()
+    | & _30: t_AcquireSyncView = Any.any_l ()
+    | & _31: t_AcquireSyncView = Any.any_l ()
+    | & _33: t_Option_AcquireSyncView = Any.any_l () ])
+    [ return (result: tup3_ptr_T_Snapshot_Int_Ghost_AcquireSyncView) ->
+    {[@stop_split] [@expl:wrap_load_T ensures] ([@stop_split] [@expl:wrap_load ensures #0] const_ORDERING = Acquire
+        -> load_acq_post_AtomicPtr_T self own sync_view result.f0'1 result.f1'1)
+      /\ ([@stop_split] [@expl:wrap_load ensures #1] const_ORDERING = Relaxed
+      -> load_rlx_post_AtomicPtr_T self own sync_view result.f0'1 result.f1'1 result.f2'1)}
+      (! return {result}) ]
+end
+module M_std__sync__atomic_no_LA__impl_AtomicPtr_T__wrap_store (* std::sync::atomic::AtomicPtr<T> *)
+  type namespace_other
+  
+  type t_Namespace = Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Opaque
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Perm_AtomicPtr_T
+  
+  type t_SyncView
+  
+  type t_ReleaseSyncView
+  
+  type closure4 = {
+    c0: MutBorrow.t (MutBorrow.t t_Perm_AtomicPtr_T);
+    c1: MutBorrow.t (MutBorrow.t t_SyncView);
+    c2: t_ReleaseSyncView;
+    c3: MutBorrow.t int }
+  
+  let deref_mut_Ghost_refmut_Perm_AtomicPtr_T (self: MutBorrow.t (MutBorrow.t t_Perm_AtomicPtr_T))
+    (return (x: MutBorrow.t (MutBorrow.t t_Perm_AtomicPtr_T))) = any
+    [ return (result: MutBorrow.t (MutBorrow.t t_Perm_AtomicPtr_T)) -> {[@stop_split] [@expl:deref_mut ensures] result
+      = self}
+      (! return {result}) ]
+  
+  let deref_mut_Ghost_refmut_SyncView (self: MutBorrow.t (MutBorrow.t t_SyncView))
+    (return (x: MutBorrow.t (MutBorrow.t t_SyncView))) = any
+    [ return (result: MutBorrow.t (MutBorrow.t t_SyncView)) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
+      (! return {result}) ]
+  
+  let deref_Ghost_ReleaseSyncView (self: t_ReleaseSyncView) (return (x: t_ReleaseSyncView)) = any
+    [ return (result: t_ReleaseSyncView) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
+  
+  type t_Committer_AtomicPtr_T_ptr_T_None_Store
+  
+  predicate shot_store_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_None_Store)
+  
+  type t_AtomicPtr_T
+  
+  function ward_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_None_Store) : t_AtomicPtr_T
+  
+  function ward_AtomicPtr_T'0 (self: t_Perm_AtomicPtr_T) : t_AtomicPtr_T
+  
+  function val_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_None_Store) : Opaque.ptr
+  
+  function val_store_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_None_Store) : Opaque.ptr
+  
+  function timestamp_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_None_Store) : int
+  
+  predicate hist_inv_AtomicPtr_T [@inline:trivial] (self: t_Committer_AtomicPtr_T_ptr_T_None_Store) (other: t_Committer_AtomicPtr_T_ptr_T_None_Store) =
+    ward_AtomicPtr_T self = ward_AtomicPtr_T other
+    /\ val_load_AtomicPtr_T self = val_load_AtomicPtr_T other
+    /\ val_store_AtomicPtr_T self = val_store_AtomicPtr_T other
+    /\ timestamp_AtomicPtr_T self = timestamp_AtomicPtr_T other
+  
+  meta "rewrite_def" predicate hist_inv_AtomicPtr_T
+  
+  type t_Ordering = Relaxed | Release | Acquire | AcqRel | SeqCst
+  
+  constant const_ORDERING : t_Ordering
+  
+  predicate lt_log_SyncView (self: t_SyncView) (_2: t_SyncView)
+  
+  predicate le_log_SyncView [@inline:trivial] (self: t_SyncView) (other: t_SyncView) =
+    lt_log_SyncView self other \/ self = other
+  
+  meta "rewrite_def" predicate le_log_SyncView
+  
+  function le_lt_log_SyncView (self: t_SyncView) (other: t_SyncView) : ()
+  
+  axiom le_lt_log_SyncView_spec: forall self: t_SyncView, other: t_SyncView. le_log_SyncView self other
+      = (lt_log_SyncView self other \/ self = other)
+  
+  function transitive_SyncView (x: t_SyncView) (y: t_SyncView) (z: t_SyncView) : ()
+  
+  axiom transitive_SyncView_spec: forall x: t_SyncView, y: t_SyncView, z: t_SyncView. lt_log_SyncView x y
+      -> lt_log_SyncView y z -> lt_log_SyncView x z
+  
+  function irreflexive_SyncView (self: t_SyncView) : ()
+  
+  axiom irreflexive_SyncView_spec: forall self: t_SyncView. not lt_log_SyncView self self
+  
+  function get_timestamp_AtomicPtr_T (self: t_AtomicPtr_T) (_2: t_SyncView) : int
+  
+  function get_timestamp_monotonic_AtomicPtr_T (self: t_AtomicPtr_T) (x: t_SyncView) (y: t_SyncView) : ()
+  
+  axiom get_timestamp_monotonic_AtomicPtr_T_spec:
+    forall self: t_AtomicPtr_T, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
+      -> get_timestamp_AtomicPtr_T self x <= get_timestamp_AtomicPtr_T self y
+  
+  predicate store_timestamp_in_view_AtomicPtr_T (atomic: t_AtomicPtr_T) (sync_view: MutBorrow.t t_SyncView) (t: int) =
+    let old_t = get_timestamp_AtomicPtr_T atomic sync_view.current in let new_t = get_timestamp_AtomicPtr_T atomic sync_view.final in old_t
+      < t
+    /\ t <= new_t
+  
+  type t_FMap_Int_tup2_ptr_T_SyncView
+  
+  type tup2_ptr_T_SyncView = { f0: Opaque.ptr; f1: t_SyncView }
+  
+  type t_Option_tup2_ptr_T_SyncView = None | Some tup2_ptr_T_SyncView
+  
+  function to_mapping_Int (self: t_FMap_Int_tup2_ptr_T_SyncView) : Map.map int t_Option_tup2_ptr_T_SyncView
+  
+  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_ptr_T_SyncView) (k: int) : t_Option_tup2_ptr_T_SyncView =
+    Map.get (to_mapping_Int self) k
+  
+  meta "rewrite_def" function get_Int
+  
+  function val_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_Int (self: t_FMap_Int_tup2_ptr_T_SyncView) : int
+  
+  axiom len_Int_spec: forall self: t_FMap_Int_tup2_ptr_T_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
+  
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_ptr_T_SyncView) (k: int) = get_Int self k <> None
+  
+  meta "rewrite_def" predicate contains_Int
+  
+  function insert_Int (self: t_FMap_Int_tup2_ptr_T_SyncView) (k: int) (v: tup2_ptr_T_SyncView) : t_FMap_Int_tup2_ptr_T_SyncView
+  
+  axiom insert_Int_spec:
+    forall self: t_FMap_Int_tup2_ptr_T_SyncView, k: int, v: tup2_ptr_T_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+      = Map.set (to_mapping_Int self) k (Some v)
+  
+  axiom insert_Int_spec'0:
+    forall self: t_FMap_Int_tup2_ptr_T_SyncView, k: int, v: tup2_ptr_T_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+      = (if contains_Int self k then len_Int self else len_Int self + 1)
+  
+  predicate store_inserts_in_history_AtomicPtr_T (own: MutBorrow.t t_Perm_AtomicPtr_T) (thread_view: t_SyncView) (val': Opaque.ptr) (t: int) =
+    get_Int (val_AtomicPtr_T own.current) t = None
+    /\ val_AtomicPtr_T own.final = insert_Int (val_AtomicPtr_T own.current) t { f0 = val'; f1 = thread_view }
+    /\ ward_AtomicPtr_T'0 own.current = ward_AtomicPtr_T'0 own.final
+  
+  predicate view_mono (sync_view: MutBorrow.t t_SyncView) = le_log_SyncView sync_view.current sync_view.final
+  
+  predicate store_rel_post_AtomicPtr_T (atomic: t_AtomicPtr_T) (own: MutBorrow.t t_Perm_AtomicPtr_T) (sync_view: MutBorrow.t t_SyncView) (val': Opaque.ptr) (t: int) =
+    store_timestamp_in_view_AtomicPtr_T atomic sync_view t
+    /\ store_inserts_in_history_AtomicPtr_T own sync_view.final val' t
+    /\ view_mono sync_view /\ ward_AtomicPtr_T'0 own.current = ward_AtomicPtr_T'0 own.final
+  
+  function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
+  
+  predicate store_rlx_post_AtomicPtr_T (atomic: t_AtomicPtr_T) (own: MutBorrow.t t_Perm_AtomicPtr_T) (sync_view: MutBorrow.t t_SyncView) (val': Opaque.ptr) (t: int) (rel_view: t_ReleaseSyncView) =
+    store_timestamp_in_view_AtomicPtr_T atomic sync_view t
+    /\ store_inserts_in_history_AtomicPtr_T own (view_ReleaseSyncView rel_view) val' t
+    /\ view_mono sync_view /\ ward_AtomicPtr_T'0 own.current = ward_AtomicPtr_T'0 own.final
+  
+  let shoot_store_AtomicPtr_T (self: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_None_Store)
+    (own: MutBorrow.t t_Perm_AtomicPtr_T) (sync_view: MutBorrow.t t_SyncView) (rel_view: t_ReleaseSyncView)
+    (return (x: ())) =
+  {[@stop_split] [@expl:shoot_store_AtomicPtr_T requires] ([@stop_split] [@expl:shoot_store requires #0] not shot_store_AtomicPtr_T self.current)
+    /\ ([@stop_split] [@expl:shoot_store requires #1] ward_AtomicPtr_T self.current = ward_AtomicPtr_T'0 own.current)}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:shoot_store_AtomicPtr_T ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicPtr_T self.current self.final)
+      /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicPtr_T self.final)
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] const_ORDERING = Release
+        -> store_rel_post_AtomicPtr_T (ward_AtomicPtr_T self.current) own sync_view (val_store_AtomicPtr_T self.current) (timestamp_AtomicPtr_T self.current
+        + 1))
+      /\ ([@stop_split] [@expl:shoot_store ensures #3] const_ORDERING = Relaxed
+      -> store_rlx_post_AtomicPtr_T (ward_AtomicPtr_T self.current) own sync_view (val_store_AtomicPtr_T self.current) (timestamp_AtomicPtr_T self.current
+      + 1) rel_view)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_SyncView)) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_refmut_SyncView
+  
+  predicate resolve_refmut_refmut_Perm_AtomicPtr_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_Perm_AtomicPtr_T)) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_refmut_Perm_AtomicPtr_T
+  
+  predicate resolve_refmut_Committer_AtomicPtr_T_ptr_T_None_Store [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_None_Store) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Committer_AtomicPtr_T_ptr_T_None_Store
+  
+  predicate resolve_refmut_closure4 [@inline:trivial] (_1: MutBorrow.t closure4) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure4
+  
+  predicate hist_inv_closure4 (self: closure4) (result_state: closure4) =
+    result_state.c0.final = self.c0.final
+    /\ result_state.c1.final = self.c1.final /\ result_state.c2 = self.c2 /\ result_state.c3.final = self.c3.final
+  
+  let closure4 [@coma:extspec] (self: MutBorrow.t closure4) (c: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_None_Store)
+    (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <MutBorrow.t t_Perm_AtomicPtr_T> {self.current.c0.current}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_Perm_AtomicPtr_T)) ->
+            [ &_7 <- _bor ]
+            [ &self <- { self with current = { self.current with c0 = { self.current.c0 with current = _bor.final } } } ]
+            s1)
+      | s1 = deref_mut_Ghost_refmut_Perm_AtomicPtr_T {_7}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_Perm_AtomicPtr_T)) -> [ &_6 <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <MutBorrow.t t_SyncView> {self.current.c1.current}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_SyncView)) ->
+            [ &_10 <- _bor ]
+            [ &self <- { self with current = { self.current with c1 = { self.current.c1 with current = _bor.final } } } ]
+            s3)
+      | s3 = deref_mut_Ghost_refmut_SyncView {_10} (fun (_x: MutBorrow.t (MutBorrow.t t_SyncView)) -> [ &_9 <- _x ] s4)
+      | s4 = deref_Ghost_ReleaseSyncView {self.current.c2} (fun (_x: t_ReleaseSyncView) -> [ &_12 <- _x ] s5)
+      | s5 = MutBorrow.borrow_final <t_Committer_AtomicPtr_T_ptr_T_None_Store> {c.current} {MutBorrow.get_id c}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_None_Store) ->
+            [ &_4 <- _bor ] [ &c <- { c with current = _bor.final } ] s6)
+      | s6 = MutBorrow.borrow_mut <t_Perm_AtomicPtr_T> {_6.current.current}
+          (fun (_bor: MutBorrow.t t_Perm_AtomicPtr_T) ->
+            [ &_5 <- _bor ] [ &_6 <- { _6 with current = { _6.current with current = _bor.final } } ] s7)
+      | s7 = MutBorrow.borrow_mut <t_SyncView> {_9.current.current}
+          (fun (_bor: MutBorrow.t t_SyncView) ->
+            [ &_8 <- _bor ] [ &_9 <- { _9 with current = { _9.current with current = _bor.final } } ] s8)
+      | s8 = shoot_store_AtomicPtr_T {_4} {_5} {_8} {_12} (fun (_x: ()) -> [ &_3 <- _x ] s9)
+      | s9 = -{resolve_refmut_refmut_SyncView _9}- s10
+      | s10 = -{resolve_refmut_refmut_Perm_AtomicPtr_T _6}- s11
+      | s11 = -{resolve_refmut_Committer_AtomicPtr_T_ptr_T_None_Store c}- s12
+      | s12 =
+        [ &self <- { self with current = { self.current with c3 = { self.current.c3 with current = timestamp_AtomicPtr_T c.current
+                                                                                         + 1 } } } ] s13
+      | s13 = -{resolve_refmut_closure4 self}- s14
+      | s14 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t closure4 = self
+    | & c: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_None_Store = c
+    | & _3: () = Any.any_l ()
+    | & _4: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_None_Store = Any.any_l ()
+    | & _5: MutBorrow.t t_Perm_AtomicPtr_T = Any.any_l ()
+    | & _6: MutBorrow.t (MutBorrow.t t_Perm_AtomicPtr_T) = Any.any_l ()
+    | & _7: MutBorrow.t (MutBorrow.t t_Perm_AtomicPtr_T) = Any.any_l ()
+    | & _8: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _9: MutBorrow.t (MutBorrow.t t_SyncView) = Any.any_l ()
+    | & _10: MutBorrow.t (MutBorrow.t t_SyncView) = Any.any_l ()
+    | & _12: t_ReleaseSyncView = Any.any_l () ]
+    [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure4 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure4'pre
+  
+  meta "rewrite_def" predicate closure4'post'return
+  
+  type t_FnGhostWrapper_closure4 = { f0'0: closure4 }
+  
+  let __new_closure4 (f: closure4) (return (x: t_FnGhostWrapper_closure4)) = any
+    [ return (result: t_FnGhostWrapper_closure4) -> {[@stop_split] [@expl:__new ensures] result.f0'0 = f}
+      (! return {result}) ]
+  
+  let new_FnGhostWrapper_closure4 (x: t_FnGhostWrapper_closure4) (return (x'0: t_FnGhostWrapper_closure4)) = any
+    [ return (result: t_FnGhostWrapper_closure4) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  predicate inv_AtomicPtr_T (_1: t_AtomicPtr_T)
+  
+  predicate invariant_ref_AtomicPtr_T [@inline:trivial] (self: t_AtomicPtr_T) = inv_AtomicPtr_T self
+  
+  meta "rewrite_def" predicate invariant_ref_AtomicPtr_T
+  
+  predicate inv_ref_AtomicPtr_T [@inline:trivial] (_1: t_AtomicPtr_T) = invariant_ref_AtomicPtr_T _1
+  
+  meta "rewrite_def" predicate inv_ref_AtomicPtr_T
+  
+  predicate precondition_closure4 (self: closure4) (args: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_None_Store) =
+    let c = args in forall bor_self: MutBorrow.t closure4. bor_self.current = self -> closure4'pre bor_self c
+  
+  meta "rewrite_def" predicate precondition_closure4
+  
+  predicate precondition_FnGhostWrapper_closure4 (self: t_FnGhostWrapper_closure4) (args: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_None_Store) =
+    precondition_closure4 self.f0'0 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure4
+  
+  predicate resolve_refmut_Snapshot_Int [@inline:trivial] (_1: MutBorrow.t int) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Snapshot_Int
+  
+  predicate resolve_refmut_Ghost_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_SyncView)) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_refmut_SyncView
+  
+  predicate resolve_refmut_Ghost_refmut_Perm_AtomicPtr_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_Perm_AtomicPtr_T)) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_refmut_Perm_AtomicPtr_T
+  
+  predicate resolve_closure4 [@inline:trivial] (_1: closure4) =
+    resolve_refmut_Snapshot_Int _1.c3
+    /\ resolve_refmut_Ghost_refmut_SyncView _1.c1 /\ resolve_refmut_Ghost_refmut_Perm_AtomicPtr_T _1.c0
+  
+  meta "rewrite_def" predicate resolve_closure4
+  
+  predicate postcondition_once_closure4 (self: closure4) (args: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_None_Store) (result: ()) =
+    let c = args in exists e: closure4. (exists bor_self: MutBorrow.t closure4. bor_self.current = self
+          /\ bor_self.final = e /\ closure4'post'return bor_self c result /\ hist_inv_closure4 self e)
+      /\ resolve_closure4 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure4
+  
+  predicate postcondition_once_FnGhostWrapper_closure4 (self: t_FnGhostWrapper_closure4) (args: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_None_Store) (result: ()) =
+    postcondition_once_closure4 self.f0'0 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure4
+  
+  let store_T (self: t_AtomicPtr_T) (val': Opaque.ptr) (f: t_FnGhostWrapper_closure4) (return (x: ())) =
+  {[@stop_split] [@expl:store_T requires] ([@stop_split] [@expl:store 'self' type invariant] inv_ref_AtomicPtr_T self)
+    /\ ([@stop_split] [@expl:store requires] forall c: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_None_Store. not shot_store_AtomicPtr_T c.current
+      -> ward_AtomicPtr_T c.current = self
+      -> val_store_AtomicPtr_T c.current = val'
+      -> precondition_FnGhostWrapper_closure4 f c
+      /\ (postcondition_once_FnGhostWrapper_closure4 f c () -> shot_store_AtomicPtr_T c.final))}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:store ensures] exists c: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_None_Store. not shot_store_AtomicPtr_T c.current
+        /\ ward_AtomicPtr_T c.current = self
+        /\ val_store_AtomicPtr_T c.current = val' /\ postcondition_once_FnGhostWrapper_closure4 f c ()}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_SyncView
+  
+  predicate resolve_Ghost_refmut_SyncView [@inline:trivial] (self: MutBorrow.t t_SyncView) =
+    resolve_refmut_SyncView self
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_SyncView
+  
+  predicate resolve_Ghost_refmut_SyncView'0 [@inline:trivial] (_1: MutBorrow.t t_SyncView) =
+    resolve_Ghost_refmut_SyncView _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_SyncView'0
+  
+  predicate resolve_refmut_Perm_AtomicPtr_T [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicPtr_T) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Perm_AtomicPtr_T
+  
+  predicate resolve_Ghost_refmut_Perm_AtomicPtr_T [@inline:trivial] (self: MutBorrow.t t_Perm_AtomicPtr_T) =
+    resolve_refmut_Perm_AtomicPtr_T self
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_Perm_AtomicPtr_T
+  
+  predicate resolve_Ghost_refmut_Perm_AtomicPtr_T'0 [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicPtr_T) =
+    resolve_Ghost_refmut_Perm_AtomicPtr_T _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_Perm_AtomicPtr_T'0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let wrap_store_T (self: t_AtomicPtr_T) (val': Opaque.ptr) (own: MutBorrow.t t_Perm_AtomicPtr_T)
+    (sync_view: MutBorrow.t t_SyncView) (rel_view: t_ReleaseSyncView) (return (x: int)) =
+  {[@stop_split] [@expl:wrap_store_T requires] ([@stop_split] [@expl:wrap_store 'self' type invariant] inv_ref_AtomicPtr_T self)
+    /\ ([@stop_split] [@expl:wrap_store requires] self = ward_AtomicPtr_T'0 own.current)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &ts <- 0 ] s1
+      | s1 = MutBorrow.borrow_mut <MutBorrow.t t_Perm_AtomicPtr_T> {own}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_Perm_AtomicPtr_T)) -> [ &_28 <- _bor ] [ &own <- _bor.final ] s2)
+      | s2 = MutBorrow.borrow_mut <MutBorrow.t t_SyncView> {sync_view}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_SyncView)) -> [ &_29 <- _bor ] [ &sync_view <- _bor.final ] s3)
+      | s3 = MutBorrow.borrow_mut <int> {ts} (fun (_bor: MutBorrow.t int) -> [ &_31 <- _bor ] [ &ts <- _bor.final ] s4)
+      | s4 = [ &_27 <- { c0 = _28; c1 = _29; c2 = rel_view; c3 = _31 } ] s5
+      | s5 = __new_closure4 {_27} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_26 <- _x ] s6)
+      | s6 = new_FnGhostWrapper_closure4 {_26} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_25 <- _x ] s7)
+      | s7 = store_T {self} {val'} {_25} (fun (_x: ()) -> [ &_22 <- _x ] s8)
+      | s8 = -{resolve_Ghost_refmut_SyncView'0 sync_view}- s9
+      | s9 = -{resolve_Ghost_refmut_Perm_AtomicPtr_T'0 own}- s10
+      | s10 = [ &_ret <- ts ] s11
+      | s11 = return {_ret} ] ]
+    [ & _ret: int = Any.any_l ()
+    | & self: t_AtomicPtr_T = self
+    | & val': Opaque.ptr = val'
+    | & own: MutBorrow.t t_Perm_AtomicPtr_T = own
+    | & sync_view: MutBorrow.t t_SyncView = sync_view
+    | & rel_view: t_ReleaseSyncView = rel_view
+    | & ts: int = Any.any_l ()
+    | & _22: () = Any.any_l ()
+    | & _25: t_FnGhostWrapper_closure4 = Any.any_l ()
+    | & _26: t_FnGhostWrapper_closure4 = Any.any_l ()
+    | & _27: closure4 = Any.any_l ()
+    | & _28: MutBorrow.t (MutBorrow.t t_Perm_AtomicPtr_T) = Any.any_l ()
+    | & _29: MutBorrow.t (MutBorrow.t t_SyncView) = Any.any_l ()
+    | & _31: MutBorrow.t int = Any.any_l () ])
+    [ return (result: int) ->
+    {[@stop_split] [@expl:wrap_store_T ensures] ([@stop_split] [@expl:wrap_store ensures #0] const_ORDERING = Release
+        -> store_rel_post_AtomicPtr_T self own sync_view val' result)
+      /\ ([@stop_split] [@expl:wrap_store ensures #1] const_ORDERING = Relaxed
+      -> store_rlx_post_AtomicPtr_T self own sync_view val' result rel_view)}
+      (! return {result}) ]
+end
 module M_std__sync__atomic_no_LA__impl_AtomicU16__wrap_load (* std::sync::atomic::AtomicU16 *)
   type namespace_other
   

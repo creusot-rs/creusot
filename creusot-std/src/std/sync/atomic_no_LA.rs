@@ -59,8 +59,8 @@ macro_rules! extend_atomic {
 #[cfg(target_has_atomic = "8")]
 extend_atomic!((bool, AtomicBool));
 // FIXME the compiler rejects this because of issues with T's lifetime
-// #[cfg(target_has_atomic = "ptr")]
-// extend_atomic!((*mut T, AtomicPtr<T>));
+#[cfg(target_has_atomic = "ptr")]
+extend_atomic!((*mut T, AtomicPtr<T>));
 
 #[cfg(target_has_atomic = "8")]
 extend_atomic!((i8, AtomicI8));
