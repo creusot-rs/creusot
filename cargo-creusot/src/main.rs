@@ -107,6 +107,8 @@ impl Runner {
                             TargetKind::Lib | TargetKind::RLib => "rlib",
                             TargetKind::Bin => "bin",
                             TargetKind::StaticLib => "staticlib",
+                            TargetKind::CDyLib => "cdylib",
+                            TargetKind::DyLib => "dylib",
                             _ => return None, // Other types are unsupported at the moment
                         };
                         Some(format!("{}_{}", target.name.replace('-', "_"), ty))
