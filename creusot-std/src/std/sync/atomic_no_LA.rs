@@ -51,6 +51,107 @@ macro_rules! extend_atomic {
                 ts
             }
 
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange`].")]
+            #[doc = ""]
+            #[doc = "The load and the store are always sequentially consistent."]
+            #[requires(*self == *own.ward())]
+            #[ensures(
+                match result.0 {
+                    Ok(v) => {
+                        v.deep_model() == current.deep_model() &&
+                        Success::Load::ORDERING == OrderingTy::Acquire ==> load_acq_post(*self, *own, *sync_view, v, *result.1) &&
+                        Success::Load::ORDERING == OrderingTy::Relaxed ==> load_rlx_post(*self, *own, *sync_view, v, *result.1, *result.2) &&
+                        Success::Store::ORDERING == OrderingTy::Release ==> store_rel_post(*self, *own, *sync_view, v, *result.1 + 1) &&
+                        Success::Store::ORDERING == OrderingTy::Relaxed ==> store_rlx_post(*self, *own, *sync_view, v, *result.1 + 1, *rel_view)
+                    },
+                    Err(v) => {
+                        v.deep_model() != current.deep_model() &&
+                        Success::Load::ORDERING == OrderingTy::Acquire ==> load_acq_post(*self, *own, *sync_view, v, *result.1) &&
+                        Success::Load::ORDERING == OrderingTy::Relaxed ==> load_rlx_post(*self, *own, *sync_view, v, *result.1, *result.2)
+                    }
+                }
+            )]
+            #[inline(always)]
+            #[allow(unused_variables)]
+            pub fn wrap_compare_exchange<Success: UpdateOrdering, Failure: LoadOrdering>(&self, current: $type, new: $type, mut own : Ghost<&mut Perm<$atomic_type $(< $T >)?>>, mut sync_view: Ghost<&mut SyncView>, rel_view : Ghost<ReleaseSyncView>) -> (Result<$type, $type>, Snapshot<Timestamp>, Ghost<AcquireSyncView>)
+            {
+                let mut ts: Snapshot<Timestamp> = snapshot!(0);
+                let mut acq_sync_view_opt = ghost!(None);
+                let f = ghost!(|c : Result<&mut Committer<_, $type, Success::Load, Success::Store>, &Committer<_, $type, Failure, _>>| {
+                    match c {
+                        Ok(c) => {
+                            let acq_sync_view = c.shoot_load(*own, *sync_view);
+                            ts = snapshot!(c.timestamp());
+                            acq_sync_view_opt = ghost!(Some(acq_sync_view));
+                            c.shoot_store(*own, *sync_view, *rel_view);
+                        },
+                        Err(c) => {
+                            let acq_sync_view = c.shoot_load(*own, *sync_view);
+                            ts = snapshot!(c.timestamp());
+                            acq_sync_view_opt = ghost!(Some(acq_sync_view));
+                        }
+                    }
+                });
+                match self.compare_exchange::<_, Success, Failure>(current, new, f) {
+                    Ok(v) => {
+                        return (Ok(v), ts, ghost!(acq_sync_view_opt.unwrap()));
+                    },
+                    Err(v) => {
+                        return (Err(v), ts, ghost!(acq_sync_view_opt.unwrap()));
+                    }
+                }
+            }
+
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange_weak`].")]
+            #[doc = ""]
+            #[doc = "The load and the store are always sequentially consistent."]
+            #[requires(*self == *own.ward())]
+            #[ensures(
+                match result.0 {
+                    Ok(v) => {
+                        v.deep_model() == current.deep_model() &&
+                        Success::Load::ORDERING == OrderingTy::Acquire ==> load_acq_post(*self, *own, *sync_view, v, *result.1) &&
+                        Success::Load::ORDERING == OrderingTy::Relaxed ==> load_rlx_post(*self, *own, *sync_view, v, *result.1, *result.2) &&
+                        Success::Store::ORDERING == OrderingTy::Release ==> store_rel_post(*self, *own, *sync_view, v, *result.1 + 1) &&
+                        Success::Store::ORDERING == OrderingTy::Relaxed ==> store_rlx_post(*self, *own, *sync_view, v, *result.1 + 1, *rel_view)
+                    },
+                    Err(v) => {
+                        Success::Load::ORDERING == OrderingTy::Acquire ==> load_acq_post(*self, *own, *sync_view, v, *result.1) &&
+                        Success::Load::ORDERING == OrderingTy::Relaxed ==> load_rlx_post(*self, *own, *sync_view, v, *result.1, *result.2)
+                    }
+                }
+            )]
+            #[inline(always)]
+            #[allow(unused_variables)]
+            pub fn wrap_compare_exchange_weak<Success: UpdateOrdering, Failure: LoadOrdering>(&self, current: $type, new: $type, mut own : Ghost<&mut Perm<$atomic_type $(< $T >)?>>, mut sync_view: Ghost<&mut SyncView>, rel_view : Ghost<ReleaseSyncView>) -> (Result<$type, $type>, Snapshot<Timestamp>, Ghost<AcquireSyncView>)
+            {
+                let mut ts: Snapshot<Timestamp> = snapshot!(0);
+                let mut acq_sync_view_opt = ghost!(None);
+                let f = ghost!(|c : Result<&mut Committer<_, $type, Success::Load, Success::Store>, &Committer<_, $type, Failure, _>>| {
+                    match c {
+                        Ok(c) => {
+                            let acq_sync_view = c.shoot_load(*own, *sync_view);
+                            ts = snapshot!(c.timestamp());
+                            acq_sync_view_opt = ghost!(Some(acq_sync_view));
+                            c.shoot_store(*own, *sync_view, *rel_view);
+                        },
+                        Err(c) => {
+                            let acq_sync_view = c.shoot_load(*own, *sync_view);
+                            ts = snapshot!(c.timestamp());
+                            acq_sync_view_opt = ghost!(Some(acq_sync_view));
+                        }
+                    }
+                });
+                match self.compare_exchange_weak::<_, Success, Failure>(current, new, f) {
+                    Ok(v) => {
+                        return (Ok(v), ts, ghost!(acq_sync_view_opt.unwrap()));
+                    },
+                    Err(v) => {
+                        return (Err(v), ts, ghost!(acq_sync_view_opt.unwrap()));
+                    }
+                }
+            }
+
         }
 
     )* };
@@ -58,7 +159,6 @@ macro_rules! extend_atomic {
 
 #[cfg(target_has_atomic = "8")]
 extend_atomic!((bool, AtomicBool));
-// FIXME the compiler rejects this because of issues with T's lifetime
 #[cfg(target_has_atomic = "ptr")]
 extend_atomic!((*mut T, AtomicPtr<T>));
 
