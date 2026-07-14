@@ -44,8 +44,8 @@ let
     patches = [
       (fetchpatch {
         name = "CoCoALib-0.99800-trace.patch";
-        url = "https://raw.githubusercontent.com/cvc5/cvc5/e0514b3e454aa184654a66b7a979244babbc4c5e/cmake/deps-utils/CoCoALib-0.99800-trace.patch";
-        sha256 = "sha256-3IrkUx6ygIiDRJAM9OSYxH3Q/Mo+ZjXGPOauMh4uZyw=";
+        url = "https://raw.githubusercontent.com/cvc5/cvc5/7de04e22fafc537d8c8f3188b32af64f3529e90c/cmake/deps-utils/CoCoALib-0.99800-trace.patch";
+        sha256 = "sha256-IW+phNt+Ce01QaBiqnnxxy1ai4rSCckOyGO+Ymjwt+o=";
       })
     ];
 
@@ -79,12 +79,36 @@ let
     patches = [
       (fetchpatch {
         name = "glpk-cut-log.patch";
-        url = "https://raw.githubusercontent.com/cvc5/cvc5/refs/heads/main/cmake/deps-utils/glpk-cut-log.patch";
+        url = "https://raw.githubusercontent.com/cvc5/cvc5/99bfe0bcc00bf730c84db499b7e27419bf165dc3/cmake/deps-utils/glpk-cut-log.patch";
         sha256 = "sha256-/H9hwlFmiBk6Kh9C7G6UeA2xKJgZjfHNjHFQYXU10lM=";
       })
     ];
 
+    preConfigure = ''
+      sed -i '37d' src/minisat/minisat.h
+    '';
+
     nativeBuildInputs = [ autoreconfHook ];
+  };
+
+  cvc5-libpoly = libpoly.overrideAttrs {
+    version = "0.2.0";
+    src = fetchFromGitHub {
+      owner = "SRI-CSL";
+      repo = "libpoly";
+      tag = "v0.2.0";
+      hash = "sha256-gE2O1YfiVab/aIqheoMP8GhE+N3yho7kb5EP56pzjW8=";
+    };
+  };
+
+  cvc5-symfpu = symfpu.overrideAttrs {
+    version = "0-unstable-2019-05-17";
+    src = fetchFromGitHub {
+      owner = "martin-cs";
+      repo = "symfpu";
+      rev = "8fbe139bf0071cbe0758d2f6690a546c69ff0053";
+      hash = "sha256-ONGfvJMo/HXlbxHmkFs9O5nhs6aDM+XuNSPgY+ykxck=";
+    };
   };
 in
 stdenv.mkDerivation {
@@ -108,12 +132,12 @@ stdenv.mkDerivation {
     cvc5-cadical
     cvc5-cocoalib
     cvc5-glpk
+    cvc5-libpoly
+    cvc5-symfpu
     gmp
     libedit
-    libpoly
     python3.pkgs.pexpect
     python3.pkgs.pyparsing
-    symfpu
   ];
 
   cmakeFlags = [
