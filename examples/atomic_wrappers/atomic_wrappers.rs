@@ -1,15 +1,15 @@
 // DEPTH 8
+#![allow(dead_code)]
 
 extern crate creusot_std;
 
 use creusot_std::{
-    ghost::{FnGhost, Perm, perm::PermTarget},
-    logic::FMap,
+    ghost::Perm,
     prelude::*,
     std::sync::{
         committer::{Committer, atomic_specs::*},
-        view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
-        atomic::{ordering::{Ordering, LoadOrdering, StoreOrdering, UpdateOrdering, Relaxed, Acquire, Release, AcqRel}, AtomicBool, AtomicPtr, AtomicI8, AtomicU8, AtomicI16, AtomicI32, AtomicI64, AtomicIsize, AtomicU16, AtomicU32, AtomicU64, AtomicUsize},
+        view::{AcquireSyncView, ReleaseSyncView, SyncView, Timestamp},
+        atomic::{ordering::{Ordering, LoadOrdering, StoreOrdering, UpdateOrdering}, AtomicBool, AtomicPtr, AtomicI8, AtomicU8, AtomicI16, AtomicI32, AtomicI64, AtomicU16, AtomicU32, AtomicU64},
     },
 };
 use core::sync::atomic::{Ordering as OrderingTy};

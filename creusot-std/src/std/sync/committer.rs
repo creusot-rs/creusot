@@ -1,3 +1,4 @@
+#![cfg_attr(not(creusot), allow(unused_imports))]
 #[cfg(feature = "sc-drf")]
 use crate::std::sync::atomic_sc::ordering::SeqCst;
 use crate::{
