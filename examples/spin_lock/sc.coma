@@ -1,0 +1,2448 @@
+module M_impl_SpinLock_T__new (* SpinLock<T> *)
+  type namespace_other
+  
+  type t_Namespace = Namespace_SPIN_LOCK int | Other namespace_other
+  
+  use real.Real
+  use real.FromInt
+  use map.Map
+  use creusot.prelude.Any
+  
+  type t_AtomicBool
+  
+  type t_Perm_AtomicBool
+  
+  type tup2_AtomicBool_Ghost_Perm_AtomicBool = { f0: t_AtomicBool; f1: t_Perm_AtomicBool }
+  
+  predicate inv_AtomicBool (_1: t_AtomicBool)
+  
+  predicate inv_tup2_AtomicBool_Ghost_Perm_AtomicBool [@inline:trivial] (_1: tup2_AtomicBool_Ghost_Perm_AtomicBool) =
+    inv_AtomicBool _1.f0
+  
+  meta "rewrite_def" predicate inv_tup2_AtomicBool_Ghost_Perm_AtomicBool
+  
+  predicate val_AtomicBool (self: t_Perm_AtomicBool)
+  
+  function ward_AtomicBool (self: t_Perm_AtomicBool) : t_AtomicBool
+  
+  let rec new (val': bool) (return (x: tup2_AtomicBool_Ghost_Perm_AtomicBool)) = any
+    [ return (result: tup2_AtomicBool_Ghost_Perm_AtomicBool) ->
+    {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new result type invariant] inv_tup2_AtomicBool_Ghost_Perm_AtomicBool result)
+      /\ ([@stop_split] [@expl:new ensures #0] val_AtomicBool result.f1 = val')
+      /\ ([@stop_split] [@expl:new ensures #1] ward_AtomicBool result.f1 = result.f0)}
+      (! return {result}) ]
+  
+  type t_T
+  
+  type t_PermCell_T
+  
+  type t_Perm_PermCell_T
+  
+  type tup2_PermCell_T_Ghost_Perm_PermCell_T = { f0'0: t_PermCell_T; f1'0: t_Perm_PermCell_T }
+  
+  predicate inv_T (_1: t_T)
+  
+  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
+  
+  function val_PermCell_T (self: t_Perm_PermCell_T) : t_T
+  
+  let rec new_T (value: t_T) (return (x: tup2_PermCell_T_Ghost_Perm_PermCell_T)) =
+    {[@stop_split] [@expl:new 'value' type invariant] inv_T value}
+    any
+    [ return (result: tup2_PermCell_T_Ghost_Perm_PermCell_T) ->
+    {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new ensures #0] result.f0'0
+        = ward_PermCell_T result.f1'0)
+      /\ ([@stop_split] [@expl:new ensures #1] val_PermCell_T result.f1'0 = value)}
+      (! return {result}) ]
+  
+  type t_LifetimeToken
+  
+  predicate inv_LifetimeToken (_1: t_LifetimeToken)
+  
+  type t_PositiveReal
+  
+  function frac (self: t_LifetimeToken) : t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function new'0 (n: Real.real) : t_PositiveReal
+  
+  axiom new_spec: forall n: Real.real [new'0 n]. Real.(>) n (FromInt.from_int 0) -> to_real (new'0 n) = n
+  
+  function from_int [@inline:trivial] (i: int) : t_PositiveReal = new'0 (FromInt.from_int i)
+  
+  meta "rewrite_def" function from_int
+  
+  let rec new'1 (return (x: t_LifetimeToken)) = any
+    [ return (result: t_LifetimeToken) ->
+    {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new result type invariant] inv_LifetimeToken result)
+      /\ ([@stop_split] [@expl:new ensures] frac result = from_int 1)}
+      (! return {result}) ]
+  
+  predicate invariant_Ghost_LifetimeToken [@inline:trivial] (self: t_LifetimeToken) = inv_LifetimeToken self
+  
+  meta "rewrite_def" predicate invariant_Ghost_LifetimeToken
+  
+  predicate inv_Ghost_LifetimeToken [@inline:trivial] (_1: t_LifetimeToken) = invariant_Ghost_LifetimeToken _1
+  
+  meta "rewrite_def" predicate inv_Ghost_LifetimeToken
+  
+  let rec new_LifetimeToken (x: t_LifetimeToken) (return (x'0: t_LifetimeToken)) =
+    {[@stop_split] [@expl:new 'x' type invariant] inv_LifetimeToken x}
+    any
+    [ return (result: t_LifetimeToken) ->
+    {[@stop_split] [@expl:new_LifetimeToken ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_LifetimeToken result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
+  type t_Lifetime
+  
+  function lft (self: t_LifetimeToken) : t_Lifetime
+  
+  type t_FullBorrow_Perm_PermCell_T
+  
+  type t_EndBorrow_Perm_PermCell_T
+  
+  type tup2_Ghost_FullBorrow_Perm_PermCell_T_Ghost_EndBorrow_Perm_PermCell_T = {
+    f0'1: t_FullBorrow_Perm_PermCell_T;
+    f1'1: t_EndBorrow_Perm_PermCell_T }
+  
+  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  
+  function lft_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Lifetime
+  
+  function lft_Perm_PermCell_T'0 (self: t_EndBorrow_Perm_PermCell_T) : t_Lifetime
+  
+  function fin_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  
+  function fin_Ghost_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+   = fin_FullBorrow_Perm_PermCell_T self
+  
+  meta "rewrite_def" function fin_Ghost_FullBorrow_Perm_PermCell_T
+  
+  function fin_EndBorrow_Perm_PermCell_T (self: t_EndBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  
+  function fin_Ghost_EndBorrow_Perm_PermCell_T [@inline:trivial] (self: t_EndBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+   = fin_EndBorrow_Perm_PermCell_T self
+  
+  meta "rewrite_def" function fin_Ghost_EndBorrow_Perm_PermCell_T
+  
+  let rec new_Perm_PermCell_T (x: t_Perm_PermCell_T) (lft'0: t_Lifetime)
+    (return (x'0: tup2_Ghost_FullBorrow_Perm_PermCell_T_Ghost_EndBorrow_Perm_PermCell_T)) = any
+    [ return (result: tup2_Ghost_FullBorrow_Perm_PermCell_T_Ghost_EndBorrow_Perm_PermCell_T) ->
+    {[@stop_split] [@expl:new_Perm_PermCell_T ensures] ([@stop_split] [@expl:new ensures #0] cur_Perm_PermCell_T result.f0'1
+        = x)
+      /\ ([@stop_split] [@expl:new ensures #1] lft_Perm_PermCell_T result.f0'1 = lft'0
+        /\ lft_Perm_PermCell_T'0 result.f1'1 = lft'0)
+      /\ ([@stop_split] [@expl:new ensures #2] fin_Ghost_FullBorrow_Perm_PermCell_T result.f0'1
+      = fin_Ghost_EndBorrow_Perm_PermCell_T result.f1'1)}
+      (! return {result}) ]
+  
+  let rec into_inner_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T)
+    (return (x: t_FullBorrow_Perm_PermCell_T)) = any
+    [ return (result: t_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+      (! return {result}) ]
+  
+  type t_Option_FullBorrow_Perm_PermCell_T = None | Some t_FullBorrow_Perm_PermCell_T
+  
+  let rec into_inner_Perm_AtomicBool (self: t_Perm_AtomicBool) (return (x: t_Perm_AtomicBool)) = any
+    [ return (result: t_Perm_AtomicBool) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+      (! return {result}) ]
+  
+  type t_SpinLockInv_T = {
+    cell'0: t_PermCell_T;
+    lft'0: t_Lifetime;
+    perm'0: t_Option_FullBorrow_Perm_PermCell_T;
+    perm_atomic'0: t_Perm_AtomicBool;
+    inv'0: Map.map t_T bool }
+  
+  let rec new_SpinLockInv_T (x: t_SpinLockInv_T) (return (x'0: t_SpinLockInv_T)) = any
+    [ return (result: t_SpinLockInv_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  type t_AtomicInvariantSC_SpinLockInv_T
+  
+  type tup2_bool_Option_FullBorrow_Perm_PermCell_T = { f0'2: bool; f1'2: t_Option_FullBorrow_Perm_PermCell_T }
+  
+  predicate protocol_SpinLockInv_T (self: t_SpinLockInv_T) =
+    match { f0'2 = val_AtomicBool self.perm_atomic'0; f1'2 = self.perm'0 } with
+      | {f0'2 = True; f1'2 = None} -> true
+      | {f0'2 = False; f1'2 = Some bor} -> lft_Perm_PermCell_T bor = self.lft'0
+      /\ ward_PermCell_T (cur_Perm_PermCell_T bor) = self.cell'0
+      /\ Map.get self.inv'0 (val_PermCell_T (cur_Perm_PermCell_T bor))
+      | _ -> false
+      end
+  
+  type tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool = {
+    f0'3: t_PermCell_T;
+    f1'3: t_AtomicBool;
+    f2'3: t_Lifetime;
+    f3'3: Map.map t_T bool }
+  
+  function public_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) : tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool
+  
+  function public_SpinLockInv_T'0 (self: t_SpinLockInv_T) : tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool =
+    { f0'3 = self.cell'0; f1'3 = ward_AtomicBool self.perm_atomic'0; f2'3 = self.lft'0; f3'3 = self.inv'0 }
+  
+  function namespace_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) : t_Namespace
+  
+  let rec new_SpinLockInv_T'0 (value: t_SpinLockInv_T) (namespace: t_Namespace)
+    (return (x: t_AtomicInvariantSC_SpinLockInv_T)) = {[@stop_split] [@expl:new requires] protocol_SpinLockInv_T value}
+    any
+    [ return (result: t_AtomicInvariantSC_SpinLockInv_T) ->
+    {[@stop_split] [@expl:new_SpinLockInv_T ensures] ([@stop_split] [@expl:new ensures #0] public_SpinLockInv_T result
+        = public_SpinLockInv_T'0 value)
+      /\ ([@stop_split] [@expl:new ensures #1] namespace_SpinLockInv_T result = namespace)}
+      (! return {result}) ]
+  
+  type t_SpinLock_T = {
+    atomic: t_AtomicBool;
+    data: t_PermCell_T;
+    lft_tok: t_LifetimeToken;
+    end': t_EndBorrow_Perm_PermCell_T;
+    inner_inv: t_AtomicInvariantSC_SpinLockInv_T;
+    inv: Map.map t_T bool }
+  
+  predicate invariant_SpinLock_T (self: t_SpinLock_T) =
+    public_SpinLockInv_T self.inner_inv
+      = { f0'3 = self.data; f1'3 = self.atomic; f2'3 = lft self.lft_tok; f3'3 = self.inv }
+    /\ frac self.lft_tok = from_int 1
+    /\ lft_Perm_PermCell_T'0 self.end' = lft self.lft_tok
+    /\ namespace_SpinLockInv_T self.inner_inv = Namespace_SPIN_LOCK 0
+  
+  predicate inv_SpinLock_T (_1: t_SpinLock_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_SpinLock_T [inv_SpinLock_T x]. inv_SpinLock_T x
+      = (invariant_SpinLock_T x /\ inv_AtomicBool x.atomic /\ inv_Ghost_LifetimeToken x.lft_tok)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec new_T'0 (data'0: t_T) (inv'1: Map.map t_T bool) (return (x: t_SpinLock_T)) =
+    {[@stop_split] [@expl:new_T requires] ([@stop_split] [@expl:new 'data' type invariant] inv_T data'0)
+    /\ ([@stop_split] [@expl:new requires] Map.get inv'1 data'0)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = new {false} (fun (_x: tup2_AtomicBool_Ghost_Perm_AtomicBool) -> [ &_10 <- _x ] s1)
+      | s1 = [ &atomic'0 <- _10.f0 ] s2
+      | s2 = [ &perm_atomic <- _10.f1 ] s3
+      | s3 = new_T {data'0} (fun (_x: tup2_PermCell_T_Ghost_Perm_PermCell_T) -> [ &_13 <- _x ] s4)
+      | s4 = [ &data'1 <- _13.f0'0 ] s5
+      | s5 = [ &perm_data <- _13.f1'0 ] s6
+      | s6 = new'1 (fun (_x: t_LifetimeToken) -> [ &_16 <- _x ] s7)
+      | s7 = new_LifetimeToken {_16} (fun (_x: t_LifetimeToken) -> [ &lft_tok'0 <- _x ] s8)
+      | s8 = new_Perm_PermCell_T {perm_data} {lft lft_tok'0}
+          (fun (_x: tup2_Ghost_FullBorrow_Perm_PermCell_T_Ghost_EndBorrow_Perm_PermCell_T) -> [ &_19 <- _x ] s9)
+      | s9 = [ &bor <- _19.f0'1 ] s10
+      | s10 = [ &end''0 <- _19.f1'1 ] s11
+      | s11 = into_inner_FullBorrow_Perm_PermCell_T {bor} (fun (_x: t_FullBorrow_Perm_PermCell_T) -> [ &_34 <- _x ] s12)
+      | s12 = [ &_33 <- Some _34 ] s13
+      | s13 = into_inner_Perm_AtomicBool {perm_atomic} (fun (_x: t_Perm_AtomicBool) -> [ &_36 <- _x ] s14)
+      | s14 = [ &_26 <- { cell'0 = data'1; lft'0 = lft lft_tok'0; perm'0 = _33; perm_atomic'0 = _36; inv'0 = inv'1 } ]
+        s15
+      | s15 = new_SpinLockInv_T {_26} (fun (_x: t_SpinLockInv_T) -> [ &_25 <- _x ] s16)
+      | s16 = new_SpinLockInv_T'0 {_25} {Namespace_SPIN_LOCK 0}
+          (fun (_x: t_AtomicInvariantSC_SpinLockInv_T) -> [ &inner_inv'0 <- _x ] s17)
+      | s17 = [ &_ret <- { atomic = atomic'0;
+                           data = data'1;
+                           lft_tok = lft_tok'0;
+                           end' = end''0;
+                           inner_inv = inner_inv'0;
+                           inv = inv'1 } ] s18
+      | s18 = return {_ret} ] ]
+    [ & _ret: t_SpinLock_T = Any.any_l ()
+    | & data'0: t_T = data'0
+    | & inv'1: Map.map t_T bool = inv'1
+    | & atomic'0: t_AtomicBool = Any.any_l ()
+    | & perm_atomic: t_Perm_AtomicBool = Any.any_l ()
+    | & _10: tup2_AtomicBool_Ghost_Perm_AtomicBool = Any.any_l ()
+    | & data'1: t_PermCell_T = Any.any_l ()
+    | & perm_data: t_Perm_PermCell_T = Any.any_l ()
+    | & _13: tup2_PermCell_T_Ghost_Perm_PermCell_T = Any.any_l ()
+    | & lft_tok'0: t_LifetimeToken = Any.any_l ()
+    | & _16: t_LifetimeToken = Any.any_l ()
+    | & bor: t_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & end''0: t_EndBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _19: tup2_Ghost_FullBorrow_Perm_PermCell_T_Ghost_EndBorrow_Perm_PermCell_T = Any.any_l ()
+    | & inner_inv'0: t_AtomicInvariantSC_SpinLockInv_T = Any.any_l ()
+    | & _25: t_SpinLockInv_T = Any.any_l ()
+    | & _26: t_SpinLockInv_T = Any.any_l ()
+    | & _33: t_Option_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _34: t_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _36: t_Perm_AtomicBool = Any.any_l () ])
+    [ return (result: t_SpinLock_T) ->
+    {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_SpinLock_T result)
+      /\ ([@stop_split] [@expl:new ensures] result.inv = inv'1)}
+      (! return {result}) ]
+end
+module M_impl_SpinLock_T__lock (* SpinLock<T> *)
+  type namespace_other
+  
+  type t_Namespace = Namespace_SPIN_LOCK int | Other namespace_other
+  
+  use creusot.prelude.MutBorrow
+  use map.Map
+  use real.Real
+  use real.FromInt
+  use creusot.prelude.Any
+  use set.Set
+  
+  type t_FullBorrow_Perm_PermCell_T
+  
+  type t_Option_FullBorrow_Perm_PermCell_T = None | Some t_FullBorrow_Perm_PermCell_T
+  
+  let rec new_Option_FullBorrow_Perm_PermCell_T (x: t_Option_FullBorrow_Perm_PermCell_T)
+    (return (x'0: t_Option_FullBorrow_Perm_PermCell_T)) = any
+    [ return (result: t_Option_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x}
+      (! return {result}) ]
+  
+  type t_Tokens
+  
+  type t_Committer_AtomicBool_bool_SeqCst_SeqCst
+  
+  type t_Committer_AtomicBool_bool_SeqCst_None
+  
+  type t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None =
+    | Ok (MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst)
+    | Err t_Committer_AtomicBool_bool_SeqCst_None
+  
+  predicate resolve_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst
+  
+  type t_AtomicBool
+  
+  type t_PermCell_T
+  
+  type t_LifetimeToken
+  
+  type t_EndBorrow_Perm_PermCell_T
+  
+  type t_AtomicInvariantSC_SpinLockInv_T
+  
+  type t_T
+  
+  type t_SpinLock_T = {
+    atomic: t_AtomicBool;
+    data: t_PermCell_T;
+    lft_tok: t_LifetimeToken;
+    end': t_EndBorrow_Perm_PermCell_T;
+    inner_inv: t_AtomicInvariantSC_SpinLockInv_T;
+    inv: Map.map t_T bool }
+  
+  type closure5 = { c0: t_SpinLock_T; c1: MutBorrow.t t_Tokens; c2: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T }
+  
+  type t_Lifetime
+  
+  type tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool = {
+    f0: t_PermCell_T;
+    f1: t_AtomicBool;
+    f2: t_Lifetime;
+    f3: Map.map t_T bool }
+  
+  function public_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) : tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool
+  
+  function lft (self: t_LifetimeToken) : t_Lifetime
+  
+  type t_PositiveReal
+  
+  function frac (self: t_LifetimeToken) : t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function new (n: Real.real) : t_PositiveReal
+  
+  axiom new_spec: forall n: Real.real [new n]. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
+  
+  meta "rewrite_def" function from_int
+  
+  function lft_Perm_PermCell_T (self: t_EndBorrow_Perm_PermCell_T) : t_Lifetime
+  
+  function namespace_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) : t_Namespace
+  
+  predicate invariant_SpinLock_T (self: t_SpinLock_T) =
+    public_SpinLockInv_T self.inner_inv = { f0 = self.data; f1 = self.atomic; f2 = lft self.lft_tok; f3 = self.inv }
+    /\ frac self.lft_tok = from_int 1
+    /\ lft_Perm_PermCell_T self.end' = lft self.lft_tok
+    /\ namespace_SpinLockInv_T self.inner_inv = Namespace_SPIN_LOCK 0
+  
+  predicate inv_AtomicBool (_1: t_AtomicBool)
+  
+  predicate inv_LifetimeToken (_1: t_LifetimeToken)
+  
+  predicate invariant_Ghost_LifetimeToken [@inline:trivial] (self: t_LifetimeToken) = inv_LifetimeToken self
+  
+  meta "rewrite_def" predicate invariant_Ghost_LifetimeToken
+  
+  predicate inv_Ghost_LifetimeToken [@inline:trivial] (_1: t_LifetimeToken) = invariant_Ghost_LifetimeToken _1
+  
+  meta "rewrite_def" predicate inv_Ghost_LifetimeToken
+  
+  predicate inv_SpinLock_T (_1: t_SpinLock_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_SpinLock_T [inv_SpinLock_T x]. inv_SpinLock_T x
+      = (invariant_SpinLock_T x /\ inv_AtomicBool x.atomic /\ inv_Ghost_LifetimeToken x.lft_tok)
+  
+  predicate invariant_ref_SpinLock_T [@inline:trivial] (self: t_SpinLock_T) = inv_SpinLock_T self
+  
+  meta "rewrite_def" predicate invariant_ref_SpinLock_T
+  
+  predicate inv_ref_SpinLock_T [@inline:trivial] (_1: t_SpinLock_T) = invariant_ref_SpinLock_T _1
+  
+  meta "rewrite_def" predicate inv_ref_SpinLock_T
+  
+  predicate inv_closure5 [@inline:trivial] (_1: closure5) =
+    let {c0 = x0; c1 = x1; c2 = x2} = _1 in inv_ref_SpinLock_T x0
+  
+  meta "rewrite_def" predicate inv_closure5
+  
+  predicate invariant_refmut_closure5 [@inline:trivial] (self: MutBorrow.t closure5) =
+    inv_closure5 self.current /\ inv_closure5 self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_closure5
+  
+  predicate inv_refmut_closure5 [@inline:trivial] (_1: MutBorrow.t closure5) = invariant_refmut_closure5 _1
+  
+  meta "rewrite_def" predicate inv_refmut_closure5
+  
+  predicate resolve_refmut_closure5 [@inline:trivial] (_1: MutBorrow.t closure5) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure5
+  
+  let rec elim_Ok
+    (_x: t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None)
+    (return (f0'0: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst)) = any
+    [ _k (f0'0: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst) -> {Ok f0'0 = _x} (! return {f0'0})
+    | _chk -> (! {[@expl:elim Ok] match _x with
+        | Ok _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  let rec deref_Ghost_AtomicInvariantSC_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T)
+    (return (x: t_AtomicInvariantSC_SpinLockInv_T)) = any
+    [ return (result: t_AtomicInvariantSC_SpinLockInv_T) -> {[@stop_split] [@expl:deref ensures] result = self}
+      (! return {result}) ]
+  
+  let rec deref_mut_Ghost_Tokens (self: MutBorrow.t t_Tokens) (return (x: MutBorrow.t t_Tokens)) = any
+    [ return (result: MutBorrow.t t_Tokens) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
+      (! return {result}) ]
+  
+  let rec reborrow (self: MutBorrow.t t_Tokens) (return (x: t_Tokens)) = any
+    [ return (result: t_Tokens) -> {[@stop_split] [@expl:reborrow ensures] result = self.current
+      /\ self.final = self.current}
+      (! return {result}) ]
+  
+  type t_Perm_AtomicBool
+  
+  type t_SpinLockInv_T = {
+    cell'0: t_PermCell_T;
+    lft'0: t_Lifetime;
+    perm'0: t_Option_FullBorrow_Perm_PermCell_T;
+    perm_atomic'0: t_Perm_AtomicBool;
+    inv'0: Map.map t_T bool }
+  
+  type closure0 = {
+    c0'0: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst;
+    c1'0: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T }
+  
+  predicate shot_store_AtomicBool (self: t_Committer_AtomicBool_bool_SeqCst_SeqCst)
+  
+  function ward_AtomicBool (self: t_Committer_AtomicBool_bool_SeqCst_SeqCst) : t_AtomicBool
+  
+  function ward_AtomicBool'0 (self: t_Perm_AtomicBool) : t_AtomicBool
+  
+  predicate val_load_AtomicBool (self: t_Committer_AtomicBool_bool_SeqCst_SeqCst)
+  
+  predicate val_AtomicBool (self: t_Perm_AtomicBool)
+  
+  let rec shoot_load_AtomicBool (self: t_Committer_AtomicBool_bool_SeqCst_SeqCst) (own: t_Perm_AtomicBool)
+    (return (x: ())) =
+    {[@stop_split] [@expl:shoot_load_AtomicBool requires] ([@stop_split] [@expl:shoot_load requires #0] not shot_store_AtomicBool self)
+    /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicBool self = ward_AtomicBool'0 own)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:shoot_load ensures] val_load_AtomicBool self = val_AtomicBool own}
+      (! return {result}) ]
+  
+  predicate val_store_AtomicBool (self: t_Committer_AtomicBool_bool_SeqCst_SeqCst)
+  
+  function timestamp_AtomicBool (self: t_Committer_AtomicBool_bool_SeqCst_SeqCst) : int
+  
+  predicate hist_inv_AtomicBool [@inline:trivial] (self: t_Committer_AtomicBool_bool_SeqCst_SeqCst) (other: t_Committer_AtomicBool_bool_SeqCst_SeqCst) =
+    ward_AtomicBool self = ward_AtomicBool other
+    /\ val_load_AtomicBool self = val_load_AtomicBool other
+    /\ val_store_AtomicBool self = val_store_AtomicBool other /\ timestamp_AtomicBool self = timestamp_AtomicBool other
+  
+  meta "rewrite_def" predicate hist_inv_AtomicBool
+  
+  let rec shoot_store_AtomicBool (self: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst)
+    (own: MutBorrow.t t_Perm_AtomicBool) (return (x: ())) =
+    {[@stop_split] [@expl:shoot_store_AtomicBool requires] ([@stop_split] [@expl:shoot_store requires #0] not shot_store_AtomicBool self.current)
+    /\ ([@stop_split] [@expl:shoot_store requires #1] ward_AtomicBool self.current = ward_AtomicBool'0 own.current)}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:shoot_store_AtomicBool ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicBool self.current self.final)
+      /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicBool self.final)
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] ward_AtomicBool'0 own.current = ward_AtomicBool'0 own.final)
+      /\ ([@stop_split] [@expl:shoot_store ensures #3] val_AtomicBool own.final = val_store_AtomicBool self.current)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Perm_AtomicBool [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicBool) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Perm_AtomicBool
+  
+  let rec take_FullBorrow_Perm_PermCell_T (self_: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T)
+    (return (x: t_Option_FullBorrow_Perm_PermCell_T)) = any
+    [ return (result: t_Option_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:take ensures] result = self_.current
+      /\ self_.final = None}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_SpinLockInv_T [@inline:trivial] (_1: MutBorrow.t t_SpinLockInv_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_SpinLockInv_T
+  
+  let rec deref_mut_Ghost_Option_FullBorrow_Perm_PermCell_T (self: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T)
+    (return (x: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T)) = any
+    [ return (result: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T) ->
+    {[@stop_split] [@expl:deref_mut ensures] result = self}
+      (! return {result}) ]
+  
+  type t_Perm_PermCell_T
+  
+  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  
+  function fin_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  
+  predicate resolve_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) =
+    cur_Perm_PermCell_T self = fin_FullBorrow_Perm_PermCell_T self
+  
+  predicate resolve_FullBorrow_Perm_PermCell_T'0 (_1: t_FullBorrow_Perm_PermCell_T)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall x: t_FullBorrow_Perm_PermCell_T [resolve_FullBorrow_Perm_PermCell_T'0 x]. resolve_FullBorrow_Perm_PermCell_T'0 x
+      = resolve_FullBorrow_Perm_PermCell_T x
+  
+  predicate resolve_Option_FullBorrow_Perm_PermCell_T (_1: t_Option_FullBorrow_Perm_PermCell_T)
+  
+  axiom resolve_axiom'0 [@rewrite]:
+    forall x: t_Option_FullBorrow_Perm_PermCell_T [resolve_Option_FullBorrow_Perm_PermCell_T x]. resolve_Option_FullBorrow_Perm_PermCell_T x
+      = match x with
+        | None -> true
+        | Some x0 -> resolve_FullBorrow_Perm_PermCell_T'0 x0
+        end
+  
+  predicate resolve_refmut_Option_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Option_FullBorrow_Perm_PermCell_T
+  
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure0
+  
+  predicate resolve_refmut_Ghost_Option_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_Option_FullBorrow_Perm_PermCell_T
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0) =
+    resolve_refmut_Ghost_Option_FullBorrow_Perm_PermCell_T _1.c1'0
+    /\ resolve_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst _1.c0'0
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate hist_inv_closure0 [@inline:trivial] (self: closure0) (result_state: closure0) =
+    result_state.c0'0.final = self.c0'0.final /\ result_state.c1'0.final = self.c1'0.final
+  
+  meta "rewrite_def" predicate hist_inv_closure0
+  
+  let rec closure0 [@coma:extspec] (self: MutBorrow.t closure0) (inv'1: MutBorrow.t t_SpinLockInv_T) (return (x: ())) =
+    bb0
+    [ bb0 = s0
+      [ s0 = [ &_6 <- inv'1.current.perm_atomic'0 ] s1
+      | s1 = shoot_load_AtomicBool {self.current.c0'0.current} {_6} (fun (_x: ()) -> [ &_3 <- _x ] s2)
+      | s2 = MutBorrow.borrow_final <t_Perm_AtomicBool> {inv'1.current.perm_atomic'0}
+          {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 3}
+          (fun (_bor: MutBorrow.t t_Perm_AtomicBool) ->
+            [ &_10 <- _bor ] [ &inv'1 <- { inv'1 with current = { inv'1.current with perm_atomic'0 = _bor.final } } ]
+            s3)
+      | s3 = MutBorrow.borrow_mut <t_Committer_AtomicBool_bool_SeqCst_SeqCst> {self.current.c0'0.current}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst) ->
+            [ &_8 <- _bor ]
+            [ &self <- { self with current = { self.current with c0'0 = { self.current.c0'0 with current = _bor.final } } } ]
+            s4)
+      | s4 = MutBorrow.borrow_final <t_Perm_AtomicBool> {_10.current} {MutBorrow.get_id _10}
+          (fun (_bor: MutBorrow.t t_Perm_AtomicBool) ->
+            [ &_9 <- _bor ] [ &_10 <- { _10 with current = _bor.final } ] s5)
+      | s5 = shoot_store_AtomicBool {_8} {_9} (fun (_x: ()) -> [ &_7 <- _x ] s6)
+      | s6 = -{resolve_refmut_Perm_AtomicBool _10}- s7
+      | s7 = MutBorrow.borrow_final <t_Option_FullBorrow_Perm_PermCell_T> {inv'1.current.perm'0}
+          {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 2}
+          (fun (_bor: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T) ->
+            [ &_12 <- _bor ] [ &inv'1 <- { inv'1 with current = { inv'1.current with perm'0 = _bor.final } } ] s8)
+      | s8 = take_FullBorrow_Perm_PermCell_T {_12} (fun (_x: t_Option_FullBorrow_Perm_PermCell_T) -> [ &_11 <- _x ] s9)
+      | s9 = -{resolve_refmut_SpinLockInv_T inv'1}- s10
+      | s10 = MutBorrow.borrow_mut <t_Option_FullBorrow_Perm_PermCell_T> {self.current.c1'0.current}
+          (fun (_bor: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T) ->
+            [ &_14 <- _bor ]
+            [ &self <- { self with current = { self.current with c1'0 = { self.current.c1'0 with current = _bor.final } } } ]
+            s11)
+      | s11 = deref_mut_Ghost_Option_FullBorrow_Perm_PermCell_T {_14}
+          (fun (_x: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T) -> [ &_13 <- _x ] s12)
+      | s12 = -{resolve_Option_FullBorrow_Perm_PermCell_T _13.current}- s13
+      | s13 = [ &_13 <- { _13 with current = _11 } ] s14
+      | s14 = -{resolve_refmut_Option_FullBorrow_Perm_PermCell_T _13}- s15
+      | s15 = -{resolve_refmut_closure0 self}- s16
+      | s16 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t closure0 = self
+    | & inv'1: MutBorrow.t t_SpinLockInv_T = inv'1
+    | & _3: () = Any.any_l ()
+    | & _6: t_Perm_AtomicBool = Any.any_l ()
+    | & _7: () = Any.any_l ()
+    | & _8: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst = Any.any_l ()
+    | & _9: MutBorrow.t t_Perm_AtomicBool = Any.any_l ()
+    | & _10: MutBorrow.t t_Perm_AtomicBool = Any.any_l ()
+    | & _11: t_Option_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _12: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _13: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _14: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T = Any.any_l () ]
+    [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  predicate postcondition_once_closure0 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_SpinLockInv_T) (result: ()) =
+    let inv'1 = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
+          /\ bor_self.final = e /\ closure0'post'return bor_self inv'1 result /\ hist_inv_closure0 self e)
+      /\ resolve_closure0 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure0
+  
+  predicate postcondition_mut_closure0 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_SpinLockInv_T) (result_state: closure0) (result: ()) =
+    let inv'1 = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
+      /\ bor_self.final = result_state
+      /\ closure0'post'return bor_self inv'1 result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  function fn_mut_once_closure0 (self: closure0) (args: MutBorrow.t t_SpinLockInv_T) (res: ()) : ()
+  
+  axiom fn_mut_once_closure0_spec:
+    forall self: closure0, args: MutBorrow.t t_SpinLockInv_T, res: (). postcondition_once_closure0 self args res
+      = (exists res_state: closure0. postcondition_mut_closure0 self args res_state res /\ resolve_closure0 res_state)
+  
+  function hist_inv_trans_closure0 (self: closure0) (b: closure0) (c: closure0) : ()
+  
+  axiom hist_inv_trans_closure0_spec: forall self: closure0, b: closure0, c: closure0. hist_inv_closure0 self b
+      -> hist_inv_closure0 b c -> hist_inv_closure0 self c
+  
+  function hist_inv_refl_closure0 (self: closure0) : ()
+  
+  axiom hist_inv_refl_closure0_spec: forall self: closure0. hist_inv_closure0 self self
+  
+  function postcondition_mut_hist_inv_closure0 (self: closure0) (args: MutBorrow.t t_SpinLockInv_T) (res_state: closure0) (res: ()) : ()
+  
+  axiom postcondition_mut_hist_inv_closure0_spec:
+    forall self: closure0, args: MutBorrow.t t_SpinLockInv_T, res_state: closure0, res: (). postcondition_mut_closure0 self args res_state res
+      -> hist_inv_closure0 self res_state
+  
+  type t_FnGhostWrapper_closure0 = { f0'0: closure0 }
+  
+  let rec __new_closure0 (f: closure0) (return (x: t_FnGhostWrapper_closure0)) = any
+    [ return (result: t_FnGhostWrapper_closure0) -> {[@stop_split] [@expl:__new ensures] result.f0'0 = f}
+      (! return {result}) ]
+  
+  predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
+  
+  meta "rewrite_def" predicate contains_Namespace
+  
+  function namespaces (self: t_Tokens) : Set.set t_Namespace
+  
+  predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
+  
+  function public_SpinLockInv_T'0 (self: t_SpinLockInv_T) : tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool =
+    { f0 = self.cell'0; f1 = ward_AtomicBool'0 self.perm_atomic'0; f2 = self.lft'0; f3 = self.inv'0 }
+  
+  type tup2_bool_Option_FullBorrow_Perm_PermCell_T = { f0'1: bool; f1'1: t_Option_FullBorrow_Perm_PermCell_T }
+  
+  function lft_Perm_PermCell_T'0 (self: t_FullBorrow_Perm_PermCell_T) : t_Lifetime
+  
+  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
+  
+  function val_PermCell_T (self: t_Perm_PermCell_T) : t_T
+  
+  predicate protocol_SpinLockInv_T (self: t_SpinLockInv_T) =
+    match { f0'1 = val_AtomicBool self.perm_atomic'0; f1'1 = self.perm'0 } with
+      | {f0'1 = True; f1'1 = None} -> true
+      | {f0'1 = False; f1'1 = Some bor} -> lft_Perm_PermCell_T'0 bor = self.lft'0
+      /\ ward_PermCell_T (cur_Perm_PermCell_T bor) = self.cell'0
+      /\ Map.get self.inv'0 (val_PermCell_T (cur_Perm_PermCell_T bor))
+      | _ -> false
+      end
+  
+  predicate inv_refmut_SpinLockInv_T [@inline:trivial] (_1: MutBorrow.t t_SpinLockInv_T) = true
+  
+  meta "rewrite_def" predicate inv_refmut_SpinLockInv_T
+  
+  predicate precondition_closure0 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_SpinLockInv_T) =
+    let inv'1 = args in forall bor_self: MutBorrow.t closure0. bor_self.current = self -> closure0'pre bor_self inv'1
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate precondition_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_SpinLockInv_T) =
+    precondition_closure0 self.f0'0 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0
+  
+  predicate postcondition_once_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_SpinLockInv_T) (result: ()) =
+    postcondition_once_closure0 self.f0'0 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0
+  
+  let rec open_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) (tokens: t_Tokens) (f: t_FnGhostWrapper_closure0)
+    (return (x: ())) =
+    {[@stop_split] [@expl:open_SpinLockInv_T requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_SpinLockInv_T self))
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_SpinLockInv_T. public_SpinLockInv_T'0 t.current
+          = public_SpinLockInv_T self
+        /\ protocol_SpinLockInv_T t.current /\ inv_refmut_SpinLockInv_T t
+      -> precondition_FnGhostWrapper_closure0 f t
+      /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res
+        -> public_SpinLockInv_T'0 t.final = public_SpinLockInv_T self /\ protocol_SpinLockInv_T t.final))}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_SpinLockInv_T. public_SpinLockInv_T'0 t.current
+          = public_SpinLockInv_T self
+        /\ protocol_SpinLockInv_T t.current
+        /\ inv_refmut_SpinLockInv_T t /\ postcondition_once_FnGhostWrapper_closure0 f t result}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Tokens [@inline:trivial] (_1: MutBorrow.t t_Tokens) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Tokens
+  
+  predicate resolve_refmut_Ghost_Tokens [@inline:trivial] (_1: MutBorrow.t t_Tokens) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Ghost_Tokens
+  
+  predicate resolve_closure5 [@inline:trivial] (_1: closure5) =
+    resolve_refmut_Ghost_Option_FullBorrow_Perm_PermCell_T _1.c2 /\ resolve_refmut_Ghost_Tokens _1.c1
+  
+  meta "rewrite_def" predicate resolve_closure5
+  
+  predicate hist_inv_closure5 [@inline:trivial] (self: closure5) (result_state: closure5) =
+    result_state.c0 = self.c0 /\ result_state.c1.final = self.c1.final /\ result_state.c2.final = self.c2.final
+  
+  meta "rewrite_def" predicate hist_inv_closure5
+  
+  let rec closure5 [@coma:extspec] (self: MutBorrow.t closure5)
+    (c: t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None)
+    (return (x: ())) = {[@stop_split] [@expl:closure 'self' type invariant] inv_refmut_closure5 self}
+    bb0
+    [ bb0 = any
+      [ br0 (x0: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst) -> {c = Ok x0} (! bb2)
+      | br1 (x0: t_Committer_AtomicBool_bool_SeqCst_None) -> {c = Err x0} (! bb8) ]
+    | bb8 = s0
+      [ s0 = -{match c with
+          | Ok x -> resolve_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst x
+          | _ -> true
+          end}-
+        s1
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure5 self} any) ]
+      | s2 = -{resolve_refmut_closure5 self}- s3
+      | s3 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = elim_Ok {c} (fun (r0: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst) -> [ &c'0 <- r0 ] s1)
+      | s1 = deref_Ghost_AtomicInvariantSC_SpinLockInv_T {self.current.c0.inner_inv}
+          (fun (_x: t_AtomicInvariantSC_SpinLockInv_T) -> [ &_6 <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <t_Tokens> {self.current.c1.current}
+          (fun (_bor: MutBorrow.t t_Tokens) ->
+            [ &_11 <- _bor ]
+            [ &self <- { self with current = { self.current with c1 = { self.current.c1 with current = _bor.final } } } ]
+            s3)
+      | s3 = deref_mut_Ghost_Tokens {_11} (fun (_x: MutBorrow.t t_Tokens) -> [ &_10 <- _x ] s4)
+      | s4 = MutBorrow.borrow_final <t_Tokens> {_10.current} {MutBorrow.get_id _10}
+          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_9 <- _bor ] [ &_10 <- { _10 with current = _bor.final } ] s5)
+      | s5 = reborrow {_9} (fun (_x: t_Tokens) -> [ &_8 <- _x ] s6)
+      | s6 = MutBorrow.borrow_final <t_Committer_AtomicBool_bool_SeqCst_SeqCst> {c'0.current} {MutBorrow.get_id c'0}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst) ->
+            [ &_14 <- _bor ] [ &c'0 <- { c'0 with current = _bor.final } ] s7)
+      | s7 = MutBorrow.borrow_mut <t_Option_FullBorrow_Perm_PermCell_T> {self.current.c2.current}
+          (fun (_bor: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T) ->
+            [ &_15 <- _bor ]
+            [ &self <- { self with current = { self.current with c2 = { self.current.c2 with current = _bor.final } } } ]
+            s8)
+      | s8 = [ &_13 <- { c0'0 = _14; c1'0 = _15 } ] s9
+      | s9 = __new_closure0 {_13} (fun (_x: t_FnGhostWrapper_closure0) -> [ &_12 <- _x ] s10)
+      | s10 = open_SpinLockInv_T {_6} {_8} {_12} (fun (_x: ()) -> [ &_ret <- _x ] s11)
+      | s11 = -{resolve_refmut_Tokens _10}- s12
+      | s12 = -{resolve_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst c'0}- s13
+      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure5 self} any) ]
+      | s14 = -{resolve_refmut_closure5 self}- s15
+      | s15 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t closure5 = self
+    | & c: t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None = c
+    | & c'0: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst = Any.any_l ()
+    | & _6: t_AtomicInvariantSC_SpinLockInv_T = Any.any_l ()
+    | & _8: t_Tokens = Any.any_l ()
+    | & _9: MutBorrow.t t_Tokens = Any.any_l ()
+    | & _10: MutBorrow.t t_Tokens = Any.any_l ()
+    | & _11: MutBorrow.t t_Tokens = Any.any_l ()
+    | & _12: t_FnGhostWrapper_closure0 = Any.any_l ()
+    | & _13: closure0 = Any.any_l ()
+    | & _14: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst = Any.any_l ()
+    | & _15: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T = Any.any_l () ]
+    [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure5 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure5'pre
+  
+  meta "rewrite_def" predicate closure5'post'return
+  
+  predicate postcondition_once_closure5 [@inline:trivial] (self: closure5) (args: t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None) (result: ()) =
+    let c = args in exists e: closure5. (exists bor_self: MutBorrow.t closure5. bor_self.current = self
+          /\ bor_self.final = e /\ closure5'post'return bor_self c result /\ hist_inv_closure5 self e)
+      /\ resolve_closure5 e
+  
+  meta "rewrite_def" predicate postcondition_once_closure5
+  
+  predicate postcondition_mut_closure5 [@inline:trivial] (self: closure5) (args: t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None) (result_state: closure5) (result: ()) =
+    let c = args in exists bor_self: MutBorrow.t closure5. bor_self.current = self
+      /\ bor_self.final = result_state /\ closure5'post'return bor_self c result /\ hist_inv_closure5 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure5
+  
+  function fn_mut_once_closure5 (self: closure5) (args: t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None) (res: ()) : ()
+  
+  axiom fn_mut_once_closure5_spec:
+    forall self: closure5, args: t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None, res: (). postcondition_once_closure5 self args res
+      = (exists res_state: closure5. postcondition_mut_closure5 self args res_state res /\ resolve_closure5 res_state)
+  
+  function hist_inv_trans_closure5 (self: closure5) (b: closure5) (c: closure5) : ()
+  
+  axiom hist_inv_trans_closure5_spec: forall self: closure5, b: closure5, c: closure5. hist_inv_closure5 self b
+      -> hist_inv_closure5 b c -> hist_inv_closure5 self c
+  
+  function hist_inv_refl_closure5 (self: closure5) : ()
+  
+  axiom hist_inv_refl_closure5_spec: forall self: closure5. hist_inv_closure5 self self
+  
+  function postcondition_mut_hist_inv_closure5 (self: closure5) (args: t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None) (res_state: closure5) (res: ()) : ()
+  
+  axiom postcondition_mut_hist_inv_closure5_spec:
+    forall self: closure5, args: t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None, res_state: closure5, res: (). postcondition_mut_closure5 self args res_state res
+      -> hist_inv_closure5 self res_state
+  
+  type t_FnGhostWrapper_closure5 = { f0'2: closure5 }
+  
+  predicate inv_FnGhostWrapper_closure5 (_1: t_FnGhostWrapper_closure5)
+  
+  axiom inv_axiom'0 [@rewrite]:
+    forall x: t_FnGhostWrapper_closure5 [inv_FnGhostWrapper_closure5 x]. inv_FnGhostWrapper_closure5 x
+      = inv_closure5 x.f0'2
+  
+  let rec __new_closure5 (f: closure5) (return (x: t_FnGhostWrapper_closure5)) =
+    {[@stop_split] [@expl:__new 'f' type invariant] inv_closure5 f}
+    any
+    [ return (result: t_FnGhostWrapper_closure5) ->
+    {[@stop_split] [@expl:__new_closure5 ensures] ([@stop_split] [@expl:__new result type invariant] inv_FnGhostWrapper_closure5 result)
+      /\ ([@stop_split] [@expl:__new ensures] result.f0'2 = f)}
+      (! return {result}) ]
+  
+  predicate invariant_Ghost_FnGhostWrapper_closure5 [@inline:trivial] (self: t_FnGhostWrapper_closure5) =
+    inv_FnGhostWrapper_closure5 self
+  
+  meta "rewrite_def" predicate invariant_Ghost_FnGhostWrapper_closure5
+  
+  predicate inv_Ghost_FnGhostWrapper_closure5 [@inline:trivial] (_1: t_FnGhostWrapper_closure5) =
+    invariant_Ghost_FnGhostWrapper_closure5 _1
+  
+  meta "rewrite_def" predicate inv_Ghost_FnGhostWrapper_closure5
+  
+  let rec new_FnGhostWrapper_closure5 (x: t_FnGhostWrapper_closure5) (return (x'0: t_FnGhostWrapper_closure5)) =
+    {[@stop_split] [@expl:new 'x' type invariant] inv_FnGhostWrapper_closure5 x}
+    any
+    [ return (result: t_FnGhostWrapper_closure5) ->
+    {[@stop_split] [@expl:new_FnGhostWrapper_closure5 ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_FnGhostWrapper_closure5 result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
+  type t_Result_bool_bool = Ok'0 bool | Err'0 bool
+  
+  predicate invariant_ref_AtomicBool [@inline:trivial] (self: t_AtomicBool) = inv_AtomicBool self
+  
+  meta "rewrite_def" predicate invariant_ref_AtomicBool
+  
+  predicate inv_ref_AtomicBool [@inline:trivial] (_1: t_AtomicBool) = invariant_ref_AtomicBool _1
+  
+  meta "rewrite_def" predicate inv_ref_AtomicBool
+  
+  predicate deep_model_bool [@inline:trivial] (self: bool) = self
+  
+  meta "rewrite_def" predicate deep_model_bool
+  
+  predicate precondition_closure5 [@inline:trivial] (self: closure5) (args: t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None) =
+    let c = args in forall bor_self: MutBorrow.t closure5. bor_self.current = self /\ inv_closure5 bor_self.final
+      -> closure5'pre bor_self c
+  
+  meta "rewrite_def" predicate precondition_closure5
+  
+  predicate precondition_FnGhostWrapper_closure5 [@inline:trivial] (self: t_FnGhostWrapper_closure5) (args: t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None) =
+    precondition_closure5 self.f0'2 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure5
+  
+  predicate postcondition_once_FnGhostWrapper_closure5 [@inline:trivial] (self: t_FnGhostWrapper_closure5) (args: t_Result_refmut_Committer_AtomicBool_bool_SeqCst_SeqCst_ref_Committer_AtomicBool_bool_SeqCst_None) (result: ()) =
+    postcondition_once_closure5 self.f0'2 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure5
+  
+  predicate shot_store_AtomicBool'0 (self: t_Committer_AtomicBool_bool_SeqCst_None)
+  
+  function ward_AtomicBool'1 (self: t_Committer_AtomicBool_bool_SeqCst_None) : t_AtomicBool
+  
+  predicate val_load_AtomicBool'0 (self: t_Committer_AtomicBool_bool_SeqCst_None)
+  
+  let rec compare_exchange_weak_FnGhostWrapper_closure5 (self: t_AtomicBool) (current': bool) (new'0: bool)
+    (f: t_FnGhostWrapper_closure5) (return (x: t_Result_bool_bool)) =
+    {[@stop_split] [@expl:compare_exchange_weak_FnGhostWrapper_closure5 requires] ([@stop_split] [@expl:compare_exchange_weak 'self' type invariant] inv_ref_AtomicBool self)
+    /\ ([@stop_split] [@expl:compare_exchange_weak 'f' type invariant] inv_Ghost_FnGhostWrapper_closure5 f)
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #0] forall c: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst. not shot_store_AtomicBool c.current
+        -> ward_AtomicBool c.current = self
+        -> deep_model_bool (val_load_AtomicBool c.current) = deep_model_bool current'
+        -> val_store_AtomicBool c.current = new'0
+        -> precondition_FnGhostWrapper_closure5 f (Ok c)
+        /\ (postcondition_once_FnGhostWrapper_closure5 f (Ok c) () -> shot_store_AtomicBool c.final))
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicBool_bool_SeqCst_None. not shot_store_AtomicBool'0 c
+      -> ward_AtomicBool'1 c = self -> precondition_FnGhostWrapper_closure5 f (Err c))}
+    any
+    [ return (result: t_Result_bool_bool) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
+        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst. not shot_store_AtomicBool c.current
+          /\ ward_AtomicBool c.current = self
+          /\ deep_model_bool (val_load_AtomicBool c.current) = deep_model_bool current'
+          /\ val_store_AtomicBool c.current = new'0
+          /\ result'0 = val_load_AtomicBool c.current /\ postcondition_once_FnGhostWrapper_closure5 f (Ok c) ()
+        | Err'0 result'0 -> exists c: t_Committer_AtomicBool_bool_SeqCst_None. not shot_store_AtomicBool'0 c
+          /\ ward_AtomicBool'1 c = self
+          /\ result'0 = val_load_AtomicBool'0 c /\ postcondition_once_FnGhostWrapper_closure5 f (Err c) ()
+        end}
+      (! return {result}) ]
+  
+  let rec into_inner_Option_FullBorrow_Perm_PermCell_T (self: t_Option_FullBorrow_Perm_PermCell_T)
+    (return (x: t_Option_FullBorrow_Perm_PermCell_T)) = any
+    [ return (result: t_Option_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+      (! return {result}) ]
+  
+  let rec unwrap_FullBorrow_Perm_PermCell_T (self_: t_Option_FullBorrow_Perm_PermCell_T)
+    (return (x: t_FullBorrow_Perm_PermCell_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+    any
+    [ return (result: t_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+      (! return {result}) ]
+  
+  let rec new_FullBorrow_Perm_PermCell_T (x: t_FullBorrow_Perm_PermCell_T)
+    (return (x'0: t_FullBorrow_Perm_PermCell_T)) = any
+    [ return (result: t_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x}
+      (! return {result}) ]
+  
+  type t_SpinLockGuard_T = { lock'1: t_SpinLock_T; perm'1: t_FullBorrow_Perm_PermCell_T; inv'1: Map.map t_T bool }
+  
+  predicate invariant_SpinLockGuard_T (self: t_SpinLockGuard_T) =
+    ward_PermCell_T (cur_Perm_PermCell_T self.perm'1) = self.lock'1.data
+    /\ lft_Perm_PermCell_T'0 self.perm'1 = lft self.lock'1.lft_tok /\ self.inv'1 = self.lock'1.inv
+  
+  predicate inv_SpinLockGuard_T (_1: t_SpinLockGuard_T)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_SpinLockGuard_T [inv_SpinLockGuard_T x]. inv_SpinLockGuard_T x
+      = (invariant_SpinLockGuard_T x /\ inv_ref_SpinLock_T x.lock'1)
+  
+  function view_SpinLockGuard_T (self: t_SpinLockGuard_T) : t_T = val_PermCell_T (cur_Perm_PermCell_T self.perm'1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec lock_T (self: t_SpinLock_T) (tokens: t_Tokens) (return (x: t_SpinLockGuard_T)) =
+    {[@stop_split] [@expl:lock_T requires] ([@stop_split] [@expl:lock 'self' type invariant] inv_ref_SpinLock_T self)
+    /\ ([@stop_split] [@expl:lock requires] contains tokens (Namespace_SPIN_LOCK 0))}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_10 <- None ] s1
+      | s1 = new_Option_FullBorrow_Perm_PermCell_T {_10}
+          (fun (_x: t_Option_FullBorrow_Perm_PermCell_T) -> [ &perm <- _x ] s2)
+      | s2 = bb2 ]
+    | bb2 = bb2
+      [ bb2 = {[@expl:loop invariant] contains tokens (Namespace_SPIN_LOCK 0)}
+        (! s0)
+        [ s0 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+            (fun (_bor: MutBorrow.t t_Tokens) -> [ &_22 <- _bor ] [ &tokens <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_mut <t_Option_FullBorrow_Perm_PermCell_T> {perm}
+            (fun (_bor: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T) -> [ &_23 <- _bor ] [ &perm <- _bor.final ] s2)
+        | s2 = [ &_20 <- { c0 = self; c1 = _22; c2 = _23 } ] s3
+        | s3 = __new_closure5 {_20} (fun (_x: t_FnGhostWrapper_closure5) -> [ &_19 <- _x ] s4)
+        | s4 = new_FnGhostWrapper_closure5 {_19} (fun (_x: t_FnGhostWrapper_closure5) -> [ &_18 <- _x ] s5)
+        | s5 = compare_exchange_weak_FnGhostWrapper_closure5 {self.atomic} {false} {true} {_18}
+            (fun (_x: t_Result_bool_bool) -> [ &_16 <- _x ] s6)
+        | s6 = any [ br0 (x0: bool) -> {_16 = Ok'0 x0} (! bb9) | br1 (x0: bool) -> {_16 = Err'0 x0} (! bb2) ] ] ]
+    | bb9 = s0
+      [ s0 = into_inner_Option_FullBorrow_Perm_PermCell_T {perm}
+          (fun (_x: t_Option_FullBorrow_Perm_PermCell_T) -> [ &_29 <- _x ] s1)
+      | s1 = unwrap_FullBorrow_Perm_PermCell_T {_29} (fun (_x: t_FullBorrow_Perm_PermCell_T) -> [ &_28 <- _x ] s2)
+      | s2 = new_FullBorrow_Perm_PermCell_T {_28} (fun (_x: t_FullBorrow_Perm_PermCell_T) -> [ &_27 <- _x ] s3)
+      | s3 = [ &_ret <- { lock'1 = self; perm'1 = _27; inv'1 = self.inv } ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_SpinLockGuard_T = Any.any_l ()
+    | & self: t_SpinLock_T = self
+    | & tokens: t_Tokens = tokens
+    | & perm: t_Option_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _10: t_Option_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _16: t_Result_bool_bool = Any.any_l ()
+    | & _18: t_FnGhostWrapper_closure5 = Any.any_l ()
+    | & _19: t_FnGhostWrapper_closure5 = Any.any_l ()
+    | & _20: closure5 = Any.any_l ()
+    | & _22: MutBorrow.t t_Tokens = Any.any_l ()
+    | & _23: MutBorrow.t t_Option_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _27: t_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _28: t_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _29: t_Option_FullBorrow_Perm_PermCell_T = Any.any_l () ])
+    [ return (result: t_SpinLockGuard_T) ->
+    {[@stop_split] [@expl:lock_T ensures] ([@stop_split] [@expl:lock result type invariant] inv_SpinLockGuard_T result)
+      /\ ([@stop_split] [@expl:lock ensures #0] Map.get self.inv (view_SpinLockGuard_T result))
+      /\ ([@stop_split] [@expl:lock ensures #1] result.inv'1 = self.inv)}
+      (! return {result}) ]
+end
+module M_impl_SpinLock_T__into_inner (* SpinLock<T> *)
+  type namespace_other
+  
+  type t_Namespace = Namespace_SPIN_LOCK int | Other namespace_other
+  
+  use map.Map
+  use real.Real
+  use real.FromInt
+  use creusot.prelude.Any
+  
+  type t_AtomicBool
+  
+  predicate inv_AtomicBool (_1: t_AtomicBool)
+  
+  type t_PermCell_T
+  
+  type t_LifetimeToken
+  
+  type t_EndBorrow_Perm_PermCell_T
+  
+  type t_AtomicInvariantSC_SpinLockInv_T
+  
+  type t_T
+  
+  type t_SpinLock_T = {
+    atomic: t_AtomicBool;
+    data: t_PermCell_T;
+    lft_tok: t_LifetimeToken;
+    end': t_EndBorrow_Perm_PermCell_T;
+    inner_inv: t_AtomicInvariantSC_SpinLockInv_T;
+    inv: Map.map t_T bool }
+  
+  predicate resolve_AtomicBool (_1: t_AtomicBool)
+  
+  predicate inv_LifetimeToken (_1: t_LifetimeToken)
+  
+  predicate invariant_Ghost_LifetimeToken [@inline:trivial] (self: t_LifetimeToken) = inv_LifetimeToken self
+  
+  meta "rewrite_def" predicate invariant_Ghost_LifetimeToken
+  
+  predicate inv_Ghost_LifetimeToken [@inline:trivial] (_1: t_LifetimeToken) = invariant_Ghost_LifetimeToken _1
+  
+  meta "rewrite_def" predicate inv_Ghost_LifetimeToken
+  
+  let rec into_inner_LifetimeToken (self: t_LifetimeToken) (return (x: t_LifetimeToken)) =
+    {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_LifetimeToken self}
+    any
+    [ return (result: t_LifetimeToken) ->
+    {[@stop_split] [@expl:into_inner_LifetimeToken ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_LifetimeToken result)
+      /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
+  
+  type t_LifetimeDead
+  
+  type t_PositiveReal
+  
+  function frac (self: t_LifetimeToken) : t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function new (n: Real.real) : t_PositiveReal
+  
+  axiom new_spec: forall n: Real.real [new n]. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
+  
+  meta "rewrite_def" function from_int
+  
+  predicate inv_LifetimeDead (_1: t_LifetimeDead)
+  
+  type t_Lifetime
+  
+  function lft (self: t_LifetimeDead) : t_Lifetime
+  
+  function lft'0 (self: t_LifetimeToken) : t_Lifetime
+  
+  let rec end''0 (self: t_LifetimeToken) (return (x: t_LifetimeDead)) =
+    {[@stop_split] [@expl:end requires] ([@stop_split] [@expl:end 'self' type invariant] inv_LifetimeToken self)
+    /\ ([@stop_split] [@expl:end requires] frac self = from_int 1)}
+    any
+    [ return (result: t_LifetimeDead) ->
+    {[@stop_split] [@expl:end ensures] ([@stop_split] [@expl:end result type invariant] inv_LifetimeDead result)
+      /\ ([@stop_split] [@expl:end ensures] lft result = lft'0 self)}
+      (! return {result}) ]
+  
+  let rec into_inner_EndBorrow_Perm_PermCell_T (self: t_EndBorrow_Perm_PermCell_T)
+    (return (x: t_EndBorrow_Perm_PermCell_T)) = any
+    [ return (result: t_EndBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+      (! return {result}) ]
+  
+  type t_Perm_PermCell_T
+  
+  function lft_Perm_PermCell_T (self: t_EndBorrow_Perm_PermCell_T) : t_Lifetime
+  
+  function fin_EndBorrow_Perm_PermCell_T (self: t_EndBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  
+  let rec get_Perm_PermCell_T (self: t_EndBorrow_Perm_PermCell_T) (lft_dead: t_LifetimeDead)
+    (return (x: t_Perm_PermCell_T)) =
+    {[@stop_split] [@expl:get_Perm_PermCell_T requires] ([@stop_split] [@expl:get 'lft_dead' type invariant] inv_LifetimeDead lft_dead)
+    /\ ([@stop_split] [@expl:get requires] lft_Perm_PermCell_T self = lft lft_dead)}
+    any
+    [ return (result: t_Perm_PermCell_T) -> {[@stop_split] [@expl:get ensures] result
+      = fin_EndBorrow_Perm_PermCell_T self}
+      (! return {result}) ]
+  
+  let rec new_Perm_PermCell_T (x: t_Perm_PermCell_T) (return (x'0: t_Perm_PermCell_T)) = any
+    [ return (result: t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
+  
+  predicate inv_T (_1: t_T)
+  
+  function val_PermCell_T (self: t_Perm_PermCell_T) : t_T
+  
+  let rec into_inner_T (self: t_PermCell_T) (perm: t_Perm_PermCell_T) (return (x: t_T)) =
+    {[@stop_split] [@expl:into_inner requires] self = ward_PermCell_T perm}
+    any
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:into_inner_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_T result)
+      /\ ([@stop_split] [@expl:into_inner ensures] result = val_PermCell_T perm)}
+      (! return {result}) ]
+  
+  type tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool = {
+    f0: t_PermCell_T;
+    f1: t_AtomicBool;
+    f2: t_Lifetime;
+    f3: Map.map t_T bool }
+  
+  function public_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) : tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool
+  
+  function namespace_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) : t_Namespace
+  
+  predicate invariant_SpinLock_T (self: t_SpinLock_T) =
+    public_SpinLockInv_T self.inner_inv = { f0 = self.data; f1 = self.atomic; f2 = lft'0 self.lft_tok; f3 = self.inv }
+    /\ frac self.lft_tok = from_int 1
+    /\ lft_Perm_PermCell_T self.end' = lft'0 self.lft_tok
+    /\ namespace_SpinLockInv_T self.inner_inv = Namespace_SPIN_LOCK 0
+  
+  predicate inv_SpinLock_T (_1: t_SpinLock_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_SpinLock_T [inv_SpinLock_T x]. inv_SpinLock_T x
+      = (invariant_SpinLock_T x /\ inv_AtomicBool x.atomic /\ inv_Ghost_LifetimeToken x.lft_tok)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec into_inner_T'0 (self: t_SpinLock_T) (return (x: t_T)) =
+    {[@stop_split] [@expl:into_inner 'self' type invariant] inv_SpinLock_T self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_AtomicBool self.atomic} any) ]
+      | s1 = -{resolve_AtomicBool self.atomic}- s2
+      | s2 = into_inner_LifetimeToken {self.lft_tok} (fun (_x: t_LifetimeToken) -> [ &_5 <- _x ] s3)
+      | s3 = end''0 {_5} (fun (_x: t_LifetimeDead) -> [ &dead <- _x ] s4)
+      | s4 = into_inner_EndBorrow_Perm_PermCell_T {self.end'}
+          (fun (_x: t_EndBorrow_Perm_PermCell_T) -> [ &_7 <- _x ] s5)
+      | s5 = get_Perm_PermCell_T {_7} {dead} (fun (_x: t_Perm_PermCell_T) -> [ &_3 <- _x ] s6)
+      | s6 = new_Perm_PermCell_T {_3} (fun (_x: t_Perm_PermCell_T) -> [ &perm <- _x ] s7)
+      | s7 = into_inner_T {self.data} {perm} (fun (_x: t_T) -> [ &_ret <- _x ] s8)
+      | s8 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l ()
+    | & self: t_SpinLock_T = self
+    | & perm: t_Perm_PermCell_T = Any.any_l ()
+    | & _3: t_Perm_PermCell_T = Any.any_l ()
+    | & dead: t_LifetimeDead = Any.any_l ()
+    | & _5: t_LifetimeToken = Any.any_l ()
+    | & _7: t_EndBorrow_Perm_PermCell_T = Any.any_l () ])
+    [ return (result: t_T) -> {[@stop_split] [@expl:into_inner result type invariant] inv_T result}
+      (! return {result}) ]
+end
+module M_impl_SpinLockGuard_T__deref (* SpinLockGuard<'a, T> *)
+  type namespace_other
+  
+  type t_Namespace = Namespace_SPIN_LOCK int | Other namespace_other
+  
+  use map.Map
+  use creusot.prelude.Any
+  use real.Real
+  use real.FromInt
+  
+  type t_FullBorrow_Perm_PermCell_T
+  
+  type t_AtomicBool
+  
+  type t_PermCell_T
+  
+  type t_LifetimeToken
+  
+  type t_EndBorrow_Perm_PermCell_T
+  
+  type t_AtomicInvariantSC_SpinLockInv_T
+  
+  type t_T
+  
+  type t_SpinLock_T = {
+    atomic: t_AtomicBool;
+    data: t_PermCell_T;
+    lft_tok: t_LifetimeToken;
+    end': t_EndBorrow_Perm_PermCell_T;
+    inner_inv: t_AtomicInvariantSC_SpinLockInv_T;
+    inv: Map.map t_T bool }
+  
+  type t_SpinLockGuard_T = { lock'0: t_SpinLock_T; perm'0: t_FullBorrow_Perm_PermCell_T; inv'0: Map.map t_T bool }
+  
+  let rec deref_Ghost_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T)
+    (return (x: t_FullBorrow_Perm_PermCell_T)) = any
+    [ return (result: t_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:deref ensures] result = self}
+      (! return {result}) ]
+  
+  predicate inv_LifetimeToken (_1: t_LifetimeToken)
+  
+  predicate invariant_Ghost_LifetimeToken [@inline:trivial] (self: t_LifetimeToken) = inv_LifetimeToken self
+  
+  meta "rewrite_def" predicate invariant_Ghost_LifetimeToken
+  
+  predicate inv_Ghost_LifetimeToken [@inline:trivial] (_1: t_LifetimeToken) = invariant_Ghost_LifetimeToken _1
+  
+  meta "rewrite_def" predicate inv_Ghost_LifetimeToken
+  
+  predicate invariant_ref_Ghost_LifetimeToken [@inline:trivial] (self: t_LifetimeToken) = inv_Ghost_LifetimeToken self
+  
+  meta "rewrite_def" predicate invariant_ref_Ghost_LifetimeToken
+  
+  predicate inv_ref_Ghost_LifetimeToken [@inline:trivial] (_1: t_LifetimeToken) = invariant_ref_Ghost_LifetimeToken _1
+  
+  meta "rewrite_def" predicate inv_ref_Ghost_LifetimeToken
+  
+  predicate invariant_ref_LifetimeToken [@inline:trivial] (self: t_LifetimeToken) = inv_LifetimeToken self
+  
+  meta "rewrite_def" predicate invariant_ref_LifetimeToken
+  
+  predicate inv_ref_LifetimeToken [@inline:trivial] (_1: t_LifetimeToken) = invariant_ref_LifetimeToken _1
+  
+  meta "rewrite_def" predicate inv_ref_LifetimeToken
+  
+  let rec deref_Ghost_LifetimeToken (self: t_LifetimeToken) (return (x: t_LifetimeToken)) =
+    {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_LifetimeToken self}
+    any
+    [ return (result: t_LifetimeToken) ->
+    {[@stop_split] [@expl:deref_Ghost_LifetimeToken ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_LifetimeToken result)
+      /\ ([@stop_split] [@expl:deref ensures] result = self)}
+      (! return {result}) ]
+  
+  type t_Perm_PermCell_T
+  
+  type t_Lifetime
+  
+  function lft_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Lifetime
+  
+  function lft (self: t_LifetimeToken) : t_Lifetime
+  
+  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  
+  let rec borrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) (token: t_LifetimeToken)
+    (return (x: t_Perm_PermCell_T)) =
+    {[@stop_split] [@expl:borrow_Perm_PermCell_T requires] ([@stop_split] [@expl:borrow 'token' type invariant] inv_ref_LifetimeToken token)
+    /\ ([@stop_split] [@expl:borrow requires] lft_Perm_PermCell_T self = lft token)}
+    any
+    [ return (result: t_Perm_PermCell_T) -> {[@stop_split] [@expl:borrow ensures] result = cur_Perm_PermCell_T self}
+      (! return {result}) ]
+  
+  let rec new_ref_Perm_PermCell_T (x: t_Perm_PermCell_T) (return (x'0: t_Perm_PermCell_T)) = any
+    [ return (result: t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  function val_PermCell_T (self: t_Perm_PermCell_T) : t_T
+  
+  let rec borrow_T (self: t_PermCell_T) (perm: t_Perm_PermCell_T) (return (x: t_T)) =
+    {[@stop_split] [@expl:borrow requires] self = ward_PermCell_T perm}
+    any
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:borrow_T ensures] ([@stop_split] [@expl:borrow result type invariant] inv_ref_T result)
+      /\ ([@stop_split] [@expl:borrow ensures] result = val_PermCell_T perm)}
+      (! return {result}) ]
+  
+  predicate invariant_SpinLockGuard_T (self: t_SpinLockGuard_T) =
+    ward_PermCell_T (cur_Perm_PermCell_T self.perm'0) = self.lock'0.data
+    /\ lft_Perm_PermCell_T self.perm'0 = lft self.lock'0.lft_tok /\ self.inv'0 = self.lock'0.inv
+  
+  type tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool = {
+    f0: t_PermCell_T;
+    f1: t_AtomicBool;
+    f2: t_Lifetime;
+    f3: Map.map t_T bool }
+  
+  function public_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) : tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool
+  
+  type t_PositiveReal
+  
+  function frac (self: t_LifetimeToken) : t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function new (n: Real.real) : t_PositiveReal
+  
+  axiom new_spec: forall n: Real.real [new n]. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
+  
+  meta "rewrite_def" function from_int
+  
+  function lft_Perm_PermCell_T'0 (self: t_EndBorrow_Perm_PermCell_T) : t_Lifetime
+  
+  function namespace_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) : t_Namespace
+  
+  predicate invariant_SpinLock_T (self: t_SpinLock_T) =
+    public_SpinLockInv_T self.inner_inv = { f0 = self.data; f1 = self.atomic; f2 = lft self.lft_tok; f3 = self.inv }
+    /\ frac self.lft_tok = from_int 1
+    /\ lft_Perm_PermCell_T'0 self.end' = lft self.lft_tok
+    /\ namespace_SpinLockInv_T self.inner_inv = Namespace_SPIN_LOCK 0
+  
+  predicate inv_AtomicBool (_1: t_AtomicBool)
+  
+  predicate inv_SpinLock_T (_1: t_SpinLock_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_SpinLock_T [inv_SpinLock_T x]. inv_SpinLock_T x
+      = (invariant_SpinLock_T x /\ inv_AtomicBool x.atomic /\ inv_Ghost_LifetimeToken x.lft_tok)
+  
+  predicate invariant_ref_SpinLock_T [@inline:trivial] (self: t_SpinLock_T) = inv_SpinLock_T self
+  
+  meta "rewrite_def" predicate invariant_ref_SpinLock_T
+  
+  predicate inv_ref_SpinLock_T [@inline:trivial] (_1: t_SpinLock_T) = invariant_ref_SpinLock_T _1
+  
+  meta "rewrite_def" predicate inv_ref_SpinLock_T
+  
+  predicate inv_SpinLockGuard_T (_1: t_SpinLockGuard_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_SpinLockGuard_T [inv_SpinLockGuard_T x]. inv_SpinLockGuard_T x
+      = (invariant_SpinLockGuard_T x /\ inv_ref_SpinLock_T x.lock'0)
+  
+  predicate invariant_ref_SpinLockGuard_T [@inline:trivial] (self: t_SpinLockGuard_T) = inv_SpinLockGuard_T self
+  
+  meta "rewrite_def" predicate invariant_ref_SpinLockGuard_T
+  
+  predicate inv_ref_SpinLockGuard_T [@inline:trivial] (_1: t_SpinLockGuard_T) = invariant_ref_SpinLockGuard_T _1
+  
+  meta "rewrite_def" predicate inv_ref_SpinLockGuard_T
+  
+  function view_SpinLockGuard_T (self: t_SpinLockGuard_T) : t_T = val_PermCell_T (cur_Perm_PermCell_T self.perm'0)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec deref_T (self: t_SpinLockGuard_T) (return (x: t_T)) =
+    {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_SpinLockGuard_T self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = deref_Ghost_FullBorrow_Perm_PermCell_T {self.perm'0}
+          (fun (_x: t_FullBorrow_Perm_PermCell_T) -> [ &_10 <- _x ] s1)
+      | s1 = [ &_15 <- self.lock'0.lft_tok ] s2
+      | s2 = deref_Ghost_LifetimeToken {_15} (fun (_x: t_LifetimeToken) -> [ &_13 <- _x ] s3)
+      | s3 = borrow_Perm_PermCell_T {_10} {_13} (fun (_x: t_Perm_PermCell_T) -> [ &_8 <- _x ] s4)
+      | s4 = new_ref_Perm_PermCell_T {_8} (fun (_x: t_Perm_PermCell_T) -> [ &_6 <- _x ] s5)
+      | s5 = borrow_T {self.lock'0.data} {_6} (fun (_x: t_T) -> [ &_4 <- _x ] s6)
+      | s6 = [ &_ret <- _4 ] s7
+      | s7 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l ()
+    | & self: t_SpinLockGuard_T = self
+    | & _4: t_T = Any.any_l ()
+    | & _6: t_Perm_PermCell_T = Any.any_l ()
+    | & _8: t_Perm_PermCell_T = Any.any_l ()
+    | & _10: t_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _13: t_LifetimeToken = Any.any_l ()
+    | & _15: t_LifetimeToken = Any.any_l () ])
+    [ return (result: t_T) ->
+    {[@stop_split] [@expl:deref_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_T result)
+      /\ ([@stop_split] [@expl:deref ensures] result = view_SpinLockGuard_T self)}
+      (! return {result}) ]
+end
+module M_impl_SpinLockGuard_T__deref_mut (* SpinLockGuard<'a, T> *)
+  type namespace_other
+  
+  type t_Namespace = Namespace_SPIN_LOCK int | Other namespace_other
+  
+  use map.Map
+  use creusot.prelude.MutBorrow
+  use real.Real
+  use real.FromInt
+  use creusot.prelude.Any
+  
+  type t_AtomicBool
+  
+  type t_PermCell_T
+  
+  type t_LifetimeToken
+  
+  type t_EndBorrow_Perm_PermCell_T
+  
+  type t_AtomicInvariantSC_SpinLockInv_T
+  
+  type t_T
+  
+  type t_SpinLock_T = {
+    atomic: t_AtomicBool;
+    data: t_PermCell_T;
+    lft_tok: t_LifetimeToken;
+    end': t_EndBorrow_Perm_PermCell_T;
+    inner_inv: t_AtomicInvariantSC_SpinLockInv_T;
+    inv: Map.map t_T bool }
+  
+  type t_FullBorrow_Perm_PermCell_T
+  
+  type t_SpinLockGuard_T = { lock'0: t_SpinLock_T; perm'0: t_FullBorrow_Perm_PermCell_T; inv'0: Map.map t_T bool }
+  
+  let rec deref_mut_Ghost_FullBorrow_Perm_PermCell_T (self: MutBorrow.t t_FullBorrow_Perm_PermCell_T)
+    (return (x: MutBorrow.t t_FullBorrow_Perm_PermCell_T)) = any
+    [ return (result: MutBorrow.t t_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:deref_mut ensures] result
+      = self}
+      (! return {result}) ]
+  
+  predicate inv_LifetimeToken (_1: t_LifetimeToken)
+  
+  predicate invariant_Ghost_LifetimeToken [@inline:trivial] (self: t_LifetimeToken) = inv_LifetimeToken self
+  
+  meta "rewrite_def" predicate invariant_Ghost_LifetimeToken
+  
+  predicate inv_Ghost_LifetimeToken [@inline:trivial] (_1: t_LifetimeToken) = invariant_Ghost_LifetimeToken _1
+  
+  meta "rewrite_def" predicate inv_Ghost_LifetimeToken
+  
+  predicate invariant_ref_Ghost_LifetimeToken [@inline:trivial] (self: t_LifetimeToken) = inv_Ghost_LifetimeToken self
+  
+  meta "rewrite_def" predicate invariant_ref_Ghost_LifetimeToken
+  
+  predicate inv_ref_Ghost_LifetimeToken [@inline:trivial] (_1: t_LifetimeToken) = invariant_ref_Ghost_LifetimeToken _1
+  
+  meta "rewrite_def" predicate inv_ref_Ghost_LifetimeToken
+  
+  predicate invariant_ref_LifetimeToken [@inline:trivial] (self: t_LifetimeToken) = inv_LifetimeToken self
+  
+  meta "rewrite_def" predicate invariant_ref_LifetimeToken
+  
+  predicate inv_ref_LifetimeToken [@inline:trivial] (_1: t_LifetimeToken) = invariant_ref_LifetimeToken _1
+  
+  meta "rewrite_def" predicate inv_ref_LifetimeToken
+  
+  let rec deref_Ghost_LifetimeToken (self: t_LifetimeToken) (return (x: t_LifetimeToken)) =
+    {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_LifetimeToken self}
+    any
+    [ return (result: t_LifetimeToken) ->
+    {[@stop_split] [@expl:deref_Ghost_LifetimeToken ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_LifetimeToken result)
+      /\ ([@stop_split] [@expl:deref ensures] result = self)}
+      (! return {result}) ]
+  
+  type t_Perm_PermCell_T
+  
+  type t_Lifetime
+  
+  function lft_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Lifetime
+  
+  function lft (self: t_LifetimeToken) : t_Lifetime
+  
+  function fin_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  
+  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  
+  let rec borrow_mut_Perm_PermCell_T (self: MutBorrow.t t_FullBorrow_Perm_PermCell_T) (token: t_LifetimeToken)
+    (return (x: MutBorrow.t t_Perm_PermCell_T)) =
+    {[@stop_split] [@expl:borrow_mut_Perm_PermCell_T requires] ([@stop_split] [@expl:borrow_mut 'token' type invariant] inv_ref_LifetimeToken token)
+    /\ ([@stop_split] [@expl:borrow_mut requires] lft_Perm_PermCell_T self.current = lft token)}
+    any
+    [ return (result: MutBorrow.t t_Perm_PermCell_T) ->
+    {[@stop_split] [@expl:borrow_mut_Perm_PermCell_T ensures] ([@stop_split] [@expl:borrow_mut ensures #0] lft_Perm_PermCell_T self.final
+        = lft_Perm_PermCell_T self.current)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #1] fin_FullBorrow_Perm_PermCell_T self.final
+        = fin_FullBorrow_Perm_PermCell_T self.current)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #2] cur_Perm_PermCell_T self.current = result.current
+      /\ cur_Perm_PermCell_T self.final = result.final)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_FullBorrow_Perm_PermCell_T) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_FullBorrow_Perm_PermCell_T
+  
+  predicate resolve_refmut_Perm_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Perm_PermCell_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Perm_PermCell_T
+  
+  let rec new_refmut_Perm_PermCell_T (x: MutBorrow.t t_Perm_PermCell_T) (return (x'0: MutBorrow.t t_Perm_PermCell_T)) =
+    any
+    [ return (result: MutBorrow.t t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x}
+      (! return {result}) ]
+  
+  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_T
+  
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_T
+  
+  function fin_Ghost_refmut_Perm_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Perm_PermCell_T) : t_Perm_PermCell_T
+   = self.final
+  
+  meta "rewrite_def" function fin_Ghost_refmut_Perm_PermCell_T
+  
+  function val_PermCell_T (self: t_Perm_PermCell_T) : t_T
+  
+  let rec borrow_mut_T (self: t_PermCell_T) (perm: MutBorrow.t t_Perm_PermCell_T) (return (x: MutBorrow.t t_T)) =
+    {[@stop_split] [@expl:borrow_mut requires] self = ward_PermCell_T perm.current}
+    any
+    [ return (result: MutBorrow.t t_T) ->
+    {[@stop_split] [@expl:borrow_mut_T ensures] ([@stop_split] [@expl:borrow_mut result type invariant] inv_refmut_T result)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #0] self = ward_PermCell_T (fin_Ghost_refmut_Perm_PermCell_T perm))
+      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = val_PermCell_T perm.current)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #2] result.final
+      = val_PermCell_T (fin_Ghost_refmut_Perm_PermCell_T perm))}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_T
+  
+  predicate invariant_SpinLockGuard_T (self: t_SpinLockGuard_T) =
+    ward_PermCell_T (cur_Perm_PermCell_T self.perm'0) = self.lock'0.data
+    /\ lft_Perm_PermCell_T self.perm'0 = lft self.lock'0.lft_tok /\ self.inv'0 = self.lock'0.inv
+  
+  type tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool = {
+    f0: t_PermCell_T;
+    f1: t_AtomicBool;
+    f2: t_Lifetime;
+    f3: Map.map t_T bool }
+  
+  function public_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) : tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool
+  
+  type t_PositiveReal
+  
+  function frac (self: t_LifetimeToken) : t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function new (n: Real.real) : t_PositiveReal
+  
+  axiom new_spec: forall n: Real.real [new n]. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
+  
+  meta "rewrite_def" function from_int
+  
+  function lft_Perm_PermCell_T'0 (self: t_EndBorrow_Perm_PermCell_T) : t_Lifetime
+  
+  function namespace_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) : t_Namespace
+  
+  predicate invariant_SpinLock_T (self: t_SpinLock_T) =
+    public_SpinLockInv_T self.inner_inv = { f0 = self.data; f1 = self.atomic; f2 = lft self.lft_tok; f3 = self.inv }
+    /\ frac self.lft_tok = from_int 1
+    /\ lft_Perm_PermCell_T'0 self.end' = lft self.lft_tok
+    /\ namespace_SpinLockInv_T self.inner_inv = Namespace_SPIN_LOCK 0
+  
+  predicate inv_AtomicBool (_1: t_AtomicBool)
+  
+  predicate inv_SpinLock_T (_1: t_SpinLock_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_SpinLock_T [inv_SpinLock_T x]. inv_SpinLock_T x
+      = (invariant_SpinLock_T x /\ inv_AtomicBool x.atomic /\ inv_Ghost_LifetimeToken x.lft_tok)
+  
+  predicate invariant_ref_SpinLock_T [@inline:trivial] (self: t_SpinLock_T) = inv_SpinLock_T self
+  
+  meta "rewrite_def" predicate invariant_ref_SpinLock_T
+  
+  predicate inv_ref_SpinLock_T [@inline:trivial] (_1: t_SpinLock_T) = invariant_ref_SpinLock_T _1
+  
+  meta "rewrite_def" predicate inv_ref_SpinLock_T
+  
+  predicate inv_SpinLockGuard_T (_1: t_SpinLockGuard_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_SpinLockGuard_T [inv_SpinLockGuard_T x]. inv_SpinLockGuard_T x
+      = (invariant_SpinLockGuard_T x /\ inv_ref_SpinLock_T x.lock'0)
+  
+  predicate invariant_refmut_SpinLockGuard_T [@inline:trivial] (self: MutBorrow.t t_SpinLockGuard_T) =
+    inv_SpinLockGuard_T self.current /\ inv_SpinLockGuard_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_SpinLockGuard_T
+  
+  predicate inv_refmut_SpinLockGuard_T [@inline:trivial] (_1: MutBorrow.t t_SpinLockGuard_T) =
+    invariant_refmut_SpinLockGuard_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_SpinLockGuard_T
+  
+  predicate resolve_refmut_SpinLockGuard_T [@inline:trivial] (_1: MutBorrow.t t_SpinLockGuard_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_SpinLockGuard_T
+  
+  function view_SpinLockGuard_T (self: t_SpinLockGuard_T) : t_T = val_PermCell_T (cur_Perm_PermCell_T self.perm'0)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec deref_mut_T (self: MutBorrow.t t_SpinLockGuard_T) (return (x: MutBorrow.t t_T)) =
+    {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_SpinLockGuard_T self}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_9 <- self.current.lock'0.data ] s1
+      | s1 = MutBorrow.borrow_final <t_FullBorrow_Perm_PermCell_T> {self.current.perm'0}
+          {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
+          (fun (_bor: MutBorrow.t t_FullBorrow_Perm_PermCell_T) ->
+            [ &_17 <- _bor ] [ &self <- { self with current = { self.current with perm'0 = _bor.final } } ] s2)
+      | s2 = deref_mut_Ghost_FullBorrow_Perm_PermCell_T {_17}
+          (fun (_x: MutBorrow.t t_FullBorrow_Perm_PermCell_T) -> [ &_16 <- _x ] s3)
+      | s3 = [ &_21 <- self.current.lock'0.lft_tok ] s4
+      | s4 = deref_Ghost_LifetimeToken {_21} (fun (_x: t_LifetimeToken) -> [ &_19 <- _x ] s5)
+      | s5 = MutBorrow.borrow_final <t_FullBorrow_Perm_PermCell_T> {_16.current} {MutBorrow.get_id _16}
+          (fun (_bor: MutBorrow.t t_FullBorrow_Perm_PermCell_T) ->
+            [ &_15 <- _bor ] [ &_16 <- { _16 with current = _bor.final } ] s6)
+      | s6 = borrow_mut_Perm_PermCell_T {_15} {_19} (fun (_x: MutBorrow.t t_Perm_PermCell_T) -> [ &_14 <- _x ] s7)
+      | s7 = MutBorrow.borrow_final <t_Perm_PermCell_T> {_14.current} {MutBorrow.get_id _14}
+          (fun (_bor: MutBorrow.t t_Perm_PermCell_T) ->
+            [ &_13 <- _bor ] [ &_14 <- { _14 with current = _bor.final } ] s8)
+      | s8 = -{resolve_refmut_FullBorrow_Perm_PermCell_T _16}- s9
+      | s9 = -{resolve_refmut_Perm_PermCell_T _14}- s10
+      | s10 = MutBorrow.borrow_final <t_Perm_PermCell_T> {_13.current} {MutBorrow.get_id _13}
+          (fun (_bor: MutBorrow.t t_Perm_PermCell_T) ->
+            [ &_12 <- _bor ] [ &_13 <- { _13 with current = _bor.final } ] s11)
+      | s11 = -{resolve_refmut_Perm_PermCell_T _13}- s12
+      | s12 = MutBorrow.borrow_final <t_Perm_PermCell_T> {_12.current} {MutBorrow.get_id _12}
+          (fun (_bor: MutBorrow.t t_Perm_PermCell_T) ->
+            [ &_11 <- _bor ] [ &_12 <- { _12 with current = _bor.final } ] s13)
+      | s13 = new_refmut_Perm_PermCell_T {_11} (fun (_x: MutBorrow.t t_Perm_PermCell_T) -> [ &_10 <- _x ] s14)
+      | s14 = -{resolve_refmut_Perm_PermCell_T _12}- s15
+      | s15 = borrow_mut_T {_9} {_10} (fun (_x: MutBorrow.t t_T) -> [ &_8 <- _x ] s16)
+      | s16 = MutBorrow.borrow_final <t_T> {_8.current} {MutBorrow.get_id _8}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_7 <- _bor ] -{inv_T _bor.final}-
+            [ &_8 <- { _8 with current = _bor.final } ] s17)
+        [ _ck -> (! {[@expl:type invariant] inv_T _8.current} any) ]
+      | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _8} any) ]
+      | s18 = -{resolve_refmut_T _8}- s19
+      | s19 = MutBorrow.borrow_final <t_T> {_7.current} {MutBorrow.get_id _7}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_2 <- _bor ] -{inv_T _bor.final}-
+            [ &_7 <- { _7 with current = _bor.final } ] s20)
+        [ _ck -> (! {[@expl:type invariant] inv_T _7.current} any) ]
+      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _7} any) ]
+      | s21 = -{resolve_refmut_T _7}- s22
+      | s22 = MutBorrow.borrow_final <t_T> {_2.current} {MutBorrow.get_id _2}
+          (fun (_bor: MutBorrow.t t_T) ->
+            [ &_ret <- _bor ] -{inv_T _bor.final}-
+            [ &_2 <- { _2 with current = _bor.final } ] s23)
+        [ _ck -> (! {[@expl:type invariant] inv_T _2.current} any) ]
+      | s23 = s24 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _2} any) ]
+      | s24 = -{resolve_refmut_T _2}- s25
+      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_SpinLockGuard_T self} any) ]
+      | s26 = -{resolve_refmut_SpinLockGuard_T self}- s27
+      | s27 = return {_ret} ] ]
+    [ & _ret: MutBorrow.t t_T = Any.any_l ()
+    | & self: MutBorrow.t t_SpinLockGuard_T = self
+    | & _2: MutBorrow.t t_T = Any.any_l ()
+    | & _7: MutBorrow.t t_T = Any.any_l ()
+    | & _8: MutBorrow.t t_T = Any.any_l ()
+    | & _9: t_PermCell_T = Any.any_l ()
+    | & _10: MutBorrow.t t_Perm_PermCell_T = Any.any_l ()
+    | & _11: MutBorrow.t t_Perm_PermCell_T = Any.any_l ()
+    | & _12: MutBorrow.t t_Perm_PermCell_T = Any.any_l ()
+    | & _13: MutBorrow.t t_Perm_PermCell_T = Any.any_l ()
+    | & _14: MutBorrow.t t_Perm_PermCell_T = Any.any_l ()
+    | & _15: MutBorrow.t t_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _16: MutBorrow.t t_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _17: MutBorrow.t t_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _19: t_LifetimeToken = Any.any_l ()
+    | & _21: t_LifetimeToken = Any.any_l () ])
+    [ return (result: MutBorrow.t t_T) ->
+    {[@stop_split] [@expl:deref_mut_T ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_T result)
+      /\ ([@stop_split] [@expl:deref_mut ensures #0] result.current = view_SpinLockGuard_T self.current
+        /\ result.final = view_SpinLockGuard_T self.final)
+      /\ ([@stop_split] [@expl:deref_mut ensures #1] self.current.inv'0 = self.final.inv'0)}
+      (! return {result}) ]
+end
+module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
+  type namespace_other
+  
+  type t_Namespace = Namespace_SPIN_LOCK int | Other namespace_other
+  
+  use map.Map
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use set.Set
+  use real.Real
+  use real.FromInt
+  
+  type t_AtomicInvariantSC_SpinLockInv_T
+  
+  type t_AtomicBool
+  
+  type t_PermCell_T
+  
+  type t_LifetimeToken
+  
+  type t_EndBorrow_Perm_PermCell_T
+  
+  type t_T
+  
+  type t_SpinLock_T = {
+    atomic: t_AtomicBool;
+    data: t_PermCell_T;
+    lft_tok: t_LifetimeToken;
+    end': t_EndBorrow_Perm_PermCell_T;
+    inner_inv: t_AtomicInvariantSC_SpinLockInv_T;
+    inv: Map.map t_T bool }
+  
+  type t_FullBorrow_Perm_PermCell_T
+  
+  type t_Tokens
+  
+  type closure2 = { c0: t_SpinLock_T; c1: t_FullBorrow_Perm_PermCell_T; c2: t_Tokens }
+  
+  let rec deref_Ghost_AtomicInvariantSC_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T)
+    (return (x: t_AtomicInvariantSC_SpinLockInv_T)) = any
+    [ return (result: t_AtomicInvariantSC_SpinLockInv_T) -> {[@stop_split] [@expl:deref ensures] result = self}
+      (! return {result}) ]
+  
+  let rec into_inner_Tokens (self: t_Tokens) (return (x: t_Tokens)) = any
+    [ return (result: t_Tokens) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  type t_Committer_AtomicBool_bool_None_SeqCst
+  
+  type t_Lifetime
+  
+  type t_Option_FullBorrow_Perm_PermCell_T = None | Some t_FullBorrow_Perm_PermCell_T
+  
+  type t_Perm_AtomicBool
+  
+  type t_SpinLockInv_T = {
+    cell'0: t_PermCell_T;
+    lft'0: t_Lifetime;
+    perm'0: t_Option_FullBorrow_Perm_PermCell_T;
+    perm_atomic'0: t_Perm_AtomicBool;
+    inv'0: Map.map t_T bool }
+  
+  type closure0 = { c0'0: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst; c1'0: t_FullBorrow_Perm_PermCell_T }
+  
+  predicate shot_store_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst)
+  
+  function ward_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst) : t_AtomicBool
+  
+  function ward_AtomicBool'0 (self: t_Perm_AtomicBool) : t_AtomicBool
+  
+  predicate val_load_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst)
+  
+  predicate val_store_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst)
+  
+  function timestamp_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst) : int
+  
+  predicate hist_inv_AtomicBool [@inline:trivial] (self: t_Committer_AtomicBool_bool_None_SeqCst) (other: t_Committer_AtomicBool_bool_None_SeqCst) =
+    ward_AtomicBool self = ward_AtomicBool other
+    /\ val_load_AtomicBool self = val_load_AtomicBool other
+    /\ val_store_AtomicBool self = val_store_AtomicBool other /\ timestamp_AtomicBool self = timestamp_AtomicBool other
+  
+  meta "rewrite_def" predicate hist_inv_AtomicBool
+  
+  predicate val_AtomicBool (self: t_Perm_AtomicBool)
+  
+  let rec shoot_store_AtomicBool (self: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst)
+    (own: MutBorrow.t t_Perm_AtomicBool) (return (x: ())) =
+    {[@stop_split] [@expl:shoot_store_AtomicBool requires] ([@stop_split] [@expl:shoot_store requires #0] not shot_store_AtomicBool self.current)
+    /\ ([@stop_split] [@expl:shoot_store requires #1] ward_AtomicBool self.current = ward_AtomicBool'0 own.current)}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:shoot_store_AtomicBool ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicBool self.current self.final)
+      /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicBool self.final)
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] ward_AtomicBool'0 own.current = ward_AtomicBool'0 own.final)
+      /\ ([@stop_split] [@expl:shoot_store ensures #3] val_AtomicBool own.final = val_store_AtomicBool self.current)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Perm_AtomicBool [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicBool) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Perm_AtomicBool
+  
+  predicate resolve_refmut_Committer_AtomicBool_bool_None_SeqCst [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Committer_AtomicBool_bool_None_SeqCst
+  
+  let rec into_inner_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T)
+    (return (x: t_FullBorrow_Perm_PermCell_T)) = any
+    [ return (result: t_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+      (! return {result}) ]
+  
+  type t_Perm_PermCell_T
+  
+  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  
+  function fin_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  
+  predicate resolve_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) =
+    cur_Perm_PermCell_T self = fin_FullBorrow_Perm_PermCell_T self
+  
+  predicate resolve_FullBorrow_Perm_PermCell_T'0 (_1: t_FullBorrow_Perm_PermCell_T)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall x: t_FullBorrow_Perm_PermCell_T [resolve_FullBorrow_Perm_PermCell_T'0 x]. resolve_FullBorrow_Perm_PermCell_T'0 x
+      = resolve_FullBorrow_Perm_PermCell_T x
+  
+  predicate resolve_Option_FullBorrow_Perm_PermCell_T (_1: t_Option_FullBorrow_Perm_PermCell_T)
+  
+  axiom resolve_axiom'0 [@rewrite]:
+    forall x: t_Option_FullBorrow_Perm_PermCell_T [resolve_Option_FullBorrow_Perm_PermCell_T x]. resolve_Option_FullBorrow_Perm_PermCell_T x
+      = match x with
+        | None -> true
+        | Some x0 -> resolve_FullBorrow_Perm_PermCell_T'0 x0
+        end
+  
+  predicate resolve_refmut_SpinLockInv_T [@inline:trivial] (_1: MutBorrow.t t_SpinLockInv_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_SpinLockInv_T
+  
+  let rec closure0 [@coma:extspec] (self: closure0) (inv'1: MutBorrow.t t_SpinLockInv_T) (return (x: ())) = bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <t_Perm_AtomicBool> {inv'1.current.perm_atomic'0}
+          {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 3}
+          (fun (_bor: MutBorrow.t t_Perm_AtomicBool) ->
+            [ &_6 <- _bor ] [ &inv'1 <- { inv'1 with current = { inv'1.current with perm_atomic'0 = _bor.final } } ] s1)
+      | s1 = MutBorrow.borrow_final <t_Committer_AtomicBool_bool_None_SeqCst> {self.c0'0.current}
+          {MutBorrow.get_id self.c0'0}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) ->
+            [ &_4 <- _bor ] [ &self <- { self with c0'0 = { self.c0'0 with current = _bor.final } } ] s2)
+      | s2 = MutBorrow.borrow_final <t_Perm_AtomicBool> {_6.current} {MutBorrow.get_id _6}
+          (fun (_bor: MutBorrow.t t_Perm_AtomicBool) -> [ &_5 <- _bor ] [ &_6 <- { _6 with current = _bor.final } ] s3)
+      | s3 = shoot_store_AtomicBool {_4} {_5} (fun (_x: ()) -> [ &_3 <- _x ] s4)
+      | s4 = -{resolve_refmut_Perm_AtomicBool _6}- s5
+      | s5 = -{match self with
+          | {c0'0 = x} -> resolve_refmut_Committer_AtomicBool_bool_None_SeqCst x
+          | _ -> true
+          end}-
+        s6
+      | s6 = into_inner_FullBorrow_Perm_PermCell_T {self.c1'0}
+          (fun (_x: t_FullBorrow_Perm_PermCell_T) -> [ &_8 <- _x ] s7)
+      | s7 = [ &_7 <- Some _8 ] s8
+      | s8 = -{resolve_Option_FullBorrow_Perm_PermCell_T inv'1.current.perm'0}- s9
+      | s9 = [ &inv'1 <- { inv'1 with current = { inv'1.current with perm'0 = _7 } } ] s10
+      | s10 = -{resolve_refmut_SpinLockInv_T inv'1}- s11
+      | s11 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: closure0 = self
+    | & inv'1: MutBorrow.t t_SpinLockInv_T = inv'1
+    | & _3: () = Any.any_l ()
+    | & _4: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst = Any.any_l ()
+    | & _5: MutBorrow.t t_Perm_AtomicBool = Any.any_l ()
+    | & _6: MutBorrow.t t_Perm_AtomicBool = Any.any_l ()
+    | & _7: t_Option_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _8: t_FullBorrow_Perm_PermCell_T = Any.any_l () ] [ return (result: ()) -> return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  type t_FnGhostWrapper_closure0 = { f0: closure0 }
+  
+  let rec __new_closure0 (f: closure0) (return (x: t_FnGhostWrapper_closure0)) = any
+    [ return (result: t_FnGhostWrapper_closure0) -> {[@stop_split] [@expl:__new ensures] result.f0 = f}
+      (! return {result}) ]
+  
+  predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
+  
+  meta "rewrite_def" predicate contains_Namespace
+  
+  function namespaces (self: t_Tokens) : Set.set t_Namespace
+  
+  predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
+  
+  function namespace_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) : t_Namespace
+  
+  type tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool = {
+    f0'0: t_PermCell_T;
+    f1'0: t_AtomicBool;
+    f2'0: t_Lifetime;
+    f3'0: Map.map t_T bool }
+  
+  function public_SpinLockInv_T (self: t_SpinLockInv_T) : tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool =
+    { f0'0 = self.cell'0; f1'0 = ward_AtomicBool'0 self.perm_atomic'0; f2'0 = self.lft'0; f3'0 = self.inv'0 }
+  
+  function public_SpinLockInv_T'0 (self: t_AtomicInvariantSC_SpinLockInv_T) : tup4_PermCell_T_AtomicBool_Lifetime_Mapping_T_bool
+  
+  type tup2_bool_Option_FullBorrow_Perm_PermCell_T = { f0'1: bool; f1'1: t_Option_FullBorrow_Perm_PermCell_T }
+  
+  function lft_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Lifetime
+  
+  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
+  
+  function val_PermCell_T (self: t_Perm_PermCell_T) : t_T
+  
+  predicate protocol_SpinLockInv_T (self: t_SpinLockInv_T) =
+    match { f0'1 = val_AtomicBool self.perm_atomic'0; f1'1 = self.perm'0 } with
+      | {f0'1 = True; f1'1 = None} -> true
+      | {f0'1 = False; f1'1 = Some bor} -> lft_Perm_PermCell_T bor = self.lft'0
+      /\ ward_PermCell_T (cur_Perm_PermCell_T bor) = self.cell'0
+      /\ Map.get self.inv'0 (val_PermCell_T (cur_Perm_PermCell_T bor))
+      | _ -> false
+      end
+  
+  predicate inv_refmut_SpinLockInv_T [@inline:trivial] (_1: MutBorrow.t t_SpinLockInv_T) = true
+  
+  meta "rewrite_def" predicate inv_refmut_SpinLockInv_T
+  
+  predicate precondition_closure0 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_SpinLockInv_T) =
+    let inv'1 = args in closure0'pre self inv'1
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate precondition_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_SpinLockInv_T) =
+    precondition_closure0 self.f0 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0
+  
+  predicate postcondition_once_closure0 [@inline:trivial] (self: closure0) (args: MutBorrow.t t_SpinLockInv_T) (result: ()) =
+    let inv'1 = args in closure0'post'return self inv'1 result
+  
+  meta "rewrite_def" predicate postcondition_once_closure0
+  
+  predicate postcondition_once_FnGhostWrapper_closure0 [@inline:trivial] (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_SpinLockInv_T) (result: ()) =
+    postcondition_once_closure0 self.f0 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0
+  
+  let rec open_SpinLockInv_T (self: t_AtomicInvariantSC_SpinLockInv_T) (tokens: t_Tokens) (f: t_FnGhostWrapper_closure0)
+    (return (x: ())) =
+    {[@stop_split] [@expl:open_SpinLockInv_T requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_SpinLockInv_T self))
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_SpinLockInv_T. public_SpinLockInv_T t.current
+          = public_SpinLockInv_T'0 self
+        /\ protocol_SpinLockInv_T t.current /\ inv_refmut_SpinLockInv_T t
+      -> precondition_FnGhostWrapper_closure0 f t
+      /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res
+        -> public_SpinLockInv_T t.final = public_SpinLockInv_T'0 self /\ protocol_SpinLockInv_T t.final))}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_SpinLockInv_T. public_SpinLockInv_T t.current
+          = public_SpinLockInv_T'0 self
+        /\ protocol_SpinLockInv_T t.current
+        /\ inv_refmut_SpinLockInv_T t /\ postcondition_once_FnGhostWrapper_closure0 f t result}
+      (! return {result}) ]
+  
+  function lft (self: t_LifetimeToken) : t_Lifetime
+  
+  type t_PositiveReal
+  
+  function frac (self: t_LifetimeToken) : t_PositiveReal
+  
+  type t_Ordering = Less | Equal | Greater
+  
+  function cmp_log_Real (self: Real.real) (o: Real.real) : t_Ordering = if Real.(<) self o then
+      Less
+    else
+      if self = o then Equal else Greater
+  
+  
+  function eq_cmp_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom eq_cmp_Real_spec: forall x: Real.real, y: Real.real. (x = y) = (cmp_log_Real x y = Equal)
+  
+  function antisym2_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym2_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Greater -> cmp_log_Real y x = Less
+  
+  function antisym1_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom antisym1_Real_spec: forall x: Real.real, y: Real.real. cmp_log_Real x y = Less -> cmp_log_Real y x = Greater
+  
+  function trans_Real (x: Real.real) (y: Real.real) (z: Real.real) (o: t_Ordering) : ()
+  
+  axiom trans_Real_spec: forall x: Real.real, y: Real.real, z: Real.real, o: t_Ordering. cmp_log_Real x y = o
+      -> cmp_log_Real y z = o -> cmp_log_Real x z = o
+  
+  function refl_Real (x: Real.real) : ()
+  
+  axiom refl_Real_spec: forall x: Real.real. cmp_log_Real x x = Equal
+  
+  function cmp_gt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_gt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>) x y = (cmp_log_Real x y = Greater)
+  
+  function cmp_ge_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_ge_log_Real_spec: forall x: Real.real, y: Real.real. Real.(>=) x y = (cmp_log_Real x y <> Less)
+  
+  function cmp_lt_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_lt_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<) x y = (cmp_log_Real x y = Less)
+  
+  function cmp_le_log_Real (x: Real.real) (y: Real.real) : ()
+  
+  axiom cmp_le_log_Real_spec: forall x: Real.real, y: Real.real. Real.(<=) x y = (cmp_log_Real x y <> Greater)
+  
+  function to_real (self: t_PositiveReal) : Real.real
+  
+  axiom to_real_spec: forall self: t_PositiveReal [to_real self]. Real.(>) (to_real self) (FromInt.from_int 0)
+  
+  function new (n: Real.real) : t_PositiveReal
+  
+  axiom new_spec: forall n: Real.real [new n]. Real.(>) n (FromInt.from_int 0) -> to_real (new n) = n
+  
+  function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
+  
+  meta "rewrite_def" function from_int
+  
+  function lft_Perm_PermCell_T'0 (self: t_EndBorrow_Perm_PermCell_T) : t_Lifetime
+  
+  predicate invariant_SpinLock_T (self: t_SpinLock_T) =
+    public_SpinLockInv_T'0 self.inner_inv
+      = { f0'0 = self.data; f1'0 = self.atomic; f2'0 = lft self.lft_tok; f3'0 = self.inv }
+    /\ frac self.lft_tok = from_int 1
+    /\ lft_Perm_PermCell_T'0 self.end' = lft self.lft_tok
+    /\ namespace_SpinLockInv_T self.inner_inv = Namespace_SPIN_LOCK 0
+  
+  predicate inv_AtomicBool (_1: t_AtomicBool)
+  
+  predicate inv_LifetimeToken (_1: t_LifetimeToken)
+  
+  predicate invariant_Ghost_LifetimeToken [@inline:trivial] (self: t_LifetimeToken) = inv_LifetimeToken self
+  
+  meta "rewrite_def" predicate invariant_Ghost_LifetimeToken
+  
+  predicate inv_Ghost_LifetimeToken [@inline:trivial] (_1: t_LifetimeToken) = invariant_Ghost_LifetimeToken _1
+  
+  meta "rewrite_def" predicate inv_Ghost_LifetimeToken
+  
+  predicate inv_SpinLock_T (_1: t_SpinLock_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_SpinLock_T [inv_SpinLock_T x]. inv_SpinLock_T x
+      = (invariant_SpinLock_T x /\ inv_AtomicBool x.atomic /\ inv_Ghost_LifetimeToken x.lft_tok)
+  
+  predicate invariant_ref_SpinLock_T [@inline:trivial] (self: t_SpinLock_T) = inv_SpinLock_T self
+  
+  meta "rewrite_def" predicate invariant_ref_SpinLock_T
+  
+  predicate inv_ref_SpinLock_T [@inline:trivial] (_1: t_SpinLock_T) = invariant_ref_SpinLock_T _1
+  
+  meta "rewrite_def" predicate inv_ref_SpinLock_T
+  
+  predicate inv_closure2 [@inline:trivial] (_1: closure2) =
+    let {c0 = x0; c1 = x1; c2 = x2} = _1 in inv_ref_SpinLock_T x0
+  
+  meta "rewrite_def" predicate inv_closure2
+  
+  let rec closure2 [@coma:extspec] (self: closure2) (c: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst)
+    (return (x: ())) = {[@stop_split] [@expl:closure 'self' type invariant] inv_closure2 self}
+    bb0
+    [ bb0 = s0
+      [ s0 = deref_Ghost_AtomicInvariantSC_SpinLockInv_T {self.c0.inner_inv}
+          (fun (_x: t_AtomicInvariantSC_SpinLockInv_T) -> [ &_4 <- _x ] s1)
+      | s1 = into_inner_Tokens {self.c2} (fun (_x: t_Tokens) -> [ &_6 <- _x ] s2)
+      | s2 = MutBorrow.borrow_final <t_Committer_AtomicBool_bool_None_SeqCst> {c.current} {MutBorrow.get_id c}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) ->
+            [ &_10 <- _bor ] [ &c <- { c with current = _bor.final } ] s3)
+      | s3 = [ &_9 <- { c0'0 = _10; c1'0 = self.c1 } ] s4
+      | s4 = __new_closure0 {_9} (fun (_x: t_FnGhostWrapper_closure0) -> [ &_8 <- _x ] s5)
+      | s5 = open_SpinLockInv_T {_4} {_6} {_8} (fun (_x: ()) -> [ &_ret <- _x ] s6)
+      | s6 = -{resolve_refmut_Committer_AtomicBool_bool_None_SeqCst c}- s7
+      | s7 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: closure2 = self
+    | & c: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst = c
+    | & _4: t_AtomicInvariantSC_SpinLockInv_T = Any.any_l ()
+    | & _6: t_Tokens = Any.any_l ()
+    | & _8: t_FnGhostWrapper_closure0 = Any.any_l ()
+    | & _9: closure0 = Any.any_l ()
+    | & _10: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst = Any.any_l () ]
+    [ return (result: ()) -> return {result} ]
+  
+  meta "rewrite_def" predicate closure2'pre
+  
+  meta "rewrite_def" predicate closure2'post'return
+  
+  type t_SpinLockGuard_T = { lock'1: t_SpinLock_T; perm'1: t_FullBorrow_Perm_PermCell_T; inv'1: Map.map t_T bool }
+  
+  type t_FnGhostWrapper_closure2 = { f0'2: closure2 }
+  
+  predicate inv_FnGhostWrapper_closure2 (_1: t_FnGhostWrapper_closure2)
+  
+  axiom inv_axiom'0 [@rewrite]:
+    forall x: t_FnGhostWrapper_closure2 [inv_FnGhostWrapper_closure2 x]. inv_FnGhostWrapper_closure2 x
+      = inv_closure2 x.f0'2
+  
+  let rec __new_closure2 (f: closure2) (return (x: t_FnGhostWrapper_closure2)) =
+    {[@stop_split] [@expl:__new 'f' type invariant] inv_closure2 f}
+    any
+    [ return (result: t_FnGhostWrapper_closure2) ->
+    {[@stop_split] [@expl:__new_closure2 ensures] ([@stop_split] [@expl:__new result type invariant] inv_FnGhostWrapper_closure2 result)
+      /\ ([@stop_split] [@expl:__new ensures] result.f0'2 = f)}
+      (! return {result}) ]
+  
+  predicate invariant_Ghost_FnGhostWrapper_closure2 [@inline:trivial] (self: t_FnGhostWrapper_closure2) =
+    inv_FnGhostWrapper_closure2 self
+  
+  meta "rewrite_def" predicate invariant_Ghost_FnGhostWrapper_closure2
+  
+  predicate inv_Ghost_FnGhostWrapper_closure2 [@inline:trivial] (_1: t_FnGhostWrapper_closure2) =
+    invariant_Ghost_FnGhostWrapper_closure2 _1
+  
+  meta "rewrite_def" predicate inv_Ghost_FnGhostWrapper_closure2
+  
+  let rec new_FnGhostWrapper_closure2 (x: t_FnGhostWrapper_closure2) (return (x'0: t_FnGhostWrapper_closure2)) =
+    {[@stop_split] [@expl:new 'x' type invariant] inv_FnGhostWrapper_closure2 x}
+    any
+    [ return (result: t_FnGhostWrapper_closure2) ->
+    {[@stop_split] [@expl:new_FnGhostWrapper_closure2 ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_FnGhostWrapper_closure2 result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
+  predicate invariant_ref_AtomicBool [@inline:trivial] (self: t_AtomicBool) = inv_AtomicBool self
+  
+  meta "rewrite_def" predicate invariant_ref_AtomicBool
+  
+  predicate inv_ref_AtomicBool [@inline:trivial] (_1: t_AtomicBool) = invariant_ref_AtomicBool _1
+  
+  meta "rewrite_def" predicate inv_ref_AtomicBool
+  
+  predicate precondition_closure2 [@inline:trivial] (self: closure2) (args: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) =
+    let c = args in closure2'pre self c
+  
+  meta "rewrite_def" predicate precondition_closure2
+  
+  predicate precondition_FnGhostWrapper_closure2 [@inline:trivial] (self: t_FnGhostWrapper_closure2) (args: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) =
+    precondition_closure2 self.f0'2 args
+  
+  meta "rewrite_def" predicate precondition_FnGhostWrapper_closure2
+  
+  predicate postcondition_once_closure2 [@inline:trivial] (self: closure2) (args: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) (result: ()) =
+    let c = args in closure2'post'return self c result
+  
+  meta "rewrite_def" predicate postcondition_once_closure2
+  
+  predicate postcondition_once_FnGhostWrapper_closure2 [@inline:trivial] (self: t_FnGhostWrapper_closure2) (args: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst) (result: ()) =
+    postcondition_once_closure2 self.f0'2 args result
+  
+  meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure2
+  
+  let rec store_FnGhostWrapper_closure2 (self: t_AtomicBool) (val': bool) (f: t_FnGhostWrapper_closure2)
+    (return (x: ())) =
+    {[@stop_split] [@expl:store_FnGhostWrapper_closure2 requires] ([@stop_split] [@expl:store 'self' type invariant] inv_ref_AtomicBool self)
+    /\ ([@stop_split] [@expl:store 'f' type invariant] inv_Ghost_FnGhostWrapper_closure2 f)
+    /\ ([@stop_split] [@expl:store requires] forall c: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst. not shot_store_AtomicBool c.current
+      -> ward_AtomicBool c.current = self
+      -> val_store_AtomicBool c.current = val'
+      -> precondition_FnGhostWrapper_closure2 f c
+      /\ (postcondition_once_FnGhostWrapper_closure2 f c () -> shot_store_AtomicBool c.final))}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:store ensures] exists c: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst. not shot_store_AtomicBool c.current
+        /\ ward_AtomicBool c.current = self
+        /\ val_store_AtomicBool c.current = val' /\ postcondition_once_FnGhostWrapper_closure2 f c ()}
+      (! return {result}) ]
+  
+  predicate invariant_SpinLockGuard_T (self: t_SpinLockGuard_T) =
+    ward_PermCell_T (cur_Perm_PermCell_T self.perm'1) = self.lock'1.data
+    /\ lft_Perm_PermCell_T self.perm'1 = lft self.lock'1.lft_tok /\ self.inv'1 = self.lock'1.inv
+  
+  predicate inv_SpinLockGuard_T (_1: t_SpinLockGuard_T)
+  
+  axiom inv_axiom'1 [@rewrite]: forall x: t_SpinLockGuard_T [inv_SpinLockGuard_T x]. inv_SpinLockGuard_T x
+      = (invariant_SpinLockGuard_T x /\ inv_ref_SpinLock_T x.lock'1)
+  
+  function view_SpinLockGuard_T (self: t_SpinLockGuard_T) : t_T = val_PermCell_T (cur_Perm_PermCell_T self.perm'1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let rec unlock_T (self: t_SpinLockGuard_T) (tokens: t_Tokens) (return (x: ())) =
+    {[@stop_split] [@expl:unlock_T requires] ([@stop_split] [@expl:unlock 'self' type invariant] inv_SpinLockGuard_T self)
+    /\ ([@stop_split] [@expl:unlock requires #0] contains tokens (Namespace_SPIN_LOCK 0))
+    /\ ([@stop_split] [@expl:unlock requires #1] Map.get self.inv'1 (view_SpinLockGuard_T self))}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_11 <- { c0 = self.lock'1; c1 = self.perm'1; c2 = tokens } ] s1
+      | s1 = __new_closure2 {_11} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_10 <- _x ] s2)
+      | s2 = new_FnGhostWrapper_closure2 {_10} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_9 <- _x ] s3)
+      | s3 = store_FnGhostWrapper_closure2 {self.lock'1.atomic} {false} {_9} (fun (_x: ()) -> [ &_7 <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: t_SpinLockGuard_T = self
+    | & tokens: t_Tokens = tokens
+    | & _7: () = Any.any_l ()
+    | & _9: t_FnGhostWrapper_closure2 = Any.any_l ()
+    | & _10: t_FnGhostWrapper_closure2 = Any.any_l ()
+    | & _11: closure2 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
