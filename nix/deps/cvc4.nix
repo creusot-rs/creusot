@@ -24,7 +24,7 @@
   version,
 }:
 let
-  cvc4-cryptominisat = cryptominisat.overrideAttrs (old: {
+  cvc4-cryptominisat = cryptominisat.overrideAttrs {
     src = fetchFromGitHub {
       owner = "msoos";
       repo = "cryptominisat";
@@ -40,7 +40,17 @@ let
     patchPhase = ''
       sed -i -e '28i#include <cstdint>' src/ccnr.h
     '';
-  });
+  };
+
+  cvc4-symfpu = symfpu.overrideAttrs {
+    version = "0-unstable-2019-05-17";
+    src = fetchFromGitHub {
+      owner = "martin-cs";
+      repo = "symfpu";
+      rev = "8fbe139bf0071cbe0758d2f6690a546c69ff0053";
+      hash = "sha256-ONGfvJMo/HXlbxHmkFs9O5nhs6aDM+XuNSPgY+ykxck=";
+    };
+  };
 in
 stdenv.mkDerivation {
   inherit (cvc4)
@@ -68,12 +78,12 @@ stdenv.mkDerivation {
     cadical
     cln
     cvc4-cryptominisat
+    cvc4-symfpu
     gmp
     jdk
     libantlr3c
     python3
     python3.pkgs.toml
-    symfpu
   ];
 
   cmakeFlags = [
