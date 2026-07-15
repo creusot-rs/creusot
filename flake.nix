@@ -103,15 +103,10 @@
 
           packages =
             let
-              rustShellToolchain = pkgs.creusot.mkRustToolchain [ ];
-
               mkCreusot =
                 isFree:
-                (pkgs.creusot.mkCreusotWrapped isFree).override (old: {
-                  paths = old.paths ++ [
-                    pkgs.gcc
-                    rustShellToolchain
-                  ];
+                (pkgs.creusot.mkCreusotWrapped (isFree // { cargo = pkgs.cargo; })).override (old: {
+                  paths = old.paths ++ [ pkgs.gcc ];
                 });
             in
             {
