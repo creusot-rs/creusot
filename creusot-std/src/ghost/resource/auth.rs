@@ -63,17 +63,17 @@ impl<R: UnitRA> From<Resource<Auth<R>>> for Fragment<R> {
 impl<R: UnitRA> Authority<R> {
     /// Id of the underlying [`Resource`].
     #[logic]
-    pub fn id(self) -> Id {
+    pub fn id_logic(self) -> Id {
         self.0.id()
     }
 
     /// Get the id for this resource.
     ///
-    /// This is the same as [`Self::id`], but for ghost code.
+    /// This is the same as [`Self::id_logic`], but for ghost code.
     #[check(ghost)]
-    #[ensures(result == self.id())]
-    pub fn id_ghost(&self) -> Id {
-        self.0.id_ghost()
+    #[logic_alias(self.id_logic())]
+    pub fn id(&self) -> Id {
+        self.0.id()
     }
 
     /// Create a new, empty authority.
@@ -141,7 +141,7 @@ impl<R: UnitRA> Authority<R> {
     #[ensures(result.id() == self.id() && (^self).id() == self.id())]
     #[allow(unused_variables)]
     pub fn add_fragment(&mut self, frag: Snapshot<R>) -> Fragment<R> {
-        let mut unit: Fragment<R> = Fragment::new_unit(self.id_ghost());
+        let mut unit: Fragment<R> = Fragment::new_unit(self.id());
         self.update(&mut unit, OpLocalUpdate(frag));
         unit
     }
@@ -158,7 +158,7 @@ impl<R: UnitRA> Authority<R> {
 impl<R: UnitRA> Fragment<R> {
     /// Id of the underlying [`Resource`].
     #[logic(open)]
-    pub fn id(self) -> Id {
+    pub fn id_logic(self) -> Id {
         self.0.id()
     }
 
@@ -166,9 +166,9 @@ impl<R: UnitRA> Fragment<R> {
     ///
     /// This is the same as [`Self::id`], but for ghost code.
     #[check(ghost)]
-    #[ensures(result == self.id())]
-    pub fn id_ghost(&self) -> Id {
-        self.0.id_ghost()
+    #[logic_alias(self.id_logic())]
+    pub fn id(&self) -> Id {
+        self.0.id()
     }
 
     /// Create a fragment containing a unit resource

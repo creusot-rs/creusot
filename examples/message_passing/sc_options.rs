@@ -57,7 +57,7 @@ pub fn message_passing() {
             atomic_own: atomic_own.into_inner(),
             data_own: None,
             data: snapshot!(data),
-            tok: Resource::new_unit(excl.id_ghost())
+            tok: Resource::new_unit(excl.id())
         }),
         snapshot!(MESSAGE_PASSING()),
     );

@@ -47,9 +47,9 @@ function id_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_Id
 
 function id_R (self: t_Authority_R) : t_Id = id_View_AuthViewRel_R self.f0
 
-let id_ghost_R (self: t_Authority_R) (return (x: t_Id)) =
-{[@stop_split] [@expl:id_ghost 'self' type invariant] inv_ref_Authority_R self}
-  any [ return (result: t_Id) -> {[@stop_split] [@expl:id_ghost ensures] result = id_R self} (! return {result}) ]
+let id_R'0 (self: t_Authority_R) (return (x: t_Id)) =
+{[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_R self}
+  any [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_R self} (! return {result}) ]
 
 type t_Fragment_R = { f0'0: t_Resource_View_AuthViewRel_R }
 
@@ -126,11 +126,11 @@ axiom frag_AuthViewRel_R_spec:
 
 function view_Fragment_R (self: t_Fragment_R) : t_R = frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0'0)
 
-function id_R'0 (self: t_Fragment_R) : t_Id = id_View_AuthViewRel_R self.f0'0
+function id_R'1 (self: t_Fragment_R) : t_Id = id_View_AuthViewRel_R self.f0'0
 
 let new_unit_R (id: t_Id) (return (x: t_Fragment_R)) = any
   [ return (result: t_Fragment_R) -> {[@stop_split] [@expl:new_unit ensures] view_Fragment_R result = unit_R
-    /\ id_R'0 result = id}
+    /\ id_R'1 result = id}
     (! return {result}) ]
 
 type t_OpLocalUpdate_R = { f0'1: t_R }
@@ -165,12 +165,12 @@ function update_OpLocalUpdate_R (self: t_OpLocalUpdate_R) (from_auth: t_R) (from
 let update_R (self: MutBorrow.t t_Authority_R) (frag: MutBorrow.t t_Fragment_R) (upd: t_OpLocalUpdate_R)
   (return (x: ())) =
 {[@stop_split] [@expl:update_R requires] ([@stop_split] [@expl:update 'self' type invariant] inv_refmut_Authority_R self)
-  /\ ([@stop_split] [@expl:update requires #0] id_R self.current = id_R'0 frag.current)
+  /\ ([@stop_split] [@expl:update requires #0] id_R self.current = id_R'1 frag.current)
   /\ ([@stop_split] [@expl:update requires #1] premise_OpLocalUpdate_R upd (view_Authority_R self.current) (view_Fragment_R frag.current))}
   any
   [ return (result: ()) ->
   {[@stop_split] [@expl:update_R ensures] ([@stop_split] [@expl:update ensures #0] id_R self.current = id_R self.final)
-    /\ ([@stop_split] [@expl:update ensures #1] id_R'0 frag.current = id_R'0 frag.final)
+    /\ ([@stop_split] [@expl:update ensures #1] id_R'1 frag.current = id_R'1 frag.final)
     /\ ([@stop_split] [@expl:update ensures #2] incl_R (view_Fragment_R frag.current) (view_Authority_R self.current))
     /\ ([@stop_split] [@expl:update ensures #3] { f0'2 = view_Authority_R self.final;
                                                   f1'2 = view_Fragment_R frag.final }
@@ -194,7 +194,7 @@ let add_fragment_R (self: MutBorrow.t t_Authority_R) (frag: t_R) (return (x: t_F
   /\ ([@stop_split] [@expl:add_fragment requires] op_R (view_Authority_R self.current) frag <> None)}
   (! bb0
   [ bb0 = s0
-    [ s0 = id_ghost_R {self.current} (fun (_x: t_Id) -> [ &_14 <- _x ] s1)
+    [ s0 = id_R'0 {self.current} (fun (_x: t_Id) -> [ &_14 <- _x ] s1)
     | s1 = new_unit_R {_14} (fun (_x: t_Fragment_R) -> [ &unit' <- _x ] s2)
     | s2 = MutBorrow.borrow_mut <t_Fragment_R> {unit'}
         (fun (_bor: MutBorrow.t t_Fragment_R) -> [ &_19 <- _bor ] [ &unit' <- _bor.final ] s3)
@@ -226,6 +226,6 @@ let add_fragment_R (self: MutBorrow.t t_Authority_R) (frag: t_R) (return (x: t_F
   {[@stop_split] [@expl:add_fragment_R ensures] ([@stop_split] [@expl:add_fragment ensures #0] view_Authority_R self.final
       = unwrap_Option_R (op_R (view_Authority_R self.current) frag))
     /\ ([@stop_split] [@expl:add_fragment ensures #1] view_Fragment_R result = frag)
-    /\ ([@stop_split] [@expl:add_fragment ensures #2] id_R'0 result = id_R self.current
+    /\ ([@stop_split] [@expl:add_fragment ensures #2] id_R'1 result = id_R self.current
     /\ id_R self.final = id_R self.current)}
     (! return {result}) ]
