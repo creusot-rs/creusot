@@ -30,10 +30,10 @@ buildEnv {
   postBuild = ''
     wrapProgram $out/bin/cargo \
       --add-flag "--config" \
-      --add-flag "patch.crates-io.creusot-std.path=\"$out/share/creusot-std\""
+      --add-flag "patch.crates-io.creusot-std.path=\"$out/share/creusot-std\"" \
+      --set CARGO "$out/bin/cargo"
 
     wrapProgram $out/bin/cargo-creusot \
-      --set CARGO "$out/bin/cargo" \
       --set CREUSOT_DATA_HOME "$out"
   '';
 
