@@ -112,12 +112,16 @@ module M_impl_S__minimize (* S *)
   
   meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_i32
   
-  let new_ref_Perm_ptr_i32 (x: t_Perm_ptr_i32) (return (x'0: t_Perm_ptr_i32)) =
+  function new_ref_Perm_ptr_i32 (x: t_Perm_ptr_i32) : t_Perm_ptr_i32
+  
+  axiom new_ref_Perm_ptr_i32_spec: forall x: t_Perm_ptr_i32 [new_ref_Perm_ptr_i32 x]. new_ref_Perm_ptr_i32 x = x
+  
+  let new_ref_Perm_ptr_i32'0 (x: t_Perm_ptr_i32) (return (x'0: t_Perm_ptr_i32)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_ref_Perm_ptr_i32 x}
     any
     [ return (result: t_Perm_ptr_i32) ->
     {[@stop_split] [@expl:new_ref_Perm_ptr_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_ref_Perm_ptr_i32 result)
-      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      /\ ([@stop_split] [@expl:new ensures] result = new_ref_Perm_ptr_i32 x)}
       (! return {result}) ]
   
   let as_ref_i32 (ptr'0: Opaque.ptr) (own: t_Perm_ptr_i32) (return (x: Int32.t)) =
@@ -140,7 +144,7 @@ module M_impl_S__minimize (* S *)
       | s1 = -{resolve_refmut_S self}- s2
       | s2 = deref_Ghost_Box_Perm_ptr_i32_Global {self.current.perm} (fun (_x: t_Perm_ptr_i32) -> [ &_12 <- _x ] s3)
       | s3 = [ &_11 <- _12 ] s4
-      | s4 = new_ref_Perm_ptr_i32 {_11} (fun (_x: t_Perm_ptr_i32) -> [ &_9 <- _x ] s5)
+      | s4 = new_ref_Perm_ptr_i32'0 {_11} (fun (_x: t_Perm_ptr_i32) -> [ &_9 <- _x ] s5)
       | s5 = as_ref_i32 {self.current.ptr} {_9} (fun (_x: Int32.t) -> [ &r <- _x ] s6)
       | s6 = bb4 ]
     | bb4 = bb4

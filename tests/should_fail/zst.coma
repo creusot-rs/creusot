@@ -203,8 +203,12 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate resolve_refmut_Perm_ptr_unit
   
-  let new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_unit (x: ()) : ()
+  
+  axiom new_unit_spec: forall x: () [new_unit x]. new_unit x = x
+  
+  let new_unit'0 (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = new_unit x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -249,7 +253,7 @@ module M_zst_pointers_may_be_equal
       | s21 = disjoint_lemma_ptr_unit {_27} {_31} (fun (_x: ()) -> [ &_26 <- _x ] s22)
       | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_unit _28} any) ]
       | s23 = -{resolve_refmut_Perm_ptr_unit _28}- s24
-      | s24 = new_unit {_26} (fun (_x: ()) -> [ &_25 <- _x ] s25)
+      | s24 = new_unit'0 {_26} (fun (_x: ()) -> [ &_25 <- _x ] s25)
       | s25 = {[@expl:assertion] Ptr.addr_logic_u64 p1 <> Ptr.addr_logic_u64 p2} s26
       | s26 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

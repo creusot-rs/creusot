@@ -56,8 +56,12 @@ module M_ghost_map
     [ return (result: bool) -> {[@stop_split] [@expl:contains_ghost ensures] result = contains_i32 self value}
       (! return {result}) ]
   
-  let new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_unit (x: ()) : ()
+  
+  axiom new_unit_spec: forall x: () [new_unit x]. new_unit x = x
+  
+  let new_unit'0 (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = new_unit x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -146,7 +150,7 @@ module M_ghost_map
       | s60 = {[@expl:assertion] contains1} s61
       | s61 = {[@expl:assertion] not contains2} s62
       | s62 = {[@expl:assertion] not contains3} s63
-      | s63 = new_unit {_3} (fun (_x: ()) -> [ &_2 <- _x ] s64)
+      | s63 = new_unit'0 {_3} (fun (_x: ()) -> [ &_2 <- _x ] s64)
       | s64 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & set: Fset.fset Int32.t = Any.any_l ()

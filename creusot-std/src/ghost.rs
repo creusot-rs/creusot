@@ -174,7 +174,7 @@ impl<T: ?Sized> Ghost<T> {
     /// This function can only be called in `ghost!` code.
     #[trusted]
     #[check(ghost)]
-    #[ensures(*result == x)]
+    #[logic_alias(Self::new_logic)]
     #[intrinsic("ghost_new")]
     pub fn new(x: T) -> Self
     where
@@ -187,7 +187,10 @@ impl<T: ?Sized> Ghost<T> {
     #[trusted]
     #[logic(opaque)]
     #[ensures(*result == x)]
-    pub fn new_logic(x: T) -> Self {
+    pub fn new_logic(x: T) -> Self
+    where
+        T: Sized,
+    {
         dead
     }
 
@@ -196,7 +199,7 @@ impl<T: ?Sized> Ghost<T> {
     /// This function can only be called in `ghost!` context.
     #[trusted]
     #[check(ghost)]
-    #[ensures(result == *self)]
+    #[logic_alias(Self::inner_logic)]
     #[intrinsic("ghost_into_inner")]
     pub fn into_inner(self) -> T
     where

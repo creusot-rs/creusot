@@ -128,9 +128,16 @@ module M_impl_List_T__foo (* List<T> *)
   
   meta "rewrite_def" predicate resolve_refmut_Perm_PermCell_List_T
   
-  let new_refmut_Perm_PermCell_List_T (x: MutBorrow.t t_Perm_PermCell_List_T)
+  function new_refmut_Perm_PermCell_List_T (x: MutBorrow.t t_Perm_PermCell_List_T) : MutBorrow.t t_Perm_PermCell_List_T
+  
+  axiom new_refmut_Perm_PermCell_List_T_spec:
+    forall x: MutBorrow.t t_Perm_PermCell_List_T [new_refmut_Perm_PermCell_List_T x]. new_refmut_Perm_PermCell_List_T x
+      = x
+  
+  let new_refmut_Perm_PermCell_List_T'0 (x: MutBorrow.t t_Perm_PermCell_List_T)
     (return (x'0: MutBorrow.t t_Perm_PermCell_List_T)) = any
-    [ return (result: MutBorrow.t t_Perm_PermCell_List_T) -> {[@stop_split] [@expl:new ensures] result = x}
+    [ return (result: MutBorrow.t t_Perm_PermCell_List_T) -> {[@stop_split] [@expl:new ensures] result
+      = new_refmut_Perm_PermCell_List_T x}
       (! return {result}) ]
   
   function ward_PermCell_List_T (self: t_Perm_PermCell_List_T) : t_PermCell_List_T
@@ -206,7 +213,7 @@ module M_impl_List_T__foo (* List<T> *)
           | s20 = MutBorrow.borrow_final <t_Perm_PermCell_List_T> {_21.current} {MutBorrow.get_id _21}
               (fun (_bor: MutBorrow.t t_Perm_PermCell_List_T) ->
                 [ &_20 <- _bor ] [ &_21 <- { _21 with current = _bor.final } ] s21)
-          | s21 = new_refmut_Perm_PermCell_List_T {_20}
+          | s21 = new_refmut_Perm_PermCell_List_T'0 {_20}
               (fun (_x: MutBorrow.t t_Perm_PermCell_List_T) -> [ &_19 <- _x ] s22)
           | s22 = -{resolve_refmut_Perm_PermCell_List_T _21}- s23
           | s23 = borrow_mut_List_T {_17} {_19} (fun (_x: MutBorrow.t t_List_T) -> [ &_15 <- _x ] s24)

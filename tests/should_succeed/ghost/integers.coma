@@ -38,8 +38,12 @@ module M_in_ghost_block
   let into_inner_Int (self: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
   
-  let new_Int (x: int) (return (x'0: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_Int (x: int) : int
+  
+  axiom new_Int_spec: forall x: int [new_Int x]. new_Int x = x
+  
+  let new_Int'0 (x: int) (return (x'0: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = new_Int x} (! return {result}) ]
   
   let deref_Ghost_Int (self: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
@@ -50,8 +54,12 @@ module M_in_ghost_block
   let mul_Int (self: int) (other: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:mul ensures] result = self * other} (! return {result}) ]
   
-  let new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_unit (x: ()) : ()
+  
+  axiom new_unit_spec: forall x: () [new_unit x]. new_unit x = x
+  
+  let new_unit'0 (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = new_unit x} (! return {result}) ]
   
   let ghost_function (x: int) (y: int) (z: int) (return (x'0: int)) = {[@stop_split] [@expl:ghost_function requires] z
     <> 0}
@@ -67,7 +75,7 @@ module M_in_ghost_block
     [ bb0 = s0
       [ s0 = new {(1: Int128.t)} (fun (_x: int) -> [ &_3 <- _x ] s1)
       | s1 = into_inner_Int {_3} (fun (_x: int) -> [ &_2 <- _x ] s2)
-      | s2 = new_Int {_2} (fun (_x: int) -> [ &x <- _x ] s3)
+      | s2 = new_Int'0 {_2} (fun (_x: int) -> [ &x <- _x ] s3)
       | s3 = new {(2: Int128.t)} (fun (_x: int) -> [ &_7 <- _x ] s4)
       | s4 = into_inner_Int {_7} (fun (_x: int) -> [ &y <- _x ] s5)
       | s5 = deref_Ghost_Int {x} (fun (_x: int) -> [ &_10 <- _x ] s6)
@@ -76,7 +84,7 @@ module M_in_ghost_block
       | s8 = into_inner_Int {_16} (fun (_x: int) -> [ &_15 <- _x ] s9)
       | s9 = mul_Int {z} {_15} (fun (_x: int) -> [ &w <- _x ] s10)
       | s10 = {[@expl:assertion] w = 9} s11
-      | s11 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s12)
+      | s11 = new_unit'0 {_5} (fun (_x: ()) -> [ &_4 <- _x ] s12)
       | s12 = new {(4: Int128.t)} (fun (_x: int) -> [ &_24 <- _x ] s13)
       | s13 = into_inner_Int {_24} (fun (_x: int) -> [ &_23 <- _x ] s14)
       | s14 = new {(13: Int128.t)} (fun (_x: int) -> [ &_26 <- _x ] s15)
@@ -85,7 +93,7 @@ module M_in_ghost_block
       | s17 = into_inner_Int {_28} (fun (_x: int) -> [ &_27 <- _x ] s18)
       | s18 = ghost_function {_23} {_25} {_27} (fun (_x: int) -> [ &x'0 <- _x ] s19)
       | s19 = {[@expl:assertion] x'0 = 7} s20
-      | s20 = new_unit {_21} (fun (_x: ()) -> [ &_20 <- _x ] s21)
+      | s20 = new_unit'0 {_21} (fun (_x: ()) -> [ &_20 <- _x ] s21)
       | s21 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: int = Any.any_l ()

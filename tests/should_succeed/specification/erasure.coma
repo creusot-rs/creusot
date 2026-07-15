@@ -115,8 +115,12 @@ module M_foog
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  let new_i32 (x: Int32.t) (return (x'0: Int32.t)) = any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_i32 (x: Int32.t) : Int32.t
+  
+  axiom new_i32_spec: forall x: Int32.t [new_i32 x]. new_i32 x = x
+  
+  let new_i32'0 (x: Int32.t) (return (x'0: Int32.t)) = any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:new ensures] result = new_i32 x} (! return {result}) ]
   
   type tup2_i32_Ghost_i32 = { f0: Int32.t; f1: Int32.t }
   
@@ -126,7 +130,7 @@ module M_foog
   
   let foog (x: Int32.t) (return (x'0: tup2_i32_Ghost_i32)) = (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 {x} (fun (_x: Int32.t) -> [ &_5 <- _x ] s1)
+      [ s0 = new_i32'0 {x} (fun (_x: Int32.t) -> [ &_5 <- _x ] s1)
       | s1 = [ &_ret <- { f0 = x; f1 = _5 } ] s2
       | s2 = return {_ret} ] ]
     [ & _ret: tup2_i32_Ghost_i32 = Any.any_l () | & x: Int32.t = x | & _5: Int32.t = Any.any_l () ])
@@ -147,8 +151,13 @@ module M_ghost_split2
   
   type tup2_unit_unit = { f0: (); f1: () }
   
-  let new_tup2_unit_unit (x: tup2_unit_unit) (return (x'0: tup2_unit_unit)) = any
-    [ return (result: tup2_unit_unit) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_tup2_unit_unit (x: tup2_unit_unit) : tup2_unit_unit
+  
+  axiom new_tup2_unit_unit_spec: forall x: tup2_unit_unit [new_tup2_unit_unit x]. new_tup2_unit_unit x = x
+  
+  let new_tup2_unit_unit'0 (x: tup2_unit_unit) (return (x'0: tup2_unit_unit)) = any
+    [ return (result: tup2_unit_unit) -> {[@stop_split] [@expl:new ensures] result = new_tup2_unit_unit x}
+      (! return {result}) ]
   
   type tup2_Ghost_unit_Ghost_unit = { f0'0: (); f1'0: () }
   
@@ -165,7 +174,7 @@ module M_ghost_split2
   let ghost_split2 (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- { f0 = _5; f1 = _6 } ] s1
-      | s1 = new_tup2_unit_unit {_4} (fun (_x: tup2_unit_unit) -> [ &_3 <- _x ] s2)
+      | s1 = new_tup2_unit_unit'0 {_4} (fun (_x: tup2_unit_unit) -> [ &_3 <- _x ] s2)
       | s2 = split_unit {_3} (fun (_x: tup2_Ghost_unit_Ghost_unit) -> [ &_2 <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
@@ -300,8 +309,12 @@ module M_quux2
   let into_inner_Int (self: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
   
-  let new_Int (x: int) (return (x'0: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_Int (x: int) : int
+  
+  axiom new_Int_spec: forall x: int [new_Int x]. new_Int x = x
+  
+  let new_Int'0 (x: int) (return (x'0: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = new_Int x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -312,7 +325,7 @@ module M_quux2
       [ s0 = foo2 {x} {y} (fun (_x: Int32.t) -> [ &_5 <- _x ] s1)
       | s1 = new {(0: Int128.t)} (fun (_x: int) -> [ &_9 <- _x ] s2)
       | s2 = into_inner_Int {_9} (fun (_x: int) -> [ &_8 <- _x ] s3)
-      | s3 = new_Int {_8} (fun (_x: int) -> [ &_ret <- _x ] s4)
+      | s3 = new_Int'0 {_8} (fun (_x: int) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ]
     [ & _ret: int = Any.any_l ()
     | & x: Int32.t = x

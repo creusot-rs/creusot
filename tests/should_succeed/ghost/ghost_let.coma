@@ -24,8 +24,12 @@ module M_bar
   
   meta "rewrite_def" predicate resolve_Ghost_refmut_i32'0
   
-  let new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_unit (x: ()) : ()
+  
+  axiom new_unit_spec: forall x: () [new_unit x]. new_unit x = x
+  
+  let new_unit'0 (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = new_unit x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -39,7 +43,7 @@ module M_bar
       | s2 = [ &_6 <- { _6 with current = { _6.current with current = (1: Int32.t) } } ] s3
       | s3 = -{resolve_refmut_refmut_i32 _6}- s4
       | s4 = -{resolve_Ghost_refmut_i32'0 g2}- s5
-      | s5 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s6)
+      | s5 = new_unit'0 {_5} (fun (_x: ()) -> [ &_4 <- _x ] s6)
       | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & g2: MutBorrow.t Int32.t = g2
@@ -87,8 +91,13 @@ module M_foo
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  let new_refmut_i32 (x: MutBorrow.t Int32.t) (return (x'0: MutBorrow.t Int32.t)) = any
-    [ return (result: MutBorrow.t Int32.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_refmut_i32 (x: MutBorrow.t Int32.t) : MutBorrow.t Int32.t
+  
+  axiom new_refmut_i32_spec: forall x: MutBorrow.t Int32.t [new_refmut_i32 x]. new_refmut_i32 x = x
+  
+  let new_refmut_i32'0 (x: MutBorrow.t Int32.t) (return (x'0: MutBorrow.t Int32.t)) = any
+    [ return (result: MutBorrow.t Int32.t) -> {[@stop_split] [@expl:new ensures] result = new_refmut_i32 x}
+      (! return {result}) ]
   
   let bar (g2: MutBorrow.t Int32.t) (return (x: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:bar ensures] g2.final = (1: Int32.t)} (! return {result}) ]
@@ -109,7 +118,7 @@ module M_foo
       | s1 = MutBorrow.borrow_final <Int32.t> {_4.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id _4) 0}
           (fun (_bor: MutBorrow.t Int32.t) ->
             [ &__temp <- _bor ] [ &_4 <- { _4 with current = { f0 = _bor.final } } ] s2)
-      | s2 = new_refmut_i32 {__temp} (fun (_x: MutBorrow.t Int32.t) -> [ &g2 <- _x ] s3)
+      | s2 = new_refmut_i32'0 {__temp} (fun (_x: MutBorrow.t Int32.t) -> [ &g2 <- _x ] s3)
       | s3 = bar {g2} (fun (_x: ()) -> [ &_8 <- _x ] s4)
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_WithInv _4} any) ]
       | s5 = -{resolve_refmut_WithInv _4}- s6

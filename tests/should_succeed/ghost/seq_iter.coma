@@ -169,12 +169,16 @@ module M_reverse_ghost
   
   axiom resolve_axiom: forall x: t_Iter_T [resolve_Iter_T'0 x]. resolve_Iter_T'0 x -> resolve_Iter_T x
   
-  let new_Seq_T (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) =
+  function new_Seq_T (x: Seq.seq t_T) : Seq.seq t_T
+  
+  axiom new_Seq_T_spec: forall x: Seq.seq t_T [new_Seq_T x]. new_Seq_T x = x
+  
+  let new_Seq_T'0 (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_Seq_T x}
     any
     [ return (result: Seq.seq t_T) ->
     {[@stop_split] [@expl:new_Seq_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Seq_T result)
-      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      /\ ([@stop_split] [@expl:new ensures] result = new_Seq_T x)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -226,7 +230,7 @@ module M_reverse_ghost
     | bb13 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
       | s1 = -{resolve_Iter_T'0 iter}- s2
-      | s2 = new_Seq_T {result} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s3)
+      | s2 = new_Seq_T'0 {result} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: Seq.seq t_T = Any.any_l ()
     | & s: Seq.seq t_T = s
@@ -447,12 +451,16 @@ module M_reverse_ghost_ref
       = push_front_ref_T self.current x}
       (! return {result}) ]
   
-  let new_Seq_ref_T (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) =
+  function new_Seq_ref_T (x: Seq.seq t_T) : Seq.seq t_T
+  
+  axiom new_Seq_ref_T_spec: forall x: Seq.seq t_T [new_Seq_ref_T x]. new_Seq_ref_T x = x
+  
+  let new_Seq_ref_T'0 (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_Seq_ref_T x}
     any
     [ return (result: Seq.seq t_T) ->
     {[@stop_split] [@expl:new_Seq_ref_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Seq_ref_T result)
-      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      /\ ([@stop_split] [@expl:new ensures] result = new_Seq_ref_T x)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -504,7 +512,7 @@ module M_reverse_ghost_ref
           | s5 = bb8 ] ] ]
     | bb13 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_ref_T iter} any) ]
-      | s1 = new_Seq_ref_T {result} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s2)
+      | s1 = new_Seq_ref_T'0 {result} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ]
     [ & _ret: Seq.seq t_T = Any.any_l ()
     | & s: Seq.seq t_T = s

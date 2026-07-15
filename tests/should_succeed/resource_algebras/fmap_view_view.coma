@@ -1098,12 +1098,16 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   
   meta "rewrite_def" predicate inv_Ghost_Authority_K_V
   
-  let new_Authority_K_V (x: t_Authority_K_V) (return (x'0: t_Authority_K_V)) =
+  function new_Authority_K_V (x: t_Authority_K_V) : t_Authority_K_V
+  
+  axiom new_Authority_K_V_spec: forall x: t_Authority_K_V [new_Authority_K_V x]. new_Authority_K_V x = x
+  
+  let new_Authority_K_V'0 (x: t_Authority_K_V) (return (x'0: t_Authority_K_V)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_Authority_K_V x}
     any
     [ return (result: t_Authority_K_V) ->
     {[@stop_split] [@expl:new_Authority_K_V ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Authority_K_V result)
-      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      /\ ([@stop_split] [@expl:new ensures] result = new_Authority_K_V x)}
       (! return {result}) ]
   
   constant any_FMap_K_V : t_FMap_K_V
@@ -1127,7 +1131,7 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
       | s1 = into_inner_Resource_View_MapRelation_K_V {resource}
           (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &_6 <- _x ] s2)
       | s2 = [ &_5 <- { f0'1 = _6 } ] s3
-      | s3 = new_Authority_K_V {_5} (fun (_x: t_Authority_K_V) -> [ &_ret <- _x ] s4)
+      | s3 = new_Authority_K_V'0 {_5} (fun (_x: t_Authority_K_V) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ]
     [ & _ret: t_Authority_K_V = Any.any_l ()
     | & resource: t_Resource_View_MapRelation_K_V = Any.any_l ()
