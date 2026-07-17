@@ -3,10 +3,10 @@ use proc_macro::{Diagnostic, Level, TokenStream as TS1};
 use proc_macro2::{Group, Span, TokenStream, TokenTree};
 use quote::{ToTokens, quote, quote_spanned};
 use syn::{
-    parse::{Parse, ParseStream},
+    parse::{Parse, Parser as _},
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
-    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Semi, Token, Trait, Unsafe},
+    token::{Brace, Colon, Comma, For, Impl, Paren, Plus, Semi, Trait, Unsafe},
     visit_mut::VisitMut,
     *,
 };
@@ -664,15 +664,6 @@ fn flatten(
     Ok(())
 }
 
-// Wrapper to implement Parse, using `parse_separated_nonempty`.
-struct PunctNonempty<T, P>(Punctuated<T, P>);
-
-impl<T: Parse, P: Token + Parse> Parse for PunctNonempty<T, P> {
-    fn parse(input: ParseStream) -> Result<Self> {
-        Punctuated::parse_separated_nonempty(input).map(PunctNonempty)
-    }
-}
-
 // Accept only `#[ensures]` and `#[constant]`
 fn parse_const_attrs(attrs: Vec<Attribute>) -> Result<Vec<Attribute>> {
     let mut r = vec![];
@@ -686,8 +677,9 @@ fn parse_const_attrs(attrs: Vec<Attribute>) -> Result<Vec<Attribute>> {
         Meta::List(list)
             if list.path.segments.len() == 1 && list.path.segments[0].ident == "constant" =>
         {
-            let args = parse::<PunctNonempty<_, Token![,]>>(list.tokens.into())?;
-            r.extend(args.0.into_iter().map(ConstantArg::to_attr));
+            let args =
+                Punctuated::<_, Token![,]>::parse_separated_nonempty.parse(list.tokens.into())?;
+            r.extend(args.into_iter().map(ConstantArg::to_attr));
             Ok(())
         }
         _ => Err(Error::new(attr.span(), "unrecognized attribute in extern spec for const")),
