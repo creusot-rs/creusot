@@ -81,7 +81,7 @@ macro_rules! impl_atomic {
         }
 
         impl $(< $T >)? $atomic_type $(< $T >)? {
-            #[ensures(result.1.val() == FMap::singleton(result.0.get_timestamp(^sync_view), (val, **sync_view)))]
+            #[ensures(result.1.val() == FMap::singleton(result.0.get_timestamp(^sync_view), (val, ^sync_view)))]
             #[ensures(*result.1.ward() == result.0)]
             #[inline(always)]
             #[trusted]
@@ -93,29 +93,27 @@ macro_rules! impl_atomic {
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::into_inner`].")]
             #[requires(self == *own.ward())]
-            #[ensures(match own.val().get(*result.1) { Some((v, _)) => result.0 == v, None => false })]
-            #[ensures(self.get_timestamp(^sync_view) == *result.1)]
+            #[ensures(match own.val().get(self.get_timestamp(*result.1)) { Some((v, _)) => result.0 == v, None => false })]
             #[ensures(forall<t> match own.val().get(t) {
-                Some((_, view)) => t <= *result.1 && view <= ^sync_view,
+                Some((_, view)) => t <= self.get_timestamp(*result.1) && view <= *result.1,
                 None => true
             })]
             #[inline(always)]
             #[trusted]
             #[allow(unused_variables)]
-            pub fn into_inner(self, own: Ghost<Perm<$atomic_type $(< $T >)?>>, sync_view: Ghost<&mut SyncView>) -> ($type, Ghost<Timestamp>) {
+            pub fn into_inner(self, own: Ghost<Perm<$atomic_type $(< $T >)?>>) -> ($type, Ghost<SyncView>) {
                 (self.0.into_inner(), Ghost::conjure())
             }
 
 
             #[doc = "Clear the old unusable history, thanks to the full ownership of the atomic."]
             #[requires(*self == *own.ward())]
-            #[ensures(match (*own).val().get(*result) {
-                Some((v, _)) => (^own).val() == FMap::singleton(*result, (v, **sync_view)),
+            #[ensures(match (*own).val().get(self.get_timestamp(*result)) {
+                Some((v, _)) => (^own).val() == FMap::singleton(self.get_timestamp(*result), (v, *result)),
                 None => false
             })]
-            #[ensures(self.get_timestamp(^sync_view) == *result)]
             #[ensures(forall<t> match own.val().get(t) {
-                Some((_, view)) => t <= *result && view <= ^sync_view ,
+                Some((_, view)) => t <= self.get_timestamp(*result) && view <= *result ,
                 None => true
             })]
             #[ensures(*self == ^self)]
@@ -123,7 +121,7 @@ macro_rules! impl_atomic {
             #[trusted]
             #[check(terminates)]
             #[allow(unused_variables)]
-            pub fn refresh(&mut self, own: Ghost<&mut Perm<$atomic_type $(< $T >)?>>, sync_view: Ghost<&mut SyncView>) -> Ghost<Timestamp> {
+            pub fn refresh(&mut self, own: Ghost<&mut Perm<$atomic_type $(< $T >)?>>) -> Ghost<SyncView> {
                  Ghost::conjure()
             }
 

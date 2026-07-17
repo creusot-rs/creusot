@@ -1,3 +1,4 @@
+#![cfg_attr(not(creusot), allow(unused_imports))]
 #[cfg(feature = "sc-drf")]
 use crate::std::sync::atomic_sc::ordering::SeqCst;
 use crate::{
@@ -5,11 +6,12 @@ use crate::{
     logic::FMap,
     prelude::*,
     std::sync::{
-        atomic::ordering::{Acquire, Relaxed, Release},
+        atomic::ordering::{LoadOrdering, StoreOrdering},
         view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
     },
 };
 use core::marker::PhantomData;
+use core::sync::atomic::{Ordering as OrderingTy};
 
 /// Wrapper around a single atomic operation, where multiple ghost steps can be performed.
 ///
@@ -64,7 +66,119 @@ impl<C: PermTarget, T, Load, Store> Committer<C, T, Load, Store> {
     }
 }
 
-impl<'a, C, T, Store> Committer<C, T, Relaxed, Store>
+pub mod atomic_specs {
+    use crate::{
+        ghost::{Perm, perm::PermTarget},
+        logic::FMap,
+        prelude::*,
+        std::sync::view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
+    };
+
+    #[logic(open, prophetic)]
+    pub fn load_timestamp_in_view<'a, C, T>(atomic : C, sync_view: &mut SyncView, t : Timestamp) -> bool
+    where
+        C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
+    {
+        pearlite!{
+            let old_t = atomic.get_timestamp(*sync_view);
+            let new_t = atomic.get_timestamp(^sync_view);
+            old_t <= t && t <= new_t
+        }
+    }
+
+    #[logic(open, prophetic)]
+    pub fn load_reads_from_history<'a, C, T>(own : &Perm<C>, thread_view : SyncView, val : T, t : Timestamp) -> bool 
+    where
+        C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
+    {
+        pearlite!{
+            match own.val().get(t) {
+                Some((v, v_view)) => v == val && v_view <= thread_view,
+                None => false
+            }
+        }
+    }
+
+    #[logic(open, prophetic)]
+    pub fn view_mono(sync_view: &mut SyncView) -> bool
+    {
+        pearlite!{
+            *sync_view <= ^sync_view
+        }
+    }
+
+    #[logic(open, prophetic)]
+    pub fn load_acq_post<'a, C, T>(atomic: C, own : &Perm<C>, sync_view: &mut SyncView, val : T, t : Timestamp) -> bool
+    where
+        C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
+    {
+        pearlite!{
+            load_timestamp_in_view(atomic, sync_view, t) && load_reads_from_history(own, ^sync_view, val, t) && view_mono(sync_view)
+        }
+    }
+
+    #[logic(open, prophetic)]
+    pub fn load_rlx_post<'a, C, T>(atomic : C, own : &Perm<C>, sync_view: &mut SyncView, val : T, t : Timestamp, acq_sync_view : AcquireSyncView) -> bool
+    where
+        C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
+    {
+        pearlite!{
+            load_timestamp_in_view(atomic, sync_view, t) && load_reads_from_history(own, acq_sync_view@, val, t) && view_mono(sync_view)
+        }
+    }
+
+    #[logic(open, prophetic)]
+    // t here corresponds to self.timestamp() + 1 in the committer specs
+    pub fn store_timestamp_in_view<'a, C, T>(atomic : C, sync_view: &mut SyncView, t : Timestamp) -> bool
+    where
+        C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
+
+    {
+        pearlite!{
+            let old_t = atomic.get_timestamp(*sync_view);
+            let new_t = atomic.get_timestamp(^sync_view);
+            old_t < t && t <= new_t
+        }
+    }
+
+    #[logic(open, prophetic)]
+    pub fn store_inserts_in_history<'a, C,T>(own : &mut Perm<C>, thread_view : SyncView, val : T, t : Timestamp) -> bool
+    where
+        C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
+    {
+        pearlite!{
+            (*own).val().get(t) == None &&
+                (^own).val() == (*own).val().insert(t, (val, thread_view)) &&
+                (*own).ward() == (^own).ward()
+        }
+    }
+
+    #[logic(open, prophetic)]
+    pub fn store_rel_post<'a, C, T>(atomic : C, own : &mut Perm<C>, sync_view: &mut SyncView, val : T, t : Timestamp) -> bool
+    where
+        C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
+    {
+        pearlite!{
+            store_timestamp_in_view(atomic, sync_view, t) &&
+                store_inserts_in_history(own, ^sync_view, val, t) &&
+                view_mono(sync_view) && (*own).ward() == (^own).ward()
+        }
+    }
+
+    #[logic(open, prophetic)]
+    pub fn store_rlx_post<'a, C, T>(atomic : C, own : &mut Perm<C>, sync_view: &mut SyncView, val : T, t : Timestamp, rel_view : ReleaseSyncView) -> bool
+        where C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
+    {
+        pearlite!{
+            store_timestamp_in_view(atomic, sync_view, t) &&
+                store_inserts_in_history(own, rel_view@, val, t) &&
+                view_mono(sync_view) && (*own).ward() == (^own).ward()
+        }
+    }
+}
+use atomic_specs::*;
+
+impl<'a, C, T, Load : LoadOrdering, Store> Committer<C, T, Load, Store>
 where
     C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
 {
@@ -73,38 +187,12 @@ where
     /// This does the read on the atomic in ghost code.
     #[requires(!self.shot_store())]
     #[requires(self.ward() == *(*own).ward())]
-    #[ensures(*sync_view <= ^sync_view)]
-    #[ensures(self.ward().get_timestamp(*sync_view) <= self.timestamp())]
-    #[ensures(self.timestamp() <= self.ward().get_timestamp(^sync_view))]
-    #[ensures(own.val().get(self.timestamp()) == Some((self.val_load(), result@)))]
+    #[ensures(Load::ORDERING == OrderingTy::Acquire ==> load_acq_post(self.ward(), own, sync_view, self.val_load(), self.timestamp()))]
+    #[ensures(Load::ORDERING == OrderingTy::Relaxed ==> load_rlx_post(self.ward(), own, sync_view, self.val_load(), self.timestamp(), result))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
     pub fn shoot_load(&self, own: &Perm<C>, sync_view: &mut SyncView) -> AcquireSyncView {
-        panic!("Should not be called outside ghost code")
-    }
-}
-
-impl<'a, C, T, Store> Committer<C, T, Acquire, Store>
-where
-    C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
-{
-    /// 'Shoot' the committer
-    ///
-    /// This does the read on the atomic in ghost code.
-    #[requires(!self.shot_store())]
-    #[requires(self.ward() == *(*own).ward())]
-    #[ensures(*sync_view <= ^sync_view)]
-    #[ensures(self.ward().get_timestamp(*sync_view) <= self.timestamp())]
-    #[ensures(self.timestamp() <= self.ward().get_timestamp(^sync_view))]
-    #[ensures(match own.val().get(self.timestamp()) {
-        Some((v, v_view)) => v == self.val_load() && v_view <= ^sync_view,
-        None => false
-    })]
-    #[check(ghost)]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn shoot_load(&self, own: &Perm<C>, sync_view: &mut SyncView) {
         panic!("Should not be called outside ghost code")
     }
 }
@@ -128,7 +216,7 @@ where
     }
 }
 
-impl<'a, C, T, Load> Committer<C, T, Load, Relaxed>
+impl<'a, C, T, Load, Store: StoreOrdering> Committer<C, T, Load, Store>
 where
     C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
 {
@@ -139,12 +227,8 @@ where
     #[requires(self.ward() == *(*own).ward())]
     #[ensures((*self).hist_inv(^self))]
     #[ensures((^self).shot_store())]
-    #[ensures((*own).ward() == (^own).ward())]
-    #[ensures(*sync_view <= ^sync_view)]
-    #[ensures((*self).ward().get_timestamp(*sync_view) <= self.timestamp())]
-    #[ensures(self.timestamp() < (*self).ward().get_timestamp(^sync_view))]
-    #[ensures((*own).val().get(self.timestamp() + 1) == None)]
-    #[ensures((^own).val() == (*own).val().insert(self.timestamp() + 1, ((*self).val_store(), rel_view@)))]
+    #[ensures(Store::ORDERING == OrderingTy::Release ==> store_rel_post(self.ward(), own, sync_view, self.val_store(), self.timestamp() + 1))]
+    #[ensures(Store::ORDERING == OrderingTy::Relaxed ==> store_rlx_post(self.ward(), own, sync_view, self.val_store(), self.timestamp() + 1, rel_view))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
@@ -154,31 +238,6 @@ where
         sync_view: &mut SyncView,
         rel_view: ReleaseSyncView,
     ) {
-        panic!("Should not be called outside ghost code")
-    }
-}
-
-impl<'a, C, T, Load> Committer<C, T, Load, Release>
-where
-    C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
-{
-    /// 'Shoot' the committer
-    ///
-    /// This does the write on the atomic in ghost code, and can only be called once.
-    #[requires(!(*self).shot_store())]
-    #[requires(self.ward() == *(*own).ward())]
-    #[ensures((*self).hist_inv(^self))]
-    #[ensures((^self).shot_store())]
-    #[ensures((*own).ward() == (^own).ward())]
-    #[ensures(*sync_view <= ^sync_view)]
-    #[ensures((*self).ward().get_timestamp(*sync_view) <= self.timestamp())]
-    #[ensures(self.timestamp() < (*self).ward().get_timestamp(^sync_view))]
-    #[ensures((*own).val().get(self.timestamp() + 1) == None)]
-    #[ensures((^own).val() == (*own).val().insert(self.timestamp() + 1, ((*self).val_store(), ^sync_view)))]
-    #[check(ghost)]
-    #[trusted]
-    #[allow(unused_variables)]
-    pub fn shoot_store(&mut self, own: &mut Perm<C>, sync_view: &mut SyncView) {
         panic!("Should not be called outside ghost code")
     }
 }
