@@ -70,7 +70,6 @@ impl<R: UnitRA> Authority<R> {
     /// Get the id for this resource.
     ///
     /// This is the same as [`Self::id`], but for ghost code.
-    #[trusted]
     #[check(ghost)]
     #[ensures(result == self.id())]
     pub fn id_ghost(&self) -> Id {
@@ -166,7 +165,6 @@ impl<R: UnitRA> Fragment<R> {
     /// Get the id for this resource.
     ///
     /// This is the same as [`Self::id`], but for ghost code.
-    #[trusted]
     #[check(ghost)]
     #[ensures(result == self.id())]
     pub fn id_ghost(&self) -> Id {
