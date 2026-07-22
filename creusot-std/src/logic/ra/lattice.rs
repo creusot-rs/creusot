@@ -1,21 +1,25 @@
 use crate::{logic::ra::RA, prelude::*};
 
-/// The 'agreement' Resource Algebra.
-///
-/// This has the property that all resource with the same id have the same value
-/// (they 'agree').
-pub struct Ag<T>(pub T);
+/// The 'lattice' Resource Algebra.
 
-impl<T> RA for Ag<T> {
-    #[logic(open)]
+pub trait SemiLattice: PartialOrdLogic + Sized {
+    #[logic]
+    #[ensures(self <= result)]
+    #[ensures(other <= result)]
+    #[ensures(forall<r> self <= r ==> other <= r ==> result <= r)]
+    fn join(self, other: Self) -> Self;
+}
+
+impl<T: SemiLattice> RA for T {
+    #[logic(open, inline)]
     fn op(self, other: Self) -> Option<Self> {
-        if self.0 == other.0 { Some(self) } else { None }
+        Some(self.join(other))
     }
 
     #[logic(open)]
     #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
     fn incl(self, other: Self) -> bool {
-        self.0 == other.0
+        self <= other
     }
 
     #[logic(law)]
@@ -23,15 +27,16 @@ impl<T> RA for Ag<T> {
     fn commutative(a: Self, b: Self) {}
 
     #[logic]
-    #[ensures(a.op(b).and_then_logic(|ab : Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
+    #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {}
 
-    #[logic(open)]
+    #[logic]
     fn core(self) -> Option<Self> {
         Some(self)
     }
 
     #[logic]
+    #[requires(self.core() != None)]
     #[ensures({
         let c = self.core().unwrap_logic();
         c.op(c) == Some(c)
@@ -47,11 +52,4 @@ impl<T> RA for Ag<T> {
         None => false,
     })]
     fn core_is_maximal_idemp(self, i: Self) {}
-
-    #[logic(open)]
-    #[ensures(result == (forall<x, y> self.op(x) != None ==>
-        self.op(x) == self.op(y) ==> x == y))]
-    fn cancelable(self) -> bool {
-        true
-    }
 }

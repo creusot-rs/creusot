@@ -21,28 +21,25 @@ impl<K, V: RA> RA for FMap<K, V> {
     }
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => forall<c: Self> factor.op(c) != Some(self),
-    })]
-    fn factor(self, factor: Self) -> Option<Self> {
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
         pearlite! {
-            if (forall<k: K> factor.get(k).incl(self.get(k))) {
-                let res = self.filter_map(|(k, vo): (K, V)|
-                    match Some(vo).factor(factor.get(k)) {
-                        Some(r) => r,
-                        None => None,
-                });
-                proof_assert!(
-                    match factor.op(res) {
-                        None => false,
-                        Some(o) => o.ext_eq(self)
-                    }
+            let r = forall<k: K> self.get(k).incl(other.get(k));
+
+            proof_assert!(r ==> {
+                let factor = other.filter_map(|(k, vo): (K, V)|
+                    if self.get(k).incl(Some(vo)) {
+                        Some(vo).factor(self.get(k))
+                    } else { None }
                 );
-                Some(res)
-            } else {
-                None
-            }
+
+                match self.op(factor) {
+                    None => false,
+                    Some(o) => o.ext_eq(other)
+                }
+            });
+
+            r
         }
     }
 
@@ -207,5 +204,61 @@ impl<K, V: RA> LocalUpdate<FMap<K, V>> for FMapInsertLocalUpdate<K, V> {
             Some(Some(x)) => to_auth.ext_eq(x),
             _ => false,
         });
+    }
+}
+
+/// Modifies a key-value mapping in an authority/fragment pair of [`FMap`]s.
+///
+/// It requires that the key is in the fragment.
+pub struct FMapKeyLocalUpdate<K, U>(pub Snapshot<K>, pub U);
+
+impl<K, V: RA, U: LocalUpdate<V>> LocalUpdate<FMap<K, V>> for FMapKeyLocalUpdate<K, U> {
+    #[logic(open, inline)]
+    fn premise(self, from_auth: FMap<K, V>, from_frag: FMap<K, V>) -> bool {
+        pearlite! {
+            match (from_auth.get(*self.0), from_frag.get(*self.0)) {
+                (Some(auth_v), Some(frag_v)) => self.1.premise(auth_v, frag_v),
+                (_, None) => false,
+                _ => true,
+            }
+        }
+    }
+
+    #[logic(open, inline)]
+    fn update(self, from_auth: FMap<K, V>, from_frag: FMap<K, V>) -> (FMap<K, V>, FMap<K, V>) {
+        let (auth, frag) = self.1.update(from_auth[*self.0], from_frag[*self.0]);
+        (from_auth.insert(*self.0, auth), from_frag.insert(*self.0, frag))
+    }
+
+    #[logic]
+    #[allow(unused)]
+    #[requires(self.premise(from_auth, from_frag))]
+    #[requires(Some(from_frag).op(frame) == Some(Some(from_auth)))]
+    #[ensures({
+        let (to_auth, to_frag) = self.update(from_auth, from_frag);
+        Some(to_frag).op(frame) == Some(Some(to_auth))
+    })]
+    fn frame_preserving(
+        self,
+        from_auth: FMap<K, V>,
+        from_frag: FMap<K, V>,
+        frame: Option<FMap<K, V>>,
+    ) {
+        match (from_auth.get(*self.0), from_frag.get(*self.0)) {
+            (Some(auth_v), Some(frag_v)) => {
+                let frame_k = match frame {
+                    Some(frame) => frame.get(*self.0),
+                    None => None,
+                };
+                self.1.frame_preserving(auth_v, frag_v, frame_k);
+
+                let (to_auth, to_frag) = self.update(from_auth, from_frag);
+                proof_assert!(match Some(to_frag).op(frame) {
+                    Some(Some(x)) => to_auth.ext_eq(x),
+                    _ => false,
+                });
+            }
+            _ => (),
+        }
     }
 }

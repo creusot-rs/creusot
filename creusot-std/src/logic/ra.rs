@@ -5,6 +5,7 @@ pub mod auth;
 pub mod excl;
 pub mod fmap;
 mod int;
+pub mod lattice;
 mod nat;
 pub mod option;
 mod positive;
@@ -14,6 +15,8 @@ pub mod sum;
 pub mod update;
 pub mod view;
 
+#[cfg(creusot)]
+use crate::logic::such_that;
 use crate::{logic::Set, prelude::*};
 
 /// Define a _Resource Algebra_.
@@ -42,17 +45,6 @@ pub trait RA: Sized {
     // We allow the implementor to give a custom definition, that is possibly
     // simpler than the generic one. The custom definition is the one that
     // will be used to prove the RA laws.
-
-    /// Factorizing elements of the RA
-    ///
-    /// Given `a` and `c`, this returns an element `b` such that `a = b.c`,
-    /// or returns `None` if there does not exists such an element.
-    #[logic]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => forall<c: Self> factor.op(c) != Some(self),
-    })]
-    fn factor(self, factor: Self) -> Option<Self>;
 
     #[logic(open, inline)]
     #[ensures(result == (self == other))]
@@ -86,10 +78,9 @@ pub trait RA: Sized {
     /// reflexive definition of `incl` on paper, but not in its accompanying
     /// Iris formalization, where it uses the non-reflexive definition (as
     /// we do here).
-    #[logic(open, sealed)]
-    fn incl(self, other: Self) -> bool {
-        other.factor(self) != None
-    }
+    #[logic]
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool;
 
     #[logic(law)]
     #[requires(self.op(other) == Some(comb))]
@@ -107,6 +98,17 @@ pub trait RA: Sized {
             None => false,
             Some(ab) => ab.incl_eq(x),
         }
+    }
+
+    /// Factorizing elements of the RA
+    ///
+    /// Given `a` and `c`, this returns an element `b` such that `a = b.c`,
+    /// or returns `None` if there does not exists such an element.
+    #[logic]
+    #[requires(factor.incl(self))]
+    #[ensures(factor.op(result) == Some(self))]
+    fn factor(self, factor: Self) -> Self {
+        such_that(|r| factor.op(r) == Some(self))
     }
 
     /// Ensures that we can go from `self` to `x` without making composition with the frame invalid.

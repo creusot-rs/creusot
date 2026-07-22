@@ -28,15 +28,20 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
     }
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => forall<c: Self> factor.op(c) != Some(self),
-    })]
-    fn factor(self, factor: Self) -> Option<Self> {
-        match (self, factor) {
-            (Self::Left(x), Self::Left(y)) => x.factor(y).map_logic(|l| Self::Left(l)),
-            (Self::Right(x), Self::Right(y)) => x.factor(y).map_logic(|r| Self::Right(r)),
-            _ => None,
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
+        match (self, other) {
+            (Self::Left(x), Self::Left(y)) => {
+                proof_assert!(forall<factor>
+                  x.op(factor) == Some(y) ==> self.op(Self::Left(factor)) == Some(other));
+                x.incl(y)
+            }
+            (Self::Right(x), Self::Right(y)) => {
+                proof_assert!(forall<factor>
+                  x.op(factor) == Some(y) ==> self.op(Self::Right(factor)) == Some(other));
+                x.incl(y)
+            }
+            _ => false,
         }
     }
 

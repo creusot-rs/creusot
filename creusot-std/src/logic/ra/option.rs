@@ -19,24 +19,12 @@ impl<T: RA> RA for Option<T> {
     }
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => forall<c: Self> factor.op(c) != Some(self),
-    })]
-    fn factor(self, factor: Self) -> Option<Self> {
-        match (self, factor) {
-            (x, None) => Some(x),
-            (None, _) => None,
-            (Some(x), Some(y)) => match x.factor(y) {
-                Some(z) => Some(Some(z)),
-                None => {
-                    if x == y {
-                        Some(None)
-                    } else {
-                        None
-                    }
-                }
-            },
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
+        match (self, other) {
+            (None, _) => true,
+            (_, None) => false,
+            (Some(x), Some(y)) => x.incl_eq(y),
         }
     }
 

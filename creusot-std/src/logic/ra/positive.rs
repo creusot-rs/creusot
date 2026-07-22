@@ -9,13 +9,13 @@ impl RA for Positive {
         Some(self + other)
     }
 
-    #[logic]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => forall<c: Self> factor.op(c) != Some(self),
-    })]
-    fn factor(self, factor: Self) -> Option<Self> {
-        if self > factor { Some(Self::new(self.view() - factor.view())) } else { None }
+    #[logic(open)]
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
+        let _ = Self::ext_eq;
+        let r = self < other;
+        proof_assert!(r ==> self.op(Self::new(other@ - self@)) == Some(other));
+        r
     }
 
     #[logic(law)]

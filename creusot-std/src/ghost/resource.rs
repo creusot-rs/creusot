@@ -222,7 +222,7 @@ mod m {
         #[ensures((^self).id() == self.id())]
         #[ensures((^self)@ == *target)]
         pub fn weaken(&mut self, target: Snapshot<R>) {
-            let f = snapshot! {self@.factor(*target).unwrap_logic()};
+            let f = snapshot! {self@.factor(*target)};
             self.split_off(f, target);
         }
 

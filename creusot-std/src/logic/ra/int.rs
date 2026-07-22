@@ -9,13 +9,10 @@ impl RA for Int {
         Some(self + other)
     }
 
-    #[logic(open, inline)]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => false,
-    })]
-    fn factor(self, factor: Self) -> Option<Self> {
-        Some(self - factor)
+    #[logic(open)]
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
+        true
     }
 
     #[logic(law)]
