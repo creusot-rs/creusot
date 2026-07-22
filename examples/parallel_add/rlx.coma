@@ -234,56 +234,54 @@ module M_parallel_add
   
   type t_View_AuthViewRel_Option_Excl_bool
   
-  function factor_Excl_bool (self: t_Excl_bool) (factor: t_Excl_bool) : t_Option_Excl_bool = None'0
+  predicate incl_Excl_bool (self: t_Excl_bool) (other: t_Excl_bool) = false
   
-  axiom factor_Excl_bool_spec:
-    forall self: t_Excl_bool, factor: t_Excl_bool [factor_Excl_bool self factor]. match factor_Excl_bool self factor with
-        | Some'0 c -> op_Excl_bool factor c = Some'0 self
-        | None'0 -> forall c: t_Excl_bool. op_Excl_bool factor c <> Some'0 self
-        end
+  axiom incl_Excl_bool_spec:
+    forall self: t_Excl_bool, other: t_Excl_bool [incl_Excl_bool self other]. incl_Excl_bool self other
+      = (exists factor: t_Excl_bool. op_Excl_bool self factor = Some'0 other)
   
-  function factor_Option_Excl_bool (self: t_Option_Excl_bool) (factor: t_Option_Excl_bool) : t_Option_Option_Excl_bool =
-    match { f0'2 = self; f1'2 = factor } with
-      | {f0'2 = x; f1'2 = None'0} -> Some'1 x
-      | {f0'2 = None'0} -> None'1
-      | {f0'2 = Some'0 x; f1'2 = Some'0 y} -> match factor_Excl_bool x y with
-        | Some'0 z -> Some'1 (Some'0 z)
-        | None'0 -> if x = y then Some'1 (None'0) else None'1
-        end
-      end
+  function incl_transitive_Excl_bool (a: t_Excl_bool) (b: t_Excl_bool) (c: t_Excl_bool) : ()
   
-  axiom factor_Option_Excl_bool_spec:
-    forall self: t_Option_Excl_bool, factor: t_Option_Excl_bool [factor_Option_Excl_bool self factor]. match factor_Option_Excl_bool self factor with
-        | Some'1 c -> op_Option_Excl_bool factor c = Some'1 self
-        | None'1 -> forall c: t_Option_Excl_bool. op_Option_Excl_bool factor c <> Some'1 self
-        end
+  axiom incl_transitive_Excl_bool_spec: forall a: t_Excl_bool, b: t_Excl_bool, c: t_Excl_bool. incl_Excl_bool a b
+      -> incl_Excl_bool b c -> incl_Excl_bool a c
+  
+  function associative_some_Excl_bool (a: t_Excl_bool) (b: t_Excl_bool) (c: t_Excl_bool) (ab: t_Excl_bool) (bc: t_Excl_bool) : ()
+  
+  axiom associative_some_Excl_bool_spec:
+    forall a: t_Excl_bool, b: t_Excl_bool, c: t_Excl_bool, ab: t_Excl_bool, bc: t_Excl_bool. op_Excl_bool a b
+        = Some'0 ab -> op_Excl_bool b c = Some'0 bc -> op_Excl_bool a bc = op_Excl_bool ab c
+  
+  function associative_none_Excl_bool (a: t_Excl_bool) (b: t_Excl_bool) (c: t_Excl_bool) (bc: t_Excl_bool) : ()
+  
+  axiom associative_none_Excl_bool_spec:
+    forall a: t_Excl_bool, b: t_Excl_bool, c: t_Excl_bool, bc: t_Excl_bool. op_Excl_bool a b = None'0
+      -> op_Excl_bool b c = Some'0 bc -> op_Excl_bool a bc = None'0
+  
+  function incl_op_Excl_bool (self: t_Excl_bool) (other: t_Excl_bool) (comb: t_Excl_bool) : ()
+  
+  axiom incl_op_Excl_bool_spec: forall self: t_Excl_bool, other: t_Excl_bool, comb: t_Excl_bool. op_Excl_bool self other
+        = Some'0 comb -> incl_Excl_bool self comb
+  
+  predicate eq_Excl_bool [@inline:trivial] (self: t_Excl_bool) (other: t_Excl_bool) = self = other
+  
+  meta "rewrite_def" predicate eq_Excl_bool
+  
+  axiom eq_Excl_bool_spec:
+    forall self: t_Excl_bool, other: t_Excl_bool [eq_Excl_bool self other]. eq_Excl_bool self other = (self = other)
+  
+  predicate incl_eq_Excl_bool (self: t_Excl_bool) (other: t_Excl_bool) =
+    eq_Excl_bool self other \/ incl_Excl_bool self other
   
   predicate incl_Option_Excl_bool (self: t_Option_Excl_bool) (other: t_Option_Excl_bool) =
-    factor_Option_Excl_bool other self <> None'1
+    match { f0'2 = self; f1'2 = other } with
+      | {f0'2 = None'0} -> true
+      | {f1'2 = None'0} -> false
+      | {f0'2 = Some'0 x; f1'2 = Some'0 y} -> incl_eq_Excl_bool x y
+      end
   
-  function incl_transitive_Option_Excl_bool (a: t_Option_Excl_bool) (b: t_Option_Excl_bool) (c: t_Option_Excl_bool) : ()
-  
-  axiom incl_transitive_Option_Excl_bool_spec:
-    forall a: t_Option_Excl_bool, b: t_Option_Excl_bool, c: t_Option_Excl_bool. incl_Option_Excl_bool a b
-      -> incl_Option_Excl_bool b c -> incl_Option_Excl_bool a c
-  
-  function associative_some_Option_Excl_bool (a: t_Option_Excl_bool) (b: t_Option_Excl_bool) (c: t_Option_Excl_bool) (ab: t_Option_Excl_bool) (bc: t_Option_Excl_bool) : ()
-  
-  axiom associative_some_Option_Excl_bool_spec:
-    forall a: t_Option_Excl_bool, b: t_Option_Excl_bool, c: t_Option_Excl_bool, ab: t_Option_Excl_bool, bc: t_Option_Excl_bool. op_Option_Excl_bool a b
-        = Some'1 ab -> op_Option_Excl_bool b c = Some'1 bc -> op_Option_Excl_bool a bc = op_Option_Excl_bool ab c
-  
-  function associative_none_Option_Excl_bool (a: t_Option_Excl_bool) (b: t_Option_Excl_bool) (c: t_Option_Excl_bool) (bc: t_Option_Excl_bool) : ()
-  
-  axiom associative_none_Option_Excl_bool_spec:
-    forall a: t_Option_Excl_bool, b: t_Option_Excl_bool, c: t_Option_Excl_bool, bc: t_Option_Excl_bool. op_Option_Excl_bool a b
-        = None'1 -> op_Option_Excl_bool b c = Some'1 bc -> op_Option_Excl_bool a bc = None'1
-  
-  function incl_op_Option_Excl_bool (self: t_Option_Excl_bool) (other: t_Option_Excl_bool) (comb: t_Option_Excl_bool) : ()
-  
-  axiom incl_op_Option_Excl_bool_spec:
-    forall self: t_Option_Excl_bool, other: t_Option_Excl_bool, comb: t_Option_Excl_bool. op_Option_Excl_bool self other
-        = Some'1 comb -> incl_Option_Excl_bool self comb
+  axiom incl_Option_Excl_bool_spec:
+    forall self: t_Option_Excl_bool, other: t_Option_Excl_bool [incl_Option_Excl_bool self other]. incl_Option_Excl_bool self other
+      = (exists factor: t_Option_Excl_bool. op_Option_Excl_bool self factor = Some'1 other)
   
   predicate rel_AuthViewRel_Option_Excl_bool (a: t_Option_Option_Excl_bool) (f: t_Option_Excl_bool) =
     match a with

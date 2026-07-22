@@ -427,86 +427,107 @@ module M_parallel_add
   
   type t_View_AuthViewRel_Option_tup2_PositiveReal_Int
   
-  function factor_PositiveReal [@inline:trivial] (self: t_PositiveReal) (factor: t_PositiveReal) : t_Option_PositiveReal
-   = if gt_log_Real (to_real self) (to_real factor) then
-      Some'2 (new'1 (Real.(-) (to_real self) (to_real factor)))
-    else
-      None'2
+  predicate incl_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) =
+    let r = Real.(<) (to_real self) (to_real other) in r
   
+  axiom incl_PositiveReal_spec:
+    forall self: t_PositiveReal, other: t_PositiveReal [incl_PositiveReal self other]. incl_PositiveReal self other
+      = (exists factor: t_PositiveReal. op_PositiveReal self factor = Some'2 other)
   
-  meta "rewrite_def" function factor_PositiveReal
+  predicate incl_Int (self: int) (other: int) = true
   
-  axiom factor_PositiveReal_spec:
-    forall self: t_PositiveReal, factor: t_PositiveReal [factor_PositiveReal self factor]. match factor_PositiveReal self factor with
-        | Some'2 c -> op_PositiveReal factor c = Some'2 self
-        | None'2 -> forall c: t_PositiveReal. op_PositiveReal factor c <> Some'2 self
-        end
+  axiom incl_Int_spec: forall self: int, other: int [incl_Int self other]. incl_Int self other
+      = (exists factor: int. op_Int self factor = Some'3 other)
   
-  function factor_Int [@inline:trivial] (self: int) (factor: int) : t_Option_Int = Some'3 (self - factor)
+  predicate incl_tup2_PositiveReal_Int (self: tup2_PositiveReal_Int) (other: tup2_PositiveReal_Int) =
+    incl_PositiveReal self.f0'2 other.f0'2 /\ incl_Int self.f1'2 other.f1'2
   
-  meta "rewrite_def" function factor_Int
+  axiom incl_tup2_PositiveReal_Int_spec:
+    forall self: tup2_PositiveReal_Int, other: tup2_PositiveReal_Int [incl_tup2_PositiveReal_Int self other]. incl_tup2_PositiveReal_Int self other
+      = (exists factor: tup2_PositiveReal_Int. op_tup2_PositiveReal_Int self factor = Some'0 other)
   
-  axiom factor_Int_spec: forall self: int, factor: int [factor_Int self factor]. match factor_Int self factor with
-        | Some'3 c -> op_Int factor c = Some'3 self
-        | None'3 -> false
-        end
+  function incl_transitive_tup2_PositiveReal_Int (a: tup2_PositiveReal_Int) (b: tup2_PositiveReal_Int) (c: tup2_PositiveReal_Int) : ()
   
-  function factor_tup2_PositiveReal_Int (self: tup2_PositiveReal_Int) (factor: tup2_PositiveReal_Int) : t_Option_tup2_PositiveReal_Int
-   = match { f0'4 = factor_PositiveReal self.f0'2 factor.f0'2; f1'4 = factor_Int self.f1'2 factor.f1'2 } with
-      | {f0'4 = Some'2 v1; f1'4 = Some'3 v2} -> Some'0 { f0'2 = v1; f1'2 = v2 }
-      | _ -> None'0
-      end
+  axiom incl_transitive_tup2_PositiveReal_Int_spec:
+    forall a: tup2_PositiveReal_Int, b: tup2_PositiveReal_Int, c: tup2_PositiveReal_Int. incl_tup2_PositiveReal_Int a b
+      -> incl_tup2_PositiveReal_Int b c -> incl_tup2_PositiveReal_Int a c
   
-  axiom factor_tup2_PositiveReal_Int_spec:
-    forall self: tup2_PositiveReal_Int, factor: tup2_PositiveReal_Int [factor_tup2_PositiveReal_Int self factor]. match factor_tup2_PositiveReal_Int self factor with
-        | Some'0 c -> op_tup2_PositiveReal_Int factor c = Some'0 self
-        | None'0 -> forall c: tup2_PositiveReal_Int. op_tup2_PositiveReal_Int factor c <> Some'0 self
-        end
+  function associative_some_tup2_PositiveReal_Int (a: tup2_PositiveReal_Int) (b: tup2_PositiveReal_Int) (c: tup2_PositiveReal_Int) (ab: tup2_PositiveReal_Int) (bc: tup2_PositiveReal_Int) : ()
   
-  function factor_Option_tup2_PositiveReal_Int (self: t_Option_tup2_PositiveReal_Int) (factor: t_Option_tup2_PositiveReal_Int) : t_Option_Option_tup2_PositiveReal_Int
-   = match { f0'3 = self; f1'3 = factor } with
-      | {f0'3 = x; f1'3 = None'0} -> Some'1 x
-      | {f0'3 = None'0} -> None'1
-      | {f0'3 = Some'0 x; f1'3 = Some'0 y} -> match factor_tup2_PositiveReal_Int x y with
-        | Some'0 z -> Some'1 (Some'0 z)
-        | None'0 -> if x = y then Some'1 (None'0) else None'1
-        end
-      end
+  axiom associative_some_tup2_PositiveReal_Int_spec:
+    forall a: tup2_PositiveReal_Int, b: tup2_PositiveReal_Int, c: tup2_PositiveReal_Int, ab: tup2_PositiveReal_Int, bc: tup2_PositiveReal_Int. op_tup2_PositiveReal_Int a b
+        = Some'0 ab
+      -> op_tup2_PositiveReal_Int b c = Some'0 bc -> op_tup2_PositiveReal_Int a bc = op_tup2_PositiveReal_Int ab c
   
-  axiom factor_Option_tup2_PositiveReal_Int_spec:
-    forall self: t_Option_tup2_PositiveReal_Int, factor: t_Option_tup2_PositiveReal_Int [factor_Option_tup2_PositiveReal_Int self factor]. match factor_Option_tup2_PositiveReal_Int self factor with
-        | Some'1 c -> op_Option_tup2_PositiveReal_Int factor c = Some'1 self
-        | None'1 -> forall c: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int factor c <> Some'1 self
-        end
+  function associative_none_tup2_PositiveReal_Int (a: tup2_PositiveReal_Int) (b: tup2_PositiveReal_Int) (c: tup2_PositiveReal_Int) (bc: tup2_PositiveReal_Int) : ()
+  
+  axiom associative_none_tup2_PositiveReal_Int_spec:
+    forall a: tup2_PositiveReal_Int, b: tup2_PositiveReal_Int, c: tup2_PositiveReal_Int, bc: tup2_PositiveReal_Int. op_tup2_PositiveReal_Int a b
+        = None'0 -> op_tup2_PositiveReal_Int b c = Some'0 bc -> op_tup2_PositiveReal_Int a bc = None'0
+  
+  function incl_op_tup2_PositiveReal_Int (self: tup2_PositiveReal_Int) (other: tup2_PositiveReal_Int) (comb: tup2_PositiveReal_Int) : ()
+  
+  axiom incl_op_tup2_PositiveReal_Int_spec:
+    forall self: tup2_PositiveReal_Int, other: tup2_PositiveReal_Int, comb: tup2_PositiveReal_Int. op_tup2_PositiveReal_Int self other
+        = Some'0 comb -> incl_tup2_PositiveReal_Int self comb
+  
+  predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
+  
+  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal [self = other]. ext_eq self other
+      = (self = other)
+  
+  predicate eq_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) = ext_eq self other
+  
+  meta "rewrite_def" predicate eq_PositiveReal
+  
+  axiom eq_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal [self
+      = other]. eq_PositiveReal self other = (self = other)
+  
+  function incl_transitive_Int (a: int) (b: int) (c: int) : ()
+  
+  axiom incl_transitive_Int_spec: forall a: int, b: int, c: int. incl_Int a b -> incl_Int b c -> incl_Int a c
+  
+  function associative_some_Int (a: int) (b: int) (c: int) (ab: int) (bc: int) : ()
+  
+  axiom associative_some_Int_spec: forall a: int, b: int, c: int, ab: int, bc: int. op_Int a b = Some'3 ab
+      -> op_Int b c = Some'3 bc -> op_Int a bc = op_Int ab c
+  
+  function associative_none_Int (a: int) (b: int) (c: int) (bc: int) : ()
+  
+  axiom associative_none_Int_spec: forall a: int, b: int, c: int, bc: int. op_Int a b = None'3
+      -> op_Int b c = Some'3 bc -> op_Int a bc = None'3
+  
+  function incl_op_Int (self: int) (other: int) (comb: int) : ()
+  
+  axiom incl_op_Int_spec: forall self: int, other: int, comb: int. op_Int self other = Some'3 comb -> incl_Int self comb
+  
+  predicate eq_Int [@inline:trivial] (self: int) (other: int) = self = other
+  
+  meta "rewrite_def" predicate eq_Int
+  
+  axiom eq_Int_spec: forall self: int, other: int [eq_Int self other]. eq_Int self other = (self = other)
+  
+  predicate eq_tup2_PositiveReal_Int [@inline:trivial] (self: tup2_PositiveReal_Int) (other: tup2_PositiveReal_Int) =
+    eq_PositiveReal self.f0'2 other.f0'2 /\ eq_Int self.f1'2 other.f1'2
+  
+  meta "rewrite_def" predicate eq_tup2_PositiveReal_Int
+  
+  axiom eq_tup2_PositiveReal_Int_spec: forall self: tup2_PositiveReal_Int, other: tup2_PositiveReal_Int [self
+      = other]. eq_tup2_PositiveReal_Int self other = (self = other)
+  
+  predicate incl_eq_tup2_PositiveReal_Int (self: tup2_PositiveReal_Int) (other: tup2_PositiveReal_Int) =
+    eq_tup2_PositiveReal_Int self other \/ incl_tup2_PositiveReal_Int self other
   
   predicate incl_Option_tup2_PositiveReal_Int (self: t_Option_tup2_PositiveReal_Int) (other: t_Option_tup2_PositiveReal_Int) =
-    factor_Option_tup2_PositiveReal_Int other self <> None'1
+    match { f0'3 = self; f1'3 = other } with
+      | {f0'3 = None'0} -> true
+      | {f1'3 = None'0} -> false
+      | {f0'3 = Some'0 x; f1'3 = Some'0 y} -> incl_eq_tup2_PositiveReal_Int x y
+      end
   
-  function incl_transitive_Option_tup2_PositiveReal_Int (a: t_Option_tup2_PositiveReal_Int) (b: t_Option_tup2_PositiveReal_Int) (c: t_Option_tup2_PositiveReal_Int) : ()
-  
-  axiom incl_transitive_Option_tup2_PositiveReal_Int_spec:
-    forall a: t_Option_tup2_PositiveReal_Int, b: t_Option_tup2_PositiveReal_Int, c: t_Option_tup2_PositiveReal_Int. incl_Option_tup2_PositiveReal_Int a b
-      -> incl_Option_tup2_PositiveReal_Int b c -> incl_Option_tup2_PositiveReal_Int a c
-  
-  function associative_some_Option_tup2_PositiveReal_Int (a: t_Option_tup2_PositiveReal_Int) (b: t_Option_tup2_PositiveReal_Int) (c: t_Option_tup2_PositiveReal_Int) (ab: t_Option_tup2_PositiveReal_Int) (bc: t_Option_tup2_PositiveReal_Int) : ()
-  
-  axiom associative_some_Option_tup2_PositiveReal_Int_spec:
-    forall a: t_Option_tup2_PositiveReal_Int, b: t_Option_tup2_PositiveReal_Int, c: t_Option_tup2_PositiveReal_Int, ab: t_Option_tup2_PositiveReal_Int, bc: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int a b
-        = Some'1 ab
-      -> op_Option_tup2_PositiveReal_Int b c = Some'1 bc
-      -> op_Option_tup2_PositiveReal_Int a bc = op_Option_tup2_PositiveReal_Int ab c
-  
-  function associative_none_Option_tup2_PositiveReal_Int (a: t_Option_tup2_PositiveReal_Int) (b: t_Option_tup2_PositiveReal_Int) (c: t_Option_tup2_PositiveReal_Int) (bc: t_Option_tup2_PositiveReal_Int) : ()
-  
-  axiom associative_none_Option_tup2_PositiveReal_Int_spec:
-    forall a: t_Option_tup2_PositiveReal_Int, b: t_Option_tup2_PositiveReal_Int, c: t_Option_tup2_PositiveReal_Int, bc: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int a b
-        = None'1 -> op_Option_tup2_PositiveReal_Int b c = Some'1 bc -> op_Option_tup2_PositiveReal_Int a bc = None'1
-  
-  function incl_op_Option_tup2_PositiveReal_Int (self: t_Option_tup2_PositiveReal_Int) (other: t_Option_tup2_PositiveReal_Int) (comb: t_Option_tup2_PositiveReal_Int) : ()
-  
-  axiom incl_op_Option_tup2_PositiveReal_Int_spec:
-    forall self: t_Option_tup2_PositiveReal_Int, other: t_Option_tup2_PositiveReal_Int, comb: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int self other
-        = Some'1 comb -> incl_Option_tup2_PositiveReal_Int self comb
+  axiom incl_Option_tup2_PositiveReal_Int_spec:
+    forall self: t_Option_tup2_PositiveReal_Int, other: t_Option_tup2_PositiveReal_Int [incl_Option_tup2_PositiveReal_Int self other]. incl_Option_tup2_PositiveReal_Int self other
+      = (exists factor: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int self factor = Some'1 other)
   
   predicate rel_AuthViewRel_Option_tup2_PositiveReal_Int (a: t_Option_Option_tup2_PositiveReal_Int) (f: t_Option_tup2_PositiveReal_Int) =
     match a with
@@ -910,51 +931,31 @@ module M_parallel_add
         end}
       any) ]
   
-  predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
+  function incl_transitive_Option_tup2_PositiveReal_Int (a: t_Option_tup2_PositiveReal_Int) (b: t_Option_tup2_PositiveReal_Int) (c: t_Option_tup2_PositiveReal_Int) : ()
   
-  axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal [self = other]. ext_eq self other
-      = (self = other)
+  axiom incl_transitive_Option_tup2_PositiveReal_Int_spec:
+    forall a: t_Option_tup2_PositiveReal_Int, b: t_Option_tup2_PositiveReal_Int, c: t_Option_tup2_PositiveReal_Int. incl_Option_tup2_PositiveReal_Int a b
+      -> incl_Option_tup2_PositiveReal_Int b c -> incl_Option_tup2_PositiveReal_Int a c
   
-  predicate eq_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) = ext_eq self other
+  function associative_some_Option_tup2_PositiveReal_Int (a: t_Option_tup2_PositiveReal_Int) (b: t_Option_tup2_PositiveReal_Int) (c: t_Option_tup2_PositiveReal_Int) (ab: t_Option_tup2_PositiveReal_Int) (bc: t_Option_tup2_PositiveReal_Int) : ()
   
-  meta "rewrite_def" predicate eq_PositiveReal
+  axiom associative_some_Option_tup2_PositiveReal_Int_spec:
+    forall a: t_Option_tup2_PositiveReal_Int, b: t_Option_tup2_PositiveReal_Int, c: t_Option_tup2_PositiveReal_Int, ab: t_Option_tup2_PositiveReal_Int, bc: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int a b
+        = Some'1 ab
+      -> op_Option_tup2_PositiveReal_Int b c = Some'1 bc
+      -> op_Option_tup2_PositiveReal_Int a bc = op_Option_tup2_PositiveReal_Int ab c
   
-  axiom eq_PositiveReal_spec: forall self: t_PositiveReal, other: t_PositiveReal [self
-      = other]. eq_PositiveReal self other = (self = other)
+  function associative_none_Option_tup2_PositiveReal_Int (a: t_Option_tup2_PositiveReal_Int) (b: t_Option_tup2_PositiveReal_Int) (c: t_Option_tup2_PositiveReal_Int) (bc: t_Option_tup2_PositiveReal_Int) : ()
   
-  predicate incl_Int (self: int) (other: int) = factor_Int other self <> None'3
+  axiom associative_none_Option_tup2_PositiveReal_Int_spec:
+    forall a: t_Option_tup2_PositiveReal_Int, b: t_Option_tup2_PositiveReal_Int, c: t_Option_tup2_PositiveReal_Int, bc: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int a b
+        = None'1 -> op_Option_tup2_PositiveReal_Int b c = Some'1 bc -> op_Option_tup2_PositiveReal_Int a bc = None'1
   
-  function incl_transitive_Int (a: int) (b: int) (c: int) : ()
+  function incl_op_Option_tup2_PositiveReal_Int (self: t_Option_tup2_PositiveReal_Int) (other: t_Option_tup2_PositiveReal_Int) (comb: t_Option_tup2_PositiveReal_Int) : ()
   
-  axiom incl_transitive_Int_spec: forall a: int, b: int, c: int. incl_Int a b -> incl_Int b c -> incl_Int a c
-  
-  function associative_some_Int (a: int) (b: int) (c: int) (ab: int) (bc: int) : ()
-  
-  axiom associative_some_Int_spec: forall a: int, b: int, c: int, ab: int, bc: int. op_Int a b = Some'3 ab
-      -> op_Int b c = Some'3 bc -> op_Int a bc = op_Int ab c
-  
-  function associative_none_Int (a: int) (b: int) (c: int) (bc: int) : ()
-  
-  axiom associative_none_Int_spec: forall a: int, b: int, c: int, bc: int. op_Int a b = None'3
-      -> op_Int b c = Some'3 bc -> op_Int a bc = None'3
-  
-  function incl_op_Int (self: int) (other: int) (comb: int) : ()
-  
-  axiom incl_op_Int_spec: forall self: int, other: int, comb: int. op_Int self other = Some'3 comb -> incl_Int self comb
-  
-  predicate eq_Int [@inline:trivial] (self: int) (other: int) = self = other
-  
-  meta "rewrite_def" predicate eq_Int
-  
-  axiom eq_Int_spec: forall self: int, other: int [eq_Int self other]. eq_Int self other = (self = other)
-  
-  predicate eq_tup2_PositiveReal_Int [@inline:trivial] (self: tup2_PositiveReal_Int) (other: tup2_PositiveReal_Int) =
-    eq_PositiveReal self.f0'2 other.f0'2 /\ eq_Int self.f1'2 other.f1'2
-  
-  meta "rewrite_def" predicate eq_tup2_PositiveReal_Int
-  
-  axiom eq_tup2_PositiveReal_Int_spec: forall self: tup2_PositiveReal_Int, other: tup2_PositiveReal_Int [self
-      = other]. eq_tup2_PositiveReal_Int self other = (self = other)
+  axiom incl_op_Option_tup2_PositiveReal_Int_spec:
+    forall self: t_Option_tup2_PositiveReal_Int, other: t_Option_tup2_PositiveReal_Int, comb: t_Option_tup2_PositiveReal_Int. op_Option_tup2_PositiveReal_Int self other
+        = Some'1 comb -> incl_Option_tup2_PositiveReal_Int self comb
   
   predicate eq_Option_tup2_PositiveReal_Int [@inline:trivial] (self: t_Option_tup2_PositiveReal_Int) (other: t_Option_tup2_PositiveReal_Int) =
     match { f0'3 = self; f1'3 = other } with

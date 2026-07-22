@@ -151,118 +151,60 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone (* <implementat
     forall x: t_FMap_PermCell_Inner_T_Ag_Seq_T [op_FMap_PermCell_Inner_T_Ag_Seq_T x unit_FMap_PermCell_Inner_T_Ag_Seq_T]. op_FMap_PermCell_Inner_T_Ag_Seq_T x unit_FMap_PermCell_Inner_T_Ag_Seq_T
       = Some x
   
-  function factor_Ag_Seq_T (self: t_Ag_Seq_T) (factor: t_Ag_Seq_T) : t_Option_Ag_Seq_T = op_Ag_Seq_T self factor
+  predicate incl_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = self.f0'0 = other.f0'0
   
-  axiom factor_Ag_Seq_T_spec:
-    forall self: t_Ag_Seq_T, factor: t_Ag_Seq_T [factor_Ag_Seq_T self factor]. match factor_Ag_Seq_T self factor with
-        | Some'0 c -> op_Ag_Seq_T factor c = Some'0 self
-        | None'0 -> forall c: t_Ag_Seq_T. op_Ag_Seq_T factor c <> Some'0 self
-        end
+  axiom incl_Ag_Seq_T_spec:
+    forall self: t_Ag_Seq_T, other: t_Ag_Seq_T [incl_Ag_Seq_T self other]. incl_Ag_Seq_T self other
+      = (exists factor: t_Ag_Seq_T. op_Ag_Seq_T self factor = Some'0 other)
   
-  function factor_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (factor: t_Option_Ag_Seq_T) : t_Option_Option_Ag_Seq_T =
-    match { f0'1 = self; f1'1 = factor } with
-      | {f0'1 = x; f1'1 = None'0} -> Some'1 x
-      | {f0'1 = None'0} -> None'1
-      | {f0'1 = Some'0 x; f1'1 = Some'0 y} -> match factor_Ag_Seq_T x y with
-        | Some'0 z -> Some'1 (Some'0 z)
-        | None'0 -> if x = y then Some'1 (None'0) else None'1
-        end
-      end
+  function incl_transitive_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) : ()
   
-  axiom factor_Option_Ag_Seq_T_spec:
-    forall self: t_Option_Ag_Seq_T, factor: t_Option_Ag_Seq_T [factor_Option_Ag_Seq_T self factor]. match factor_Option_Ag_Seq_T self factor with
-        | Some'1 c -> op_Option_Ag_Seq_T factor c = Some'1 self
-        | None'1 -> forall c: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T factor c <> Some'1 self
-        end
+  axiom incl_transitive_Ag_Seq_T_spec: forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T. incl_Ag_Seq_T a b
+      -> incl_Ag_Seq_T b c -> incl_Ag_Seq_T a c
+  
+  function associative_some_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) (ab: t_Ag_Seq_T) (bc: t_Ag_Seq_T) : ()
+  
+  axiom associative_some_Ag_Seq_T_spec:
+    forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T, ab: t_Ag_Seq_T, bc: t_Ag_Seq_T. op_Ag_Seq_T a b = Some'0 ab
+      -> op_Ag_Seq_T b c = Some'0 bc -> op_Ag_Seq_T a bc = op_Ag_Seq_T ab c
+  
+  function associative_none_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) (bc: t_Ag_Seq_T) : ()
+  
+  axiom associative_none_Ag_Seq_T_spec:
+    forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T, bc: t_Ag_Seq_T. op_Ag_Seq_T a b = None'0
+      -> op_Ag_Seq_T b c = Some'0 bc -> op_Ag_Seq_T a bc = None'0
+  
+  function incl_op_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) (comb: t_Ag_Seq_T) : ()
+  
+  axiom incl_op_Ag_Seq_T_spec: forall self: t_Ag_Seq_T, other: t_Ag_Seq_T, comb: t_Ag_Seq_T. op_Ag_Seq_T self other
+        = Some'0 comb -> incl_Ag_Seq_T self comb
+  
+  predicate eq_Ag_Seq_T [@inline:trivial] (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = self = other
+  
+  meta "rewrite_def" predicate eq_Ag_Seq_T
+  
+  axiom eq_Ag_Seq_T_spec: forall self: t_Ag_Seq_T, other: t_Ag_Seq_T [eq_Ag_Seq_T self other]. eq_Ag_Seq_T self other
+      = (self = other)
+  
+  predicate incl_eq_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = eq_Ag_Seq_T self other \/ incl_Ag_Seq_T self other
   
   predicate incl_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (other: t_Option_Ag_Seq_T) =
-    factor_Option_Ag_Seq_T other self <> None'1
+    match { f0'1 = self; f1'1 = other } with
+      | {f0'1 = None'0} -> true
+      | {f1'1 = None'0} -> false
+      | {f0'1 = Some'0 x; f1'1 = Some'0 y} -> incl_eq_Ag_Seq_T x y
+      end
   
-  function incl_transitive_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) : ()
-  
-  axiom incl_transitive_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T. incl_Option_Ag_Seq_T a b
-      -> incl_Option_Ag_Seq_T b c -> incl_Option_Ag_Seq_T a c
-  
-  function associative_some_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) (ab: t_Option_Ag_Seq_T) (bc: t_Option_Ag_Seq_T) : ()
-  
-  axiom associative_some_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T, ab: t_Option_Ag_Seq_T, bc: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T a b
-        = Some'1 ab -> op_Option_Ag_Seq_T b c = Some'1 bc -> op_Option_Ag_Seq_T a bc = op_Option_Ag_Seq_T ab c
-  
-  function associative_none_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) (bc: t_Option_Ag_Seq_T) : ()
-  
-  axiom associative_none_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T, bc: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T a b
-        = None'1 -> op_Option_Ag_Seq_T b c = Some'1 bc -> op_Option_Ag_Seq_T a bc = None'1
-  
-  function incl_op_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (other: t_Option_Ag_Seq_T) (comb: t_Option_Ag_Seq_T) : ()
-  
-  axiom incl_op_Option_Ag_Seq_T_spec:
-    forall self: t_Option_Ag_Seq_T, other: t_Option_Ag_Seq_T, comb: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self other
-        = Some'1 comb -> incl_Option_Ag_Seq_T self comb
-  
-  type tup2_PermCell_Inner_T_Ag_Seq_T = { f0'2: t_PermCell_Inner_T; f1'2: t_Ag_Seq_T }
-  
-  function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T [@inline:trivial] (self: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) (a: tup2_PermCell_Inner_T_Ag_Seq_T) : t_Option_Ag_Seq_T
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T
-  
-  function filter_map_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) : t_FMap_PermCell_Inner_T_Ag_Seq_T
-  
-  axiom filter_map_PermCell_Inner_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T [filter_map_PermCell_Inner_T self f]. forall k: t_PermCell_Inner_T [get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k]. get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k
-        = match get_PermCell_Inner_T self k with
-          | None'0 -> None'0
-          | Some'0 v -> index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T f { f0'2 = k; f1'2 = v }
-          end
-  
-  function factor_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (factor: t_FMap_PermCell_Inner_T_Ag_Seq_T) : t_Option_FMap_PermCell_Inner_T_Ag_Seq_T
-   =
-    if forall k: t_PermCell_Inner_T. incl_Option_Ag_Seq_T (get_PermCell_Inner_T factor k) (get_PermCell_Inner_T self k) then
-      let res = filter_map_PermCell_Inner_T self (fun (__0: tup2_PermCell_Inner_T_Ag_Seq_T) -> let {f0'2 = k; f1'2 = vo} = __0 in match factor_Option_Ag_Seq_T (Some'0 vo) (get_PermCell_Inner_T factor k) with
-        | Some'1 r -> r
-        | None'1 -> None'0
-        end) in Some res
-    else
-      None
-  
-  
-  axiom factor_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, factor: t_FMap_PermCell_Inner_T_Ag_Seq_T [factor_FMap_PermCell_Inner_T_Ag_Seq_T self factor]. match factor_FMap_PermCell_Inner_T_Ag_Seq_T self factor with
-        | Some c -> op_FMap_PermCell_Inner_T_Ag_Seq_T factor c = Some self
-        | None -> forall c: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T factor c <> Some self
-        end
+  axiom incl_Option_Ag_Seq_T_spec:
+    forall self: t_Option_Ag_Seq_T, other: t_Option_Ag_Seq_T [incl_Option_Ag_Seq_T self other]. incl_Option_Ag_Seq_T self other
+      = (exists factor: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self factor = Some'1 other)
   
   predicate incl_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (other: t_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    factor_FMap_PermCell_Inner_T_Ag_Seq_T other self <> None
+    let r = forall k: t_PermCell_Inner_T. incl_Option_Ag_Seq_T (get_PermCell_Inner_T self k) (get_PermCell_Inner_T other k) in r
   
-  function incl_transitive_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom incl_transitive_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T. incl_FMap_PermCell_Inner_T_Ag_Seq_T a b
-      -> incl_FMap_PermCell_Inner_T_Ag_Seq_T b c -> incl_FMap_PermCell_Inner_T_Ag_Seq_T a c
-  
-  function associative_some_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) (ab: t_FMap_PermCell_Inner_T_Ag_Seq_T) (bc: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom associative_some_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T, ab: t_FMap_PermCell_Inner_T_Ag_Seq_T, bc: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
-        = Some ab
-      -> op_FMap_PermCell_Inner_T_Ag_Seq_T b c = Some bc
-      -> op_FMap_PermCell_Inner_T_Ag_Seq_T a bc = op_FMap_PermCell_Inner_T_Ag_Seq_T ab c
-  
-  function associative_none_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) (bc: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom associative_none_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T, bc: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
-        = None -> op_FMap_PermCell_Inner_T_Ag_Seq_T b c = Some bc -> op_FMap_PermCell_Inner_T_Ag_Seq_T a bc = None
-  
-  function incl_op_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (other: t_FMap_PermCell_Inner_T_Ag_Seq_T) (comb: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom incl_op_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, other: t_FMap_PermCell_Inner_T_Ag_Seq_T, comb: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T self other
-        = Some comb -> incl_FMap_PermCell_Inner_T_Ag_Seq_T self comb
+  axiom incl_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, other: t_FMap_PermCell_Inner_T_Ag_Seq_T [incl_FMap_PermCell_Inner_T_Ag_Seq_T self other]. incl_FMap_PermCell_Inner_T_Ag_Seq_T self other
+      = (exists factor: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T self factor = Some other)
   
   predicate rel_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_Option_FMap_PermCell_Inner_T_Ag_Seq_T) (f: t_FMap_PermCell_Inner_T_Ag_Seq_T) =
     match a with
@@ -303,6 +245,22 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone (* <implementat
   function view_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T) : t_FMap_PermCell_Inner_T_Ag_Seq_T
    =
     frag_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T (view_Resource_View_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T self.f0)
+  
+  type tup2_PermCell_Inner_T_Ag_Seq_T = { f0'2: t_PermCell_Inner_T; f1'2: t_Ag_Seq_T }
+  
+  function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T [@inline:trivial] (self: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) (a: tup2_PermCell_Inner_T_Ag_Seq_T) : t_Option_Ag_Seq_T
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T
+  
+  function filter_map_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) : t_FMap_PermCell_Inner_T_Ag_Seq_T
+  
+  axiom filter_map_PermCell_Inner_T_spec:
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T [filter_map_PermCell_Inner_T self f]. forall k: t_PermCell_Inner_T [get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k]. get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k
+        = match get_PermCell_Inner_T self k with
+          | None'0 -> None'0
+          | Some'0 v -> index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T f { f0'2 = k; f1'2 = v }
+          end
   
   function core_Ag_Seq_T (self: t_Ag_Seq_T) : t_Option_Ag_Seq_T = Some'0 self
   
@@ -563,119 +521,60 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone__refines (* <im
     forall x: t_FMap_PermCell_Inner_T_Ag_Seq_T [op_FMap_PermCell_Inner_T_Ag_Seq_T x unit_FMap_PermCell_Inner_T_Ag_Seq_T]. op_FMap_PermCell_Inner_T_Ag_Seq_T x unit_FMap_PermCell_Inner_T_Ag_Seq_T
       = Some'0 x
   
-  function factor_Ag_Seq_T (self: t_Ag_Seq_T) (factor: t_Ag_Seq_T) : t_Option_Ag_Seq_T = op_Ag_Seq_T self factor
+  predicate incl_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = self.f0'0 = other.f0'0
   
-  axiom factor_Ag_Seq_T_spec:
-    forall self: t_Ag_Seq_T, factor: t_Ag_Seq_T [factor_Ag_Seq_T self factor]. match factor_Ag_Seq_T self factor with
-        | Some c -> op_Ag_Seq_T factor c = Some self
-        | None -> forall c: t_Ag_Seq_T. op_Ag_Seq_T factor c <> Some self
-        end
+  axiom incl_Ag_Seq_T_spec:
+    forall self: t_Ag_Seq_T, other: t_Ag_Seq_T [incl_Ag_Seq_T self other]. incl_Ag_Seq_T self other
+      = (exists factor: t_Ag_Seq_T. op_Ag_Seq_T self factor = Some other)
   
-  function factor_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (factor: t_Option_Ag_Seq_T) : t_Option_Option_Ag_Seq_T =
-    match { f0'1 = self; f1'1 = factor } with
-      | {f0'1 = x; f1'1 = None} -> Some'1 x
-      | {f0'1 = None} -> None'1
-      | {f0'1 = Some x; f1'1 = Some y} -> match factor_Ag_Seq_T x y with
-        | Some z -> Some'1 (Some z)
-        | None -> if x = y then Some'1 (None) else None'1
-        end
-      end
+  function incl_transitive_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) : ()
   
-  axiom factor_Option_Ag_Seq_T_spec:
-    forall self: t_Option_Ag_Seq_T, factor: t_Option_Ag_Seq_T [factor_Option_Ag_Seq_T self factor]. match factor_Option_Ag_Seq_T self factor with
-        | Some'1 c -> op_Option_Ag_Seq_T factor c = Some'1 self
-        | None'1 -> forall c: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T factor c <> Some'1 self
-        end
+  axiom incl_transitive_Ag_Seq_T_spec: forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T. incl_Ag_Seq_T a b
+      -> incl_Ag_Seq_T b c -> incl_Ag_Seq_T a c
+  
+  function associative_some_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) (ab: t_Ag_Seq_T) (bc: t_Ag_Seq_T) : ()
+  
+  axiom associative_some_Ag_Seq_T_spec:
+    forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T, ab: t_Ag_Seq_T, bc: t_Ag_Seq_T. op_Ag_Seq_T a b = Some ab
+      -> op_Ag_Seq_T b c = Some bc -> op_Ag_Seq_T a bc = op_Ag_Seq_T ab c
+  
+  function associative_none_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) (bc: t_Ag_Seq_T) : ()
+  
+  axiom associative_none_Ag_Seq_T_spec:
+    forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T, bc: t_Ag_Seq_T. op_Ag_Seq_T a b = None
+      -> op_Ag_Seq_T b c = Some bc -> op_Ag_Seq_T a bc = None
+  
+  function incl_op_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) (comb: t_Ag_Seq_T) : ()
+  
+  axiom incl_op_Ag_Seq_T_spec: forall self: t_Ag_Seq_T, other: t_Ag_Seq_T, comb: t_Ag_Seq_T. op_Ag_Seq_T self other
+        = Some comb -> incl_Ag_Seq_T self comb
+  
+  predicate eq_Ag_Seq_T [@inline:trivial] (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = self = other
+  
+  meta "rewrite_def" predicate eq_Ag_Seq_T
+  
+  axiom eq_Ag_Seq_T_spec: forall self: t_Ag_Seq_T, other: t_Ag_Seq_T [eq_Ag_Seq_T self other]. eq_Ag_Seq_T self other
+      = (self = other)
+  
+  predicate incl_eq_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = eq_Ag_Seq_T self other \/ incl_Ag_Seq_T self other
   
   predicate incl_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (other: t_Option_Ag_Seq_T) =
-    factor_Option_Ag_Seq_T other self <> None'1
+    match { f0'1 = self; f1'1 = other } with
+      | {f0'1 = None} -> true
+      | {f1'1 = None} -> false
+      | {f0'1 = Some x; f1'1 = Some y} -> incl_eq_Ag_Seq_T x y
+      end
   
-  function incl_transitive_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) : ()
-  
-  axiom incl_transitive_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T. incl_Option_Ag_Seq_T a b
-      -> incl_Option_Ag_Seq_T b c -> incl_Option_Ag_Seq_T a c
-  
-  function associative_some_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) (ab: t_Option_Ag_Seq_T) (bc: t_Option_Ag_Seq_T) : ()
-  
-  axiom associative_some_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T, ab: t_Option_Ag_Seq_T, bc: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T a b
-        = Some'1 ab -> op_Option_Ag_Seq_T b c = Some'1 bc -> op_Option_Ag_Seq_T a bc = op_Option_Ag_Seq_T ab c
-  
-  function associative_none_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) (bc: t_Option_Ag_Seq_T) : ()
-  
-  axiom associative_none_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T, bc: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T a b
-        = None'1 -> op_Option_Ag_Seq_T b c = Some'1 bc -> op_Option_Ag_Seq_T a bc = None'1
-  
-  function incl_op_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (other: t_Option_Ag_Seq_T) (comb: t_Option_Ag_Seq_T) : ()
-  
-  axiom incl_op_Option_Ag_Seq_T_spec:
-    forall self: t_Option_Ag_Seq_T, other: t_Option_Ag_Seq_T, comb: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self other
-        = Some'1 comb -> incl_Option_Ag_Seq_T self comb
-  
-  type tup2_PermCell_Inner_T_Ag_Seq_T = { f0'2: t_PermCell_Inner_T; f1'2: t_Ag_Seq_T }
-  
-  function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T [@inline:trivial] (self: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) (a: tup2_PermCell_Inner_T_Ag_Seq_T) : t_Option_Ag_Seq_T
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T
-  
-  function filter_map_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) : t_FMap_PermCell_Inner_T_Ag_Seq_T
-  
-  axiom filter_map_PermCell_Inner_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T [filter_map_PermCell_Inner_T self f]. forall k: t_PermCell_Inner_T [get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k]. get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k
-        = match get_PermCell_Inner_T self k with
-          | None -> None
-          | Some v -> index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T f { f0'2 = k; f1'2 = v }
-          end
-  
-  function factor_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (factor: t_FMap_PermCell_Inner_T_Ag_Seq_T) : t_Option_FMap_PermCell_Inner_T_Ag_Seq_T
-   =
-    if forall k: t_PermCell_Inner_T. incl_Option_Ag_Seq_T (get_PermCell_Inner_T factor k) (get_PermCell_Inner_T self k) then
-      let res = filter_map_PermCell_Inner_T self (fun (__0: tup2_PermCell_Inner_T_Ag_Seq_T) -> let {f0'2 = k; f1'2 = vo} = __0 in match factor_Option_Ag_Seq_T (Some vo) (get_PermCell_Inner_T factor k) with
-        | Some'1 r -> r
-        | None'1 -> None
-        end) in Some'0 res
-    else
-      None'0
-  
-  
-  axiom factor_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, factor: t_FMap_PermCell_Inner_T_Ag_Seq_T [factor_FMap_PermCell_Inner_T_Ag_Seq_T self factor]. match factor_FMap_PermCell_Inner_T_Ag_Seq_T self factor with
-        | Some'0 c -> op_FMap_PermCell_Inner_T_Ag_Seq_T factor c = Some'0 self
-        | None'0 -> forall c: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T factor c
-          <> Some'0 self
-        end
+  axiom incl_Option_Ag_Seq_T_spec:
+    forall self: t_Option_Ag_Seq_T, other: t_Option_Ag_Seq_T [incl_Option_Ag_Seq_T self other]. incl_Option_Ag_Seq_T self other
+      = (exists factor: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self factor = Some'1 other)
   
   predicate incl_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (other: t_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    factor_FMap_PermCell_Inner_T_Ag_Seq_T other self <> None'0
+    let r = forall k: t_PermCell_Inner_T. incl_Option_Ag_Seq_T (get_PermCell_Inner_T self k) (get_PermCell_Inner_T other k) in r
   
-  function incl_transitive_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom incl_transitive_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T. incl_FMap_PermCell_Inner_T_Ag_Seq_T a b
-      -> incl_FMap_PermCell_Inner_T_Ag_Seq_T b c -> incl_FMap_PermCell_Inner_T_Ag_Seq_T a c
-  
-  function associative_some_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) (ab: t_FMap_PermCell_Inner_T_Ag_Seq_T) (bc: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom associative_some_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T, ab: t_FMap_PermCell_Inner_T_Ag_Seq_T, bc: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
-        = Some'0 ab
-      -> op_FMap_PermCell_Inner_T_Ag_Seq_T b c = Some'0 bc
-      -> op_FMap_PermCell_Inner_T_Ag_Seq_T a bc = op_FMap_PermCell_Inner_T_Ag_Seq_T ab c
-  
-  function associative_none_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) (bc: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom associative_none_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T, bc: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
-        = None'0 -> op_FMap_PermCell_Inner_T_Ag_Seq_T b c = Some'0 bc -> op_FMap_PermCell_Inner_T_Ag_Seq_T a bc = None'0
-  
-  function incl_op_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (other: t_FMap_PermCell_Inner_T_Ag_Seq_T) (comb: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom incl_op_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, other: t_FMap_PermCell_Inner_T_Ag_Seq_T, comb: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T self other
-        = Some'0 comb -> incl_FMap_PermCell_Inner_T_Ag_Seq_T self comb
+  axiom incl_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, other: t_FMap_PermCell_Inner_T_Ag_Seq_T [incl_FMap_PermCell_Inner_T_Ag_Seq_T self other]. incl_FMap_PermCell_Inner_T_Ag_Seq_T self other
+      = (exists factor: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T self factor = Some'0 other)
   
   predicate rel_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_Option_FMap_PermCell_Inner_T_Ag_Seq_T) (f: t_FMap_PermCell_Inner_T_Ag_Seq_T) =
     match a with
@@ -980,118 +879,60 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
       = op_FMap_PermCell_Inner_T_Ag_Seq_T b a
   
-  function factor_Ag_Seq_T (self: t_Ag_Seq_T) (factor: t_Ag_Seq_T) : t_Option_Ag_Seq_T = op_Ag_Seq_T self factor
+  predicate incl_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = self.f0'0 = other.f0'0
   
-  axiom factor_Ag_Seq_T_spec:
-    forall self: t_Ag_Seq_T, factor: t_Ag_Seq_T [factor_Ag_Seq_T self factor]. match factor_Ag_Seq_T self factor with
-        | Some'0 c -> op_Ag_Seq_T factor c = Some'0 self
-        | None'0 -> forall c: t_Ag_Seq_T. op_Ag_Seq_T factor c <> Some'0 self
-        end
+  axiom incl_Ag_Seq_T_spec:
+    forall self: t_Ag_Seq_T, other: t_Ag_Seq_T [incl_Ag_Seq_T self other]. incl_Ag_Seq_T self other
+      = (exists factor: t_Ag_Seq_T. op_Ag_Seq_T self factor = Some'0 other)
   
-  function factor_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (factor: t_Option_Ag_Seq_T) : t_Option_Option_Ag_Seq_T =
-    match { f0'1 = self; f1'1 = factor } with
-      | {f0'1 = x; f1'1 = None'0} -> Some'1 x
-      | {f0'1 = None'0} -> None'1
-      | {f0'1 = Some'0 x; f1'1 = Some'0 y} -> match factor_Ag_Seq_T x y with
-        | Some'0 z -> Some'1 (Some'0 z)
-        | None'0 -> if x = y then Some'1 (None'0) else None'1
-        end
-      end
+  function incl_transitive_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) : ()
   
-  axiom factor_Option_Ag_Seq_T_spec:
-    forall self: t_Option_Ag_Seq_T, factor: t_Option_Ag_Seq_T [factor_Option_Ag_Seq_T self factor]. match factor_Option_Ag_Seq_T self factor with
-        | Some'1 c -> op_Option_Ag_Seq_T factor c = Some'1 self
-        | None'1 -> forall c: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T factor c <> Some'1 self
-        end
+  axiom incl_transitive_Ag_Seq_T_spec: forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T. incl_Ag_Seq_T a b
+      -> incl_Ag_Seq_T b c -> incl_Ag_Seq_T a c
+  
+  function associative_some_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) (ab: t_Ag_Seq_T) (bc: t_Ag_Seq_T) : ()
+  
+  axiom associative_some_Ag_Seq_T_spec:
+    forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T, ab: t_Ag_Seq_T, bc: t_Ag_Seq_T. op_Ag_Seq_T a b = Some'0 ab
+      -> op_Ag_Seq_T b c = Some'0 bc -> op_Ag_Seq_T a bc = op_Ag_Seq_T ab c
+  
+  function associative_none_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) (bc: t_Ag_Seq_T) : ()
+  
+  axiom associative_none_Ag_Seq_T_spec:
+    forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T, bc: t_Ag_Seq_T. op_Ag_Seq_T a b = None'0
+      -> op_Ag_Seq_T b c = Some'0 bc -> op_Ag_Seq_T a bc = None'0
+  
+  function incl_op_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) (comb: t_Ag_Seq_T) : ()
+  
+  axiom incl_op_Ag_Seq_T_spec: forall self: t_Ag_Seq_T, other: t_Ag_Seq_T, comb: t_Ag_Seq_T. op_Ag_Seq_T self other
+        = Some'0 comb -> incl_Ag_Seq_T self comb
+  
+  predicate eq_Ag_Seq_T [@inline:trivial] (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = self = other
+  
+  meta "rewrite_def" predicate eq_Ag_Seq_T
+  
+  axiom eq_Ag_Seq_T_spec: forall self: t_Ag_Seq_T, other: t_Ag_Seq_T [eq_Ag_Seq_T self other]. eq_Ag_Seq_T self other
+      = (self = other)
+  
+  predicate incl_eq_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = eq_Ag_Seq_T self other \/ incl_Ag_Seq_T self other
   
   predicate incl_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (other: t_Option_Ag_Seq_T) =
-    factor_Option_Ag_Seq_T other self <> None'1
+    match { f0'1 = self; f1'1 = other } with
+      | {f0'1 = None'0} -> true
+      | {f1'1 = None'0} -> false
+      | {f0'1 = Some'0 x; f1'1 = Some'0 y} -> incl_eq_Ag_Seq_T x y
+      end
   
-  function incl_transitive_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) : ()
-  
-  axiom incl_transitive_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T. incl_Option_Ag_Seq_T a b
-      -> incl_Option_Ag_Seq_T b c -> incl_Option_Ag_Seq_T a c
-  
-  function associative_some_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) (ab: t_Option_Ag_Seq_T) (bc: t_Option_Ag_Seq_T) : ()
-  
-  axiom associative_some_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T, ab: t_Option_Ag_Seq_T, bc: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T a b
-        = Some'1 ab -> op_Option_Ag_Seq_T b c = Some'1 bc -> op_Option_Ag_Seq_T a bc = op_Option_Ag_Seq_T ab c
-  
-  function associative_none_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) (bc: t_Option_Ag_Seq_T) : ()
-  
-  axiom associative_none_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T, bc: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T a b
-        = None'1 -> op_Option_Ag_Seq_T b c = Some'1 bc -> op_Option_Ag_Seq_T a bc = None'1
-  
-  function incl_op_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (other: t_Option_Ag_Seq_T) (comb: t_Option_Ag_Seq_T) : ()
-  
-  axiom incl_op_Option_Ag_Seq_T_spec:
-    forall self: t_Option_Ag_Seq_T, other: t_Option_Ag_Seq_T, comb: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self other
-        = Some'1 comb -> incl_Option_Ag_Seq_T self comb
-  
-  type tup2_PermCell_Inner_T_Ag_Seq_T = { f0'2: t_PermCell_Inner_T; f1'2: t_Ag_Seq_T }
-  
-  function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T [@inline:trivial] (self: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) (a: tup2_PermCell_Inner_T_Ag_Seq_T) : t_Option_Ag_Seq_T
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T
-  
-  function filter_map_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) : t_FMap_PermCell_Inner_T_Ag_Seq_T
-  
-  axiom filter_map_PermCell_Inner_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T [filter_map_PermCell_Inner_T self f]. forall k: t_PermCell_Inner_T [get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k]. get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k
-        = match get_PermCell_Inner_T self k with
-          | None'0 -> None'0
-          | Some'0 v -> index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T f { f0'2 = k; f1'2 = v }
-          end
-  
-  function factor_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (factor: t_FMap_PermCell_Inner_T_Ag_Seq_T) : t_Option_FMap_PermCell_Inner_T_Ag_Seq_T
-   =
-    if forall k: t_PermCell_Inner_T. incl_Option_Ag_Seq_T (get_PermCell_Inner_T factor k) (get_PermCell_Inner_T self k) then
-      let res = filter_map_PermCell_Inner_T self (fun (__0: tup2_PermCell_Inner_T_Ag_Seq_T) -> let {f0'2 = k; f1'2 = vo} = __0 in match factor_Option_Ag_Seq_T (Some'0 vo) (get_PermCell_Inner_T factor k) with
-        | Some'1 r -> r
-        | None'1 -> None'0
-        end) in Some res
-    else
-      None
-  
-  
-  axiom factor_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, factor: t_FMap_PermCell_Inner_T_Ag_Seq_T [factor_FMap_PermCell_Inner_T_Ag_Seq_T self factor]. match factor_FMap_PermCell_Inner_T_Ag_Seq_T self factor with
-        | Some c -> op_FMap_PermCell_Inner_T_Ag_Seq_T factor c = Some self
-        | None -> forall c: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T factor c <> Some self
-        end
+  axiom incl_Option_Ag_Seq_T_spec:
+    forall self: t_Option_Ag_Seq_T, other: t_Option_Ag_Seq_T [incl_Option_Ag_Seq_T self other]. incl_Option_Ag_Seq_T self other
+      = (exists factor: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self factor = Some'1 other)
   
   predicate incl_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (other: t_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    factor_FMap_PermCell_Inner_T_Ag_Seq_T other self <> None
+    let r = forall k: t_PermCell_Inner_T. incl_Option_Ag_Seq_T (get_PermCell_Inner_T self k) (get_PermCell_Inner_T other k) in r
   
-  function incl_transitive_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom incl_transitive_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T. incl_FMap_PermCell_Inner_T_Ag_Seq_T a b
-      -> incl_FMap_PermCell_Inner_T_Ag_Seq_T b c -> incl_FMap_PermCell_Inner_T_Ag_Seq_T a c
-  
-  function associative_some_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) (ab: t_FMap_PermCell_Inner_T_Ag_Seq_T) (bc: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom associative_some_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T, ab: t_FMap_PermCell_Inner_T_Ag_Seq_T, bc: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
-        = Some ab
-      -> op_FMap_PermCell_Inner_T_Ag_Seq_T b c = Some bc
-      -> op_FMap_PermCell_Inner_T_Ag_Seq_T a bc = op_FMap_PermCell_Inner_T_Ag_Seq_T ab c
-  
-  function associative_none_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) (bc: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom associative_none_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T, bc: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
-        = None -> op_FMap_PermCell_Inner_T_Ag_Seq_T b c = Some bc -> op_FMap_PermCell_Inner_T_Ag_Seq_T a bc = None
-  
-  function incl_op_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (other: t_FMap_PermCell_Inner_T_Ag_Seq_T) (comb: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom incl_op_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, other: t_FMap_PermCell_Inner_T_Ag_Seq_T, comb: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T self other
-        = Some comb -> incl_FMap_PermCell_Inner_T_Ag_Seq_T self comb
+  axiom incl_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, other: t_FMap_PermCell_Inner_T_Ag_Seq_T [incl_FMap_PermCell_Inner_T_Ag_Seq_T self other]. incl_FMap_PermCell_Inner_T_Ag_Seq_T self other
+      = (exists factor: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T self factor = Some other)
   
   type t_View_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T
   
@@ -1424,7 +1265,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   axiom inv_axiom'2 [@rewrite]: forall x: t_Inner_T [inv_Inner_T x]. inv_Inner_T x
       = match x with
-        | Direct f0'3 -> inv_Vec_T_Global f0'3
+        | Direct f0'2 -> inv_Vec_T_Global f0'2
         | Link index value next -> inv_T value /\ inv_Rc_PermCell_Inner_T_Global next
         end
   
@@ -1444,8 +1285,8 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       /\ ([@stop_split] [@expl:borrow ensures] result = val_PermCell_Inner_T perm)}
       (! return {result}) ]
   
-  let elim_Direct (_x: t_Inner_T) (return (f0'3: t_Vec_T_Global)) = any
-    [ _k (f0'3: t_Vec_T_Global) -> {Direct f0'3 = _x} (! return {f0'3})
+  let elim_Direct (_x: t_Inner_T) (return (f0'2: t_Vec_T_Global)) = any
+    [ _k (f0'2: t_Vec_T_Global) -> {Direct f0'2 = _x} (! return {f0'2})
     | _chk -> (! {[@expl:elim Direct] match _x with
         | Direct _ -> true
         | _ -> false
@@ -1670,9 +1511,9 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   meta "rewrite_def" predicate inv_ref_Ghost_GhostShared_NonAtomicInvariant_PA_T
   
   type tup3_Ghost_ref_GhostShared_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0 = {
-    f0'3: t_NonAtomicInvariant_PA_T;
-    f1'3: t_Tokens;
-    f2'3: closure0 }
+    f0'2: t_NonAtomicInvariant_PA_T;
+    f1'2: t_Tokens;
+    f2'2: closure0 }
   
   predicate invariant_ref_GhostShared_NonAtomicInvariant_PA_T [@inline:trivial] (self: t_NonAtomicInvariant_PA_T) =
     inv_GhostShared_NonAtomicInvariant_PA_T self
@@ -1705,9 +1546,9 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   meta "rewrite_def" predicate postcondition_deref
   
   type tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0 = {
-    f0'4: t_NonAtomicInvariant_PA_T;
-    f1'4: t_Tokens;
-    f2'4: closure0 }
+    f0'3: t_NonAtomicInvariant_PA_T;
+    f1'3: t_Tokens;
+    f2'3: closure0 }
   
   predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
   
@@ -1736,7 +1577,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   meta "rewrite_def" predicate postcondition_once_closure0
   
   predicate precondition_open (self: ()) (args: tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) =
-    let {f0'4 = self'0; f1'4 = tokens; f2'4 = f} = args in inv_closure0 f
+    let {f0'3 = self'0; f1'3 = tokens; f2'3 = f} = args in inv_closure0 f
     /\ contains tokens (namespace_PA_T self'0)
     /\ (forall t: MutBorrow.t t_PA_T. public_PA_T'0 t.current = public_PA_T self'0
         /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t
@@ -1752,11 +1593,11 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     forall x: t_NonAtomicInvariant_PA_T [new_ref_NonAtomicInvariant_PA_T x]. new_ref_NonAtomicInvariant_PA_T x = x
   
   predicate precondition_open'0 (self: ()) (args: tup3_Ghost_ref_GhostShared_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) =
-    let {f0'3 = self'0; f1'3 = tokens; f2'3 = f} = args in inv_Ghost_ref_GhostShared_NonAtomicInvariant_PA_T self'0
+    let {f0'2 = self'0; f1'2 = tokens; f2'2 = f} = args in inv_Ghost_ref_GhostShared_NonAtomicInvariant_PA_T self'0
     /\ inv_closure0 f
     /\ precondition_deref () self'0
     /\ (forall this: t_NonAtomicInvariant_PA_T. postcondition_deref () self'0 this
-      -> precondition_open () { f0'4 = new_ref_NonAtomicInvariant_PA_T this; f1'4 = tokens; f2'4 = f })
+      -> precondition_open () { f0'3 = new_ref_NonAtomicInvariant_PA_T this; f1'3 = tokens; f2'3 = f })
   
   meta "rewrite_def" predicate precondition_open'0
   
@@ -1784,7 +1625,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       (! return {result}) ]
   
   predicate postcondition_open (self: ()) (args: tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) (result: t_T) =
-    let {f0'4 = self'0; f1'4 = tokens; f2'4 = f} = args in inv_ref_T result
+    let {f0'3 = self'0; f1'3 = tokens; f2'3 = f} = args in inv_ref_T result
     /\ (exists t: MutBorrow.t t_PA_T. public_PA_T'0 t.current = public_PA_T self'0
       /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t /\ postcondition_once_closure0 f t result)
   
@@ -1796,12 +1637,12 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     /\ ([@stop_split] [@expl:open 'f' type invariant] inv_closure0 f)
     /\ ([@stop_split] [@expl:open requires #0] precondition_deref () self)
     /\ ([@stop_split] [@expl:open requires #1] forall this: t_NonAtomicInvariant_PA_T. postcondition_deref () self this
-      -> precondition_open () { f0'4 = new_ref_NonAtomicInvariant_PA_T this; f1'4 = tokens; f2'4 = f })}
+      -> precondition_open () { f0'3 = new_ref_NonAtomicInvariant_PA_T this; f1'3 = tokens; f2'3 = f })}
     any
     [ return (result: t_T) ->
     {[@stop_split] [@expl:open_Ghost_ref_GhostShared_NonAtomicInvariant_PA_T ensures] ([@stop_split] [@expl:open result type invariant] inv_ref_T result)
       /\ ([@stop_split] [@expl:open ensures] exists this: t_NonAtomicInvariant_PA_T. postcondition_deref () self this
-        /\ postcondition_open () { f0'4 = new_ref_NonAtomicInvariant_PA_T this; f1'4 = tokens; f2'4 = f } result)}
+        /\ postcondition_open () { f0'3 = new_ref_NonAtomicInvariant_PA_T this; f1'3 = tokens; f2'3 = f } result)}
       (! return {result}) ]
   
   function new_ref_GhostShared_NonAtomicInvariant_PA_T (x: t_NonAtomicInvariant_PA_T) : t_NonAtomicInvariant_PA_T
@@ -1811,9 +1652,9 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       = x
   
   predicate postcondition_open'0 (self: ()) (args: tup3_Ghost_ref_GhostShared_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) (result: t_T) =
-    let {f0'3 = self'0; f1'3 = tokens; f2'3 = f} = args in inv_ref_T result
+    let {f0'2 = self'0; f1'2 = tokens; f2'2 = f} = args in inv_ref_T result
     /\ (exists this: t_NonAtomicInvariant_PA_T. postcondition_deref () self'0 this
-      /\ postcondition_open () { f0'4 = new_ref_NonAtomicInvariant_PA_T this; f1'4 = tokens; f2'4 = f } result)
+      /\ postcondition_open () { f0'3 = new_ref_NonAtomicInvariant_PA_T this; f1'3 = tokens; f2'3 = f } result)
   
   meta "rewrite_def" predicate postcondition_open'0
   
@@ -1821,15 +1662,15 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     (f: closure0) (return (x: t_T)) =
   {[@stop_split] [@expl:open_ref_Ghost_GhostShared_NonAtomicInvariant_PA_T requires] ([@stop_split] [@expl:open 'self' type invariant] inv_ref_Ghost_GhostShared_NonAtomicInvariant_PA_T self)
     /\ ([@stop_split] [@expl:open 'f' type invariant] inv_closure0 f)
-    /\ ([@stop_split] [@expl:open requires] precondition_open'0 () { f0'3 = new_ref_GhostShared_NonAtomicInvariant_PA_T self;
-                                                                     f1'3 = tokens;
-                                                                     f2'3 = f })}
+    /\ ([@stop_split] [@expl:open requires] precondition_open'0 () { f0'2 = new_ref_GhostShared_NonAtomicInvariant_PA_T self;
+                                                                     f1'2 = tokens;
+                                                                     f2'2 = f })}
     any
     [ return (result: t_T) ->
     {[@stop_split] [@expl:open_ref_Ghost_GhostShared_NonAtomicInvariant_PA_T ensures] ([@stop_split] [@expl:open result type invariant] inv_ref_T result)
-      /\ ([@stop_split] [@expl:open ensures] postcondition_open'0 () { f0'3 = new_ref_GhostShared_NonAtomicInvariant_PA_T self;
-                                                                       f1'3 = tokens;
-                                                                       f2'3 = f } result)}
+      /\ ([@stop_split] [@expl:open ensures] postcondition_open'0 () { f0'2 = new_ref_GhostShared_NonAtomicInvariant_PA_T self;
+                                                                       f1'2 = tokens;
+                                                                       f2'2 = f } result)}
       (! return {result}) ]
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
@@ -2252,119 +2093,60 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
     forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
       = op_FMap_PermCell_Inner_T_Ag_Seq_T b a
   
-  function factor_Ag_Seq_T (self: t_Ag_Seq_T) (factor: t_Ag_Seq_T) : t_Option_Ag_Seq_T = op_Ag_Seq_T self factor
+  predicate incl_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = self.f0'0 = other.f0'0
   
-  axiom factor_Ag_Seq_T_spec:
-    forall self: t_Ag_Seq_T, factor: t_Ag_Seq_T [factor_Ag_Seq_T self factor]. match factor_Ag_Seq_T self factor with
-        | Some c -> op_Ag_Seq_T factor c = Some self
-        | None -> forall c: t_Ag_Seq_T. op_Ag_Seq_T factor c <> Some self
-        end
+  axiom incl_Ag_Seq_T_spec:
+    forall self: t_Ag_Seq_T, other: t_Ag_Seq_T [incl_Ag_Seq_T self other]. incl_Ag_Seq_T self other
+      = (exists factor: t_Ag_Seq_T. op_Ag_Seq_T self factor = Some other)
   
-  function factor_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (factor: t_Option_Ag_Seq_T) : t_Option_Option_Ag_Seq_T =
-    match { f0'1 = self; f1'1 = factor } with
-      | {f0'1 = x; f1'1 = None} -> Some'2 x
-      | {f0'1 = None} -> None'2
-      | {f0'1 = Some x; f1'1 = Some y} -> match factor_Ag_Seq_T x y with
-        | Some z -> Some'2 (Some z)
-        | None -> if x = y then Some'2 (None) else None'2
-        end
-      end
+  function incl_transitive_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) : ()
   
-  axiom factor_Option_Ag_Seq_T_spec:
-    forall self: t_Option_Ag_Seq_T, factor: t_Option_Ag_Seq_T [factor_Option_Ag_Seq_T self factor]. match factor_Option_Ag_Seq_T self factor with
-        | Some'2 c -> op_Option_Ag_Seq_T factor c = Some'2 self
-        | None'2 -> forall c: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T factor c <> Some'2 self
-        end
+  axiom incl_transitive_Ag_Seq_T_spec: forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T. incl_Ag_Seq_T a b
+      -> incl_Ag_Seq_T b c -> incl_Ag_Seq_T a c
+  
+  function associative_some_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) (ab: t_Ag_Seq_T) (bc: t_Ag_Seq_T) : ()
+  
+  axiom associative_some_Ag_Seq_T_spec:
+    forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T, ab: t_Ag_Seq_T, bc: t_Ag_Seq_T. op_Ag_Seq_T a b = Some ab
+      -> op_Ag_Seq_T b c = Some bc -> op_Ag_Seq_T a bc = op_Ag_Seq_T ab c
+  
+  function associative_none_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) (bc: t_Ag_Seq_T) : ()
+  
+  axiom associative_none_Ag_Seq_T_spec:
+    forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T, bc: t_Ag_Seq_T. op_Ag_Seq_T a b = None
+      -> op_Ag_Seq_T b c = Some bc -> op_Ag_Seq_T a bc = None
+  
+  function incl_op_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) (comb: t_Ag_Seq_T) : ()
+  
+  axiom incl_op_Ag_Seq_T_spec: forall self: t_Ag_Seq_T, other: t_Ag_Seq_T, comb: t_Ag_Seq_T. op_Ag_Seq_T self other
+        = Some comb -> incl_Ag_Seq_T self comb
+  
+  predicate eq_Ag_Seq_T [@inline:trivial] (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = self = other
+  
+  meta "rewrite_def" predicate eq_Ag_Seq_T
+  
+  axiom eq_Ag_Seq_T_spec: forall self: t_Ag_Seq_T, other: t_Ag_Seq_T [eq_Ag_Seq_T self other]. eq_Ag_Seq_T self other
+      = (self = other)
+  
+  predicate incl_eq_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = eq_Ag_Seq_T self other \/ incl_Ag_Seq_T self other
   
   predicate incl_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (other: t_Option_Ag_Seq_T) =
-    factor_Option_Ag_Seq_T other self <> None'2
+    match { f0'1 = self; f1'1 = other } with
+      | {f0'1 = None} -> true
+      | {f1'1 = None} -> false
+      | {f0'1 = Some x; f1'1 = Some y} -> incl_eq_Ag_Seq_T x y
+      end
   
-  function incl_transitive_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) : ()
-  
-  axiom incl_transitive_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T. incl_Option_Ag_Seq_T a b
-      -> incl_Option_Ag_Seq_T b c -> incl_Option_Ag_Seq_T a c
-  
-  function associative_some_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) (ab: t_Option_Ag_Seq_T) (bc: t_Option_Ag_Seq_T) : ()
-  
-  axiom associative_some_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T, ab: t_Option_Ag_Seq_T, bc: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T a b
-        = Some'2 ab -> op_Option_Ag_Seq_T b c = Some'2 bc -> op_Option_Ag_Seq_T a bc = op_Option_Ag_Seq_T ab c
-  
-  function associative_none_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) (bc: t_Option_Ag_Seq_T) : ()
-  
-  axiom associative_none_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T, bc: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T a b
-        = None'2 -> op_Option_Ag_Seq_T b c = Some'2 bc -> op_Option_Ag_Seq_T a bc = None'2
-  
-  function incl_op_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (other: t_Option_Ag_Seq_T) (comb: t_Option_Ag_Seq_T) : ()
-  
-  axiom incl_op_Option_Ag_Seq_T_spec:
-    forall self: t_Option_Ag_Seq_T, other: t_Option_Ag_Seq_T, comb: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self other
-        = Some'2 comb -> incl_Option_Ag_Seq_T self comb
-  
-  type tup2_PermCell_Inner_T_Ag_Seq_T = { f0'2: t_PermCell_Inner_T; f1'2: t_Ag_Seq_T }
-  
-  function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T [@inline:trivial] (self: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) (a: tup2_PermCell_Inner_T_Ag_Seq_T) : t_Option_Ag_Seq_T
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T
-  
-  function filter_map_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) : t_FMap_PermCell_Inner_T_Ag_Seq_T
-  
-  axiom filter_map_PermCell_Inner_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T [filter_map_PermCell_Inner_T self f]. forall k: t_PermCell_Inner_T [get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k]. get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k
-        = match get_PermCell_Inner_T self k with
-          | None -> None
-          | Some v -> index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T f { f0'2 = k; f1'2 = v }
-          end
-  
-  function factor_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (factor: t_FMap_PermCell_Inner_T_Ag_Seq_T) : t_Option_FMap_PermCell_Inner_T_Ag_Seq_T
-   =
-    if forall k: t_PermCell_Inner_T. incl_Option_Ag_Seq_T (get_PermCell_Inner_T factor k) (get_PermCell_Inner_T self k) then
-      let res = filter_map_PermCell_Inner_T self (fun (__0: tup2_PermCell_Inner_T_Ag_Seq_T) -> let {f0'2 = k; f1'2 = vo} = __0 in match factor_Option_Ag_Seq_T (Some vo) (get_PermCell_Inner_T factor k) with
-        | Some'2 r -> r
-        | None'2 -> None
-        end) in Some'1 res
-    else
-      None'1
-  
-  
-  axiom factor_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, factor: t_FMap_PermCell_Inner_T_Ag_Seq_T [factor_FMap_PermCell_Inner_T_Ag_Seq_T self factor]. match factor_FMap_PermCell_Inner_T_Ag_Seq_T self factor with
-        | Some'1 c -> op_FMap_PermCell_Inner_T_Ag_Seq_T factor c = Some'1 self
-        | None'1 -> forall c: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T factor c
-          <> Some'1 self
-        end
+  axiom incl_Option_Ag_Seq_T_spec:
+    forall self: t_Option_Ag_Seq_T, other: t_Option_Ag_Seq_T [incl_Option_Ag_Seq_T self other]. incl_Option_Ag_Seq_T self other
+      = (exists factor: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self factor = Some'2 other)
   
   predicate incl_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (other: t_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    factor_FMap_PermCell_Inner_T_Ag_Seq_T other self <> None'1
+    let r = forall k: t_PermCell_Inner_T. incl_Option_Ag_Seq_T (get_PermCell_Inner_T self k) (get_PermCell_Inner_T other k) in r
   
-  function incl_transitive_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom incl_transitive_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T. incl_FMap_PermCell_Inner_T_Ag_Seq_T a b
-      -> incl_FMap_PermCell_Inner_T_Ag_Seq_T b c -> incl_FMap_PermCell_Inner_T_Ag_Seq_T a c
-  
-  function associative_some_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) (ab: t_FMap_PermCell_Inner_T_Ag_Seq_T) (bc: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom associative_some_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T, ab: t_FMap_PermCell_Inner_T_Ag_Seq_T, bc: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
-        = Some'1 ab
-      -> op_FMap_PermCell_Inner_T_Ag_Seq_T b c = Some'1 bc
-      -> op_FMap_PermCell_Inner_T_Ag_Seq_T a bc = op_FMap_PermCell_Inner_T_Ag_Seq_T ab c
-  
-  function associative_none_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) (bc: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom associative_none_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T, bc: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
-        = None'1 -> op_FMap_PermCell_Inner_T_Ag_Seq_T b c = Some'1 bc -> op_FMap_PermCell_Inner_T_Ag_Seq_T a bc = None'1
-  
-  function incl_op_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (other: t_FMap_PermCell_Inner_T_Ag_Seq_T) (comb: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom incl_op_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, other: t_FMap_PermCell_Inner_T_Ag_Seq_T, comb: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T self other
-        = Some'1 comb -> incl_FMap_PermCell_Inner_T_Ag_Seq_T self comb
+  axiom incl_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, other: t_FMap_PermCell_Inner_T_Ag_Seq_T [incl_FMap_PermCell_Inner_T_Ag_Seq_T self other]. incl_FMap_PermCell_Inner_T_Ag_Seq_T self other
+      = (exists factor: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T self factor = Some'1 other)
   
   type t_View_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T
   
@@ -3224,118 +3006,60 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   
   type t_View_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T
   
-  function factor_Ag_Seq_T (self: t_Ag_Seq_T) (factor: t_Ag_Seq_T) : t_Option_Ag_Seq_T = op_Ag_Seq_T self factor
+  predicate incl_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = self.f0 = other.f0
   
-  axiom factor_Ag_Seq_T_spec:
-    forall self: t_Ag_Seq_T, factor: t_Ag_Seq_T [factor_Ag_Seq_T self factor]. match factor_Ag_Seq_T self factor with
-        | Some'0 c -> op_Ag_Seq_T factor c = Some'0 self
-        | None'0 -> forall c: t_Ag_Seq_T. op_Ag_Seq_T factor c <> Some'0 self
-        end
+  axiom incl_Ag_Seq_T_spec:
+    forall self: t_Ag_Seq_T, other: t_Ag_Seq_T [incl_Ag_Seq_T self other]. incl_Ag_Seq_T self other
+      = (exists factor: t_Ag_Seq_T. op_Ag_Seq_T self factor = Some'0 other)
   
-  function factor_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (factor: t_Option_Ag_Seq_T) : t_Option_Option_Ag_Seq_T =
-    match { f0'1 = self; f1'1 = factor } with
-      | {f0'1 = x; f1'1 = None'0} -> Some'1 x
-      | {f0'1 = None'0} -> None'1
-      | {f0'1 = Some'0 x; f1'1 = Some'0 y} -> match factor_Ag_Seq_T x y with
-        | Some'0 z -> Some'1 (Some'0 z)
-        | None'0 -> if x = y then Some'1 (None'0) else None'1
-        end
-      end
+  function incl_transitive_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) : ()
   
-  axiom factor_Option_Ag_Seq_T_spec:
-    forall self: t_Option_Ag_Seq_T, factor: t_Option_Ag_Seq_T [factor_Option_Ag_Seq_T self factor]. match factor_Option_Ag_Seq_T self factor with
-        | Some'1 c -> op_Option_Ag_Seq_T factor c = Some'1 self
-        | None'1 -> forall c: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T factor c <> Some'1 self
-        end
+  axiom incl_transitive_Ag_Seq_T_spec: forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T. incl_Ag_Seq_T a b
+      -> incl_Ag_Seq_T b c -> incl_Ag_Seq_T a c
+  
+  function associative_some_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) (ab: t_Ag_Seq_T) (bc: t_Ag_Seq_T) : ()
+  
+  axiom associative_some_Ag_Seq_T_spec:
+    forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T, ab: t_Ag_Seq_T, bc: t_Ag_Seq_T. op_Ag_Seq_T a b = Some'0 ab
+      -> op_Ag_Seq_T b c = Some'0 bc -> op_Ag_Seq_T a bc = op_Ag_Seq_T ab c
+  
+  function associative_none_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) (bc: t_Ag_Seq_T) : ()
+  
+  axiom associative_none_Ag_Seq_T_spec:
+    forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T, bc: t_Ag_Seq_T. op_Ag_Seq_T a b = None'0
+      -> op_Ag_Seq_T b c = Some'0 bc -> op_Ag_Seq_T a bc = None'0
+  
+  function incl_op_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) (comb: t_Ag_Seq_T) : ()
+  
+  axiom incl_op_Ag_Seq_T_spec: forall self: t_Ag_Seq_T, other: t_Ag_Seq_T, comb: t_Ag_Seq_T. op_Ag_Seq_T self other
+        = Some'0 comb -> incl_Ag_Seq_T self comb
+  
+  predicate eq_Ag_Seq_T [@inline:trivial] (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = self = other
+  
+  meta "rewrite_def" predicate eq_Ag_Seq_T
+  
+  axiom eq_Ag_Seq_T_spec: forall self: t_Ag_Seq_T, other: t_Ag_Seq_T [eq_Ag_Seq_T self other]. eq_Ag_Seq_T self other
+      = (self = other)
+  
+  predicate incl_eq_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = eq_Ag_Seq_T self other \/ incl_Ag_Seq_T self other
   
   predicate incl_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (other: t_Option_Ag_Seq_T) =
-    factor_Option_Ag_Seq_T other self <> None'1
+    match { f0'1 = self; f1'1 = other } with
+      | {f0'1 = None'0} -> true
+      | {f1'1 = None'0} -> false
+      | {f0'1 = Some'0 x; f1'1 = Some'0 y} -> incl_eq_Ag_Seq_T x y
+      end
   
-  function incl_transitive_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) : ()
-  
-  axiom incl_transitive_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T. incl_Option_Ag_Seq_T a b
-      -> incl_Option_Ag_Seq_T b c -> incl_Option_Ag_Seq_T a c
-  
-  function associative_some_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) (ab: t_Option_Ag_Seq_T) (bc: t_Option_Ag_Seq_T) : ()
-  
-  axiom associative_some_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T, ab: t_Option_Ag_Seq_T, bc: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T a b
-        = Some'1 ab -> op_Option_Ag_Seq_T b c = Some'1 bc -> op_Option_Ag_Seq_T a bc = op_Option_Ag_Seq_T ab c
-  
-  function associative_none_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) (bc: t_Option_Ag_Seq_T) : ()
-  
-  axiom associative_none_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T, bc: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T a b
-        = None'1 -> op_Option_Ag_Seq_T b c = Some'1 bc -> op_Option_Ag_Seq_T a bc = None'1
-  
-  function incl_op_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (other: t_Option_Ag_Seq_T) (comb: t_Option_Ag_Seq_T) : ()
-  
-  axiom incl_op_Option_Ag_Seq_T_spec:
-    forall self: t_Option_Ag_Seq_T, other: t_Option_Ag_Seq_T, comb: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self other
-        = Some'1 comb -> incl_Option_Ag_Seq_T self comb
-  
-  type tup2_PermCell_Inner_T_Ag_Seq_T = { f0'3: t_PermCell_Inner_T; f1'3: t_Ag_Seq_T }
-  
-  function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T [@inline:trivial] (self: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) (a: tup2_PermCell_Inner_T_Ag_Seq_T) : t_Option_Ag_Seq_T
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T
-  
-  function filter_map_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) : t_FMap_PermCell_Inner_T_Ag_Seq_T
-  
-  axiom filter_map_PermCell_Inner_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T [filter_map_PermCell_Inner_T self f]. forall k: t_PermCell_Inner_T [get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k]. get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k
-        = match get_PermCell_Inner_T self k with
-          | None'0 -> None'0
-          | Some'0 v -> index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T f { f0'3 = k; f1'3 = v }
-          end
-  
-  function factor_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (factor: t_FMap_PermCell_Inner_T_Ag_Seq_T) : t_Option_FMap_PermCell_Inner_T_Ag_Seq_T
-   =
-    if forall k: t_PermCell_Inner_T. incl_Option_Ag_Seq_T (get_PermCell_Inner_T factor k) (get_PermCell_Inner_T self k) then
-      let res = filter_map_PermCell_Inner_T self (fun (__0: tup2_PermCell_Inner_T_Ag_Seq_T) -> let {f0'3 = k; f1'3 = vo} = __0 in match factor_Option_Ag_Seq_T (Some'0 vo) (get_PermCell_Inner_T factor k) with
-        | Some'1 r -> r
-        | None'1 -> None'0
-        end) in Some res
-    else
-      None
-  
-  
-  axiom factor_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, factor: t_FMap_PermCell_Inner_T_Ag_Seq_T [factor_FMap_PermCell_Inner_T_Ag_Seq_T self factor]. match factor_FMap_PermCell_Inner_T_Ag_Seq_T self factor with
-        | Some c -> op_FMap_PermCell_Inner_T_Ag_Seq_T factor c = Some self
-        | None -> forall c: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T factor c <> Some self
-        end
+  axiom incl_Option_Ag_Seq_T_spec:
+    forall self: t_Option_Ag_Seq_T, other: t_Option_Ag_Seq_T [incl_Option_Ag_Seq_T self other]. incl_Option_Ag_Seq_T self other
+      = (exists factor: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self factor = Some'1 other)
   
   predicate incl_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (other: t_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    factor_FMap_PermCell_Inner_T_Ag_Seq_T other self <> None
+    let r = forall k: t_PermCell_Inner_T. incl_Option_Ag_Seq_T (get_PermCell_Inner_T self k) (get_PermCell_Inner_T other k) in r
   
-  function incl_transitive_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom incl_transitive_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T. incl_FMap_PermCell_Inner_T_Ag_Seq_T a b
-      -> incl_FMap_PermCell_Inner_T_Ag_Seq_T b c -> incl_FMap_PermCell_Inner_T_Ag_Seq_T a c
-  
-  function associative_some_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) (ab: t_FMap_PermCell_Inner_T_Ag_Seq_T) (bc: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom associative_some_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T, ab: t_FMap_PermCell_Inner_T_Ag_Seq_T, bc: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
-        = Some ab
-      -> op_FMap_PermCell_Inner_T_Ag_Seq_T b c = Some bc
-      -> op_FMap_PermCell_Inner_T_Ag_Seq_T a bc = op_FMap_PermCell_Inner_T_Ag_Seq_T ab c
-  
-  function associative_none_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) (bc: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom associative_none_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T, bc: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
-        = None -> op_FMap_PermCell_Inner_T_Ag_Seq_T b c = Some bc -> op_FMap_PermCell_Inner_T_Ag_Seq_T a bc = None
-  
-  function incl_op_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (other: t_FMap_PermCell_Inner_T_Ag_Seq_T) (comb: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom incl_op_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, other: t_FMap_PermCell_Inner_T_Ag_Seq_T, comb: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T self other
-        = Some comb -> incl_FMap_PermCell_Inner_T_Ag_Seq_T self comb
+  axiom incl_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, other: t_FMap_PermCell_Inner_T_Ag_Seq_T [incl_FMap_PermCell_Inner_T_Ag_Seq_T self other]. incl_FMap_PermCell_Inner_T_Ag_Seq_T self other
+      = (exists factor: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T self factor = Some other)
   
   predicate rel_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_Option_FMap_PermCell_Inner_T_Ag_Seq_T) (f: t_FMap_PermCell_Inner_T_Ag_Seq_T) =
     match a with
@@ -3432,16 +3156,16 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
     {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
   
-  type t_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T = { f0'4: t_PermCell_Inner_T; f1'4: t_Ag_Seq_T }
+  type t_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T = { f0'3: t_PermCell_Inner_T; f1'3: t_Ag_Seq_T }
   
   predicate premise_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T) (from_auth: t_FMap_PermCell_Inner_T_Ag_Seq_T) (_3: t_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    get_PermCell_Inner_T from_auth self.f0'4 = None'0
+    get_PermCell_Inner_T from_auth self.f0'3 = None'0
   
   meta "rewrite_def" predicate premise_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T
   
   type tup2_FMap_PermCell_Inner_T_Ag_Seq_T_FMap_PermCell_Inner_T_Ag_Seq_T = {
-    f0'5: t_FMap_PermCell_Inner_T_Ag_Seq_T;
-    f1'5: t_FMap_PermCell_Inner_T_Ag_Seq_T }
+    f0'4: t_FMap_PermCell_Inner_T_Ag_Seq_T;
+    f1'4: t_FMap_PermCell_Inner_T_Ag_Seq_T }
   
   predicate contains_PermCell_Inner_T [@inline:trivial] (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (k: t_PermCell_Inner_T) =
     get_PermCell_Inner_T self k <> None'0
@@ -3459,8 +3183,8 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
       = (if contains_PermCell_Inner_T self k then len_PermCell_Inner_T self else len_PermCell_Inner_T self + 1)
   
   function update_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T) (from_auth: t_FMap_PermCell_Inner_T_Ag_Seq_T) (from_frag: t_FMap_PermCell_Inner_T_Ag_Seq_T) : tup2_FMap_PermCell_Inner_T_Ag_Seq_T_FMap_PermCell_Inner_T_Ag_Seq_T
-   = { f0'5 = insert_PermCell_Inner_T from_auth self.f0'4 self.f1'4;
-       f1'5 = insert_PermCell_Inner_T from_frag self.f0'4 self.f1'4 }
+   = { f0'4 = insert_PermCell_Inner_T from_auth self.f0'3 self.f1'3;
+       f1'4 = insert_PermCell_Inner_T from_frag self.f0'3 self.f1'3 }
   
   meta "rewrite_def" function update_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T
   
@@ -3478,8 +3202,8 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
       /\ ([@stop_split] [@expl:update ensures #1] id_FMap_PermCell_Inner_T_Ag_Seq_T'0 frag.current
         = id_FMap_PermCell_Inner_T_Ag_Seq_T'0 frag.final)
       /\ ([@stop_split] [@expl:update ensures #2] incl_FMap_PermCell_Inner_T_Ag_Seq_T (view_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T frag.current) (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.current))
-      /\ ([@stop_split] [@expl:update ensures #3] { f0'5 = view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.final;
-                                                    f1'5 = view_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T frag.final }
+      /\ ([@stop_split] [@expl:update ensures #3] { f0'4 = view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.final;
+                                                    f1'4 = view_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T frag.final }
       = update_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T upd (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.current) (view_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T frag.current))}
       (! return {result}) ]
   
@@ -3820,7 +3544,7 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
             [ &_26 <- _bor ] [ &_27 <- { _27 with current = _bor.final } ] s14)
       | s14 = deref_mut_Ghost_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T {_26}
           (fun (_x: MutBorrow.t t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T) -> [ &_25 <- _x ] s15)
-      | s15 = [ &_28 <- { f0'4 = ward_PermCell_Inner_T perm; f1'4 = new_ag } ] s16
+      | s15 = [ &_28 <- { f0'3 = ward_PermCell_Inner_T perm; f1'3 = new_ag } ] s16
       | s16 = MutBorrow.borrow_final <t_Authority_FMap_PermCell_Inner_T_Ag_Seq_T> {_22.current} {MutBorrow.get_id _22}
           (fun (_bor: MutBorrow.t t_Authority_FMap_PermCell_Inner_T_Ag_Seq_T) ->
             [ &_21 <- _bor ] -{inv_Authority_FMap_PermCell_Inner_T_Ag_Seq_T _bor.final}-
@@ -5010,119 +4734,60 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
     forall x: t_FMap_PermCell_Inner_T_Ag_Seq_T [op_FMap_PermCell_Inner_T_Ag_Seq_T x unit_FMap_PermCell_Inner_T_Ag_Seq_T]. op_FMap_PermCell_Inner_T_Ag_Seq_T x unit_FMap_PermCell_Inner_T_Ag_Seq_T
       = Some'0 x
   
-  function factor_Ag_Seq_T (self: t_Ag_Seq_T) (factor: t_Ag_Seq_T) : t_Option_Ag_Seq_T = op_Ag_Seq_T self factor
+  predicate incl_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = self.f0'0 = other.f0'0
   
-  axiom factor_Ag_Seq_T_spec:
-    forall self: t_Ag_Seq_T, factor: t_Ag_Seq_T [factor_Ag_Seq_T self factor]. match factor_Ag_Seq_T self factor with
-        | Some c -> op_Ag_Seq_T factor c = Some self
-        | None -> forall c: t_Ag_Seq_T. op_Ag_Seq_T factor c <> Some self
-        end
+  axiom incl_Ag_Seq_T_spec:
+    forall self: t_Ag_Seq_T, other: t_Ag_Seq_T [incl_Ag_Seq_T self other]. incl_Ag_Seq_T self other
+      = (exists factor: t_Ag_Seq_T. op_Ag_Seq_T self factor = Some other)
   
-  function factor_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (factor: t_Option_Ag_Seq_T) : t_Option_Option_Ag_Seq_T =
-    match { f0'1 = self; f1'1 = factor } with
-      | {f0'1 = x; f1'1 = None} -> Some'1 x
-      | {f0'1 = None} -> None'1
-      | {f0'1 = Some x; f1'1 = Some y} -> match factor_Ag_Seq_T x y with
-        | Some z -> Some'1 (Some z)
-        | None -> if x = y then Some'1 (None) else None'1
-        end
-      end
+  function incl_transitive_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) : ()
   
-  axiom factor_Option_Ag_Seq_T_spec:
-    forall self: t_Option_Ag_Seq_T, factor: t_Option_Ag_Seq_T [factor_Option_Ag_Seq_T self factor]. match factor_Option_Ag_Seq_T self factor with
-        | Some'1 c -> op_Option_Ag_Seq_T factor c = Some'1 self
-        | None'1 -> forall c: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T factor c <> Some'1 self
-        end
+  axiom incl_transitive_Ag_Seq_T_spec: forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T. incl_Ag_Seq_T a b
+      -> incl_Ag_Seq_T b c -> incl_Ag_Seq_T a c
+  
+  function associative_some_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) (ab: t_Ag_Seq_T) (bc: t_Ag_Seq_T) : ()
+  
+  axiom associative_some_Ag_Seq_T_spec:
+    forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T, ab: t_Ag_Seq_T, bc: t_Ag_Seq_T. op_Ag_Seq_T a b = Some ab
+      -> op_Ag_Seq_T b c = Some bc -> op_Ag_Seq_T a bc = op_Ag_Seq_T ab c
+  
+  function associative_none_Ag_Seq_T (a: t_Ag_Seq_T) (b: t_Ag_Seq_T) (c: t_Ag_Seq_T) (bc: t_Ag_Seq_T) : ()
+  
+  axiom associative_none_Ag_Seq_T_spec:
+    forall a: t_Ag_Seq_T, b: t_Ag_Seq_T, c: t_Ag_Seq_T, bc: t_Ag_Seq_T. op_Ag_Seq_T a b = None
+      -> op_Ag_Seq_T b c = Some bc -> op_Ag_Seq_T a bc = None
+  
+  function incl_op_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) (comb: t_Ag_Seq_T) : ()
+  
+  axiom incl_op_Ag_Seq_T_spec: forall self: t_Ag_Seq_T, other: t_Ag_Seq_T, comb: t_Ag_Seq_T. op_Ag_Seq_T self other
+        = Some comb -> incl_Ag_Seq_T self comb
+  
+  predicate eq_Ag_Seq_T [@inline:trivial] (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = self = other
+  
+  meta "rewrite_def" predicate eq_Ag_Seq_T
+  
+  axiom eq_Ag_Seq_T_spec: forall self: t_Ag_Seq_T, other: t_Ag_Seq_T [eq_Ag_Seq_T self other]. eq_Ag_Seq_T self other
+      = (self = other)
+  
+  predicate incl_eq_Ag_Seq_T (self: t_Ag_Seq_T) (other: t_Ag_Seq_T) = eq_Ag_Seq_T self other \/ incl_Ag_Seq_T self other
   
   predicate incl_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (other: t_Option_Ag_Seq_T) =
-    factor_Option_Ag_Seq_T other self <> None'1
+    match { f0'1 = self; f1'1 = other } with
+      | {f0'1 = None} -> true
+      | {f1'1 = None} -> false
+      | {f0'1 = Some x; f1'1 = Some y} -> incl_eq_Ag_Seq_T x y
+      end
   
-  function incl_transitive_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) : ()
-  
-  axiom incl_transitive_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T. incl_Option_Ag_Seq_T a b
-      -> incl_Option_Ag_Seq_T b c -> incl_Option_Ag_Seq_T a c
-  
-  function associative_some_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) (ab: t_Option_Ag_Seq_T) (bc: t_Option_Ag_Seq_T) : ()
-  
-  axiom associative_some_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T, ab: t_Option_Ag_Seq_T, bc: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T a b
-        = Some'1 ab -> op_Option_Ag_Seq_T b c = Some'1 bc -> op_Option_Ag_Seq_T a bc = op_Option_Ag_Seq_T ab c
-  
-  function associative_none_Option_Ag_Seq_T (a: t_Option_Ag_Seq_T) (b: t_Option_Ag_Seq_T) (c: t_Option_Ag_Seq_T) (bc: t_Option_Ag_Seq_T) : ()
-  
-  axiom associative_none_Option_Ag_Seq_T_spec:
-    forall a: t_Option_Ag_Seq_T, b: t_Option_Ag_Seq_T, c: t_Option_Ag_Seq_T, bc: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T a b
-        = None'1 -> op_Option_Ag_Seq_T b c = Some'1 bc -> op_Option_Ag_Seq_T a bc = None'1
-  
-  function incl_op_Option_Ag_Seq_T (self: t_Option_Ag_Seq_T) (other: t_Option_Ag_Seq_T) (comb: t_Option_Ag_Seq_T) : ()
-  
-  axiom incl_op_Option_Ag_Seq_T_spec:
-    forall self: t_Option_Ag_Seq_T, other: t_Option_Ag_Seq_T, comb: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self other
-        = Some'1 comb -> incl_Option_Ag_Seq_T self comb
-  
-  type tup2_PermCell_Inner_T_Ag_Seq_T = { f0'2: t_PermCell_Inner_T; f1'2: t_Ag_Seq_T }
-  
-  function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T [@inline:trivial] (self: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) (a: tup2_PermCell_Inner_T_Ag_Seq_T) : t_Option_Ag_Seq_T
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T
-  
-  function filter_map_PermCell_Inner_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) : t_FMap_PermCell_Inner_T_Ag_Seq_T
-  
-  axiom filter_map_PermCell_Inner_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, f: Map.map tup2_PermCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T [filter_map_PermCell_Inner_T self f]. forall k: t_PermCell_Inner_T [get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k]. get_PermCell_Inner_T (filter_map_PermCell_Inner_T self f) k
-        = match get_PermCell_Inner_T self k with
-          | None -> None
-          | Some v -> index_Mapping_tup2_PermCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T f { f0'2 = k; f1'2 = v }
-          end
-  
-  function factor_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (factor: t_FMap_PermCell_Inner_T_Ag_Seq_T) : t_Option_FMap_PermCell_Inner_T_Ag_Seq_T
-   =
-    if forall k: t_PermCell_Inner_T. incl_Option_Ag_Seq_T (get_PermCell_Inner_T factor k) (get_PermCell_Inner_T self k) then
-      let res = filter_map_PermCell_Inner_T self (fun (__0: tup2_PermCell_Inner_T_Ag_Seq_T) -> let {f0'2 = k; f1'2 = vo} = __0 in match factor_Option_Ag_Seq_T (Some vo) (get_PermCell_Inner_T factor k) with
-        | Some'1 r -> r
-        | None'1 -> None
-        end) in Some'0 res
-    else
-      None'0
-  
-  
-  axiom factor_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, factor: t_FMap_PermCell_Inner_T_Ag_Seq_T [factor_FMap_PermCell_Inner_T_Ag_Seq_T self factor]. match factor_FMap_PermCell_Inner_T_Ag_Seq_T self factor with
-        | Some'0 c -> op_FMap_PermCell_Inner_T_Ag_Seq_T factor c = Some'0 self
-        | None'0 -> forall c: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T factor c
-          <> Some'0 self
-        end
+  axiom incl_Option_Ag_Seq_T_spec:
+    forall self: t_Option_Ag_Seq_T, other: t_Option_Ag_Seq_T [incl_Option_Ag_Seq_T self other]. incl_Option_Ag_Seq_T self other
+      = (exists factor: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self factor = Some'1 other)
   
   predicate incl_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (other: t_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    factor_FMap_PermCell_Inner_T_Ag_Seq_T other self <> None'0
+    let r = forall k: t_PermCell_Inner_T. incl_Option_Ag_Seq_T (get_PermCell_Inner_T self k) (get_PermCell_Inner_T other k) in r
   
-  function incl_transitive_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom incl_transitive_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T. incl_FMap_PermCell_Inner_T_Ag_Seq_T a b
-      -> incl_FMap_PermCell_Inner_T_Ag_Seq_T b c -> incl_FMap_PermCell_Inner_T_Ag_Seq_T a c
-  
-  function associative_some_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) (ab: t_FMap_PermCell_Inner_T_Ag_Seq_T) (bc: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom associative_some_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T, ab: t_FMap_PermCell_Inner_T_Ag_Seq_T, bc: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
-        = Some'0 ab
-      -> op_FMap_PermCell_Inner_T_Ag_Seq_T b c = Some'0 bc
-      -> op_FMap_PermCell_Inner_T_Ag_Seq_T a bc = op_FMap_PermCell_Inner_T_Ag_Seq_T ab c
-  
-  function associative_none_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_FMap_PermCell_Inner_T_Ag_Seq_T) (b: t_FMap_PermCell_Inner_T_Ag_Seq_T) (c: t_FMap_PermCell_Inner_T_Ag_Seq_T) (bc: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom associative_none_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall a: t_FMap_PermCell_Inner_T_Ag_Seq_T, b: t_FMap_PermCell_Inner_T_Ag_Seq_T, c: t_FMap_PermCell_Inner_T_Ag_Seq_T, bc: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T a b
-        = None'0 -> op_FMap_PermCell_Inner_T_Ag_Seq_T b c = Some'0 bc -> op_FMap_PermCell_Inner_T_Ag_Seq_T a bc = None'0
-  
-  function incl_op_FMap_PermCell_Inner_T_Ag_Seq_T (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (other: t_FMap_PermCell_Inner_T_Ag_Seq_T) (comb: t_FMap_PermCell_Inner_T_Ag_Seq_T) : ()
-  
-  axiom incl_op_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
-    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, other: t_FMap_PermCell_Inner_T_Ag_Seq_T, comb: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T self other
-        = Some'0 comb -> incl_FMap_PermCell_Inner_T_Ag_Seq_T self comb
+  axiom incl_FMap_PermCell_Inner_T_Ag_Seq_T_spec:
+    forall self: t_FMap_PermCell_Inner_T_Ag_Seq_T, other: t_FMap_PermCell_Inner_T_Ag_Seq_T [incl_FMap_PermCell_Inner_T_Ag_Seq_T self other]. incl_FMap_PermCell_Inner_T_Ag_Seq_T self other
+      = (exists factor: t_FMap_PermCell_Inner_T_Ag_Seq_T. op_FMap_PermCell_Inner_T_Ag_Seq_T self factor = Some'0 other)
   
   predicate rel_AuthViewRel_FMap_PermCell_Inner_T_Ag_Seq_T (a: t_Option_FMap_PermCell_Inner_T_Ag_Seq_T) (f: t_FMap_PermCell_Inner_T_Ag_Seq_T) =
     match a with
@@ -5198,7 +4863,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   type t_Perm_PermCell_Inner_T
   
-  type tup2_PermCell_Inner_T_Ghost_Perm_PermCell_Inner_T = { f0'3: t_PermCell_Inner_T; f1'3: t_Perm_PermCell_Inner_T }
+  type tup2_PermCell_Inner_T_Ghost_Perm_PermCell_Inner_T = { f0'2: t_PermCell_Inner_T; f1'2: t_Perm_PermCell_Inner_T }
   
   predicate inv_T (_1: t_T)
   
@@ -5236,7 +4901,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   axiom inv_axiom'0 [@rewrite]: forall x: t_Inner_T [inv_Inner_T x]. inv_Inner_T x
       = match x with
-        | Direct f0'4 -> inv_Vec_T_Global f0'4
+        | Direct f0'3 -> inv_Vec_T_Global f0'3
         | Link index value next -> inv_T value /\ inv_Rc_PermCell_Inner_T_Global next
         end
   
@@ -5248,9 +4913,9 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   {[@stop_split] [@expl:new 'value' type invariant] inv_Inner_T value}
     any
     [ return (result: tup2_PermCell_Inner_T_Ghost_Perm_PermCell_Inner_T) ->
-    {[@stop_split] [@expl:new_Inner_T ensures] ([@stop_split] [@expl:new ensures #0] result.f0'3
-        = ward_PermCell_Inner_T result.f1'3)
-      /\ ([@stop_split] [@expl:new ensures #1] val_PermCell_Inner_T result.f1'3 = value)}
+    {[@stop_split] [@expl:new_Inner_T ensures] ([@stop_split] [@expl:new ensures #0] result.f0'2
+        = ward_PermCell_Inner_T result.f1'2)
+      /\ ([@stop_split] [@expl:new ensures #1] val_PermCell_Inner_T result.f1'2 = value)}
       (! return {result}) ]
   
   type t_FMap_Snapshot_PermCell_Inner_T_Perm_PermCell_Inner_T
@@ -5450,8 +5115,8 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   meta "rewrite_def" predicate resolve_refmut_refmut_PA_T
   
-  let elim_Some (_x: t_Option_refmut_Perm_PermCell_Inner_T) (return (f0'4: MutBorrow.t t_Perm_PermCell_Inner_T)) = any
-    [ _k (f0'4: MutBorrow.t t_Perm_PermCell_Inner_T) -> {Some'2 f0'4 = _x} (! return {f0'4})
+  let elim_Some (_x: t_Option_refmut_Perm_PermCell_Inner_T) (return (f0'3: MutBorrow.t t_Perm_PermCell_Inner_T)) = any
+    [ _k (f0'3: MutBorrow.t t_Perm_PermCell_Inner_T) -> {Some'2 f0'3 = _x} (! return {f0'3})
     | _chk -> (! {[@expl:elim Some] match _x with
         | Some'2 _ -> true
         | _ -> false
@@ -5518,7 +5183,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       /\ id_FMap_PermCell_Inner_T_Ag_Seq_T'0 result = id}
       (! return {result}) ]
   
-  type t_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T = { f0'4: t_PermCell_Inner_T; f1'4: t_Ag_Seq_T }
+  type t_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T = { f0'3: t_PermCell_Inner_T; f1'3: t_Ag_Seq_T }
   
   predicate invariant_refmut_Authority_FMap_PermCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: MutBorrow.t t_Authority_FMap_PermCell_Inner_T_Ag_Seq_T) =
     inv_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.current /\ inv_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.final
@@ -5531,13 +5196,13 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   meta "rewrite_def" predicate inv_refmut_Authority_FMap_PermCell_Inner_T_Ag_Seq_T
   
   predicate premise_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T) (from_auth: t_FMap_PermCell_Inner_T_Ag_Seq_T) (_3: t_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    get_PermCell_Inner_T from_auth self.f0'4 = None
+    get_PermCell_Inner_T from_auth self.f0'3 = None
   
   meta "rewrite_def" predicate premise_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T
   
   type tup2_FMap_PermCell_Inner_T_Ag_Seq_T_FMap_PermCell_Inner_T_Ag_Seq_T = {
-    f0'5: t_FMap_PermCell_Inner_T_Ag_Seq_T;
-    f1'5: t_FMap_PermCell_Inner_T_Ag_Seq_T }
+    f0'4: t_FMap_PermCell_Inner_T_Ag_Seq_T;
+    f1'4: t_FMap_PermCell_Inner_T_Ag_Seq_T }
   
   predicate contains_PermCell_Inner_T [@inline:trivial] (self: t_FMap_PermCell_Inner_T_Ag_Seq_T) (k: t_PermCell_Inner_T) =
     get_PermCell_Inner_T self k <> None
@@ -5555,8 +5220,8 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       = (if contains_PermCell_Inner_T self k then len_PermCell_Inner_T self else len_PermCell_Inner_T self + 1)
   
   function update_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T) (from_auth: t_FMap_PermCell_Inner_T_Ag_Seq_T) (from_frag: t_FMap_PermCell_Inner_T_Ag_Seq_T) : tup2_FMap_PermCell_Inner_T_Ag_Seq_T_FMap_PermCell_Inner_T_Ag_Seq_T
-   = { f0'5 = insert_PermCell_Inner_T from_auth self.f0'4 self.f1'4;
-       f1'5 = insert_PermCell_Inner_T from_frag self.f0'4 self.f1'4 }
+   = { f0'4 = insert_PermCell_Inner_T from_auth self.f0'3 self.f1'3;
+       f1'4 = insert_PermCell_Inner_T from_frag self.f0'3 self.f1'3 }
   
   meta "rewrite_def" function update_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T
   
@@ -5574,8 +5239,8 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       /\ ([@stop_split] [@expl:update ensures #1] id_FMap_PermCell_Inner_T_Ag_Seq_T'0 frag'0.current
         = id_FMap_PermCell_Inner_T_Ag_Seq_T'0 frag'0.final)
       /\ ([@stop_split] [@expl:update ensures #2] incl_FMap_PermCell_Inner_T_Ag_Seq_T (view_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T frag'0.current) (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.current))
-      /\ ([@stop_split] [@expl:update ensures #3] { f0'5 = view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.final;
-                                                    f1'5 = view_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T frag'0.final }
+      /\ ([@stop_split] [@expl:update ensures #3] { f0'4 = view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.final;
+                                                    f1'4 = view_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T frag'0.final }
       = update_FMapInsertLocalUpdate_PermCell_Inner_T_Ag_Seq_T upd (view_Authority_FMap_PermCell_Inner_T_Ag_Seq_T self.current) (view_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T frag'0.current))}
       (! return {result}) ]
   
@@ -5750,7 +5415,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       | s18 = MutBorrow.borrow_mut <t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T> {frag'0}
           (fun (_bor: MutBorrow.t t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T) ->
             [ &_57 <- _bor ] [ &frag'0 <- _bor.final ] s19)
-      | s19 = [ &_58 <- { f0'4 = self.c1; f1'4 = self.c3 } ] s20
+      | s19 = [ &_58 <- { f0'3 = self.c1; f1'3 = self.c3 } ] s20
       | s20 = MutBorrow.borrow_mut <t_Authority_FMap_PermCell_Inner_T_Ag_Seq_T> {_54.current.current.auth}
           (fun (_bor: MutBorrow.t t_Authority_FMap_PermCell_Inner_T_Ag_Seq_T) ->
             [ &_53 <- _bor ] -{inv_Authority_FMap_PermCell_Inner_T_Ag_Seq_T _bor.final}-
@@ -5824,9 +5489,9 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   meta "rewrite_def" predicate inv_ref_Ghost_GhostShared_NonAtomicInvariant_PA_T
   
   type tup3_Ghost_ref_GhostShared_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0 = {
-    f0'6: t_NonAtomicInvariant_PA_T;
-    f1'6: t_Tokens;
-    f2'6: closure0 }
+    f0'5: t_NonAtomicInvariant_PA_T;
+    f1'5: t_Tokens;
+    f2'5: closure0 }
   
   predicate invariant_ref_GhostShared_NonAtomicInvariant_PA_T [@inline:trivial] (self: t_NonAtomicInvariant_PA_T) =
     inv_GhostShared_NonAtomicInvariant_PA_T self
@@ -5859,9 +5524,9 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   meta "rewrite_def" predicate postcondition_deref
   
   type tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0 = {
-    f0'7: t_NonAtomicInvariant_PA_T;
-    f1'7: t_Tokens;
-    f2'7: closure0 }
+    f0'6: t_NonAtomicInvariant_PA_T;
+    f1'6: t_Tokens;
+    f2'6: closure0 }
   
   predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
   
@@ -5925,7 +5590,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   meta "rewrite_def" function fin_Ghost_refmut_PA_T
   
   predicate precondition_open (self: ()) (args: tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) =
-    let {f0'7 = self'0; f1'7 = tokens; f2'7 = f} = args in inv_closure0 f
+    let {f0'6 = self'0; f1'6 = tokens; f2'6 = f} = args in inv_closure0 f
     /\ contains tokens (namespace_PA_T self'0)
     /\ (forall t: MutBorrow.t t_PA_T. public_PA_T'0 t.current = public_PA_T self'0
         /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t
@@ -5941,11 +5606,11 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
     forall x: t_NonAtomicInvariant_PA_T [new_ref_NonAtomicInvariant_PA_T x]. new_ref_NonAtomicInvariant_PA_T x = x
   
   predicate precondition_open'0 (self: ()) (args: tup3_Ghost_ref_GhostShared_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) =
-    let {f0'6 = self'0; f1'6 = tokens; f2'6 = f} = args in inv_Ghost_ref_GhostShared_NonAtomicInvariant_PA_T self'0
+    let {f0'5 = self'0; f1'5 = tokens; f2'5 = f} = args in inv_Ghost_ref_GhostShared_NonAtomicInvariant_PA_T self'0
     /\ inv_closure0 f
     /\ precondition_deref () self'0
     /\ (forall this: t_NonAtomicInvariant_PA_T. postcondition_deref () self'0 this
-      -> precondition_open () { f0'7 = new_ref_NonAtomicInvariant_PA_T this; f1'7 = tokens; f2'7 = f })
+      -> precondition_open () { f0'6 = new_ref_NonAtomicInvariant_PA_T this; f1'6 = tokens; f2'6 = f })
   
   meta "rewrite_def" predicate precondition_open'0
   
@@ -5972,7 +5637,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       (! return {result}) ]
   
   predicate postcondition_open (self: ()) (args: tup3_Ghost_ref_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) (result: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    let {f0'7 = self'0; f1'7 = tokens; f2'7 = f} = args in exists t: MutBorrow.t t_PA_T. public_PA_T'0 t.current
+    let {f0'6 = self'0; f1'6 = tokens; f2'6 = f} = args in exists t: MutBorrow.t t_PA_T. public_PA_T'0 t.current
         = public_PA_T self'0
       /\ protocol_PA_T t.current /\ inv_Ghost_refmut_PA_T t /\ postcondition_once_closure0 f t result
   
@@ -5984,11 +5649,11 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
     /\ ([@stop_split] [@expl:open 'f' type invariant] inv_closure0 f)
     /\ ([@stop_split] [@expl:open requires #0] precondition_deref () self)
     /\ ([@stop_split] [@expl:open requires #1] forall this: t_NonAtomicInvariant_PA_T. postcondition_deref () self this
-      -> precondition_open () { f0'7 = new_ref_NonAtomicInvariant_PA_T this; f1'7 = tokens; f2'7 = f })}
+      -> precondition_open () { f0'6 = new_ref_NonAtomicInvariant_PA_T this; f1'6 = tokens; f2'6 = f })}
     any
     [ return (result: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T) ->
     {[@stop_split] [@expl:open ensures] exists this: t_NonAtomicInvariant_PA_T. postcondition_deref () self this
-        /\ postcondition_open () { f0'7 = new_ref_NonAtomicInvariant_PA_T this; f1'7 = tokens; f2'7 = f } result}
+        /\ postcondition_open () { f0'6 = new_ref_NonAtomicInvariant_PA_T this; f1'6 = tokens; f2'6 = f } result}
       (! return {result}) ]
   
   function new_ref_GhostShared_NonAtomicInvariant_PA_T (x: t_NonAtomicInvariant_PA_T) : t_NonAtomicInvariant_PA_T
@@ -5998,8 +5663,8 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       = x
   
   predicate postcondition_open'0 (self: ()) (args: tup3_Ghost_ref_GhostShared_NonAtomicInvariant_PA_T_Ghost_Tokens_closure0) (result: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T) =
-    let {f0'6 = self'0; f1'6 = tokens; f2'6 = f} = args in exists this: t_NonAtomicInvariant_PA_T. postcondition_deref () self'0 this
-      /\ postcondition_open () { f0'7 = new_ref_NonAtomicInvariant_PA_T this; f1'7 = tokens; f2'7 = f } result
+    let {f0'5 = self'0; f1'5 = tokens; f2'5 = f} = args in exists this: t_NonAtomicInvariant_PA_T. postcondition_deref () self'0 this
+      /\ postcondition_open () { f0'6 = new_ref_NonAtomicInvariant_PA_T this; f1'6 = tokens; f2'6 = f } result
   
   meta "rewrite_def" predicate postcondition_open'0
   
@@ -6007,14 +5672,14 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
     (f: closure0) (return (x: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T)) =
   {[@stop_split] [@expl:open_ref_Ghost_GhostShared_NonAtomicInvariant_PA_T requires] ([@stop_split] [@expl:open 'self' type invariant] inv_ref_Ghost_GhostShared_NonAtomicInvariant_PA_T self)
     /\ ([@stop_split] [@expl:open 'f' type invariant] inv_closure0 f)
-    /\ ([@stop_split] [@expl:open requires] precondition_open'0 () { f0'6 = new_ref_GhostShared_NonAtomicInvariant_PA_T self;
-                                                                     f1'6 = tokens;
-                                                                     f2'6 = f })}
+    /\ ([@stop_split] [@expl:open requires] precondition_open'0 () { f0'5 = new_ref_GhostShared_NonAtomicInvariant_PA_T self;
+                                                                     f1'5 = tokens;
+                                                                     f2'5 = f })}
     any
     [ return (result: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T) ->
-    {[@stop_split] [@expl:open ensures] postcondition_open'0 () { f0'6 = new_ref_GhostShared_NonAtomicInvariant_PA_T self;
-                                                                  f1'6 = tokens;
-                                                                  f2'6 = f } result}
+    {[@stop_split] [@expl:open ensures] postcondition_open'0 () { f0'5 = new_ref_GhostShared_NonAtomicInvariant_PA_T self;
+                                                                  f1'5 = tokens;
+                                                                  f2'5 = f } result}
       (! return {result}) ]
   
   let new_PermCell_Inner_T (value: t_PermCell_Inner_T) (return (x: t_Rc_PermCell_Inner_T_Global)) = any
@@ -6040,8 +5705,8 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
           (fun (_x: t_Rc_PermCell_Inner_T_Global) -> [ &_25 <- _x ] s2)
       | s2 = [ &_22 <- Link index value _25 ] s3
       | s3 = new_Inner_T {_22} (fun (_x: tup2_PermCell_Inner_T_Ghost_Perm_PermCell_Inner_T) -> [ &_21 <- _x ] s4)
-      | s4 = [ &permcell'0 <- _21.f0'3 ] s5
-      | s5 = [ &perm <- _21.f1'3 ] s6
+      | s4 = [ &permcell'0 <- _21.f0'2 ] s5
+      | s5 = [ &perm <- _21.f1'2 ] s6
       | s6 = [ &_30 <- { c0 = self; c1 = permcell'0; c2 = perm; c3 = new_ag } ] s7
       | s7 = open_ref_Ghost_GhostShared_NonAtomicInvariant_PA_T {self.inv} {tokens} {_30}
           (fun (_x: t_Fragment_FMap_PermCell_Inner_T_Ag_Seq_T) -> [ &frag'0 <- _x ] s8)

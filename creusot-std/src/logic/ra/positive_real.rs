@@ -9,18 +9,13 @@ impl RA for PositiveReal {
         Some(self + other)
     }
 
-    #[logic(open, inline)]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => forall<c: Self> factor.op(c) != Some(self),
-    })]
-    fn factor(self, factor: Self) -> Option<Self> {
-        let _ = PositiveReal::ext_eq;
-        if self.to_real() > factor.to_real() {
-            Some(PositiveReal::new(self.to_real() - factor.to_real()))
-        } else {
-            None
-        }
+    #[logic(open)]
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
+        let _ = Self::ext_eq;
+        let r = self.to_real() < other.to_real();
+        proof_assert!(r ==> self.op(Self::new(other.to_real() - self.to_real())) == Some(other));
+        r
     }
 
     #[logic(open, inline)]

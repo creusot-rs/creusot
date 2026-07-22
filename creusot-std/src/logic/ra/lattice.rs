@@ -16,13 +16,10 @@ impl<T: SemiLattice> RA for T {
         Some(self.join(other))
     }
 
-    #[logic]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => forall<c: Self> factor.op(c) != Some(self),
-    })]
-    fn factor(self, factor: Self) -> Option<Self> {
-        if factor <= self { Some(self) } else { None }
+    #[logic(open)]
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
+        self <= other
     }
 
     #[logic(law)]

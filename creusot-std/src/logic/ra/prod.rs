@@ -19,15 +19,9 @@ impl<$($t : RA),*> RA for ($($t),*) {
     }
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => forall<c: Self> factor.op(c) != Some(self),
-    })]
-    fn factor(self, factor: Self) -> Option<Self> {
-        match ($(self.$n.factor(factor.$n)),*) {
-            ($(Some($v)),*) => Some(($($v),*)),
-            _ => None,
-        }
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
+        $(self.$n.incl(other.$n))&&*
     }
 
     #[logic(open, inline)]

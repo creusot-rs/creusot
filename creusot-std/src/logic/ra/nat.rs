@@ -12,18 +12,13 @@ impl RA for Nat {
         Some(self + other)
     }
 
-    #[logic(open, inline)]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => forall<c: Self> factor.op(c) != Some(self),
-    })]
-    fn factor(self, factor: Self) -> Option<Self> {
-        let _ = Nat::ext_eq;
-        if self.to_int() >= factor.to_int() {
-            Some(Nat::new(self.to_int() - factor.to_int()))
-        } else {
-            None
-        }
+    #[logic(open)]
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
+        let _ = Self::ext_eq;
+        let r = self.to_int() <= other.to_int();
+        proof_assert!(r ==> self.op(Self::new(other.to_int() - self.to_int())) == Some(other));
+        r
     }
 
     #[logic(open, inline)]

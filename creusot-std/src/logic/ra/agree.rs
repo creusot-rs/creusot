@@ -13,12 +13,9 @@ impl<T> RA for Ag<T> {
     }
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => forall<c: Self> factor.op(c) != Some(self),
-    })]
-    fn factor(self, factor: Self) -> Option<Self> {
-        self.op(factor)
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
+        self.0 == other.0
     }
 
     #[logic(law)]

@@ -21,28 +21,25 @@ impl<K, V: RA> RA for FMap<K, V> {
     }
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => forall<c: Self> factor.op(c) != Some(self),
-    })]
-    fn factor(self, factor: Self) -> Option<Self> {
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
         pearlite! {
-            if (forall<k: K> factor.get(k).incl(self.get(k))) {
-                let res = self.filter_map(|(k, vo): (K, V)|
-                    match Some(vo).factor(factor.get(k)) {
-                        Some(r) => r,
-                        None => None,
-                });
-                proof_assert!(
-                    match factor.op(res) {
-                        None => false,
-                        Some(o) => o.ext_eq(self)
-                    }
+            let r = forall<k: K> self.get(k).incl(other.get(k));
+
+            proof_assert!(r ==> {
+                let factor = other.filter_map(|(k, vo): (K, V)|
+                    if self.get(k).incl(Some(vo)) {
+                        Some(vo).factor(self.get(k))
+                    } else { None }
                 );
-                Some(res)
-            } else {
-                None
-            }
+
+                match self.op(factor) {
+                    None => false,
+                    Some(o) => o.ext_eq(other)
+                }
+            });
+
+            r
         }
     }
 

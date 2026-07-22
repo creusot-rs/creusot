@@ -122,25 +122,23 @@ impl<R: ViewRel> RA for View<R> {
     }
 
     #[logic(open)]
-    #[ensures(match result {
-        Some(c) => factor.op(c) == Some(self),
-        None => forall<c: Self> factor.op(c) != Some(self),
-    })]
-    fn factor(self, factor: Self) -> Option<Self> {
+    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
+    fn incl(self, other: Self) -> bool {
         let _ = Subset::<ViewInner<R>>::inner_inj;
-        match self.frag().factor(factor.frag()) {
-            Some(f) => match (self.auth(), factor.auth()) {
-                (Some(a), None) => Some(Self::new(Some(a), f)),
-                (a1, a2) => {
-                    if a1 == a2 {
-                        Some(Self::new_frag(f))
-                    } else {
-                        None
-                    }
-                }
-            },
-            None => None,
-        }
+        let r =
+            self.frag().incl(other.frag()) && (self.auth() == None || self.auth() == other.auth());
+
+        proof_assert!(r ==> {
+            forall<frag> self.frag().op(frag) == Some(other.frag()) ==> {
+                let factor_auth = match self.auth() {
+                    Some(_) => None,
+                    None => other.auth()
+                };
+
+                self.op(Self::new(factor_auth, frag)) == Some(other)
+            }
+        });
+        r
     }
 
     #[logic(open, inline)]
