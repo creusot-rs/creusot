@@ -12,6 +12,50 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ## [Unreleased] - ReleaseDate
 
+## [0.13.0] - 2026-07-27
+
+### creusot-std
+
+- [RA requirements, semi-lattice RA, `FMapKeyLocalUpdate`, Atomic API](https://github.com/creusot-rs/creusot/pull/2209)
+- [Allow pointers to non-static content to be used in atomics.](https://github.com/creusot-rs/creusot/pull/2202)
+- [Add external specifications for traits `AsRef` and `AsMut`](https://github.com/creusot-rs/creusot/pull/2191)
+- [Make num-rational dependency optional](https://github.com/creusot-rs/creusot/pull/2189)
+- [Remove the specialized extern spec for `Option<T>::partial_eq`](https://github.com/creusot-rs/creusot/pull/2178)
+- [**Add `PartialOrdLogic`**](https://github.com/creusot-rs/creusot/pull/2174)
+- [Disjointness of shared permissions](https://github.com/creusot-rs/creusot/pull/2166)
+- [Add extern specs for `From` and `FromIterator` on strings](https://github.com/creusot-rs/creusot/pull/2165)
+- [Add `Seq::insert`](https://github.com/creusot-rs/creusot/pull/2160) (now `Seq::insert_ghost`, cf. [#2173](https://github.com/creusot-rs/creusot/pull/2173))
+- [Add specs for bitwise operations on references](https://github.com/creusot-rs/creusot/pull/2158)
+- [Add `logic::any` and `logic::try_such_that`](https://github.com/creusot-rs/creusot/pull/2152)
+- [Add `Chain` iterator](https://github.com/creusot-rs/creusot/pull/2148)
+
+### Prelude
+
+- [Merge `Slice` module in prelude into `SliceOps`, so that the invariant does not depends on `UInt` module in bitwise mode](https://github.com/creusot-rs/creusot/pull/2195)
+- [Fix upper bound of integer shift operations in Coma prelude](https://github.com/creusot-rs/creusot/pull/2190)
+- [Fix bounds of `Int$bits_count$BW` in Coma prelude](https://github.com/creusot-rs/creusot/pull/2188)
+- [Fix `char` upper bound in Coma prelude](https://github.com/creusot-rs/creusot/pull/2185)
+
+### Misc fixes
+
+- [Add new crate kinds dylib and cdylib](https://github.com/creusot-rs/creusot/pull/2201)
+- [Fix translation of const to respect visibility](https://github.com/creusot-rs/creusot/pull/2076)
+- [**Detect recursion between logic functions and non-terminating program functions or const items**](https://github.com/creusot-rs/creusot/pull/2194)
+- [Debug `extern_spec!`](https://github.com/creusot-rs/creusot/pull/2192)
+- [Refine `size_of_logic`](https://github.com/creusot-rs/creusot/pull/2180)
+- [Do not warn for unspecified extern trait](https://github.com/creusot-rs/creusot/pull/2183)
+- [Weaken the autoloading mechanism of laws](https://github.com/creusot-rs/creusot/pull/2175)
+- [Proper handling of builtin trait impls instead of ICE-ing](https://github.com/creusot-rs/creusot/pull/2171)
+- [Harden `extern_spec`](https://github.com/creusot-rs/creusot/pull/2170)
+- [Whitelist common traits used with dyn](https://github.com/creusot-rs/creusot/pull/2168)
+- [Partially fix translation of non-trivial format strings](https://github.com/creusot-rs/creusot/pull/2140)
+
+### Toolchain
+
+- [Update to Nix 26.05](https://github.com/creusot-rs/creusot/pull/2204)
+- [Update toolchain to nightly-2026-06-22](https://github.com/creusot-rs/creusot/pull/2155)
+- [Update Why3](https://github.com/creusot-rs/creusot/pull/2141)
+
 ## [0.12.0] - 2026-06-12
 
 ## cargo-creusot
