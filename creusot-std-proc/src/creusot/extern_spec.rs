@@ -222,6 +222,19 @@ impl FlatSpec {
             paren_token: Paren::default(),
             args,
         });
+        // Rust intrinsics marked with `#[rustc_comptime]` can only be used in `const` blocks
+        let call = if has_comptime(&attrs) {
+            Expr::Const(ExprConst {
+                attrs: Vec::new(),
+                const_token: Token![const](self.span),
+                block: Block {
+                    brace_token: Default::default(),
+                    stmts: vec![Stmt::Expr(call, None)],
+                },
+            })
+        } else {
+            call
+        };
 
         match self.kind {
             FlatSpecKind::Fn { body, doc_item_name, .. } => {
@@ -415,6 +428,10 @@ fn filter_erasure(attrs: &[Attribute]) -> Vec<Attribute> {
         })
         .cloned()
         .collect::<Vec<_>>()
+}
+
+fn has_comptime(attrs: &[Attribute]) -> bool {
+    attrs.iter().any(|attr| attr.path().is_ident("rustc_comptime"))
 }
 
 enum SelfTypeKind {

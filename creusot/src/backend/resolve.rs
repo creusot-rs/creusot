@@ -67,7 +67,7 @@ pub fn is_resolve_trivial<'tcx>(
             },
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
             TyKind::Param(_)
-            | TyKind::Alias(_)
+            | TyKind::Alias(_, _)
             | TyKind::Dynamic(..)
             | TyKind::Ref(_, _, Mutability::Mut) => return false,
             TyKind::Bool

@@ -38,11 +38,14 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::Type(t) => match t.kind() {
                 TyKind::Adt(def, substs) => Some((def.did(), substs)),
                 TyKind::Closure(id, substs) => Some((*id, substs)),
-                &TyKind::Alias(AliasTy {
-                    kind: AliasTyKind::Opaque { def_id } | AliasTyKind::Projection { def_id },
-                    args,
-                    ..
-                }) => Some((def_id, args)),
+                &TyKind::Alias(
+                    _,
+                    AliasTy {
+                        kind: AliasTyKind::Opaque { def_id } | AliasTyKind::Projection { def_id },
+                        args,
+                        ..
+                    },
+                ) => Some((def_id, args)),
                 _ => None,
             },
             _ => None,

@@ -6,7 +6,7 @@ use rustc_data_structures::fx::FxHashMap;
 use rustc_hir::def_id::{CrateNum, DefId, DefIndex, DefPathHash, StableCrateId};
 use rustc_middle::{
     implement_ty_decoder,
-    ty::{Ty, TyCtxt, codec::TyDecoder},
+    ty::{InternerDecoder, Ty, TyCtxt, codec::TyDecoder},
 };
 use rustc_serialize::{
     Decodable, Decoder,
@@ -166,10 +166,6 @@ impl<'a, 'tcx> TyDecoder<'tcx> for MetadataDecoder<'a, 'tcx> {
     // Whether crate-local information can be cleared while encoding
     const CLEAR_CROSS_CRATE: bool = true;
 
-    fn interner(&self) -> TyCtxt<'tcx> {
-        self.tcx
-    }
-
     fn cached_ty_for_shorthand<F>(&mut self, shorthand: usize, or_insert_with: F) -> Ty<'tcx>
     where
         F: FnOnce(&mut Self) -> Ty<'tcx>,
@@ -196,6 +192,14 @@ impl<'a, 'tcx> TyDecoder<'tcx> for MetadataDecoder<'a, 'tcx> {
 
     fn decode_alloc_id(&mut self) -> rustc_middle::mir::interpret::AllocId {
         unimplemented!("decode_alloc_id")
+    }
+}
+
+impl<'a, 'tcx> InternerDecoder for MetadataDecoder<'a, 'tcx> {
+    type Interner = TyCtxt<'tcx>;
+
+    fn interner(&self) -> TyCtxt<'tcx> {
+        self.tcx
     }
 }
 

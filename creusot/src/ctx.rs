@@ -36,7 +36,7 @@ use rustc_errors::{Diag, DiagMessage, FatalAbort};
 use rustc_hir::{
     HirId,
     def::DefKind,
-    def_id::{CrateNum, DefId, LOCAL_CRATE, LocalDefId},
+    def_id::{CrateNum, DefId, LOCAL_CRATE, LocalDefId, ModId},
 };
 use rustc_index::bit_set::DenseBitSet;
 use rustc_infer::traits::ObligationCause;
@@ -80,7 +80,7 @@ impl BodyId {
 #[derive(Copy, Clone, Debug)]
 pub(crate) enum Opacity {
     Opaque,
-    Transparent(Visibility<DefId>),
+    Transparent(Visibility<ModId>),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -471,7 +471,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             ItemType::Logic { .. } => {
                 let vis = opacity_witness_name(self.tcx, item).map_or_else(
                     || Visibility::Restricted(parent_module(self.tcx, item)),
-                    |nm| self.visibility(self.creusot_item(nm).unwrap()),
+                    |nm| self.visibility(ModId::new_unchecked(self.creusot_item(nm).unwrap())),
                 );
                 Opacity::Transparent(vis)
             }
@@ -754,7 +754,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             }
             DefKind::AssocConst { .. }
             | DefKind::Const { .. }
-            | DefKind::InlineConst
+            | DefKind::AnonConst
             | DefKind::ConstParam => ItemType::Constant,
             DefKind::Closure => ItemType::Closure,
             DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,

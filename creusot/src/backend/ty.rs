@@ -137,7 +137,7 @@ pub(crate) fn translate_ty<'tcx>(
         Foreign(_) => MlT::qconstructor(names.in_pre(PreMod::Opaque, "foreign")),
         Error(_) => MlT::unit(),
         Closure(..) | Tuple(_) | Param(_) | Dynamic(_, _) => MlT::TConstructor(names.ty(ty)),
-        Alias(t)
+        Alias(_, t)
             if matches!(t.kind, AliasTyKind::Opaque { .. } | AliasTyKind::Projection { .. }) =>
         {
             MlT::TConstructor(names.ty(ty))
@@ -152,7 +152,7 @@ pub(crate) fn translate_closure_ty<'tcx>(
     did: DefId,
     subst: GenericArgsRef<'tcx>,
 ) -> Vec<Decl> {
-    let ty_name = names.def_ty(did, subst).to_ident();
+    let ty_name = names.ty_closure(did, subst).to_ident();
     let closure_subst = subst.as_closure();
     let fields: Box<[_]> = closure_subst
         .upvar_tys()
@@ -237,11 +237,11 @@ pub(crate) fn translate_adtdecl<'tcx>(
             vec![]
         }
         AdtKind::Opaque { .. } => {
-            let ty_name = names.def_ty(def.did(), subst).to_ident();
+            let ty_name = names.ty_adt(def.did(), subst).to_ident();
             vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })]
         }
         AdtKind::Enum => {
-            let ty_name = names.def_ty(def.did(), subst).to_ident();
+            let ty_name = names.ty_adt(def.did(), subst).to_ident();
             let sumrecord = SumRecord::Sum(
                 def.variants()
                     .iter()
@@ -263,7 +263,7 @@ pub(crate) fn translate_adtdecl<'tcx>(
             })]
         }
         AdtKind::Struct { partially_opaque } => {
-            let ty_name = names.def_ty(def.did(), subst).to_ident();
+            let ty_name = names.ty_adt(def.did(), subst).to_ident();
 
             let fields: Box<[_]> = def
                 .non_enum_variant()

@@ -132,7 +132,7 @@ fn check_erasure<'tcx>(
     };
     let right = ctx.tcx.normalize_erasing_regions(
         typing_env,
-        ty::EarlyBinder::bind(right_anf.into_owned()).instantiate(ctx.tcx, right.def.1),
+        ty::EarlyBinder::bind(ctx.tcx, right_anf.into_owned()).instantiate(ctx.tcx, right.def.1),
     );
     Ok(equate_anf(ctx, left_local, &left, &right, level).map_err(|_| None)?)
 }
@@ -855,6 +855,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             }
             ZstLiteral { .. } => match expr.ty.kind() {
                 &ty::TyKind::FnDef(fun_id, subst) => {
+                    let subst = subst.no_bound_vars().unwrap();
                     let (mut fun_id, mut subst) =
                         TraitResolved::resolve_item(self.tcx, self.typing_env, fun_id, subst)
                             .to_opt(fun_id, subst)
@@ -872,7 +873,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                                 fun_id = erasure.def.0;
                                 subst = self.tcx.normalize_erasing_regions(
                                     self.typing_env,
-                                    ty::EarlyBinder::bind(erasure.def.1)
+                                    ty::EarlyBinder::bind(ctx.tcx, erasure.def.1)
                                         .instantiate(self.tcx, subst),
                                 );
                                 erasure_info =
@@ -1364,12 +1365,13 @@ fn erase_types<'tcx, T: TypeFoldable<TyCtxt<'tcx>>>(
                     if let Some(Some(erasure)) = self.ctx.erasure(fun_id) =>
                 {
                     let tcx = self.cx();
-                    ty::Ty::new_fn_def(
-                        tcx,
-                        erasure.def.0,
-                        self.cx().normalize_erasing_regions(
-                            self.typing_env,
-                            ty::EarlyBinder::bind(erasure.def.1).instantiate(tcx, args),
+                    self.cx().normalize_erasing_regions(
+                        self.typing_env,
+                        tcx.type_of(erasure.def.0).instantiate(
+                            tcx,
+                            ty::EarlyBinder::bind(self.cx(), erasure.def.1)
+                                .instantiate(tcx, args.skip_binder())
+                                .skip_normalization(),
                         ),
                     )
                 }

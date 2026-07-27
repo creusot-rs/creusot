@@ -217,14 +217,17 @@ impl ContractClauses {
             ctx.term(var_id).unwrap().rename(bound)
         });
         log::trace!("purity: {}", self.purity);
-        EarlyBinder::bind(PreContract {
-            variant,
-            requires,
-            ensures,
-            purity: self.purity,
-            extern_no_spec: false,
-            has_user_contract,
-        })
+        EarlyBinder::bind(
+            ctx.tcx,
+            PreContract {
+                variant,
+                requires,
+                ensures,
+                purity: self.purity,
+                extern_no_spec: false,
+                has_user_contract,
+            },
+        )
     }
 }
 
@@ -324,10 +327,10 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
             .skip_normalization();
         contract.check_ensures_no_trigger(ctx);
         PreSignature {
-            inputs: EarlyBinder::bind(spec.inputs)
+            inputs: EarlyBinder::bind(ctx.tcx, spec.inputs)
                 .instantiate(ctx.tcx, spec.subst)
                 .skip_normalization(),
-            output: EarlyBinder::bind(spec.output)
+            output: EarlyBinder::bind(ctx.tcx, spec.output)
                 .instantiate(ctx.tcx, spec.subst)
                 .skip_normalization(),
             contract,
@@ -347,10 +350,10 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
             .skip_normalization();
         contract.check_ensures_no_trigger(ctx);
         PreSignature {
-            inputs: EarlyBinder::bind(spec.inputs.clone())
+            inputs: EarlyBinder::bind(ctx.tcx, spec.inputs.clone())
                 .instantiate(ctx.tcx, subst)
                 .skip_normalization(),
-            output: EarlyBinder::bind(spec.output.clone())
+            output: EarlyBinder::bind(ctx.tcx, spec.output.clone())
                 .instantiate(ctx.tcx, subst)
                 .skip_normalization(),
             contract,
@@ -397,7 +400,8 @@ impl<'tcx> PreSignature<'tcx> {
         subst: GenericArgsRef<'tcx>,
         typing_env: TypingEnv<'tcx>,
     ) -> Self {
-        let mut sig = EarlyBinder::bind(self).instantiate(ctx.tcx, subst).skip_normalization();
+        let mut sig =
+            EarlyBinder::bind(ctx.tcx, self).instantiate(ctx.tcx, subst).skip_normalization();
         sig.contract = sig.contract.normalize(ctx, typing_env);
         (sig.inputs, sig.output) = ctx
             .tcx
@@ -406,6 +410,8 @@ impl<'tcx> PreSignature<'tcx> {
     }
 }
 
+// Note: the result contains unnormalized types: all `TyKind::Alias` have their first field set to `IsRigid::No`.
+// We cannot normalize them under the `TypingEnv` of `def_id` because we don't want to unfold RPITs.
 pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
     if ctx.def_kind(def_id) == DefKind::ConstParam {
         let contract = PreContract {
@@ -423,7 +429,8 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     let mut presig = contract_of(ctx, def_id);
 
     if ctx.def_kind(def_id) == DefKind::Closure {
-        let fn_ty = ctx.type_of(def_id).instantiate_identity().skip_normalization();
+        let fn_ty = ctx.type_of(def_id).instantiate_identity();
+        let fn_ty = ctx.normalize_erasing_regions(ctx.typing_env(def_id), fn_ty);
         let TyKind::Closure(_, subst) = fn_ty.kind() else { unreachable!() };
 
         let kind = subst.as_closure().kind();

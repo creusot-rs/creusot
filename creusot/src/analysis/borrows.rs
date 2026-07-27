@@ -72,8 +72,7 @@ impl<'a, 'mir, 'tcx> Borrows<'a, 'mir, 'tcx> {
     fn kill_borrows_on_place(&self, trans: &mut impl GenKill<BorrowIndex>, place: Place<'tcx>) {
         let other_borrows_of_local = self
             .borrow_set
-            .local_map()
-            .get(&place.local)
+            .borrows_on_local(place.local)
             .into_iter()
             .flat_map(|bs| bs.iter())
             .copied();
@@ -113,7 +112,7 @@ impl<'tcx> Analysis<'tcx> for Borrows<'_, '_, 'tcx> {
 
     fn bottom_value(&self, _: &mir::Body<'tcx>) -> Self::Domain {
         // bottom = nothing is reserved or activated yet;
-        MixedBitSet::new_empty(self.borrow_set.location_map().len())
+        MixedBitSet::new_empty(self.borrow_set.len())
     }
 
     fn initialize_start_block(&self, _: &mir::Body<'tcx>, _: &mut Self::Domain) {
@@ -137,16 +136,13 @@ impl<'tcx> Analysis<'tcx> for Borrows<'_, '_, 'tcx> {
                         self.body,
                         &self.borrow_set.locals_state_at_exit(),
                     ) {
-                        let index = self
-                            .borrow_set
-                            .location_map()
-                            .get_index_of(&location)
-                            .map(BorrowIndex::from)
-                            .unwrap_or_else(|| {
+                        for &index in
+                            self.borrow_set.borrows_at_location(&location).unwrap_or_else(|| {
                                 panic!("could not find BorrowIndex for location {:?}", location);
-                            });
-
-                        trans.gen_(index);
+                            })
+                        {
+                            trans.gen_(index);
+                        }
                     }
                 }
 

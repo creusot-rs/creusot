@@ -8,7 +8,7 @@ use crate::{
     },
 };
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{GenericArgsRef, TypingEnv, Unnormalized};
+use rustc_middle::ty::{EarlyBinder, GenericArgsRef, TypingEnv};
 use rustc_span::sym;
 
 pub(crate) fn normalize<'tcx>(
@@ -17,7 +17,10 @@ pub(crate) fn normalize<'tcx>(
     mut term: Term<'tcx>,
 ) -> Term<'tcx> {
     NormalizeTerm { typing_env, ctx }.visit_mut_term(&mut term);
-    let term = ctx.normalize_erasing_regions(typing_env, Unnormalized::new(term));
+    let term = ctx.normalize_erasing_regions(
+        typing_env,
+        EarlyBinder::bind(ctx.tcx, term).instantiate_identity(),
+    );
     term
 }
 

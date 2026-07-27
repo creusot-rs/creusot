@@ -565,6 +565,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             Literal::ZST => {
                 if let &TyKind::FnDef(id, subst) = ty.kind() {
+                    let subst = subst.skip_binder();
                     let (id, subst) =
                         TraitResolved::resolve_item(self.tcx(), self.names.typing_env(), id, subst)
                             .to_opt(id, subst)
@@ -637,7 +638,7 @@ pub(crate) fn tyconst_to_term_final<'tcx>(
     use rustc_type_ir::ConstKind::*;
     match c.kind() {
         Value(ty::Value { ty, valtree }) => valtree_to_term(valtree, ctx, ty, env, span),
-        Unevaluated(ty::UnevaluatedConst { kind, args, .. }) => {
+        Alias(_, ty::AliasConst { kind, args, .. }) => {
             Some(Term::const_item(kind.opt_def_id().unwrap(), args, ty))
         }
         Param(p) => {

@@ -47,7 +47,7 @@ impl<'tcx> ExternSpec<'tcx> {
         sub: GenericArgsRef<'tcx>,
     ) -> Vec<Predicate<'tcx>> {
         // skip normalization: the instantiation should just be a renaming
-        EarlyBinder::bind(self.additional_predicates.clone())
+        EarlyBinder::bind(tcx, self.additional_predicates.clone())
             .instantiate(tcx, sub)
             .skip_normalization()
     }
@@ -89,7 +89,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         let id = ctx.lang_items().into_try_type_fn().unwrap();
         (id, erased_identity_for_item(ctx.tcx, id), ItemKind::Fn)
     } else {
-        extract_extern_item(thir, expr)
+        extract_extern_item(ctx.tcx, thir, expr)
     };
     let (id, inner_subst) =
         TraitResolved::resolve_item(ctx.tcx, ctx.typing_env(def_id), id, subst).to_opt(id, subst).unwrap_or_else(|| {
@@ -158,9 +158,9 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let subst = ctx.mk_args(&subst);
 
     let additional_predicates = ctx
-        .predicates_of(local_def_id)
+        .clauses_of(local_def_id)
         .instantiate(ctx.tcx, subst)
-        .predicates
+        .clauses
         .into_iter()
         // skip normalization: the instantiation was only renaming
         .map(|clause| clause.skip_normalization().as_predicate())
@@ -177,8 +177,12 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
 /// Extract a target item for `extern_spec!` or `#[erasure]`.
 /// The visited body should be just a function call.
-fn extract_extern_item<'tcx>(thir: &Thir<'tcx>, expr_id: thir::ExprId) -> ExternItem<'tcx> {
-    let mut visitor = ExtractExternItem::new(thir);
+fn extract_extern_item<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: &Thir<'tcx>,
+    expr_id: thir::ExprId,
+) -> ExternItem<'tcx> {
+    let mut visitor = ExtractExternItem::new(tcx, thir);
     visitor.visit_expr(&thir[expr_id]);
     visitor.item.unwrap()
 }
@@ -186,13 +190,14 @@ fn extract_extern_item<'tcx>(thir: &Thir<'tcx>, expr_id: thir::ExprId) -> Extern
 type ExternItem<'tcx> = (DefId, GenericArgsRef<'tcx>, ItemKind);
 
 struct ExtractExternItem<'a, 'tcx> {
+    tcx: TyCtxt<'tcx>,
     thir: &'a Thir<'tcx>,
     item: Option<ExternItem<'tcx>>,
 }
 
 impl<'a, 'tcx> ExtractExternItem<'a, 'tcx> {
-    pub fn new(thir: &'a Thir<'tcx>) -> Self {
-        ExtractExternItem { thir, item: None }
+    pub fn new(tcx: TyCtxt<'tcx>, thir: &'a Thir<'tcx>) -> Self {
+        ExtractExternItem { tcx, thir, item: None }
     }
 }
 
@@ -207,14 +212,26 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItem<'a, 'tcx> {
     }
 
     fn visit_expr(&mut self, expr: &'a Expr<'tcx>) {
-        if let ExprKind::Call { ty, .. } = expr.kind {
-            if let TyKind::FnDef(id, subst) = ty.kind() {
-                self.item = Some((*id, subst, ItemKind::Fn));
+        match expr.kind {
+            ExprKind::Call { ty, .. } => {
+                if let TyKind::FnDef(id, subst) = ty.kind() {
+                    self.item = Some((*id, subst.skip_binder(), ItemKind::Fn));
+                }
             }
-        } else if let ExprKind::NamedConst { def_id, args, .. } = expr.kind {
-            self.item = Some((def_id, args, ItemKind::Const))
-        } else {
-            thir::visit::walk_expr(self, expr);
+            ExprKind::NamedConst { def_id, args, .. } => {
+                self.item = Some((def_id, args, ItemKind::Const))
+            }
+            ExprKind::ConstBlock { did, args } => {
+                let (thir, expr) =
+                    self.tcx.thir_body(did.expect_local()).unwrap_or_else(|e| e.raise_fatal());
+                let thir = &thir.borrow();
+                let mut item = extract_extern_item(self.tcx, thir, expr);
+                item.1 = EarlyBinder::bind(self.tcx, item.1)
+                    .instantiate(self.tcx, args)
+                    .skip_normalization();
+                self.item = Some(item);
+            }
+            _ => thir::visit::walk_expr(self, expr),
         }
     }
 }
@@ -236,7 +253,8 @@ pub(crate) fn extract_erasure_from_item<'tcx>(
         None => return None,
         Some(ErasureKind::Parent) => {
             let parent = ctx.tcx.parent(def_id);
-            let (id_erased, subst_erased, kind) = extract_extern_item(&thir.borrow(), expr);
+            let (id_erased, subst_erased, kind) =
+                extract_extern_item(ctx.tcx, &thir.borrow(), expr);
             let ItemKind::Fn = kind else {
                 ctx.crash_and_error(ctx.def_span(def_id), "erasure for const is not implemented")
             };

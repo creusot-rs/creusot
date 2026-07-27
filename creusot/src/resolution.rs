@@ -6,8 +6,8 @@ use rustc_infer::{
     traits::{CodegenObligationError, ObligationCause, specialization_graph::Graph},
 };
 use rustc_middle::ty::{
-    self, Const, ConstKind, GenericArgsRef, ParamConst, ParamEnv, ParamEnvAnd, ParamTy, TraitRef,
-    Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv, TypingMode, Unnormalized,
+    self, Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst, ParamEnv, ParamEnvAnd,
+    ParamTy, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv, TypingMode,
 };
 use rustc_span::{DUMMY_SP, ErrorGuaranteed};
 use rustc_trait_selection::traits::{ImplSource, InCrate, orphan_check_trait_ref};
@@ -219,7 +219,10 @@ impl<'tcx> TraitResolved<'tcx> {
         } else {
             return TraitResolved::NotATraitItem;
         };
-        let trait_ref = tcx.normalize_erasing_regions(typing_env, Unnormalized::new(trait_ref));
+        let trait_ref = tcx.normalize_erasing_regions(
+            typing_env,
+            EarlyBinder::bind(tcx, trait_ref).instantiate_identity(),
+        );
 
         let source = match select_trait_impl(tcx, typing_env, trait_ref) {
             ImplSelection::Found(source) => source,

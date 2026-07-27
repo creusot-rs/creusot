@@ -25,6 +25,7 @@ use rustc_middle::ty::{
     Unnormalized,
 };
 use rustc_span::Span;
+use rustc_type_ir::IsRigid;
 use why3::{
     Exp, Ident, Name, QName, Symbol,
     coma::{Defn, Expr, Param, Prototype},
@@ -67,17 +68,20 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::Item(def_id, subst)).ident()
     }
 
-    fn def_ty(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
-        let ty = match self.tcx().def_kind(def_id) {
-            DefKind::Enum | DefKind::Struct | DefKind::Union => {
-                Ty::new_adt(self.tcx(), self.tcx().adt_def(def_id), subst)
-            }
-            DefKind::AssocTy => Ty::new_projection(self.tcx(), def_id, subst),
-            DefKind::Closure => Ty::new_closure(self.tcx(), def_id, subst),
-            DefKind::OpaqueTy => Ty::new_opaque(self.tcx(), def_id, subst),
-            k => unreachable!("{k:?}"),
-        };
-        self.ty(ty)
+    fn ty_adt(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
+        self.ty(Ty::new_adt(self.tcx(), self.tcx().adt_def(def_id), subst))
+    }
+
+    fn ty_projection(&self, rigid: IsRigid, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
+        self.ty(Ty::new_projection(self.tcx(), rigid, def_id, subst))
+    }
+
+    fn ty_closure(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
+        self.ty(Ty::new_closure(self.tcx(), def_id, subst))
+    }
+
+    fn ty_opaque(&self, rigid: IsRigid, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
+        self.ty(Ty::new_opaque(self.tcx(), rigid, def_id, subst))
     }
 
     fn ty(&self, ty: Ty<'tcx>) -> Name {
@@ -93,7 +97,7 @@ pub(crate) trait Namer<'tcx> {
     fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> Ident {
         let node = match self.tcx().def_kind(def_id) {
             DefKind::Closure => {
-                self.def_ty(def_id, subst);
+                self.ty_closure(def_id, subst);
                 Dependency::ClosureAccessor(def_id, subst, ix.as_u32())
             }
             DefKind::Struct => {
@@ -433,7 +437,7 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
 
     /// Get a name for the `Namespace` type, _without_ adding it to the list of dependencies.
     pub(crate) fn namespace_ty(&self) -> Name {
-        self.names.def_ty(Intrinsic::Namespace.get(self.names.ctx), GenericArgsRef::default())
+        self.names.ty_adt(Intrinsic::Namespace.get(self.names.ctx), GenericArgsRef::default())
     }
 
     pub(crate) fn provide_deps(mut self, ctx: &Why3Generator<'tcx>) -> (Vec<Decl>, Setters) {

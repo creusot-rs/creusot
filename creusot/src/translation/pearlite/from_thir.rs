@@ -335,6 +335,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 let TyKind::FnDef(id, subst) = *f_ty.kind() else {
                     unreachable!("Call on non-function type");
                 };
+                let subst = subst.skip_binder();
                 match self.ctx.intrinsic(id) {
                     s @ (Intrinsic::Forall | Intrinsic::Exists) => {
                         let kind = if let Intrinsic::Forall = s {
@@ -503,7 +504,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             {
                 // We have just detected `*deref_mut(&mut x)`, which can happen only for Ghost and Snapshot
                 assert_matches!(borrow_kind, BorrowKind::Mut { .. });
-                assert_matches!(subst.type_at(0).kind(),
+                assert_matches!(subst.skip_binder().type_at(0).kind(),
                     TyKind::Adt(adt, _) if matches!(self.ctx.intrinsic(adt.did()), Intrinsic::Snapshot | Intrinsic::Ghost));
                 Ok(self.expr_term(arg)?.coerce(ty).span(span))
             }
@@ -784,6 +785,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         && self.ctx.is_diagnostic_item(sym::deref_method, f_did)
                         && let ExprKind::Borrow { borrow_kind, arg } = self.head(args[0]).kind =>
                 {
+                    let subst = subst.skip_binder();
                     assert_matches!(borrow_kind, BorrowKind::Shared);
                     assert_matches!(subst.type_at(0).kind(),
                         TyKind::Adt(adt, _) if matches!(self.ctx.intrinsic(adt.did()), Intrinsic::Snapshot | Intrinsic::Ghost));
