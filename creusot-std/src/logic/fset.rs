@@ -381,7 +381,7 @@ impl<T> FSet<T> {
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(result == self.len())]
+    #[logic_alias(Self::len(*self))]
     pub fn len_ghost(&self) -> Int {
         panic!()
     }
@@ -402,7 +402,7 @@ impl<T> FSet<T> {
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(result == self.contains(*value))]
+    #[logic_alias(Self::contains(*self, *value))]
     pub fn contains_ghost(&self, value: &T) -> bool {
         let _ = value;
         panic!()
