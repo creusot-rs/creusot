@@ -68,7 +68,7 @@ mod arc {
 
         impl<T, A: Allocator> Arc<T, A> {
             #[check(ghost)]
-            #[ensures(result == this.as_ptr_logic())]
+            #[logic_alias(Arc::<T, A>::as_ptr_logic(*this))]
             #[ensures(!result.is_null_logic())]
             fn as_ptr(this: &Arc<T, A>) -> *const T;
 

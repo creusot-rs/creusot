@@ -60,7 +60,7 @@ extern_spec! {
             // ([source](https://doc.rust-lang.org/reference/type-layout.html#r-layout.repr.alignment.constraint-alignment)),
             // which may overflow on 16-bit archs.
             #[check(terminates)]
-            #[ensures(result == align_of_logic::<T>())]
+            #[logic_alias(align_of_logic::<T>())]
             fn align_of<T>() -> usize;
         }
     }
