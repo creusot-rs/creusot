@@ -71,7 +71,7 @@ impl<R: UnitRA> Authority<R> {
     ///
     /// This is the same as [`Self::id`], but for ghost code.
     #[check(ghost)]
-    #[ensures(result == self.id())]
+    #[logic_alias(Self::id(*self))]
     pub fn id_ghost(&self) -> Id {
         self.0.id_ghost()
     }
@@ -166,7 +166,7 @@ impl<R: UnitRA> Fragment<R> {
     ///
     /// This is the same as [`Self::id`], but for ghost code.
     #[check(ghost)]
-    #[ensures(result == self.id())]
+    #[logic_alias(Self::id(*self))]
     pub fn id_ghost(&self) -> Id {
         self.0.id_ghost()
     }

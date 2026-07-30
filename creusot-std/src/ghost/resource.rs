@@ -75,7 +75,7 @@ mod m {
         /// This is the same as [`Self::id`], but for ghost code.
         #[trusted]
         #[check(ghost)]
-        #[ensures(result == self.id())]
+        #[logic_alias(Self::id(*self))]
         pub fn id_ghost(&self) -> Id {
             panic!("ghost code only")
         }
