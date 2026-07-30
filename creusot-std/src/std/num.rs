@@ -279,19 +279,19 @@ macro_rules! spec_unsized {
                     fn is_power_of_two(self) -> bool;
 
                     #[check(ghost)]
-                    #[ensures(result == self.leading_zeros_logic())]
+                    #[logic_alias($type::leading_zeros_logic)]
                     fn leading_zeros(self) -> u32;
 
                     #[check(ghost)]
-                    #[ensures(result == self.trailing_zeros_logic())]
+                    #[logic_alias($type::trailing_zeros_logic)]
                     fn trailing_zeros(self) -> u32;
 
                     #[check(ghost)]
-                    #[ensures(result == self.leading_ones_logic())]
+                    #[logic_alias($type::leading_ones_logic)]
                     fn leading_ones(self) -> u32;
 
                     #[check(ghost)]
-                    #[ensures(result == self.trailing_ones_logic())]
+                    #[logic_alias($type::trailing_ones_logic)]
                     fn trailing_ones(self) -> u32;
             }
         }

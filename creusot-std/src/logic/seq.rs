@@ -580,7 +580,7 @@ impl<T> Seq<T> {
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(result == self.len())]
+    #[logic_alias(Self::len(*self))]
     pub fn len_ghost(&self) -> Int {
         panic!()
     }

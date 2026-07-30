@@ -361,11 +361,11 @@ impl<T> SlicePointerExt<T> for *mut [T] {
 extern_spec! {
     impl<T: ?Sized> *const T {
         #[check(ghost)]
-        #[ensures(result == self.addr_logic())]
+        #[logic_alias(<*const T>::addr_logic)]
         fn addr(self) -> usize;
 
         #[check(ghost)]
-        #[ensures(result == self.is_null_logic())]
+        #[logic_alias(<*const T>::is_null_logic)]
         fn is_null(self) -> bool;
 
         #[check(ghost)]
@@ -407,11 +407,11 @@ extern_spec! {
 
     impl<T: ?Sized> *mut T {
         #[check(ghost)]
-        #[ensures(result == self.addr_logic())]
+        #[logic_alias(<*mut T>::addr_logic)]
         fn addr(self) -> usize;
 
         #[check(ghost)]
-        #[ensures(result == self.is_null_logic())]
+        #[logic_alias(<*mut T>::is_null_logic)]
         fn is_null(self) -> bool;
 
         #[check(ghost)]

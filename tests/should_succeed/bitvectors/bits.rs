@@ -11,7 +11,7 @@ pub fn ffs(val: usize) -> u32 {
 #[logic]
 pub fn ffs_logic(val: usize) -> u32 {
     pearlite! {
-        USIZE_BITS as u32 - val.leading_zeros_logic()
+        USIZE_BITS as u32 - val.leading_zeros()
     }
 }
 
