@@ -195,7 +195,7 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for OpacityVisitor<'thir, 'tcx> {
 
 /// Validates that a private function is not made visible in a public *open* logic function or in a public const.
 pub(crate) fn validate_opacity<'tcx>(ctx: &TranslationCtx<'tcx>, item: DefId) {
-    if matches!(ctx.tcx.def_kind(item), DefKind::Closure | DefKind::InlineConst) {
+    if matches!(ctx.tcx.def_kind(item), DefKind::Closure | DefKind::AnonConst) {
         return;
     }
     let is_logic = is_logic(ctx.tcx, item);

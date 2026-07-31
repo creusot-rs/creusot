@@ -87,10 +87,6 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
         Resolver { live, uninit, borrows, borrow_set, move_data, body, tcx }
     }
 
-    pub(super) fn borrow_set(&self) -> &BorrowSet<'tcx> {
-        self.borrow_set
-    }
-
     /// Get the set of frozen move paths corresponding to the given set of borrows.
     /// If both components of a tuple are borrowed, then each component is
     /// considered frozen independently, and not the parent move path.
@@ -151,7 +147,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
                 // and factor what can be factored.
                 self.uninit.seek_before_primary_effect(loc);
                 uninit = self.uninit.get().clone();
-                for mi in &self.move_data().loc_map[loc] {
+                for mi in &self.move_data().move_out_loc_map[loc] {
                     let path = mi.move_path_index(self.move_data());
                     on_all_children_bits(self.move_data(), path, |mpi| {
                         uninit.insert(mpi);
@@ -195,10 +191,9 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
                         self.body,
                         &self.borrow_set.locals_state_at_exit(),
                     ) {
-                        let index = BorrowIndex::from(
-                            self.borrow_set.location_map().get_index_of(&loc).unwrap(),
-                        );
-                        borrows.insert(index);
+                        for &index in self.borrow_set.borrows_at_location(&loc).unwrap() {
+                            borrows.insert(index);
+                        }
                     }
                 }
             }

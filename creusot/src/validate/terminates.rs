@@ -60,7 +60,7 @@ use rustc_middle::{
     thir::{self, visit::Visitor},
     ty::{
         self, ClauseKind, Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, ParamEnv,
-        PredicateKind, TraitRef, TyCtxt, TyKind, TypingEnv, TypingMode, Unnormalized,
+        PredicateKind, TraitRef, TyCtxt, TyKind, TypingEnv, TypingMode,
     },
 };
 use rustc_span::Span;
@@ -353,7 +353,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
 
         let called_node: Option<graph::NodeIndex>;
         let mut bounds: Box<dyn Iterator<Item = ty::Clause<'tcx>>> = Box::new(
-            EarlyBinder::bind(ctx.param_env(fun_id).caller_bounds())
+            EarlyBinder::bind(ctx.tcx, ctx.param_env(fun_id).caller_bounds())
                 .instantiate(ctx.tcx, subst)
                 .skip_normalization()
                 .iter(),
@@ -371,7 +371,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 let (node, bnds) = self.visit_specialized_default_function(ctx, impl_ldid, fun_id);
                 called_node = Some(node);
                 bounds = Box::new(
-                    EarlyBinder::bind(bnds)
+                    EarlyBinder::bind(ctx.tcx, bnds)
                         .instantiate(
                             ctx.tcx,
                             subst.rebase_onto(ctx.tcx, ctx.parent(fun_id), impl_args),
@@ -485,7 +485,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             item_bounds.iter().filter(|b| !defimpl_bounds.contains(b)).map(|b| {
                 ctx.tcx.normalize_erasing_regions(
                     typing_env_for_bounds,
-                    EarlyBinder::bind(b).instantiate(ctx.tcx, func_impl_args),
+                    EarlyBinder::bind(ctx.tcx, b).instantiate(ctx.tcx, func_impl_args),
                 )
             }),
         );
@@ -501,7 +501,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         visitor.visit_term(&ctx.term(item_id).unwrap().1);
         for (called_id, generic_args, call_span) in visitor.results {
             // Instantiate the args for the call with the context we just built up.
-            let actual_args = EarlyBinder::bind(generic_args)
+            let actual_args = EarlyBinder::bind(ctx.tcx, generic_args)
                 .instantiate(ctx.tcx, func_impl_args)
                 .skip_normalization();
             self.function_dep(ctx, node, typing_env, called_id, actual_args, call_span, true);
@@ -612,14 +612,14 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionDeps<'a, 'tcx> {
         use thir::ExprKind::*;
         match expr.kind {
             ZstLiteral { .. } if let &FnDef(def_id, generic_args) = expr.ty.kind() => {
-                self.deps.push((def_id, generic_args, expr.span, false));
+                self.deps.push((def_id, generic_args.no_bound_vars().unwrap(), expr.span, false));
             }
             Call { ty, fun, ref args, .. }
                 if let fun = &self.thir[fun]
                     && self.is_trivial_fun(fun)
                     && let &FnDef(def_id, generic_args) = ty.kind() =>
             {
-                self.deps.push((def_id, generic_args, fun.span, true));
+                self.deps.push((def_id, generic_args.no_bound_vars().unwrap(), fun.span, true));
                 for &arg in &**args {
                     self.visit_expr(&self.thir()[arg]);
                 }
@@ -764,7 +764,7 @@ impl<'tcx> TermVisitor<'tcx> for TermCalls<'tcx> {
                 self.results.insert((id, subst, term.span));
             }
             TermKind::Lit(Literal::ZST) if let &TyKind::FnDef(id, subst) = term.ty.kind() => {
-                self.results.insert((id, subst, term.span));
+                self.results.insert((id, subst.no_bound_vars().unwrap(), term.span));
             }
             _ => (),
         }
@@ -908,16 +908,20 @@ pub(crate) fn proof_tree_nodes<'tcx>(
     let mut nodes = Vec::new();
     let mut predicates: Vec<_> = trait_refs_of_clauses(tcx, clauses).collect();
     while let Some(trait_ref) = predicates.pop() {
-        let trait_ref = tcx.normalize_erasing_regions(typing_env, Unnormalized::new(trait_ref));
+        let trait_ref = tcx.normalize_erasing_regions(
+            typing_env,
+            EarlyBinder::bind(tcx, trait_ref).instantiate_identity(),
+        );
         let ImplSelection::Found(source) = select_trait_impl(tcx, typing_env, trait_ref) else {
             continue;
         };
         match source {
             ImplSource::UserDefined(source) => {
                 nodes.push(source.impl_def_id);
-                let bounds = EarlyBinder::bind(tcx.param_env(source.impl_def_id).caller_bounds())
-                    .instantiate(tcx, source.args)
-                    .skip_normalization();
+                let bounds =
+                    EarlyBinder::bind(tcx, tcx.param_env(source.impl_def_id).caller_bounds())
+                        .instantiate(tcx, source.args)
+                        .skip_normalization();
                 predicates.extend(trait_refs_of_clauses(tcx, bounds));
             }
             ImplSource::Param(_) => (),
@@ -956,12 +960,12 @@ fn param_env_for_termination(tcx: TyCtxt, trait_item_id: DefId, impl_item_id: De
     let args = impl_item_args.rebase_onto(tcx, impl_id, trait_ref.args);
 
     // Reverse engineered from `GenericPredicates::instantiate_into`
-    let predicates = tcx.predicates_of(impl_id).instantiate_identity(tcx).predicates.into_iter();
+    let predicates = tcx.clauses_of(impl_id).instantiate_identity(tcx).clauses.into_iter();
     let predicates = predicates.chain(
-        tcx.predicates_of(trait_item_id)
-            .predicates
+        tcx.clauses_of(trait_item_id)
+            .clauses
             .iter()
-            .map(|(p, _)| EarlyBinder::bind(*p).instantiate(tcx, args)),
+            .map(|(p, _)| EarlyBinder::bind(tcx, *p).instantiate(tcx, args)),
     );
     let predicates: Vec<_> = predicates.map(|p| p.skip_normalization()).collect();
     let unnormalized_env = ty::ParamEnv::new(tcx.mk_clauses(&predicates));

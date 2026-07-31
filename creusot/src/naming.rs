@@ -276,14 +276,17 @@ fn type_string_walk(tcx: TyCtxt, prefix: &mut String, ty: Ty) {
                 type_string_walk(tcx, prefix, ty)
             }
         }
-        &Alias(AliasTy {
-            kind:
-                AliasTyKind::Projection { def_id }
-                | AliasTyKind::Inherent { def_id }
-                | AliasTyKind::Free { def_id }
-                | AliasTyKind::Opaque { def_id },
-            ..
-        }) => match tcx.def_key(def_id).get_opt_name() {
+        &Alias(
+            _,
+            AliasTy {
+                kind:
+                    AliasTyKind::Projection { def_id }
+                    | AliasTyKind::Inherent { def_id }
+                    | AliasTyKind::Free { def_id }
+                    | AliasTyKind::Opaque { def_id },
+                ..
+            },
+        ) => match tcx.def_key(def_id).get_opt_name() {
             None => push_(prefix, "opaque"),
             Some(name) => push_(prefix, &to_alphanumeric(name.as_str())),
         },

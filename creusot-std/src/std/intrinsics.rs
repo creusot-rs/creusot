@@ -24,11 +24,13 @@ extern_spec! {
             // This intrinsic is used by the constant `SizedTypeProperties::SIZE`
             #[check(terminates)]
             #[ensures(result@ == size_of_logic::<T>())]
+            #[rustc_comptime]
             fn size_of<T>() -> usize;
 
             // This intrinsic is used by the constant `SizedTypeProperties::ALIGN`
             #[check(terminates)]
             #[ensures(result == align_of_logic::<T>())]
+            #[rustc_comptime]
             fn align_of<T>() -> usize;
         }
     }

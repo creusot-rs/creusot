@@ -125,7 +125,7 @@ fn logic_refinement_term<'tcx>(
     let typing_env = TypingEnv::non_body_analysis(ctx.tcx, impl_item_id);
 
     // Get the contract of the trait version
-    let mut trait_sig = EarlyBinder::bind(ctx.sig(trait_item_id).clone())
+    let mut trait_sig = EarlyBinder::bind(ctx.tcx, ctx.sig(trait_item_id).clone())
         .instantiate(ctx.tcx, refn_subst)
         .skip_normalization()
         .normalize_contract(ctx, typing_env);

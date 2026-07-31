@@ -16,7 +16,7 @@ pub(crate) fn validate_traits(ctx: &TranslationCtx) {
         let trait_item = ctx.hir_trait_item(trait_item_id);
 
         if is_law(ctx.tcx, trait_item.owner_id.def_id.to_def_id())
-            && !(ctx.predicates_of(trait_item.owner_id.def_id).predicates.is_empty()
+            && !(ctx.clauses_of(trait_item.owner_id.def_id).clauses.is_empty()
                 && ctx.generics_of(trait_item.owner_id.def_id).own_params.is_empty())
         {
             law_violations.push((trait_item.owner_id.def_id, trait_item.span))

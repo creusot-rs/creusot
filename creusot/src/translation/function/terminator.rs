@@ -54,6 +54,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 else {
                     self.fatal_error(fn_span, "unsupported function call type").emit()
                 };
+                let subst = subst.skip_binder();
                 if Intrinsic::SnapshotFromFn.is(self.ctx, fun_def_id) {
                     let GenericArgKind::Type(ty) = subst.get(1).unwrap().kind() else {
                         unreachable!()

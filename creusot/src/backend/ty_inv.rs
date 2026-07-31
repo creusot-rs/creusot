@@ -12,7 +12,7 @@ use crate::{
 };
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{GenericArg, Ty, TyKind, TypingEnv, Unnormalized};
+use rustc_middle::ty::{EarlyBinder, GenericArg, Ty, TyKind, TypingEnv};
 use rustc_span::{DUMMY_SP, Span};
 use std::collections::HashSet;
 
@@ -76,7 +76,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                 AdtKind::Box(_) => unreachable!(),
             },
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
-            TyKind::Param(_) | TyKind::Alias(_) | TyKind::Never => return false,
+            TyKind::Param(_) | TyKind::Alias(_, _) | TyKind::Never => return false,
             TyKind::Bool
             | TyKind::Char
             | TyKind::Int(_)
@@ -266,7 +266,10 @@ pub(crate) fn inv_call<'tcx>(
     scope_id: DefId,
     term: Term<'tcx>,
 ) -> Option<Term<'tcx>> {
-    let ty = ctx.normalize_erasing_regions(typing_env, Unnormalized::new(term.ty));
+    let ty = ctx.normalize_erasing_regions(
+        typing_env,
+        EarlyBinder::bind(ctx.tcx, term.ty).instantiate_identity(),
+    );
     if is_tyinv_trivial(&ctx, scope_id, typing_env, ty, term.span) {
         return None;
     }

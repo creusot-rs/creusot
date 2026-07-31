@@ -12,7 +12,7 @@ use borrows::*;
 use liveness_no_drop::*;
 use not_final_places::NotFinalPlaces;
 use rustc_abi::{FieldIdx, VariantIdx};
-use rustc_borrowck::consumers::{BodyWithBorrowckFacts, TwoPhaseActivation};
+use rustc_borrowck::consumers::{BodyWithBorrowckFacts, TwoPhaseActivation::ActivatedAt};
 use rustc_hir::{
     HirId,
     def_id::{DefId, LocalDefId},
@@ -21,7 +21,7 @@ use rustc_index::{Idx as _, bit_set::MixedBitSet};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     mir::{self, BasicBlock, Local, Location, Place, traversal},
-    ty::{self, TyCtxt, TypingEnv, Unnormalized},
+    ty::{self, TyCtxt, TypingEnv},
 };
 use rustc_mir_dataflow::{
     Analysis as _, ResultsCursor,
@@ -81,12 +81,32 @@ pub struct BorrowData<'tcx> {
 }
 
 impl<'tcx> BorrowData<'tcx> {
-    pub fn new() -> Self {
+    pub fn new(borrow_set: &rustc_borrowck::consumers::BorrowSet<'tcx>) -> Self {
+        // Collect two-phase borrows
+        let mut two_phases_created = HashSet::new();
+        let mut two_phases_activated: HashMap<
+            Orphan<Location>,
+            Vec<(Place<'tcx>, Place<'tcx>, BorrowKind)>,
+        > = HashMap::new();
+
+        for borrow in borrow_set.iter() {
+            let ActivatedAt(activated) = borrow.activation_location() else {
+                continue;
+            };
+            two_phases_created.insert(Orphan(borrow.reserve_location()));
+            // The `BorrowKind` (third component of the triple) is a dummy value to be set by the analysis.
+            two_phases_activated.entry(Orphan(activated)).or_default().push((
+                borrow.assigned_place(),
+                borrow.borrowed_place(),
+                BorrowKind::Mut,
+            ));
+        }
+
         BorrowData {
             resolved_at: HashMap::new(),
             resolved_between_blocks: HashMap::new(),
-            two_phases_created: HashSet::new(),
-            two_phases_activated: HashMap::new(),
+            two_phases_created,
+            two_phases_activated,
             final_borrows: HashMap::new(),
         }
     }
@@ -300,7 +320,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
             not_final_places: NotFinalPlaces::new(tcx, &body.body)
                 .iterate_to_fixpoint(tcx, &body.body, None)
                 .into_results_cursor(&body.body),
-            data: BorrowData::new(),
+            data: BorrowData::new(&body.borrow_set),
             body_specs,
         }
     }
@@ -447,7 +467,6 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
             }
             let tcx = self.tcx();
             let ty = pl.ty(&self.body().local_decls, tcx);
-            let ty = tcx.normalize_erasing_regions(self.typing_env, Unnormalized::new(ty));
             use TyKind::*;
             match ty.ty.kind() {
                 Adt(adt_def, subst) => {
@@ -514,7 +533,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 | Foreign(_)
                 | Str
                 | RawPtr(_, _)
-                | Alias(_)
+                | Alias(_, _)
                 | Param(_)
                 | Bound(_, _)
                 | Placeholder(_)
@@ -678,7 +697,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
     }
 
     fn analyze_statement(&mut self, statement: &mir::Statement<'tcx>, loc: Location) {
-        self.activate_two_phases(loc);
+        self.update_final_two_phases(loc);
         use mir::StatementKind::*;
         match statement.kind {
             Assign(box (pl, ref rvalue)) => {
@@ -757,7 +776,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
     }
 
     fn analyze_terminator(&mut self, terminator: &mir::Terminator<'tcx>, mut loc: Location) {
-        self.activate_two_phases(loc);
+        self.update_final_two_phases(loc);
         use mir::TerminatorKind::*;
         match terminator.kind {
             Return => {
@@ -781,7 +800,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 else {
                     self.fatal_error(fn_span, "unsupported function call type").emit()
                 };
-                if let Some(ty) = subst.get(1)
+                if let Some(ty) = subst.no_bound_vars().unwrap().get(1)
                     && let ty::GenericArgKind::Type(ty) = ty.kind()
                     && let &ty::TyKind::Closure(def_id, _) = ty.kind()
                     && is_snapshot_closure(self.tcx(), def_id)
@@ -835,31 +854,21 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
         self.store_resolved_before(loc);
     }
 
-    /// Store the location if it is a two-phase borrow creation.
-    fn is_two_phases(&mut self, loc: Location) -> bool {
-        let borrows = self.resolver.borrow_set();
-        let is_two_phases = borrows.location_map().get(&loc).iter().any(|borrow| {
-            matches!(borrow.activation_location(), TwoPhaseActivation::ActivatedAt(_))
-        });
-        if is_two_phases {
-            self.data.two_phases_created.insert(Orphan(loc));
-        }
-        is_two_phases
+    fn is_two_phases(&self, loc: Location) -> bool {
+        self.data.two_phases_created.contains(&Orphan(loc))
     }
 
-    /// Collect two-phase borrows activated at this location.
-    fn activate_two_phases(&mut self, loc: Location) {
+    /// Record which two-phase borrows activated at this location are final.
+    fn update_final_two_phases(&mut self, loc: Location) {
         let not_final_places = &mut self.not_final_places;
-        let borrows = self.resolver.borrow_set();
-        let mut activations = Vec::new();
-        for i in borrows.activation_map().get(&loc).iter().flat_map(|is| is.iter()) {
-            let borrow = &borrows[*i];
-            let borrowed = borrow.borrowed_place();
-            let is_final = NotFinalPlaces::is_final_at(not_final_places, &borrowed, loc);
-            activations.push((borrow.assigned_place(), borrowed, is_final))
-        }
-        if !activations.is_empty() {
-            self.data.two_phases_activated.insert(Orphan(loc), activations);
+        for (_, borrowed, is_final) in self
+            .data
+            .two_phases_activated
+            .get_mut(&Orphan(loc))
+            .iter_mut()
+            .flat_map(|is| is.iter_mut())
+        {
+            *is_final = NotFinalPlaces::is_final_at(not_final_places, borrowed, loc);
         }
     }
 
@@ -911,18 +920,20 @@ pub(crate) fn run_with_specs<'tcx>(
     let tree = fmir::ScopeTree::build(&body.body, &body_locals.locals);
     let clos_subst = tcx.is_closure_like(def_id).then(|| {
         let loc = body_locals.vars.get_index(1).unwrap();
-        let ty_env = tcx.type_of(def_id).instantiate_identity().skip_normalization();
-        let TyKind::Closure(_, subst) = ty_env.kind() else { unreachable!() };
+        let closure_kind = {
+            let TyKind::Closure(_, subst) =
+                tcx.type_of(def_id).instantiate_identity().skip_normalization().kind()
+            else {
+                unreachable!()
+            };
+            subst.as_closure().kind()
+        };
         let self_ = Term::var(*loc.0, loc.1.ty);
-        let self_ = match subst.as_closure().kind() {
+        let self_ = match closure_kind {
             ClosureKind::Fn => self_.clone().shr_deref(),
             ClosureKind::FnMut => self_.clone().cur(),
             ClosureKind::FnOnce => self_.clone(),
         };
-        assert_eq!(
-            ctx.erase_and_anonymize_regions(self_.ty),
-            ctx.erase_and_anonymize_regions(ty_env)
-        );
         ClosSubst::pre_or_cur(tcx, def_id.expect_local(), self_)
     });
     let analysis_env = AnalysisEnv::new(tree, corenamer, &body_locals.locals, clos_subst);

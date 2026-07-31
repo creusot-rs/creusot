@@ -2,7 +2,7 @@ use std::{hash::Hash as _, path::Path};
 
 use rustc_hir::{
     def::DefKind,
-    def_id::{DefId, DefPathHash, LOCAL_CRATE},
+    def_id::{DefId, DefPathHash, LOCAL_CRATE, ModId},
     definitions::{DefKey, DefPathData, DisambiguatedDefPathData},
 };
 use rustc_index::IndexVec;
@@ -21,11 +21,11 @@ pub(crate) fn erased_identity_for_item(tcx: TyCtxt, did: DefId) -> GenericArgsRe
     tcx.erase_and_anonymize_regions(GenericArgs::identity_for_item(tcx, did))
 }
 
-pub(crate) fn parent_module(tcx: TyCtxt, mut id: DefId) -> DefId {
+pub(crate) fn parent_module(tcx: TyCtxt, mut id: DefId) -> ModId {
     while tcx.def_kind(id) != DefKind::Mod {
         id = tcx.parent(id);
     }
-    id
+    ModId::new_unchecked(id)
 }
 
 pub(crate) fn path_of_span(tcx: TyCtxt, span: Span, span_mode: &SpanMode) -> Option<Box<Path>> {
@@ -203,7 +203,9 @@ fn equal_types<'tcx>(t1: &ty::Ty<'tcx>, t2: &ty::Ty<'tcx>) -> bool {
             mutable1 == mutable2 && equal_types(ty1, ty2)
         }
         (FnDef(def_id1, subst1), FnDef(def_id2, subst2)) => {
-            def_id1 == def_id2 && NamelessGenericArgs(*subst1) == NamelessGenericArgs(*subst2)
+            def_id1 == def_id2
+                && NamelessGenericArgs(subst1.skip_binder())
+                    == NamelessGenericArgs(subst2.skip_binder())
         }
         (Param(p1), Param(p2)) => p1.index == p2.index, // Ignore `name`
         _ => t1 == t2,

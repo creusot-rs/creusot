@@ -7,7 +7,7 @@ use crate::{
 use petgraph::{algo::tarjan_scc, graph};
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::DenseBitSet;
-use rustc_middle::ty::{self, AliasTyKind, AssocKind, EarlyBinder, Unnormalized};
+use rustc_middle::ty::{self, AliasTyKind, AssocKind, EarlyBinder};
 use rustc_span::Span;
 use std::collections::{HashMap, HashSet};
 
@@ -184,7 +184,7 @@ fn forbid_recursion<'tcx>(
         // recursion through arrays and slices is not yet supported
         Array(_, _) => Err(Other("array".into())),
         Slice(_) => Err(Other("slice".into())),
-        Alias(alias) => {
+        Alias(_, alias) => {
             let (AliasTyKind::Projection { def_id }
             | AliasTyKind::Inherent { def_id }
             | AliasTyKind::Opaque { def_id }
@@ -389,9 +389,7 @@ fn add_trait(ctx: &TranslationCtx, def_id: DefId, graph: &mut TypeGraph) {
     }
     let node = graph.node(TypeNode::Trait(def_id));
 
-    for &(clause, span) in
-        ctx.trait_explicit_predicates_and_bounds(def_id.expect_local()).predicates
-    {
+    for &(clause, span) in ctx.trait_explicit_clauses_and_bounds(def_id.expect_local()).clauses {
         if let ty::ClauseKind::Trait(predicate) = clause.kind().skip_binder() {
             graph.add_edge(
                 node,
@@ -409,7 +407,7 @@ fn add_trait(ctx: &TranslationCtx, def_id: DefId, graph: &mut TypeGraph) {
         match item.kind {
             AssocKind::Const { .. } => continue,
             AssocKind::Fn { .. } => {
-                for &(clause, span) in ctx.predicates_of(item.def_id.expect_local()).predicates {
+                for &(clause, span) in ctx.clauses_of(item.def_id.expect_local()).clauses {
                     if let ty::ClauseKind::Trait(predicate) = clause.kind().skip_binder() {
                         graph.add_edge(
                             node,
@@ -441,7 +439,7 @@ fn add_trait_impl(ctx: &TranslationCtx, def_id: DefId, graph: &mut TypeGraph) {
             let typing_env = ctx.typing_env(item.def_id);
             let ty = ctx.normalize_erasing_regions(
                 typing_env,
-                Unnormalized::new(ctx.type_of(item.def_id).skip_binder()),
+                ctx.type_of(item.def_id).instantiate_identity(),
             );
             let mut path = Vec::new();
             walk_type(ctx, typing_env, ty, &mut path, &mut |tgt, _| {
@@ -488,10 +486,10 @@ fn walk_type<'tcx, E>(
         &Adt(adt, args) => {
             f(TypeNode::Type(adt.did()), path)?;
             // Add edges to impls used to resolve bounds on this ADT's generic arguments
-            let clauses = ctx.predicates_of(adt.did()).predicates.iter().map(|&(clause, _)| {
+            let clauses = ctx.clauses_of(adt.did()).clauses.iter().map(|&(clause, _)| {
                 ctx.normalize_erasing_regions(
                     typing_env,
-                    EarlyBinder::bind(clause).instantiate(ctx.tcx, args),
+                    EarlyBinder::bind(ctx.tcx, clause).instantiate(ctx.tcx, args),
                 )
             });
             path.push((ty, None)); // Pass the current type to f (for more precise errors)
@@ -517,7 +515,7 @@ fn walk_type<'tcx, E>(
         &Tuple(args) => {
             args.iter().try_for_each(|arg| walk_type(ctx, typing_env, arg, path, f))?;
         }
-        Alias(alias) => {
+        Alias(_, alias) => {
             // Types are normalized, so the only case left should be unresolved associated types.
             // Nothing to do then: an associated type is like an extra type parameter, and we will track
             // the subsequent dependency via the instantiation of the surrounding type with a trait impl.

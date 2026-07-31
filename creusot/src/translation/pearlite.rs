@@ -6,8 +6,8 @@ use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Mutability::*, ProjectionElem},
     ty::{
-        Const, GenericArgsRef, ParamConst, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
-        TypingEnv, Unnormalized,
+        Const, EarlyBinder, GenericArgsRef, ParamConst, Ty, TyCtxt, TyKind, TypeFoldable,
+        TypeVisitable, TypingEnv,
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -529,7 +529,10 @@ impl<'tcx> Term<'tcx> {
         args: impl IntoIterator<Item = Term<'tcx>>,
     ) -> Self {
         let mut res = Self::call_no_normalize(tcx, def_id, subst, args);
-        res.ty = tcx.normalize_erasing_regions(typing_env, Unnormalized::new(res.ty));
+        res.ty = tcx.normalize_erasing_regions(
+            typing_env,
+            EarlyBinder::bind(tcx, res.ty).instantiate_identity(),
+        );
         res
     }
 

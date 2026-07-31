@@ -127,10 +127,11 @@ fn builtin_clone_posts<'tcx>(
         .map(|(i, field_ty)| {
             let self_i = self_val.clone().proj(i.into(), field_ty);
             let result_i = result_val.clone().proj(i.into(), field_ty);
-            let fndef_ty = Ty::new_fn_def(
-                ctx.tcx,
-                ctx.lang_items().clone_fn().unwrap(),
-                ctx.mk_args(&[GenericArg::from(field_ty)]),
+            let fndef_ty = ctx.tcx.normalize_erasing_regions(
+                typing_env,
+                ctx.tcx
+                    .type_of(ctx.lang_items().clone_fn().unwrap())
+                    .instantiate(ctx.tcx, ctx.mk_args(&[GenericArg::from(field_ty)])),
             );
             let args = Term::tuple(ctx.tcx, [self_i.shr_ref(ctx.tcx)]);
             let subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
@@ -187,7 +188,10 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                     ctx.tcx,
                     pre_sig.inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)),
                 );
-                let fndef_ty = Ty::new_fn_def(ctx.tcx, def_id, subst);
+                let fndef_ty = ctx.tcx.normalize_erasing_regions(
+                    typing_env,
+                    ctx.tcx.type_of(def_id).instantiate(ctx.tcx, subst),
+                );
 
                 let pre_post_subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
 
@@ -309,6 +313,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                     | Intrinsic::PostconditionOnce
             ) && let &TyKind::FnDef(did_f, subst_f) = subst.type_at(1).kind()
             {
+                let subst_f = subst_f.skip_binder();
                 // No definite instance if found for this method, so `term` has returned `None`
                 // However, we still emit an axiom telling that the specification should be a refinement.
                 let args_id = Ident::fresh_local("args").into();
@@ -465,7 +470,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             let output = ctx.instantiate_and_normalize_erasing_regions(
                 subst,
                 typing_env,
-                EarlyBinder::bind(ctx.sig(def_id).output),
+                EarlyBinder::bind(ctx.tcx, ctx.sig(def_id).output),
             );
             let ty = translate_ty(ctx, &mut names, ctx.def_span(def_id), output);
             let inner_def = Defn {
@@ -518,15 +523,21 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 ty_name: names.ty(ty).to_ident(),
                 ty_params: Box::new([]),
             })],
-            &TyKind::Alias(AliasTy {
-                kind: AliasTyKind::Opaque { def_id } | AliasTyKind::Projection { def_id },
-                args,
-                ..
-            }) => {
-                vec![Decl::TyDecl(TyDecl::Opaque {
-                    ty_name: names.def_ty(def_id, args).to_ident(),
-                    ty_params: Box::new([]),
-                })]
+            &TyKind::Alias(
+                rigid,
+                AliasTy {
+                    kind:
+                        kind @ (AliasTyKind::Opaque { def_id } | AliasTyKind::Projection { def_id }),
+                    args,
+                    ..
+                },
+            ) => {
+                let ty_name = if let AliasTyKind::Opaque { .. } = kind {
+                    names.ty_opaque(rigid, def_id, args).to_ident()
+                } else {
+                    names.ty_projection(rigid, def_id, args).to_ident()
+                };
+                vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })]
             }
             TyKind::Closure(did, subst) => translate_closure_ty(ctx, &names, *did, subst),
             TyKind::Adt(_, _) => translate_adtdecl(ctx, &names, ty),
@@ -646,7 +657,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 ItemType::Logic { .. } => self.expand_logic(def_id, subst),
                 ItemType::Constant => self.expand_constant(def_id, subst),
                 ItemType::Field | ItemType::Variant => {
-                    self.namer(dep).def_ty(ctx.parent(def_id), subst);
+                    self.namer(dep).ty_adt(ctx.parent(def_id), subst);
                     vec![]
                 }
                 ItemType::Program | ItemType::Closure => self.expand_program(def_id, subst),
@@ -786,7 +797,7 @@ fn postcondition_once_term<'tcx>(
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(Intrinsic::PostconditionOnce.get(ctx)).inputs[2].2),
+        EarlyBinder::bind(ctx.tcx, ctx.sig(Intrinsic::PostconditionOnce.get(ctx)).inputs[2].2),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
@@ -858,7 +869,7 @@ fn postcondition_mut_term<'tcx>(
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(Intrinsic::PostconditionMut.get(ctx)).inputs[3].2),
+        EarlyBinder::bind(ctx.tcx, ctx.sig(Intrinsic::PostconditionMut.get(ctx)).inputs[3].2),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
@@ -947,7 +958,7 @@ fn postcondition_term<'tcx>(
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.sig(Intrinsic::Postcondition.get(ctx)).inputs[2].2),
+        EarlyBinder::bind(ctx.tcx, ctx.sig(Intrinsic::Postcondition.get(ctx)).inputs[2].2),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
@@ -984,7 +995,9 @@ fn postcondition_term<'tcx>(
             let post_fn = Intrinsic::Postcondition.get(ctx);
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
-        &TyKind::FnDef(did, subst) => post_fndef(ctx, names, did, subst, args, res, true),
+        &TyKind::FnDef(did, subst) => {
+            post_fndef(ctx, names, did, subst.skip_binder(), args, res, true)
+        }
         _ => None,
     }
 }
@@ -1077,7 +1090,7 @@ fn precondition_term<'tcx>(
             let pre_args = [self_.proj(0usize.into(), closure_ty), args];
             Some(Term::call(ctx.tcx, typing_env, pre_fn, subst_postcond, pre_args))
         }
-        &TyKind::FnDef(did, subst) => pre_fndef(ctx, names, did, subst, args, true),
+        &TyKind::FnDef(did, subst) => pre_fndef(ctx, names, did, subst.skip_binder(), args, true),
         _ => None,
     }
 }
@@ -1349,7 +1362,7 @@ fn term<'tcx>(
         Intrinsic::IsAlignedLogic => is_aligned_logic_term(ctx, names, subst.type_at(0), bound),
         Intrinsic::MetadataMatches => metadata_matches_term(ctx, names, subst, bound),
         _ => {
-            let term = EarlyBinder::bind(ctx.term(def_id).unwrap().rename(bound));
+            let term = EarlyBinder::bind(ctx.tcx, ctx.term(def_id).unwrap().rename(bound));
             Some(normalize(ctx, typing_env, term.instantiate(ctx.tcx, subst).skip_normalization()))
         }
     }

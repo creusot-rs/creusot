@@ -48,7 +48,7 @@ pub fn register_lints(_sess: &Session, store: &mut LintStore) {
         trusted::TRUSTED_CODE,
         result_param::RESULT_PARAM,
     ]);
-    store.register_late_pass(move |_| Box::new(validate::GhostValidate {}));
-    store.register_late_pass(move |_| Box::new(experimental_types::Experimental {}));
-    store.register_late_pass(move |_| Box::new(trusted::TrustedCode {}));
+    store.register_late_lint_pass(Box::new(move |_| Box::new(validate::GhostValidate {})));
+    store.register_late_lint_pass(Box::new(move |_| Box::new(experimental_types::Experimental {})));
+    store.register_late_lint_pass(Box::new(move |_| Box::new(trusted::TrustedCode {})));
 }

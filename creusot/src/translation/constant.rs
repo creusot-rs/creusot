@@ -6,7 +6,7 @@ use rustc_abi::Size;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{self, ConstOperand, ConstValue, TerminatorKind, interpret::AllocRange},
-    ty::{self, ConstKind, Ty, TyCtxt, TypingEnv, UnevaluatedConstKind},
+    ty::{self, AliasConstKind, ConstKind, Ty, TyCtxt, TypingEnv},
 };
 use rustc_span::Span;
 
@@ -29,7 +29,7 @@ pub(crate) fn mirconst_to_operand<'tcx>(
         Unevaluated(u, ty) => {
             if let Some(promoted) = u.promoted {
                 Operand::promoted(caller_id, promoted, ty)
-            } else if matches!(ctx.def_kind(u.def), DefKind::InlineConst) {
+            } else if matches!(ctx.def_kind(u.def), DefKind::AnonConst) {
                 Operand::inline_const(u.def, u.args, ty)
             } else {
                 Operand::term(Term::const_item(u.def, u.args, ty).span(c.span))
@@ -177,8 +177,8 @@ pub fn try_const_to_term<'tcx>(
         let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
         let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
         let span = ctx.def_span(def_id);
-        let kind = ty::UnevaluatedConstKind::new_from_def_id(ctx.tcx, def_id);
-        let uneval = ty::UnevaluatedConst::new(ctx.tcx, kind, subst);
+        let kind = ty::AliasConstKind::new_from_def_id(ctx.tcx, def_id);
+        let uneval = ty::AliasConst::new(ctx.tcx, kind, subst);
         if let Ok(Ok(val)) = ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
             return valtree_to_term(val, ctx, ty, typing_env, span);
         }
@@ -203,14 +203,14 @@ pub fn try_const_to_term<'tcx>(
             let c = args.const_at(p.index as usize);
             Some(Term::const_(c, ty, span))
         }
-        ConstKind::Unevaluated(u)
-            if let UnevaluatedConstKind::Projection { def_id }
-            | UnevaluatedConstKind::Free { def_id }
-            | UnevaluatedConstKind::Inherent { def_id } = u.kind =>
+        ConstKind::Alias(_, u)
+            if let AliasConstKind::Projection { def_id }
+            | AliasConstKind::Free { def_id }
+            | AliasConstKind::Inherent { def_id } = u.kind =>
         {
             let (u, ty) = ctx.tcx.normalize_erasing_regions(
                 typing_env,
-                ty::EarlyBinder::bind((u, ty)).instantiate(ctx.tcx, args),
+                ty::EarlyBinder::bind(ctx.tcx, (u, ty)).instantiate(ctx.tcx, args),
             );
             Some(Term::const_item(def_id, u.args, ty).span(span))
         }
@@ -282,7 +282,7 @@ fn simple_body_const<'tcx>(
     match rhs.const_ {
         mir::Const::Ty(ty, c) => Some((c.kind(), ty, rhs.span)),
         mir::Const::Unevaluated(u, ty) => {
-            Some((rustc_type_ir::ConstKind::Unevaluated(u.shrink(tcx)), ty, rhs.span))
+            Some((rustc_type_ir::ConstKind::Alias(ty::IsRigid::No, u.shrink(tcx)), ty, rhs.span))
         }
         _ => return None,
     }
