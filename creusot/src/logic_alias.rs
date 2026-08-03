@@ -1,3 +1,140 @@
+//! Logic Function Aliases
+//!
+//! This module implements the core machinery for aliasing logic functions.
+//!
+//! # Definitions
+//!
+//! A logic alias can be of two kinds:
+//! - a path to a logic function
+//! - a call to a logic function
+//!
+//! In both cases the logic alias must be a valid term.
+//! Note that we do not allow the logic alias to be an arbitrary term,
+//! as this would open the gates of hell on pearlite.
+//!
+//! Adding a `#[logic_alias]` clause on a function have two visible effects:
+//! - An #[ensures] clause will automatically be added (see below)
+//! - It becomes possible to use the prog_id in pearlite, as every fake term
+//!   will be automatically replaced by an aliased term.
+//!
+//! # Example:
+//! TODO: move this to user documentation
+//!
+//! ```
+//! #[logic]
+//! #[ensures(result == x + 1i64)]
+//! fn add_one_log(x: i64) -> i64 { ... }
+//!
+//! #[logic_alias(add_one_log)]
+//! fn add_one(x: i64) -> i64 { ... }
+//!
+//! #[ensures(result == add_one(add_one(a)))]
+//! fn add_two(a: i64) -> i64 { ... }
+//! ```
+//! Roughly becomes:
+//! ```
+//! #[ensures(result == x + 1i64)]
+//! fn add_one_log(x: i64) -> i64 { ... }
+//!
+//! #[ensures(result == add_one_log(x))]
+//! fn add_one(x: i64) -> i64 { ... }
+//!
+//! #[ensures(result == add_one_log(add_one_log(a)))]
+//! fn add_two(a: i64) -> bool { ... }
+//! ```
+//!
+//! TODO: move this to user documentation
+//! In this examples we have:
+//! - The logic alias of `add_one` is `add_one_log`
+//! - The alias closure of `add_one` is `result == add_one_log(x)`
+//! - The prog_id of `add_one` is `add_one`
+//! - The logic_id of `add_one` is `add_one_log`
+//! - The closure_id of `add_one` is whatever DefId will be given the
+//!   alias closure
+//! - `add_two` #[ensures] clause contains one fake term
+//!   `add_one(add_one(a))`
+//! - `add_two` #[ensures] clause will be replaced by the aliased term
+//!   `add_one_log(add_one_log(a))`
+//! - `add_one` is an aliased function
+//! - `add_one_log` is the alias function of `add_one`
+//!
+//!
+//! # Compilation
+//!
+//! Logic aliases are compiled as follows:
+//!
+//! ## Step 1: preprocessing
+//! During macro evaluation, every #[logic_alias] clause is replaced by an
+//! #[ensures] clause of the form `result == <logic alias>`.
+//! We also add an annotation `#[creusot::decl::logic_alias = <closure_id>]`
+//! to retrieve the aliases later.
+//! See [creusot-std-proc::creusot::specs::logic_alias]
+//! and [creusot-std-proc::creusot::specs::ensures_inner]
+//!
+//! ## Step 2: alias loading
+//! During the initialization of the `TranslationCtx`, we build a map
+//! from the prog_id's to their associated closure_id's. We also check that the
+//! aliases are valid (see below). Special care needs to be taken for aliases
+//! located in `extern_spec!` blocks, as the aliased functions will be wrapped
+//! by a local function. We therefore need to also bind the wrapper id to the
+//! closure id.
+//! See [creusot::ctx::load_logic_aliases]
+//! and [creusot::logic_alias::check_validity]
+//!
+//! ## Step 3: substitution
+//! See [creusot::translation::pearlite::from_thir::expr_term]
+//! and [creusot::logic_alias::subst_call]
+//!
+//! # Validity of aliasing
+//!
+//! The following table shows the rules for aliasing:
+//! (NB: This is still a work in progress, and I do not yet guarantee that `check_validity`
+//!  enforces these rules properly, since they have been subject to quite some change
+//!  recently following discussions with Diane and Li-Yao. I rather wait for a consensus
+//!  on the Creusot team to apply any meaningfull changes to the current implementation).
+//! +--------------------------------------------------------------------------------------------+
+//! |   Program part    |    Logic part     |                    Validity                        |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  fun              |  fun              |  valid if both fun comes from the current crate,   |
+//! |                   |                   |     or are located in an extern_spec!              |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  fun              |   trait           |    invalid                                         |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  fun              |   impl type       |    invalid                                         |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  fun              |   impl trait      |    invalid                                         |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  trait            |   fun             |    valid if `fun` comes from the current crate     |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  trait            |   trait           |    valid if in the same trait                      |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  trait            |   impl type       |    valid if `type` also implement `trait`  ?       |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  trait            |   impl trait      |    invalid                                         |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  impl type        |   fun             |    valid if `fun` comes from the current crate     |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  impl type        |   trait           |    valid if `type` implements `trait` and          |
+//! |                   |                   |    logic function is sealed ?                      |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  impl type        |   impl type       |    valid if it's the same type (*)                 |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  impl type        |   impl trait      |    valid if it's the same type                     |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  impl trait       |   fun             |    valid if `fun` comes from the current crate     |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  impl trait       |   trait           |    valid if it's the same trait (**)               |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  impl trait       |   impl type       |    valid if `type` implements `trait`              |
+//! |-------------------+-------------------+----------------------------------------------------|
+//! |  impl trait       |   impl trait      |    valid if it's the same trait (**)               |
+//! +-------------------+-------------------+----------------------------------------------------+
+//!
+//! (*) I'm not sure if this is really a big deal to have aliasing between methods from two
+//! different types. Maybe we could to allow it as long as the signatures match?
+//! (**) Do we really want this ? Do we want to go even further ?
+//!
+
 use crate::{
     ctx::TranslationCtx,
     translation::pearlite::{MapSubstitution, Substable, Term, TermKind},
@@ -104,49 +241,6 @@ fn failwith(
         .raise_fatal()
 }
 
-/*
- * TODO mael: write doc
- *
- * +--------------------------------------------------------------------------------------------+
- * |    Program part   |    Logic part     |                    Validity                        |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  fun              |  fun              |  valid if both fun comes from the current crate,   |
- * |                   |                   |     or are located in an extern_spec!              |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  fun              |   trait           |    invalid                                         |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  fun              |   impl type       |    invalid                                         |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  fun              |   impl trait      |    invalid                                         |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  trait            |   fun             |    valid if `fun` comes from the current crate     |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  trait            |   trait           |    valid if in the same trait                      |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  trait            |   impl type       |    valid if `type` also implement `trait`          |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  trait            |   impl trait      |    valid if it's the same trait                    |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  impl type        |   fun             |    valid if `fun` comes from the current crate     |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  impl type        |   trait           |    valid if `type` implements `trait`              |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  impl type        |   impl type       |    valid if it's the same type (*)                 |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  impl type        |   impl trait      |    valid if it's the same type                     |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  impl trait       |   fun             |    valid if `fun` comes from the current crate     |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  impl trait       |   trait           |    valid if it's the same trait                    |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  impl trait       |   impl type       |    valid if `type` implements `trait`              |
- * |-------------------+-------------------+----------------------------------------------------|
- * |  impl trait       |   impl trait      |    valid if it's the same trait                    |
- * +-------------------+-------------------+----------------------------------------------------+
- *
- * (*) I'm not sure if this is really a big deal to have aliasing between methods from two
- * different types. Maybe we could to allow it as long as the signatures match?
- */
 pub(crate) fn check_validity(
     ctx: &TranslationCtx,
     prog_id: DefId,
