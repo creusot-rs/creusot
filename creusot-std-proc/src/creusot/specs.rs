@@ -326,6 +326,51 @@ pub fn logic_alias(attr: TS1, tokens: TS1) -> TS1 {
     ensures_inner(ensures_contract.into(), tokens, true)
 }
 
+pub fn hybrid(attrs: TS1, tokens: TS1) -> TS1 {
+    match syn::parse::<ContractSubject>(tokens.clone()) {
+        Ok(ContractSubject::FnOrMethod(prog)) => {
+            let logic_ident = Ident::new(&format!("{}_logic", prog.sig.ident), prog.sig.span());
+
+            let mut log = FnOrMethod {
+                attrs: prog.attrs.clone(),
+                defaultness: prog.defaultness.clone(),
+                visibility: prog.visibility.clone(),
+                sig: prog.sig.clone(),
+                body: prog.body.clone(),
+                semi_token: prog.semi_token.clone(),
+            };
+            log.sig.ident = logic_ident.clone();
+            let logic_alias = if log.sig.receiver().is_some() {
+                quote!(Self::#logic_ident)
+            } else {
+                quote!(#logic_ident)
+            };
+            let attrs = TokenStream::from(attrs);
+            quote! {
+                #[logic(#attrs)]
+                #log
+
+                #[logic_alias(#logic_alias)]
+                #prog
+            }
+            .into()
+        }
+        Ok(invalid) => {
+            return syn::Error::new(
+                invalid.span(),
+                "[hybrid] must be used on a valid logic function",
+            )
+            .to_compile_error()
+            .into();
+        }
+        Err(err) => {
+            return syn::Error::new(err.span(), "#[hybrid] must be used on a valid logic function")
+                .to_compile_error()
+                .into();
+        }
+    }
+}
+
 pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
     super::invariant::desugar_variant(attr.into(), tokens.into())
         .unwrap_or_else(|e| e.to_compile_error())

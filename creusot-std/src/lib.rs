@@ -362,6 +362,8 @@ pub mod macros {
     /// TODO(mael) Document this
     pub use base_macros::logic_alias;
 
+    pub use base_macros::hybrid;
+
     /// Inserts a *logical* assertion into the code
     ///
     /// This assertion will not be checked at runtime but only during proofs. However,
