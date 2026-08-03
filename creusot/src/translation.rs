@@ -128,6 +128,9 @@ fn force_translation(ctx: &TranslationCtx) {
         if is_no_translate(ctx.tcx, def_id) && !is_extern_spec(ctx.tcx, def_id) {
             continue;
         }
+        if ctx.def_kind(def_id) == DefKind::Closure {
+            continue;
+        }
         let _ = ctx.sig(def_id);
         if is_logic(ctx.tcx, def_id) && !is_opaque(ctx.tcx, def_id) {
             let _ = ctx.term(def_id);

@@ -429,12 +429,21 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     let mut presig = contract_of(ctx, def_id);
 
     if ctx.def_kind(def_id) == DefKind::Closure {
-        let fn_ty = ctx.type_of(def_id).instantiate_identity();
-        let fn_ty = ctx.normalize_erasing_regions(ctx.typing_env(def_id), fn_ty);
-        let TyKind::Closure(_, subst) = fn_ty.kind() else { unreachable!() };
-
-        let kind = subst.as_closure().kind();
+        let fn_ty = ctx.normalize_erasing_regions(
+            ctx.typing_env(def_id),
+            ctx.type_of(def_id).instantiate_identity(),
+        );
+        let subst = match fn_ty.kind() {
+            TyKind::Closure(_, subst) => subst,
+            TyKind::Coroutine(..) | TyKind::CoroutineClosure(..) => {
+                ctx.crash_and_error(ctx.def_span(def_id), "async is not yet supported")
+            }
+            _ => unreachable!(),
+        };
+        let closure = subst.as_closure();
+        let kind = closure.kind();
         let env_ty = ctx.closure_env_ty(fn_ty, kind, ctx.lifetimes.re_erased);
+
         let self_ = Term::var(name::self_(), env_ty);
 
         let self_pre = match kind {
@@ -471,7 +480,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         }
 
         if kind == ClosureKind::FnMut {
-            let args = subst.as_closure().sig().inputs().map_bound(|tys| tys[0]);
+            let args = closure.sig().inputs().map_bound(|tys| tys[0]);
             let args = ctx.instantiate_bound_regions_with_erased(args);
 
             let term = Term::call(
