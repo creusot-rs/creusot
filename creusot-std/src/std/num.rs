@@ -603,3 +603,51 @@ spec_abs_diff!(u32, i32);
 spec_abs_diff!(u64, i64);
 spec_abs_diff!(u128, i128);
 spec_abs_diff!(usize, isize);
+
+#[cfg(creusot)]
+use core::num::{NonZero, ZeroablePrimitive};
+
+#[cfg(creusot)]
+impl<T: ZeroablePrimitive> View for NonZero<T> {
+    type ViewTy = Int;
+    #[trusted]
+    #[logic(opaque)]
+    fn view(self) -> Int {
+        dead
+    }
+}
+
+#[cfg(creusot)]
+impl<T: ZeroablePrimitive> DeepModel for NonZero<T> {
+    type DeepModelTy = Int;
+    #[logic(open, inline)]
+    fn deep_model(self) -> Int {
+        pearlite! { self@ }
+    }
+}
+
+#[cfg(creusot)]
+impl<T: ZeroablePrimitive + View<ViewTy = Int>> Invariant for NonZero<T> {
+    #[logic(open)]
+    fn invariant(self) -> bool {
+        pearlite! { self@ != 0 }
+    }
+}
+
+#[cfg(creusot)]
+extern_spec! {
+    impl<T: ZeroablePrimitive + View<ViewTy = Int>> NonZero<T> {
+        #[ensures(match result {
+            None => n@ == 0,
+            Some(nz) => n@ != 0 && nz@ == n@,
+        })]
+        fn new(n: T) -> Option<Self>;
+
+        #[requires(n@ != 0)]
+        #[ensures(result@ == n@)]
+        unsafe fn new_unchecked(n: T) -> Self;
+
+        #[ensures(result@ == self@)]
+        fn get(self) -> T;
+    }
+}
