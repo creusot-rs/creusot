@@ -608,21 +608,31 @@ spec_abs_diff!(usize, isize);
 use core::num::{NonZero, ZeroablePrimitive};
 
 #[cfg(creusot)]
-impl<T: ZeroablePrimitive> View for NonZero<T> {
-    type ViewTy = Int;
-    #[trusted]
-    #[logic(opaque)]
-    fn view(self) -> Int {
-        dead
+impl<T: ZeroablePrimitive + View> View for NonZero<T> {
+    type ViewTy = T::ViewTy;
+    #[logic(open, inline)]
+    fn view(self) -> Self::ViewTy {
+        self.get_logic().view()
     }
 }
 
 #[cfg(creusot)]
-impl<T: ZeroablePrimitive> DeepModel for NonZero<T> {
-    type DeepModelTy = Int;
+impl<T: ZeroablePrimitive + DeepModel> DeepModel for NonZero<T> {
+    type DeepModelTy = T::DeepModelTy;
     #[logic(open, inline)]
-    fn deep_model(self) -> Int {
-        pearlite! { self@ }
+    fn deep_model(self) -> Self::DeepModelTy {
+        self.get_logic().deep_model()
+    }
+}
+
+#[cfg(creusot)]
+impl<T: ZeroablePrimitive> Plain for NonZero<T> {
+    #[trusted]
+    #[ensures(*result == *snap)]
+    #[check(ghost)]
+    #[allow(unused_variables)]
+    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+        Ghost::conjure()
     }
 }
 
@@ -635,19 +645,42 @@ impl<T: ZeroablePrimitive + View<ViewTy = Int>> Invariant for NonZero<T> {
 }
 
 #[cfg(creusot)]
+pub trait NonZeroExt {
+    type Inner;
+
+    #[logic]
+    fn get_logic(self) -> Self::Inner;
+}
+
+#[cfg(creusot)]
+impl<T: ZeroablePrimitive> NonZeroExt for NonZero<T> {
+    type Inner = T;
+
+    #[logic(opaque)]
+    fn get_logic(self) -> Self::Inner {
+        dead
+    }
+}
+
+#[cfg(creusot)]
 extern_spec! {
+    impl<T: ZeroablePrimitive> NonZero<T> {
+        #[ensures(result == self.get_logic())]
+        #[check(ghost)]
+        fn get(self) -> T;
+    }
+
     impl<T: ZeroablePrimitive + View<ViewTy = Int>> NonZero<T> {
         #[ensures(match result {
             None => n@ == 0,
-            Some(nz) => n@ != 0 && nz@ == n@,
+            Some(nz) => n@ != 0 && nz.get_logic() == n,
         })]
+        #[check(ghost)]
         fn new(n: T) -> Option<Self>;
 
         #[requires(n@ != 0)]
-        #[ensures(result@ == n@)]
+        #[ensures(result.get_logic() == n)]
+        #[check(ghost)]
         unsafe fn new_unchecked(n: T) -> Self;
-
-        #[ensures(result@ == self@)]
-        fn get(self) -> T;
     }
 }
