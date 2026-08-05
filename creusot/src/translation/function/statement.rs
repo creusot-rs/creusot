@@ -203,7 +203,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 | CastKind::FnPtrToPtr
                 | CastKind::FloatToFloat
                 | CastKind::Subtype
-                | CastKind::Transmute,
+                | CastKind::Transmute
+                | CastKind::BoxDerefTransmute,
                 _,
                 _,
             ) => self.ctx.crash_and_error(si.span, format!("Unsupported pointer cast: {rvalue:?}")),

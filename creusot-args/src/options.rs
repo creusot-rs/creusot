@@ -30,8 +30,8 @@ pub struct CreusotArgs {
     #[clap(group = "output", long, env)]
     pub output_dir: Option<PathBuf>,
     /// Disable output.
-    #[clap(group = "output", long, default_value_t = false, action = clap::ArgAction::SetTrue)]
-    pub check: bool,
+    #[clap(group = "output", long)]
+    pub no_output: bool,
     /// Output the generated code in a single file in output_dir.
     #[clap(long, default_value_t = false, action = clap::ArgAction::SetTrue)]
     pub monolithic: bool,
@@ -147,13 +147,15 @@ impl CreusotArgs {
         let cargo_creusot = std::env::var("CARGO_CREUSOT").is_ok();
         let should_output = !cargo_creusot || std::env::var("CARGO_PRIMARY_PACKAGE").is_ok();
 
-        let output = match (self.stdout, self.output_file, self.output_dir, self.check) {
+        let output = match (self.stdout, self.output_file, self.output_dir, self.no_output) {
             (true, None, None, false) => Ok(Output::Stdout),
             (false, Some(f), None, false) => Ok(Output::File(f)),
             (false, None, Some(d), false) => Ok(Output::Directory(d)),
             (false, None, None, true) => Ok(Output::None),
             (false, None, None, false) => Ok(Output::Directory(PathBuf::from("."))), // default --output-dir=.
-            _ => Err("--stdout, --output-file, --output-dir, and --check are mutually exclusive"), // This should already be enforced by clap
+            _ => {
+                Err("--stdout, --output-file, --output-dir, and --no-output are mutually exclusive")
+            } // This should already be enforced by clap
         }?;
 
         let span_mode = match (&self.span_mode, &output, &self.spans_relative_to) {

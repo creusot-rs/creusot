@@ -1,5 +1,6 @@
 use clap::Parser;
 use libc::{STDOUT_FILENO, TIOCGWINSZ, c_ushort, ioctl};
+use serde_json;
 use std::{
     env,
     fs::{self, File},
@@ -79,7 +80,7 @@ fn main() {
     build_cargo_creusot(args.force_color);
 
     let base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let paths = CreusotPaths::new(base_path.parent().unwrap());
+    let mut paths = CreusotPaths::new(base_path.parent().unwrap());
 
     if args.erasure_check {
         erasure_check(&paths);
@@ -92,10 +93,10 @@ fn main() {
     {
         test_creusot_std = false;
     }
-    let contracts_success = translate_creusot_std(&args, &paths, test_creusot_std);
+    let creusot_std_success = translate_creusot_std(&args, &mut paths, test_creusot_std);
 
     let (mut failed, mut total) =
-        (if contracts_success { 0 } else { 1 }, if test_creusot_std { 1 } else { 0 });
+        (if creusot_std_success { 0 } else { 1 }, if test_creusot_std { 1 } else { 0 });
     let (fail1, total1) = should_fail(&["tests/should_fail/**/*.rs"], &args, |p| {
         run_creusot(p, &paths, args.with_spans)
     });
@@ -143,9 +144,9 @@ fn cargo_build(target: &str, force_color: bool) {
 
 struct CreusotPaths {
     creusot_rustc: PathBuf,
-    deps: PathBuf,
     rlib: PathBuf,
     cmeta: PathBuf,
+    libs: Vec<PathBuf>,
 }
 
 impl CreusotPaths {
@@ -153,17 +154,19 @@ impl CreusotPaths {
         let creusot = base.join("target/creusot/debug");
         Self {
             creusot_rustc: base.join(CREUSOT_RUSTC),
-            deps: creusot.join("deps"),
             rlib: creusot.join("libcreusot_std.rlib"),
             cmeta: creusot.join("libcreusot_std.cmeta"),
+            libs: vec![],
         }
     }
 }
 
-/// Returns `false` if the translation changed
+/// Run cargo creusot on creusot-std, output to `/tmp/creusot-std.coma`,
+/// and record compiled artifacts in `paths` (for invoking creusot-rustc ourselves, without cargo).
 ///
+/// Returns `false` if the translation changed.
 /// This will only check the output of `creusot-std` if `test_creusot_std` is true.
-fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bool) -> bool {
+fn translate_creusot_std(args: &Args, paths: &mut CreusotPaths, test_creusot_std: bool) -> bool {
     print!("Translating creusot-std... ");
     std::io::stdout().flush().unwrap();
     if test_creusot_std {
@@ -171,8 +174,21 @@ fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bo
     }
 
     let mut out = args.stream();
-    let output = build_creusot_std(paths, true, ErasureCheck::No, args.with_spans)
-        .expect("could not translate `creusot_std`");
+    let tmpfile = if test_creusot_std {
+        let mut tmpfile = std::env::temp_dir();
+        tmpfile.push("creusot-std.coma");
+        Some(tmpfile)
+    } else {
+        None
+    };
+    let output = build_creusot_std(
+        paths,
+        tmpfile.as_ref().map(|p| p.as_path()),
+        true,
+        ErasureCheck::No,
+        args.with_spans,
+    )
+    .expect("could not translate `creusot_std`");
     if !output.status.success() {
         writeln_color!(out, Color::Red, "could not translate");
         out.flush().unwrap();
@@ -180,14 +196,42 @@ fn translate_creusot_std(args: &Args, paths: &CreusotPaths, test_creusot_std: bo
         std::process::exit(1);
     }
 
-    if !test_creusot_std {
-        println!();
-        return true;
+    use serde_json::Value;
+    for line in output.stdout.lines() {
+        let line: Value = serde_json::from_str(&line.unwrap()).unwrap();
+        let Some(object) = line.as_object() else {
+            continue;
+        };
+        let Some(filenames) = object.get("filenames") else {
+            continue;
+        };
+        let Some(filename) = filenames
+            .as_array()
+            .iter()
+            .flat_map(|array| array.iter())
+            .filter_map(|name| {
+                name.as_str().and_then(|name| {
+                    if name.ends_with(".rlib") || name.ends_with(".so") { Some(name) } else { None }
+                })
+            })
+            .next()
+        else {
+            continue;
+        };
+        let mut path = PathBuf::from(filename);
+        path.pop();
+        paths.libs.push(path);
     }
 
+    let Some(tmpfile) = tmpfile else {
+        println!();
+        return true;
+    };
+
+    let actual = std::fs::read_to_string(tmpfile).unwrap();
     let expect = PathBuf::from("tests/creusot-std/creusot-std.coma");
     let mut succeeded = true;
-    let (success, buf) = differ(output.clone(), &expect, None, true, args.force_color).unwrap();
+    let (success, buf) = differ(&output, &actual, &expect, None, true, args.force_color).unwrap();
 
     // Warnings in creusot-std will be counted as an error at the end,
     // but we still allow --bless so we can experiment without resolving warnings immediately.
@@ -233,6 +277,7 @@ enum ErasureCheck {
 
 fn build_creusot_std(
     paths: &CreusotPaths,
+    outfile: Option<&Path>,
     output_cmeta: bool,
     erasure_check: ErasureCheck,
     with_spans: bool,
@@ -259,12 +304,16 @@ fn build_creusot_std(
         "--package",
         "creusot-std",
         "--no-check-version",
-        "--stdout",
         "--spans-relative-to=tests/creusot-std",
     ]);
+    if let Some(outfile) = outfile {
+        build.arg("--output-file").arg(outfile);
+    } else {
+        build.arg("--no-output");
+    }
     build.arg("--creusot-rustc").arg(&paths.creusot_rustc);
     build
-        .args(["--", "--package", "creusot-std", "--quiet", "-Fsc-drf"])
+        .args(["--", "--package", "creusot-std", "--quiet", "-Fsc-drf", "--message-format=json"])
         .env("CREUSOT_CONTINUE", "true");
     if matches!(erasure_check, ErasureCheck::Warn | ErasureCheck::Error) {
         build.arg("-Zbuild-std=core,std");
@@ -298,8 +347,11 @@ fn run_creusot(
     cmd.args(["--diagnostic-width=100", "-Zwrite-long-types-to-disk=no"]);
     cmd.args(["--edition=2024", "-Zno-codegen", "--crate-type=lib"]);
     cmd.args(["--extern", &format!("creusot_std={}", paths.rlib.display())]);
-    cmd.arg(format!("-Ldependency={}/", paths.deps.display()));
     cmd.arg(file.file_name().unwrap());
+
+    for path in paths.libs.iter() {
+        cmd.arg("-L").arg(format!("dependency={}", path.display()));
+    }
 
     if header_line.contains("SHORT_ERROR") {
         cmd.arg("--error-format=short");
@@ -419,7 +471,7 @@ where
 
                 let entry_name = entry.file_stem().unwrap().to_str().unwrap();
 
-                let output = match command_builder(&entry) {
+                let mut output = match command_builder(&entry) {
                     None => continue,
                     Some(mut c) => {
                         if !args.quiet {
@@ -438,9 +490,11 @@ where
 
                 let stderr = entry.with_extension("stderr");
                 let stdout = entry.with_extension("coma");
+                let actual = String::from_utf8(std::mem::take(&mut output.stdout)).unwrap();
 
                 let (success, buf) = differ(
-                    output.clone(),
+                    &output,
+                    &actual,
                     &stdout,
                     Some(&stderr),
                     should_succeed,
@@ -458,10 +512,10 @@ where
                 }
 
                 if args.bless && !(should_succeed && !output.status.success()) {
-                    if output.stdout.is_empty() {
+                    if actual.is_empty() {
                         let _ = std::fs::remove_file(stdout);
                     } else {
-                        std::fs::write(stdout, &output.stdout).unwrap();
+                        std::fs::write(stdout, &actual).unwrap();
                     }
 
                     let no_warn = output.stderr.is_empty();
@@ -520,7 +574,7 @@ fn erasure_check(paths: &CreusotPaths) {
     let build_once = |erasure_check, msg: &str| {
         print!("{msg}");
         std::io::stdout().flush().unwrap();
-        let output = build_creusot_std(paths, false, erasure_check, false).unwrap();
+        let output = build_creusot_std(paths, None, false, erasure_check, false).unwrap();
         if !output.status.success() {
             println!("failed");
             if !output.stderr.is_empty() {

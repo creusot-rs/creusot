@@ -15,8 +15,9 @@ pub fn normalize_file_path(input: impl Into<String>) -> String {
 }
 
 pub fn differ(
-    output: std::process::Output,
-    stdout: &Path,
+    output: &std::process::Output,
+    actual: &str,
+    expect: &Path,
     stderr: Option<&Path>,
     should_succeed: bool,
     enable_color: bool,
@@ -24,9 +25,8 @@ pub fn differ(
     let mut buf = if enable_color { Buffer::ansi() } else { Buffer::no_color() };
     match output.clone().ok() {
         Ok(output) => {
-            let expect_out = &std::fs::read(stdout).unwrap_or_else(|_| Vec::new());
-            let success_out =
-                compare_str(&mut buf, from_utf8(&output.stdout)?, from_utf8(expect_out)?);
+            let expect_out = std::fs::read(expect).unwrap_or_else(|_| Vec::new());
+            let success_out = compare_str(&mut buf, actual, from_utf8(&expect_out)?);
 
             let success_err = if let Some(stderr) = stderr {
                 let expect_err = &std::fs::read(stderr).unwrap_or_else(|_| Vec::new());
