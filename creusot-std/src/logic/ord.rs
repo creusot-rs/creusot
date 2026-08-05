@@ -343,3 +343,12 @@ impl<A: PartialOrdLogic, B: PartialOrdLogic> PartialOrdLogic for (A, B) {
 
     partial_ord_laws_impl! {}
 }
+
+impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
+    #[logic]
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {
+        let _ = A::lt_log_total;
+        let _ = B::lt_log_total;
+    }
+}
