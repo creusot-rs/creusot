@@ -8,8 +8,12 @@ module M_foo
   let into_inner_Int (self: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
   
-  let new_Int (x: int) (return (x'0: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_Int (x: int) : int
+  
+  axiom new_Int_spec: forall x: int [new_Int x]. new_Int x = x
+  
+  let new_Int'0 (x: int) (return (x'0: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = new_Int x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -19,7 +23,7 @@ module M_foo
     [ bb0 = s0
       [ s0 = new {(1: Int128.t)} (fun (_x: int) -> [ &_3 <- _x ] s1)
       | s1 = into_inner_Int {_3} (fun (_x: int) -> [ &_2 <- _x ] s2)
-      | s2 = new_Int {_2} (fun (_x: int) -> [ &_ret <- _x ] s3)
+      | s2 = new_Int'0 {_2} (fun (_x: int) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ] [ & _ret: int = Any.any_l () | & _2: int = Any.any_l () | & _3: int = Any.any_l () ])
     [ return (result: int) -> {[@stop_split] [@expl:foo ensures] result = 1} (! return {result}) ]
 end

@@ -175,8 +175,12 @@ module M_foo
   
   meta "rewrite_def" predicate resolve_refmut_Box_Perm_ptr_i32_Global
   
-  let new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_unit (x: ()) : ()
+  
+  axiom new_unit_spec: forall x: () [new_unit x]. new_unit x = x
+  
+  let new_unit'0 (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = new_unit x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -215,7 +219,7 @@ module M_foo
       | s16 = s17 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_Perm_ptr_i32_Global _11} any) ]
       | s17 = -{resolve_refmut_Box_Perm_ptr_i32_Global _11}- s18
       | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Box_Perm_ptr_i32_Global own1} any) ]
-      | s19 = new_unit {_8} (fun (_x: ()) -> [ &_7 <- _x ] s20)
+      | s19 = new_unit'0 {_8} (fun (_x: ()) -> [ &_7 <- _x ] s20)
       | s20 = {[@expl:assertion] own1 <> own2} s21
       | s21 = {[@expl:assertion] p1 <> p2} s22
       | s22 = return {_ret} ] ]

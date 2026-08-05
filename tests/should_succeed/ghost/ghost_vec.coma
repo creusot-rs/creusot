@@ -87,8 +87,12 @@ module M_ghost_vec
         end}
       (! return {result}) ]
   
-  let new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_unit (x: ()) : ()
+  
+  axiom new_unit_spec: forall x: () [new_unit x]. new_unit x = x
+  
+  let new_unit'0 (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = new_unit x} (! return {result}) ]
   
   function push_front_i32 [@inline:trivial] (self: Seq.seq Int32.t) (x: Int32.t) : Seq.seq Int32.t = Seq.cons x self
   
@@ -242,7 +246,7 @@ module M_ghost_vec
       | s28 = {[@expl:assertion] pop3 = Some (42: Int32.t)} s29
       | s29 = {[@expl:assertion] pop4 = None} s30
       | s30 = {[@expl:assertion] pop5 = None} s31
-      | s31 = new_unit {_6} (fun (_x: ()) -> [ &_5 <- _x ] s32)
+      | s31 = new_unit'0 {_6} (fun (_x: ()) -> [ &_5 <- _x ] s32)
       | s32 = new_i32 (fun (_x: Seq.seq Int32.t) -> [ &v'0 <- _x ] s33)
       | s33 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v'0}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_118 <- _bor ] [ &v'0 <- _bor.final ] s34)
@@ -304,7 +308,7 @@ module M_ghost_vec
       | s69 = {[@expl:assertion] pop2'0 = Some (2: Int32.t)} s70
       | s70 = {[@expl:assertion] pop3'0 = Some (1: Int32.t)} s71
       | s71 = {[@expl:assertion] pop4'0 = None} s72
-      | s72 = new_unit {_114} (fun (_x: ()) -> [ &_113 <- _x ] s73)
+      | s72 = new_unit'0 {_114} (fun (_x: ()) -> [ &_113 <- _x ] s73)
       | s73 = return {_ret} ]
     | bb5 = {false} any ]
     [ & _ret: () = Any.any_l ()

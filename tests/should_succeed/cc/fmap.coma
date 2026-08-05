@@ -213,8 +213,12 @@ module M_resolves
     forall x: t_Iter_refmut_usize_refmut_usize [resolve_Iter_refmut_usize_refmut_usize'0 x]. resolve_Iter_refmut_usize_refmut_usize'0 x
       -> resolve_Iter_refmut_usize_refmut_usize x
   
-  let new_usize (x: UInt64.t) (return (x'0: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_usize (x: UInt64.t) : UInt64.t
+  
+  axiom new_usize_spec: forall x: UInt64.t [new_usize x]. new_usize x = x
+  
+  let new_usize'0 (x: UInt64.t) (return (x'0: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:new ensures] result = new_usize x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -281,7 +285,7 @@ module M_resolves
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_refmut_usize_refmut_usize iter} any) ]
       | s1 = -{resolve_Iter_refmut_usize_refmut_usize'0 iter}- s2
       | s2 = UInt64.add {k} {v} (fun (_x: UInt64.t) -> [ &_2 <- _x ] s3)
-      | s3 = new_usize {_2} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
+      | s3 = new_usize'0 {_2} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & _2: UInt64.t = Any.any_l ()

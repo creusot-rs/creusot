@@ -1,0 +1,2653 @@
+module M_add_one
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  use int.Int
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  function add_one (x: Int64.t) : Int64.t = Int64.add x (1: Int64.t)
+  
+  axiom add_one_spec: forall x: Int64.t [add_one x]. Int64.to_int x < Int64.to_int const_MAX - 1
+      -> Int64.to_int (add_one x) = Int64.to_int x + 1
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let add_one'0 (x: Int64.t) (return (x'0: Int64.t)) = {[@stop_split] [@expl:add_one requires] Int64.to_int x
+    < Int64.to_int const_MAX - 1}
+    (! bb0
+    [ bb0 = s0 [ s0 = Int64.add {x} {(1: Int64.t)} (fun (_x: Int64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int64.t = Any.any_l () | & x: Int64.t = x ])
+    [ return (result: Int64.t) ->
+    {[@stop_split] [@expl:add_one ensures] ([@stop_split] [@expl:add_one ensures #0] result = add_one x)
+      /\ ([@stop_split] [@expl:add_one ensures #1] Int64.to_int result = Int64.to_int x + 1)}
+      (! return {result}) ]
+end
+module M_add_one_logic
+  use creusot.int.Int64
+  use int.Int
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : Int64.t
+  
+  function add_one (x: Int64.t) : Int64.t
+  
+  goal vc_add_one: Int64.to_int x < Int64.to_int const_MAX - 1
+    -> ([@stop_split] [@expl:add_one_logic ensures] Int64.to_int (Int64.add x (1: Int64.t)) = Int64.to_int x + 1)
+end
+module M_add_two
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  use int.Int
+  
+  constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+  
+  function add_one (x: Int64.t) : Int64.t = Int64.add x (1: Int64.t)
+  
+  axiom add_one_spec: forall x: Int64.t [add_one x]. Int64.to_int x < Int64.to_int const_MAX - 1
+      -> Int64.to_int (add_one x) = Int64.to_int x + 1
+  
+  let add_one'0 (x: Int64.t) (return (x'0: Int64.t)) = {[@stop_split] [@expl:add_one requires] Int64.to_int x
+    < Int64.to_int const_MAX - 1}
+    any
+    [ return (result: Int64.t) ->
+    {[@stop_split] [@expl:add_one ensures] ([@stop_split] [@expl:add_one ensures #0] result = add_one x)
+      /\ ([@stop_split] [@expl:add_one ensures #1] Int64.to_int result = Int64.to_int x + 1)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let add_two (x: Int64.t) (return (x'0: Int64.t)) = {[@stop_split] [@expl:add_two requires] Int64.to_int x
+    < Int64.to_int const_MAX - 2}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = add_one'0 {x} (fun (_x: Int64.t) -> [ &_6 <- _x ] s1)
+      | s1 = Int64.add {_6} {(1: Int64.t)} (fun (_x: Int64.t) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: Int64.t = Any.any_l () | & x: Int64.t = x | & _6: Int64.t = Any.any_l () ])
+    [ return (result: Int64.t) -> {[@stop_split] [@expl:add_two ensures] result = add_one (add_one x)}
+      (! return {result}) ]
+end
+module M_all_ones
+  use creusot.slice.Slice64
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  type t_Iter_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+  
+  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+  
+  meta "rewrite_def" predicate inv_slice_T
+  
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+  
+  meta "rewrite_def" predicate invariant_ref_slice_T
+  
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_slice_T
+  
+  predicate inv_Iter_T (_1: t_Iter_T)
+  
+  function view_Iter_T (self: t_Iter_T) : Slice64.slice t_T
+  
+  let into_iter_ref_slice_T (self_: Slice64.slice t_T) (return (x: t_Iter_T)) =
+  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_ref_slice_T self_}
+    any
+    [ return (result: t_Iter_T) ->
+    {[@stop_split] [@expl:into_iter_ref_slice_T ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_T result)
+      /\ ([@stop_split] [@expl:into_iter ensures] self_ = view_Iter_T result)}
+      (! return {result}) ]
+  
+  type t_Option_ref_T = None | Some t_T
+  
+  predicate invariant_refmut_Iter_T [@inline:trivial] (self: MutBorrow.t t_Iter_T) =
+    inv_Iter_T self.current /\ inv_Iter_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Iter_T
+  
+  predicate inv_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = invariant_refmut_Iter_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Iter_T
+  
+  predicate inv_Option_ref_T (_1: t_Option_ref_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_ref_T f0
+        end
+  
+  function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_T
+  
+  function to_ref_seq_slice_T (self: Slice64.slice t_T) : Seq.seq t_T
+  
+  axiom to_ref_seq_slice_T_spec:
+    forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. Seq.length (to_ref_seq_slice_T self)
+      = Seq.length (Slice64.view self)
+  
+  axiom to_ref_seq_slice_T_spec'0: forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. forall i: int. 0 <= i
+          /\ i < Seq.length (to_ref_seq_slice_T self) -> Seq.get (to_ref_seq_slice_T self) i = index_slice_T self i
+  
+  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (tl: t_Iter_T) =
+    to_ref_seq_slice_T (view_Iter_T self) = Seq.(++) visited (to_ref_seq_slice_T (view_Iter_T tl))
+  
+  function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : ()
+  
+  axiom produces_trans_Iter_T_spec:
+    forall a: t_Iter_T, ab: Seq.seq t_T, b: t_Iter_T, bc: Seq.seq t_T, c: t_Iter_T. produces_Iter_T a ab b
+      -> produces_Iter_T b bc c -> produces_Iter_T a (Seq.(++) ab bc) c
+  
+  function produces_refl_Iter_T (self: t_Iter_T) : ()
+  
+  axiom produces_refl_Iter_T_spec: forall self: t_Iter_T. produces_Iter_T self (Seq.empty: Seq.seq t_T) self
+  
+  predicate resolve_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Iter_T
+  
+  predicate completed_Iter_T (self: MutBorrow.t t_Iter_T) =
+    resolve_refmut_Iter_T self /\ Slice64.view (view_Iter_T self.current) = (Seq.empty: Seq.seq t_T)
+  
+  let next_Iter_T (self_: MutBorrow.t t_Iter_T) (return (x: t_Option_ref_T)) =
+  {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_T self_}
+    any
+    [ return (result: t_Option_ref_T) ->
+    {[@stop_split] [@expl:next_Iter_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_ref_T result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
+        | None -> completed_Iter_T self_
+        | Some v -> produces_Iter_T self_.current (Seq.singleton v) self_.final
+        end)}
+      (! return {result}) ]
+  
+  function view_T (self: t_T) : int
+  
+  predicate is_one_T (self: t_T)
+  
+  axiom is_one_T_spec: forall self: t_T [is_one_T self]. is_one_T self = (view_T self = 1)
+  
+  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
+  
+  meta "rewrite_def" predicate invariant_ref_ref_T
+  
+  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_ref_T
+  
+  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_ref_T
+  
+  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_ref_T
+  
+  let elim_Some (_x: t_Option_ref_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate precondition_is_one (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition_is_one () args]. (let self = args in inv_ref_T self)
+      -> precondition_is_one () args
+  
+  predicate postcondition_is_one (self: ()) (args: t_T) (result: bool)
+  
+  axiom postcondition_fndef:
+    forall args: t_T, res: bool [postcondition_is_one () args res]. postcondition_is_one () args res
+      -> (let self = args in res = is_one_T self /\ res = (view_T self = 1))
+  
+  predicate postcondition_once_is_one (self: ()) (args: t_T) (result: bool) = postcondition_is_one self args result
+  
+  meta "rewrite_def" predicate postcondition_once_is_one
+  
+  let is_one_T'0 (self: t_T) (return (x: bool)) = {[@stop_split] [@expl:is_one requires] precondition_is_one () self}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_one ensures] postcondition_once_is_one () self result}
+      (! return {result}) ]
+  
+  predicate resolve_Iter_T (_1: t_Iter_T)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let all_ones_T (elems: Slice64.slice t_T) (return (x: bool)) =
+  {[@stop_split] [@expl:all_ones 'elems' type invariant] inv_ref_slice_T elems}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = into_iter_ref_slice_T {elems} (fun (_x: t_Iter_T) -> [ &iter <- _x ] s1)
+      | s1 = [ &iter_old <- iter ] s2
+      | s2 = [ &produced <- Seq.empty: Seq.seq t_T ] s3
+      | s3 = bb4 ]
+    | bb4 = bb4
+      [ bb4 = {[@expl:inferred invariant: type invariant] inv_Iter_T iter}
+        {[@expl:for invariant] inv_Seq_ref_T produced}
+        {[@expl:for invariant] produces_Iter_T iter_old produced iter}
+        {[@expl:loop invariant] forall i: int. 0 <= i /\ i < Seq.length produced -> is_one_T (Seq.get produced i)}
+        (! s0)
+        [ s0 = MutBorrow.borrow_mut <t_Iter_T> {iter}
+            (fun (_bor: MutBorrow.t t_Iter_T) -> [ &_26 <- _bor ] -{inv_Iter_T _bor.final}- [ &iter <- _bor.final ] s1)
+          [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Iter_T> {_26.current} {MutBorrow.get_id _26}
+            (fun (_bor: MutBorrow.t t_Iter_T) ->
+              [ &_25 <- _bor ] -{inv_Iter_T _bor.final}-
+              [ &_26 <- { _26 with current = _bor.final } ] s2)
+          [ _ck -> (! {[@expl:type invariant] inv_Iter_T _26.current} any) ]
+        | s2 = next_Iter_T {_25} (fun (_x: t_Option_ref_T) -> [ &_24 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_T _26} any) ]
+        | s4 = -{resolve_refmut_Iter_T _26}- s5
+        | s5 = any [ br0 -> {_24 = None} (! bb9) | br1 (x0: t_T) -> {_24 = Some x0} (! bb10) ] ]
+        [ bb10 = s0
+          [ s0 = elim_Some {_24} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &elem <- __creusot_proc_iter_elem ] s3
+          | s3 = is_one_T'0 {elem} (fun (_x: bool) -> [ &_35 <- _x ] s4)
+          | s4 = any [ br0 -> {_35 = false} (! bb14) | br1 -> {_35} (! bb4) ] ] ] ]
+    | bb14 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
+      | s1 = -{resolve_Iter_T iter}- s2
+      | s2 = [ &_ret <- false ] s3
+      | s3 = return {_ret} ]
+    | bb9 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
+      | s1 = -{resolve_Iter_T iter}- s2
+      | s2 = [ &_ret <- true ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l ()
+    | & elems: Slice64.slice t_T = elems
+    | & iter: t_Iter_T = Any.any_l ()
+    | & iter_old: t_Iter_T = Any.any_l ()
+    | & produced: Seq.seq t_T = Any.any_l ()
+    | & _24: t_Option_ref_T = Any.any_l ()
+    | & _25: MutBorrow.t t_Iter_T = Any.any_l ()
+    | & _26: MutBorrow.t t_Iter_T = Any.any_l ()
+    | & __creusot_proc_iter_elem: t_T = Any.any_l ()
+    | & elem: t_T = Any.any_l ()
+    | & _35: bool = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:all_ones ensures] result
+      = (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view elems) -> is_one_T (Seq.get (Slice64.view elems) i))}
+      (! return {result}) ]
+end
+module M_all_zeros
+  use creusot.int.UInt64
+  use creusot.slice.Slice64
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+  
+  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+  
+  meta "rewrite_def" predicate inv_slice_T
+  
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+  
+  meta "rewrite_def" predicate invariant_ref_slice_T
+  
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_slice_T
+  
+  let len_T (self_: Slice64.slice t_T) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_slice_T self_}
+    any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
+      = UInt64.t'int result}
+      (! return {result}) ]
+  
+  predicate precondition_is_zero (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition_is_zero () args]. (let self = args in inv_ref_T self)
+      -> precondition_is_zero () args
+  
+  predicate is_zero_T (self: t_T)
+  
+  predicate postcondition_is_zero (self: ()) (args: t_T) (result: bool)
+  
+  axiom postcondition_fndef:
+    forall args: t_T, res: bool [postcondition_is_zero () args res]. postcondition_is_zero () args res
+      -> (let self = args in res = is_zero_T self)
+  
+  predicate postcondition_once_is_zero (self: ()) (args: t_T) (result: bool) = postcondition_is_zero self args result
+  
+  meta "rewrite_def" predicate postcondition_once_is_zero
+  
+  let is_zero_T'0 (self: t_T) (return (x: bool)) = {[@stop_split] [@expl:is_zero requires] precondition_is_zero () self}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_zero ensures] postcondition_once_is_zero () self result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let all_zeros_T (elems: Slice64.slice t_T) (return (x: bool)) =
+  {[@stop_split] [@expl:all_zeros 'elems' type invariant] inv_ref_slice_T elems}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &i <- (0: UInt64.t) ] s1 | s1 = bb2 ]
+    | bb2 = bb2
+      [ bb2 = (! s0
+        [ s0 = len_T {elems} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s1)
+        | s1 = [ &_7 <- UInt64.lt i _9 ] s2
+        | s2 = any [ br0 -> {_7 = false} (! bb9) | br1 -> {_7} (! bb4) ] ])
+        [ bb4 = s0
+          [ s0 = [ &_13 <- i ] s1
+          | s1 = [ &_14 <- Slice64.length elems ] s2
+          | s2 = [ &_15 <- UInt64.lt _13 _14 ] s3
+          | s3 = {[@expl:index in bounds] _15} s4
+          | s4 = Slice64.get <t_T> {elems} {_13} (fun (r: t_T) -> [ &_12 <- r ] s5)
+          | s5 = is_zero_T'0 {_12} (fun (_x: bool) -> [ &_11 <- _x ] s6)
+          | s6 = any [ br0 -> {_11 = false} (! bb8) | br1 -> {_11} (! bb2) ] ] ] ]
+    | bb8 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+    | bb9 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l ()
+    | & elems: Slice64.slice t_T = elems
+    | & i: UInt64.t = Any.any_l ()
+    | & _7: bool = Any.any_l ()
+    | & _9: UInt64.t = Any.any_l ()
+    | & _11: bool = Any.any_l ()
+    | & _12: t_T = Any.any_l ()
+    | & _13: UInt64.t = Any.any_l ()
+    | & _14: UInt64.t = Any.any_l ()
+    | & _15: bool = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:all_zeros ensures] result
+      = (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view elems) -> is_zero_T (Seq.get (Slice64.view elems) i))}
+      (! return {result}) ]
+end
+module M_are_zeros
+  use creusot.int.Int32
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  
+  predicate is_zero_i32 (self: Int32.t) = self = (0: Int32.t)
+  
+  let is_zero_i32'0 (self: Int32.t) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_zero ensures] result = is_zero_i32 self} (! return {result}) ]
+  
+  predicate is_zero_i64 (self: Int64.t) = self = (0: Int64.t)
+  
+  let is_zero_i64'0 (self: Int64.t) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_zero ensures] result = is_zero_i64 self} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let are_zeros (x: Int32.t) (y: Int64.t) (return (x'0: bool)) = (! bb0
+    [ bb0 = s0
+      [ s0 = is_zero_i32'0 {x} (fun (_x: bool) -> [ &_6 <- _x ] s1)
+      | s1 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb2) ] ]
+    | bb2 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ]
+    | bb3 = s0 [ s0 = is_zero_i64'0 {y} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & x: Int32.t = x | & y: Int64.t = y | & _6: bool = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:are_zeros ensures] result = is_zero_i32 x \/ is_zero_i64 y}
+      (! return {result}) ]
+end
+module M_dummy_cast1
+  use creusot.slice.Slice64
+  use creusot.int.UInt8
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int8
+  use creusot.prelude.Any
+  use seq.Seq
+  use creusot.int.UInt64
+  use int.Int
+  
+  type t_Iter_u8
+  
+  predicate inv_Iter_u8 (_1: t_Iter_u8)
+  
+  function view_Iter_u8 (self: t_Iter_u8) : Slice64.slice UInt8.t
+  
+  let iter_u8 (self_: Slice64.slice UInt8.t) (return (x: t_Iter_u8)) = any
+    [ return (result: t_Iter_u8) ->
+    {[@stop_split] [@expl:iter_u8 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_u8 result)
+      /\ ([@stop_split] [@expl:iter ensures] view_Iter_u8 result = self_)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure0
+  
+  predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
+  
+  let closure0 [@coma:extspec] (self: MutBorrow.t ()) (i: UInt8.t) (return (x: Int8.t)) = bb0
+    [ bb0 = s0
+      [ s0 = -{resolve_refmut_closure0 self}- s1
+      | s1 = [ &_ret <- Int8.of_int (UInt8.t'int i) ] s2
+      | s2 = return {_ret} ] ] [ & _ret: Int8.t = Any.any_l () | & self: MutBorrow.t () = self | & i: UInt8.t = i ]
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  type t_Map_Iter_u8_closure0
+  
+  function index_slice_u8 [@inline:trivial] (self: Slice64.slice UInt8.t) (ix: int) : UInt8.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_u8
+  
+  function to_ref_seq_slice_u8 (self: Slice64.slice UInt8.t) : Seq.seq UInt8.t
+  
+  axiom to_ref_seq_slice_u8_spec:
+    forall self: Slice64.slice UInt8.t [to_ref_seq_slice_u8 self]. Seq.length (to_ref_seq_slice_u8 self)
+      = Seq.length (Slice64.view self)
+  
+  axiom to_ref_seq_slice_u8_spec'0: forall self: Slice64.slice UInt8.t [to_ref_seq_slice_u8 self]. forall i: int. 0 <= i
+          /\ i < Seq.length (to_ref_seq_slice_u8 self) -> Seq.get (to_ref_seq_slice_u8 self) i = index_slice_u8 self i
+  
+  predicate produces_Iter_u8 (self: t_Iter_u8) (visited: Seq.seq UInt8.t) (tl: t_Iter_u8) =
+    to_ref_seq_slice_u8 (view_Iter_u8 self) = Seq.(++) visited (to_ref_seq_slice_u8 (view_Iter_u8 tl))
+  
+  function produces_trans_Iter_u8 (a: t_Iter_u8) (ab: Seq.seq UInt8.t) (b: t_Iter_u8) (bc: Seq.seq UInt8.t) (c: t_Iter_u8) : ()
+  
+  axiom produces_trans_Iter_u8_spec:
+    forall a: t_Iter_u8, ab: Seq.seq UInt8.t, b: t_Iter_u8, bc: Seq.seq UInt8.t, c: t_Iter_u8. produces_Iter_u8 a ab b
+      -> produces_Iter_u8 b bc c -> produces_Iter_u8 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Iter_u8 (self: t_Iter_u8) : ()
+  
+  axiom produces_refl_Iter_u8_spec: forall self: t_Iter_u8. produces_Iter_u8 self (Seq.empty: Seq.seq UInt8.t) self
+  
+  predicate inv_ref_u8 [@inline:trivial] (_1: UInt8.t) = true
+  
+  meta "rewrite_def" predicate inv_ref_u8
+  
+  predicate precondition_closure0 (self: ()) (args: UInt8.t) =
+    let i = args in forall bor_self: MutBorrow.t (). bor_self.current = self -> closure0'pre bor_self i
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate resolve_refmut_Iter_u8 [@inline:trivial] (_1: MutBorrow.t t_Iter_u8) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Iter_u8
+  
+  predicate completed_Iter_u8 (self: MutBorrow.t t_Iter_u8) =
+    resolve_refmut_Iter_u8 self /\ Slice64.view (view_Iter_u8 self.current) = (Seq.empty: Seq.seq UInt8.t)
+  
+  predicate next_precondition_Iter_u8 [@inline:trivial] (iter: t_Iter_u8) (func: ()) =
+    forall e: UInt8.t, i: t_Iter_u8 [produces_Iter_u8 iter (Seq.singleton e) i]. inv_ref_u8 e
+        /\ produces_Iter_u8 iter (Seq.singleton e) i -> precondition_closure0 func e
+  
+  meta "rewrite_def" predicate next_precondition_Iter_u8
+  
+  predicate inv_Seq_ref_u8 [@inline:trivial] (_1: Seq.seq UInt8.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_ref_u8
+  
+  predicate inv_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = true
+  
+  meta "rewrite_def" predicate inv_refmut_closure0
+  
+  predicate postcondition_mut_closure0 (self: ()) (args: UInt8.t) (result_state: ()) (result: Int8.t) =
+    let i = args in exists bor_self: MutBorrow.t (). bor_self.current = self
+      /\ bor_self.final = result_state /\ closure0'post'return bor_self i result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  predicate preservation_Iter_u8 [@inline:trivial] (iter: t_Iter_u8) (func: ()) =
+    forall s: Seq.seq UInt8.t, e1: UInt8.t, e2: UInt8.t, f: MutBorrow.t (), b: Int8.t, i: t_Iter_u8 [produces_Iter_u8 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current e1 f.final b]. hist_inv_closure0 func f.current
+      -> inv_Seq_ref_u8 s /\ inv_ref_u8 e1 /\ inv_ref_u8 e2 /\ inv_refmut_closure0 f
+      -> produces_Iter_u8 iter (Seq.snoc (Seq.snoc s e1) e2) i
+      -> postcondition_mut_closure0 f.current e1 f.final b -> precondition_closure0 f.final e2
+  
+  meta "rewrite_def" predicate preservation_Iter_u8
+  
+  predicate reinitialize_Iter_u8 [@inline:trivial] =
+    forall iter: MutBorrow.t t_Iter_u8, func: (). completed_Iter_u8 iter
+      -> next_precondition_Iter_u8 iter.final func /\ preservation_Iter_u8 iter.final func
+  
+  meta "rewrite_def" predicate reinitialize_Iter_u8
+  
+  function iter_Map_Iter_u8_closure0 (self: t_Map_Iter_u8_closure0) : t_Iter_u8
+  
+  predicate inv_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate inv_closure0
+  
+  function func_Map_Iter_u8_closure0 (self: t_Map_Iter_u8_closure0) : ()
+  
+  predicate invariant_Map_Iter_u8_closure0 (self: t_Map_Iter_u8_closure0)
+  
+  axiom invariant_Map_Iter_u8_closure0_spec:
+    forall self: t_Map_Iter_u8_closure0 [invariant_Map_Iter_u8_closure0 self]. invariant_Map_Iter_u8_closure0 self
+      -> inv_Iter_u8 (iter_Map_Iter_u8_closure0 self) /\ inv_closure0 (func_Map_Iter_u8_closure0 self)
+  
+  predicate inv_Map_Iter_u8_closure0 (_1: t_Map_Iter_u8_closure0)
+  
+  axiom inv_axiom: forall x: t_Map_Iter_u8_closure0 [inv_Map_Iter_u8_closure0 x]. inv_Map_Iter_u8_closure0 x
+      -> invariant_Map_Iter_u8_closure0 x
+  
+  let map_Iter_u8 (self_: t_Iter_u8) (f: ()) (return (x: t_Map_Iter_u8_closure0)) =
+  {[@stop_split] [@expl:map_Iter_u8 requires] ([@stop_split] [@expl:map 'self_' type invariant] inv_Iter_u8 self_)
+    /\ ([@stop_split] [@expl:map requires #0] forall e: UInt8.t, i2: t_Iter_u8. produces_Iter_u8 self_ (Seq.singleton e) i2
+          /\ inv_ref_u8 e -> precondition_closure0 f e)
+    /\ ([@stop_split] [@expl:map requires #1] reinitialize_Iter_u8)
+    /\ ([@stop_split] [@expl:map requires #2] preservation_Iter_u8 self_ f)}
+    any
+    [ return (result: t_Map_Iter_u8_closure0) ->
+    {[@stop_split] [@expl:map_Iter_u8 ensures] ([@stop_split] [@expl:map result type invariant] inv_Map_Iter_u8_closure0 result)
+      /\ ([@stop_split] [@expl:map ensures] iter_Map_Iter_u8_closure0 result = self_
+      /\ func_Map_Iter_u8_closure0 result = f)}
+      (! return {result}) ]
+  
+  type t_Vec_i8_Global
+  
+  predicate precondition_into_iter (self: ()) (args: t_Map_Iter_u8_closure0) =
+    let self_ = args in inv_Map_Iter_u8_closure0 self_
+  
+  meta "rewrite_def" predicate precondition_into_iter
+  
+  predicate precondition_from_iter (self: ()) (args: t_Map_Iter_u8_closure0) =
+    let iter = args in inv_Map_Iter_u8_closure0 iter /\ precondition_into_iter () iter
+  
+  meta "rewrite_def" predicate precondition_from_iter
+  
+  let into_iter_Map_Iter_u8_closure0 (self_: t_Map_Iter_u8_closure0) (return (x: t_Map_Iter_u8_closure0)) =
+  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Map_Iter_u8_closure0 self_}
+    any
+    [ return (result: t_Map_Iter_u8_closure0) ->
+    {[@stop_split] [@expl:into_iter_Map_Iter_u8_closure0 ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Map_Iter_u8_closure0 result)
+      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
+      (! return {result}) ]
+  
+  predicate postcondition_into_iter (self: ()) (args: t_Map_Iter_u8_closure0) (result: t_Map_Iter_u8_closure0) =
+    let self_ = args in inv_Map_Iter_u8_closure0 result /\ result = self_
+  
+  meta "rewrite_def" predicate postcondition_into_iter
+  
+  predicate produces_Map_Iter_u8_closure0 [@inline:trivial] (self: t_Map_Iter_u8_closure0) (visited: Seq.seq Int8.t) (succ: t_Map_Iter_u8_closure0) =
+    hist_inv_closure0 (func_Map_Iter_u8_closure0 self) (func_Map_Iter_u8_closure0 succ)
+    /\ (exists fs: Seq.seq (MutBorrow.t ()). Seq.length fs = Seq.length visited
+      /\ (exists s: Seq.seq UInt8.t [produces_Iter_u8 (iter_Map_Iter_u8_closure0 self) s (iter_Map_Iter_u8_closure0 succ)]. Seq.length s
+          = Seq.length visited
+        /\ produces_Iter_u8 (iter_Map_Iter_u8_closure0 self) s (iter_Map_Iter_u8_closure0 succ)
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            func_Map_Iter_u8_closure0 self = func_Map_Iter_u8_closure0 succ
+          else
+            (Seq.get fs 0).current = func_Map_Iter_u8_closure0 self
+            /\ (Seq.get fs (Seq.length visited - 1)).final = func_Map_Iter_u8_closure0 succ
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv_closure0 (func_Map_Iter_u8_closure0 self) (Seq.get fs i).current
+          /\ postcondition_mut_closure0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+  
+  meta "rewrite_def" predicate produces_Map_Iter_u8_closure0
+  
+  function produces_trans_Map_Iter_u8_closure0 (a: t_Map_Iter_u8_closure0) (ab: Seq.seq Int8.t) (b: t_Map_Iter_u8_closure0) (bc: Seq.seq Int8.t) (c: t_Map_Iter_u8_closure0) : ()
+  
+  axiom produces_trans_Map_Iter_u8_closure0_spec:
+    forall a: t_Map_Iter_u8_closure0, ab: Seq.seq Int8.t, b: t_Map_Iter_u8_closure0, bc: Seq.seq Int8.t, c: t_Map_Iter_u8_closure0. produces_Map_Iter_u8_closure0 a ab b
+      -> produces_Map_Iter_u8_closure0 b bc c -> produces_Map_Iter_u8_closure0 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Map_Iter_u8_closure0 (self: t_Map_Iter_u8_closure0) : ()
+  
+  axiom produces_refl_Map_Iter_u8_closure0_spec:
+    forall self: t_Map_Iter_u8_closure0. produces_Map_Iter_u8_closure0 self (Seq.empty: Seq.seq Int8.t) self
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_i8_Global (self: t_Vec_i8_Global) : Seq.seq Int8.t
+  
+  axiom view_Vec_i8_Global_spec:
+    forall self: t_Vec_i8_Global [view_Vec_i8_Global self]. Seq.length (view_Vec_i8_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate completed_Map_Iter_u8_closure0 (self: MutBorrow.t t_Map_Iter_u8_closure0) =
+    (exists inner: MutBorrow.t t_Iter_u8. inner.current = iter_Map_Iter_u8_closure0 self.current
+        /\ inner.final = iter_Map_Iter_u8_closure0 self.final /\ completed_Iter_u8 inner)
+    /\ func_Map_Iter_u8_closure0 self.current = func_Map_Iter_u8_closure0 self.final
+  
+  predicate resolve_Iter_u8 (_1: t_Iter_u8)
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate resolve_Map_Iter_u8_closure0 [@inline:trivial] (self: t_Map_Iter_u8_closure0) =
+    resolve_Iter_u8 (iter_Map_Iter_u8_closure0 self) /\ resolve_closure0 (func_Map_Iter_u8_closure0 self)
+  
+  meta "rewrite_def" predicate resolve_Map_Iter_u8_closure0
+  
+  predicate resolve_Map_Iter_u8_closure0'0 (_1: t_Map_Iter_u8_closure0)
+  
+  axiom resolve_axiom:
+    forall x: t_Map_Iter_u8_closure0 [resolve_Map_Iter_u8_closure0'0 x]. resolve_Map_Iter_u8_closure0'0 x
+      -> resolve_Map_Iter_u8_closure0 x
+  
+  let from_iter_Vec_i8_Global (iter: t_Map_Iter_u8_closure0) (return (x: t_Vec_i8_Global)) =
+  {[@stop_split] [@expl:from_iter_Vec_i8_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_Map_Iter_u8_closure0 iter)
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    any
+    [ return (result: t_Vec_i8_Global) ->
+    {[@stop_split] [@expl:from_iter ensures] exists into_iter: t_Map_Iter_u8_closure0, done': MutBorrow.t t_Map_Iter_u8_closure0. postcondition_into_iter () iter into_iter
+        /\ produces_Map_Iter_u8_closure0 into_iter (view_Vec_i8_Global result) done'.current
+        /\ completed_Map_Iter_u8_closure0 done' /\ resolve_Map_Iter_u8_closure0'0 done'.final}
+      (! return {result}) ]
+  
+  predicate postcondition_from_iter (self: ()) (args: t_Map_Iter_u8_closure0) (result: t_Vec_i8_Global) =
+    let iter = args in exists into_iter: t_Map_Iter_u8_closure0, done': MutBorrow.t t_Map_Iter_u8_closure0. postcondition_into_iter () iter into_iter
+      /\ produces_Map_Iter_u8_closure0 into_iter (view_Vec_i8_Global result) done'.current
+      /\ completed_Map_Iter_u8_closure0 done' /\ resolve_Map_Iter_u8_closure0'0 done'.final
+  
+  meta "rewrite_def" predicate postcondition_from_iter
+  
+  let collect_Map_Iter_u8_closure0 (self_: t_Map_Iter_u8_closure0) (return (x: t_Vec_i8_Global)) =
+  {[@stop_split] [@expl:collect_Map_Iter_u8_closure0 requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_Map_Iter_u8_closure0 self_)
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
+    any
+    [ return (result: t_Vec_i8_Global) ->
+    {[@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result}
+      (! return {result}) ]
+  
+  predicate is_one_u8 (self: UInt8.t) = self = (1: UInt8.t)
+  
+  axiom is_one_u8_spec: forall self: UInt8.t [is_one_u8 self]. is_one_u8 self = (UInt8.t'int self = 1)
+  
+  predicate is_one_i8 (self: Int8.t) = self = (1: Int8.t)
+  
+  axiom is_one_i8_spec: forall self: Int8.t [is_one_i8 self]. is_one_i8 self = (Int8.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let dummy_cast1 (elems: Slice64.slice UInt8.t) (return (x: t_Vec_i8_Global)) =
+  {[@stop_split] [@expl:dummy_cast1 requires] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view elems)
+      -> is_one_u8 (Seq.get (Slice64.view elems) i)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = iter_u8 {elems} (fun (_x: t_Iter_u8) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_8 <- () ] s2
+      | s2 = map_Iter_u8 {_6} {_8} (fun (_x: t_Map_Iter_u8_closure0) -> [ &_5 <- _x ] s3)
+      | s3 = collect_Map_Iter_u8_closure0 {_5} (fun (_x: t_Vec_i8_Global) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_Vec_i8_Global = Any.any_l ()
+    | & elems: Slice64.slice UInt8.t = elems
+    | & _5: t_Map_Iter_u8_closure0 = Any.any_l ()
+    | & _6: t_Iter_u8 = Any.any_l ()
+    | & _8: () = Any.any_l () ])
+    [ return (result: t_Vec_i8_Global) -> {[@stop_split] [@expl:dummy_cast1 ensures] forall i: int. 0 <= i
+          /\ i < Seq.length (view_Vec_i8_Global result) -> is_one_i8 (Seq.get (view_Vec_i8_Global result) i)}
+      (! return {result}) ]
+end
+module M_dummy_cast2
+  use creusot.slice.Slice64
+  use creusot.int.UInt16
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int16
+  use creusot.prelude.Any
+  use seq.Seq
+  use creusot.int.UInt64
+  use int.Int
+  
+  type t_Iter_u16
+  
+  predicate inv_Iter_u16 (_1: t_Iter_u16)
+  
+  function view_Iter_u16 (self: t_Iter_u16) : Slice64.slice UInt16.t
+  
+  let iter_u16 (self_: Slice64.slice UInt16.t) (return (x: t_Iter_u16)) = any
+    [ return (result: t_Iter_u16) ->
+    {[@stop_split] [@expl:iter_u16 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_u16 result)
+      /\ ([@stop_split] [@expl:iter ensures] view_Iter_u16 result = self_)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure0
+  
+  predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
+  
+  let closure0 [@coma:extspec] (self: MutBorrow.t ()) (i: UInt16.t) (return (x: Int16.t)) = bb0
+    [ bb0 = s0
+      [ s0 = -{resolve_refmut_closure0 self}- s1
+      | s1 = [ &_ret <- Int16.of_int (UInt16.t'int i) ] s2
+      | s2 = return {_ret} ] ] [ & _ret: Int16.t = Any.any_l () | & self: MutBorrow.t () = self | & i: UInt16.t = i ]
+    [ return (result: Int16.t) ->
+    {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  type t_Map_Iter_u16_closure0
+  
+  function index_slice_u16 [@inline:trivial] (self: Slice64.slice UInt16.t) (ix: int) : UInt16.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_u16
+  
+  function to_ref_seq_slice_u16 (self: Slice64.slice UInt16.t) : Seq.seq UInt16.t
+  
+  axiom to_ref_seq_slice_u16_spec:
+    forall self: Slice64.slice UInt16.t [to_ref_seq_slice_u16 self]. Seq.length (to_ref_seq_slice_u16 self)
+      = Seq.length (Slice64.view self)
+  
+  axiom to_ref_seq_slice_u16_spec'0: forall self: Slice64.slice UInt16.t [to_ref_seq_slice_u16 self]. forall i: int. 0
+            <= i
+          /\ i < Seq.length (to_ref_seq_slice_u16 self)
+        -> Seq.get (to_ref_seq_slice_u16 self) i = index_slice_u16 self i
+  
+  predicate produces_Iter_u16 (self: t_Iter_u16) (visited: Seq.seq UInt16.t) (tl: t_Iter_u16) =
+    to_ref_seq_slice_u16 (view_Iter_u16 self) = Seq.(++) visited (to_ref_seq_slice_u16 (view_Iter_u16 tl))
+  
+  function produces_trans_Iter_u16 (a: t_Iter_u16) (ab: Seq.seq UInt16.t) (b: t_Iter_u16) (bc: Seq.seq UInt16.t) (c: t_Iter_u16) : ()
+  
+  axiom produces_trans_Iter_u16_spec:
+    forall a: t_Iter_u16, ab: Seq.seq UInt16.t, b: t_Iter_u16, bc: Seq.seq UInt16.t, c: t_Iter_u16. produces_Iter_u16 a ab b
+      -> produces_Iter_u16 b bc c -> produces_Iter_u16 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Iter_u16 (self: t_Iter_u16) : ()
+  
+  axiom produces_refl_Iter_u16_spec: forall self: t_Iter_u16. produces_Iter_u16 self (Seq.empty: Seq.seq UInt16.t) self
+  
+  predicate inv_ref_u16 [@inline:trivial] (_1: UInt16.t) = true
+  
+  meta "rewrite_def" predicate inv_ref_u16
+  
+  predicate precondition_closure0 (self: ()) (args: UInt16.t) =
+    let i = args in forall bor_self: MutBorrow.t (). bor_self.current = self -> closure0'pre bor_self i
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate resolve_refmut_Iter_u16 [@inline:trivial] (_1: MutBorrow.t t_Iter_u16) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Iter_u16
+  
+  predicate completed_Iter_u16 (self: MutBorrow.t t_Iter_u16) =
+    resolve_refmut_Iter_u16 self /\ Slice64.view (view_Iter_u16 self.current) = (Seq.empty: Seq.seq UInt16.t)
+  
+  predicate next_precondition_Iter_u16 [@inline:trivial] (iter: t_Iter_u16) (func: ()) =
+    forall e: UInt16.t, i: t_Iter_u16 [produces_Iter_u16 iter (Seq.singleton e) i]. inv_ref_u16 e
+        /\ produces_Iter_u16 iter (Seq.singleton e) i -> precondition_closure0 func e
+  
+  meta "rewrite_def" predicate next_precondition_Iter_u16
+  
+  predicate inv_Seq_ref_u16 [@inline:trivial] (_1: Seq.seq UInt16.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_ref_u16
+  
+  predicate inv_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = true
+  
+  meta "rewrite_def" predicate inv_refmut_closure0
+  
+  predicate postcondition_mut_closure0 (self: ()) (args: UInt16.t) (result_state: ()) (result: Int16.t) =
+    let i = args in exists bor_self: MutBorrow.t (). bor_self.current = self
+      /\ bor_self.final = result_state /\ closure0'post'return bor_self i result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  predicate preservation_Iter_u16 [@inline:trivial] (iter: t_Iter_u16) (func: ()) =
+    forall s: Seq.seq UInt16.t, e1: UInt16.t, e2: UInt16.t, f: MutBorrow.t (), b: Int16.t, i: t_Iter_u16 [produces_Iter_u16 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current e1 f.final b]. hist_inv_closure0 func f.current
+      -> inv_Seq_ref_u16 s /\ inv_ref_u16 e1 /\ inv_ref_u16 e2 /\ inv_refmut_closure0 f
+      -> produces_Iter_u16 iter (Seq.snoc (Seq.snoc s e1) e2) i
+      -> postcondition_mut_closure0 f.current e1 f.final b -> precondition_closure0 f.final e2
+  
+  meta "rewrite_def" predicate preservation_Iter_u16
+  
+  predicate reinitialize_Iter_u16 [@inline:trivial] =
+    forall iter: MutBorrow.t t_Iter_u16, func: (). completed_Iter_u16 iter
+      -> next_precondition_Iter_u16 iter.final func /\ preservation_Iter_u16 iter.final func
+  
+  meta "rewrite_def" predicate reinitialize_Iter_u16
+  
+  function iter_Map_Iter_u16_closure0 (self: t_Map_Iter_u16_closure0) : t_Iter_u16
+  
+  predicate inv_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate inv_closure0
+  
+  function func_Map_Iter_u16_closure0 (self: t_Map_Iter_u16_closure0) : ()
+  
+  predicate invariant_Map_Iter_u16_closure0 (self: t_Map_Iter_u16_closure0)
+  
+  axiom invariant_Map_Iter_u16_closure0_spec:
+    forall self: t_Map_Iter_u16_closure0 [invariant_Map_Iter_u16_closure0 self]. invariant_Map_Iter_u16_closure0 self
+      -> inv_Iter_u16 (iter_Map_Iter_u16_closure0 self) /\ inv_closure0 (func_Map_Iter_u16_closure0 self)
+  
+  predicate inv_Map_Iter_u16_closure0 (_1: t_Map_Iter_u16_closure0)
+  
+  axiom inv_axiom: forall x: t_Map_Iter_u16_closure0 [inv_Map_Iter_u16_closure0 x]. inv_Map_Iter_u16_closure0 x
+      -> invariant_Map_Iter_u16_closure0 x
+  
+  let map_Iter_u16 (self_: t_Iter_u16) (f: ()) (return (x: t_Map_Iter_u16_closure0)) =
+  {[@stop_split] [@expl:map_Iter_u16 requires] ([@stop_split] [@expl:map 'self_' type invariant] inv_Iter_u16 self_)
+    /\ ([@stop_split] [@expl:map requires #0] forall e: UInt16.t, i2: t_Iter_u16. produces_Iter_u16 self_ (Seq.singleton e) i2
+          /\ inv_ref_u16 e -> precondition_closure0 f e)
+    /\ ([@stop_split] [@expl:map requires #1] reinitialize_Iter_u16)
+    /\ ([@stop_split] [@expl:map requires #2] preservation_Iter_u16 self_ f)}
+    any
+    [ return (result: t_Map_Iter_u16_closure0) ->
+    {[@stop_split] [@expl:map_Iter_u16 ensures] ([@stop_split] [@expl:map result type invariant] inv_Map_Iter_u16_closure0 result)
+      /\ ([@stop_split] [@expl:map ensures] iter_Map_Iter_u16_closure0 result = self_
+      /\ func_Map_Iter_u16_closure0 result = f)}
+      (! return {result}) ]
+  
+  type t_Vec_i16_Global
+  
+  predicate precondition_into_iter (self: ()) (args: t_Map_Iter_u16_closure0) =
+    let self_ = args in inv_Map_Iter_u16_closure0 self_
+  
+  meta "rewrite_def" predicate precondition_into_iter
+  
+  predicate precondition_from_iter (self: ()) (args: t_Map_Iter_u16_closure0) =
+    let iter = args in inv_Map_Iter_u16_closure0 iter /\ precondition_into_iter () iter
+  
+  meta "rewrite_def" predicate precondition_from_iter
+  
+  let into_iter_Map_Iter_u16_closure0 (self_: t_Map_Iter_u16_closure0) (return (x: t_Map_Iter_u16_closure0)) =
+  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Map_Iter_u16_closure0 self_}
+    any
+    [ return (result: t_Map_Iter_u16_closure0) ->
+    {[@stop_split] [@expl:into_iter_Map_Iter_u16_closure0 ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Map_Iter_u16_closure0 result)
+      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
+      (! return {result}) ]
+  
+  predicate postcondition_into_iter (self: ()) (args: t_Map_Iter_u16_closure0) (result: t_Map_Iter_u16_closure0) =
+    let self_ = args in inv_Map_Iter_u16_closure0 result /\ result = self_
+  
+  meta "rewrite_def" predicate postcondition_into_iter
+  
+  predicate produces_Map_Iter_u16_closure0 [@inline:trivial] (self: t_Map_Iter_u16_closure0) (visited: Seq.seq Int16.t) (succ: t_Map_Iter_u16_closure0) =
+    hist_inv_closure0 (func_Map_Iter_u16_closure0 self) (func_Map_Iter_u16_closure0 succ)
+    /\ (exists fs: Seq.seq (MutBorrow.t ()). Seq.length fs = Seq.length visited
+      /\ (exists s: Seq.seq UInt16.t [produces_Iter_u16 (iter_Map_Iter_u16_closure0 self) s (iter_Map_Iter_u16_closure0 succ)]. Seq.length s
+          = Seq.length visited
+        /\ produces_Iter_u16 (iter_Map_Iter_u16_closure0 self) s (iter_Map_Iter_u16_closure0 succ)
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            func_Map_Iter_u16_closure0 self = func_Map_Iter_u16_closure0 succ
+          else
+            (Seq.get fs 0).current = func_Map_Iter_u16_closure0 self
+            /\ (Seq.get fs (Seq.length visited - 1)).final = func_Map_Iter_u16_closure0 succ
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv_closure0 (func_Map_Iter_u16_closure0 self) (Seq.get fs i).current
+          /\ postcondition_mut_closure0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+  
+  meta "rewrite_def" predicate produces_Map_Iter_u16_closure0
+  
+  function produces_trans_Map_Iter_u16_closure0 (a: t_Map_Iter_u16_closure0) (ab: Seq.seq Int16.t) (b: t_Map_Iter_u16_closure0) (bc: Seq.seq Int16.t) (c: t_Map_Iter_u16_closure0) : ()
+  
+  axiom produces_trans_Map_Iter_u16_closure0_spec:
+    forall a: t_Map_Iter_u16_closure0, ab: Seq.seq Int16.t, b: t_Map_Iter_u16_closure0, bc: Seq.seq Int16.t, c: t_Map_Iter_u16_closure0. produces_Map_Iter_u16_closure0 a ab b
+      -> produces_Map_Iter_u16_closure0 b bc c -> produces_Map_Iter_u16_closure0 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Map_Iter_u16_closure0 (self: t_Map_Iter_u16_closure0) : ()
+  
+  axiom produces_refl_Map_Iter_u16_closure0_spec:
+    forall self: t_Map_Iter_u16_closure0. produces_Map_Iter_u16_closure0 self (Seq.empty: Seq.seq Int16.t) self
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_i16_Global (self: t_Vec_i16_Global) : Seq.seq Int16.t
+  
+  axiom view_Vec_i16_Global_spec:
+    forall self: t_Vec_i16_Global [view_Vec_i16_Global self]. Seq.length (view_Vec_i16_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate completed_Map_Iter_u16_closure0 (self: MutBorrow.t t_Map_Iter_u16_closure0) =
+    (exists inner: MutBorrow.t t_Iter_u16. inner.current = iter_Map_Iter_u16_closure0 self.current
+        /\ inner.final = iter_Map_Iter_u16_closure0 self.final /\ completed_Iter_u16 inner)
+    /\ func_Map_Iter_u16_closure0 self.current = func_Map_Iter_u16_closure0 self.final
+  
+  predicate resolve_Iter_u16 (_1: t_Iter_u16)
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate resolve_Map_Iter_u16_closure0 [@inline:trivial] (self: t_Map_Iter_u16_closure0) =
+    resolve_Iter_u16 (iter_Map_Iter_u16_closure0 self) /\ resolve_closure0 (func_Map_Iter_u16_closure0 self)
+  
+  meta "rewrite_def" predicate resolve_Map_Iter_u16_closure0
+  
+  predicate resolve_Map_Iter_u16_closure0'0 (_1: t_Map_Iter_u16_closure0)
+  
+  axiom resolve_axiom:
+    forall x: t_Map_Iter_u16_closure0 [resolve_Map_Iter_u16_closure0'0 x]. resolve_Map_Iter_u16_closure0'0 x
+      -> resolve_Map_Iter_u16_closure0 x
+  
+  let from_iter_Vec_i16_Global (iter: t_Map_Iter_u16_closure0) (return (x: t_Vec_i16_Global)) =
+  {[@stop_split] [@expl:from_iter_Vec_i16_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_Map_Iter_u16_closure0 iter)
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    any
+    [ return (result: t_Vec_i16_Global) ->
+    {[@stop_split] [@expl:from_iter ensures] exists into_iter: t_Map_Iter_u16_closure0, done': MutBorrow.t t_Map_Iter_u16_closure0. postcondition_into_iter () iter into_iter
+        /\ produces_Map_Iter_u16_closure0 into_iter (view_Vec_i16_Global result) done'.current
+        /\ completed_Map_Iter_u16_closure0 done' /\ resolve_Map_Iter_u16_closure0'0 done'.final}
+      (! return {result}) ]
+  
+  predicate postcondition_from_iter (self: ()) (args: t_Map_Iter_u16_closure0) (result: t_Vec_i16_Global) =
+    let iter = args in exists into_iter: t_Map_Iter_u16_closure0, done': MutBorrow.t t_Map_Iter_u16_closure0. postcondition_into_iter () iter into_iter
+      /\ produces_Map_Iter_u16_closure0 into_iter (view_Vec_i16_Global result) done'.current
+      /\ completed_Map_Iter_u16_closure0 done' /\ resolve_Map_Iter_u16_closure0'0 done'.final
+  
+  meta "rewrite_def" predicate postcondition_from_iter
+  
+  let collect_Map_Iter_u16_closure0 (self_: t_Map_Iter_u16_closure0) (return (x: t_Vec_i16_Global)) =
+  {[@stop_split] [@expl:collect_Map_Iter_u16_closure0 requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_Map_Iter_u16_closure0 self_)
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
+    any
+    [ return (result: t_Vec_i16_Global) ->
+    {[@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result}
+      (! return {result}) ]
+  
+  predicate is_one_u16 (self: UInt16.t) = self = (1: UInt16.t)
+  
+  axiom is_one_u16_spec: forall self: UInt16.t [is_one_u16 self]. is_one_u16 self = (UInt16.t'int self = 1)
+  
+  predicate is_one_i16 (self: Int16.t) = self = (1: Int16.t)
+  
+  axiom is_one_i16_spec: forall self: Int16.t [is_one_i16 self]. is_one_i16 self = (Int16.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let dummy_cast2 (elems: Slice64.slice UInt16.t) (return (x: t_Vec_i16_Global)) =
+  {[@stop_split] [@expl:dummy_cast2 requires] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view elems)
+      -> is_one_u16 (Seq.get (Slice64.view elems) i)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = iter_u16 {elems} (fun (_x: t_Iter_u16) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_8 <- () ] s2
+      | s2 = map_Iter_u16 {_6} {_8} (fun (_x: t_Map_Iter_u16_closure0) -> [ &_5 <- _x ] s3)
+      | s3 = collect_Map_Iter_u16_closure0 {_5} (fun (_x: t_Vec_i16_Global) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_Vec_i16_Global = Any.any_l ()
+    | & elems: Slice64.slice UInt16.t = elems
+    | & _5: t_Map_Iter_u16_closure0 = Any.any_l ()
+    | & _6: t_Iter_u16 = Any.any_l ()
+    | & _8: () = Any.any_l () ])
+    [ return (result: t_Vec_i16_Global) -> {[@stop_split] [@expl:dummy_cast2 ensures] forall i: int. 0 <= i
+          /\ i < Seq.length (view_Vec_i16_Global result) -> is_one_i16 (Seq.get (view_Vec_i16_Global result) i)}
+      (! return {result}) ]
+end
+module M_dummy_cast3
+  use creusot.slice.Slice64
+  use creusot.int.UInt32
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  use seq.Seq
+  use creusot.int.UInt64
+  use int.Int
+  
+  type t_Iter_u32
+  
+  predicate inv_Iter_u32 (_1: t_Iter_u32)
+  
+  function view_Iter_u32 (self: t_Iter_u32) : Slice64.slice UInt32.t
+  
+  let iter_u32 (self_: Slice64.slice UInt32.t) (return (x: t_Iter_u32)) = any
+    [ return (result: t_Iter_u32) ->
+    {[@stop_split] [@expl:iter_u32 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_u32 result)
+      /\ ([@stop_split] [@expl:iter ensures] view_Iter_u32 result = self_)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure0
+  
+  predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
+  
+  let closure0 [@coma:extspec] (self: MutBorrow.t ()) (i: UInt32.t) (return (x: Int32.t)) = bb0
+    [ bb0 = s0
+      [ s0 = -{resolve_refmut_closure0 self}- s1
+      | s1 = [ &_ret <- Int32.of_int (UInt32.t'int i) ] s2
+      | s2 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & self: MutBorrow.t () = self | & i: UInt32.t = i ]
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  type t_Map_Iter_u32_closure0
+  
+  function index_slice_u32 [@inline:trivial] (self: Slice64.slice UInt32.t) (ix: int) : UInt32.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_u32
+  
+  function to_ref_seq_slice_u32 (self: Slice64.slice UInt32.t) : Seq.seq UInt32.t
+  
+  axiom to_ref_seq_slice_u32_spec:
+    forall self: Slice64.slice UInt32.t [to_ref_seq_slice_u32 self]. Seq.length (to_ref_seq_slice_u32 self)
+      = Seq.length (Slice64.view self)
+  
+  axiom to_ref_seq_slice_u32_spec'0: forall self: Slice64.slice UInt32.t [to_ref_seq_slice_u32 self]. forall i: int. 0
+            <= i
+          /\ i < Seq.length (to_ref_seq_slice_u32 self)
+        -> Seq.get (to_ref_seq_slice_u32 self) i = index_slice_u32 self i
+  
+  predicate produces_Iter_u32 (self: t_Iter_u32) (visited: Seq.seq UInt32.t) (tl: t_Iter_u32) =
+    to_ref_seq_slice_u32 (view_Iter_u32 self) = Seq.(++) visited (to_ref_seq_slice_u32 (view_Iter_u32 tl))
+  
+  function produces_trans_Iter_u32 (a: t_Iter_u32) (ab: Seq.seq UInt32.t) (b: t_Iter_u32) (bc: Seq.seq UInt32.t) (c: t_Iter_u32) : ()
+  
+  axiom produces_trans_Iter_u32_spec:
+    forall a: t_Iter_u32, ab: Seq.seq UInt32.t, b: t_Iter_u32, bc: Seq.seq UInt32.t, c: t_Iter_u32. produces_Iter_u32 a ab b
+      -> produces_Iter_u32 b bc c -> produces_Iter_u32 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Iter_u32 (self: t_Iter_u32) : ()
+  
+  axiom produces_refl_Iter_u32_spec: forall self: t_Iter_u32. produces_Iter_u32 self (Seq.empty: Seq.seq UInt32.t) self
+  
+  predicate inv_ref_u32 [@inline:trivial] (_1: UInt32.t) = true
+  
+  meta "rewrite_def" predicate inv_ref_u32
+  
+  predicate precondition_closure0 (self: ()) (args: UInt32.t) =
+    let i = args in forall bor_self: MutBorrow.t (). bor_self.current = self -> closure0'pre bor_self i
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate resolve_refmut_Iter_u32 [@inline:trivial] (_1: MutBorrow.t t_Iter_u32) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Iter_u32
+  
+  predicate completed_Iter_u32 (self: MutBorrow.t t_Iter_u32) =
+    resolve_refmut_Iter_u32 self /\ Slice64.view (view_Iter_u32 self.current) = (Seq.empty: Seq.seq UInt32.t)
+  
+  predicate next_precondition_Iter_u32 [@inline:trivial] (iter: t_Iter_u32) (func: ()) =
+    forall e: UInt32.t, i: t_Iter_u32 [produces_Iter_u32 iter (Seq.singleton e) i]. inv_ref_u32 e
+        /\ produces_Iter_u32 iter (Seq.singleton e) i -> precondition_closure0 func e
+  
+  meta "rewrite_def" predicate next_precondition_Iter_u32
+  
+  predicate inv_Seq_ref_u32 [@inline:trivial] (_1: Seq.seq UInt32.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_ref_u32
+  
+  predicate inv_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = true
+  
+  meta "rewrite_def" predicate inv_refmut_closure0
+  
+  predicate postcondition_mut_closure0 (self: ()) (args: UInt32.t) (result_state: ()) (result: Int32.t) =
+    let i = args in exists bor_self: MutBorrow.t (). bor_self.current = self
+      /\ bor_self.final = result_state /\ closure0'post'return bor_self i result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  predicate preservation_Iter_u32 [@inline:trivial] (iter: t_Iter_u32) (func: ()) =
+    forall s: Seq.seq UInt32.t, e1: UInt32.t, e2: UInt32.t, f: MutBorrow.t (), b: Int32.t, i: t_Iter_u32 [produces_Iter_u32 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current e1 f.final b]. hist_inv_closure0 func f.current
+      -> inv_Seq_ref_u32 s /\ inv_ref_u32 e1 /\ inv_ref_u32 e2 /\ inv_refmut_closure0 f
+      -> produces_Iter_u32 iter (Seq.snoc (Seq.snoc s e1) e2) i
+      -> postcondition_mut_closure0 f.current e1 f.final b -> precondition_closure0 f.final e2
+  
+  meta "rewrite_def" predicate preservation_Iter_u32
+  
+  predicate reinitialize_Iter_u32 [@inline:trivial] =
+    forall iter: MutBorrow.t t_Iter_u32, func: (). completed_Iter_u32 iter
+      -> next_precondition_Iter_u32 iter.final func /\ preservation_Iter_u32 iter.final func
+  
+  meta "rewrite_def" predicate reinitialize_Iter_u32
+  
+  function iter_Map_Iter_u32_closure0 (self: t_Map_Iter_u32_closure0) : t_Iter_u32
+  
+  predicate inv_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate inv_closure0
+  
+  function func_Map_Iter_u32_closure0 (self: t_Map_Iter_u32_closure0) : ()
+  
+  predicate invariant_Map_Iter_u32_closure0 (self: t_Map_Iter_u32_closure0)
+  
+  axiom invariant_Map_Iter_u32_closure0_spec:
+    forall self: t_Map_Iter_u32_closure0 [invariant_Map_Iter_u32_closure0 self]. invariant_Map_Iter_u32_closure0 self
+      -> inv_Iter_u32 (iter_Map_Iter_u32_closure0 self) /\ inv_closure0 (func_Map_Iter_u32_closure0 self)
+  
+  predicate inv_Map_Iter_u32_closure0 (_1: t_Map_Iter_u32_closure0)
+  
+  axiom inv_axiom: forall x: t_Map_Iter_u32_closure0 [inv_Map_Iter_u32_closure0 x]. inv_Map_Iter_u32_closure0 x
+      -> invariant_Map_Iter_u32_closure0 x
+  
+  let map_Iter_u32 (self_: t_Iter_u32) (f: ()) (return (x: t_Map_Iter_u32_closure0)) =
+  {[@stop_split] [@expl:map_Iter_u32 requires] ([@stop_split] [@expl:map 'self_' type invariant] inv_Iter_u32 self_)
+    /\ ([@stop_split] [@expl:map requires #0] forall e: UInt32.t, i2: t_Iter_u32. produces_Iter_u32 self_ (Seq.singleton e) i2
+          /\ inv_ref_u32 e -> precondition_closure0 f e)
+    /\ ([@stop_split] [@expl:map requires #1] reinitialize_Iter_u32)
+    /\ ([@stop_split] [@expl:map requires #2] preservation_Iter_u32 self_ f)}
+    any
+    [ return (result: t_Map_Iter_u32_closure0) ->
+    {[@stop_split] [@expl:map_Iter_u32 ensures] ([@stop_split] [@expl:map result type invariant] inv_Map_Iter_u32_closure0 result)
+      /\ ([@stop_split] [@expl:map ensures] iter_Map_Iter_u32_closure0 result = self_
+      /\ func_Map_Iter_u32_closure0 result = f)}
+      (! return {result}) ]
+  
+  type t_Vec_i32_Global
+  
+  predicate precondition_into_iter (self: ()) (args: t_Map_Iter_u32_closure0) =
+    let self_ = args in inv_Map_Iter_u32_closure0 self_
+  
+  meta "rewrite_def" predicate precondition_into_iter
+  
+  predicate precondition_from_iter (self: ()) (args: t_Map_Iter_u32_closure0) =
+    let iter = args in inv_Map_Iter_u32_closure0 iter /\ precondition_into_iter () iter
+  
+  meta "rewrite_def" predicate precondition_from_iter
+  
+  let into_iter_Map_Iter_u32_closure0 (self_: t_Map_Iter_u32_closure0) (return (x: t_Map_Iter_u32_closure0)) =
+  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Map_Iter_u32_closure0 self_}
+    any
+    [ return (result: t_Map_Iter_u32_closure0) ->
+    {[@stop_split] [@expl:into_iter_Map_Iter_u32_closure0 ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Map_Iter_u32_closure0 result)
+      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
+      (! return {result}) ]
+  
+  predicate postcondition_into_iter (self: ()) (args: t_Map_Iter_u32_closure0) (result: t_Map_Iter_u32_closure0) =
+    let self_ = args in inv_Map_Iter_u32_closure0 result /\ result = self_
+  
+  meta "rewrite_def" predicate postcondition_into_iter
+  
+  predicate produces_Map_Iter_u32_closure0 [@inline:trivial] (self: t_Map_Iter_u32_closure0) (visited: Seq.seq Int32.t) (succ: t_Map_Iter_u32_closure0) =
+    hist_inv_closure0 (func_Map_Iter_u32_closure0 self) (func_Map_Iter_u32_closure0 succ)
+    /\ (exists fs: Seq.seq (MutBorrow.t ()). Seq.length fs = Seq.length visited
+      /\ (exists s: Seq.seq UInt32.t [produces_Iter_u32 (iter_Map_Iter_u32_closure0 self) s (iter_Map_Iter_u32_closure0 succ)]. Seq.length s
+          = Seq.length visited
+        /\ produces_Iter_u32 (iter_Map_Iter_u32_closure0 self) s (iter_Map_Iter_u32_closure0 succ)
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            func_Map_Iter_u32_closure0 self = func_Map_Iter_u32_closure0 succ
+          else
+            (Seq.get fs 0).current = func_Map_Iter_u32_closure0 self
+            /\ (Seq.get fs (Seq.length visited - 1)).final = func_Map_Iter_u32_closure0 succ
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv_closure0 (func_Map_Iter_u32_closure0 self) (Seq.get fs i).current
+          /\ postcondition_mut_closure0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+  
+  meta "rewrite_def" predicate produces_Map_Iter_u32_closure0
+  
+  function produces_trans_Map_Iter_u32_closure0 (a: t_Map_Iter_u32_closure0) (ab: Seq.seq Int32.t) (b: t_Map_Iter_u32_closure0) (bc: Seq.seq Int32.t) (c: t_Map_Iter_u32_closure0) : ()
+  
+  axiom produces_trans_Map_Iter_u32_closure0_spec:
+    forall a: t_Map_Iter_u32_closure0, ab: Seq.seq Int32.t, b: t_Map_Iter_u32_closure0, bc: Seq.seq Int32.t, c: t_Map_Iter_u32_closure0. produces_Map_Iter_u32_closure0 a ab b
+      -> produces_Map_Iter_u32_closure0 b bc c -> produces_Map_Iter_u32_closure0 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Map_Iter_u32_closure0 (self: t_Map_Iter_u32_closure0) : ()
+  
+  axiom produces_refl_Map_Iter_u32_closure0_spec:
+    forall self: t_Map_Iter_u32_closure0. produces_Map_Iter_u32_closure0 self (Seq.empty: Seq.seq Int32.t) self
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_i32_Global (self: t_Vec_i32_Global) : Seq.seq Int32.t
+  
+  axiom view_Vec_i32_Global_spec:
+    forall self: t_Vec_i32_Global [view_Vec_i32_Global self]. Seq.length (view_Vec_i32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate completed_Map_Iter_u32_closure0 (self: MutBorrow.t t_Map_Iter_u32_closure0) =
+    (exists inner: MutBorrow.t t_Iter_u32. inner.current = iter_Map_Iter_u32_closure0 self.current
+        /\ inner.final = iter_Map_Iter_u32_closure0 self.final /\ completed_Iter_u32 inner)
+    /\ func_Map_Iter_u32_closure0 self.current = func_Map_Iter_u32_closure0 self.final
+  
+  predicate resolve_Iter_u32 (_1: t_Iter_u32)
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate resolve_Map_Iter_u32_closure0 [@inline:trivial] (self: t_Map_Iter_u32_closure0) =
+    resolve_Iter_u32 (iter_Map_Iter_u32_closure0 self) /\ resolve_closure0 (func_Map_Iter_u32_closure0 self)
+  
+  meta "rewrite_def" predicate resolve_Map_Iter_u32_closure0
+  
+  predicate resolve_Map_Iter_u32_closure0'0 (_1: t_Map_Iter_u32_closure0)
+  
+  axiom resolve_axiom:
+    forall x: t_Map_Iter_u32_closure0 [resolve_Map_Iter_u32_closure0'0 x]. resolve_Map_Iter_u32_closure0'0 x
+      -> resolve_Map_Iter_u32_closure0 x
+  
+  let from_iter_Vec_i32_Global (iter: t_Map_Iter_u32_closure0) (return (x: t_Vec_i32_Global)) =
+  {[@stop_split] [@expl:from_iter_Vec_i32_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_Map_Iter_u32_closure0 iter)
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    any
+    [ return (result: t_Vec_i32_Global) ->
+    {[@stop_split] [@expl:from_iter ensures] exists into_iter: t_Map_Iter_u32_closure0, done': MutBorrow.t t_Map_Iter_u32_closure0. postcondition_into_iter () iter into_iter
+        /\ produces_Map_Iter_u32_closure0 into_iter (view_Vec_i32_Global result) done'.current
+        /\ completed_Map_Iter_u32_closure0 done' /\ resolve_Map_Iter_u32_closure0'0 done'.final}
+      (! return {result}) ]
+  
+  predicate postcondition_from_iter (self: ()) (args: t_Map_Iter_u32_closure0) (result: t_Vec_i32_Global) =
+    let iter = args in exists into_iter: t_Map_Iter_u32_closure0, done': MutBorrow.t t_Map_Iter_u32_closure0. postcondition_into_iter () iter into_iter
+      /\ produces_Map_Iter_u32_closure0 into_iter (view_Vec_i32_Global result) done'.current
+      /\ completed_Map_Iter_u32_closure0 done' /\ resolve_Map_Iter_u32_closure0'0 done'.final
+  
+  meta "rewrite_def" predicate postcondition_from_iter
+  
+  let collect_Map_Iter_u32_closure0 (self_: t_Map_Iter_u32_closure0) (return (x: t_Vec_i32_Global)) =
+  {[@stop_split] [@expl:collect_Map_Iter_u32_closure0 requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_Map_Iter_u32_closure0 self_)
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
+    any
+    [ return (result: t_Vec_i32_Global) ->
+    {[@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result}
+      (! return {result}) ]
+  
+  predicate is_one_u32 (self: UInt32.t) = self = (1: UInt32.t)
+  
+  axiom is_one_u32_spec: forall self: UInt32.t [is_one_u32 self]. is_one_u32 self = (UInt32.t'int self = 1)
+  
+  predicate is_one_i32 (self: Int32.t) = self = (1: Int32.t)
+  
+  axiom is_one_i32_spec: forall self: Int32.t [is_one_i32 self]. is_one_i32 self = (Int32.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let dummy_cast3 (elems: Slice64.slice UInt32.t) (return (x: t_Vec_i32_Global)) =
+  {[@stop_split] [@expl:dummy_cast3 requires] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view elems)
+      -> is_one_u32 (Seq.get (Slice64.view elems) i)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = iter_u32 {elems} (fun (_x: t_Iter_u32) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_8 <- () ] s2
+      | s2 = map_Iter_u32 {_6} {_8} (fun (_x: t_Map_Iter_u32_closure0) -> [ &_5 <- _x ] s3)
+      | s3 = collect_Map_Iter_u32_closure0 {_5} (fun (_x: t_Vec_i32_Global) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_Vec_i32_Global = Any.any_l ()
+    | & elems: Slice64.slice UInt32.t = elems
+    | & _5: t_Map_Iter_u32_closure0 = Any.any_l ()
+    | & _6: t_Iter_u32 = Any.any_l ()
+    | & _8: () = Any.any_l () ])
+    [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:dummy_cast3 ensures] forall i: int. 0 <= i
+          /\ i < Seq.length (view_Vec_i32_Global result) -> is_one_i32 (Seq.get (view_Vec_i32_Global result) i)}
+      (! return {result}) ]
+end
+module M_dummy_cast4
+  use creusot.slice.Slice64
+  use creusot.int.UInt8
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  use seq.Seq
+  use creusot.int.UInt64
+  use int.Int
+  
+  type t_Iter_u8
+  
+  predicate inv_Iter_u8 (_1: t_Iter_u8)
+  
+  function view_Iter_u8 (self: t_Iter_u8) : Slice64.slice UInt8.t
+  
+  let iter_u8 (self_: Slice64.slice UInt8.t) (return (x: t_Iter_u8)) = any
+    [ return (result: t_Iter_u8) ->
+    {[@stop_split] [@expl:iter_u8 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_u8 result)
+      /\ ([@stop_split] [@expl:iter ensures] view_Iter_u8 result = self_)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure0
+  
+  predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
+  
+  let closure0 [@coma:extspec] (self: MutBorrow.t ()) (i: UInt8.t) (return (x: Int64.t)) = bb0
+    [ bb0 = s0
+      [ s0 = -{resolve_refmut_closure0 self}- s1
+      | s1 = [ &_ret <- Int64.of_int (UInt8.t'int i) ] s2
+      | s2 = return {_ret} ] ] [ & _ret: Int64.t = Any.any_l () | & self: MutBorrow.t () = self | & i: UInt8.t = i ]
+    [ return (result: Int64.t) ->
+    {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  type t_Map_Iter_u8_closure0
+  
+  function index_slice_u8 [@inline:trivial] (self: Slice64.slice UInt8.t) (ix: int) : UInt8.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_u8
+  
+  function to_ref_seq_slice_u8 (self: Slice64.slice UInt8.t) : Seq.seq UInt8.t
+  
+  axiom to_ref_seq_slice_u8_spec:
+    forall self: Slice64.slice UInt8.t [to_ref_seq_slice_u8 self]. Seq.length (to_ref_seq_slice_u8 self)
+      = Seq.length (Slice64.view self)
+  
+  axiom to_ref_seq_slice_u8_spec'0: forall self: Slice64.slice UInt8.t [to_ref_seq_slice_u8 self]. forall i: int. 0 <= i
+          /\ i < Seq.length (to_ref_seq_slice_u8 self) -> Seq.get (to_ref_seq_slice_u8 self) i = index_slice_u8 self i
+  
+  predicate produces_Iter_u8 (self: t_Iter_u8) (visited: Seq.seq UInt8.t) (tl: t_Iter_u8) =
+    to_ref_seq_slice_u8 (view_Iter_u8 self) = Seq.(++) visited (to_ref_seq_slice_u8 (view_Iter_u8 tl))
+  
+  function produces_trans_Iter_u8 (a: t_Iter_u8) (ab: Seq.seq UInt8.t) (b: t_Iter_u8) (bc: Seq.seq UInt8.t) (c: t_Iter_u8) : ()
+  
+  axiom produces_trans_Iter_u8_spec:
+    forall a: t_Iter_u8, ab: Seq.seq UInt8.t, b: t_Iter_u8, bc: Seq.seq UInt8.t, c: t_Iter_u8. produces_Iter_u8 a ab b
+      -> produces_Iter_u8 b bc c -> produces_Iter_u8 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Iter_u8 (self: t_Iter_u8) : ()
+  
+  axiom produces_refl_Iter_u8_spec: forall self: t_Iter_u8. produces_Iter_u8 self (Seq.empty: Seq.seq UInt8.t) self
+  
+  predicate inv_ref_u8 [@inline:trivial] (_1: UInt8.t) = true
+  
+  meta "rewrite_def" predicate inv_ref_u8
+  
+  predicate precondition_closure0 (self: ()) (args: UInt8.t) =
+    let i = args in forall bor_self: MutBorrow.t (). bor_self.current = self -> closure0'pre bor_self i
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate resolve_refmut_Iter_u8 [@inline:trivial] (_1: MutBorrow.t t_Iter_u8) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Iter_u8
+  
+  predicate completed_Iter_u8 (self: MutBorrow.t t_Iter_u8) =
+    resolve_refmut_Iter_u8 self /\ Slice64.view (view_Iter_u8 self.current) = (Seq.empty: Seq.seq UInt8.t)
+  
+  predicate next_precondition_Iter_u8 [@inline:trivial] (iter: t_Iter_u8) (func: ()) =
+    forall e: UInt8.t, i: t_Iter_u8 [produces_Iter_u8 iter (Seq.singleton e) i]. inv_ref_u8 e
+        /\ produces_Iter_u8 iter (Seq.singleton e) i -> precondition_closure0 func e
+  
+  meta "rewrite_def" predicate next_precondition_Iter_u8
+  
+  predicate inv_Seq_ref_u8 [@inline:trivial] (_1: Seq.seq UInt8.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_ref_u8
+  
+  predicate inv_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = true
+  
+  meta "rewrite_def" predicate inv_refmut_closure0
+  
+  predicate postcondition_mut_closure0 (self: ()) (args: UInt8.t) (result_state: ()) (result: Int64.t) =
+    let i = args in exists bor_self: MutBorrow.t (). bor_self.current = self
+      /\ bor_self.final = result_state /\ closure0'post'return bor_self i result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  predicate preservation_Iter_u8 [@inline:trivial] (iter: t_Iter_u8) (func: ()) =
+    forall s: Seq.seq UInt8.t, e1: UInt8.t, e2: UInt8.t, f: MutBorrow.t (), b: Int64.t, i: t_Iter_u8 [produces_Iter_u8 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current e1 f.final b]. hist_inv_closure0 func f.current
+      -> inv_Seq_ref_u8 s /\ inv_ref_u8 e1 /\ inv_ref_u8 e2 /\ inv_refmut_closure0 f
+      -> produces_Iter_u8 iter (Seq.snoc (Seq.snoc s e1) e2) i
+      -> postcondition_mut_closure0 f.current e1 f.final b -> precondition_closure0 f.final e2
+  
+  meta "rewrite_def" predicate preservation_Iter_u8
+  
+  predicate reinitialize_Iter_u8 [@inline:trivial] =
+    forall iter: MutBorrow.t t_Iter_u8, func: (). completed_Iter_u8 iter
+      -> next_precondition_Iter_u8 iter.final func /\ preservation_Iter_u8 iter.final func
+  
+  meta "rewrite_def" predicate reinitialize_Iter_u8
+  
+  function iter_Map_Iter_u8_closure0 (self: t_Map_Iter_u8_closure0) : t_Iter_u8
+  
+  predicate inv_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate inv_closure0
+  
+  function func_Map_Iter_u8_closure0 (self: t_Map_Iter_u8_closure0) : ()
+  
+  predicate invariant_Map_Iter_u8_closure0 (self: t_Map_Iter_u8_closure0)
+  
+  axiom invariant_Map_Iter_u8_closure0_spec:
+    forall self: t_Map_Iter_u8_closure0 [invariant_Map_Iter_u8_closure0 self]. invariant_Map_Iter_u8_closure0 self
+      -> inv_Iter_u8 (iter_Map_Iter_u8_closure0 self) /\ inv_closure0 (func_Map_Iter_u8_closure0 self)
+  
+  predicate inv_Map_Iter_u8_closure0 (_1: t_Map_Iter_u8_closure0)
+  
+  axiom inv_axiom: forall x: t_Map_Iter_u8_closure0 [inv_Map_Iter_u8_closure0 x]. inv_Map_Iter_u8_closure0 x
+      -> invariant_Map_Iter_u8_closure0 x
+  
+  let map_Iter_u8 (self_: t_Iter_u8) (f: ()) (return (x: t_Map_Iter_u8_closure0)) =
+  {[@stop_split] [@expl:map_Iter_u8 requires] ([@stop_split] [@expl:map 'self_' type invariant] inv_Iter_u8 self_)
+    /\ ([@stop_split] [@expl:map requires #0] forall e: UInt8.t, i2: t_Iter_u8. produces_Iter_u8 self_ (Seq.singleton e) i2
+          /\ inv_ref_u8 e -> precondition_closure0 f e)
+    /\ ([@stop_split] [@expl:map requires #1] reinitialize_Iter_u8)
+    /\ ([@stop_split] [@expl:map requires #2] preservation_Iter_u8 self_ f)}
+    any
+    [ return (result: t_Map_Iter_u8_closure0) ->
+    {[@stop_split] [@expl:map_Iter_u8 ensures] ([@stop_split] [@expl:map result type invariant] inv_Map_Iter_u8_closure0 result)
+      /\ ([@stop_split] [@expl:map ensures] iter_Map_Iter_u8_closure0 result = self_
+      /\ func_Map_Iter_u8_closure0 result = f)}
+      (! return {result}) ]
+  
+  type t_Vec_i64_Global
+  
+  predicate precondition_into_iter (self: ()) (args: t_Map_Iter_u8_closure0) =
+    let self_ = args in inv_Map_Iter_u8_closure0 self_
+  
+  meta "rewrite_def" predicate precondition_into_iter
+  
+  predicate precondition_from_iter (self: ()) (args: t_Map_Iter_u8_closure0) =
+    let iter = args in inv_Map_Iter_u8_closure0 iter /\ precondition_into_iter () iter
+  
+  meta "rewrite_def" predicate precondition_from_iter
+  
+  let into_iter_Map_Iter_u8_closure0 (self_: t_Map_Iter_u8_closure0) (return (x: t_Map_Iter_u8_closure0)) =
+  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Map_Iter_u8_closure0 self_}
+    any
+    [ return (result: t_Map_Iter_u8_closure0) ->
+    {[@stop_split] [@expl:into_iter_Map_Iter_u8_closure0 ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Map_Iter_u8_closure0 result)
+      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
+      (! return {result}) ]
+  
+  predicate postcondition_into_iter (self: ()) (args: t_Map_Iter_u8_closure0) (result: t_Map_Iter_u8_closure0) =
+    let self_ = args in inv_Map_Iter_u8_closure0 result /\ result = self_
+  
+  meta "rewrite_def" predicate postcondition_into_iter
+  
+  predicate produces_Map_Iter_u8_closure0 [@inline:trivial] (self: t_Map_Iter_u8_closure0) (visited: Seq.seq Int64.t) (succ: t_Map_Iter_u8_closure0) =
+    hist_inv_closure0 (func_Map_Iter_u8_closure0 self) (func_Map_Iter_u8_closure0 succ)
+    /\ (exists fs: Seq.seq (MutBorrow.t ()). Seq.length fs = Seq.length visited
+      /\ (exists s: Seq.seq UInt8.t [produces_Iter_u8 (iter_Map_Iter_u8_closure0 self) s (iter_Map_Iter_u8_closure0 succ)]. Seq.length s
+          = Seq.length visited
+        /\ produces_Iter_u8 (iter_Map_Iter_u8_closure0 self) s (iter_Map_Iter_u8_closure0 succ)
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            func_Map_Iter_u8_closure0 self = func_Map_Iter_u8_closure0 succ
+          else
+            (Seq.get fs 0).current = func_Map_Iter_u8_closure0 self
+            /\ (Seq.get fs (Seq.length visited - 1)).final = func_Map_Iter_u8_closure0 succ
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv_closure0 (func_Map_Iter_u8_closure0 self) (Seq.get fs i).current
+          /\ postcondition_mut_closure0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+  
+  meta "rewrite_def" predicate produces_Map_Iter_u8_closure0
+  
+  function produces_trans_Map_Iter_u8_closure0 (a: t_Map_Iter_u8_closure0) (ab: Seq.seq Int64.t) (b: t_Map_Iter_u8_closure0) (bc: Seq.seq Int64.t) (c: t_Map_Iter_u8_closure0) : ()
+  
+  axiom produces_trans_Map_Iter_u8_closure0_spec:
+    forall a: t_Map_Iter_u8_closure0, ab: Seq.seq Int64.t, b: t_Map_Iter_u8_closure0, bc: Seq.seq Int64.t, c: t_Map_Iter_u8_closure0. produces_Map_Iter_u8_closure0 a ab b
+      -> produces_Map_Iter_u8_closure0 b bc c -> produces_Map_Iter_u8_closure0 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Map_Iter_u8_closure0 (self: t_Map_Iter_u8_closure0) : ()
+  
+  axiom produces_refl_Map_Iter_u8_closure0_spec:
+    forall self: t_Map_Iter_u8_closure0. produces_Map_Iter_u8_closure0 self (Seq.empty: Seq.seq Int64.t) self
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_i64_Global (self: t_Vec_i64_Global) : Seq.seq Int64.t
+  
+  axiom view_Vec_i64_Global_spec:
+    forall self: t_Vec_i64_Global [view_Vec_i64_Global self]. Seq.length (view_Vec_i64_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate completed_Map_Iter_u8_closure0 (self: MutBorrow.t t_Map_Iter_u8_closure0) =
+    (exists inner: MutBorrow.t t_Iter_u8. inner.current = iter_Map_Iter_u8_closure0 self.current
+        /\ inner.final = iter_Map_Iter_u8_closure0 self.final /\ completed_Iter_u8 inner)
+    /\ func_Map_Iter_u8_closure0 self.current = func_Map_Iter_u8_closure0 self.final
+  
+  predicate resolve_Iter_u8 (_1: t_Iter_u8)
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate resolve_Map_Iter_u8_closure0 [@inline:trivial] (self: t_Map_Iter_u8_closure0) =
+    resolve_Iter_u8 (iter_Map_Iter_u8_closure0 self) /\ resolve_closure0 (func_Map_Iter_u8_closure0 self)
+  
+  meta "rewrite_def" predicate resolve_Map_Iter_u8_closure0
+  
+  predicate resolve_Map_Iter_u8_closure0'0 (_1: t_Map_Iter_u8_closure0)
+  
+  axiom resolve_axiom:
+    forall x: t_Map_Iter_u8_closure0 [resolve_Map_Iter_u8_closure0'0 x]. resolve_Map_Iter_u8_closure0'0 x
+      -> resolve_Map_Iter_u8_closure0 x
+  
+  let from_iter_Vec_i64_Global (iter: t_Map_Iter_u8_closure0) (return (x: t_Vec_i64_Global)) =
+  {[@stop_split] [@expl:from_iter_Vec_i64_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_Map_Iter_u8_closure0 iter)
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    any
+    [ return (result: t_Vec_i64_Global) ->
+    {[@stop_split] [@expl:from_iter ensures] exists into_iter: t_Map_Iter_u8_closure0, done': MutBorrow.t t_Map_Iter_u8_closure0. postcondition_into_iter () iter into_iter
+        /\ produces_Map_Iter_u8_closure0 into_iter (view_Vec_i64_Global result) done'.current
+        /\ completed_Map_Iter_u8_closure0 done' /\ resolve_Map_Iter_u8_closure0'0 done'.final}
+      (! return {result}) ]
+  
+  predicate postcondition_from_iter (self: ()) (args: t_Map_Iter_u8_closure0) (result: t_Vec_i64_Global) =
+    let iter = args in exists into_iter: t_Map_Iter_u8_closure0, done': MutBorrow.t t_Map_Iter_u8_closure0. postcondition_into_iter () iter into_iter
+      /\ produces_Map_Iter_u8_closure0 into_iter (view_Vec_i64_Global result) done'.current
+      /\ completed_Map_Iter_u8_closure0 done' /\ resolve_Map_Iter_u8_closure0'0 done'.final
+  
+  meta "rewrite_def" predicate postcondition_from_iter
+  
+  let collect_Map_Iter_u8_closure0 (self_: t_Map_Iter_u8_closure0) (return (x: t_Vec_i64_Global)) =
+  {[@stop_split] [@expl:collect_Map_Iter_u8_closure0 requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_Map_Iter_u8_closure0 self_)
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
+    any
+    [ return (result: t_Vec_i64_Global) ->
+    {[@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result}
+      (! return {result}) ]
+  
+  predicate is_one_u8 (self: UInt8.t) = self = (1: UInt8.t)
+  
+  axiom is_one_u8_spec: forall self: UInt8.t [is_one_u8 self]. is_one_u8 self = (UInt8.t'int self = 1)
+  
+  predicate is_one_i64 (self: Int64.t) = self = (1: Int64.t)
+  
+  axiom is_one_i64_spec: forall self: Int64.t [is_one_i64 self]. is_one_i64 self = (Int64.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let dummy_cast4 (elems: Slice64.slice UInt8.t) (return (x: t_Vec_i64_Global)) =
+  {[@stop_split] [@expl:dummy_cast4 requires] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view elems)
+      -> is_one_u8 (Seq.get (Slice64.view elems) i)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = iter_u8 {elems} (fun (_x: t_Iter_u8) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_8 <- () ] s2
+      | s2 = map_Iter_u8 {_6} {_8} (fun (_x: t_Map_Iter_u8_closure0) -> [ &_5 <- _x ] s3)
+      | s3 = collect_Map_Iter_u8_closure0 {_5} (fun (_x: t_Vec_i64_Global) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_Vec_i64_Global = Any.any_l ()
+    | & elems: Slice64.slice UInt8.t = elems
+    | & _5: t_Map_Iter_u8_closure0 = Any.any_l ()
+    | & _6: t_Iter_u8 = Any.any_l ()
+    | & _8: () = Any.any_l () ])
+    [ return (result: t_Vec_i64_Global) -> {[@stop_split] [@expl:dummy_cast4 ensures] forall i: int. 0 <= i
+          /\ i < Seq.length (view_Vec_i64_Global result) -> is_one_i64 (Seq.get (view_Vec_i64_Global result) i)}
+      (! return {result}) ]
+end
+module M_dummy_cast5
+  use creusot.slice.Slice64
+  use creusot.int.UInt8
+  use creusot.prelude.MutBorrow
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  use seq.Seq
+  use creusot.int.UInt64
+  use int.Int
+  
+  type t_Iter_u8
+  
+  predicate inv_Iter_u8 (_1: t_Iter_u8)
+  
+  function view_Iter_u8 (self: t_Iter_u8) : Slice64.slice UInt8.t
+  
+  let iter_u8 (self_: Slice64.slice UInt8.t) (return (x: t_Iter_u8)) = any
+    [ return (result: t_Iter_u8) ->
+    {[@stop_split] [@expl:iter_u8 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_u8 result)
+      /\ ([@stop_split] [@expl:iter ensures] view_Iter_u8 result = self_)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure0
+  
+  predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
+  
+  let closure0 [@coma:extspec] (self: MutBorrow.t ()) (i: UInt8.t) (return (x: Int32.t)) = bb0
+    [ bb0 = s0
+      [ s0 = -{resolve_refmut_closure0 self}- s1
+      | s1 = [ &_ret <- Int32.of_int (UInt8.t'int i) ] s2
+      | s2 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & self: MutBorrow.t () = self | & i: UInt8.t = i ]
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  type t_Map_Iter_u8_closure0
+  
+  function index_slice_u8 [@inline:trivial] (self: Slice64.slice UInt8.t) (ix: int) : UInt8.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_u8
+  
+  function to_ref_seq_slice_u8 (self: Slice64.slice UInt8.t) : Seq.seq UInt8.t
+  
+  axiom to_ref_seq_slice_u8_spec:
+    forall self: Slice64.slice UInt8.t [to_ref_seq_slice_u8 self]. Seq.length (to_ref_seq_slice_u8 self)
+      = Seq.length (Slice64.view self)
+  
+  axiom to_ref_seq_slice_u8_spec'0: forall self: Slice64.slice UInt8.t [to_ref_seq_slice_u8 self]. forall i: int. 0 <= i
+          /\ i < Seq.length (to_ref_seq_slice_u8 self) -> Seq.get (to_ref_seq_slice_u8 self) i = index_slice_u8 self i
+  
+  predicate produces_Iter_u8 (self: t_Iter_u8) (visited: Seq.seq UInt8.t) (tl: t_Iter_u8) =
+    to_ref_seq_slice_u8 (view_Iter_u8 self) = Seq.(++) visited (to_ref_seq_slice_u8 (view_Iter_u8 tl))
+  
+  function produces_trans_Iter_u8 (a: t_Iter_u8) (ab: Seq.seq UInt8.t) (b: t_Iter_u8) (bc: Seq.seq UInt8.t) (c: t_Iter_u8) : ()
+  
+  axiom produces_trans_Iter_u8_spec:
+    forall a: t_Iter_u8, ab: Seq.seq UInt8.t, b: t_Iter_u8, bc: Seq.seq UInt8.t, c: t_Iter_u8. produces_Iter_u8 a ab b
+      -> produces_Iter_u8 b bc c -> produces_Iter_u8 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Iter_u8 (self: t_Iter_u8) : ()
+  
+  axiom produces_refl_Iter_u8_spec: forall self: t_Iter_u8. produces_Iter_u8 self (Seq.empty: Seq.seq UInt8.t) self
+  
+  predicate inv_ref_u8 [@inline:trivial] (_1: UInt8.t) = true
+  
+  meta "rewrite_def" predicate inv_ref_u8
+  
+  predicate precondition_closure0 (self: ()) (args: UInt8.t) =
+    let i = args in forall bor_self: MutBorrow.t (). bor_self.current = self -> closure0'pre bor_self i
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate resolve_refmut_Iter_u8 [@inline:trivial] (_1: MutBorrow.t t_Iter_u8) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Iter_u8
+  
+  predicate completed_Iter_u8 (self: MutBorrow.t t_Iter_u8) =
+    resolve_refmut_Iter_u8 self /\ Slice64.view (view_Iter_u8 self.current) = (Seq.empty: Seq.seq UInt8.t)
+  
+  predicate next_precondition_Iter_u8 [@inline:trivial] (iter: t_Iter_u8) (func: ()) =
+    forall e: UInt8.t, i: t_Iter_u8 [produces_Iter_u8 iter (Seq.singleton e) i]. inv_ref_u8 e
+        /\ produces_Iter_u8 iter (Seq.singleton e) i -> precondition_closure0 func e
+  
+  meta "rewrite_def" predicate next_precondition_Iter_u8
+  
+  predicate inv_Seq_ref_u8 [@inline:trivial] (_1: Seq.seq UInt8.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_ref_u8
+  
+  predicate inv_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t ()) = true
+  
+  meta "rewrite_def" predicate inv_refmut_closure0
+  
+  predicate postcondition_mut_closure0 (self: ()) (args: UInt8.t) (result_state: ()) (result: Int32.t) =
+    let i = args in exists bor_self: MutBorrow.t (). bor_self.current = self
+      /\ bor_self.final = result_state /\ closure0'post'return bor_self i result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  predicate preservation_Iter_u8 [@inline:trivial] (iter: t_Iter_u8) (func: ()) =
+    forall s: Seq.seq UInt8.t, e1: UInt8.t, e2: UInt8.t, f: MutBorrow.t (), b: Int32.t, i: t_Iter_u8 [produces_Iter_u8 iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current e1 f.final b]. hist_inv_closure0 func f.current
+      -> inv_Seq_ref_u8 s /\ inv_ref_u8 e1 /\ inv_ref_u8 e2 /\ inv_refmut_closure0 f
+      -> produces_Iter_u8 iter (Seq.snoc (Seq.snoc s e1) e2) i
+      -> postcondition_mut_closure0 f.current e1 f.final b -> precondition_closure0 f.final e2
+  
+  meta "rewrite_def" predicate preservation_Iter_u8
+  
+  predicate reinitialize_Iter_u8 [@inline:trivial] =
+    forall iter: MutBorrow.t t_Iter_u8, func: (). completed_Iter_u8 iter
+      -> next_precondition_Iter_u8 iter.final func /\ preservation_Iter_u8 iter.final func
+  
+  meta "rewrite_def" predicate reinitialize_Iter_u8
+  
+  function iter_Map_Iter_u8_closure0 (self: t_Map_Iter_u8_closure0) : t_Iter_u8
+  
+  predicate inv_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate inv_closure0
+  
+  function func_Map_Iter_u8_closure0 (self: t_Map_Iter_u8_closure0) : ()
+  
+  predicate invariant_Map_Iter_u8_closure0 (self: t_Map_Iter_u8_closure0)
+  
+  axiom invariant_Map_Iter_u8_closure0_spec:
+    forall self: t_Map_Iter_u8_closure0 [invariant_Map_Iter_u8_closure0 self]. invariant_Map_Iter_u8_closure0 self
+      -> inv_Iter_u8 (iter_Map_Iter_u8_closure0 self) /\ inv_closure0 (func_Map_Iter_u8_closure0 self)
+  
+  predicate inv_Map_Iter_u8_closure0 (_1: t_Map_Iter_u8_closure0)
+  
+  axiom inv_axiom: forall x: t_Map_Iter_u8_closure0 [inv_Map_Iter_u8_closure0 x]. inv_Map_Iter_u8_closure0 x
+      -> invariant_Map_Iter_u8_closure0 x
+  
+  let map_Iter_u8 (self_: t_Iter_u8) (f: ()) (return (x: t_Map_Iter_u8_closure0)) =
+  {[@stop_split] [@expl:map_Iter_u8 requires] ([@stop_split] [@expl:map 'self_' type invariant] inv_Iter_u8 self_)
+    /\ ([@stop_split] [@expl:map requires #0] forall e: UInt8.t, i2: t_Iter_u8. produces_Iter_u8 self_ (Seq.singleton e) i2
+          /\ inv_ref_u8 e -> precondition_closure0 f e)
+    /\ ([@stop_split] [@expl:map requires #1] reinitialize_Iter_u8)
+    /\ ([@stop_split] [@expl:map requires #2] preservation_Iter_u8 self_ f)}
+    any
+    [ return (result: t_Map_Iter_u8_closure0) ->
+    {[@stop_split] [@expl:map_Iter_u8 ensures] ([@stop_split] [@expl:map result type invariant] inv_Map_Iter_u8_closure0 result)
+      /\ ([@stop_split] [@expl:map ensures] iter_Map_Iter_u8_closure0 result = self_
+      /\ func_Map_Iter_u8_closure0 result = f)}
+      (! return {result}) ]
+  
+  type t_Vec_i32_Global
+  
+  predicate precondition_into_iter (self: ()) (args: t_Map_Iter_u8_closure0) =
+    let self_ = args in inv_Map_Iter_u8_closure0 self_
+  
+  meta "rewrite_def" predicate precondition_into_iter
+  
+  predicate precondition_from_iter (self: ()) (args: t_Map_Iter_u8_closure0) =
+    let iter = args in inv_Map_Iter_u8_closure0 iter /\ precondition_into_iter () iter
+  
+  meta "rewrite_def" predicate precondition_from_iter
+  
+  let into_iter_Map_Iter_u8_closure0 (self_: t_Map_Iter_u8_closure0) (return (x: t_Map_Iter_u8_closure0)) =
+  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Map_Iter_u8_closure0 self_}
+    any
+    [ return (result: t_Map_Iter_u8_closure0) ->
+    {[@stop_split] [@expl:into_iter_Map_Iter_u8_closure0 ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Map_Iter_u8_closure0 result)
+      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
+      (! return {result}) ]
+  
+  predicate postcondition_into_iter (self: ()) (args: t_Map_Iter_u8_closure0) (result: t_Map_Iter_u8_closure0) =
+    let self_ = args in inv_Map_Iter_u8_closure0 result /\ result = self_
+  
+  meta "rewrite_def" predicate postcondition_into_iter
+  
+  predicate produces_Map_Iter_u8_closure0 [@inline:trivial] (self: t_Map_Iter_u8_closure0) (visited: Seq.seq Int32.t) (succ: t_Map_Iter_u8_closure0) =
+    hist_inv_closure0 (func_Map_Iter_u8_closure0 self) (func_Map_Iter_u8_closure0 succ)
+    /\ (exists fs: Seq.seq (MutBorrow.t ()). Seq.length fs = Seq.length visited
+      /\ (exists s: Seq.seq UInt8.t [produces_Iter_u8 (iter_Map_Iter_u8_closure0 self) s (iter_Map_Iter_u8_closure0 succ)]. Seq.length s
+          = Seq.length visited
+        /\ produces_Iter_u8 (iter_Map_Iter_u8_closure0 self) s (iter_Map_Iter_u8_closure0 succ)
+        /\ (forall i: int. 1 <= i /\ i < Seq.length fs -> (Seq.get fs (i - 1)).final = (Seq.get fs i).current)
+        /\ (if Seq.length visited = 0 then
+            func_Map_Iter_u8_closure0 self = func_Map_Iter_u8_closure0 succ
+          else
+            (Seq.get fs 0).current = func_Map_Iter_u8_closure0 self
+            /\ (Seq.get fs (Seq.length visited - 1)).final = func_Map_Iter_u8_closure0 succ
+          )
+        /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+          -> hist_inv_closure0 (func_Map_Iter_u8_closure0 self) (Seq.get fs i).current
+          /\ postcondition_mut_closure0 (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+  
+  meta "rewrite_def" predicate produces_Map_Iter_u8_closure0
+  
+  function produces_trans_Map_Iter_u8_closure0 (a: t_Map_Iter_u8_closure0) (ab: Seq.seq Int32.t) (b: t_Map_Iter_u8_closure0) (bc: Seq.seq Int32.t) (c: t_Map_Iter_u8_closure0) : ()
+  
+  axiom produces_trans_Map_Iter_u8_closure0_spec:
+    forall a: t_Map_Iter_u8_closure0, ab: Seq.seq Int32.t, b: t_Map_Iter_u8_closure0, bc: Seq.seq Int32.t, c: t_Map_Iter_u8_closure0. produces_Map_Iter_u8_closure0 a ab b
+      -> produces_Map_Iter_u8_closure0 b bc c -> produces_Map_Iter_u8_closure0 a (Seq.(++) ab bc) c
+  
+  function produces_refl_Map_Iter_u8_closure0 (self: t_Map_Iter_u8_closure0) : ()
+  
+  axiom produces_refl_Map_Iter_u8_closure0_spec:
+    forall self: t_Map_Iter_u8_closure0. produces_Map_Iter_u8_closure0 self (Seq.empty: Seq.seq Int32.t) self
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_i32_Global (self: t_Vec_i32_Global) : Seq.seq Int32.t
+  
+  axiom view_Vec_i32_Global_spec:
+    forall self: t_Vec_i32_Global [view_Vec_i32_Global self]. Seq.length (view_Vec_i32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate completed_Map_Iter_u8_closure0 (self: MutBorrow.t t_Map_Iter_u8_closure0) =
+    (exists inner: MutBorrow.t t_Iter_u8. inner.current = iter_Map_Iter_u8_closure0 self.current
+        /\ inner.final = iter_Map_Iter_u8_closure0 self.final /\ completed_Iter_u8 inner)
+    /\ func_Map_Iter_u8_closure0 self.current = func_Map_Iter_u8_closure0 self.final
+  
+  predicate resolve_Iter_u8 (_1: t_Iter_u8)
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate resolve_Map_Iter_u8_closure0 [@inline:trivial] (self: t_Map_Iter_u8_closure0) =
+    resolve_Iter_u8 (iter_Map_Iter_u8_closure0 self) /\ resolve_closure0 (func_Map_Iter_u8_closure0 self)
+  
+  meta "rewrite_def" predicate resolve_Map_Iter_u8_closure0
+  
+  predicate resolve_Map_Iter_u8_closure0'0 (_1: t_Map_Iter_u8_closure0)
+  
+  axiom resolve_axiom:
+    forall x: t_Map_Iter_u8_closure0 [resolve_Map_Iter_u8_closure0'0 x]. resolve_Map_Iter_u8_closure0'0 x
+      -> resolve_Map_Iter_u8_closure0 x
+  
+  let from_iter_Vec_i32_Global (iter: t_Map_Iter_u8_closure0) (return (x: t_Vec_i32_Global)) =
+  {[@stop_split] [@expl:from_iter_Vec_i32_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_Map_Iter_u8_closure0 iter)
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    any
+    [ return (result: t_Vec_i32_Global) ->
+    {[@stop_split] [@expl:from_iter ensures] exists into_iter: t_Map_Iter_u8_closure0, done': MutBorrow.t t_Map_Iter_u8_closure0. postcondition_into_iter () iter into_iter
+        /\ produces_Map_Iter_u8_closure0 into_iter (view_Vec_i32_Global result) done'.current
+        /\ completed_Map_Iter_u8_closure0 done' /\ resolve_Map_Iter_u8_closure0'0 done'.final}
+      (! return {result}) ]
+  
+  predicate postcondition_from_iter (self: ()) (args: t_Map_Iter_u8_closure0) (result: t_Vec_i32_Global) =
+    let iter = args in exists into_iter: t_Map_Iter_u8_closure0, done': MutBorrow.t t_Map_Iter_u8_closure0. postcondition_into_iter () iter into_iter
+      /\ produces_Map_Iter_u8_closure0 into_iter (view_Vec_i32_Global result) done'.current
+      /\ completed_Map_Iter_u8_closure0 done' /\ resolve_Map_Iter_u8_closure0'0 done'.final
+  
+  meta "rewrite_def" predicate postcondition_from_iter
+  
+  let collect_Map_Iter_u8_closure0 (self_: t_Map_Iter_u8_closure0) (return (x: t_Vec_i32_Global)) =
+  {[@stop_split] [@expl:collect_Map_Iter_u8_closure0 requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_Map_Iter_u8_closure0 self_)
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
+    any
+    [ return (result: t_Vec_i32_Global) ->
+    {[@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result}
+      (! return {result}) ]
+  
+  predicate is_one_u8 (self: UInt8.t) = self = (1: UInt8.t)
+  
+  axiom is_one_u8_spec: forall self: UInt8.t [is_one_u8 self]. is_one_u8 self = (UInt8.t'int self = 1)
+  
+  predicate is_one_i32 (self: Int32.t) = self = (1: Int32.t)
+  
+  axiom is_one_i32_spec: forall self: Int32.t [is_one_i32 self]. is_one_i32 self = (Int32.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let dummy_cast5 (elems: Slice64.slice UInt8.t) (return (x: t_Vec_i32_Global)) =
+  {[@stop_split] [@expl:dummy_cast5 requires] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view elems)
+      -> is_one_u8 (Seq.get (Slice64.view elems) i)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = iter_u8 {elems} (fun (_x: t_Iter_u8) -> [ &_6 <- _x ] s1)
+      | s1 = [ &_8 <- () ] s2
+      | s2 = map_Iter_u8 {_6} {_8} (fun (_x: t_Map_Iter_u8_closure0) -> [ &_5 <- _x ] s3)
+      | s3 = collect_Map_Iter_u8_closure0 {_5} (fun (_x: t_Vec_i32_Global) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_Vec_i32_Global = Any.any_l ()
+    | & elems: Slice64.slice UInt8.t = elems
+    | & _5: t_Map_Iter_u8_closure0 = Any.any_l ()
+    | & _6: t_Iter_u8 = Any.any_l ()
+    | & _8: () = Any.any_l () ])
+    [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:dummy_cast5 ensures] forall i: int. 0 <= i
+          /\ i < Seq.length (view_Vec_i32_Global result) -> is_one_i32 (Seq.get (view_Vec_i32_Global result) i)}
+      (! return {result}) ]
+end
+module M_impl_IsOne_for_i16__is_one (* <i16 as IsOne> *)
+  use creusot.int.Int16
+  use creusot.prelude.Any
+  
+  predicate is_one_i16 (self: Int16.t) = self = (1: Int16.t)
+  
+  axiom is_one_i16_spec: forall self: Int16.t [is_one_i16 self]. is_one_i16 self = (Int16.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_one_i16'0 (self: Int16.t) (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self = (1: Int16.t) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: Int16.t = self ])
+    [ return (result: bool) -> {[@stop_split] [@expl:is_one_i16 ensures] ([@stop_split] [@expl:is_one ensures #0] result
+        = is_one_i16 self)
+      /\ ([@stop_split] [@expl:is_one ensures #1] result = (Int16.to_int self = 1))}
+      (! return {result}) ]
+end
+module M_impl_IsOne_for_i16__is_one__refines (* <i16 as IsOne> *)
+  use creusot.int.Int16
+  
+  predicate is_one_i16 (self: Int16.t) = self = (1: Int16.t)
+  
+  axiom is_one_i16_spec: forall self: Int16.t [is_one_i16 self]. is_one_i16 self = (Int16.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Int16.t. forall result: bool. result = is_one_i16 self /\ result = (Int16.to_int self = 1)
+        -> result = is_one_i16 self /\ result = (Int16.to_int self = 1)
+end
+module M_impl_IsOne_for_i16__is_one_logic (* <i16 as IsOne> *)
+  use creusot.int.Int16
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : Int16.t
+  
+  predicate is_one_i16 (self: Int16.t)
+  
+  goal vc_is_one_i16: [@stop_split] [@expl:is_one_logic ensures] (self = (1: Int16.t)) = (Int16.to_int self = 1)
+end
+module M_impl_IsOne_for_i16__is_one_logic__refines (* <i16 as IsOne> *)
+  use creusot.int.Int16
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Int16.t. forall result: bool. result = (Int16.to_int self = 1)
+        -> result = (Int16.to_int self = 1)
+end
+module M_impl_IsOne_for_i32__is_one (* <i32 as IsOne> *)
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  predicate is_one_i32 (self: Int32.t) = self = (1: Int32.t)
+  
+  axiom is_one_i32_spec: forall self: Int32.t [is_one_i32 self]. is_one_i32 self = (Int32.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_one_i32'0 (self: Int32.t) (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self = (1: Int32.t) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: Int32.t = self ])
+    [ return (result: bool) -> {[@stop_split] [@expl:is_one_i32 ensures] ([@stop_split] [@expl:is_one ensures #0] result
+        = is_one_i32 self)
+      /\ ([@stop_split] [@expl:is_one ensures #1] result = (Int32.to_int self = 1))}
+      (! return {result}) ]
+end
+module M_impl_IsOne_for_i32__is_one__refines (* <i32 as IsOne> *)
+  use creusot.int.Int32
+  
+  predicate is_one_i32 (self: Int32.t) = self = (1: Int32.t)
+  
+  axiom is_one_i32_spec: forall self: Int32.t [is_one_i32 self]. is_one_i32 self = (Int32.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Int32.t. forall result: bool. result = is_one_i32 self /\ result = (Int32.to_int self = 1)
+        -> result = is_one_i32 self /\ result = (Int32.to_int self = 1)
+end
+module M_impl_IsOne_for_i32__is_one_logic (* <i32 as IsOne> *)
+  use creusot.int.Int32
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : Int32.t
+  
+  predicate is_one_i32 (self: Int32.t)
+  
+  goal vc_is_one_i32: [@stop_split] [@expl:is_one_logic ensures] (self = (1: Int32.t)) = (Int32.to_int self = 1)
+end
+module M_impl_IsOne_for_i32__is_one_logic__refines (* <i32 as IsOne> *)
+  use creusot.int.Int32
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Int32.t. forall result: bool. result = (Int32.to_int self = 1)
+        -> result = (Int32.to_int self = 1)
+end
+module M_impl_IsOne_for_i64__is_one (* <i64 as IsOne> *)
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  
+  predicate is_one_i64 (self: Int64.t) = self = (1: Int64.t)
+  
+  axiom is_one_i64_spec: forall self: Int64.t [is_one_i64 self]. is_one_i64 self = (Int64.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_one_i64'0 (self: Int64.t) (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self = (1: Int64.t) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: Int64.t = self ])
+    [ return (result: bool) -> {[@stop_split] [@expl:is_one_i64 ensures] ([@stop_split] [@expl:is_one ensures #0] result
+        = is_one_i64 self)
+      /\ ([@stop_split] [@expl:is_one ensures #1] result = (Int64.to_int self = 1))}
+      (! return {result}) ]
+end
+module M_impl_IsOne_for_i64__is_one__refines (* <i64 as IsOne> *)
+  use creusot.int.Int64
+  
+  predicate is_one_i64 (self: Int64.t) = self = (1: Int64.t)
+  
+  axiom is_one_i64_spec: forall self: Int64.t [is_one_i64 self]. is_one_i64 self = (Int64.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Int64.t. forall result: bool. result = is_one_i64 self /\ result = (Int64.to_int self = 1)
+        -> result = is_one_i64 self /\ result = (Int64.to_int self = 1)
+end
+module M_impl_IsOne_for_i64__is_one_logic (* <i64 as IsOne> *)
+  use creusot.int.Int64
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : Int64.t
+  
+  predicate is_one_i64 (self: Int64.t)
+  
+  goal vc_is_one_i64: [@stop_split] [@expl:is_one_logic ensures] (self = (1: Int64.t)) = (Int64.to_int self = 1)
+end
+module M_impl_IsOne_for_i64__is_one_logic__refines (* <i64 as IsOne> *)
+  use creusot.int.Int64
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Int64.t. forall result: bool. result = (Int64.to_int self = 1)
+        -> result = (Int64.to_int self = 1)
+end
+module M_impl_IsOne_for_i8__is_one (* <i8 as IsOne> *)
+  use creusot.int.Int8
+  use creusot.prelude.Any
+  
+  predicate is_one_i8 (self: Int8.t) = self = (1: Int8.t)
+  
+  axiom is_one_i8_spec: forall self: Int8.t [is_one_i8 self]. is_one_i8 self = (Int8.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_one_i8'0 (self: Int8.t) (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self = (1: Int8.t) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: Int8.t = self ])
+    [ return (result: bool) -> {[@stop_split] [@expl:is_one_i8 ensures] ([@stop_split] [@expl:is_one ensures #0] result
+        = is_one_i8 self)
+      /\ ([@stop_split] [@expl:is_one ensures #1] result = (Int8.to_int self = 1))}
+      (! return {result}) ]
+end
+module M_impl_IsOne_for_i8__is_one__refines (* <i8 as IsOne> *)
+  use creusot.int.Int8
+  
+  predicate is_one_i8 (self: Int8.t) = self = (1: Int8.t)
+  
+  axiom is_one_i8_spec: forall self: Int8.t [is_one_i8 self]. is_one_i8 self = (Int8.to_int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Int8.t. forall result: bool. result = is_one_i8 self /\ result = (Int8.to_int self = 1)
+        -> result = is_one_i8 self /\ result = (Int8.to_int self = 1)
+end
+module M_impl_IsOne_for_i8__is_one_logic (* <i8 as IsOne> *)
+  use creusot.int.Int8
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : Int8.t
+  
+  predicate is_one_i8 (self: Int8.t)
+  
+  goal vc_is_one_i8: [@stop_split] [@expl:is_one_logic ensures] (self = (1: Int8.t)) = (Int8.to_int self = 1)
+end
+module M_impl_IsOne_for_i8__is_one_logic__refines (* <i8 as IsOne> *)
+  use creusot.int.Int8
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Int8.t. forall result: bool. result = (Int8.to_int self = 1)
+        -> result = (Int8.to_int self = 1)
+end
+module M_impl_IsOne_for_u16__is_one (* <u16 as IsOne> *)
+  use creusot.int.UInt16
+  use creusot.prelude.Any
+  
+  predicate is_one_u16 (self: UInt16.t) = self = (1: UInt16.t)
+  
+  axiom is_one_u16_spec: forall self: UInt16.t [is_one_u16 self]. is_one_u16 self = (UInt16.t'int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_one_u16'0 (self: UInt16.t) (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self = (1: UInt16.t) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: UInt16.t = self ])
+    [ return (result: bool) -> {[@stop_split] [@expl:is_one_u16 ensures] ([@stop_split] [@expl:is_one ensures #0] result
+        = is_one_u16 self)
+      /\ ([@stop_split] [@expl:is_one ensures #1] result = (UInt16.t'int self = 1))}
+      (! return {result}) ]
+end
+module M_impl_IsOne_for_u16__is_one__refines (* <u16 as IsOne> *)
+  use creusot.int.UInt16
+  
+  predicate is_one_u16 (self: UInt16.t) = self = (1: UInt16.t)
+  
+  axiom is_one_u16_spec: forall self: UInt16.t [is_one_u16 self]. is_one_u16 self = (UInt16.t'int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: UInt16.t. forall result: bool. result = is_one_u16 self /\ result = (UInt16.t'int self = 1)
+        -> result = is_one_u16 self /\ result = (UInt16.t'int self = 1)
+end
+module M_impl_IsOne_for_u16__is_one_logic (* <u16 as IsOne> *)
+  use creusot.int.UInt16
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : UInt16.t
+  
+  predicate is_one_u16 (self: UInt16.t)
+  
+  goal vc_is_one_u16: [@stop_split] [@expl:is_one_logic ensures] (self = (1: UInt16.t)) = (UInt16.t'int self = 1)
+end
+module M_impl_IsOne_for_u16__is_one_logic__refines (* <u16 as IsOne> *)
+  use creusot.int.UInt16
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: UInt16.t. forall result: bool. result = (UInt16.t'int self = 1)
+        -> result = (UInt16.t'int self = 1)
+end
+module M_impl_IsOne_for_u32__is_one (* <u32 as IsOne> *)
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  predicate is_one_u32 (self: UInt32.t) = self = (1: UInt32.t)
+  
+  axiom is_one_u32_spec: forall self: UInt32.t [is_one_u32 self]. is_one_u32 self = (UInt32.t'int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_one_u32'0 (self: UInt32.t) (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self = (1: UInt32.t) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: UInt32.t = self ])
+    [ return (result: bool) -> {[@stop_split] [@expl:is_one_u32 ensures] ([@stop_split] [@expl:is_one ensures #0] result
+        = is_one_u32 self)
+      /\ ([@stop_split] [@expl:is_one ensures #1] result = (UInt32.t'int self = 1))}
+      (! return {result}) ]
+end
+module M_impl_IsOne_for_u32__is_one__refines (* <u32 as IsOne> *)
+  use creusot.int.UInt32
+  
+  predicate is_one_u32 (self: UInt32.t) = self = (1: UInt32.t)
+  
+  axiom is_one_u32_spec: forall self: UInt32.t [is_one_u32 self]. is_one_u32 self = (UInt32.t'int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: UInt32.t. forall result: bool. result = is_one_u32 self /\ result = (UInt32.t'int self = 1)
+        -> result = is_one_u32 self /\ result = (UInt32.t'int self = 1)
+end
+module M_impl_IsOne_for_u32__is_one_logic (* <u32 as IsOne> *)
+  use creusot.int.UInt32
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : UInt32.t
+  
+  predicate is_one_u32 (self: UInt32.t)
+  
+  goal vc_is_one_u32: [@stop_split] [@expl:is_one_logic ensures] (self = (1: UInt32.t)) = (UInt32.t'int self = 1)
+end
+module M_impl_IsOne_for_u32__is_one_logic__refines (* <u32 as IsOne> *)
+  use creusot.int.UInt32
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: UInt32.t. forall result: bool. result = (UInt32.t'int self = 1)
+        -> result = (UInt32.t'int self = 1)
+end
+module M_impl_IsOne_for_u64__is_one (* <u64 as IsOne> *)
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  predicate is_one_u64 (self: UInt64.t) = self = (1: UInt64.t)
+  
+  axiom is_one_u64_spec: forall self: UInt64.t [is_one_u64 self]. is_one_u64 self = (UInt64.t'int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_one_u64'0 (self: UInt64.t) (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self = (1: UInt64.t) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: UInt64.t = self ])
+    [ return (result: bool) -> {[@stop_split] [@expl:is_one_u64 ensures] ([@stop_split] [@expl:is_one ensures #0] result
+        = is_one_u64 self)
+      /\ ([@stop_split] [@expl:is_one ensures #1] result = (UInt64.t'int self = 1))}
+      (! return {result}) ]
+end
+module M_impl_IsOne_for_u64__is_one__refines (* <u64 as IsOne> *)
+  use creusot.int.UInt64
+  
+  predicate is_one_u64 (self: UInt64.t) = self = (1: UInt64.t)
+  
+  axiom is_one_u64_spec: forall self: UInt64.t [is_one_u64 self]. is_one_u64 self = (UInt64.t'int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: UInt64.t. forall result: bool. result = is_one_u64 self /\ result = (UInt64.t'int self = 1)
+        -> result = is_one_u64 self /\ result = (UInt64.t'int self = 1)
+end
+module M_impl_IsOne_for_u64__is_one_logic (* <u64 as IsOne> *)
+  use creusot.int.UInt64
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : UInt64.t
+  
+  predicate is_one_u64 (self: UInt64.t)
+  
+  goal vc_is_one_u64: [@stop_split] [@expl:is_one_logic ensures] (self = (1: UInt64.t)) = (UInt64.t'int self = 1)
+end
+module M_impl_IsOne_for_u64__is_one_logic__refines (* <u64 as IsOne> *)
+  use creusot.int.UInt64
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: UInt64.t. forall result: bool. result = (UInt64.t'int self = 1)
+        -> result = (UInt64.t'int self = 1)
+end
+module M_impl_IsOne_for_u8__is_one (* <u8 as IsOne> *)
+  use creusot.int.UInt8
+  use creusot.prelude.Any
+  
+  predicate is_one_u8 (self: UInt8.t) = self = (1: UInt8.t)
+  
+  axiom is_one_u8_spec: forall self: UInt8.t [is_one_u8 self]. is_one_u8 self = (UInt8.t'int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_one_u8'0 (self: UInt8.t) (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self = (1: UInt8.t) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: UInt8.t = self ])
+    [ return (result: bool) -> {[@stop_split] [@expl:is_one_u8 ensures] ([@stop_split] [@expl:is_one ensures #0] result
+        = is_one_u8 self)
+      /\ ([@stop_split] [@expl:is_one ensures #1] result = (UInt8.t'int self = 1))}
+      (! return {result}) ]
+end
+module M_impl_IsOne_for_u8__is_one__refines (* <u8 as IsOne> *)
+  use creusot.int.UInt8
+  
+  predicate is_one_u8 (self: UInt8.t) = self = (1: UInt8.t)
+  
+  axiom is_one_u8_spec: forall self: UInt8.t [is_one_u8 self]. is_one_u8 self = (UInt8.t'int self = 1)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: UInt8.t. forall result: bool. result = is_one_u8 self /\ result = (UInt8.t'int self = 1)
+        -> result = is_one_u8 self /\ result = (UInt8.t'int self = 1)
+end
+module M_impl_IsOne_for_u8__is_one_logic (* <u8 as IsOne> *)
+  use creusot.int.UInt8
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : UInt8.t
+  
+  predicate is_one_u8 (self: UInt8.t)
+  
+  goal vc_is_one_u8: [@stop_split] [@expl:is_one_logic ensures] (self = (1: UInt8.t)) = (UInt8.t'int self = 1)
+end
+module M_impl_IsOne_for_u8__is_one_logic__refines (* <u8 as IsOne> *)
+  use creusot.int.UInt8
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: UInt8.t. forall result: bool. result = (UInt8.t'int self = 1)
+        -> result = (UInt8.t'int self = 1)
+end
+module M_impl_IsZero_for_i32__is_zero (* <i32 as IsZero> *)
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  predicate is_zero_i32 (self: Int32.t) = self = (0: Int32.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_zero_i32'0 (self: Int32.t) (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self = (0: Int32.t) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: Int32.t = self ])
+    [ return (result: bool) -> {[@stop_split] [@expl:is_zero ensures] result = is_zero_i32 self} (! return {result}) ]
+end
+module M_impl_IsZero_for_i32__is_zero__refines (* <i32 as IsZero> *)
+  use creusot.int.Int32
+  
+  predicate is_zero_i32 (self: Int32.t) = self = (0: Int32.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Int32.t. forall result: bool. result = is_zero_i32 self -> result = is_zero_i32 self
+end
+module M_impl_IsZero_for_i64__is_zero (* <i64 as IsZero> *)
+  use creusot.int.Int64
+  use creusot.prelude.Any
+  
+  predicate is_zero_i64 (self: Int64.t) = self = (0: Int64.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_zero_i64'0 (self: Int64.t) (return (x: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- self = (0: Int64.t) ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: Int64.t = self ])
+    [ return (result: bool) -> {[@stop_split] [@expl:is_zero ensures] result = is_zero_i64 self} (! return {result}) ]
+end
+module M_impl_IsZero_for_i64__is_zero__refines (* <i64 as IsZero> *)
+  use creusot.int.Int64
+  
+  predicate is_zero_i64 (self: Int64.t) = self = (0: Int64.t)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: Int64.t. forall result: bool. result = is_zero_i64 self -> result = is_zero_i64 self
+end
+module M_no_zeros
+  use creusot.slice.Slice64
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_T
+  
+  type t_Iter_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+  
+  predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+  
+  meta "rewrite_def" predicate inv_slice_T
+  
+  predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+  
+  meta "rewrite_def" predicate invariant_ref_slice_T
+  
+  predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+  
+  meta "rewrite_def" predicate inv_ref_slice_T
+  
+  predicate inv_Iter_T (_1: t_Iter_T)
+  
+  function view_Iter_T (self: t_Iter_T) : Slice64.slice t_T
+  
+  let into_iter_ref_slice_T (self_: Slice64.slice t_T) (return (x: t_Iter_T)) =
+  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_ref_slice_T self_}
+    any
+    [ return (result: t_Iter_T) ->
+    {[@stop_split] [@expl:into_iter_ref_slice_T ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_T result)
+      /\ ([@stop_split] [@expl:into_iter ensures] self_ = view_Iter_T result)}
+      (! return {result}) ]
+  
+  type t_Option_ref_T = None | Some t_T
+  
+  predicate invariant_refmut_Iter_T [@inline:trivial] (self: MutBorrow.t t_Iter_T) =
+    inv_Iter_T self.current /\ inv_Iter_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Iter_T
+  
+  predicate inv_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = invariant_refmut_Iter_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_Iter_T
+  
+  predicate inv_Option_ref_T (_1: t_Option_ref_T)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_ref_T f0
+        end
+  
+  function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_T
+  
+  function to_ref_seq_slice_T (self: Slice64.slice t_T) : Seq.seq t_T
+  
+  axiom to_ref_seq_slice_T_spec:
+    forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. Seq.length (to_ref_seq_slice_T self)
+      = Seq.length (Slice64.view self)
+  
+  axiom to_ref_seq_slice_T_spec'0: forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. forall i: int. 0 <= i
+          /\ i < Seq.length (to_ref_seq_slice_T self) -> Seq.get (to_ref_seq_slice_T self) i = index_slice_T self i
+  
+  predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (tl: t_Iter_T) =
+    to_ref_seq_slice_T (view_Iter_T self) = Seq.(++) visited (to_ref_seq_slice_T (view_Iter_T tl))
+  
+  function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : ()
+  
+  axiom produces_trans_Iter_T_spec:
+    forall a: t_Iter_T, ab: Seq.seq t_T, b: t_Iter_T, bc: Seq.seq t_T, c: t_Iter_T. produces_Iter_T a ab b
+      -> produces_Iter_T b bc c -> produces_Iter_T a (Seq.(++) ab bc) c
+  
+  function produces_refl_Iter_T (self: t_Iter_T) : ()
+  
+  axiom produces_refl_Iter_T_spec: forall self: t_Iter_T. produces_Iter_T self (Seq.empty: Seq.seq t_T) self
+  
+  predicate resolve_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Iter_T
+  
+  predicate completed_Iter_T (self: MutBorrow.t t_Iter_T) =
+    resolve_refmut_Iter_T self /\ Slice64.view (view_Iter_T self.current) = (Seq.empty: Seq.seq t_T)
+  
+  let next_Iter_T (self_: MutBorrow.t t_Iter_T) (return (x: t_Option_ref_T)) =
+  {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_T self_}
+    any
+    [ return (result: t_Option_ref_T) ->
+    {[@stop_split] [@expl:next_Iter_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_ref_T result)
+      /\ ([@stop_split] [@expl:next ensures] match result with
+        | None -> completed_Iter_T self_
+        | Some v -> produces_Iter_T self_.current (Seq.singleton v) self_.final
+        end)}
+      (! return {result}) ]
+  
+  predicate is_zero_T (self: t_T)
+  
+  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
+  
+  meta "rewrite_def" predicate invariant_ref_ref_T
+  
+  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_ref_T
+  
+  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_ref_T
+  
+  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_ref_T
+  
+  let elim_Some (_x: t_Option_ref_T) (return (f0: t_T)) = any
+    [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate precondition_is_zero (self: ()) (args: t_T)
+  
+  axiom precondition_fndef: forall args: t_T [precondition_is_zero () args]. (let self = args in inv_ref_T self)
+      -> precondition_is_zero () args
+  
+  predicate postcondition_is_zero (self: ()) (args: t_T) (result: bool)
+  
+  axiom postcondition_fndef:
+    forall args: t_T, res: bool [postcondition_is_zero () args res]. postcondition_is_zero () args res
+      -> (let self = args in res = is_zero_T self)
+  
+  predicate postcondition_once_is_zero (self: ()) (args: t_T) (result: bool) = postcondition_is_zero self args result
+  
+  meta "rewrite_def" predicate postcondition_once_is_zero
+  
+  let is_zero_T'0 (self: t_T) (return (x: bool)) = {[@stop_split] [@expl:is_zero requires] precondition_is_zero () self}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_zero ensures] postcondition_once_is_zero () self result}
+      (! return {result}) ]
+  
+  predicate resolve_Iter_T (_1: t_Iter_T)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let no_zeros_T (elems: Slice64.slice t_T) (return (x: bool)) =
+  {[@stop_split] [@expl:no_zeros 'elems' type invariant] inv_ref_slice_T elems}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = into_iter_ref_slice_T {elems} (fun (_x: t_Iter_T) -> [ &iter <- _x ] s1)
+      | s1 = [ &iter_old <- iter ] s2
+      | s2 = [ &produced <- Seq.empty: Seq.seq t_T ] s3
+      | s3 = bb4 ]
+    | bb4 = bb4
+      [ bb4 = {[@expl:inferred invariant: type invariant] inv_Iter_T iter}
+        {[@expl:for invariant] inv_Seq_ref_T produced}
+        {[@expl:for invariant] produces_Iter_T iter_old produced iter}
+        {[@expl:loop invariant] forall i: int. 0 <= i /\ i < Seq.length produced -> not is_zero_T (Seq.get produced i)}
+        (! s0)
+        [ s0 = MutBorrow.borrow_mut <t_Iter_T> {iter}
+            (fun (_bor: MutBorrow.t t_Iter_T) -> [ &_26 <- _bor ] -{inv_Iter_T _bor.final}- [ &iter <- _bor.final ] s1)
+          [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
+        | s1 = MutBorrow.borrow_final <t_Iter_T> {_26.current} {MutBorrow.get_id _26}
+            (fun (_bor: MutBorrow.t t_Iter_T) ->
+              [ &_25 <- _bor ] -{inv_Iter_T _bor.final}-
+              [ &_26 <- { _26 with current = _bor.final } ] s2)
+          [ _ck -> (! {[@expl:type invariant] inv_Iter_T _26.current} any) ]
+        | s2 = next_Iter_T {_25} (fun (_x: t_Option_ref_T) -> [ &_24 <- _x ] s3)
+        | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_T _26} any) ]
+        | s4 = -{resolve_refmut_Iter_T _26}- s5
+        | s5 = any [ br0 -> {_24 = None} (! bb9) | br1 (x0: t_T) -> {_24 = Some x0} (! bb10) ] ]
+        [ bb10 = s0
+          [ s0 = elim_Some {_24} (fun (r0: t_T) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &elem <- __creusot_proc_iter_elem ] s3
+          | s3 = is_zero_T'0 {elem} (fun (_x: bool) -> [ &_35 <- _x ] s4)
+          | s4 = any [ br0 -> {_35 = false} (! bb4) | br1 -> {_35} (! bb13) ] ] ] ]
+    | bb13 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
+      | s1 = -{resolve_Iter_T iter}- s2
+      | s2 = [ &_ret <- false ] s3
+      | s3 = return {_ret} ]
+    | bb9 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
+      | s1 = -{resolve_Iter_T iter}- s2
+      | s2 = [ &_ret <- true ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l ()
+    | & elems: Slice64.slice t_T = elems
+    | & iter: t_Iter_T = Any.any_l ()
+    | & iter_old: t_Iter_T = Any.any_l ()
+    | & produced: Seq.seq t_T = Any.any_l ()
+    | & _24: t_Option_ref_T = Any.any_l ()
+    | & _25: MutBorrow.t t_Iter_T = Any.any_l ()
+    | & _26: MutBorrow.t t_Iter_T = Any.any_l ()
+    | & __creusot_proc_iter_elem: t_T = Any.any_l ()
+    | & elem: t_T = Any.any_l ()
+    | & _35: bool = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:no_zeros ensures] result
+      = (forall i: int. 0 <= i /\ i < Seq.length (Slice64.view elems)
+        -> not is_zero_T (Seq.get (Slice64.view elems) i))}
+      (! return {result}) ]
+end

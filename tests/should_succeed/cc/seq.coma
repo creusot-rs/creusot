@@ -79,8 +79,12 @@ module M_f
   
   meta "rewrite_def" predicate resolve_Seq_refmut_usize'0
   
-  let new_usize (x: UInt64.t) (return (x'0: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_usize (x: UInt64.t) : UInt64.t
+  
+  axiom new_usize_spec: forall x: UInt64.t [new_usize x]. new_usize x = x
+  
+  let new_usize'0 (x: UInt64.t) (return (x'0: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:new ensures] result = new_usize x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -105,7 +109,7 @@ module M_f
       | s11 = [ &_9 <- { _9 with current = { _9.current with current = (1: UInt64.t) } } ] s12
       | s12 = -{resolve_refmut_refmut_usize _9}- s13
       | s13 = -{resolve_Seq_refmut_usize'0 s}- s14
-      | s14 = new_usize {x} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s15)
+      | s14 = new_usize'0 {x} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s15)
       | s15 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & x: UInt64.t = Any.any_l ()

@@ -120,8 +120,14 @@ module M_wrong_permcell_permission
   let deref_Ghost_Perm_PermCell_i32 (self: t_Perm_PermCell_i32) (return (x: t_Perm_PermCell_i32)) = any
     [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
-  let new_ref_Perm_PermCell_i32 (x: t_Perm_PermCell_i32) (return (x'0: t_Perm_PermCell_i32)) = any
-    [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_ref_Perm_PermCell_i32 (x: t_Perm_PermCell_i32) : t_Perm_PermCell_i32
+  
+  axiom new_ref_Perm_PermCell_i32_spec:
+    forall x: t_Perm_PermCell_i32 [new_ref_Perm_PermCell_i32 x]. new_ref_Perm_PermCell_i32 x = x
+  
+  let new_ref_Perm_PermCell_i32'0 (x: t_Perm_PermCell_i32) (return (x'0: t_Perm_PermCell_i32)) = any
+    [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:new ensures] result = new_ref_Perm_PermCell_i32 x}
+      (! return {result}) ]
   
   let borrow_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
   {[@stop_split] [@expl:borrow requires] self = ward_PermCell_i32 perm}
@@ -141,7 +147,7 @@ module M_wrong_permcell_permission
       | s3 = [ &perm <- _4.f1 ] s4
       | s4 = deref_Ghost_Perm_PermCell_i32 {perm} (fun (_x: t_Perm_PermCell_i32) -> [ &_10 <- _x ] s5)
       | s5 = [ &_9 <- _10 ] s6
-      | s6 = new_ref_Perm_PermCell_i32 {_9} (fun (_x: t_Perm_PermCell_i32) -> [ &_7 <- _x ] s7)
+      | s6 = new_ref_Perm_PermCell_i32'0 {_9} (fun (_x: t_Perm_PermCell_i32) -> [ &_7 <- _x ] s7)
       | s7 = borrow_i32 {cell} {_7} (fun (_x: Int32.t) -> [ &_5 <- _x ] s8)
       | s8 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
@@ -261,12 +267,16 @@ module M_wrong_ptr_perm_permission
   
   meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_i32
   
-  let new_ref_Perm_ptr_i32 (x: t_Perm_ptr_i32) (return (x'0: t_Perm_ptr_i32)) =
+  function new_ref_Perm_ptr_i32 (x: t_Perm_ptr_i32) : t_Perm_ptr_i32
+  
+  axiom new_ref_Perm_ptr_i32_spec: forall x: t_Perm_ptr_i32 [new_ref_Perm_ptr_i32 x]. new_ref_Perm_ptr_i32 x = x
+  
+  let new_ref_Perm_ptr_i32'0 (x: t_Perm_ptr_i32) (return (x'0: t_Perm_ptr_i32)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_ref_Perm_ptr_i32 x}
     any
     [ return (result: t_Perm_ptr_i32) ->
     {[@stop_split] [@expl:new_ref_Perm_ptr_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_ref_Perm_ptr_i32 result)
-      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      /\ ([@stop_split] [@expl:new ensures] result = new_ref_Perm_ptr_i32 x)}
       (! return {result}) ]
   
   let as_ref_i32 (ptr: Opaque.ptr) (own: t_Perm_ptr_i32) (return (x: Int32.t)) =
@@ -289,7 +299,7 @@ module M_wrong_ptr_perm_permission
       | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Box_Perm_ptr_i32_Global perm} any) ]
       | s6 = deref_Ghost_Box_Perm_ptr_i32_Global {perm} (fun (_x: t_Perm_ptr_i32) -> [ &_11 <- _x ] s7)
       | s7 = [ &_10 <- _11 ] s8
-      | s8 = new_ref_Perm_ptr_i32 {_10} (fun (_x: t_Perm_ptr_i32) -> [ &_8 <- _x ] s9)
+      | s8 = new_ref_Perm_ptr_i32'0 {_10} (fun (_x: t_Perm_ptr_i32) -> [ &_8 <- _x ] s9)
       | s9 = as_ref_i32 {ptr} {_8} (fun (_x: Int32.t) -> [ &_5 <- _x ] s10)
       | s10 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

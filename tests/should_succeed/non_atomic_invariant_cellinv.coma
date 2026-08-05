@@ -20,8 +20,14 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
   
   meta "rewrite_def" predicate resolve_refmut_PermCellNAInv_T
   
-  let new_ref_Perm_PermCell_T (x: t_Perm_PermCell_T) (return (x'0: t_Perm_PermCell_T)) = any
-    [ return (result: t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_ref_Perm_PermCell_T (x: t_Perm_PermCell_T) : t_Perm_PermCell_T
+  
+  axiom new_ref_Perm_PermCell_T_spec: forall x: t_Perm_PermCell_T [new_ref_Perm_PermCell_T x]. new_ref_Perm_PermCell_T x
+      = x
+  
+  let new_ref_Perm_PermCell_T'0 (x: t_Perm_PermCell_T) (return (x'0: t_Perm_PermCell_T)) = any
+    [ return (result: t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = new_ref_Perm_PermCell_T x}
+      (! return {result}) ]
   
   type t_PermCell_T
   
@@ -86,7 +92,7 @@ module M_impl_CellInv_T__read (* CellInv<T> *)
       [ s0 = into_inner_refmut_PermCellNAInv_T {perm} (fun (_x: MutBorrow.t t_PermCellNAInv_T) -> [ &_7 <- _x ] s1)
       | s1 = -{resolve_refmut_PermCellNAInv_T _7}- s2
       | s2 = [ &_6 <- _7.current.f0 ] s3
-      | s3 = new_ref_Perm_PermCell_T {_6} (fun (_x: t_Perm_PermCell_T) -> [ &_4 <- _x ] s4)
+      | s3 = new_ref_Perm_PermCell_T'0 {_6} (fun (_x: t_Perm_PermCell_T) -> [ &_4 <- _x ] s4)
       | s4 = borrow_T {self.c0.data} {_4} (fun (_x: t_T) -> [ &_ret <- _x ] s5)
       | s5 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
@@ -246,8 +252,15 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
   
   meta "rewrite_def" predicate resolve_refmut_Perm_PermCell_T
   
-  let new_refmut_Perm_PermCell_T (x: MutBorrow.t t_Perm_PermCell_T) (return (x'0: MutBorrow.t t_Perm_PermCell_T)) = any
-    [ return (result: MutBorrow.t t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x}
+  function new_refmut_Perm_PermCell_T (x: MutBorrow.t t_Perm_PermCell_T) : MutBorrow.t t_Perm_PermCell_T
+  
+  axiom new_refmut_Perm_PermCell_T_spec:
+    forall x: MutBorrow.t t_Perm_PermCell_T [new_refmut_Perm_PermCell_T x]. new_refmut_Perm_PermCell_T x = x
+  
+  let new_refmut_Perm_PermCell_T'0 (x: MutBorrow.t t_Perm_PermCell_T) (return (x'0: MutBorrow.t t_Perm_PermCell_T)) =
+  any
+    [ return (result: MutBorrow.t t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result
+      = new_refmut_Perm_PermCell_T x}
       (! return {result}) ]
   
   type t_PermCell_T
@@ -339,7 +352,7 @@ module M_impl_CellInv_T__write (* CellInv<T> *)
       | s6 = -{resolve_refmut_Perm_PermCell_T _9}- s7
       | s7 = MutBorrow.borrow_final <t_Perm_PermCell_T> {_8.current} {MutBorrow.get_id _8}
           (fun (_bor: MutBorrow.t t_Perm_PermCell_T) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s8)
-      | s8 = new_refmut_Perm_PermCell_T {_7} (fun (_x: MutBorrow.t t_Perm_PermCell_T) -> [ &_6 <- _x ] s9)
+      | s8 = new_refmut_Perm_PermCell_T'0 {_7} (fun (_x: MutBorrow.t t_Perm_PermCell_T) -> [ &_6 <- _x ] s9)
       | s9 = -{resolve_refmut_Perm_PermCell_T _8}- s10
       | s10 = borrow_mut_T {self.c0.data} {_6} (fun (_x: MutBorrow.t t_T) -> [ &_4 <- _x ] s11)
       | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_T _4.current} any) ]

@@ -2,8 +2,12 @@ module M_bar
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  let new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_unit (x: ()) : ()
+  
+  axiom new_unit_spec: forall x: () [new_unit x]. new_unit x = x
+  
+  let new_unit'0 (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = new_unit x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -14,7 +18,7 @@ module M_bar
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = [ &_4 <- x ] s2
       | s2 = {[@expl:assertion] exists y: Int32.t. x = y} s3
-      | s3 = new_unit {_3} (fun (_x: ()) -> [ &_2 <- _x ] s4)
+      | s3 = new_unit'0 {_3} (fun (_x: ()) -> [ &_2 <- _x ] s4)
       | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
@@ -25,8 +29,12 @@ end
 module M_foo
   use creusot.prelude.Any
   
-  let new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  function new_unit (x: ()) : ()
+  
+  axiom new_unit_spec: forall x: () [new_unit x]. new_unit x = x
+  
+  let new_unit'0 (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = new_unit x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -36,7 +44,7 @@ module M_foo
     [ bb0 = s0
       [ s0 = [ &x <- 1 ] s1
       | s1 = {[@expl:assertion] x = 1} s2
-      | s2 = new_unit {_2} (fun (_x: ()) -> [ &_1 <- _x ] s3)
+      | s2 = new_unit'0 {_2} (fun (_x: ()) -> [ &_1 <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () | & _2: () = Any.any_l () | & x: int = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]

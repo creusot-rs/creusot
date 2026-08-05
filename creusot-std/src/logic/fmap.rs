@@ -278,7 +278,7 @@ impl<K, V> FMap<K, V> {
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(result == self.len())]
+    #[logic_alias(Self::len(*self))]
     pub fn len_ghost(&self) -> Int {
         panic!()
     }
@@ -286,6 +286,7 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[check(ghost)]
     #[ensures(result == (self.len() == 0 && forall<k> !self.contains(k)))]
+    #[logic_alias(Self::is_empty(*self))]
     pub fn is_empty_ghost(&self) -> bool {
         panic!()
     }
@@ -305,7 +306,7 @@ impl<K, V> FMap<K, V> {
     /// };
     /// ```
     #[check(ghost)]
-    #[ensures(result == self.contains(*key))]
+    #[logic_alias(Self::contains(*self, *key))]
     pub fn contains_ghost(&self, key: &K) -> bool {
         self.get_ghost(key).is_some()
     }
