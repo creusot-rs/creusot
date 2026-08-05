@@ -39,13 +39,13 @@
 
           pins = {
             why3 = {
-              version = "54c92f96bb0711d6e991c18f10bfbc08d90d028b";
-              sha256 = "sha256-xLV6WQSsT1K4FQKMut4DZUAnCoL3XhKhyuPUmk+NWoE=";
+              version = "c369bc4cdc22d1e714255bb3675a2ce6b7242f19";
+              sha256 = "sha256-keEg/NkxRAvScvhHhcPi7JBbJEF+gHRPoWIpo2JCzO0=";
             };
 
             why3find = {
-              version = "eab37557d3e24e1913a3c4f44bc5528ef497c6c9";
-              sha256 = "sha256-nyf/d3d0y5WuH5fTz93HkCbziwN0WR7sAzas+Ipauwg=";
+              version = "0f054b93c86ac7ba20bca7df5d1563a9a4434a30";
+              sha256 = "sha256-fahxMg18Dc8FjbtwH2/P9G1VDtQpe0qMLIn3B7o54dk=";
             };
 
             alt-ergo = {
