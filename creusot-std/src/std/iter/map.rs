@@ -70,7 +70,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
             && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
             && if visited.len() == 0 { self.func() == succ.func() }
                else { *fs[0] == self.func() &&  ^fs[visited.len() - 1] == succ.func() }
-            && forall<i> 0 <= i && i < visited.len() ==>
+            && forall<mode: Mode, i> 0 <= i && i < visited.len() ==>
                  self.func().hist_inv(*fs[i]) && (*fs[i]).postcondition_mut(mode, (s[i],), ^fs[i], visited[i])
         }
     }
@@ -96,7 +96,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
             (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
             && if ac.len() == 0 { a.func() == c.func() }
                else { *fs[0] == a.func() &&  ^fs[ac.len() - 1] == c.func() }
-            && forall<i> 0 <= i && i < ac.len() ==>
+            && forall<mode: Mode, i> 0 <= i && i < ac.len() ==>
                  a.func().hist_inv(*fs[i])
                  && (*fs[i]).postcondition_mut(mode, (s[i],), ^fs[i], ac[i])
         }
@@ -105,14 +105,14 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
 
 extern_spec! {
     impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
-        #[ensures(|mode| I::size_hint.postcondition(mode, (&self.iter(),), result))]
+        #[ensures(|result, mode|I::size_hint.postcondition(mode, (&self.iter(),), result))]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }
 
 impl<I: ExactSizeIteratorSpec, B, F: FnMut(I::Item) -> B> ExactSizeIteratorSpec for Map<I, F> {
     #[logic(law)]
-    #[requires(|mode| Self::size_hint.postcondition(mode, (self,), r))]
+    #[requires(exists<mode: Mode>Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         self.iter().size_hint_exact(r)
@@ -127,7 +127,7 @@ impl<I: ExactSizeIteratorSpec, B, F: FnMut(I::Item) -> B> ExactSizeIteratorSpec 
     && (forall<i> 1 <= i && i < result.0.len() ==>  ^result.0[i - 1] == *result.0[i])
     && if visited.len() == 0 { this.func() == succ.func() }
        else { *result.0[0] == this.func() &&  ^result.0[visited.len() - 1] == succ.func() }
-    && forall<i> 0 <= i && i < visited.len() ==>
+    && forall<mode: Mode, i> 0 <= i && i < visited.len() ==>
          this.func().hist_inv(*result.0[i])
          && (*result.0[i]).postcondition_mut(mode, (result.1[i],), ^result.0[i], visited[i])
 )]
@@ -144,7 +144,7 @@ fn produces_instantiate_existential<'a, I: IteratorSpec, B, F: FnMut(I::Item) ->
             && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
             && if visited.len() == 0 { this.func() == succ.func() }
                else { *fs[0] == this.func() &&  ^fs[visited.len() - 1] == succ.func() }
-            && forall<i> 0 <= i && i < visited.len() ==>
+            && forall<mode: Mode, i> 0 <= i && i < visited.len() ==>
                  this.func().hist_inv(*fs[i])
                  && (*fs[i]).postcondition_mut(mode, (s[i],), ^fs[i], visited[i])
 
@@ -153,28 +153,23 @@ fn produces_instantiate_existential<'a, I: IteratorSpec, B, F: FnMut(I::Item) ->
 }
 
 #[logic(open, prophetic, inline)]
-pub fn next_precondition<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(
-    mode: Mode,
-    iter: I,
-    func: F,
-) -> bool {
+pub fn next_precondition<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> bool {
     pearlite! {
         forall<e: I::Item, i: I>
             #[trigger(iter.produces(Seq::singleton(e), i))]
             inv(e) && iter.produces(Seq::singleton(e), i) ==>
-            func.precondition(mode, (e,))
+            forall<mode: Mode> func.precondition(mode, (e,))
     }
 }
 
 #[logic(open, prophetic, inline)]
 pub fn preservation<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> bool {
     pearlite! {
-        forall<mode: Mode, s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-            #[trigger(iter.produces(mode, s.push_back(e1).push_back(e2), i), (*f).postcondition_mut(mode, (e1,), ^f, b))]
-            !mode.terminates() ==>
+        forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I, mode: Mode>
+            #[trigger(iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut(mode, (e1,), ^f, b))]
             func.hist_inv(*f) ==>
             inv(s) && inv(e1) && inv(e2) && inv(f) ==>
-            iter.produces(mode, s.push_back(e1).push_back(e2), i) ==>
+            iter.produces(s.push_back(e1).push_back(e2), i) ==>
             (*f).postcondition_mut(mode, (e1,), ^f, b) ==>
             (^f).precondition(mode, (e2, ))
     }
@@ -185,7 +180,7 @@ pub fn reinitialize<I: IteratorSpec, B, F: FnMut(I::Item) -> B>() -> bool {
     pearlite! {
         forall<iter: &mut I, func: F>
             iter.completed()
-            ==> (forall<mode: Mode> !mode.terminates() ==> next_precondition(mode, ^iter, func))
+            ==> next_precondition(^iter, func)
                 && preservation(^iter, func)
     }
 }

@@ -63,7 +63,7 @@ macro_rules! impl_exact_size_range {
     ($($t:ty)*) => ($(
         impl ExactSizeIteratorSpec for Range<$t> {
             #[logic(law)]
-            #[requires(Self::size_hint.postcondition((self,), r))]
+            #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
             #[ensures(r.1 == Some(r.0))]
             #[allow(unused_variables)]
             fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -107,7 +107,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {
@@ -172,7 +172,7 @@ macro_rules! impl_exact_size_range_inclusive {
     ($($t:ty)*) => ($(
         impl ExactSizeIteratorSpec for RangeInclusive<$t> {
             #[logic(law)]
-            #[requires(Self::size_hint.postcondition((self,), r))]
+            #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
             #[ensures(r.1 == Some(r.0))]
             #[allow(unused_variables)]
             fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -214,7 +214,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {

@@ -90,8 +90,8 @@ impl<I: IteratorSpec> IteratorSpec for Take<I> {
 
 extern_spec! {
     impl<I: Iterator> Iterator for Take<I> {
-        #[ensures(self.n() > 0usize ==> exists<r>
-            I::size_hint.postcondition((&self.iter(),), r) &&
+        #[ensures(|result, mode| self.n() > 0usize ==> exists<r>
+            I::size_hint.postcondition(mode, (&self.iter(),), r) &&
             (r.0 <= self.n() ==> result.0 == r.0) &&
             (r.0 >= self.n() ==> result.0 == self.n()) &&
             match r.1 {
@@ -108,7 +108,7 @@ extern_spec! {
 
 impl<I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Take<I> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {

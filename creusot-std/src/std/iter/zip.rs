@@ -76,9 +76,9 @@ impl<A: IteratorSpec, B: IteratorSpec> IteratorSpec for Zip<A, B> {
 
 extern_spec! {
     impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
-        #[ensures(exists<ra, rb>
-            A::size_hint.postcondition((&self.iter_a(),), ra) &&
-            B::size_hint.postcondition((&self.iter_b(),), rb) &&
+        #[ensures(|result, mode| exists<ra, rb>
+            A::size_hint.postcondition(mode, (&self.iter_a(),), ra) &&
+            B::size_hint.postcondition(mode, (&self.iter_b(),), rb) &&
             (ra.0@ <= rb.0@ ==> result.0 == ra.0) &&
             (ra.0@ >= rb.0@ ==> result.0 == rb.0) &&
             match (ra.1, rb.1) {
@@ -96,7 +96,7 @@ extern_spec! {
 
 impl<A: ExactSizeIteratorSpec, B: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Zip<A, B> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {

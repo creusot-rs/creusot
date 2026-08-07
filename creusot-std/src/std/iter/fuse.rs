@@ -38,7 +38,7 @@ impl<I: IteratorSpec> IteratorSpec for Fuse<I> {
                 None => prod == Seq::empty() && other@ == self@,
                 Some(i) => match other@ {
                     Some(i2) => i.produces(prod, i2),
-                    None => false,
+                    None => exists<i2: &mut I> i.produces(prod, *i2) && i2.completed() && resolve(^i2),
                 },
             }
         }
