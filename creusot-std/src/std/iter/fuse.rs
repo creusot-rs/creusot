@@ -73,8 +73,8 @@ impl<I: IteratorSpec> FusedIteratorSpec for Fuse<I> {
 
 extern_spec! {
     impl<I: Iterator> Iterator for Fuse<I> {
-        #[ensures(match self@ {
-            Some(s) => I::size_hint.postcondition((&s,), result),
+        #[ensures(|result, mode| match self@ {
+            Some(s) => I::size_hint.postcondition(mode, (&s,), result),
             None => result == (0usize, Some(0usize))
         })]
         fn size_hint(&self) -> (usize, Option<usize>);
@@ -83,7 +83,7 @@ extern_spec! {
 
 impl<I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Fuse<I> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {

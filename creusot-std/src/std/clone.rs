@@ -13,7 +13,7 @@ extern_spec! {
                 fn clone(&self) -> Self;
 
                 #[ensures(resolve(*self))]
-                #[ensures(Self::clone.postcondition((source,), ^self))]
+                #[ensures(|_, mode| Self::clone.postcondition(mode, (source,), ^self))]
                 fn clone_from(&mut self, source: &Self) {
                     *self = source.clone()
                 }

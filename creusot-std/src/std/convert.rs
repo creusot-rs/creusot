@@ -28,8 +28,8 @@ extern_spec! {
     where
         T: AsRef<U>,
     {
-        #[requires(<T as AsRef<U>>::as_ref.precondition((*self,)))]
-        #[ensures(<T as AsRef<U>>::as_ref.postcondition((*self,), result))]
+        #[requires(|mode| <T as AsRef<U>>::as_ref.precondition(mode, (*self,)))]
+        #[ensures(|result, mode| <T as AsRef<U>>::as_ref.postcondition(mode, (*self,), result))]
         fn as_ref<'b>(&'b self) -> &'b U {
             <T as AsRef<U>>::as_ref(*self)
         }
@@ -39,8 +39,8 @@ extern_spec! {
     where
         T: AsRef<U>,
     {
-        #[requires(<T as AsRef<U>>::as_ref.precondition((*self,)))]
-        #[ensures(<T as AsRef<U>>::as_ref.postcondition((*self,), result))]
+        #[requires(|mode| <T as AsRef<U>>::as_ref.precondition(mode, (*self,)))]
+        #[ensures(|result, mode| <T as AsRef<U>>::as_ref.postcondition(mode, (*self,), result))]
         fn as_ref<'b>(&'b self) -> &'b U {
             <T as AsRef<U>>::as_ref(*self)
         }
@@ -66,10 +66,10 @@ extern_spec! {
     where
         T: AsMut<U>,
     {
-        #[requires(<T as AsMut<U>>::as_mut.precondition((*self,)))]
+        #[requires(|mode| <T as AsMut<U>>::as_mut.precondition(mode, (*self,)))]
         #[ensures(^*self == ^^self)]
-        #[ensures(exists<s: &mut T> *s == **self && ^s == *^self &&
-            <T as AsMut<U>>::as_mut.postcondition((s,), result)
+        #[ensures(|result, mode| exists<s: &mut T> *s == **self && ^s == *^self &&
+            <T as AsMut<U>>::as_mut.postcondition(mode, (s,), result)
         )]
         fn as_mut<'b>(&'b mut self) -> &'b mut U {
             (*self).as_mut()

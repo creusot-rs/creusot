@@ -52,9 +52,9 @@ extern_spec! {
 
 
     impl<T: Eq + Hash + DeepModel, S: BuildHasher + Default> FromIterator<T> for HashSet<T, S> {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, prod: Seq<T>, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, prod: Seq<T>, done: &mut I::IntoIter>
+            I::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&
             forall<x: T::DeepModelTy>
                 result@.contains(x) == exists<x1: T> x1.deep_model() == x && prod.contains(x1)
@@ -142,7 +142,7 @@ extern_spec! {
 #[cfg(feature = "nightly")]
 impl<T: DeepModel, A: Allocator> ExactSizeIteratorSpec for IntoIter<T, A> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -191,7 +191,7 @@ extern_spec! {
 
 impl<'a, T: DeepModel> ExactSizeIteratorSpec for Iter<'a, T> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}

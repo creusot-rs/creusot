@@ -96,14 +96,14 @@ impl<I: IteratorSpec> IteratorSpec for Enumerate<I> {
 
 extern_spec! {
     impl<I: Iterator> Iterator for Enumerate<I> {
-        #[ensures(I::size_hint.postcondition((&self.iter(),), result))]
+        #[ensures(|result, mode| I::size_hint.postcondition(mode, (&self.iter(),), result))]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }
 
 impl<'a, I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Enumerate<I> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         self.iter().size_hint_exact(r)

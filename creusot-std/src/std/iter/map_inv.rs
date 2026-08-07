@@ -21,13 +21,13 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(mode, ab, b))]
-    #[requires(b.produces(mode, bc, c))]
-    #[ensures(a.produces(mode, ab.concat(bc), c))]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(
         mode: Mode,
         a: Self,
@@ -39,8 +39,9 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
     }
 
     #[logic(open, prophetic, inline)]
-    fn produces(self, mode: Mode, visited: Seq<Self::Item>, succ: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
+            forall<mode: Mode>
             self.func.hist_inv(succ.func)
             && exists<fs: Seq<&mut F>> fs.len() == visited.len()
             && exists<s: Seq<I::Item>> s.len() == visited.len() && self.iter.produces(mode, s, succ.iter)
@@ -121,7 +122,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 func.hist_inv(*f) ==>
                 inv(s) && inv(e1) && inv(e2) && inv(f) ==>
-                iter.produces(mode, s.push_back(e1).push_back(e2), i) ==>
+                iter.produces(s.push_back(e1).push_back(e2), i) ==>
                 (*f).postcondition_mut(mode, (e1, Snapshot::new(produced.concat(s))), ^f, b) ==>
                 (^f).precondition(mode, (e2, Snapshot::new(produced.concat(s).push_back(e1))))
         }
@@ -154,14 +155,14 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
     #[requires(self.invariant())]
     #[requires(self.iter.produces(mode, Seq::singleton(e), iter))]
     #[requires(*f == self.func)]
-    #[requires((*f).postcondition_mut(mode, (e, self.produced), ^f, r) )]
-    #[ensures(Self::preservation_inv(mode, iter, ^f, self.produced.push_back(e)))]
-    #[ensures(Self::next_precondition(mode, iter, ^f, self.produced.push_back(e)))]
-    fn produces_one_invariant(self, mode: Mode, e: I::Item, r: B, f: &mut F, iter: I) {
+    #[requires(forall<mode: Mode> (*f).postcondition_mut(mode, (e, self.produced), ^f, r) )]
+    #[ensures(Self::preservation_inv(iter, ^f, self.produced.push_back(e)))]
+    #[ensures(Self::next_precondition(iter, ^f, self.produced.push_back(e)))]
+    fn produces_one_invariant(self, e: I::Item, r: B, f: &mut F, iter: I) {
         proof_assert! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, i: I>
-                iter.produces(mode, s.push_back(e1).push_back(e2), i) ==>
-                self.iter.produces(mode, s.push_front(e).push_back(e1).push_back(e2), i)
+                iter.produces(s.push_back(e1).push_back(e2), i) ==>
+                self.iter.produces(s.push_front(e).push_back(e1).push_back(e2), i)
         }
     }
 

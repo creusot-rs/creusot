@@ -43,7 +43,7 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for Empty<T> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}

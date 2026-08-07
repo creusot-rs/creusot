@@ -175,7 +175,7 @@ extern_spec! {
         #[ensures(|_, mode| exists<start_: I::IntoIter, done: &mut I::IntoIter, prod: Seq<T>>
             inv(start_) && inv(done) && inv(prod) &&
             I::into_iter.postcondition(mode, (iter,), start_) &&
-            done.completed() && start_.produces(mode, prod, *done) && (^self)@ == self@.concat(prod)
+            done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
         )]
         fn extend<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(&mut self, iter: I);
     }
@@ -245,9 +245,9 @@ extern_spec! {
     }
 
     impl<T> FromIterator<T> for Vec<T> {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
+            I::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(result@, *done) && done.completed() && resolve(^done))]
         fn from_iter<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
@@ -285,7 +285,7 @@ impl<T, A: Allocator> IteratorSpec for IntoIter<T, A> {
     }
 
     #[logic(open)]
-    fn produces(self, _: Mode, visited: Seq<T>, rhs: Self) -> bool {
+    fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
         pearlite! {
             self@ == visited.concat(rhs@)
         }
@@ -317,7 +317,7 @@ extern_spec! {
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> ExactSizeIteratorSpec for IntoIter<T, A> {
     #[logic(law)]
-    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -354,7 +354,7 @@ impl<T, A: Allocator> DoubleEndedIteratorSpec for IntoIter<T, A> {
     }
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {

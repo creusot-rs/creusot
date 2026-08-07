@@ -44,29 +44,30 @@ impl<'a, I: IteratorSpec<Item = &'a T>, T: Clone + 'a> IteratorSpec for Cloned<I
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, mode: Mode, visited: Seq<T>, o: Self) -> bool {
+    fn produces(self, visited: Seq<T>, o: Self) -> bool {
         pearlite! {
+            forall<mode: Mode>
             exists<s: Seq<&'a T>>
-                   self.iter().produces(mode, s, o.iter())
+                   self.iter().produces(s, o.iter())
                 && visited.len() == s.len()
                 && forall<i> 0 <= i && i < s.len() ==> T::clone.postcondition(mode, (s[i],), visited[i])
         }
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(mode, ab, b))]
-    #[requires(b.produces(mode, bc, c))]
-    #[ensures(a.produces(mode, ab.concat(bc), c))]
-    fn produces_trans(mode: Mode, a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
 }
 
 extern_spec! {
     impl<'a, I: Iterator<Item = &'a T>, T: Clone + 'a> Iterator for Cloned<I> {
-        #[ensures(I::size_hint.postcondition((&self.iter(),), result))]
+        #[ensures(|result, mode| I::size_hint.postcondition(mode, (&self.iter(),), result))]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }
@@ -75,7 +76,7 @@ impl<'a, I: ExactSizeIteratorSpec<Item = &'a T>, T: Clone + 'a> ExactSizeIterato
     for Cloned<I>
 {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         self.iter().size_hint_exact(r)

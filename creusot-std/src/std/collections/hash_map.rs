@@ -56,8 +56,8 @@ extern_spec! {
         for HashMap<K, V, S>
     {
         #[requires(T::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: T::IntoIter, prod: Seq<(K, V)>, done: &mut T::IntoIter>
-            T::into_iter.postcondition((iter,), into_iter) &&
+        #[ensures(|result, mode| exists<into_iter: T::IntoIter, prod: Seq<(K, V)>, done: &mut T::IntoIter>
+            T::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&
             forall<k: K::DeepModelTy, v: V> (result@.get(k) == Some(v))
                 == (exists<i, k1: K> 0 <= i && i < prod.len() && k1.deep_model() == k && prod[i] == (k1, v)
@@ -126,7 +126,7 @@ extern_spec! {
 #[cfg(feature = "nightly")]
 impl<K: DeepModel, V, A: Allocator> ExactSizeIteratorSpec for IntoIter<K, V, A> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -188,7 +188,7 @@ extern_spec! {
 
 impl<'a, K: DeepModel, V> ExactSizeIteratorSpec for Iter<'a, K, V> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -250,7 +250,7 @@ extern_spec! {
 
 impl<'a, K: DeepModel, V> ExactSizeIteratorSpec for IterMut<'a, K, V> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
