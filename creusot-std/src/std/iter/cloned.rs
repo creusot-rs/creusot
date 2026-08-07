@@ -46,11 +46,10 @@ impl<'a, I: IteratorSpec<Item = &'a T>, T: Clone + 'a> IteratorSpec for Cloned<I
     #[logic(open, prophetic)]
     fn produces(self, visited: Seq<T>, o: Self) -> bool {
         pearlite! {
-            forall<mode: Mode>
             exists<s: Seq<&'a T>>
                    self.iter().produces(s, o.iter())
                 && visited.len() == s.len()
-                && forall<i> 0 <= i && i < s.len() ==> T::clone.postcondition(mode, (s[i],), visited[i])
+                && forall<i> 0 <= i && i < s.len() ==> forall<mode: Mode> T::clone.postcondition(mode, (s[i],), visited[i])
         }
     }
 

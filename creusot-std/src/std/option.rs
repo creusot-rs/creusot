@@ -304,18 +304,18 @@ extern_spec! {
             }
         }
 
-        #[ensures(|result, mode| match *self {
+        #[ensures(match *self {
             None => exists<it: &mut Iter<'_, T>> it.completed() && *it == result,
             Some(x) => exists<s: Seq<&T>, it: &mut Iter<'_, T>> {
-                it.completed() && s.len() == 1 && *s[0] == x && result.produces(mode, s, *it)
+                it.completed() && s.len() == 1 && *s[0] == x && result.produces(s, *it)
             }
         })]
         fn iter(&self) -> Iter<'_, T>;
 
-        #[ensures(|result, mode| match (*self, ^self) {
+        #[ensures(match (*self, ^self) {
             (None, None) => exists<it: &mut IterMut<'_, T>> it.completed() && *it == result,
             (Some(cur), Some(fin)) => exists<s: Seq<&mut T>, it: &mut IterMut<'_, T>> {
-                it.completed() && s.len() == 1 && *s[0] == cur && ^s[0] == fin && result.produces(mode, s, *it)
+                it.completed() && s.len() == 1 && *s[0] == cur && ^s[0] == fin && result.produces(s, *it)
             },
             _ => false,
         })]
@@ -685,7 +685,7 @@ impl<T> IteratorSpec for IntoIter<T> {
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
@@ -737,7 +737,7 @@ impl<T> IteratorSpec for Iter<'_, T> {
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
@@ -806,7 +806,7 @@ impl<T> IteratorSpec for IterMut<'_, T> {
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
+    #[ensures(forall<mode: Mode> self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]

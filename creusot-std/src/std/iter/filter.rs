@@ -70,46 +70,38 @@ impl<I: IteratorSpec, F: FnMut(&I::Item) -> bool> IteratorSpec for Filter<I, F> 
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            forall<mode: Mode>
-            (exists<s: Seq<_>, e: &mut I > self.iter().produces(mode, s, *e) && e.completed() &&
-                forall<i> 0 <= i && i < s.len() ==> (*self).func().postcondition_mut(mode, (&s[i],), (^self).func(), false))
+            (exists<s: Seq<_>, e: &mut I > self.iter().produces(s, *e) && e.completed() &&
+                forall<i> 0 <= i && i < s.len() ==> forall<mode: Mode> (*self).func().postcondition_mut(mode, (&s[i],), (^self).func(), false))
             && (*self).func() == (^self).func()
         }
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, mode: Mode, visited: Seq<Self::Item>, succ: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             private_invariant(self) ==>
             self.func().hist_inv(succ.func()) &&
             // f here is a mapping from indices of `visited` to those of `s`, where `s` is the whole sequence produced by the underlying iterator
             // Interestingly, Z3 guesses `f` quite readily but gives up *totally* on `s`. However, the addition of the final assertions on the correctness of the values
             // blocks z3's guess for `f`.
-            exists<s: Seq<Self::Item>, f: Mapping<Int, Int>> self.iter().produces(mode, s, succ.iter()) &&
+            exists<s: Seq<Self::Item>, f: Mapping<Int, Int>> self.iter().produces(s, succ.iter()) &&
                 (forall<i> 0 <= i && i < visited.len() ==> 0 <= f.get(i) && f.get(i) < s.len()) &&
                 // `f` is a monotone mapping
                 (forall<i, j> 0 <= i && i < j && j < visited.len() ==> f.get(i) < f.get(j)) &&
                 (forall<i> 0 <= i && i < visited.len() ==> visited[i] == s[f.get(i)]) &&
                 (forall<i> 0 <= i &&  i < s.len() ==>
+                    forall<mode: Mode>
                     (exists<j> 0 <= j && j < visited.len() && f.get(j) == i) == self.func().postcondition_mut(mode, (&s[i],), self.func(), true))
         }
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(mode, ab, b))]
-    #[requires(b.produces(mode, bc, c))]
-    #[ensures(a.produces(mode, ab.concat(bc), c))]
-    fn produces_trans(
-        mode: Mode,
-        a: Self,
-        ab: Seq<Self::Item>,
-        b: Self,
-        bc: Seq<Self::Item>,
-        c: Self,
-    ) {
-    }
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }

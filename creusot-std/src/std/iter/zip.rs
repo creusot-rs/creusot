@@ -34,18 +34,17 @@ impl<A: IteratorSpec, B: IteratorSpec> IteratorSpec for Zip<A, B> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            forall<mode: Mode>
             exists<a: &mut A, b: &mut B>
                    *a == (*self).iter_a() && *b == (*self).iter_b()
                 && ^a == (^self).iter_a() && ^b == (^self).iter_b()
                 && (a.completed() && resolve(b)
-                    || exists<x: A::Item> inv(x) && (*a).produces(mode, Seq::singleton(x), ^a) &&
+                    || exists<x: A::Item> inv(x) && (*a).produces(Seq::singleton(x), ^a) &&
                                           resolve(x) && (*b).completed())
         }
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             // Using an `unzip` definition doesn't work well because of issues related to datatypes and `match`
             exists<p1: Seq<_>, p2: Seq<_>>
@@ -56,22 +55,14 @@ impl<A: IteratorSpec, B: IteratorSpec> IteratorSpec for Zip<A, B> {
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(mode, ab, b))]
-    #[requires(b.produces(mode, bc, c))]
-    #[ensures(a.produces(mode, ab.concat(bc), c))]
-    fn produces_trans(
-        mode: Mode,
-        a: Self,
-        ab: Seq<Self::Item>,
-        b: Self,
-        bc: Seq<Self::Item>,
-        c: Self,
-    ) {
-    }
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
 extern_spec! {
