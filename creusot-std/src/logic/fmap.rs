@@ -1,11 +1,11 @@
 //! A logical/ghost finite map.
 
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{
     logic::{FSet, Mapping, ops::IndexLogic},
     prelude::*,
 };
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use core::marker::PhantomData;
 
 /// A finite map type usable in pearlite and `ghost!` blocks.
@@ -593,13 +593,7 @@ impl<K, V> IteratorSpec for Iter<K, V> {
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(
-        a: Self,
-        ab: Seq<Self::Item>,
-        b: Self,
-        bc: Seq<Self::Item>,
-        c: Self,
-    ) {
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         let ac = ab.concat(bc);
         proof_assert!(forall<x> ab.contains(x) ==> ac.contains(x));
         proof_assert!(forall<i> 0 <= i && i < bc.len() ==> ac[i + ab.len()] == bc[i]);

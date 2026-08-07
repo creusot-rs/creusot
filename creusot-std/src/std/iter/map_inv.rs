@@ -28,14 +28,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(
-        a: Self,
-        ab: Seq<Self::Item>,
-        b: Self,
-        bc: Seq<Self::Item>,
-        c: Self,
-    ) {
-    }
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[logic(open, prophetic, inline)]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {

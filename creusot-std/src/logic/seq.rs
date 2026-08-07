@@ -1,11 +1,11 @@
+#[cfg(creusot)]
+use crate::resolve::structural_resolve;
 use crate::{
     ghost::Plain,
     logic::{Mapping, ops::IndexLogic},
     prelude::*,
     std::ops::RangeInclusiveExt as _,
 };
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use core::{
     marker::PhantomData,
     ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive},
@@ -1119,14 +1119,7 @@ impl<T> IteratorSpec for Iter<T> {
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(
-        a: Self,
-        ab: Seq<Self::Item>,
-        b: Self,
-        bc: Seq<Self::Item>,
-        c: Self,
-    ) {
-    }
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
 impl<T> IntoIterator for Seq<T> {

@@ -1500,7 +1500,10 @@ pub fn is_unsized(ty: &Ty) -> bool {
 /// check that its preconditions are trivial in `nopanic` mode.
 /// TODO: find a better place for this check
 fn safety_check(ctx: &TranslationCtx, def_id: DefId) {
-    if !is_unsafe(ctx.tcx, def_id) && has_unsafe_block(ctx.tcx, def_id) {
+    if matches!(ctx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
+        && !is_unsafe(ctx.tcx, def_id)
+        && has_unsafe_block(ctx.tcx, def_id)
+    {
         // All preconditions must be guarded by nopanic, terminates, or ghost
         let sig = ctx.sig(def_id);
         let modes = [
