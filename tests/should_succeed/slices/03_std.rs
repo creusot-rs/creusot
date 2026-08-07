@@ -1,3 +1,4 @@
+// TIME 5
 extern crate creusot_std;
 
 use creusot_std::prelude::{vec, *};

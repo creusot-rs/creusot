@@ -1,3 +1,4 @@
+// TIME 5
 #![feature(allocator_api)]
 
 extern crate creusot_std;
