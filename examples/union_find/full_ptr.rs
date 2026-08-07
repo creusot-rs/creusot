@@ -1,3 +1,4 @@
+// TIME 5
 extern crate creusot_std;
 
 // This proof is largely adapted from the one in Vocal (see https://github.com/ocaml-gospel/vocal/blob/main/proofs/why3/UnionFind_impl.mlw)
