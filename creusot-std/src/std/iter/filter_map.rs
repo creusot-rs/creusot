@@ -74,7 +74,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> Option<B>> IteratorSpec for Filter
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, mode: Mode, visited: Seq<Self::Item>, succ: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             private_invariant(self) ==>
             self.func().hist_inv(succ.func()) &&

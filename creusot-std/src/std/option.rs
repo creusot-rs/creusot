@@ -256,7 +256,7 @@ extern_spec! {
             }
         }
 
-        #[requires(|mode, self == None ==> err.precondition(mode, ()))]
+        #[requires(|mode| self == None ==> err.precondition(mode, ()))]
         #[ensures(|result, mode| match self {
             None => exists<r> result == Err(r) && err.postcondition_once(mode, (), r),
             Some(t) => resolve(err) && result == Ok(t),
@@ -677,7 +677,7 @@ impl<T> IteratorSpec for IntoIter<T> {
     }
 
     #[logic(open)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||
             exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
@@ -685,7 +685,7 @@ impl<T> IteratorSpec for IntoIter<T> {
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(Seq::empty(), self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
@@ -729,7 +729,7 @@ impl<T> IteratorSpec for Iter<'_, T> {
     }
 
     #[logic(open)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||
             exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
@@ -737,7 +737,7 @@ impl<T> IteratorSpec for Iter<'_, T> {
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(Seq::empty(), self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
@@ -798,7 +798,7 @@ impl<T> IteratorSpec for IterMut<'_, T> {
     }
 
     #[logic(open, inline)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||
             exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
@@ -806,7 +806,7 @@ impl<T> IteratorSpec for IterMut<'_, T> {
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(Seq::empty(), self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]

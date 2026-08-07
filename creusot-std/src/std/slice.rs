@@ -551,7 +551,7 @@ impl<'a, T> IteratorSpec for Iter<'a, T> {
     }
 
     #[logic(open)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, tl: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self@.to_ref_seq() == visited.concat(tl@.to_ref_seq())
         }
@@ -661,7 +661,7 @@ impl<'a, T> IteratorSpec for IterMut<'a, T> {
     }
 
     #[logic(open)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, tl: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self@.to_mut_seq() == visited.concat(tl@.to_mut_seq())
         }

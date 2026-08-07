@@ -170,7 +170,7 @@ impl<'a, T> IteratorSpec for Iter<'a, T> {
     }
 
     #[logic(open)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, tl: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self@ == visited.concat(tl@)
         }

@@ -127,7 +127,7 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for RangeInclusive<I
     }
 
     #[logic(open)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
             (self.is_empty_log() ==> o.is_empty_log()) &&
@@ -180,7 +180,7 @@ impl_exact_size_range_inclusive! { i16 u16 }
 #[cfg(feature = "nightly")]
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for RangeInclusive<Idx> {
     #[logic(open)]
-    fn produces_back(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
             (self.is_empty_log() ==> o.is_empty_log()) &&

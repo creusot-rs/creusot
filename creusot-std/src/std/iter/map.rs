@@ -44,7 +44,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
             inv(self.iter()) && inv(self.func()) &&
             reinitialize::<I, B, F>() &&
             preservation(self.iter(), self.func()) &&
-            forall<mode: Mode> !mode.terminates() ==> next_precondition(mode, self.iter(), self.func())
+            next_precondition(self.iter(), self.func())
         }
     }
 }
@@ -65,8 +65,8 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
             self.func().hist_inv(succ.func())
             && exists<fs: Seq<&mut F>> fs.len() == visited.len()
             && exists<s: Seq<I::Item>>
-                #[trigger(self.iter().produces(mode, s, succ.iter()))]
-                s.len() == visited.len() && self.iter().produces(mode, s, succ.iter())
+                #[trigger(self.iter().produces(s, succ.iter()))]
+                s.len() == visited.len() && self.iter().produces(s, succ.iter())
             && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
             && if visited.len() == 0 { self.func() == succ.func() }
                else { *fs[0] == self.func() &&  ^fs[visited.len() - 1] == succ.func() }
@@ -88,8 +88,8 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         proof_assert! {
             let ac = ab.concat(bc);
-            let (fsab, sab) = produces_instantiate_existential(mode, a, ab, b);
-            let (fsbc, sbc) = produces_instantiate_existential(mode, b, bc, c);
+            let (fsab, sab) = produces_instantiate_existential(a, ab, b);
+            let (fsbc, sbc) = produces_instantiate_existential(b, bc, c);
             let fs = fsab.concat(fsbc);
             let s = sab.concat(sbc);
 
@@ -132,7 +132,6 @@ impl<I: ExactSizeIteratorSpec, B, F: FnMut(I::Item) -> B> ExactSizeIteratorSpec 
          && (*result.0[i]).postcondition_mut(mode, (result.1[i],), ^result.0[i], visited[i])
 )]
 fn produces_instantiate_existential<'a, I: IteratorSpec, B, F: FnMut(I::Item) -> B>(
-    mode: Mode,
     this: Map<I, F>,
     visited: Seq<B>,
     succ: Map<I, F>,
@@ -140,7 +139,7 @@ fn produces_instantiate_existential<'a, I: IteratorSpec, B, F: FnMut(I::Item) ->
     such_that(|(fs, s): (Seq<&mut F>, Seq<I::Item>)| {
         pearlite! {
             fs.len() == visited.len() && s.len() == visited.len()
-            && this.iter().produces(mode, s, succ.iter())
+            && this.iter().produces(s, succ.iter())
             && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
             && if visited.len() == 0 { this.func() == succ.func() }
                else { *fs[0] == this.func() &&  ^fs[visited.len() - 1] == succ.func() }

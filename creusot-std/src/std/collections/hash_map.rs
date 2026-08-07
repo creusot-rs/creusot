@@ -80,7 +80,7 @@ impl<K: DeepModel, V, A: Allocator> View for IntoIter<K, V, A> {
 #[cfg(feature = "nightly")]
 impl<K: DeepModel, V, A: Allocator> IteratorSpec for IntoIter<K, V, A> {
     #[logic(open, prophetic, inline)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // self@ equals the union of visited (viewed as a fmap) and o@
         pearlite! {
             self@.len() == visited.len() + o@.len()
@@ -143,7 +143,7 @@ impl<'a, K: DeepModel, V> View for Iter<'a, K, V> {
 
 impl<'a, K: DeepModel, V> IteratorSpec for Iter<'a, K, V> {
     #[logic(open, prophetic, inline)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // `self@` equals the union of `visited` (viewed as a finite map) and `o@`
         pearlite! {
             self@.len() == visited.len() + o@.len()
@@ -205,7 +205,7 @@ impl<'a, K: DeepModel, V> View for IterMut<'a, K, V> {
 
 impl<'a, K: DeepModel, V> IteratorSpec for IterMut<'a, K, V> {
     #[logic(open, prophetic, inline)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         // self@ equals the union of visited (viewed as a fmap) and o@
         pearlite! {
             self@.len() == visited.len() + o@.len()

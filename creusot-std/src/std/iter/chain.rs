@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::resolve::structural_resolve;
+use crate::{mode::Mode, resolve::structural_resolve};
 use crate::{prelude::*, std::iter::DoubleEndedIteratorSpec};
 use core::iter::Chain;
 

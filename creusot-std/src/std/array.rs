@@ -77,7 +77,7 @@ impl<T, const N: usize> View for IntoIter<T, N> {
 
 impl<T, const N: usize> IteratorSpec for IntoIter<T, N> {
     #[logic(open, prophetic)]
-    fn produces(self, _: Mode, visited: Seq<T>, o: Self) -> bool {
+    fn produces(self, visited: Seq<T>, o: Self) -> bool {
         pearlite! { self@ == visited.concat(o@) }
     }
 

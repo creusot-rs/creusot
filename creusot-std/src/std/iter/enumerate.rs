@@ -46,7 +46,7 @@ impl<I: IteratorSpec> Invariant for Enumerate<I> {
         pearlite! {
             inv(self.iter())
             && (forall<s: Seq<I::Item>, i: I>
-                #[trigger(self.iter().produces(mode, s, i))]
+                #[trigger(self.iter().produces(s, i))]
                 self.iter().produces(s, i) ==>
                 self.n()@ + s.len() < core::usize::MAX@)
             && (forall<i: &mut I> i.completed() ==> forall<mode: Mode> (*i).produces(Seq::empty(), ^i))

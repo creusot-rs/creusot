@@ -53,10 +53,10 @@ pub trait IteratorSpec: Iterator {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
     #[check(ghost)]
-    #[requires(|mode| forall<e, i2> self.produces(Seq::singleton(e), i2) && inv(e) ==>
-                    func.precondition(mode, (e, Snapshot::new(Seq::empty()))))]
+    #[requires(forall<e, i2> self.produces(Seq::singleton(e), i2) && inv(e) ==>
+                    forall<mode: Mode> func.precondition(mode, (e, Snapshot::new(Seq::empty()))))]
     #[requires(MapInv::<Self, F>::reinitialize())]
-    #[requires(forall<mode: Mode> !mode.terminates() ==> MapInv::<Self, F>::preservation(mode, self, func))]
+    #[requires(MapInv::<Self, F>::preservation(self, func))]
     #[ensures(result == MapInv { iter: self, func, produced: Snapshot::new(Seq::empty())})]
     fn map_inv<B, F>(self, func: F) -> MapInv<Self, F>
     where

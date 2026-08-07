@@ -29,7 +29,6 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(
-        mode: Mode,
         a: Self,
         ab: Seq<Self::Item>,
         b: Self,
@@ -44,7 +43,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
             forall<mode: Mode>
             self.func.hist_inv(succ.func)
             && exists<fs: Seq<&mut F>> fs.len() == visited.len()
-            && exists<s: Seq<I::Item>> s.len() == visited.len() && self.iter.produces(mode, s, succ.iter)
+            && exists<s: Seq<I::Item>> s.len() == visited.len() && self.iter.produces(s, succ.iter)
             && succ.produced.inner() == self.produced.concat(s)
             && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == * fs[i])
             && if visited.len() == 0 { self.func == succ.func }
@@ -63,10 +62,9 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invaria
     fn invariant(self) -> bool {
         pearlite! {
             forall<mode: Mode>
-            !mode.terminates() ==>
             Self::reinitialize() &&
-            Self::preservation_inv(mode, self.iter, self.func, *self.produced) &&
-            Self::next_precondition(mode, self.iter, self.func, *self.produced)
+            Self::preservation_inv(self.iter, self.func, *self.produced) &&
+            Self::next_precondition(self.iter, self.func, *self.produced)
         }
     }
 }
@@ -74,9 +72,9 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invaria
 impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator for MapInv<I, F> {
     type Item = B;
 
-    #[ensures(|result, mode| match result {
+    #[ensures(match result {
         None => self.completed(),
-        Some(v) => (*self).produces_one(mode, v, ^self)
+        Some(v) => (*self).produces_one(v, ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
         let _old_self: Snapshot<Self> = snapshot! { *self };
@@ -88,7 +86,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
                 self.produced = produced;
                 #[allow(path_statements)]
                 let _ = snapshot! { Self::produces_one_invariant };
-                // TODO proof_assert! { _old_self.produces_one(mode, r, *self) };
+                // TODO proof_assert! { _old_self.produces_one(r, *self) };
                 let _ = self; // Make sure self is not resolve until here.
                 Some(r)
             }
@@ -99,7 +97,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
         }
     }
 
-    #[ensures(I::size_hint.postcondition((&self.iter,), result))]
+    #[ensures(|result, mode| I::size_hint.postcondition(mode, (&self.iter,), result))]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -107,19 +105,19 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
 
 impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<I, F> {
     #[logic(open, prophetic, inline)]
-    pub fn next_precondition(mode: Mode, iter: I, func: F, produced: Seq<I::Item>) -> bool {
+    pub fn next_precondition(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<e: I::Item, i: I>
-                inv(e) && iter.produces(mode, Seq::singleton(e), i) ==>
-                func.precondition(mode, (e, Snapshot::new(produced)))
+                inv(e) && iter.produces(Seq::singleton(e), i) ==>
+                forall<mode: Mode> func.precondition(mode, (e, Snapshot::new(produced)))
         }
     }
 
     #[logic(prophetic)]
-    #[ensures(produced == Seq::empty() ==> result == Self::preservation(mode, iter, func))]
-    pub fn preservation_inv(mode: Mode, iter: I, func: F, produced: Seq<I::Item>) -> bool {
+    #[ensures(produced == Seq::empty() ==> result == Self::preservation(iter, func))]
+    pub fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
-            forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
+            forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I, mode: Mode>
                 func.hist_inv(*f) ==>
                 inv(s) && inv(e1) && inv(e2) && inv(f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
@@ -129,12 +127,12 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
     }
 
     #[logic(open, prophetic, inline)]
-    pub fn preservation(mode: Mode, iter: I, func: F) -> bool {
+    pub fn preservation(iter: I, func: F) -> bool {
         pearlite! {
-            forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                !mode.terminates() && func.hist_inv(*f) ==>
+            forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I, mode: Mode>
+                func.hist_inv(*f) ==>
                 inv(s) && inv(e1) && inv(e2) && inv(f) ==>
-                iter.produces(mode, s.push_back(e1).push_back(e2), i) ==>
+                iter.produces(s.push_back(e1).push_back(e2), i) ==>
                 (*f).postcondition_mut(mode, (e1, Snapshot::new(s)), ^f, b) ==>
                 (^f).precondition(mode, (e2, Snapshot::new(s.push_back(e1))))
         }
@@ -145,8 +143,8 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
         pearlite! {
             forall<mode: Mode, iter: &mut I, func: F>
                 !mode.terminates() && iter.completed() ==> // mode?
-                Self::next_precondition(mode, ^iter, func, Seq::empty()) &&
-                Self::preservation(mode, ^iter, func)
+                Self::next_precondition(^iter, func, Seq::empty()) &&
+                Self::preservation(^iter, func)
         }
     }
 
@@ -168,13 +166,13 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
 
     #[logic(open, prophetic)]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
-    pub fn produces_one(self, mode: Mode, visited: B, succ: Self) -> bool {
+    pub fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
             exists<f: &mut F, e: I::Item>
                 *f == self.func && ^f == succ.func
                 && self.iter.produces(Seq::singleton(e), succ.iter)
                 && succ.produced.inner() == self.produced.push_back(e)
-                && (*f).postcondition_mut(mode, (e, self.produced), ^f, visited)
+                && forall<mode: Mode> (*f).postcondition_mut(mode, (e, self.produced), ^f, visited)
         }
     }
 }
