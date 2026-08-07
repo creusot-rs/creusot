@@ -55,7 +55,7 @@ extern_spec! {
     impl<K: Eq + Hash + DeepModel, V, S: BuildHasher + Default> FromIterator<(K, V)>
         for HashMap<K, V, S>
     {
-        #[requires(T::into_iter.precondition((iter,)))]
+        #[requires(|mode| T::into_iter.precondition(mode, (iter,)))]
         #[ensures(|result, mode| exists<into_iter: T::IntoIter, prod: Seq<(K, V)>, done: &mut T::IntoIter>
             T::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&

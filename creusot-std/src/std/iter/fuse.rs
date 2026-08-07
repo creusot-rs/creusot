@@ -32,12 +32,12 @@ impl<I: IteratorSpec> IteratorSpec for Fuse<I> {
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, mode: Mode, prod: Seq<Self::Item>, other: Self) -> bool {
+    fn produces(self, prod: Seq<Self::Item>, other: Self) -> bool {
         pearlite! {
             match self@ {
                 None => prod == Seq::empty() && other@ == self@,
                 Some(i) => match other@ {
-                    Some(i2) => i.produces(mode, prod, i2),
+                    Some(i2) => i.produces(prod, i2),
                     None => false,
                 },
             }
@@ -58,17 +58,17 @@ impl<I: IteratorSpec> IteratorSpec for Fuse<I> {
 pub trait FusedIteratorSpec: FusedIterator + IteratorSpec {
     #[logic(law)]
     #[requires(self.completed())]
-    #[requires((^self).produces(mode, steps, next))]
+    #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::empty())]
-    fn is_fused(&mut self, mode: Mode, steps: Seq<Self::Item>, next: Self);
+    fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self);
 }
 
 impl<I: IteratorSpec> FusedIteratorSpec for Fuse<I> {
     #[logic(law)]
     #[requires(self.completed())]
-    #[requires((^self).produces(mode, steps, next))]
+    #[requires((^self).produces(steps, next))]
     #[ensures(steps == Seq::empty())]
-    fn is_fused(&mut self, mode: Mode, steps: Seq<Self::Item>, next: Self) {}
+    fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self) {}
 }
 
 extern_spec! {
@@ -83,7 +83,7 @@ extern_spec! {
 
 impl<I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Fuse<I> {
     #[logic(law)]
-    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {

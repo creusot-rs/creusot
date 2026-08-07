@@ -105,14 +105,14 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
 
 extern_spec! {
     impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
-        #[ensures(I::size_hint.postcondition((&self.iter(),), result))]
+        #[ensures(|mode| I::size_hint.postcondition(mode, (&self.iter(),), result))]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }
 
 impl<I: ExactSizeIteratorSpec, B, F: FnMut(I::Item) -> B> ExactSizeIteratorSpec for Map<I, F> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(|mode| Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         self.iter().size_hint_exact(r)
@@ -121,9 +121,9 @@ impl<I: ExactSizeIteratorSpec, B, F: FnMut(I::Item) -> B> ExactSizeIteratorSpec 
 
 /// Get the witnesses for the existentials in `produces`
 #[logic(prophetic)]
-#[requires(this.produces(mode, visited, succ))]
+#[requires(this.produces(visited, succ))]
 #[ensures(result.0.len() == visited.len() && result.1.len() == visited.len()
-    && this.iter().produces(mode, result.1, succ.iter())
+    && this.iter().produces(result.1, succ.iter())
     && (forall<i> 1 <= i && i < result.0.len() ==>  ^result.0[i - 1] == *result.0[i])
     && if visited.len() == 0 { this.func() == succ.func() }
        else { *result.0[0] == this.func() &&  ^result.0[visited.len() - 1] == succ.func() }
@@ -160,8 +160,8 @@ pub fn next_precondition<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(
 ) -> bool {
     pearlite! {
         forall<e: I::Item, i: I>
-            #[trigger(iter.produces(mode, Seq::singleton(e), i))]
-            inv(e) && iter.produces(mode, Seq::singleton(e), i) ==>
+            #[trigger(iter.produces(Seq::singleton(e), i))]
+            inv(e) && iter.produces(Seq::singleton(e), i) ==>
             func.precondition(mode, (e,))
     }
 }
