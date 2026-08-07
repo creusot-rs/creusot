@@ -150,8 +150,8 @@ pub(crate) fn closure_post<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     target_kind: ClosureKind,
     def_id: LocalDefId,
-    mode: Term<'tcx>,
     self_: Term<'tcx>,
+    mode: Term<'tcx>,
     args: Term<'tcx>,
     result_state: Option<Term<'tcx>>,
 ) -> Term<'tcx> {
@@ -229,7 +229,7 @@ pub(crate) fn closure_post<'tcx>(
         match closure_kind {
             ClosureKind::Fn => {
                 let bor_self = self_.clone().shr_ref(ctx.tcx);
-                let params = [mode, bor_self].into_iter().chain(arg_vars).chain([result]).collect();
+                let params = [bor_self, mode].into_iter().chain(arg_vars).chain([result]).collect();
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
                     ty: ctx.types.bool,
@@ -247,7 +247,7 @@ pub(crate) fn closure_post<'tcx>(
                     Ty::new_ref(ctx.tcx, ctx.lifetimes.re_erased, self_.ty, Mutability::Mut);
                 let bor_self = Term::var(bor_self_ident, bor_self_ty);
                 let params =
-                    [mode, bor_self.clone()].into_iter().chain(arg_vars).chain([result]).collect();
+                    [bor_self.clone(), mode].into_iter().chain(arg_vars).chain([result]).collect();
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
                     ty: ctx.types.bool,
@@ -285,7 +285,7 @@ pub(crate) fn closure_post<'tcx>(
             ClosureKind::FnOnce => {
                 assert_eq!(target_kind, ClosureKind::FnOnce);
                 let params =
-                    [mode, self_.clone()].into_iter().chain(arg_vars).chain([result]).collect();
+                    [self_.clone(), mode].into_iter().chain(arg_vars).chain([result]).collect();
                 to_resolve = vec![];
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },

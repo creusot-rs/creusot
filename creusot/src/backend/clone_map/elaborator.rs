@@ -878,7 +878,7 @@ fn postcondition_once_term<'tcx>(
     match ty_self.kind() {
         TyKind::Closure(did, _) => {
             let mut post =
-                closure_post(ctx, ClosureKind::FnOnce, did.expect_local(), mode, self_, args, None);
+                closure_post(ctx, ClosureKind::FnOnce, did.expect_local(), self_, mode, args, None);
             post.subst(&SmallRenaming([(name::result(), result), (name::mode(), mode_id)]));
             Some(post)
         }
@@ -918,7 +918,7 @@ fn postcondition_once_term<'tcx>(
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::FnDef(..) => {
-            let post_args = [self_, args, res];
+            let post_args = [self_, mode, args, res];
             let post_fn = Intrinsic::Postcondition.get(ctx);
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst, post_args))
         }
@@ -954,8 +954,8 @@ fn postcondition_mut_term<'tcx>(
                 ctx,
                 ClosureKind::FnMut,
                 did.expect_local(),
-                mode,
                 self_,
+                mode,
                 args,
                 Some(result_state),
             );
@@ -1044,7 +1044,7 @@ fn postcondition_term<'tcx>(
     match ty_self.kind() {
         TyKind::Closure(did, _) => {
             let mut post =
-                closure_post(ctx, ClosureKind::Fn, did.expect_local(), mode, self_, args, None);
+                closure_post(ctx, ClosureKind::Fn, did.expect_local(), self_, mode, args, None);
             post.subst(&SmallRenaming([(name::result(), result), (name::mode(), mode_id)]));
             Some(post)
         }
