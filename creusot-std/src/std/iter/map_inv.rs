@@ -33,7 +33,6 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
     #[logic(open, prophetic, inline)]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
-            forall<mode: Mode>
             self.func.hist_inv(succ.func)
             && exists<fs: Seq<&mut F>> fs.len() == visited.len()
             && exists<s: Seq<I::Item>> s.len() == visited.len() && self.iter.produces(s, succ.iter)
@@ -43,7 +42,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
             && forall<i> 0 <= i && i < visited.len() ==>
                  self.func.hist_inv(*fs[i])
-                 && (*fs[i]).postcondition_mut(mode, (s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
+                 && forall<mode: Mode> (*fs[i]).postcondition_mut(mode, (s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
         }
     }
 }
@@ -54,7 +53,6 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invaria
     #[logic(open, inline, prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
-            forall<mode: Mode>
             Self::reinitialize() &&
             Self::preservation_inv(self.iter, self.func, *self.produced) &&
             Self::next_precondition(self.iter, self.func, *self.produced)
@@ -134,8 +132,8 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
     #[logic(open, prophetic, inline)]
     pub fn reinitialize() -> bool {
         pearlite! {
-            forall<mode: Mode, iter: &mut I, func: F>
-                !mode.terminates() && iter.completed() ==> // mode?
+            forall<iter: &mut I, func: F>
+                iter.completed() ==>
                 Self::next_precondition(^iter, func, Seq::empty()) &&
                 Self::preservation(^iter, func)
         }
