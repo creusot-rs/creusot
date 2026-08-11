@@ -1,0 +1,54 @@
+module M_g
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  type t_Option_u32 = None | Some UInt32.t
+  
+  type t_E = A UInt32.t
+  
+  let f_A (_1: UInt32.t) (return (x: t_E)) = any
+    [ return (result: t_E) -> {[@stop_split] [@expl:A result] result = A _1} (! return {result}) ]
+  
+  type t_Option_E = None'0 | Some'0 t_E
+  
+  predicate precondition_A (self: ()) (args: UInt32.t) = let _1 = args in true
+  
+  meta "rewrite_def" predicate precondition_A
+  
+  predicate resolve_A [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_A
+  
+  predicate postcondition_A (self: ()) (args: UInt32.t) (result: t_E) = let _1 = args in result = A _1
+  
+  meta "rewrite_def" predicate postcondition_A
+  
+  predicate postcondition_once_A (self: ()) (args: UInt32.t) (result: t_E) = postcondition_A self args result
+  
+  meta "rewrite_def" predicate postcondition_once_A
+  
+  let map_u32 (self_: t_Option_u32) (f: ()) (return (x: t_Option_E)) =
+  {[@stop_split] [@expl:map requires] match self_ with
+      | None -> true
+      | Some t -> precondition_A f t
+      end}
+    any
+    [ return (result: t_Option_E) -> {[@stop_split] [@expl:map ensures] match self_ with
+        | None -> resolve_A f /\ result = None'0
+        | Some t -> exists r: t_E. result = Some'0 r /\ postcondition_once_A f t r
+        end}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let g (o: t_Option_u32) (return (x: t_Option_E)) = (! bb0
+    [ bb0 = s0 [ s0 = map_u32 {o} {()} (fun (_x: t_Option_E) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_Option_E = Any.any_l () | & o: t_Option_u32 = o ])
+    [ return (result: t_Option_E) ->
+    {[@stop_split] [@expl:g ensures] ([@stop_split] [@expl:g ensures #0] forall x: UInt32.t. o = Some x
+          -> result = Some'0 (A x))
+      /\ ([@stop_split] [@expl:g ensures #1] o = None -> result = None'0)}
+      (! return {result}) ]
+end

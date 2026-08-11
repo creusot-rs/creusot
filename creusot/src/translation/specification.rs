@@ -9,11 +9,15 @@ use crate::{
     naming::{lowercase_prefix, name},
     translation::{
         external::ExternSpec,
-        pearlite::{Ident, PIdent, Term, TermWithTriggers, Trigger, normalize},
+        pearlite::{Ident, PIdent, Term, TermKind, TermWithTriggers, Trigger, normalize},
     },
     util::erased_identity_for_item,
 };
-use rustc_hir::{AttrArgs, HirId, Safety, def::DefKind, def_id::DefId};
+use rustc_hir::{
+    AttrArgs, HirId, Safety,
+    def::{CtorKind, CtorOf, DefKind},
+    def_id::DefId,
+};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     thir::{BodyTy, Pat, PatKind, Thir},
@@ -368,6 +372,32 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
                 expl: format!("expl:{} requires false", fn_name),
             });
         }
+        // A tuple-struct/tuple-variant constructor used as a function value has no body to
+        // translate, but its meaning is exact and trivially expressible: it returns precisely the
+        // variant built from its arguments. Without this the constructor would translate with a
+        // vacuous `true` postcondition, so `o.map(E::A)` would compile and prove nothing about the
+        // result — worse than refusing it, because the vacuity is silent (#2223).
+        if let DefKind::Ctor(ctor_of, CtorKind::Fn) = ctx.def_kind(def_id) {
+            let variant = match ctor_of {
+                CtorOf::Struct => rustc_abi::FIRST_VARIANT,
+                CtorOf::Variant => {
+                    let variant_did = ctx.parent(def_id);
+                    ctx.adt_def(ctx.parent(variant_did)).variant_index_with_id(variant_did)
+                }
+            };
+            let fields =
+                inputs.iter().map(|(ident, _, ty)| Term::var(ident.0, *ty)).collect::<Box<[_]>>();
+            let built = Term {
+                ty: output,
+                kind: TermKind::Constructor { variant, fields },
+                span: ctx.def_span(def_id),
+            };
+            let term = Term::var(name::result(), output).eq(ctx.tcx, built);
+            contract
+                .ensures
+                .push((Box::new([]), Condition { term, expl: format!("expl:{fn_name} result") }));
+        }
+
         if !matches!(ctx.item_type(def_id), ItemType::Logic { .. }) {
             contract.check_ensures_no_trigger(ctx);
         }
@@ -566,10 +596,18 @@ pub fn inputs_and_output<'tcx>(
                 typing_env,
                 tcx.fn_sig(def_id).instantiate_identity().skip_normalization(),
             );
-            let inputs = tcx
-                .fn_arg_idents(def_id)
-                .iter()
-                .cloned()
+            // A tuple-struct/tuple-variant constructor is a synthesized item with no HIR
+            // parameters, so asking rustc for its argument idents would ICE (#2223). Its arguments
+            // are anonymous by construction — the fields are positional — so name them like any
+            // other unnamed parameter.
+            let arg_idents: Vec<Option<rustc_span::Ident>> =
+                if matches!(tcx.def_kind(def_id), DefKind::Ctor(..)) {
+                    vec![None; sig.inputs().len()]
+                } else {
+                    tcx.fn_arg_idents(def_id).to_vec()
+                };
+            let inputs = arg_idents
+                .into_iter()
                 .zip(sig.inputs().iter().cloned())
                 .zip(1..) // We start numbering from 1 to match locals numbering (_0 is the return value)
                 .map(|((ident, ty), ix)| match ident {

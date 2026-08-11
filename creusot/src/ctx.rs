@@ -35,7 +35,7 @@ use rustc_data_structures::steal::Steal;
 use rustc_errors::{Diag, DiagMessage, FatalAbort};
 use rustc_hir::{
     HirId,
-    def::DefKind,
+    def::{CtorKind, DefKind},
     def_id::{CrateNum, DefId, LOCAL_CRATE, LocalDefId, ModId},
 };
 use rustc_index::bit_set::DenseBitSet;
@@ -569,7 +569,14 @@ impl<'tcx> TranslationCtx<'tcx> {
         param_env: ParamEnv<'tcx>,
     ) -> TypingEnv<'tcx> {
         // FIXME: is it correct to pretend we are doing a non-body analysis?
-        let mode = if self.is_mir_available(def_id) && def_id.is_local() {
+        // A tuple-struct/tuple-variant constructor has shim MIR, so it passes `is_mir_available`,
+        // but it is not a body owner: rustc refuses to compute `opaque_types_defined_by` for one,
+        // which `post_borrowck_analysis` needs. It defines no opaque types, so the non-body mode is
+        // both correct and the only one available (#2223).
+        let mode = if self.is_mir_available(def_id)
+            && def_id.is_local()
+            && !matches!(self.def_kind(def_id), DefKind::Ctor(..))
+        {
             TypingMode::post_borrowck_analysis(self.tcx, def_id.as_local().unwrap())
         } else {
             TypingMode::non_body_analysis()
@@ -761,6 +768,10 @@ impl<'tcx> TranslationCtx<'tcx> {
             DefKind::AssocTy => ItemType::AssocTy,
             DefKind::Field => ItemType::Field,
             DefKind::Variant => ItemType::Variant,
+            // A tuple-struct/tuple-variant constructor used as a *function value* (`o.map(E::A)`)
+            // reaches us as an item of its own. It behaves like a program function whose contract
+            // is trivial, so it is translated as one (#2223).
+            DefKind::Ctor(_, CtorKind::Fn) => ItemType::Program,
             dk => ItemType::Unsupported(dk),
         }
     }
