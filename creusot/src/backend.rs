@@ -91,6 +91,7 @@ impl<'tcx> Why3Generator<'tcx> {
                 format!("unsupported definition kind {:?} {:?}", def_id, dk),
             ),
             ItemType::Closure
+            | ItemType::CtorFn
             | ItemType::Trait
             | ItemType::Type
             | ItemType::AssocTy

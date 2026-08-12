@@ -35,7 +35,7 @@ use rustc_data_structures::steal::Steal;
 use rustc_errors::{Diag, DiagMessage, FatalAbort};
 use rustc_hir::{
     HirId,
-    def::DefKind,
+    def::{CtorKind, DefKind},
     def_id::{CrateNum, DefId, LOCAL_CRATE, LocalDefId, ModId},
 };
 use rustc_index::bit_set::DenseBitSet;
@@ -94,8 +94,9 @@ pub enum ItemType {
     AssocTy,
     Constant,
     Variant,
-    Unsupported(DefKind),
+    CtorFn,
     Field,
+    Unsupported(DefKind),
 }
 
 impl ItemType {
@@ -110,9 +111,10 @@ impl ItemType {
             ItemType::Type => "type declaration",
             ItemType::AssocTy => "associated type",
             ItemType::Constant => "constant",
+            ItemType::Variant => "constructor",
+            ItemType::CtorFn => "constructor function",
             ItemType::Field => "field",
             ItemType::Unsupported(_) => "[OTHER]",
-            ItemType::Variant => "constructor",
         }
     }
 
@@ -761,6 +763,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             DefKind::AssocTy => ItemType::AssocTy,
             DefKind::Field => ItemType::Field,
             DefKind::Variant => ItemType::Variant,
+            DefKind::Ctor(_, CtorKind::Fn) => ItemType::CtorFn,
             dk => ItemType::Unsupported(dk),
         }
     }
