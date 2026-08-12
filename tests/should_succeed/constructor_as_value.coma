@@ -52,3 +52,127 @@ module M_g
       /\ ([@stop_split] [@expl:g ensures #1] o = None -> result = None'0)}
       (! return {result}) ]
 end
+module M_g_extern
+  use creusot.prelude.Any
+  use map.Map
+  
+  type t_A
+  
+  type t_Option_A = None | Some t_A
+  
+  predicate inv_A (_1: t_A)
+  
+  predicate inv_Option_A (_1: t_Option_A)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_A [inv_Option_A x]. inv_Option_A x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_A f0
+        end
+  
+  let f_Some_A (_1: t_A) (return (x: t_Option_A)) =
+  {[@stop_split] [@expl:f_Some_A requires] ([@stop_split] [@expl:Some '_1' type invariant] inv_A _1)
+    /\ ([@stop_split] [@expl:Some result type invariant] inv_Option_A (Some _1))}
+    any
+    [ return (result: t_Option_A) ->
+    {[@stop_split] [@expl:f_Some_A ensures] ([@stop_split] [@expl:Some result type invariant] inv_Option_A result)
+      /\ ([@stop_split] [@expl:Some result] result = Some _1)}
+      (! return {result}) ]
+  
+  type t_Option_Option_A = None'0 | Some'0 t_Option_A
+  
+  predicate precondition_Some (self: ()) (args: t_A) = let _1 = args in inv_A _1 /\ inv_Option_A (Some _1)
+  
+  meta "rewrite_def" predicate precondition_Some
+  
+  predicate inv_Option_Option_A (_1: t_Option_Option_A)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Option_A [inv_Option_Option_A x]. inv_Option_Option_A x
+      = match x with
+        | None'0 -> true
+        | Some'0 f0 -> inv_Option_A f0
+        end
+  
+  predicate resolve_Some [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_Some
+  
+  predicate postcondition_Some (self: ()) (args: t_A) (result: t_Option_A) =
+    let _1 = args in inv_Option_A result /\ result = Some _1
+  
+  meta "rewrite_def" predicate postcondition_Some
+  
+  predicate postcondition_once_Some (self: ()) (args: t_A) (result: t_Option_A) = postcondition_Some self args result
+  
+  meta "rewrite_def" predicate postcondition_once_Some
+  
+  let map_A (self_: t_Option_A) (f: ()) (return (x: t_Option_Option_A)) =
+  {[@stop_split] [@expl:map_A requires] ([@stop_split] [@expl:map 'self_' type invariant] inv_Option_A self_)
+    /\ ([@stop_split] [@expl:map requires] match self_ with
+      | None -> true
+      | Some t -> precondition_Some f t
+      end)}
+    any
+    [ return (result: t_Option_Option_A) ->
+    {[@stop_split] [@expl:map_A ensures] ([@stop_split] [@expl:map result type invariant] inv_Option_Option_A result)
+      /\ ([@stop_split] [@expl:map ensures] match self_ with
+        | None -> resolve_Some f /\ result = None'0
+        | Some t -> exists r: t_Option_A. result = Some'0 r /\ postcondition_once_Some f t r
+        end)}
+      (! return {result}) ]
+  
+  function map_Option_A (self: t_Option_A) (f: Map.map t_A t_Option_A) : t_Option_Option_A = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let g_extern_A (o: t_Option_A) (return (x: t_Option_Option_A)) =
+  {[@stop_split] [@expl:g_extern 'o' type invariant] inv_Option_A o}
+    (! bb0
+    [ bb0 = s0 [ s0 = map_A {o} {()} (fun (_x: t_Option_Option_A) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_Option_Option_A = Any.any_l () | & o: t_Option_A = o ])
+    [ return (result: t_Option_Option_A) ->
+    {[@stop_split] [@expl:g_extern_A ensures] ([@stop_split] [@expl:g_extern result type invariant] inv_Option_Option_A result)
+      /\ ([@stop_split] [@expl:g_extern ensures] result = map_Option_A o (fun (x: t_A) -> Some x))}
+      (! return {result}) ]
+end
+module M_h
+  use creusot.prelude.Any
+  
+  let f_T0 (return (x: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:T0 result] result = ()} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let h (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = [ &t <- () ] s1 | s1 = f_T0 (fun (_x: ()) -> [ &_ret <- _x ] s2) | s2 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & t: () = Any.any_l () ])
+    [ return (result: ()) -> {[@stop_split] [@expl:h ensures] result = ()} (! return {result}) ]
+end
+module M_i
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  type t_T2 = { f0: UInt32.t; f1: UInt32.t }
+  
+  let f_T2 (_1: UInt32.t) (_2: UInt32.t) (return (x: t_T2)) = any
+    [ return (result: t_T2) -> {[@stop_split] [@expl:T2 result] result = { f0 = _1; f1 = _2 }} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let i (return (x: t_T2)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &t <- () ] s1
+      | s1 = f_T2 {(0: UInt32.t)} {(1: UInt32.t)} (fun (_x: t_T2) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: t_T2 = Any.any_l () | & t: () = Any.any_l () ])
+    [ return (result: t_T2) -> {[@stop_split] [@expl:i ensures] result = { f0 = (0: UInt32.t); f1 = (1: UInt32.t) }}
+      (! return {result}) ]
+end

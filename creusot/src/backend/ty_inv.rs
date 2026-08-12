@@ -7,7 +7,7 @@ use crate::{
     resolution::TraitResolved,
     translation::{
         pearlite::{Ident, Pattern, Term, TermKind, Trigger},
-        specification::{Condition, PreSignature},
+        specification::{Condition, PreSignature, ctor_term},
     },
 };
 use rustc_abi::{FieldIdx, VariantIdx};
@@ -338,6 +338,16 @@ pub(crate) fn sig_add_type_invariant_spec<'tcx>(
         }
     });
     pre_sig.contract.requires.splice(0..0, new_requires);
+
+    // A constructor has no body, so the result invariant below is a goal nothing else can
+    // discharge: the field invariants above do not imply the built value's. Require it, which
+    // moves the obligation to the call site, where the fields are known.
+    if let Some(built) = ctor_term(ctx, def_id, &pre_sig.inputs, pre_sig.output)
+        && let Some(term) = inv_call(ctx, typing_env, scope_id, built)
+    {
+        let expl = format!("expl:{} result type invariant", fn_name);
+        pre_sig.contract.requires.push(Condition { term: term.span(ctx.def_span(def_id)), expl });
+    }
 
     let ret_ty_span: Option<Span> = try { ctx.hir_get_fn_output(def_id.as_local()?)?.span() };
     if (ctx.def_kind(def_id) == DefKind::ConstParam || !is_open_inv_result(ctx.tcx, def_id))

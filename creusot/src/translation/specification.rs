@@ -301,6 +301,34 @@ pub(crate) fn inherited_extern_spec<'tcx, 'a>(
     Some((spec, subst))
 }
 
+/// The term `C(args)` built by a tuple-struct or tuple-variant constructor, or `None` if `def_id`
+/// is not one.
+///
+/// Both halves of a constructor's contract are stated in terms of the value it builds: the
+/// postcondition says the result is that value, and the type invariant it must establish is that
+/// value's (see `sig_add_type_invariant_spec`). They have to agree, so they share this.
+pub(crate) fn ctor_term<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    def_id: DefId,
+    inputs: &[(PIdent, Span, Ty<'tcx>)],
+    output: Ty<'tcx>,
+) -> Option<Term<'tcx>> {
+    let DefKind::Ctor(ctor_of, CtorKind::Fn) = ctx.def_kind(def_id) else { return None };
+    let variant = match ctor_of {
+        CtorOf::Struct => rustc_abi::FIRST_VARIANT,
+        CtorOf::Variant => {
+            let variant_did = ctx.parent(def_id);
+            ctx.adt_def(ctx.parent(variant_did)).variant_index_with_id(variant_did)
+        }
+    };
+    let fields = inputs.iter().map(|(ident, _, ty)| Term::var(ident.0, *ty)).collect::<Box<[_]>>();
+    Some(Term {
+        ty: output,
+        kind: TermKind::Constructor { variant, fields },
+        span: ctx.def_span(def_id),
+    })
+}
+
 pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
     let fn_name = ctx.opt_item_name(def_id);
     let fn_name = match &fn_name {
@@ -363,7 +391,10 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
             contract,
         }
     } else {
-        if ctx.non_creusot_crate(def_id.krate) {
+        let ctor = ctor_term(ctx, def_id, &inputs, output);
+        // A constructor needs no written spec, so it is not "extern without one": its contract is
+        // the same whichever crate it comes from. Poisoning it would leave `o.map(Some)` unusable.
+        if ctx.non_creusot_crate(def_id.krate) && ctor.is_none() {
             assert!(contract.is_empty());
             assert_matches!(ctx.item_type(def_id), ItemType::Program | ItemType::Constant);
             contract.extern_no_spec = true;
@@ -372,26 +403,9 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
                 expl: format!("expl:{} requires false", fn_name),
             });
         }
-        // A tuple-struct/tuple-variant constructor used as a function value has no body to
-        // translate, but its meaning is exact and trivially expressible: it returns precisely the
-        // variant built from its arguments. Without this the constructor would translate with a
-        // vacuous `true` postcondition, so `o.map(E::A)` would compile and prove nothing about the
-        // result — worse than refusing it, because the vacuity is silent (#2223).
-        if let DefKind::Ctor(ctor_of, CtorKind::Fn) = ctx.def_kind(def_id) {
-            let variant = match ctor_of {
-                CtorOf::Struct => rustc_abi::FIRST_VARIANT,
-                CtorOf::Variant => {
-                    let variant_did = ctx.parent(def_id);
-                    ctx.adt_def(ctx.parent(variant_did)).variant_index_with_id(variant_did)
-                }
-            };
-            let fields =
-                inputs.iter().map(|(ident, _, ty)| Term::var(ident.0, *ty)).collect::<Box<[_]>>();
-            let built = Term {
-                ty: output,
-                kind: TermKind::Constructor { variant, fields },
-                span: ctx.def_span(def_id),
-            };
+        // A constructor has no body, so without a postcondition it would translate with a vacuous
+        // `true` one: `o.map(E::A)` would compile and prove nothing about the result.
+        if let Some(built) = ctor {
             let term = Term::var(name::result(), output).eq(ctx.tcx, built);
             contract
                 .ensures
@@ -596,18 +610,17 @@ pub fn inputs_and_output<'tcx>(
                 typing_env,
                 tcx.fn_sig(def_id).instantiate_identity().skip_normalization(),
             );
-            // A tuple-struct/tuple-variant constructor is a synthesized item with no HIR
-            // parameters, so asking rustc for its argument idents would ICE (#2223). Its arguments
-            // are anonymous by construction — the fields are positional — so name them like any
-            // other unnamed parameter.
-            let arg_idents: Vec<Option<rustc_span::Ident>> =
-                if matches!(tcx.def_kind(def_id), DefKind::Ctor(..)) {
-                    vec![None; sig.inputs().len()]
-                } else {
-                    tcx.fn_arg_idents(def_id).to_vec()
-                };
+            // A constructor has no HIR parameters, so `fn_arg_idents` raises `unexpected item` for
+            // one. Its fields are positional, so they are unnamed like any other anonymous
+            // parameter.
+            let arg_idents = if matches!(tcx.def_kind(def_id), DefKind::Ctor(..)) {
+                &vec![None; sig.inputs().len()]
+            } else {
+                tcx.fn_arg_idents(def_id)
+            };
             let inputs = arg_idents
-                .into_iter()
+                .iter()
+                .cloned()
                 .zip(sig.inputs().iter().cloned())
                 .zip(1..) // We start numbering from 1 to match locals numbering (_0 is the return value)
                 .map(|((ident, ty), ix)| match ident {

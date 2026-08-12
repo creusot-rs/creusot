@@ -569,10 +569,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         param_env: ParamEnv<'tcx>,
     ) -> TypingEnv<'tcx> {
         // FIXME: is it correct to pretend we are doing a non-body analysis?
-        // A tuple-struct/tuple-variant constructor has shim MIR, so it passes `is_mir_available`,
-        // but it is not a body owner: rustc refuses to compute `opaque_types_defined_by` for one,
-        // which `post_borrowck_analysis` needs. It defines no opaque types, so the non-body mode is
-        // both correct and the only one available (#2223).
+        // A constructor has shim MIR, so it passes `is_mir_available`, but it is not a body owner:
+        // `post_borrowck_analysis` needs `opaque_types_defined_by`, which rustc refuses for one.
         let mode = if self.is_mir_available(def_id)
             && def_id.is_local()
             && !matches!(self.def_kind(def_id), DefKind::Ctor(..))
@@ -768,9 +766,10 @@ impl<'tcx> TranslationCtx<'tcx> {
             DefKind::AssocTy => ItemType::AssocTy,
             DefKind::Field => ItemType::Field,
             DefKind::Variant => ItemType::Variant,
-            // A tuple-struct/tuple-variant constructor used as a *function value* (`o.map(E::A)`)
-            // reaches us as an item of its own. It behaves like a program function whose contract
-            // is trivial, so it is translated as one (#2223).
+            // Reached only for a constructor used as a function value (`o.map(E::A)`): applying
+            // one (`E::A(x)`) is an aggregate in MIR and never asks for its item type. Such a
+            // constructor is called like any program function, and is translated as one; its
+            // contract is synthesized in `contract_of`.
             DefKind::Ctor(_, CtorKind::Fn) => ItemType::Program,
             dk => ItemType::Unsupported(dk),
         }
