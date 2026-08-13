@@ -37,7 +37,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
             && exists<fs: Seq<&mut F>> fs.len() == visited.len()
             && exists<s: Seq<I::Item>> s.len() == visited.len() && self.iter.produces(s, succ.iter)
             && succ.produced.inner() == self.produced.concat(s)
-            && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == * fs[i])
+            && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
             && if visited.len() == 0 { self.func == succ.func }
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
             && forall<i> 0 <= i && i < visited.len() ==>
@@ -157,14 +157,14 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
         }
     }
 
-    #[logic(open, inline, prophetic)]
+    #[logic(open, prophetic)] // TODO: inline (blocked on: binders in triggers are not supported in SMTLIB https://gitlab.inria.fr/why3/why3/-/work_items?sort=created_date&state=opened&search=trigger&first_page_size=20&show=eyJpaWQiOiI5MjciLCJmdWxsX3BhdGgiOiJ3aHkzL3doeTMiLCJpZCI6MTMxNTUwfQ%3D%3D)
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     pub fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
             exists<e: I::Item>
                 self.iter.produces(Seq::singleton(e), succ.iter)
                 && succ.produced.inner() == self.produced.push_back(e)
-                && forall<mode: Mode> self.func.postcondition_mut(mode, (e, self.produced), succ.func, visited)
+                && exists<mode: Mode> self.func.postcondition_mut(mode, (e, self.produced), succ.func, visited)
         }
     }
 }
