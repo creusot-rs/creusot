@@ -34,15 +34,13 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.func.hist_inv(succ.func)
-            && exists<fs: Seq<&mut F>> fs.len() == visited.len()
+            && exists<fs: Seq<F>> fs.len() == visited.len() + 1
             && exists<s: Seq<I::Item>> s.len() == visited.len() && self.iter.produces(s, succ.iter)
             && succ.produced.inner() == self.produced.concat(s)
-            && (forall<i> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
-            && if visited.len() == 0 { self.func == succ.func }
-               else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
+            && fs[0] == self.func && fs[visited.len()] == succ.func
             && forall<i> 0 <= i && i < visited.len() ==>
-                self.func.hist_inv(*fs[i])
-                && exists<mode: Mode> (*fs[i]).postcondition_mut(mode, (s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
+                self.func.hist_inv(fs[i])
+                && exists<mode: Mode> fs[i].postcondition_mut(mode, (s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), fs[i+1], visited[i])
         }
     }
 }
