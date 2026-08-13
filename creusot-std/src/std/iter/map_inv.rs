@@ -55,7 +55,10 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invaria
         pearlite! {
             Self::reinitialize() &&
             Self::preservation_inv(self.iter, self.func, *self.produced) &&
-            Self::next_precondition(self.iter, self.func, *self.produced)
+            Self::next_precondition(self.iter, self.func, *self.produced) &&
+            forall<mode1, mode2, arg, f, f_fin, res>
+                self.func.hist_inv(f) && f.postcondition_mut(mode1, arg, f_fin, res)
+                ==> f.postcondition_mut(mode2, arg, f_fin, res)
         }
     }
 }
@@ -71,7 +74,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
         let _old_self: Snapshot<Self> = snapshot! { *self };
         match self.iter.next() {
             Some(v) => {
-                // proof_assert! { |mode| self.func.precondition(mode, (v, self.produced)) };
+                proof_assert! { forall<mode> self.func.precondition(mode, (v, self.produced)) };
                 let produced = snapshot! { self.produced.push_back(v) };
                 let r = (self.func)(v, self.produced);
                 self.produced = produced;
@@ -154,15 +157,14 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
         }
     }
 
-    #[logic(open, prophetic)]
+    #[logic(open, inline, prophetic)]
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     pub fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
-            exists<f: &mut F, e: I::Item>
-                *f == self.func && ^f == succ.func
-                && self.iter.produces(Seq::singleton(e), succ.iter)
+            exists<e: I::Item>
+                self.iter.produces(Seq::singleton(e), succ.iter)
                 && succ.produced.inner() == self.produced.push_back(e)
-                && forall<mode: Mode> (*f).postcondition_mut(mode, (e, self.produced), ^f, visited)
+                && forall<mode: Mode> self.func.postcondition_mut(mode, (e, self.produced), succ.func, visited)
         }
     }
 }

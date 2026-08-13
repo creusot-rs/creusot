@@ -54,9 +54,11 @@ pub trait IteratorSpec: Iterator {
 
     #[check(ghost)]
     #[requires(forall<e, i2> self.produces(Seq::singleton(e), i2) && inv(e) ==>
-                    forall<mode: Mode> func.precondition(mode, (e, Snapshot::new(Seq::empty()))))]
+        forall<mode: Mode> func.precondition(mode, (e, Snapshot::new(Seq::empty()))))]
     #[requires(MapInv::<Self, F>::reinitialize())]
     #[requires(MapInv::<Self, F>::preservation(self, func))]
+    #[requires(forall<mode1, mode2, arg, f, res>
+        func.postcondition_mut(mode1, arg, f, res) == func.postcondition_mut(mode2, arg, f, res))]
     #[ensures(result == MapInv { iter: self, func, produced: Snapshot::new(Seq::empty())})]
     fn map_inv<B, F>(self, func: F) -> MapInv<Self, F>
     where
