@@ -75,7 +75,6 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
                 let produced = snapshot! { self.produced.push_back(v) };
                 let r = (self.func)(v, self.produced);
                 self.produced = produced;
-                #[allow(path_statements)]
                 let _ = snapshot! { Self::produces_one_invariant };
                 proof_assert! { _old_self.produces_one(r, *self) };
                 let _ = self; // Make sure self is not resolve until here.
