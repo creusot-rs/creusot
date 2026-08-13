@@ -569,7 +569,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         param_env: ParamEnv<'tcx>,
     ) -> TypingEnv<'tcx> {
         // FIXME: is it correct to pretend we are doing a non-body analysis?
-        // A constructor has shim MIR, so it passes `is_mir_available`, but it is not a body owner:
+        // `contract_of` calls this for a constructor used as a function value (`o.map(E::A)`). A
+        // constructor has shim MIR, so it passes `is_mir_available`, but it is not a body owner:
         // `post_borrowck_analysis` needs `opaque_types_defined_by`, which rustc refuses for one.
         let mode = if self.is_mir_available(def_id)
             && def_id.is_local()
