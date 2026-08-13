@@ -42,7 +42,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
             && forall<i> 0 <= i && i < visited.len() ==>
                 self.func.hist_inv(*fs[i])
-                && forall<mode: Mode> (*fs[i]).postcondition_mut(mode, (s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
+                && exists<mode: Mode> (*fs[i]).postcondition_mut(mode, (s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
         }
     }
 }
