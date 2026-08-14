@@ -45,7 +45,7 @@ in
 
     mkWhy3Framework = final.callPackage ./mkWhy3Framework.nix { };
     mkCreusotWrapped = final.callPackage ./mkCreusotWrapped.nix {
-      inherit rustToolchain;
+      inherit mkRustToolchain;
     };
   };
 }

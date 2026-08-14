@@ -2,19 +2,24 @@
   # Dependencies
   creusot,
   makeWrapper,
-  rustToolchain,
+  mkRustToolchain,
 
   # Librairies
   buildEnv,
+  lib,
 }:
 
 # Arguments
 {
-  cargo ? rustToolchain.passthru.availableComponents.cargo,
+  cargo ? null,
+  components ? [],
+
+  # NOTE: `isFree` is intentionally made mandatory
   isFree,
 }:
 
 let
+  toolchain = mkRustToolchain components;
   why3Framework = creusot.mkWhy3Framework { inherit isFree; };
 in
 buildEnv {
@@ -23,6 +28,7 @@ buildEnv {
     cargo
     creusot.prelude
     creusot.creusot
+    (lib.lowPrio toolchain)
     why3Framework
   ];
 
