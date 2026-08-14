@@ -67,6 +67,7 @@
         negative_impls,
         exact_size_is_empty,
         sized_hierarchy,
+        nonzero_internals,
     )
 )]
 #![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]
