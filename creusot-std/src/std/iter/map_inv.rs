@@ -34,14 +34,22 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.func.hist_inv(succ.func)
-            && exists<fs: Seq<F>> fs.len() == visited.len() + 1
+            && exists<fs: Seq<F>> fs.len() == visited.len()
             && exists<s: Seq<I::Item>> s.len() == visited.len() && self.iter.produces(s, succ.iter)
             && succ.produced.inner() == self.produced.concat(s)
-            && fs[0] == self.func && fs[visited.len()] == succ.func
+            && (visited.len() == 0 ==> self.func == succ.func)
+            && (visited.len() != 0 ==> fs[fs.len() - 1] == succ.func)
             && forall<i> 0 <= i && i < visited.len() ==>
-                self.func.hist_inv(fs[i])
-                && exists<mode: Mode> fs[i].postcondition_mut(mode, (s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), fs[i+1], visited[i])
+                self.func.hist_inv(fs.push_front(self.func)[i])
+                && exists<mode: Mode> fs.push_front(self.func)[i].postcondition_mut(mode, (s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), fs.push_front(self.func)[i+1], visited[i])
         }
+    }
+}
+
+#[logic(open, prophetic)]
+pub fn postcondition_mut<Args: std::marker::Tuple, F: FnMut<Args>>(f: F, args: Args, f_fin: F, r: F::Output) -> bool {
+    pearlite! {
+        exists<mode> f.postcondition_mut(mode, args, f_fin, r)
     }
 }
 
@@ -107,10 +115,11 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
     #[ensures(produced == Seq::empty() ==> result == Self::preservation(iter, func))]
     pub fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
-            forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: F, f_fin: F, b: B, i: I, mode: Mode>
+            forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: F, f_fin: F, b: B, i: I>
                 func.hist_inv(f) ==>
                 inv(s) && inv(e1) && inv(e2) && inv(f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
+                forall<mode>
                 f.postcondition_mut(mode, (e1, Snapshot::new(produced.concat(s))), f_fin, b) ==>
                 f_fin.precondition(mode, (e2, Snapshot::new(produced.concat(s).push_back(e1))))
         }
@@ -119,10 +128,11 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
     #[logic(open, prophetic, inline)]
     pub fn preservation(iter: I, func: F) -> bool {
         pearlite! {
-            forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: F, f_fin: F, b: B, i: I, mode: Mode>
+            forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: F, f_fin: F, b: B, i: I>
                 func.hist_inv(f) ==>
                 inv(s) && inv(e1) && inv(e2) && inv(f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
+                forall<mode>
                 f.postcondition_mut(mode, (e1, Snapshot::new(s)), f_fin, b) ==>
                 f_fin.precondition(mode, (e2, Snapshot::new(s.push_back(e1))))
         }
@@ -140,17 +150,27 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
 
     #[logic]
     #[requires(inv(e))]
-    #[requires(self.invariant())]
+    #[requires(inv(self))]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
-    #[requires(exists<mode: Mode> self.func.postcondition_mut(mode, (e, self.produced), f_fin, r) )]
-    #[ensures(Self::preservation_inv(iter, f_fin, self.produced.push_back(e)))]
-    #[ensures(Self::next_precondition(iter, f_fin, self.produced.push_back(e)))]
-    fn produces_one_invariant(self, e: I::Item, r: B, f_fin: F, iter: I) {
+    #[requires(exists<mode: Mode> self.func.postcondition_mut(mode, (e, self.produced), f2, r) )]
+    #[ensures(Self::preservation_inv(iter, f2, self.produced.push_back(e)))]
+    #[ensures(Self::next_precondition(iter, f2, self.produced.push_back(e)))]
+    fn produces_one_invariant(self, e: I::Item, r: B, f2: F, iter: I) {
         proof_assert! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, i: I>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
                 self.iter.produces(s.push_front(e).push_back(e1).push_back(e2), i)
-        }
+        };
+        proof_assert! {
+            // instantiation of preservation_inv to prove next_precondition
+            forall<e2: I::Item, i>
+                self.func.hist_inv(self.func) // This helps quantifier instantiation
+                && inv(e2)
+                && self.iter.produces(Seq::singleton(e).push_back(e2), i)
+                ==> forall<mode>
+                    self.func.postcondition_mut(mode, (e, self.produced), f2, r)
+                    ==> f2.precondition(mode, (e2, Snapshot::new(self.produced.push_back(e))))
+        };
     }
 
     #[logic(open, prophetic)] // TODO: inline (blocked on: binders in triggers are not supported in SMTLIB https://gitlab.inria.fr/why3/why3/-/work_items?sort=created_date&state=opened&search=trigger&first_page_size=20&show=eyJpaWQiOiI5MjciLCJmdWxsX3BhdGgiOiJ3aHkzL3doeTMiLCJpZCI6MTMxNTUwfQ%3D%3D)

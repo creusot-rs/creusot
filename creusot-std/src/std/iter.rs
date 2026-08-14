@@ -57,8 +57,9 @@ pub trait IteratorSpec: Iterator {
         forall<mode: Mode> func.precondition(mode, (e, Snapshot::new(Seq::empty()))))]
     #[requires(MapInv::<Self, F>::reinitialize())]
     #[requires(MapInv::<Self, F>::preservation(self, func))]
-    #[requires(forall<mode1, mode2, arg, f, res>
-        func.postcondition_mut(mode1, arg, f, res) == func.postcondition_mut(mode2, arg, f, res))]
+    #[requires(forall<mode1, mode2, arg, f, f_fin, res>
+        func.hist_inv(f) && f.postcondition_mut(mode1, arg, f_fin, res)
+        ==> f.postcondition_mut(mode2, arg, f_fin, res))]
     #[ensures(result == MapInv { iter: self, func, produced: Snapshot::new(Seq::empty())})]
     fn map_inv<B, F>(self, func: F) -> MapInv<Self, F>
     where
