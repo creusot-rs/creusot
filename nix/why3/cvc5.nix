@@ -1,10 +1,10 @@
 {
   # Dependencies
   autoreconfHook,
-  bash,
   cadical,
   cln,
   cmake,
+  cocoalib,
   glpk,
   gmp,
   libedit,
@@ -27,90 +27,7 @@
   sha256,
   version,
 }:
-let
-  cvc5-cadical = cadical.override { version = "2.1.3"; };
 
-  cvc5-cocoalib = stdenv.mkDerivation {
-    name = "CoCoALib";
-
-    src = fetchurl {
-      url = "https://cocoa.altervista.org/cocoalib/tgz/CoCoALib-0.99800.tgz";
-      sha256 = "sha256-+Lsifi4XKeFxz3rCAIr3HfJZFGB3EsNdt7y1oESpKMY=";
-    };
-
-    nativeBuildInputs = [ which ];
-    buildInputs = [ gmp ];
-
-    patches = [
-      (fetchpatch {
-        name = "CoCoALib-0.99800-trace.patch";
-        url = "https://raw.githubusercontent.com/cvc5/cvc5/7de04e22fafc537d8c8f3188b32af64f3529e90c/cmake/deps-utils/CoCoALib-0.99800-trace.patch";
-        sha256 = "sha256-IW+phNt+Ce01QaBiqnnxxy1ai4rSCckOyGO+Ymjwt+o=";
-      })
-    ];
-
-    preConfigure = ''
-      find . -type f -exec sed -i -e 's|/usr/bin/||g' {} \;
-      find . -type f -exec sed -i -e 's|/bin/||g' {} \;
-      find . -name "*.sh" -exec sed -i -e 's|bash|${bash}/bin/bash|g' {} \;
-      sed -i -e '14s|.*|GMP_LIB="${gmp.dev}/lib/libgmp.so"|g' configuration/gmp-find-hdr.sh
-      sed -i -e '106iexport LD_LIBRARY_PATH=${gmp}/lib' configuration/gmp-check-cxxflags.sh
-      sed -i -e '1s|.*|exit 0|g' src/tests/RunTests.sh
-      touch doc/CoCoALib.pdf examples/index.html
-      mkdir $out $out/include $out/lib
-    '';
-
-    configureFlags = [
-      "--with-libgmp=${gmp}/lib/libgmp.so"
-    ];
-  };
-
-  cvc5-glpk = stdenv.mkDerivation rec {
-    inherit (glpk) meta;
-
-    name = "glpk";
-    version = "4.52";
-
-    src = fetchurl {
-      url = "mirror://gnu/glpk/${name}-${version}.tar.gz";
-      sha256 = "sha256-ml2rNWJotPF3wz4A3fgWRJbcJDToO9ERQUcCTfmDo7s=";
-    };
-
-    patches = [
-      (fetchpatch {
-        name = "glpk-cut-log.patch";
-        url = "https://raw.githubusercontent.com/cvc5/cvc5/99bfe0bcc00bf730c84db499b7e27419bf165dc3/cmake/deps-utils/glpk-cut-log.patch";
-        sha256 = "sha256-/H9hwlFmiBk6Kh9C7G6UeA2xKJgZjfHNjHFQYXU10lM=";
-      })
-    ];
-
-    preConfigure = ''
-      sed -i '37d' src/minisat/minisat.h
-    '';
-
-    nativeBuildInputs = [ autoreconfHook ];
-  };
-
-  cvc5-libpoly = libpoly.overrideAttrs {
-    version = "0.2.0";
-    src = fetchFromGitHub {
-      owner = "SRI-CSL";
-      repo = "libpoly";
-      tag = "v0.2.0";
-      hash = "sha256-gE2O1YfiVab/aIqheoMP8GhE+N3yho7kb5EP56pzjW8=";
-    };
-  };
-
-  cvc5-symfpu = symfpu.overrideAttrs {
-    version = "0-unstable-2019-05-17";
-    src = fetchFromGitHub {
-      owner = "martin-cs";
-      repo = "symfpu";
-      rev = "8fbe139bf0071cbe0758d2f6690a546c69ff0053";
-      hash = "sha256-ONGfvJMo/HXlbxHmkFs9O5nhs6aDM+XuNSPgY+ykxck=";
-    };
-  };
-in
 stdenv.mkDerivation {
   inherit (cvc5) meta pname;
   inherit version;
@@ -128,16 +45,17 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
+    cadical
+    cocoalib
     cln
-    cvc5-cadical
-    cvc5-cocoalib
-    cvc5-glpk
-    cvc5-libpoly
-    cvc5-symfpu
+    glpk
     gmp
     libedit
+    libpoly
+    python3
     python3.pkgs.pexpect
     python3.pkgs.pyparsing
+    symfpu
   ];
 
   cmakeFlags = [

@@ -17,14 +17,10 @@
   sha256,
   version,
 }:
+
 stdenv.mkDerivation {
-  inherit (why3)
-    installTargets
-    meta
-    pname
-    postInstall
-    outputs
-    ;
+  inherit (why3) meta pname;
+  inherit (why3) installTargets postInstall outputs;
   inherit version;
 
   src = fetchurl {

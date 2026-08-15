@@ -23,42 +23,10 @@
   sha256,
   version,
 }:
-let
-  cvc4-cryptominisat = cryptominisat.overrideAttrs {
-    src = fetchFromGitHub {
-      owner = "msoos";
-      repo = "cryptominisat";
-      rev = "5.8.0";
-      hash = "sha256-oGDsEYU9yXmHfbK4LyFzuJdfKHiFbSrT5PdY6GnrFQI=";
-    };
 
-    cmakeFlags = [
-      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-      "-DENABLE_PYTHON_INTERFACE=0"
-    ];
-
-    patchPhase = ''
-      sed -i -e '28i#include <cstdint>' src/ccnr.h
-    '';
-  };
-
-  cvc4-symfpu = symfpu.overrideAttrs {
-    version = "0-unstable-2019-05-17";
-    src = fetchFromGitHub {
-      owner = "martin-cs";
-      repo = "symfpu";
-      rev = "8fbe139bf0071cbe0758d2f6690a546c69ff0053";
-      hash = "sha256-ONGfvJMo/HXlbxHmkFs9O5nhs6aDM+XuNSPgY+ykxck=";
-    };
-  };
-in
 stdenv.mkDerivation {
-  inherit (cvc4)
-    meta
-    patches
-    pname
-    preConfigure
-    ;
+  inherit (cvc4) meta pname;
+  inherit (cvc4) patches preConfigure;
   inherit version;
 
   src = fetchFromGitHub {
@@ -77,13 +45,13 @@ stdenv.mkDerivation {
     antlr3_4
     cadical
     cln
-    cvc4-cryptominisat
-    cvc4-symfpu
+    cryptominisat
     gmp
     jdk
     libantlr3c
     python3
     python3.pkgs.toml
+    symfpu
   ];
 
   cmakeFlags = [
