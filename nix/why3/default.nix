@@ -1,5 +1,5 @@
 pins: final: prev: {
-  creusot = prev.creusot or { } // {
+  why3Framework = prev.why3Framework or { } // {
     alt-ergo = final.callPackage ./alt-ergo.nix pins.alt-ergo;
     alt-ergo-free = final.callPackage ./alt-ergo-free.nix pins.alt-ergo-free;
 

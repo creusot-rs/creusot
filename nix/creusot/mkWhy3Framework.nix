@@ -1,6 +1,6 @@
 {
   # Dependencies
-  creusot,
+  why3Framework,
 
   # Librairies
   symlinkJoin,
@@ -13,7 +13,7 @@
 }:
 let
   solvers =
-    with creusot;
+    with why3Framework;
     (if isFree then [ alt-ergo-free ] else [ alt-ergo ])
     ++ [
       cvc4

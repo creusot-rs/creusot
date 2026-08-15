@@ -76,12 +76,12 @@
         in
         {
           overlays = rec {
-            deps = import ./nix/deps pins;
+            why3 = import ./nix/why3 pins;
             creusot = import ./nix/creusot (creusotAttrs // { inherit crane; });
 
             default = nixpkgs.lib.composeManyExtensions [
               rust-overlay.overlays.default
-              self.overlays.deps
+              self.overlays.why3
               self.overlays.creusot
             ];
           };
