@@ -46,13 +46,6 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
     }
 }
 
-#[logic(open, prophetic)]
-pub fn postcondition_mut<Args: std::marker::Tuple, F: FnMut<Args>>(f: F, args: Args, f_fin: F, r: F::Output) -> bool {
-    pearlite! {
-        exists<mode> f.postcondition_mut(mode, args, f_fin, r)
-    }
-}
-
 impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant
     for MapInv<I, F>
 {
@@ -173,7 +166,8 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
         };
     }
 
-    #[logic(open, prophetic)] // TODO: inline (blocked on: binders in triggers are not supported in SMTLIB https://gitlab.inria.fr/why3/why3/-/work_items?sort=created_date&state=opened&search=trigger&first_page_size=20&show=eyJpaWQiOiI5MjciLCJmdWxsX3BhdGgiOiJ3aHkzL3doeTMiLCJpZCI6MTMxNTUwfQ%3D%3D)
+    #[logic(open, prophetic)]
+    // TODO: inline to enable more automation (blocked on: binders in triggers are not supported in SMTLIB https://gitlab.inria.fr/why3/why3/-/work_items?sort=created_date&state=opened&search=trigger&first_page_size=20&show=eyJpaWQiOiI5MjciLCJmdWxsX3BhdGgiOiJ3aHkzL3doeTMiLCJpZCI6MTMxNTUwfQ%3D%3D)
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     pub fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
