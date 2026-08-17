@@ -17,50 +17,71 @@ pub const CVC5_VERSION: &'static str = "1.3.1";
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
 pub const URLS: Urls = Urls {
-    altergo: Url {
+    altergo: Some(Url {
         url: "https://github.com/OCamlPro/alt-ergo/releases/download/v2.6.2/alt-ergo-v2.6.2-x86_64-linux-musl",
         sha256: "bdc4e487f2bdfd421011c82f545df3f50530aee6d6e406b1e847d433650ca3c1",
-    },
-    z3: Url {
+    }),
+    z3: Some(Url {
         url: "https://github.com/Z3Prover/z3/releases/download/z3-4.15.3/z3-4.15.3-x64-glibc-2.39.zip",
         sha256: "94549c5e31a75b9c543fe6eea8f32927054765c2e92e696d2d6dde0eedf348a1",
-    },
-    cvc4: Url {
+    }),
+    cvc4: Some(Url {
         url: "https://github.com/CVC4/CVC4-archived/releases/download/1.8/cvc4-1.8-x86_64-linux-opt",
         sha256: "d38a79cf984592785eda41ec888d94ca107ac1f13058740238041e28c8472e51",
-    },
-    cvc5: Url {
+    }),
+    cvc5: Some(Url {
         url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.3.1/cvc5-Linux-x86_64-static-gpl.zip",
         sha256: "dcad9de0827509e8517f60da87f0c4292652627641dbcad8012644b6a982a183",
-    },
+    }),
+};
+
+#[cfg(all(target_os = "linux", target_arch = "aarch64"))]
+pub const URLS: Urls = Urls {
+    // Alt-Ergo publishes no aarch64-linux binary; it is an OCaml program, so
+    // `opam install alt-ergo` plus `--external alt-ergo` covers it.
+    altergo: None,
+    z3: Some(Url {
+        url: "https://github.com/Z3Prover/z3/releases/download/z3-4.15.3/z3-4.15.3-arm64-glibc-2.34.zip",
+        sha256: "78b383374905a20af7f38cb3e8e9e8e38c5cb3d23a8c2fbf8f54ff4b41a9c605",
+    }),
+    // CVC4 is archived upstream (last release 2020) and never shipped an
+    // aarch64-linux binary. CVC5 supersedes it.
+    cvc4: None,
+    cvc5: Some(Url {
+        url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.3.1/cvc5-Linux-arm64-static-gpl.zip",
+        sha256: "a3673b5f91aa71f11939494498ae7f8b89a035c7e0993f5a2f81728e6f9bcc43",
+    }),
 };
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub const URLS: Urls = Urls {
-    altergo: Url {
+    altergo: Some(Url {
         url: "https://github.com/OCamlPro/alt-ergo/releases/download/v2.6.2/alt-ergo-v2.6.2-aarch64-macos",
         sha256: "bfec57500243a3cf1d3b613662f5814492d49152453409a9a46d0dfeacf61b31",
-    },
-    z3: Url {
+    }),
+    z3: Some(Url {
         url: "https://github.com/Z3Prover/z3/releases/download/z3-4.15.3/z3-4.15.3-arm64-osx-13.7.6.zip",
         sha256: "941659417b5464a361c49089658509f3118a0c3e8d4f8a1dc999f8b5cd1f3c71",
-    },
+    }),
     // CVC4 only has a macos x86_64 binary; we rely on rosetta for compatibility
-    cvc4: Url {
+    cvc4: Some(Url {
         url: "https://github.com/CVC4/CVC4-archived/releases/download/1.8/cvc4-1.8-macos-opt",
         sha256: "b8a0b8714dd947aa46182402d9caba27d3d696041e17704884bc3d8510066527",
-    },
-    cvc5: Url {
+    }),
+    cvc5: Some(Url {
         url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.3.1/cvc5-macOS-arm64-static-gpl.zip",
         sha256: "e28df7104ebac5ca0953a0e9aadd016c2c63b00ec6edc3d25820fd888e7e22c3",
-    },
+    }),
 };
 
+/// A `None` field means: no binary release of that prover exists for this
+/// platform. `creusot-install` skips it with a message; install it by other
+/// means (opam, distro package, from source) and pass `--external <TOOL>`.
 pub struct Urls {
-    pub altergo: Url,
-    pub z3: Url,
-    pub cvc4: Url,
-    pub cvc5: Url,
+    pub altergo: Option<Url>,
+    pub z3: Option<Url>,
+    pub cvc4: Option<Url>,
+    pub cvc5: Option<Url>,
 }
 
 pub struct Url {

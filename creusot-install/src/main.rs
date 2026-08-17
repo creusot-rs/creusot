@@ -10,7 +10,9 @@ use std::{
 #[derive(Clone, Copy)]
 pub struct ManagedBinary {
     pub bin: setup::Binary,
-    url: &'static Url,
+    /// `None` if no binary release exists for this platform; the tool must then
+    /// be supplied with `--external`.
+    url: &'static Option<Url>,
     download: fn(&Url, &Path, &Path, &Args) -> anyhow::Result<()>,
 }
 
@@ -255,9 +257,16 @@ fn install_provers(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<(
         if args.external.contains(&tool) {
             // create symbolic links for external tools
             args.symlink_file(get_path(bin.bin, args)?, paths.bin().join(bin.bin.binary_name))?;
-        } else {
+        } else if let Some(url) = bin.url {
             // download binaries for builtins
-            download(bin, &paths.cache_dir(), &paths.bin(), args)?;
+            download(bin, url, &paths.cache_dir(), &paths.bin(), args)?;
+        } else {
+            eprintln!(
+                "Skipping {}: no binary release for this platform. \
+                 Install it separately and re-run with `--external {}`.",
+                bin.bin.display_name,
+                format!("{tool:?}").to_lowercase(),
+            );
         }
     }
     Ok(())
@@ -381,6 +390,7 @@ fn download_from_url_with_cache(
 
 fn download(
     bin: ManagedBinary,
+    url: &Url,
     cache_dir: &Path,
     dest_dir: &Path,
     args: &Args,
@@ -392,7 +402,7 @@ fn download(
     }
     let path = dest_dir.join(bin.bin.binary_name);
     let dl = bin.download;
-    dl(bin.url, cache_dir, &path, args)?;
+    dl(url, cache_dir, &path, args)?;
     set_executable(&path)
 }
 

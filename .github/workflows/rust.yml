@@ -172,6 +172,45 @@ jobs:
       with:
         path: .why3find
         key: ${{ runner.os }}-why3find-${{ env.TODAY }}-${{ hashFiles('.why3find/**') }}
+  install-aarch64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@v4
+    - name: Cache Opam switch
+      uses: actions/cache@v4
+      with:
+        path: ~/.local/share/creusot/_opam
+        key: ${{ runner.os }}-${{ runner.arch }}-opam-${{ hashFiles('creusot-deps.opam') }}
+        restore-keys: ${{ runner.os }}-${{ runner.arch }}-opam-
+    - run: sudo apt update && sudo apt install -y opam libzmq3-dev
+    - name: setup opam
+      run: |
+        opam init --bare --disable-sandboxing --no-setup -y
+        opam --cli=2.1 var --global in-creusot-ci=true
+    # The switch must exist before Alt-Ergo can be installed into it, so the components are taken in
+    # two passes rather than one `./INSTALL`.
+    - name: install why3 (creates the opam switch)
+      run: cargo run --bin creusot-install -- why3
+    - name: install alt-ergo from opam
+      run: opam install -y alt-ergo.2.6.2 --switch "$HOME/.local/share/creusot"
+    - name: install the rest, with alt-ergo supplied externally
+      run: |
+        eval $(opam env --switch "$HOME/.local/share/creusot" --set-switch)
+        cargo run --bin creusot-install -- --external alt-ergo \
+          creusot-rustc prelude cargo-creusot provers why3-conf
+    # Stat the results rather than trusting a zero exit: the point of the job is that the binaries
+    # an aarch64 user needs actually land.
+    - name: the installed toolchain is really there
+      run: |
+        D="$HOME/.local/share/creusot"
+        test -x "$D/bin/z3"
+        test -x "$D/bin/cvc5"
+        test -x "$D/bin/alt-ergo"
+        test -x $(echo "$D"/toolchains/*/bin/creusot-rustc)
+        test -x "$HOME/.cargo/bin/cargo-creusot"
+    - name: Minimize Opam cache
+      run: opam clean --all-switches --download-cache --logs --repo-cache
+
   install:
     strategy:
       matrix:
