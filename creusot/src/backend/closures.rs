@@ -229,7 +229,7 @@ pub(crate) fn closure_post<'tcx>(
         match closure_kind {
             ClosureKind::Fn => {
                 let bor_self = self_.clone().shr_ref(ctx.tcx);
-                let params = [bor_self, mode].into_iter().chain(arg_vars).chain([result]).collect();
+                let params = [mode, bor_self].into_iter().chain(arg_vars).chain([result]).collect();
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
                     ty: ctx.types.bool,
@@ -247,7 +247,7 @@ pub(crate) fn closure_post<'tcx>(
                     Ty::new_ref(ctx.tcx, ctx.lifetimes.re_erased, self_.ty, Mutability::Mut);
                 let bor_self = Term::var(bor_self_ident, bor_self_ty);
                 let params =
-                    [bor_self.clone(), mode].into_iter().chain(arg_vars).chain([result]).collect();
+                    [mode, bor_self.clone()].into_iter().chain(arg_vars).chain([result]).collect();
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
                     ty: ctx.types.bool,

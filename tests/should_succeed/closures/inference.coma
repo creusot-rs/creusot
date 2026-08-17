@@ -234,7 +234,7 @@ module M_closure_fn
   meta "rewrite_def" predicate precondition_closure0
   
   predicate postcondition_closure0 (self: ()) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
-    let x = args in closure0'post'return self mode x result
+    let x = args in closure0'post'return mode self x result
   
   meta "rewrite_def" predicate postcondition_closure0
   
@@ -246,7 +246,7 @@ module M_closure_fn
       (! return {result}) ]
   
   predicate postcondition_mut_closure0 (self: ()) (mode: Mode.t) (args: Int32.t) (result_state: ()) (result: Int32.t) =
-    let x = args in closure0'post'return self mode x result /\ self = result_state
+    let x = args in closure0'post'return mode self x result /\ self = result_state
   
   meta "rewrite_def" predicate postcondition_mut_closure0
   
@@ -262,7 +262,7 @@ module M_closure_fn
   meta "rewrite_def" predicate resolve_refmut_closure0
   
   predicate postcondition_once_closure0 (self: ()) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
-    let x = args in closure0'post'return self mode x result
+    let x = args in closure0'post'return mode self x result
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
@@ -366,7 +366,7 @@ module M_closure_fn_mut
   predicate postcondition_mut_closure0 (self: closure0) (mode: Mode.t) (args: Int32.t) (result_state: closure0) (result: Int32.t) =
     let x = args in exists bor_self: MutBorrow.t closure0. bor_self.current = self
       /\ bor_self.final = result_state
-      /\ closure0'post'return bor_self mode x result /\ hist_inv_closure0 self result_state
+      /\ closure0'post'return mode bor_self x result /\ hist_inv_closure0 self result_state
   
   meta "rewrite_def" predicate postcondition_mut_closure0
   
@@ -387,7 +387,7 @@ module M_closure_fn_mut
   
   predicate postcondition_once_closure0 (self: closure0) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
     let x = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
-          /\ bor_self.final = e /\ closure0'post'return bor_self mode x result /\ hist_inv_closure0 self e)
+          /\ bor_self.final = e /\ closure0'post'return mode bor_self x result /\ hist_inv_closure0 self e)
       /\ resolve_closure0 e
   
   meta "rewrite_def" predicate postcondition_once_closure0
