@@ -204,15 +204,16 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 let self_val = Term::var(self_nm, self_ty).deref();
                 let result = Term::var(name::result(), pre_sig.output);
                 assert!(pre_sig.contract.ensures.is_empty());
-                pre_sig.contract.ensures = builtin_clone_posts(ctx, typing_env, &mode, self_val, result)
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, term)| {
-                        let trig: Box<[_]> = Box::new([]);
-                        let expl = format!("expl:{} ensures #{i}", ctx.item_name(def_id));
-                        (trig, Condition { term, expl })
-                    })
-                    .collect();
+                pre_sig.contract.ensures =
+                    builtin_clone_posts(ctx, typing_env, &mode, self_val, result)
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, term)| {
+                            let trig: Box<[_]> = Box::new([]);
+                            let expl = format!("expl:{} ensures #{i}", ctx.item_name(def_id));
+                            (trig, Condition { term, expl })
+                        })
+                        .collect();
             }
             TraitResolved::Instance { .. }
             | TraitResolved::UnknownFound
@@ -867,6 +868,8 @@ fn postcondition_once_term<'tcx>(
     let &[self_, mode_id, args, result] = bound else {
         panic!("postcondition_once must have 4 arguments. This should not happen. Found: {bound:?}")
     };
+    // index of `result` in the arguments of `postcondition_once`
+    const RESULT_INDEX: usize = 3;
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
     let mode = Term::var(mode_id, mode_ty(&ctx.ctx, names));
@@ -874,7 +877,10 @@ fn postcondition_once_term<'tcx>(
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.tcx, ctx.sig(Intrinsic::PostconditionOnce.get(ctx)).inputs[2].2),
+        EarlyBinder::bind(
+            ctx.tcx,
+            ctx.sig(Intrinsic::PostconditionOnce.get(ctx)).inputs[RESULT_INDEX].2,
+        ),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
@@ -939,6 +945,8 @@ fn postcondition_mut_term<'tcx>(
     let &[self_, mode_id, args, result_state, result] = bound else {
         panic!("postcondition_mut must have 5 arguments. This should not happen. Found: {bound:?}")
     };
+    // index of `result` in the arguments of `postcondition_mut`
+    const RESULT_INDEX: usize = 4;
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
     let mode = Term::var(mode_id, mode_ty(&ctx.ctx, names));
@@ -947,7 +955,10 @@ fn postcondition_mut_term<'tcx>(
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.tcx, ctx.sig(Intrinsic::PostconditionMut.get(ctx)).inputs[3].2),
+        EarlyBinder::bind(
+            ctx.tcx,
+            ctx.sig(Intrinsic::PostconditionMut.get(ctx)).inputs[RESULT_INDEX].2,
+        ),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
@@ -1033,6 +1044,8 @@ fn postcondition_term<'tcx>(
     let &[self_, mode_id, args, result] = bound else {
         panic!("postcondition must have 4 arguments. This should not happen. Found: {bound:?}")
     };
+    // index of `result` in the arguments of `postcondition`
+    const RESULT_INDEX: usize = 3;
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
     let mode = Term::var(mode_id, mode_ty(&ctx.ctx, names));
@@ -1040,7 +1053,10 @@ fn postcondition_term<'tcx>(
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.tcx, ctx.sig(Intrinsic::Postcondition.get(ctx)).inputs[2].2),
+        EarlyBinder::bind(
+            ctx.tcx,
+            ctx.sig(Intrinsic::Postcondition.get(ctx)).inputs[RESULT_INDEX].2,
+        ),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
