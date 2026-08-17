@@ -1,4 +1,5 @@
 module M_agreement
+  use creusot.prelude.Mode
   use creusot.int.Int32
   use creusot.prelude.Any
   
@@ -63,8 +64,8 @@ module M_agreement
   
   meta "rewrite_def" function view_Resource_Ag_i32
   
-  let join_shared_Ag_i32 (self: t_Resource_Ag_i32) (other: t_Resource_Ag_i32) (return (x: t_Resource_Ag_i32)) =
-  {[@stop_split] [@expl:join_shared requires] id_Ag_i32 self = id_Ag_i32 other}
+  let join_shared_Ag_i32 (mode: Mode.t) (self: t_Resource_Ag_i32) (other: t_Resource_Ag_i32)
+    (return (x: t_Resource_Ag_i32)) = {[@stop_split] [@expl:join_shared requires] id_Ag_i32 self = id_Ag_i32 other}
     any
     [ return (result: t_Resource_Ag_i32) ->
     {[@stop_split] [@expl:join_shared_Ag_i32 ensures] ([@stop_split] [@expl:join_shared ensures #0] id_Ag_i32 result
@@ -77,11 +78,12 @@ module M_agreement
   
   meta "select_lsinst" "all"
   
-  let agreement (x: t_Resource_Ag_i32) (y: t_Resource_Ag_i32) (return (x'0: ())) =
+  let agreement (mode: Mode.t) (x: t_Resource_Ag_i32) (y: t_Resource_Ag_i32) (return (x'0: ())) =
   {[@stop_split] [@expl:agreement requires] id_Ag_i32 x = id_Ag_i32 y}
     (! bb0
     [ bb0 = s0
-      [ s0 = join_shared_Ag_i32 {x} {y} (fun (_x: t_Resource_Ag_i32) -> [ &_9 <- _x ] s1) | s1 = return {_ret} ] ]
+      [ s0 = join_shared_Ag_i32 {mode} {x} {y} (fun (_x: t_Resource_Ag_i32) -> [ &_9 <- _x ] s1)
+      | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: t_Resource_Ag_i32 = x
     | & y: t_Resource_Ag_i32 = y

@@ -1,13 +1,14 @@
 module M_f
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_MyInt = { f0: UInt64.t }
   
   type tup2_MyInt_MyInt = { f0'0: t_MyInt; f1'0: t_MyInt }
   
-  let z (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
+  let z (mode: Mode.t) (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
   
   predicate resolve_refmut_tup2_MyInt_MyInt [@inline:trivial] (_1: MutBorrow.t tup2_MyInt_MyInt) = _1.final = _1.current
   
@@ -17,14 +18,14 @@ module M_f
   
   meta "select_lsinst" "all"
   
-  let f (return (x: ())) = (! bb0
+  let f (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_2 <- { f0 = (1: UInt64.t) } ] s1
       | s1 = [ &_3 <- { f0 = (2: UInt64.t) } ] s2
       | s2 = [ &x <- { f0'0 = _2; f1'0 = _3 } ] s3
       | s3 = MutBorrow.borrow_mut <tup2_MyInt_MyInt> {x}
           (fun (_bor: MutBorrow.t tup2_MyInt_MyInt) -> [ &y <- _bor ] [ &x <- _bor.final ] s4)
-      | s4 = z (fun (_x: bool) -> [ &_6 <- _x ] s5)
+      | s4 = z {mode} (fun (_x: bool) -> [ &_6 <- _x ] s5)
       | s5 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb2) ] ]
     | bb2 = s0
       [ s0 = [ &_7 <- { f0 = (4: UInt64.t) } ] s1
@@ -48,6 +49,7 @@ module M_g
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_MyInt = { f0: UInt64.t }
   
@@ -65,7 +67,7 @@ module M_g
   
   meta "select_lsinst" "all"
   
-  let g (return (x: ())) = (! bb0
+  let g (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_2 <- { f0 = (1: UInt64.t) } ] s1
       | s1 = [ &_3 <- { f0 = (2: UInt64.t) } ] s2
@@ -90,12 +92,13 @@ module M_g
 end
 module M_z
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let z (return (x: bool)) = (! bb0
+  let z (mode: Mode.t) (return (x: bool)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])
     [ return (result: bool) -> (! return {result}) ]
 end

@@ -1,5 +1,6 @@
 module M_bar
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -7,7 +8,7 @@ module M_bar
   
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
-  let into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
+  let into_iter_Range_i32 (mode: Mode.t) (self_: t_Range_i32) (return (x: t_Range_i32)) = any
     [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
@@ -50,7 +51,7 @@ module M_bar
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
     resolve_refmut_Range_i32 self /\ ge_log_Int (deep_model_i32 self.current.start) (deep_model_i32 self.current.end')
   
-  let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
+  let next_Range_i32 (mode: Mode.t) (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_i32 self_
         | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
@@ -59,7 +60,7 @@ module M_bar
   
   type t_F
   
-  predicate precondition_F (self: t_F) (args: ())
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: ())
   
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
@@ -83,17 +84,17 @@ module M_bar
   
   meta "rewrite_def" predicate inv_refmut_F
   
-  predicate postcondition_once_F (self: t_F) (args: ()) (result: ())
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: ()) (result: ())
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: ()) (result_state: t_F) (result: ())
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: ()) (result_state: t_F) (result: ())
   
-  function fn_mut_once_F (self: t_F) (args: ()) (res: ()) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: ()) (res: ()) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: (), res: () [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: (), res: () [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -107,31 +108,31 @@ module M_bar
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: ()) (res_state: t_F) (res: ()) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: ()) (res_state: t_F) (res: ()) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: (), res_state: t_F, res: () [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: (), res_state: t_F, res: () [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
-  let call_mut_F (self_: MutBorrow.t t_F) (arg: ()) (return (x: ())) =
+  let call_mut_F (mode: Mode.t) (self_: MutBorrow.t t_F) (arg: ()) (return (x: ())) =
   {[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
-    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self_.current arg)}
+    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self_.current mode arg)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self_.current mode arg self_.final result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let bar_F (f: t_F) (return (x: ())) =
+  let bar_F (mode: Mode.t) (f: t_F) (return (x: ())) =
   {[@stop_split] [@expl:bar_F requires] ([@stop_split] [@expl:bar 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:bar requires] precondition_F f ())}
+    /\ ([@stop_split] [@expl:bar requires] precondition_F f mode ())}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_5 <- { start = (0: Int32.t); end' = (1: Int32.t) } ] s1
-      | s1 = into_iter_Range_i32 {_5} (fun (_x: t_Range_i32) -> [ &iter <- _x ] s2)
+      | s1 = into_iter_Range_i32 {mode} {_5} (fun (_x: t_Range_i32) -> [ &iter <- _x ] s2)
       | s2 = [ &iter_old <- iter ] s3
       | s3 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s4
       | s4 = bb4 ]
@@ -139,13 +140,13 @@ module M_bar
       [ bb4 = {[@expl:inferred invariant: type invariant] inv_F f}
         {[@expl:for invariant] inv_Seq_i32 produced}
         {[@expl:for invariant] produces_Range_i32 iter_old produced iter}
-        {[@expl:loop invariant] Seq.length produced = 0 -> precondition_F f ()}
+        {[@expl:loop invariant] Seq.length produced = 0 -> precondition_F f mode ()}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_i32> {iter}
             (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_26 <- _bor ] [ &iter <- _bor.final ] s1)
         | s1 = MutBorrow.borrow_final <t_Range_i32> {_26.current} {MutBorrow.get_id _26}
             (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_25 <- _bor ] [ &_26 <- { _26 with current = _bor.final } ] s2)
-        | s2 = next_Range_i32 {_25} (fun (_x: t_Option_i32) -> [ &_24 <- _x ] s3)
+        | s2 = next_Range_i32 {mode} {_25} (fun (_x: t_Option_i32) -> [ &_24 <- _x ] s3)
         | s3 = -{resolve_refmut_Range_i32 _26}- s4
         | s4 = any [ br0 -> {_24 = None} (! bb9) | br1 (x0: Int32.t) -> {_24 = Some x0} (! bb10) ] ]
         [ bb10 = s0
@@ -154,7 +155,7 @@ module M_bar
           | s2 = MutBorrow.borrow_mut <t_F> {f}
               (fun (_bor: MutBorrow.t t_F) -> [ &_35 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s3)
             [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
-          | s3 = call_mut_F {_35} {_36} (fun (_x: ()) -> [ &_34 <- _x ] s4)
+          | s3 = call_mut_F {mode} {_35} {_36} (fun (_x: ()) -> [ &_34 <- _x ] s4)
           | s4 = bb4 ] ] ]
     | bb9 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ] | s1 = -{resolve_F f}- s2 | s2 = return {_ret} ] ]

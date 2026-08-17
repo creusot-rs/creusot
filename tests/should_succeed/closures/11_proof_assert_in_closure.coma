@@ -2,6 +2,7 @@ module M_captures_and_call
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type closure0 = { c0: MutBorrow.t Int32.t }
   
@@ -11,7 +12,7 @@ module M_captures_and_call
   
   predicate hist_inv_closure0 (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
   
-  let closure0 (self: MutBorrow.t closure0) (return (x: ())) =
+  let closure0 (mode: Mode.t) (self: MutBorrow.t closure0) (return (x: ())) =
   {[@stop_split] [@expl:closure requires] self.current.c0.current = (1: Int32.t)}
     (! bb0
     [ bb0 = s0
@@ -25,31 +26,32 @@ module M_captures_and_call
       /\ ([@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final)}
       (! return {result}) ]
   
-  predicate precondition_closure0 (self: closure0) (args: ()) = self.c0.current = (1: Int32.t)
+  predicate precondition_closure0 (self: closure0) (mode: Mode.t) (args: ()) = self.c0.current = (1: Int32.t)
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate postcondition_once_closure0 (self: closure0) (args: ()) (result: ()) = self.c0.final = (2: Int32.t)
+  predicate postcondition_once_closure0 (self: closure0) (mode: Mode.t) (args: ()) (result: ()) =
+    self.c0.final = (2: Int32.t)
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  let calls_closure_closure0 (f: closure0) (return (x: ())) =
-  {[@stop_split] [@expl:calls_closure requires] precondition_closure0 f ()}
+  let calls_closure_closure0 (mode: Mode.t) (f: closure0) (return (x: ())) =
+  {[@stop_split] [@expl:calls_closure requires] precondition_closure0 f mode ()}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:calls_closure ensures] postcondition_once_closure0 f () ()}
+    [ return (result: ()) -> {[@stop_split] [@expl:calls_closure ensures] postcondition_once_closure0 f mode () ()}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let captures_and_call (return (x: ())) = (! bb0
+  let captures_and_call (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_3 <- _bor ] [ &x <- _bor.final ] s2)
       | s2 = [ &clos <- { c0 = _3 } ] s3
-      | s3 = calls_closure_closure0 {clos} (fun (_x: ()) -> [ &_4 <- _x ] s4)
+      | s3 = calls_closure_closure0 {mode} {clos} (fun (_x: ()) -> [ &_4 <- _x ] s4)
       | s4 = {[@expl:assertion] x = (2: Int32.t)} s5
       | s5 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
@@ -61,37 +63,39 @@ end
 module M_immutable_capture
   use creusot.int.Int32
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type closure0 = { c0: Int32.t }
   
-  let closure0 (self: closure0) (return (x: ())) = {[@stop_split] [@expl:closure requires] self.c0 = (1: Int32.t)}
+  let closure0 (mode: Mode.t) (self: closure0) (return (x: ())) = {[@stop_split] [@expl:closure requires] self.c0
+    = (1: Int32.t)}
     (! bb0
     [ bb0 = s0 [ s0 = {[@expl:assertion] self.c0 = (1: Int32.t)} s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & self: closure0 = self ]) [ return (result: ()) -> (! return {result}) ]
   
-  predicate precondition_closure0 (self: closure0) (args: ()) = self.c0 = (1: Int32.t)
+  predicate precondition_closure0 (self: closure0) (mode: Mode.t) (args: ()) = self.c0 = (1: Int32.t)
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate postcondition_closure0 (self: closure0) (args: ()) (result: ()) = true
+  predicate postcondition_closure0 (self: closure0) (mode: Mode.t) (args: ()) (result: ()) = true
   
   meta "rewrite_def" predicate postcondition_closure0
   
-  let call_closure0 (self_: closure0) (arg: ()) (return (x: ())) =
-  {[@stop_split] [@expl:call requires] precondition_closure0 self_ arg}
+  let call_closure0 (mode: Mode.t) (self_: closure0) (arg: ()) (return (x: ())) =
+  {[@stop_split] [@expl:call requires] precondition_closure0 self_ mode arg}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self_ arg result}
+    [ return (result: ()) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self_ mode arg result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let immutable_capture (return (x: ())) = (! bb0
+  let immutable_capture (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = [ &_4 <- { c0 = x } ] s2
-      | s2 = call_closure0 {_4} {_6} (fun (_x: ()) -> [ &_2 <- _x ] s3)
+      | s2 = call_closure0 {mode} {_4} {_6} (fun (_x: ()) -> [ &_2 <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
@@ -103,6 +107,7 @@ module M_mutable_capture
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type closure0 = { c0: MutBorrow.t Int32.t }
   
@@ -112,7 +117,7 @@ module M_mutable_capture
   
   predicate hist_inv_closure0 (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
   
-  let closure0 (self: MutBorrow.t closure0) (return (x: ())) =
+  let closure0 (mode: Mode.t) (self: MutBorrow.t closure0) (return (x: ())) =
   {[@stop_split] [@expl:closure requires] self.current.c0.current = (1: Int32.t)}
     (! bb0
     [ bb0 = s0
@@ -124,20 +129,20 @@ module M_mutable_capture
     [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
       (! return {result}) ]
   
-  predicate precondition_closure0 (self: closure0) (args: ()) = self.c0.current = (1: Int32.t)
+  predicate precondition_closure0 (self: closure0) (mode: Mode.t) (args: ()) = self.c0.current = (1: Int32.t)
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate postcondition_mut_closure0 (self: closure0) (args: ()) (result_state: closure0) (result: ()) =
+  predicate postcondition_mut_closure0 (self: closure0) (mode: Mode.t) (args: ()) (result_state: closure0) (result: ()) =
     hist_inv_closure0 self result_state
   
   meta "rewrite_def" predicate postcondition_mut_closure0
   
-  let call_mut_closure0 (self_: MutBorrow.t closure0) (arg: ()) (return (x: ())) =
-  {[@stop_split] [@expl:call_mut requires] precondition_closure0 self_.current arg}
+  let call_mut_closure0 (mode: Mode.t) (self_: MutBorrow.t closure0) (arg: ()) (return (x: ())) =
+  {[@stop_split] [@expl:call_mut requires] precondition_closure0 self_.current mode arg}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_closure0 self_.current arg self_.final result}
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_closure0 self_.current mode arg self_.final result}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
@@ -152,7 +157,7 @@ module M_mutable_capture
   
   meta "select_lsinst" "all"
   
-  let mutable_capture (return (x: ())) = (! bb0
+  let mutable_capture (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
@@ -160,7 +165,7 @@ module M_mutable_capture
       | s2 = [ &_4 <- { c0 = _5 } ] s3
       | s3 = MutBorrow.borrow_mut <closure0> {_4}
           (fun (_bor: MutBorrow.t closure0) -> [ &_3 <- _bor ] [ &_4 <- _bor.final ] s4)
-      | s4 = call_mut_closure0 {_3} {_6} (fun (_x: ()) -> [ &_2 <- _x ] s5)
+      | s4 = call_mut_closure0 {mode} {_3} {_6} (fun (_x: ()) -> [ &_2 <- _x ] s5)
       | s5 = -{resolve_closure0 _4}- s6
       | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

@@ -1,4 +1,5 @@
 module M_exclusivity
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -9,10 +10,10 @@ module M_exclusivity
   
   function id_Excl_i32 (self: t_Resource_Excl_i32) : t_Id
   
-  let id_ghost_Excl_i32 (self: t_Resource_Excl_i32) (return (x: t_Id)) = any
+  let id_ghost_Excl_i32 (mode: Mode.t) (self: t_Resource_Excl_i32) (return (x: t_Id)) = any
     [ return (result: t_Id) -> {[@stop_split] [@expl:id_ghost ensures] result = id_Excl_i32 self} (! return {result}) ]
   
-  let eq_Id (self: t_Id) (other: t_Id) (return (x: bool)) = any
+  let eq_Id (mode: Mode.t) (self: t_Id) (other: t_Id) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (self = other)} (! return {result}) ]
   
   type t_Excl_i32 = { f0: Int32.t }
@@ -31,8 +32,8 @@ module M_exclusivity
   
   meta "rewrite_def" function view_Resource_Excl_i32
   
-  let valid_op_lemma_Excl_i32 (self: MutBorrow.t t_Resource_Excl_i32) (other: t_Resource_Excl_i32) (return (x: ())) =
-  {[@stop_split] [@expl:valid_op_lemma requires] id_Excl_i32 self.current = id_Excl_i32 other}
+  let valid_op_lemma_Excl_i32 (mode: Mode.t) (self: MutBorrow.t t_Resource_Excl_i32) (other: t_Resource_Excl_i32)
+    (return (x: ())) = {[@stop_split] [@expl:valid_op_lemma requires] id_Excl_i32 self.current = id_Excl_i32 other}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:valid_op_lemma_Excl_i32 ensures] ([@stop_split] [@expl:valid_op_lemma ensures #0] self.final
@@ -46,24 +47,34 @@ module M_exclusivity
   
   meta "rewrite_def" predicate resolve_refmut_Resource_Excl_i32
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let exclusivity (x: MutBorrow.t t_Resource_Excl_i32) (y: t_Resource_Excl_i32) (return (x'0: ())) = (! bb0
+  let exclusivity (mode: Mode.t) (x: MutBorrow.t t_Resource_Excl_i32) (y: t_Resource_Excl_i32) (return (x'0: ())) =
+  (! bb0
     [ bb0 = s0
-      [ s0 = id_ghost_Excl_i32 {x.current} (fun (_x: t_Id) -> [ &_10 <- _x ] s1)
-      | s1 = id_ghost_Excl_i32 {y} (fun (_x: t_Id) -> [ &_13 <- _x ] s2)
-      | s2 = eq_Id {_10} {_13} (fun (_x: bool) -> [ &_8 <- _x ] s3)
+      [ s0 = id_ghost_Excl_i32 {mode} {x.current} (fun (_x: t_Id) -> [ &_10 <- _x ] s1)
+      | s1 = id_ghost_Excl_i32 {mode} {y} (fun (_x: t_Id) -> [ &_13 <- _x ] s2)
+      | s2 = eq_Id {mode} {_10} {_13} (fun (_x: bool) -> [ &_8 <- _x ] s3)
       | s3 = any [ br0 -> {_8 = false} (! bb8) | br1 -> {_8} (! bb4) ] ]
     | bb4 = s0
       [ s0 = MutBorrow.borrow_final <t_Resource_Excl_i32> {x.current} {MutBorrow.get_id x}
           (fun (_bor: MutBorrow.t t_Resource_Excl_i32) -> [ &_16 <- _bor ] [ &x <- { x with current = _bor.final } ] s1)
-      | s1 = valid_op_lemma_Excl_i32 {_16} {y} (fun (_x: ()) -> [ &_15 <- _x ] s2)
+      | s1 = valid_op_lemma_Excl_i32 {mode} {_16} {y} (fun (_x: ()) -> [ &_15 <- _x ] s2)
       | s2 = -{resolve_refmut_Resource_Excl_i32 x}- s3
       | s3 = any [ br0 -> {false = false} (! bb6) | br1 -> {false} (! bb9) ] ]
     | bb9 = return {_ret}
-    | bb6 = {false} any
+    | bb6 = s0 [ s0 = panic {mode} {"assertion failed: false"} (fun (_x: ()) -> [ &_20 <- _x ] s1) | s1 = {false} any ]
     | bb8 = s0 [ s0 = -{resolve_refmut_Resource_Excl_i32 x}- s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: MutBorrow.t t_Resource_Excl_i32 = x
@@ -72,7 +83,8 @@ module M_exclusivity
     | & _10: t_Id = Any.any_l ()
     | & _13: t_Id = Any.any_l ()
     | & _15: () = Any.any_l ()
-    | & _16: MutBorrow.t t_Resource_Excl_i32 = Any.any_l () ])
+    | & _16: MutBorrow.t t_Resource_Excl_i32 = Any.any_l ()
+    | & _20: () = Any.any_l () ])
     [ return (result: ()) ->
     {[@stop_split] [@expl:exclusivity ensures] ([@stop_split] [@expl:exclusivity ensures #0] id_Excl_i32 x.current
         <> id_Excl_i32 y)

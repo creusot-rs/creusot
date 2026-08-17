@@ -1,4 +1,5 @@
 module M_hashset_difference
+  use creusot.prelude.Mode
   use set.Fset
   use seq.Seq
   use creusot.prelude.MutBorrow
@@ -29,7 +30,7 @@ module M_hashset_difference
   
   function view_HashSet_T_RandomState_Global (self: t_HashSet_T_RandomState_Global) : Fset.fset t_DeepModelTy
   
-  let difference_T (self_: t_HashSet_T_RandomState_Global) (other: t_HashSet_T_RandomState_Global)
+  let difference_T (mode: Mode.t) (self_: t_HashSet_T_RandomState_Global) (other: t_HashSet_T_RandomState_Global)
     (return (x: t_Difference_T_RandomState_Global)) =
   {[@stop_split] [@expl:difference_T requires] ([@stop_split] [@expl:difference 'self_' type invariant] inv_ref_HashSet_T_RandomState_Global self_)
     /\ ([@stop_split] [@expl:difference 'other' type invariant] inv_ref_HashSet_T_RandomState_Global other)}
@@ -55,7 +56,7 @@ module M_hashset_difference
     forall x: t_Copied_Difference_T_RandomState_Global [inv_Copied_Difference_T_RandomState_Global x]. inv_Copied_Difference_T_RandomState_Global x
       -> invariant_Copied_Difference_T_RandomState_Global x
   
-  let copied_Difference_T_RandomState_Global (self_: t_Difference_T_RandomState_Global)
+  let copied_Difference_T_RandomState_Global (mode: Mode.t) (self_: t_Difference_T_RandomState_Global)
     (return (x: t_Copied_Difference_T_RandomState_Global)) =
   {[@stop_split] [@expl:copied 'self_' type invariant] inv_Difference_T_RandomState_Global self_}
     any
@@ -64,17 +65,17 @@ module M_hashset_difference
       /\ ([@stop_split] [@expl:copied ensures] iter_Copied_Difference_T_RandomState_Global result = self_)}
       (! return {result}) ]
   
-  predicate precondition_into_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) =
+  predicate precondition_into_iter (self: ()) (mode: Mode.t) (args: t_Copied_Difference_T_RandomState_Global) =
     let self_ = args in inv_Copied_Difference_T_RandomState_Global self_
   
   meta "rewrite_def" predicate precondition_into_iter
   
-  predicate precondition_from_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) =
-    let iter = args in inv_Copied_Difference_T_RandomState_Global iter /\ precondition_into_iter () iter
+  predicate precondition_from_iter (self: ()) (mode: Mode.t) (args: t_Copied_Difference_T_RandomState_Global) =
+    let iter = args in inv_Copied_Difference_T_RandomState_Global iter /\ precondition_into_iter () mode iter
   
   meta "rewrite_def" predicate precondition_from_iter
   
-  let into_iter_Copied_Difference_T_RandomState_Global (self_: t_Copied_Difference_T_RandomState_Global)
+  let into_iter_Copied_Difference_T_RandomState_Global (mode: Mode.t) (self_: t_Copied_Difference_T_RandomState_Global)
     (return (x: t_Copied_Difference_T_RandomState_Global)) =
   {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Copied_Difference_T_RandomState_Global self_}
     any
@@ -83,7 +84,7 @@ module M_hashset_difference
       /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
-  predicate postcondition_into_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (result: t_Copied_Difference_T_RandomState_Global) =
+  predicate postcondition_into_iter (self: ()) (mode: Mode.t) (args: t_Copied_Difference_T_RandomState_Global) (result: t_Copied_Difference_T_RandomState_Global) =
     let self_ = args in inv_Copied_Difference_T_RandomState_Global result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
@@ -183,14 +184,14 @@ module M_hashset_difference
   
   predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  let from_iter_HashSet_T_RandomState_Global (iter: t_Copied_Difference_T_RandomState_Global)
+  let from_iter_HashSet_T_RandomState_Global (mode: Mode.t) (iter: t_Copied_Difference_T_RandomState_Global)
     (return (x: t_HashSet_T_RandomState_Global)) =
   {[@stop_split] [@expl:from_iter_HashSet_T_RandomState_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_Copied_Difference_T_RandomState_Global iter)
-    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () mode iter)}
     any
     [ return (result: t_HashSet_T_RandomState_Global) ->
     {[@stop_split] [@expl:from_iter_HashSet_T_RandomState_Global ensures] ([@stop_split] [@expl:from_iter result type invariant] inv_HashSet_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_Copied_Difference_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Difference_T_RandomState_Global. postcondition_into_iter () iter into_iter
+      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_Copied_Difference_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Difference_T_RandomState_Global. postcondition_into_iter () mode iter into_iter
         /\ produces_Copied_Difference_T_RandomState_Global into_iter prod done'.current
         /\ completed_Copied_Difference_T_RandomState_Global done'
         /\ resolve_Copied_Difference_T_RandomState_Global'0 done'.final
@@ -198,9 +199,9 @@ module M_hashset_difference
           = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))}
       (! return {result}) ]
   
-  predicate postcondition_from_iter (self: ()) (args: t_Copied_Difference_T_RandomState_Global) (result: t_HashSet_T_RandomState_Global) =
+  predicate postcondition_from_iter (self: ()) (mode: Mode.t) (args: t_Copied_Difference_T_RandomState_Global) (result: t_HashSet_T_RandomState_Global) =
     let iter = args in inv_HashSet_T_RandomState_Global result
-    /\ (exists into_iter: t_Copied_Difference_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Difference_T_RandomState_Global. postcondition_into_iter () iter into_iter
+    /\ (exists into_iter: t_Copied_Difference_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Difference_T_RandomState_Global. postcondition_into_iter () mode iter into_iter
       /\ produces_Copied_Difference_T_RandomState_Global into_iter prod done'.current
       /\ completed_Copied_Difference_T_RandomState_Global done'
       /\ resolve_Copied_Difference_T_RandomState_Global'0 done'.final
@@ -209,30 +210,30 @@ module M_hashset_difference
   
   meta "rewrite_def" predicate postcondition_from_iter
   
-  let collect_Copied_Difference_T_RandomState_Global (self_: t_Copied_Difference_T_RandomState_Global)
+  let collect_Copied_Difference_T_RandomState_Global (mode: Mode.t) (self_: t_Copied_Difference_T_RandomState_Global)
     (return (x: t_HashSet_T_RandomState_Global)) =
   {[@stop_split] [@expl:collect_Copied_Difference_T_RandomState_Global requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_Copied_Difference_T_RandomState_Global self_)
-    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () mode self_)}
     any
     [ return (result: t_HashSet_T_RandomState_Global) ->
     {[@stop_split] [@expl:collect_Copied_Difference_T_RandomState_Global ensures] ([@stop_split] [@expl:collect result type invariant] inv_HashSet_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result)}
+      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () mode self_ result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let hashset_difference_T (xs: t_HashSet_T_RandomState_Global) (ys: t_HashSet_T_RandomState_Global)
+  let hashset_difference_T (mode: Mode.t) (xs: t_HashSet_T_RandomState_Global) (ys: t_HashSet_T_RandomState_Global)
     (return (x: t_HashSet_T_RandomState_Global)) =
   {[@stop_split] [@expl:hashset_difference_T requires] ([@stop_split] [@expl:hashset_difference 'xs' type invariant] inv_ref_HashSet_T_RandomState_Global xs)
     /\ ([@stop_split] [@expl:hashset_difference 'ys' type invariant] inv_ref_HashSet_T_RandomState_Global ys)}
     (! bb0
     [ bb0 = s0
-      [ s0 = difference_T {xs} {ys} (fun (_x: t_Difference_T_RandomState_Global) -> [ &_7 <- _x ] s1)
-      | s1 = copied_Difference_T_RandomState_Global {_7}
+      [ s0 = difference_T {mode} {xs} {ys} (fun (_x: t_Difference_T_RandomState_Global) -> [ &_7 <- _x ] s1)
+      | s1 = copied_Difference_T_RandomState_Global {mode} {_7}
           (fun (_x: t_Copied_Difference_T_RandomState_Global) -> [ &_6 <- _x ] s2)
-      | s2 = collect_Copied_Difference_T_RandomState_Global {_6}
+      | s2 = collect_Copied_Difference_T_RandomState_Global {mode} {_6}
           (fun (_x: t_HashSet_T_RandomState_Global) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: t_HashSet_T_RandomState_Global = Any.any_l ()
@@ -247,6 +248,7 @@ module M_hashset_difference
       (! return {result}) ]
 end
 module M_hashset_intersection
+  use creusot.prelude.Mode
   use set.Fset
   use seq.Seq
   use creusot.prelude.MutBorrow
@@ -277,7 +279,7 @@ module M_hashset_intersection
   
   function view_HashSet_T_RandomState_Global (self: t_HashSet_T_RandomState_Global) : Fset.fset t_DeepModelTy
   
-  let intersection_T (self_: t_HashSet_T_RandomState_Global) (other: t_HashSet_T_RandomState_Global)
+  let intersection_T (mode: Mode.t) (self_: t_HashSet_T_RandomState_Global) (other: t_HashSet_T_RandomState_Global)
     (return (x: t_Intersection_T_RandomState_Global)) =
   {[@stop_split] [@expl:intersection_T requires] ([@stop_split] [@expl:intersection 'self_' type invariant] inv_ref_HashSet_T_RandomState_Global self_)
     /\ ([@stop_split] [@expl:intersection 'other' type invariant] inv_ref_HashSet_T_RandomState_Global other)}
@@ -303,7 +305,7 @@ module M_hashset_intersection
     forall x: t_Copied_Intersection_T_RandomState_Global [inv_Copied_Intersection_T_RandomState_Global x]. inv_Copied_Intersection_T_RandomState_Global x
       -> invariant_Copied_Intersection_T_RandomState_Global x
   
-  let copied_Intersection_T_RandomState_Global (self_: t_Intersection_T_RandomState_Global)
+  let copied_Intersection_T_RandomState_Global (mode: Mode.t) (self_: t_Intersection_T_RandomState_Global)
     (return (x: t_Copied_Intersection_T_RandomState_Global)) =
   {[@stop_split] [@expl:copied 'self_' type invariant] inv_Intersection_T_RandomState_Global self_}
     any
@@ -312,18 +314,18 @@ module M_hashset_intersection
       /\ ([@stop_split] [@expl:copied ensures] iter_Copied_Intersection_T_RandomState_Global result = self_)}
       (! return {result}) ]
   
-  predicate precondition_into_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) =
+  predicate precondition_into_iter (self: ()) (mode: Mode.t) (args: t_Copied_Intersection_T_RandomState_Global) =
     let self_ = args in inv_Copied_Intersection_T_RandomState_Global self_
   
   meta "rewrite_def" predicate precondition_into_iter
   
-  predicate precondition_from_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) =
-    let iter = args in inv_Copied_Intersection_T_RandomState_Global iter /\ precondition_into_iter () iter
+  predicate precondition_from_iter (self: ()) (mode: Mode.t) (args: t_Copied_Intersection_T_RandomState_Global) =
+    let iter = args in inv_Copied_Intersection_T_RandomState_Global iter /\ precondition_into_iter () mode iter
   
   meta "rewrite_def" predicate precondition_from_iter
   
-  let into_iter_Copied_Intersection_T_RandomState_Global (self_: t_Copied_Intersection_T_RandomState_Global)
-    (return (x: t_Copied_Intersection_T_RandomState_Global)) =
+  let into_iter_Copied_Intersection_T_RandomState_Global (mode: Mode.t)
+    (self_: t_Copied_Intersection_T_RandomState_Global) (return (x: t_Copied_Intersection_T_RandomState_Global)) =
   {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Copied_Intersection_T_RandomState_Global self_}
     any
     [ return (result: t_Copied_Intersection_T_RandomState_Global) ->
@@ -331,7 +333,7 @@ module M_hashset_intersection
       /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
-  predicate postcondition_into_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (result: t_Copied_Intersection_T_RandomState_Global) =
+  predicate postcondition_into_iter (self: ()) (mode: Mode.t) (args: t_Copied_Intersection_T_RandomState_Global) (result: t_Copied_Intersection_T_RandomState_Global) =
     let self_ = args in inv_Copied_Intersection_T_RandomState_Global result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
@@ -431,14 +433,14 @@ module M_hashset_intersection
   
   predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
   
-  let from_iter_HashSet_T_RandomState_Global (iter: t_Copied_Intersection_T_RandomState_Global)
+  let from_iter_HashSet_T_RandomState_Global (mode: Mode.t) (iter: t_Copied_Intersection_T_RandomState_Global)
     (return (x: t_HashSet_T_RandomState_Global)) =
   {[@stop_split] [@expl:from_iter_HashSet_T_RandomState_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_Copied_Intersection_T_RandomState_Global iter)
-    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () mode iter)}
     any
     [ return (result: t_HashSet_T_RandomState_Global) ->
     {[@stop_split] [@expl:from_iter_HashSet_T_RandomState_Global ensures] ([@stop_split] [@expl:from_iter result type invariant] inv_HashSet_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_Copied_Intersection_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Intersection_T_RandomState_Global. postcondition_into_iter () iter into_iter
+      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_Copied_Intersection_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Intersection_T_RandomState_Global. postcondition_into_iter () mode iter into_iter
         /\ produces_Copied_Intersection_T_RandomState_Global into_iter prod done'.current
         /\ completed_Copied_Intersection_T_RandomState_Global done'
         /\ resolve_Copied_Intersection_T_RandomState_Global'0 done'.final
@@ -446,9 +448,9 @@ module M_hashset_intersection
           = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))}
       (! return {result}) ]
   
-  predicate postcondition_from_iter (self: ()) (args: t_Copied_Intersection_T_RandomState_Global) (result: t_HashSet_T_RandomState_Global) =
+  predicate postcondition_from_iter (self: ()) (mode: Mode.t) (args: t_Copied_Intersection_T_RandomState_Global) (result: t_HashSet_T_RandomState_Global) =
     let iter = args in inv_HashSet_T_RandomState_Global result
-    /\ (exists into_iter: t_Copied_Intersection_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Intersection_T_RandomState_Global. postcondition_into_iter () iter into_iter
+    /\ (exists into_iter: t_Copied_Intersection_T_RandomState_Global, prod: Seq.seq t_T, done': MutBorrow.t t_Copied_Intersection_T_RandomState_Global. postcondition_into_iter () mode iter into_iter
       /\ produces_Copied_Intersection_T_RandomState_Global into_iter prod done'.current
       /\ completed_Copied_Intersection_T_RandomState_Global done'
       /\ resolve_Copied_Intersection_T_RandomState_Global'0 done'.final
@@ -457,30 +459,30 @@ module M_hashset_intersection
   
   meta "rewrite_def" predicate postcondition_from_iter
   
-  let collect_Copied_Intersection_T_RandomState_Global (self_: t_Copied_Intersection_T_RandomState_Global)
-    (return (x: t_HashSet_T_RandomState_Global)) =
+  let collect_Copied_Intersection_T_RandomState_Global (mode: Mode.t)
+    (self_: t_Copied_Intersection_T_RandomState_Global) (return (x: t_HashSet_T_RandomState_Global)) =
   {[@stop_split] [@expl:collect_Copied_Intersection_T_RandomState_Global requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_Copied_Intersection_T_RandomState_Global self_)
-    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () mode self_)}
     any
     [ return (result: t_HashSet_T_RandomState_Global) ->
     {[@stop_split] [@expl:collect_Copied_Intersection_T_RandomState_Global ensures] ([@stop_split] [@expl:collect result type invariant] inv_HashSet_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result)}
+      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () mode self_ result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let hashset_intersection_T (xs: t_HashSet_T_RandomState_Global) (ys: t_HashSet_T_RandomState_Global)
+  let hashset_intersection_T (mode: Mode.t) (xs: t_HashSet_T_RandomState_Global) (ys: t_HashSet_T_RandomState_Global)
     (return (x: t_HashSet_T_RandomState_Global)) =
   {[@stop_split] [@expl:hashset_intersection_T requires] ([@stop_split] [@expl:hashset_intersection 'xs' type invariant] inv_ref_HashSet_T_RandomState_Global xs)
     /\ ([@stop_split] [@expl:hashset_intersection 'ys' type invariant] inv_ref_HashSet_T_RandomState_Global ys)}
     (! bb0
     [ bb0 = s0
-      [ s0 = intersection_T {xs} {ys} (fun (_x: t_Intersection_T_RandomState_Global) -> [ &_7 <- _x ] s1)
-      | s1 = copied_Intersection_T_RandomState_Global {_7}
+      [ s0 = intersection_T {mode} {xs} {ys} (fun (_x: t_Intersection_T_RandomState_Global) -> [ &_7 <- _x ] s1)
+      | s1 = copied_Intersection_T_RandomState_Global {mode} {_7}
           (fun (_x: t_Copied_Intersection_T_RandomState_Global) -> [ &_6 <- _x ] s2)
-      | s2 = collect_Copied_Intersection_T_RandomState_Global {_6}
+      | s2 = collect_Copied_Intersection_T_RandomState_Global {mode} {_6}
           (fun (_x: t_HashSet_T_RandomState_Global) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: t_HashSet_T_RandomState_Global = Any.any_l ()
@@ -495,6 +497,7 @@ module M_hashset_intersection
       (! return {result}) ]
 end
 module M_roundtrip_hashmap_into_iter
+  use creusot.prelude.Mode
   use seq.Seq
   use map.Map
   use creusot.prelude.MutBorrow
@@ -516,7 +519,7 @@ module M_roundtrip_hashmap_into_iter
   
   function view_IntoIter_K_V_Global (self: t_IntoIter_K_V_Global) : t_FMap_DeepModelTy_V
   
-  let into_iter_HashMap_K_V_RandomState_Global (self_: t_HashMap_K_V_RandomState_Global)
+  let into_iter_HashMap_K_V_RandomState_Global (mode: Mode.t) (self_: t_HashMap_K_V_RandomState_Global)
     (return (x: t_IntoIter_K_V_Global)) =
   {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_HashMap_K_V_RandomState_Global self_}
     any
@@ -526,17 +529,17 @@ module M_roundtrip_hashmap_into_iter
       = view_IntoIter_K_V_Global result)}
       (! return {result}) ]
   
-  predicate precondition_into_iter (self: ()) (args: t_IntoIter_K_V_Global) =
+  predicate precondition_into_iter (self: ()) (mode: Mode.t) (args: t_IntoIter_K_V_Global) =
     let self_ = args in inv_IntoIter_K_V_Global self_
   
   meta "rewrite_def" predicate precondition_into_iter
   
-  predicate precondition_from_iter (self: ()) (args: t_IntoIter_K_V_Global) =
-    let iter = args in inv_IntoIter_K_V_Global iter /\ precondition_into_iter () iter
+  predicate precondition_from_iter (self: ()) (mode: Mode.t) (args: t_IntoIter_K_V_Global) =
+    let iter = args in inv_IntoIter_K_V_Global iter /\ precondition_into_iter () mode iter
   
   meta "rewrite_def" predicate precondition_from_iter
   
-  let into_iter_IntoIter_K_V_Global (self_: t_IntoIter_K_V_Global) (return (x: t_IntoIter_K_V_Global)) =
+  let into_iter_IntoIter_K_V_Global (mode: Mode.t) (self_: t_IntoIter_K_V_Global) (return (x: t_IntoIter_K_V_Global)) =
   {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_IntoIter_K_V_Global self_}
     any
     [ return (result: t_IntoIter_K_V_Global) ->
@@ -544,7 +547,7 @@ module M_roundtrip_hashmap_into_iter
       /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
-  predicate postcondition_into_iter (self: ()) (args: t_IntoIter_K_V_Global) (result: t_IntoIter_K_V_Global) =
+  predicate postcondition_into_iter (self: ()) (mode: Mode.t) (args: t_IntoIter_K_V_Global) (result: t_IntoIter_K_V_Global) =
     let self_ = args in inv_IntoIter_K_V_Global result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
@@ -634,14 +637,14 @@ module M_roundtrip_hashmap_into_iter
   
   predicate resolve_IntoIter_K_V_Global (_1: t_IntoIter_K_V_Global)
   
-  let from_iter_HashMap_K_V_RandomState_Global (iter: t_IntoIter_K_V_Global)
+  let from_iter_HashMap_K_V_RandomState_Global (mode: Mode.t) (iter: t_IntoIter_K_V_Global)
     (return (x: t_HashMap_K_V_RandomState_Global)) =
   {[@stop_split] [@expl:from_iter_HashMap_K_V_RandomState_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_IntoIter_K_V_Global iter)
-    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () mode iter)}
     any
     [ return (result: t_HashMap_K_V_RandomState_Global) ->
     {[@stop_split] [@expl:from_iter_HashMap_K_V_RandomState_Global ensures] ([@stop_split] [@expl:from_iter result type invariant] inv_HashMap_K_V_RandomState_Global result)
-      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_IntoIter_K_V_Global, prod: Seq.seq tup2_K_V, done': MutBorrow.t t_IntoIter_K_V_Global. postcondition_into_iter () iter into_iter
+      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_IntoIter_K_V_Global, prod: Seq.seq tup2_K_V, done': MutBorrow.t t_IntoIter_K_V_Global. postcondition_into_iter () mode iter into_iter
         /\ produces_IntoIter_K_V_Global into_iter prod done'.current
         /\ completed_IntoIter_K_V_Global done'
         /\ resolve_IntoIter_K_V_Global done'.final
@@ -653,9 +656,9 @@ module M_roundtrip_hashmap_into_iter
             /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_K (Seq.get prod j).f0 <> k))))}
       (! return {result}) ]
   
-  predicate postcondition_from_iter (self: ()) (args: t_IntoIter_K_V_Global) (result: t_HashMap_K_V_RandomState_Global) =
+  predicate postcondition_from_iter (self: ()) (mode: Mode.t) (args: t_IntoIter_K_V_Global) (result: t_HashMap_K_V_RandomState_Global) =
     let iter = args in inv_HashMap_K_V_RandomState_Global result
-    /\ (exists into_iter: t_IntoIter_K_V_Global, prod: Seq.seq tup2_K_V, done': MutBorrow.t t_IntoIter_K_V_Global. postcondition_into_iter () iter into_iter
+    /\ (exists into_iter: t_IntoIter_K_V_Global, prod: Seq.seq tup2_K_V, done': MutBorrow.t t_IntoIter_K_V_Global. postcondition_into_iter () mode iter into_iter
       /\ produces_IntoIter_K_V_Global into_iter prod done'.current
       /\ completed_IntoIter_K_V_Global done'
       /\ resolve_IntoIter_K_V_Global done'.final
@@ -668,13 +671,14 @@ module M_roundtrip_hashmap_into_iter
   
   meta "rewrite_def" predicate postcondition_from_iter
   
-  let collect_IntoIter_K_V_Global (self_: t_IntoIter_K_V_Global) (return (x: t_HashMap_K_V_RandomState_Global)) =
+  let collect_IntoIter_K_V_Global (mode: Mode.t) (self_: t_IntoIter_K_V_Global)
+    (return (x: t_HashMap_K_V_RandomState_Global)) =
   {[@stop_split] [@expl:collect_IntoIter_K_V_Global requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_IntoIter_K_V_Global self_)
-    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () mode self_)}
     any
     [ return (result: t_HashMap_K_V_RandomState_Global) ->
     {[@stop_split] [@expl:collect_IntoIter_K_V_Global ensures] ([@stop_split] [@expl:collect result type invariant] inv_HashMap_K_V_RandomState_Global result)
-      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result)}
+      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () mode self_ result)}
       (! return {result}) ]
   
   predicate contains_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) =
@@ -703,15 +707,15 @@ module M_roundtrip_hashmap_into_iter
   
   meta "select_lsinst" "all"
   
-  let roundtrip_hashmap_into_iter_K (xs: t_HashMap_K_V_RandomState_Global)
+  let roundtrip_hashmap_into_iter_K (mode: Mode.t) (xs: t_HashMap_K_V_RandomState_Global)
     (return (x: t_HashMap_K_V_RandomState_Global)) =
   {[@stop_split] [@expl:roundtrip_hashmap_into_iter 'xs' type invariant] inv_HashMap_K_V_RandomState_Global xs}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &xs_snap <- xs ] s1
-      | s1 = into_iter_HashMap_K_V_RandomState_Global {xs} (fun (_x: t_IntoIter_K_V_Global) -> [ &it <- _x ] s2)
+      | s1 = into_iter_HashMap_K_V_RandomState_Global {mode} {xs} (fun (_x: t_IntoIter_K_V_Global) -> [ &it <- _x ] s2)
       | s2 = [ &it0 <- it ] s3
-      | s3 = collect_IntoIter_K_V_Global {it} (fun (_x: t_HashMap_K_V_RandomState_Global) -> [ &r <- _x ] s4)
+      | s3 = collect_IntoIter_K_V_Global {mode} {it} (fun (_x: t_HashMap_K_V_RandomState_Global) -> [ &r <- _x ] s4)
       | s4 =
         {[@expl:assertion] exists prod: Seq.seq tup2_K_V, it1: MutBorrow.t t_IntoIter_K_V_Global. completed_IntoIter_K_V_Global it1
           /\ produces_IntoIter_K_V_Global it0 prod it1.current
@@ -743,6 +747,7 @@ module M_roundtrip_hashmap_into_iter
       (! return {result}) ]
 end
 module M_roundtrip_hashmap_iter
+  use creusot.prelude.Mode
   use seq.Seq
   use map.Map
   use creusot.prelude.MutBorrow
@@ -774,7 +779,7 @@ module M_roundtrip_hashmap_iter
   
   function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_DeepModelTy_V
   
-  let iter_K (self_: t_HashMap_K_V_RandomState_Global) (return (x: t_Iter_K_V)) =
+  let iter_K (mode: Mode.t) (self_: t_HashMap_K_V_RandomState_Global) (return (x: t_Iter_K_V)) =
   {[@stop_split] [@expl:iter 'self_' type invariant] inv_ref_HashMap_K_V_RandomState_Global self_}
     any
     [ return (result: t_Iter_K_V) ->
@@ -784,16 +789,16 @@ module M_roundtrip_hashmap_iter
   
   type t_HashMap_ref_K_ref_V_RandomState_Global
   
-  predicate precondition_into_iter (self: ()) (args: t_Iter_K_V) = let self_ = args in inv_Iter_K_V self_
+  predicate precondition_into_iter (self: ()) (mode: Mode.t) (args: t_Iter_K_V) = let self_ = args in inv_Iter_K_V self_
   
   meta "rewrite_def" predicate precondition_into_iter
   
-  predicate precondition_from_iter (self: ()) (args: t_Iter_K_V) =
-    let iter = args in inv_Iter_K_V iter /\ precondition_into_iter () iter
+  predicate precondition_from_iter (self: ()) (mode: Mode.t) (args: t_Iter_K_V) =
+    let iter = args in inv_Iter_K_V iter /\ precondition_into_iter () mode iter
   
   meta "rewrite_def" predicate precondition_from_iter
   
-  let into_iter_Iter_K_V (self_: t_Iter_K_V) (return (x: t_Iter_K_V)) =
+  let into_iter_Iter_K_V (mode: Mode.t) (self_: t_Iter_K_V) (return (x: t_Iter_K_V)) =
   {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Iter_K_V self_}
     any
     [ return (result: t_Iter_K_V) ->
@@ -803,7 +808,7 @@ module M_roundtrip_hashmap_iter
   
   predicate inv_HashMap_ref_K_ref_V_RandomState_Global (_1: t_HashMap_ref_K_ref_V_RandomState_Global)
   
-  predicate postcondition_into_iter (self: ()) (args: t_Iter_K_V) (result: t_Iter_K_V) =
+  predicate postcondition_into_iter (self: ()) (mode: Mode.t) (args: t_Iter_K_V) (result: t_Iter_K_V) =
     let self_ = args in inv_Iter_K_V result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
@@ -910,14 +915,14 @@ module M_roundtrip_hashmap_iter
   
   function view_HashMap_ref_K_ref_V_RandomState_Global (self: t_HashMap_ref_K_ref_V_RandomState_Global) : t_FMap_DeepModelTy_ref_V
   
-  let from_iter_HashMap_ref_K_ref_V_RandomState_Global (iter: t_Iter_K_V)
+  let from_iter_HashMap_ref_K_ref_V_RandomState_Global (mode: Mode.t) (iter: t_Iter_K_V)
     (return (x: t_HashMap_ref_K_ref_V_RandomState_Global)) =
   {[@stop_split] [@expl:from_iter_HashMap_ref_K_ref_V_RandomState_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_Iter_K_V iter)
-    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () mode iter)}
     any
     [ return (result: t_HashMap_ref_K_ref_V_RandomState_Global) ->
     {[@stop_split] [@expl:from_iter_HashMap_ref_K_ref_V_RandomState_Global ensures] ([@stop_split] [@expl:from_iter result type invariant] inv_HashMap_ref_K_ref_V_RandomState_Global result)
-      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_Iter_K_V, prod: Seq.seq tup2_ref_K_ref_V, done': MutBorrow.t t_Iter_K_V. postcondition_into_iter () iter into_iter
+      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_Iter_K_V, prod: Seq.seq tup2_ref_K_ref_V, done': MutBorrow.t t_Iter_K_V. postcondition_into_iter () mode iter into_iter
         /\ produces_Iter_K_V into_iter prod done'.current
         /\ completed_Iter_K_V done'
         /\ resolve_Iter_K_V done'.final
@@ -930,9 +935,9 @@ module M_roundtrip_hashmap_iter
             /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_ref_K (Seq.get prod j).f0 <> k))))}
       (! return {result}) ]
   
-  predicate postcondition_from_iter (self: ()) (args: t_Iter_K_V) (result: t_HashMap_ref_K_ref_V_RandomState_Global) =
+  predicate postcondition_from_iter (self: ()) (mode: Mode.t) (args: t_Iter_K_V) (result: t_HashMap_ref_K_ref_V_RandomState_Global) =
     let iter = args in inv_HashMap_ref_K_ref_V_RandomState_Global result
-    /\ (exists into_iter: t_Iter_K_V, prod: Seq.seq tup2_ref_K_ref_V, done': MutBorrow.t t_Iter_K_V. postcondition_into_iter () iter into_iter
+    /\ (exists into_iter: t_Iter_K_V, prod: Seq.seq tup2_ref_K_ref_V, done': MutBorrow.t t_Iter_K_V. postcondition_into_iter () mode iter into_iter
       /\ produces_Iter_K_V into_iter prod done'.current
       /\ completed_Iter_K_V done'
       /\ resolve_Iter_K_V done'.final
@@ -946,27 +951,27 @@ module M_roundtrip_hashmap_iter
   
   meta "rewrite_def" predicate postcondition_from_iter
   
-  let collect_Iter_K_V (self_: t_Iter_K_V) (return (x: t_HashMap_ref_K_ref_V_RandomState_Global)) =
+  let collect_Iter_K_V (mode: Mode.t) (self_: t_Iter_K_V) (return (x: t_HashMap_ref_K_ref_V_RandomState_Global)) =
   {[@stop_split] [@expl:collect_Iter_K_V requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_Iter_K_V self_)
-    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () mode self_)}
     any
     [ return (result: t_HashMap_ref_K_ref_V_RandomState_Global) ->
     {[@stop_split] [@expl:collect_Iter_K_V ensures] ([@stop_split] [@expl:collect result type invariant] inv_HashMap_ref_K_ref_V_RandomState_Global result)
-      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result)}
+      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () mode self_ result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let roundtrip_hashmap_iter_K (xs: t_HashMap_K_V_RandomState_Global)
+  let roundtrip_hashmap_iter_K (mode: Mode.t) (xs: t_HashMap_K_V_RandomState_Global)
     (return (x: t_HashMap_ref_K_ref_V_RandomState_Global)) =
   {[@stop_split] [@expl:roundtrip_hashmap_iter 'xs' type invariant] inv_ref_HashMap_K_V_RandomState_Global xs}
     (! bb0
     [ bb0 = s0
-      [ s0 = iter_K {xs} (fun (_x: t_Iter_K_V) -> [ &it <- _x ] s1)
+      [ s0 = iter_K {mode} {xs} (fun (_x: t_Iter_K_V) -> [ &it <- _x ] s1)
       | s1 = [ &it0 <- it ] s2
-      | s2 = collect_Iter_K_V {it} (fun (_x: t_HashMap_ref_K_ref_V_RandomState_Global) -> [ &r <- _x ] s3)
+      | s2 = collect_Iter_K_V {mode} {it} (fun (_x: t_HashMap_ref_K_ref_V_RandomState_Global) -> [ &r <- _x ] s3)
       | s3 =
         {[@expl:assertion] exists prod: Seq.seq tup2_ref_K_ref_V, it1: MutBorrow.t t_Iter_K_V. completed_Iter_K_V it1
           /\ produces_Iter_K_V it0 prod it1.current
@@ -990,6 +995,7 @@ module M_roundtrip_hashmap_iter
 end
 module M_roundtrip_hashmap_iter_mut
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use map.Map
   use seq.Seq
   use map.Const
@@ -1088,7 +1094,7 @@ module M_roundtrip_hashmap_iter_mut
   
   meta "rewrite_def" function index_FMap_DeepModelTy_refmut_V
   
-  let iter_mut_K (self_: MutBorrow.t t_HashMap_K_V_RandomState_Global) (return (x: t_IterMut_K_V)) =
+  let iter_mut_K (mode: Mode.t) (self_: MutBorrow.t t_HashMap_K_V_RandomState_Global) (return (x: t_IterMut_K_V)) =
   {[@stop_split] [@expl:iter_mut 'self_' type invariant] inv_refmut_HashMap_K_V_RandomState_Global self_}
     any
     [ return (result: t_IterMut_K_V) ->
@@ -1106,16 +1112,17 @@ module M_roundtrip_hashmap_iter_mut
   
   type t_HashMap_ref_K_refmut_V_RandomState_Global
   
-  predicate precondition_into_iter (self: ()) (args: t_IterMut_K_V) = let self_ = args in inv_IterMut_K_V self_
+  predicate precondition_into_iter (self: ()) (mode: Mode.t) (args: t_IterMut_K_V) =
+    let self_ = args in inv_IterMut_K_V self_
   
   meta "rewrite_def" predicate precondition_into_iter
   
-  predicate precondition_from_iter (self: ()) (args: t_IterMut_K_V) =
-    let iter = args in inv_IterMut_K_V iter /\ precondition_into_iter () iter
+  predicate precondition_from_iter (self: ()) (mode: Mode.t) (args: t_IterMut_K_V) =
+    let iter = args in inv_IterMut_K_V iter /\ precondition_into_iter () mode iter
   
   meta "rewrite_def" predicate precondition_from_iter
   
-  let into_iter_IterMut_K_V (self_: t_IterMut_K_V) (return (x: t_IterMut_K_V)) =
+  let into_iter_IterMut_K_V (mode: Mode.t) (self_: t_IterMut_K_V) (return (x: t_IterMut_K_V)) =
   {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_IterMut_K_V self_}
     any
     [ return (result: t_IterMut_K_V) ->
@@ -1125,7 +1132,7 @@ module M_roundtrip_hashmap_iter_mut
   
   predicate inv_HashMap_ref_K_refmut_V_RandomState_Global (_1: t_HashMap_ref_K_refmut_V_RandomState_Global)
   
-  predicate postcondition_into_iter (self: ()) (args: t_IterMut_K_V) (result: t_IterMut_K_V) =
+  predicate postcondition_into_iter (self: ()) (mode: Mode.t) (args: t_IterMut_K_V) (result: t_IterMut_K_V) =
     let self_ = args in inv_IterMut_K_V result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
@@ -1208,14 +1215,14 @@ module M_roundtrip_hashmap_iter_mut
   
   function view_HashMap_ref_K_refmut_V_RandomState_Global (self: t_HashMap_ref_K_refmut_V_RandomState_Global) : t_FMap_DeepModelTy_refmut_V
   
-  let from_iter_HashMap_ref_K_refmut_V_RandomState_Global (iter: t_IterMut_K_V)
+  let from_iter_HashMap_ref_K_refmut_V_RandomState_Global (mode: Mode.t) (iter: t_IterMut_K_V)
     (return (x: t_HashMap_ref_K_refmut_V_RandomState_Global)) =
   {[@stop_split] [@expl:from_iter_HashMap_ref_K_refmut_V_RandomState_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_IterMut_K_V iter)
-    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () mode iter)}
     any
     [ return (result: t_HashMap_ref_K_refmut_V_RandomState_Global) ->
     {[@stop_split] [@expl:from_iter_HashMap_ref_K_refmut_V_RandomState_Global ensures] ([@stop_split] [@expl:from_iter result type invariant] inv_HashMap_ref_K_refmut_V_RandomState_Global result)
-      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_IterMut_K_V, prod: Seq.seq tup2_ref_K_refmut_V, done': MutBorrow.t t_IterMut_K_V. postcondition_into_iter () iter into_iter
+      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_IterMut_K_V, prod: Seq.seq tup2_ref_K_refmut_V, done': MutBorrow.t t_IterMut_K_V. postcondition_into_iter () mode iter into_iter
         /\ produces_IterMut_K_V into_iter prod done'.current
         /\ completed_IterMut_K_V done'
         /\ resolve_IterMut_K_V done'.final
@@ -1228,9 +1235,9 @@ module M_roundtrip_hashmap_iter_mut
             /\ (forall j: int. i < j /\ j < Seq.length prod -> deep_model_ref_K (Seq.get prod j).f0 <> k))))}
       (! return {result}) ]
   
-  predicate postcondition_from_iter (self: ()) (args: t_IterMut_K_V) (result: t_HashMap_ref_K_refmut_V_RandomState_Global) =
+  predicate postcondition_from_iter (self: ()) (mode: Mode.t) (args: t_IterMut_K_V) (result: t_HashMap_ref_K_refmut_V_RandomState_Global) =
     let iter = args in inv_HashMap_ref_K_refmut_V_RandomState_Global result
-    /\ (exists into_iter: t_IterMut_K_V, prod: Seq.seq tup2_ref_K_refmut_V, done': MutBorrow.t t_IterMut_K_V. postcondition_into_iter () iter into_iter
+    /\ (exists into_iter: t_IterMut_K_V, prod: Seq.seq tup2_ref_K_refmut_V, done': MutBorrow.t t_IterMut_K_V. postcondition_into_iter () mode iter into_iter
       /\ produces_IterMut_K_V into_iter prod done'.current
       /\ completed_IterMut_K_V done'
       /\ resolve_IterMut_K_V done'.final
@@ -1244,13 +1251,14 @@ module M_roundtrip_hashmap_iter_mut
   
   meta "rewrite_def" predicate postcondition_from_iter
   
-  let collect_IterMut_K_V (self_: t_IterMut_K_V) (return (x: t_HashMap_ref_K_refmut_V_RandomState_Global)) =
+  let collect_IterMut_K_V (mode: Mode.t) (self_: t_IterMut_K_V)
+    (return (x: t_HashMap_ref_K_refmut_V_RandomState_Global)) =
   {[@stop_split] [@expl:collect_IterMut_K_V requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_IterMut_K_V self_)
-    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () mode self_)}
     any
     [ return (result: t_HashMap_ref_K_refmut_V_RandomState_Global) ->
     {[@stop_split] [@expl:collect_IterMut_K_V ensures] ([@stop_split] [@expl:collect result type invariant] inv_HashMap_ref_K_refmut_V_RandomState_Global result)
-      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result)}
+      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () mode self_ result)}
       (! return {result}) ]
   
   predicate resolve_refmut_HashMap_K_V_RandomState_Global [@inline:trivial] (_1: MutBorrow.t t_HashMap_K_V_RandomState_Global) =
@@ -1262,7 +1270,7 @@ module M_roundtrip_hashmap_iter_mut
   
   meta "select_lsinst" "all"
   
-  let roundtrip_hashmap_iter_mut_K (xs: MutBorrow.t t_HashMap_K_V_RandomState_Global)
+  let roundtrip_hashmap_iter_mut_K (mode: Mode.t) (xs: MutBorrow.t t_HashMap_K_V_RandomState_Global)
     (return (x: t_HashMap_ref_K_refmut_V_RandomState_Global)) =
   {[@stop_split] [@expl:roundtrip_hashmap_iter_mut 'xs' type invariant] inv_refmut_HashMap_K_V_RandomState_Global xs}
     (! bb0
@@ -1272,9 +1280,9 @@ module M_roundtrip_hashmap_iter_mut
             [ &_9 <- _bor ] -{inv_HashMap_K_V_RandomState_Global _bor.final}-
             [ &xs <- { xs with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_HashMap_K_V_RandomState_Global xs.current} any) ]
-      | s1 = iter_mut_K {_9} (fun (_x: t_IterMut_K_V) -> [ &it <- _x ] s2)
+      | s1 = iter_mut_K {mode} {_9} (fun (_x: t_IterMut_K_V) -> [ &it <- _x ] s2)
       | s2 = [ &it0 <- it ] s3
-      | s3 = collect_IterMut_K_V {it} (fun (_x: t_HashMap_ref_K_refmut_V_RandomState_Global) -> [ &r <- _x ] s4)
+      | s3 = collect_IterMut_K_V {mode} {it} (fun (_x: t_HashMap_ref_K_refmut_V_RandomState_Global) -> [ &r <- _x ] s4)
       | s4 =
         {[@expl:assertion] exists prod: Seq.seq tup2_ref_K_refmut_V, it1: MutBorrow.t t_IterMut_K_V. completed_IterMut_K_V it1
           /\ produces_IterMut_K_V it0 prod it1.current
@@ -1309,6 +1317,7 @@ module M_roundtrip_hashmap_iter_mut
       (! return {result}) ]
 end
 module M_roundtrip_hashset_into_iter
+  use creusot.prelude.Mode
   use set.Fset
   use seq.Seq
   use creusot.prelude.MutBorrow
@@ -1329,7 +1338,8 @@ module M_roundtrip_hashset_into_iter
   
   function view_IntoIter_T_Global (self: t_IntoIter_T_Global) : Fset.fset t_DeepModelTy
   
-  let into_iter_HashSet_T_RandomState_Global (self_: t_HashSet_T_RandomState_Global) (return (x: t_IntoIter_T_Global)) =
+  let into_iter_HashSet_T_RandomState_Global (mode: Mode.t) (self_: t_HashSet_T_RandomState_Global)
+    (return (x: t_IntoIter_T_Global)) =
   {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_HashSet_T_RandomState_Global self_}
     any
     [ return (result: t_IntoIter_T_Global) ->
@@ -1338,17 +1348,17 @@ module M_roundtrip_hashset_into_iter
       = view_IntoIter_T_Global result)}
       (! return {result}) ]
   
-  predicate precondition_into_iter (self: ()) (args: t_IntoIter_T_Global) =
+  predicate precondition_into_iter (self: ()) (mode: Mode.t) (args: t_IntoIter_T_Global) =
     let self_ = args in inv_IntoIter_T_Global self_
   
   meta "rewrite_def" predicate precondition_into_iter
   
-  predicate precondition_from_iter (self: ()) (args: t_IntoIter_T_Global) =
-    let iter = args in inv_IntoIter_T_Global iter /\ precondition_into_iter () iter
+  predicate precondition_from_iter (self: ()) (mode: Mode.t) (args: t_IntoIter_T_Global) =
+    let iter = args in inv_IntoIter_T_Global iter /\ precondition_into_iter () mode iter
   
   meta "rewrite_def" predicate precondition_from_iter
   
-  let into_iter_IntoIter_T_Global (self_: t_IntoIter_T_Global) (return (x: t_IntoIter_T_Global)) =
+  let into_iter_IntoIter_T_Global (mode: Mode.t) (self_: t_IntoIter_T_Global) (return (x: t_IntoIter_T_Global)) =
   {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_IntoIter_T_Global self_}
     any
     [ return (result: t_IntoIter_T_Global) ->
@@ -1356,7 +1366,7 @@ module M_roundtrip_hashset_into_iter
       /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
       (! return {result}) ]
   
-  predicate postcondition_into_iter (self: ()) (args: t_IntoIter_T_Global) (result: t_IntoIter_T_Global) =
+  predicate postcondition_into_iter (self: ()) (mode: Mode.t) (args: t_IntoIter_T_Global) (result: t_IntoIter_T_Global) =
     let self_ = args in inv_IntoIter_T_Global result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
@@ -1406,13 +1416,14 @@ module M_roundtrip_hashset_into_iter
   
   predicate resolve_IntoIter_T_Global (_1: t_IntoIter_T_Global)
   
-  let from_iter_HashSet_T_RandomState_Global (iter: t_IntoIter_T_Global) (return (x: t_HashSet_T_RandomState_Global)) =
+  let from_iter_HashSet_T_RandomState_Global (mode: Mode.t) (iter: t_IntoIter_T_Global)
+    (return (x: t_HashSet_T_RandomState_Global)) =
   {[@stop_split] [@expl:from_iter_HashSet_T_RandomState_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_IntoIter_T_Global iter)
-    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () mode iter)}
     any
     [ return (result: t_HashSet_T_RandomState_Global) ->
     {[@stop_split] [@expl:from_iter_HashSet_T_RandomState_Global ensures] ([@stop_split] [@expl:from_iter result type invariant] inv_HashSet_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_IntoIter_T_Global, prod: Seq.seq t_T, done': MutBorrow.t t_IntoIter_T_Global. postcondition_into_iter () iter into_iter
+      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_IntoIter_T_Global, prod: Seq.seq t_T, done': MutBorrow.t t_IntoIter_T_Global. postcondition_into_iter () mode iter into_iter
         /\ produces_IntoIter_T_Global into_iter prod done'.current
         /\ completed_IntoIter_T_Global done'
         /\ resolve_IntoIter_T_Global done'.final
@@ -1420,9 +1431,9 @@ module M_roundtrip_hashset_into_iter
           = (exists x1: t_T. deep_model_T x1 = x /\ contains_T prod x1)))}
       (! return {result}) ]
   
-  predicate postcondition_from_iter (self: ()) (args: t_IntoIter_T_Global) (result: t_HashSet_T_RandomState_Global) =
+  predicate postcondition_from_iter (self: ()) (mode: Mode.t) (args: t_IntoIter_T_Global) (result: t_HashSet_T_RandomState_Global) =
     let iter = args in inv_HashSet_T_RandomState_Global result
-    /\ (exists into_iter: t_IntoIter_T_Global, prod: Seq.seq t_T, done': MutBorrow.t t_IntoIter_T_Global. postcondition_into_iter () iter into_iter
+    /\ (exists into_iter: t_IntoIter_T_Global, prod: Seq.seq t_T, done': MutBorrow.t t_IntoIter_T_Global. postcondition_into_iter () mode iter into_iter
       /\ produces_IntoIter_T_Global into_iter prod done'.current
       /\ completed_IntoIter_T_Global done'
       /\ resolve_IntoIter_T_Global done'.final
@@ -1431,25 +1442,27 @@ module M_roundtrip_hashset_into_iter
   
   meta "rewrite_def" predicate postcondition_from_iter
   
-  let collect_IntoIter_T_Global (self_: t_IntoIter_T_Global) (return (x: t_HashSet_T_RandomState_Global)) =
+  let collect_IntoIter_T_Global (mode: Mode.t) (self_: t_IntoIter_T_Global)
+    (return (x: t_HashSet_T_RandomState_Global)) =
   {[@stop_split] [@expl:collect_IntoIter_T_Global requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_IntoIter_T_Global self_)
-    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () mode self_)}
     any
     [ return (result: t_HashSet_T_RandomState_Global) ->
     {[@stop_split] [@expl:collect_IntoIter_T_Global ensures] ([@stop_split] [@expl:collect result type invariant] inv_HashSet_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result)}
+      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () mode self_ result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let roundtrip_hashset_into_iter_T (xs: t_HashSet_T_RandomState_Global) (return (x: t_HashSet_T_RandomState_Global)) =
+  let roundtrip_hashset_into_iter_T (mode: Mode.t) (xs: t_HashSet_T_RandomState_Global)
+    (return (x: t_HashSet_T_RandomState_Global)) =
   {[@stop_split] [@expl:roundtrip_hashset_into_iter 'xs' type invariant] inv_HashSet_T_RandomState_Global xs}
     (! bb0
     [ bb0 = s0
-      [ s0 = into_iter_HashSet_T_RandomState_Global {xs} (fun (_x: t_IntoIter_T_Global) -> [ &_4 <- _x ] s1)
-      | s1 = collect_IntoIter_T_Global {_4} (fun (_x: t_HashSet_T_RandomState_Global) -> [ &_ret <- _x ] s2)
+      [ s0 = into_iter_HashSet_T_RandomState_Global {mode} {xs} (fun (_x: t_IntoIter_T_Global) -> [ &_4 <- _x ] s1)
+      | s1 = collect_IntoIter_T_Global {mode} {_4} (fun (_x: t_HashSet_T_RandomState_Global) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ]
     [ & _ret: t_HashSet_T_RandomState_Global = Any.any_l ()
     | & xs: t_HashSet_T_RandomState_Global = xs
@@ -1461,6 +1474,7 @@ module M_roundtrip_hashset_into_iter
       (! return {result}) ]
 end
 module M_roundtrip_hashset_iter
+  use creusot.prelude.Mode
   use set.Fset
   use seq.Seq
   use creusot.prelude.MutBorrow
@@ -1491,7 +1505,7 @@ module M_roundtrip_hashset_iter
   
   function view_Iter_T (self: t_Iter_T) : Fset.fset t_DeepModelTy
   
-  let iter_T (self_: t_HashSet_T_RandomState_Global) (return (x: t_Iter_T)) =
+  let iter_T (mode: Mode.t) (self_: t_HashSet_T_RandomState_Global) (return (x: t_Iter_T)) =
   {[@stop_split] [@expl:iter 'self_' type invariant] inv_ref_HashSet_T_RandomState_Global self_}
     any
     [ return (result: t_Iter_T) ->
@@ -1501,16 +1515,16 @@ module M_roundtrip_hashset_iter
   
   type t_HashSet_ref_T_RandomState_Global
   
-  predicate precondition_into_iter (self: ()) (args: t_Iter_T) = let self_ = args in inv_Iter_T self_
+  predicate precondition_into_iter (self: ()) (mode: Mode.t) (args: t_Iter_T) = let self_ = args in inv_Iter_T self_
   
   meta "rewrite_def" predicate precondition_into_iter
   
-  predicate precondition_from_iter (self: ()) (args: t_Iter_T) =
-    let iter = args in inv_Iter_T iter /\ precondition_into_iter () iter
+  predicate precondition_from_iter (self: ()) (mode: Mode.t) (args: t_Iter_T) =
+    let iter = args in inv_Iter_T iter /\ precondition_into_iter () mode iter
   
   meta "rewrite_def" predicate precondition_from_iter
   
-  let into_iter_Iter_T (self_: t_Iter_T) (return (x: t_Iter_T)) =
+  let into_iter_Iter_T (mode: Mode.t) (self_: t_Iter_T) (return (x: t_Iter_T)) =
   {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Iter_T self_}
     any
     [ return (result: t_Iter_T) ->
@@ -1520,7 +1534,7 @@ module M_roundtrip_hashset_iter
   
   predicate inv_HashSet_ref_T_RandomState_Global (_1: t_HashSet_ref_T_RandomState_Global)
   
-  predicate postcondition_into_iter (self: ()) (args: t_Iter_T) (result: t_Iter_T) =
+  predicate postcondition_into_iter (self: ()) (mode: Mode.t) (args: t_Iter_T) (result: t_Iter_T) =
     let self_ = args in inv_Iter_T result /\ result = self_
   
   meta "rewrite_def" predicate postcondition_into_iter
@@ -1575,13 +1589,14 @@ module M_roundtrip_hashset_iter
   
   function view_HashSet_ref_T_RandomState_Global (self: t_HashSet_ref_T_RandomState_Global) : Fset.fset t_DeepModelTy
   
-  let from_iter_HashSet_ref_T_RandomState_Global (iter: t_Iter_T) (return (x: t_HashSet_ref_T_RandomState_Global)) =
+  let from_iter_HashSet_ref_T_RandomState_Global (mode: Mode.t) (iter: t_Iter_T)
+    (return (x: t_HashSet_ref_T_RandomState_Global)) =
   {[@stop_split] [@expl:from_iter_HashSet_ref_T_RandomState_Global requires] ([@stop_split] [@expl:from_iter 'iter' type invariant] inv_Iter_T iter)
-    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () iter)}
+    /\ ([@stop_split] [@expl:from_iter requires] precondition_into_iter () mode iter)}
     any
     [ return (result: t_HashSet_ref_T_RandomState_Global) ->
     {[@stop_split] [@expl:from_iter_HashSet_ref_T_RandomState_Global ensures] ([@stop_split] [@expl:from_iter result type invariant] inv_HashSet_ref_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_Iter_T, prod: Seq.seq t_T, done': MutBorrow.t t_Iter_T. postcondition_into_iter () iter into_iter
+      /\ ([@stop_split] [@expl:from_iter ensures] exists into_iter: t_Iter_T, prod: Seq.seq t_T, done': MutBorrow.t t_Iter_T. postcondition_into_iter () mode iter into_iter
         /\ produces_Iter_T into_iter prod done'.current
         /\ completed_Iter_T done'
         /\ resolve_Iter_T done'.final
@@ -1589,9 +1604,9 @@ module M_roundtrip_hashset_iter
           = (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T prod x1)))}
       (! return {result}) ]
   
-  predicate postcondition_from_iter (self: ()) (args: t_Iter_T) (result: t_HashSet_ref_T_RandomState_Global) =
+  predicate postcondition_from_iter (self: ()) (mode: Mode.t) (args: t_Iter_T) (result: t_HashSet_ref_T_RandomState_Global) =
     let iter = args in inv_HashSet_ref_T_RandomState_Global result
-    /\ (exists into_iter: t_Iter_T, prod: Seq.seq t_T, done': MutBorrow.t t_Iter_T. postcondition_into_iter () iter into_iter
+    /\ (exists into_iter: t_Iter_T, prod: Seq.seq t_T, done': MutBorrow.t t_Iter_T. postcondition_into_iter () mode iter into_iter
       /\ produces_Iter_T into_iter prod done'.current
       /\ completed_Iter_T done'
       /\ resolve_Iter_T done'.final
@@ -1600,25 +1615,26 @@ module M_roundtrip_hashset_iter
   
   meta "rewrite_def" predicate postcondition_from_iter
   
-  let collect_Iter_T (self_: t_Iter_T) (return (x: t_HashSet_ref_T_RandomState_Global)) =
+  let collect_Iter_T (mode: Mode.t) (self_: t_Iter_T) (return (x: t_HashSet_ref_T_RandomState_Global)) =
   {[@stop_split] [@expl:collect_Iter_T requires] ([@stop_split] [@expl:collect 'self_' type invariant] inv_Iter_T self_)
-    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () self_)}
+    /\ ([@stop_split] [@expl:collect requires] precondition_from_iter () mode self_)}
     any
     [ return (result: t_HashSet_ref_T_RandomState_Global) ->
     {[@stop_split] [@expl:collect_Iter_T ensures] ([@stop_split] [@expl:collect result type invariant] inv_HashSet_ref_T_RandomState_Global result)
-      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () self_ result)}
+      /\ ([@stop_split] [@expl:collect ensures] postcondition_from_iter () mode self_ result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let roundtrip_hashset_iter_T (xs: t_HashSet_T_RandomState_Global) (return (x: t_HashSet_ref_T_RandomState_Global)) =
+  let roundtrip_hashset_iter_T (mode: Mode.t) (xs: t_HashSet_T_RandomState_Global)
+    (return (x: t_HashSet_ref_T_RandomState_Global)) =
   {[@stop_split] [@expl:roundtrip_hashset_iter 'xs' type invariant] inv_ref_HashSet_T_RandomState_Global xs}
     (! bb0
     [ bb0 = s0
-      [ s0 = iter_T {xs} (fun (_x: t_Iter_T) -> [ &_4 <- _x ] s1)
-      | s1 = collect_Iter_T {_4} (fun (_x: t_HashSet_ref_T_RandomState_Global) -> [ &_ret <- _x ] s2)
+      [ s0 = iter_T {mode} {xs} (fun (_x: t_Iter_T) -> [ &_4 <- _x ] s1)
+      | s1 = collect_Iter_T {mode} {_4} (fun (_x: t_HashSet_ref_T_RandomState_Global) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ]
     [ & _ret: t_HashSet_ref_T_RandomState_Global = Any.any_l ()
     | & xs: t_HashSet_T_RandomState_Global = xs

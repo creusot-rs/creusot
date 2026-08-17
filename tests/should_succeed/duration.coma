@@ -1,6 +1,7 @@
 module M_test_duration
   use creusot.int.UInt64
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use int.ComputerDivision
   use creusot.int.UInt128
   use creusot.prelude.Any
@@ -25,7 +26,7 @@ module M_test_duration
   axiom view_Duration_spec: forall self: t_Duration [view_Duration self]. ge_log_Int (view_Duration self) 0
       /\ view_Duration self <= secs_to_nanos (UInt64.t'int const_MAX) + 999999999
   
-  let new (secs: UInt64.t) (nanos: UInt32.t) (return (x: t_Duration)) =
+  let new (mode: Mode.t) (secs: UInt64.t) (nanos: UInt32.t) (return (x: t_Duration)) =
   {[@stop_split] [@expl:new requires] UInt64.t'int secs + nanos_to_secs (UInt32.t'int nanos) <= UInt64.t'int const_MAX}
     any
     [ return (result: t_Duration) ->
@@ -42,7 +43,7 @@ module M_test_duration
   
   meta "rewrite_def" predicate inv_ref_Duration
   
-  let as_nanos (self_: t_Duration) (return (x: UInt128.t)) =
+  let as_nanos (mode: Mode.t) (self_: t_Duration) (return (x: UInt128.t)) =
   {[@stop_split] [@expl:as_nanos 'self_' type invariant] inv_ref_Duration self_}
     any
     [ return (result: UInt128.t) ->
@@ -52,31 +53,31 @@ module M_test_duration
       <= secs_to_nanos (UInt64.t'int const_MAX) + 999999999)}
       (! return {result}) ]
   
-  let from_secs (secs: UInt64.t) (return (x: t_Duration)) = any
+  let from_secs (mode: Mode.t) (secs: UInt64.t) (return (x: t_Duration)) = any
     [ return (result: t_Duration) ->
     {[@stop_split] [@expl:from_secs ensures] ([@stop_split] [@expl:from_secs result type invariant] inv_Duration result)
       /\ ([@stop_split] [@expl:from_secs ensures] view_Duration result = secs_to_nanos (UInt64.t'int secs))}
       (! return {result}) ]
   
-  let from_millis (millis: UInt64.t) (return (x: t_Duration)) = any
+  let from_millis (mode: Mode.t) (millis: UInt64.t) (return (x: t_Duration)) = any
     [ return (result: t_Duration) ->
     {[@stop_split] [@expl:from_millis ensures] ([@stop_split] [@expl:from_millis result type invariant] inv_Duration result)
       /\ ([@stop_split] [@expl:from_millis ensures] view_Duration result = UInt64.t'int millis * 1000000)}
       (! return {result}) ]
   
-  let from_micros (micros: UInt64.t) (return (x: t_Duration)) = any
+  let from_micros (mode: Mode.t) (micros: UInt64.t) (return (x: t_Duration)) = any
     [ return (result: t_Duration) ->
     {[@stop_split] [@expl:from_micros ensures] ([@stop_split] [@expl:from_micros result type invariant] inv_Duration result)
       /\ ([@stop_split] [@expl:from_micros ensures] view_Duration result = UInt64.t'int micros * 1000)}
       (! return {result}) ]
   
-  let from_nanos (nanos: UInt64.t) (return (x: t_Duration)) = any
+  let from_nanos (mode: Mode.t) (nanos: UInt64.t) (return (x: t_Duration)) = any
     [ return (result: t_Duration) ->
     {[@stop_split] [@expl:from_nanos ensures] ([@stop_split] [@expl:from_nanos result type invariant] inv_Duration result)
       /\ ([@stop_split] [@expl:from_nanos ensures] view_Duration result = UInt64.t'int nanos)}
       (! return {result}) ]
   
-  let is_zero (self_: t_Duration) (return (x: bool)) =
+  let is_zero (mode: Mode.t) (self_: t_Duration) (return (x: bool)) =
   {[@stop_split] [@expl:is_zero 'self_' type invariant] inv_ref_Duration self_}
     any
     [ return (result: bool) ->
@@ -85,7 +86,16 @@ module M_test_duration
       /\ ([@stop_split] [@expl:is_zero ensures #1] view_Duration self_ <> 0 -> result = false)}
       (! return {result}) ]
   
-  let as_secs (self_: t_Duration) (return (x: UInt64.t)) =
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
+  let as_secs (mode: Mode.t) (self_: t_Duration) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:as_secs 'self_' type invariant] inv_ref_Duration self_}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:as_secs ensures] UInt64.t'int result
@@ -94,7 +104,7 @@ module M_test_duration
   
   function nanos_to_millis (nanos: int) : int = ComputerDivision.div nanos 1000000
   
-  let subsec_millis (self_: t_Duration) (return (x: UInt32.t)) =
+  let subsec_millis (mode: Mode.t) (self_: t_Duration) (return (x: UInt32.t)) =
   {[@stop_split] [@expl:subsec_millis 'self_' type invariant] inv_ref_Duration self_}
     any
     [ return (result: UInt32.t) ->
@@ -105,7 +115,7 @@ module M_test_duration
   
   function nanos_to_micros (nanos: int) : int = ComputerDivision.div nanos 1000
   
-  let subsec_micros (self_: t_Duration) (return (x: UInt32.t)) =
+  let subsec_micros (mode: Mode.t) (self_: t_Duration) (return (x: UInt32.t)) =
   {[@stop_split] [@expl:subsec_micros 'self_' type invariant] inv_ref_Duration self_}
     any
     [ return (result: UInt32.t) ->
@@ -114,7 +124,7 @@ module M_test_duration
       /\ ([@stop_split] [@expl:subsec_micros ensures #1] UInt32.lt result (1000000: UInt32.t))}
       (! return {result}) ]
   
-  let subsec_nanos (self_: t_Duration) (return (x: UInt32.t)) =
+  let subsec_nanos (mode: Mode.t) (self_: t_Duration) (return (x: UInt32.t)) =
   {[@stop_split] [@expl:subsec_nanos 'self_' type invariant] inv_ref_Duration self_}
     any
     [ return (result: UInt32.t) ->
@@ -123,14 +133,14 @@ module M_test_duration
       /\ ([@stop_split] [@expl:subsec_nanos ensures #1] UInt32.lt result (1000000000: UInt32.t))}
       (! return {result}) ]
   
-  let as_millis (self_: t_Duration) (return (x: UInt128.t)) =
+  let as_millis (mode: Mode.t) (self_: t_Duration) (return (x: UInt128.t)) =
   {[@stop_split] [@expl:as_millis 'self_' type invariant] inv_ref_Duration self_}
     any
     [ return (result: UInt128.t) -> {[@stop_split] [@expl:as_millis ensures] UInt128.t'int result
       = nanos_to_millis (view_Duration self_)}
       (! return {result}) ]
   
-  let as_micros (self_: t_Duration) (return (x: UInt128.t)) =
+  let as_micros (mode: Mode.t) (self_: t_Duration) (return (x: UInt128.t)) =
   {[@stop_split] [@expl:as_micros 'self_' type invariant] inv_ref_Duration self_}
     any
     [ return (result: UInt128.t) -> {[@stop_split] [@expl:as_micros ensures] UInt128.t'int result
@@ -164,7 +174,7 @@ module M_test_duration
   
   meta "rewrite_def" function deep_model_Option_Duration
   
-  let checked_add (self_: t_Duration) (rhs: t_Duration) (return (x: t_Option_Duration)) =
+  let checked_add (mode: Mode.t) (self_: t_Duration) (rhs: t_Duration) (return (x: t_Option_Duration)) =
   {[@stop_split] [@expl:checked_add requires] ([@stop_split] [@expl:checked_add 'self_' type invariant] inv_Duration self_)
     /\ ([@stop_split] [@expl:checked_add 'rhs' type invariant] inv_Duration rhs)}
     any
@@ -185,16 +195,16 @@ module M_test_duration
   
   meta "rewrite_def" predicate inv_ref_Option_Duration
   
-  let is_none_Duration (self_: t_Option_Duration) (return (x: bool)) =
+  let is_none_Duration (mode: Mode.t) (self_: t_Option_Duration) (return (x: bool)) =
   {[@stop_split] [@expl:is_none 'self_' type invariant] inv_ref_Option_Duration self_}
     any [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let is_some_Duration (self_: t_Option_Duration) (return (x: bool)) =
+  let is_some_Duration (mode: Mode.t) (self_: t_Option_Duration) (return (x: bool)) =
   {[@stop_split] [@expl:is_some 'self_' type invariant] inv_ref_Option_Duration self_}
     any
     [ return (result: bool) -> {[@stop_split] [@expl:is_some ensures] result = (self_ <> None)} (! return {result}) ]
   
-  let checked_sub (self_: t_Duration) (rhs: t_Duration) (return (x: t_Option_Duration)) =
+  let checked_sub (mode: Mode.t) (self_: t_Duration) (rhs: t_Duration) (return (x: t_Option_Duration)) =
   {[@stop_split] [@expl:checked_sub requires] ([@stop_split] [@expl:checked_sub 'self_' type invariant] inv_Duration self_)
     /\ ([@stop_split] [@expl:checked_sub 'rhs' type invariant] inv_Duration rhs)}
     any
@@ -205,7 +215,7 @@ module M_test_duration
       -> deep_model_Option_Duration result = Some'0 (view_Duration self_ - view_Duration rhs))}
       (! return {result}) ]
   
-  let checked_mul (self_: t_Duration) (rhs: UInt32.t) (return (x: t_Option_Duration)) =
+  let checked_mul (mode: Mode.t) (self_: t_Duration) (rhs: UInt32.t) (return (x: t_Option_Duration)) =
   {[@stop_split] [@expl:checked_mul 'self_' type invariant] inv_Duration self_}
     any
     [ return (result: t_Option_Duration) ->
@@ -217,7 +227,7 @@ module M_test_duration
       -> deep_model_Option_Duration result = Some'0 (view_Duration self_ * UInt32.t'int rhs))}
       (! return {result}) ]
   
-  let checked_div (self_: t_Duration) (rhs: UInt32.t) (return (x: t_Option_Duration)) =
+  let checked_div (mode: Mode.t) (self_: t_Duration) (rhs: UInt32.t) (return (x: t_Option_Duration)) =
   {[@stop_split] [@expl:checked_div 'self_' type invariant] inv_Duration self_}
     any
     [ return (result: t_Option_Duration) ->
@@ -227,7 +237,7 @@ module M_test_duration
       -> deep_model_Option_Duration result = Some'0 (ComputerDivision.div (view_Duration self_) (UInt32.t'int rhs)))}
       (! return {result}) ]
   
-  let add_Duration (self_: t_Duration) (rhs: t_Duration) (return (x: t_Duration)) =
+  let add_Duration (mode: Mode.t) (self_: t_Duration) (rhs: t_Duration) (return (x: t_Duration)) =
   {[@stop_split] [@expl:add_Duration requires] ([@stop_split] [@expl:add 'self_' type invariant] inv_Duration self_)
     /\ ([@stop_split] [@expl:add 'rhs' type invariant] inv_Duration rhs)
     /\ ([@stop_split] [@expl:add requires] view_Duration self_ + view_Duration rhs
@@ -238,7 +248,7 @@ module M_test_duration
       /\ ([@stop_split] [@expl:add ensures] view_Duration self_ + view_Duration rhs = view_Duration result)}
       (! return {result}) ]
   
-  let sub_Duration (self_: t_Duration) (rhs: t_Duration) (return (x: t_Duration)) =
+  let sub_Duration (mode: Mode.t) (self_: t_Duration) (rhs: t_Duration) (return (x: t_Duration)) =
   {[@stop_split] [@expl:sub_Duration requires] ([@stop_split] [@expl:sub 'self_' type invariant] inv_Duration self_)
     /\ ([@stop_split] [@expl:sub 'rhs' type invariant] inv_Duration rhs)
     /\ ([@stop_split] [@expl:sub requires] ge_log_Int (view_Duration self_ - view_Duration rhs) 0)}
@@ -252,165 +262,222 @@ module M_test_duration
   
   meta "select_lsinst" "all"
   
-  let test_duration (return (x: ())) = (! bb0
+  let test_duration (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = new {(0: UInt64.t)} {(0: UInt32.t)} (fun (_x: t_Duration) -> [ &zero <- _x ] s1)
+      [ s0 = new {mode} {(0: UInt64.t)} {(0: UInt32.t)} (fun (_x: t_Duration) -> [ &zero <- _x ] s1)
       | s1 = {[@expl:assertion] view_Duration zero = 0} s2
-      | s2 = as_nanos {zero} (fun (_x: UInt128.t) -> [ &_7 <- _x ] s3)
+      | s2 = as_nanos {mode} {zero} (fun (_x: UInt128.t) -> [ &_7 <- _x ] s3)
       | s3 = [ &_6 <- _7 = (0: UInt128.t) ] s4
       | s4 = any [ br0 -> {_6 = false} (! bb4) | br1 -> {_6} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = new {const_MAX} {(999999999: UInt32.t)} (fun (_x: t_Duration) -> [ &max <- _x ] s1)
-      | s1 = from_secs {(1: UInt64.t)} (fun (_x: t_Duration) -> [ &d_secs <- _x ] s2)
+      [ s0 = new {mode} {const_MAX} {(999999999: UInt32.t)} (fun (_x: t_Duration) -> [ &max <- _x ] s1)
+      | s1 = from_secs {mode} {(1: UInt64.t)} (fun (_x: t_Duration) -> [ &d_secs <- _x ] s2)
       | s2 = {[@expl:assertion] view_Duration d_secs = 1000000000} s3
-      | s3 = from_millis {(1: UInt64.t)} (fun (_x: t_Duration) -> [ &d_millis <- _x ] s4)
+      | s3 = from_millis {mode} {(1: UInt64.t)} (fun (_x: t_Duration) -> [ &d_millis <- _x ] s4)
       | s4 = {[@expl:assertion] view_Duration d_millis = 1000000} s5
-      | s5 = from_micros {(1: UInt64.t)} (fun (_x: t_Duration) -> [ &d_micros <- _x ] s6)
+      | s5 = from_micros {mode} {(1: UInt64.t)} (fun (_x: t_Duration) -> [ &d_micros <- _x ] s6)
       | s6 = {[@expl:assertion] view_Duration d_micros = 1000} s7
-      | s7 = from_nanos {(1: UInt64.t)} (fun (_x: t_Duration) -> [ &d_nanos <- _x ] s8)
+      | s7 = from_nanos {mode} {(1: UInt64.t)} (fun (_x: t_Duration) -> [ &d_nanos <- _x ] s8)
       | s8 = {[@expl:assertion] view_Duration d_nanos = 1} s9
-      | s9 = is_zero {zero} (fun (_x: bool) -> [ &_28 <- _x ] s10)
+      | s9 = is_zero {mode} {zero} (fun (_x: bool) -> [ &_28 <- _x ] s10)
       | s10 = any [ br0 -> {_28 = false} (! bb12) | br1 -> {_28} (! bb11) ] ]
     | bb11 = s0
-      [ s0 = is_zero {d_secs} (fun (_x: bool) -> [ &_32 <- _x ] s1)
+      [ s0 = is_zero {mode} {d_secs} (fun (_x: bool) -> [ &_32 <- _x ] s1)
       | s1 = any [ br0 -> {_32 = false} (! bb15) | br1 -> {_32} (! bb14) ] ]
-    | bb14 = {false} any
+    | bb14 = s0
+      [ s0 = panic {mode} {"assertion failed: !d_secs.is_zero()"} (fun (_x: ()) -> [ &_34 <- _x ] s1)
+      | s1 = {false} any ]
     | bb15 = s0
-      [ s0 = as_secs {d_secs} (fun (_x: UInt64.t) -> [ &_37 <- _x ] s1)
+      [ s0 = as_secs {mode} {d_secs} (fun (_x: UInt64.t) -> [ &_37 <- _x ] s1)
       | s1 = [ &_36 <- (1: UInt64.t) = _37 ] s2
       | s2 = any [ br0 -> {_36 = false} (! bb18) | br1 -> {_36} (! bb17) ] ]
     | bb17 = s0
-      [ s0 = subsec_millis {d_secs} (fun (_x: UInt32.t) -> [ &_42 <- _x ] s1)
+      [ s0 = subsec_millis {mode} {d_secs} (fun (_x: UInt32.t) -> [ &_42 <- _x ] s1)
       | s1 = [ &_41 <- (0: UInt32.t) = _42 ] s2
       | s2 = any [ br0 -> {_41 = false} (! bb21) | br1 -> {_41} (! bb20) ] ]
     | bb20 = s0
-      [ s0 = subsec_micros {d_secs} (fun (_x: UInt32.t) -> [ &_47 <- _x ] s1)
+      [ s0 = subsec_micros {mode} {d_secs} (fun (_x: UInt32.t) -> [ &_47 <- _x ] s1)
       | s1 = [ &_46 <- (0: UInt32.t) = _47 ] s2
       | s2 = any [ br0 -> {_46 = false} (! bb24) | br1 -> {_46} (! bb23) ] ]
     | bb23 = s0
-      [ s0 = subsec_nanos {d_secs} (fun (_x: UInt32.t) -> [ &_52 <- _x ] s1)
+      [ s0 = subsec_nanos {mode} {d_secs} (fun (_x: UInt32.t) -> [ &_52 <- _x ] s1)
       | s1 = [ &_51 <- (0: UInt32.t) = _52 ] s2
       | s2 = any [ br0 -> {_51 = false} (! bb27) | br1 -> {_51} (! bb26) ] ]
     | bb26 = s0
-      [ s0 = subsec_millis {d_millis} (fun (_x: UInt32.t) -> [ &_58 <- _x ] s1)
+      [ s0 = subsec_millis {mode} {d_millis} (fun (_x: UInt32.t) -> [ &_58 <- _x ] s1)
       | s1 = [ &_57 <- UInt128.of_int (UInt32.t'int _58) ] s2
-      | s2 = as_millis {d_millis} (fun (_x: UInt128.t) -> [ &_60 <- _x ] s3)
+      | s2 = as_millis {mode} {d_millis} (fun (_x: UInt128.t) -> [ &_60 <- _x ] s3)
       | s3 = [ &_56 <- _57 = _60 ] s4
       | s4 = any [ br0 -> {_56 = false} (! bb31) | br1 -> {_56} (! bb30) ] ]
     | bb30 = s0
-      [ s0 = subsec_micros {d_micros} (fun (_x: UInt32.t) -> [ &_66 <- _x ] s1)
+      [ s0 = subsec_micros {mode} {d_micros} (fun (_x: UInt32.t) -> [ &_66 <- _x ] s1)
       | s1 = [ &_65 <- UInt128.of_int (UInt32.t'int _66) ] s2
-      | s2 = as_micros {d_micros} (fun (_x: UInt128.t) -> [ &_68 <- _x ] s3)
+      | s2 = as_micros {mode} {d_micros} (fun (_x: UInt128.t) -> [ &_68 <- _x ] s3)
       | s3 = [ &_64 <- _65 = _68 ] s4
       | s4 = any [ br0 -> {_64 = false} (! bb35) | br1 -> {_64} (! bb34) ] ]
     | bb34 = s0
-      [ s0 = subsec_nanos {d_nanos} (fun (_x: UInt32.t) -> [ &_74 <- _x ] s1)
+      [ s0 = subsec_nanos {mode} {d_nanos} (fun (_x: UInt32.t) -> [ &_74 <- _x ] s1)
       | s1 = [ &_73 <- UInt128.of_int (UInt32.t'int _74) ] s2
-      | s2 = as_nanos {d_nanos} (fun (_x: UInt128.t) -> [ &_76 <- _x ] s3)
+      | s2 = as_nanos {mode} {d_nanos} (fun (_x: UInt128.t) -> [ &_76 <- _x ] s3)
       | s3 = [ &_72 <- _73 = _76 ] s4
       | s4 = any [ br0 -> {_72 = false} (! bb39) | br1 -> {_72} (! bb38) ] ]
     | bb38 = s0
-      [ s0 = checked_add {d_secs} {max} (fun (_x: t_Option_Duration) -> [ &_82 <- _x ] s1)
-      | s1 = is_none_Duration {_82} (fun (_x: bool) -> [ &_80 <- _x ] s2)
+      [ s0 = checked_add {mode} {d_secs} {max} (fun (_x: t_Option_Duration) -> [ &_82 <- _x ] s1)
+      | s1 = is_none_Duration {mode} {_82} (fun (_x: bool) -> [ &_80 <- _x ] s2)
       | s2 = any [ br0 -> {_80 = false} (! bb43) | br1 -> {_80} (! bb42) ] ]
     | bb42 = s0
-      [ s0 = checked_add {d_secs} {d_secs} (fun (_x: t_Option_Duration) -> [ &_89 <- _x ] s1)
-      | s1 = is_some_Duration {_89} (fun (_x: bool) -> [ &_87 <- _x ] s2)
+      [ s0 = checked_add {mode} {d_secs} {d_secs} (fun (_x: t_Option_Duration) -> [ &_89 <- _x ] s1)
+      | s1 = is_some_Duration {mode} {_89} (fun (_x: bool) -> [ &_87 <- _x ] s2)
       | s2 = any [ br0 -> {_87 = false} (! bb47) | br1 -> {_87} (! bb46) ] ]
     | bb46 = s0
-      [ s0 = checked_sub {d_secs} {max} (fun (_x: t_Option_Duration) -> [ &_96 <- _x ] s1)
-      | s1 = is_none_Duration {_96} (fun (_x: bool) -> [ &_94 <- _x ] s2)
+      [ s0 = checked_sub {mode} {d_secs} {max} (fun (_x: t_Option_Duration) -> [ &_96 <- _x ] s1)
+      | s1 = is_none_Duration {mode} {_96} (fun (_x: bool) -> [ &_94 <- _x ] s2)
       | s2 = any [ br0 -> {_94 = false} (! bb51) | br1 -> {_94} (! bb50) ] ]
     | bb50 = s0
-      [ s0 = checked_sub {d_secs} {d_millis} (fun (_x: t_Option_Duration) -> [ &_103 <- _x ] s1)
-      | s1 = is_some_Duration {_103} (fun (_x: bool) -> [ &_101 <- _x ] s2)
+      [ s0 = checked_sub {mode} {d_secs} {d_millis} (fun (_x: t_Option_Duration) -> [ &_103 <- _x ] s1)
+      | s1 = is_some_Duration {mode} {_103} (fun (_x: bool) -> [ &_101 <- _x ] s2)
       | s2 = any [ br0 -> {_101 = false} (! bb55) | br1 -> {_101} (! bb54) ] ]
     | bb54 = s0
-      [ s0 = checked_mul {max} {(2: UInt32.t)} (fun (_x: t_Option_Duration) -> [ &_110 <- _x ] s1)
-      | s1 = is_none_Duration {_110} (fun (_x: bool) -> [ &_108 <- _x ] s2)
+      [ s0 = checked_mul {mode} {max} {(2: UInt32.t)} (fun (_x: t_Option_Duration) -> [ &_110 <- _x ] s1)
+      | s1 = is_none_Duration {mode} {_110} (fun (_x: bool) -> [ &_108 <- _x ] s2)
       | s2 = any [ br0 -> {_108 = false} (! bb59) | br1 -> {_108} (! bb58) ] ]
     | bb58 = s0
-      [ s0 = checked_mul {d_secs} {(10: UInt32.t)} (fun (_x: t_Option_Duration) -> [ &_116 <- _x ] s1)
-      | s1 = is_some_Duration {_116} (fun (_x: bool) -> [ &_114 <- _x ] s2)
+      [ s0 = checked_mul {mode} {d_secs} {(10: UInt32.t)} (fun (_x: t_Option_Duration) -> [ &_116 <- _x ] s1)
+      | s1 = is_some_Duration {mode} {_116} (fun (_x: bool) -> [ &_114 <- _x ] s2)
       | s2 = any [ br0 -> {_114 = false} (! bb63) | br1 -> {_114} (! bb62) ] ]
     | bb62 = s0
-      [ s0 = checked_div {d_secs} {(0: UInt32.t)} (fun (_x: t_Option_Duration) -> [ &_122 <- _x ] s1)
-      | s1 = is_none_Duration {_122} (fun (_x: bool) -> [ &_120 <- _x ] s2)
+      [ s0 = checked_div {mode} {d_secs} {(0: UInt32.t)} (fun (_x: t_Option_Duration) -> [ &_122 <- _x ] s1)
+      | s1 = is_none_Duration {mode} {_122} (fun (_x: bool) -> [ &_120 <- _x ] s2)
       | s2 = any [ br0 -> {_120 = false} (! bb67) | br1 -> {_120} (! bb66) ] ]
     | bb66 = s0
-      [ s0 = checked_div {d_secs} {(10: UInt32.t)} (fun (_x: t_Option_Duration) -> [ &_128 <- _x ] s1)
-      | s1 = is_some_Duration {_128} (fun (_x: bool) -> [ &_126 <- _x ] s2)
+      [ s0 = checked_div {mode} {d_secs} {(10: UInt32.t)} (fun (_x: t_Option_Duration) -> [ &_128 <- _x ] s1)
+      | s1 = is_some_Duration {mode} {_128} (fun (_x: bool) -> [ &_126 <- _x ] s2)
       | s2 = any [ br0 -> {_126 = false} (! bb71) | br1 -> {_126} (! bb70) ] ]
     | bb70 = s0
-      [ s0 = add_Duration {d_millis} {d_micros} (fun (_x: t_Duration) -> [ &sum <- _x ] s1)
-      | s1 = sub_Duration {d_millis} {d_micros} (fun (_x: t_Duration) -> [ &difference <- _x ] s2)
+      [ s0 = add_Duration {mode} {d_millis} {d_micros} (fun (_x: t_Duration) -> [ &sum <- _x ] s1)
+      | s1 = sub_Duration {mode} {d_millis} {d_micros} (fun (_x: t_Duration) -> [ &difference <- _x ] s2)
       | s2 = {[@expl:assertion] view_Duration sum = 1001000} s3
       | s3 = {[@expl:assertion] view_Duration difference = 999000} s4
       | s4 = return {_ret} ]
-    | bb71 = {false} any
-    | bb67 = {false} any
-    | bb63 = {false} any
-    | bb59 = {false} any
-    | bb55 = {false} any
-    | bb51 = {false} any
-    | bb47 = {false} any
-    | bb43 = {false} any
-    | bb39 = {false} any
-    | bb35 = {false} any
-    | bb31 = {false} any
-    | bb27 = {false} any
-    | bb24 = {false} any
-    | bb21 = {false} any
-    | bb18 = {false} any
-    | bb12 = {false} any
-    | bb4 = {false} any ]
+    | bb71 = s0
+      [ s0 = panic {mode} {"assertion failed: d_secs.checked_div(10).is_some()"} (fun (_x: ()) -> [ &_130 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb67 = s0
+      [ s0 = panic {mode} {"assertion failed: d_secs.checked_div(0).is_none()"} (fun (_x: ()) -> [ &_124 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb63 = s0
+      [ s0 = panic {mode} {"assertion failed: d_secs.checked_mul(10).is_some()"} (fun (_x: ()) -> [ &_118 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb59 = s0
+      [ s0 = panic {mode} {"assertion failed: max.checked_mul(2).is_none()"} (fun (_x: ()) -> [ &_112 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb55 = s0
+      [ s0 = panic {mode} {"assertion failed: d_secs.checked_sub(d_millis).is_some()"}
+          (fun (_x: ()) -> [ &_106 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb51 = s0
+      [ s0 = panic {mode} {"assertion failed: d_secs.checked_sub(max).is_none()"} (fun (_x: ()) -> [ &_99 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb47 = s0
+      [ s0 = panic {mode} {"assertion failed: d_secs.checked_add(d_secs).is_some()"} (fun (_x: ()) -> [ &_92 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb43 = s0
+      [ s0 = panic {mode} {"assertion failed: d_secs.checked_add(max).is_none()"} (fun (_x: ()) -> [ &_85 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb39 = s0
+      [ s0 = panic {mode} {"assertion failed: d_nanos.subsec_nanos() as u128 == d_nanos.as_nanos()"}
+          (fun (_x: ()) -> [ &_78 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb35 = s0
+      [ s0 = panic {mode} {"assertion failed: d_micros.subsec_micros() as u128 == d_micros.as_micros()"}
+          (fun (_x: ()) -> [ &_70 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb31 = s0
+      [ s0 = panic {mode} {"assertion failed: d_millis.subsec_millis() as u128 == d_millis.as_millis()"}
+          (fun (_x: ()) -> [ &_62 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb27 = s0
+      [ s0 = panic {mode} {"assertion failed: 0 == d_secs.subsec_nanos()"} (fun (_x: ()) -> [ &_54 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb24 = s0
+      [ s0 = panic {mode} {"assertion failed: 0 == d_secs.subsec_micros()"} (fun (_x: ()) -> [ &_49 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb21 = s0
+      [ s0 = panic {mode} {"assertion failed: 0 == d_secs.subsec_millis()"} (fun (_x: ()) -> [ &_44 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb18 = s0
+      [ s0 = panic {mode} {"assertion failed: 1 == d_secs.as_secs()"} (fun (_x: ()) -> [ &_39 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb12 = s0
+      [ s0 = panic {mode} {"assertion failed: zero.is_zero()"} (fun (_x: ()) -> [ &_30 <- _x ] s1) | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: zero.as_nanos() == 0"} (fun (_x: ()) -> [ &_9 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & zero: t_Duration = Any.any_l ()
     | & _6: bool = Any.any_l ()
     | & _7: UInt128.t = Any.any_l ()
+    | & _9: () = Any.any_l ()
     | & max: t_Duration = Any.any_l ()
     | & d_secs: t_Duration = Any.any_l ()
     | & d_millis: t_Duration = Any.any_l ()
     | & d_micros: t_Duration = Any.any_l ()
     | & d_nanos: t_Duration = Any.any_l ()
     | & _28: bool = Any.any_l ()
+    | & _30: () = Any.any_l ()
     | & _32: bool = Any.any_l ()
+    | & _34: () = Any.any_l ()
     | & _36: bool = Any.any_l ()
     | & _37: UInt64.t = Any.any_l ()
+    | & _39: () = Any.any_l ()
     | & _41: bool = Any.any_l ()
     | & _42: UInt32.t = Any.any_l ()
+    | & _44: () = Any.any_l ()
     | & _46: bool = Any.any_l ()
     | & _47: UInt32.t = Any.any_l ()
+    | & _49: () = Any.any_l ()
     | & _51: bool = Any.any_l ()
     | & _52: UInt32.t = Any.any_l ()
+    | & _54: () = Any.any_l ()
     | & _56: bool = Any.any_l ()
     | & _57: UInt128.t = Any.any_l ()
     | & _58: UInt32.t = Any.any_l ()
     | & _60: UInt128.t = Any.any_l ()
+    | & _62: () = Any.any_l ()
     | & _64: bool = Any.any_l ()
     | & _65: UInt128.t = Any.any_l ()
     | & _66: UInt32.t = Any.any_l ()
     | & _68: UInt128.t = Any.any_l ()
+    | & _70: () = Any.any_l ()
     | & _72: bool = Any.any_l ()
     | & _73: UInt128.t = Any.any_l ()
     | & _74: UInt32.t = Any.any_l ()
     | & _76: UInt128.t = Any.any_l ()
+    | & _78: () = Any.any_l ()
     | & _80: bool = Any.any_l ()
     | & _82: t_Option_Duration = Any.any_l ()
+    | & _85: () = Any.any_l ()
     | & _87: bool = Any.any_l ()
     | & _89: t_Option_Duration = Any.any_l ()
+    | & _92: () = Any.any_l ()
     | & _94: bool = Any.any_l ()
     | & _96: t_Option_Duration = Any.any_l ()
+    | & _99: () = Any.any_l ()
     | & _101: bool = Any.any_l ()
     | & _103: t_Option_Duration = Any.any_l ()
+    | & _106: () = Any.any_l ()
     | & _108: bool = Any.any_l ()
     | & _110: t_Option_Duration = Any.any_l ()
+    | & _112: () = Any.any_l ()
     | & _114: bool = Any.any_l ()
     | & _116: t_Option_Duration = Any.any_l ()
+    | & _118: () = Any.any_l ()
     | & _120: bool = Any.any_l ()
     | & _122: t_Option_Duration = Any.any_l ()
+    | & _124: () = Any.any_l ()
     | & _126: bool = Any.any_l ()
     | & _128: t_Option_Duration = Any.any_l ()
+    | & _130: () = Any.any_l ()
     | & sum: t_Duration = Any.any_l ()
     | & difference: t_Duration = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

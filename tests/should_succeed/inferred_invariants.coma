@@ -1,6 +1,7 @@
 module M_f
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -22,7 +23,8 @@ module M_f
   
   meta "select_lsinst" "all"
   
-  let f_T (_1: MutBorrow.t t_T) (return (x: ())) = {[@stop_split] [@expl:f '_1' type invariant] inv_refmut_T _1}
+  let f_T (mode: Mode.t) (_1: MutBorrow.t t_T) (return (x: ())) =
+  {[@stop_split] [@expl:f '_1' type invariant] inv_refmut_T _1}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _1} any) ]
@@ -33,9 +35,10 @@ end
 module M_nested_borrows
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
-  let replace_refmut_i32 (dest: MutBorrow.t (MutBorrow.t Int32.t)) (src: MutBorrow.t Int32.t)
+  let replace_refmut_i32 (mode: Mode.t) (dest: MutBorrow.t (MutBorrow.t Int32.t)) (src: MutBorrow.t Int32.t)
     (return (x: MutBorrow.t Int32.t)) = any
     [ return (result: MutBorrow.t Int32.t) ->
     {[@stop_split] [@expl:replace_refmut_i32 ensures] ([@stop_split] [@expl:replace ensures #0] dest.final = src)
@@ -54,7 +57,7 @@ module M_nested_borrows
   
   meta "select_lsinst" "all"
   
-  let nested_borrows (x: MutBorrow.t (MutBorrow.t Int32.t)) (y: MutBorrow.t Int32.t) (return (x'0: ())) =
+  let nested_borrows (mode: Mode.t) (x: MutBorrow.t (MutBorrow.t Int32.t)) (y: MutBorrow.t Int32.t) (return (x'0: ())) =
   {[@stop_split] [@expl:nested_borrows requires] x.current.current = (0: Int32.t)}
     (! bb0
     [ bb0 = s0
@@ -79,7 +82,7 @@ module M_nested_borrows
             [ &_21 <- _bor ] [ &x <- { x with current = _bor.final } ] s1)
       | s1 = MutBorrow.borrow_final <Int32.t> {y.current} {MutBorrow.get_id y}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_22 <- _bor ] [ &y <- { y with current = _bor.final } ] s2)
-      | s2 = replace_refmut_i32 {_21} {_22} (fun (_x: MutBorrow.t Int32.t) -> [ &b <- _x ] s3)
+      | s2 = replace_refmut_i32 {mode} {_21} {_22} (fun (_x: MutBorrow.t Int32.t) -> [ &b <- _x ] s3)
       | s3 = -{resolve_refmut_refmut_i32 x}- s4
       | s4 = Int32.add {b.current} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &b <- { b with current = _x } ] s5)
       | s5 = -{resolve_refmut_i32 b}- s6
@@ -104,6 +107,7 @@ module M_nested_loops
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
@@ -113,8 +117,8 @@ module M_nested_loops
   
   meta "select_lsinst" "all"
   
-  let nested_loops (x: MutBorrow.t Int32.t) (return (x'0: ())) = {[@stop_split] [@expl:nested_loops requires] x.current
-    = (0: Int32.t)}
+  let nested_loops (mode: Mode.t) (x: MutBorrow.t Int32.t) (return (x'0: ())) =
+  {[@stop_split] [@expl:nested_loops requires] x.current = (0: Int32.t)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &i <- (0: Int32.t) ] s1 | s1 = [ &_old'0 <- x.final ] s2 | s2 = bb1 ]
     | bb1 = bb1
@@ -151,6 +155,7 @@ module M_nested_loops
 end
 module M_simple
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -165,14 +170,15 @@ module M_simple
   
   meta "rewrite_def" predicate inv_refmut_T
   
-  let f_T (_1: MutBorrow.t t_T) (return (x: ())) = {[@stop_split] [@expl:f '_1' type invariant] inv_refmut_T _1}
+  let f_T (mode: Mode.t) (_1: MutBorrow.t t_T) (return (x: ())) =
+  {[@stop_split] [@expl:f '_1' type invariant] inv_refmut_T _1}
     any [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let simple_T (x: MutBorrow.t t_T) (return (x'0: ())) =
+  let simple_T (mode: Mode.t) (x: MutBorrow.t t_T) (return (x'0: ())) =
   {[@stop_split] [@expl:simple 'x' type invariant] inv_refmut_T x}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_old <- x.final ] s1 | s1 = bb1 ]
@@ -184,7 +190,7 @@ module M_simple
             (fun (_bor: MutBorrow.t t_T) ->
               [ &_4 <- _bor ] -{inv_T _bor.final}-
               [ &x <- { x with current = _bor.final } ] s1) [ _ck -> (! {[@expl:type invariant] inv_T x.current} any) ]
-        | s1 = f_T {_4} (fun (_x: ()) -> [ &_3 <- _x ] s2)
+        | s1 = f_T {mode} {_4} (fun (_x: ()) -> [ &_3 <- _x ] s2)
         | s2 = bb1 ] ] ]
     [ & x: MutBorrow.t t_T = x
     | & _3: () = Any.any_l ()
@@ -194,6 +200,7 @@ end
 module M_swapper
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -215,7 +222,7 @@ module M_swapper
   
   meta "select_lsinst" "all"
   
-  let swapper_T (x: MutBorrow.t t_T) (y: MutBorrow.t t_T) (return (x'0: ())) =
+  let swapper_T (mode: Mode.t) (x: MutBorrow.t t_T) (y: MutBorrow.t t_T) (return (x'0: ())) =
   {[@stop_split] [@expl:swapper_T requires] ([@stop_split] [@expl:swapper 'x' type invariant] inv_refmut_T x)
     /\ ([@stop_split] [@expl:swapper 'y' type invariant] inv_refmut_T y)}
     (! bb0
@@ -248,6 +255,7 @@ end
 module M_temp_move
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -269,7 +277,7 @@ module M_temp_move
   
   meta "select_lsinst" "all"
   
-  let temp_move_T (x: MutBorrow.t t_T) (return (x'0: ())) =
+  let temp_move_T (mode: Mode.t) (x: MutBorrow.t t_T) (return (x'0: ())) =
   {[@stop_split] [@expl:temp_move 'x' type invariant] inv_refmut_T x}
     (! bb0
     [ bb0 = bb0
@@ -290,6 +298,7 @@ end
 module M_tuple
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -313,7 +322,7 @@ module M_tuple
   
   meta "select_lsinst" "all"
   
-  let tuple_T (d: tup2_refmut_T_bool) (e: tup2_refmut_T_bool) (return (x: ())) =
+  let tuple_T (mode: Mode.t) (d: tup2_refmut_T_bool) (e: tup2_refmut_T_bool) (return (x: ())) =
   {[@stop_split] [@expl:tuple_T requires] ([@stop_split] [@expl:tuple 'd' type invariant] inv_tup2_refmut_T_bool d)
     /\ ([@stop_split] [@expl:tuple 'e' type invariant] inv_tup2_refmut_T_bool e)}
     (! bb0
@@ -328,6 +337,7 @@ end
 module M_y
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -343,7 +353,7 @@ module M_y
     forall self: t_Vec_i32_Global [view_Vec_i32_Global self]. Seq.length (view_Vec_i32_Global self)
       <= UInt64.t'int const_MAX
   
-  let len_i32 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32 (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (view_Vec_i32_Global self_)}
       (! return {result}) ]
@@ -363,7 +373,8 @@ module M_y
   
   meta "rewrite_def" predicate resolve_elswhere_usize
   
-  let index_mut_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (ix: UInt64.t) (return (x: MutBorrow.t Int32.t)) =
+  let index_mut_Vec_i32_Global (mode: Mode.t) (self_: MutBorrow.t t_Vec_i32_Global) (ix: UInt64.t)
+    (return (x: MutBorrow.t Int32.t)) =
   {[@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_i32_Global self_.current)}
     any
     [ return (result: MutBorrow.t Int32.t) ->
@@ -386,7 +397,7 @@ module M_y
   
   meta "select_lsinst" "all"
   
-  let y (v: MutBorrow.t t_Vec_i32_Global) (return (x: ())) = (! bb0
+  let y (mode: Mode.t) (v: MutBorrow.t t_Vec_i32_Global) (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = [ &_old <- v.final ] s3 | s3 = bb2 ]
     | bb2 = bb2
       [ bb2 = {[@expl:inferred invariant: unchanged value] _old = v.final}
@@ -394,14 +405,14 @@ module M_y
         = Seq.length (view_Vec_i32_Global v.current)}
         {[@expl:loop invariant #1] UInt64.t'int i <= 10}
         (! s0)
-        [ s0 = len_i32 {v.current} (fun (_x: UInt64.t) -> [ &_16 <- _x ] s1)
+        [ s0 = len_i32 {mode} {v.current} (fun (_x: UInt64.t) -> [ &_16 <- _x ] s1)
         | s1 = [ &_14 <- UInt64.lt i _16 ] s2
         | s2 = any [ br0 -> {_14 = false} (! bb8) | br1 -> {_14} (! bb5) ] ]
         [ bb5 = s0
           [ s0 = MutBorrow.borrow_mut <t_Vec_i32_Global> {v.current}
               (fun (_bor: MutBorrow.t t_Vec_i32_Global) ->
                 [ &_19 <- _bor ] [ &v <- { v with current = _bor.final } ] s1)
-          | s1 = index_mut_Vec_i32_Global {_19} {i} (fun (_x: MutBorrow.t Int32.t) -> [ &_18 <- _x ] s2)
+          | s1 = index_mut_Vec_i32_Global {mode} {_19} {i} (fun (_x: MutBorrow.t Int32.t) -> [ &_18 <- _x ] s2)
           | s2 = [ &_18 <- { _18 with current = (0: Int32.t) } ] s3
           | s3 = -{resolve_refmut_i32 _18}- s4
           | s4 = bb8 ]

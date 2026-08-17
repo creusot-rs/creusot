@@ -1,4 +1,5 @@
 module M_omg
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -33,7 +34,7 @@ module M_omg
   
   meta "rewrite_def" function deep_model_ref_ref_T
   
-  let eq_ref_T (self_: t_T) (rhs: t_T) (return (x: bool)) =
+  let eq_ref_T (mode: Mode.t) (self_: t_T) (rhs: t_T) (return (x: bool)) =
   {[@stop_split] [@expl:eq_ref_T requires] ([@stop_split] [@expl:eq 'self_' type invariant] inv_ref_ref_T self_)
     /\ ([@stop_split] [@expl:eq 'rhs' type invariant] inv_ref_ref_T rhs)}
     any
@@ -45,10 +46,10 @@ module M_omg
   
   meta "select_lsinst" "all"
   
-  let omg_T (x: t_T) (y: t_T) (return (x'0: bool)) =
+  let omg_T (mode: Mode.t) (x: t_T) (y: t_T) (return (x'0: bool)) =
   {[@stop_split] [@expl:omg_T requires] ([@stop_split] [@expl:omg 'x' type invariant] inv_ref_T x)
     /\ ([@stop_split] [@expl:omg 'y' type invariant] inv_ref_T y)}
     (! bb0
-    [ bb0 = s0 [ s0 = eq_ref_T {x} {y} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = eq_ref_T {mode} {x} {y} (fun (_x: bool) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & x: t_T = x | & y: t_T = y ]) [ return (result: bool) -> (! return {result}) ]
 end

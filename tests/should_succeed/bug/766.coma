@@ -1,5 +1,6 @@
 module M_trait_Trait__goo
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Self
@@ -15,11 +16,11 @@ module M_trait_Trait__goo
   
   meta "rewrite_def" predicate inv_refmut_Self
   
-  predicate precondition_f (self: ()) (args: MutBorrow.t t_Self)
+  predicate precondition_f (self: ()) (mode: Mode.t) (args: MutBorrow.t t_Self)
   
   axiom precondition_fndef:
-    forall args: MutBorrow.t t_Self [precondition_f () args]. (let self = args in inv_refmut_Self self)
-      -> precondition_f () args
+    forall mode: Mode.t. forall args: MutBorrow.t t_Self [precondition_f () mode args]. (let self = args in inv_refmut_Self self)
+        -> precondition_f () mode args
   
   type t_FMap_DeepModelTy_DeepModelTy
   
@@ -30,19 +31,22 @@ module M_trait_Trait__goo
   
   meta "rewrite_def" function deep_model_refmut_Self
   
-  predicate postcondition_f (self: ()) (args: MutBorrow.t t_Self) (result: ())
+  predicate postcondition_f (self: ()) (mode: Mode.t) (args: MutBorrow.t t_Self) (result: ())
   
   axiom postcondition_fndef:
-    forall args: MutBorrow.t t_Self, res: () [postcondition_f () args res]. postcondition_f () args res
+    forall mode: Mode.t, args: MutBorrow.t t_Self, res: () [postcondition_f () mode args res]. postcondition_f () mode args res
       -> (let self = args in deep_model_refmut_Self self = deep_model_refmut_Self self)
   
-  predicate postcondition_once_f (self: ()) (args: MutBorrow.t t_Self) (result: ()) = postcondition_f self args result
+  predicate postcondition_once_f (self: ()) (mode: Mode.t) (args: MutBorrow.t t_Self) (result: ()) =
+    postcondition_f self mode args result
   
   meta "rewrite_def" predicate postcondition_once_f
   
-  let f_Self (self: MutBorrow.t t_Self) (return (x: ())) = {[@stop_split] [@expl:f requires] precondition_f () self}
+  let f_Self (mode: Mode.t) (self: MutBorrow.t t_Self) (return (x: ())) =
+  {[@stop_split] [@expl:f requires] precondition_f () mode self}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:f ensures] postcondition_once_f () self result} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:f ensures] postcondition_once_f () mode self result}
+      (! return {result}) ]
   
   predicate resolve_refmut_Self [@inline:trivial] (_1: MutBorrow.t t_Self) = _1.final = _1.current
   
@@ -52,7 +56,7 @@ module M_trait_Trait__goo
   
   meta "select_lsinst" "all"
   
-  let goo_Self (self: MutBorrow.t t_Self) (return (x: ())) =
+  let goo_Self (mode: Mode.t) (self: MutBorrow.t t_Self) (return (x: ())) =
   {[@stop_split] [@expl:goo 'self' type invariant] inv_refmut_Self self}
     (! bb0
     [ bb0 = s0
@@ -61,7 +65,7 @@ module M_trait_Trait__goo
             [ &_2 <- _bor ] -{inv_Self _bor.final}-
             [ &self <- { self with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Self self.current} any) ]
-      | s1 = f_Self {_2} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+      | s1 = f_Self {mode} {_2} (fun (_x: ()) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Self self} any) ]
       | s3 = -{resolve_refmut_Self self}- s4
       | s4 = return {_ret} ] ]

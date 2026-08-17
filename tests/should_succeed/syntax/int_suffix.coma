@@ -1,25 +1,26 @@
 module M_foo
   use creusot.int.Int128
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
-  let new (value: Int128.t) (return (x: int)) = any
+  let new (mode: Mode.t) (value: Int128.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
   
-  let into_inner_Int (self: int) (return (x: int)) = any
+  let into_inner_Int (mode: Mode.t) (self: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
   
-  let new_Int (x: int) (return (x'0: int)) = any
+  let new_Int (mode: Mode.t) (x: int) (return (x'0: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let foo (return (x: int)) = (! bb0
+  let foo (mode: Mode.t) (return (x: int)) = (! bb0
     [ bb0 = s0
-      [ s0 = new {(1: Int128.t)} (fun (_x: int) -> [ &_3 <- _x ] s1)
-      | s1 = into_inner_Int {_3} (fun (_x: int) -> [ &_2 <- _x ] s2)
-      | s2 = new_Int {_2} (fun (_x: int) -> [ &_ret <- _x ] s3)
+      [ s0 = new {Mode.into_ghost mode} {(1: Int128.t)} (fun (_x: int) -> [ &_3 <- _x ] s1)
+      | s1 = into_inner_Int {Mode.into_ghost mode} {_3} (fun (_x: int) -> [ &_2 <- _x ] s2)
+      | s2 = new_Int {Mode.into_ghost mode} {_2} (fun (_x: int) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ] [ & _ret: int = Any.any_l () | & _2: int = Any.any_l () | & _3: int = Any.any_l () ])
     [ return (result: int) -> {[@stop_split] [@expl:foo ensures] result = 1} (! return {result}) ]
 end

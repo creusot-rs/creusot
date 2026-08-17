@@ -1,9 +1,9 @@
 extern crate creusot_std;
 use creusot_std::prelude::*;
 
-#[requires(<T as AsRef<[u8]>>::as_ref.precondition((&bytes,)))]
-#[ensures(exists<s: &[u8]>
-    <T as AsRef<[u8]>>::as_ref.postcondition((&bytes,), s) &&
+#[requires(|mode| <T as AsRef<[u8]>>::as_ref.precondition(mode, (&bytes,)))]
+#[ensures(|result, mode| exists<s: &[u8]>
+    <T as AsRef<[u8]>>::as_ref.postcondition(mode, (&bytes,), s) &&
     result@ == s@.len()
 )]
 pub fn get_len_through_as_ref<T: AsRef<[u8]>>(bytes: T) -> usize {

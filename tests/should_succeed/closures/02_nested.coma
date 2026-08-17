@@ -1,9 +1,10 @@
 module M_nested_closure
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type closure0 = { c0: bool }
   
-  let closure0 [@coma:extspec] (self: closure0) (return (x: bool)) = bb0
+  let closure0 [@coma:extspec] (mode: Mode.t) (self: closure0) (return (x: bool)) = bb0
     [ bb0 = s0 [ s0 = [ &_ret <- self.c0 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & self: closure0 = self ] [ return (result: bool) -> return {result} ]
   
@@ -13,24 +14,25 @@ module M_nested_closure
   
   type closure0'0 = { c0'0: bool }
   
-  predicate precondition_closure0 (self: closure0) (args: ()) = closure0'pre self
+  predicate precondition_closure0 (self: closure0) (mode: Mode.t) (args: ()) = closure0'pre mode self
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate postcondition_closure0 (self: closure0) (args: ()) (result: bool) = closure0'post'return self result
+  predicate postcondition_closure0 (self: closure0) (mode: Mode.t) (args: ()) (result: bool) =
+    closure0'post'return self mode result
   
   meta "rewrite_def" predicate postcondition_closure0
   
-  let call_closure0 (self_: closure0) (arg: ()) (return (x: bool)) =
-  {[@stop_split] [@expl:call requires] precondition_closure0 self_ arg}
+  let call_closure0 (mode: Mode.t) (self_: closure0) (arg: ()) (return (x: bool)) =
+  {[@stop_split] [@expl:call requires] precondition_closure0 self_ mode arg}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self_ arg result}
+    [ return (result: bool) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self_ mode arg result}
       (! return {result}) ]
   
-  let closure0'0 [@coma:extspec] (self: closure0'0) (return (x: bool)) = bb0
+  let closure0'0 [@coma:extspec] (mode: Mode.t) (self: closure0'0) (return (x: bool)) = bb0
     [ bb0 = s0
       [ s0 = [ &omg <- { c0 = self.c0'0 } ] s1
-      | s1 = call_closure0 {omg} {_5} (fun (_x: bool) -> [ &_ret <- _x ] s2)
+      | s1 = call_closure0 {mode} {omg} {_5} (fun (_x: bool) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self: closure0'0 = self
@@ -41,29 +43,30 @@ module M_nested_closure
   
   meta "rewrite_def" predicate closure0'0'post'return
   
-  predicate precondition_closure0'0 (self: closure0'0) (args: ()) = closure0'0'pre self
+  predicate precondition_closure0'0 (self: closure0'0) (mode: Mode.t) (args: ()) = closure0'0'pre mode self
   
   meta "rewrite_def" predicate precondition_closure0'0
   
-  predicate postcondition_closure0'0 (self: closure0'0) (args: ()) (result: bool) = closure0'0'post'return self result
+  predicate postcondition_closure0'0 (self: closure0'0) (mode: Mode.t) (args: ()) (result: bool) =
+    closure0'0'post'return self mode result
   
   meta "rewrite_def" predicate postcondition_closure0'0
   
-  let call_closure0'0 (self_: closure0'0) (arg: ()) (return (x: bool)) =
-  {[@stop_split] [@expl:call requires] precondition_closure0'0 self_ arg}
+  let call_closure0'0 (mode: Mode.t) (self_: closure0'0) (arg: ()) (return (x: bool)) =
+  {[@stop_split] [@expl:call requires] precondition_closure0'0 self_ mode arg}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:call ensures] postcondition_closure0'0 self_ arg result}
+    [ return (result: bool) -> {[@stop_split] [@expl:call ensures] postcondition_closure0'0 self_ mode arg result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let nested_closure (return (x: ())) = (! bb0
+  let nested_closure (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &a <- true ] s1
       | s1 = [ &_4 <- { c0'0 = a } ] s2
-      | s2 = call_closure0'0 {_4} {_6} (fun (_x: bool) -> [ &_a <- _x ] s3)
+      | s2 = call_closure0'0 {mode} {_4} {_6} (fun (_x: bool) -> [ &_a <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & a: bool = Any.any_l ()

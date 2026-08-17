@@ -2,6 +2,7 @@ module M_f
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.Int
   
   type closure0 = { c0: bool; c1: MutBorrow.t Int32.t; c2: MutBorrow.t Int32.t }
@@ -19,9 +20,8 @@ module M_f
   
   meta "rewrite_def" predicate resolve_Box_Box_refmut_i32_Global_Global
   
-  let closure0 (self: closure0) (return (x: ())) = {[@stop_split] [@expl:closure requires] Int32.to_int self.c2.current
-      = 1
-    /\ Int32.to_int self.c1.current = 1}
+  let closure0 (mode: Mode.t) (self: closure0) (return (x: ())) =
+  {[@stop_split] [@expl:closure requires] Int32.to_int self.c2.current = 1 /\ Int32.to_int self.c1.current = 1}
     (! bb0
     [ bb0 = any [ br0 -> {self.c0 = false} (! bb3) | br1 -> {self.c0} (! bb1) ]
     | bb1 = s0
@@ -57,27 +57,27 @@ module M_f
       = 3}
       (! return {result}) ]
   
-  predicate precondition_closure0 (self: closure0) (args: ()) =
+  predicate precondition_closure0 (self: closure0) (mode: Mode.t) (args: ()) =
     Int32.to_int self.c2.current = 1 /\ Int32.to_int self.c1.current = 1
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate postcondition_once_closure0 (self: closure0) (args: ()) (result: ()) =
+  predicate postcondition_once_closure0 (self: closure0) (mode: Mode.t) (args: ()) (result: ()) =
     Int32.to_int self.c2.final + Int32.to_int self.c1.final = 3
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  let call_once_closure0 (self_: closure0) (arg: ()) (return (x: ())) =
-  {[@stop_split] [@expl:call_once requires] precondition_closure0 self_ arg}
+  let call_once_closure0 (mode: Mode.t) (self_: closure0) (arg: ()) (return (x: ())) =
+  {[@stop_split] [@expl:call_once requires] precondition_closure0 self_ mode arg}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_closure0 self_ arg result}
+    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_closure0 self_ mode arg result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let f (c: bool) (return (x: ())) = (! bb0
+  let f (mode: Mode.t) (c: bool) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = [ &y <- (1: Int32.t) ] s2
@@ -88,7 +88,7 @@ module M_f
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_8 <- _bor ] [ &y <- _bor.final ] s5)
       | s5 = [ &by' <- _8 ] s6
       | s6 = [ &f <- { c0 = c; c1 = by'; c2 = bx } ] s7
-      | s7 = call_once_closure0 {f} {_12} (fun (_x: ()) -> [ &_10 <- _x ] s8)
+      | s7 = call_once_closure0 {mode} {f} {_12} (fun (_x: ()) -> [ &_10 <- _x ] s8)
       | s8 = {[@expl:assertion] Int32.to_int x + Int32.to_int y = 3} s9
       | s9 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

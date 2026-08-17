@@ -1,5 +1,6 @@
 module M_adds_two
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use map.Map
   use creusot.prelude.Any
   use int.ComputerDivision
@@ -12,12 +13,12 @@ module M_adds_two
   
   function view_PredCell_u32 (self: t_PredCell_u32) : Map.map UInt32.t bool
   
-  let get_u32 (self: t_PredCell_u32) (return (x: UInt32.t)) = any
+  let get_u32 (mode: Mode.t) (self: t_PredCell_u32) (return (x: UInt32.t)) = any
     [ return (result: UInt32.t) ->
     {[@stop_split] [@expl:get ensures] index_Mapping_u32_bool (view_PredCell_u32 self) result}
       (! return {result}) ]
   
-  let set_u32 (self: t_PredCell_u32) (v: UInt32.t) (return (x: ())) =
+  let set_u32 (mode: Mode.t) (self: t_PredCell_u32) (v: UInt32.t) (return (x: ())) =
   {[@stop_split] [@expl:set requires] index_Mapping_u32_bool (view_PredCell_u32 self) v}
     any [ return (result: ()) -> (! return {result}) ]
   
@@ -25,18 +26,19 @@ module M_adds_two
   
   meta "select_lsinst" "all"
   
-  let adds_two (c: t_PredCell_u32) (return (x: ())) = {[@stop_split] [@expl:adds_two requires] view_PredCell_u32 c
+  let adds_two (mode: Mode.t) (c: t_PredCell_u32) (return (x: ())) =
+  {[@stop_split] [@expl:adds_two requires] view_PredCell_u32 c
     = fun (z: UInt32.t) -> ComputerDivision.mod (UInt32.t'int z) 2 = 0}
     (! bb0
     [ bb0 = s0
-      [ s0 = get_u32 {c} (fun (_x: UInt32.t) -> [ &v <- _x ] s1)
+      [ s0 = get_u32 {mode} {c} (fun (_x: UInt32.t) -> [ &v <- _x ] s1)
       | s1 = [ &_6 <- UInt32.lt v (100000: UInt32.t) ] s2
       | s2 = any [ br0 -> {_6 = false} (! bb4) | br1 -> {_6} (! bb2) ] ]
     | bb2 = s0
       [ s0 = UInt32.add {v} {(2: UInt32.t)} (fun (_x: UInt32.t) -> [ &_10 <- _x ] s1)
-      | s1 = set_u32 {c} {_10} (fun (_x: ()) -> [ &_8 <- _x ] s2)
+      | s1 = set_u32 {mode} {c} {_10} (fun (_x: ()) -> [ &_8 <- _x ] s2)
       | s2 = return {_ret} ]
-    | bb4 = s0 [ s0 = set_u32 {c} {(0: UInt32.t)} (fun (_x: ()) -> [ &_12 <- _x ] s1) | s1 = return {_ret} ] ]
+    | bb4 = s0 [ s0 = set_u32 {mode} {c} {(0: UInt32.t)} (fun (_x: ()) -> [ &_12 <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & c: t_PredCell_u32 = c
     | & v: UInt32.t = Any.any_l ()

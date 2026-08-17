@@ -1,17 +1,19 @@
 module M_ghost_arg
   use creusot.prelude.Any
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let ghost_arg (g: UInt32.t) (return (x: ())) = (! bb0
+  let ghost_arg (mode: Mode.t) (g: UInt32.t) (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &_x <- g ] s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & g: UInt32.t = g | & _x: UInt32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_ghost_check
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.Int32
   use creusot.int.UInt64
@@ -29,57 +31,69 @@ module M_ghost_check
     forall self: t_Vec_i32_Global [view_Vec_i32_Global self]. Seq.length (view_Vec_i32_Global self)
       <= UInt64.t'int const_MAX
   
-  let new_i32 (return (x: t_Vec_i32_Global)) = any
+  let new_i32 (mode: Mode.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_i32_Global result)
       = 0}
       (! return {result}) ]
   
   function logi_drop_Vec_i32_Global (_1: t_Vec_i32_Global) : () = ()
   
-  let push_i32 (self_: MutBorrow.t t_Vec_i32_Global) (v: Int32.t) (return (x: ())) = any
+  let push_i32 (mode: Mode.t) (self_: MutBorrow.t t_Vec_i32_Global) (v: Int32.t) (return (x: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:push ensures] view_Vec_i32_Global self_.final
       = Seq.snoc (view_Vec_i32_Global self_.current) v}
       (! return {result}) ]
   
-  let len_i32 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32 (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (view_Vec_i32_Global self_)}
       (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let ghost_check (return (x: ())) = (! bb0
+  let ghost_check (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 (fun (_x: t_Vec_i32_Global) -> [ &x <- _x ] s1)
+      [ s0 = new_i32 {mode} (fun (_x: t_Vec_i32_Global) -> [ &x <- _x ] s1)
       | s1 = [ &_2 <- let _ = logi_drop_Vec_i32_Global x in () ] s2
       | s2 = MutBorrow.borrow_mut <t_Vec_i32_Global> {x}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_6 <- _bor ] [ &x <- _bor.final ] s3)
-      | s3 = push_i32 {_6} {(0: Int32.t)} (fun (_x: ()) -> [ &_5 <- _x ] s4)
-      | s4 = len_i32 {x} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s5)
+      | s3 = push_i32 {mode} {_6} {(0: Int32.t)} (fun (_x: ()) -> [ &_5 <- _x ] s4)
+      | s4 = len_i32 {mode} {x} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s5)
       | s5 = [ &_8 <- _9 = (1: UInt64.t) ] s6
       | s6 = any [ br0 -> {_8 = false} (! bb6) | br1 -> {_8} (! bb7) ] ]
     | bb7 = return {_ret}
-    | bb6 = {false} any ]
+    | bb6 = s0
+      [ s0 = panic {mode} {"assertion failed: x.len() == 1"} (fun (_x: ()) -> [ &_11 <- _x ] s1) | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & x: t_Vec_i32_Global = Any.any_l ()
     | & _2: () = Any.any_l ()
     | & _5: () = Any.any_l ()
     | & _6: MutBorrow.t t_Vec_i32_Global = Any.any_l ()
     | & _8: bool = Any.any_l ()
-    | & _9: UInt64.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _9: UInt64.t = Any.any_l ()
+    | & _11: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_ghost_copy
   use creusot.int.Int32
   use seq.Seq
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let ghost_copy (return (x: ())) = (! bb0
+  let ghost_copy (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &a <- (0: Int32.t) ] s1
       | s1 = [ &_s <- Seq.snoc (Seq.empty: Seq.seq Int32.t) (0: Int32.t) ] s2
@@ -92,6 +106,7 @@ module M_ghost_is_copy
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
@@ -101,7 +116,7 @@ module M_ghost_is_copy
   
   meta "select_lsinst" "all"
   
-  let ghost_is_copy (return (x: ())) = (! bb0
+  let ghost_is_copy (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (0: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
@@ -120,6 +135,7 @@ module M_ghost_is_copy
     | & g2: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_ghost_vec
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.UInt32
   use creusot.int.UInt64
@@ -136,7 +152,7 @@ module M_ghost_vec
     forall self: t_Vec_u32_Global [view_Vec_u32_Global self]. Seq.length (view_Vec_u32_Global self)
       <= UInt64.t'int const_MAX
   
-  let new_u32 (return (x: t_Vec_u32_Global)) = any
+  let new_u32 (mode: Mode.t) (return (x: t_Vec_u32_Global)) = any
     [ return (result: t_Vec_u32_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_u32_Global result)
       = 0}
       (! return {result}) ]
@@ -145,15 +161,18 @@ module M_ghost_vec
   
   meta "select_lsinst" "all"
   
-  let ghost_vec (return (x: ())) = (! bb0
+  let ghost_vec (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = new_u32 (fun (_x: t_Vec_u32_Global) -> [ &x <- _x ] s1) | s1 = [ &_s <- x ] s2 | s2 = return {_ret} ] ]
+      [ s0 = new_u32 {mode} (fun (_x: t_Vec_u32_Global) -> [ &x <- _x ] s1)
+      | s1 = [ &_s <- x ] s2
+      | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & x: t_Vec_u32_Global = Any.any_l () | & _s: t_Vec_u32_Global = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_takes_struct
   use creusot.int.UInt32
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_MyStruct = { f: UInt32.t; g: UInt32.t }
   
@@ -161,7 +180,7 @@ module M_takes_struct
   
   meta "select_lsinst" "all"
   
-  let takes_struct (x: t_MyStruct) (return (x'0: t_MyStruct)) =
+  let takes_struct (mode: Mode.t) (x: t_MyStruct) (return (x'0: t_MyStruct)) =
   {[@stop_split] [@expl:takes_struct requires] UInt32.t'int x.g = 0}
     (! bb0
     [ bb0 = s0 [ s0 = [ &x <- { x with g = x.f } ] s1 | s1 = [ &_ret <- x ] s2 | s2 = return {_ret} ] ]

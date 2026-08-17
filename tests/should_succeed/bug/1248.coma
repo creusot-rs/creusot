@@ -1,12 +1,22 @@
 module M_multiple_values_usize
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let multiple_values_usize (x: UInt64.t) (return (x'0: ())) = (! bb0
+  let multiple_values_usize (mode: Mode.t) (x: UInt64.t) (return (x'0: ())) = (! bb0
     [ bb0 = any
       [ br0 -> {x = (1: UInt64.t)} (! bb7)
       | br1 -> {x = (2: UInt64.t)} (! bb6)
@@ -18,37 +28,58 @@ module M_multiple_values_usize
       [ s0 = [ &_16 <- x <> (2: UInt64.t) ] s1 | s1 = any [ br0 -> {_16 = false} (! bb17) | br1 -> {_16} (! bb16) ] ]
     | bb16 = s0
       [ s0 = [ &_20 <- x <> (3: UInt64.t) ] s1 | s1 = any [ br0 -> {_20 = false} (! bb19) | br1 -> {_20} (! bb20) ] ]
-    | bb19 = {false} any
-    | bb17 = {false} any
-    | bb15 = {false} any
+    | bb19 = s0
+      [ s0 = panic {mode} {"assertion failed: x != 3"} (fun (_x: ()) -> [ &_22 <- _x ] s1) | s1 = {false} any ]
+    | bb17 = s0
+      [ s0 = panic {mode} {"assertion failed: x != 2"} (fun (_x: ()) -> [ &_18 <- _x ] s1) | s1 = {false} any ]
+    | bb15 = s0
+      [ s0 = panic {mode} {"assertion failed: x != 1"} (fun (_x: ()) -> [ &_14 <- _x ] s1) | s1 = {false} any ]
     | bb5 = s0
       [ s0 = [ &_8 <- x = (3: UInt64.t) ] s1 | s1 = any [ br0 -> {_8 = false} (! bb13) | br1 -> {_8} (! bb20) ] ]
-    | bb13 = {false} any
+    | bb13 = s0
+      [ s0 = panic {mode} {"assertion failed: x == 3"} (fun (_x: ()) -> [ &_10 <- _x ] s1) | s1 = {false} any ]
     | bb6 = s0
       [ s0 = [ &_5 <- x = (2: UInt64.t) ] s1 | s1 = any [ br0 -> {_5 = false} (! bb11) | br1 -> {_5} (! bb20) ] ]
-    | bb11 = {false} any
+    | bb11 = s0 [ s0 = panic {mode} {"assertion failed: x == 2"} (fun (_x: ()) -> [ &_7 <- _x ] s1) | s1 = {false} any ]
     | bb7 = s0
       [ s0 = [ &_2 <- x = (1: UInt64.t) ] s1 | s1 = any [ br0 -> {_2 = false} (! bb9) | br1 -> {_2} (! bb20) ] ]
     | bb20 = return {_ret}
-    | bb9 = {false} any ]
+    | bb9 = s0
+      [ s0 = panic {mode} {"assertion failed: x == 1"} (fun (_x: ()) -> [ &_4 <- _x ] s1) | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & x: UInt64.t = x
     | & _2: bool = Any.any_l ()
+    | & _4: () = Any.any_l ()
     | & _5: bool = Any.any_l ()
+    | & _7: () = Any.any_l ()
     | & _8: bool = Any.any_l ()
+    | & _10: () = Any.any_l ()
     | & _12: bool = Any.any_l ()
+    | & _14: () = Any.any_l ()
     | & _16: bool = Any.any_l ()
-    | & _20: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _18: () = Any.any_l ()
+    | & _20: bool = Any.any_l ()
+    | & _22: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_negative_values_i32
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let negative_values_i32 (x: Int32.t) (return (x'0: ())) = (! bb0
+  let negative_values_i32 (mode: Mode.t) (x: Int32.t) (return (x'0: ())) = (! bb0
     [ bb0 = any
       [ br0 -> {x = (-1: Int32.t)} (! bb7)
       | br1 -> {x = (0: Int32.t)} (! bb6)
@@ -60,62 +91,103 @@ module M_negative_values_i32
       [ s0 = [ &_16 <- x <> (0: Int32.t) ] s1 | s1 = any [ br0 -> {_16 = false} (! bb17) | br1 -> {_16} (! bb16) ] ]
     | bb16 = s0
       [ s0 = [ &_20 <- x <> (1: Int32.t) ] s1 | s1 = any [ br0 -> {_20 = false} (! bb19) | br1 -> {_20} (! bb20) ] ]
-    | bb19 = {false} any
-    | bb17 = {false} any
-    | bb15 = {false} any
+    | bb19 = s0
+      [ s0 = panic {mode} {"assertion failed: x != 1"} (fun (_x: ()) -> [ &_22 <- _x ] s1) | s1 = {false} any ]
+    | bb17 = s0
+      [ s0 = panic {mode} {"assertion failed: x != 0"} (fun (_x: ()) -> [ &_18 <- _x ] s1) | s1 = {false} any ]
+    | bb15 = s0
+      [ s0 = panic {mode} {"assertion failed: x != -1"} (fun (_x: ()) -> [ &_14 <- _x ] s1) | s1 = {false} any ]
     | bb5 = s0
       [ s0 = [ &_8 <- x = (1: Int32.t) ] s1 | s1 = any [ br0 -> {_8 = false} (! bb13) | br1 -> {_8} (! bb20) ] ]
-    | bb13 = {false} any
+    | bb13 = s0
+      [ s0 = panic {mode} {"assertion failed: x == 1"} (fun (_x: ()) -> [ &_10 <- _x ] s1) | s1 = {false} any ]
     | bb6 = s0
       [ s0 = [ &_5 <- x = (0: Int32.t) ] s1 | s1 = any [ br0 -> {_5 = false} (! bb11) | br1 -> {_5} (! bb20) ] ]
-    | bb11 = {false} any
+    | bb11 = s0 [ s0 = panic {mode} {"assertion failed: x == 0"} (fun (_x: ()) -> [ &_7 <- _x ] s1) | s1 = {false} any ]
     | bb7 = s0
       [ s0 = [ &_2 <- x = (-1: Int32.t) ] s1 | s1 = any [ br0 -> {_2 = false} (! bb9) | br1 -> {_2} (! bb20) ] ]
     | bb20 = return {_ret}
-    | bb9 = {false} any ]
+    | bb9 = s0
+      [ s0 = panic {mode} {"assertion failed: x == -1"} (fun (_x: ()) -> [ &_4 <- _x ] s1) | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & x: Int32.t = x
     | & _2: bool = Any.any_l ()
+    | & _4: () = Any.any_l ()
     | & _5: bool = Any.any_l ()
+    | & _7: () = Any.any_l ()
     | & _8: bool = Any.any_l ()
+    | & _10: () = Any.any_l ()
     | & _12: bool = Any.any_l ()
+    | & _14: () = Any.any_l ()
     | & _16: bool = Any.any_l ()
-    | & _20: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _18: () = Any.any_l ()
+    | & _20: bool = Any.any_l ()
+    | & _22: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_single_value_i32
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let single_value_i32 (x: Int32.t) (return (x'0: ())) = (! bb0
+  let single_value_i32 (mode: Mode.t) (x: Int32.t) (return (x'0: ())) = (! bb0
     [ bb0 = any [ br0 -> {x = (0: Int32.t)} (! bb3) | default -> -{x <> (0: Int32.t)}- (! bb1) ]
     | bb1 = s0 [ s0 = [ &_5 <- x <> (0: Int32.t) ] s1 | s1 = any [ br0 -> {_5 = false} (! bb7) | br1 -> {_5} (! bb8) ] ]
-    | bb7 = {false} any
+    | bb7 = s0 [ s0 = panic {mode} {"assertion failed: x != 0"} (fun (_x: ()) -> [ &_7 <- _x ] s1) | s1 = {false} any ]
     | bb3 = s0 [ s0 = [ &_2 <- x = (0: Int32.t) ] s1 | s1 = any [ br0 -> {_2 = false} (! bb5) | br1 -> {_2} (! bb8) ] ]
     | bb8 = return {_ret}
-    | bb5 = {false} any ]
-    [ & _ret: () = Any.any_l () | & x: Int32.t = x | & _2: bool = Any.any_l () | & _5: bool = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+    | bb5 = s0
+      [ s0 = panic {mode} {"assertion failed: x == 0"} (fun (_x: ()) -> [ &_4 <- _x ] s1) | s1 = {false} any ] ]
+    [ & _ret: () = Any.any_l ()
+    | & x: Int32.t = x
+    | & _2: bool = Any.any_l ()
+    | & _4: () = Any.any_l ()
+    | & _5: bool = Any.any_l ()
+    | & _7: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_single_value_usize
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let single_value_usize (x: UInt64.t) (return (x'0: ())) = (! bb0
+  let single_value_usize (mode: Mode.t) (x: UInt64.t) (return (x'0: ())) = (! bb0
     [ bb0 = any [ br0 -> {x = (1: UInt64.t)} (! bb3) | default -> -{x <> (1: UInt64.t)}- (! bb1) ]
     | bb1 = s0
       [ s0 = [ &_5 <- x <> (1: UInt64.t) ] s1 | s1 = any [ br0 -> {_5 = false} (! bb7) | br1 -> {_5} (! bb8) ] ]
-    | bb7 = {false} any
+    | bb7 = s0 [ s0 = panic {mode} {"assertion failed: x != 1"} (fun (_x: ()) -> [ &_7 <- _x ] s1) | s1 = {false} any ]
     | bb3 = s0 [ s0 = [ &_2 <- x = (1: UInt64.t) ] s1 | s1 = any [ br0 -> {_2 = false} (! bb5) | br1 -> {_2} (! bb8) ] ]
     | bb8 = return {_ret}
-    | bb5 = {false} any ]
-    [ & _ret: () = Any.any_l () | & x: UInt64.t = x | & _2: bool = Any.any_l () | & _5: bool = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+    | bb5 = s0
+      [ s0 = panic {mode} {"assertion failed: x == 1"} (fun (_x: ()) -> [ &_4 <- _x ] s1) | s1 = {false} any ] ]
+    [ & _ret: () = Any.any_l ()
+    | & x: UInt64.t = x
+    | & _2: bool = Any.any_l ()
+    | & _4: () = Any.any_l ()
+    | & _5: bool = Any.any_l ()
+    | & _7: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

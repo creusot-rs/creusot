@@ -1,4 +1,5 @@
 module M_test_array
+  use creusot.prelude.Mode
   use creusot.slice.Slice64
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -13,7 +14,7 @@ module M_test_array
   
   function view_Iter_i32 (self: t_Iter_i32) : Slice64.slice Int32.t
   
-  let iter_i32 (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
+  let iter_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
     [ return (result: t_Iter_i32) ->
     {[@stop_split] [@expl:iter_i32 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_i32 result)
       /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self_)}
@@ -66,7 +67,7 @@ module M_test_array
   predicate completed_Iter_i32 (self: MutBorrow.t t_Iter_i32) =
     resolve_refmut_Iter_i32 self /\ Slice64.view (view_Iter_i32 self.current) = (Seq.empty: Seq.seq Int32.t)
   
-  let next_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
+  let next_Iter_i32 (mode: Mode.t) (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
   {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_i32 self_}
     any
     [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:next ensures] match result with
@@ -99,7 +100,7 @@ module M_test_array
   
   meta "rewrite_def" function deep_model_ref_Option_ref_i32
   
-  let eq_Option_ref_i32 (self_: t_Option_ref_i32) (rhs: t_Option_ref_i32) (return (x: bool)) = any
+  let eq_Option_ref_i32 (mode: Mode.t) (self_: t_Option_ref_i32) (rhs: t_Option_ref_i32) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
       = (deep_model_ref_Option_ref_i32 self_ = deep_model_ref_Option_ref_i32 rhs)}
       (! return {result}) ]
@@ -123,7 +124,7 @@ module M_test_array
   
   function view_IntoIter_i32 (self: t_IntoIter_i32) : Seq.seq Int32.t
   
-  let into_iter_array_i32_1 (self_: Slice64.array Int32.t) (return (x: t_IntoIter_i32)) =
+  let into_iter_array_i32_1 (mode: Mode.t) (self_: Slice64.array Int32.t) (return (x: t_IntoIter_i32)) =
   {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_array_i32_1 self_}
     any
     [ return (result: t_IntoIter_i32) ->
@@ -164,7 +165,7 @@ module M_test_array
   predicate completed_IntoIter_i32 (self: MutBorrow.t t_IntoIter_i32) =
     resolve_refmut_IntoIter_i32 self /\ view_IntoIter_i32 self.current = (Seq.empty: Seq.seq Int32.t)
   
-  let next_IntoIter_i32 (self_: MutBorrow.t t_IntoIter_i32) (return (x: t_Option_i32)) =
+  let next_IntoIter_i32 (mode: Mode.t) (self_: MutBorrow.t t_IntoIter_i32) (return (x: t_Option_i32)) =
   {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_IntoIter_i32 self_}
     any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
@@ -186,7 +187,7 @@ module M_test_array
   
   meta "rewrite_def" function deep_model_ref_Option_i32
   
-  let eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
+  let eq_Option_i32 (mode: Mode.t) (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
       = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
       (! return {result}) ]
@@ -195,11 +196,45 @@ module M_test_array
   
   type t_AssertKind = Eq | Ne | Match
   
+  type t_Arguments
+  
+  type t_Option_Arguments = None'2 | Some'2 t_Arguments
+  
+  predicate inv_Arguments (_1: t_Arguments)
+  
+  predicate inv_Option_Arguments (_1: t_Option_Arguments)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_Arguments [inv_Option_Arguments x]. inv_Option_Arguments x
+      = match x with
+        | None'2 -> true
+        | Some'2 f0'1 -> inv_Arguments f0'1
+        end
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let assert_failed_Option_i32 (mode: Mode.t) (kind: t_AssertKind) (left: t_Option_i32) (right: t_Option_i32)
+    (args: t_Option_Arguments) (return (x: ())) =
+  {[@stop_split] [@expl:assert_failed_Option_i32 requires] ([@stop_split] [@expl:assert_failed 'args' type invariant] inv_Option_Arguments args)
+    /\ ([@stop_split] [@expl:assert_failed requires] not Mode.nopanic mode)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:assert_failed result type invariant] inv_never result}
+      (! return {result}) ]
+  
+  let assert_failed_Option_ref_i32 (mode: Mode.t) (kind: t_AssertKind) (left: t_Option_ref_i32)
+    (right: t_Option_ref_i32) (args: t_Option_Arguments) (return (x: ())) =
+  {[@stop_split] [@expl:assert_failed_Option_ref_i32 requires] ([@stop_split] [@expl:assert_failed 'args' type invariant] inv_Option_Arguments args)
+    /\ ([@stop_split] [@expl:assert_failed requires] not Mode.nopanic mode)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:assert_failed result type invariant] inv_never result}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_array (return (x: ())) = (! bb0
+  let test_array (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
@@ -211,11 +246,11 @@ module M_test_array
           | s2'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: Slice64.array Int32.t = Any.any_l () | & _1: Slice64.array Int32.t = Any.any_l () ]
         [ _const_ret (_const: Slice64.array Int32.t) -> [ &_121 <- _const ] s1 ]
-      | s1 = iter_i32 {_121} (fun (_x: t_Iter_i32) -> [ &a <- _x ] s2)
+      | s1 = iter_i32 {mode} {_121} (fun (_x: t_Iter_i32) -> [ &a <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_Iter_i32> {a}
           (fun (_bor: MutBorrow.t t_Iter_i32) -> [ &_9 <- _bor ] -{inv_Iter_i32 _bor.final}- [ &a <- _bor.final ] s3)
         [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
-      | s3 = next_Iter_i32 {_9} (fun (_x: t_Option_ref_i32) -> [ &_8 <- _x ] s4)
+      | s3 = next_Iter_i32 {mode} {_9} (fun (_x: t_Option_ref_i32) -> [ &_8 <- _x ] s4)
       | s4 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- Some (1: Int32.t) ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
@@ -224,13 +259,13 @@ module M_test_array
       | s5 = [ &_6 <- { f0 = _8; f1 = _120 } ] s6
       | s6 = [ &left_val <- _6.f0 ] s7
       | s7 = [ &right_val <- _6.f1 ] s8
-      | s8 = eq_Option_ref_i32 {left_val} {right_val} (fun (_x: bool) -> [ &_16 <- _x ] s9)
+      | s8 = eq_Option_ref_i32 {mode} {left_val} {right_val} (fun (_x: bool) -> [ &_16 <- _x ] s9)
       | s9 = any [ br0 -> {_16 = false} (! bb5) | br1 -> {_16} (! bb4) ] ]
     | bb4 = s0
       [ s0 = MutBorrow.borrow_mut <t_Iter_i32> {a}
           (fun (_bor: MutBorrow.t t_Iter_i32) -> [ &_32 <- _bor ] -{inv_Iter_i32 _bor.final}- [ &a <- _bor.final ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
-      | s1 = next_Iter_i32 {_32} (fun (_x: t_Option_ref_i32) -> [ &_31 <- _x ] s2)
+      | s1 = next_Iter_i32 {mode} {_32} (fun (_x: t_Option_ref_i32) -> [ &_31 <- _x ] s2)
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- Some (2: Int32.t) ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
@@ -239,13 +274,13 @@ module M_test_array
       | s3 = [ &_29 <- { f0 = _31; f1 = _119 } ] s4
       | s4 = [ &left_val'0 <- _29.f0 ] s5
       | s5 = [ &right_val'0 <- _29.f1 ] s6
-      | s6 = eq_Option_ref_i32 {left_val'0} {right_val'0} (fun (_x: bool) -> [ &_39 <- _x ] s7)
+      | s6 = eq_Option_ref_i32 {mode} {left_val'0} {right_val'0} (fun (_x: bool) -> [ &_39 <- _x ] s7)
       | s7 = any [ br0 -> {_39 = false} (! bb9) | br1 -> {_39} (! bb8) ] ]
     | bb8 = s0
       [ s0 = MutBorrow.borrow_mut <t_Iter_i32> {a}
           (fun (_bor: MutBorrow.t t_Iter_i32) -> [ &_55 <- _bor ] -{inv_Iter_i32 _bor.final}- [ &a <- _bor.final ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
-      | s1 = next_Iter_i32 {_55} (fun (_x: t_Option_ref_i32) -> [ &_54 <- _x ] s2)
+      | s1 = next_Iter_i32 {mode} {_55} (fun (_x: t_Option_ref_i32) -> [ &_54 <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
       | s3 = -{resolve_Iter_i32 a}- s4
       | s4 = bb0'0
@@ -255,19 +290,19 @@ module M_test_array
       | s5 = [ &_52 <- { f0 = _54; f1 = _118 } ] s6
       | s6 = [ &left_val'1 <- _52.f0 ] s7
       | s7 = [ &right_val'1 <- _52.f1 ] s8
-      | s8 = eq_Option_ref_i32 {left_val'1} {right_val'1} (fun (_x: bool) -> [ &_60 <- _x ] s9)
+      | s8 = eq_Option_ref_i32 {mode} {left_val'1} {right_val'1} (fun (_x: bool) -> [ &_60 <- _x ] s9)
       | s9 = any [ br0 -> {_60 = false} (! bb13) | br1 -> {_60} (! bb12) ] ]
     | bb12 = s0
       [ s0 = any
         [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
           /\ Seq.length __arr_temp.Slice64.elts = 1}-
           [ &_73 <- __arr_temp ] s1) ]
-      | s1 = into_iter_array_i32_1 {_73} (fun (_x: t_IntoIter_i32) -> [ &b <- _x ] s2)
+      | s1 = into_iter_array_i32_1 {mode} {_73} (fun (_x: t_IntoIter_i32) -> [ &b <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_IntoIter_i32> {b}
           (fun (_bor: MutBorrow.t t_IntoIter_i32) ->
             [ &_78 <- _bor ] -{inv_IntoIter_i32 _bor.final}-
             [ &b <- _bor.final ] s3) [ _ck -> (! {[@expl:type invariant] inv_IntoIter_i32 b} any) ]
-      | s3 = next_IntoIter_i32 {_78} (fun (_x: t_Option_i32) -> [ &_77 <- _x ] s4)
+      | s3 = next_IntoIter_i32 {mode} {_78} (fun (_x: t_Option_i32) -> [ &_77 <- _x ] s4)
       | s4 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- Some'1 (1: Int32.t) ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
@@ -276,14 +311,14 @@ module M_test_array
       | s5 = [ &_75 <- { f0'0 = _77; f1'0 = _117 } ] s6
       | s6 = [ &left_val'2 <- _75.f0'0 ] s7
       | s7 = [ &right_val'2 <- _75.f1'0 ] s8
-      | s8 = eq_Option_i32 {left_val'2} {right_val'2} (fun (_x: bool) -> [ &_83 <- _x ] s9)
+      | s8 = eq_Option_i32 {mode} {left_val'2} {right_val'2} (fun (_x: bool) -> [ &_83 <- _x ] s9)
       | s9 = any [ br0 -> {_83 = false} (! bb18) | br1 -> {_83} (! bb17) ] ]
     | bb17 = s0
       [ s0 = MutBorrow.borrow_mut <t_IntoIter_i32> {b}
           (fun (_bor: MutBorrow.t t_IntoIter_i32) ->
             [ &_99 <- _bor ] -{inv_IntoIter_i32 _bor.final}-
             [ &b <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_IntoIter_i32 b} any) ]
-      | s1 = next_IntoIter_i32 {_99} (fun (_x: t_Option_i32) -> [ &_98 <- _x ] s2)
+      | s1 = next_IntoIter_i32 {mode} {_99} (fun (_x: t_Option_i32) -> [ &_98 <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_IntoIter_i32 b} any) ]
       | s3 = -{resolve_IntoIter_i32 b}- s4
       | s4 = bb0'0
@@ -293,40 +328,50 @@ module M_test_array
       | s5 = [ &_96 <- { f0'0 = _98; f1'0 = _116 } ] s6
       | s6 = [ &left_val'3 <- _96.f0'0 ] s7
       | s7 = [ &right_val'3 <- _96.f1'0 ] s8
-      | s8 = eq_Option_i32 {left_val'3} {right_val'3} (fun (_x: bool) -> [ &_104 <- _x ] s9)
+      | s8 = eq_Option_i32 {mode} {left_val'3} {right_val'3} (fun (_x: bool) -> [ &_104 <- _x ] s9)
       | s9 = any [ br0 -> {_104 = false} (! bb22) | br1 -> {_104} (! bb23) ] ]
     | bb23 = return {_ret}
     | bb22 = s0
       [ s0 = [ &kind'3 <- Eq ] s1
       | s1 = [ &_112 <- left_val'3 ] s2
       | s2 = [ &_114 <- right_val'3 ] s3
-      | s3 = {false} any ]
+      | s3 = [ &_115 <- None'2 ] s4
+      | s4 = assert_failed_Option_i32 {mode} {kind'3} {_112} {_114} {_115} (fun (_x: ()) -> [ &_109 <- _x ] s5)
+      | s5 = {false} any ]
     | bb18 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_IntoIter_i32 b} any) ]
       | s1 = -{resolve_IntoIter_i32 b}- s2
       | s2 = [ &kind'2 <- Eq ] s3
       | s3 = [ &_91 <- left_val'2 ] s4
       | s4 = [ &_93 <- right_val'2 ] s5
-      | s5 = {false} any ]
+      | s5 = [ &_94 <- None'2 ] s6
+      | s6 = assert_failed_Option_i32 {mode} {kind'2} {_91} {_93} {_94} (fun (_x: ()) -> [ &_88 <- _x ] s7)
+      | s7 = {false} any ]
     | bb13 = s0
       [ s0 = [ &kind'1 <- Eq ] s1
       | s1 = [ &_68 <- left_val'1 ] s2
       | s2 = [ &_70 <- right_val'1 ] s3
-      | s3 = {false} any ]
+      | s3 = [ &_71 <- None'2 ] s4
+      | s4 = assert_failed_Option_ref_i32 {mode} {kind'1} {_68} {_70} {_71} (fun (_x: ()) -> [ &_65 <- _x ] s5)
+      | s5 = {false} any ]
     | bb9 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
       | s1 = -{resolve_Iter_i32 a}- s2
       | s2 = [ &kind'0 <- Eq ] s3
       | s3 = [ &_47 <- left_val'0 ] s4
       | s4 = [ &_49 <- right_val'0 ] s5
-      | s5 = {false} any ]
+      | s5 = [ &_50 <- None'2 ] s6
+      | s6 = assert_failed_Option_ref_i32 {mode} {kind'0} {_47} {_49} {_50} (fun (_x: ()) -> [ &_44 <- _x ] s7)
+      | s7 = {false} any ]
     | bb5 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
       | s1 = -{resolve_Iter_i32 a}- s2
       | s2 = [ &kind <- Eq ] s3
       | s3 = [ &_24 <- left_val ] s4
       | s4 = [ &_26 <- right_val ] s5
-      | s5 = {false} any ] ]
+      | s5 = [ &_27 <- None'2 ] s6
+      | s6 = assert_failed_Option_ref_i32 {mode} {kind} {_24} {_26} {_27} (fun (_x: ()) -> [ &_21 <- _x ] s7)
+      | s7 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: t_Iter_i32 = Any.any_l ()
     | & _6: tup2_ref_Option_ref_i32_ref_Option_ref_i32 = Any.any_l ()
@@ -336,8 +381,10 @@ module M_test_array
     | & right_val: t_Option_ref_i32 = Any.any_l ()
     | & _16: bool = Any.any_l ()
     | & kind: t_AssertKind = Any.any_l ()
+    | & _21: () = Any.any_l ()
     | & _24: t_Option_ref_i32 = Any.any_l ()
     | & _26: t_Option_ref_i32 = Any.any_l ()
+    | & _27: t_Option_Arguments = Any.any_l ()
     | & _29: tup2_ref_Option_ref_i32_ref_Option_ref_i32 = Any.any_l ()
     | & _31: t_Option_ref_i32 = Any.any_l ()
     | & _32: MutBorrow.t t_Iter_i32 = Any.any_l ()
@@ -345,8 +392,10 @@ module M_test_array
     | & right_val'0: t_Option_ref_i32 = Any.any_l ()
     | & _39: bool = Any.any_l ()
     | & kind'0: t_AssertKind = Any.any_l ()
+    | & _44: () = Any.any_l ()
     | & _47: t_Option_ref_i32 = Any.any_l ()
     | & _49: t_Option_ref_i32 = Any.any_l ()
+    | & _50: t_Option_Arguments = Any.any_l ()
     | & _52: tup2_ref_Option_ref_i32_ref_Option_ref_i32 = Any.any_l ()
     | & _54: t_Option_ref_i32 = Any.any_l ()
     | & _55: MutBorrow.t t_Iter_i32 = Any.any_l ()
@@ -354,8 +403,10 @@ module M_test_array
     | & right_val'1: t_Option_ref_i32 = Any.any_l ()
     | & _60: bool = Any.any_l ()
     | & kind'1: t_AssertKind = Any.any_l ()
+    | & _65: () = Any.any_l ()
     | & _68: t_Option_ref_i32 = Any.any_l ()
     | & _70: t_Option_ref_i32 = Any.any_l ()
+    | & _71: t_Option_Arguments = Any.any_l ()
     | & b: t_IntoIter_i32 = Any.any_l ()
     | & _73: Slice64.array Int32.t = Any.any_l ()
     | & _75: tup2_ref_Option_i32_ref_Option_i32 = Any.any_l ()
@@ -365,8 +416,10 @@ module M_test_array
     | & right_val'2: t_Option_i32 = Any.any_l ()
     | & _83: bool = Any.any_l ()
     | & kind'2: t_AssertKind = Any.any_l ()
+    | & _88: () = Any.any_l ()
     | & _91: t_Option_i32 = Any.any_l ()
     | & _93: t_Option_i32 = Any.any_l ()
+    | & _94: t_Option_Arguments = Any.any_l ()
     | & _96: tup2_ref_Option_i32_ref_Option_i32 = Any.any_l ()
     | & _98: t_Option_i32 = Any.any_l ()
     | & _99: MutBorrow.t t_IntoIter_i32 = Any.any_l ()
@@ -374,8 +427,10 @@ module M_test_array
     | & right_val'3: t_Option_i32 = Any.any_l ()
     | & _104: bool = Any.any_l ()
     | & kind'3: t_AssertKind = Any.any_l ()
+    | & _109: () = Any.any_l ()
     | & _112: t_Option_i32 = Any.any_l ()
     | & _114: t_Option_i32 = Any.any_l ()
+    | & _115: t_Option_Arguments = Any.any_l ()
     | & _116: t_Option_i32 = Any.any_l ()
     | & _117: t_Option_i32 = Any.any_l ()
     | & _118: t_Option_ref_i32 = Any.any_l ()

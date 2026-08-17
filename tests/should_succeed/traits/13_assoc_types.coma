@@ -1,4 +1,5 @@
 module M_impl_Model_for_ref_T__model (* <&T as Model> *)
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -17,7 +18,7 @@ module M_impl_Model_for_ref_T__model (* <&T as Model> *)
   
   predicate inv_ModelTy (_1: t_ModelTy)
   
-  let model_ref_T (self: t_T) (return (x: t_ModelTy)) =
+  let model_ref_T (mode: Mode.t) (self: t_T) (return (x: t_ModelTy)) =
   {[@stop_split] [@expl:model 'self' type invariant] inv_ref_T self}
     any
     [ return (result: t_ModelTy) -> {[@stop_split] [@expl:model result type invariant] inv_ModelTy result}
@@ -27,15 +28,17 @@ module M_impl_Model_for_ref_T__model (* <&T as Model> *)
   
   meta "select_lsinst" "all"
   
-  let model_ref_T'0 (self: t_T) (return (x: t_ModelTy)) =
+  let model_ref_T'0 (mode: Mode.t) (self: t_T) (return (x: t_ModelTy)) =
   {[@stop_split] [@expl:model 'self' type invariant] inv_ref_T self}
     (! bb0
-    [ bb0 = s0 [ s0 = model_ref_T {self} (fun (_x: t_ModelTy) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = model_ref_T {mode} {self} (fun (_x: t_ModelTy) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_ModelTy = Any.any_l () | & self: t_T = self ])
     [ return (result: t_ModelTy) -> {[@stop_split] [@expl:model result type invariant] inv_ModelTy result}
       (! return {result}) ]
 end
 module M_impl_Model_for_ref_T__model__refines (* <&T as Model> *)
+  use creusot.prelude.Mode
+  
   type t_T
   
   predicate inv_T (_1: t_T)
@@ -56,6 +59,6 @@ module M_impl_Model_for_ref_T__model__refines (* <&T as Model> *)
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_T. inv_ref_T self
+  goal refines: forall mode: Mode.t, self: t_T. inv_ref_T self
       -> inv_ref_T self /\ (forall result: t_ModelTy. inv_ModelTy result -> inv_ModelTy result)
 end

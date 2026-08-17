@@ -1,5 +1,6 @@
 module M_test_1
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   
   predicate invariant' (self: ()) (b: bool) (c: UInt64.t) = true
@@ -8,7 +9,8 @@ module M_test_1
   
   meta "select_lsinst" "all"
   
-  let test_1 (a: ()) (b: bool) (c: UInt64.t) (return (x: ())) = {[@stop_split] [@expl:test_1 requires] invariant' a b c}
+  let test_1 (mode: Mode.t) (a: ()) (b: bool) (c: UInt64.t) (return (x: ())) =
+  {[@stop_split] [@expl:test_1 requires] invariant' a b c}
     (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:test_1 ensures] invariant' a b c} (! return {result}) ]
@@ -16,6 +18,7 @@ end
 module M_test_2
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   
   predicate resolve_refmut_A [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
@@ -28,7 +31,7 @@ module M_test_2
   
   meta "select_lsinst" "all"
   
-  let test_2 (a: MutBorrow.t ()) (b: bool) (c: UInt64.t) (return (x: ())) =
+  let test_2 (mode: Mode.t) (a: MutBorrow.t ()) (b: bool) (c: UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:test_2 requires] invariant' a.current b c}
     (! bb0
     [ bb0 = s0 [ s0 = -{resolve_refmut_A a}- s1 | s1 = return {_ret} ] ]
@@ -38,6 +41,7 @@ end
 module M_test_3
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   
   predicate resolve_refmut_bool [@inline:trivial] (_1: MutBorrow.t bool) = _1.final = _1.current
@@ -54,7 +58,7 @@ module M_test_3
   
   meta "select_lsinst" "all"
   
-  let test_3 (a: MutBorrow.t ()) (b: MutBorrow.t bool) (c: UInt64.t) (return (x: ())) =
+  let test_3 (mode: Mode.t) (a: MutBorrow.t ()) (b: MutBorrow.t bool) (c: UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:test_3 requires] invariant' a.current b.current c}
     (! bb0
     [ bb0 = s0 [ s0 = -{resolve_refmut_bool b}- s1 | s1 = -{resolve_refmut_A a}- s2 | s2 = return {_ret} ] ]
@@ -63,6 +67,7 @@ module M_test_3
 end
 module M_test_5
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use int.Int
   
@@ -72,14 +77,15 @@ module M_test_5
   
   meta "select_lsinst" "all"
   
-  let test_5 (a: ()) (b: UInt64.t) (return (x: ())) = {[@stop_split] [@expl:test_5 requires] inv2 a (UInt64.t'int b
-    + 0)}
+  let test_5 (mode: Mode.t) (a: ()) (b: UInt64.t) (return (x: ())) =
+  {[@stop_split] [@expl:test_5 requires] inv2 a (UInt64.t'int b + 0)}
     (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:test_5 ensures] inv2 a (UInt64.t'int b + 0)} (! return {result}) ]
 end
 module M_test_6
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   predicate other_inv (a: ()) (b: bool) = true
   
@@ -87,7 +93,7 @@ module M_test_6
   
   meta "select_lsinst" "all"
   
-  let test_6 (a: ()) (b: bool) (return (x: ())) = {[@stop_split] [@expl:test_6 requires] other_inv a b}
+  let test_6 (mode: Mode.t) (a: ()) (b: bool) (return (x: ())) = {[@stop_split] [@expl:test_6 requires] other_inv a b}
     (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:test_6 ensures] other_inv a b} (! return {result}) ]

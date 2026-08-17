@@ -1,5 +1,6 @@
 module M_impl_OwnResult_Option_T_E__transpose (* OwnResult<std::option::Option<T>, E> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -79,7 +80,7 @@ module M_impl_OwnResult_Option_T_E__transpose (* OwnResult<std::option::Option<T
   
   meta "select_lsinst" "all"
   
-  let transpose_T (self: t_OwnResult_Option_T_E) (return (x: t_Option_OwnResult_T_E)) =
+  let transpose_T (mode: Mode.t) (self: t_OwnResult_Option_T_E) (return (x: t_Option_OwnResult_T_E)) =
   {[@stop_split] [@expl:transpose 'self' type invariant] inv_OwnResult_Option_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_Option_T) -> {self = Ok x0} (! bb2) | br1 (x0: t_E) -> {self = Err x0} (! bb5) ]
@@ -111,6 +112,7 @@ module M_impl_OwnResult_Option_T_E__transpose (* OwnResult<std::option::Option<T
 end
 module M_impl_OwnResult_T_E__and (* OwnResult<T, E> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -178,7 +180,7 @@ module M_impl_OwnResult_T_E__and (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let and_T (self: t_OwnResult_T_E) (res: t_OwnResult_U_E) (return (x: t_OwnResult_U_E)) =
+  let and_T (mode: Mode.t) (self: t_OwnResult_T_E) (res: t_OwnResult_U_E) (return (x: t_OwnResult_U_E)) =
   {[@stop_split] [@expl:and_T requires] ([@stop_split] [@expl:and 'self' type invariant] inv_OwnResult_T_E self)
     /\ ([@stop_split] [@expl:and 'res' type invariant] inv_OwnResult_U_E res)}
     (! bb0
@@ -209,6 +211,7 @@ end
 module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -297,7 +300,7 @@ module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let as_mut_T (self: MutBorrow.t t_OwnResult_T_E) (return (x: t_OwnResult_refmut_T_refmut_E)) =
+  let as_mut_T (mode: Mode.t) (self: MutBorrow.t t_OwnResult_T_E) (return (x: t_OwnResult_refmut_T_refmut_E)) =
   {[@stop_split] [@expl:as_mut 'self' type invariant] inv_refmut_OwnResult_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self.current = Ok x0} (! bb4) | br1 (x0: t_E) -> {self.current = Err x0} (! bb3) ]
@@ -354,6 +357,7 @@ module M_impl_OwnResult_T_E__as_mut (* OwnResult<T, E> *)
 end
 module M_impl_OwnResult_T_E__as_ref (* OwnResult<T, E> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -428,7 +432,7 @@ module M_impl_OwnResult_T_E__as_ref (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let as_ref_T (self: t_OwnResult_T_E) (return (x: t_OwnResult_ref_T_ref_E)) =
+  let as_ref_T (mode: Mode.t) (self: t_OwnResult_T_E) (return (x: t_OwnResult_ref_T_ref_E)) =
   {[@stop_split] [@expl:as_ref 'self' type invariant] inv_ref_OwnResult_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
@@ -450,6 +454,7 @@ module M_impl_OwnResult_T_E__as_ref (* OwnResult<T, E> *)
 end
 module M_impl_OwnResult_T_E__err (* OwnResult<T, E> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -501,7 +506,7 @@ module M_impl_OwnResult_T_E__err (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let err_T (self: t_OwnResult_T_E) (return (x: t_Option_E)) =
+  let err_T (mode: Mode.t) (self: t_OwnResult_T_E) (return (x: t_Option_E)) =
   {[@stop_split] [@expl:err 'self' type invariant] inv_OwnResult_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
@@ -524,6 +529,7 @@ module M_impl_OwnResult_T_E__err (* OwnResult<T, E> *)
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__expect (* OwnResult<T, E> *)
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -543,6 +549,15 @@ module M_impl_OwnResult_T_E__expect (* OwnResult<T, E> *)
   predicate inv_E (_1: t_E)
   
   predicate resolve_E (_1: t_E)
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   let elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
     [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
@@ -566,7 +581,7 @@ module M_impl_OwnResult_T_E__expect (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let expect_T (self: t_OwnResult_T_E) (msg: string) (return (x: t_T)) =
+  let expect_T (mode: Mode.t) (self: t_OwnResult_T_E) (msg: string) (return (x: t_T)) =
   {[@stop_split] [@expl:expect_T requires] ([@stop_split] [@expl:expect 'self' type invariant] inv_OwnResult_T_E self)
     /\ ([@stop_split] [@expl:expect requires] exists t: t_T. self = Ok t)}
     (! bb0
@@ -575,19 +590,22 @@ module M_impl_OwnResult_T_E__expect (* OwnResult<T, E> *)
       [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &_e <- r0 ] s1)
       | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E _e} any) ]
       | s2 = -{resolve_E _e}- s3
-      | s3 = {false} any ]
+      | s3 = panic {mode} {"explicit panic"} (fun (_x: ()) -> [ &_10 <- _x ] s4)
+      | s4 = {false} any ]
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & self: t_OwnResult_T_E = self
     | & t: t_T = Any.any_l ()
-    | & _e: t_E = Any.any_l () ])
+    | & _e: t_E = Any.any_l ()
+    | & _10: () = Any.any_l () ])
     [ return (result: t_T) ->
     {[@stop_split] [@expl:expect_T ensures] ([@stop_split] [@expl:expect result type invariant] inv_T result)
       /\ ([@stop_split] [@expl:expect ensures] Ok result = self)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__is_err (* OwnResult<T, E> *)
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -616,7 +634,7 @@ module M_impl_OwnResult_T_E__is_err (* OwnResult<T, E> *)
   
   meta "rewrite_def" predicate inv_ref_OwnResult_T_E
   
-  let is_ok_T (self: t_OwnResult_T_E) (return (x: bool)) =
+  let is_ok_T (mode: Mode.t) (self: t_OwnResult_T_E) (return (x: bool)) =
   {[@stop_split] [@expl:is_ok 'self' type invariant] inv_ref_OwnResult_T_E self}
     any
     [ return (result: bool) -> {[@stop_split] [@expl:is_ok ensures] result = (exists t: t_T. self = Ok t)}
@@ -626,17 +644,20 @@ module M_impl_OwnResult_T_E__is_err (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let is_err_T (self: t_OwnResult_T_E) (return (x: bool)) =
+  let is_err_T (mode: Mode.t) (self: t_OwnResult_T_E) (return (x: bool)) =
   {[@stop_split] [@expl:is_err 'self' type invariant] inv_ref_OwnResult_T_E self}
     (! bb0
     [ bb0 = s0
-      [ s0 = is_ok_T {self} (fun (_x: bool) -> [ &_4 <- _x ] s1) | s1 = [ &_ret <- not _4 ] s2 | s2 = return {_ret} ] ]
+      [ s0 = is_ok_T {mode} {self} (fun (_x: bool) -> [ &_4 <- _x ] s1)
+      | s1 = [ &_ret <- not _4 ] s2
+      | s2 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & self: t_OwnResult_T_E = self | & _4: bool = Any.any_l () ])
     [ return (result: bool) -> {[@stop_split] [@expl:is_err ensures] result = (exists e: t_E. self = Err e)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__is_ok (* OwnResult<T, E> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -668,7 +689,7 @@ module M_impl_OwnResult_T_E__is_ok (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let is_ok_T (self: t_OwnResult_T_E) (return (x: bool)) =
+  let is_ok_T (mode: Mode.t) (self: t_OwnResult_T_E) (return (x: bool)) =
   {[@stop_split] [@expl:is_ok 'self' type invariant] inv_ref_OwnResult_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb3) | br1 (x0: t_E) -> {self = Err x0} (! bb1) ]
@@ -680,6 +701,7 @@ module M_impl_OwnResult_T_E__is_ok (* OwnResult<T, E> *)
 end
 module M_impl_OwnResult_T_E__ok (* OwnResult<T, E> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -731,7 +753,7 @@ module M_impl_OwnResult_T_E__ok (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let ok_T (self: t_OwnResult_T_E) (return (x: t_Option_T)) =
+  let ok_T (mode: Mode.t) (self: t_OwnResult_T_E) (return (x: t_Option_T)) =
   {[@stop_split] [@expl:ok 'self' type invariant] inv_OwnResult_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
@@ -755,6 +777,7 @@ module M_impl_OwnResult_T_E__ok (* OwnResult<T, E> *)
 end
 module M_impl_OwnResult_T_E__or (* OwnResult<T, E> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -822,7 +845,7 @@ module M_impl_OwnResult_T_E__or (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let or_T (self: t_OwnResult_T_E) (res: t_OwnResult_T_F) (return (x: t_OwnResult_T_F)) =
+  let or_T (mode: Mode.t) (self: t_OwnResult_T_E) (res: t_OwnResult_T_F) (return (x: t_OwnResult_T_F)) =
   {[@stop_split] [@expl:or_T requires] ([@stop_split] [@expl:or 'self' type invariant] inv_OwnResult_T_E self)
     /\ ([@stop_split] [@expl:or 'res' type invariant] inv_OwnResult_T_F res)}
     (! bb0
@@ -851,6 +874,7 @@ module M_impl_OwnResult_T_E__or (* OwnResult<T, E> *)
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__unwrap (* OwnResult<T, E> *)
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -870,6 +894,15 @@ module M_impl_OwnResult_T_E__unwrap (* OwnResult<T, E> *)
   predicate inv_E (_1: t_E)
   
   predicate resolve_E (_1: t_E)
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   let elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
     [ _k (f0: t_T) -> {Ok f0 = _x} (! return {f0})
@@ -893,7 +926,7 @@ module M_impl_OwnResult_T_E__unwrap (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let unwrap_T (self: t_OwnResult_T_E) (return (x: t_T)) =
+  let unwrap_T (mode: Mode.t) (self: t_OwnResult_T_E) (return (x: t_T)) =
   {[@stop_split] [@expl:unwrap_T requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_OwnResult_T_E self)
     /\ ([@stop_split] [@expl:unwrap requires] exists t: t_T. self = Ok t)}
     (! bb0
@@ -902,19 +935,22 @@ module M_impl_OwnResult_T_E__unwrap (* OwnResult<T, E> *)
       [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &_e <- r0 ] s1)
       | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_E _e} any) ]
       | s2 = -{resolve_E _e}- s3
-      | s3 = {false} any ]
+      | s3 = panic {mode} {"explicit panic"} (fun (_x: ()) -> [ &_9 <- _x ] s4)
+      | s4 = {false} any ]
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & self: t_OwnResult_T_E = self
     | & t: t_T = Any.any_l ()
-    | & _e: t_E = Any.any_l () ])
+    | & _e: t_E = Any.any_l ()
+    | & _9: () = Any.any_l () ])
     [ return (result: t_T) ->
     {[@stop_split] [@expl:unwrap_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_T result)
       /\ ([@stop_split] [@expl:unwrap ensures] Ok result = self)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__unwrap_err (* OwnResult<T, E> *)
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -943,6 +979,15 @@ module M_impl_OwnResult_T_E__unwrap_err (* OwnResult<T, E> *)
   
   predicate resolve_T (_1: t_T)
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   predicate inv_E (_1: t_E)
   
   predicate inv_OwnResult_T_E (_1: t_OwnResult_T_E)
@@ -957,7 +1002,7 @@ module M_impl_OwnResult_T_E__unwrap_err (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let unwrap_err_T (self: t_OwnResult_T_E) (return (x: t_E)) =
+  let unwrap_err_T (mode: Mode.t) (self: t_OwnResult_T_E) (return (x: t_E)) =
   {[@stop_split] [@expl:unwrap_err_T requires] ([@stop_split] [@expl:unwrap_err 'self' type invariant] inv_OwnResult_T_E self)
     /\ ([@stop_split] [@expl:unwrap_err requires] exists e: t_E. self = Err e)}
     (! bb0
@@ -967,10 +1012,12 @@ module M_impl_OwnResult_T_E__unwrap_err (* OwnResult<T, E> *)
       [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &_t <- r0 ] s1)
       | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_T _t} any) ]
       | s2 = -{resolve_T _t}- s3
-      | s3 = {false} any ] ]
+      | s3 = panic {mode} {"explicit panic"} (fun (_x: ()) -> [ &_8 <- _x ] s4)
+      | s4 = {false} any ] ]
     [ & _ret: t_E = Any.any_l ()
     | & self: t_OwnResult_T_E = self
     | & _t: t_T = Any.any_l ()
+    | & _8: () = Any.any_l ()
     | & e: t_E = Any.any_l () ])
     [ return (result: t_E) ->
     {[@stop_split] [@expl:unwrap_err_T ensures] ([@stop_split] [@expl:unwrap_err result type invariant] inv_E result)
@@ -979,6 +1026,7 @@ module M_impl_OwnResult_T_E__unwrap_err (* OwnResult<T, E> *)
 end
 module M_impl_OwnResult_T_E__unwrap_or (* OwnResult<T, E> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -1022,7 +1070,7 @@ module M_impl_OwnResult_T_E__unwrap_or (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let unwrap_or_T (self: t_OwnResult_T_E) (default: t_T) (return (x: t_T)) =
+  let unwrap_or_T (mode: Mode.t) (self: t_OwnResult_T_E) (default: t_T) (return (x: t_T)) =
   {[@stop_split] [@expl:unwrap_or_T requires] ([@stop_split] [@expl:unwrap_or 'self' type invariant] inv_OwnResult_T_E self)
     /\ ([@stop_split] [@expl:unwrap_or 'default' type invariant] inv_T default)}
     (! bb0
@@ -1051,6 +1099,7 @@ module M_impl_OwnResult_T_E__unwrap_or (* OwnResult<T, E> *)
       (! return {result}) ]
 end
 module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -1083,24 +1132,27 @@ module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
         | Err x0 -> resolve_E x0
         end
   
-  predicate precondition_default (self: ()) (args: ())
+  predicate precondition_default (self: ()) (mode: Mode.t) (args: ())
   
-  axiom precondition_fndef: forall args: () [precondition_default () args]. (let () = args in true)
-      -> precondition_default () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: () [precondition_default () mode args]. (let () = args in true)
+        -> precondition_default () mode args
   
-  predicate postcondition_default (self: ()) (args: ()) (result: t_T)
+  predicate postcondition_default (self: ()) (mode: Mode.t) (args: ()) (result: t_T)
   
   axiom postcondition_fndef:
-    forall args: (), res: t_T [postcondition_default () args res]. postcondition_default () args res
+    forall mode: Mode.t, args: (), res: t_T [postcondition_default () mode args res]. postcondition_default () mode args res
       -> (let () = args in inv_T res)
   
-  predicate postcondition_once_default (self: ()) (args: ()) (result: t_T) = postcondition_default self args result
+  predicate postcondition_once_default (self: ()) (mode: Mode.t) (args: ()) (result: t_T) =
+    postcondition_default self mode args result
   
   meta "rewrite_def" predicate postcondition_once_default
   
-  let default_T (return (x: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
+  let default_T (mode: Mode.t) (return (x: t_T)) =
+  {[@stop_split] [@expl:default requires] precondition_default () mode ()}
     any
-    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () () result}
+    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () mode () result}
       (! return {result}) ]
   
   let elim_Ok (_x: t_OwnResult_T_E) (return (f0: t_T)) = any
@@ -1115,14 +1167,14 @@ module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
   
   meta "select_lsinst" "all"
   
-  let unwrap_or_default_T (self: t_OwnResult_T_E) (return (x: t_T)) =
+  let unwrap_or_default_T (mode: Mode.t) (self: t_OwnResult_T_E) (return (x: t_T)) =
   {[@stop_split] [@expl:unwrap_or_default 'self' type invariant] inv_OwnResult_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
     | bb3 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_OwnResult_T_E self} any) ]
       | s1 = -{resolve_OwnResult_T_E self}- s2
-      | s2 = default_T (fun (_x: t_T) -> [ &_ret <- _x ] s3)
+      | s2 = default_T {mode} (fun (_x: t_T) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &x <- r0 ] s1) | s1 = [ &_ret <- x ] s2 | s2 = return {_ret} ] ]
@@ -1131,10 +1183,11 @@ module M_impl_OwnResult_T_E__unwrap_or_default (* OwnResult<T, E> *)
     {[@stop_split] [@expl:unwrap_or_default_T ensures] ([@stop_split] [@expl:unwrap_or_default result type invariant] inv_T result)
       /\ ([@stop_split] [@expl:unwrap_or_default ensures #0] forall t: t_T. self = Ok t -> result = t)
       /\ ([@stop_split] [@expl:unwrap_or_default ensures #1] (exists e: t_E. self = Err e)
-      -> postcondition_default () () result)}
+      -> postcondition_default () mode () result)}
       (! return {result}) ]
 end
 module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -1171,24 +1224,27 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
   
   meta "rewrite_def" predicate inv_ref_T
   
-  predicate precondition_clone (self: ()) (args: t_T)
+  predicate precondition_clone (self: ()) (mode: Mode.t) (args: t_T)
   
-  axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
-      -> precondition_clone () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_T [precondition_clone () mode args]. (let self_ = args in inv_ref_T self_)
+        -> precondition_clone () mode args
   
-  predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
+  predicate postcondition_clone (self: ()) (mode: Mode.t) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef:
-    forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
+    forall mode: Mode.t, args: t_T, res: t_T [postcondition_clone () mode args res]. postcondition_clone () mode args res
       -> (let self_ = args in inv_T res)
   
-  predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T) = postcondition_clone self args result
+  predicate postcondition_once_clone (self: ()) (mode: Mode.t) (args: t_T) (result: t_T) =
+    postcondition_clone self mode args result
   
   meta "rewrite_def" predicate postcondition_once_clone
   
-  let clone_T (self_: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+  let clone_T (mode: Mode.t) (self_: t_T) (return (x: t_T)) =
+  {[@stop_split] [@expl:clone requires] precondition_clone () mode self_}
     any
-    [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+    [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () mode self_ result}
       (! return {result}) ]
   
   predicate inv_E (_1: t_E)
@@ -1215,7 +1271,7 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
   
   meta "select_lsinst" "all"
   
-  let cloned_T (self: t_OwnResult_ref_T_E) (return (x: t_OwnResult_T_E)) =
+  let cloned_T (mode: Mode.t) (self: t_OwnResult_ref_T_E) (return (x: t_OwnResult_T_E)) =
   {[@stop_split] [@expl:cloned 'self' type invariant] inv_OwnResult_ref_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
@@ -1223,7 +1279,7 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
       [ s0 = elim_Err {self} (fun (r0: t_E) -> [ &e <- r0 ] s1) | s1 = [ &_ret <- Err'0 e ] s2 | s2 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Ok {self} (fun (r0: t_T) -> [ &t <- r0 ] s1)
-      | s1 = clone_T {t} (fun (_x: t_T) -> [ &_6 <- _x ] s2)
+      | s1 = clone_T {mode} {t} (fun (_x: t_T) -> [ &_6 <- _x ] s2)
       | s2 = [ &_ret <- Ok'0 _6 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_OwnResult_T_E = Any.any_l ()
@@ -1234,7 +1290,7 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
     [ return (result: t_OwnResult_T_E) ->
     {[@stop_split] [@expl:cloned_T ensures] ([@stop_split] [@expl:cloned result type invariant] inv_OwnResult_T_E result)
       /\ ([@stop_split] [@expl:cloned ensures] match { f0 = self; f1 = result } with
-        | {f0 = Ok s; f1 = Ok'0 r} -> postcondition_clone () s r
+        | {f0 = Ok s; f1 = Ok'0 r} -> postcondition_clone () mode s r
         | {f0 = Err s; f1 = Err'0 r} -> s = r
         | _ -> false
         end)}
@@ -1242,6 +1298,7 @@ module M_impl_OwnResult_ref_T_E__cloned (* OwnResult<&T, E> *)
 end
 module M_impl_OwnResult_ref_T_E__copied (* OwnResult<&T, E> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -1299,7 +1356,7 @@ module M_impl_OwnResult_ref_T_E__copied (* OwnResult<&T, E> *)
   
   meta "select_lsinst" "all"
   
-  let copied_T (self: t_OwnResult_ref_T_E) (return (x: t_OwnResult_T_E)) =
+  let copied_T (mode: Mode.t) (self: t_OwnResult_ref_T_E) (return (x: t_OwnResult_T_E)) =
   {[@stop_split] [@expl:copied 'self' type invariant] inv_OwnResult_ref_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
@@ -1319,6 +1376,7 @@ module M_impl_OwnResult_ref_T_E__copied (* OwnResult<&T, E> *)
 end
 module M_impl_OwnResult_refmut_T_E__cloned (* OwnResult<&mut T, E> *)
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -1367,24 +1425,27 @@ module M_impl_OwnResult_refmut_T_E__cloned (* OwnResult<&mut T, E> *)
   
   meta "rewrite_def" predicate inv_ref_T
   
-  predicate precondition_clone (self: ()) (args: t_T)
+  predicate precondition_clone (self: ()) (mode: Mode.t) (args: t_T)
   
-  axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
-      -> precondition_clone () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_T [precondition_clone () mode args]. (let self_ = args in inv_ref_T self_)
+        -> precondition_clone () mode args
   
-  predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
+  predicate postcondition_clone (self: ()) (mode: Mode.t) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef:
-    forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
+    forall mode: Mode.t, args: t_T, res: t_T [postcondition_clone () mode args res]. postcondition_clone () mode args res
       -> (let self_ = args in inv_T res)
   
-  predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T) = postcondition_clone self args result
+  predicate postcondition_once_clone (self: ()) (mode: Mode.t) (args: t_T) (result: t_T) =
+    postcondition_clone self mode args result
   
   meta "rewrite_def" predicate postcondition_once_clone
   
-  let clone_T (self_: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+  let clone_T (mode: Mode.t) (self_: t_T) (return (x: t_T)) =
+  {[@stop_split] [@expl:clone requires] precondition_clone () mode self_}
     any
-    [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+    [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () mode self_ result}
       (! return {result}) ]
   
   predicate inv_E (_1: t_E)
@@ -1411,7 +1472,7 @@ module M_impl_OwnResult_refmut_T_E__cloned (* OwnResult<&mut T, E> *)
   
   meta "select_lsinst" "all"
   
-  let cloned_T (self: t_OwnResult_refmut_T_E) (return (x: t_OwnResult_T_E)) =
+  let cloned_T (mode: Mode.t) (self: t_OwnResult_refmut_T_E) (return (x: t_OwnResult_T_E)) =
   {[@stop_split] [@expl:cloned 'self' type invariant] inv_OwnResult_refmut_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: MutBorrow.t t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]
@@ -1421,7 +1482,7 @@ module M_impl_OwnResult_refmut_T_E__cloned (* OwnResult<&mut T, E> *)
       [ s0 = elim_Ok {self} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
       | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
       | s2 = -{resolve_refmut_T t}- s3
-      | s3 = clone_T {t.current} (fun (_x: t_T) -> [ &_6 <- _x ] s4)
+      | s3 = clone_T {mode} {t.current} (fun (_x: t_T) -> [ &_6 <- _x ] s4)
       | s4 = [ &_ret <- Ok'0 _6 ] s5
       | s5 = return {_ret} ] ]
     [ & _ret: t_OwnResult_T_E = Any.any_l ()
@@ -1432,7 +1493,7 @@ module M_impl_OwnResult_refmut_T_E__cloned (* OwnResult<&mut T, E> *)
     [ return (result: t_OwnResult_T_E) ->
     {[@stop_split] [@expl:cloned_T ensures] ([@stop_split] [@expl:cloned result type invariant] inv_OwnResult_T_E result)
       /\ ([@stop_split] [@expl:cloned ensures] match { f0 = self; f1 = result } with
-        | {f0 = Ok s; f1 = Ok'0 r} -> postcondition_clone () s.current r
+        | {f0 = Ok s; f1 = Ok'0 r} -> postcondition_clone () mode s.current r
         | {f0 = Err s; f1 = Err'0 r} -> s = r
         | _ -> false
         end)}
@@ -1441,6 +1502,7 @@ end
 module M_impl_OwnResult_refmut_T_E__copied (* OwnResult<&mut T, E> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -1502,7 +1564,7 @@ module M_impl_OwnResult_refmut_T_E__copied (* OwnResult<&mut T, E> *)
   
   meta "select_lsinst" "all"
   
-  let copied_T (self: t_OwnResult_refmut_T_E) (return (x: t_OwnResult_T_E)) =
+  let copied_T (mode: Mode.t) (self: t_OwnResult_refmut_T_E) (return (x: t_OwnResult_T_E)) =
   {[@stop_split] [@expl:copied 'self' type invariant] inv_OwnResult_refmut_T_E self}
     (! bb0
     [ bb0 = any [ br0 (x0: MutBorrow.t t_T) -> {self = Ok x0} (! bb4) | br1 (x0: t_E) -> {self = Err x0} (! bb3) ]

@@ -2,6 +2,7 @@ module M_take_first_mut
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use seq.Seq
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -51,27 +52,27 @@ module M_take_first_mut
   
   meta "rewrite_def" predicate inv_refmut_refmut_slice_T
   
-  predicate postcondition_default (self: ()) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
+  predicate postcondition_default (self: ()) (mode: Mode.t) (args: ()) (result: MutBorrow.t (Slice64.slice t_T)) =
     let () = args in inv_refmut_slice_T result
     /\ Slice64.view result.current = (Seq.empty: Seq.seq t_T) /\ Slice64.view result.final = (Seq.empty: Seq.seq t_T)
   
   meta "rewrite_def" predicate postcondition_default
   
-  let default_refmut_slice_T (return (x: MutBorrow.t (Slice64.slice t_T))) = any
+  let default_refmut_slice_T (mode: Mode.t) (return (x: MutBorrow.t (Slice64.slice t_T))) = any
     [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
     {[@stop_split] [@expl:default_refmut_slice_T ensures] ([@stop_split] [@expl:default result type invariant] inv_refmut_slice_T result)
       /\ ([@stop_split] [@expl:default ensures #0] Slice64.view result.current = (Seq.empty: Seq.seq t_T))
       /\ ([@stop_split] [@expl:default ensures #1] Slice64.view result.final = (Seq.empty: Seq.seq t_T))}
       (! return {result}) ]
   
-  let take_refmut_slice_T (dest: MutBorrow.t (MutBorrow.t (Slice64.slice t_T)))
+  let take_refmut_slice_T (mode: Mode.t) (dest: MutBorrow.t (MutBorrow.t (Slice64.slice t_T)))
     (return (x: MutBorrow.t (Slice64.slice t_T))) =
   {[@stop_split] [@expl:take 'dest' type invariant] inv_refmut_refmut_slice_T dest}
     any
     [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
     {[@stop_split] [@expl:take_refmut_slice_T ensures] ([@stop_split] [@expl:take result type invariant] inv_refmut_slice_T result)
       /\ ([@stop_split] [@expl:take ensures #0] result = dest.current)
-      /\ ([@stop_split] [@expl:take ensures #1] postcondition_default () () dest.final)}
+      /\ ([@stop_split] [@expl:take ensures #1] postcondition_default () mode () dest.final)}
       (! return {result}) ]
   
   type tup2_refmut_T_refmut_slice_T = { f0: MutBorrow.t t_T; f1: MutBorrow.t (Slice64.slice t_T) }
@@ -110,7 +111,8 @@ module M_take_first_mut
   
   function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
-  let split_first_mut_T (self_: MutBorrow.t (Slice64.slice t_T)) (return (x: t_Option_tup2_refmut_T_refmut_slice_T)) =
+  let split_first_mut_T (mode: Mode.t) (self_: MutBorrow.t (Slice64.slice t_T))
+    (return (x: t_Option_tup2_refmut_T_refmut_slice_T)) =
   {[@stop_split] [@expl:split_first_mut 'self_' type invariant] inv_refmut_slice_T self_}
     any
     [ return (result: t_Option_tup2_refmut_T_refmut_slice_T) ->
@@ -162,7 +164,8 @@ module M_take_first_mut
   
   meta "select_lsinst" "all"
   
-  let take_first_mut_T (self_: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) (return (x: t_Option_refmut_T)) =
+  let take_first_mut_T (mode: Mode.t) (self_: MutBorrow.t (MutBorrow.t (Slice64.slice t_T)))
+    (return (x: t_Option_refmut_T)) =
   {[@stop_split] [@expl:take_first_mut 'self_' type invariant] inv_refmut_refmut_slice_T self_}
     (! bb0
     [ bb0 = s0
@@ -171,13 +174,13 @@ module M_take_first_mut
             [ &_7 <- _bor ] -{inv_refmut_slice_T _bor.final}-
             [ &self_ <- { self_ with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T self_.current} any) ]
-      | s1 = take_refmut_slice_T {_7} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_6 <- _x ] s2)
+      | s1 = take_refmut_slice_T {mode} {_7} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_6 <- _x ] s2)
       | s2 = MutBorrow.borrow_final <Slice64.slice t_T> {_6.current} {MutBorrow.get_id _6}
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_5 <- _bor ] -{inv_slice_T _bor.final}-
             [ &_6 <- { _6 with current = _bor.final } ] s3)
         [ _ck -> (! {[@expl:type invariant] inv_slice_T _6.current} any) ]
-      | s3 = split_first_mut_T {_5} (fun (_x: t_Option_tup2_refmut_T_refmut_slice_T) -> [ &_4 <- _x ] s4)
+      | s3 = split_first_mut_T {mode} {_5} (fun (_x: t_Option_tup2_refmut_T_refmut_slice_T) -> [ &_4 <- _x ] s4)
       | s4 = any [ br0 -> {_4 = None} (! bb4) | br1 (x0: tup2_refmut_T_refmut_slice_T) -> {_4 = Some x0} (! bb5) ] ]
     | bb5 = s0
       [ s0 = elim_Some {_4} (fun (r0: tup2_refmut_T_refmut_slice_T) -> [ &first <- r0.f0 ] s1)

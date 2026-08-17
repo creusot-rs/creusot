@@ -5,6 +5,7 @@ module M_index_mut_slice
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use seq.Seq
   
   predicate resolve_refmut_slice_u32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt32.t)) =
@@ -21,7 +22,7 @@ module M_index_mut_slice
   
   meta "select_lsinst" "all"
   
-  let index_mut_slice (a: MutBorrow.t (Slice64.slice UInt32.t)) (return (x: ())) =
+  let index_mut_slice (mode: Mode.t) (a: MutBorrow.t (Slice64.slice UInt32.t)) (return (x: ())) =
   {[@stop_split] [@expl:index_mut_slice requires] Seq.length (Slice64.view a.current) = 5}
     (! bb0
     [ bb0 = s0
@@ -50,6 +51,7 @@ module M_index_slice
   use creusot.slice.Slice64
   use creusot.int.UInt32
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use seq.Seq
   use int.Int
   
@@ -57,8 +59,8 @@ module M_index_slice
   
   meta "select_lsinst" "all"
   
-  let index_slice (a: Slice64.slice UInt32.t) (return (x: UInt32.t)) = {[@stop_split] [@expl:index_slice requires] 10
-    < Seq.length (Slice64.view a)}
+  let index_slice (mode: Mode.t) (a: Slice64.slice UInt32.t) (return (x: UInt32.t)) =
+  {[@stop_split] [@expl:index_slice requires] 10 < Seq.length (Slice64.view a)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- (10: UInt64.t) ] s1
@@ -76,6 +78,7 @@ end
 module M_slice_first
   use creusot.slice.Slice64
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
@@ -115,7 +118,7 @@ module M_slice_first
   
   meta "rewrite_def" predicate inv_ref_slice_T
   
-  let len_T (self_: Slice64.slice t_T) (return (x: UInt64.t)) =
+  let len_T (mode: Mode.t) (self_: Slice64.slice t_T) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_slice_T self_}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
@@ -140,11 +143,11 @@ module M_slice_first
   
   meta "select_lsinst" "all"
   
-  let slice_first_T (a: Slice64.slice t_T) (return (x: t_Option_ref_T)) =
+  let slice_first_T (mode: Mode.t) (a: Slice64.slice t_T) (return (x: t_Option_ref_T)) =
   {[@stop_split] [@expl:slice_first 'a' type invariant] inv_ref_slice_T a}
     (! bb0
     [ bb0 = s0
-      [ s0 = len_T {a} (fun (_x: UInt64.t) -> [ &_5 <- _x ] s1)
+      [ s0 = len_T {mode} {a} (fun (_x: UInt64.t) -> [ &_5 <- _x ] s1)
       | s1 = [ &_4 <- UInt64.gt _5 (0: UInt64.t) ] s2
       | s2 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb2) ] ]
     | bb2 = s0

@@ -2,20 +2,30 @@ module M_peek
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
   
-  let len_u8 (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
+  let len_u8 (mode: Mode.t) (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
       = UInt64.t'int result}
       (! return {result}) ]
   
-  let peek_bit_array8 (addr: Slice64.slice UInt8.t) (left: UInt64.t) (return (x: bool)) =
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
+  let peek_bit_array8 (mode: Mode.t) (addr: Slice64.slice UInt8.t) (left: UInt64.t) (return (x: bool)) =
   {[@stop_split] [@expl:peek_bit_array8 requires] UInt64.t'int left < 8 * Seq.length (Slice64.view addr)}
     any [ return (result: bool) -> (! return {result}) ]
   
-  let poke_bit_64 (value: UInt64.t) (left: UInt64.t) (flag: bool) (return (x: UInt64.t)) =
+  let poke_bit_64 (mode: Mode.t) (value: UInt64.t) (left: UInt64.t) (flag: bool) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:poke_bit_64 requires] UInt64.lt left (64: UInt64.t)}
     any [ return (result: UInt64.t) -> (! return {result}) ]
   
@@ -23,7 +33,7 @@ module M_peek
   
   meta "select_lsinst" "all"
   
-  let peek (start: UInt64.t) (length: UInt64.t) (addr: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
+  let peek (mode: Mode.t) (start: UInt64.t) (length: UInt64.t) (addr: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:peek requires] ([@stop_split] [@expl:peek requires #0] Seq.length (Slice64.view addr)
       < 10000000)
     /\ ([@stop_split] [@expl:peek requires #1] UInt64.le length (64: UInt64.t))
@@ -32,21 +42,21 @@ module M_peek
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.add {start} {length} (fun (_x: UInt64.t) -> [ &_15 <- _x ] s1)
-      | s1 = len_u8 {addr} (fun (_x: UInt64.t) -> [ &_19 <- _x ] s2)
+      | s1 = len_u8 {mode} {addr} (fun (_x: UInt64.t) -> [ &_19 <- _x ] s2)
       | s2 = UInt64.mul {(8: UInt64.t)} {_19} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s3)
       | s3 = [ &_14 <- UInt64.gt _15 _18 ] s4
       | s4 = any [ br0 -> {_14 = false} (! bb3) | br1 -> {_14} (! bb2) ] ]
-    | bb2 = {false} any
+    | bb2 = s0 [ s0 = panic {mode} {"explicit panic"} (fun (_x: ()) -> [ &_21 <- _x ] s1) | s1 = {false} any ]
     | bb3 = s0 [ s0 = [ &retval <- (0: UInt64.t) ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = bb5 ]
     | bb5 = bb5
       [ bb5 = (! s0
         [ s0 = [ &_26 <- UInt64.lt i length ] s1 | s1 = any [ br0 -> {_26 = false} (! bb9) | br1 -> {_26} (! bb6) ] ])
         [ bb6 = s0
           [ s0 = UInt64.add {start} {i} (fun (_x: UInt64.t) -> [ &_31 <- _x ] s1)
-          | s1 = peek_bit_array8 {addr} {_31} (fun (_x: bool) -> [ &flag <- _x ] s2)
+          | s1 = peek_bit_array8 {mode} {addr} {_31} (fun (_x: bool) -> [ &flag <- _x ] s2)
           | s2 = UInt64.sub {length} {i} (fun (_x: UInt64.t) -> [ &_37 <- _x ] s3)
           | s3 = UInt64.sub {(64: UInt64.t)} {_37} (fun (_x: UInt64.t) -> [ &_36 <- _x ] s4)
-          | s4 = poke_bit_64 {retval} {_36} {flag} (fun (_x: UInt64.t) -> [ &_34 <- _x ] s5)
+          | s4 = poke_bit_64 {mode} {retval} {_36} {flag} (fun (_x: UInt64.t) -> [ &_34 <- _x ] s5)
           | s5 = [ &retval <- _34 ] s6
           | s6 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s7)
           | s7 = bb5 ] ] ]
@@ -59,6 +69,7 @@ module M_peek
     | & _15: UInt64.t = Any.any_l ()
     | & _18: UInt64.t = Any.any_l ()
     | & _19: UInt64.t = Any.any_l ()
+    | & _21: () = Any.any_l ()
     | & retval: UInt64.t = Any.any_l ()
     | & i: UInt64.t = Any.any_l ()
     | & _26: bool = Any.any_l ()
@@ -71,12 +82,13 @@ end
 module M_peek_64bit
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let peek_64bit (value: UInt64.t) (left: UInt64.t) (return (x: bool)) =
+  let peek_64bit (mode: Mode.t) (value: UInt64.t) (left: UInt64.t) (return (x: bool)) =
   {[@stop_split] [@expl:peek_64bit requires] UInt64.lt left (64: UInt64.t)}
     (! bb0
     [ bb0 = s0
@@ -96,6 +108,7 @@ module M_peek_bit_array8
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
@@ -112,7 +125,7 @@ module M_peek_bit_array8
   
   meta "rewrite_def" predicate has_value_usize
   
-  let get_u8 (self_: Slice64.slice UInt8.t) (ix: UInt64.t) (return (x: t_Option_ref_u8)) = any
+  let get_u8 (mode: Mode.t) (self_: Slice64.slice UInt8.t) (ix: UInt64.t) (return (x: t_Option_ref_u8)) = any
     [ return (result: t_Option_ref_u8) ->
     {[@stop_split] [@expl:get_u8 ensures] ([@stop_split] [@expl:get ensures #0] in_bounds_usize ix (Slice64.view self_)
         -> (exists r: UInt8.t. result = Some r /\ has_value_usize ix (Slice64.view self_) r))
@@ -127,33 +140,43 @@ module M_peek_bit_array8
         end}
       any) ]
   
-  let peek_bit_u8 (x: UInt8.t) (left: UInt64.t) (return (x'0: bool)) =
+  let peek_bit_u8 (mode: Mode.t) (x: UInt8.t) (left: UInt64.t) (return (x'0: bool)) =
   {[@stop_split] [@expl:peek_bit_u8 requires] UInt64.lt left (8: UInt64.t)}
     any [ return (result: bool) -> (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let peek_bit_array8 (addr: Slice64.slice UInt8.t) (left: UInt64.t) (return (x: bool)) =
+  let peek_bit_array8 (mode: Mode.t) (addr: Slice64.slice UInt8.t) (left: UInt64.t) (return (x: bool)) =
   {[@stop_split] [@expl:peek_bit_array8 requires] UInt64.t'int left < 8 * Seq.length (Slice64.view addr)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_10 <- (8: UInt64.t) = (0: UInt64.t) ] s1
       | s1 = {[@expl:division by zero] not _10} s2
       | s2 = UInt64.div {left} {(8: UInt64.t)} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s3)
-      | s3 = get_u8 {addr} {_8} (fun (_x: t_Option_ref_u8) -> [ &_6 <- _x ] s4)
+      | s3 = get_u8 {mode} {addr} {_8} (fun (_x: t_Option_ref_u8) -> [ &_6 <- _x ] s4)
       | s4 = any [ br0 -> {_6 = None} (! bb5) | br1 (x0: UInt8.t) -> {_6 = Some x0} (! bb6) ] ]
     | bb6 = s0
       [ s0 = elim_Some {_6} (fun (r0: UInt8.t) -> [ &v <- r0 ] s1)
       | s1 = [ &_16 <- (8: UInt64.t) = (0: UInt64.t) ] s2
       | s2 = {[@expl:remainder by zero] not _16} s3
       | s3 = UInt64.rem {left} {(8: UInt64.t)} (fun (_x: UInt64.t) -> [ &_14 <- _x ] s4)
-      | s4 = peek_bit_u8 {v} {_14} (fun (_x: bool) -> [ &_ret <- _x ] s5)
+      | s4 = peek_bit_u8 {mode} {v} {_14} (fun (_x: bool) -> [ &_ret <- _x ] s5)
       | s5 = return {_ret} ]
     | bb5 = any [ br0 -> {false = false} (! bb9) | br1 -> {false} (! bb10) ]
     | bb10 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
-    | bb9 = {false} any ]
+    | bb9 = s0
+      [ s0 = panic {mode} {"assertion failed: false"} (fun (_x: ()) -> [ &_19 <- _x ] s1) | s1 = {false} any ] ]
     [ & _ret: bool = Any.any_l ()
     | & addr: Slice64.slice UInt8.t = addr
     | & left: UInt64.t = left
@@ -162,18 +185,20 @@ module M_peek_bit_array8
     | & _10: bool = Any.any_l ()
     | & v: UInt8.t = Any.any_l ()
     | & _14: UInt64.t = Any.any_l ()
-    | & _16: bool = Any.any_l () ]) [ return (result: bool) -> (! return {result}) ]
+    | & _16: bool = Any.any_l ()
+    | & _19: () = Any.any_l () ]) [ return (result: bool) -> (! return {result}) ]
 end
 module M_peek_bit_u8
   use creusot.int.UInt64
   use creusot.int.UInt8
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let peek_bit_u8 (x: UInt8.t) (left: UInt64.t) (return (x'0: bool)) =
+  let peek_bit_u8 (mode: Mode.t) (x: UInt8.t) (left: UInt64.t) (return (x'0: bool)) =
   {[@stop_split] [@expl:peek_bit_u8 requires] UInt64.lt left (8: UInt64.t)}
     (! bb0
     [ bb0 = s0
@@ -193,13 +218,14 @@ module M_peekthenpoke
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.int.Int8
   use creusot.prelude.Any
   use int.Int
   
-  let peek (start: UInt64.t) (length: UInt64.t) (addr: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
+  let peek (mode: Mode.t) (start: UInt64.t) (length: UInt64.t) (addr: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:peek requires] ([@stop_split] [@expl:peek requires #0] Seq.length (Slice64.view addr)
       < 10000000)
     /\ ([@stop_split] [@expl:peek requires #1] UInt64.le length (64: UInt64.t))
@@ -207,8 +233,8 @@ module M_peekthenpoke
     <= 8 * Seq.length (Slice64.view addr))}
     any [ return (result: UInt64.t) -> (! return {result}) ]
   
-  let poke (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t)) (value: UInt64.t)
-    (return (x: Int8.t)) =
+  let poke (mode: Mode.t) (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t))
+    (value: UInt64.t) (return (x: Int8.t)) =
   {[@stop_split] [@expl:poke requires] ([@stop_split] [@expl:poke requires #0] Seq.length (Slice64.view addr.current)
       < 10000000)
     /\ ([@stop_split] [@expl:poke requires #1] UInt64.le length (64: UInt64.t))
@@ -227,7 +253,7 @@ module M_peekthenpoke
   
   meta "select_lsinst" "all"
   
-  let peekthenpoke (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t))
+  let peekthenpoke (mode: Mode.t) (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t))
     (return (x: Int8.t)) =
   {[@stop_split] [@expl:peekthenpoke requires] ([@stop_split] [@expl:peekthenpoke requires #0] Seq.length (Slice64.view addr.current)
       < 10000000)
@@ -236,11 +262,11 @@ module M_peekthenpoke
     <= 8 * Seq.length (Slice64.view addr.current))}
     (! bb0
     [ bb0 = s0
-      [ s0 = peek {start} {length} {addr.current} (fun (_x: UInt64.t) -> [ &value <- _x ] s1)
+      [ s0 = peek {mode} {start} {length} {addr.current} (fun (_x: UInt64.t) -> [ &value <- _x ] s1)
       | s1 = MutBorrow.borrow_final <Slice64.slice UInt8.t> {addr.current} {MutBorrow.get_id addr}
           (fun (_bor: MutBorrow.t (Slice64.slice UInt8.t)) ->
             [ &_19 <- _bor ] [ &addr <- { addr with current = _bor.final } ] s2)
-      | s2 = poke {start} {length} {_19} {value} (fun (_x: Int8.t) -> [ &res <- _x ] s3)
+      | s2 = poke {mode} {start} {length} {_19} {value} (fun (_x: Int8.t) -> [ &res <- _x ] s3)
       | s3 = -{resolve_refmut_slice_u8 addr}- s4
       | s4 = [ &_ret <- res ] s5
       | s5 = return {_ret} ] ]
@@ -256,13 +282,14 @@ module M_poke
   use creusot.slice.Slice64
   use creusot.int.UInt8
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.int.Int8
   use creusot.prelude.Any
   use int.Int
   
-  let len_u8 (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
+  let len_u8 (mode: Mode.t) (self_: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
       = UInt64.t'int result}
       (! return {result}) ]
@@ -271,12 +298,13 @@ module M_poke
   
   meta "rewrite_def" predicate resolve_refmut_slice_u8
   
-  let peek_64bit (value: UInt64.t) (left: UInt64.t) (return (x: bool)) =
+  let peek_64bit (mode: Mode.t) (value: UInt64.t) (left: UInt64.t) (return (x: bool)) =
   {[@stop_split] [@expl:peek_64bit requires] UInt64.lt left (64: UInt64.t)}
     any [ return (result: bool) -> (! return {result}) ]
   
-  let poke_8bit_array (addr: MutBorrow.t (Slice64.slice UInt8.t)) (left: UInt64.t) (flag: bool) (return (x: ())) =
-  {[@stop_split] [@expl:poke_8bit_array requires] UInt64.t'int left < 8 * Seq.length (Slice64.view addr.current)}
+  let poke_8bit_array (mode: Mode.t) (addr: MutBorrow.t (Slice64.slice UInt8.t)) (left: UInt64.t) (flag: bool)
+    (return (x: ())) = {[@stop_split] [@expl:poke_8bit_array requires] UInt64.t'int left
+    < 8 * Seq.length (Slice64.view addr.current)}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:poke_8bit_array ensures] Seq.length (Slice64.view addr.final)
       = Seq.length (Slice64.view addr.current)}
@@ -286,8 +314,8 @@ module M_poke
   
   meta "select_lsinst" "all"
   
-  let poke (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t)) (value: UInt64.t)
-    (return (x: Int8.t)) =
+  let poke (mode: Mode.t) (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t))
+    (value: UInt64.t) (return (x: Int8.t)) =
   {[@stop_split] [@expl:poke requires] ([@stop_split] [@expl:poke requires #0] Seq.length (Slice64.view addr.current)
       < 10000000)
     /\ ([@stop_split] [@expl:poke requires #1] UInt64.le length (64: UInt64.t))
@@ -295,9 +323,9 @@ module M_poke
     <= 8 * Seq.length (Slice64.view addr.current))}
     (! bb0
     [ bb0 = s0
-      [ s0 = len_u8 {addr.current} (fun (_x: UInt64.t) -> [ &ghost_len <- _x ] s1)
+      [ s0 = len_u8 {mode} {addr.current} (fun (_x: UInt64.t) -> [ &ghost_len <- _x ] s1)
       | s1 = UInt64.add {start} {length} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s2)
-      | s2 = len_u8 {addr.current} (fun (_x: UInt64.t) -> [ &_24 <- _x ] s3)
+      | s2 = len_u8 {mode} {addr.current} (fun (_x: UInt64.t) -> [ &_24 <- _x ] s3)
       | s3 = UInt64.mul {(8: UInt64.t)} {_24} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s4)
       | s4 = [ &_19 <- UInt64.gt _20 _23 ] s5
       | s5 = any [ br0 -> {_19 = false} (! bb4) | br1 -> {_19} (! bb3) ] ]
@@ -324,12 +352,12 @@ module M_poke
         [ bb12 = s0
           [ s0 = {[@expl:assertion] UInt64.t'int i < UInt64.t'int length} s1
           | s1 = UInt64.add {lstart} {i} (fun (_x: UInt64.t) -> [ &_56 <- _x ] s2)
-          | s2 = peek_64bit {value} {_56} (fun (_x: bool) -> [ &flag <- _x ] s3)
+          | s2 = peek_64bit {mode} {value} {_56} (fun (_x: bool) -> [ &flag <- _x ] s3)
           | s3 = UInt64.add {start} {i} (fun (_x: UInt64.t) -> [ &_61 <- _x ] s4)
           | s4 = MutBorrow.borrow_mut <Slice64.slice UInt8.t> {addr.current}
               (fun (_bor: MutBorrow.t (Slice64.slice UInt8.t)) ->
                 [ &_60 <- _bor ] [ &addr <- { addr with current = _bor.final } ] s5)
-          | s5 = poke_8bit_array {_60} {_61} {flag} (fun (_x: ()) -> [ &_59 <- _x ] s6)
+          | s5 = poke_8bit_array {mode} {_60} {_61} {flag} (fun (_x: ()) -> [ &_59 <- _x ] s6)
           | s6 = {[@expl:assertion] Seq.length (Slice64.view addr.current) = UInt64.t'int ghost_len} s7
           | s7 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s8)
           | s8 = bb10 ] ] ]
@@ -364,12 +392,13 @@ module M_poke_8bit
   use creusot.int.UInt64
   use creusot.int.UInt8
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let poke_8bit (byte: UInt8.t) (left: UInt64.t) (flag: bool) (return (x: UInt8.t)) =
+  let poke_8bit (mode: Mode.t) (byte: UInt8.t) (left: UInt64.t) (flag: bool) (return (x: UInt8.t)) =
   {[@stop_split] [@expl:poke_8bit requires] UInt64.lt left (8: UInt64.t)}
     (! bb0
     [ bb0 = s0
@@ -392,12 +421,13 @@ module M_poke_8bit_array
   use creusot.prelude.Opaque
   use creusot.slice.Slice64
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use seq.Seq
   use int.Int
   
-  let poke_8bit (byte: UInt8.t) (left: UInt64.t) (flag: bool) (return (x: UInt8.t)) =
+  let poke_8bit (mode: Mode.t) (byte: UInt8.t) (left: UInt64.t) (flag: bool) (return (x: UInt8.t)) =
   {[@stop_split] [@expl:poke_8bit requires] UInt64.lt left (8: UInt64.t)}
     any [ return (result: UInt8.t) -> (! return {result}) ]
   
@@ -409,8 +439,9 @@ module M_poke_8bit_array
   
   meta "select_lsinst" "all"
   
-  let poke_8bit_array (addr: MutBorrow.t (Slice64.slice UInt8.t)) (left: UInt64.t) (flag: bool) (return (x: ())) =
-  {[@stop_split] [@expl:poke_8bit_array requires] UInt64.t'int left < 8 * Seq.length (Slice64.view addr.current)}
+  let poke_8bit_array (mode: Mode.t) (addr: MutBorrow.t (Slice64.slice UInt8.t)) (left: UInt64.t) (flag: bool)
+    (return (x: ())) = {[@stop_split] [@expl:poke_8bit_array requires] UInt64.t'int left
+    < 8 * Seq.length (Slice64.view addr.current)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_11 <- (8: UInt64.t) = (0: UInt64.t) ] s1
@@ -426,7 +457,7 @@ module M_poke_8bit_array
       | s9 = [ &_20 <- UInt64.lt _17 _19 ] s10
       | s10 = {[@expl:index in bounds] _20} s11
       | s11 = Slice64.get <UInt8.t> {addr.current} {_17} (fun (r: UInt8.t) -> [ &_16 <- r ] s12)
-      | s12 = poke_8bit {_16} {k} {flag} (fun (_x: UInt8.t) -> [ &_15 <- _x ] s13)
+      | s12 = poke_8bit {mode} {_16} {k} {flag} (fun (_x: UInt8.t) -> [ &_15 <- _x ] s13)
       | s13 = [ &_23 <- i ] s14
       | s14 = Opaque.fresh_ptr
           (fun (_ptr: Opaque.ptr) -> -{Slice64.slice_ptr_len _ptr = Slice64.length addr.current}- [ &_24 <- _ptr ] s15)
@@ -462,12 +493,13 @@ end
 module M_poke_bit_64
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let poke_bit_64 (value: UInt64.t) (left: UInt64.t) (flag: bool) (return (x: UInt64.t)) =
+  let poke_bit_64 (mode: Mode.t) (value: UInt64.t) (left: UInt64.t) (flag: bool) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:poke_bit_64 requires] UInt64.lt left (64: UInt64.t)}
     (! bb0
     [ bb0 = s0
@@ -491,12 +523,13 @@ module M_pokethenpeek
   use creusot.int.UInt8
   use creusot.int.UInt64
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
   
-  let poke (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t)) (value: UInt64.t)
-    (return (x: Int8.t)) =
+  let poke (mode: Mode.t) (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t))
+    (value: UInt64.t) (return (x: Int8.t)) =
   {[@stop_split] [@expl:poke requires] ([@stop_split] [@expl:poke requires #0] Seq.length (Slice64.view addr.current)
       < 10000000)
     /\ ([@stop_split] [@expl:poke requires #1] UInt64.le length (64: UInt64.t))
@@ -511,7 +544,7 @@ module M_pokethenpeek
   
   meta "rewrite_def" predicate resolve_refmut_slice_u8
   
-  let peek (start: UInt64.t) (length: UInt64.t) (addr: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
+  let peek (mode: Mode.t) (start: UInt64.t) (length: UInt64.t) (addr: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:peek requires] ([@stop_split] [@expl:peek requires #0] Seq.length (Slice64.view addr)
       < 10000000)
     /\ ([@stop_split] [@expl:peek requires #1] UInt64.le length (64: UInt64.t))
@@ -523,8 +556,8 @@ module M_pokethenpeek
   
   meta "select_lsinst" "all"
   
-  let pokethenpeek (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t)) (value: UInt64.t)
-    (return (x: UInt64.t)) =
+  let pokethenpeek (mode: Mode.t) (start: UInt64.t) (length: UInt64.t) (addr: MutBorrow.t (Slice64.slice UInt8.t))
+    (value: UInt64.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:pokethenpeek requires] ([@stop_split] [@expl:pokethenpeek requires #0] Seq.length (Slice64.view addr.current)
       < 10000000)
     /\ ([@stop_split] [@expl:pokethenpeek requires #1] UInt64.le length (64: UInt64.t))
@@ -535,9 +568,9 @@ module M_pokethenpeek
       [ s0 = MutBorrow.borrow_final <Slice64.slice UInt8.t> {addr.current} {MutBorrow.get_id addr}
           (fun (_bor: MutBorrow.t (Slice64.slice UInt8.t)) ->
             [ &_16 <- _bor ] [ &addr <- { addr with current = _bor.final } ] s1)
-      | s1 = poke {start} {length} {_16} {value} (fun (_x: Int8.t) -> [ &_res <- _x ] s2)
+      | s1 = poke {mode} {start} {length} {_16} {value} (fun (_x: Int8.t) -> [ &_res <- _x ] s2)
       | s2 = -{resolve_refmut_slice_u8 addr}- s3
-      | s3 = peek {start} {length} {addr.current} (fun (_x: UInt64.t) -> [ &peek_result <- _x ] s4)
+      | s3 = peek {mode} {start} {length} {addr.current} (fun (_x: UInt64.t) -> [ &peek_result <- _x ] s4)
       | s4 = [ &_ret <- peek_result ] s5
       | s5 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()

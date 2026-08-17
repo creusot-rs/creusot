@@ -1,6 +1,7 @@
 module M_impl_Tree__height (* Tree *)
   use creusot.int.UInt32
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -16,7 +17,8 @@ module M_impl_Tree__height (* Tree *)
         end}
       any) ]
   
-  let height (self: t_Tree) (return (x: UInt64.t)) = any [ return (result: UInt64.t) -> (! return {result}) ]
+  let height (mode: Mode.t) (self: t_Tree) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> (! return {result}) ]
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -26,7 +28,7 @@ module M_impl_Tree__height (* Tree *)
   
   meta "rewrite_def" function deep_model_u64
   
-  let max_u64 (self_: UInt64.t) (o: UInt64.t) (return (x: UInt64.t)) = any
+  let max_u64 (mode: Mode.t) (self_: UInt64.t) (o: UInt64.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) ->
     {[@stop_split] [@expl:max_u64 ensures] ([@stop_split] [@expl:max ensures #0] ge_log_Int (deep_model_u64 result) (deep_model_u64 self_))
       /\ ([@stop_split] [@expl:max ensures #1] ge_log_Int (deep_model_u64 result) (deep_model_u64 o))
@@ -39,13 +41,13 @@ module M_impl_Tree__height (* Tree *)
   
   meta "select_lsinst" "all"
   
-  let height'0 (self: t_Tree) (return (x: UInt64.t)) = (! bb0
+  let height'0 (mode: Mode.t) (self: t_Tree) (return (x: UInt64.t)) = (! bb0
     [ bb0 = any [ br0 -> {self.f0 = None} (! bb4) | br1 (x0: t_Node) -> {self.f0 = Some x0} (! bb3) ]
     | bb3 = s0
       [ s0 = elim_Some {self.f0} (fun (r0: t_Node) -> [ &n <- r0 ] s1)
-      | s1 = height {n.left} (fun (_x: UInt64.t) -> [ &_5 <- _x ] s2)
-      | s2 = height {n.right} (fun (_x: UInt64.t) -> [ &_7 <- _x ] s3)
-      | s3 = max_u64 {_5} {_7} (fun (_x: UInt64.t) -> [ &_4 <- _x ] s4)
+      | s1 = height {mode} {n.left} (fun (_x: UInt64.t) -> [ &_5 <- _x ] s2)
+      | s2 = height {mode} {n.right} (fun (_x: UInt64.t) -> [ &_7 <- _x ] s3)
+      | s3 = max_u64 {mode} {_5} {_7} (fun (_x: UInt64.t) -> [ &_4 <- _x ] s4)
       | s4 = UInt64.add {_4} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s5)
       | s5 = return {_ret} ]
     | bb4 = s0 [ s0 = [ &_ret <- (0: UInt64.t) ] s1 | s1 = return {_ret} ] ]
@@ -58,6 +60,7 @@ module M_impl_Tree__height (* Tree *)
 end
 module M_use_tree
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use creusot.int.UInt32
   
   type t_Node = { left: t_Tree; val': UInt32.t; right: t_Tree }
@@ -68,6 +71,6 @@ module M_use_tree
   
   meta "select_lsinst" "all"
   
-  let use_tree (_1: t_Tree) (return (x: ())) = (! bb0
+  let use_tree (mode: Mode.t) (_1: t_Tree) (return (x: ())) = (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

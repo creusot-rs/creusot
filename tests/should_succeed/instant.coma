@@ -1,4 +1,5 @@
 module M_test_instant
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use creusot.prelude.Any
   use int.Int
@@ -15,7 +16,7 @@ module M_test_instant
   
   axiom view_Instant_spec: forall self: t_Instant [view_Instant self]. ge_log_Int (view_Instant self) 0
   
-  let now (return (x: t_Instant)) = any
+  let now (mode: Mode.t) (return (x: t_Instant)) = any
     [ return (result: t_Instant) ->
     {[@stop_split] [@expl:now ensures] ([@stop_split] [@expl:now result type invariant] inv_Instant result)
       /\ ([@stop_split] [@expl:now ensures] ge_log_Int (view_Instant result) 0)}
@@ -34,7 +35,7 @@ module M_test_instant
   axiom view_Duration_spec: forall self: t_Duration [view_Duration self]. ge_log_Int (view_Duration self) 0
       /\ view_Duration self <= secs_to_nanos (UInt64.t'int const_MAX) + 999999999
   
-  let from_secs (secs: UInt64.t) (return (x: t_Duration)) = any
+  let from_secs (mode: Mode.t) (secs: UInt64.t) (return (x: t_Duration)) = any
     [ return (result: t_Duration) ->
     {[@stop_split] [@expl:from_secs ensures] ([@stop_split] [@expl:from_secs result type invariant] inv_Duration result)
       /\ ([@stop_split] [@expl:from_secs ensures] view_Duration result = secs_to_nanos (UInt64.t'int secs))}
@@ -48,7 +49,7 @@ module M_test_instant
   
   meta "rewrite_def" predicate inv_ref_Instant
   
-  let elapsed (self_: t_Instant) (return (x: t_Duration)) =
+  let elapsed (mode: Mode.t) (self_: t_Instant) (return (x: t_Duration)) =
   {[@stop_split] [@expl:elapsed 'self_' type invariant] inv_ref_Instant self_}
     any
     [ return (result: t_Duration) ->
@@ -72,7 +73,7 @@ module M_test_instant
   
   meta "rewrite_def" function deep_model_ref_Duration
   
-  let ge_Duration (self_: t_Duration) (other: t_Duration) (return (x: bool)) =
+  let ge_Duration (mode: Mode.t) (self_: t_Duration) (other: t_Duration) (return (x: bool)) =
   {[@stop_split] [@expl:ge_Duration requires] ([@stop_split] [@expl:ge 'self_' type invariant] inv_ref_Duration self_)
     /\ ([@stop_split] [@expl:ge 'other' type invariant] inv_ref_Duration other)}
     any
@@ -139,7 +140,7 @@ module M_test_instant
   
   axiom irreflexive_Option_Int_spec: forall self: t_Option_Int. not lt_log_Option_Int self self
   
-  let checked_add (self_: t_Instant) (duration: t_Duration) (return (x: t_Option_Instant)) =
+  let checked_add (mode: Mode.t) (self_: t_Instant) (duration: t_Duration) (return (x: t_Option_Instant)) =
   {[@stop_split] [@expl:checked_add requires] ([@stop_split] [@expl:checked_add 'self_' type invariant] inv_ref_Instant self_)
     /\ ([@stop_split] [@expl:checked_add 'duration' type invariant] inv_Duration duration)}
     any
@@ -151,7 +152,7 @@ module M_test_instant
       -> lt_log_Option_Int (Some'0 (view_Instant self_)) (deep_model_Option_Instant result))}
       (! return {result}) ]
   
-  let unwrap_Instant (self_: t_Option_Instant) (return (x: t_Instant)) =
+  let unwrap_Instant (mode: Mode.t) (self_: t_Option_Instant) (return (x: t_Instant)) =
   {[@stop_split] [@expl:unwrap_Instant requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_Instant self_)
     /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
     any
@@ -164,7 +165,7 @@ module M_test_instant
   
   meta "rewrite_def" function deep_model_ref_Instant
   
-  let eq_Instant (self_: t_Instant) (rhs: t_Instant) (return (x: bool)) =
+  let eq_Instant (mode: Mode.t) (self_: t_Instant) (rhs: t_Instant) (return (x: bool)) =
   {[@stop_split] [@expl:eq_Instant requires] ([@stop_split] [@expl:eq 'self_' type invariant] inv_ref_Instant self_)
     /\ ([@stop_split] [@expl:eq 'rhs' type invariant] inv_ref_Instant rhs)}
     any
@@ -172,7 +173,7 @@ module M_test_instant
       = (deep_model_ref_Instant self_ = deep_model_ref_Instant rhs)}
       (! return {result}) ]
   
-  let add_Instant (self_: t_Instant) (rhs: t_Duration) (return (x: t_Instant)) =
+  let add_Instant (mode: Mode.t) (self_: t_Instant) (rhs: t_Duration) (return (x: t_Instant)) =
   {[@stop_split] [@expl:add_Instant requires] ([@stop_split] [@expl:add 'self_' type invariant] inv_Instant self_)
     /\ ([@stop_split] [@expl:add 'rhs' type invariant] inv_Duration rhs)}
     any
@@ -188,7 +189,7 @@ module M_test_instant
   
   meta "rewrite_def" predicate gt_log_Option_Int
   
-  let checked_sub (self_: t_Instant) (duration: t_Duration) (return (x: t_Option_Instant)) =
+  let checked_sub (mode: Mode.t) (self_: t_Instant) (duration: t_Duration) (return (x: t_Option_Instant)) =
   {[@stop_split] [@expl:checked_sub requires] ([@stop_split] [@expl:checked_sub 'self_' type invariant] inv_ref_Instant self_)
     /\ ([@stop_split] [@expl:checked_sub 'duration' type invariant] inv_Duration duration)}
     any
@@ -200,7 +201,7 @@ module M_test_instant
       -> gt_log_Option_Int (Some'0 (view_Instant self_)) (deep_model_Option_Instant result))}
       (! return {result}) ]
   
-  let sub_Instant (self_: t_Instant) (rhs: t_Duration) (return (x: t_Instant)) =
+  let sub_Instant (mode: Mode.t) (self_: t_Instant) (rhs: t_Duration) (return (x: t_Instant)) =
   {[@stop_split] [@expl:sub_Instant requires] ([@stop_split] [@expl:sub 'self_' type invariant] inv_Instant self_)
     /\ ([@stop_split] [@expl:sub 'rhs' type invariant] inv_Duration rhs)}
     any
@@ -211,7 +212,7 @@ module M_test_instant
       -> gt_log_Int (view_Instant self_) (view_Instant result))}
       (! return {result}) ]
   
-  let sub_Instant'0 (self_: t_Instant) (other: t_Instant) (return (x: t_Duration)) =
+  let sub_Instant'0 (mode: Mode.t) (self_: t_Instant) (other: t_Instant) (return (x: t_Duration)) =
   {[@stop_split] [@expl:sub_Instant requires] ([@stop_split] [@expl:sub 'self_' type invariant] inv_Instant self_)
     /\ ([@stop_split] [@expl:sub 'other' type invariant] inv_Instant other)}
     any
@@ -222,7 +223,7 @@ module M_test_instant
       /\ ([@stop_split] [@expl:sub ensures #1] view_Instant self_ <= view_Instant other -> view_Duration result = 0)}
       (! return {result}) ]
   
-  let eq_Duration (self_: t_Duration) (rhs: t_Duration) (return (x: bool)) =
+  let eq_Duration (mode: Mode.t) (self_: t_Duration) (rhs: t_Duration) (return (x: bool)) =
   {[@stop_split] [@expl:eq_Duration requires] ([@stop_split] [@expl:eq 'self_' type invariant] inv_ref_Duration self_)
     /\ ([@stop_split] [@expl:eq 'rhs' type invariant] inv_ref_Duration rhs)}
     any
@@ -230,7 +231,7 @@ module M_test_instant
       = (deep_model_ref_Duration self_ = deep_model_ref_Duration rhs)}
       (! return {result}) ]
   
-  let gt_Duration (self_: t_Duration) (other: t_Duration) (return (x: bool)) =
+  let gt_Duration (mode: Mode.t) (self_: t_Duration) (other: t_Duration) (return (x: bool)) =
   {[@stop_split] [@expl:gt_Duration requires] ([@stop_split] [@expl:gt 'self_' type invariant] inv_ref_Duration self_)
     /\ ([@stop_split] [@expl:gt 'other' type invariant] inv_ref_Duration other)}
     any
@@ -238,7 +239,7 @@ module M_test_instant
       = gt_log_Int (deep_model_ref_Duration self_) (deep_model_ref_Duration other)}
       (! return {result}) ]
   
-  let duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Duration)) =
+  let duration_since (mode: Mode.t) (self_: t_Instant) (earlier: t_Instant) (return (x: t_Duration)) =
   {[@stop_split] [@expl:duration_since requires] ([@stop_split] [@expl:duration_since 'self_' type invariant] inv_ref_Instant self_)
     /\ ([@stop_split] [@expl:duration_since 'earlier' type invariant] inv_Instant earlier)}
     any
@@ -260,7 +261,7 @@ module M_test_instant
         | Some'1 f0 -> inv_Duration f0
         end
   
-  let checked_duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Option_Duration)) =
+  let checked_duration_since (mode: Mode.t) (self_: t_Instant) (earlier: t_Instant) (return (x: t_Option_Duration)) =
   {[@stop_split] [@expl:checked_duration_since requires] ([@stop_split] [@expl:checked_duration_since 'self_' type invariant] inv_ref_Instant self_)
     /\ ([@stop_split] [@expl:checked_duration_since 'earlier' type invariant] inv_Instant earlier)}
     any
@@ -280,17 +281,17 @@ module M_test_instant
   
   meta "rewrite_def" predicate inv_ref_Option_Duration
   
-  let is_some_Duration (self_: t_Option_Duration) (return (x: bool)) =
+  let is_some_Duration (mode: Mode.t) (self_: t_Option_Duration) (return (x: bool)) =
   {[@stop_split] [@expl:is_some 'self_' type invariant] inv_ref_Option_Duration self_}
     any
     [ return (result: bool) -> {[@stop_split] [@expl:is_some ensures] result = (self_ <> None'1)} (! return {result}) ]
   
-  let is_none_Duration (self_: t_Option_Duration) (return (x: bool)) =
+  let is_none_Duration (mode: Mode.t) (self_: t_Option_Duration) (return (x: bool)) =
   {[@stop_split] [@expl:is_none 'self_' type invariant] inv_ref_Option_Duration self_}
     any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None'1)} (! return {result}) ]
   
-  let saturating_duration_since (self_: t_Instant) (earlier: t_Instant) (return (x: t_Duration)) =
+  let saturating_duration_since (mode: Mode.t) (self_: t_Instant) (earlier: t_Instant) (return (x: t_Duration)) =
   {[@stop_split] [@expl:saturating_duration_since requires] ([@stop_split] [@expl:saturating_duration_since 'self_' type invariant] inv_ref_Instant self_)
     /\ ([@stop_split] [@expl:saturating_duration_since 'earlier' type invariant] inv_Instant earlier)}
     any
@@ -302,128 +303,191 @@ module M_test_instant
       -> view_Duration result = 0)}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_instant (return (x: ())) = (! bb0
+  let test_instant (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = now (fun (_x: t_Instant) -> [ &instant <- _x ] s1)
-      | s1 = from_secs {(0: UInt64.t)} (fun (_x: t_Duration) -> [ &zero_dur <- _x ] s2)
-      | s2 = elapsed {instant} (fun (_x: t_Duration) -> [ &_6 <- _x ] s3)
-      | s3 = ge_Duration {_6} {zero_dur} (fun (_x: bool) -> [ &_4 <- _x ] s4)
+      [ s0 = now {mode} (fun (_x: t_Instant) -> [ &instant <- _x ] s1)
+      | s1 = from_secs {mode} {(0: UInt64.t)} (fun (_x: t_Duration) -> [ &zero_dur <- _x ] s2)
+      | s2 = elapsed {mode} {instant} (fun (_x: t_Duration) -> [ &_6 <- _x ] s3)
+      | s3 = ge_Duration {mode} {_6} {zero_dur} (fun (_x: bool) -> [ &_4 <- _x ] s4)
       | s4 = any [ br0 -> {_4 = false} (! bb6) | br1 -> {_4} (! bb5) ] ]
     | bb5 = s0
-      [ s0 = checked_add {instant} {zero_dur} (fun (_x: t_Option_Instant) -> [ &_14 <- _x ] s1)
-      | s1 = unwrap_Instant {_14} (fun (_x: t_Instant) -> [ &_13 <- _x ] s2)
-      | s2 = eq_Instant {_13} {instant} (fun (_x: bool) -> [ &_11 <- _x ] s3)
+      [ s0 = checked_add {mode} {instant} {zero_dur} (fun (_x: t_Option_Instant) -> [ &_14 <- _x ] s1)
+      | s1 = unwrap_Instant {mode} {_14} (fun (_x: t_Instant) -> [ &_13 <- _x ] s2)
+      | s2 = eq_Instant {mode} {_13} {instant} (fun (_x: bool) -> [ &_11 <- _x ] s3)
       | s3 = any [ br0 -> {_11 = false} (! bb11) | br1 -> {_11} (! bb10) ] ]
     | bb10 = s0
-      [ s0 = add_Instant {instant} {zero_dur} (fun (_x: t_Instant) -> [ &_22 <- _x ] s1)
-      | s1 = eq_Instant {_22} {instant} (fun (_x: bool) -> [ &_20 <- _x ] s2)
+      [ s0 = add_Instant {mode} {instant} {zero_dur} (fun (_x: t_Instant) -> [ &_22 <- _x ] s1)
+      | s1 = eq_Instant {mode} {_22} {instant} (fun (_x: bool) -> [ &_20 <- _x ] s2)
       | s2 = any [ br0 -> {_20 = false} (! bb15) | br1 -> {_20} (! bb14) ] ]
     | bb14 = s0
-      [ s0 = from_secs {(3: UInt64.t)} (fun (_x: t_Duration) -> [ &three_seconds <- _x ] s1)
-      | s1 = add_Instant {instant} {three_seconds} (fun (_x: t_Instant) -> [ &greater_instant <- _x ] s2)
+      [ s0 = from_secs {mode} {(3: UInt64.t)} (fun (_x: t_Duration) -> [ &three_seconds <- _x ] s1)
+      | s1 = add_Instant {mode} {instant} {three_seconds} (fun (_x: t_Instant) -> [ &greater_instant <- _x ] s2)
       | s2 = {[@expl:assertion] view_Instant instant < view_Instant greater_instant} s3
-      | s3 = add_Instant {greater_instant} {three_seconds} (fun (_x: t_Instant) -> [ &even_greater_instant <- _x ] s4)
+      | s3 = add_Instant {mode} {greater_instant} {three_seconds}
+          (fun (_x: t_Instant) -> [ &even_greater_instant <- _x ] s4)
       | s4 = {[@expl:assertion] view_Instant instant < view_Instant even_greater_instant} s5
-      | s5 = checked_sub {instant} {zero_dur} (fun (_x: t_Option_Instant) -> [ &_46 <- _x ] s6)
-      | s6 = unwrap_Instant {_46} (fun (_x: t_Instant) -> [ &_45 <- _x ] s7)
-      | s7 = eq_Instant {_45} {instant} (fun (_x: bool) -> [ &_43 <- _x ] s8)
+      | s5 = checked_sub {mode} {instant} {zero_dur} (fun (_x: t_Option_Instant) -> [ &_46 <- _x ] s6)
+      | s6 = unwrap_Instant {mode} {_46} (fun (_x: t_Instant) -> [ &_45 <- _x ] s7)
+      | s7 = eq_Instant {mode} {_45} {instant} (fun (_x: bool) -> [ &_43 <- _x ] s8)
       | s8 = any [ br0 -> {_43 = false} (! bb23) | br1 -> {_43} (! bb22) ] ]
     | bb22 = s0
-      [ s0 = sub_Instant {instant} {zero_dur} (fun (_x: t_Instant) -> [ &_54 <- _x ] s1)
-      | s1 = eq_Instant {_54} {instant} (fun (_x: bool) -> [ &_52 <- _x ] s2)
+      [ s0 = sub_Instant {mode} {instant} {zero_dur} (fun (_x: t_Instant) -> [ &_54 <- _x ] s1)
+      | s1 = eq_Instant {mode} {_54} {instant} (fun (_x: bool) -> [ &_52 <- _x ] s2)
       | s2 = any [ br0 -> {_52 = false} (! bb27) | br1 -> {_52} (! bb26) ] ]
     | bb26 = s0
-      [ s0 = sub_Instant {instant} {three_seconds} (fun (_x: t_Instant) -> [ &lesser_instant <- _x ] s1)
+      [ s0 = sub_Instant {mode} {instant} {three_seconds} (fun (_x: t_Instant) -> [ &lesser_instant <- _x ] s1)
       | s1 = {[@expl:assertion] gt_log_Int (view_Instant instant) (view_Instant lesser_instant)} s2
-      | s2 = sub_Instant'0 {instant} {instant} (fun (_x: t_Duration) -> [ &_69 <- _x ] s3)
-      | s3 = eq_Duration {_69} {zero_dur} (fun (_x: bool) -> [ &_67 <- _x ] s4)
+      | s2 = sub_Instant'0 {mode} {instant} {instant} (fun (_x: t_Duration) -> [ &_69 <- _x ] s3)
+      | s3 = eq_Duration {mode} {_69} {zero_dur} (fun (_x: bool) -> [ &_67 <- _x ] s4)
       | s4 = any [ br0 -> {_67 = false} (! bb32) | br1 -> {_67} (! bb31) ] ]
     | bb31 = s0
-      [ s0 = sub_Instant'0 {instant} {greater_instant} (fun (_x: t_Duration) -> [ &_77 <- _x ] s1)
-      | s1 = eq_Duration {_77} {zero_dur} (fun (_x: bool) -> [ &_75 <- _x ] s2)
+      [ s0 = sub_Instant'0 {mode} {instant} {greater_instant} (fun (_x: t_Duration) -> [ &_77 <- _x ] s1)
+      | s1 = eq_Duration {mode} {_77} {zero_dur} (fun (_x: bool) -> [ &_75 <- _x ] s2)
       | s2 = any [ br0 -> {_75 = false} (! bb36) | br1 -> {_75} (! bb35) ] ]
     | bb35 = s0
-      [ s0 = sub_Instant'0 {greater_instant} {instant} (fun (_x: t_Duration) -> [ &_85 <- _x ] s1)
-      | s1 = gt_Duration {_85} {zero_dur} (fun (_x: bool) -> [ &_83 <- _x ] s2)
+      [ s0 = sub_Instant'0 {mode} {greater_instant} {instant} (fun (_x: t_Duration) -> [ &_85 <- _x ] s1)
+      | s1 = gt_Duration {mode} {_85} {zero_dur} (fun (_x: bool) -> [ &_83 <- _x ] s2)
       | s2 = any [ br0 -> {_83 = false} (! bb40) | br1 -> {_83} (! bb39) ] ]
     | bb39 = s0
-      [ s0 = duration_since {greater_instant} {instant} (fun (_x: t_Duration) -> [ &_93 <- _x ] s1)
-      | s1 = gt_Duration {_93} {zero_dur} (fun (_x: bool) -> [ &_91 <- _x ] s2)
+      [ s0 = duration_since {mode} {greater_instant} {instant} (fun (_x: t_Duration) -> [ &_93 <- _x ] s1)
+      | s1 = gt_Duration {mode} {_93} {zero_dur} (fun (_x: bool) -> [ &_91 <- _x ] s2)
       | s2 = any [ br0 -> {_91 = false} (! bb44) | br1 -> {_91} (! bb43) ] ]
     | bb43 = s0
-      [ s0 = duration_since {instant} {greater_instant} (fun (_x: t_Duration) -> [ &_101 <- _x ] s1)
-      | s1 = eq_Duration {_101} {zero_dur} (fun (_x: bool) -> [ &_99 <- _x ] s2)
+      [ s0 = duration_since {mode} {instant} {greater_instant} (fun (_x: t_Duration) -> [ &_101 <- _x ] s1)
+      | s1 = eq_Duration {mode} {_101} {zero_dur} (fun (_x: bool) -> [ &_99 <- _x ] s2)
       | s2 = any [ br0 -> {_99 = false} (! bb48) | br1 -> {_99} (! bb47) ] ]
     | bb47 = s0
-      [ s0 = checked_duration_since {greater_instant} {instant} (fun (_x: t_Option_Duration) -> [ &_109 <- _x ] s1)
-      | s1 = is_some_Duration {_109} (fun (_x: bool) -> [ &_107 <- _x ] s2)
+      [ s0 = checked_duration_since {mode} {greater_instant} {instant}
+          (fun (_x: t_Option_Duration) -> [ &_109 <- _x ] s1)
+      | s1 = is_some_Duration {mode} {_109} (fun (_x: bool) -> [ &_107 <- _x ] s2)
       | s2 = any [ br0 -> {_107 = false} (! bb52) | br1 -> {_107} (! bb51) ] ]
     | bb51 = s0
-      [ s0 = checked_duration_since {instant} {greater_instant} (fun (_x: t_Option_Duration) -> [ &_116 <- _x ] s1)
-      | s1 = is_none_Duration {_116} (fun (_x: bool) -> [ &_114 <- _x ] s2)
+      [ s0 = checked_duration_since {mode} {instant} {greater_instant}
+          (fun (_x: t_Option_Duration) -> [ &_116 <- _x ] s1)
+      | s1 = is_none_Duration {mode} {_116} (fun (_x: bool) -> [ &_114 <- _x ] s2)
       | s2 = any [ br0 -> {_114 = false} (! bb56) | br1 -> {_114} (! bb55) ] ]
     | bb55 = s0
-      [ s0 = saturating_duration_since {greater_instant} {instant} (fun (_x: t_Duration) -> [ &_123 <- _x ] s1)
-      | s1 = gt_Duration {_123} {zero_dur} (fun (_x: bool) -> [ &_121 <- _x ] s2)
+      [ s0 = saturating_duration_since {mode} {greater_instant} {instant} (fun (_x: t_Duration) -> [ &_123 <- _x ] s1)
+      | s1 = gt_Duration {mode} {_123} {zero_dur} (fun (_x: bool) -> [ &_121 <- _x ] s2)
       | s2 = any [ br0 -> {_121 = false} (! bb60) | br1 -> {_121} (! bb59) ] ]
     | bb59 = s0
-      [ s0 = saturating_duration_since {instant} {greater_instant} (fun (_x: t_Duration) -> [ &_131 <- _x ] s1)
-      | s1 = eq_Duration {_131} {zero_dur} (fun (_x: bool) -> [ &_129 <- _x ] s2)
+      [ s0 = saturating_duration_since {mode} {instant} {greater_instant} (fun (_x: t_Duration) -> [ &_131 <- _x ] s1)
+      | s1 = eq_Duration {mode} {_131} {zero_dur} (fun (_x: bool) -> [ &_129 <- _x ] s2)
       | s2 = any [ br0 -> {_129 = false} (! bb64) | br1 -> {_129} (! bb63) ] ]
     | bb63 = return {_ret}
-    | bb64 = {false} any
-    | bb60 = {false} any
-    | bb56 = {false} any
-    | bb52 = {false} any
-    | bb48 = {false} any
-    | bb44 = {false} any
-    | bb40 = {false} any
-    | bb36 = {false} any
-    | bb32 = {false} any
-    | bb27 = {false} any
-    | bb23 = {false} any
-    | bb15 = {false} any
-    | bb11 = {false} any
-    | bb6 = {false} any ]
+    | bb64 = s0
+      [ s0 = panic {mode} {"assertion failed: instant.saturating_duration_since(greater_instant) == zero_dur"}
+          (fun (_x: ()) -> [ &_135 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb60 = s0
+      [ s0 = panic {mode} {"assertion failed: greater_instant.saturating_duration_since(instant) > zero_dur"}
+          (fun (_x: ()) -> [ &_127 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb56 = s0
+      [ s0 = panic {mode} {"assertion failed: instant.checked_duration_since(greater_instant).is_none()"}
+          (fun (_x: ()) -> [ &_119 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb52 = s0
+      [ s0 = panic {mode} {"assertion failed: greater_instant.checked_duration_since(instant).is_some()"}
+          (fun (_x: ()) -> [ &_112 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb48 = s0
+      [ s0 = panic {mode} {"assertion failed: instant.duration_since(greater_instant) == zero_dur"}
+          (fun (_x: ()) -> [ &_105 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb44 = s0
+      [ s0 = panic {mode} {"assertion failed: greater_instant.duration_since(instant) > zero_dur"}
+          (fun (_x: ()) -> [ &_97 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb40 = s0
+      [ s0 = panic {mode} {"assertion failed: greater_instant - instant > zero_dur"} (fun (_x: ()) -> [ &_89 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb36 = s0
+      [ s0 = panic {mode} {"assertion failed: instant - greater_instant == zero_dur"}
+          (fun (_x: ()) -> [ &_81 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb32 = s0
+      [ s0 = panic {mode} {"assertion failed: instant - instant == zero_dur"} (fun (_x: ()) -> [ &_73 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb27 = s0
+      [ s0 = panic {mode} {"assertion failed: instant - zero_dur == instant"} (fun (_x: ()) -> [ &_58 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb23 = s0
+      [ s0 = panic {mode} {"assertion failed: instant.checked_sub(zero_dur).unwrap() == instant"}
+          (fun (_x: ()) -> [ &_50 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb15 = s0
+      [ s0 = panic {mode} {"assertion failed: instant + zero_dur == instant"} (fun (_x: ()) -> [ &_26 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb11 = s0
+      [ s0 = panic {mode} {"assertion failed: instant.checked_add(zero_dur).unwrap() == instant"}
+          (fun (_x: ()) -> [ &_18 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb6 = s0
+      [ s0 = panic {mode} {"assertion failed: instant.elapsed() >= zero_dur"} (fun (_x: ()) -> [ &_9 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & instant: t_Instant = Any.any_l ()
     | & zero_dur: t_Duration = Any.any_l ()
     | & _4: bool = Any.any_l ()
     | & _6: t_Duration = Any.any_l ()
+    | & _9: () = Any.any_l ()
     | & _11: bool = Any.any_l ()
     | & _13: t_Instant = Any.any_l ()
     | & _14: t_Option_Instant = Any.any_l ()
+    | & _18: () = Any.any_l ()
     | & _20: bool = Any.any_l ()
     | & _22: t_Instant = Any.any_l ()
+    | & _26: () = Any.any_l ()
     | & three_seconds: t_Duration = Any.any_l ()
     | & greater_instant: t_Instant = Any.any_l ()
     | & even_greater_instant: t_Instant = Any.any_l ()
     | & _43: bool = Any.any_l ()
     | & _45: t_Instant = Any.any_l ()
     | & _46: t_Option_Instant = Any.any_l ()
+    | & _50: () = Any.any_l ()
     | & _52: bool = Any.any_l ()
     | & _54: t_Instant = Any.any_l ()
+    | & _58: () = Any.any_l ()
     | & lesser_instant: t_Instant = Any.any_l ()
     | & _67: bool = Any.any_l ()
     | & _69: t_Duration = Any.any_l ()
+    | & _73: () = Any.any_l ()
     | & _75: bool = Any.any_l ()
     | & _77: t_Duration = Any.any_l ()
+    | & _81: () = Any.any_l ()
     | & _83: bool = Any.any_l ()
     | & _85: t_Duration = Any.any_l ()
+    | & _89: () = Any.any_l ()
     | & _91: bool = Any.any_l ()
     | & _93: t_Duration = Any.any_l ()
+    | & _97: () = Any.any_l ()
     | & _99: bool = Any.any_l ()
     | & _101: t_Duration = Any.any_l ()
+    | & _105: () = Any.any_l ()
     | & _107: bool = Any.any_l ()
     | & _109: t_Option_Duration = Any.any_l ()
+    | & _112: () = Any.any_l ()
     | & _114: bool = Any.any_l ()
     | & _116: t_Option_Duration = Any.any_l ()
+    | & _119: () = Any.any_l ()
     | & _121: bool = Any.any_l ()
     | & _123: t_Duration = Any.any_l ()
+    | & _127: () = Any.any_l ()
     | & _129: bool = Any.any_l ()
-    | & _131: t_Duration = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _131: t_Duration = Any.any_l ()
+    | & _135: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

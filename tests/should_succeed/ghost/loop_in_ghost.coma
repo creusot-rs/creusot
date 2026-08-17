@@ -1,5 +1,6 @@
 module M_foo
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -11,14 +12,14 @@ module M_foo
   
   meta "rewrite_def" predicate well_founded_relation_u32
   
-  let new_u32 (x: UInt32.t) (return (x'0: UInt32.t)) = any
+  let new_u32 (mode: Mode.t) (x: UInt32.t) (return (x'0: UInt32.t)) = any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let foo (x: UInt32.t) (return (x'0: UInt32.t)) = (! bb0
+  let foo (mode: Mode.t) (x: UInt32.t) (return (x'0: UInt32.t)) = (! bb0
     [ bb0 = s0 [ s0 = [ &y <- (0: UInt32.t) ] s1 | s1 = [ &i <- x ] s2 | s2 = bb1 ]
     | bb1 = bb1invariant
       [ bb1 = {[@expl:loop variant] well_founded_relation_u32 variant_old_bb1 i} bb1invariant
@@ -30,7 +31,8 @@ module M_foo
           [ s0 = UInt32.sub {i} {(1: UInt32.t)} (fun (_x: UInt32.t) -> [ &i <- _x ] s1)
           | s1 = UInt32.add {y} {(1: UInt32.t)} (fun (_x: UInt32.t) -> [ &y <- _x ] s2)
           | s2 = bb1 ] ] ]
-    | bb4 = s0 [ s0 = new_u32 {y} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    | bb4 = s0
+      [ s0 = new_u32 {Mode.into_ghost mode} {y} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l ()
     | & x: UInt32.t = x
     | & y: UInt32.t = Any.any_l ()

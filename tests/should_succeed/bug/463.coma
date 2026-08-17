@@ -1,9 +1,10 @@
 module M_test
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.Int
   
-  let closure0 (self: ()) (x: UInt64.t) (return (x'0: UInt64.t)) =
+  let closure0 (mode: Mode.t) (self: ()) (x: UInt64.t) (return (x'0: UInt64.t)) =
   {[@stop_split] [@expl:closure requires] UInt64.t'int x < 1000}
     (! bb0
     [ bb0 = s0
@@ -18,30 +19,30 @@ module M_test
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:closure ensures] UInt64.t'int result = UInt64.t'int x + 1}
       (! return {result}) ]
   
-  predicate precondition_closure0 (self: ()) (args: UInt64.t) = let x = args in UInt64.t'int x < 1000
+  predicate precondition_closure0 (self: ()) (mode: Mode.t) (args: UInt64.t) = let x = args in UInt64.t'int x < 1000
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate postcondition_closure0 (self: ()) (args: UInt64.t) (result: UInt64.t) =
+  predicate postcondition_closure0 (self: ()) (mode: Mode.t) (args: UInt64.t) (result: UInt64.t) =
     let x = args in UInt64.t'int result = UInt64.t'int x + 1
   
   meta "rewrite_def" predicate postcondition_closure0
   
-  let call_closure0 (self_: ()) (arg: UInt64.t) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:call requires] precondition_closure0 self_ arg}
+  let call_closure0 (mode: Mode.t) (self_: ()) (arg: UInt64.t) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:call requires] precondition_closure0 self_ mode arg}
     any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self_ arg result}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self_ mode arg result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test (return (x: ())) = (! bb0
+  let test (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &c <- () ] s1
       | s1 = [ &_4 <- (2: UInt64.t) ] s2
-      | s2 = call_closure0 {c} {_4} (fun (_x: UInt64.t) -> [ &y <- _x ] s3)
+      | s2 = call_closure0 {mode} {c} {_4} (fun (_x: UInt64.t) -> [ &y <- _x ] s3)
       | s3 = {[@expl:assertion] UInt64.t'int y = 3} s4
       | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

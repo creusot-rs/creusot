@@ -1,6 +1,7 @@
 module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
@@ -21,24 +22,27 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   
   meta "rewrite_def" predicate inv_ref_K
   
-  predicate precondition_clone (self: ()) (args: t_K)
+  predicate precondition_clone (self: ()) (mode: Mode.t) (args: t_K)
   
-  axiom precondition_fndef: forall args: t_K [precondition_clone () args]. (let self_ = args in inv_ref_K self_)
-      -> precondition_clone () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_K [precondition_clone () mode args]. (let self_ = args in inv_ref_K self_)
+        -> precondition_clone () mode args
   
-  predicate postcondition_clone (self: ()) (args: t_K) (result: t_K)
+  predicate postcondition_clone (self: ()) (mode: Mode.t) (args: t_K) (result: t_K)
   
   axiom postcondition_fndef:
-    forall args: t_K, res: t_K [postcondition_clone () args res]. postcondition_clone () args res
+    forall mode: Mode.t, args: t_K, res: t_K [postcondition_clone () mode args res]. postcondition_clone () mode args res
       -> (let self_ = args in inv_K res)
   
-  predicate postcondition_once_clone (self: ()) (args: t_K) (result: t_K) = postcondition_clone self args result
+  predicate postcondition_once_clone (self: ()) (mode: Mode.t) (args: t_K) (result: t_K) =
+    postcondition_clone self mode args result
   
   meta "rewrite_def" predicate postcondition_once_clone
   
-  let clone_K (self_: t_K) (return (x: t_K)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+  let clone_K (mode: Mode.t) (self_: t_K) (return (x: t_K)) =
+  {[@stop_split] [@expl:clone requires] precondition_clone () mode self_}
     any
-    [ return (result: t_K) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+    [ return (result: t_K) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () mode self_ result}
       (! return {result}) ]
   
   predicate invariant_Seq_K [@inline:trivial] (self: Seq.seq t_K) =
@@ -78,7 +82,7 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   
   meta "rewrite_def" function index_Vec_K_Global
   
-  let insert_K (self_: MutBorrow.t t_Vec_K_Global) (index'0: UInt64.t) (element: t_K) (return (x: ())) =
+  let insert_K (mode: Mode.t) (self_: MutBorrow.t t_Vec_K_Global) (index'0: UInt64.t) (element: t_K) (return (x: ())) =
   {[@stop_split] [@expl:insert_K requires] ([@stop_split] [@expl:insert 'self_' type invariant] inv_refmut_Vec_K_Global self_)
     /\ ([@stop_split] [@expl:insert 'element' type invariant] inv_K element)}
     any
@@ -116,18 +120,18 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   
   meta "select_lsinst" "all"
   
-  let insert_K'0 (self: MutBorrow.t t_VacantEntry_K) (return (x: ())) =
+  let insert_K'0 (mode: Mode.t) (self: MutBorrow.t t_VacantEntry_K) (return (x: ())) =
   {[@stop_split] [@expl:insert 'self' type invariant] inv_refmut_VacantEntry_K self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_3 <- self.current.index ] s1
-      | s1 = clone_K {self.current.key} (fun (_x: t_K) -> [ &_4 <- _x ] s2)
+      | s1 = clone_K {mode} {self.current.key} (fun (_x: t_K) -> [ &_4 <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_Vec_K_Global> {self.current.map.current}
           (fun (_bor: MutBorrow.t t_Vec_K_Global) ->
             [ &_2 <- _bor ] -{inv_Vec_K_Global _bor.final}-
             [ &self <- { self with current = { self.current with map = { self.current.map with current = _bor.final } } } ]
             s3) [ _ck -> (! {[@expl:type invariant] inv_Vec_K_Global self.current.map.current} any) ]
-      | s3 = insert_K {_2} {_3} {_4} (fun (_x: ()) -> [ &_ret <- _x ] s4)
+      | s3 = insert_K {mode} {_2} {_3} {_4} (fun (_x: ()) -> [ &_ret <- _x ] s4)
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_VacantEntry_K self} any) ]
       | s5 = -{resolve_refmut_VacantEntry_K self}- s6
       | s6 = return {_ret} ] ]
@@ -139,6 +143,7 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
 end
 module M_test
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -154,12 +159,12 @@ module M_test
     forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
       <= UInt64.t'int const_MAX
   
-  let len_usize (self_: t_Vec_usize_Global) (return (x: UInt64.t)) = any
+  let len_usize (mode: Mode.t) (self_: t_Vec_usize_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (view_Vec_usize_Global self_)}
       (! return {result}) ]
   
-  let push_usize (self_: MutBorrow.t t_Vec_usize_Global) (v: UInt64.t) (return (x: ())) = any
+  let push_usize (mode: Mode.t) (self_: MutBorrow.t t_Vec_usize_Global) (v: UInt64.t) (return (x: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:push ensures] view_Vec_usize_Global self_.final
       = Seq.snoc (view_Vec_usize_Global self_.current) v}
       (! return {result}) ]
@@ -178,12 +183,12 @@ module M_test
   
   meta "select_lsinst" "all"
   
-  let test (v: MutBorrow.t t_Vec_usize_Global) (return (x: ())) = (! bb0
+  let test (mode: Mode.t) (v: MutBorrow.t t_Vec_usize_Global) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = len_usize {v.current} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1)
+      [ s0 = len_usize {mode} {v.current} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1)
       | s1 = MutBorrow.borrow_final <t_Vec_usize_Global> {v.current} {MutBorrow.get_id v}
           (fun (_bor: MutBorrow.t t_Vec_usize_Global) -> [ &_5 <- _bor ] [ &v <- { v with current = _bor.final } ] s2)
-      | s2 = push_usize {_5} {_6} (fun (_x: ()) -> [ &_4 <- _x ] s3)
+      | s2 = push_usize {mode} {_5} {_6} (fun (_x: ()) -> [ &_4 <- _x ] s3)
       | s3 = -{resolve_refmut_Vec_usize_Global v}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

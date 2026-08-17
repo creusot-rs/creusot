@@ -1,6 +1,7 @@
 module M_empty
   use creusot.int.UInt64BW
   use creusot.int.UInt32BW
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use creusot.int.UInt8BW
   use int.Int
@@ -11,7 +12,7 @@ module M_empty
   
   axiom size_of_usize_spec: 0 <= size_of_usize
   
-  let size_of_usize'0 (return (x: UInt64BW.t)) = any
+  let size_of_usize'0 (mode: Mode.t) (return (x: UInt64BW.t)) = any
     [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:size_of ensures] UInt64BW.t'int result = size_of_usize}
       (! return {result}) ]
   
@@ -21,7 +22,7 @@ module M_empty
   
   let set_USIZE_BITS (return) = bb0
     [ bb0 = s0
-      [ s0 = size_of_usize'0 (fun (_x: UInt64BW.t) -> [ &_1 <- _x ] s1)
+      [ s0 = size_of_usize'0 {Mode.program_mode} (fun (_x: UInt64BW.t) -> [ &_1 <- _x ] s1)
       | s1 = [ &_2 <- let (_fst, _snd) = UInt64BW.mul_with_overflow _1 (8: UInt64BW.t) in { f0 = _fst; f1 = _snd } ] s2
       | s2 = {[@expl:Mul overflow] not _2.f1} s3
       | s3 = [ &_ret <- _2.f0 ] s4
@@ -48,17 +49,17 @@ module M_empty
   function ffs (val': UInt64BW.t) : UInt32BW.t =
     UInt32BW.sub (UInt32BW.of_BV256 (UInt64BW.to_BV256 const_USIZE_BITS)) (leading_zeros_usize val')
   
-  let ffs'0 (val': UInt64BW.t) (return (x: UInt32BW.t)) = any
+  let ffs'0 (mode: Mode.t) (val': UInt64BW.t) (return (x: UInt32BW.t)) = any
     [ return (result: UInt32BW.t) -> {[@stop_split] [@expl:ffs ensures] result = ffs val'} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let empty (val': UInt64BW.t) (return (x: UInt64BW.t)) = (! set_USIZE_BITS
+  let empty (mode: Mode.t) (val': UInt64BW.t) (return (x: UInt64BW.t)) = (! set_USIZE_BITS
       (bb0
       [ bb0 = s0
-        [ s0 = ffs'0 {val'} (fun (_x: UInt32BW.t) -> [ &rq_ffs <- _x ] s1)
+        [ s0 = ffs'0 {mode} {val'} (fun (_x: UInt32BW.t) -> [ &rq_ffs <- _x ] s1)
         | s1 = [ &_8 <- rq_ffs = (0: UInt32BW.t) ] s2
         | s2 = any [ br0 -> {_8 = false} (! bb3) | br1 -> {_8} (! bb2) ] ]
       | bb2 = s0 [ s0 = [ &_ret <- (0: UInt64BW.t) ] s1 | s1 = return {_ret} ]
@@ -86,6 +87,7 @@ module M_empty
 end
 module M_ffs
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use creusot.int.UInt32
   use int.Int
@@ -96,7 +98,7 @@ module M_ffs
   
   axiom size_of_usize_spec: 0 <= size_of_usize
   
-  let size_of_usize'0 (return (x: UInt64.t)) = any
+  let size_of_usize'0 (mode: Mode.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:size_of ensures] UInt64.t'int result = size_of_usize}
       (! return {result}) ]
   
@@ -106,7 +108,7 @@ module M_ffs
   
   let set_USIZE_BITS (return) = bb0
     [ bb0 = s0
-      [ s0 = size_of_usize'0 (fun (_x: UInt64.t) -> [ &_1 <- _x ] s1)
+      [ s0 = size_of_usize'0 {Mode.program_mode} (fun (_x: UInt64.t) -> [ &_1 <- _x ] s1)
       | s1 = [ &_2 <- let (_fst, _snd) = UInt64.mul_with_overflow _1 (8: UInt64.t) in { f0 = _fst; f1 = _snd } ] s2
       | s2 = {[@expl:Mul overflow] not _2.f1} s3
       | s3 = [ &_ret <- _2.f0 ] s4
@@ -130,7 +132,7 @@ module M_ffs
         = const_BITS)
       = (self = (0: UInt64.t))
   
-  let leading_zeros (self_: UInt64.t) (return (x: UInt32.t)) = any
+  let leading_zeros (mode: Mode.t) (self_: UInt64.t) (return (x: UInt32.t)) = any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:leading_zeros ensures] result = leading_zeros_usize self_}
       (! return {result}) ]
   
@@ -141,11 +143,11 @@ module M_ffs
   
   meta "select_lsinst" "all"
   
-  let ffs'0 (val': UInt64.t) (return (x: UInt32.t)) = (! set_USIZE_BITS
+  let ffs'0 (mode: Mode.t) (val': UInt64.t) (return (x: UInt32.t)) = (! set_USIZE_BITS
       (bb0
       [ bb0 = s0
         [ s0 = [ &_4 <- UInt32.of_int (UInt64.t'int const_USIZE_BITS) ] s1
-        | s1 = leading_zeros {val'} (fun (_x: UInt32.t) -> [ &_5 <- _x ] s2)
+        | s1 = leading_zeros {mode} {val'} (fun (_x: UInt32.t) -> [ &_5 <- _x ] s2)
         | s2 = UInt32.sub {_4} {_5} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s3)
         | s3 = return {_ret} ] ]
       [ & _ret: UInt32.t = Any.any_l ()
@@ -157,6 +159,7 @@ end
 module M_merge_bvs
   use creusot.int.UInt64BW
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use creusot.int.UInt8BW
   
   predicate has_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) =
@@ -166,7 +169,7 @@ module M_merge_bvs
   
   meta "select_lsinst" "all"
   
-  let merge_bvs (lhs: UInt64BW.t) (rhs: UInt64BW.t) (return (x: UInt64BW.t)) = (! bb0
+  let merge_bvs (mode: Mode.t) (lhs: UInt64BW.t) (rhs: UInt64BW.t) (return (x: UInt64BW.t)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- UInt64BW.bw_or lhs rhs ] s1 | s1 = return {_ret} ] ]
     [ & _ret: UInt64BW.t = Any.any_l () | & lhs: UInt64BW.t = lhs | & rhs: UInt64BW.t = rhs ])
     [ return (result: UInt64BW.t) ->
@@ -179,6 +182,7 @@ module M_set_bit
   use creusot.int.UInt8BW
   use creusot.int.UInt64BW
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.Int
   
   constant size_of_usize: int = 8
@@ -187,7 +191,7 @@ module M_set_bit
   
   axiom size_of_usize_spec: 0 <= size_of_usize
   
-  let size_of_usize'0 (return (x: UInt64BW.t)) = any
+  let size_of_usize'0 (mode: Mode.t) (return (x: UInt64BW.t)) = any
     [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:size_of ensures] UInt64BW.t'int result = size_of_usize}
       (! return {result}) ]
   
@@ -197,7 +201,7 @@ module M_set_bit
   
   let set_USIZE_BITS (return) = bb0
     [ bb0 = s0
-      [ s0 = size_of_usize'0 (fun (_x: UInt64BW.t) -> [ &_1 <- _x ] s1)
+      [ s0 = size_of_usize'0 {Mode.program_mode} (fun (_x: UInt64BW.t) -> [ &_1 <- _x ] s1)
       | s1 = [ &_2 <- let (_fst, _snd) = UInt64BW.mul_with_overflow _1 (8: UInt64BW.t) in { f0 = _fst; f1 = _snd } ] s2
       | s2 = {[@expl:Mul overflow] not _2.f1} s3
       | s3 = [ &_ret <- _2.f0 ] s4
@@ -212,7 +216,7 @@ module M_set_bit
   
   meta "select_lsinst" "all"
   
-  let set_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) (return (x: UInt64BW.t)) =
+  let set_bit (mode: Mode.t) (bitvec: UInt64BW.t) (bit: UInt8BW.t) (return (x: UInt64BW.t)) =
   {[@stop_split] [@expl:set_bit requires] UInt8BW.t'int bit < UInt64BW.t'int const_USIZE_BITS}
     (! set_USIZE_BITS
       (bb0
@@ -233,6 +237,7 @@ module M_unset_bit
   use creusot.int.UInt8BW
   use creusot.int.UInt64BW
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.Int
   
   constant size_of_usize: int = 8
@@ -241,7 +246,7 @@ module M_unset_bit
   
   axiom size_of_usize_spec: 0 <= size_of_usize
   
-  let size_of_usize'0 (return (x: UInt64BW.t)) = any
+  let size_of_usize'0 (mode: Mode.t) (return (x: UInt64BW.t)) = any
     [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:size_of ensures] UInt64BW.t'int result = size_of_usize}
       (! return {result}) ]
   
@@ -251,7 +256,7 @@ module M_unset_bit
   
   let set_USIZE_BITS (return) = bb0
     [ bb0 = s0
-      [ s0 = size_of_usize'0 (fun (_x: UInt64BW.t) -> [ &_1 <- _x ] s1)
+      [ s0 = size_of_usize'0 {Mode.program_mode} (fun (_x: UInt64BW.t) -> [ &_1 <- _x ] s1)
       | s1 = [ &_2 <- let (_fst, _snd) = UInt64BW.mul_with_overflow _1 (8: UInt64BW.t) in { f0 = _fst; f1 = _snd } ] s2
       | s2 = {[@expl:Mul overflow] not _2.f1} s3
       | s3 = [ &_ret <- _2.f0 ] s4
@@ -266,7 +271,7 @@ module M_unset_bit
   
   meta "select_lsinst" "all"
   
-  let unset_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) (return (x: UInt64BW.t)) =
+  let unset_bit (mode: Mode.t) (bitvec: UInt64BW.t) (bit: UInt8BW.t) (return (x: UInt64BW.t)) =
   {[@stop_split] [@expl:unset_bit requires] UInt8BW.t'int bit < UInt64BW.t'int const_USIZE_BITS}
     (! set_USIZE_BITS
       (bb0

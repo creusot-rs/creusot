@@ -1,13 +1,14 @@
 module M_f
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type tup2_u32_u32 = { f0: UInt32.t; f1: UInt32.t }
   
   type tup2_refmut_u32_refmut_u32 = { f0'0: MutBorrow.t UInt32.t; f1'0: MutBorrow.t UInt32.t }
   
-  let swap_refmut_u32 (x: tup2_refmut_u32_refmut_u32) (return (x'0: tup2_refmut_u32_refmut_u32)) = any
+  let swap_refmut_u32 (mode: Mode.t) (x: tup2_refmut_u32_refmut_u32) (return (x'0: tup2_refmut_u32_refmut_u32)) = any
     [ return (result: tup2_refmut_u32_refmut_u32) -> {[@stop_split] [@expl:swap ensures] result
       = { f0'0 = x.f1'0; f1'0 = x.f0'0 }}
       (! return {result}) ]
@@ -20,7 +21,7 @@ module M_f
   
   meta "select_lsinst" "all"
   
-  let f (return (x: ())) = (! bb0
+  let f (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_3 <- { f0 = (0: UInt32.t); f1 = (0: UInt32.t) } ] s1
       | s1 = [ &a <- _3.f0 ] s2
@@ -32,7 +33,7 @@ module M_f
       | s5 = MutBorrow.borrow_final <UInt32.t> {_8.current} {MutBorrow.get_id _8}
           (fun (_bor: MutBorrow.t UInt32.t) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s6)
       | s6 = [ &_5 <- { f0'0 = _6; f1'0 = _7 } ] s7
-      | s7 = swap_refmut_u32 {_5} (fun (_x: tup2_refmut_u32_refmut_u32) -> [ &p <- _x ] s8)
+      | s7 = swap_refmut_u32 {mode} {_5} (fun (_x: tup2_refmut_u32_refmut_u32) -> [ &p <- _x ] s8)
       | s8 = -{resolve_refmut_u32 p.f1'0}- s9
       | s9 = -{resolve_refmut_u32 _8}- s10
       | s10 = [ &p <- { p with f0'0 = { p.f0'0 with current = (10: UInt32.t) } } ] s11
@@ -52,6 +53,7 @@ module M_f
 end
 module M_swap
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -67,7 +69,8 @@ module M_swap
   
   meta "select_lsinst" "all"
   
-  let swap_T (x: tup2_T_T) (return (x'0: tup2_T_T)) = {[@stop_split] [@expl:swap 'x' type invariant] inv_tup2_T_T x}
+  let swap_T (mode: Mode.t) (x: tup2_T_T) (return (x'0: tup2_T_T)) =
+  {[@stop_split] [@expl:swap 'x' type invariant] inv_tup2_T_T x}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- { f0 = x.f1; f1 = x.f0 } ] s1 | s1 = return {_ret} ] ]
     [ & _ret: tup2_T_T = Any.any_l () | & x: tup2_T_T = x ])

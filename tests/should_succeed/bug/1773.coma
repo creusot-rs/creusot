@@ -1,20 +1,22 @@
 module M_impl_Tr_for_S__f (* <S as Tr<45>> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let f_S (return (x: ())) = (! bb0
+  let f_S (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_impl_Tr_for_S__g (* <S as Tr<45>> *)
   use creusot.slice.Slice64
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   
-  let len_usize (self_: Slice64.slice UInt64.t) (return (x: UInt64.t)) = any
+  let len_usize (mode: Mode.t) (self_: Slice64.slice UInt64.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
       = UInt64.t'int result}
       (! return {result}) ]
@@ -34,14 +36,15 @@ module M_impl_Tr_for_S__g (* <S as Tr<45>> *)
   
   meta "select_lsinst" "all"
   
-  let g_S (x: Slice64.array UInt64.t) (return (x'0: UInt64.t)) =
+  let g_S (mode: Mode.t) (x: Slice64.array UInt64.t) (return (x'0: UInt64.t)) =
   {[@stop_split] [@expl:g 'x' type invariant] inv_array_usize_45 x}
     (! bb0
-    [ bb0 = s0 [ s0 = len_usize {x} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = len_usize {mode} {x} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & x: Slice64.array UInt64.t = x ])
     [ return (result: UInt64.t) -> (! return {result}) ]
 end
 module M_impl_Tr_for_S__g__refines (* <S as Tr<45>> *)
+  use creusot.prelude.Mode
   use creusot.slice.Slice64
   use creusot.int.UInt64
   use seq.Seq
@@ -61,5 +64,5 @@ module M_impl_Tr_for_S__g__refines (* <S as Tr<45>> *)
   
   meta "select_lsinst" "all"
   
-  goal refines: forall x: Slice64.array UInt64.t. inv_array_usize_45 x -> inv_array_usize_45 x
+  goal refines: forall mode: Mode.t, x: Slice64.array UInt64.t. inv_array_usize_45 x -> inv_array_usize_45 x
 end

@@ -1,6 +1,7 @@
 module M_test_invariant_move
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.UInt64
   use creusot.prelude.Any
@@ -18,7 +19,7 @@ module M_test_invariant_move
     forall self: t_Vec_u32_Global [view_Vec_u32_Global self]. Seq.length (view_Vec_u32_Global self)
       <= UInt64.t'int const_MAX
   
-  let pop_u32 (self_: MutBorrow.t t_Vec_u32_Global) (return (x: t_Option_u32)) = any
+  let pop_u32 (mode: Mode.t) (self_: MutBorrow.t t_Vec_u32_Global) (return (x: t_Option_u32)) = any
     [ return (result: t_Option_u32) -> {[@stop_split] [@expl:pop ensures] match result with
         | Some t -> view_Vec_u32_Global self_.final
           = Seq.([..]) (view_Vec_u32_Global self_.current) 0 (Seq.length (view_Vec_u32_Global self_.current) - 1)
@@ -35,7 +36,7 @@ module M_test_invariant_move
   
   meta "select_lsinst" "all"
   
-  let test_invariant_move (x: t_Vec_u32_Global) (return (x'0: ())) = (! bb0
+  let test_invariant_move (mode: Mode.t) (x: t_Vec_u32_Global) (return (x'0: ())) = (! bb0
     [ bb0 = bb0
       [ bb0 = {[@expl:loop invariant] x = x}
         (! s0)
@@ -43,7 +44,7 @@ module M_test_invariant_move
             (fun (_bor: MutBorrow.t t_Vec_u32_Global) -> [ &_8 <- _bor ] [ &x <- _bor.final ] s1)
         | s1 = MutBorrow.borrow_final <t_Vec_u32_Global> {_8.current} {MutBorrow.get_id _8}
             (fun (_bor: MutBorrow.t t_Vec_u32_Global) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s2)
-        | s2 = pop_u32 {_7} (fun (_x: t_Option_u32) -> [ &_6 <- _x ] s3)
+        | s2 = pop_u32 {mode} {_7} (fun (_x: t_Option_u32) -> [ &_6 <- _x ] s3)
         | s3 = -{resolve_refmut_Vec_u32_Global _8}- s4
         | s4 = any [ br0 -> {_6 = None} (! bb7) | br1 (x0: UInt32.t) -> {_6 = Some x0} (! bb0) ] ] ]
     | bb7 = return {_ret} ]

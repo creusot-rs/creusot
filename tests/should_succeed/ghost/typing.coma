@@ -1,21 +1,22 @@
 module M_copy_enter_ghost
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type tup2_i32_i32 = { f0: Int32.t; f1: Int32.t }
   
-  let new_unit (x: ()) (return (x'0: ())) = any
+  let new_unit (mode: Mode.t) (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let copy_enter_ghost (return (x: ())) = (! bb0
+  let copy_enter_ghost (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (2: Int32.t) ] s1
       | s1 = [ &pair <- { f0 = (6: Int32.t); f1 = (42: Int32.t) } ] s2
-      | s2 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s3)
+      | s2 = new_unit {Mode.into_ghost mode} {_5} (fun (_x: ()) -> [ &_4 <- _x ] s3)
       | s3 = {[@expl:assertion] Int32.to_int x = 2} s4
       | s4 = {[@expl:assertion] Int32.to_int pair.f0 = 6 /\ Int32.to_int pair.f1 = 42} s5
       | s5 = return {_ret} ] ]
@@ -27,18 +28,19 @@ module M_copy_enter_ghost
 end
 module M_ghost_enter_ghost
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   
   type t_NonCopy = { f0: Int32.t }
   
-  let new_NonCopy (x: t_NonCopy) (return (x'0: t_NonCopy)) = any
+  let new_NonCopy (mode: Mode.t) (x: t_NonCopy) (return (x'0: t_NonCopy)) = any
     [ return (result: t_NonCopy) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  let deref_Ghost_NonCopy (self: t_NonCopy) (return (x: t_NonCopy)) = any
+  let deref_Ghost_NonCopy (mode: Mode.t) (self: t_NonCopy) (return (x: t_NonCopy)) = any
     [ return (result: t_NonCopy) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
-  let deref_mut_Ghost_NonCopy (self: MutBorrow.t t_NonCopy) (return (x: MutBorrow.t t_NonCopy)) = any
+  let deref_mut_Ghost_NonCopy (mode: Mode.t) (self: MutBorrow.t t_NonCopy) (return (x: MutBorrow.t t_NonCopy)) = any
     [ return (result: MutBorrow.t t_NonCopy) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
   
@@ -46,7 +48,7 @@ module M_ghost_enter_ghost
   
   meta "rewrite_def" predicate resolve_refmut_NonCopy
   
-  let new_unit (x: ()) (return (x'0: ())) = any
+  let new_unit (mode: Mode.t) (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   function view_NonCopy (self: t_NonCopy) : int = Int32.to_int self.f0
@@ -55,22 +57,23 @@ module M_ghost_enter_ghost
   
   meta "select_lsinst" "all"
   
-  let ghost_enter_ghost (return (x: ())) = (! bb0
+  let ghost_enter_ghost (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_2 <- { f0 = (1: Int32.t) } ] s1
-      | s1 = new_NonCopy {_2} (fun (_x: t_NonCopy) -> [ &g_move <- _x ] s2)
+      | s1 = new_NonCopy {Mode.into_ghost mode} {_2} (fun (_x: t_NonCopy) -> [ &g_move <- _x ] s2)
       | s2 = [ &_4 <- { f0 = (2: Int32.t) } ] s3
-      | s3 = new_NonCopy {_4} (fun (_x: t_NonCopy) -> [ &g_read <- _x ] s4)
+      | s3 = new_NonCopy {Mode.into_ghost mode} {_4} (fun (_x: t_NonCopy) -> [ &g_read <- _x ] s4)
       | s4 = [ &_6 <- { f0 = (3: Int32.t) } ] s5
-      | s5 = new_NonCopy {_6} (fun (_x: t_NonCopy) -> [ &g_mut <- _x ] s6)
-      | s6 = deref_Ghost_NonCopy {g_read} (fun (_x: t_NonCopy) -> [ &_9 <- _x ] s7)
+      | s5 = new_NonCopy {Mode.into_ghost mode} {_6} (fun (_x: t_NonCopy) -> [ &g_mut <- _x ] s6)
+      | s6 = deref_Ghost_NonCopy {Mode.into_ghost mode} {g_read} (fun (_x: t_NonCopy) -> [ &_9 <- _x ] s7)
       | s7 = [ &_11 <- { f0 = (4: Int32.t) } ] s8
       | s8 = MutBorrow.borrow_mut <t_NonCopy> {g_mut}
           (fun (_bor: MutBorrow.t t_NonCopy) -> [ &_13 <- _bor ] [ &g_mut <- _bor.final ] s9)
-      | s9 = deref_mut_Ghost_NonCopy {_13} (fun (_x: MutBorrow.t t_NonCopy) -> [ &_12 <- _x ] s10)
+      | s9 = deref_mut_Ghost_NonCopy {Mode.into_ghost mode} {_13}
+          (fun (_x: MutBorrow.t t_NonCopy) -> [ &_12 <- _x ] s10)
       | s10 = [ &_12 <- { _12 with current = _11 } ] s11
       | s11 = -{resolve_refmut_NonCopy _12}- s12
-      | s12 = new_unit {_8} (fun (_x: ()) -> [ &_7 <- _x ] s13)
+      | s12 = new_unit {Mode.into_ghost mode} {_8} (fun (_x: ()) -> [ &_7 <- _x ] s13)
       | s13 = {[@expl:assertion] view_NonCopy g_read = 2} s14
       | s14 = {[@expl:assertion] view_NonCopy g_mut = 4} s15
       | s15 = return {_ret} ] ]
@@ -90,26 +93,27 @@ module M_ghost_enter_ghost
 end
 module M_snapshot_enter_ghost
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_NonCopy = { f0: Int32.t }
   
   function view_NonCopy (self: t_NonCopy) : int = Int32.to_int self.f0
   
-  let new_unit (x: ()) (return (x'0: ())) = any
+  let new_unit (mode: Mode.t) (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let snapshot_enter_ghost (return (x: ())) = (! bb0
+  let snapshot_enter_ghost (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &g_read <- { f0 = (1: Int32.t) } ] s1
       | s1 = [ &g_mut <- { f0 = (3: Int32.t) } ] s2
       | s2 = {[@expl:assertion] view_NonCopy g_mut = 3} s3
       | s3 = [ &g_mut <- { f0 = (4: Int32.t) } ] s4
-      | s4 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s5)
+      | s4 = new_unit {Mode.into_ghost mode} {_5} (fun (_x: ()) -> [ &_4 <- _x ] s5)
       | s5 = {[@expl:assertion] view_NonCopy g_read = 1} s6
       | s6 = {[@expl:assertion] view_NonCopy g_mut = 4} s7
       | s7 = return {_ret} ] ]

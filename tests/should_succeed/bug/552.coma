@@ -1,5 +1,6 @@
 module M_impl_Machine__transition (* Machine *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   predicate invariants_Machine (self: ()) = true
   
@@ -7,13 +8,15 @@ module M_impl_Machine__transition (* Machine *)
   
   meta "select_lsinst" "all"
   
-  let transition (self: ()) (return (x: ())) = {[@stop_split] [@expl:transition requires] invariants_Machine self}
+  let transition (mode: Mode.t) (self: ()) (return (x: ())) =
+  {[@stop_split] [@expl:transition requires] invariants_Machine self}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- () ] s1 | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_impl_MachineTrait_for_Machine__step (* <Machine as MachineTrait> *)
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   predicate resolve_refmut_Machine [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
@@ -22,25 +25,27 @@ module M_impl_MachineTrait_for_Machine__step (* <Machine as MachineTrait> *)
   
   predicate invariants_Machine (self: ()) = true
   
-  let transition (self: ()) (return (x: ())) = {[@stop_split] [@expl:transition requires] invariants_Machine self}
+  let transition (mode: Mode.t) (self: ()) (return (x: ())) =
+  {[@stop_split] [@expl:transition requires] invariants_Machine self}
     any [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let step_Machine (self: MutBorrow.t ()) (return (x: bool)) =
+  let step_Machine (mode: Mode.t) (self: MutBorrow.t ()) (return (x: bool)) =
   {[@stop_split] [@expl:step requires] invariants_Machine self.current}
     (! bb0
     [ bb0 = s0
       [ s0 = -{resolve_refmut_Machine self}- s1
-      | s1 = transition {self.current} (fun (_x: ()) -> [ &_6 <- _x ] s2)
+      | s1 = transition {mode} {self.current} (fun (_x: ()) -> [ &_6 <- _x ] s2)
       | s2 = [ &_ret <- false ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & self: MutBorrow.t () = self | & _6: () = Any.any_l () ])
     [ return (result: bool) -> {[@stop_split] [@expl:step ensures] invariants_Machine self.final} (! return {result}) ]
 end
 module M_impl_MachineTrait_for_Machine__step__refines (* <Machine as MachineTrait> *)
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   
   predicate invariants_Machine (self: ()) = true
@@ -49,7 +54,7 @@ module M_impl_MachineTrait_for_Machine__step__refines (* <Machine as MachineTrai
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t (). invariants_Machine self.current
+  goal refines: forall mode: Mode.t, self: MutBorrow.t (). invariants_Machine self.current
       -> invariants_Machine self.current
       /\ (forall result: bool. invariants_Machine self.final -> invariants_Machine self.final)
 end

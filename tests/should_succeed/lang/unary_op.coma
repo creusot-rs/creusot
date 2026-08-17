@@ -1,11 +1,23 @@
 module M_f
+  use creusot.prelude.Mode
   use creusot.prelude.Any
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let f (return (x: ())) = (! bb0
-    [ bb0 = any [ br0 -> {false = false} (! bb2) | br1 -> {false} (! bb1) ] | bb1 = {false} any | bb2 = return {_ret} ]
-    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+  let f (mode: Mode.t) (return (x: ())) = (! bb0
+    [ bb0 = any [ br0 -> {false = false} (! bb2) | br1 -> {false} (! bb1) ]
+    | bb1 = s0 [ s0 = panic {mode} {"assertion failed: !false"} (fun (_x: ()) -> [ &_3 <- _x ] s1) | s1 = {false} any ]
+    | bb2 = return {_ret} ] [ & _ret: () = Any.any_l () | & _3: () = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end

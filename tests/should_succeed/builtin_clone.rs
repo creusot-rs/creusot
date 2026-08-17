@@ -17,8 +17,8 @@ pub fn clone_nested(x: ((u32, bool), u8)) -> ((u32, bool), u8) {
 
 // Generic fields: the law *composes* each field's own `Clone` postcondition
 // rather than asserting a primitive equality.
-#[ensures(T::clone.postcondition((&x.0,), result.0))]
-#[ensures(U::clone.postcondition((&x.1,), result.1))]
+#[ensures(|result, mode| T::clone.postcondition(mode, (&x.0,), result.0))]
+#[ensures(|result, mode| U::clone.postcondition(mode, (&x.1,), result.1))]
 pub fn clone_generic<T: Clone, U: Clone>(x: (T, U)) -> (T, U) {
     x.clone()
 }

@@ -1,9 +1,10 @@
 module M_f
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
-  let proj_toggle_i32 (toggle: bool) (a: MutBorrow.t Int32.t) (b: MutBorrow.t Int32.t)
+  let proj_toggle_i32 (mode: Mode.t) (toggle: bool) (a: MutBorrow.t Int32.t) (b: MutBorrow.t Int32.t)
     (return (x: MutBorrow.t Int32.t)) = any
     [ return (result: MutBorrow.t Int32.t) -> {[@stop_split] [@expl:proj_toggle ensures] if toggle then
         result = a /\ b.final = b.current
@@ -16,11 +17,20 @@ module M_f
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let f (return (x: ())) = (! bb0
+  let f (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &a <- (10: Int32.t) ] s1
       | s1 = [ &b <- (5: Int32.t) ] s2
@@ -32,7 +42,7 @@ module M_f
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_4 <- _bor ] [ &_5 <- { _5 with current = _bor.final } ] s5)
       | s5 = MutBorrow.borrow_final <Int32.t> {_7.current} {MutBorrow.get_id _7}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_6 <- _bor ] [ &_7 <- { _7 with current = _bor.final } ] s6)
-      | s6 = proj_toggle_i32 {true} {_4} {_6} (fun (_x: MutBorrow.t Int32.t) -> [ &x <- _x ] s7)
+      | s6 = proj_toggle_i32 {mode} {true} {_4} {_6} (fun (_x: MutBorrow.t Int32.t) -> [ &x <- _x ] s7)
       | s7 = -{resolve_refmut_i32 _7}- s8
       | s8 = -{resolve_refmut_i32 _5}- s9
       | s9 = Int32.add {x.current} {(5: Int32.t)} (fun (_x: Int32.t) -> [ &x <- { x with current = _x } ] s10)
@@ -40,7 +50,8 @@ module M_f
       | s11 = [ &_9 <- a = (15: Int32.t) ] s12
       | s12 = any [ br0 -> {_9 = false} (! bb3) | br1 -> {_9} (! bb2) ] ]
     | bb2 = return {_ret}
-    | bb3 = {false} any ]
+    | bb3 = s0
+      [ s0 = panic {mode} {"assertion failed: a == 15"} (fun (_x: ()) -> [ &_11 <- _x ] s1) | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: Int32.t = Any.any_l ()
     | & b: Int32.t = Any.any_l ()
@@ -49,11 +60,13 @@ module M_f
     | & _5: MutBorrow.t Int32.t = Any.any_l ()
     | & _6: MutBorrow.t Int32.t = Any.any_l ()
     | & _7: MutBorrow.t Int32.t = Any.any_l ()
-    | & _9: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _9: bool = Any.any_l ()
+    | & _11: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_proj_toggle
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -75,7 +88,8 @@ module M_proj_toggle
   
   meta "select_lsinst" "all"
   
-  let proj_toggle_T (toggle: bool) (a: MutBorrow.t t_T) (b: MutBorrow.t t_T) (return (x: MutBorrow.t t_T)) =
+  let proj_toggle_T (mode: Mode.t) (toggle: bool) (a: MutBorrow.t t_T) (b: MutBorrow.t t_T)
+    (return (x: MutBorrow.t t_T)) =
   {[@stop_split] [@expl:proj_toggle_T requires] ([@stop_split] [@expl:proj_toggle 'a' type invariant] inv_refmut_T a)
     /\ ([@stop_split] [@expl:proj_toggle 'b' type invariant] inv_refmut_T b)}
     (! bb0

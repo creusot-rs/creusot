@@ -1,13 +1,23 @@
 module M_signed_division
   use creusot.int.Int32
   use creusot.prelude.Bool
+  use creusot.prelude.Mode
   use creusot.prelude.Any
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let signed_division (return (x: ())) = (! bb0
+  let signed_division (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (10: Int32.t) ] s1
       | s1 = [ &y <- (1: Int32.t) ] s2
@@ -23,7 +33,8 @@ module M_signed_division
       | s11 = [ &_4 <- _5 = (10: Int32.t) ] s12
       | s12 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
     | bb3 = return {_ret}
-    | bb4 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: x / y == 10"} (fun (_x: ()) -> [ &_12 <- _x ] s1) | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & x: Int32.t = Any.any_l ()
     | & y: Int32.t = Any.any_l ()
@@ -34,5 +45,6 @@ module M_signed_division
     | & _8: bool = Any.any_l ()
     | & _9: bool = Any.any_l ()
     | & _10: bool = Any.any_l ()
-    | & _11: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _11: bool = Any.any_l ()
+    | & _12: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

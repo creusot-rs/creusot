@@ -1,4 +1,5 @@
 module M_omg
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -15,36 +16,39 @@ module M_omg
   
   meta "rewrite_def" predicate inv_ref_T
   
-  predicate precondition_is_true (self: ()) (args: t_T)
+  predicate precondition_is_true (self: ()) (mode: Mode.t) (args: t_T)
   
-  axiom precondition_fndef: forall args: t_T [precondition_is_true () args]. (let self = args in inv_ref_T self)
-      -> precondition_is_true () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_T [precondition_is_true () mode args]. (let self = args in inv_ref_T self)
+        -> precondition_is_true () mode args
   
-  predicate postcondition_is_true (self: ()) (args: t_T) (result: bool)
+  predicate postcondition_is_true (self: ()) (mode: Mode.t) (args: t_T) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: t_T, res: bool [postcondition_is_true () args res]. postcondition_is_true () args res
+    forall mode: Mode.t, args: t_T, res: bool [postcondition_is_true () mode args res]. postcondition_is_true () mode args res
       -> (let self = args in res = true)
   
-  predicate postcondition_once_is_true (self: ()) (args: t_T) (result: bool) = postcondition_is_true self args result
+  predicate postcondition_once_is_true (self: ()) (mode: Mode.t) (args: t_T) (result: bool) =
+    postcondition_is_true self mode args result
   
   meta "rewrite_def" predicate postcondition_once_is_true
   
-  let is_true_T (self: t_T) (return (x: bool)) = {[@stop_split] [@expl:is_true requires] precondition_is_true () self}
+  let is_true_T (mode: Mode.t) (self: t_T) (return (x: bool)) =
+  {[@stop_split] [@expl:is_true requires] precondition_is_true () mode self}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_true ensures] postcondition_once_is_true () self result}
+    [ return (result: bool) -> {[@stop_split] [@expl:is_true ensures] postcondition_once_is_true () mode self result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let omg_T (a: t_T) (return (x: bool)) = {[@stop_split] [@expl:omg 'a' type invariant] inv_T a}
+  let omg_T (mode: Mode.t) (a: t_T) (return (x: bool)) = {[@stop_split] [@expl:omg 'a' type invariant] inv_T a}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_T a} any) ]
       | s1 = -{resolve_T a}- s2
-      | s2 = is_true_T {a} (fun (_x: bool) -> [ &_ret <- _x ] s3)
+      | s2 = is_true_T {mode} {a} (fun (_x: bool) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & a: t_T = a ])
     [ return (result: bool) -> {[@stop_split] [@expl:omg ensures] result = true} (! return {result}) ]
 end

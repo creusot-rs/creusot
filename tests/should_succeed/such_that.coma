@@ -1,13 +1,14 @@
 module M_even
   use creusot.int.Int32
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.ComputerDivision
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let even (return (x: Int32.t)) = (! bb0
+  let even (mode: Mode.t) (return (x: Int32.t)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- (2: Int32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> {[@stop_split] [@expl:even ensures] ComputerDivision.mod (Int32.to_int result) 2 = 0}
       (! return {result}) ]
@@ -15,6 +16,7 @@ end
 module M_foo
   use map.Map
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use int.ComputerDivision
   use creusot.prelude.Any
   use int.Int
@@ -28,7 +30,7 @@ module M_foo
   axiom such_that_Int_spec: forall p: Map.map int bool [such_that_Int p]. (exists x: int. index_Mapping_Int_bool p x)
       -> index_Mapping_Int_bool p (such_that_Int p)
   
-  let even (return (x: Int32.t)) = any
+  let even (mode: Mode.t) (return (x: Int32.t)) = any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:even ensures] ComputerDivision.mod (Int32.to_int result) 2 = 0}
       (! return {result}) ]
   
@@ -40,11 +42,11 @@ module M_foo
   
   meta "select_lsinst" "all"
   
-  let foo (return (x: ())) = (! bb0
+  let foo (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- such_that_Int (fun (x'1: int) -> x'1 + 1 = 42) ] s1
       | s1 = {[@expl:assertion] x = 41} s2
-      | s2 = even (fun (_x: Int32.t) -> [ &y <- _x ] s3)
+      | s2 = even {mode} (fun (_x: Int32.t) -> [ &y <- _x ] s3)
       | s3 = [ &mapping <- fun (x'1: int) -> x'1 + Int32.to_int y ] s4
       | s4 = [ &predicate' <- fun (x'1: int) -> index_Mapping_Int_Int mapping x'1 + 1 = 0 ] s5
       | s5 = {[@expl:assertion] index_Mapping_Int_bool predicate' (- Int32.to_int y - 1)} s6

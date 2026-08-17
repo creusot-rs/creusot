@@ -1,14 +1,24 @@
 module M_main
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.int.Int32
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use int.Int
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
-  let into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
+  let into_iter_Range_i32 (mode: Mode.t) (self_: t_Range_i32) (return (x: t_Range_i32)) = any
     [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
@@ -55,7 +65,7 @@ module M_main
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
     resolve_refmut_Range_i32 self /\ ge_log_Int (deep_model_i32 self.current.start) (deep_model_i32 self.current.end')
   
-  let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
+  let next_Range_i32 (mode: Mode.t) (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_i32 self_
         | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
@@ -74,7 +84,7 @@ module M_main
   
   meta "select_lsinst" "all"
   
-  let main (return (x: ())) = (! bb0
+  let main (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (0: UInt64.t) ] s1
       | s1 = {[@expl:loop invariant] x = (0: UInt64.t)} s2
@@ -101,7 +111,8 @@ module M_main
           | s1 = [ &x <- (4: UInt64.t) ] s2
           | s2 = [ &_45 <- x = (4: UInt64.t) ] s3
           | s3 = any [ br0 -> {_45 = false} (! bb24) | br1 -> {_45} (! bb19) ] ] ] ]
-    | bb24 = {false} any
+    | bb24 = s0
+      [ s0 = panic {mode} {"assertion failed: x == 4"} (fun (_x: ()) -> [ &_47 <- _x ] s1) | s1 = {false} any ]
     | bb26 = s0 [ s0 = {[@expl:loop invariant] x = (4: UInt64.t)} s1 | s1 = bb28 ]
     | bb28 = bb28
       [ bb28 = (! s0
@@ -110,7 +121,7 @@ module M_main
     | bb30 = any [ br0 -> {false} (! bb33) | br1 -> (! bb33) ]
     | bb33 = s0
       [ s0 = [ &_63 <- { start = (0: Int32.t); end' = (10: Int32.t) } ] s1
-      | s1 = into_iter_Range_i32 {_63} (fun (_x: t_Range_i32) -> [ &iter <- _x ] s2)
+      | s1 = into_iter_Range_i32 {mode} {_63} (fun (_x: t_Range_i32) -> [ &iter <- _x ] s2)
       | s2 = [ &iter_old <- iter ] s3
       | s3 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s4
       | s4 = {[@expl:for invariant] inv_Seq_i32 produced} s5
@@ -120,7 +131,7 @@ module M_main
           (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_82 <- _bor ] [ &iter <- _bor.final ] s8)
       | s8 = MutBorrow.borrow_final <t_Range_i32> {_82.current} {MutBorrow.get_id _82}
           (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_81 <- _bor ] [ &_82 <- { _82 with current = _bor.final } ] s9)
-      | s9 = next_Range_i32 {_81} (fun (_x: t_Option_i32) -> [ &_80 <- _x ] s10)
+      | s9 = next_Range_i32 {mode} {_81} (fun (_x: t_Option_i32) -> [ &_80 <- _x ] s10)
       | s10 = -{resolve_refmut_Range_i32 _82}- s11
       | s11 = any [ br0 -> {_80 = None} (! bb44) | br1 (x0: Int32.t) -> {_80 = Some x0} (! bb42) ] ]
     | bb42 = s0
@@ -135,6 +146,7 @@ module M_main
     | & _30: bool = Any.any_l ()
     | & _39: bool = Any.any_l ()
     | & _45: bool = Any.any_l ()
+    | & _47: () = Any.any_l ()
     | & _55: bool = Any.any_l ()
     | & iter: t_Range_i32 = Any.any_l ()
     | & _63: t_Range_i32 = Any.any_l ()

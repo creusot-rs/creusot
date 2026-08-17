@@ -2,6 +2,7 @@ module M_read_write
   use creusot.prelude.MutBorrow
   use seq.Seq
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -73,7 +74,8 @@ module M_read_write
   
   meta "rewrite_def" predicate resolve_elswhere_usize
   
-  let index_mut_Vec_T_Global (self_: MutBorrow.t t_Vec_T_Global) (ix: UInt64.t) (return (x: MutBorrow.t t_T)) =
+  let index_mut_Vec_T_Global (mode: Mode.t) (self_: MutBorrow.t t_Vec_T_Global) (ix: UInt64.t)
+    (return (x: MutBorrow.t t_T)) =
   {[@stop_split] [@expl:index_mut_Vec_T_Global requires] ([@stop_split] [@expl:index_mut 'self_' type invariant] inv_refmut_Vec_T_Global self_)
     /\ ([@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_T_Global self_.current))}
     any
@@ -102,7 +104,7 @@ module M_read_write
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  let index_Vec_T_Global (self_: t_Vec_T_Global) (ix: UInt64.t) (return (x: t_T)) =
+  let index_Vec_T_Global (mode: Mode.t) (self_: t_Vec_T_Global) (ix: UInt64.t) (return (x: t_T)) =
   {[@stop_split] [@expl:index_Vec_T_Global requires] ([@stop_split] [@expl:index 'self_' type invariant] inv_ref_Vec_T_Global self_)
     /\ ([@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_T_Global self_))}
     any
@@ -113,11 +115,11 @@ module M_read_write
   
   type tup2_ref_T_ref_T = { f0: t_T; f1: t_T }
   
-  predicate precondition_eq (self: ()) (args: tup2_ref_T_ref_T)
+  predicate precondition_eq (self: ()) (mode: Mode.t) (args: tup2_ref_T_ref_T)
   
   axiom precondition_fndef:
-    forall args: tup2_ref_T_ref_T [precondition_eq () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_T self_
-        /\ inv_ref_T rhs) -> precondition_eq () args
+    forall mode: Mode.t. forall args: tup2_ref_T_ref_T [precondition_eq () mode args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_T self_
+          /\ inv_ref_T rhs) -> precondition_eq () mode args
   
   type t_DeepModelTy
   
@@ -127,28 +129,38 @@ module M_read_write
   
   meta "rewrite_def" function deep_model_ref_T
   
-  predicate postcondition_eq (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
+  predicate postcondition_eq (self: ()) (mode: Mode.t) (args: tup2_ref_T_ref_T) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_T_ref_T, res: bool [postcondition_eq () args res]. postcondition_eq () args res
+    forall mode: Mode.t, args: tup2_ref_T_ref_T, res: bool [postcondition_eq () mode args res]. postcondition_eq () mode args res
       -> (let {f0 = self_; f1 = rhs} = args in res = (deep_model_ref_T self_ = deep_model_ref_T rhs))
   
-  predicate postcondition_once_eq (self: ()) (args: tup2_ref_T_ref_T) (result: bool) = postcondition_eq self args result
+  predicate postcondition_once_eq (self: ()) (mode: Mode.t) (args: tup2_ref_T_ref_T) (result: bool) =
+    postcondition_eq self mode args result
   
   meta "rewrite_def" predicate postcondition_once_eq
   
-  let eq_T (self_: t_T) (rhs: t_T) (return (x: bool)) =
-  {[@stop_split] [@expl:eq requires] precondition_eq () { f0 = self_; f1 = rhs }}
+  let eq_T (mode: Mode.t) (self_: t_T) (rhs: t_T) (return (x: bool)) =
+  {[@stop_split] [@expl:eq requires] precondition_eq () mode { f0 = self_; f1 = rhs }}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] postcondition_once_eq () { f0 = self_;
-                                                                                            f1 = rhs } result}
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] postcondition_once_eq () mode { f0 = self_;
+                                                                                                 f1 = rhs } result}
       (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let read_write_T (a: MutBorrow.t t_Vec_T_Global) (i: UInt64.t) (x: t_T) (return (x'0: ())) =
+  let read_write_T (mode: Mode.t) (a: MutBorrow.t t_Vec_T_Global) (i: UInt64.t) (x: t_T) (return (x'0: ())) =
   {[@stop_split] [@expl:read_write_T requires] ([@stop_split] [@expl:read_write 'a' type invariant] inv_refmut_Vec_T_Global a)
     /\ ([@stop_split] [@expl:read_write 'x' type invariant] inv_T x)
     /\ ([@stop_split] [@expl:read_write requires] UInt64.t'int i < Seq.length (view_Vec_T_Global a.current))}
@@ -159,17 +171,18 @@ module M_read_write
             [ &_9 <- _bor ] -{inv_Vec_T_Global _bor.final}-
             [ &a <- { a with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global a.current} any) ]
-      | s1 = index_mut_Vec_T_Global {_9} {i} (fun (_x: MutBorrow.t t_T) -> [ &_8 <- _x ] s2)
+      | s1 = index_mut_Vec_T_Global {mode} {_9} {i} (fun (_x: MutBorrow.t t_T) -> [ &_8 <- _x ] s2)
       | s2 = [ &_8 <- { _8 with current = x } ] s3
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _8} any) ]
       | s4 = -{resolve_refmut_T _8}- s5
       | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T_Global a} any) ]
       | s6 = -{resolve_refmut_Vec_T_Global a}- s7
-      | s7 = index_Vec_T_Global {a.current} {i} (fun (_x: t_T) -> [ &_14 <- _x ] s8)
-      | s8 = eq_T {_14} {x} (fun (_x: bool) -> [ &_12 <- _x ] s9)
+      | s7 = index_Vec_T_Global {mode} {a.current} {i} (fun (_x: t_T) -> [ &_14 <- _x ] s8)
+      | s8 = eq_T {mode} {_14} {x} (fun (_x: bool) -> [ &_12 <- _x ] s9)
       | s9 = any [ br0 -> {_12 = false} (! bb5) | br1 -> {_12} (! bb4) ] ]
     | bb4 = return {_ret}
-    | bb5 = {false} any ]
+    | bb5 = s0
+      [ s0 = panic {mode} {"assertion failed: a[i] == x"} (fun (_x: ()) -> [ &_18 <- _x ] s1) | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: MutBorrow.t t_Vec_T_Global = a
     | & i: UInt64.t = i
@@ -177,5 +190,6 @@ module M_read_write
     | & _8: MutBorrow.t t_T = Any.any_l ()
     | & _9: MutBorrow.t t_Vec_T_Global = Any.any_l ()
     | & _12: bool = Any.any_l ()
-    | & _14: t_T = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _14: t_T = Any.any_l ()
+    | & _18: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

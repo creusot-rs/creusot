@@ -1,19 +1,20 @@
 module M_test1
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   
   type t_F
   
-  predicate postcondition_once_F (self: t_F) (args: UInt32.t) (result: bool)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (result: bool)
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: UInt32.t) (result_state: t_F) (result: bool)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (result_state: t_F) (result: bool)
   
-  function fn_mut_once_F (self: t_F) (args: UInt32.t) (res: bool) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (res: bool) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: UInt32.t, res: bool [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: UInt32.t, res: bool [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -27,10 +28,10 @@ module M_test1
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: UInt32.t) (res_state: t_F) (res: bool) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (res_state: t_F) (res: bool) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: UInt32.t, res_state: t_F, res: bool [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: UInt32.t, res_state: t_F, res: bool [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -38,30 +39,32 @@ module M_test1
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: UInt32.t) (result: bool)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (result: bool)
   
-  function fn_once_F (self: t_F) (args: UInt32.t) (res: bool) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (res: bool) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: UInt32.t, res: bool [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: UInt32.t, res: bool [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: UInt32.t) (res_state: t_F) (res: bool) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (res_state: t_F) (res: bool) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: UInt32.t, res_state: t_F, res: bool [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: UInt32.t, res_state: t_F, res: bool [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
-  predicate postcondition_ref_F (self: t_F) (args: UInt32.t) (result: bool) = postcondition_F self args result
+  predicate postcondition_ref_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (result: bool) =
+    postcondition_F self mode args result
   
   meta "rewrite_def" predicate postcondition_ref_F
   
-  predicate postcondition_mut_ref_F (self: t_F) (args: UInt32.t) (result_state: t_F) (result: bool) =
-    postcondition_F self args result /\ self = result_state
+  predicate postcondition_mut_ref_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (result_state: t_F) (result: bool) =
+    postcondition_F self mode args result /\ self = result_state
   
   meta "rewrite_def" predicate postcondition_mut_ref_F
   
-  predicate postcondition_once_ref_F (self: t_F) (args: UInt32.t) (result: bool) = postcondition_F self args result
+  predicate postcondition_once_ref_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (result: bool) =
+    postcondition_F self mode args result
   
   meta "rewrite_def" predicate postcondition_once_ref_F
   
@@ -78,29 +81,31 @@ module M_test1
   function test1_F (x: t_F) (n: UInt32.t) (r: bool) : ()
   
   goal vc_test1_F:
-    [@stop_split] [@expl:test1_F ensures] ([@stop_split] [@expl:test1 ensures #0] postcondition_ref_F x n r
-      = postcondition_F x n r)
-    /\ ([@stop_split] [@expl:test1 ensures #1] forall xx: t_F. postcondition_mut_ref_F x n xx r
-        = (postcondition_F x n r /\ x = xx))
-    /\ ([@stop_split] [@expl:test1 ensures #2] postcondition_once_ref_F x n r = postcondition_F x n r)
+    [@stop_split] [@expl:test1_F ensures] ([@stop_split] [@expl:test1 ensures #0] postcondition_ref_F x ERROR_UNBOUND_mode n r
+      = postcondition_F x ERROR_UNBOUND_mode n r)
+    /\ ([@stop_split] [@expl:test1 ensures #1] forall xx: t_F. postcondition_mut_ref_F x ERROR_UNBOUND_mode n xx r
+        = (postcondition_F x ERROR_UNBOUND_mode n r /\ x = xx))
+    /\ ([@stop_split] [@expl:test1 ensures #2] postcondition_once_ref_F x ERROR_UNBOUND_mode n r
+    = postcondition_F x ERROR_UNBOUND_mode n r)
 end
 module M_test2
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   
   type t_F
   
-  predicate postcondition_once_F (self: t_F) (args: UInt32.t) (result: bool)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (result: bool)
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: UInt32.t) (result_state: t_F) (result: bool)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (result_state: t_F) (result: bool)
   
-  function fn_mut_once_F (self: t_F) (args: UInt32.t) (res: bool) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (res: bool) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: UInt32.t, res: bool [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: UInt32.t, res: bool [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -114,19 +119,19 @@ module M_test2
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: UInt32.t) (res_state: t_F) (res: bool) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: UInt32.t) (res_state: t_F) (res: bool) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: UInt32.t, res_state: t_F, res: bool [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: UInt32.t, res_state: t_F, res: bool [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_mut_refmut_F (self: MutBorrow.t t_F) (args: UInt32.t) (result_state: MutBorrow.t t_F) (result: bool) =
-    postcondition_mut_F self.current args result_state.current result /\ self.final = result_state.final
+  predicate postcondition_mut_refmut_F (self: MutBorrow.t t_F) (mode: Mode.t) (args: UInt32.t) (result_state: MutBorrow.t t_F) (result: bool) =
+    postcondition_mut_F self.current mode args result_state.current result /\ self.final = result_state.final
   
   meta "rewrite_def" predicate postcondition_mut_refmut_F
   
-  predicate postcondition_once_refmut_F (self: MutBorrow.t t_F) (args: UInt32.t) (result: bool) =
-    postcondition_mut_F self.current args self.final result
+  predicate postcondition_once_refmut_F (self: MutBorrow.t t_F) (mode: Mode.t) (args: UInt32.t) (result: bool) =
+    postcondition_mut_F self.current mode args self.final result
   
   meta "rewrite_def" predicate postcondition_once_refmut_F
   
@@ -143,8 +148,8 @@ module M_test2
   function test2_F (x: MutBorrow.t t_F) (n: UInt32.t) (r: bool) : ()
   
   goal vc_test2_F:
-    [@stop_split] [@expl:test2_F ensures] ([@stop_split] [@expl:test2 ensures #0] forall xx: MutBorrow.t t_F. postcondition_mut_refmut_F x n xx r
-        = (postcondition_mut_F x.current n xx.current r /\ x.final = xx.final))
-    /\ ([@stop_split] [@expl:test2 ensures #1] postcondition_once_refmut_F x n r
-    = postcondition_mut_F x.current n x.final r)
+    [@stop_split] [@expl:test2_F ensures] ([@stop_split] [@expl:test2 ensures #0] forall xx: MutBorrow.t t_F. postcondition_mut_refmut_F x ERROR_UNBOUND_mode n xx r
+        = (postcondition_mut_F x.current ERROR_UNBOUND_mode n xx.current r /\ x.final = xx.final))
+    /\ ([@stop_split] [@expl:test2 ensures #1] postcondition_once_refmut_F x ERROR_UNBOUND_mode n r
+    = postcondition_mut_F x.current ERROR_UNBOUND_mode n x.final r)
 end

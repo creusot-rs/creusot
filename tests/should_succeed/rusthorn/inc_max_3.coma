@@ -1,9 +1,11 @@
 module M_inc_max_3
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
-  let swap (mma: MutBorrow.t (MutBorrow.t UInt32.t)) (mmb: MutBorrow.t (MutBorrow.t UInt32.t)) (return (x: ())) = any
+  let swap (mode: Mode.t) (mma: MutBorrow.t (MutBorrow.t UInt32.t)) (mmb: MutBorrow.t (MutBorrow.t UInt32.t))
+    (return (x: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:swap ensures] mma.final = mmb.current /\ mmb.final = mma.current}
       (! return {result}) ]
   
@@ -19,8 +21,8 @@ module M_inc_max_3
   
   meta "select_lsinst" "all"
   
-  let inc_max_3 (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (mc: MutBorrow.t UInt32.t) (return (x: ())) =
-  {[@stop_split] [@expl:inc_max_3 requires] UInt32.le ma.current (1000000: UInt32.t)
+  let inc_max_3 (mode: Mode.t) (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (mc: MutBorrow.t UInt32.t)
+    (return (x: ())) = {[@stop_split] [@expl:inc_max_3 requires] UInt32.le ma.current (1000000: UInt32.t)
     /\ UInt32.le mb.current (1000000: UInt32.t) /\ UInt32.le mc.current (1000000: UInt32.t)}
     (! bb0
     [ bb0 = s0
@@ -37,7 +39,7 @@ module M_inc_max_3
       | s3 = MutBorrow.borrow_final <MutBorrow.t UInt32.t> {_20.current} {MutBorrow.get_id _20}
           (fun (_bor: MutBorrow.t (MutBorrow.t UInt32.t)) ->
             [ &_19 <- _bor ] [ &_20 <- { _20 with current = _bor.final } ] s4)
-      | s4 = swap {_17} {_19} (fun (_x: ()) -> [ &_16 <- _x ] s5)
+      | s4 = swap {mode} {_17} {_19} (fun (_x: ()) -> [ &_16 <- _x ] s5)
       | s5 = -{resolve_refmut_refmut_u32 _20}- s6
       | s6 = -{resolve_refmut_refmut_u32 _18}- s7
       | s7 = bb4 ]
@@ -55,7 +57,7 @@ module M_inc_max_3
       | s3 = MutBorrow.borrow_final <MutBorrow.t UInt32.t> {_29.current} {MutBorrow.get_id _29}
           (fun (_bor: MutBorrow.t (MutBorrow.t UInt32.t)) ->
             [ &_28 <- _bor ] [ &_29 <- { _29 with current = _bor.final } ] s4)
-      | s4 = swap {_26} {_28} (fun (_x: ()) -> [ &_25 <- _x ] s5)
+      | s4 = swap {mode} {_26} {_28} (fun (_x: ()) -> [ &_25 <- _x ] s5)
       | s5 = -{resolve_refmut_refmut_u32 _29}- s6
       | s6 = -{resolve_refmut_refmut_u32 _27}- s7
       | s7 = -{resolve_refmut_u32 mc}- s8
@@ -75,7 +77,7 @@ module M_inc_max_3
       | s3 = MutBorrow.borrow_final <MutBorrow.t UInt32.t> {_38.current} {MutBorrow.get_id _38}
           (fun (_bor: MutBorrow.t (MutBorrow.t UInt32.t)) ->
             [ &_37 <- _bor ] [ &_38 <- { _38 with current = _bor.final } ] s4)
-      | s4 = swap {_35} {_37} (fun (_x: ()) -> [ &_34 <- _x ] s5)
+      | s4 = swap {mode} {_35} {_37} (fun (_x: ()) -> [ &_34 <- _x ] s5)
       | s5 = -{resolve_refmut_refmut_u32 _38}- s6
       | s6 = -{resolve_refmut_refmut_u32 _36}- s7
       | s7 = bb12 ]
@@ -114,10 +116,11 @@ end
 module M_test_inc_max_3
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
-  let inc_max_3 (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (mc: MutBorrow.t UInt32.t) (return (x: ())) =
-  {[@stop_split] [@expl:inc_max_3 requires] UInt32.le ma.current (1000000: UInt32.t)
+  let inc_max_3 (mode: Mode.t) (ma: MutBorrow.t UInt32.t) (mb: MutBorrow.t UInt32.t) (mc: MutBorrow.t UInt32.t)
+    (return (x: ())) = {[@stop_split] [@expl:inc_max_3 requires] UInt32.le ma.current (1000000: UInt32.t)
     /\ UInt32.le mb.current (1000000: UInt32.t) /\ UInt32.le mc.current (1000000: UInt32.t)}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:inc_max_3 ensures] ma.final <> mb.final
@@ -128,11 +131,20 @@ module M_test_inc_max_3
   
   meta "rewrite_def" predicate resolve_refmut_u32
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_inc_max_3 (a: UInt32.t) (b: UInt32.t) (c: UInt32.t) (return (x: ())) =
+  let test_inc_max_3 (mode: Mode.t) (a: UInt32.t) (b: UInt32.t) (c: UInt32.t) (return (x: ())) =
   {[@stop_split] [@expl:test_inc_max_3 requires] UInt32.le a (1000000: UInt32.t)
     /\ UInt32.le b (1000000: UInt32.t) /\ UInt32.le c (1000000: UInt32.t)}
     (! bb0
@@ -149,7 +161,7 @@ module M_test_inc_max_3
           (fun (_bor: MutBorrow.t UInt32.t) -> [ &_11 <- _bor ] [ &_12 <- { _12 with current = _bor.final } ] s5)
       | s5 = MutBorrow.borrow_final <UInt32.t> {_14.current} {MutBorrow.get_id _14}
           (fun (_bor: MutBorrow.t UInt32.t) -> [ &_13 <- _bor ] [ &_14 <- { _14 with current = _bor.final } ] s6)
-      | s6 = inc_max_3 {_9} {_11} {_13} (fun (_x: ()) -> [ &_8 <- _x ] s7)
+      | s6 = inc_max_3 {mode} {_9} {_11} {_13} (fun (_x: ()) -> [ &_8 <- _x ] s7)
       | s7 = -{resolve_refmut_u32 _14}- s8
       | s8 = -{resolve_refmut_u32 _12}- s9
       | s9 = -{resolve_refmut_u32 _10}- s10
@@ -158,7 +170,9 @@ module M_test_inc_max_3
     | bb2 = s0 [ s0 = [ &_19 <- b <> c ] s1 | s1 = any [ br0 -> {_19 = false} (! bb8) | br1 -> {_19} (! bb3) ] ]
     | bb3 = s0 [ s0 = [ &_22 <- c <> a ] s1 | s1 = any [ br0 -> {_22 = false} (! bb8) | br1 -> {_22} (! bb4) ] ]
     | bb4 = return {_ret}
-    | bb8 = {false} any ]
+    | bb8 = s0
+      [ s0 = panic {mode} {"assertion failed: a != b && b != c && c != a"} (fun (_x: ()) -> [ &_25 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: UInt32.t = a
     | & b: UInt32.t = b
@@ -172,5 +186,6 @@ module M_test_inc_max_3
     | & _14: MutBorrow.t UInt32.t = Any.any_l ()
     | & _16: bool = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _22: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _22: bool = Any.any_l ()
+    | & _25: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

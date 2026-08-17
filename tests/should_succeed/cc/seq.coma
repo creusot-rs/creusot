@@ -1,18 +1,19 @@
 module M_f
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use seq.Seq
   use creusot.int.Int128
   use creusot.prelude.Any
   use int.Int
   
-  let new_refmut_usize (return (x: Seq.seq (MutBorrow.t UInt64.t))) = any
+  let new_refmut_usize (mode: Mode.t) (return (x: Seq.seq (MutBorrow.t UInt64.t))) = any
     [ return (result: Seq.seq (MutBorrow.t UInt64.t)) -> {[@stop_split] [@expl:new ensures] result
       = (Seq.empty: Seq.seq (MutBorrow.t UInt64.t))}
       (! return {result}) ]
   
-  let into_inner_Seq_refmut_usize (self: Seq.seq (MutBorrow.t UInt64.t)) (return (x: Seq.seq (MutBorrow.t UInt64.t))) =
-  any
+  let into_inner_Seq_refmut_usize (mode: Mode.t) (self: Seq.seq (MutBorrow.t UInt64.t))
+    (return (x: Seq.seq (MutBorrow.t UInt64.t))) = any
     [ return (result: Seq.seq (MutBorrow.t UInt64.t)) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
@@ -21,16 +22,16 @@ module M_f
   
   meta "rewrite_def" function push_front_refmut_usize
   
-  let push_front_ghost_refmut_usize (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (x: MutBorrow.t UInt64.t)
-    (return (x'0: ())) = any
+  let push_front_ghost_refmut_usize (mode: Mode.t) (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t)))
+    (x: MutBorrow.t UInt64.t) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:push_front_ghost ensures] self.final
       = push_front_refmut_usize self.current x}
       (! return {result}) ]
   
-  let new (value: Int128.t) (return (x: int)) = any
+  let new (mode: Mode.t) (value: Int128.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
   
-  let deref_Ghost_Int (self: int) (return (x: int)) = any
+  let deref_Ghost_Int (mode: Mode.t) (self: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
   type t_Option_refmut_refmut_usize = None | Some (MutBorrow.t (MutBorrow.t UInt64.t))
@@ -44,7 +45,7 @@ module M_f
       None'0
   
   
-  let get_mut_ghost_refmut_usize (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (index: int)
+  let get_mut_ghost_refmut_usize (mode: Mode.t) (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (index: int)
     (return (x: t_Option_refmut_refmut_usize)) = any
     [ return (result: t_Option_refmut_refmut_usize) ->
     {[@stop_split] [@expl:get_mut_ghost_refmut_usize ensures] ([@stop_split] [@expl:get_mut_ghost ensures #0] match result with
@@ -56,7 +57,7 @@ module M_f
       /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] Seq.length self.current = Seq.length self.final)}
       (! return {result}) ]
   
-  let unwrap_refmut_refmut_usize (self_: t_Option_refmut_refmut_usize)
+  let unwrap_refmut_refmut_usize (mode: Mode.t) (self_: t_Option_refmut_refmut_usize)
     (return (x: MutBorrow.t (MutBorrow.t UInt64.t))) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
     any
     [ return (result: MutBorrow.t (MutBorrow.t UInt64.t)) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
@@ -79,33 +80,36 @@ module M_f
   
   meta "rewrite_def" predicate resolve_Seq_refmut_usize'0
   
-  let new_usize (x: UInt64.t) (return (x'0: UInt64.t)) = any
+  let new_usize (mode: Mode.t) (x: UInt64.t) (return (x'0: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let f (return (x: UInt64.t)) = (! bb0
+  let f (mode: Mode.t) (return (x: UInt64.t)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (0: UInt64.t) ] s1
-      | s1 = new_refmut_usize (fun (_x: Seq.seq (MutBorrow.t UInt64.t)) -> [ &_5 <- _x ] s2)
-      | s2 = into_inner_Seq_refmut_usize {_5} (fun (_x: Seq.seq (MutBorrow.t UInt64.t)) -> [ &s <- _x ] s3)
+      | s1 = new_refmut_usize {Mode.into_ghost mode} (fun (_x: Seq.seq (MutBorrow.t UInt64.t)) -> [ &_5 <- _x ] s2)
+      | s2 = into_inner_Seq_refmut_usize {Mode.into_ghost mode} {_5}
+          (fun (_x: Seq.seq (MutBorrow.t UInt64.t)) -> [ &s <- _x ] s3)
       | s3 = MutBorrow.borrow_mut <UInt64.t> {x}
           (fun (_bor: MutBorrow.t UInt64.t) -> [ &_8 <- _bor ] [ &x <- _bor.final ] s4)
       | s4 = MutBorrow.borrow_mut <Seq.seq (MutBorrow.t UInt64.t)> {s}
           (fun (_bor: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) -> [ &_7 <- _bor ] [ &s <- _bor.final ] s5)
-      | s5 = push_front_ghost_refmut_usize {_7} {_8} (fun (_x: ()) -> [ &_6 <- _x ] s6)
-      | s6 = new {(0: Int128.t)} (fun (_x: int) -> [ &_15 <- _x ] s7)
-      | s7 = deref_Ghost_Int {_15} (fun (_x: int) -> [ &_13 <- _x ] s8)
+      | s5 = push_front_ghost_refmut_usize {Mode.into_ghost mode} {_7} {_8} (fun (_x: ()) -> [ &_6 <- _x ] s6)
+      | s6 = new {Mode.into_ghost mode} {(0: Int128.t)} (fun (_x: int) -> [ &_15 <- _x ] s7)
+      | s7 = deref_Ghost_Int {Mode.into_ghost mode} {_15} (fun (_x: int) -> [ &_13 <- _x ] s8)
       | s8 = MutBorrow.borrow_mut <Seq.seq (MutBorrow.t UInt64.t)> {s}
           (fun (_bor: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) -> [ &_11 <- _bor ] [ &s <- _bor.final ] s9)
-      | s9 = get_mut_ghost_refmut_usize {_11} {_13} (fun (_x: t_Option_refmut_refmut_usize) -> [ &_10 <- _x ] s10)
-      | s10 = unwrap_refmut_refmut_usize {_10} (fun (_x: MutBorrow.t (MutBorrow.t UInt64.t)) -> [ &_9 <- _x ] s11)
+      | s9 = get_mut_ghost_refmut_usize {Mode.into_ghost mode} {_11} {_13}
+          (fun (_x: t_Option_refmut_refmut_usize) -> [ &_10 <- _x ] s10)
+      | s10 = unwrap_refmut_refmut_usize {Mode.into_ghost mode} {_10}
+          (fun (_x: MutBorrow.t (MutBorrow.t UInt64.t)) -> [ &_9 <- _x ] s11)
       | s11 = [ &_9 <- { _9 with current = { _9.current with current = (1: UInt64.t) } } ] s12
       | s12 = -{resolve_refmut_refmut_usize _9}- s13
       | s13 = -{resolve_Seq_refmut_usize'0 s}- s14
-      | s14 = new_usize {x} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s15)
+      | s14 = new_usize {Mode.into_ghost mode} {x} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s15)
       | s15 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & x: UInt64.t = Any.any_l ()
@@ -123,6 +127,7 @@ module M_f
 end
 module M_g
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use seq.Seq
   use int.Int
   
@@ -201,7 +206,8 @@ module M_g
   
   meta "select_lsinst" "all"
   
-  let g (s: Seq.seq int) (return (x: ())) = {[@stop_split] [@expl:g requires] ge_log_Int (Seq.length s) 1}
+  let g (mode: Mode.t) (s: Seq.seq int) (return (x: ())) =
+  {[@stop_split] [@expl:g requires] ge_log_Int (Seq.length s) 1}
     (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) ->

@@ -2,6 +2,7 @@ module M_f
   use creusot.int.Int32
   use map.Map
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -12,7 +13,7 @@ module M_f
   axiom view_T_spec: forall self: t_T [view_T self]. forall i: int. Map.get (view_T self) i
         = (if 0 <= i /\ i < Int32.to_int self.a then 1 else 0)
   
-  let incr (t: MutBorrow.t t_T) (return (x: ())) =
+  let incr (mode: Mode.t) (t: MutBorrow.t t_T) (return (x: ())) =
   {[@stop_split] [@expl:incr requires] ([@stop_split] [@expl:incr requires #0] 0 <= Int32.to_int t.current.a)
     /\ ([@stop_split] [@expl:incr requires #1] Int32.to_int t.current.a < 1000)}
     any
@@ -28,7 +29,7 @@ module M_f
   
   meta "select_lsinst" "all"
   
-  let f (return (x: ())) = (! bb0
+  let f (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- { a = (42: Int32.t) } ] s1
       | s1 = {[@expl:assertion] Map.get (view_T x) 13 = 1} s2
@@ -36,7 +37,7 @@ module M_f
       | s3 = MutBorrow.borrow_mut <t_T> {x} (fun (_bor: MutBorrow.t t_T) -> [ &_10 <- _bor ] [ &x <- _bor.final ] s4)
       | s4 = MutBorrow.borrow_final <t_T> {_10.current} {MutBorrow.get_id _10}
           (fun (_bor: MutBorrow.t t_T) -> [ &_9 <- _bor ] [ &_10 <- { _10 with current = _bor.final } ] s5)
-      | s5 = incr {_9} (fun (_x: ()) -> [ &_8 <- _x ] s6)
+      | s5 = incr {mode} {_9} (fun (_x: ()) -> [ &_8 <- _x ] s6)
       | s6 = -{resolve_refmut_T _10}- s7
       | s7 = {[@expl:assertion] Map.get (view_T x) 13 = 1} s8
       | s8 = {[@expl:assertion] Map.get (view_T x) 42 = 1} s9
@@ -52,6 +53,7 @@ module M_incr
   use creusot.prelude.MutBorrow
   use map.Map
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.Int
   
   type t_T = { a: Int32.t }
@@ -69,7 +71,7 @@ module M_incr
   
   meta "select_lsinst" "all"
   
-  let incr (t: MutBorrow.t t_T) (return (x: ())) =
+  let incr (mode: Mode.t) (t: MutBorrow.t t_T) (return (x: ())) =
   {[@stop_split] [@expl:incr requires] ([@stop_split] [@expl:incr requires #0] 0 <= Int32.to_int t.current.a)
     /\ ([@stop_split] [@expl:incr requires #1] Int32.to_int t.current.a < 1000)}
     (! bb0

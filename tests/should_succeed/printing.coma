@@ -1,4 +1,5 @@
 module M_f
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -6,15 +7,15 @@ module M_f
   
   predicate inv_Arguments (_1: t_Arguments)
   
-  let from_str (s: string) (return (x: t_Arguments)) = any
+  let from_str (mode: Mode.t) (s: string) (return (x: t_Arguments)) = any
     [ return (result: t_Arguments) -> {[@stop_split] [@expl:from_str result type invariant] inv_Arguments result}
       (! return {result}) ]
   
-  let _print (args: t_Arguments) (return (x: ())) =
+  let _print (mode: Mode.t) (args: t_Arguments) (return (x: ())) =
   {[@stop_split] [@expl:_print 'args' type invariant] inv_Arguments args}
     any [ return (result: ()) -> (! return {result}) ]
   
-  let _eprint (args: t_Arguments) (return (x: ())) =
+  let _eprint (mode: Mode.t) (args: t_Arguments) (return (x: ())) =
   {[@stop_split] [@expl:_eprint 'args' type invariant] inv_Arguments args}
     any [ return (result: ()) -> (! return {result}) ]
   
@@ -22,16 +23,16 @@ module M_f
   
   meta "select_lsinst" "all"
   
-  let f (return (x: ())) = (! bb0
+  let f (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = from_str {"Hello "} (fun (_x: t_Arguments) -> [ &_3 <- _x ] s1)
-      | s1 = _print {_3} (fun (_x: ()) -> [ &_2 <- _x ] s2)
-      | s2 = from_str {"world!\n"} (fun (_x: t_Arguments) -> [ &_6 <- _x ] s3)
-      | s3 = _print {_6} (fun (_x: ()) -> [ &_5 <- _x ] s4)
-      | s4 = from_str {"Hello "} (fun (_x: t_Arguments) -> [ &_9 <- _x ] s5)
-      | s5 = _eprint {_9} (fun (_x: ()) -> [ &_8 <- _x ] s6)
-      | s6 = from_str {"stderr!\n"} (fun (_x: t_Arguments) -> [ &_12 <- _x ] s7)
-      | s7 = _eprint {_12} (fun (_x: ()) -> [ &_11 <- _x ] s8)
+      [ s0 = from_str {mode} {"Hello "} (fun (_x: t_Arguments) -> [ &_3 <- _x ] s1)
+      | s1 = _print {mode} {_3} (fun (_x: ()) -> [ &_2 <- _x ] s2)
+      | s2 = from_str {mode} {"world!\n"} (fun (_x: t_Arguments) -> [ &_6 <- _x ] s3)
+      | s3 = _print {mode} {_6} (fun (_x: ()) -> [ &_5 <- _x ] s4)
+      | s4 = from_str {mode} {"Hello "} (fun (_x: t_Arguments) -> [ &_9 <- _x ] s5)
+      | s5 = _eprint {mode} {_9} (fun (_x: ()) -> [ &_8 <- _x ] s6)
+      | s6 = from_str {mode} {"stderr!\n"} (fun (_x: t_Arguments) -> [ &_12 <- _x ] s7)
+      | s7 = _eprint {mode} {_12} (fun (_x: ()) -> [ &_11 <- _x ] s8)
       | s8 = {[@expl:assertion] 1 + 1 = 2} s9
       | s9 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

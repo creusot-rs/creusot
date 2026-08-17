@@ -1,4 +1,5 @@
 module M_create_arr
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.Int32
   use creusot.int.UInt64
@@ -16,12 +17,12 @@ module M_create_arr
     forall self: t_Vec_i32_Global [view_Vec_i32_Global self]. Seq.length (view_Vec_i32_Global self)
       <= UInt64.t'int const_MAX
   
-  let new_i32 (return (x: t_Vec_i32_Global)) = any
+  let new_i32 (mode: Mode.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_i32_Global result)
       = 0}
       (! return {result}) ]
   
-  let push_i32 (self_: MutBorrow.t t_Vec_i32_Global) (v: Int32.t) (return (x: ())) = any
+  let push_i32 (mode: Mode.t) (self_: MutBorrow.t t_Vec_i32_Global) (v: Int32.t) (return (x: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:push ensures] view_Vec_i32_Global self_.final
       = Seq.snoc (view_Vec_i32_Global self_.current) v}
       (! return {result}) ]
@@ -35,24 +36,24 @@ module M_create_arr
   
   meta "select_lsinst" "all"
   
-  let create_arr (return (x: t_Vec_i32_Global)) = (! bb0
+  let create_arr (mode: Mode.t) (return (x: t_Vec_i32_Global)) = (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 (fun (_x: t_Vec_i32_Global) -> [ &arr <- _x ] s1)
+      [ s0 = new_i32 {mode} (fun (_x: t_Vec_i32_Global) -> [ &arr <- _x ] s1)
       | s1 = MutBorrow.borrow_mut <t_Vec_i32_Global> {arr}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_4 <- _bor ] [ &arr <- _bor.final ] s2)
-      | s2 = push_i32 {_4} {(0: Int32.t)} (fun (_x: ()) -> [ &_3 <- _x ] s3)
+      | s2 = push_i32 {mode} {_4} {(0: Int32.t)} (fun (_x: ()) -> [ &_3 <- _x ] s3)
       | s3 = MutBorrow.borrow_mut <t_Vec_i32_Global> {arr}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_6 <- _bor ] [ &arr <- _bor.final ] s4)
-      | s4 = push_i32 {_6} {(1: Int32.t)} (fun (_x: ()) -> [ &_5 <- _x ] s5)
+      | s4 = push_i32 {mode} {_6} {(1: Int32.t)} (fun (_x: ()) -> [ &_5 <- _x ] s5)
       | s5 = MutBorrow.borrow_mut <t_Vec_i32_Global> {arr}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_8 <- _bor ] [ &arr <- _bor.final ] s6)
-      | s6 = push_i32 {_8} {(2: Int32.t)} (fun (_x: ()) -> [ &_7 <- _x ] s7)
+      | s6 = push_i32 {mode} {_8} {(2: Int32.t)} (fun (_x: ()) -> [ &_7 <- _x ] s7)
       | s7 = MutBorrow.borrow_mut <t_Vec_i32_Global> {arr}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_10 <- _bor ] [ &arr <- _bor.final ] s8)
-      | s8 = push_i32 {_10} {(3: Int32.t)} (fun (_x: ()) -> [ &_9 <- _x ] s9)
+      | s8 = push_i32 {mode} {_10} {(3: Int32.t)} (fun (_x: ()) -> [ &_9 <- _x ] s9)
       | s9 = MutBorrow.borrow_mut <t_Vec_i32_Global> {arr}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_12 <- _bor ] [ &arr <- _bor.final ] s10)
-      | s10 = push_i32 {_12} {(4: Int32.t)} (fun (_x: ()) -> [ &_11 <- _x ] s11)
+      | s10 = push_i32 {mode} {_12} {(4: Int32.t)} (fun (_x: ()) -> [ &_11 <- _x ] s11)
       | s11 = [ &_ret <- arr ] s12
       | s12 = return {_ret} ] ]
     [ & _ret: t_Vec_i32_Global = Any.any_l ()
@@ -76,6 +77,7 @@ module M_create_arr
       (! return {result}) ]
 end
 module M_test_range
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.Int32
   use creusot.int.UInt64
@@ -100,7 +102,7 @@ module M_test_range
   
   meta "rewrite_def" function index_Vec_i32_Global
   
-  let create_arr (return (x: t_Vec_i32_Global)) = any
+  let create_arr (mode: Mode.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) ->
     {[@stop_split] [@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
@@ -117,40 +119,42 @@ module M_test_range
   predicate has_value_Range_usize (self: t_Range_usize) (seq: Seq.seq Int32.t) (out: Slice64.slice Int32.t) =
     Seq.([..]) seq (UInt64.t'int self.start) (UInt64.t'int self.end') = Slice64.view out
   
-  let index_Vec_i32_Global'0 (self_: t_Vec_i32_Global) (ix: t_Range_usize) (return (x: Slice64.slice Int32.t)) =
+  let index_Vec_i32_Global'0 (mode: Mode.t) (self_: t_Vec_i32_Global) (ix: t_Range_usize)
+    (return (x: Slice64.slice Int32.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_Range_usize ix (view_Vec_i32_Global self_)}
     any
     [ return (result: Slice64.slice Int32.t) ->
     {[@stop_split] [@expl:index ensures] has_value_Range_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
-  let len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+  let len_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
       = UInt64.t'int result}
       (! return {result}) ]
   
-  let deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
+  let deref_Vec_i32_Global (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
     [ return (result: Slice64.slice Int32.t) -> {[@stop_split] [@expl:deref ensures] Slice64.view result
       = view_Vec_i32_Global self_}
       (! return {result}) ]
   
   type t_Option_ref_slice_i32 = None | Some (Slice64.slice Int32.t)
   
-  let get_i32 (self_: Slice64.slice Int32.t) (ix: t_Range_usize) (return (x: t_Option_ref_slice_i32)) = any
+  let get_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (ix: t_Range_usize) (return (x: t_Option_ref_slice_i32)) =
+  any
     [ return (result: t_Option_ref_slice_i32) ->
     {[@stop_split] [@expl:get_i32 ensures] ([@stop_split] [@expl:get ensures #0] in_bounds_Range_usize ix (Slice64.view self_)
         -> (exists r: Slice64.slice Int32.t. result = Some r /\ has_value_Range_usize ix (Slice64.view self_) r))
       /\ ([@stop_split] [@expl:get ensures #1] in_bounds_Range_usize ix (Slice64.view self_) \/ result = None)}
       (! return {result}) ]
   
-  let is_none_ref_slice_i32 (self_: t_Option_ref_slice_i32) (return (x: bool)) = any
+  let is_none_ref_slice_i32 (mode: Mode.t) (self_: t_Option_ref_slice_i32) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   predicate resolve_elswhere_Range_usize (self: t_Range_usize) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. 0 <= i /\ (i < UInt64.t'int self.start \/ UInt64.t'int self.end' <= i) /\ i < Seq.length old'
       -> Seq.get old' i = Seq.get fin i
   
-  let index_mut_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (ix: t_Range_usize)
+  let index_mut_Vec_i32_Global (mode: Mode.t) (self_: MutBorrow.t t_Vec_i32_Global) (ix: t_Range_usize)
     (return (x: MutBorrow.t (Slice64.slice Int32.t))) =
   {[@stop_split] [@expl:index_mut requires] in_bounds_Range_usize ix (view_Vec_i32_Global self_.current)}
     any
@@ -166,7 +170,7 @@ module M_test_range
   
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
-  let len_i32'0 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32'0 (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (view_Vec_i32_Global self_)}
       (! return {result}) ]
@@ -181,24 +185,33 @@ module M_test_range
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_i32_Global'1 (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
+  let index_Vec_i32_Global'1 (mode: Mode.t) (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_i32_Global self_)}
     any
     [ return (result: Int32.t) ->
     {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_range (return (x: ())) = (! bb0
+  let test_range (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = create_arr (fun (_x: t_Vec_i32_Global) -> [ &arr <- _x ] s1)
+      [ s0 = create_arr {mode} (fun (_x: t_Vec_i32_Global) -> [ &arr <- _x ] s1)
       | s1 = [ &_5 <- { start = (0: UInt64.t); end' = (2: UInt64.t) } ] s2
-      | s2 = index_Vec_i32_Global'0 {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
+      | s2 = index_Vec_i32_Global'0 {mode} {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
       | s3 = [ &s <- _3 ] s4
-      | s4 = len_i32 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s4 = len_i32 {mode} {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
       | s5 = [ &_7 <- _8 = (2: UInt64.t) ] s6
       | s6 = any [ br0 -> {_7 = false} (! bb12) | br1 -> {_7} (! bb4) ] ]
     | bb4 = s0
@@ -219,9 +232,9 @@ module M_test_range
       | s6 = any [ br0 -> {_15 = false} (! bb12) | br1 -> {_15} (! bb8) ] ]
     | bb8 = s0
       [ s0 = [ &_24 <- { start = (3: UInt64.t); end' = (5: UInt64.t) } ] s1
-      | s1 = index_Vec_i32_Global'0 {arr} {_24} (fun (_x: Slice64.slice Int32.t) -> [ &_22 <- _x ] s2)
+      | s1 = index_Vec_i32_Global'0 {mode} {arr} {_24} (fun (_x: Slice64.slice Int32.t) -> [ &_22 <- _x ] s2)
       | s2 = [ &s'0 <- _22 ] s3
-      | s3 = len_i32 {s'0} (fun (_x: UInt64.t) -> [ &_27 <- _x ] s4)
+      | s3 = len_i32 {mode} {s'0} (fun (_x: UInt64.t) -> [ &_27 <- _x ] s4)
       | s4 = [ &_26 <- _27 = (2: UInt64.t) ] s5
       | s5 = any [ br0 -> {_26 = false} (! bb23) | br1 -> {_26} (! bb15) ] ]
     | bb15 = s0
@@ -242,49 +255,50 @@ module M_test_range
       | s6 = any [ br0 -> {_34 = false} (! bb23) | br1 -> {_34} (! bb19) ] ]
     | bb19 = s0
       [ s0 = [ &_46 <- { start = (2: UInt64.t); end' = (2: UInt64.t) } ] s1
-      | s1 = index_Vec_i32_Global'0 {arr} {_46} (fun (_x: Slice64.slice Int32.t) -> [ &_44 <- _x ] s2)
-      | s2 = len_i32 {_44} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s3)
+      | s1 = index_Vec_i32_Global'0 {mode} {arr} {_46} (fun (_x: Slice64.slice Int32.t) -> [ &_44 <- _x ] s2)
+      | s2 = len_i32 {mode} {_44} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s3)
       | s3 = [ &_41 <- _42 = (0: UInt64.t) ] s4
       | s4 = any [ br0 -> {_41 = false} (! bb27) | br1 -> {_41} (! bb26) ] ]
     | bb26 = s0
       [ s0 = [ &_54 <- { start = (5: UInt64.t); end' = (5: UInt64.t) } ] s1
-      | s1 = index_Vec_i32_Global'0 {arr} {_54} (fun (_x: Slice64.slice Int32.t) -> [ &_52 <- _x ] s2)
-      | s2 = len_i32 {_52} (fun (_x: UInt64.t) -> [ &_50 <- _x ] s3)
+      | s1 = index_Vec_i32_Global'0 {mode} {arr} {_54} (fun (_x: Slice64.slice Int32.t) -> [ &_52 <- _x ] s2)
+      | s2 = len_i32 {mode} {_52} (fun (_x: UInt64.t) -> [ &_50 <- _x ] s3)
       | s3 = [ &_49 <- _50 = (0: UInt64.t) ] s4
       | s4 = any [ br0 -> {_49 = false} (! bb31) | br1 -> {_49} (! bb30) ] ]
     | bb30 = s0
-      [ s0 = deref_Vec_i32_Global {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_61 <- _x ] s1)
+      [ s0 = deref_Vec_i32_Global {mode} {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_61 <- _x ] s1)
       | s1 = [ &_63 <- { start = (2: UInt64.t); end' = (6: UInt64.t) } ] s2
-      | s2 = get_i32 {_61} {_63} (fun (_x: t_Option_ref_slice_i32) -> [ &_59 <- _x ] s3)
-      | s3 = is_none_ref_slice_i32 {_59} (fun (_x: bool) -> [ &_57 <- _x ] s4)
+      | s2 = get_i32 {mode} {_61} {_63} (fun (_x: t_Option_ref_slice_i32) -> [ &_59 <- _x ] s3)
+      | s3 = is_none_ref_slice_i32 {mode} {_59} (fun (_x: bool) -> [ &_57 <- _x ] s4)
       | s4 = any [ br0 -> {_57 = false} (! bb36) | br1 -> {_57} (! bb35) ] ]
     | bb35 = s0
-      [ s0 = deref_Vec_i32_Global {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_70 <- _x ] s1)
+      [ s0 = deref_Vec_i32_Global {mode} {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_70 <- _x ] s1)
       | s1 = [ &_72 <- { start = (2: UInt64.t); end' = (1: UInt64.t) } ] s2
-      | s2 = get_i32 {_70} {_72} (fun (_x: t_Option_ref_slice_i32) -> [ &_68 <- _x ] s3)
-      | s3 = is_none_ref_slice_i32 {_68} (fun (_x: bool) -> [ &_66 <- _x ] s4)
+      | s2 = get_i32 {mode} {_70} {_72} (fun (_x: t_Option_ref_slice_i32) -> [ &_68 <- _x ] s3)
+      | s3 = is_none_ref_slice_i32 {mode} {_68} (fun (_x: bool) -> [ &_66 <- _x ] s4)
       | s4 = any [ br0 -> {_66 = false} (! bb41) | br1 -> {_66} (! bb40) ] ]
     | bb40 = s0
-      [ s0 = deref_Vec_i32_Global {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_79 <- _x ] s1)
+      [ s0 = deref_Vec_i32_Global {mode} {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_79 <- _x ] s1)
       | s1 = [ &_81 <- { start = (6: UInt64.t); end' = (6: UInt64.t) } ] s2
-      | s2 = get_i32 {_79} {_81} (fun (_x: t_Option_ref_slice_i32) -> [ &_77 <- _x ] s3)
-      | s3 = is_none_ref_slice_i32 {_77} (fun (_x: bool) -> [ &_75 <- _x ] s4)
+      | s2 = get_i32 {mode} {_79} {_81} (fun (_x: t_Option_ref_slice_i32) -> [ &_77 <- _x ] s3)
+      | s3 = is_none_ref_slice_i32 {mode} {_77} (fun (_x: bool) -> [ &_75 <- _x ] s4)
       | s4 = any [ br0 -> {_75 = false} (! bb46) | br1 -> {_75} (! bb45) ] ]
     | bb45 = s0
-      [ s0 = deref_Vec_i32_Global {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_88 <- _x ] s1)
+      [ s0 = deref_Vec_i32_Global {mode} {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_88 <- _x ] s1)
       | s1 = [ &_90 <- { start = (10: UInt64.t); end' = (10: UInt64.t) } ] s2
-      | s2 = get_i32 {_88} {_90} (fun (_x: t_Option_ref_slice_i32) -> [ &_86 <- _x ] s3)
-      | s3 = is_none_ref_slice_i32 {_86} (fun (_x: bool) -> [ &_84 <- _x ] s4)
+      | s2 = get_i32 {mode} {_88} {_90} (fun (_x: t_Option_ref_slice_i32) -> [ &_86 <- _x ] s3)
+      | s3 = is_none_ref_slice_i32 {mode} {_86} (fun (_x: bool) -> [ &_84 <- _x ] s4)
       | s4 = any [ br0 -> {_84 = false} (! bb51) | br1 -> {_84} (! bb50) ] ]
     | bb50 = s0
       [ s0 = MutBorrow.borrow_mut <t_Vec_i32_Global> {arr}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_94 <- _bor ] [ &arr <- _bor.final ] s1)
       | s1 = [ &_95 <- { start = (1: UInt64.t); end' = (4: UInt64.t) } ] s2
-      | s2 = index_mut_Vec_i32_Global {_94} {_95} (fun (_x: MutBorrow.t (Slice64.slice Int32.t)) -> [ &_93 <- _x ] s3)
+      | s2 = index_mut_Vec_i32_Global {mode} {_94} {_95}
+          (fun (_x: MutBorrow.t (Slice64.slice Int32.t)) -> [ &_93 <- _x ] s3)
       | s3 = MutBorrow.borrow_final <Slice64.slice Int32.t> {_93.current} {MutBorrow.get_id _93}
           (fun (_bor: MutBorrow.t (Slice64.slice Int32.t)) ->
             [ &s'1 <- _bor ] [ &_93 <- { _93 with current = _bor.final } ] s4)
-      | s4 = len_i32 {s'1.current} (fun (_x: UInt64.t) -> [ &_98 <- _x ] s5)
+      | s4 = len_i32 {mode} {s'1.current} (fun (_x: UInt64.t) -> [ &_98 <- _x ] s5)
       | s5 = [ &_97 <- _98 = (3: UInt64.t) ] s6
       | s6 = any [ br0 -> {_97 = false} (! bb55) | br1 -> {_97} (! bb54) ] ]
     | bb54 = s0
@@ -316,47 +330,75 @@ module M_test_range
       | s20 = [ &_110 <- _111 = (3: Int32.t) ] s21
       | s21 = any [ br0 -> {_110 = false} (! bb60) | br1 -> {_110} (! bb59) ] ]
     | bb59 = s0
-      [ s0 = len_i32'0 {arr} (fun (_x: UInt64.t) -> [ &_119 <- _x ] s1)
+      [ s0 = len_i32'0 {mode} {arr} (fun (_x: UInt64.t) -> [ &_119 <- _x ] s1)
       | s1 = [ &_118 <- _119 = (5: UInt64.t) ] s2
       | s2 = any [ br0 -> {_118 = false} (! bb63) | br1 -> {_118} (! bb62) ] ]
     | bb62 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(0: UInt64.t)} (fun (_x: Int32.t) -> [ &_125 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(0: UInt64.t)} (fun (_x: Int32.t) -> [ &_125 <- _x ] s1)
       | s1 = [ &_123 <- _125 = (0: Int32.t) ] s2
       | s2 = any [ br0 -> {_123 = false} (! bb66) | br1 -> {_123} (! bb65) ] ]
     | bb65 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(1: UInt64.t)} (fun (_x: Int32.t) -> [ &_131 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(1: UInt64.t)} (fun (_x: Int32.t) -> [ &_131 <- _x ] s1)
       | s1 = [ &_129 <- _131 = (-1: Int32.t) ] s2
       | s2 = any [ br0 -> {_129 = false} (! bb69) | br1 -> {_129} (! bb68) ] ]
     | bb68 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(2: UInt64.t)} (fun (_x: Int32.t) -> [ &_137 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(2: UInt64.t)} (fun (_x: Int32.t) -> [ &_137 <- _x ] s1)
       | s1 = [ &_135 <- _137 = (-1: Int32.t) ] s2
       | s2 = any [ br0 -> {_135 = false} (! bb72) | br1 -> {_135} (! bb71) ] ]
     | bb71 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(3: UInt64.t)} (fun (_x: Int32.t) -> [ &_143 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(3: UInt64.t)} (fun (_x: Int32.t) -> [ &_143 <- _x ] s1)
       | s1 = [ &_141 <- _143 = (3: Int32.t) ] s2
       | s2 = any [ br0 -> {_141 = false} (! bb75) | br1 -> {_141} (! bb74) ] ]
     | bb74 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(4: UInt64.t)} (fun (_x: Int32.t) -> [ &_149 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(4: UInt64.t)} (fun (_x: Int32.t) -> [ &_149 <- _x ] s1)
       | s1 = [ &_147 <- _149 = (4: Int32.t) ] s2
       | s2 = any [ br0 -> {_147 = false} (! bb78) | br1 -> {_147} (! bb79) ] ]
     | bb79 = return {_ret}
-    | bb78 = {false} any
-    | bb75 = {false} any
-    | bb72 = {false} any
-    | bb69 = {false} any
-    | bb66 = {false} any
-    | bb63 = {false} any
-    | bb60 = {false} any
+    | bb78 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[4] == 4"} (fun (_x: ()) -> [ &_151 <- _x ] s1) | s1 = {false} any ]
+    | bb75 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[3] == 3"} (fun (_x: ()) -> [ &_145 <- _x ] s1) | s1 = {false} any ]
+    | bb72 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[2] == -1"} (fun (_x: ()) -> [ &_139 <- _x ] s1) | s1 = {false} any ]
+    | bb69 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[1] == -1"} (fun (_x: ()) -> [ &_133 <- _x ] s1) | s1 = {false} any ]
+    | bb66 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[0] == 0"} (fun (_x: ()) -> [ &_127 <- _x ] s1) | s1 = {false} any ]
+    | bb63 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.len() == 5"} (fun (_x: ()) -> [ &_121 <- _x ] s1) | s1 = {false} any ]
+    | bb60 = s0
+      [ s0 = panic {mode} {"assertion failed: s[2] == 3"} (fun (_x: ()) -> [ &_116 <- _x ] s1) | s1 = {false} any ]
     | bb55 = s0
-      [ s0 = -{resolve_refmut_slice_i32 s'1}- s1 | s1 = -{resolve_refmut_slice_i32 _93}- s2 | s2 = {false} any ]
-    | bb51 = {false} any
-    | bb46 = {false} any
-    | bb41 = {false} any
-    | bb36 = {false} any
-    | bb31 = {false} any
-    | bb27 = {false} any
-    | bb23 = {false} any
-    | bb12 = {false} any ]
+      [ s0 = -{resolve_refmut_slice_i32 s'1}- s1
+      | s1 = -{resolve_refmut_slice_i32 _93}- s2
+      | s2 = panic {mode} {"assertion failed: s.len() == 3"} (fun (_x: ()) -> [ &_100 <- _x ] s3)
+      | s3 = {false} any ]
+    | bb51 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.get(10..10).is_none()"} (fun (_x: ()) -> [ &_91 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb46 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.get(6..6).is_none()"} (fun (_x: ()) -> [ &_82 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb41 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.get(2..1).is_none()"} (fun (_x: ()) -> [ &_73 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb36 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.get(2..6).is_none()"} (fun (_x: ()) -> [ &_64 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb31 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[5..5].len() == 0"} (fun (_x: ()) -> [ &_55 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb27 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[2..2].len() == 0"} (fun (_x: ()) -> [ &_47 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb23 = s0
+      [ s0 = panic {mode} {"assertion failed: s.len() == 2 && s[0] == 3 && s[1] == 4"}
+          (fun (_x: ()) -> [ &_39 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb12 = s0
+      [ s0 = panic {mode} {"assertion failed: s.len() == 2 && s[0] == 0 && s[1] == 1"}
+          (fun (_x: ()) -> [ &_20 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & arr: t_Vec_i32_Global = Any.any_l ()
     | & s: Slice64.slice Int32.t = Any.any_l ()
@@ -374,6 +416,7 @@ module M_test_range
     | & _17: UInt64.t = Any.any_l ()
     | & _18: UInt64.t = Any.any_l ()
     | & _19: bool = Any.any_l ()
+    | & _20: () = Any.any_l ()
     | & s'0: Slice64.slice Int32.t = Any.any_l ()
     | & _22: Slice64.slice Int32.t = Any.any_l ()
     | & _24: t_Range_usize = Any.any_l ()
@@ -389,36 +432,44 @@ module M_test_range
     | & _36: UInt64.t = Any.any_l ()
     | & _37: UInt64.t = Any.any_l ()
     | & _38: bool = Any.any_l ()
+    | & _39: () = Any.any_l ()
     | & _41: bool = Any.any_l ()
     | & _42: UInt64.t = Any.any_l ()
     | & _44: Slice64.slice Int32.t = Any.any_l ()
     | & _46: t_Range_usize = Any.any_l ()
+    | & _47: () = Any.any_l ()
     | & _49: bool = Any.any_l ()
     | & _50: UInt64.t = Any.any_l ()
     | & _52: Slice64.slice Int32.t = Any.any_l ()
     | & _54: t_Range_usize = Any.any_l ()
+    | & _55: () = Any.any_l ()
     | & _57: bool = Any.any_l ()
     | & _59: t_Option_ref_slice_i32 = Any.any_l ()
     | & _61: Slice64.slice Int32.t = Any.any_l ()
     | & _63: t_Range_usize = Any.any_l ()
+    | & _64: () = Any.any_l ()
     | & _66: bool = Any.any_l ()
     | & _68: t_Option_ref_slice_i32 = Any.any_l ()
     | & _70: Slice64.slice Int32.t = Any.any_l ()
     | & _72: t_Range_usize = Any.any_l ()
+    | & _73: () = Any.any_l ()
     | & _75: bool = Any.any_l ()
     | & _77: t_Option_ref_slice_i32 = Any.any_l ()
     | & _79: Slice64.slice Int32.t = Any.any_l ()
     | & _81: t_Range_usize = Any.any_l ()
+    | & _82: () = Any.any_l ()
     | & _84: bool = Any.any_l ()
     | & _86: t_Option_ref_slice_i32 = Any.any_l ()
     | & _88: Slice64.slice Int32.t = Any.any_l ()
     | & _90: t_Range_usize = Any.any_l ()
+    | & _91: () = Any.any_l ()
     | & s'1: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & _93: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & _94: MutBorrow.t t_Vec_i32_Global = Any.any_l ()
     | & _95: t_Range_usize = Any.any_l ()
     | & _97: bool = Any.any_l ()
     | & _98: UInt64.t = Any.any_l ()
+    | & _100: () = Any.any_l ()
     | & _101: UInt64.t = Any.any_l ()
     | & _102: Opaque.ptr = Any.any_l ()
     | & _103: UInt64.t = Any.any_l ()
@@ -433,20 +484,28 @@ module M_test_range
     | & _113: Opaque.ptr = Any.any_l ()
     | & _114: UInt64.t = Any.any_l ()
     | & _115: bool = Any.any_l ()
+    | & _116: () = Any.any_l ()
     | & _118: bool = Any.any_l ()
     | & _119: UInt64.t = Any.any_l ()
+    | & _121: () = Any.any_l ()
     | & _123: bool = Any.any_l ()
     | & _125: Int32.t = Any.any_l ()
+    | & _127: () = Any.any_l ()
     | & _129: bool = Any.any_l ()
     | & _131: Int32.t = Any.any_l ()
+    | & _133: () = Any.any_l ()
     | & _135: bool = Any.any_l ()
     | & _137: Int32.t = Any.any_l ()
+    | & _139: () = Any.any_l ()
     | & _141: bool = Any.any_l ()
     | & _143: Int32.t = Any.any_l ()
+    | & _145: () = Any.any_l ()
     | & _147: bool = Any.any_l ()
-    | & _149: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _149: Int32.t = Any.any_l ()
+    | & _151: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_range_from
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.Int32
   use creusot.int.UInt64
@@ -471,7 +530,7 @@ module M_test_range_from
   
   meta "rewrite_def" function index_Vec_i32_Global
   
-  let create_arr (return (x: t_Vec_i32_Global)) = any
+  let create_arr (mode: Mode.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) ->
     {[@stop_split] [@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
@@ -488,39 +547,41 @@ module M_test_range_from
   predicate has_value_RangeFrom_usize (self: t_RangeFrom_usize) (seq: Seq.seq Int32.t) (out: Slice64.slice Int32.t) =
     Seq.([..]) seq (UInt64.t'int self.start) (Seq.length seq) = Slice64.view out
   
-  let index_Vec_i32_Global'0 (self_: t_Vec_i32_Global) (ix: t_RangeFrom_usize) (return (x: Slice64.slice Int32.t)) =
+  let index_Vec_i32_Global'0 (mode: Mode.t) (self_: t_Vec_i32_Global) (ix: t_RangeFrom_usize)
+    (return (x: Slice64.slice Int32.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_RangeFrom_usize ix (view_Vec_i32_Global self_)}
     any
     [ return (result: Slice64.slice Int32.t) ->
     {[@stop_split] [@expl:index ensures] has_value_RangeFrom_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
-  let len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+  let len_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
       = UInt64.t'int result}
       (! return {result}) ]
   
-  let deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
+  let deref_Vec_i32_Global (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
     [ return (result: Slice64.slice Int32.t) -> {[@stop_split] [@expl:deref ensures] Slice64.view result
       = view_Vec_i32_Global self_}
       (! return {result}) ]
   
   type t_Option_ref_slice_i32 = None | Some (Slice64.slice Int32.t)
   
-  let get_i32 (self_: Slice64.slice Int32.t) (ix: t_RangeFrom_usize) (return (x: t_Option_ref_slice_i32)) = any
+  let get_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (ix: t_RangeFrom_usize)
+    (return (x: t_Option_ref_slice_i32)) = any
     [ return (result: t_Option_ref_slice_i32) ->
     {[@stop_split] [@expl:get_i32 ensures] ([@stop_split] [@expl:get ensures #0] in_bounds_RangeFrom_usize ix (Slice64.view self_)
         -> (exists r: Slice64.slice Int32.t. result = Some r /\ has_value_RangeFrom_usize ix (Slice64.view self_) r))
       /\ ([@stop_split] [@expl:get ensures #1] in_bounds_RangeFrom_usize ix (Slice64.view self_) \/ result = None)}
       (! return {result}) ]
   
-  let is_none_ref_slice_i32 (self_: t_Option_ref_slice_i32) (return (x: bool)) = any
+  let is_none_ref_slice_i32 (mode: Mode.t) (self_: t_Option_ref_slice_i32) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   predicate resolve_elswhere_RangeFrom_usize (self: t_RangeFrom_usize) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. 0 <= i /\ i < UInt64.t'int self.start /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
   
-  let index_mut_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (ix: t_RangeFrom_usize)
+  let index_mut_Vec_i32_Global (mode: Mode.t) (self_: MutBorrow.t t_Vec_i32_Global) (ix: t_RangeFrom_usize)
     (return (x: MutBorrow.t (Slice64.slice Int32.t))) =
   {[@stop_split] [@expl:index_mut requires] in_bounds_RangeFrom_usize ix (view_Vec_i32_Global self_.current)}
     any
@@ -536,7 +597,7 @@ module M_test_range_from
   
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
-  let len_i32'0 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32'0 (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (view_Vec_i32_Global self_)}
       (! return {result}) ]
@@ -551,24 +612,33 @@ module M_test_range_from
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_i32_Global'1 (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
+  let index_Vec_i32_Global'1 (mode: Mode.t) (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_i32_Global self_)}
     any
     [ return (result: Int32.t) ->
     {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_range_from (return (x: ())) = (! bb0
+  let test_range_from (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = create_arr (fun (_x: t_Vec_i32_Global) -> [ &arr <- _x ] s1)
+      [ s0 = create_arr {mode} (fun (_x: t_Vec_i32_Global) -> [ &arr <- _x ] s1)
       | s1 = [ &_5 <- { start = (3: UInt64.t) } ] s2
-      | s2 = index_Vec_i32_Global'0 {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
+      | s2 = index_Vec_i32_Global'0 {mode} {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
       | s3 = [ &s <- _3 ] s4
-      | s4 = len_i32 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s4 = len_i32 {mode} {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
       | s5 = [ &_7 <- _8 = (2: UInt64.t) ] s6
       | s6 = any [ br0 -> {_7 = false} (! bb12) | br1 -> {_7} (! bb4) ] ]
     | bb4 = s0
@@ -589,31 +659,32 @@ module M_test_range_from
       | s6 = any [ br0 -> {_15 = false} (! bb12) | br1 -> {_15} (! bb8) ] ]
     | bb8 = s0
       [ s0 = [ &_27 <- { start = (5: UInt64.t) } ] s1
-      | s1 = index_Vec_i32_Global'0 {arr} {_27} (fun (_x: Slice64.slice Int32.t) -> [ &_25 <- _x ] s2)
-      | s2 = len_i32 {_25} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s3)
+      | s1 = index_Vec_i32_Global'0 {mode} {arr} {_27} (fun (_x: Slice64.slice Int32.t) -> [ &_25 <- _x ] s2)
+      | s2 = len_i32 {mode} {_25} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s3)
       | s3 = [ &_22 <- _23 = (0: UInt64.t) ] s4
       | s4 = any [ br0 -> {_22 = false} (! bb16) | br1 -> {_22} (! bb15) ] ]
     | bb15 = s0
-      [ s0 = deref_Vec_i32_Global {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_34 <- _x ] s1)
+      [ s0 = deref_Vec_i32_Global {mode} {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_34 <- _x ] s1)
       | s1 = [ &_36 <- { start = (6: UInt64.t) } ] s2
-      | s2 = get_i32 {_34} {_36} (fun (_x: t_Option_ref_slice_i32) -> [ &_32 <- _x ] s3)
-      | s3 = is_none_ref_slice_i32 {_32} (fun (_x: bool) -> [ &_30 <- _x ] s4)
+      | s2 = get_i32 {mode} {_34} {_36} (fun (_x: t_Option_ref_slice_i32) -> [ &_32 <- _x ] s3)
+      | s3 = is_none_ref_slice_i32 {mode} {_32} (fun (_x: bool) -> [ &_30 <- _x ] s4)
       | s4 = any [ br0 -> {_30 = false} (! bb21) | br1 -> {_30} (! bb20) ] ]
     | bb20 = s0
-      [ s0 = deref_Vec_i32_Global {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_43 <- _x ] s1)
+      [ s0 = deref_Vec_i32_Global {mode} {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_43 <- _x ] s1)
       | s1 = [ &_45 <- { start = (10: UInt64.t) } ] s2
-      | s2 = get_i32 {_43} {_45} (fun (_x: t_Option_ref_slice_i32) -> [ &_41 <- _x ] s3)
-      | s3 = is_none_ref_slice_i32 {_41} (fun (_x: bool) -> [ &_39 <- _x ] s4)
+      | s2 = get_i32 {mode} {_43} {_45} (fun (_x: t_Option_ref_slice_i32) -> [ &_41 <- _x ] s3)
+      | s3 = is_none_ref_slice_i32 {mode} {_41} (fun (_x: bool) -> [ &_39 <- _x ] s4)
       | s4 = any [ br0 -> {_39 = false} (! bb26) | br1 -> {_39} (! bb25) ] ]
     | bb25 = s0
       [ s0 = MutBorrow.borrow_mut <t_Vec_i32_Global> {arr}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_49 <- _bor ] [ &arr <- _bor.final ] s1)
       | s1 = [ &_50 <- { start = (2: UInt64.t) } ] s2
-      | s2 = index_mut_Vec_i32_Global {_49} {_50} (fun (_x: MutBorrow.t (Slice64.slice Int32.t)) -> [ &_48 <- _x ] s3)
+      | s2 = index_mut_Vec_i32_Global {mode} {_49} {_50}
+          (fun (_x: MutBorrow.t (Slice64.slice Int32.t)) -> [ &_48 <- _x ] s3)
       | s3 = MutBorrow.borrow_final <Slice64.slice Int32.t> {_48.current} {MutBorrow.get_id _48}
           (fun (_bor: MutBorrow.t (Slice64.slice Int32.t)) ->
             [ &s'0 <- _bor ] [ &_48 <- { _48 with current = _bor.final } ] s4)
-      | s4 = len_i32 {s'0.current} (fun (_x: UInt64.t) -> [ &_53 <- _x ] s5)
+      | s4 = len_i32 {mode} {s'0.current} (fun (_x: UInt64.t) -> [ &_53 <- _x ] s5)
       | s5 = [ &_52 <- _53 = (3: UInt64.t) ] s6
       | s6 = any [ br0 -> {_52 = false} (! bb30) | br1 -> {_52} (! bb29) ] ]
     | bb29 = s0
@@ -645,43 +716,62 @@ module M_test_range_from
       | s20 = [ &_65 <- _66 = (4: Int32.t) ] s21
       | s21 = any [ br0 -> {_65 = false} (! bb35) | br1 -> {_65} (! bb34) ] ]
     | bb34 = s0
-      [ s0 = len_i32'0 {arr} (fun (_x: UInt64.t) -> [ &_74 <- _x ] s1)
+      [ s0 = len_i32'0 {mode} {arr} (fun (_x: UInt64.t) -> [ &_74 <- _x ] s1)
       | s1 = [ &_73 <- _74 = (5: UInt64.t) ] s2
       | s2 = any [ br0 -> {_73 = false} (! bb38) | br1 -> {_73} (! bb37) ] ]
     | bb37 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(0: UInt64.t)} (fun (_x: Int32.t) -> [ &_80 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(0: UInt64.t)} (fun (_x: Int32.t) -> [ &_80 <- _x ] s1)
       | s1 = [ &_78 <- _80 = (0: Int32.t) ] s2
       | s2 = any [ br0 -> {_78 = false} (! bb41) | br1 -> {_78} (! bb40) ] ]
     | bb40 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(1: UInt64.t)} (fun (_x: Int32.t) -> [ &_86 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(1: UInt64.t)} (fun (_x: Int32.t) -> [ &_86 <- _x ] s1)
       | s1 = [ &_84 <- _86 = (1: Int32.t) ] s2
       | s2 = any [ br0 -> {_84 = false} (! bb44) | br1 -> {_84} (! bb43) ] ]
     | bb43 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(2: UInt64.t)} (fun (_x: Int32.t) -> [ &_92 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(2: UInt64.t)} (fun (_x: Int32.t) -> [ &_92 <- _x ] s1)
       | s1 = [ &_90 <- _92 = (-1: Int32.t) ] s2
       | s2 = any [ br0 -> {_90 = false} (! bb47) | br1 -> {_90} (! bb46) ] ]
     | bb46 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(3: UInt64.t)} (fun (_x: Int32.t) -> [ &_98 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(3: UInt64.t)} (fun (_x: Int32.t) -> [ &_98 <- _x ] s1)
       | s1 = [ &_96 <- _98 = (-1: Int32.t) ] s2
       | s2 = any [ br0 -> {_96 = false} (! bb50) | br1 -> {_96} (! bb49) ] ]
     | bb49 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(4: UInt64.t)} (fun (_x: Int32.t) -> [ &_104 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(4: UInt64.t)} (fun (_x: Int32.t) -> [ &_104 <- _x ] s1)
       | s1 = [ &_102 <- _104 = (4: Int32.t) ] s2
       | s2 = any [ br0 -> {_102 = false} (! bb53) | br1 -> {_102} (! bb54) ] ]
     | bb54 = return {_ret}
-    | bb53 = {false} any
-    | bb50 = {false} any
-    | bb47 = {false} any
-    | bb44 = {false} any
-    | bb41 = {false} any
-    | bb38 = {false} any
-    | bb35 = {false} any
+    | bb53 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[4] == 4"} (fun (_x: ()) -> [ &_106 <- _x ] s1) | s1 = {false} any ]
+    | bb50 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[3] == -1"} (fun (_x: ()) -> [ &_100 <- _x ] s1) | s1 = {false} any ]
+    | bb47 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[2] == -1"} (fun (_x: ()) -> [ &_94 <- _x ] s1) | s1 = {false} any ]
+    | bb44 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[1] == 1"} (fun (_x: ()) -> [ &_88 <- _x ] s1) | s1 = {false} any ]
+    | bb41 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[0] == 0"} (fun (_x: ()) -> [ &_82 <- _x ] s1) | s1 = {false} any ]
+    | bb38 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.len() == 5"} (fun (_x: ()) -> [ &_76 <- _x ] s1) | s1 = {false} any ]
+    | bb35 = s0
+      [ s0 = panic {mode} {"assertion failed: s[2] == 4"} (fun (_x: ()) -> [ &_71 <- _x ] s1) | s1 = {false} any ]
     | bb30 = s0
-      [ s0 = -{resolve_refmut_slice_i32 s'0}- s1 | s1 = -{resolve_refmut_slice_i32 _48}- s2 | s2 = {false} any ]
-    | bb26 = {false} any
-    | bb21 = {false} any
-    | bb16 = {false} any
-    | bb12 = {false} any ]
+      [ s0 = -{resolve_refmut_slice_i32 s'0}- s1
+      | s1 = -{resolve_refmut_slice_i32 _48}- s2
+      | s2 = panic {mode} {"assertion failed: s.len() == 3"} (fun (_x: ()) -> [ &_55 <- _x ] s3)
+      | s3 = {false} any ]
+    | bb26 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.get(10..).is_none()"} (fun (_x: ()) -> [ &_46 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb21 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.get(6..).is_none()"} (fun (_x: ()) -> [ &_37 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb16 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[5..].len() == 0"} (fun (_x: ()) -> [ &_28 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb12 = s0
+      [ s0 = panic {mode} {"assertion failed: s.len() == 2 && s[0] == 3 && s[1] == 4"}
+          (fun (_x: ()) -> [ &_20 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & arr: t_Vec_i32_Global = Any.any_l ()
     | & s: Slice64.slice Int32.t = Any.any_l ()
@@ -699,24 +789,29 @@ module M_test_range_from
     | & _17: UInt64.t = Any.any_l ()
     | & _18: UInt64.t = Any.any_l ()
     | & _19: bool = Any.any_l ()
+    | & _20: () = Any.any_l ()
     | & _22: bool = Any.any_l ()
     | & _23: UInt64.t = Any.any_l ()
     | & _25: Slice64.slice Int32.t = Any.any_l ()
     | & _27: t_RangeFrom_usize = Any.any_l ()
+    | & _28: () = Any.any_l ()
     | & _30: bool = Any.any_l ()
     | & _32: t_Option_ref_slice_i32 = Any.any_l ()
     | & _34: Slice64.slice Int32.t = Any.any_l ()
     | & _36: t_RangeFrom_usize = Any.any_l ()
+    | & _37: () = Any.any_l ()
     | & _39: bool = Any.any_l ()
     | & _41: t_Option_ref_slice_i32 = Any.any_l ()
     | & _43: Slice64.slice Int32.t = Any.any_l ()
     | & _45: t_RangeFrom_usize = Any.any_l ()
+    | & _46: () = Any.any_l ()
     | & s'0: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & _48: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & _49: MutBorrow.t t_Vec_i32_Global = Any.any_l ()
     | & _50: t_RangeFrom_usize = Any.any_l ()
     | & _52: bool = Any.any_l ()
     | & _53: UInt64.t = Any.any_l ()
+    | & _55: () = Any.any_l ()
     | & _56: UInt64.t = Any.any_l ()
     | & _57: Opaque.ptr = Any.any_l ()
     | & _58: UInt64.t = Any.any_l ()
@@ -731,20 +826,28 @@ module M_test_range_from
     | & _68: Opaque.ptr = Any.any_l ()
     | & _69: UInt64.t = Any.any_l ()
     | & _70: bool = Any.any_l ()
+    | & _71: () = Any.any_l ()
     | & _73: bool = Any.any_l ()
     | & _74: UInt64.t = Any.any_l ()
+    | & _76: () = Any.any_l ()
     | & _78: bool = Any.any_l ()
     | & _80: Int32.t = Any.any_l ()
+    | & _82: () = Any.any_l ()
     | & _84: bool = Any.any_l ()
     | & _86: Int32.t = Any.any_l ()
+    | & _88: () = Any.any_l ()
     | & _90: bool = Any.any_l ()
     | & _92: Int32.t = Any.any_l ()
+    | & _94: () = Any.any_l ()
     | & _96: bool = Any.any_l ()
     | & _98: Int32.t = Any.any_l ()
+    | & _100: () = Any.any_l ()
     | & _102: bool = Any.any_l ()
-    | & _104: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _104: Int32.t = Any.any_l ()
+    | & _106: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_range_full
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.Int32
   use creusot.int.UInt64
@@ -769,7 +872,7 @@ module M_test_range_full
   
   meta "rewrite_def" function index_Vec_i32_Global
   
-  let create_arr (return (x: t_Vec_i32_Global)) = any
+  let create_arr (mode: Mode.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) ->
     {[@stop_split] [@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
@@ -782,21 +885,21 @@ module M_test_range_full
   
   predicate has_value_RangeFull (self: ()) (seq: Seq.seq Int32.t) (out: Slice64.slice Int32.t) = seq = Slice64.view out
   
-  let index_Vec_i32_Global'0 (self_: t_Vec_i32_Global) (ix: ()) (return (x: Slice64.slice Int32.t)) =
+  let index_Vec_i32_Global'0 (mode: Mode.t) (self_: t_Vec_i32_Global) (ix: ()) (return (x: Slice64.slice Int32.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_RangeFull ix (view_Vec_i32_Global self_)}
     any
     [ return (result: Slice64.slice Int32.t) ->
     {[@stop_split] [@expl:index ensures] has_value_RangeFull ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
-  let len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+  let len_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
       = UInt64.t'int result}
       (! return {result}) ]
   
   predicate resolve_elswhere_RangeFull (self: ()) (_old: Seq.seq Int32.t) (_fin: Seq.seq Int32.t) = true
   
-  let index_mut_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (ix: ())
+  let index_mut_Vec_i32_Global (mode: Mode.t) (self_: MutBorrow.t t_Vec_i32_Global) (ix: ())
     (return (x: MutBorrow.t (Slice64.slice Int32.t))) =
   {[@stop_split] [@expl:index_mut requires] in_bounds_RangeFull ix (view_Vec_i32_Global self_.current)}
     any
@@ -812,7 +915,7 @@ module M_test_range_full
   
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
-  let len_i32'0 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32'0 (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (view_Vec_i32_Global self_)}
       (! return {result}) ]
@@ -827,24 +930,33 @@ module M_test_range_full
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_i32_Global'1 (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
+  let index_Vec_i32_Global'1 (mode: Mode.t) (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_i32_Global self_)}
     any
     [ return (result: Int32.t) ->
     {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_range_full (return (x: ())) = (! bb0
+  let test_range_full (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = create_arr (fun (_x: t_Vec_i32_Global) -> [ &arr <- _x ] s1)
+      [ s0 = create_arr {mode} (fun (_x: t_Vec_i32_Global) -> [ &arr <- _x ] s1)
       | s1 = [ &_5 <- () ] s2
-      | s2 = index_Vec_i32_Global'0 {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
+      | s2 = index_Vec_i32_Global'0 {mode} {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
       | s3 = [ &s <- _3 ] s4
-      | s4 = len_i32 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s4 = len_i32 {mode} {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
       | s5 = [ &_7 <- _8 = (5: UInt64.t) ] s6
       | s6 = any [ br0 -> {_7 = false} (! bb21) | br1 -> {_7} (! bb4) ] ]
     | bb4 = s0
@@ -891,11 +1003,12 @@ module M_test_range_full
       [ s0 = MutBorrow.borrow_mut <t_Vec_i32_Global> {arr}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_38 <- _bor ] [ &arr <- _bor.final ] s1)
       | s1 = [ &_39 <- () ] s2
-      | s2 = index_mut_Vec_i32_Global {_38} {_39} (fun (_x: MutBorrow.t (Slice64.slice Int32.t)) -> [ &_37 <- _x ] s3)
+      | s2 = index_mut_Vec_i32_Global {mode} {_38} {_39}
+          (fun (_x: MutBorrow.t (Slice64.slice Int32.t)) -> [ &_37 <- _x ] s3)
       | s3 = MutBorrow.borrow_final <Slice64.slice Int32.t> {_37.current} {MutBorrow.get_id _37}
           (fun (_bor: MutBorrow.t (Slice64.slice Int32.t)) ->
             [ &s'0 <- _bor ] [ &_37 <- { _37 with current = _bor.final } ] s4)
-      | s4 = len_i32 {s'0.current} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s5)
+      | s4 = len_i32 {mode} {s'0.current} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s5)
       | s5 = [ &_41 <- _42 = (5: UInt64.t) ] s6
       | s6 = any [ br0 -> {_41 = false} (! bb25) | br1 -> {_41} (! bb24) ] ]
     | bb24 = s0
@@ -917,39 +1030,52 @@ module M_test_range_full
           (fun (r: Slice64.slice Int32.t) -> [ &s'0 <- { s'0 with current = r } ] s12)
       | s12 = -{resolve_refmut_slice_i32 s'0}- s13
       | s13 = -{resolve_refmut_slice_i32 _37}- s14
-      | s14 = len_i32'0 {arr} (fun (_x: UInt64.t) -> [ &_55 <- _x ] s15)
+      | s14 = len_i32'0 {mode} {arr} (fun (_x: UInt64.t) -> [ &_55 <- _x ] s15)
       | s15 = [ &_54 <- _55 = (5: UInt64.t) ] s16
       | s16 = any [ br0 -> {_54 = false} (! bb30) | br1 -> {_54} (! bb29) ] ]
     | bb29 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(0: UInt64.t)} (fun (_x: Int32.t) -> [ &_61 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(0: UInt64.t)} (fun (_x: Int32.t) -> [ &_61 <- _x ] s1)
       | s1 = [ &_59 <- _61 = (0: Int32.t) ] s2
       | s2 = any [ br0 -> {_59 = false} (! bb33) | br1 -> {_59} (! bb32) ] ]
     | bb32 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(1: UInt64.t)} (fun (_x: Int32.t) -> [ &_67 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(1: UInt64.t)} (fun (_x: Int32.t) -> [ &_67 <- _x ] s1)
       | s1 = [ &_65 <- _67 = (-1: Int32.t) ] s2
       | s2 = any [ br0 -> {_65 = false} (! bb36) | br1 -> {_65} (! bb35) ] ]
     | bb35 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(2: UInt64.t)} (fun (_x: Int32.t) -> [ &_73 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(2: UInt64.t)} (fun (_x: Int32.t) -> [ &_73 <- _x ] s1)
       | s1 = [ &_71 <- _73 = (2: Int32.t) ] s2
       | s2 = any [ br0 -> {_71 = false} (! bb39) | br1 -> {_71} (! bb38) ] ]
     | bb38 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(3: UInt64.t)} (fun (_x: Int32.t) -> [ &_79 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(3: UInt64.t)} (fun (_x: Int32.t) -> [ &_79 <- _x ] s1)
       | s1 = [ &_77 <- _79 = (-1: Int32.t) ] s2
       | s2 = any [ br0 -> {_77 = false} (! bb42) | br1 -> {_77} (! bb41) ] ]
     | bb41 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(4: UInt64.t)} (fun (_x: Int32.t) -> [ &_85 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(4: UInt64.t)} (fun (_x: Int32.t) -> [ &_85 <- _x ] s1)
       | s1 = [ &_83 <- _85 = (4: Int32.t) ] s2
       | s2 = any [ br0 -> {_83 = false} (! bb45) | br1 -> {_83} (! bb46) ] ]
     | bb46 = return {_ret}
-    | bb45 = {false} any
-    | bb42 = {false} any
-    | bb39 = {false} any
-    | bb36 = {false} any
-    | bb33 = {false} any
-    | bb30 = {false} any
+    | bb45 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[4] == 4"} (fun (_x: ()) -> [ &_87 <- _x ] s1) | s1 = {false} any ]
+    | bb42 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[3] == -1"} (fun (_x: ()) -> [ &_81 <- _x ] s1) | s1 = {false} any ]
+    | bb39 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[2] == 2"} (fun (_x: ()) -> [ &_75 <- _x ] s1) | s1 = {false} any ]
+    | bb36 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[1] == -1"} (fun (_x: ()) -> [ &_69 <- _x ] s1) | s1 = {false} any ]
+    | bb33 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[0] == 0"} (fun (_x: ()) -> [ &_63 <- _x ] s1) | s1 = {false} any ]
+    | bb30 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.len() == 5"} (fun (_x: ()) -> [ &_57 <- _x ] s1) | s1 = {false} any ]
     | bb25 = s0
-      [ s0 = -{resolve_refmut_slice_i32 s'0}- s1 | s1 = -{resolve_refmut_slice_i32 _37}- s2 | s2 = {false} any ]
-    | bb21 = {false} any ]
+      [ s0 = -{resolve_refmut_slice_i32 s'0}- s1
+      | s1 = -{resolve_refmut_slice_i32 _37}- s2
+      | s2 = panic {mode} {"assertion failed: s.len() == 5"} (fun (_x: ()) -> [ &_44 <- _x ] s3)
+      | s3 = {false} any ]
+    | bb21 = s0
+      [ s0 = panic {mode}
+          {"assertion failed: s.len() == 5 && s[0] == 0 && s[1] == 1 && s[2] == 2 && s[3] == 3 && s[4] == 4"}
+          (fun (_x: ()) -> [ &_35 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & arr: t_Vec_i32_Global = Any.any_l ()
     | & s: Slice64.slice Int32.t = Any.any_l ()
@@ -982,12 +1108,14 @@ module M_test_range_full
     | & _32: UInt64.t = Any.any_l ()
     | & _33: UInt64.t = Any.any_l ()
     | & _34: bool = Any.any_l ()
+    | & _35: () = Any.any_l ()
     | & s'0: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & _37: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & _38: MutBorrow.t t_Vec_i32_Global = Any.any_l ()
     | & _39: () = Any.any_l ()
     | & _41: bool = Any.any_l ()
     | & _42: UInt64.t = Any.any_l ()
+    | & _44: () = Any.any_l ()
     | & _45: UInt64.t = Any.any_l ()
     | & _46: Opaque.ptr = Any.any_l ()
     | & _47: UInt64.t = Any.any_l ()
@@ -998,18 +1126,25 @@ module M_test_range_full
     | & _52: bool = Any.any_l ()
     | & _54: bool = Any.any_l ()
     | & _55: UInt64.t = Any.any_l ()
+    | & _57: () = Any.any_l ()
     | & _59: bool = Any.any_l ()
     | & _61: Int32.t = Any.any_l ()
+    | & _63: () = Any.any_l ()
     | & _65: bool = Any.any_l ()
     | & _67: Int32.t = Any.any_l ()
+    | & _69: () = Any.any_l ()
     | & _71: bool = Any.any_l ()
     | & _73: Int32.t = Any.any_l ()
+    | & _75: () = Any.any_l ()
     | & _77: bool = Any.any_l ()
     | & _79: Int32.t = Any.any_l ()
+    | & _81: () = Any.any_l ()
     | & _83: bool = Any.any_l ()
-    | & _85: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _85: Int32.t = Any.any_l ()
+    | & _87: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_range_to
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.Int32
   use creusot.int.UInt64
@@ -1034,7 +1169,7 @@ module M_test_range_to
   
   meta "rewrite_def" function index_Vec_i32_Global
   
-  let create_arr (return (x: t_Vec_i32_Global)) = any
+  let create_arr (mode: Mode.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) ->
     {[@stop_split] [@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
@@ -1051,39 +1186,41 @@ module M_test_range_to
   predicate has_value_RangeTo_usize (self: t_RangeTo_usize) (seq: Seq.seq Int32.t) (out: Slice64.slice Int32.t) =
     Seq.([..]) seq 0 (UInt64.t'int self.end') = Slice64.view out
   
-  let index_Vec_i32_Global'0 (self_: t_Vec_i32_Global) (ix: t_RangeTo_usize) (return (x: Slice64.slice Int32.t)) =
+  let index_Vec_i32_Global'0 (mode: Mode.t) (self_: t_Vec_i32_Global) (ix: t_RangeTo_usize)
+    (return (x: Slice64.slice Int32.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_RangeTo_usize ix (view_Vec_i32_Global self_)}
     any
     [ return (result: Slice64.slice Int32.t) ->
     {[@stop_split] [@expl:index ensures] has_value_RangeTo_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
-  let len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+  let len_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
       = UInt64.t'int result}
       (! return {result}) ]
   
-  let deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
+  let deref_Vec_i32_Global (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
     [ return (result: Slice64.slice Int32.t) -> {[@stop_split] [@expl:deref ensures] Slice64.view result
       = view_Vec_i32_Global self_}
       (! return {result}) ]
   
   type t_Option_ref_slice_i32 = None | Some (Slice64.slice Int32.t)
   
-  let get_i32 (self_: Slice64.slice Int32.t) (ix: t_RangeTo_usize) (return (x: t_Option_ref_slice_i32)) = any
+  let get_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (ix: t_RangeTo_usize) (return (x: t_Option_ref_slice_i32)) =
+  any
     [ return (result: t_Option_ref_slice_i32) ->
     {[@stop_split] [@expl:get_i32 ensures] ([@stop_split] [@expl:get ensures #0] in_bounds_RangeTo_usize ix (Slice64.view self_)
         -> (exists r: Slice64.slice Int32.t. result = Some r /\ has_value_RangeTo_usize ix (Slice64.view self_) r))
       /\ ([@stop_split] [@expl:get ensures #1] in_bounds_RangeTo_usize ix (Slice64.view self_) \/ result = None)}
       (! return {result}) ]
   
-  let is_none_ref_slice_i32 (self_: t_Option_ref_slice_i32) (return (x: bool)) = any
+  let is_none_ref_slice_i32 (mode: Mode.t) (self_: t_Option_ref_slice_i32) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   predicate resolve_elswhere_RangeTo_usize (self: t_RangeTo_usize) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. UInt64.t'int self.end' <= i /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
   
-  let index_mut_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (ix: t_RangeTo_usize)
+  let index_mut_Vec_i32_Global (mode: Mode.t) (self_: MutBorrow.t t_Vec_i32_Global) (ix: t_RangeTo_usize)
     (return (x: MutBorrow.t (Slice64.slice Int32.t))) =
   {[@stop_split] [@expl:index_mut requires] in_bounds_RangeTo_usize ix (view_Vec_i32_Global self_.current)}
     any
@@ -1099,7 +1236,7 @@ module M_test_range_to
   
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
-  let len_i32'0 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32'0 (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (view_Vec_i32_Global self_)}
       (! return {result}) ]
@@ -1114,24 +1251,33 @@ module M_test_range_to
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_i32_Global'1 (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
+  let index_Vec_i32_Global'1 (mode: Mode.t) (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_i32_Global self_)}
     any
     [ return (result: Int32.t) ->
     {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_range_to (return (x: ())) = (! bb0
+  let test_range_to (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = create_arr (fun (_x: t_Vec_i32_Global) -> [ &arr <- _x ] s1)
+      [ s0 = create_arr {mode} (fun (_x: t_Vec_i32_Global) -> [ &arr <- _x ] s1)
       | s1 = [ &_5 <- { end' = (2: UInt64.t) } ] s2
-      | s2 = index_Vec_i32_Global'0 {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
+      | s2 = index_Vec_i32_Global'0 {mode} {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
       | s3 = [ &s <- _3 ] s4
-      | s4 = len_i32 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s4 = len_i32 {mode} {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
       | s5 = [ &_7 <- _8 = (2: UInt64.t) ] s6
       | s6 = any [ br0 -> {_7 = false} (! bb12) | br1 -> {_7} (! bb4) ] ]
     | bb4 = s0
@@ -1152,25 +1298,26 @@ module M_test_range_to
       | s6 = any [ br0 -> {_15 = false} (! bb12) | br1 -> {_15} (! bb8) ] ]
     | bb8 = s0
       [ s0 = [ &_27 <- { end' = (0: UInt64.t) } ] s1
-      | s1 = index_Vec_i32_Global'0 {arr} {_27} (fun (_x: Slice64.slice Int32.t) -> [ &_25 <- _x ] s2)
-      | s2 = len_i32 {_25} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s3)
+      | s1 = index_Vec_i32_Global'0 {mode} {arr} {_27} (fun (_x: Slice64.slice Int32.t) -> [ &_25 <- _x ] s2)
+      | s2 = len_i32 {mode} {_25} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s3)
       | s3 = [ &_22 <- _23 = (0: UInt64.t) ] s4
       | s4 = any [ br0 -> {_22 = false} (! bb16) | br1 -> {_22} (! bb15) ] ]
     | bb15 = s0
-      [ s0 = deref_Vec_i32_Global {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_34 <- _x ] s1)
+      [ s0 = deref_Vec_i32_Global {mode} {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_34 <- _x ] s1)
       | s1 = [ &_36 <- { end' = (6: UInt64.t) } ] s2
-      | s2 = get_i32 {_34} {_36} (fun (_x: t_Option_ref_slice_i32) -> [ &_32 <- _x ] s3)
-      | s3 = is_none_ref_slice_i32 {_32} (fun (_x: bool) -> [ &_30 <- _x ] s4)
+      | s2 = get_i32 {mode} {_34} {_36} (fun (_x: t_Option_ref_slice_i32) -> [ &_32 <- _x ] s3)
+      | s3 = is_none_ref_slice_i32 {mode} {_32} (fun (_x: bool) -> [ &_30 <- _x ] s4)
       | s4 = any [ br0 -> {_30 = false} (! bb21) | br1 -> {_30} (! bb20) ] ]
     | bb20 = s0
       [ s0 = MutBorrow.borrow_mut <t_Vec_i32_Global> {arr}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_40 <- _bor ] [ &arr <- _bor.final ] s1)
       | s1 = [ &_41 <- { end' = (3: UInt64.t) } ] s2
-      | s2 = index_mut_Vec_i32_Global {_40} {_41} (fun (_x: MutBorrow.t (Slice64.slice Int32.t)) -> [ &_39 <- _x ] s3)
+      | s2 = index_mut_Vec_i32_Global {mode} {_40} {_41}
+          (fun (_x: MutBorrow.t (Slice64.slice Int32.t)) -> [ &_39 <- _x ] s3)
       | s3 = MutBorrow.borrow_final <Slice64.slice Int32.t> {_39.current} {MutBorrow.get_id _39}
           (fun (_bor: MutBorrow.t (Slice64.slice Int32.t)) ->
             [ &s'0 <- _bor ] [ &_39 <- { _39 with current = _bor.final } ] s4)
-      | s4 = len_i32 {s'0.current} (fun (_x: UInt64.t) -> [ &_44 <- _x ] s5)
+      | s4 = len_i32 {mode} {s'0.current} (fun (_x: UInt64.t) -> [ &_44 <- _x ] s5)
       | s5 = [ &_43 <- _44 = (3: UInt64.t) ] s6
       | s6 = any [ br0 -> {_43 = false} (! bb25) | br1 -> {_43} (! bb24) ] ]
     | bb24 = s0
@@ -1202,42 +1349,59 @@ module M_test_range_to
       | s20 = [ &_56 <- _57 = (1: Int32.t) ] s21
       | s21 = any [ br0 -> {_56 = false} (! bb30) | br1 -> {_56} (! bb29) ] ]
     | bb29 = s0
-      [ s0 = len_i32'0 {arr} (fun (_x: UInt64.t) -> [ &_65 <- _x ] s1)
+      [ s0 = len_i32'0 {mode} {arr} (fun (_x: UInt64.t) -> [ &_65 <- _x ] s1)
       | s1 = [ &_64 <- _65 = (5: UInt64.t) ] s2
       | s2 = any [ br0 -> {_64 = false} (! bb33) | br1 -> {_64} (! bb32) ] ]
     | bb32 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(0: UInt64.t)} (fun (_x: Int32.t) -> [ &_71 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(0: UInt64.t)} (fun (_x: Int32.t) -> [ &_71 <- _x ] s1)
       | s1 = [ &_69 <- _71 = (-1: Int32.t) ] s2
       | s2 = any [ br0 -> {_69 = false} (! bb36) | br1 -> {_69} (! bb35) ] ]
     | bb35 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(1: UInt64.t)} (fun (_x: Int32.t) -> [ &_77 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(1: UInt64.t)} (fun (_x: Int32.t) -> [ &_77 <- _x ] s1)
       | s1 = [ &_75 <- _77 = (1: Int32.t) ] s2
       | s2 = any [ br0 -> {_75 = false} (! bb39) | br1 -> {_75} (! bb38) ] ]
     | bb38 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(2: UInt64.t)} (fun (_x: Int32.t) -> [ &_83 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(2: UInt64.t)} (fun (_x: Int32.t) -> [ &_83 <- _x ] s1)
       | s1 = [ &_81 <- _83 = (-1: Int32.t) ] s2
       | s2 = any [ br0 -> {_81 = false} (! bb42) | br1 -> {_81} (! bb41) ] ]
     | bb41 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(3: UInt64.t)} (fun (_x: Int32.t) -> [ &_89 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(3: UInt64.t)} (fun (_x: Int32.t) -> [ &_89 <- _x ] s1)
       | s1 = [ &_87 <- _89 = (3: Int32.t) ] s2
       | s2 = any [ br0 -> {_87 = false} (! bb45) | br1 -> {_87} (! bb44) ] ]
     | bb44 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(4: UInt64.t)} (fun (_x: Int32.t) -> [ &_95 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(4: UInt64.t)} (fun (_x: Int32.t) -> [ &_95 <- _x ] s1)
       | s1 = [ &_93 <- _95 = (4: Int32.t) ] s2
       | s2 = any [ br0 -> {_93 = false} (! bb48) | br1 -> {_93} (! bb49) ] ]
     | bb49 = return {_ret}
-    | bb48 = {false} any
-    | bb45 = {false} any
-    | bb42 = {false} any
-    | bb39 = {false} any
-    | bb36 = {false} any
-    | bb33 = {false} any
-    | bb30 = {false} any
+    | bb48 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[4] == 4"} (fun (_x: ()) -> [ &_97 <- _x ] s1) | s1 = {false} any ]
+    | bb45 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[3] == 3"} (fun (_x: ()) -> [ &_91 <- _x ] s1) | s1 = {false} any ]
+    | bb42 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[2] == -1"} (fun (_x: ()) -> [ &_85 <- _x ] s1) | s1 = {false} any ]
+    | bb39 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[1] == 1"} (fun (_x: ()) -> [ &_79 <- _x ] s1) | s1 = {false} any ]
+    | bb36 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[0] == -1"} (fun (_x: ()) -> [ &_73 <- _x ] s1) | s1 = {false} any ]
+    | bb33 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.len() == 5"} (fun (_x: ()) -> [ &_67 <- _x ] s1) | s1 = {false} any ]
+    | bb30 = s0
+      [ s0 = panic {mode} {"assertion failed: s[1] == 1"} (fun (_x: ()) -> [ &_62 <- _x ] s1) | s1 = {false} any ]
     | bb25 = s0
-      [ s0 = -{resolve_refmut_slice_i32 s'0}- s1 | s1 = -{resolve_refmut_slice_i32 _39}- s2 | s2 = {false} any ]
-    | bb21 = {false} any
-    | bb16 = {false} any
-    | bb12 = {false} any ]
+      [ s0 = -{resolve_refmut_slice_i32 s'0}- s1
+      | s1 = -{resolve_refmut_slice_i32 _39}- s2
+      | s2 = panic {mode} {"assertion failed: s.len() == 3"} (fun (_x: ()) -> [ &_46 <- _x ] s3)
+      | s3 = {false} any ]
+    | bb21 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.get(..6).is_none()"} (fun (_x: ()) -> [ &_37 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb16 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[..0].len() == 0"} (fun (_x: ()) -> [ &_28 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb12 = s0
+      [ s0 = panic {mode} {"assertion failed: s.len() == 2 && s[0] == 0 && s[1] == 1"}
+          (fun (_x: ()) -> [ &_20 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & arr: t_Vec_i32_Global = Any.any_l ()
     | & s: Slice64.slice Int32.t = Any.any_l ()
@@ -1255,20 +1419,24 @@ module M_test_range_to
     | & _17: UInt64.t = Any.any_l ()
     | & _18: UInt64.t = Any.any_l ()
     | & _19: bool = Any.any_l ()
+    | & _20: () = Any.any_l ()
     | & _22: bool = Any.any_l ()
     | & _23: UInt64.t = Any.any_l ()
     | & _25: Slice64.slice Int32.t = Any.any_l ()
     | & _27: t_RangeTo_usize = Any.any_l ()
+    | & _28: () = Any.any_l ()
     | & _30: bool = Any.any_l ()
     | & _32: t_Option_ref_slice_i32 = Any.any_l ()
     | & _34: Slice64.slice Int32.t = Any.any_l ()
     | & _36: t_RangeTo_usize = Any.any_l ()
+    | & _37: () = Any.any_l ()
     | & s'0: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & _39: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & _40: MutBorrow.t t_Vec_i32_Global = Any.any_l ()
     | & _41: t_RangeTo_usize = Any.any_l ()
     | & _43: bool = Any.any_l ()
     | & _44: UInt64.t = Any.any_l ()
+    | & _46: () = Any.any_l ()
     | & _47: UInt64.t = Any.any_l ()
     | & _48: Opaque.ptr = Any.any_l ()
     | & _49: UInt64.t = Any.any_l ()
@@ -1283,20 +1451,28 @@ module M_test_range_to
     | & _59: Opaque.ptr = Any.any_l ()
     | & _60: UInt64.t = Any.any_l ()
     | & _61: bool = Any.any_l ()
+    | & _62: () = Any.any_l ()
     | & _64: bool = Any.any_l ()
     | & _65: UInt64.t = Any.any_l ()
+    | & _67: () = Any.any_l ()
     | & _69: bool = Any.any_l ()
     | & _71: Int32.t = Any.any_l ()
+    | & _73: () = Any.any_l ()
     | & _75: bool = Any.any_l ()
     | & _77: Int32.t = Any.any_l ()
+    | & _79: () = Any.any_l ()
     | & _81: bool = Any.any_l ()
     | & _83: Int32.t = Any.any_l ()
+    | & _85: () = Any.any_l ()
     | & _87: bool = Any.any_l ()
     | & _89: Int32.t = Any.any_l ()
+    | & _91: () = Any.any_l ()
     | & _93: bool = Any.any_l ()
-    | & _95: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _95: Int32.t = Any.any_l ()
+    | & _97: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_range_to_inclusive
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.Int32
   use creusot.int.UInt64
@@ -1321,7 +1497,7 @@ module M_test_range_to_inclusive
   
   meta "rewrite_def" function index_Vec_i32_Global
   
-  let create_arr (return (x: t_Vec_i32_Global)) = any
+  let create_arr (mode: Mode.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) ->
     {[@stop_split] [@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
@@ -1338,7 +1514,7 @@ module M_test_range_to_inclusive
   predicate has_value_RangeToInclusive_usize (self: t_RangeToInclusive_usize) (seq: Seq.seq Int32.t) (out: Slice64.slice Int32.t) =
     Seq.([..]) seq 0 (UInt64.t'int self.end' + 1) = Slice64.view out
   
-  let index_Vec_i32_Global'0 (self_: t_Vec_i32_Global) (ix: t_RangeToInclusive_usize)
+  let index_Vec_i32_Global'0 (mode: Mode.t) (self_: t_Vec_i32_Global) (ix: t_RangeToInclusive_usize)
     (return (x: Slice64.slice Int32.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_RangeToInclusive_usize ix (view_Vec_i32_Global self_)}
     any
@@ -1346,19 +1522,20 @@ module M_test_range_to_inclusive
     {[@stop_split] [@expl:index ensures] has_value_RangeToInclusive_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
-  let len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+  let len_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
       = UInt64.t'int result}
       (! return {result}) ]
   
-  let deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
+  let deref_Vec_i32_Global (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
     [ return (result: Slice64.slice Int32.t) -> {[@stop_split] [@expl:deref ensures] Slice64.view result
       = view_Vec_i32_Global self_}
       (! return {result}) ]
   
   type t_Option_ref_slice_i32 = None | Some (Slice64.slice Int32.t)
   
-  let get_i32 (self_: Slice64.slice Int32.t) (ix: t_RangeToInclusive_usize) (return (x: t_Option_ref_slice_i32)) = any
+  let get_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (ix: t_RangeToInclusive_usize)
+    (return (x: t_Option_ref_slice_i32)) = any
     [ return (result: t_Option_ref_slice_i32) ->
     {[@stop_split] [@expl:get_i32 ensures] ([@stop_split] [@expl:get ensures #0] in_bounds_RangeToInclusive_usize ix (Slice64.view self_)
         -> (exists r: Slice64.slice Int32.t. result = Some r
@@ -1367,13 +1544,13 @@ module M_test_range_to_inclusive
       \/ result = None)}
       (! return {result}) ]
   
-  let is_none_ref_slice_i32 (self_: t_Option_ref_slice_i32) (return (x: bool)) = any
+  let is_none_ref_slice_i32 (mode: Mode.t) (self_: t_Option_ref_slice_i32) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
   predicate resolve_elswhere_RangeToInclusive_usize (self: t_RangeToInclusive_usize) (old': Seq.seq Int32.t) (fin: Seq.seq Int32.t) =
     forall i: int. UInt64.t'int self.end' < i /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
   
-  let index_mut_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (ix: t_RangeToInclusive_usize)
+  let index_mut_Vec_i32_Global (mode: Mode.t) (self_: MutBorrow.t t_Vec_i32_Global) (ix: t_RangeToInclusive_usize)
     (return (x: MutBorrow.t (Slice64.slice Int32.t))) =
   {[@stop_split] [@expl:index_mut requires] in_bounds_RangeToInclusive_usize ix (view_Vec_i32_Global self_.current)}
     any
@@ -1389,7 +1566,7 @@ module M_test_range_to_inclusive
   
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
-  let len_i32'0 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32'0 (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (view_Vec_i32_Global self_)}
       (! return {result}) ]
@@ -1404,24 +1581,33 @@ module M_test_range_to_inclusive
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_i32_Global'1 (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
+  let index_Vec_i32_Global'1 (mode: Mode.t) (self_: t_Vec_i32_Global) (ix: UInt64.t) (return (x: Int32.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_i32_Global self_)}
     any
     [ return (result: Int32.t) ->
     {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_i32_Global self_) result}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_range_to_inclusive (return (x: ())) = (! bb0
+  let test_range_to_inclusive (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = create_arr (fun (_x: t_Vec_i32_Global) -> [ &arr <- _x ] s1)
+      [ s0 = create_arr {mode} (fun (_x: t_Vec_i32_Global) -> [ &arr <- _x ] s1)
       | s1 = [ &_5 <- { end' = (1: UInt64.t) } ] s2
-      | s2 = index_Vec_i32_Global'0 {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
+      | s2 = index_Vec_i32_Global'0 {mode} {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
       | s3 = [ &s <- _3 ] s4
-      | s4 = len_i32 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s4 = len_i32 {mode} {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
       | s5 = [ &_7 <- _8 = (2: UInt64.t) ] s6
       | s6 = any [ br0 -> {_7 = false} (! bb12) | br1 -> {_7} (! bb4) ] ]
     | bb4 = s0
@@ -1441,20 +1627,21 @@ module M_test_range_to_inclusive
       | s5 = [ &_15 <- _16 = (1: Int32.t) ] s6
       | s6 = any [ br0 -> {_15 = false} (! bb12) | br1 -> {_15} (! bb8) ] ]
     | bb8 = s0
-      [ s0 = deref_Vec_i32_Global {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_26 <- _x ] s1)
+      [ s0 = deref_Vec_i32_Global {mode} {arr} (fun (_x: Slice64.slice Int32.t) -> [ &_26 <- _x ] s1)
       | s1 = [ &_28 <- { end' = (5: UInt64.t) } ] s2
-      | s2 = get_i32 {_26} {_28} (fun (_x: t_Option_ref_slice_i32) -> [ &_24 <- _x ] s3)
-      | s3 = is_none_ref_slice_i32 {_24} (fun (_x: bool) -> [ &_22 <- _x ] s4)
+      | s2 = get_i32 {mode} {_26} {_28} (fun (_x: t_Option_ref_slice_i32) -> [ &_24 <- _x ] s3)
+      | s3 = is_none_ref_slice_i32 {mode} {_24} (fun (_x: bool) -> [ &_22 <- _x ] s4)
       | s4 = any [ br0 -> {_22 = false} (! bb17) | br1 -> {_22} (! bb16) ] ]
     | bb16 = s0
       [ s0 = MutBorrow.borrow_mut <t_Vec_i32_Global> {arr}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_32 <- _bor ] [ &arr <- _bor.final ] s1)
       | s1 = [ &_33 <- { end' = (2: UInt64.t) } ] s2
-      | s2 = index_mut_Vec_i32_Global {_32} {_33} (fun (_x: MutBorrow.t (Slice64.slice Int32.t)) -> [ &_31 <- _x ] s3)
+      | s2 = index_mut_Vec_i32_Global {mode} {_32} {_33}
+          (fun (_x: MutBorrow.t (Slice64.slice Int32.t)) -> [ &_31 <- _x ] s3)
       | s3 = MutBorrow.borrow_final <Slice64.slice Int32.t> {_31.current} {MutBorrow.get_id _31}
           (fun (_bor: MutBorrow.t (Slice64.slice Int32.t)) ->
             [ &s'0 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s4)
-      | s4 = len_i32 {s'0.current} (fun (_x: UInt64.t) -> [ &_36 <- _x ] s5)
+      | s4 = len_i32 {mode} {s'0.current} (fun (_x: UInt64.t) -> [ &_36 <- _x ] s5)
       | s5 = [ &_35 <- _36 = (3: UInt64.t) ] s6
       | s6 = any [ br0 -> {_35 = false} (! bb21) | br1 -> {_35} (! bb20) ] ]
     | bb20 = s0
@@ -1486,41 +1673,56 @@ module M_test_range_to_inclusive
       | s20 = [ &_48 <- _49 = (1: Int32.t) ] s21
       | s21 = any [ br0 -> {_48 = false} (! bb26) | br1 -> {_48} (! bb25) ] ]
     | bb25 = s0
-      [ s0 = len_i32'0 {arr} (fun (_x: UInt64.t) -> [ &_57 <- _x ] s1)
+      [ s0 = len_i32'0 {mode} {arr} (fun (_x: UInt64.t) -> [ &_57 <- _x ] s1)
       | s1 = [ &_56 <- _57 = (5: UInt64.t) ] s2
       | s2 = any [ br0 -> {_56 = false} (! bb29) | br1 -> {_56} (! bb28) ] ]
     | bb28 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(0: UInt64.t)} (fun (_x: Int32.t) -> [ &_63 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(0: UInt64.t)} (fun (_x: Int32.t) -> [ &_63 <- _x ] s1)
       | s1 = [ &_61 <- _63 = (-1: Int32.t) ] s2
       | s2 = any [ br0 -> {_61 = false} (! bb32) | br1 -> {_61} (! bb31) ] ]
     | bb31 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(1: UInt64.t)} (fun (_x: Int32.t) -> [ &_69 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(1: UInt64.t)} (fun (_x: Int32.t) -> [ &_69 <- _x ] s1)
       | s1 = [ &_67 <- _69 = (1: Int32.t) ] s2
       | s2 = any [ br0 -> {_67 = false} (! bb35) | br1 -> {_67} (! bb34) ] ]
     | bb34 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(2: UInt64.t)} (fun (_x: Int32.t) -> [ &_75 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(2: UInt64.t)} (fun (_x: Int32.t) -> [ &_75 <- _x ] s1)
       | s1 = [ &_73 <- _75 = (-1: Int32.t) ] s2
       | s2 = any [ br0 -> {_73 = false} (! bb38) | br1 -> {_73} (! bb37) ] ]
     | bb37 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(3: UInt64.t)} (fun (_x: Int32.t) -> [ &_81 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(3: UInt64.t)} (fun (_x: Int32.t) -> [ &_81 <- _x ] s1)
       | s1 = [ &_79 <- _81 = (3: Int32.t) ] s2
       | s2 = any [ br0 -> {_79 = false} (! bb41) | br1 -> {_79} (! bb40) ] ]
     | bb40 = s0
-      [ s0 = index_Vec_i32_Global'1 {arr} {(4: UInt64.t)} (fun (_x: Int32.t) -> [ &_87 <- _x ] s1)
+      [ s0 = index_Vec_i32_Global'1 {mode} {arr} {(4: UInt64.t)} (fun (_x: Int32.t) -> [ &_87 <- _x ] s1)
       | s1 = [ &_85 <- _87 = (4: Int32.t) ] s2
       | s2 = any [ br0 -> {_85 = false} (! bb44) | br1 -> {_85} (! bb45) ] ]
     | bb45 = return {_ret}
-    | bb44 = {false} any
-    | bb41 = {false} any
-    | bb38 = {false} any
-    | bb35 = {false} any
-    | bb32 = {false} any
-    | bb29 = {false} any
-    | bb26 = {false} any
+    | bb44 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[4] == 4"} (fun (_x: ()) -> [ &_89 <- _x ] s1) | s1 = {false} any ]
+    | bb41 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[3] == 3"} (fun (_x: ()) -> [ &_83 <- _x ] s1) | s1 = {false} any ]
+    | bb38 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[2] == -1"} (fun (_x: ()) -> [ &_77 <- _x ] s1) | s1 = {false} any ]
+    | bb35 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[1] == 1"} (fun (_x: ()) -> [ &_71 <- _x ] s1) | s1 = {false} any ]
+    | bb32 = s0
+      [ s0 = panic {mode} {"assertion failed: arr[0] == -1"} (fun (_x: ()) -> [ &_65 <- _x ] s1) | s1 = {false} any ]
+    | bb29 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.len() == 5"} (fun (_x: ()) -> [ &_59 <- _x ] s1) | s1 = {false} any ]
+    | bb26 = s0
+      [ s0 = panic {mode} {"assertion failed: s[1] == 1"} (fun (_x: ()) -> [ &_54 <- _x ] s1) | s1 = {false} any ]
     | bb21 = s0
-      [ s0 = -{resolve_refmut_slice_i32 s'0}- s1 | s1 = -{resolve_refmut_slice_i32 _31}- s2 | s2 = {false} any ]
-    | bb17 = {false} any
-    | bb12 = {false} any ]
+      [ s0 = -{resolve_refmut_slice_i32 s'0}- s1
+      | s1 = -{resolve_refmut_slice_i32 _31}- s2
+      | s2 = panic {mode} {"assertion failed: s.len() == 3"} (fun (_x: ()) -> [ &_38 <- _x ] s3)
+      | s3 = {false} any ]
+    | bb17 = s0
+      [ s0 = panic {mode} {"assertion failed: arr.get(..=5).is_none()"} (fun (_x: ()) -> [ &_29 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb12 = s0
+      [ s0 = panic {mode} {"assertion failed: s.len() == 2 && s[0] == 0 && s[1] == 1"}
+          (fun (_x: ()) -> [ &_20 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & arr: t_Vec_i32_Global = Any.any_l ()
     | & s: Slice64.slice Int32.t = Any.any_l ()
@@ -1538,16 +1740,19 @@ module M_test_range_to_inclusive
     | & _17: UInt64.t = Any.any_l ()
     | & _18: UInt64.t = Any.any_l ()
     | & _19: bool = Any.any_l ()
+    | & _20: () = Any.any_l ()
     | & _22: bool = Any.any_l ()
     | & _24: t_Option_ref_slice_i32 = Any.any_l ()
     | & _26: Slice64.slice Int32.t = Any.any_l ()
     | & _28: t_RangeToInclusive_usize = Any.any_l ()
+    | & _29: () = Any.any_l ()
     | & s'0: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & _31: MutBorrow.t (Slice64.slice Int32.t) = Any.any_l ()
     | & _32: MutBorrow.t t_Vec_i32_Global = Any.any_l ()
     | & _33: t_RangeToInclusive_usize = Any.any_l ()
     | & _35: bool = Any.any_l ()
     | & _36: UInt64.t = Any.any_l ()
+    | & _38: () = Any.any_l ()
     | & _39: UInt64.t = Any.any_l ()
     | & _40: Opaque.ptr = Any.any_l ()
     | & _41: UInt64.t = Any.any_l ()
@@ -1562,16 +1767,23 @@ module M_test_range_to_inclusive
     | & _51: Opaque.ptr = Any.any_l ()
     | & _52: UInt64.t = Any.any_l ()
     | & _53: bool = Any.any_l ()
+    | & _54: () = Any.any_l ()
     | & _56: bool = Any.any_l ()
     | & _57: UInt64.t = Any.any_l ()
+    | & _59: () = Any.any_l ()
     | & _61: bool = Any.any_l ()
     | & _63: Int32.t = Any.any_l ()
+    | & _65: () = Any.any_l ()
     | & _67: bool = Any.any_l ()
     | & _69: Int32.t = Any.any_l ()
+    | & _71: () = Any.any_l ()
     | & _73: bool = Any.any_l ()
     | & _75: Int32.t = Any.any_l ()
+    | & _77: () = Any.any_l ()
     | & _79: bool = Any.any_l ()
     | & _81: Int32.t = Any.any_l ()
+    | & _83: () = Any.any_l ()
     | & _85: bool = Any.any_l ()
-    | & _87: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _87: Int32.t = Any.any_l ()
+    | & _89: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

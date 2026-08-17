@@ -1,4 +1,5 @@
 module M_test_filter
+  use creusot.prelude.Mode
   use creusot.slice.Slice64
   use creusot.prelude.Any
   use creusot.prelude.MutBorrow
@@ -12,7 +13,7 @@ module M_test_filter
   
   function view_Iter_bool (self: t_Iter_bool) : Slice64.slice bool
   
-  let iter_bool (self_: Slice64.slice bool) (return (x: t_Iter_bool)) = any
+  let iter_bool (mode: Mode.t) (self_: Slice64.slice bool) (return (x: t_Iter_bool)) = any
     [ return (result: t_Iter_bool) ->
     {[@stop_split] [@expl:iter_bool ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_bool result)
       /\ ([@stop_split] [@expl:iter ensures] view_Iter_bool result = self_)}
@@ -24,7 +25,7 @@ module M_test_filter
   
   predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
   
-  let closure0 (self: MutBorrow.t ()) (b: bool) (return (x: bool)) = (! bb0
+  let closure0 (mode: Mode.t) (self: MutBorrow.t ()) (b: bool) (return (x: bool)) = (! bb0
     [ bb0 = s0
       [ s0 = -{resolve_refmut_closure0 self}- s1
       | s1 = [ &res <- b ] s2
@@ -48,21 +49,22 @@ module M_test_filter
   
   meta "rewrite_def" predicate inv_ref_ref_bool
   
-  predicate precondition_closure0 (self: ()) (args: bool) = let b = args in true
+  predicate precondition_closure0 (self: ()) (mode: Mode.t) (args: bool) = let b = args in true
   
   meta "rewrite_def" predicate precondition_closure0
   
   predicate no_precondition_ref_ref_bool (_1: ()) =
-    forall f: (), i: bool. inv_closure0 f /\ inv_ref_ref_bool i -> precondition_closure0 f i
+    forall mode: Mode.t, f: (), i: bool. not Mode.terminates mode /\ inv_closure0 f /\ inv_ref_ref_bool i
+      -> precondition_closure0 f mode i
   
-  predicate postcondition_mut_closure0 (self: ()) (args: bool) (result_state: ()) (result: bool) =
+  predicate postcondition_mut_closure0 (self: ()) (mode: Mode.t) (args: bool) (result_state: ()) (result: bool) =
     let b = args in result = b /\ hist_inv_closure0 self result_state
   
   meta "rewrite_def" predicate postcondition_mut_closure0
   
   predicate precise_ref_ref_bool (_1: ()) =
-    forall f1: (), f2: (), i: bool. not (postcondition_mut_closure0 f1 i f2 true
-      /\ postcondition_mut_closure0 f1 i f2 false)
+    forall mode: Mode.t, f1: (), f2: (), i: bool. not Mode.terminates mode
+      -> not (postcondition_mut_closure0 f1 mode i f2 true /\ postcondition_mut_closure0 f1 mode i f2 false)
   
   function iter_Filter_Iter_bool_closure0 (self: t_Filter_Iter_bool_closure0) : t_Iter_bool
   
@@ -86,7 +88,7 @@ module M_test_filter
     forall x: t_Filter_Iter_bool_closure0 [inv_Filter_Iter_bool_closure0 x]. inv_Filter_Iter_bool_closure0 x
       -> invariant_Filter_Iter_bool_closure0 x
   
-  let filter_Iter_bool (self_: t_Iter_bool) (f: ()) (return (x: t_Filter_Iter_bool_closure0)) =
+  let filter_Iter_bool (mode: Mode.t) (self_: t_Iter_bool) (f: ()) (return (x: t_Filter_Iter_bool_closure0)) =
   {[@stop_split] [@expl:filter_Iter_bool requires] ([@stop_split] [@expl:filter 'self_' type invariant] inv_Iter_bool self_)
     /\ ([@stop_split] [@expl:filter requires #0] immutable_ref_ref_bool f)
     /\ ([@stop_split] [@expl:filter requires #1] no_precondition_ref_ref_bool f)
@@ -146,8 +148,8 @@ module M_test_filter
       /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> Seq.get visited i = Seq.get s (Map.get f i))
       /\ (forall i: int. 0 <= i /\ i < Seq.length s
-        -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
-        = postcondition_mut_closure0 (func_Filter_Iter_bool_closure0 self) (Seq.get s i) (func_Filter_Iter_bool_closure0 self) true))
+        -> (forall mode: Mode.t. (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
+          = postcondition_mut_closure0 (func_Filter_Iter_bool_closure0 self) mode (Seq.get s i) (func_Filter_Iter_bool_closure0 self) true)))
   
   function produces_trans_Filter_Iter_bool_closure0 (a: t_Filter_Iter_bool_closure0) (ab: Seq.seq bool) (b: t_Filter_Iter_bool_closure0) (bc: Seq.seq bool) (c: t_Filter_Iter_bool_closure0) : ()
   
@@ -171,10 +173,11 @@ module M_test_filter
     (exists s: Seq.seq bool, e: MutBorrow.t t_Iter_bool. produces_Iter_bool (iter_Filter_Iter_bool_closure0 self.current) s e.current
         /\ completed_Iter_bool e
         /\ (forall i: int. 0 <= i /\ i < Seq.length s
-          -> postcondition_mut_closure0 (func_Filter_Iter_bool_closure0 self.current) (Seq.get s i) (func_Filter_Iter_bool_closure0 self.final) false))
+          -> (forall mode: Mode.t. postcondition_mut_closure0 (func_Filter_Iter_bool_closure0 self.current) mode (Seq.get s i) (func_Filter_Iter_bool_closure0 self.final) false)))
     /\ func_Filter_Iter_bool_closure0 self.current = func_Filter_Iter_bool_closure0 self.final
   
-  let next_Filter_Iter_bool_closure0 (self_: MutBorrow.t t_Filter_Iter_bool_closure0) (return (x: t_Option_ref_bool)) =
+  let next_Filter_Iter_bool_closure0 (mode: Mode.t) (self_: MutBorrow.t t_Filter_Iter_bool_closure0)
+    (return (x: t_Option_ref_bool)) =
   {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Filter_Iter_bool_closure0 self_}
     any
     [ return (result: t_Option_ref_bool) -> {[@stop_split] [@expl:next ensures] match result with
@@ -212,7 +215,7 @@ module M_test_filter
   
   meta "rewrite_def" function deep_model_ref_Option_ref_bool
   
-  let eq_Option_ref_bool (self_: t_Option_ref_bool) (rhs: t_Option_ref_bool) (return (x: bool)) = any
+  let eq_Option_ref_bool (mode: Mode.t) (self_: t_Option_ref_bool) (rhs: t_Option_ref_bool) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
       = (deep_model_ref_Option_ref_bool self_ = deep_model_ref_Option_ref_bool rhs)}
       (! return {result}) ]
@@ -221,11 +224,37 @@ module M_test_filter
   
   type t_AssertKind = Eq | Ne | Match
   
+  type t_Arguments
+  
+  type t_Option_Arguments = None'1 | Some'1 t_Arguments
+  
+  predicate inv_Arguments (_1: t_Arguments)
+  
+  predicate inv_Option_Arguments (_1: t_Option_Arguments)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Arguments [inv_Option_Arguments x]. inv_Option_Arguments x
+      = match x with
+        | None'1 -> true
+        | Some'1 f0'0 -> inv_Arguments f0'0
+        end
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let assert_failed_Option_ref_bool (mode: Mode.t) (kind: t_AssertKind) (left: t_Option_ref_bool)
+    (right: t_Option_ref_bool) (args: t_Option_Arguments) (return (x: ())) =
+  {[@stop_split] [@expl:assert_failed_Option_ref_bool requires] ([@stop_split] [@expl:assert_failed 'args' type invariant] inv_Option_Arguments args)
+    /\ ([@stop_split] [@expl:assert_failed requires] not Mode.nopanic mode)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:assert_failed result type invariant] inv_never result}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_filter (return (x: ())) = (! bb0
+  let test_filter (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
@@ -238,9 +267,9 @@ module M_test_filter
           | s2'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: Slice64.array bool = Any.any_l () | & _1: Slice64.array bool = Any.any_l () ]
         [ _const_ret (_const: Slice64.array bool) -> [ &_80 <- _const ] s1 ]
-      | s1 = iter_bool {_80} (fun (_x: t_Iter_bool) -> [ &_2 <- _x ] s2)
+      | s1 = iter_bool {mode} {_80} (fun (_x: t_Iter_bool) -> [ &_2 <- _x ] s2)
       | s2 = [ &_6 <- () ] s3
-      | s3 = filter_Iter_bool {_2} {_6} (fun (_x: t_Filter_Iter_bool_closure0) -> [ &a <- _x ] s4)
+      | s3 = filter_Iter_bool {mode} {_2} {_6} (fun (_x: t_Filter_Iter_bool_closure0) -> [ &a <- _x ] s4)
       | s4 = MutBorrow.borrow_mut <t_Filter_Iter_bool_closure0> {a}
           (fun (_bor: MutBorrow.t t_Filter_Iter_bool_closure0) ->
             [ &_12 <- _bor ] -{inv_Filter_Iter_bool_closure0 _bor.final}-
@@ -250,7 +279,7 @@ module M_test_filter
             [ &_11 <- _bor ] -{inv_Filter_Iter_bool_closure0 _bor.final}-
             [ &_12 <- { _12 with current = _bor.final } ] s6)
         [ _ck -> (! {[@expl:type invariant] inv_Filter_Iter_bool_closure0 _12.current} any) ]
-      | s6 = next_Filter_Iter_bool_closure0 {_11} (fun (_x: t_Option_ref_bool) -> [ &_10 <- _x ] s7)
+      | s6 = next_Filter_Iter_bool_closure0 {mode} {_11} (fun (_x: t_Option_ref_bool) -> [ &_10 <- _x ] s7)
       | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_Filter_Iter_bool_closure0 _12} any) ]
       | s8 = -{resolve_refmut_Filter_Iter_bool_closure0 _12}- s9
       | s9 = bb0'0
@@ -261,7 +290,7 @@ module M_test_filter
       | s10 = [ &_8 <- { f0 = _10; f1 = _79 } ] s11
       | s11 = [ &left_val <- _8.f0 ] s12
       | s12 = [ &right_val <- _8.f1 ] s13
-      | s13 = eq_Option_ref_bool {left_val} {right_val} (fun (_x: bool) -> [ &_19 <- _x ] s14)
+      | s13 = eq_Option_ref_bool {mode} {left_val} {right_val} (fun (_x: bool) -> [ &_19 <- _x ] s14)
       | s14 = any [ br0 -> {_19 = false} (! bb6) | br1 -> {_19} (! bb5) ] ]
     | bb5 = s0
       [ s0 = MutBorrow.borrow_mut <t_Filter_Iter_bool_closure0> {a}
@@ -273,7 +302,7 @@ module M_test_filter
             [ &_35 <- _bor ] -{inv_Filter_Iter_bool_closure0 _bor.final}-
             [ &_36 <- { _36 with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_Filter_Iter_bool_closure0 _36.current} any) ]
-      | s2 = next_Filter_Iter_bool_closure0 {_35} (fun (_x: t_Option_ref_bool) -> [ &_34 <- _x ] s3)
+      | s2 = next_Filter_Iter_bool_closure0 {mode} {_35} (fun (_x: t_Option_ref_bool) -> [ &_34 <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Filter_Iter_bool_closure0 _36} any) ]
       | s4 = -{resolve_refmut_Filter_Iter_bool_closure0 _36}- s5
       | s5 = bb0'0
@@ -284,7 +313,7 @@ module M_test_filter
       | s6 = [ &_32 <- { f0 = _34; f1 = _78 } ] s7
       | s7 = [ &left_val'0 <- _32.f0 ] s8
       | s8 = [ &right_val'0 <- _32.f1 ] s9
-      | s9 = eq_Option_ref_bool {left_val'0} {right_val'0} (fun (_x: bool) -> [ &_43 <- _x ] s10)
+      | s9 = eq_Option_ref_bool {mode} {left_val'0} {right_val'0} (fun (_x: bool) -> [ &_43 <- _x ] s10)
       | s10 = any [ br0 -> {_43 = false} (! bb10) | br1 -> {_43} (! bb9) ] ]
     | bb9 = s0
       [ s0 = MutBorrow.borrow_mut <t_Filter_Iter_bool_closure0> {a}
@@ -296,7 +325,7 @@ module M_test_filter
             [ &_59 <- _bor ] -{inv_Filter_Iter_bool_closure0 _bor.final}-
             [ &_60 <- { _60 with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_Filter_Iter_bool_closure0 _60.current} any) ]
-      | s2 = next_Filter_Iter_bool_closure0 {_59} (fun (_x: t_Option_ref_bool) -> [ &_58 <- _x ] s3)
+      | s2 = next_Filter_Iter_bool_closure0 {mode} {_59} (fun (_x: t_Option_ref_bool) -> [ &_58 <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Filter_Iter_bool_closure0 _60} any) ]
       | s4 = -{resolve_refmut_Filter_Iter_bool_closure0 _60}- s5
       | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_Filter_Iter_bool_closure0 a} any) ]
@@ -308,28 +337,34 @@ module M_test_filter
       | s8 = [ &_56 <- { f0 = _58; f1 = _77 } ] s9
       | s9 = [ &left_val'1 <- _56.f0 ] s10
       | s10 = [ &right_val'1 <- _56.f1 ] s11
-      | s11 = eq_Option_ref_bool {left_val'1} {right_val'1} (fun (_x: bool) -> [ &_65 <- _x ] s12)
+      | s11 = eq_Option_ref_bool {mode} {left_val'1} {right_val'1} (fun (_x: bool) -> [ &_65 <- _x ] s12)
       | s12 = any [ br0 -> {_65 = false} (! bb14) | br1 -> {_65} (! bb13) ] ]
     | bb13 = return {_ret}
     | bb14 = s0
       [ s0 = [ &kind'1 <- Eq ] s1
       | s1 = [ &_73 <- left_val'1 ] s2
       | s2 = [ &_75 <- right_val'1 ] s3
-      | s3 = {false} any ]
+      | s3 = [ &_76 <- None'1 ] s4
+      | s4 = assert_failed_Option_ref_bool {mode} {kind'1} {_73} {_75} {_76} (fun (_x: ()) -> [ &_70 <- _x ] s5)
+      | s5 = {false} any ]
     | bb10 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Filter_Iter_bool_closure0 a} any) ]
       | s1 = -{resolve_Filter_Iter_bool_closure0 a}- s2
       | s2 = [ &kind'0 <- Eq ] s3
       | s3 = [ &_51 <- left_val'0 ] s4
       | s4 = [ &_53 <- right_val'0 ] s5
-      | s5 = {false} any ]
+      | s5 = [ &_54 <- None'1 ] s6
+      | s6 = assert_failed_Option_ref_bool {mode} {kind'0} {_51} {_53} {_54} (fun (_x: ()) -> [ &_48 <- _x ] s7)
+      | s7 = {false} any ]
     | bb6 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Filter_Iter_bool_closure0 a} any) ]
       | s1 = -{resolve_Filter_Iter_bool_closure0 a}- s2
       | s2 = [ &kind <- Eq ] s3
       | s3 = [ &_27 <- left_val ] s4
       | s4 = [ &_29 <- right_val ] s5
-      | s5 = {false} any ] ]
+      | s5 = [ &_30 <- None'1 ] s6
+      | s6 = assert_failed_Option_ref_bool {mode} {kind} {_27} {_29} {_30} (fun (_x: ()) -> [ &_24 <- _x ] s7)
+      | s7 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: t_Filter_Iter_bool_closure0 = Any.any_l ()
     | & _2: t_Iter_bool = Any.any_l ()
@@ -342,8 +377,10 @@ module M_test_filter
     | & right_val: t_Option_ref_bool = Any.any_l ()
     | & _19: bool = Any.any_l ()
     | & kind: t_AssertKind = Any.any_l ()
+    | & _24: () = Any.any_l ()
     | & _27: t_Option_ref_bool = Any.any_l ()
     | & _29: t_Option_ref_bool = Any.any_l ()
+    | & _30: t_Option_Arguments = Any.any_l ()
     | & _32: tup2_ref_Option_ref_bool_ref_Option_ref_bool = Any.any_l ()
     | & _34: t_Option_ref_bool = Any.any_l ()
     | & _35: MutBorrow.t t_Filter_Iter_bool_closure0 = Any.any_l ()
@@ -352,8 +389,10 @@ module M_test_filter
     | & right_val'0: t_Option_ref_bool = Any.any_l ()
     | & _43: bool = Any.any_l ()
     | & kind'0: t_AssertKind = Any.any_l ()
+    | & _48: () = Any.any_l ()
     | & _51: t_Option_ref_bool = Any.any_l ()
     | & _53: t_Option_ref_bool = Any.any_l ()
+    | & _54: t_Option_Arguments = Any.any_l ()
     | & _56: tup2_ref_Option_ref_bool_ref_Option_ref_bool = Any.any_l ()
     | & _58: t_Option_ref_bool = Any.any_l ()
     | & _59: MutBorrow.t t_Filter_Iter_bool_closure0 = Any.any_l ()
@@ -362,14 +401,17 @@ module M_test_filter
     | & right_val'1: t_Option_ref_bool = Any.any_l ()
     | & _65: bool = Any.any_l ()
     | & kind'1: t_AssertKind = Any.any_l ()
+    | & _70: () = Any.any_l ()
     | & _73: t_Option_ref_bool = Any.any_l ()
     | & _75: t_Option_ref_bool = Any.any_l ()
+    | & _76: t_Option_Arguments = Any.any_l ()
     | & _77: t_Option_ref_bool = Any.any_l ()
     | & _78: t_Option_ref_bool = Any.any_l ()
     | & _79: t_Option_ref_bool = Any.any_l ()
     | & _80: Slice64.array bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_filter_map
+  use creusot.prelude.Mode
   use creusot.slice.Slice64
   use creusot.prelude.Any
   use creusot.prelude.MutBorrow
@@ -383,7 +425,7 @@ module M_test_filter_map
   
   function view_Iter_bool (self: t_Iter_bool) : Slice64.slice bool
   
-  let iter_bool (self_: Slice64.slice bool) (return (x: t_Iter_bool)) = any
+  let iter_bool (mode: Mode.t) (self_: Slice64.slice bool) (return (x: t_Iter_bool)) = any
     [ return (result: t_Iter_bool) ->
     {[@stop_split] [@expl:iter_bool ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_bool result)
       /\ ([@stop_split] [@expl:iter ensures] view_Iter_bool result = self_)}
@@ -397,7 +439,7 @@ module M_test_filter_map
   
   predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
   
-  let closure0 (self: MutBorrow.t ()) (b: bool) (return (x: t_Option_bool)) = (! bb0
+  let closure0 (mode: Mode.t) (self: MutBorrow.t ()) (b: bool) (return (x: t_Option_bool)) = (! bb0
     [ bb0 = s0
       [ s0 = -{resolve_refmut_closure0 self}- s1 | s1 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ] ]
     | bb1 = s0 [ s0 = [ &res <- Some false ] s1 | s1 = bb3 ]
@@ -421,20 +463,22 @@ module M_test_filter_map
   
   meta "rewrite_def" predicate inv_ref_bool
   
-  predicate precondition_closure0 (self: ()) (args: bool) = let b = args in true
+  predicate precondition_closure0 (self: ()) (mode: Mode.t) (args: bool) = let b = args in true
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate no_precondition_ref_bool (f: ()) = forall i: bool. inv_ref_bool i -> precondition_closure0 f i
+  predicate no_precondition_ref_bool (f: ()) =
+    forall mode: Mode.t, i: bool. not Mode.terminates mode /\ inv_ref_bool i -> precondition_closure0 f mode i
   
-  predicate postcondition_mut_closure0 (self: ()) (args: bool) (result_state: ()) (result: t_Option_bool) =
+  predicate postcondition_mut_closure0 (self: ()) (mode: Mode.t) (args: bool) (result_state: ()) (result: t_Option_bool) =
     let b = args in result = (if b then Some false else None) /\ hist_inv_closure0 self result_state
   
   meta "rewrite_def" predicate postcondition_mut_closure0
   
   predicate precise_ref_bool (f1: ()) =
-    forall f2: (), i: bool. not ((exists b: bool. postcondition_mut_closure0 f1 i f2 (Some b))
-      /\ postcondition_mut_closure0 f1 i f2 (None))
+    forall mode: Mode.t, f2: (), i: bool. not Mode.terminates mode
+      -> not ((exists b: bool. postcondition_mut_closure0 f1 mode i f2 (Some b))
+      /\ postcondition_mut_closure0 f1 mode i f2 (None))
   
   function iter_FilterMap_Iter_bool_closure0 (self: t_FilterMap_Iter_bool_closure0) : t_Iter_bool
   
@@ -458,7 +502,7 @@ module M_test_filter_map
     forall x: t_FilterMap_Iter_bool_closure0 [inv_FilterMap_Iter_bool_closure0 x]. inv_FilterMap_Iter_bool_closure0 x
       -> invariant_FilterMap_Iter_bool_closure0 x
   
-  let filter_map_Iter_bool (self_: t_Iter_bool) (f: ()) (return (x: t_FilterMap_Iter_bool_closure0)) =
+  let filter_map_Iter_bool (mode: Mode.t) (self_: t_Iter_bool) (f: ()) (return (x: t_FilterMap_Iter_bool_closure0)) =
   {[@stop_split] [@expl:filter_map_Iter_bool requires] ([@stop_split] [@expl:filter_map 'self_' type invariant] inv_Iter_bool self_)
     /\ ([@stop_split] [@expl:filter_map requires #0] immutable_ref_bool f)
     /\ ([@stop_split] [@expl:filter_map requires #1] no_precondition_ref_bool f)
@@ -515,10 +559,10 @@ module M_test_filter_map
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
       /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-          -> postcondition_mut_closure0 (func_FilterMap_Iter_bool_closure0 self) (Seq.get s (Map.get f i)) (func_FilterMap_Iter_bool_closure0 self) (Some (Seq.get visited i)))
+          -> (forall mode: Mode.t. postcondition_mut_closure0 (func_FilterMap_Iter_bool_closure0 self) mode (Seq.get s (Map.get f i)) (func_FilterMap_Iter_bool_closure0 self) (Some (Seq.get visited i))))
       /\ (forall j: int. 0 <= j /\ j < Seq.length s
-        -> (not (exists i: int. 0 <= i /\ i < Seq.length visited /\ Map.get f i = j))
-        = postcondition_mut_closure0 (func_FilterMap_Iter_bool_closure0 self) (Seq.get s j) (func_FilterMap_Iter_bool_closure0 self) (None)))
+        -> (forall mode: Mode.t. (not (exists i: int. 0 <= i /\ i < Seq.length visited /\ Map.get f i = j))
+          = postcondition_mut_closure0 (func_FilterMap_Iter_bool_closure0 self) mode (Seq.get s j) (func_FilterMap_Iter_bool_closure0 self) (None))))
   
   function produces_trans_FilterMap_Iter_bool_closure0 (a: t_FilterMap_Iter_bool_closure0) (ab: Seq.seq bool) (b: t_FilterMap_Iter_bool_closure0) (bc: Seq.seq bool) (c: t_FilterMap_Iter_bool_closure0) : ()
   
@@ -542,10 +586,10 @@ module M_test_filter_map
     (exists s: Seq.seq bool, e: MutBorrow.t t_Iter_bool. produces_Iter_bool (iter_FilterMap_Iter_bool_closure0 self.current) s e.current
         /\ completed_Iter_bool e
         /\ (forall i: int. 0 <= i /\ i < Seq.length s
-          -> postcondition_mut_closure0 (func_FilterMap_Iter_bool_closure0 self.current) (Seq.get s i) (func_FilterMap_Iter_bool_closure0 self.final) (None)))
+          -> (forall mode: Mode.t. postcondition_mut_closure0 (func_FilterMap_Iter_bool_closure0 self.current) mode (Seq.get s i) (func_FilterMap_Iter_bool_closure0 self.final) (None))))
     /\ func_FilterMap_Iter_bool_closure0 self.current = func_FilterMap_Iter_bool_closure0 self.final
   
-  let next_FilterMap_Iter_bool_closure0 (self_: MutBorrow.t t_FilterMap_Iter_bool_closure0)
+  let next_FilterMap_Iter_bool_closure0 (mode: Mode.t) (self_: MutBorrow.t t_FilterMap_Iter_bool_closure0)
     (return (x: t_Option_bool)) =
   {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_FilterMap_Iter_bool_closure0 self_}
     any
@@ -578,7 +622,7 @@ module M_test_filter_map
   
   meta "rewrite_def" function deep_model_ref_Option_bool
   
-  let eq_Option_bool (self_: t_Option_bool) (rhs: t_Option_bool) (return (x: bool)) = any
+  let eq_Option_bool (mode: Mode.t) (self_: t_Option_bool) (rhs: t_Option_bool) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
       = (deep_model_ref_Option_bool self_ = deep_model_ref_Option_bool rhs)}
       (! return {result}) ]
@@ -587,11 +631,37 @@ module M_test_filter_map
   
   type t_AssertKind = Eq | Ne | Match
   
+  type t_Arguments
+  
+  type t_Option_Arguments = None'0 | Some'0 t_Arguments
+  
+  predicate inv_Arguments (_1: t_Arguments)
+  
+  predicate inv_Option_Arguments (_1: t_Option_Arguments)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Arguments [inv_Option_Arguments x]. inv_Option_Arguments x
+      = match x with
+        | None'0 -> true
+        | Some'0 f0'0 -> inv_Arguments f0'0
+        end
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let assert_failed_Option_bool (mode: Mode.t) (kind: t_AssertKind) (left: t_Option_bool) (right: t_Option_bool)
+    (args: t_Option_Arguments) (return (x: ())) =
+  {[@stop_split] [@expl:assert_failed_Option_bool requires] ([@stop_split] [@expl:assert_failed 'args' type invariant] inv_Option_Arguments args)
+    /\ ([@stop_split] [@expl:assert_failed requires] not Mode.nopanic mode)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:assert_failed result type invariant] inv_never result}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_filter_map (return (x: ())) = (! bb0
+  let test_filter_map (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
@@ -604,9 +674,9 @@ module M_test_filter_map
           | s2'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: Slice64.array bool = Any.any_l () | & _1: Slice64.array bool = Any.any_l () ]
         [ _const_ret (_const: Slice64.array bool) -> [ &_76 <- _const ] s1 ]
-      | s1 = iter_bool {_76} (fun (_x: t_Iter_bool) -> [ &_2 <- _x ] s2)
+      | s1 = iter_bool {mode} {_76} (fun (_x: t_Iter_bool) -> [ &_2 <- _x ] s2)
       | s2 = [ &_6 <- () ] s3
-      | s3 = filter_map_Iter_bool {_2} {_6} (fun (_x: t_FilterMap_Iter_bool_closure0) -> [ &a <- _x ] s4)
+      | s3 = filter_map_Iter_bool {mode} {_2} {_6} (fun (_x: t_FilterMap_Iter_bool_closure0) -> [ &a <- _x ] s4)
       | s4 = MutBorrow.borrow_mut <t_FilterMap_Iter_bool_closure0> {a}
           (fun (_bor: MutBorrow.t t_FilterMap_Iter_bool_closure0) ->
             [ &_12 <- _bor ] -{inv_FilterMap_Iter_bool_closure0 _bor.final}-
@@ -616,7 +686,7 @@ module M_test_filter_map
             [ &_11 <- _bor ] -{inv_FilterMap_Iter_bool_closure0 _bor.final}-
             [ &_12 <- { _12 with current = _bor.final } ] s6)
         [ _ck -> (! {[@expl:type invariant] inv_FilterMap_Iter_bool_closure0 _12.current} any) ]
-      | s6 = next_FilterMap_Iter_bool_closure0 {_11} (fun (_x: t_Option_bool) -> [ &_10 <- _x ] s7)
+      | s6 = next_FilterMap_Iter_bool_closure0 {mode} {_11} (fun (_x: t_Option_bool) -> [ &_10 <- _x ] s7)
       | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_FilterMap_Iter_bool_closure0 _12} any) ]
       | s8 = -{resolve_refmut_FilterMap_Iter_bool_closure0 _12}- s9
       | s9 = bb0'0
@@ -627,7 +697,7 @@ module M_test_filter_map
       | s10 = [ &_8 <- { f0 = _10; f1 = _75 } ] s11
       | s11 = [ &left_val <- _8.f0 ] s12
       | s12 = [ &right_val <- _8.f1 ] s13
-      | s13 = eq_Option_bool {left_val} {right_val} (fun (_x: bool) -> [ &_17 <- _x ] s14)
+      | s13 = eq_Option_bool {mode} {left_val} {right_val} (fun (_x: bool) -> [ &_17 <- _x ] s14)
       | s14 = any [ br0 -> {_17 = false} (! bb6) | br1 -> {_17} (! bb5) ] ]
     | bb5 = s0
       [ s0 = MutBorrow.borrow_mut <t_FilterMap_Iter_bool_closure0> {a}
@@ -639,7 +709,7 @@ module M_test_filter_map
             [ &_33 <- _bor ] -{inv_FilterMap_Iter_bool_closure0 _bor.final}-
             [ &_34 <- { _34 with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_FilterMap_Iter_bool_closure0 _34.current} any) ]
-      | s2 = next_FilterMap_Iter_bool_closure0 {_33} (fun (_x: t_Option_bool) -> [ &_32 <- _x ] s3)
+      | s2 = next_FilterMap_Iter_bool_closure0 {mode} {_33} (fun (_x: t_Option_bool) -> [ &_32 <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_FilterMap_Iter_bool_closure0 _34} any) ]
       | s4 = -{resolve_refmut_FilterMap_Iter_bool_closure0 _34}- s5
       | s5 = bb0'0
@@ -650,7 +720,7 @@ module M_test_filter_map
       | s6 = [ &_30 <- { f0 = _32; f1 = _74 } ] s7
       | s7 = [ &left_val'0 <- _30.f0 ] s8
       | s8 = [ &right_val'0 <- _30.f1 ] s9
-      | s9 = eq_Option_bool {left_val'0} {right_val'0} (fun (_x: bool) -> [ &_39 <- _x ] s10)
+      | s9 = eq_Option_bool {mode} {left_val'0} {right_val'0} (fun (_x: bool) -> [ &_39 <- _x ] s10)
       | s10 = any [ br0 -> {_39 = false} (! bb10) | br1 -> {_39} (! bb9) ] ]
     | bb9 = s0
       [ s0 = MutBorrow.borrow_mut <t_FilterMap_Iter_bool_closure0> {a}
@@ -662,7 +732,7 @@ module M_test_filter_map
             [ &_55 <- _bor ] -{inv_FilterMap_Iter_bool_closure0 _bor.final}-
             [ &_56 <- { _56 with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_FilterMap_Iter_bool_closure0 _56.current} any) ]
-      | s2 = next_FilterMap_Iter_bool_closure0 {_55} (fun (_x: t_Option_bool) -> [ &_54 <- _x ] s3)
+      | s2 = next_FilterMap_Iter_bool_closure0 {mode} {_55} (fun (_x: t_Option_bool) -> [ &_54 <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_FilterMap_Iter_bool_closure0 _56} any) ]
       | s4 = -{resolve_refmut_FilterMap_Iter_bool_closure0 _56}- s5
       | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_FilterMap_Iter_bool_closure0 a} any) ]
@@ -674,28 +744,34 @@ module M_test_filter_map
       | s8 = [ &_52 <- { f0 = _54; f1 = _73 } ] s9
       | s9 = [ &left_val'1 <- _52.f0 ] s10
       | s10 = [ &right_val'1 <- _52.f1 ] s11
-      | s11 = eq_Option_bool {left_val'1} {right_val'1} (fun (_x: bool) -> [ &_61 <- _x ] s12)
+      | s11 = eq_Option_bool {mode} {left_val'1} {right_val'1} (fun (_x: bool) -> [ &_61 <- _x ] s12)
       | s12 = any [ br0 -> {_61 = false} (! bb14) | br1 -> {_61} (! bb13) ] ]
     | bb13 = return {_ret}
     | bb14 = s0
       [ s0 = [ &kind'1 <- Eq ] s1
       | s1 = [ &_69 <- left_val'1 ] s2
       | s2 = [ &_71 <- right_val'1 ] s3
-      | s3 = {false} any ]
+      | s3 = [ &_72 <- None'0 ] s4
+      | s4 = assert_failed_Option_bool {mode} {kind'1} {_69} {_71} {_72} (fun (_x: ()) -> [ &_66 <- _x ] s5)
+      | s5 = {false} any ]
     | bb10 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_FilterMap_Iter_bool_closure0 a} any) ]
       | s1 = -{resolve_FilterMap_Iter_bool_closure0 a}- s2
       | s2 = [ &kind'0 <- Eq ] s3
       | s3 = [ &_47 <- left_val'0 ] s4
       | s4 = [ &_49 <- right_val'0 ] s5
-      | s5 = {false} any ]
+      | s5 = [ &_50 <- None'0 ] s6
+      | s6 = assert_failed_Option_bool {mode} {kind'0} {_47} {_49} {_50} (fun (_x: ()) -> [ &_44 <- _x ] s7)
+      | s7 = {false} any ]
     | bb6 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_FilterMap_Iter_bool_closure0 a} any) ]
       | s1 = -{resolve_FilterMap_Iter_bool_closure0 a}- s2
       | s2 = [ &kind <- Eq ] s3
       | s3 = [ &_25 <- left_val ] s4
       | s4 = [ &_27 <- right_val ] s5
-      | s5 = {false} any ] ]
+      | s5 = [ &_28 <- None'0 ] s6
+      | s6 = assert_failed_Option_bool {mode} {kind} {_25} {_27} {_28} (fun (_x: ()) -> [ &_22 <- _x ] s7)
+      | s7 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: t_FilterMap_Iter_bool_closure0 = Any.any_l ()
     | & _2: t_Iter_bool = Any.any_l ()
@@ -708,8 +784,10 @@ module M_test_filter_map
     | & right_val: t_Option_bool = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & kind: t_AssertKind = Any.any_l ()
+    | & _22: () = Any.any_l ()
     | & _25: t_Option_bool = Any.any_l ()
     | & _27: t_Option_bool = Any.any_l ()
+    | & _28: t_Option_Arguments = Any.any_l ()
     | & _30: tup2_ref_Option_bool_ref_Option_bool = Any.any_l ()
     | & _32: t_Option_bool = Any.any_l ()
     | & _33: MutBorrow.t t_FilterMap_Iter_bool_closure0 = Any.any_l ()
@@ -718,8 +796,10 @@ module M_test_filter_map
     | & right_val'0: t_Option_bool = Any.any_l ()
     | & _39: bool = Any.any_l ()
     | & kind'0: t_AssertKind = Any.any_l ()
+    | & _44: () = Any.any_l ()
     | & _47: t_Option_bool = Any.any_l ()
     | & _49: t_Option_bool = Any.any_l ()
+    | & _50: t_Option_Arguments = Any.any_l ()
     | & _52: tup2_ref_Option_bool_ref_Option_bool = Any.any_l ()
     | & _54: t_Option_bool = Any.any_l ()
     | & _55: MutBorrow.t t_FilterMap_Iter_bool_closure0 = Any.any_l ()
@@ -728,14 +808,17 @@ module M_test_filter_map
     | & right_val'1: t_Option_bool = Any.any_l ()
     | & _61: bool = Any.any_l ()
     | & kind'1: t_AssertKind = Any.any_l ()
+    | & _66: () = Any.any_l ()
     | & _69: t_Option_bool = Any.any_l ()
     | & _71: t_Option_bool = Any.any_l ()
+    | & _72: t_Option_Arguments = Any.any_l ()
     | & _73: t_Option_bool = Any.any_l ()
     | & _74: t_Option_bool = Any.any_l ()
     | & _75: t_Option_bool = Any.any_l ()
     | & _76: Slice64.array bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_mut_ref
+  use creusot.prelude.Mode
   use creusot.slice.Slice64
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -749,7 +832,7 @@ module M_test_mut_ref
   
   function view_Iter_i32 (self: t_Iter_i32) : Slice64.slice Int32.t
   
-  let iter_i32 (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
+  let iter_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
     [ return (result: t_Iter_i32) ->
     {[@stop_split] [@expl:iter_i32 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_i32 result)
       /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self_)}
@@ -802,7 +885,7 @@ module M_test_mut_ref
   predicate completed_Iter_i32 (self: MutBorrow.t t_Iter_i32) =
     resolve_refmut_Iter_i32 self /\ Slice64.view (view_Iter_i32 self.current) = (Seq.empty: Seq.seq Int32.t)
   
-  let next_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
+  let next_Iter_i32 (mode: Mode.t) (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
   {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_i32 self_}
     any
     [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:next ensures] match result with
@@ -835,7 +918,7 @@ module M_test_mut_ref
   
   meta "rewrite_def" function deep_model_ref_Option_ref_i32
   
-  let eq_Option_ref_i32 (self_: t_Option_ref_i32) (rhs: t_Option_ref_i32) (return (x: bool)) = any
+  let eq_Option_ref_i32 (mode: Mode.t) (self_: t_Option_ref_i32) (rhs: t_Option_ref_i32) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
       = (deep_model_ref_Option_ref_i32 self_ = deep_model_ref_Option_ref_i32 rhs)}
       (! return {result}) ]
@@ -844,11 +927,37 @@ module M_test_mut_ref
   
   type t_AssertKind = Eq | Ne | Match
   
+  type t_Arguments
+  
+  type t_Option_Arguments = None'1 | Some'1 t_Arguments
+  
+  predicate inv_Arguments (_1: t_Arguments)
+  
+  predicate inv_Option_Arguments (_1: t_Option_Arguments)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_Arguments [inv_Option_Arguments x]. inv_Option_Arguments x
+      = match x with
+        | None'1 -> true
+        | Some'1 f0'0 -> inv_Arguments f0'0
+        end
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let assert_failed_Option_ref_i32 (mode: Mode.t) (kind: t_AssertKind) (left: t_Option_ref_i32)
+    (right: t_Option_ref_i32) (args: t_Option_Arguments) (return (x: ())) =
+  {[@stop_split] [@expl:assert_failed_Option_ref_i32 requires] ([@stop_split] [@expl:assert_failed 'args' type invariant] inv_Option_Arguments args)
+    /\ ([@stop_split] [@expl:assert_failed requires] not Mode.nopanic mode)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:assert_failed result type invariant] inv_never result}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_mut_ref (return (x: ())) = (! bb0
+  let test_mut_ref (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
@@ -860,7 +969,7 @@ module M_test_mut_ref
           | s2'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: Slice64.array Int32.t = Any.any_l () | & _1: Slice64.array Int32.t = Any.any_l () ]
         [ _const_ret (_const: Slice64.array Int32.t) -> [ &_78 <- _const ] s1 ]
-      | s1 = iter_i32 {_78} (fun (_x: t_Iter_i32) -> [ &a <- _x ] s2)
+      | s1 = iter_i32 {mode} {_78} (fun (_x: t_Iter_i32) -> [ &a <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_Iter_i32> {a}
           (fun (_bor: MutBorrow.t t_Iter_i32) -> [ &_10 <- _bor ] -{inv_Iter_i32 _bor.final}- [ &a <- _bor.final ] s3)
         [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
@@ -869,7 +978,7 @@ module M_test_mut_ref
             [ &_9 <- _bor ] -{inv_Iter_i32 _bor.final}-
             [ &_10 <- { _10 with current = _bor.final } ] s4)
         [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 _10.current} any) ]
-      | s4 = next_Iter_i32 {_9} (fun (_x: t_Option_ref_i32) -> [ &_8 <- _x ] s5)
+      | s4 = next_Iter_i32 {mode} {_9} (fun (_x: t_Option_ref_i32) -> [ &_8 <- _x ] s5)
       | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_i32 _10} any) ]
       | s6 = -{resolve_refmut_Iter_i32 _10}- s7
       | s7 = bb0'0
@@ -880,7 +989,7 @@ module M_test_mut_ref
       | s8 = [ &_6 <- { f0 = _8; f1 = _77 } ] s9
       | s9 = [ &left_val <- _6.f0 ] s10
       | s10 = [ &right_val <- _6.f1 ] s11
-      | s11 = eq_Option_ref_i32 {left_val} {right_val} (fun (_x: bool) -> [ &_17 <- _x ] s12)
+      | s11 = eq_Option_ref_i32 {mode} {left_val} {right_val} (fun (_x: bool) -> [ &_17 <- _x ] s12)
       | s12 = any [ br0 -> {_17 = false} (! bb5) | br1 -> {_17} (! bb4) ] ]
     | bb4 = s0
       [ s0 = MutBorrow.borrow_mut <t_Iter_i32> {a}
@@ -891,7 +1000,7 @@ module M_test_mut_ref
             [ &_33 <- _bor ] -{inv_Iter_i32 _bor.final}-
             [ &_34 <- { _34 with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 _34.current} any) ]
-      | s2 = next_Iter_i32 {_33} (fun (_x: t_Option_ref_i32) -> [ &_32 <- _x ] s3)
+      | s2 = next_Iter_i32 {mode} {_33} (fun (_x: t_Option_ref_i32) -> [ &_32 <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_i32 _34} any) ]
       | s4 = -{resolve_refmut_Iter_i32 _34}- s5
       | s5 = bb0'0
@@ -902,7 +1011,7 @@ module M_test_mut_ref
       | s6 = [ &_30 <- { f0 = _32; f1 = _76 } ] s7
       | s7 = [ &left_val'0 <- _30.f0 ] s8
       | s8 = [ &right_val'0 <- _30.f1 ] s9
-      | s9 = eq_Option_ref_i32 {left_val'0} {right_val'0} (fun (_x: bool) -> [ &_41 <- _x ] s10)
+      | s9 = eq_Option_ref_i32 {mode} {left_val'0} {right_val'0} (fun (_x: bool) -> [ &_41 <- _x ] s10)
       | s10 = any [ br0 -> {_41 = false} (! bb9) | br1 -> {_41} (! bb8) ] ]
     | bb8 = s0
       [ s0 = MutBorrow.borrow_mut <t_Iter_i32> {a}
@@ -913,7 +1022,7 @@ module M_test_mut_ref
             [ &_57 <- _bor ] -{inv_Iter_i32 _bor.final}-
             [ &_58 <- { _58 with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 _58.current} any) ]
-      | s2 = next_Iter_i32 {_57} (fun (_x: t_Option_ref_i32) -> [ &_56 <- _x ] s3)
+      | s2 = next_Iter_i32 {mode} {_57} (fun (_x: t_Option_ref_i32) -> [ &_56 <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_i32 _58} any) ]
       | s4 = -{resolve_refmut_Iter_i32 _58}- s5
       | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
@@ -925,28 +1034,34 @@ module M_test_mut_ref
       | s8 = [ &_54 <- { f0 = _56; f1 = _75 } ] s9
       | s9 = [ &left_val'1 <- _54.f0 ] s10
       | s10 = [ &right_val'1 <- _54.f1 ] s11
-      | s11 = eq_Option_ref_i32 {left_val'1} {right_val'1} (fun (_x: bool) -> [ &_63 <- _x ] s12)
+      | s11 = eq_Option_ref_i32 {mode} {left_val'1} {right_val'1} (fun (_x: bool) -> [ &_63 <- _x ] s12)
       | s12 = any [ br0 -> {_63 = false} (! bb13) | br1 -> {_63} (! bb12) ] ]
     | bb12 = return {_ret}
     | bb13 = s0
       [ s0 = [ &kind'1 <- Eq ] s1
       | s1 = [ &_71 <- left_val'1 ] s2
       | s2 = [ &_73 <- right_val'1 ] s3
-      | s3 = {false} any ]
+      | s3 = [ &_74 <- None'1 ] s4
+      | s4 = assert_failed_Option_ref_i32 {mode} {kind'1} {_71} {_73} {_74} (fun (_x: ()) -> [ &_68 <- _x ] s5)
+      | s5 = {false} any ]
     | bb9 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
       | s1 = -{resolve_Iter_i32 a}- s2
       | s2 = [ &kind'0 <- Eq ] s3
       | s3 = [ &_49 <- left_val'0 ] s4
       | s4 = [ &_51 <- right_val'0 ] s5
-      | s5 = {false} any ]
+      | s5 = [ &_52 <- None'1 ] s6
+      | s6 = assert_failed_Option_ref_i32 {mode} {kind'0} {_49} {_51} {_52} (fun (_x: ()) -> [ &_46 <- _x ] s7)
+      | s7 = {false} any ]
     | bb5 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 a} any) ]
       | s1 = -{resolve_Iter_i32 a}- s2
       | s2 = [ &kind <- Eq ] s3
       | s3 = [ &_25 <- left_val ] s4
       | s4 = [ &_27 <- right_val ] s5
-      | s5 = {false} any ] ]
+      | s5 = [ &_28 <- None'1 ] s6
+      | s6 = assert_failed_Option_ref_i32 {mode} {kind} {_25} {_27} {_28} (fun (_x: ()) -> [ &_22 <- _x ] s7)
+      | s7 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: t_Iter_i32 = Any.any_l ()
     | & _6: tup2_ref_Option_ref_i32_ref_Option_ref_i32 = Any.any_l ()
@@ -957,8 +1072,10 @@ module M_test_mut_ref
     | & right_val: t_Option_ref_i32 = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & kind: t_AssertKind = Any.any_l ()
+    | & _22: () = Any.any_l ()
     | & _25: t_Option_ref_i32 = Any.any_l ()
     | & _27: t_Option_ref_i32 = Any.any_l ()
+    | & _28: t_Option_Arguments = Any.any_l ()
     | & _30: tup2_ref_Option_ref_i32_ref_Option_ref_i32 = Any.any_l ()
     | & _32: t_Option_ref_i32 = Any.any_l ()
     | & _33: MutBorrow.t t_Iter_i32 = Any.any_l ()
@@ -967,8 +1084,10 @@ module M_test_mut_ref
     | & right_val'0: t_Option_ref_i32 = Any.any_l ()
     | & _41: bool = Any.any_l ()
     | & kind'0: t_AssertKind = Any.any_l ()
+    | & _46: () = Any.any_l ()
     | & _49: t_Option_ref_i32 = Any.any_l ()
     | & _51: t_Option_ref_i32 = Any.any_l ()
+    | & _52: t_Option_Arguments = Any.any_l ()
     | & _54: tup2_ref_Option_ref_i32_ref_Option_ref_i32 = Any.any_l ()
     | & _56: t_Option_ref_i32 = Any.any_l ()
     | & _57: MutBorrow.t t_Iter_i32 = Any.any_l ()
@@ -977,8 +1096,10 @@ module M_test_mut_ref
     | & right_val'1: t_Option_ref_i32 = Any.any_l ()
     | & _63: bool = Any.any_l ()
     | & kind'1: t_AssertKind = Any.any_l ()
+    | & _68: () = Any.any_l ()
     | & _71: t_Option_ref_i32 = Any.any_l ()
     | & _73: t_Option_ref_i32 = Any.any_l ()
+    | & _74: t_Option_Arguments = Any.any_l ()
     | & _75: t_Option_ref_i32 = Any.any_l ()
     | & _76: t_Option_ref_i32 = Any.any_l ()
     | & _77: t_Option_ref_i32 = Any.any_l ()

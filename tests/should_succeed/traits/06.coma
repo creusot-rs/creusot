@@ -1,5 +1,6 @@
 module M_test
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -18,39 +19,39 @@ module M_test
   
   meta "rewrite_def" predicate inv_ref_T
   
-  predicate precondition_ix (self: ()) (args: tup2_ref_T_usize)
+  predicate precondition_ix (self: ()) (mode: Mode.t) (args: tup2_ref_T_usize)
   
   axiom precondition_fndef:
-    forall args: tup2_ref_T_usize [precondition_ix () args]. (let {f0 = self; f1 = ix} = args in inv_ref_T self)
-      -> precondition_ix () args
+    forall mode: Mode.t. forall args: tup2_ref_T_usize [precondition_ix () mode args]. (let {f0 = self; f1 = ix} = args in inv_ref_T self)
+        -> precondition_ix () mode args
   
   predicate inv_Tgt (_1: t_Tgt)
   
-  predicate postcondition_ix (self: ()) (args: tup2_ref_T_usize) (result: t_Tgt)
+  predicate postcondition_ix (self: ()) (mode: Mode.t) (args: tup2_ref_T_usize) (result: t_Tgt)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_T_usize, res: t_Tgt [postcondition_ix () args res]. postcondition_ix () args res
+    forall mode: Mode.t, args: tup2_ref_T_usize, res: t_Tgt [postcondition_ix () mode args res]. postcondition_ix () mode args res
       -> (let {f0 = self; f1 = ix} = args in inv_Tgt res)
   
-  predicate postcondition_once_ix (self: ()) (args: tup2_ref_T_usize) (result: t_Tgt) =
-    postcondition_ix self args result
+  predicate postcondition_once_ix (self: ()) (mode: Mode.t) (args: tup2_ref_T_usize) (result: t_Tgt) =
+    postcondition_ix self mode args result
   
   meta "rewrite_def" predicate postcondition_once_ix
   
-  let ix_T (self: t_T) (ix: UInt64.t) (return (x: t_Tgt)) =
-  {[@stop_split] [@expl:ix requires] precondition_ix () { f0 = self; f1 = ix }}
+  let ix_T (mode: Mode.t) (self: t_T) (ix: UInt64.t) (return (x: t_Tgt)) =
+  {[@stop_split] [@expl:ix requires] precondition_ix () mode { f0 = self; f1 = ix }}
     any
-    [ return (result: t_Tgt) -> {[@stop_split] [@expl:ix ensures] postcondition_once_ix () { f0 = self;
-                                                                                             f1 = ix } result}
+    [ return (result: t_Tgt) -> {[@stop_split] [@expl:ix ensures] postcondition_once_ix () mode { f0 = self;
+                                                                                                  f1 = ix } result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_T (a: t_T) (return (x: t_Tgt)) = {[@stop_split] [@expl:test 'a' type invariant] inv_ref_T a}
+  let test_T (mode: Mode.t) (a: t_T) (return (x: t_Tgt)) = {[@stop_split] [@expl:test 'a' type invariant] inv_ref_T a}
     (! bb0
-    [ bb0 = s0 [ s0 = ix_T {a} {(0: UInt64.t)} (fun (_x: t_Tgt) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = ix_T {mode} {a} {(0: UInt64.t)} (fun (_x: t_Tgt) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_Tgt = Any.any_l () | & a: t_T = a ])
     [ return (result: t_Tgt) -> {[@stop_split] [@expl:test result type invariant] inv_Tgt result} (! return {result}) ]
 end
