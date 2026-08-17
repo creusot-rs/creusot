@@ -114,6 +114,7 @@ impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, '_, 'tcx> {
 fn builtin_clone_posts<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
+    mode: &Term<'tcx>,
     self_val: Term<'tcx>,
     result_val: Term<'tcx>,
 ) -> Vec<Term<'tcx>> {
@@ -136,7 +137,7 @@ fn builtin_clone_posts<'tcx>(
             );
             let args = Term::tuple(ctx.tcx, [self_i.shr_ref(ctx.tcx)]);
             let subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
-            let post_args = [Term::unit(ctx.tcx).coerce(fndef_ty), args, result_i];
+            let post_args = [Term::unit(ctx.tcx).coerce(fndef_ty), mode.clone(), args, result_i];
             Term::call(ctx.tcx, typing_env, Intrinsic::PostconditionOnce.get(ctx), subst, post_args)
         })
         .collect()
@@ -198,11 +199,12 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                     vec![(Box::new([]), Condition { term: post, expl: expl_post })]
             }
             TraitResolved::BuiltinClone => {
+                let mode = Term::var(name::mode(), mode_ty(&ctx.ctx, &names));
                 let (self_nm, _, self_ty) = pre_sig.inputs[0];
                 let self_val = Term::var(self_nm, self_ty).deref();
                 let result = Term::var(name::result(), pre_sig.output);
                 assert!(pre_sig.contract.ensures.is_empty());
-                pre_sig.contract.ensures = builtin_clone_posts(ctx, typing_env, self_val, result)
+                pre_sig.contract.ensures = builtin_clone_posts(ctx, typing_env, &mode, self_val, result)
                     .into_iter()
                     .enumerate()
                     .map(|(i, term)| {
@@ -1101,7 +1103,7 @@ fn post_fndef<'tcx>(
             let TyKind::Tuple(argsty) = args.ty.kind() else { unreachable!() };
             assert_eq!((did, argsty.len()), (ctx.lang_items().clone_fn().unwrap(), 1));
             let arg = args.proj(0usize.into(), argsty[0]);
-            let posts = builtin_clone_posts(ctx, names.typing_env(), arg.deref(), res);
+            let posts = builtin_clone_posts(ctx, names.typing_env(), &mode, arg.deref(), res);
             return Some(posts.into_iter().fold(Term::true_(ctx.tcx), Term::conj));
         }
         TraitResolved::UnknownFound if exact => return None,
