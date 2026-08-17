@@ -1555,7 +1555,8 @@ fn has_unsafe_block(tcx: TyCtxt, def_id: DefId) -> bool {
         }
 
         fn visit_block(&mut self, b: &'tcx hir::Block<'tcx>) -> Self::Result {
-            if let hir::BlockCheckMode::UnsafeBlock(_) = b.rules {
+            use rustc_hir::UnsafeSource::UserProvided;
+            if let hir::BlockCheckMode::UnsafeBlock(UserProvided) = b.rules {
                 return ControlFlow::Break(());
             }
             walk_block(self, b)
