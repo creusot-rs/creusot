@@ -1512,13 +1512,16 @@ fn safety_check(ctx: &TranslationCtx, def_id: DefId) {
             Intrinsic::ModeGhost.get(ctx),
         ];
         for pre in &sig.contract.requires {
-            use crate::translation::pearlite::TermKind::*;
+            use crate::translation::pearlite::{Literal::Bool, TermKind::*};
             if let Impl { lhs: ref arg, .. } = pre.term.kind
                 && let Call { id, ref args, .. } = arg.kind
                 && modes.contains(&id)
                 && let Var(v) = args[0].kind
                 && v.0 == name::mode()
             {
+                continue;
+            }
+            if let Lit(Bool(true)) = pre.term.kind {
                 continue;
             }
             // Warn for now
