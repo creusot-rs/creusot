@@ -1,22 +1,24 @@
 module M_impl_MyTrait_for_unit__a (* <() as MyTrait> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let a_unit (self: ()) (return (x: bool)) = (! bb0
+  let a_unit (mode: Mode.t) (self: ()) (return (x: bool)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])
     [ return (result: bool) -> {[@stop_split] [@expl:a ensures] result} (! return {result}) ]
 end
 module M_main
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type opaque
   
   predicate inv_opaque (_1: opaque)
   
-  let returns_iterator (return (x: opaque)) = any
+  let returns_iterator (mode: Mode.t) (return (x: opaque)) = any
     [ return (result: opaque) -> {[@stop_split] [@expl:returns_iterator result type invariant] inv_opaque result}
       (! return {result}) ]
   
@@ -30,46 +32,51 @@ module M_main
   
   meta "rewrite_def" predicate inv_ref_opaque
   
-  predicate precondition_a (self: ()) (args: opaque)
+  predicate precondition_a (self: ()) (mode: Mode.t) (args: opaque)
   
-  axiom precondition_fndef: forall args: opaque [precondition_a () args]. (let self = args in inv_ref_opaque self)
-      -> precondition_a () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: opaque [precondition_a () mode args]. (let self = args in inv_ref_opaque self)
+        -> precondition_a () mode args
   
-  predicate postcondition_a (self: ()) (args: opaque) (result: bool)
+  predicate postcondition_a (self: ()) (mode: Mode.t) (args: opaque) (result: bool)
   
-  axiom postcondition_fndef: forall args: opaque, res: bool [postcondition_a () args res]. postcondition_a () args res
+  axiom postcondition_fndef:
+    forall mode: Mode.t, args: opaque, res: bool [postcondition_a () mode args res]. postcondition_a () mode args res
       -> (let self = args in true)
   
-  predicate postcondition_once_a (self: ()) (args: opaque) (result: bool) = postcondition_a self args result
+  predicate postcondition_once_a (self: ()) (mode: Mode.t) (args: opaque) (result: bool) =
+    postcondition_a self mode args result
   
   meta "rewrite_def" predicate postcondition_once_a
   
-  let a_opaque (self: opaque) (return (x: bool)) = {[@stop_split] [@expl:a requires] precondition_a () self}
+  let a_opaque (mode: Mode.t) (self: opaque) (return (x: bool)) =
+  {[@stop_split] [@expl:a requires] precondition_a () mode self}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:a ensures] postcondition_once_a () self result}
+    [ return (result: bool) -> {[@stop_split] [@expl:a ensures] postcondition_once_a () mode self result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let main (return (x: ())) = (! bb0
+  let main (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = returns_iterator (fun (_x: opaque) -> [ &_4 <- _x ] s1)
+      [ s0 = returns_iterator {mode} (fun (_x: opaque) -> [ &_4 <- _x ] s1)
       | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_opaque _4} any) ]
       | s2 = -{resolve_opaque _4}- s3
-      | s3 = a_opaque {_4} (fun (_x: bool) -> [ &x <- _x ] s4)
+      | s3 = a_opaque {mode} {_4} (fun (_x: bool) -> [ &x <- _x ] s4)
       | s4 = {[@expl:assertion] x} s5
       | s5 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: bool = Any.any_l () | & _4: opaque = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_returns_iterator
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let returns_iterator (return (x: ())) = (! bb0
+  let returns_iterator (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

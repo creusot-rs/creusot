@@ -13,6 +13,7 @@ module M_trait_A__is_true
 end
 module M_uses_invariant
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -40,7 +41,7 @@ module M_uses_invariant
   
   meta "rewrite_def" predicate inv_refmut_Option_T
   
-  let take_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
+  let take_T (mode: Mode.t) (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
   {[@stop_split] [@expl:take 'self_' type invariant] inv_refmut_Option_T self_}
     any
     [ return (result: t_Option_T) ->
@@ -81,7 +82,7 @@ module M_uses_invariant
   
   meta "select_lsinst" "all"
   
-  let uses_invariant_T (x: MutBorrow.t t_Once_T) (return (x'0: ())) =
+  let uses_invariant_T (mode: Mode.t) (x: MutBorrow.t t_Once_T) (return (x'0: ())) =
   {[@stop_split] [@expl:uses_invariant_T requires] ([@stop_split] [@expl:uses_invariant 'x' type invariant] inv_refmut_Once_T x)
     /\ ([@stop_split] [@expl:uses_invariant requires] invariant_Once_T x.current)}
     (! bb0
@@ -91,7 +92,7 @@ module M_uses_invariant
             [ &_7 <- _bor ] -{inv_Option_T _bor.final}-
             [ &x <- { x with current = { f0 = _bor.final } } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Option_T x.current.f0} any) ]
-      | s1 = take_T {_7} (fun (_x: t_Option_T) -> [ &_6 <- _x ] s2)
+      | s1 = take_T {mode} {_7} (fun (_x: t_Option_T) -> [ &_6 <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Option_T _6} any) ]
       | s3 = -{resolve_Option_T _6}- s4
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Once_T x} any) ]

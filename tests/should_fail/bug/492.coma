@@ -2,6 +2,7 @@ module M_reborrow_tuple
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -29,7 +30,7 @@ module M_reborrow_tuple
   
   meta "select_lsinst" "all"
   
-  let reborrow_tuple_T (x: MutBorrow.t t_T) (return (x'0: tup2_refmut_T_u32)) =
+  let reborrow_tuple_T (mode: Mode.t) (x: MutBorrow.t t_T) (return (x'0: tup2_refmut_T_u32)) =
   {[@stop_split] [@expl:reborrow_tuple 'x' type invariant] inv_refmut_T x}
     (! bb0
     [ bb0 = s0
@@ -51,11 +52,12 @@ module M_test
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type tup2_refmut_i32_u32 = { f0: MutBorrow.t Int32.t; f1: UInt32.t }
   
-  let reborrow_tuple_i32 (x: MutBorrow.t Int32.t) (return (x'0: tup2_refmut_i32_u32)) = any
+  let reborrow_tuple_i32 (mode: Mode.t) (x: MutBorrow.t Int32.t) (return (x'0: tup2_refmut_i32_u32)) = any
     [ return (result: tup2_refmut_i32_u32) -> {[@stop_split] [@expl:reborrow_tuple ensures] result.f0.current
       = x.current}
       (! return {result}) ]
@@ -68,14 +70,14 @@ module M_test
   
   meta "select_lsinst" "all"
   
-  let test (return (x: ())) = (! bb0
+  let test (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (5: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_6 <- _bor ] [ &x <- _bor.final ] s2)
       | s2 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_5 <- _bor ] [ &_6 <- { _6 with current = _bor.final } ] s3)
-      | s3 = reborrow_tuple_i32 {_5} (fun (_x: tup2_refmut_i32_u32) -> [ &_4 <- _x ] s4)
+      | s3 = reborrow_tuple_i32 {mode} {_5} (fun (_x: tup2_refmut_i32_u32) -> [ &_4 <- _x ] s4)
       | s4 = [ &res <- _4.f0 ] s5
       | s5 = -{resolve_refmut_i32 _6}- s6
       | s6 = {[@expl:assertion] res.final = (5: Int32.t)} s7

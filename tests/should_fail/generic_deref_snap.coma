@@ -1,41 +1,44 @@
 module M_bad
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
-  predicate precondition_deref (self: ()) (args: Int32.t)
+  predicate precondition_deref (self: ()) (mode: Mode.t) (args: Int32.t)
   
-  predicate postcondition_deref (self: ()) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_deref (self: ()) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  let deref_wrap_Snapshot_i32 (x: Int32.t) (return (x'0: Int32.t)) =
-  {[@stop_split] [@expl:deref_wrap requires] precondition_deref () x}
+  let deref_wrap_Snapshot_i32 (mode: Mode.t) (x: Int32.t) (return (x'0: Int32.t)) =
+  {[@stop_split] [@expl:deref_wrap requires] precondition_deref () mode x}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:deref_wrap ensures] postcondition_deref () x result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:deref_wrap ensures] postcondition_deref () mode x result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let bad (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
+  let bad (mode: Mode.t) (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- x ] s1
-      | s1 = deref_wrap_Snapshot_i32 {_4} (fun (_x: Int32.t) -> [ &_2 <- _x ] s2)
+      | s1 = deref_wrap_Snapshot_i32 {mode} {_4} (fun (_x: Int32.t) -> [ &_2 <- _x ] s2)
       | s2 = [ &_ret <- _2 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x | & _2: Int32.t = Any.any_l () | & _4: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_deref_wrap
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
   
   type t_Target
   
-  predicate precondition_deref (self: ()) (args: t_T)
+  predicate precondition_deref (self: ()) (mode: Mode.t) (args: t_T)
   
-  axiom precondition_fndef: forall args: t_T [precondition_deref () args]. (let self_ = args in false)
-      -> precondition_deref () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_T [precondition_deref () mode args]. (let self_ = args in false)
+        -> precondition_deref () mode args
   
   predicate inv_Target (_1: t_Target)
   
@@ -47,19 +50,21 @@ module M_deref_wrap
   
   meta "rewrite_def" predicate inv_ref_Target
   
-  predicate postcondition_deref (self: ()) (args: t_T) (result: t_Target)
+  predicate postcondition_deref (self: ()) (mode: Mode.t) (args: t_T) (result: t_Target)
   
   axiom postcondition_fndef:
-    forall args: t_T, res: t_Target [postcondition_deref () args res]. postcondition_deref () args res
+    forall mode: Mode.t, args: t_T, res: t_Target [postcondition_deref () mode args res]. postcondition_deref () mode args res
       -> (let self_ = args in inv_ref_Target res)
   
-  predicate postcondition_once_deref (self: ()) (args: t_T) (result: t_Target) = postcondition_deref self args result
+  predicate postcondition_once_deref (self: ()) (mode: Mode.t) (args: t_T) (result: t_Target) =
+    postcondition_deref self mode args result
   
   meta "rewrite_def" predicate postcondition_once_deref
   
-  let deref_T (self_: t_T) (return (x: t_Target)) = {[@stop_split] [@expl:deref requires] precondition_deref () self_}
+  let deref_T (mode: Mode.t) (self_: t_T) (return (x: t_Target)) =
+  {[@stop_split] [@expl:deref requires] precondition_deref () mode self_}
     any
-    [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self_ result}
+    [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () mode self_ result}
       (! return {result}) ]
   
   predicate inv_T (_1: t_T)
@@ -76,18 +81,18 @@ module M_deref_wrap
   
   meta "select_lsinst" "all"
   
-  let deref_wrap_T (x: t_T) (return (x'0: t_Target)) =
+  let deref_wrap_T (mode: Mode.t) (x: t_T) (return (x'0: t_Target)) =
   {[@stop_split] [@expl:deref_wrap_T requires] ([@stop_split] [@expl:deref_wrap 'x' type invariant] inv_ref_T x)
-    /\ ([@stop_split] [@expl:deref_wrap requires] precondition_deref () x)}
+    /\ ([@stop_split] [@expl:deref_wrap requires] precondition_deref () mode x)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_8 <- x ] s1
-      | s1 = deref_T {_8} (fun (_x: t_Target) -> [ &_6 <- _x ] s2)
+      | s1 = deref_T {mode} {_8} (fun (_x: t_Target) -> [ &_6 <- _x ] s2)
       | s2 = [ &_ret <- _6 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Target = Any.any_l () | & x: t_T = x | & _6: t_Target = Any.any_l () | & _8: t_T = Any.any_l () ])
     [ return (result: t_Target) ->
     {[@stop_split] [@expl:deref_wrap_T ensures] ([@stop_split] [@expl:deref_wrap result type invariant] inv_ref_Target result)
-      /\ ([@stop_split] [@expl:deref_wrap ensures] postcondition_deref () x result)}
+      /\ ([@stop_split] [@expl:deref_wrap ensures] postcondition_deref () mode x result)}
       (! return {result}) ]
 end

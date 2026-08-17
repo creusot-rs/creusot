@@ -1,6 +1,7 @@
 module M_evil
   use creusot.int.Int32
   use creusot.prelude.Opaque
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_S_i32 = { f0: Int32.t; f1: Opaque.ptr }
@@ -11,7 +12,7 @@ module M_evil
   
   axiom inv_axiom [@rewrite]: forall x: t_S_i32 [inv_S_i32 x]. inv_S_i32 x = invariant_S_i32 x
   
-  let mk_s_i32 (t: Int32.t) (return (x: t_S_i32)) = any
+  let mk_s_i32 (mode: Mode.t) (t: Int32.t) (return (x: t_S_i32)) = any
     [ return (result: t_S_i32) ->
     {[@stop_split] [@expl:mk_s_i32 ensures] ([@stop_split] [@expl:mk_s result type invariant] inv_S_i32 result)
       /\ ([@stop_split] [@expl:mk_s ensures] result.f0 = t)}
@@ -21,9 +22,9 @@ module M_evil
   
   meta "select_lsinst" "all"
   
-  let evil (return (x: ())) = (! bb0
+  let evil (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = mk_s_i32 {(1: Int32.t)} (fun (_x: t_S_i32) -> [ &_s <- _x ] s1)
+      [ s0 = mk_s_i32 {mode} {(1: Int32.t)} (fun (_x: t_S_i32) -> [ &_s <- _x ] s1)
       | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_S_i32 _s} any) ]
       | s2 = {[@expl:assertion] false} s3
       | s3 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _s: t_S_i32 = Any.any_l () ])
@@ -31,6 +32,7 @@ module M_evil
 end
 module M_mk_s
   use creusot.prelude.Opaque
+  use creusot.prelude.Mode
   use creusot.prelude.Ptr
   use creusot.int.UInt64
   use creusot.int.Int32
@@ -38,7 +40,7 @@ module M_mk_s
   
   predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let null_T (return (x: Opaque.ptr)) = any
+  let null_T (mode: Mode.t) (return (x: Opaque.ptr)) = any
     [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:null ensures] is_null_ptr_T result} (! return {result}) ]
   
   type t_S_T = { f0: Int32.t; f1: Opaque.ptr }
@@ -49,9 +51,9 @@ module M_mk_s
   
   meta "select_lsinst" "all"
   
-  let mk_s_T (t: Int32.t) (return (x: t_S_T)) = (! bb0
+  let mk_s_T (mode: Mode.t) (t: Int32.t) (return (x: t_S_T)) = (! bb0
     [ bb0 = s0
-      [ s0 = null_T (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s1)
+      [ s0 = null_T {mode} (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s1)
       | s1 = [ &_ret <- { f0 = t; f1 = _6 } ] s2
       | s2 = return {_ret} ] ] [ & _ret: t_S_T = Any.any_l () | & t: Int32.t = t | & _6: Opaque.ptr = Any.any_l () ])
     [ return (result: t_S_T) ->
