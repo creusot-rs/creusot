@@ -207,7 +207,11 @@ impl ContractClauses {
                 }
                 let term = ctx.term_with_triggers(ens_id).unwrap();
                 // ensures does not have a result argument in `const` items
-                let bound = if term.0.len() == bound.len() { bound } else { bound_with_result };
+                let bound = if term.0.len() == bound_with_mode.len() {
+                    bound_with_mode
+                } else {
+                    bound_with_result
+                };
                 let TermWithTriggers { triggers, box term } = term.rename(bound);
                 (triggers, Condition { term, expl })
             })
