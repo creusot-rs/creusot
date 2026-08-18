@@ -152,23 +152,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         let mut pre_sig = ctx.sig(def_id).clone().instantiate_and_normalize(ctx, subst, typing_env);
 
-        if ctx.def_kind(def_id) == DefKind::Closure {
-            // Inline the body of closures
-            let mut decls = vec![Decl::Coma(program::to_why(ctx, &names, name, def_id))];
-            if !pre_sig.contract.has_user_contract {
-                decls.extend(["'pre", "'post'return"].map(|s| {
-                    Decl::Meta(Meta {
-                        name: MetaIdent("rewrite_def".into()),
-                        args: Box::new([
-                            MetaArg::Keyword("predicate".into()),
-                            MetaArg::Name(Name::Local(name, Some(why3::Symbol::intern(s)))),
-                        ]),
-                    })
-                }))
-            }
-            return decls;
-        }
-
         if matches!(ctx.intrinsic(def_id), Intrinsic::GhostDeref | Intrinsic::GhostDerefMut) {
             // If `Ghost::deref`` or `Ghost::deref_mut` are called direclty, then
             // the validation pass has checked that the call is in the right context.
@@ -243,6 +226,32 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         let sig = lower_program_sig(ctx, &names, name, pre_sig, def_id, name::return_());
         vec![program::val(sig.prototype, sig.contract, sig.return_ty)]
+    }
+
+    fn expand_closure(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
+        let dep = Dependency::Item(def_id, subst);
+        let typing_env = self.typing_env;
+        let ctx = self.ctx;
+        let names = self.namer(dep);
+
+        let name = names.dependency(dep).ident();
+
+        let pre_sig = ctx.sig(def_id).clone().instantiate_and_normalize(ctx, subst, typing_env);
+
+        // Inline the body of closures
+        let mut decls = vec![Decl::Coma(program::to_why(ctx, &names, name, def_id))];
+        if !pre_sig.contract.has_user_contract {
+            decls.extend(["'pre", "'post'return"].map(|s| {
+                Decl::Meta(Meta {
+                    name: MetaIdent("rewrite_def".into()),
+                    args: Box::new([
+                        MetaArg::Keyword("predicate".into()),
+                        MetaArg::Name(Name::Local(name, Some(why3::Symbol::intern(s)))),
+                    ]),
+                })
+            }))
+        }
+        decls
     }
 
     /// Expand a logical item
@@ -660,7 +669,8 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                     self.namer(dep).ty_adt(ctx.parent(def_id), subst);
                     vec![]
                 }
-                ItemType::Program | ItemType::Closure => self.expand_program(def_id, subst),
+                ItemType::Program => self.expand_program(def_id, subst),
+                ItemType::Closure => self.expand_closure(def_id, subst),
                 item_type => {
                     let path = ctx.def_path_str(def_id);
                     let self_path = ctx.def_path_str(self.namer.source_id());
