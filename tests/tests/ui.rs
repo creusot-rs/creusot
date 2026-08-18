@@ -243,7 +243,7 @@ fn translate_creusot_std(args: &Args, paths: &mut CreusotPaths, test_creusot_std
     }
 
     if args.bless {
-        if output.stdout.is_empty() {
+        if actual.is_empty() {
             panic!("creusot-std should have an output!")
         }
 
@@ -251,7 +251,7 @@ fn translate_creusot_std(args: &Args, paths: &mut CreusotPaths, test_creusot_std
             writeln_color!(out, Color::Green, "unchanged");
         } else {
             writeln_color!(out, Color::Blue, "blessed");
-            std::fs::write(expect, &output.stdout).unwrap();
+            std::fs::write(expect, &actual).unwrap();
         }
     } else {
         if success {
