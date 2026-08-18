@@ -1,0 +1,170 @@
+module M_g
+  use creusot.prelude.Any
+  use map.Map
+  
+  type t_A
+  
+  type t_Option_A = None | Some t_A
+  
+  predicate inv_A (_1: t_A)
+  
+  predicate inv_Option_A (_1: t_Option_A)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_Option_A [inv_Option_A x]. inv_Option_A x
+      = match x with
+        | None -> true
+        | Some f0 -> inv_A f0
+        end
+  
+  let c_Some [@coma:extspec] (_1: t_A) (return (x: t_Option_A)) = {[@expl:Some type invariant] inv_Option_A (Some _1)}
+    return {Some _1}
+  
+  type t_Option_Option_A = None'0 | Some'0 t_Option_A
+  
+  predicate precondition_Some (self: ()) (args: t_A) = let _1 = args in c_Some'pre _1
+  
+  meta "rewrite_def" predicate precondition_Some
+  
+  predicate inv_Option_Option_A (_1: t_Option_Option_A)
+  
+  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Option_A [inv_Option_Option_A x]. inv_Option_Option_A x
+      = match x with
+        | None'0 -> true
+        | Some'0 f0 -> inv_Option_A f0
+        end
+  
+  predicate resolve_Some [@inline:trivial] (_1: ()) = true
+  
+  meta "rewrite_def" predicate resolve_Some
+  
+  predicate postcondition_Some (self: ()) (args: t_A) (result: t_Option_A) =
+    let _1 = args in c_Some'post'return _1 result
+  
+  meta "rewrite_def" predicate postcondition_Some
+  
+  predicate postcondition_once_Some (self: ()) (args: t_A) (result: t_Option_A) = postcondition_Some self args result
+  
+  meta "rewrite_def" predicate postcondition_once_Some
+  
+  let map_A (self_: t_Option_A) (f: ()) (return (x: t_Option_Option_A)) =
+  {[@stop_split] [@expl:map_A requires] ([@stop_split] [@expl:map 'self_' type invariant] inv_Option_A self_)
+    /\ ([@stop_split] [@expl:map requires] match self_ with
+      | None -> true
+      | Some t -> precondition_Some f t
+      end)}
+    any
+    [ return (result: t_Option_Option_A) ->
+    {[@stop_split] [@expl:map_A ensures] ([@stop_split] [@expl:map result type invariant] inv_Option_Option_A result)
+      /\ ([@stop_split] [@expl:map ensures] match self_ with
+        | None -> resolve_Some f /\ result = None'0
+        | Some t -> exists r: t_Option_A. result = Some'0 r /\ postcondition_once_Some f t r
+        end)}
+      (! return {result}) ]
+  
+  function map_Option_A (self: t_Option_A) (f: Map.map t_A t_Option_A) : t_Option_Option_A = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let g_A (o: t_Option_A) (return (x: t_Option_Option_A)) = {[@stop_split] [@expl:g 'o' type invariant] inv_Option_A o}
+    (! bb0
+    [ bb0 = s0 [ s0 = map_A {o} {()} (fun (_x: t_Option_Option_A) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_Option_Option_A = Any.any_l () | & o: t_Option_A = o ])
+    [ return (result: t_Option_Option_A) ->
+    {[@stop_split] [@expl:g_A ensures] ([@stop_split] [@expl:g result type invariant] inv_Option_Option_A result)
+      /\ ([@stop_split] [@expl:g ensures] result = map_Option_A o (fun (x: t_A) -> Some x))}
+      (! return {result}) ]
+end
+module M_h
+  use creusot.prelude.Any
+  
+  let c_T0 [@coma:extspec] (return (x: ())) = return {()}
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let h (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = [ &t <- () ] s1 | s1 = c_T0 (fun (_x: ()) -> [ &_ret <- _x ] s2) | s2 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & t: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_i
+  use creusot.prelude.Any
+  
+  type t_A
+  
+  type t_B
+  
+  type t_T2_A_B = { f0: t_A; f1: t_B }
+  
+  predicate invariant_T2_A_B (self: t_T2_A_B)
+  
+  predicate inv_A (_1: t_A)
+  
+  predicate inv_B (_1: t_B)
+  
+  predicate inv_T2_A_B (_1: t_T2_A_B)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_T2_A_B [inv_T2_A_B x]. inv_T2_A_B x
+      = (invariant_T2_A_B x /\ inv_A x.f0 /\ inv_B x.f1)
+  
+  let c_T2 [@coma:extspec] (_1: t_A) (_2: t_B) (return (x: t_T2_A_B)) = {[@expl:T2 type invariant] inv_T2_A_B { f0 = _1;
+                                                                                                                f1 = _2 }}
+    return {{ f0 = _1; f1 = _2 }}
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let i_A (x: t_A) (y: t_B) (return (x'0: t_T2_A_B)) =
+  {[@stop_split] [@expl:i_A requires] ([@stop_split] [@expl:i 'x' type invariant] inv_A x)
+    /\ ([@stop_split] [@expl:i 'y' type invariant] inv_B y)
+    /\ ([@stop_split] [@expl:i requires] inv_T2_A_B { f0 = x; f1 = y })}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &t <- () ] s1 | s1 = c_T2 {x} {y} (fun (_x: t_T2_A_B) -> [ &_ret <- _x ] s2) | s2 = return {_ret} ] ]
+    [ & _ret: t_T2_A_B = Any.any_l () | & x: t_A = x | & y: t_B = y | & t: () = Any.any_l () ])
+    [ return (result: t_T2_A_B) ->
+    {[@stop_split] [@expl:i_A ensures] ([@stop_split] [@expl:i result type invariant] inv_T2_A_B result)
+      /\ ([@stop_split] [@expl:i ensures] result = { f0 = x; f1 = y })}
+      (! return {result}) ]
+end
+module M_some_post
+  type t_A
+  
+  type tup2_A_A = { f0: t_A; f1: t_A }
+  
+  type t_T2_A_A = { f0'0: t_A; f1'0: t_A }
+  
+  predicate invariant_T2_A_A (self: t_T2_A_A)
+  
+  predicate inv_A (_1: t_A)
+  
+  predicate inv_T2_A_A (_1: t_T2_A_A)
+  
+  axiom inv_axiom [@rewrite]: forall x: t_T2_A_A [inv_T2_A_A x]. inv_T2_A_A x
+      = (invariant_T2_A_A x /\ inv_A x.f0'0 /\ inv_A x.f1'0)
+  
+  let c_T2 [@coma:extspec] (_1: t_A) (_2: t_A) (return (x: t_T2_A_A)) =
+  {[@expl:T2 type invariant] inv_T2_A_A { f0'0 = _1; f1'0 = _2 }}
+    return {{ f0'0 = _1; f1'0 = _2 }}
+  
+  predicate precondition_T2 (self: ()) (args: tup2_A_A) = let {f0 = _1; f1 = _2} = args in c_T2'pre _1 _2
+  
+  meta "rewrite_def" predicate precondition_T2
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : t_A
+  
+  function some_post_A (x: t_A) : ()
+  
+  goal vc_some_post_A: [@stop_split] [@expl:some_post ensures] precondition_T2 () { f0 = x; f1 = x }
+    = inv_T2_A_A { f0'0 = x; f1'0 = x }
+end

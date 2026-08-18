@@ -8,7 +8,7 @@ use crate::{
             Ident, Pattern, Term, TermKind, normalize,
             visit::{TermVisitorMut, super_visit_mut_term},
         },
-        specification::{PreSignature, contract_of},
+        specification::{PreSignature, contract_of, inputs_and_output},
     },
 };
 use itertools::Itertools;
@@ -17,7 +17,10 @@ use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_index::IndexVec;
 use rustc_middle::{
     mir::Mutability,
-    ty::{BorrowKind, CapturedPlace, ClosureKind, GenericArg, Ty, TyCtxt, TyKind, UpvarCapture},
+    ty::{
+        BorrowKind, CapturedPlace, ClosureKind, EarlyBinder, GenericArg, GenericArgsRef, Ty,
+        TyCtxt, TyKind, UpvarCapture,
+    },
 };
 use std::{assert_matches, iter::once};
 
@@ -313,6 +316,59 @@ pub(crate) fn closure_post<'tcx>(
     }
 
     normalize(ctx, typing_env, post)
+}
+
+pub(crate) fn ctor_pre<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    scope: DefId,
+    def_id: DefId,
+    subst: GenericArgsRef<'tcx>,
+    args: Term<'tcx>,
+) -> Term<'tcx> {
+    let typing_env = ctx.typing_env(scope);
+    let inputs = ctx.normalize_erasing_regions(
+        typing_env,
+        EarlyBinder::bind(ctx.tcx, inputs_and_output(ctx, def_id.into()).0)
+            .instantiate(ctx.tcx, subst),
+    );
+    let params = inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)).collect();
+    let pre = Term {
+        kind: TermKind::Precondition { item: def_id, subst, params },
+        ty: ctx.types.bool,
+        span: ctx.def_span(def_id),
+    };
+    let pattern = Pattern::tuple(
+        inputs.iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
+        args.ty,
+    );
+    Term::let_(pattern, args, pre).span(ctx.def_span(def_id))
+}
+
+pub(crate) fn ctor_post<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    scope: DefId,
+    def_id: DefId,
+    subst: GenericArgsRef<'tcx>,
+    args: Term<'tcx>,
+    res: Term<'tcx>,
+) -> Term<'tcx> {
+    let typing_env = ctx.typing_env(scope);
+    let inputs = ctx.normalize_erasing_regions(
+        typing_env,
+        EarlyBinder::bind(ctx.tcx, inputs_and_output(ctx, def_id.into()).0)
+            .instantiate(ctx.tcx, subst),
+    );
+    let params = inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)).chain(once(res)).collect();
+    let pre = Term {
+        kind: TermKind::Postcondition { item: def_id, subst, params },
+        ty: ctx.types.bool,
+        span: ctx.def_span(def_id),
+    };
+    let pattern = Pattern::tuple(
+        inputs.iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
+        args.ty,
+    );
+    Term::let_(pattern, args, pre).span(ctx.def_span(def_id))
 }
 
 // Responsible for replacing occurences of captured variables with projections from the closure environment.

@@ -358,6 +358,9 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
                 .skip_normalization(),
             contract,
         }
+    } else if matches!(ctx.def_kind(def_id), DefKind::Ctor(..)) {
+        contract.purity = ProgramPurity::Ghost;
+        PreSignature { inputs, output, contract }
     } else {
         if ctx.non_creusot_crate(def_id.krate) {
             assert!(contract.is_empty());
@@ -566,8 +569,11 @@ pub fn inputs_and_output<'tcx>(
                 typing_env,
                 tcx.fn_sig(def_id).instantiate_identity().skip_normalization(),
             );
-            let inputs = tcx
-                .fn_arg_idents(def_id)
+            let idents = match tcx.def_kind(def_id) {
+                DefKind::Ctor(..) => &vec![None; sig.inputs().len()],
+                _ => tcx.fn_arg_idents(def_id),
+            };
+            let inputs = idents
                 .iter()
                 .cloned()
                 .zip(sig.inputs().iter().cloned())

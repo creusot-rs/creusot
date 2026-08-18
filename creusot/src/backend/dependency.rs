@@ -78,6 +78,9 @@ impl<'tcx> Dependency<'tcx> {
                 DefKind::Variant => {
                     Some(Symbol::intern(&uppercase_prefix("C_", ctx.item_name(did).as_str())))
                 }
+                DefKind::Ctor(..) => {
+                    Some(Symbol::intern(&lowercase_prefix("c_", ctx.item_name(did).as_str())))
+                }
                 _ if Intrinsic::SizeOfLogic.is(ctx, did) => {
                     Some(Symbol::intern(&type_string(ctx.tcx, "size_of".into(), subst.type_at(0))))
                 }

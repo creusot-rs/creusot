@@ -2,16 +2,17 @@ use crate::{
     backend::{
         self, Why3Generator,
         clone_map::{CloneNames, DepGraphBuilder, Dependency, Kind, Namer},
-        closures::{closure_hist_inv, closure_post, closure_pre},
+        closures::{closure_hist_inv, closure_post, closure_pre, ctor_post, ctor_pre},
         logic::{lower_logical_defn, spec_axioms},
         program,
         resolve::{ResolveDef, elaborate_resolve_def, structural_resolve},
         signature::{LogicSignature, lower_logic_sig, lower_program_sig},
         term::{lower_pure, lower_pure_weakdep},
         ty::{
-            eliminator, translate_adtdecl, translate_closure_ty, translate_tuple_ty, translate_ty,
+            constructor, eliminator, translate_adtdecl, translate_closure_ty, translate_tuple_ty,
+            translate_ty,
         },
-        ty_inv::{TyInvDef, elaborate_tyinv_def, sig_add_type_invariant_spec},
+        ty_inv::{TyInvDef, elaborate_tyinv_def, inv_call, sig_add_type_invariant_spec},
     },
     contracts_items::{Intrinsic, get_builtin, is_law, is_logic, why3_metas},
     ctx::{BodyId, HasTyCtxt, ItemType},
@@ -152,23 +153,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         let mut pre_sig = ctx.sig(def_id).clone().instantiate_and_normalize(ctx, subst, typing_env);
 
-        if ctx.def_kind(def_id) == DefKind::Closure {
-            // Inline the body of closures
-            let mut decls = vec![Decl::Coma(program::to_why(ctx, &names, name, def_id))];
-            if !pre_sig.contract.has_user_contract {
-                decls.extend(["'pre", "'post'return"].map(|s| {
-                    Decl::Meta(Meta {
-                        name: MetaIdent("rewrite_def".into()),
-                        args: Box::new([
-                            MetaArg::Keyword("predicate".into()),
-                            MetaArg::Name(Name::Local(name, Some(why3::Symbol::intern(s)))),
-                        ]),
-                    })
-                }))
-            }
-            return decls;
-        }
-
         if matches!(ctx.intrinsic(def_id), Intrinsic::GhostDeref | Intrinsic::GhostDerefMut) {
             // If `Ghost::deref`` or `Ghost::deref_mut` are called direclty, then
             // the validation pass has checked that the call is in the right context.
@@ -243,6 +227,76 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         let sig = lower_program_sig(ctx, &names, name, pre_sig, def_id, name::return_());
         vec![program::val(sig.prototype, sig.contract, sig.return_ty)]
+    }
+
+    fn expand_closure(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
+        let dep = Dependency::Item(def_id, subst);
+        let typing_env = self.typing_env;
+        let ctx = self.ctx;
+        let names = self.namer(dep);
+
+        let name = names.dependency(dep).ident();
+
+        let pre_sig = ctx.sig(def_id).clone().instantiate_and_normalize(ctx, subst, typing_env);
+
+        // Inline the body of closures
+        let mut decls = vec![Decl::Coma(program::to_why(ctx, &names, name, def_id))];
+        if !pre_sig.contract.has_user_contract {
+            decls.extend(["'pre", "'post'return"].map(|s| {
+                Decl::Meta(Meta {
+                    name: MetaIdent("rewrite_def".into()),
+                    args: Box::new([
+                        MetaArg::Keyword("predicate".into()),
+                        MetaArg::Name(Name::Local(name, Some(why3::Symbol::intern(s)))),
+                    ]),
+                })
+            }))
+        }
+        decls
+    }
+
+    // Generate a body for a constructor closure, of the form
+    //
+    // ```
+    // let c_Some (_1: a) (return (x: option_a)) =
+    //   {inv (Some x)} return {Some x}
+    // ```
+    //
+    // We duplicate the constructor application because it's usually shorter
+    // than writing out the let binding (most constructors used this way have
+    // few fields, and the assertion even goes away if it's trivial).
+    fn expand_ctor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
+        let dep = Dependency::Item(def_id, subst);
+        let typing_env = self.typing_env;
+        let ctx = self.ctx;
+        let names = self.namer(dep);
+        let name = names.dependency(dep).ident();
+        let pre_sig = ctx.sig(def_id).clone().instantiate_and_normalize(ctx, subst, typing_env);
+
+        use why3::{coma::Arg, declaration::Attribute};
+        let fields = pre_sig.inputs.iter().map(|(arg, _, _)| Exp::var(arg.0)).collect();
+        let ctor = constructor(&names, fields, ctx.parent(def_id), subst);
+        let body = Expr::App(Expr::var(name::return_()).boxed(), Arg::Term(ctor.clone()).into());
+        // Placeholder for the argument of `inv_call`, to be substituted after lowering.
+        let result = name::result();
+        let invariant =
+            inv_call(ctx, typing_env, names.source_id(), Term::var(result, pre_sig.output));
+        let body = match invariant {
+            None => body,
+            Some(invariant) => {
+                let mut invariant = lower_pure(ctx, &names, &invariant);
+                invariant.subst(&[(result, ctor)].into());
+                let expl = format!("expl:{} type invariant", ctx.item_name(def_id).as_str());
+                let invariant = Exp::Attr(Attribute::Attr(expl), invariant.boxed());
+                Expr::Assert(invariant.boxed(), body.boxed())
+            }
+        };
+
+        let sig = lower_program_sig(ctx, &names, name, pre_sig, def_id, name::return_());
+        let prototype =
+            Prototype { attrs: vec![Attribute::Attr("coma:extspec".into())], ..sig.prototype };
+
+        vec![Decl::Coma(Defn { prototype, body })]
     }
 
     /// Expand a logical item
@@ -660,7 +714,9 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                     self.namer(dep).ty_adt(ctx.parent(def_id), subst);
                     vec![]
                 }
-                ItemType::Program | ItemType::Closure => self.expand_program(def_id, subst),
+                ItemType::Program => self.expand_program(def_id, subst),
+                ItemType::Closure => self.expand_closure(def_id, subst),
+                ItemType::CtorFn => self.expand_ctor(def_id, subst),
                 item_type => {
                     let path = ctx.def_path_str(def_id);
                     let self_path = ctx.def_path_str(self.namer.source_id());
@@ -995,6 +1051,9 @@ fn postcondition_term<'tcx>(
             let post_fn = Intrinsic::Postcondition.get(ctx);
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
+        &TyKind::FnDef(did, subst) if let DefKind::Ctor(..) = ctx.def_kind(did) => {
+            Some(ctor_post(ctx, names.source_id(), did, subst.skip_binder(), args, res))
+        }
         &TyKind::FnDef(did, subst) => {
             post_fndef(ctx, names, did, subst.skip_binder(), args, res, true)
         }
@@ -1043,7 +1102,7 @@ fn post_fndef<'tcx>(
     Some(Term::let_(pattern, args, post).span(ctx.def_span(did)))
 }
 
-/// Generate body of `precondition_once` for `FnOnce` closures.
+/// Generate body of `precondition` for `FnOnce` closures.
 fn precondition_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
@@ -1052,7 +1111,7 @@ fn precondition_term<'tcx>(
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
     let &[self_, args] = bound else {
-        panic!("precondition_once must have 2 arguments. This should not happen. Found: {bound:?}")
+        panic!("precondition must have 2 arguments. This should not happen. Found: {bound:?}")
     };
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
@@ -1089,6 +1148,9 @@ fn precondition_term<'tcx>(
             let pre_fn = Intrinsic::Precondition.get(ctx);
             let pre_args = [self_.proj(0usize.into(), closure_ty), args];
             Some(Term::call(ctx.tcx, typing_env, pre_fn, subst_postcond, pre_args))
+        }
+        &TyKind::FnDef(did, subst) if let DefKind::Ctor(..) = ctx.def_kind(did) => {
+            Some(ctor_pre(ctx, names.source_id(), did, subst.skip_binder(), args))
         }
         &TyKind::FnDef(did, subst) => pre_fndef(ctx, names, did, subst.skip_binder(), args, true),
         _ => None,
