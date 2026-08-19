@@ -75,3 +75,8 @@ pub fn slices(i: usize) -> usize {
     x[i] = x[i] + x.len();
     x[0]
 }
+
+#[requires(x != None)]
+pub fn unwrap(x: Option<u8>) -> u8 {
+    x.unwrap()
+}
