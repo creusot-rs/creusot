@@ -5,9 +5,9 @@ module M_bar [#"spans.rs" 24 0 24 33]
   let%span sspans'2 = "spans.rs" 28 13 28 14
   let%span sspans'3 = "spans.rs" 28 8 28 14
   let%span sspans'4 = "spans.rs" 23 11 23 18
-  let%span swell_founded = "creusot-std/src/logic/well_founded.rs" 43 8 43 33
-  let%span sord = "creusot-std/src/logic/ord.rs" 34 8 34 21
-  let%span sord'0 = "creusot-std/src/logic/ord.rs" 22 8 22 20
+  let%span swell_founded = "../../creusot-std/src/logic/well_founded.rs" 43 8 43 33
+  let%span sord = "../../creusot-std/src/logic/ord.rs" 34 8 34 21
+  let%span sord'0 = "../../creusot-std/src/logic/ord.rs" 22 8 22 20
   
   use creusot.int.UInt64
   use creusot.prelude.Any
@@ -52,9 +52,9 @@ module M_baz [#"spans.rs" 37 0 37 25]
   let%span sspans = "spans.rs" 34 10 34 11
   let%span sspans'0 = "spans.rs" 35 11 35 17
   let%span sspans'1 = "spans.rs" 36 10 36 21
-  let%span swell_founded = "creusot-std/src/logic/well_founded.rs" 43 8 43 33
-  let%span sord = "creusot-std/src/logic/ord.rs" 34 8 34 21
-  let%span sord'0 = "creusot-std/src/logic/ord.rs" 22 8 22 20
+  let%span swell_founded = "../../creusot-std/src/logic/well_founded.rs" 43 8 43 33
+  let%span sord = "../../creusot-std/src/logic/ord.rs" 34 8 34 21
+  let%span sord'0 = "../../creusot-std/src/logic/ord.rs" 22 8 22 20
   
   use int.Int
   
@@ -171,9 +171,9 @@ module M_quux [#"spans.rs" 68 0 68 32]
   let%span sspans'8 = "spans.rs" 60 25 60 29
   let%span sspans'9 = "spans.rs" 59 14 59 38
   let%span sspans'10 = "spans.rs" 52 20 52 32
-  let%span swell_founded = "creusot-std/src/logic/well_founded.rs" 43 8 43 33
-  let%span sord = "creusot-std/src/logic/ord.rs" 34 8 34 21
-  let%span sord'0 = "creusot-std/src/logic/ord.rs" 22 8 22 20
+  let%span swell_founded = "../../creusot-std/src/logic/well_founded.rs" 43 8 43 33
+  let%span sord = "../../creusot-std/src/logic/ord.rs" 34 8 34 21
+  let%span sord'0 = "../../creusot-std/src/logic/ord.rs" 22 8 22 20
   
   use creusot.int.UInt64
   use creusot.prelude.Any
@@ -249,7 +249,7 @@ module M_slices [#"spans.rs" 73 0 73 32]
   let%span sspans'5 = "spans.rs" 76 6 76 7
   let%span sspans'6 = "spans.rs" 76 4 76 8
   let%span sspans'7 = "spans.rs" 72 11 72 17
-  let%span sslice = "creusot-std/src/std/slice.rs" 331 18 331 22
+  let%span sslice = "../../creusot-std/src/std/slice.rs" 331 18 331 22
   
   use creusot.int.UInt64
   use creusot.slice.Slice64
@@ -299,4 +299,31 @@ module M_slices [#"spans.rs" 73 0 73 32]
     | & _12: bool = Any.any_l ()
     | & _13: UInt64.t = Any.any_l ()
     | & _14: bool = Any.any_l () ]) [ return (result: UInt64.t) -> (! return {result}) ]
+end
+module M_unwrap [#"spans.rs" 80 0 80 34]
+  let%span sspans = "spans.rs" 81 4 81 14
+  let%span sspans'0 = "spans.rs" 79 11 79 20
+  let%span soption = "../../creusot-std/src/std/option.rs" 137 19 137 23
+  let%span soption'0 = "../../creusot-std/src/std/option.rs" 138 34 138 38
+  
+  use creusot.int.UInt8
+  use creusot.prelude.Any
+  
+  type t_Option_u8 = None | Some UInt8.t
+  
+  let unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] [%#soption] self_
+    <> None}
+    any
+    [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] [%#soption'0] Some result = self_}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let unwrap [#"spans.rs" 80 0 80 34] (x: t_Option_u8) (return (x'0: UInt8.t)) =
+  {[@stop_split] [@expl:unwrap requires] [%#sspans'0] x <> None}
+    (! bb0
+    [ bb0 = s0 [ s0 = unwrap_u8 [%#sspans] {x} (fun (_x: UInt8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: UInt8.t = Any.any_l () | & x: t_Option_u8 = x ]) [ return (result: UInt8.t) -> (! return {result}) ]
 end

@@ -13,7 +13,7 @@ use rustc_middle::{
     ty::{self, GenericArgs, GenericArgsRef, TyCtxt},
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
-use rustc_span::{Span, Symbol};
+use rustc_span::{RemapPathScopeComponents, Span, Symbol};
 
 use creusot_args::options::SpanMode;
 
@@ -35,7 +35,7 @@ pub(crate) fn path_of_span(tcx: TyCtxt, span: Span, span_mode: &SpanMode) -> Opt
 
     let lo = tcx.sess.source_map().lookup_char_pos(span.lo());
     let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
-    let path = path.local_path()?;
+    let path = path.embeddable_name(RemapPathScopeComponents::MACRO).1;
 
     if let Some(rustc_base) = &tcx.sess.opts.real_rust_source_base_dir
         && path.starts_with(rustc_base)
