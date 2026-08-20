@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use creusot.int.Int16
 use int.Int
 
@@ -44,7 +45,7 @@ predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
 
 meta "rewrite_def" predicate gt_log_Int
 
-predicate postcondition_size_hint (self: ()) (args: t_RangeInclusive_i16) (result: tup2_usize_Option_usize) =
+predicate postcondition_size_hint (self: ()) (mode: Mode.t) (args: t_RangeInclusive_i16) (result: tup2_usize_Option_usize) =
   let self_ = args in (let s = range_inclusive_len_i16 self_ in s <= UInt64.t'int const_MAX
     -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
   /\ (gt_log_Int (range_inclusive_len_i16 self_) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })
@@ -61,7 +62,7 @@ predicate inv_ref_RangeInclusive_i16 [@inline:trivial] (_1: t_RangeInclusive_i16
 
 meta "rewrite_def" predicate inv_ref_RangeInclusive_i16
 
-let size_hint_RangeInclusive_i16 (self_: t_RangeInclusive_i16) (return (x: tup2_usize_Option_usize)) =
+let size_hint_RangeInclusive_i16 (mode: Mode.t) (self_: t_RangeInclusive_i16) (return (x: tup2_usize_Option_usize)) =
 {[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_RangeInclusive_i16 self_}
   any
   [ return (result: tup2_usize_Option_usize) ->
@@ -75,5 +76,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self: t_RangeInclusive_i16, r: tup2_usize_Option_usize. postcondition_size_hint () self r
-    -> postcondition_size_hint () self r /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))
+goal refines:
+  forall self: t_RangeInclusive_i16, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint () mode self r)
+    -> (exists mode: Mode.t. postcondition_size_hint () mode self r)
+    /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))

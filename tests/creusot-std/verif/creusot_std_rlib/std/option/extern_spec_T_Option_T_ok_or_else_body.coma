@@ -2,6 +2,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -26,19 +27,19 @@ type t_E
 
 type t_Result_T_E = Ok t_T | Err t_E
 
-predicate precondition_F (self: t_F) (args: ())
+predicate precondition_F (self: t_F) (mode: Mode.t) (args: ())
 
 predicate inv_E (_1: t_E)
 
-predicate postcondition_once_F (self: t_F) (args: ()) (result: t_E)
+predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: ()) (result: t_E)
 
-let call_once_F (self_: t_F) (arg: ()) (return (x: t_E)) =
+let call_once_F (mode: Mode.t) (self_: t_F) (arg: ()) (return (x: t_E)) =
 {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
-  /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+  /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ mode arg)}
   any
   [ return (result: t_E) ->
   {[@stop_split] [@expl:call_once_F ensures] ([@stop_split] [@expl:call_once result type invariant] inv_E result)
-    /\ ([@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result)}
+    /\ ([@stop_split] [@expl:call_once ensures] postcondition_once_F self_ mode arg result)}
     (! return {result}) ]
 
 predicate inv_T (_1: t_T)
@@ -63,10 +64,10 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_Option_T_ok_or_else_body_T (self_: t_Option_T) (err: t_F) (return (x: t_Result_T_E)) =
+let extern_spec_T_Option_T_ok_or_else_body_T (mode: Mode.t) (self_: t_Option_T) (err: t_F) (return (x: t_Result_T_E)) =
 {[@stop_split] [@expl:extern_spec_T_Option_T_ok_or_else_body_T requires] ([@stop_split] [@expl:extern_spec_T_Option_T_ok_or_else_body 'self_' type invariant] inv_Option_T self_)
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_ok_or_else_body 'err' type invariant] inv_F err)
-  /\ ([@stop_split] [@expl:extern_spec_T_Option_T_ok_or_else_body requires] self_ = None -> precondition_F err ())}
+  /\ ([@stop_split] [@expl:extern_spec_T_Option_T_ok_or_else_body requires] self_ = None -> precondition_F err mode ())}
   (! bb0
   [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
   | bb3 = s0
@@ -76,7 +77,7 @@ let extern_spec_T_Option_T_ok_or_else_body_T (self_: t_Option_T) (err: t_F) (ret
     | s3 = [ &_ret <- Ok t ] s4
     | s4 = return {_ret} ]
   | bb4 = s0
-    [ s0 = call_once_F {err} {_12} (fun (_x: t_E) -> [ &_10 <- _x ] s1)
+    [ s0 = call_once_F {mode} {err} {_12} (fun (_x: t_E) -> [ &_10 <- _x ] s1)
     | s1 = [ &_ret <- Err _10 ] s2
     | s2 = return {_ret} ] ]
   [ & _ret: t_Result_T_E = Any.any_l ()
@@ -88,7 +89,7 @@ let extern_spec_T_Option_T_ok_or_else_body_T (self_: t_Option_T) (err: t_F) (ret
   [ return (result: t_Result_T_E) ->
   {[@stop_split] [@expl:extern_spec_T_Option_T_ok_or_else_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Option_T_ok_or_else_body result type invariant] inv_Result_T_E result)
     /\ ([@stop_split] [@expl:extern_spec_T_Option_T_ok_or_else_body ensures] match self_ with
-      | None -> exists r: t_E. result = Err r /\ postcondition_once_F err () r
+      | None -> exists r: t_E. result = Err r /\ postcondition_once_F err mode () r
       | Some t -> resolve_F err /\ result = Ok t
       end)}
     (! return {result}) ]

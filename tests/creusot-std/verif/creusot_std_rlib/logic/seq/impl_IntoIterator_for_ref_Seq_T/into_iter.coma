@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use seq.Seq
+use creusot.prelude.Mode
 use creusot.prelude.Any
 use int.Int
 
@@ -54,7 +55,7 @@ predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_
 
 meta "rewrite_def" predicate inv_Seq_ref_T
 
-let as_refs_T (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
+let as_refs_T (mode: Mode.t) (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
 {[@stop_split] [@expl:as_refs 'self' type invariant] inv_ref_Seq_T self}
   any
   [ return (result: Seq.seq t_T) ->
@@ -74,11 +75,11 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let into_iter_ref_Seq_T (self: Seq.seq t_T) (return (x: t_Iter_ref_T)) =
+let into_iter_ref_Seq_T (mode: Mode.t) (self: Seq.seq t_T) (return (x: t_Iter_ref_T)) =
 {[@stop_split] [@expl:into_iter 'self' type invariant] inv_ref_Seq_T self}
   (! bb0
   [ bb0 = s0
-    [ s0 = as_refs_T {self} (fun (_x: Seq.seq t_T) -> [ &_4 <- _x ] s1)
+    [ s0 = as_refs_T {mode} {self} (fun (_x: Seq.seq t_T) -> [ &_4 <- _x ] s1)
     | s1 = [ &_ret <- { f0 = _4 } ] s2
     | s2 = return {_ret} ] ]
   [ & _ret: t_Iter_ref_T = Any.any_l () | & self: Seq.seq t_T = self | & _4: Seq.seq t_T = Any.any_l () ])

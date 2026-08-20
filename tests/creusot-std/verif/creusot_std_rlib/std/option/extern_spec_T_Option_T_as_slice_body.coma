@@ -3,6 +3,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.slice.Slice64
+use creusot.prelude.Mode
 use seq.Seq
 use creusot.prelude.Any
 use int.Int
@@ -52,7 +53,7 @@ predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_
 
 meta "rewrite_def" predicate inv_ref_slice_T
 
-let from_ref_T (s: t_T) (return (x: Slice64.slice t_T)) =
+let from_ref_T (mode: Mode.t) (s: t_T) (return (x: Slice64.slice t_T)) =
 {[@stop_split] [@expl:from_ref 's' type invariant] inv_ref_T s}
   any
   [ return (result: Slice64.slice t_T) ->
@@ -81,13 +82,13 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_Option_T_as_slice_body_T (self_: t_Option_T) (return (x: Slice64.slice t_T)) =
+let extern_spec_T_Option_T_as_slice_body_T (mode: Mode.t) (self_: t_Option_T) (return (x: Slice64.slice t_T)) =
 {[@stop_split] [@expl:extern_spec_T_Option_T_as_slice_body 'self_' type invariant] inv_ref_Option_T self_}
   (! bb0
   [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
   | bb3 = s0
     [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1)
-    | s1 = from_ref_T {t} (fun (_x: Slice64.slice t_T) -> [ &_10 <- _x ] s2)
+    | s1 = from_ref_T {mode} {t} (fun (_x: Slice64.slice t_T) -> [ &_10 <- _x ] s2)
     | s2 = [ &_4 <- _10 ] s3
     | s3 = bb6 ]
   | bb4 = s0

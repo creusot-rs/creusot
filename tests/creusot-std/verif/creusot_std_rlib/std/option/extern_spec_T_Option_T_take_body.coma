@@ -3,6 +3,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -28,7 +29,7 @@ predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = i
 
 meta "rewrite_def" predicate inv_refmut_Option_T
 
-let replace_Option_T (dest: MutBorrow.t t_Option_T) (src: t_Option_T) (return (x: t_Option_T)) =
+let replace_Option_T (mode: Mode.t) (dest: MutBorrow.t t_Option_T) (src: t_Option_T) (return (x: t_Option_T)) =
 {[@stop_split] [@expl:replace_Option_T requires] ([@stop_split] [@expl:replace 'dest' type invariant] inv_refmut_Option_T dest)
   /\ ([@stop_split] [@expl:replace 'src' type invariant] inv_Option_T src)}
   any
@@ -46,7 +47,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_Option_T_take_body_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
+let extern_spec_T_Option_T_take_body_T (mode: Mode.t) (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
 {[@stop_split] [@expl:extern_spec_T_Option_T_take_body 'self_' type invariant] inv_refmut_Option_T self_}
   (! bb0
   [ bb0 = s0
@@ -56,7 +57,7 @@ let extern_spec_T_Option_T_take_body_T (self_: MutBorrow.t t_Option_T) (return (
           [ &_4 <- _bor ] -{inv_Option_T _bor.final}-
           [ &self_ <- { self_ with current = _bor.final } ] s2)
       [ _ck -> (! {[@expl:type invariant] inv_Option_T self_.current} any) ]
-    | s2 = replace_Option_T {_4} {_5} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s3)
+    | s2 = replace_Option_T {mode} {_4} {_5} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s3)
     | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
     | s4 = -{resolve_refmut_Option_T self_}- s5
     | s5 = return {_ret} ] ]

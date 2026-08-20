@@ -4,6 +4,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 use int.Int
 
@@ -32,10 +33,10 @@ predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
 
 axiom ext_eq_spec: forall self: t_Nat, other: t_Nat [self = other]. ext_eq self other = (self = other)
 
-let into_ghost_Int (self: int) (return (x: int)) = any
+let into_ghost_Int (mode: Mode.t) (self: int) (return (x: int)) = any
   [ return (result: int) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
 
-let into_inner_Int (self: int) (return (x: int)) = any
+let into_inner_Int (mode: Mode.t) (self: int) (return (x: int)) = any
   [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
 
 predicate inv_NatInner (_1: t_NatInner)
@@ -47,29 +48,29 @@ function new_NatInner (x: t_NatInner) : t_Subset_NatInner
 axiom new_NatInner_spec: forall x: t_NatInner [new_NatInner x]. invariant_NatInner x
     -> inner_NatInner (new_NatInner x) = x
 
-let new_NatInner'0 (x: t_NatInner) (return (x'0: t_Subset_NatInner)) =
+let new_NatInner'0 (mode: Mode.t) (x: t_NatInner) (return (x'0: t_Subset_NatInner)) =
 {[@stop_split] [@expl:new 'x' type invariant] inv_NatInner x}
   any
   [ return (result: t_Subset_NatInner) -> {[@stop_split] [@expl:new ensures] result = new_NatInner x}
     (! return {result}) ]
 
-let new_Nat (x: t_Nat) (return (x'0: t_Nat)) = any
+let new_Nat (mode: Mode.t) (x: t_Nat) (return (x'0: t_Nat)) = any
   [ return (result: t_Nat) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
 
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let into_ghost_Nat (s: t_Nat) (return (x: t_Nat)) = (! bb0
+let into_ghost_Nat (mode: Mode.t) (s: t_Nat) (return (x: t_Nat)) = (! bb0
   [ bb0 = s0
     [ s0 = [ &n <- to_int s ] s1
     | s1 = [ &_8 <- () ] s2
-    | s2 = into_ghost_Int {n} (fun (_x: int) -> [ &_13 <- _x ] s3)
-    | s3 = into_inner_Int {_13} (fun (_x: int) -> [ &_12 <- _x ] s4)
+    | s2 = into_ghost_Int {Mode.into_ghost mode} {n} (fun (_x: int) -> [ &_13 <- _x ] s3)
+    | s3 = into_inner_Int {Mode.into_ghost mode} {_13} (fun (_x: int) -> [ &_12 <- _x ] s4)
     | s4 = [ &_11 <- { f0'0 = _12 } ] s5
-    | s5 = new_NatInner'0 {_11} (fun (_x: t_Subset_NatInner) -> [ &_10 <- _x ] s6)
+    | s5 = new_NatInner'0 {Mode.into_ghost mode} {_11} (fun (_x: t_Subset_NatInner) -> [ &_10 <- _x ] s6)
     | s6 = [ &_4 <- { f0 = _10 } ] s7
-    | s7 = new_Nat {_4} (fun (_x: t_Nat) -> [ &_ret <- _x ] s8)
+    | s7 = new_Nat {Mode.into_ghost mode} {_4} (fun (_x: t_Nat) -> [ &_ret <- _x ] s8)
     | s8 = return {_ret} ] ]
   [ & _ret: t_Nat = Any.any_l ()
   | & s: t_Nat = s

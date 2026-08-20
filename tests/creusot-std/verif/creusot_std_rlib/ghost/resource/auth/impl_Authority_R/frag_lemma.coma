@@ -4,6 +4,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_Resource_View_AuthViewRel_R
@@ -174,9 +175,9 @@ function view_Resource_View_AuthViewRel_R [@inline:trivial] (self: t_Resource_Vi
 
 meta "rewrite_def" function view_Resource_View_AuthViewRel_R
 
-let join_shared_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) (other: t_Resource_View_AuthViewRel_R)
-  (return (x: t_Resource_View_AuthViewRel_R)) = {[@stop_split] [@expl:join_shared requires] id_View_AuthViewRel_R self
-  = id_View_AuthViewRel_R other}
+let join_shared_View_AuthViewRel_R (mode: Mode.t) (self: t_Resource_View_AuthViewRel_R)
+  (other: t_Resource_View_AuthViewRel_R) (return (x: t_Resource_View_AuthViewRel_R)) =
+{[@stop_split] [@expl:join_shared requires] id_View_AuthViewRel_R self = id_View_AuthViewRel_R other}
   any
   [ return (result: t_Resource_View_AuthViewRel_R) ->
   {[@stop_split] [@expl:join_shared_View_AuthViewRel_R ensures] ([@stop_split] [@expl:join_shared ensures #0] id_View_AuthViewRel_R result
@@ -220,13 +221,13 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let frag_lemma_R (self: t_Authority_R) (frag: t_Fragment_R) (return (x: ())) =
+let frag_lemma_R (mode: Mode.t) (self: t_Authority_R) (frag: t_Fragment_R) (return (x: ())) =
 {[@stop_split] [@expl:frag_lemma_R requires] ([@stop_split] [@expl:frag_lemma 'self' type invariant] inv_ref_Authority_R self)
   /\ ([@stop_split] [@expl:frag_lemma requires] id_R self = id_R'0 frag)}
   (! bb0
   [ bb0 = s0
     [ s0 = [ &_12 <- frag.f0 ] s1
-    | s1 = join_shared_View_AuthViewRel_R {self.f0'0} {_12}
+    | s1 = join_shared_View_AuthViewRel_R {mode} {self.f0'0} {_12}
         (fun (_x: t_Resource_View_AuthViewRel_R) -> [ &_9 <- _x ] s2)
     | s2 = return {_ret} ] ]
   [ & _ret: () = Any.any_l ()

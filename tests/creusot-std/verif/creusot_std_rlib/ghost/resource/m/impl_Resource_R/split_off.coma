@@ -4,14 +4,16 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.MutBorrow
 use creusot.prelude.Any
 
 type t_Resource_R
 
-let dummy_R (return (x: t_Resource_R)) = any [ return (result: t_Resource_R) -> (! return {result}) ]
+let dummy_R (mode: Mode.t) (return (x: t_Resource_R)) = any [ return (result: t_Resource_R) -> (! return {result}) ]
 
-let replace_Resource_R (dest: MutBorrow.t t_Resource_R) (src: t_Resource_R) (return (x: t_Resource_R)) = any
+let replace_Resource_R (mode: Mode.t) (dest: MutBorrow.t t_Resource_R) (src: t_Resource_R) (return (x: t_Resource_R)) =
+any
   [ return (result: t_Resource_R) ->
   {[@stop_split] [@expl:replace_Resource_R ensures] ([@stop_split] [@expl:replace ensures #0] dest.final = src)
     /\ ([@stop_split] [@expl:replace ensures #1] result = dest.current)}
@@ -74,7 +76,7 @@ type t_Id
 
 function id_R (self: t_Resource_R) : t_Id
 
-let split_R (self: t_Resource_R) (a: t_R) (b: t_R) (return (x: tup2_Resource_R_Resource_R)) =
+let split_R (mode: Mode.t) (self: t_Resource_R) (a: t_R) (b: t_R) (return (x: tup2_Resource_R_Resource_R)) =
 {[@stop_split] [@expl:split requires] incl_eq_op_R a b (view_Resource_R self)}
   any
   [ return (result: tup2_Resource_R_Resource_R) ->
@@ -92,20 +94,20 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let split_off_R (self: MutBorrow.t t_Resource_R) (r: t_R) (s: t_R) (return (x: t_Resource_R)) =
+let split_off_R (mode: Mode.t) (self: MutBorrow.t t_Resource_R) (r: t_R) (s: t_R) (return (x: t_Resource_R)) =
 {[@stop_split] [@expl:split_off requires] incl_eq_op_R r s (view_Resource_R self.current)}
   (! bb0
   [ bb0 = s0
-    [ s0 = dummy_R (fun (_x: t_Resource_R) -> [ &_17 <- _x ] s1)
+    [ s0 = dummy_R {mode} (fun (_x: t_Resource_R) -> [ &_17 <- _x ] s1)
     | s1 = MutBorrow.borrow_mut <t_Resource_R> {self.current}
         (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_16 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
-    | s2 = replace_Resource_R {_16} {_17} (fun (_x: t_Resource_R) -> [ &this <- _x ] s3)
-    | s3 = split_R {this} {r} {s} (fun (_x: tup2_Resource_R_Resource_R) -> [ &_20 <- _x ] s4)
+    | s2 = replace_Resource_R {mode} {_16} {_17} (fun (_x: t_Resource_R) -> [ &this <- _x ] s3)
+    | s3 = split_R {mode} {this} {r} {s} (fun (_x: tup2_Resource_R_Resource_R) -> [ &_20 <- _x ] s4)
     | s4 = [ &r'0 <- _20.f0 ] s5
     | s5 = [ &this'0 <- _20.f1 ] s6
     | s6 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
         (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_25 <- _bor ] [ &self <- { self with current = _bor.final } ] s7)
-    | s7 = replace_Resource_R {_25} {this'0} (fun (_x: t_Resource_R) -> [ &_24 <- _x ] s8)
+    | s7 = replace_Resource_R {mode} {_25} {this'0} (fun (_x: t_Resource_R) -> [ &_24 <- _x ] s8)
     | s8 = -{resolve_refmut_Resource_R self}- s9
     | s9 = [ &_ret <- r'0 ] s10
     | s10 = return {_ret} ] ]

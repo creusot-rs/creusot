@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_Resource_R
@@ -82,7 +83,7 @@ type t_Id
 
 function id_R (self: t_Resource_R) : t_Id
 
-let split_off_R (self: MutBorrow.t t_Resource_R) (r: t_R) (s: t_R) (return (x: t_Resource_R)) =
+let split_off_R (mode: Mode.t) (self: MutBorrow.t t_Resource_R) (r: t_R) (s: t_R) (return (x: t_Resource_R)) =
 {[@stop_split] [@expl:split_off requires] incl_eq_op_R r s (view_Resource_R self.current)}
   any
   [ return (result: t_Resource_R) ->
@@ -101,12 +102,12 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let take_R (self: MutBorrow.t t_Resource_R) (return (x: t_Resource_R)) = (! bb0
+let take_R (mode: Mode.t) (self: MutBorrow.t t_Resource_R) (return (x: t_Resource_R)) = (! bb0
   [ bb0 = s0
     [ s0 = [ &r <- view_Resource_R self.current ] s1
     | s1 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
         (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_11 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
-    | s2 = split_off_R {_11} {r} {unit_R} (fun (_x: t_Resource_R) -> [ &_ret <- _x ] s3)
+    | s2 = split_off_R {mode} {_11} {r} {unit_R} (fun (_x: t_Resource_R) -> [ &_ret <- _x ] s3)
     | s3 = -{resolve_refmut_Resource_R self}- s4
     | s4 = return {_ret} ] ]
   [ & _ret: t_Resource_R = Any.any_l ()

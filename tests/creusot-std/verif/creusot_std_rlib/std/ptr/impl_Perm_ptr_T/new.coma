@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.Opaque
+use creusot.prelude.Mode
 use creusot.prelude.Ptr
 use creusot.int.UInt64
 use creusot.prelude.Any
@@ -71,7 +72,7 @@ predicate inv_tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global [@inline:trivial] (_1: tup2
 
 meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global
 
-let from_box_T (val': t_T) (return (x: tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global)) =
+let from_box_T (mode: Mode.t) (val': t_T) (return (x: tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global)) =
 {[@stop_split] [@expl:from_box 'val' type invariant] inv_Box_T_Global val'}
   any
   [ return (result: tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global) ->
@@ -83,11 +84,11 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let new_T (v: t_T) (return (x: tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global)) =
+let new_T (mode: Mode.t) (v: t_T) (return (x: tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global)) =
 {[@stop_split] [@expl:new 'v' type invariant] inv_T v}
   (! bb0
   [ bb0 = s0
-    [ s0 = from_box_T {v} (fun (_x: tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global) -> [ &_ret <- _x ] s1)
+    [ s0 = from_box_T {mode} {v} (fun (_x: tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global) -> [ &_ret <- _x ] s1)
     | s1 = return {_ret} ] ] [ & _ret: tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global = Any.any_l () | & v: t_T = v ])
   [ return (result: tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global) ->
   {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global result)

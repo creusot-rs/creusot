@@ -6,6 +6,7 @@ type t_Namespace = Other namespace_other
 
 use seq.Seq
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 use int.Int
 
@@ -53,7 +54,7 @@ function index_Seq_T'0 [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeTo_I
 
 meta "rewrite_def" function index_Seq_T'0
 
-let split_off_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (mid: int) (return (x: Seq.seq t_T)) =
+let split_off_ghost_T (mode: Mode.t) (self: MutBorrow.t (Seq.seq t_T)) (mid: int) (return (x: Seq.seq t_T)) =
 {[@stop_split] [@expl:split_off_ghost_T requires] ([@stop_split] [@expl:split_off_ghost 'self' type invariant] inv_refmut_Seq_T self)
   /\ ([@stop_split] [@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current)}
   any
@@ -87,7 +88,7 @@ meta "rewrite_def" predicate gt_log_Int
 
 function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
 
-let pop_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
+let pop_front_ghost_T (mode: Mode.t) (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
 {[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_T self}
   any
   [ return (result: t_Option_T) ->
@@ -99,7 +100,7 @@ let pop_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T))
       end)}
     (! return {result}) ]
 
-let unwrap_T (self_: t_Option_T) (return (x: t_T)) =
+let unwrap_T (mode: Mode.t) (self_: t_Option_T) (return (x: t_T)) =
 {[@stop_split] [@expl:unwrap_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_T self_)
   /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
   any
@@ -112,7 +113,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extract_T (self: Seq.seq t_T) (index: int) (return (x: t_T)) =
+let extract_T (mode: Mode.t) (self: Seq.seq t_T) (index: int) (return (x: t_T)) =
 {[@stop_split] [@expl:extract_T requires] ([@stop_split] [@expl:extract 'self' type invariant] inv_Seq_T self)
   /\ ([@stop_split] [@expl:extract requires] 0 <= index /\ index < Seq.length self)}
   (! bb0
@@ -123,16 +124,16 @@ let extract_T (self: Seq.seq t_T) (index: int) (return (x: t_T)) =
     | s1 = MutBorrow.borrow_mut <Seq.seq t_T> {self}
         (fun (_bor: MutBorrow.t (Seq.seq t_T)) -> [ &_19 <- _bor ] -{inv_Seq_T _bor.final}- [ &self <- _bor.final ] s2)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T self} any) ]
-    | s2 = split_off_ghost_T {_19} {index} (fun (_x: Seq.seq t_T) -> [ &_18 <- _x ] s3)
+    | s2 = split_off_ghost_T {mode} {_19} {index} (fun (_x: Seq.seq t_T) -> [ &_18 <- _x ] s3)
     | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Seq_T self} any) ]
     | s4 = -{resolve_Seq_T'0 self}- s5
     | s5 = MutBorrow.borrow_mut <Seq.seq t_T> {_18}
         (fun (_bor: MutBorrow.t (Seq.seq t_T)) -> [ &_17 <- _bor ] -{inv_Seq_T _bor.final}- [ &_18 <- _bor.final ] s6)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T _18} any) ]
-    | s6 = pop_front_ghost_T {_17} (fun (_x: t_Option_T) -> [ &_16 <- _x ] s7)
+    | s6 = pop_front_ghost_T {mode} {_17} (fun (_x: t_Option_T) -> [ &_16 <- _x ] s7)
     | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_Seq_T _18} any) ]
     | s8 = -{resolve_Seq_T'0 _18}- s9
-    | s9 = unwrap_T {_16} (fun (_x: t_T) -> [ &_ret <- _x ] s10)
+    | s9 = unwrap_T {mode} {_16} (fun (_x: t_T) -> [ &_ret <- _x ] s10)
     | s10 = return {_ret} ] ]
   [ & _ret: t_T = Any.any_l ()
   | & self: Seq.seq t_T = self

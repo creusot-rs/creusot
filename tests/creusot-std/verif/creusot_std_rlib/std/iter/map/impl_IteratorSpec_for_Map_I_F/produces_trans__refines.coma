@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use seq.Seq
+use creusot.prelude.Mode
 use creusot.prelude.MutBorrow
 use int.Int
 
@@ -16,17 +17,17 @@ type t_F
 
 type t_Item
 
-predicate postcondition_once_F (self: t_F) (args: t_Item) (result: t_B)
+predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: t_Item) (result: t_B)
 
 predicate resolve_F (_1: t_F)
 
-predicate postcondition_mut_F (self: t_F) (args: t_Item) (result_state: t_F) (result: t_B)
+predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: t_Item) (result_state: t_F) (result: t_B)
 
-function fn_mut_once_F (self: t_F) (args: t_Item) (res: t_B) : ()
+function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: t_Item) (res: t_B) : ()
 
 axiom fn_mut_once_F_spec:
-  forall self: t_F, args: t_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
-    = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+  forall self: t_F, mode: Mode.t, args: t_Item, res: t_B [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+    = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
 
 predicate hist_inv_F (self: t_F) (result_state: t_F)
 
@@ -40,10 +41,10 @@ function hist_inv_refl_F (self: t_F) : ()
 
 axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
 
-function postcondition_mut_hist_inv_F (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
+function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: t_Item) (res_state: t_F) (res: t_B) : ()
 
 axiom postcondition_mut_hist_inv_F_spec:
-  forall self: t_F, args: t_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+  forall self: t_F, mode: Mode.t, args: t_Item, res_state: t_F, res: t_B [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
     -> hist_inv_F self res_state
 
 function func_Map_I_F (self: t_Map_I_F) : t_F
@@ -77,7 +78,7 @@ predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq
         )
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited
         -> hist_inv_F (func_Map_I_F self) (Seq.get fs i).current
-        /\ postcondition_mut_F (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+        /\ (forall mode: Mode.t. postcondition_mut_F (Seq.get fs i).current mode (Seq.get s i) (Seq.get fs i).final (Seq.get visited i)))))
 
 meta "rewrite_def" predicate produces_Map_I_F
 

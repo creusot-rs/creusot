@@ -4,6 +4,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -26,7 +27,8 @@ predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
 
 meta "rewrite_def" predicate inv_ref_T
 
-let to_ref_T (self: t_T) (return (x: t_T)) = {[@stop_split] [@expl:to_ref 'self' type invariant] inv_GhostShared_T self}
+let to_ref_T (mode: Mode.t) (self: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:to_ref 'self' type invariant] inv_GhostShared_T self}
   any
   [ return (result: t_T) ->
   {[@stop_split] [@expl:to_ref_T ensures] ([@stop_split] [@expl:to_ref result type invariant] inv_ref_T result)
@@ -45,11 +47,11 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let deref_GhostShared_T (self: t_T) (return (x: t_T)) =
+let deref_GhostShared_T (mode: Mode.t) (self: t_T) (return (x: t_T)) =
 {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_GhostShared_T self}
   (! bb0
   [ bb0 = s0
-    [ s0 = to_ref_T {self} (fun (_x: t_T) -> [ &_4 <- _x ] s1) | s1 = [ &_ret <- _4 ] s2 | s2 = return {_ret} ] ]
+    [ s0 = to_ref_T {mode} {self} (fun (_x: t_T) -> [ &_4 <- _x ] s1) | s1 = [ &_ret <- _4 ] s2 | s2 = return {_ret} ] ]
   [ & _ret: t_T = Any.any_l () | & self: t_T = self | & _4: t_T = Any.any_l () ])
   [ return (result: t_T) ->
   {[@stop_split] [@expl:deref_GhostShared_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_T result)

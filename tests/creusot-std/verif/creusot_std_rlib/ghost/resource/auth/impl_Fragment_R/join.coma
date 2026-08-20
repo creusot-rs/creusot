@@ -4,6 +4,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_Resource_View_AuthViewRel_R
@@ -129,7 +130,7 @@ function commutative_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_Aut
 axiom commutative_View_AuthViewRel_R_spec:
   forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R. op_View_AuthViewRel_R a b = op_View_AuthViewRel_R b a
 
-let join_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) (other: t_Resource_View_AuthViewRel_R)
+let join_View_AuthViewRel_R (mode: Mode.t) (self: t_Resource_View_AuthViewRel_R) (other: t_Resource_View_AuthViewRel_R)
   (return (x: t_Resource_View_AuthViewRel_R)) = {[@stop_split] [@expl:join requires] id_View_AuthViewRel_R self
   = id_View_AuthViewRel_R other}
   any
@@ -148,11 +149,12 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let join_R (self: t_Fragment_R) (other: t_Fragment_R) (return (x: t_Fragment_R)) =
+let join_R (mode: Mode.t) (self: t_Fragment_R) (other: t_Fragment_R) (return (x: t_Fragment_R)) =
 {[@stop_split] [@expl:join requires] id_R self = id_R other}
   (! bb0
   [ bb0 = s0
-    [ s0 = join_View_AuthViewRel_R {self.f0} {other.f0} (fun (_x: t_Resource_View_AuthViewRel_R) -> [ &_11 <- _x ] s1)
+    [ s0 = join_View_AuthViewRel_R {mode} {self.f0} {other.f0}
+        (fun (_x: t_Resource_View_AuthViewRel_R) -> [ &_11 <- _x ] s1)
     | s1 = [ &_ret <- { f0 = _11 } ] s2
     | s2 = return {_ret} ] ]
   [ & _ret: t_Fragment_R = Any.any_l ()

@@ -6,6 +6,7 @@ type t_Namespace = Other namespace_other
 
 use creusot.int.Int8
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use int.Int
 
 type t_Range_i8 = { start: Int8.t; end': Int8.t }
@@ -28,7 +29,7 @@ predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
 
 meta "rewrite_def" predicate gt_log_Int
 
-predicate postcondition_size_hint (self: ()) (args: t_Range_i8) (result: tup2_usize_Option_usize) =
+predicate postcondition_size_hint (self: ()) (mode: Mode.t) (args: t_Range_i8) (result: tup2_usize_Option_usize) =
   let self_ = args in (ge_log_Int (deep_model_i8 self_.start) (deep_model_i8 self_.end')
     -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
   /\ (let s = deep_model_i8 self_.end' - deep_model_i8 self_.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
@@ -38,7 +39,7 @@ predicate postcondition_size_hint (self: ()) (args: t_Range_i8) (result: tup2_us
 
 meta "rewrite_def" predicate postcondition_size_hint
 
-let size_hint_Range_i8 (self_: t_Range_i8) (return (x: tup2_usize_Option_usize)) = any
+let size_hint_Range_i8 (mode: Mode.t) (self_: t_Range_i8) (return (x: tup2_usize_Option_usize)) = any
   [ return (result: tup2_usize_Option_usize) ->
   {[@stop_split] [@expl:size_hint_Range_i8 ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_i8 self_.start) (deep_model_i8 self_.end')
       -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
@@ -53,5 +54,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self: t_Range_i8, r: tup2_usize_Option_usize. postcondition_size_hint () self r
-    -> postcondition_size_hint () self r /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))
+goal refines:
+  forall self: t_Range_i8, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint () mode self r)
+    -> (exists mode: Mode.t. postcondition_size_hint () mode self r)
+    /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))

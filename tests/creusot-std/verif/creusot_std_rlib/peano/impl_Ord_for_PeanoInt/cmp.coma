@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use creusot.prelude.Any
 use int.Int
 
@@ -22,7 +23,7 @@ function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int 
 
 meta "rewrite_def" function deep_model_u64
 
-let cmp_u64 (self_: UInt64.t) (rhs: UInt64.t) (return (x: t_Ordering)) = any
+let cmp_u64 (mode: Mode.t) (self_: UInt64.t) (rhs: UInt64.t) (return (x: t_Ordering)) = any
   [ return (result: t_Ordering) -> {[@stop_split] [@expl:cmp ensures] result
     = cmp_log_Int (deep_model_u64 self_) (deep_model_u64 rhs)}
     (! return {result}) ]
@@ -41,10 +42,10 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let cmp_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: t_Ordering)) = (! bb0
+let cmp_PeanoInt (mode: Mode.t) (self: t_PeanoInt) (other: t_PeanoInt) (return (x: t_Ordering)) = (! bb0
   [ bb0 = s0
     [ s0 = [ &_8 <- other.f0 ] s1
-    | s1 = cmp_u64 {self.f0} {_8} (fun (_x: t_Ordering) -> [ &_ret <- _x ] s2)
+    | s1 = cmp_u64 {mode} {self.f0} {_8} (fun (_x: t_Ordering) -> [ &_ret <- _x ] s2)
     | s2 = return {_ret} ] ]
   [ & _ret: t_Ordering = Any.any_l ()
   | & self: t_PeanoInt = self

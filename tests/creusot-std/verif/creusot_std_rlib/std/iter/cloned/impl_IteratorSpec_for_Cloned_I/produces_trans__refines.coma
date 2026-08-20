@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use seq.Seq
+use creusot.prelude.Mode
 use int.Int
 
 type t_Cloned_I
@@ -28,15 +29,17 @@ function iter_Cloned_I (self: t_Cloned_I) : t_I
 
 predicate inv_T (_1: t_T)
 
-predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
+predicate postcondition_clone (self: ()) (mode: Mode.t) (args: t_T) (result: t_T)
 
-axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
+axiom postcondition_fndef:
+  forall mode: Mode.t, args: t_T, res: t_T [postcondition_clone () mode args res]. postcondition_clone () mode args res
     -> (let self_ = args in inv_T res)
 
 predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
   exists s: Seq.seq t_T. produces_I (iter_Cloned_I self) s (iter_Cloned_I o)
     /\ Seq.length visited = Seq.length s
-    /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+    /\ (forall i: int. 0 <= i /\ i < Seq.length s
+      -> (forall mode: Mode.t. postcondition_clone () mode (Seq.get s i) (Seq.get visited i)))
 
 meta "compute_max_steps" 1000000
 

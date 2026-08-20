@@ -4,11 +4,12 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use int.ComputerDivision
 use creusot.prelude.MutBorrow
 use creusot.prelude.Any
 
-let rem_Int (self: int) (other: int) (return (x: int)) = {[@stop_split] [@expl:rem requires] other <> 0}
+let rem_Int (mode: Mode.t) (self: int) (other: int) (return (x: int)) = {[@stop_split] [@expl:rem requires] other <> 0}
   any
   [ return (result: int) -> {[@stop_split] [@expl:rem ensures] result = ComputerDivision.mod self other}
     (! return {result}) ]
@@ -21,11 +22,11 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let rem_assign_Int (self: MutBorrow.t int) (rhs: int) (return (x: ())) = {[@stop_split] [@expl:rem_assign requires] rhs
-  <> 0}
+let rem_assign_Int (mode: Mode.t) (self: MutBorrow.t int) (rhs: int) (return (x: ())) =
+{[@stop_split] [@expl:rem_assign requires] rhs <> 0}
   (! bb0
   [ bb0 = s0
-    [ s0 = rem_Int {self.current} {rhs} (fun (_x: int) -> [ &_8 <- _x ] s1)
+    [ s0 = rem_Int {mode} {self.current} {rhs} (fun (_x: int) -> [ &_8 <- _x ] s1)
     | s1 = [ &self <- { self with current = _8 } ] s2
     | s2 = -{resolve_refmut_Int self}- s3
     | s3 = return {_ret} ] ]

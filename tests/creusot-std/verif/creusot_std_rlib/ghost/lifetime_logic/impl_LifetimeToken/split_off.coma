@@ -7,6 +7,7 @@ type t_Namespace = Other namespace_other
 use real.Real
 use real.FromInt
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_PositiveReal
@@ -41,7 +42,7 @@ function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.fro
 
 meta "rewrite_def" function from_int
 
-let deref_mut_Ghost_Resource_PositiveReal (self: MutBorrow.t t_Resource_PositiveReal)
+let deref_mut_Ghost_Resource_PositiveReal (mode: Mode.t) (self: MutBorrow.t t_Resource_PositiveReal)
   (return (x: MutBorrow.t t_Resource_PositiveReal)) = any
   [ return (result: MutBorrow.t t_Resource_PositiveReal) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
     (! return {result}) ]
@@ -124,8 +125,8 @@ type t_Id
 
 function id_PositiveReal (self: t_Resource_PositiveReal) : t_Id
 
-let split_off_PositiveReal (self: MutBorrow.t t_Resource_PositiveReal) (r: t_PositiveReal) (s: t_PositiveReal)
-  (return (x: t_Resource_PositiveReal)) =
+let split_off_PositiveReal (mode: Mode.t) (self: MutBorrow.t t_Resource_PositiveReal) (r: t_PositiveReal)
+  (s: t_PositiveReal) (return (x: t_Resource_PositiveReal)) =
 {[@stop_split] [@expl:split_off requires] incl_eq_op_PositiveReal r s (view_Resource_PositiveReal self.current)}
   any
   [ return (result: t_Resource_PositiveReal) ->
@@ -145,7 +146,7 @@ predicate resolve_refmut_LifetimeToken [@inline:trivial] (_1: MutBorrow.t t_Life
 
 meta "rewrite_def" predicate resolve_refmut_LifetimeToken
 
-let new_Resource_PositiveReal (x: t_Resource_PositiveReal) (return (x'0: t_Resource_PositiveReal)) = any
+let new_Resource_PositiveReal (mode: Mode.t) (x: t_Resource_PositiveReal) (return (x'0: t_Resource_PositiveReal)) = any
   [ return (result: t_Resource_PositiveReal) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
 
 type t_Lifetime = { f0'0: t_Id }
@@ -156,22 +157,23 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let split_off (self: MutBorrow.t t_LifetimeToken) (return (x: t_LifetimeToken)) = (! bb0
+let split_off (mode: Mode.t) (self: MutBorrow.t t_LifetimeToken) (return (x: t_LifetimeToken)) = (! bb0
   [ bb0 = s0
     [ s0 = [ &half <- div_PositiveReal (frac self.current) (from_int 2) ] s1
     | s1 = MutBorrow.borrow_final <t_Resource_PositiveReal> {self.current.f0}
         {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
         (fun (_bor: MutBorrow.t t_Resource_PositiveReal) ->
           [ &_15 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s2)
-    | s2 = deref_mut_Ghost_Resource_PositiveReal {_15}
+    | s2 = deref_mut_Ghost_Resource_PositiveReal {Mode.into_ghost mode} {_15}
         (fun (_x: MutBorrow.t t_Resource_PositiveReal) -> [ &_14 <- _x ] s3)
     | s3 = MutBorrow.borrow_final <t_Resource_PositiveReal> {_14.current} {MutBorrow.get_id _14}
         (fun (_bor: MutBorrow.t t_Resource_PositiveReal) ->
           [ &_13 <- _bor ] [ &_14 <- { _14 with current = _bor.final } ] s4)
-    | s4 = split_off_PositiveReal {_13} {half} {half} (fun (_x: t_Resource_PositiveReal) -> [ &_9 <- _x ] s5)
+    | s4 = split_off_PositiveReal {Mode.into_ghost mode} {_13} {half} {half}
+        (fun (_x: t_Resource_PositiveReal) -> [ &_9 <- _x ] s5)
     | s5 = -{resolve_refmut_Resource_PositiveReal _14}- s6
     | s6 = -{resolve_refmut_LifetimeToken self}- s7
-    | s7 = new_Resource_PositiveReal {_9} (fun (_x: t_Resource_PositiveReal) -> [ &_8 <- _x ] s8)
+    | s7 = new_Resource_PositiveReal {Mode.into_ghost mode} {_9} (fun (_x: t_Resource_PositiveReal) -> [ &_8 <- _x ] s8)
     | s8 = [ &_ret <- { f0 = _8 } ] s9
     | s9 = return {_ret} ] ]
   [ & _ret: t_LifetimeToken = Any.any_l ()

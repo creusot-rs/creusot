@@ -6,6 +6,7 @@ type t_Namespace = Other namespace_other
 
 use creusot.slice.Slice64
 use creusot.prelude.Opaque
+use creusot.prelude.Mode
 use seq.Seq
 use creusot.prelude.Ptr
 use creusot.int.UInt64
@@ -97,7 +98,7 @@ predicate inv_tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1:
 
 meta "rewrite_def" predicate inv_tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T
 
-let from_ref_slice_T (r: Slice64.slice t_T) (return (x: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T)) =
+let from_ref_slice_T (mode: Mode.t) (r: Slice64.slice t_T) (return (x: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T)) =
 {[@stop_split] [@expl:from_ref 'r' type invariant] inv_ref_slice_T r}
   any
   [ return (result: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T) ->
@@ -117,11 +118,11 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let as_ptr_perm_slice_T (self: Slice64.slice t_T) (return (x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T)) =
+let as_ptr_perm_slice_T (mode: Mode.t) (self: Slice64.slice t_T) (return (x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T)) =
 {[@stop_split] [@expl:as_ptr_perm 'self' type invariant] inv_ref_slice_T self}
   (! bb0
   [ bb0 = s0
-    [ s0 = from_ref_slice_T {self} (fun (_x: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T) -> [ &_9 <- _x ] s1)
+    [ s0 = from_ref_slice_T {mode} {self} (fun (_x: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T) -> [ &_9 <- _x ] s1)
     | s1 = [ &ptr <- _9.f0 ] s2
     | s2 = [ &own <- _9.f1 ] s3
     | s3 = [ &_12 <- Opaque.thin ptr ] s4

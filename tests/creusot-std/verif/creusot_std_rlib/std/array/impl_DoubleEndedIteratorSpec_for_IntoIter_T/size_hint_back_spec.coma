@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use seq.Seq
 use seq.Reverse
 use creusot.prelude.MutBorrow
@@ -20,7 +21,7 @@ type t_T
 
 function view_IntoIter_T (self: t_IntoIter_T) : Seq.seq t_T
 
-predicate postcondition_size_hint (self: ()) (args: t_IntoIter_T) (result: tup2_usize_Option_usize) =
+predicate postcondition_size_hint (self: ()) (mode: Mode.t) (args: t_IntoIter_T) (result: tup2_usize_Option_usize) =
   let self_ = args in UInt64.t'int result.f0 = Seq.length (view_IntoIter_T self_) /\ result.f1 = Some (result.f0)
 
 meta "rewrite_def" predicate postcondition_size_hint
@@ -35,7 +36,7 @@ predicate inv_ref_IntoIter_T [@inline:trivial] (_1: t_IntoIter_T) = invariant_re
 
 meta "rewrite_def" predicate inv_ref_IntoIter_T
 
-let size_hint_IntoIter_T (self_: t_IntoIter_T) (return (x: tup2_usize_Option_usize)) =
+let size_hint_IntoIter_T (mode: Mode.t) (self_: t_IntoIter_T) (return (x: tup2_usize_Option_usize)) =
 {[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_IntoIter_T self_}
   any
   [ return (result: tup2_usize_Option_usize) ->
@@ -85,7 +86,7 @@ constant r : tup2_usize_Option_usize
 
 function size_hint_back_spec_IntoIter_T (self: t_IntoIter_T) (r: tup2_usize_Option_usize) : ()
 
-goal vc_size_hint_back_spec_IntoIter_T: postcondition_size_hint () self r
+goal vc_size_hint_back_spec_IntoIter_T: (exists mode: Mode.t. postcondition_size_hint () mode self r)
   -> ([@stop_split] [@expl:size_hint_back_spec_IntoIter_T ensures] ([@stop_split] [@expl:size_hint_back_spec ensures #0] forall s: Seq.seq t_T, i: MutBorrow.t t_IntoIter_T. produces_back_IntoIter_T self s i.current
         /\ completed_back_IntoIter_T i -> UInt64.t'int r.f0 <= Seq.length s)
   /\ ([@stop_split] [@expl:size_hint_back_spec ensures #1] match r.f1 with

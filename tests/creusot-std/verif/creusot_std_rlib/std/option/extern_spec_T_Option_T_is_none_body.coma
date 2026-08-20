@@ -2,6 +2,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -26,7 +27,7 @@ predicate inv_ref_Option_T [@inline:trivial] (_1: t_Option_T) = invariant_ref_Op
 
 meta "rewrite_def" predicate inv_ref_Option_T
 
-let is_some_T (self_: t_Option_T) (return (x: bool)) =
+let is_some_T (mode: Mode.t) (self_: t_Option_T) (return (x: bool)) =
 {[@stop_split] [@expl:is_some 'self_' type invariant] inv_ref_Option_T self_}
   any [ return (result: bool) -> {[@stop_split] [@expl:is_some ensures] result = (self_ <> None)} (! return {result}) ]
 
@@ -34,11 +35,12 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_Option_T_is_none_body_T (self_: t_Option_T) (return (x: bool)) =
+let extern_spec_T_Option_T_is_none_body_T (mode: Mode.t) (self_: t_Option_T) (return (x: bool)) =
 {[@stop_split] [@expl:extern_spec_T_Option_T_is_none_body 'self_' type invariant] inv_ref_Option_T self_}
   (! bb0
   [ bb0 = s0
-    [ s0 = is_some_T {self_} (fun (_x: bool) -> [ &_6 <- _x ] s1) | s1 = [ &_ret <- not _6 ] s2 | s2 = return {_ret} ] ]
-  [ & _ret: bool = Any.any_l () | & self_: t_Option_T = self_ | & _6: bool = Any.any_l () ])
+    [ s0 = is_some_T {mode} {self_} (fun (_x: bool) -> [ &_6 <- _x ] s1)
+    | s1 = [ &_ret <- not _6 ] s2
+    | s2 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & self_: t_Option_T = self_ | & _6: bool = Any.any_l () ])
   [ return (result: bool) -> {[@stop_split] [@expl:extern_spec_T_Option_T_is_none_body ensures] result = (self_ = None)}
     (! return {result}) ]

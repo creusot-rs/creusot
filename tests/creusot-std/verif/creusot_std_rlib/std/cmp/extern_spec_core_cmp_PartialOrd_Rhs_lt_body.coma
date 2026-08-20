@@ -2,6 +2,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_Self_
@@ -34,11 +35,11 @@ predicate inv_ref_Rhs [@inline:trivial] (_1: t_Rhs) = invariant_ref_Rhs _1
 
 meta "rewrite_def" predicate inv_ref_Rhs
 
-predicate precondition_partial_cmp (self: ()) (args: tup2_ref_Self__ref_Rhs)
+predicate precondition_partial_cmp (self: ()) (mode: Mode.t) (args: tup2_ref_Self__ref_Rhs)
 
 axiom precondition_fndef:
-  forall args: tup2_ref_Self__ref_Rhs [precondition_partial_cmp () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_Self_ self_
-      /\ inv_ref_Rhs rhs) -> precondition_partial_cmp () args
+  forall mode: Mode.t. forall args: tup2_ref_Self__ref_Rhs [precondition_partial_cmp () mode args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_Self_ self_
+        /\ inv_ref_Rhs rhs) -> precondition_partial_cmp () mode args
 
 type t_DeepModelTy
 
@@ -75,23 +76,23 @@ function deep_model_Self_ (self: t_Self_) : t_DeepModelTy
 
 function deep_model_Rhs (self: t_Rhs) : t_DeepModelTy
 
-predicate postcondition_partial_cmp (self: ()) (args: tup2_ref_Self__ref_Rhs) (result: t_Option_Ordering)
+predicate postcondition_partial_cmp (self: ()) (mode: Mode.t) (args: tup2_ref_Self__ref_Rhs) (result: t_Option_Ordering)
 
 axiom postcondition_fndef:
-  forall args: tup2_ref_Self__ref_Rhs, res: t_Option_Ordering [postcondition_partial_cmp () args res]. postcondition_partial_cmp () args res
+  forall mode: Mode.t, args: tup2_ref_Self__ref_Rhs, res: t_Option_Ordering [postcondition_partial_cmp () mode args res]. postcondition_partial_cmp () mode args res
     -> (let {f0 = self_; f1 = rhs} = args in res
     = partial_cmp_log_DeepModelTy (deep_model_Self_ self_) (deep_model_Rhs rhs))
 
-predicate postcondition_once_partial_cmp (self: ()) (args: tup2_ref_Self__ref_Rhs) (result: t_Option_Ordering) =
-  postcondition_partial_cmp self args result
+predicate postcondition_once_partial_cmp (self: ()) (mode: Mode.t) (args: tup2_ref_Self__ref_Rhs) (result: t_Option_Ordering) =
+  postcondition_partial_cmp self mode args result
 
 meta "rewrite_def" predicate postcondition_once_partial_cmp
 
-let partial_cmp_Self_ (self_: t_Self_) (rhs: t_Rhs) (return (x: t_Option_Ordering)) =
-{[@stop_split] [@expl:partial_cmp requires] precondition_partial_cmp () { f0 = self_; f1 = rhs }}
+let partial_cmp_Self_ (mode: Mode.t) (self_: t_Self_) (rhs: t_Rhs) (return (x: t_Option_Ordering)) =
+{[@stop_split] [@expl:partial_cmp requires] precondition_partial_cmp () mode { f0 = self_; f1 = rhs }}
   any
   [ return (result: t_Option_Ordering) ->
-  {[@stop_split] [@expl:partial_cmp ensures] postcondition_once_partial_cmp () { f0 = self_; f1 = rhs } result}
+  {[@stop_split] [@expl:partial_cmp ensures] postcondition_once_partial_cmp () mode { f0 = self_; f1 = rhs } result}
     (! return {result}) ]
 
 let elim_Some (_x: t_Option_Ordering) (return (f0'0: t_Ordering)) = any
@@ -114,12 +115,13 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_core_cmp_PartialOrd_Rhs_lt_body_Self_ (self_: t_Self_) (other: t_Rhs) (return (x: bool)) =
+let extern_spec_core_cmp_PartialOrd_Rhs_lt_body_Self_ (mode: Mode.t) (self_: t_Self_) (other: t_Rhs)
+  (return (x: bool)) =
 {[@stop_split] [@expl:extern_spec_core_cmp_PartialOrd_Rhs_lt_body_Self_ requires] ([@stop_split] [@expl:extern_spec_core_cmp_PartialOrd_Rhs_lt_body 'self_' type invariant] inv_ref_Self_ self_)
   /\ ([@stop_split] [@expl:extern_spec_core_cmp_PartialOrd_Rhs_lt_body 'other' type invariant] inv_ref_Rhs other)}
   (! bb0
   [ bb0 = s0
-    [ s0 = partial_cmp_Self_ {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+    [ s0 = partial_cmp_Self_ {mode} {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
     | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
   | bb3 = elim_Some {_6}
       (fun (r0: t_Ordering) ->

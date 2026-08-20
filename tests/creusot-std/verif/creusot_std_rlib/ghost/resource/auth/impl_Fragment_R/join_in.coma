@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_Resource_View_AuthViewRel_R
@@ -130,9 +131,9 @@ function commutative_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_Aut
 axiom commutative_View_AuthViewRel_R_spec:
   forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R. op_View_AuthViewRel_R a b = op_View_AuthViewRel_R b a
 
-let join_in_View_AuthViewRel_R (self: MutBorrow.t t_Resource_View_AuthViewRel_R) (other: t_Resource_View_AuthViewRel_R)
-  (return (x: ())) = {[@stop_split] [@expl:join_in requires] id_View_AuthViewRel_R self.current
-  = id_View_AuthViewRel_R other}
+let join_in_View_AuthViewRel_R (mode: Mode.t) (self: MutBorrow.t t_Resource_View_AuthViewRel_R)
+  (other: t_Resource_View_AuthViewRel_R) (return (x: ())) =
+{[@stop_split] [@expl:join_in requires] id_View_AuthViewRel_R self.current = id_View_AuthViewRel_R other}
   any
   [ return (result: ()) ->
   {[@stop_split] [@expl:join_in_View_AuthViewRel_R ensures] ([@stop_split] [@expl:join_in ensures #0] id_View_AuthViewRel_R self.final
@@ -153,7 +154,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let join_in_R (self: MutBorrow.t t_Fragment_R) (other: t_Fragment_R) (return (x: ())) =
+let join_in_R (mode: Mode.t) (self: MutBorrow.t t_Fragment_R) (other: t_Fragment_R) (return (x: ())) =
 {[@stop_split] [@expl:join_in requires] id_R self.current = id_R other}
   (! bb0
   [ bb0 = s0
@@ -161,7 +162,7 @@ let join_in_R (self: MutBorrow.t t_Fragment_R) (other: t_Fragment_R) (return (x:
         {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
         (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_R) ->
           [ &_11 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s1)
-    | s1 = join_in_View_AuthViewRel_R {_11} {other.f0} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+    | s1 = join_in_View_AuthViewRel_R {mode} {_11} {other.f0} (fun (_x: ()) -> [ &_ret <- _x ] s2)
     | s2 = -{resolve_refmut_Fragment_R self}- s3
     | s3 = return {_ret} ] ]
   [ & _ret: () = Any.any_l ()

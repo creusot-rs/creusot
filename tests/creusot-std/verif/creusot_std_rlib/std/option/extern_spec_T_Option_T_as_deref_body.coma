@@ -2,6 +2,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -18,10 +19,11 @@ let elim_Some (_x: t_Option_T) (return (f0: t_T)) = any
 
 type t_Target
 
-predicate precondition_deref (self: ()) (args: t_T)
+predicate precondition_deref (self: ()) (mode: Mode.t) (args: t_T)
 
-axiom precondition_fndef: forall args: t_T [precondition_deref () args]. (let self_ = args in false)
-    -> precondition_deref () args
+axiom precondition_fndef:
+  forall mode: Mode.t. forall args: t_T [precondition_deref () mode args]. (let self_ = args in false)
+      -> precondition_deref () mode args
 
 predicate inv_Target (_1: t_Target)
 
@@ -33,19 +35,21 @@ predicate inv_ref_Target [@inline:trivial] (_1: t_Target) = invariant_ref_Target
 
 meta "rewrite_def" predicate inv_ref_Target
 
-predicate postcondition_deref (self: ()) (args: t_T) (result: t_Target)
+predicate postcondition_deref (self: ()) (mode: Mode.t) (args: t_T) (result: t_Target)
 
 axiom postcondition_fndef:
-  forall args: t_T, res: t_Target [postcondition_deref () args res]. postcondition_deref () args res
+  forall mode: Mode.t, args: t_T, res: t_Target [postcondition_deref () mode args res]. postcondition_deref () mode args res
     -> (let self_ = args in inv_ref_Target res)
 
-predicate postcondition_once_deref (self: ()) (args: t_T) (result: t_Target) = postcondition_deref self args result
+predicate postcondition_once_deref (self: ()) (mode: Mode.t) (args: t_T) (result: t_Target) =
+  postcondition_deref self mode args result
 
 meta "rewrite_def" predicate postcondition_once_deref
 
-let deref_T (self_: t_T) (return (x: t_Target)) = {[@stop_split] [@expl:deref requires] precondition_deref () self_}
+let deref_T (mode: Mode.t) (self_: t_T) (return (x: t_Target)) =
+{[@stop_split] [@expl:deref requires] precondition_deref () mode self_}
   any
-  [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self_ result}
+  [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () mode self_ result}
     (! return {result}) ]
 
 type t_Option_ref_Target = None'0 | Some'0 t_Target
@@ -82,18 +86,18 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_Option_T_as_deref_body_T (self_: t_Option_T) (return (x: t_Option_ref_Target)) =
+let extern_spec_T_Option_T_as_deref_body_T (mode: Mode.t) (self_: t_Option_T) (return (x: t_Option_ref_Target)) =
 {[@stop_split] [@expl:extern_spec_T_Option_T_as_deref_body_T requires] ([@stop_split] [@expl:extern_spec_T_Option_T_as_deref_body 'self_' type invariant] inv_ref_Option_T self_)
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_as_deref_body requires] match self_ with
     | None -> true
-    | Some x -> precondition_deref () x
+    | Some x -> precondition_deref () mode x
     end)}
   (! bb0
   [ bb0 = any [ br0 -> {self_ = None} (! bb3) | br1 (x0: t_T) -> {self_ = Some x0} (! bb4) ]
   | bb4 = s0
     [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &x <- r0 ] s1)
     | s1 = [ &_11 <- x ] s2
-    | s2 = deref_T {_11} (fun (_x: t_Target) -> [ &_9 <- _x ] s3)
+    | s2 = deref_T {mode} {_11} (fun (_x: t_Target) -> [ &_9 <- _x ] s3)
     | s3 = [ &_ret <- Some'0 _9 ] s4
     | s4 = return {_ret} ]
   | bb3 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
@@ -106,7 +110,7 @@ let extern_spec_T_Option_T_as_deref_body_T (self_: t_Option_T) (return (x: t_Opt
   {[@stop_split] [@expl:extern_spec_T_Option_T_as_deref_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Option_T_as_deref_body result type invariant] inv_Option_ref_Target result)
     /\ ([@stop_split] [@expl:extern_spec_T_Option_T_as_deref_body ensures] match { f0 = self_; f1 = result } with
       | {f0 = None; f1 = None'0} -> true
-      | {f0 = Some x; f1 = Some'0 r} -> postcondition_deref () x r
+      | {f0 = Some x; f1 = Some'0 r} -> postcondition_deref () mode x r
       | _ -> false
       end)}
     (! return {result}) ]

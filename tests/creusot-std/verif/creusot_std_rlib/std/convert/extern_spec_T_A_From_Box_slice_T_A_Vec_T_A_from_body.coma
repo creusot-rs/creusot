@@ -3,6 +3,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.slice.Slice64
+use creusot.prelude.Mode
 use seq.Seq
 use creusot.int.UInt64
 use creusot.prelude.Any
@@ -60,7 +61,7 @@ function view_Box_slice_T_A [@inline:trivial] (self: Slice64.slice t_T) : Seq.se
 
 meta "rewrite_def" function view_Box_slice_T_A
 
-let into_vec_T (self_: Slice64.slice t_T) (return (x: t_Vec_T_A)) =
+let into_vec_T (mode: Mode.t) (self_: Slice64.slice t_T) (return (x: t_Vec_T_A)) =
 {[@stop_split] [@expl:into_vec 'self_' type invariant] inv_Box_slice_T_A self_}
   any
   [ return (result: t_Vec_T_A) ->
@@ -72,10 +73,11 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_A_From_Box__slice_T_A_Vec_T_A_from_body_T (s: Slice64.slice t_T) (return (x: t_Vec_T_A)) =
+let extern_spec_T_A_From_Box__slice_T_A_Vec_T_A_from_body_T (mode: Mode.t) (s: Slice64.slice t_T)
+  (return (x: t_Vec_T_A)) =
 {[@stop_split] [@expl:extern_spec_T_A_From_Box__slice_T_A_Vec_T_A_from_body 's' type invariant] inv_Box_slice_T_A s}
   (! bb0
-  [ bb0 = s0 [ s0 = into_vec_T {s} (fun (_x: t_Vec_T_A) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ bb0 = s0 [ s0 = into_vec_T {mode} {s} (fun (_x: t_Vec_T_A) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
   [ & _ret: t_Vec_T_A = Any.any_l () | & s: Slice64.slice t_T = s ])
   [ return (result: t_Vec_T_A) ->
   {[@stop_split] [@expl:extern_spec_T_A_From_Box__slice_T_A_Vec_T_A_from_body_T ensures] ([@stop_split] [@expl:extern_spec_T_A_From_Box__slice_T_A_Vec_T_A_from_body result type invariant] inv_Vec_T_A result)

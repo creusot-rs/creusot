@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.Opaque
+use creusot.prelude.Mode
 use creusot.prelude.Ptr
 use creusot.int.UInt64
 use creusot.prelude.Any
@@ -64,7 +65,7 @@ predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global 
 
 meta "rewrite_def" predicate inv_Box_T_Global
 
-let to_box_T (ptr: Opaque.ptr) (own: t_Perm_ptr_T) (return (x: t_T)) =
+let to_box_T (mode: Mode.t) (ptr: Opaque.ptr) (own: t_Perm_ptr_T) (return (x: t_T)) =
 {[@stop_split] [@expl:to_box_T requires] ([@stop_split] [@expl:to_box 'own' type invariant] inv_Ghost_Box_Perm_ptr_T_Global own)
   /\ ([@stop_split] [@expl:to_box requires] ptr = ward_ptr_T own)}
   any
@@ -83,12 +84,12 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let drop_T (ptr: Opaque.ptr) (own: t_Perm_ptr_T) (return (x: ())) =
+let drop_T (mode: Mode.t) (ptr: Opaque.ptr) (own: t_Perm_ptr_T) (return (x: ())) =
 {[@stop_split] [@expl:drop_T requires] ([@stop_split] [@expl:drop 'own' type invariant] inv_Ghost_Box_Perm_ptr_T_Global own)
   /\ ([@stop_split] [@expl:drop requires] ptr = ward_ptr_T own)}
   (! bb0
   [ bb0 = s0
-    [ s0 = to_box_T {ptr} {own} (fun (_x: t_T) -> [ &_6 <- _x ] s1)
+    [ s0 = to_box_T {mode} {ptr} {own} (fun (_x: t_T) -> [ &_6 <- _x ] s1)
     | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_Box_T_Global _6} any) ]
     | s2 = -{resolve_Box_T_Global _6}- s3
     | s3 = return {_ret} ] ]

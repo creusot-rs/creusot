@@ -3,6 +3,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -39,23 +40,27 @@ predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
 
 meta "rewrite_def" predicate inv_ref_T
 
-predicate precondition_clone (self: ()) (args: t_T)
+predicate precondition_clone (self: ()) (mode: Mode.t) (args: t_T)
 
-axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
-    -> precondition_clone () args
+axiom precondition_fndef:
+  forall mode: Mode.t. forall args: t_T [precondition_clone () mode args]. (let self_ = args in inv_ref_T self_)
+      -> precondition_clone () mode args
 
-predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
+predicate postcondition_clone (self: ()) (mode: Mode.t) (args: t_T) (result: t_T)
 
-axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
+axiom postcondition_fndef:
+  forall mode: Mode.t, args: t_T, res: t_T [postcondition_clone () mode args res]. postcondition_clone () mode args res
     -> (let self_ = args in inv_T res)
 
-predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T) = postcondition_clone self args result
+predicate postcondition_once_clone (self: ()) (mode: Mode.t) (args: t_T) (result: t_T) =
+  postcondition_clone self mode args result
 
 meta "rewrite_def" predicate postcondition_once_clone
 
-let clone_T (self_: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+let clone_T (mode: Mode.t) (self_: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:clone requires] precondition_clone () mode self_}
   any
-  [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+  [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () mode self_ result}
     (! return {result}) ]
 
 type t_Option_T = None'0 | Some'0 t_T
@@ -82,7 +87,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_Option__refmut_T_cloned_body_T (self_: t_Option_refmut_T) (return (x: t_Option_T)) =
+let extern_spec_T_Option__refmut_T_cloned_body_T (mode: Mode.t) (self_: t_Option_refmut_T) (return (x: t_Option_T)) =
 {[@stop_split] [@expl:extern_spec_T_Option__refmut_T_cloned_body 'self_' type invariant] inv_Option_refmut_T self_}
   (! bb0
   [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: MutBorrow.t t_T) -> {self_ = Some x0} (! bb3) ]
@@ -90,7 +95,7 @@ let extern_spec_T_Option__refmut_T_cloned_body_T (self_: t_Option_refmut_T) (ret
     [ s0 = elim_Some {self_} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
     | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
     | s2 = -{resolve_refmut_T t}- s3
-    | s3 = clone_T {t.current} (fun (_x: t_T) -> [ &_6 <- _x ] s4)
+    | s3 = clone_T {mode} {t.current} (fun (_x: t_T) -> [ &_6 <- _x ] s4)
     | s4 = [ &_ret <- Some'0 _6 ] s5
     | s5 = return {_ret} ]
   | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
@@ -102,7 +107,7 @@ let extern_spec_T_Option__refmut_T_cloned_body_T (self_: t_Option_refmut_T) (ret
   {[@stop_split] [@expl:extern_spec_T_Option__refmut_T_cloned_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Option__refmut_T_cloned_body result type invariant] inv_Option_T result)
     /\ ([@stop_split] [@expl:extern_spec_T_Option__refmut_T_cloned_body ensures] match { f0 = self_; f1 = result } with
       | {f0 = None; f1 = None'0} -> true
-      | {f0 = Some s; f1 = Some'0 r} -> postcondition_clone () s.current r /\ s.final = s.current
+      | {f0 = Some s; f1 = Some'0 r} -> postcondition_clone () mode s.current r /\ s.final = s.current
       | _ -> false
       end)}
     (! return {result}) ]

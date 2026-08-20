@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use int.Int
 
 type t_Range_usize = { start: UInt64.t; end': UInt64.t }
@@ -27,7 +28,7 @@ predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
 
 meta "rewrite_def" predicate gt_log_Int
 
-predicate postcondition_size_hint (self: ()) (args: t_Range_usize) (result: tup2_usize_Option_usize) =
+predicate postcondition_size_hint (self: ()) (mode: Mode.t) (args: t_Range_usize) (result: tup2_usize_Option_usize) =
   let self_ = args in (ge_log_Int (deep_model_usize self_.start) (deep_model_usize self_.end')
     -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
   /\ (let s = deep_model_usize self_.end' - deep_model_usize self_.start in ge_log_Int s 0
@@ -37,7 +38,7 @@ predicate postcondition_size_hint (self: ()) (args: t_Range_usize) (result: tup2
 
 meta "rewrite_def" predicate postcondition_size_hint
 
-let size_hint_Range_usize (self_: t_Range_usize) (return (x: tup2_usize_Option_usize)) = any
+let size_hint_Range_usize (mode: Mode.t) (self_: t_Range_usize) (return (x: tup2_usize_Option_usize)) = any
   [ return (result: tup2_usize_Option_usize) ->
   {[@stop_split] [@expl:size_hint_Range_usize ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_usize self_.start) (deep_model_usize self_.end')
       -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
@@ -58,5 +59,5 @@ constant r : tup2_usize_Option_usize
 
 function size_hint_exact_Range_usize (self: t_Range_usize) (r: tup2_usize_Option_usize) : ()
 
-goal vc_size_hint_exact_Range_usize: postcondition_size_hint () self r
+goal vc_size_hint_exact_Range_usize: (exists mode: Mode.t. postcondition_size_hint () mode self r)
   -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))

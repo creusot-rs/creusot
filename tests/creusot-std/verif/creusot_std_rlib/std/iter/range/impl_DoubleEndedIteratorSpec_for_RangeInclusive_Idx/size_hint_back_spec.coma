@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use seq.Seq
 use creusot.prelude.MutBorrow
 use int.Int
@@ -45,7 +46,7 @@ predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
 
 meta "rewrite_def" predicate gt_log_Int
 
-predicate postcondition_size_hint (self: ()) (args: t_RangeInclusive_Idx) (result: tup2_usize_Option_usize) =
+predicate postcondition_size_hint (self: ()) (mode: Mode.t) (args: t_RangeInclusive_Idx) (result: tup2_usize_Option_usize) =
   let self_ = args in (let s = range_inclusive_len_Idx self_ in s <= UInt64.t'int const_MAX
     -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
   /\ (gt_log_Int (range_inclusive_len_Idx self_) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })
@@ -62,7 +63,7 @@ predicate inv_ref_RangeInclusive_Idx [@inline:trivial] (_1: t_RangeInclusive_Idx
 
 meta "rewrite_def" predicate inv_ref_RangeInclusive_Idx
 
-let size_hint_RangeInclusive_Idx (self_: t_RangeInclusive_Idx) (return (x: tup2_usize_Option_usize)) =
+let size_hint_RangeInclusive_Idx (mode: Mode.t) (self_: t_RangeInclusive_Idx) (return (x: tup2_usize_Option_usize)) =
 {[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_RangeInclusive_Idx self_}
   any
   [ return (result: tup2_usize_Option_usize) ->
@@ -113,7 +114,7 @@ constant r : tup2_usize_Option_usize
 
 function size_hint_back_spec_RangeInclusive_Idx (self: t_RangeInclusive_Idx) (r: tup2_usize_Option_usize) : ()
 
-goal vc_size_hint_back_spec_RangeInclusive_Idx: postcondition_size_hint () self r
+goal vc_size_hint_back_spec_RangeInclusive_Idx: (exists mode: Mode.t. postcondition_size_hint () mode self r)
   -> ([@stop_split] [@expl:size_hint_back_spec_RangeInclusive_Idx ensures] ([@stop_split] [@expl:size_hint_back_spec ensures #0] forall s: Seq.seq t_Idx, i: MutBorrow.t t_RangeInclusive_Idx. produces_back_RangeInclusive_Idx self s i.current
         /\ completed_back_RangeInclusive_Idx i -> UInt64.t'int r.f0 <= Seq.length s)
   /\ ([@stop_split] [@expl:size_hint_back_spec ensures #1] match r.f1 with

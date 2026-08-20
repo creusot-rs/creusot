@@ -2,6 +2,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -10,11 +11,11 @@ type tup2_T_T = { f0: t_T; f1: t_T }
 
 predicate inv_T (_1: t_T)
 
-predicate precondition_min (self: ()) (args: tup2_T_T)
+predicate precondition_min (self: ()) (mode: Mode.t) (args: tup2_T_T)
 
 axiom precondition_fndef:
-  forall args: tup2_T_T [precondition_min () args]. (let {f0 = self_; f1 = o} = args in inv_T self_ /\ inv_T o)
-    -> precondition_min () args
+  forall mode: Mode.t. forall args: tup2_T_T [precondition_min () mode args]. (let {f0 = self_; f1 = o} = args in inv_T self_
+        /\ inv_T o) -> precondition_min () mode args
 
 type t_DeepModelTy
 
@@ -38,10 +39,10 @@ axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepM
 
 function deep_model_T (self: t_T) : t_DeepModelTy
 
-predicate postcondition_min (self: ()) (args: tup2_T_T) (result: t_T)
+predicate postcondition_min (self: ()) (mode: Mode.t) (args: tup2_T_T) (result: t_T)
 
 axiom postcondition_fndef:
-  forall args: tup2_T_T, res: t_T [postcondition_min () args res]. postcondition_min () args res
+  forall mode: Mode.t, args: tup2_T_T, res: t_T [postcondition_min () mode args res]. postcondition_min () mode args res
     -> (let {f0 = self_; f1 = o} = args in inv_T res
     /\ le_log_DeepModelTy (deep_model_T res) (deep_model_T self_)
     /\ le_log_DeepModelTy (deep_model_T res) (deep_model_T o)
@@ -49,25 +50,27 @@ axiom postcondition_fndef:
     /\ (lt_log_DeepModelTy (deep_model_T self_) (deep_model_T o) -> res = self_)
     /\ (le_log_DeepModelTy (deep_model_T o) (deep_model_T self_) -> res = o))
 
-predicate postcondition_once_min (self: ()) (args: tup2_T_T) (result: t_T) = postcondition_min self args result
+predicate postcondition_once_min (self: ()) (mode: Mode.t) (args: tup2_T_T) (result: t_T) =
+  postcondition_min self mode args result
 
 meta "rewrite_def" predicate postcondition_once_min
 
-let min_T (self_: t_T) (o: t_T) (return (x: t_T)) =
-{[@stop_split] [@expl:min requires] precondition_min () { f0 = self_; f1 = o }}
+let min_T (mode: Mode.t) (self_: t_T) (o: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:min requires] precondition_min () mode { f0 = self_; f1 = o }}
   any
-  [ return (result: t_T) -> {[@stop_split] [@expl:min ensures] postcondition_once_min () { f0 = self_; f1 = o } result}
+  [ return (result: t_T) -> {[@stop_split] [@expl:min ensures] postcondition_once_min () mode { f0 = self_;
+                                                                                                f1 = o } result}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_core_cmp_min_body_T (v1: t_T) (v2: t_T) (return (x: t_T)) =
+let extern_spec_core_cmp_min_body_T (mode: Mode.t) (v1: t_T) (v2: t_T) (return (x: t_T)) =
 {[@stop_split] [@expl:extern_spec_core_cmp_min_body_T requires] ([@stop_split] [@expl:extern_spec_core_cmp_min_body 'v1' type invariant] inv_T v1)
   /\ ([@stop_split] [@expl:extern_spec_core_cmp_min_body 'v2' type invariant] inv_T v2)}
   (! bb0
-  [ bb0 = s0 [ s0 = min_T {v1} {v2} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ bb0 = s0 [ s0 = min_T {mode} {v1} {v2} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
   [ & _ret: t_T = Any.any_l () | & v1: t_T = v1 | & v2: t_T = v2 ])
   [ return (result: t_T) ->
   {[@stop_split] [@expl:extern_spec_core_cmp_min_body_T ensures] ([@stop_split] [@expl:extern_spec_core_cmp_min_body result type invariant] inv_T result)

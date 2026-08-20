@@ -3,6 +3,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -21,10 +22,11 @@ predicate inv_T (_1: t_T)
 
 type t_Target
 
-predicate precondition_deref_mut (self: ()) (args: MutBorrow.t t_T)
+predicate precondition_deref_mut (self: ()) (mode: Mode.t) (args: MutBorrow.t t_T)
 
-axiom precondition_fndef: forall args: MutBorrow.t t_T [precondition_deref_mut () args]. (let self_ = args in false)
-    -> precondition_deref_mut () args
+axiom precondition_fndef:
+  forall mode: Mode.t. forall args: MutBorrow.t t_T [precondition_deref_mut () mode args]. (let self_ = args in false)
+      -> precondition_deref_mut () mode args
 
 predicate inv_Target (_1: t_Target)
 
@@ -37,22 +39,22 @@ predicate inv_refmut_Target [@inline:trivial] (_1: MutBorrow.t t_Target) = invar
 
 meta "rewrite_def" predicate inv_refmut_Target
 
-predicate postcondition_deref_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target)
+predicate postcondition_deref_mut (self: ()) (mode: Mode.t) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target)
 
 axiom postcondition_fndef:
-  forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_deref_mut () args res]. postcondition_deref_mut () args res
+  forall mode: Mode.t, args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_deref_mut () mode args res]. postcondition_deref_mut () mode args res
     -> (let self_ = args in inv_refmut_Target res)
 
-predicate postcondition_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target) =
-  postcondition_deref_mut self args result
+predicate postcondition_once_deref_mut (self: ()) (mode: Mode.t) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target) =
+  postcondition_deref_mut self mode args result
 
 meta "rewrite_def" predicate postcondition_once_deref_mut
 
-let deref_mut_T (self_: MutBorrow.t t_T) (return (x: MutBorrow.t t_Target)) =
-{[@stop_split] [@expl:deref_mut requires] precondition_deref_mut () self_}
+let deref_mut_T (mode: Mode.t) (self_: MutBorrow.t t_T) (return (x: MutBorrow.t t_Target)) =
+{[@stop_split] [@expl:deref_mut requires] precondition_deref_mut () mode self_}
   any
   [ return (result: MutBorrow.t t_Target) ->
-  {[@stop_split] [@expl:deref_mut ensures] postcondition_once_deref_mut () self_ result}
+  {[@stop_split] [@expl:deref_mut ensures] postcondition_once_deref_mut () mode self_ result}
     (! return {result}) ]
 
 type t_Option_refmut_Target = None'0 | Some'0 (MutBorrow.t t_Target)
@@ -108,11 +110,12 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_Option_T_as_deref_mut_body_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_refmut_Target)) =
+let extern_spec_T_Option_T_as_deref_mut_body_T (mode: Mode.t) (self_: MutBorrow.t t_Option_T)
+  (return (x: t_Option_refmut_Target)) =
 {[@stop_split] [@expl:extern_spec_T_Option_T_as_deref_mut_body_T requires] ([@stop_split] [@expl:extern_spec_T_Option_T_as_deref_mut_body 'self_' type invariant] inv_refmut_Option_T self_)
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_as_deref_mut_body requires] match self_.current with
     | None -> true
-    | Some cur -> forall bor: MutBorrow.t t_T. bor.current = cur -> precondition_deref_mut () bor
+    | Some cur -> forall bor: MutBorrow.t t_T. bor.current = cur -> precondition_deref_mut () mode bor
     end)}
   (! bb0
   [ bb0 = any [ br0 -> {self_.current = None} (! bb3) | br1 (x0: t_T) -> {self_.current = Some x0} (! bb4) ]
@@ -133,7 +136,7 @@ let extern_spec_T_Option_T_as_deref_mut_body_T (self_: MutBorrow.t t_Option_T) (
           [ &_10 <- _bor ] -{inv_T _bor.final}-
           [ &_11 <- { _11 with current = _bor.final } ] s3)
       [ _ck -> (! {[@expl:type invariant] inv_T _11.current} any) ]
-    | s3 = deref_mut_T {_10} (fun (_x: MutBorrow.t t_Target) -> [ &_9 <- _x ] s4)
+    | s3 = deref_mut_T {mode} {_10} (fun (_x: MutBorrow.t t_Target) -> [ &_9 <- _x ] s4)
     | s4 = MutBorrow.borrow_final <t_Target> {_9.current} {MutBorrow.get_id _9}
         (fun (_bor: MutBorrow.t t_Target) ->
           [ &_8 <- _bor ] -{inv_Target _bor.final}-
@@ -170,7 +173,7 @@ let extern_spec_T_Option_T_as_deref_mut_body_T (self_: MutBorrow.t t_Option_T) (
                                                                                        f2 = result } with
       | {f0 = None; f1 = None; f2 = None'0} -> true
       | {f0 = Some cur; f1 = Some fin; f2 = Some'0 r} -> exists bor: MutBorrow.t t_T. bor.current = cur
-        /\ bor.final = fin /\ postcondition_deref_mut () bor r
+        /\ bor.final = fin /\ postcondition_deref_mut () mode bor r
       | _ -> false
       end)}
     (! return {result}) ]

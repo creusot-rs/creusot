@@ -6,6 +6,7 @@ type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
 use seq.Seq
+use creusot.prelude.Mode
 use creusot.prelude.Any
 use int.Int
 
@@ -65,7 +66,7 @@ function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < S
     None'0
 
 
-let get_mut_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t_Option_refmut_T)) =
+let get_mut_ghost_T (mode: Mode.t) (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t_Option_refmut_T)) =
 {[@stop_split] [@expl:get_mut_ghost 'self' type invariant] inv_refmut_Seq_T self}
   any
   [ return (result: t_Option_refmut_T) ->
@@ -79,7 +80,7 @@ let get_mut_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t
     /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] Seq.length self.current = Seq.length self.final)}
     (! return {result}) ]
 
-let unwrap_refmut_T (self_: t_Option_refmut_T) (return (x: MutBorrow.t t_T)) =
+let unwrap_refmut_T (mode: Mode.t) (self_: t_Option_refmut_T) (return (x: MutBorrow.t t_T)) =
 {[@stop_split] [@expl:unwrap_refmut_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_refmut_T self_)
   /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
   any
@@ -100,7 +101,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let index_mut_Seq_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: MutBorrow.t t_T)) =
+let index_mut_Seq_T (mode: Mode.t) (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: MutBorrow.t t_T)) =
 {[@stop_split] [@expl:index_mut_Seq_T requires] ([@stop_split] [@expl:index_mut 'self' type invariant] inv_refmut_Seq_T self)
   /\ ([@stop_split] [@expl:index_mut requires] 0 <= index /\ index < Seq.length self.current)}
   (! bb0
@@ -110,8 +111,8 @@ let index_mut_Seq_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: M
           [ &_17 <- _bor ] -{inv_Seq_T _bor.final}-
           [ &self <- { self with current = _bor.final } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
-    | s1 = get_mut_ghost_T {_17} {index} (fun (_x: t_Option_refmut_T) -> [ &_16 <- _x ] s2)
-    | s2 = unwrap_refmut_T {_16} (fun (_x: MutBorrow.t t_T) -> [ &_15 <- _x ] s3)
+    | s1 = get_mut_ghost_T {mode} {_17} {index} (fun (_x: t_Option_refmut_T) -> [ &_16 <- _x ] s2)
+    | s2 = unwrap_refmut_T {mode} {_16} (fun (_x: MutBorrow.t t_T) -> [ &_15 <- _x ] s3)
     | s3 = MutBorrow.borrow_final <t_T> {_15.current} {MutBorrow.get_id _15}
         (fun (_bor: MutBorrow.t t_T) ->
           [ &_3 <- _bor ] -{inv_T _bor.final}-

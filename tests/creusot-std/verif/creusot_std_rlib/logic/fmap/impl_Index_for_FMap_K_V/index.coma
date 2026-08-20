@@ -4,6 +4,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use map.Map
 use creusot.prelude.Any
 
@@ -101,7 +102,7 @@ function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V =
     | Some'0 x -> Some (Map.get f x)
     end
 
-let get_ghost_K (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
+let get_ghost_K (mode: Mode.t) (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
 {[@stop_split] [@expl:get_ghost_K requires] ([@stop_split] [@expl:get_ghost 'self' type invariant] inv_ref_FMap_K_V self)
   /\ ([@stop_split] [@expl:get_ghost 'key' type invariant] inv_ref_K key)}
   any
@@ -110,7 +111,7 @@ let get_ghost_K (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
     /\ ([@stop_split] [@expl:get_ghost ensures] result = map_Option_V (get_K self key) (fun (v: t_V) -> v))}
     (! return {result}) ]
 
-let unwrap_ref_V (self_: t_Option_ref_V) (return (x: t_V)) =
+let unwrap_ref_V (mode: Mode.t) (self_: t_Option_ref_V) (return (x: t_V)) =
 {[@stop_split] [@expl:unwrap_ref_V requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_ref_V self_)
   /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
   any
@@ -123,14 +124,14 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let index_FMap_K_V'0 (self: t_FMap_K_V) (key: t_K) (return (x: t_V)) =
+let index_FMap_K_V'0 (mode: Mode.t) (self: t_FMap_K_V) (key: t_K) (return (x: t_V)) =
 {[@stop_split] [@expl:index_FMap_K_V requires] ([@stop_split] [@expl:index 'self' type invariant] inv_ref_FMap_K_V self)
   /\ ([@stop_split] [@expl:index 'key' type invariant] inv_ref_K key)
   /\ ([@stop_split] [@expl:index requires] contains_K self key)}
   (! bb0
   [ bb0 = s0
-    [ s0 = get_ghost_K {self} {key} (fun (_x: t_Option_ref_V) -> [ &_10 <- _x ] s1)
-    | s1 = unwrap_ref_V {_10} (fun (_x: t_V) -> [ &_9 <- _x ] s2)
+    [ s0 = get_ghost_K {mode} {self} {key} (fun (_x: t_Option_ref_V) -> [ &_10 <- _x ] s1)
+    | s1 = unwrap_ref_V {mode} {_10} (fun (_x: t_V) -> [ &_9 <- _x ] s2)
     | s2 = [ &_ret <- _9 ] s3
     | s3 = return {_ret} ] ]
   [ & _ret: t_V = Any.any_l ()

@@ -3,6 +3,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -62,11 +63,20 @@ predicate resolve_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T)
 
 meta "rewrite_def" predicate resolve_refmut_Option_T
 
+predicate inv_never [@inline:trivial] (_1: ()) = false
+
+meta "rewrite_def" predicate inv_never
+
+let panic (mode: Mode.t) (expr: string) (return (x: ())) = {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+  any
+  [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_Option_T_insert_body_T (self_: MutBorrow.t t_Option_T) (value: t_T) (return (x: MutBorrow.t t_T)) =
+let extern_spec_T_Option_T_insert_body_T (mode: Mode.t) (self_: MutBorrow.t t_Option_T) (value: t_T)
+  (return (x: MutBorrow.t t_T)) =
 {[@stop_split] [@expl:extern_spec_T_Option_T_insert_body_T requires] ([@stop_split] [@expl:extern_spec_T_Option_T_insert_body 'self_' type invariant] inv_refmut_Option_T self_)
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_insert_body 'value' type invariant] inv_T value)}
   (! bb0
@@ -109,13 +119,15 @@ let extern_spec_T_Option_T_insert_body_T (self_: MutBorrow.t t_Option_T) (value:
   | bb6 = s0
     [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
     | s1 = -{resolve_refmut_Option_T self_}- s2
-    | s2 = {false} any ] ]
+    | s2 = panic {mode} {"internal error: entered unreachable code"} (fun (_x: ()) -> [ &_13 <- _x ] s3)
+    | s3 = {false} any ] ]
   [ & _ret: MutBorrow.t t_T = Any.any_l ()
   | & self_: MutBorrow.t t_Option_T = self_
   | & value: t_T = value
   | & _3: MutBorrow.t t_T = Any.any_l ()
   | & _9: t_Option_T = Any.any_l ()
   | & _11: MutBorrow.t t_T = Any.any_l ()
+  | & _13: () = Any.any_l ()
   | & v: MutBorrow.t t_T = Any.any_l () ])
   [ return (result: MutBorrow.t t_T) ->
   {[@stop_split] [@expl:extern_spec_T_Option_T_insert_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Option_T_insert_body result type invariant] inv_refmut_T result)

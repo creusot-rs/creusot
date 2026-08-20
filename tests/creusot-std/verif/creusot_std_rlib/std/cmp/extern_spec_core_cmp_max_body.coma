@@ -2,6 +2,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -10,11 +11,11 @@ type tup2_T_T = { f0: t_T; f1: t_T }
 
 predicate inv_T (_1: t_T)
 
-predicate precondition_max (self: ()) (args: tup2_T_T)
+predicate precondition_max (self: ()) (mode: Mode.t) (args: tup2_T_T)
 
 axiom precondition_fndef:
-  forall args: tup2_T_T [precondition_max () args]. (let {f0 = self_; f1 = o} = args in inv_T self_ /\ inv_T o)
-    -> precondition_max () args
+  forall mode: Mode.t. forall args: tup2_T_T [precondition_max () mode args]. (let {f0 = self_; f1 = o} = args in inv_T self_
+        /\ inv_T o) -> precondition_max () mode args
 
 type t_DeepModelTy
 
@@ -43,10 +44,10 @@ meta "rewrite_def" predicate ge_log_DeepModelTy
 
 function deep_model_T (self: t_T) : t_DeepModelTy
 
-predicate postcondition_max (self: ()) (args: tup2_T_T) (result: t_T)
+predicate postcondition_max (self: ()) (mode: Mode.t) (args: tup2_T_T) (result: t_T)
 
 axiom postcondition_fndef:
-  forall args: tup2_T_T, res: t_T [postcondition_max () args res]. postcondition_max () args res
+  forall mode: Mode.t, args: tup2_T_T, res: t_T [postcondition_max () mode args res]. postcondition_max () mode args res
     -> (let {f0 = self_; f1 = o} = args in inv_T res
     /\ ge_log_DeepModelTy (deep_model_T res) (deep_model_T self_)
     /\ ge_log_DeepModelTy (deep_model_T res) (deep_model_T o)
@@ -54,25 +55,27 @@ axiom postcondition_fndef:
     /\ (le_log_DeepModelTy (deep_model_T self_) (deep_model_T o) -> res = o)
     /\ (lt_log_DeepModelTy (deep_model_T o) (deep_model_T self_) -> res = self_))
 
-predicate postcondition_once_max (self: ()) (args: tup2_T_T) (result: t_T) = postcondition_max self args result
+predicate postcondition_once_max (self: ()) (mode: Mode.t) (args: tup2_T_T) (result: t_T) =
+  postcondition_max self mode args result
 
 meta "rewrite_def" predicate postcondition_once_max
 
-let max_T (self_: t_T) (o: t_T) (return (x: t_T)) =
-{[@stop_split] [@expl:max requires] precondition_max () { f0 = self_; f1 = o }}
+let max_T (mode: Mode.t) (self_: t_T) (o: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:max requires] precondition_max () mode { f0 = self_; f1 = o }}
   any
-  [ return (result: t_T) -> {[@stop_split] [@expl:max ensures] postcondition_once_max () { f0 = self_; f1 = o } result}
+  [ return (result: t_T) -> {[@stop_split] [@expl:max ensures] postcondition_once_max () mode { f0 = self_;
+                                                                                                f1 = o } result}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_core_cmp_max_body_T (v1: t_T) (v2: t_T) (return (x: t_T)) =
+let extern_spec_core_cmp_max_body_T (mode: Mode.t) (v1: t_T) (v2: t_T) (return (x: t_T)) =
 {[@stop_split] [@expl:extern_spec_core_cmp_max_body_T requires] ([@stop_split] [@expl:extern_spec_core_cmp_max_body 'v1' type invariant] inv_T v1)
   /\ ([@stop_split] [@expl:extern_spec_core_cmp_max_body 'v2' type invariant] inv_T v2)}
   (! bb0
-  [ bb0 = s0 [ s0 = max_T {v1} {v2} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ bb0 = s0 [ s0 = max_T {mode} {v1} {v2} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
   [ & _ret: t_T = Any.any_l () | & v1: t_T = v1 | & v2: t_T = v2 ])
   [ return (result: t_T) ->
   {[@stop_split] [@expl:extern_spec_core_cmp_max_body_T ensures] ([@stop_split] [@expl:extern_spec_core_cmp_max_body result type invariant] inv_T result)

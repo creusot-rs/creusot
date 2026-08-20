@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_PeanoInt = { f0: UInt64.t }
@@ -23,7 +24,7 @@ function cmp_log_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) : t_Ordering = 
     if lt_log_PeanoInt self other then Less else Greater
 
 
-let partial_cmp_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: t_Option_Ordering)) = any
+let partial_cmp_PeanoInt (mode: Mode.t) (self: t_PeanoInt) (other: t_PeanoInt) (return (x: t_Option_Ordering)) = any
   [ return (result: t_Option_Ordering) -> {[@stop_split] [@expl:partial_cmp ensures] result
     = Some (cmp_log_PeanoInt self other)}
     (! return {result}) ]
@@ -48,9 +49,9 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let gt_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: bool)) = (! bb0
+let gt_PeanoInt (mode: Mode.t) (self: t_PeanoInt) (other: t_PeanoInt) (return (x: bool)) = (! bb0
   [ bb0 = s0
-    [ s0 = partial_cmp_PeanoInt {self} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+    [ s0 = partial_cmp_PeanoInt {mode} {self} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
     | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
   | bb3 = elim_Some {_6}
       (fun (r0: t_Ordering) ->

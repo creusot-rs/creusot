@@ -6,6 +6,7 @@ type t_Namespace = Other namespace_other
 
 use real.Real
 use real.FromInt
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_PositiveReal
@@ -35,7 +36,7 @@ function view_Resource_PositiveReal [@inline:trivial] (self: t_Resource_Positive
 
 meta "rewrite_def" function view_Resource_PositiveReal
 
-let alloc_PositiveReal (r: t_PositiveReal) (return (x: t_Resource_PositiveReal)) = any
+let alloc_PositiveReal (mode: Mode.t) (r: t_PositiveReal) (return (x: t_Resource_PositiveReal)) = any
   [ return (result: t_Resource_PositiveReal) -> {[@stop_split] [@expl:alloc ensures] view_Resource_PositiveReal result
     = r}
     (! return {result}) ]
@@ -48,9 +49,9 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let new'0 (return (x: t_LifetimeToken)) = (! bb0
+let new'0 (mode: Mode.t) (return (x: t_LifetimeToken)) = (! bb0
   [ bb0 = s0
-    [ s0 = alloc_PositiveReal {from_int 1} (fun (_x: t_Resource_PositiveReal) -> [ &_2 <- _x ] s1)
+    [ s0 = alloc_PositiveReal {mode} {from_int 1} (fun (_x: t_Resource_PositiveReal) -> [ &_2 <- _x ] s1)
     | s1 = [ &_ret <- { f0 = _2 } ] s2
     | s2 = return {_ret} ] ] [ & _ret: t_LifetimeToken = Any.any_l () | & _2: t_Resource_PositiveReal = Any.any_l () ])
   [ return (result: t_LifetimeToken) -> {[@stop_split] [@expl:new ensures] frac result = from_int 1}
