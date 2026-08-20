@@ -1,31 +1,33 @@
+// DEPTH 7
+
 //! This implementation is an adaption from:
 //! https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
 #![allow(unused)]
 
-use core::borrow::BorrowMut;
-use core::{cmp::Ordering, mem::MaybeUninit};
+use core::{borrow::BorrowMut, cmp::Ordering, mem::MaybeUninit};
 use creusot_std::{
     cell::PermCell,
     ghost::{
-        invariant::{declare_namespace, AtomicInvariant, Protocol, Tokens},
+        invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
         perm::Perm,
         resource::{Authority, Fragment, Resource},
     },
     logic::{
-        ra::{auth::Auth, excl::Excl, lattice::SemiLattice, RA},
-        seq::Seq,
         FMap, Id,
+        ra::{RA, auth::Auth, excl::Excl, lattice::SemiLattice},
+        seq::Seq,
+        such_that,
     },
     partial_ord_laws_impl,
     prelude::*,
     std::sync::{
         atomic::{
-            ordering::{Acquire, Relaxed, Release},
             AtomicUsize,
+            ordering::{Acquire, Relaxed, Release},
         },
         committer::Committer,
-        view::{AtView, HasTimestamp, ReleaseSyncView, SyncView},
+        view::{AtView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
     },
 };
 
@@ -59,10 +61,9 @@ impl SemiLattice for StatusWithView {
         match self.status.cmp_log(other.status) {
             Ordering::Less => other,
             Ordering::Greater => self,
-            Ordering::Equal => StatusWithView {
-                status: self.status,
-                view: self.view.meet(other.view),
-            },
+            Ordering::Equal => {
+                StatusWithView { status: self.status, view: self.view.meet(other.view) }
+            }
         }
     }
 }
@@ -71,8 +72,8 @@ mod values {
     use creusot_std::{
         ghost::resource::{self, Resource},
         logic::{
-            ra::{excl::Excl, update::LocalUpdate, UnitRA, RA},
             Id, Seq,
+            ra::{RA, UnitRA, excl::Excl, update::LocalUpdate},
         },
         prelude::*,
     };
@@ -116,10 +117,7 @@ mod values {
             let mut auth = ghost!(resource::Authority::alloc().into_inner());
             let frag = ghost!(auth.add_fragment(snapshot!(Some(Excl(*value)))));
 
-            (
-                ghost!(Authority(auth.into_inner())),
-                ghost!(Fragment(frag.into_inner())),
-            )
+            (ghost!(Authority(auth.into_inner())), ghost!(Fragment(frag.into_inner())))
         }
 
         #[check(ghost)]
@@ -156,8 +154,8 @@ mod statuses {
     use creusot_std::{
         ghost::resource::{self, Resource},
         logic::{
-            ra::{auth::Auth, excl::Excl, update::LocalUpdate, UnitRA, RA},
             Id, Seq,
+            ra::{RA, UnitRA, auth::Auth, excl::Excl, update::LocalUpdate},
         },
         prelude::*,
     };
@@ -194,9 +192,7 @@ mod statuses {
         #[ensures(result.val() == *value)]
         pub fn alloc(value: Snapshot<StatusWithView>) -> Ghost<Authority> {
             let resource = Resource::alloc(snapshot!(Auth::new_auth(Some(*value))));
-            ghost!(Authority(
-                resource::Authority::from_resource(resource.into_inner()).0
-            ))
+            ghost!(Authority(resource::Authority::from_resource(resource.into_inner()).0))
         }
 
         #[check(ghost)]
@@ -242,14 +238,14 @@ mod tokens {
     use creusot_std::{
         ghost::resource::{self, Resource},
         logic::{
+            FMap, Id, Seq,
             ra::{
+                RA, UnitRA,
                 auth::{Auth, CancelLocalUpdateUnit},
                 excl::Excl,
                 fmap::FMapKeyLocalUpdate,
                 update::LocalUpdate,
-                UnitRA, RA,
             },
-            FMap, Id, Seq,
         },
         prelude::*,
     };
@@ -299,9 +295,7 @@ mod tokens {
         #[ensures(forall<i> result.val(i) == State::None)]
         pub fn alloc() -> Ghost<Authority<T>> {
             let resource = Resource::alloc(snapshot!(Auth::new_auth(FMap::empty())));
-            ghost!(Authority(
-                resource::Authority::from_resource(resource.into_inner()).0
-            ))
+            ghost!(Authority(resource::Authority::from_resource(resource.into_inner()).0))
         }
     }
 
@@ -325,8 +319,7 @@ mod tokens {
         #[ensures(forall<i> i != index ==> (*auth).val(i) == (^auth).val(i))]
         pub fn alloc(mut auth: Ghost<&mut Authority<T>>, index: Int) -> Ghost<TokenR<T>> {
             ghost!(TokenR(
-                auth.0
-                    .add_fragment(snapshot!(FMap::singleton(index, Excl(None)))),
+                auth.0.add_fragment(snapshot!(FMap::singleton(index, Excl(None)))),
                 index
             ))
         }
@@ -375,8 +368,7 @@ mod tokens {
             value: Snapshot<T>,
         ) -> Ghost<TokenW<T>> {
             ghost!(TokenW(
-                auth.0
-                    .add_fragment(snapshot!(FMap::singleton(index, Excl(Some(*value))))),
+                auth.0.add_fragment(snapshot!(FMap::singleton(index, Excl(Some(*value))))),
                 index
             ))
         }
@@ -438,8 +430,8 @@ struct QueueInv<T> {
     statuses_mono_auth: Seq<statuses::Authority>, // in [0; N]
     tokens_auth: tokens::Authority<T>,
 
-    head: Snapshot<Int>,
-    tail: Snapshot<Int>,
+    head_last_ts: Timestamp,
+    tail_last_ts: Timestamp,
     values: Snapshot<Seq<T>>, // in [self.tail; self.head - 1]
 
     cells_wards: Snapshot<Seq<PermCell<MaybeUninit<T>>>>,
@@ -475,6 +467,8 @@ impl<T> Protocol for QueueInv<T> {
     fn protocol(self) -> bool {
         pearlite! {
             let len = self.statuses_own.len();
+            let head = self.head_own.val().get(self.head_last_ts).unwrap_logic().0@;
+            let tail = self.tail_own.val().get(self.tail_last_ts).unwrap_logic().0@;
 
             (len == self.cells_own.len()) &&
             (len == self.statuses_mono_auth.len()) &&
@@ -496,19 +490,19 @@ impl<T> Protocol for QueueInv<T> {
                 self.statuses_mono_auth[i].id() == self.statuses_mono_auth_wards[i]) &&
 
             // 0 <= t <= h <= t + len
-            (0 <= *self.tail && *self.tail <= *self.head && *self.head <= *self.tail + len) &&
+            (0 <= tail && tail <= head && head <= tail + len) &&
 
             // head ~> (h, H)
             (forall<ts> #[trigger(self.head_own.val().get(ts))]
                 self.head_own.val().contains(ts) ==>
-                    self.head_own.val()[ts].0@ == *self.head ||
+                    ts == self.head_last_ts ||
                     self.head_own.val().contains(ts + 1)
             ) &&
 
             // tail ~> (t, T)
             (forall<ts> #[trigger(self.tail_own.val().get(ts))]
                 self.tail_own.val().contains(ts) ==>
-                    self.tail_own.val()[ts].0@ == *self.tail ||
+                    ts == self.tail_last_ts ||
                     self.tail_own.val().contains(ts + 1)
             ) &&
 
@@ -523,13 +517,10 @@ impl<T> Protocol for QueueInv<T> {
 
             // • [(v_t, V_t), ..., (v_h-1, V_h-1)]
             self.values_auth.val() == *self.values &&
-            self.values.len() == *self.head - *self.tail &&
-
-            // •({ k -> ()         | h <= k < t + len }
-            //   { k -> (v_k, V_k) | t <= k < h       })
+            self.values.len() == head - tail &&
 
             // ∗{h - len <= k < t} s_k = 2k + 1 \/ Available k (s_k, S_k)
-            (forall<k: Int> #[trigger(k.rem_euclid(len))] *self.head <= k && k < *self.tail + len ==>
+            (forall<k: Int> #[trigger(k.rem_euclid(len))] head <= k && k < tail + len ==>
              match self.statuses_mono_auth[k.rem_euclid(len)].val() {
                  StatusWithView { status, view } =>
                      (status == 2 * (k - len) + 1 &&
@@ -543,12 +534,12 @@ impl<T> Protocol for QueueInv<T> {
              }) &&
 
             // ∗{t <= k < h} s_k = 2k \/ Occupied k (s_k, S_k) (v_k, V_k)
-            (forall<k: Int> #[trigger(k.rem_euclid(len))] *self.tail <= k && k < *self.head ==>
+            (forall<k: Int> #[trigger(k.rem_euclid(len))] tail <= k && k < head ==>
              match self.statuses_mono_auth[k.rem_euclid(len)].val() {
                  StatusWithView { status, view } => {
-                     let value = self.values[k - *self.tail];
+                     let value = self.values[k - tail];
                      (status == 2 * k &&
-                      self.tokens_auth.val(k) == tokens::State::W(self.values[k - *self.tail])) ||
+                      self.tokens_auth.val(k) == tokens::State::W(self.values[k - tail])) ||
                      (status == 2 * k + 1 &&
                       match self.cells_own[k.rem_euclid(len)] {
                           Some(at_view) => view >= at_view.view() && at_view.val().val()@ == Some(value),
@@ -556,7 +547,10 @@ impl<T> Protocol for QueueInv<T> {
                       } &&
                       self.tokens_auth.val(k) == tokens::State::None)
                  }
-            })
+             }) &&
+
+            // *{0 < k < h - len && h <= k} None
+            (forall<k: Int> k < tail || tail + len <= k ==> self.tokens_auth.val(k) == tokens::State::None)
         }
     }
 }
@@ -704,7 +698,9 @@ impl<T> Queue<T> {
         }
 
         let (head, head_own) = AtomicUsize::new(0, SyncView::new().borrow_mut());
+        let head_ts = snapshot!(such_that(|t| head_own.val().contains(t)));
         let (tail, tail_own) = AtomicUsize::new(0, SyncView::new().borrow_mut());
+        let tail_ts = snapshot!(such_that(|t| tail_own.val().contains(t)));
 
         let cells_wards = snapshot!(
             cells_own.map(|x: Option<AtView<PermPermCell<T>>>| *x.unwrap_logic().val().ward())
@@ -726,8 +722,8 @@ impl<T> Queue<T> {
                 statuses_mono_auth: statuses_mono_auth.into_inner(),
                 tokens_auth: tokens_auth.into_inner(),
 
-                head: snapshot!(0),
-                tail: snapshot!(0),
+                head_last_ts: *head_ts.into_ghost(),
+                tail_last_ts: *tail_ts.into_ghost(),
                 values: snapshot!(Seq::empty()),
 
                 cells_wards,
@@ -737,17 +733,10 @@ impl<T> Queue<T> {
             snapshot!(BOUNDED_MPMC_QUEUE()),
         );
 
-        let queue = Queue {
-            cells,
-            head,
-            tail,
-            inv,
-        };
+        let queue = Queue { cells, head, tail, inv };
 
-        let perm_queue = ghost!(PermQueue {
-            fragment: perm_queue.into_inner(),
-            ward: snapshot!(queue)
-        });
+        let perm_queue =
+            ghost!(PermQueue { fragment: perm_queue.into_inner(), ward: snapshot!(queue) });
 
         (queue, perm_queue)
     }
@@ -808,21 +797,19 @@ impl<T> Queue<T> {
                     inv.statuses_mono_auth[*index_ghost].frag_lemma(witness.as_ref().unwrap());
 
                     let _ = snapshot!(rem_euclid_minus);
-                    let toto = snapshot!((head@ - inv.cells_own.len()).rem_euclid(inv.cells_own.len()));
-                    proof_assert!(*toto == *index_ghost);
+                    proof_assert!((head@ - inv.cells_own.len()).rem_euclid(inv.cells_own.len()) == *index_ghost);
 
-                    proof_assert!(head@ < *inv.tail + inv.cells_own.len());
-                    proof_assert!(inv.statuses_mono_auth[*index_ghost].val().status == 2 * head@);
                     *cell_own = Some(inv.cells_own[*index_ghost].take().unwrap().sync(*view));
 
                     let head_ghost = *snapshot!(head@).into_ghost();
                     *token = Some(tokens::TokenW::alloc(Ghost::new(&mut inv.tokens_auth), head_ghost, snapshot!(item)).into_inner());
 
                     let item_snap = snapshot!(item); // TODO: [VL] Do MWE, then bug report
-                    inv.values_auth.update(&mut perm_queue.fragment, item_snap);
+                    let pq = &mut **perm_queue;
+                    inv.values_auth.update(&mut pq.fragment, item_snap);
                     inv.values = snapshot!(inv.values.push_back(item));
 
-                    inv.head = snapshot!(head@ + 1);
+                    inv.head_last_ts += 1int;
                 });
             }}
         );
@@ -831,10 +818,7 @@ impl<T> Queue<T> {
             return false;
         }
 
-        unsafe {
-            cell.item
-                .set(ghost!(cell_own.as_mut().unwrap()), MaybeUninit::new(item))
-        };
+        unsafe { cell.item.set(ghost!(cell_own.as_mut().unwrap()), MaybeUninit::new(item)) };
 
         cell.status.store(
             2 * head + 1,
@@ -858,14 +842,10 @@ impl<T> Queue<T> {
     }
 
     pub fn try_dequeue(&self) -> Option<T> {
-        let tail = self
-            .tail
-            .load(ghost! { |c: &Committer<_, _, Relaxed, _>| {} });
+        let tail = self.tail.load(ghost! { |c: &Committer<_, _, Relaxed, _>| {} });
 
         let cell = &self.cells[tail % self.cells.len()];
-        let status = cell
-            .status
-            .load(ghost! { |c: &Committer<_, _, Acquire, _>| {} });
+        let status = cell.status.load(ghost! { |c: &Committer<_, _, Acquire, _>| {} });
 
         if tail + 1 != status {
             return None;
@@ -885,10 +865,8 @@ impl<T> Queue<T> {
             let v = cell.item.replace(Ghost::conjure(), MaybeUninit::uninit());
             v.assume_init()
         };
-        cell.status.store(
-            tail + self.cells.len(),
-            ghost! { |c: &mut Committer<_, _, _, Release>| {} },
-        );
+        cell.status
+            .store(tail + self.cells.len(), ghost! { |c: &mut Committer<_, _, _, Release>| {} });
 
         Some(item)
     }
