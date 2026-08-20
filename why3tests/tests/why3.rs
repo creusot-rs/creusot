@@ -32,9 +32,14 @@ struct Args {
     /// Ignore why3find cache
     #[clap(long)]
     no_cache: bool,
-    /// Timeout in seconds
+    /// Timeout in seconds, does not override the TIME comment in .rs files
     #[clap(long)]
     time: Option<f64>,
+    /// Multiply all timeouts by this factor
+    /// The `--time=N` option must also be provided for the factor to affect tests without explicit TIME comments
+    /// We use this option to run tests on especially slow machines, like CI.
+    #[clap(long, default_value_t = 1.)]
+    time_factor: f64,
     /// Only run tests which contain one of these strings
     filter: Vec<String>,
 }
@@ -42,7 +47,7 @@ struct Args {
 enum OtherTest {
     Why3find {
         tactic: Option<String>,
-        time: Option<String>,
+        time: Option<f64>,
         depth: Option<String>,
     },
     Why3 {
@@ -158,7 +163,10 @@ fn main() {
                 success = false;
             }
             let tactic = tactic_re.captures_iter(&header_line).next().map(|c| c[1].to_owned());
-            let time = time_re.captures_iter(&header_line).next().map(|c| c[1].to_owned());
+            let time = time_re
+                .captures_iter(&header_line)
+                .next()
+                .map(|c| c[1].to_owned().parse().unwrap());
             let depth = depth_re.captures_iter(&header_line).next().map(|c| c[1].to_owned());
             if tactic.is_none() && time.is_none() && depth.is_none() {
                 default_tests.push(file);
@@ -180,7 +188,7 @@ fn main() {
             .arg("--no-autodetect-provers")
             .args(["-j", &format!("{}", creusot_setup::default_provers_parallelism())]);
         if let Some(time) = args.time {
-            why3find.args(["--time", &format!("{}", time)]);
+            why3find.args(["--time", &format!("{}", time * args.time_factor)]);
         }
         if args.no_cache {
             why3find.arg("--no-cache");
@@ -239,10 +247,8 @@ fn main() {
                 if let Some(tactic) = tactic {
                     why3find.args(["--tactic", &tactic]);
                 }
-                if args.time.is_none()
-                    && let Some(time) = time
-                {
-                    why3find.args(["--time", &time]);
+                if let Some(time) = time {
+                    why3find.args(["--time", &format!("{}", time * args.time_factor)]);
                 }
                 if let Some(depth) = depth {
                     why3find.args(["--depth", &depth]);

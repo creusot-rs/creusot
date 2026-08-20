@@ -14,6 +14,7 @@ for i in "$@"; do
       echo "    --why3-all   Run why3 test on all .coma files"
       echo "                 (default is .coma files with changes from origin/master)"
       echo "    --time=[N]   Timeout for why3 tests in seconds"
+      echo "    --time-factor=[N]   Timeout multiplier for why3 tests, for slow machines"
       echo "    --no-cache   Ignore Why3find cache for why3 tests"
       echo "    [STRING]     Only run tests for files containing this string (tests: ui, why3)"
       echo "    --debug      Print commands as they are run"
@@ -85,7 +86,11 @@ for i in "$@"; do
       shift
       ;;
     --time=*)
-      WHY3_ARGS+=("--time=${i#--time=}")
+      WHY3_ARGS+=("$i")
+      shift
+      ;;
+    --time-factor=*)
+      WHY3_ARGS+=("$i")
       shift
       ;;
     -*)
