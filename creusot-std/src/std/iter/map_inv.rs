@@ -48,7 +48,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
 impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant
     for MapInv<I, F>
 {
-    #[logic(open, inline, prophetic)]
+    #[logic(open, prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
             Self::reinitialize() &&
