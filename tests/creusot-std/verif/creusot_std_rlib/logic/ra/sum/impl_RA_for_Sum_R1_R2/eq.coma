@@ -1,0 +1,101 @@
+(* <logic::ra::sum::Sum<R1, R2> as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_R1
+
+type t_R2
+
+type t_Sum_R1_R2 = Left t_R1 | Right t_R2
+
+type tup2_Sum_R1_R2_Sum_R1_R2 = { f0: t_Sum_R1_R2; f1: t_Sum_R1_R2 }
+
+type t_Option_R1 = None | Some t_R1
+
+function op_R1 (self: t_R1) (other: t_R1) : t_Option_R1
+
+predicate incl_R1 (self: t_R1) (other: t_R1)
+
+axiom incl_R1_spec: forall self: t_R1, other: t_R1 [incl_R1 self other]. incl_R1 self other
+    = (exists factor: t_R1. op_R1 self factor = Some other)
+
+function incl_transitive_R1 (a: t_R1) (b: t_R1) (c: t_R1) : ()
+
+axiom incl_transitive_R1_spec: forall a: t_R1, b: t_R1, c: t_R1. incl_R1 a b -> incl_R1 b c -> incl_R1 a c
+
+function associative_some_R1 (a: t_R1) (b: t_R1) (c: t_R1) (ab: t_R1) (bc: t_R1) : ()
+
+axiom associative_some_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, ab: t_R1, bc: t_R1. op_R1 a b = Some ab
+    -> op_R1 b c = Some bc -> op_R1 a bc = op_R1 ab c
+
+function associative_none_R1 (a: t_R1) (b: t_R1) (c: t_R1) (bc: t_R1) : ()
+
+axiom associative_none_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, bc: t_R1. op_R1 a b = None
+    -> op_R1 b c = Some bc -> op_R1 a bc = None
+
+function commutative_R1 (a: t_R1) (b: t_R1) : ()
+
+axiom commutative_R1_spec: forall a: t_R1, b: t_R1. op_R1 a b = op_R1 b a
+
+function incl_op_R1 (self: t_R1) (other: t_R1) (comb: t_R1) : ()
+
+axiom incl_op_R1_spec: forall self: t_R1, other: t_R1, comb: t_R1. op_R1 self other = Some comb -> incl_R1 self comb
+
+predicate eq_R1 (self: t_R1) (other: t_R1)
+
+axiom eq_R1_spec: forall self: t_R1, other: t_R1 [eq_R1 self other]. eq_R1 self other = (self = other)
+
+type t_Option_R2 = None'0 | Some'0 t_R2
+
+function op_R2 (self: t_R2) (other: t_R2) : t_Option_R2
+
+predicate incl_R2 (self: t_R2) (other: t_R2)
+
+axiom incl_R2_spec: forall self: t_R2, other: t_R2 [incl_R2 self other]. incl_R2 self other
+    = (exists factor: t_R2. op_R2 self factor = Some'0 other)
+
+function incl_transitive_R2 (a: t_R2) (b: t_R2) (c: t_R2) : ()
+
+axiom incl_transitive_R2_spec: forall a: t_R2, b: t_R2, c: t_R2. incl_R2 a b -> incl_R2 b c -> incl_R2 a c
+
+function associative_some_R2 (a: t_R2) (b: t_R2) (c: t_R2) (ab: t_R2) (bc: t_R2) : ()
+
+axiom associative_some_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, ab: t_R2, bc: t_R2. op_R2 a b = Some'0 ab
+    -> op_R2 b c = Some'0 bc -> op_R2 a bc = op_R2 ab c
+
+function associative_none_R2 (a: t_R2) (b: t_R2) (c: t_R2) (bc: t_R2) : ()
+
+axiom associative_none_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, bc: t_R2. op_R2 a b = None'0
+    -> op_R2 b c = Some'0 bc -> op_R2 a bc = None'0
+
+function commutative_R2 (a: t_R2) (b: t_R2) : ()
+
+axiom commutative_R2_spec: forall a: t_R2, b: t_R2. op_R2 a b = op_R2 b a
+
+function incl_op_R2 (self: t_R2) (other: t_R2) (comb: t_R2) : ()
+
+axiom incl_op_R2_spec: forall self: t_R2, other: t_R2, comb: t_R2. op_R2 self other = Some'0 comb -> incl_R2 self comb
+
+predicate eq_R2 (self: t_R2) (other: t_R2)
+
+axiom eq_R2_spec: forall self: t_R2, other: t_R2 [eq_R2 self other]. eq_R2 self other = (self = other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Sum_R1_R2
+
+constant other : t_Sum_R1_R2
+
+predicate eq_Sum_R1_R2 (self: t_Sum_R1_R2) (other: t_Sum_R1_R2)
+
+goal vc_eq_Sum_R1_R2: match { f0 = self; f1 = other } with
+    | {f0 = Left s; f1 = Left o} -> ([@stop_split] [@expl:eq ensures] eq_R1 s o = (s = o))
+    -> ([@stop_split] [@expl:eq ensures] eq_R1 s o = (self = other))
+    | {f0 = Right s; f1 = Right o} -> ([@stop_split] [@expl:eq ensures] eq_R2 s o = (s = o))
+    -> ([@stop_split] [@expl:eq ensures] eq_R2 s o = (self = other))
+    | _ -> [@stop_split] [@expl:eq ensures] false = (self = other)
+    end

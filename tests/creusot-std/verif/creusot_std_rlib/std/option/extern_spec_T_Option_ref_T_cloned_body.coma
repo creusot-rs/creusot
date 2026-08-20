@@ -1,0 +1,93 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+type t_Option_ref_T = None | Some t_T
+
+let elim_Some (_x: t_Option_ref_T) (return (f0: t_T)) = any
+  [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+  | _chk -> (! {[@expl:elim Some] match _x with
+      | Some _ -> true
+      | _ -> false
+      end}
+    any) ]
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate precondition_clone (self: ()) (args: t_T)
+
+axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
+    -> precondition_clone () args
+
+predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
+
+axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
+    -> (let self_ = args in inv_T res)
+
+predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T) = postcondition_clone self args result
+
+meta "rewrite_def" predicate postcondition_once_clone
+
+let clone_T (self_: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+  any
+  [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+    (! return {result}) ]
+
+type t_Option_T = None'0 | Some'0 t_T
+
+predicate inv_Option_ref_T (_1: t_Option_ref_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+    = match x with
+      | None -> true
+      | Some f0 -> inv_ref_T f0
+      end
+
+predicate inv_Option_T (_1: t_Option_T)
+
+axiom inv_axiom'0 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+    = match x with
+      | None'0 -> true
+      | Some'0 f0 -> inv_T f0
+      end
+
+type tup2_Option_ref_T_Option_T = { f0: t_Option_ref_T; f1: t_Option_T }
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_Option__ref_T_cloned_body_T (self_: t_Option_ref_T) (return (x: t_Option_T)) =
+{[@stop_split] [@expl:extern_spec_T_Option__ref_T_cloned_body 'self_' type invariant] inv_Option_ref_T self_}
+  (! bb0
+  [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
+  | bb3 = s0
+    [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1)
+    | s1 = clone_T {t} (fun (_x: t_T) -> [ &_6 <- _x ] s2)
+    | s2 = [ &_ret <- Some'0 _6 ] s3
+    | s3 = return {_ret} ]
+  | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_Option_T = Any.any_l ()
+  | & self_: t_Option_ref_T = self_
+  | & t: t_T = Any.any_l ()
+  | & _6: t_T = Any.any_l () ])
+  [ return (result: t_Option_T) ->
+  {[@stop_split] [@expl:extern_spec_T_Option__ref_T_cloned_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Option__ref_T_cloned_body result type invariant] inv_Option_T result)
+    /\ ([@stop_split] [@expl:extern_spec_T_Option__ref_T_cloned_body ensures] match { f0 = self_; f1 = result } with
+      | {f0 = None; f1 = None'0} -> true
+      | {f0 = Some s; f1 = Some'0 r} -> postcondition_clone () s r
+      | _ -> false
+      end)}
+    (! return {result}) ]

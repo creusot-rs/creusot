@@ -1,0 +1,27 @@
+(* <*mut [T] as std::ptr::SlicePointerExt<T>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Opaque
+use creusot.int.UInt64
+
+function thin_ptr_slice_T [@inline:trivial] (self: Opaque.ptr) : Opaque.ptr = Opaque.thin self
+
+meta "rewrite_def" function thin_ptr_slice_T
+
+function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
+
+function len_ptr_slice_T [@inline:trivial] (self: Opaque.ptr) : UInt64.t = metadata_slice_T self
+
+meta "rewrite_def" function len_ptr_slice_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: Opaque.ptr, other: Opaque.ptr. forall result: (). thin_ptr_slice_T self
+            = thin_ptr_slice_T other
+          /\ len_ptr_slice_T self = len_ptr_slice_T other -> self = other
+      -> thin_ptr_slice_T self = thin_ptr_slice_T other /\ len_ptr_slice_T self = len_ptr_slice_T other -> self = other

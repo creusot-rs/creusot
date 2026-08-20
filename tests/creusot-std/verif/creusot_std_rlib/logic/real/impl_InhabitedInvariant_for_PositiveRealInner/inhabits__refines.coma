@@ -1,0 +1,23 @@
+(* <logic::real::PositiveRealInner as invariant::InhabitedInvariant> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use real.Real
+use real.FromInt
+
+type t_PositiveRealInner = { f0: Real.real }
+
+predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
+
+meta "rewrite_def" predicate gt_log_Real
+
+predicate invariant_PositiveRealInner (self: t_PositiveRealInner) = gt_log_Real self.f0 (FromInt.from_int 0)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall result: t_PositiveRealInner. invariant_PositiveRealInner result
+    -> invariant_PositiveRealInner result

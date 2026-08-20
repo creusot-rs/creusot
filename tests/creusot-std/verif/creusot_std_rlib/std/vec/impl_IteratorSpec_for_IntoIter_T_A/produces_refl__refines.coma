@@ -1,0 +1,23 @@
+(* <std::vec::IntoIter<T, A> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+
+type t_IntoIter_T_A
+
+type t_T
+
+function view_IntoIter_T_A (self: t_IntoIter_T_A) : Seq.seq t_T
+
+predicate produces_IntoIter_T_A (self: t_IntoIter_T_A) (visited: Seq.seq t_T) (rhs: t_IntoIter_T_A) =
+  view_IntoIter_T_A self = Seq.(++) visited (view_IntoIter_T_A rhs)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_IntoIter_T_A. forall result: (). produces_IntoIter_T_A self (Seq.empty: Seq.seq t_T) self
+      -> produces_IntoIter_T_A self (Seq.empty: Seq.seq t_T) self

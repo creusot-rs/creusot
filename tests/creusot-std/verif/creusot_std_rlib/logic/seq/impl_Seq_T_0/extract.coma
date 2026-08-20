@@ -1,0 +1,149 @@
+(* logic::seq::Seq<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+use int.Int
+
+type t_T
+
+type t_RangeFrom_Int = { start: int }
+
+function index_Seq_T [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom_Int) : Seq.seq t_T =
+  Seq.([..]) self range.start (Seq.length self)
+
+meta "rewrite_def" function index_Seq_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+  inv_Seq_T self.current /\ inv_Seq_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_Seq_T
+
+predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
+
+meta "rewrite_def" predicate inv_refmut_Seq_T
+
+type t_RangeTo_Int = { end': int }
+
+function index_Seq_T'0 [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeTo_Int) : Seq.seq t_T =
+  Seq.([..]) self 0 range.end'
+
+meta "rewrite_def" function index_Seq_T'0
+
+let split_off_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (mid: int) (return (x: Seq.seq t_T)) =
+{[@stop_split] [@expl:split_off_ghost_T requires] ([@stop_split] [@expl:split_off_ghost 'self' type invariant] inv_refmut_Seq_T self)
+  /\ ([@stop_split] [@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current)}
+  any
+  [ return (result: Seq.seq t_T) ->
+  {[@stop_split] [@expl:split_off_ghost_T ensures] ([@stop_split] [@expl:split_off_ghost result type invariant] inv_Seq_T result)
+    /\ ([@stop_split] [@expl:split_off_ghost ensures #0] self.final = index_Seq_T'0 self.current { end' = mid })
+    /\ ([@stop_split] [@expl:split_off_ghost ensures #1] result = index_Seq_T self.current { start = mid })}
+    (! return {result}) ]
+
+predicate resolve_T (_1: t_T)
+
+predicate resolve_Seq_T (self: Seq.seq t_T) = forall i: int. 0 <= i /\ i < Seq.length self -> resolve_T (Seq.get self i)
+
+predicate resolve_Seq_T'0 [@inline:trivial] (_1: Seq.seq t_T) = resolve_Seq_T _1
+
+meta "rewrite_def" predicate resolve_Seq_T'0
+
+type t_Option_T = None | Some t_T
+
+predicate inv_Option_T (_1: t_Option_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+    = match x with
+      | None -> true
+      | Some f0 -> inv_T f0
+      end
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+
+let pop_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
+{[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_T self}
+  any
+  [ return (result: t_Option_T) ->
+  {[@stop_split] [@expl:pop_front_ghost_T ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_T result)
+    /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
+      | None -> self.current = (Seq.empty: Seq.seq t_T) /\ self.current = self.final
+      | Some r -> gt_log_Int (Seq.length self.current) 0
+      /\ r = Seq.get self.current 0 /\ self.final = tail_T self.current
+      end)}
+    (! return {result}) ]
+
+let unwrap_T (self_: t_Option_T) (return (x: t_T)) =
+{[@stop_split] [@expl:unwrap_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_T self_)
+  /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
+  any
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:unwrap_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_T result)
+    /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extract_T (self: Seq.seq t_T) (index: int) (return (x: t_T)) =
+{[@stop_split] [@expl:extract_T requires] ([@stop_split] [@expl:extract 'self' type invariant] inv_Seq_T self)
+  /\ ([@stop_split] [@expl:extract requires] 0 <= index /\ index < Seq.length self)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = {[@expl:assertion] forall i: int. index < i /\ i < Seq.length self
+        -> Seq.get self i = Seq.get (index_Seq_T self { start = index + 1 }) (i - index - 1)}
+      s1
+    | s1 = MutBorrow.borrow_mut <Seq.seq t_T> {self}
+        (fun (_bor: MutBorrow.t (Seq.seq t_T)) -> [ &_19 <- _bor ] -{inv_Seq_T _bor.final}- [ &self <- _bor.final ] s2)
+      [ _ck -> (! {[@expl:type invariant] inv_Seq_T self} any) ]
+    | s2 = split_off_ghost_T {_19} {index} (fun (_x: Seq.seq t_T) -> [ &_18 <- _x ] s3)
+    | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Seq_T self} any) ]
+    | s4 = -{resolve_Seq_T'0 self}- s5
+    | s5 = MutBorrow.borrow_mut <Seq.seq t_T> {_18}
+        (fun (_bor: MutBorrow.t (Seq.seq t_T)) -> [ &_17 <- _bor ] -{inv_Seq_T _bor.final}- [ &_18 <- _bor.final ] s6)
+      [ _ck -> (! {[@expl:type invariant] inv_Seq_T _18} any) ]
+    | s6 = pop_front_ghost_T {_17} (fun (_x: t_Option_T) -> [ &_16 <- _x ] s7)
+    | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_Seq_T _18} any) ]
+    | s8 = -{resolve_Seq_T'0 _18}- s9
+    | s9 = unwrap_T {_16} (fun (_x: t_T) -> [ &_ret <- _x ] s10)
+    | s10 = return {_ret} ] ]
+  [ & _ret: t_T = Any.any_l ()
+  | & self: Seq.seq t_T = self
+  | & index: int = index
+  | & _16: t_Option_T = Any.any_l ()
+  | & _17: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
+  | & _18: Seq.seq t_T = Any.any_l ()
+  | & _19: MutBorrow.t (Seq.seq t_T) = Any.any_l () ])
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:extract_T ensures] ([@stop_split] [@expl:extract result type invariant] inv_T result)
+    /\ ([@stop_split] [@expl:extract ensures #0] result = Seq.get self index)
+    /\ ([@stop_split] [@expl:extract ensures #1] forall i: int. 0 <= i /\ i < Seq.length self /\ i <> index
+      -> resolve_T (Seq.get self i))}
+    (! return {result}) ]

@@ -1,0 +1,39 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
+
+meta "rewrite_def" predicate invariant_ref_ref_T
+
+predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_ref_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_Deref__ref_T_deref_body_T (self_: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:extern_spec_T_Deref__ref_T_deref_body 'self_' type invariant] inv_ref_ref_T self_}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- self_ ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_T = Any.any_l () | & self_: t_T = self_ ])
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:extern_spec_T_Deref__ref_T_deref_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Deref__ref_T_deref_body result type invariant] inv_ref_T result)
+    /\ ([@stop_split] [@expl:extern_spec_T_Deref__ref_T_deref_body ensures] result = self_)}
+    (! return {result}) ]

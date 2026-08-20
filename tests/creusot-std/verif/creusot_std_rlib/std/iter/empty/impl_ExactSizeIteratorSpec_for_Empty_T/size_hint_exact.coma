@@ -1,0 +1,48 @@
+(* <std::iter::Empty<T> as std::iter::ExactSizeIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+
+type t_Empty_T
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+predicate postcondition_size_hint (self: ()) (args: t_Empty_T) (result: tup2_usize_Option_usize) =
+  let self_ = args in result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) }
+
+meta "rewrite_def" predicate postcondition_size_hint
+
+predicate inv_Empty_T (_1: t_Empty_T)
+
+predicate invariant_ref_Empty_T [@inline:trivial] (self: t_Empty_T) = inv_Empty_T self
+
+meta "rewrite_def" predicate invariant_ref_Empty_T
+
+predicate inv_ref_Empty_T [@inline:trivial] (_1: t_Empty_T) = invariant_ref_Empty_T _1
+
+meta "rewrite_def" predicate inv_ref_Empty_T
+
+let size_hint_Empty_T (self_: t_Empty_T) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Empty_T self_}
+  any
+  [ return (result: tup2_usize_Option_usize) -> {[@stop_split] [@expl:size_hint ensures] result
+    = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) }}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Empty_T
+
+constant r : tup2_usize_Option_usize
+
+function size_hint_exact_Empty_T (self: t_Empty_T) (r: tup2_usize_Option_usize) : ()
+
+goal vc_size_hint_exact_Empty_T: postcondition_size_hint () self r
+  -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))

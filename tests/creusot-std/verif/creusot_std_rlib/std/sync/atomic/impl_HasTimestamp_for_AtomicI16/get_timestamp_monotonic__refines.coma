@@ -1,0 +1,45 @@
+(* <std::sync::atomic::AtomicI16 as std::sync::view::HasTimestamp> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Atomic_i16
+
+type t_AtomicI16 = { f0: t_Atomic_i16 }
+
+type t_SyncView
+
+predicate lt_log_SyncView (self: t_SyncView) (_2: t_SyncView)
+
+predicate le_log_SyncView [@inline:trivial] (self: t_SyncView) (other: t_SyncView) =
+  lt_log_SyncView self other \/ self = other
+
+meta "rewrite_def" predicate le_log_SyncView
+
+function le_lt_log_SyncView (self: t_SyncView) (other: t_SyncView) : ()
+
+axiom le_lt_log_SyncView_spec: forall self: t_SyncView, other: t_SyncView. le_log_SyncView self other
+    = (lt_log_SyncView self other \/ self = other)
+
+function transitive_SyncView (x: t_SyncView) (y: t_SyncView) (z: t_SyncView) : ()
+
+axiom transitive_SyncView_spec: forall x: t_SyncView, y: t_SyncView, z: t_SyncView. lt_log_SyncView x y
+    -> lt_log_SyncView y z -> lt_log_SyncView x z
+
+function irreflexive_SyncView (self: t_SyncView) : ()
+
+axiom irreflexive_SyncView_spec: forall self: t_SyncView. not lt_log_SyncView self self
+
+function get_timestamp_AtomicI16 (self: t_AtomicI16) (_2: t_SyncView) : int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_AtomicI16, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
+    -> le_log_SyncView x y
+    /\ (forall result: (). get_timestamp_AtomicI16 self x <= get_timestamp_AtomicI16 self y
+      -> get_timestamp_AtomicI16 self x <= get_timestamp_AtomicI16 self y)

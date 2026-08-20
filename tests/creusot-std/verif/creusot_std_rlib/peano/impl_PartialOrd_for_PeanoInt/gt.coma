@@ -1,0 +1,66 @@
+(* <peano::PeanoInt as std::cmp::PartialOrd> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use creusot.prelude.Any
+
+type t_PeanoInt = { f0: UInt64.t }
+
+type t_Ordering = Less | Equal | Greater
+
+type t_Option_Ordering = None | Some t_Ordering
+
+predicate lt_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) = UInt64.lt self.f0 o.f0
+
+meta "rewrite_def" predicate lt_log_PeanoInt
+
+function cmp_log_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) : t_Ordering = if self = other then
+    Equal
+  else
+    if lt_log_PeanoInt self other then Less else Greater
+
+
+let partial_cmp_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: t_Option_Ordering)) = any
+  [ return (result: t_Option_Ordering) -> {[@stop_split] [@expl:partial_cmp ensures] result
+    = Some (cmp_log_PeanoInt self other)}
+    (! return {result}) ]
+
+let elim_Some (_x: t_Option_Ordering) (return (f0'0: t_Ordering)) = any
+  [ _k (f0'0: t_Ordering) -> {Some f0'0 = _x} (! return {f0'0})
+  | _chk -> (! {[@expl:elim Some] match _x with
+      | Some _ -> true
+      | _ -> false
+      end}
+    any) ]
+
+predicate gt_log_u64 [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.lt other self
+
+meta "rewrite_def" predicate gt_log_u64
+
+function view_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0
+
+meta "rewrite_def" function view_PeanoInt
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let gt_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: bool)) = (! bb0
+  [ bb0 = s0
+    [ s0 = partial_cmp_PeanoInt {self} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+    | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
+  | bb3 = elim_Some {_6}
+      (fun (r0: t_Ordering) ->
+        any [ br0 -> {r0 = Less} (! bb2) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb5) ])
+  | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+  | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: bool = Any.any_l ()
+  | & self: t_PeanoInt = self
+  | & other: t_PeanoInt = other
+  | & _6: t_Option_Ordering = Any.any_l () ])
+  [ return (result: bool) -> {[@stop_split] [@expl:gt ensures] result
+    = gt_log_u64 (view_PeanoInt self) (view_PeanoInt other)}
+    (! return {result}) ]

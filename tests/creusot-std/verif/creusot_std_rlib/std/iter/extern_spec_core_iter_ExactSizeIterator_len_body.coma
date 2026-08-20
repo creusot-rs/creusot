@@ -1,0 +1,142 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use seq.Seq
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+use int.Int
+
+type t_Self_
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+type t_Item
+
+predicate produces_Self_ (self: t_Self_) (visited: Seq.seq t_Item) (o: t_Self_)
+
+function produces_trans_Self_ (a: t_Self_) (ab: Seq.seq t_Item) (b: t_Self_) (bc: Seq.seq t_Item) (c: t_Self_) : ()
+
+axiom produces_trans_Self__spec:
+  forall a: t_Self_, ab: Seq.seq t_Item, b: t_Self_, bc: Seq.seq t_Item, c: t_Self_. produces_Self_ a ab b
+    -> produces_Self_ b bc c -> produces_Self_ a (Seq.(++) ab bc) c
+
+function produces_refl_Self_ (self: t_Self_) : ()
+
+axiom produces_refl_Self__spec: forall self: t_Self_. produces_Self_ self (Seq.empty: Seq.seq t_Item) self
+
+predicate completed_Self_ (self: MutBorrow.t t_Self_)
+
+predicate postcondition_size_hint (self: ()) (args: t_Self_) (result: tup2_usize_Option_usize)
+
+axiom postcondition_fndef:
+  forall args: t_Self_, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self_. produces_Self_ self_ s i.current
+          /\ completed_Self_ i -> UInt64.t'int res.f0 <= Seq.length s)
+    /\ match res.f1 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_Self_. produces_Self_ self_ s i -> Seq.length s <= UInt64.t'int r
+      | None -> true
+      end)
+
+predicate inv_Self_ (_1: t_Self_)
+
+predicate invariant_ref_Self_ [@inline:trivial] (self: t_Self_) = inv_Self_ self
+
+meta "rewrite_def" predicate invariant_ref_Self_
+
+predicate inv_ref_Self_ [@inline:trivial] (_1: t_Self_) = invariant_ref_Self_ _1
+
+meta "rewrite_def" predicate inv_ref_Self_
+
+predicate precondition_size_hint (self: ()) (args: t_Self_)
+
+axiom precondition_fndef:
+  forall args: t_Self_ [precondition_size_hint () args]. (let self_ = args in inv_ref_Self_ self_)
+    -> precondition_size_hint () args
+
+predicate postcondition_once_size_hint (self: ()) (args: t_Self_) (result: tup2_usize_Option_usize) =
+  postcondition_size_hint self args result
+
+meta "rewrite_def" predicate postcondition_once_size_hint
+
+let size_hint_Self_ (self_: t_Self_) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+    (! return {result}) ]
+
+function size_hint_exact_Self_ (self: t_Self_) (r: tup2_usize_Option_usize) : ()
+
+axiom size_hint_exact_Self__spec: forall self: t_Self_, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> r.f1 = Some (r.f0)
+
+type tup2_ref_Option_usize_ref_Option_usize = { f0'0: t_Option_usize; f1'0: t_Option_usize }
+
+type t_Option_Int = None'0 | Some'0 int
+
+function deep_model_usize [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+
+meta "rewrite_def" function deep_model_usize
+
+function deep_model_Option_usize [@inline:trivial] (self: t_Option_usize) : t_Option_Int = match self with
+    | Some t -> Some'0 (deep_model_usize t)
+    | None -> None'0
+    end
+
+meta "rewrite_def" function deep_model_Option_usize
+
+function deep_model_ref_Option_usize [@inline:trivial] (self: t_Option_usize) : t_Option_Int =
+  deep_model_Option_usize self
+
+meta "rewrite_def" function deep_model_ref_Option_usize
+
+let eq_Option_usize (self_: t_Option_usize) (rhs: t_Option_usize) (return (x: bool)) = any
+  [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
+    = (deep_model_ref_Option_usize self_ = deep_model_ref_Option_usize rhs)}
+    (! return {result}) ]
+
+type t_AssertKind = Eq | Ne | Match
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_core_iter_ExactSizeIterator_len_body_Self_ (self_: t_Self_) (return (x: UInt64.t)) =
+{[@stop_split] [@expl:extern_spec_core_iter_ExactSizeIterator_len_body 'self_' type invariant] inv_ref_Self_ self_}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_4 <- () ] s1
+    | s1 = size_hint_Self_ {self_} (fun (_x: tup2_usize_Option_usize) -> [ &_8 <- _x ] s2)
+    | s2 = [ &lower <- _8.f0 ] s3
+    | s3 = [ &upper <- _8.f1 ] s4
+    | s4 = [ &_14 <- Some lower ] s5
+    | s5 = [ &_11 <- { f0'0 = upper; f1'0 = _14 } ] s6
+    | s6 = [ &left_val <- _11.f0'0 ] s7
+    | s7 = [ &right_val <- _11.f1'0 ] s8
+    | s8 = eq_Option_usize {left_val} {right_val} (fun (_x: bool) -> [ &_18 <- _x ] s9)
+    | s9 = any [ br0 -> {_18 = false} (! bb5) | br1 -> {_18} (! bb4) ] ]
+  | bb4 = s0 [ s0 = [ &_ret <- lower ] s1 | s1 = return {_ret} ]
+  | bb5 = s0
+    [ s0 = [ &kind <- Eq ] s1 | s1 = [ &_26 <- left_val ] s2 | s2 = [ &_28 <- right_val ] s3 | s3 = {false} any ] ]
+  [ & _ret: UInt64.t = Any.any_l ()
+  | & self_: t_Self_ = self_
+  | & _4: () = Any.any_l ()
+  | & lower: UInt64.t = Any.any_l ()
+  | & upper: t_Option_usize = Any.any_l ()
+  | & _8: tup2_usize_Option_usize = Any.any_l ()
+  | & _11: tup2_ref_Option_usize_ref_Option_usize = Any.any_l ()
+  | & _14: t_Option_usize = Any.any_l ()
+  | & left_val: t_Option_usize = Any.any_l ()
+  | & right_val: t_Option_usize = Any.any_l ()
+  | & _18: bool = Any.any_l ()
+  | & kind: t_AssertKind = Any.any_l ()
+  | & _26: t_Option_usize = Any.any_l ()
+  | & _28: t_Option_usize = Any.any_l () ])
+  [ return (result: UInt64.t) ->
+  {[@stop_split] [@expl:extern_spec_core_iter_ExactSizeIterator_len_body ensures] postcondition_size_hint () self_ { f0 = result;
+                                                                                                                     f1 = Some result }}
+    (! return {result}) ]

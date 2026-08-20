@@ -1,0 +1,38 @@
+(* <ghost::lifetime_logic::FullBorrow<T> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_FullBorrow_T
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+function cur_T (self: t_FullBorrow_T) : t_T
+
+function fin_FullBorrow_T (self: t_FullBorrow_T) : t_T
+
+predicate invariant_FullBorrow_T [@inline:trivial] (self: t_FullBorrow_T) =
+  inv_T (cur_T self) /\ inv_T (fin_FullBorrow_T self)
+
+meta "rewrite_def" predicate invariant_FullBorrow_T
+
+predicate inv_FullBorrow_T (_1: t_FullBorrow_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_FullBorrow_T [inv_FullBorrow_T x]. inv_FullBorrow_T x = invariant_FullBorrow_T x
+
+predicate structural_resolve_FullBorrow_T (_1: t_FullBorrow_T)
+
+predicate resolve_FullBorrow_T (self: t_FullBorrow_T) = cur_T self = fin_FullBorrow_T self
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_FullBorrow_T. inv_FullBorrow_T self
+    -> structural_resolve_FullBorrow_T self
+    -> inv_FullBorrow_T self
+    /\ structural_resolve_FullBorrow_T self
+    /\ (forall result: (). resolve_FullBorrow_T self -> resolve_FullBorrow_T self)

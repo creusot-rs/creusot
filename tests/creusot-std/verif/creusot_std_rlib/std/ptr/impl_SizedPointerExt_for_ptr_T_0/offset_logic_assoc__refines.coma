@@ -1,0 +1,66 @@
+(* <*mut T as std::ptr::SizedPointerExt<T>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Opaque
+use creusot.int.UInt64
+use creusot.prelude.Ptr
+use int.Int
+
+constant size_of_T : int
+
+axiom size_of_T_spec: 0 <= size_of_T
+
+constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+
+function sub_ptr_T (self: Opaque.ptr) (rhs: Opaque.ptr) : int
+
+function offset_ptr_T (self: Opaque.ptr) (offset: int) : Opaque.ptr
+
+axiom offset_ptr_T_spec: forall self: Opaque.ptr, offset: int [offset_ptr_T self offset]. 0
+      <= UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+    -> UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T <= UInt64.t'int const_MAX
+    -> UInt64.t'int (Ptr.addr_logic_u64 (offset_ptr_T self offset))
+    = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+
+function sub_offset_ptr_T (self: Opaque.ptr) (offset: int) : () = ()
+
+axiom sub_offset_ptr_T_spec: forall self: Opaque.ptr, offset: int. sub_ptr_T (offset_ptr_T self offset) self = offset
+
+axiom sub_offset_ptr_T_spec'0: forall self: Opaque.ptr, offset: int. sub_ptr_T self (offset_ptr_T self offset)
+    = - offset
+
+function sub_logic_refl_ptr_T (self: Opaque.ptr) : () = ()
+
+axiom sub_logic_refl_ptr_T_spec: forall self: Opaque.ptr. sub_ptr_T self self = 0
+
+function offset_logic_assoc_ptr_T (self: Opaque.ptr) (offset1: int) (offset2: int) : () = ()
+
+axiom offset_logic_assoc_ptr_T_spec:
+  forall self: Opaque.ptr, offset1: int, offset2: int. offset_ptr_T (offset_ptr_T self offset1) offset2
+    = offset_ptr_T self (offset1 + offset2)
+
+function offset_logic_zero_ptr_T (self: Opaque.ptr) : () = ()
+
+axiom offset_logic_zero_ptr_T_spec: forall self: Opaque.ptr. offset_ptr_T self 0 = self
+
+function offset_ptr_T'0 [@inline:trivial] (self: Opaque.ptr) (offset: int) : Opaque.ptr = offset_ptr_T self offset
+
+meta "rewrite_def" function offset_ptr_T'0
+
+axiom offset_ptr_T_spec'0: forall self: Opaque.ptr, offset: int [offset_ptr_T'0 self offset]. 0
+      <= UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+    -> UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T <= UInt64.t'int const_MAX
+    -> UInt64.t'int (Ptr.addr_logic_u64 (offset_ptr_T'0 self offset))
+    = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall self: Opaque.ptr, offset1: int, offset2: int. forall result: (). offset_ptr_T'0 (offset_ptr_T'0 self offset1) offset2
+        = offset_ptr_T'0 self (offset1 + offset2)
+      -> offset_ptr_T'0 (offset_ptr_T'0 self offset1) offset2 = offset_ptr_T'0 self (offset1 + offset2)

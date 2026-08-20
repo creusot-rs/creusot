@@ -1,0 +1,137 @@
+(* <logic::seq::Iter<T> as std::iter::Iterator> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+use int.Int
+
+type t_T
+
+type t_Iter_T = { f0: Seq.seq t_T }
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+type t_Option_T = None | Some t_T
+
+predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+  inv_Seq_T self.current /\ inv_Seq_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_Seq_T
+
+predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
+
+meta "rewrite_def" predicate inv_refmut_Seq_T
+
+predicate inv_Option_T (_1: t_Option_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+    = match x with
+      | None -> true
+      | Some f0'0 -> inv_T f0'0
+      end
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+
+let pop_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
+{[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_T self}
+  any
+  [ return (result: t_Option_T) ->
+  {[@stop_split] [@expl:pop_front_ghost_T ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_T result)
+    /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
+      | None -> self.current = (Seq.empty: Seq.seq t_T) /\ self.current = self.final
+      | Some r -> gt_log_Int (Seq.length self.current) 0
+      /\ r = Seq.get self.current 0 /\ self.final = tail_T self.current
+      end)}
+    (! return {result}) ]
+
+predicate inv_Iter_T (_1: t_Iter_T)
+
+axiom inv_axiom'0 [@rewrite]: forall x: t_Iter_T [inv_Iter_T x]. inv_Iter_T x = inv_Seq_T x.f0
+
+predicate invariant_refmut_Iter_T [@inline:trivial] (self: MutBorrow.t t_Iter_T) =
+  inv_Iter_T self.current /\ inv_Iter_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_Iter_T
+
+predicate inv_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = invariant_refmut_Iter_T _1
+
+meta "rewrite_def" predicate inv_refmut_Iter_T
+
+predicate resolve_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Iter_T
+
+function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
+
+predicate produces_Iter_T [@inline:trivial] (self: t_Iter_T) (visited: Seq.seq t_T) (o: t_Iter_T) =
+  view_Iter_T self = Seq.(++) visited (view_Iter_T o)
+
+meta "rewrite_def" predicate produces_Iter_T
+
+function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : () = ()
+
+axiom produces_trans_Iter_T_spec:
+  forall a: t_Iter_T, ab: Seq.seq t_T, b: t_Iter_T, bc: Seq.seq t_T, c: t_Iter_T. produces_Iter_T a ab b
+    -> produces_Iter_T b bc c -> produces_Iter_T a (Seq.(++) ab bc) c
+
+function produces_refl_Iter_T (self: t_Iter_T) : () = ()
+
+axiom produces_refl_Iter_T_spec: forall self: t_Iter_T. produces_Iter_T self (Seq.empty: Seq.seq t_T) self
+
+predicate completed_Iter_T [@inline:trivial] (self: MutBorrow.t t_Iter_T) =
+  view_Iter_T self.current = (Seq.empty: Seq.seq t_T)
+
+meta "rewrite_def" predicate completed_Iter_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let next_Iter_T (self: MutBorrow.t t_Iter_T) (return (x: t_Option_T)) =
+{[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_T self}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = MutBorrow.borrow_final <Seq.seq t_T> {self.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
+        (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+          [ &_4 <- _bor ] -{inv_Seq_T _bor.final}-
+          [ &self <- { self with current = { f0 = _bor.final } } ] s1)
+      [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current.f0} any) ]
+    | s1 = pop_front_ghost_T {_4} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
+    | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_T self} any) ]
+    | s3 = -{resolve_refmut_Iter_T self}- s4
+    | s4 = return {_ret} ] ]
+  [ & _ret: t_Option_T = Any.any_l ()
+  | & self: MutBorrow.t t_Iter_T = self
+  | & _4: MutBorrow.t (Seq.seq t_T) = Any.any_l () ])
+  [ return (result: t_Option_T) ->
+  {[@stop_split] [@expl:next_Iter_T ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_T result)
+    /\ ([@stop_split] [@expl:next ensures] match result with
+      | None -> completed_Iter_T self
+      | Some v -> produces_Iter_T self.current (Seq.singleton v) self.final
+      end)}
+    (! return {result}) ]

@@ -1,0 +1,71 @@
+(* <u32 as logic::well_founded::WellFounded> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt32
+use map.Map
+use int.Int
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate gt_log_u32 [@inline:trivial] (self: UInt32.t) (other: UInt32.t) = UInt32.lt other self
+
+meta "rewrite_def" predicate gt_log_u32
+
+predicate well_founded_relation_u32 [@inline:trivial] (self: UInt32.t) (other: UInt32.t) = gt_log_u32 self other
+
+meta "rewrite_def" predicate well_founded_relation_u32
+
+function index_Mapping_Int_u32 [@inline:trivial] (self: Map.map int UInt32.t) (a: int) : UInt32.t = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_u32
+
+constant const_MIN: UInt32.t = (0: UInt32.t)
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+  ge_log_Int self 0 /\ gt_log_Int self other
+
+meta "rewrite_def" predicate well_founded_relation_Int
+
+function index_Mapping_Int_Int [@inline:trivial] (self: Map.map int int) (a: int) : int = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_Int
+
+function no_infinite_decreasing_sequence_Int (s: Map.map int int) : int
+
+axiom no_infinite_decreasing_sequence_Int_spec:
+  forall s: Map.map int int [no_infinite_decreasing_sequence_Int s]. ge_log_Int (no_infinite_decreasing_sequence_Int s) 0
+
+axiom no_infinite_decreasing_sequence_Int_spec'0:
+  forall s: Map.map int int [no_infinite_decreasing_sequence_Int s]. not well_founded_relation_Int (index_Mapping_Int_Int s (no_infinite_decreasing_sequence_Int s)) (index_Mapping_Int_Int s (no_infinite_decreasing_sequence_Int s
+    + 1))
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant s : Map.map int UInt32.t
+
+function no_infinite_decreasing_sequence_u32 (s: Map.map int UInt32.t) : int
+
+goal vc_no_infinite_decreasing_sequence_u32:
+  ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int (no_infinite_decreasing_sequence_Int (fun (i: int) -> UInt32.t'int (index_Mapping_Int_u32 s i)
+      - UInt32.t'int const_MIN)) 0)
+    /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_Int (index_Mapping_Int_Int (fun (i: int) -> UInt32.t'int (index_Mapping_Int_u32 s i)
+    - UInt32.t'int const_MIN) (no_infinite_decreasing_sequence_Int (fun (i: int) -> UInt32.t'int (index_Mapping_Int_u32 s i)
+    - UInt32.t'int const_MIN))) (index_Mapping_Int_Int (fun (i: int) -> UInt32.t'int (index_Mapping_Int_u32 s i)
+    - UInt32.t'int const_MIN) (no_infinite_decreasing_sequence_Int (fun (i: int) -> UInt32.t'int (index_Mapping_Int_u32 s i)
+      - UInt32.t'int const_MIN)
+    + 1))))
+  -> (let result = no_infinite_decreasing_sequence_Int (fun (i: int) -> UInt32.t'int (index_Mapping_Int_u32 s i)
+  - UInt32.t'int const_MIN) in [@stop_split] [@expl:no_infinite_decreasing_sequence_u32 ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int result 0)
+  /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_u32 (index_Mapping_Int_u32 s result) (index_Mapping_Int_u32 s (result
+  + 1))))

@@ -1,0 +1,35 @@
+(* <*const T as std::ptr::SizedPointerExt<T>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Opaque
+use creusot.int.UInt64
+use creusot.prelude.Ptr
+use int.Int
+
+function sub_ptr_T (self: Opaque.ptr) (rhs: Opaque.ptr) : int
+
+constant size_of_T : int
+
+axiom size_of_T_spec: 0 <= size_of_T
+
+constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+
+function offset_ptr_T (self: Opaque.ptr) (offset: int) : Opaque.ptr
+
+axiom offset_ptr_T_spec: forall self: Opaque.ptr, offset: int [offset_ptr_T self offset]. 0
+      <= UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+    -> UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T <= UInt64.t'int const_MAX
+    -> UInt64.t'int (Ptr.addr_logic_u64 (offset_ptr_T self offset))
+    = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: Opaque.ptr, offset: int. forall result: (). sub_ptr_T (offset_ptr_T self offset) self
+          = offset
+        /\ sub_ptr_T self (offset_ptr_T self offset) = - offset
+      -> sub_ptr_T (offset_ptr_T self offset) self = offset /\ sub_ptr_T self (offset_ptr_T self offset) = - offset

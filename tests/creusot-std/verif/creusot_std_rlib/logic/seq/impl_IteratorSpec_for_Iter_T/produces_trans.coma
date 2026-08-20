@@ -1,0 +1,37 @@
+(* <logic::seq::Iter<T> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+
+type t_T
+
+type t_Iter_T = { f0: Seq.seq t_T }
+
+function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
+
+predicate produces_Iter_T [@inline:trivial] (self: t_Iter_T) (visited: Seq.seq t_T) (o: t_Iter_T) =
+  view_Iter_T self = Seq.(++) visited (view_Iter_T o)
+
+meta "rewrite_def" predicate produces_Iter_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_Iter_T
+
+constant ab : Seq.seq t_T
+
+constant b : t_Iter_T
+
+constant bc : Seq.seq t_T
+
+constant c : t_Iter_T
+
+function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : ()
+
+goal vc_produces_trans_Iter_T: produces_Iter_T a ab b
+  -> produces_Iter_T b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Iter_T a (Seq.(++) ab bc) c)

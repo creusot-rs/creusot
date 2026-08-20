@@ -1,0 +1,22 @@
+(* <logic::int::Int as std::cmp::PartialEq> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+let eq_Int (self: int) (other: int) (return (x: bool)) = any
+  [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (self = other)} (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let ne_Int (self: int) (other: int) (return (x: bool)) = (! bb0
+  [ bb0 = s0
+    [ s0 = eq_Int {self} {other} (fun (_x: bool) -> [ &_6 <- _x ] s1)
+    | s1 = [ &_ret <- not _6 ] s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: bool = Any.any_l () | & self: int = self | & other: int = other | & _6: bool = Any.any_l () ])
+  [ return (result: bool) -> {[@stop_split] [@expl:ne ensures] result = (self <> other)} (! return {result}) ]

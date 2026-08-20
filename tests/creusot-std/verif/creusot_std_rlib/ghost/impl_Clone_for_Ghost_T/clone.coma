@@ -1,0 +1,66 @@
+(* <ghost::Ghost<T> as std::clone::Clone> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_Ghost_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_Ghost_T
+
+predicate inv_Ghost_T [@inline:trivial] (_1: t_T) = invariant_Ghost_T _1
+
+meta "rewrite_def" predicate inv_Ghost_T
+
+predicate invariant_ref_Ghost_T [@inline:trivial] (self: t_T) = inv_Ghost_T self
+
+meta "rewrite_def" predicate invariant_ref_Ghost_T
+
+predicate inv_ref_Ghost_T [@inline:trivial] (_1: t_T) = invariant_ref_Ghost_T _1
+
+meta "rewrite_def" predicate inv_ref_Ghost_T
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+let deref_Ghost_T (self: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_T self}
+  any
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:deref_Ghost_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_T result)
+    /\ ([@stop_split] [@expl:deref ensures] result = self)}
+    (! return {result}) ]
+
+let new_T (x: t_T) (return (x'0: t_T)) = {[@stop_split] [@expl:new 'x' type invariant] inv_T x}
+  any
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_T result)
+    /\ ([@stop_split] [@expl:new ensures] result = x)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let clone_Ghost_T (self: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Ghost_T self}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = deref_Ghost_T {self} (fun (_x: t_T) -> [ &_5 <- _x ] s1)
+    | s1 = new_T {_5} (fun (_x: t_T) -> [ &_ret <- _x ] s2)
+    | s2 = return {_ret} ] ] [ & _ret: t_T = Any.any_l () | & self: t_T = self | & _5: t_T = Any.any_l () ])
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:clone_Ghost_T ensures] ([@stop_split] [@expl:clone result type invariant] inv_Ghost_T result)
+    /\ ([@stop_split] [@expl:clone ensures] result = self)}
+    (! return {result}) ]

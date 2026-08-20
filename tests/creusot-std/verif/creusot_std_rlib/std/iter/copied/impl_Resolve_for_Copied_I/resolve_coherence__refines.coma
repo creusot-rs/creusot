@@ -1,0 +1,37 @@
+(* <std::iter::Copied<I> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_Copied_I
+
+type t_I
+
+predicate inv_I (_1: t_I)
+
+function iter_Copied_I (self: t_Copied_I) : t_I
+
+predicate invariant_Copied_I [@inline:trivial] (self: t_Copied_I) = inv_I (iter_Copied_I self)
+
+meta "rewrite_def" predicate invariant_Copied_I
+
+predicate inv_Copied_I (_1: t_Copied_I)
+
+axiom inv_axiom: forall x: t_Copied_I [inv_Copied_I x]. inv_Copied_I x -> invariant_Copied_I x
+
+predicate structural_resolve_Copied_I (_1: t_Copied_I)
+
+predicate resolve_I (_1: t_I)
+
+predicate resolve_Copied_I [@inline:trivial] (self: t_Copied_I) = resolve_I (iter_Copied_I self)
+
+meta "rewrite_def" predicate resolve_Copied_I
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Copied_I. inv_Copied_I self
+    -> structural_resolve_Copied_I self
+    -> structural_resolve_Copied_I self /\ (forall result: (). resolve_Copied_I self -> resolve_Copied_I self)

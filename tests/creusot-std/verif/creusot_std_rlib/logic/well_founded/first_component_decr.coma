@@ -1,0 +1,114 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+type t_T1
+
+type t_T2
+
+type tup2_T1_T2 = { f0: t_T1; f1: t_T2 }
+
+predicate well_founded_relation_T1 (self: t_T1) (other: t_T1)
+
+predicate well_founded_relation_T2 (self: t_T2) (other: t_T2)
+
+predicate well_founded_relation_tup2_T1_T2 [@inline:trivial] (self: tup2_T1_T2) (other: tup2_T1_T2) =
+  well_founded_relation_T1 self.f0 other.f0 \/ self.f0 = other.f0 /\ well_founded_relation_T2 self.f1 other.f1
+
+meta "rewrite_def" predicate well_founded_relation_tup2_T1_T2
+
+function index_Mapping_Int_tup2_T1_T2 [@inline:trivial] (self: Map.map int tup2_T1_T2) (a: int) : tup2_T1_T2 =
+  Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_tup2_T1_T2
+
+function index_Mapping_Int_T1 [@inline:trivial] (self: Map.map int t_T1) (a: int) : t_T1 = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_T1
+
+function extract_next_decr_T1 (s: Map.map int tup2_T1_T2) (i: int) : int
+
+axiom extract_next_decr_T1_def: forall s: Map.map int tup2_T1_T2, i: int [extract_next_decr_T1 s i]. (forall i'0: int. 0
+          <= i'0
+        -> well_founded_relation_tup2_T1_T2 (index_Mapping_Int_tup2_T1_T2 s i'0) (index_Mapping_Int_tup2_T1_T2 s (i'0
+        + 1)))
+    -> 0 <= i
+    -> extract_next_decr_T1 s i
+    = (if well_founded_relation_T1 (index_Mapping_Int_tup2_T1_T2 s i).f0 (index_Mapping_Int_tup2_T1_T2 s (i
+    + 1)).f0 then
+      i + 1
+    else
+      extract_next_decr_T1 s (i + 1)
+    )
+
+axiom extract_next_decr_T1_spec:
+  forall s: Map.map int tup2_T1_T2, i: int [extract_next_decr_T1 s i]. (forall i'0: int. 0 <= i'0
+        -> well_founded_relation_tup2_T1_T2 (index_Mapping_Int_tup2_T1_T2 s i'0) (index_Mapping_Int_tup2_T1_T2 s (i'0
+        + 1))) -> 0 <= i -> i < extract_next_decr_T1 s i
+
+axiom extract_next_decr_T1_spec'0:
+  forall s: Map.map int tup2_T1_T2, i: int [extract_next_decr_T1 s i]. (forall i'0: int. 0 <= i'0
+        -> well_founded_relation_tup2_T1_T2 (index_Mapping_Int_tup2_T1_T2 s i'0) (index_Mapping_Int_tup2_T1_T2 s (i'0
+        + 1)))
+    -> 0 <= i
+    -> well_founded_relation_T1 (index_Mapping_Int_tup2_T1_T2 s i).f0 (index_Mapping_Int_tup2_T1_T2 s (extract_next_decr_T1 s i)).f0
+
+function extract_nth_T1 (s: Map.map int tup2_T1_T2) (i: int) : int
+
+axiom extract_nth_T1_def: forall s: Map.map int tup2_T1_T2, i: int [extract_nth_T1 s i]. (forall i'0: int. 0 <= i'0
+        -> well_founded_relation_tup2_T1_T2 (index_Mapping_Int_tup2_T1_T2 s i'0) (index_Mapping_Int_tup2_T1_T2 s (i'0
+        + 1)))
+    -> 0 <= i
+    -> extract_nth_T1 s i = (if i = 0 then 0 else let prev = extract_nth_T1 s (i - 1) in extract_next_decr_T1 s prev)
+
+axiom extract_nth_T1_spec: forall s: Map.map int tup2_T1_T2, i: int [extract_nth_T1 s i]. (forall i'0: int. 0 <= i'0
+        -> well_founded_relation_tup2_T1_T2 (index_Mapping_Int_tup2_T1_T2 s i'0) (index_Mapping_Int_tup2_T1_T2 s (i'0
+        + 1))) -> 0 <= i -> 0 <= extract_nth_T1 s i
+
+axiom extract_nth_T1_spec'0: forall s: Map.map int tup2_T1_T2, i: int [extract_nth_T1 s i]. (forall i'0: int. 0 <= i'0
+        -> well_founded_relation_tup2_T1_T2 (index_Mapping_Int_tup2_T1_T2 s i'0) (index_Mapping_Int_tup2_T1_T2 s (i'0
+        + 1)))
+    -> 0 <= i
+    -> 0 < i
+    -> (let prev = extract_nth_T1 s (i - 1) in prev < extract_nth_T1 s i
+    /\ well_founded_relation_T1 (index_Mapping_Int_tup2_T1_T2 s prev).f0 (index_Mapping_Int_tup2_T1_T2 s (extract_nth_T1 s i)).f0)
+
+predicate index_Mapping_T1_bool [@inline:trivial] (self: Map.map t_T1 bool) (a: t_T1) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_T1_bool
+
+function such_that_T1 (p: Map.map t_T1 bool) : t_T1
+
+axiom such_that_T1_spec: forall p: Map.map t_T1 bool [such_that_T1 p]. (exists x: t_T1. index_Mapping_T1_bool p x)
+    -> index_Mapping_T1_bool p (such_that_T1 p)
+
+constant any_T1: t_T1 = such_that_T1 (fun (__0: t_T1) -> true)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant s : Map.map int tup2_T1_T2
+
+function first_component_decr_T1 (s: Map.map int tup2_T1_T2) : Map.map int t_T1
+
+goal vc_first_component_decr_T1: (forall i: int. 0 <= i
+      -> well_founded_relation_tup2_T1_T2 (index_Mapping_Int_tup2_T1_T2 s i) (index_Mapping_Int_tup2_T1_T2 s (i + 1)))
+  -> (forall i: int. if 0 <= i then
+        [@stop_split] [@expl:extract_nth requires] ([@stop_split] [@expl:extract_nth requires #0] forall i'0: int. 0
+              <= i'0
+            -> well_founded_relation_tup2_T1_T2 (index_Mapping_Int_tup2_T1_T2 s i'0) (index_Mapping_Int_tup2_T1_T2 s (i'0
+            + 1)))
+        /\ ([@stop_split] [@expl:extract_nth requires #1] 0 <= i)
+      else
+        true
+    )
+  /\ (let result = fun (i: int) -> if 0 <= i then
+    (index_Mapping_Int_tup2_T1_T2 s (extract_nth_T1 s i)).f0
+  else
+    any_T1
+   in [@stop_split] [@expl:first_component_decr ensures] forall i: int. 0 <= i
+    -> well_founded_relation_T1 (index_Mapping_Int_T1 result i) (index_Mapping_Int_T1 result (i + 1)))

@@ -1,0 +1,42 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt128
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+use int.ComputerDivision
+use int.Int
+
+predicate resolve_refmut_u128 [@inline:trivial] (_1: MutBorrow.t UInt128.t) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_u128
+
+constant const_MIN: UInt128.t = (0: UInt128.t)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_DivAssign_u128_u128_div_assign_body (self_: MutBorrow.t UInt128.t) (rhs: UInt128.t) (return (x: ())) =
+{[@stop_split] [@expl:extern_spec_DivAssign_u128_u128_div_assign_body requires] ([@stop_split] [@expl:extern_spec_DivAssign_u128_u128_div_assign_body requires #0] UInt128.t'int rhs
+    <> 0)
+  /\ ([@stop_split] [@expl:extern_spec_DivAssign_u128_u128_div_assign_body requires #1] not (self_.current = const_MIN
+  /\ UInt128.t'int rhs = - 1))}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_11 <- rhs ] s1
+    | s1 = [ &_12 <- _11 = (0: UInt128.t) ] s2
+    | s2 = {[@expl:division by zero] not _12} s3
+    | s3 = UInt128.div {self_.current} {_11} (fun (_x: UInt128.t) -> [ &self_ <- { self_ with current = _x } ] s4)
+    | s4 = -{resolve_refmut_u128 self_}- s5
+    | s5 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l ()
+  | & self_: MutBorrow.t UInt128.t = self_
+  | & rhs: UInt128.t = rhs
+  | & _11: UInt128.t = Any.any_l ()
+  | & _12: bool = Any.any_l () ])
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:extern_spec_DivAssign_u128_u128_div_assign_body ensures] UInt128.t'int self_.final
+    = ComputerDivision.div (UInt128.t'int self_.current) (UInt128.t'int rhs)}
+    (! return {result}) ]

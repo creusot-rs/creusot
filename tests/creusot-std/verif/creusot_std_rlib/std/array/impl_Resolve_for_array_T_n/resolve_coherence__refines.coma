@@ -1,0 +1,57 @@
+(* <[T; N] as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.slice.Slice64
+use seq.Seq
+use creusot.int.UInt64
+use int.Int
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+constant const_N : UInt64.t
+
+predicate invariant_array_T_n (self: Slice64.array t_T) =
+  inv_Seq_T (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int const_N
+
+predicate inv_array_T_n [@inline:trivial] (_1: Slice64.array t_T) = invariant_array_T_n _1
+
+meta "rewrite_def" predicate inv_array_T_n
+
+predicate structural_resolve_array_T_n (_1: Slice64.array t_T)
+
+predicate resolve_T (_1: t_T)
+
+predicate resolve_array_T_n [@inline:trivial] (self: Slice64.array t_T) =
+  forall i: int. 0 <= i /\ i < UInt64.t'int const_N -> resolve_T (Seq.get (Slice64.view self) i)
+
+meta "rewrite_def" predicate resolve_array_T_n
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: Slice64.array t_T. inv_array_T_n self
+    -> structural_resolve_array_T_n self
+    -> structural_resolve_array_T_n self /\ (forall result: (). resolve_array_T_n self -> resolve_array_T_n self)

@@ -1,0 +1,63 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+type t_T1
+
+type t_T2
+
+type tup2_T1_T2 = { f0: t_T1; f1: t_T2 }
+
+function index_Mapping_Int_tup2_T1_T2 [@inline:trivial] (self: Map.map int tup2_T1_T2) (a: int) : tup2_T1_T2 =
+  Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_tup2_T1_T2
+
+predicate well_founded_relation_T1 (self: t_T1) (other: t_T1)
+
+predicate well_founded_relation_T2 (self: t_T2) (other: t_T2)
+
+predicate well_founded_relation_tup2_T1_T2 [@inline:trivial] (self: tup2_T1_T2) (other: tup2_T1_T2) =
+  well_founded_relation_T1 self.f0 other.f0 \/ self.f0 = other.f0 /\ well_founded_relation_T2 self.f1 other.f1
+
+meta "rewrite_def" predicate well_founded_relation_tup2_T1_T2
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant s : Map.map int tup2_T1_T2
+
+constant i : int
+
+function extract_next_decr_T1 (s: Map.map int tup2_T1_T2) (i: int) : int
+
+goal vc_extract_next_decr_T1: (forall i'0: int. 0 <= i'0
+      -> well_founded_relation_tup2_T1_T2 (index_Mapping_Int_tup2_T1_T2 s i'0) (index_Mapping_Int_tup2_T1_T2 s (i'0
+      + 1)))
+  -> 0 <= i
+  -> (if well_founded_relation_T1 (index_Mapping_Int_tup2_T1_T2 s i).f0 (index_Mapping_Int_tup2_T1_T2 s (i + 1)).f0 then
+    let result = i
+    + 1 in [@stop_split] [@expl:extract_next_decr_T1 ensures] ([@stop_split] [@expl:extract_next_decr ensures #0] i
+      < result)
+    /\ ([@stop_split] [@expl:extract_next_decr ensures #1] well_founded_relation_T1 (index_Mapping_Int_tup2_T1_T2 s i).f0 (index_Mapping_Int_tup2_T1_T2 s result).f0)
+  else
+    (([@stop_split] [@expl:extract_next_decr requires] ([@stop_split] [@expl:extract_next_decr requires #0] forall i'0: int. 0
+              <= i'0
+            -> well_founded_relation_tup2_T1_T2 (index_Mapping_Int_tup2_T1_T2 s i'0) (index_Mapping_Int_tup2_T1_T2 s (i'0
+            + 1)))
+        /\ ([@stop_split] [@expl:extract_next_decr requires #1] 0 <= i + 1))
+      /\ ([@expl:variant decreases] well_founded_relation_T2 (index_Mapping_Int_tup2_T1_T2 s i).f1 (index_Mapping_Int_tup2_T1_T2 s (i
+      + 1)).f1))
+    /\ (([@stop_split] [@expl:extract_next_decr ensures] ([@stop_split] [@expl:extract_next_decr ensures #0] i + 1
+        < extract_next_decr_T1 s (i + 1))
+      /\ ([@stop_split] [@expl:extract_next_decr ensures #1] well_founded_relation_T1 (index_Mapping_Int_tup2_T1_T2 s (i
+      + 1)).f0 (index_Mapping_Int_tup2_T1_T2 s (extract_next_decr_T1 s (i + 1))).f0))
+    -> (let result = extract_next_decr_T1 s (i
+    + 1) in [@stop_split] [@expl:extract_next_decr_T1 ensures] ([@stop_split] [@expl:extract_next_decr ensures #0] i
+      < result)
+    /\ ([@stop_split] [@expl:extract_next_decr ensures #1] well_founded_relation_T1 (index_Mapping_Int_tup2_T1_T2 s i).f0 (index_Mapping_Int_tup2_T1_T2 s result).f0)))
+  )

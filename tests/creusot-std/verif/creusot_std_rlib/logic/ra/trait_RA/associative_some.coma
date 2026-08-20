@@ -1,0 +1,44 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_Self
+
+type t_Option_Self = None | Some t_Self
+
+function op_Self (self: t_Self) (other: t_Self) : t_Option_Self
+
+function and_then_Option_Self (self: t_Option_Self) (f: Map.map t_Self t_Option_Self) : t_Option_Self = match self with
+    | None -> None
+    | Some x -> Map.get f x
+    end
+
+function associative_Self (a: t_Self) (b: t_Self) (c: t_Self) : ()
+
+axiom associative_Self_spec:
+  forall a: t_Self, b: t_Self, c: t_Self. and_then_Option_Self (op_Self a b) (fun (ab: t_Self) -> op_Self ab c)
+    = and_then_Option_Self (op_Self b c) (fun (bc: t_Self) -> op_Self a bc)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_Self
+
+constant b : t_Self
+
+constant c : t_Self
+
+constant ab : t_Self
+
+constant bc : t_Self
+
+function associative_some_Self (a: t_Self) (b: t_Self) (c: t_Self) (ab: t_Self) (bc: t_Self) : ()
+
+goal vc_associative_some_Self: op_Self a b = Some ab
+  -> op_Self b c = Some bc
+  -> ([@stop_split] [@expl:associative ensures] and_then_Option_Self (op_Self a b) (fun (ab'0: t_Self) -> op_Self ab'0 c)
+    = and_then_Option_Self (op_Self b c) (fun (bc'0: t_Self) -> op_Self a bc'0))
+  -> (let _ = associative_Self a b c in [@stop_split] [@expl:associative_some ensures] op_Self a bc = op_Self ab c)

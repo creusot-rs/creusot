@@ -1,0 +1,62 @@
+(* logic::seq::Seq<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+type t_U
+
+function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+
+function flat_map_T (self: Seq.seq t_T) (other: Map.map t_T (Seq.seq t_U)) : Seq.seq t_U
+
+axiom flat_map_T_def:
+  forall self: Seq.seq t_T, other: Map.map t_T (Seq.seq t_U) [flat_map_T self other]. flat_map_T self other
+    = (if Seq.length self = 0 then
+      Seq.empty: Seq.seq t_U
+    else
+      Seq.(++) (Map.get other (Seq.get self 0)) (flat_map_T (tail_T self) other)
+    )
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+  ge_log_Int self 0 /\ gt_log_Int self other
+
+meta "rewrite_def" predicate well_founded_relation_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq t_T
+
+constant x : t_T
+
+constant f : Map.map t_T (Seq.seq t_U)
+
+function flat_map_push_back_T (self: Seq.seq t_T) (x: t_T) (f: Map.map t_T (Seq.seq t_U)) : ()
+
+goal vc_flat_map_push_back_T: if gt_log_Int (Seq.length self) 0 then
+    ([@expl:variant decreases] well_founded_relation_Int (Seq.length self) (Seq.length (tail_T self)))
+    /\ (([@stop_split] [@expl:flat_map_push_back ensures] flat_map_T (Seq.snoc (tail_T self) x) f
+      = Seq.(++) (flat_map_T (tail_T self) f) (Map.get f x))
+    -> (let _ = flat_map_push_back_T (tail_T self) x f in Seq.snoc (tail_T self) x = tail_T (Seq.snoc self x)
+    && ([@stop_split] [@expl:flat_map_push_back ensures] flat_map_T (Seq.snoc self x) f
+    = Seq.(++) (flat_map_T self f) (Map.get f x))))
+  else
+    [@stop_split] [@expl:flat_map_push_back ensures] flat_map_T (Seq.snoc self x) f
+    = Seq.(++) (flat_map_T self f) (Map.get f x)
+  

@@ -1,0 +1,81 @@
+(* <std::iter::Chain<A, B> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_Chain_A_B
+
+type t_A
+
+type t_Option_A = None | Some t_A
+
+predicate inv_A (_1: t_A)
+
+predicate inv_Option_A (_1: t_Option_A)
+
+axiom inv_axiom [@rewrite]: forall x: t_Option_A [inv_Option_A x]. inv_Option_A x
+    = match x with
+      | None -> true
+      | Some f0 -> inv_A f0
+      end
+
+function iter_a_Chain_A_B (self: t_Chain_A_B) : t_Option_A
+
+type t_B
+
+type t_Option_B = None'0 | Some'0 t_B
+
+predicate inv_B (_1: t_B)
+
+predicate inv_Option_B (_1: t_Option_B)
+
+axiom inv_axiom'0 [@rewrite]: forall x: t_Option_B [inv_Option_B x]. inv_Option_B x
+    = match x with
+      | None'0 -> true
+      | Some'0 f0 -> inv_B f0
+      end
+
+function iter_b_Chain_A_B (self: t_Chain_A_B) : t_Option_B
+
+predicate invariant_Chain_A_B (self: t_Chain_A_B) =
+  inv_Option_A (iter_a_Chain_A_B self) /\ inv_Option_B (iter_b_Chain_A_B self)
+
+predicate inv_Chain_A_B (_1: t_Chain_A_B)
+
+axiom inv_axiom'1: forall x: t_Chain_A_B [inv_Chain_A_B x]. inv_Chain_A_B x -> invariant_Chain_A_B x
+
+predicate structural_resolve_Chain_A_B (_1: t_Chain_A_B)
+
+predicate resolve_A (_1: t_A)
+
+predicate resolve_Option_A (_1: t_Option_A)
+
+axiom resolve_axiom [@rewrite]: forall x: t_Option_A [resolve_Option_A x]. resolve_Option_A x
+    = match x with
+      | None -> true
+      | Some x0 -> resolve_A x0
+      end
+
+predicate resolve_B (_1: t_B)
+
+predicate resolve_Option_B (_1: t_Option_B)
+
+axiom resolve_axiom'0 [@rewrite]: forall x: t_Option_B [resolve_Option_B x]. resolve_Option_B x
+    = match x with
+      | None'0 -> true
+      | Some'0 x0 -> resolve_B x0
+      end
+
+predicate resolve_Chain_A_B [@inline:trivial] (self: t_Chain_A_B) =
+  resolve_Option_A (iter_a_Chain_A_B self) /\ resolve_Option_B (iter_b_Chain_A_B self)
+
+meta "rewrite_def" predicate resolve_Chain_A_B
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Chain_A_B. inv_Chain_A_B self
+    -> structural_resolve_Chain_A_B self
+    -> structural_resolve_Chain_A_B self /\ (forall result: (). resolve_Chain_A_B self -> resolve_Chain_A_B self)

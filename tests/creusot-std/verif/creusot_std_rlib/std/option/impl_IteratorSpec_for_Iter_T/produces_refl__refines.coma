@@ -1,0 +1,26 @@
+(* <std::option::Iter<'_, T> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+
+type t_Iter_T
+
+type t_T
+
+type t_Option_ref_T = None | Some t_T
+
+function view_Iter_T (self: t_Iter_T) : t_Option_ref_T
+
+predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (o: t_Iter_T) =
+  visited = (Seq.empty: Seq.seq t_T) /\ self = o
+  \/ (exists e: t_T. view_Iter_T self = Some e /\ visited = Seq.singleton e /\ view_Iter_T o = None)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Iter_T. forall result: (). produces_Iter_T self (Seq.empty: Seq.seq t_T) self
+      -> produces_Iter_T self (Seq.empty: Seq.seq t_T) self

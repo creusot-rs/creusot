@@ -1,0 +1,45 @@
+(* <logic::ra::excl::Excl<T> as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_T
+
+type t_Excl_T = { f0: t_T }
+
+type t_Option_Excl_T = None | Some t_Excl_T
+
+function core_Excl_T (self: t_Excl_T) : t_Option_Excl_T = None
+
+predicate index_Mapping_Excl_T_bool [@inline:trivial] (self: Map.map t_Excl_T bool) (a: t_Excl_T) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Excl_T_bool
+
+function such_that_Excl_T (p: Map.map t_Excl_T bool) : t_Excl_T
+
+axiom such_that_Excl_T_spec:
+  forall p: Map.map t_Excl_T bool [such_that_Excl_T p]. (exists x: t_Excl_T. index_Mapping_Excl_T_bool p x)
+    -> index_Mapping_Excl_T_bool p (such_that_Excl_T p)
+
+constant any_Excl_T: t_Excl_T = such_that_Excl_T (fun (__0: t_Excl_T) -> true)
+
+function unwrap_Option_Excl_T (self: t_Option_Excl_T) : t_Excl_T = match self with
+    | Some x -> x
+    | None -> any_Excl_T
+    end
+
+function op_Excl_T (self: t_Excl_T) (_other: t_Excl_T) : t_Option_Excl_T = None
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Excl_T. core_Excl_T self <> None
+    -> core_Excl_T self <> None
+    /\ (forall result: (). (let c = unwrap_Option_Excl_T (core_Excl_T self) in op_Excl_T c c = Some c)
+        /\ op_Excl_T (unwrap_Option_Excl_T (core_Excl_T self)) self = Some self
+      -> (let c = unwrap_Option_Excl_T (core_Excl_T self) in op_Excl_T c c = Some c)
+      /\ op_Excl_T (unwrap_Option_Excl_T (core_Excl_T self)) self = Some self)

@@ -1,0 +1,93 @@
+(* <std::iter::Filter<I, F> as invariant::Invariant> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_Filter_I_F
+
+type t_I
+
+predicate inv_I (_1: t_I)
+
+function iter_Filter_I_F (self: t_Filter_I_F) : t_I
+
+type t_F
+
+predicate inv_F (_1: t_F)
+
+function func_Filter_I_F (self: t_Filter_I_F) : t_F
+
+type t_Item
+
+predicate inv_Item (_1: t_Item)
+
+predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+
+meta "rewrite_def" predicate invariant_ref_Item
+
+predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+
+meta "rewrite_def" predicate inv_ref_Item
+
+predicate precondition_F (self: t_F) (args: t_Item)
+
+predicate no_precondition_ref_Item (_1: t_F) = forall f: t_F, i: t_Item. inv_F f /\ inv_ref_Item i -> precondition_F f i
+
+predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
+
+predicate resolve_F (_1: t_F)
+
+predicate postcondition_mut_F (self: t_F) (args: t_Item) (result_state: t_F) (result: bool)
+
+function fn_mut_once_F (self: t_F) (args: t_Item) (res: bool) : ()
+
+axiom fn_mut_once_F_spec:
+  forall self: t_F, args: t_Item, res: bool [postcondition_once_F self args res]. postcondition_once_F self args res
+    = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+
+predicate hist_inv_F (self: t_F) (result_state: t_F)
+
+function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
+
+axiom hist_inv_trans_F_spec:
+  forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
+    -> hist_inv_F b c -> hist_inv_F self c
+
+function hist_inv_refl_F (self: t_F) : ()
+
+axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
+
+function postcondition_mut_hist_inv_F (self: t_F) (args: t_Item) (res_state: t_F) (res: bool) : ()
+
+axiom postcondition_mut_hist_inv_F_spec:
+  forall self: t_F, args: t_Item, res_state: t_F, res: bool [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    -> hist_inv_F self res_state
+
+predicate immutable_ref_Item (_1: t_F) = forall f: t_F, g: t_F. hist_inv_F f g -> f = g
+
+predicate precise_ref_Item (_1: t_F) =
+  forall f1: t_F, f2: t_F, i: t_Item. not (postcondition_mut_F f1 i f2 true /\ postcondition_mut_F f1 i f2 false)
+
+predicate private_invariant_I (f: t_Filter_I_F) =
+  no_precondition_ref_Item (func_Filter_I_F f)
+  /\ immutable_ref_Item (func_Filter_I_F f) /\ precise_ref_Item (func_Filter_I_F f)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Filter_I_F
+
+predicate invariant_Filter_I_F (self: t_Filter_I_F)
+
+goal vc_invariant_Filter_I_F: if inv_I (iter_Filter_I_F self) then
+    if inv_F (func_Filter_I_F self) then
+      [@stop_split] [@expl:invariant ensures] private_invariant_I self
+      -> inv_I (iter_Filter_I_F self) /\ inv_F (func_Filter_I_F self)
+    else
+      [@stop_split] [@expl:invariant ensures] false -> inv_I (iter_Filter_I_F self) /\ inv_F (func_Filter_I_F self)
+  
+  else
+    [@stop_split] [@expl:invariant ensures] false -> inv_I (iter_Filter_I_F self) /\ inv_F (func_Filter_I_F self)
+  

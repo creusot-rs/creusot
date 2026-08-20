@@ -1,0 +1,46 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+use creusot.int.UInt64
+use creusot.prelude.Ptr
+use creusot.prelude.Opaque
+
+type t_NonNull_T
+
+function view_NonNull_T (self: t_NonNull_T) : Opaque.ptr
+
+function addr_NonNull_T [@inline:trivial] (self: t_NonNull_T) : UInt64.t = Ptr.addr_logic_u64 (view_NonNull_T self)
+
+meta "rewrite_def" function addr_NonNull_T
+
+predicate is_null_NonNull_T (self: t_NonNull_T) = addr_NonNull_T self = (0: UInt64.t)
+
+predicate invariant_NonNull_T (self: t_NonNull_T) = not is_null_NonNull_T self
+
+predicate inv_NonNull_T (_1: t_NonNull_T)
+
+axiom inv_axiom: forall x: t_NonNull_T [inv_NonNull_T x]. inv_NonNull_T x -> invariant_NonNull_T x
+
+predicate invariant_ref_NonNull_T [@inline:trivial] (self: t_NonNull_T) = inv_NonNull_T self
+
+meta "rewrite_def" predicate invariant_ref_NonNull_T
+
+predicate inv_ref_NonNull_T [@inline:trivial] (_1: t_NonNull_T) = invariant_ref_NonNull_T _1
+
+meta "rewrite_def" predicate inv_ref_NonNull_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_Clone_NonNull_T_clone_body_T (self_: t_NonNull_T) (return (x: t_NonNull_T)) =
+{[@stop_split] [@expl:extern_spec_T_Clone_NonNull_T_clone_body 'self_' type invariant] inv_ref_NonNull_T self_}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- self_ ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_NonNull_T = Any.any_l () | & self_: t_NonNull_T = self_ ])
+  [ return (result: t_NonNull_T) ->
+  {[@stop_split] [@expl:extern_spec_T_Clone_NonNull_T_clone_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Clone_NonNull_T_clone_body result type invariant] inv_NonNull_T result)
+    /\ ([@stop_split] [@expl:extern_spec_T_Clone_NonNull_T_clone_body ensures] result = self_)}
+    (! return {result}) ]

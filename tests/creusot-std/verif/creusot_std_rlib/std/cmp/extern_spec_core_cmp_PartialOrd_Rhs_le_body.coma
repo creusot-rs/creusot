@@ -1,0 +1,135 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_Self_
+
+type t_Rhs
+
+type t_Ordering = Less | Equal | Greater
+
+type t_Option_Ordering = None | Some t_Ordering
+
+type tup2_ref_Self__ref_Rhs = { f0: t_Self_; f1: t_Rhs }
+
+predicate inv_Self_ (_1: t_Self_)
+
+predicate invariant_ref_Self_ [@inline:trivial] (self: t_Self_) = inv_Self_ self
+
+meta "rewrite_def" predicate invariant_ref_Self_
+
+predicate inv_ref_Self_ [@inline:trivial] (_1: t_Self_) = invariant_ref_Self_ _1
+
+meta "rewrite_def" predicate inv_ref_Self_
+
+predicate inv_Rhs (_1: t_Rhs)
+
+predicate invariant_ref_Rhs [@inline:trivial] (self: t_Rhs) = inv_Rhs self
+
+meta "rewrite_def" predicate invariant_ref_Rhs
+
+predicate inv_ref_Rhs [@inline:trivial] (_1: t_Rhs) = invariant_ref_Rhs _1
+
+meta "rewrite_def" predicate inv_ref_Rhs
+
+predicate precondition_partial_cmp (self: ()) (args: tup2_ref_Self__ref_Rhs)
+
+axiom precondition_fndef:
+  forall args: tup2_ref_Self__ref_Rhs [precondition_partial_cmp () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_Self_ self_
+      /\ inv_ref_Rhs rhs) -> precondition_partial_cmp () args
+
+type t_DeepModelTy
+
+predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
+
+predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
+
+function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
+
+axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+    = (lt_log_DeepModelTy self other \/ self = other)
+
+function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
+
+axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+    -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
+
+function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
+
+axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
+
+function partial_cmp_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : t_Option_Ordering = if self
+  = other then
+    Some (Equal)
+  else
+    if lt_log_DeepModelTy self other then
+      Some (Less)
+    else
+      if lt_log_DeepModelTy other self then Some (Greater) else None
+  
+
+
+function deep_model_Self_ (self: t_Self_) : t_DeepModelTy
+
+function deep_model_Rhs (self: t_Rhs) : t_DeepModelTy
+
+predicate postcondition_partial_cmp (self: ()) (args: tup2_ref_Self__ref_Rhs) (result: t_Option_Ordering)
+
+axiom postcondition_fndef:
+  forall args: tup2_ref_Self__ref_Rhs, res: t_Option_Ordering [postcondition_partial_cmp () args res]. postcondition_partial_cmp () args res
+    -> (let {f0 = self_; f1 = rhs} = args in res
+    = partial_cmp_log_DeepModelTy (deep_model_Self_ self_) (deep_model_Rhs rhs))
+
+predicate postcondition_once_partial_cmp (self: ()) (args: tup2_ref_Self__ref_Rhs) (result: t_Option_Ordering) =
+  postcondition_partial_cmp self args result
+
+meta "rewrite_def" predicate postcondition_once_partial_cmp
+
+let partial_cmp_Self_ (self_: t_Self_) (rhs: t_Rhs) (return (x: t_Option_Ordering)) =
+{[@stop_split] [@expl:partial_cmp requires] precondition_partial_cmp () { f0 = self_; f1 = rhs }}
+  any
+  [ return (result: t_Option_Ordering) ->
+  {[@stop_split] [@expl:partial_cmp ensures] postcondition_once_partial_cmp () { f0 = self_; f1 = rhs } result}
+    (! return {result}) ]
+
+let elim_Some (_x: t_Option_Ordering) (return (f0'0: t_Ordering)) = any
+  [ _k (f0'0: t_Ordering) -> {Some f0'0 = _x} (! return {f0'0})
+  | _chk -> (! {[@expl:elim Some] match _x with
+      | Some _ -> true
+      | _ -> false
+      end}
+    any) ]
+
+function deep_model_ref_Self_ [@inline:trivial] (self: t_Self_) : t_DeepModelTy = deep_model_Self_ self
+
+meta "rewrite_def" function deep_model_ref_Self_
+
+function deep_model_ref_Rhs [@inline:trivial] (self: t_Rhs) : t_DeepModelTy = deep_model_Rhs self
+
+meta "rewrite_def" function deep_model_ref_Rhs
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_core_cmp_PartialOrd_Rhs_le_body_Self_ (self_: t_Self_) (other: t_Rhs) (return (x: bool)) =
+{[@stop_split] [@expl:extern_spec_core_cmp_PartialOrd_Rhs_le_body_Self_ requires] ([@stop_split] [@expl:extern_spec_core_cmp_PartialOrd_Rhs_le_body 'self_' type invariant] inv_ref_Self_ self_)
+  /\ ([@stop_split] [@expl:extern_spec_core_cmp_PartialOrd_Rhs_le_body 'other' type invariant] inv_ref_Rhs other)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = partial_cmp_Self_ {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+    | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
+  | bb3 = elim_Some {_6}
+      (fun (r0: t_Ordering) ->
+        any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb5) | br2 -> {r0 = Greater} (! bb2) ])
+  | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+  | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: bool = Any.any_l ()
+  | & self_: t_Self_ = self_
+  | & other: t_Rhs = other
+  | & _6: t_Option_Ordering = Any.any_l () ])
+  [ return (result: bool) -> {[@stop_split] [@expl:extern_spec_core_cmp_PartialOrd_Rhs_le_body ensures] result
+    = le_log_DeepModelTy (deep_model_ref_Self_ self_) (deep_model_ref_Rhs other)}
+    (! return {result}) ]

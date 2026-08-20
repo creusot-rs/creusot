@@ -1,0 +1,54 @@
+(* <logic::int::Nat as logic::ra::UnitRA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Nat
+
+type t_Option_Nat = None | Some t_Nat
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function to_int (self: t_Nat) : int
+
+axiom to_int_spec: forall self: t_Nat [to_int self]. ge_log_Int (to_int self) 0
+
+function view_Nat (self: t_Nat) : int = to_int self
+
+function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+
+axiom add_Nat_spec: forall self: t_Nat, other: t_Nat [add_Nat self other]. view_Nat (add_Nat self other)
+    = view_Nat self + view_Nat other
+
+function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+
+meta "rewrite_def" function op_Nat
+
+function commutative_Nat (a: t_Nat) (b: t_Nat) : () = ()
+
+axiom commutative_Nat_spec: forall a: t_Nat, b: t_Nat. op_Nat a b = op_Nat b a
+
+function new (n: int) : t_Nat
+
+axiom new_spec: forall n: int [new n]. ge_log_Int n 0 -> to_int (new n) = n
+
+function core_Nat [@inline:trivial] (self: t_Nat) : t_Option_Nat = Some (new 0)
+
+meta "rewrite_def" function core_Nat
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Nat
+
+function core_total_Nat (self: t_Nat) : t_Nat
+
+goal vc_core_total_Nat: ([@stop_split] [@expl:new requires] ge_log_Int 0 0)
+  /\ (([@stop_split] [@expl:new ensures] to_int (new 0) = 0)
+  -> ([@stop_split] [@expl:core_total ensures] core_Nat self = Some (new 0)))

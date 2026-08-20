@@ -1,0 +1,48 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+use creusot.prelude.MutBorrow
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+predicate invariant_ref_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_refmut_T self
+
+meta "rewrite_def" predicate invariant_ref_refmut_T
+
+predicate inv_ref_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_refmut_T _1
+
+meta "rewrite_def" predicate inv_ref_refmut_T
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_Deref__refmut_T_deref_body_T (self_: MutBorrow.t t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:extern_spec_T_Deref__refmut_T_deref_body 'self_' type invariant] inv_ref_refmut_T self_}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- self_.current ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_T = Any.any_l () | & self_: MutBorrow.t t_T = self_ ])
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:extern_spec_T_Deref__refmut_T_deref_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Deref__refmut_T_deref_body result type invariant] inv_ref_T result)
+    /\ ([@stop_split] [@expl:extern_spec_T_Deref__refmut_T_deref_body ensures] result = self_.current)}
+    (! return {result}) ]

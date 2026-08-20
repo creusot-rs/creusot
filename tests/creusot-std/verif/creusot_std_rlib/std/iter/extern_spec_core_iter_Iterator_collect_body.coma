@@ -1,0 +1,62 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_Self_
+
+type t_B
+
+predicate inv_Self_ (_1: t_Self_)
+
+predicate precondition_into_iter (self: ()) (args: t_Self_) = let self_ = args in inv_Self_ self_
+
+meta "rewrite_def" predicate precondition_into_iter
+
+let into_iter_Self_ (self_: t_Self_) (return (x: t_Self_)) =
+{[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Self_ self_}
+  any
+  [ return (result: t_Self_) ->
+  {[@stop_split] [@expl:into_iter_Self_ ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Self_ result)
+    /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
+    (! return {result}) ]
+
+predicate precondition_from_iter (self: ()) (args: t_Self_)
+
+axiom precondition_fndef: forall args: t_Self_ [precondition_from_iter () args]. (let iter = args in inv_Self_ iter
+      /\ precondition_into_iter () iter) -> precondition_from_iter () args
+
+predicate inv_B (_1: t_B)
+
+predicate postcondition_from_iter (self: ()) (args: t_Self_) (result: t_B)
+
+axiom postcondition_fndef:
+  forall args: t_Self_, res: t_B [postcondition_from_iter () args res]. postcondition_from_iter () args res
+    -> (let iter = args in inv_B res)
+
+predicate postcondition_once_from_iter (self: ()) (args: t_Self_) (result: t_B) =
+  postcondition_from_iter self args result
+
+meta "rewrite_def" predicate postcondition_once_from_iter
+
+let from_iter_B (iter: t_Self_) (return (x: t_B)) =
+{[@stop_split] [@expl:from_iter requires] precondition_from_iter () iter}
+  any
+  [ return (result: t_B) -> {[@stop_split] [@expl:from_iter ensures] postcondition_once_from_iter () iter result}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_core_iter_Iterator_collect_body_Self_ (self_: t_Self_) (return (x: t_B)) =
+{[@stop_split] [@expl:extern_spec_core_iter_Iterator_collect_body_Self_ requires] ([@stop_split] [@expl:extern_spec_core_iter_Iterator_collect_body 'self_' type invariant] inv_Self_ self_)
+  /\ ([@stop_split] [@expl:extern_spec_core_iter_Iterator_collect_body requires] precondition_from_iter () self_)}
+  (! bb0
+  [ bb0 = s0 [ s0 = from_iter_B {self_} (fun (_x: t_B) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: t_B = Any.any_l () | & self_: t_Self_ = self_ ])
+  [ return (result: t_B) ->
+  {[@stop_split] [@expl:extern_spec_core_iter_Iterator_collect_body_Self_ ensures] ([@stop_split] [@expl:extern_spec_core_iter_Iterator_collect_body result type invariant] inv_B result)
+    /\ ([@stop_split] [@expl:extern_spec_core_iter_Iterator_collect_body ensures] postcondition_from_iter () self_ result)}
+    (! return {result}) ]

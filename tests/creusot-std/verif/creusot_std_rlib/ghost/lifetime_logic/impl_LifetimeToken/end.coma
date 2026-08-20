@@ -1,0 +1,58 @@
+(* ghost::lifetime_logic::LifetimeToken *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+use real.Real
+use real.FromInt
+
+type t_Resource_PositiveReal
+
+type t_LifetimeToken = { f0: t_Resource_PositiveReal }
+
+type t_Id
+
+type t_Lifetime = { f0'0: t_Id }
+
+function id_PositiveReal (self: t_Resource_PositiveReal) : t_Id
+
+function lft (self: t_LifetimeToken) : t_Lifetime = { f0'0 = id_PositiveReal self.f0 }
+
+type t_LifetimeDead = { f0'1: t_Lifetime }
+
+type t_PositiveReal
+
+function val_PositiveReal (self: t_Resource_PositiveReal) : t_PositiveReal
+
+function frac (self: t_LifetimeToken) : t_PositiveReal = val_PositiveReal self.f0
+
+predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
+
+meta "rewrite_def" predicate gt_log_Real
+
+function to_real (self: t_PositiveReal) : Real.real
+
+axiom to_real_spec: forall self: t_PositiveReal [to_real self]. gt_log_Real (to_real self) (FromInt.from_int 0)
+
+function new (n: Real.real) : t_PositiveReal
+
+axiom new_spec: forall n: Real.real [new n]. gt_log_Real n (FromInt.from_int 0) -> to_real (new n) = n
+
+function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
+
+meta "rewrite_def" function from_int
+
+function lft'0 (self: t_LifetimeDead) : t_Lifetime = self.f0'1
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let end' (self: t_LifetimeToken) (return (x: t_LifetimeDead)) = {[@stop_split] [@expl:end requires] frac self
+  = from_int 1}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- { f0'1 = lft self } ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_LifetimeDead = Any.any_l () | & self: t_LifetimeToken = self ])
+  [ return (result: t_LifetimeDead) -> {[@stop_split] [@expl:end ensures] lft'0 result = lft self} (! return {result}) ]

@@ -1,0 +1,42 @@
+(* <std::vec::IntoIter<T, A> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+
+type t_IntoIter_T_A
+
+type t_T
+
+function view_IntoIter_T_A (self: t_IntoIter_T_A) : Seq.seq t_T
+
+predicate produces_IntoIter_T_A (self: t_IntoIter_T_A) (visited: Seq.seq t_T) (rhs: t_IntoIter_T_A) =
+  view_IntoIter_T_A self = Seq.(++) visited (view_IntoIter_T_A rhs)
+
+function concat_assoc_T (self: Seq.seq t_T) (other1: Seq.seq t_T) (other2: Seq.seq t_T) : ()
+
+axiom concat_assoc_T_spec:
+  forall self: Seq.seq t_T, other1: Seq.seq t_T, other2: Seq.seq t_T. Seq.(++) (Seq.(++) self other1) other2
+    = Seq.(++) self (Seq.(++) other1 other2)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_IntoIter_T_A
+
+constant ab : Seq.seq t_T
+
+constant b : t_IntoIter_T_A
+
+constant bc : Seq.seq t_T
+
+constant c : t_IntoIter_T_A
+
+function produces_trans_IntoIter_T_A (a: t_IntoIter_T_A) (ab: Seq.seq t_T) (b: t_IntoIter_T_A) (bc: Seq.seq t_T) (c: t_IntoIter_T_A) : ()
+
+goal vc_produces_trans_IntoIter_T_A: produces_IntoIter_T_A a ab b
+  -> produces_IntoIter_T_A b bc c
+  -> ([@stop_split] [@expl:produces_trans ensures] produces_IntoIter_T_A a (Seq.(++) ab bc) c)

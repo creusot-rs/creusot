@@ -1,0 +1,80 @@
+(* <std::option::Option<T> as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_T
+
+type t_Option_T = None | Some t_T
+
+type t_Option_Option_T = None'0 | Some'0 t_Option_T
+
+type tup2_Option_T_Option_T = { f0: t_Option_T; f1: t_Option_T }
+
+function map_Option_T (self: t_Option_T) (f: Map.map t_T t_Option_T) : t_Option_Option_T = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
+function op_T (self: t_T) (other: t_T) : t_Option_T
+
+predicate incl_T (self: t_T) (other: t_T)
+
+axiom incl_T_spec: forall self: t_T, other: t_T [incl_T self other]. incl_T self other
+    = (exists factor: t_T. op_T self factor = Some other)
+
+function incl_transitive_T (a: t_T) (b: t_T) (c: t_T) : ()
+
+axiom incl_transitive_T_spec: forall a: t_T, b: t_T, c: t_T. incl_T a b -> incl_T b c -> incl_T a c
+
+function associative_some_T (a: t_T) (b: t_T) (c: t_T) (ab: t_T) (bc: t_T) : ()
+
+axiom associative_some_T_spec: forall a: t_T, b: t_T, c: t_T, ab: t_T, bc: t_T. op_T a b = Some ab
+    -> op_T b c = Some bc -> op_T a bc = op_T ab c
+
+function associative_none_T (a: t_T) (b: t_T) (c: t_T) (bc: t_T) : ()
+
+axiom associative_none_T_spec: forall a: t_T, b: t_T, c: t_T, bc: t_T. op_T a b = None
+    -> op_T b c = Some bc -> op_T a bc = None
+
+function commutative_T (a: t_T) (b: t_T) : ()
+
+axiom commutative_T_spec: forall a: t_T, b: t_T. op_T a b = op_T b a
+
+function incl_op_T (self: t_T) (other: t_T) (comb: t_T) : ()
+
+axiom incl_op_T_spec: forall self: t_T, other: t_T, comb: t_T. op_T self other = Some comb -> incl_T self comb
+
+function op_Option_T (self: t_Option_T) (other: t_Option_T) : t_Option_Option_T = match { f0 = self; f1 = other } with
+    | {f0 = None} -> Some'0 other
+    | {f1 = None} -> Some'0 self
+    | {f0 = Some x; f1 = Some y} -> map_Option_T (op_T x y) (fun (z: t_T) -> Some z)
+    end
+
+predicate eq_T (self: t_T) (other: t_T)
+
+axiom eq_T_spec: forall self: t_T, other: t_T [eq_T self other]. eq_T self other = (self = other)
+
+predicate incl_eq_T (self: t_T) (other: t_T) = eq_T self other \/ incl_T self other
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Option_T
+
+constant other : t_Option_T
+
+predicate incl_Option_T (self: t_Option_T) (other: t_Option_T)
+
+goal vc_incl_Option_T: match { f0 = self; f1 = other } with
+    | {f0 = None} -> [@stop_split] [@expl:incl ensures] true
+    = (exists factor: t_Option_T. op_Option_T self factor = Some'0 other)
+    | {f1 = None} -> [@stop_split] [@expl:incl ensures] false
+    = (exists factor: t_Option_T. op_Option_T self factor = Some'0 other)
+    | {f0 = Some x; f1 = Some y} -> [@stop_split] [@expl:incl ensures] incl_eq_T x y
+    = (exists factor: t_Option_T. op_Option_T self factor = Some'0 other)
+    end

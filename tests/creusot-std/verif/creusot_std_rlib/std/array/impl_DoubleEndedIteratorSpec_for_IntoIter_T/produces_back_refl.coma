@@ -1,0 +1,39 @@
+(* <std::array::IntoIter<T, N> as std::iter::DoubleEndedIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use seq.Reverse
+
+type t_IntoIter_T
+
+type t_T
+
+function view_IntoIter_T (self: t_IntoIter_T) : Seq.seq t_T
+
+predicate produces_back_IntoIter_T (self: t_IntoIter_T) (visited: Seq.seq t_T) (o: t_IntoIter_T) =
+  view_IntoIter_T self = Seq.(++) (view_IntoIter_T o) (Reverse.reverse visited)
+
+constant reverse_empty_T : ()
+
+axiom reverse_empty_T_spec: Reverse.reverse (Seq.empty: Seq.seq t_T) = (Seq.empty: Seq.seq t_T)
+
+function concat_empty_T (self: Seq.seq t_T) : ()
+
+axiom concat_empty_T_spec: forall self: Seq.seq t_T. Seq.(++) self (Seq.empty: Seq.seq t_T) = self
+
+axiom concat_empty_T_spec'0: forall self: Seq.seq t_T. Seq.(++) (Seq.empty: Seq.seq t_T) self = self
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_IntoIter_T
+
+function produces_back_refl_IntoIter_T (self: t_IntoIter_T) : ()
+
+goal vc_produces_back_refl_IntoIter_T:
+  ([@stop_split] [@expl:reverse_empty ensures] Reverse.reverse (Seq.empty: Seq.seq t_T) = (Seq.empty: Seq.seq t_T))
+  -> (let _ = reverse_empty_T in [@stop_split] [@expl:produces_back_refl ensures] produces_back_IntoIter_T self (Seq.empty: Seq.seq t_T) self)

@@ -1,0 +1,141 @@
+(* logic::fmap::FMap<K, V> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_FMap_K_V
+
+type t_V
+
+type t_Option_V = None | Some t_V
+
+type t_Option_Option_V = None'0 | Some'0 t_Option_V
+
+type tup2_Option_V_Option_V = { f0: t_Option_V; f1: t_Option_V }
+
+function map_Option_V (self: t_Option_V) (f: Map.map t_V t_Option_V) : t_Option_Option_V = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
+function op_V (self: t_V) (other: t_V) : t_Option_V
+
+predicate incl_V (self: t_V) (other: t_V)
+
+axiom incl_V_spec: forall self: t_V, other: t_V [incl_V self other]. incl_V self other
+    = (exists factor: t_V. op_V self factor = Some other)
+
+function incl_transitive_V (a: t_V) (b: t_V) (c: t_V) : ()
+
+axiom incl_transitive_V_spec: forall a: t_V, b: t_V, c: t_V. incl_V a b -> incl_V b c -> incl_V a c
+
+function associative_some_V (a: t_V) (b: t_V) (c: t_V) (ab: t_V) (bc: t_V) : ()
+
+axiom associative_some_V_spec: forall a: t_V, b: t_V, c: t_V, ab: t_V, bc: t_V. op_V a b = Some ab
+    -> op_V b c = Some bc -> op_V a bc = op_V ab c
+
+function associative_none_V (a: t_V) (b: t_V) (c: t_V) (bc: t_V) : ()
+
+axiom associative_none_V_spec: forall a: t_V, b: t_V, c: t_V, bc: t_V. op_V a b = None
+    -> op_V b c = Some bc -> op_V a bc = None
+
+function commutative_V (a: t_V) (b: t_V) : ()
+
+axiom commutative_V_spec: forall a: t_V, b: t_V. op_V a b = op_V b a
+
+function incl_op_V (self: t_V) (other: t_V) (comb: t_V) : ()
+
+axiom incl_op_V_spec: forall self: t_V, other: t_V, comb: t_V. op_V self other = Some comb -> incl_V self comb
+
+function op_Option_V (self: t_Option_V) (other: t_Option_V) : t_Option_Option_V = match { f0 = self; f1 = other } with
+    | {f0 = None} -> Some'0 other
+    | {f1 = None} -> Some'0 self
+    | {f0 = Some x; f1 = Some y} -> map_Option_V (op_V x y) (fun (z: t_V) -> Some z)
+    end
+
+function commutative_Option_V (a: t_Option_V) (b: t_Option_V) : ()
+
+axiom commutative_Option_V_spec: forall a: t_Option_V, b: t_Option_V. op_Option_V a b = op_Option_V b a
+
+type t_K
+
+function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+
+function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+
+meta "rewrite_def" function get_K
+
+type tup2_V_V = { f0'0: t_V; f1'0: t_V }
+
+predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_V_bool
+
+function such_that_V (p: Map.map t_V bool) : t_V
+
+axiom such_that_V_spec: forall p: Map.map t_V bool [such_that_V p]. (exists x: t_V. index_Mapping_V_bool p x)
+    -> index_Mapping_V_bool p (such_that_V p)
+
+constant any_V: t_V = such_that_V (fun (__0: t_V) -> true)
+
+function index_Mapping_tup2_V_V_V [@inline:trivial] (self: Map.map tup2_V_V t_V) (a: tup2_V_V) : t_V = Map.get self a
+
+meta "rewrite_def" function index_Mapping_tup2_V_V_V
+
+function merge_K (self: t_FMap_K_V) (m: t_FMap_K_V) (f: Map.map tup2_V_V t_V) : t_FMap_K_V
+
+axiom merge_K_spec:
+  forall self: t_FMap_K_V, m: t_FMap_K_V, f: Map.map tup2_V_V t_V [merge_K self m f]. forall k: t_K [get_K (merge_K self m f) k]. match { f0 = get_K self k;
+                                                                                                                                          f1 = get_K m k } with
+        | {f0 = None; f1 = y} -> get_K (merge_K self m f) k = y
+        | {f0 = x; f1 = None} -> get_K (merge_K self m f) k = x
+        | {f0 = Some x; f1 = Some y} -> get_K (merge_K self m f) k
+        = Some (index_Mapping_tup2_V_V_V f { f0'0 = x; f1'0 = y })
+        end
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_FMap_K_V
+
+constant other : t_FMap_K_V
+
+function total_op_K (self: t_FMap_K_V) (other: t_FMap_K_V) : t_FMap_K_V
+
+goal vc_total_op_K: (forall k: t_K. op_Option_V (get_K self k) (get_K other k) <> None'0)
+  -> (forall __0: tup2_V_V. let {f0'0 = x; f1'0 = y} = __0 in match op_V x y with
+        | Some r -> true
+        | _ -> true
+        end)
+  /\ (([@stop_split] [@expl:merge ensures] forall k: t_K [get_K (merge_K self other (fun (__0: tup2_V_V) -> let {f0'0 = x; f1'0 = y} = __0 in match op_V x y with
+        | Some r -> r
+        | _ -> any_V
+        end)) k]. match { f0 = get_K self k; f1 = get_K other k } with
+        | {f0 = None; f1 = y} -> get_K (merge_K self other (fun (__0: tup2_V_V) -> let {f0'0 = x; f1'0 = y'0} = __0 in match op_V x y'0 with
+            | Some r -> r
+            | _ -> any_V
+            end)) k
+        = y
+        | {f0 = x; f1 = None} -> get_K (merge_K self other (fun (__0: tup2_V_V) -> let {f0'0 = x'0; f1'0 = y} = __0 in match op_V x'0 y with
+            | Some r -> r
+            | _ -> any_V
+            end)) k
+        = x
+        | {f0 = Some x; f1 = Some y} -> get_K (merge_K self other (fun (__0: tup2_V_V) -> let {f0'0 = x'0; f1'0 = y'0} = __0 in match op_V x'0 y'0 with
+            | Some r -> r
+            | _ -> any_V
+            end)) k
+        = Some (index_Mapping_tup2_V_V_V (fun (__0: tup2_V_V) -> let {f0'0 = x'0; f1'0 = y'0} = __0 in match op_V x'0 y'0 with
+          | Some r -> r
+          | _ -> any_V
+          end) { f0'0 = x; f1'0 = y })
+        end)
+  -> ([@stop_split] [@expl:total_op ensures] forall k: t_K. Some'0 (get_K (merge_K self other (fun (__0: tup2_V_V) -> let {f0'0 = x; f1'0 = y} = __0 in match op_V x y with
+        | Some r -> r
+        | _ -> any_V
+        end)) k)
+    = op_Option_V (get_K self k) (get_K other k)))

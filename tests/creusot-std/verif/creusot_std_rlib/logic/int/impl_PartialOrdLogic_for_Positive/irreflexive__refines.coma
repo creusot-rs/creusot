@@ -1,0 +1,36 @@
+(* <logic::int::Positive as logic::ord::PartialOrdLogic> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Subset_PositiveInner
+
+type t_Positive = { f0: t_Subset_PositiveInner }
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+type t_PositiveInner = { f0'0: int }
+
+predicate invariant_PositiveInner (self: t_PositiveInner) = gt_log_Int self.f0'0 0
+
+function inner_PositiveInner (self: t_Subset_PositiveInner) : t_PositiveInner
+
+axiom inner_PositiveInner_spec:
+  forall self: t_Subset_PositiveInner [inner_PositiveInner self]. invariant_PositiveInner (inner_PositiveInner self)
+
+function to_int (self: t_Positive) : int = (inner_PositiveInner self.f0).f0'0
+
+axiom to_int_spec: forall self: t_Positive [to_int self]. gt_log_Int (to_int self) 0
+
+predicate lt_log_Positive (self: t_Positive) (other: t_Positive) = to_int self < to_int other
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Positive. forall result: (). not lt_log_Positive self self -> not lt_log_Positive self self

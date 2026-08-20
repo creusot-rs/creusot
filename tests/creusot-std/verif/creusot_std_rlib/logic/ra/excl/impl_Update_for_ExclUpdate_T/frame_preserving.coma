@@ -1,0 +1,44 @@
+(* <logic::ra::excl::ExclUpdate<T> as logic::ra::update::Update<logic::ra::excl::Excl<T>>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+type t_ExclUpdate_T = { f0: t_T }
+
+type t_Excl_T = { f0'0: t_T }
+
+predicate premise_ExclUpdate_T [@inline:trivial] (self: t_ExclUpdate_T) (_2: t_Excl_T) = true
+
+meta "rewrite_def" predicate premise_ExclUpdate_T
+
+type t_Option_Excl_T = None | Some t_Excl_T
+
+function op_Excl_T (self: t_Excl_T) (_other: t_Excl_T) : t_Option_Excl_T = None
+
+function commutative_Excl_T (a: t_Excl_T) (b: t_Excl_T) : () = ()
+
+axiom commutative_Excl_T_spec: forall a: t_Excl_T, b: t_Excl_T. op_Excl_T a b = op_Excl_T b a
+
+function update_ExclUpdate_T [@inline:trivial] (self: t_ExclUpdate_T) (from: t_Excl_T) (_3: ()) : t_Excl_T =
+  { f0'0 = self.f0 }
+
+meta "rewrite_def" function update_ExclUpdate_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_ExclUpdate_T
+
+constant from : t_Excl_T
+
+constant frame : t_Excl_T
+
+function frame_preserving_ExclUpdate_T (self: t_ExclUpdate_T) (from: t_Excl_T) (frame: t_Excl_T) : ()
+
+goal vc_frame_preserving_ExclUpdate_T: premise_ExclUpdate_T self from
+  -> op_Excl_T from frame <> None
+  -> ([@stop_split] [@expl:frame_preserving ensures] op_Excl_T (update_ExclUpdate_T self from ()) frame <> None)

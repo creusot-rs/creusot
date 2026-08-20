@@ -1,0 +1,50 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_R
+
+type t_TryType
+
+predicate inv_R (_1: t_R)
+
+predicate precondition_from_residual (self: ()) (args: t_R)
+
+axiom precondition_fndef: forall args: t_R [precondition_from_residual () args]. (let residual = args in inv_R residual)
+    -> precondition_from_residual () args
+
+predicate inv_TryType (_1: t_TryType)
+
+predicate postcondition_from_residual (self: ()) (args: t_R) (result: t_TryType)
+
+axiom postcondition_fndef:
+  forall args: t_R, res: t_TryType [postcondition_from_residual () args res]. postcondition_from_residual () args res
+    -> (let residual = args in inv_TryType res)
+
+predicate postcondition_once_from_residual (self: ()) (args: t_R) (result: t_TryType) =
+  postcondition_from_residual self args result
+
+meta "rewrite_def" predicate postcondition_once_from_residual
+
+let from_residual_TryType (residual: t_R) (return (x: t_TryType)) =
+{[@stop_split] [@expl:from_residual requires] precondition_from_residual () residual}
+  any
+  [ return (result: t_TryType) ->
+  {[@stop_split] [@expl:from_residual ensures] postcondition_once_from_residual () residual result}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let residual_into_try_type_R (r: t_R) (return (x: t_TryType)) =
+{[@stop_split] [@expl:residual_into_try_type 'r' type invariant] inv_R r}
+  (! bb0
+  [ bb0 = s0 [ s0 = from_residual_TryType {r} (fun (_x: t_TryType) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: t_TryType = Any.any_l () | & r: t_R = r ])
+  [ return (result: t_TryType) ->
+  {[@stop_split] [@expl:residual_into_try_type_R ensures] ([@stop_split] [@expl:residual_into_try_type result type invariant] inv_TryType result)
+    /\ ([@stop_split] [@expl:residual_into_try_type ensures] postcondition_from_residual () r result)}
+    (! return {result}) ]

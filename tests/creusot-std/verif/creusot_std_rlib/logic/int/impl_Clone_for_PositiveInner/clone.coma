@@ -1,0 +1,43 @@
+(* <logic::int::PositiveInner as std::clone::Clone> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+use int.Int
+
+type t_PositiveInner = { f0: int }
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate invariant_PositiveInner (self: t_PositiveInner) = gt_log_Int self.f0 0
+
+predicate inv_PositiveInner (_1: t_PositiveInner)
+
+axiom inv_axiom [@rewrite]: forall x: t_PositiveInner [inv_PositiveInner x]. inv_PositiveInner x
+    = invariant_PositiveInner x
+
+predicate invariant_ref_PositiveInner [@inline:trivial] (self: t_PositiveInner) = inv_PositiveInner self
+
+meta "rewrite_def" predicate invariant_ref_PositiveInner
+
+predicate inv_ref_PositiveInner [@inline:trivial] (_1: t_PositiveInner) = invariant_ref_PositiveInner _1
+
+meta "rewrite_def" predicate inv_ref_PositiveInner
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let clone_PositiveInner (self: t_PositiveInner) (return (x: t_PositiveInner)) =
+{[@stop_split] [@expl:clone 'self' type invariant] inv_ref_PositiveInner self}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_PositiveInner = Any.any_l () | & self: t_PositiveInner = self ])
+  [ return (result: t_PositiveInner) ->
+  {[@stop_split] [@expl:clone_PositiveInner ensures] ([@stop_split] [@expl:clone result type invariant] inv_PositiveInner result)
+    /\ ([@stop_split] [@expl:clone ensures] result = self)}
+    (! return {result}) ]

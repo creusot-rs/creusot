@@ -1,0 +1,52 @@
+(* <F as std::ops::FnExt<Args>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_F
+
+type t_Args
+
+type t_Output
+
+predicate postcondition_once_F (self: t_F) (args: t_Args) (result: t_Output)
+
+predicate resolve_F (_1: t_F)
+
+predicate postcondition_mut_F (self: t_F) (args: t_Args) (result_state: t_F) (result: t_Output)
+
+function fn_mut_once_F (self: t_F) (args: t_Args) (res: t_Output) : () = ()
+
+axiom fn_mut_once_F_spec:
+  forall self: t_F, args: t_Args, res: t_Output [postcondition_once_F self args res]. postcondition_once_F self args res
+    = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+
+predicate hist_inv_F (self: t_F) (result_state: t_F)
+
+function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : () = ()
+
+axiom hist_inv_trans_F_spec:
+  forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
+    -> hist_inv_F b c -> hist_inv_F self c
+
+function hist_inv_refl_F (self: t_F) : () = ()
+
+axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
+
+function postcondition_mut_hist_inv_F (self: t_F) (args: t_Args) (res_state: t_F) (res: t_Output) : () = ()
+
+axiom postcondition_mut_hist_inv_F_spec:
+  forall self: t_F, args: t_Args, res_state: t_F, res: t_Output [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    -> hist_inv_F self res_state
+
+predicate postcondition_F (self: t_F) (args: t_Args) (result: t_Output)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall self: t_F, args: t_Args, res_state: t_F, res: t_Output. forall result: (). postcondition_mut_F self args res_state res
+        = (postcondition_F self args res /\ self = res_state)
+      -> postcondition_mut_F self args res_state res = (postcondition_F self args res /\ self = res_state)

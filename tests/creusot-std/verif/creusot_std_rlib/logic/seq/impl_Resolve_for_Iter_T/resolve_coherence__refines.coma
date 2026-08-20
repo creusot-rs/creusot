@@ -1,0 +1,59 @@
+(* <logic::seq::Iter<T> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use int.Int
+
+type t_T
+
+type t_Iter_T = { f0: Seq.seq t_T }
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate inv_Iter_T (_1: t_Iter_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Iter_T [inv_Iter_T x]. inv_Iter_T x = inv_Seq_T x.f0
+
+predicate resolve_T (_1: t_T)
+
+predicate resolve_Seq_T (self: Seq.seq t_T) = forall i: int. 0 <= i /\ i < Seq.length self -> resolve_T (Seq.get self i)
+
+predicate resolve_Seq_T'0 [@inline:trivial] (_1: Seq.seq t_T) = resolve_Seq_T _1
+
+meta "rewrite_def" predicate resolve_Seq_T'0
+
+predicate structural_resolve_Iter_T (_1: t_Iter_T) = resolve_Seq_T'0 _1.f0
+
+function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
+
+predicate resolve_Iter_T [@inline:trivial] (self: t_Iter_T) = resolve_Seq_T'0 (view_Iter_T self)
+
+meta "rewrite_def" predicate resolve_Iter_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Iter_T. inv_Iter_T self
+    -> structural_resolve_Iter_T self
+    -> structural_resolve_Iter_T self /\ (forall result: (). resolve_Iter_T self -> resolve_Iter_T self)

@@ -1,0 +1,61 @@
+(* <logic::int::Nat as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Nat
+
+type t_Option_Nat = None | Some t_Nat
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function to_int (self: t_Nat) : int
+
+axiom to_int_spec: forall self: t_Nat [to_int self]. ge_log_Int (to_int self) 0
+
+function view_Nat (self: t_Nat) : int = to_int self
+
+function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+
+axiom add_Nat_spec: forall self: t_Nat, other: t_Nat [add_Nat self other]. view_Nat (add_Nat self other)
+    = view_Nat self + view_Nat other
+
+function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+
+meta "rewrite_def" function op_Nat
+
+predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+
+axiom ext_eq_spec: forall self: t_Nat, other: t_Nat [self = other]. ext_eq self other = (self = other)
+
+function new (n: int) : t_Nat
+
+axiom new_spec: forall n: int [new n]. ge_log_Int n 0 -> to_int (new n) = n
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Nat
+
+constant other : t_Nat
+
+predicate incl_Nat (self: t_Nat) (other: t_Nat)
+
+goal vc_incl_Nat: ([@stop_split] [@expl:to_int ensures] ge_log_Int (to_int self) 0)
+  -> ([@stop_split] [@expl:to_int ensures] ge_log_Int (to_int other) 0)
+  -> (let r = to_int self <= to_int other in if r then
+    ([@stop_split] [@expl:to_int ensures] ge_log_Int (to_int other) 0)
+    -> ([@stop_split] [@expl:to_int ensures] ge_log_Int (to_int self) 0)
+    -> ([@stop_split] [@expl:new requires] ge_log_Int (to_int other - to_int self) 0)
+    /\ (([@stop_split] [@expl:new ensures] to_int (new (to_int other - to_int self)) = to_int other - to_int self)
+    -> op_Nat self (new (to_int other - to_int self)) = Some other
+    && ([@stop_split] [@expl:incl ensures] r = (exists factor: t_Nat. op_Nat self factor = Some other)))
+  else
+    [@stop_split] [@expl:incl ensures] r = (exists factor: t_Nat. op_Nat self factor = Some other)
+  )

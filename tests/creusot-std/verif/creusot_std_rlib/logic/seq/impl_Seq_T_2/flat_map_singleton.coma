@@ -1,0 +1,37 @@
+(* logic::seq::Seq<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use map.Map
+
+type t_T
+
+type t_U
+
+function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+
+function flat_map_T (self: Seq.seq t_T) (other: Map.map t_T (Seq.seq t_U)) : Seq.seq t_U
+
+axiom flat_map_T_def:
+  forall self: Seq.seq t_T, other: Map.map t_T (Seq.seq t_U) [flat_map_T self other]. flat_map_T self other
+    = (if Seq.length self = 0 then
+      Seq.empty: Seq.seq t_U
+    else
+      Seq.(++) (Map.get other (Seq.get self 0)) (flat_map_T (tail_T self) other)
+    )
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant x : t_T
+
+constant f : Map.map t_T (Seq.seq t_U)
+
+function flat_map_singleton_T (x: t_T) (f: Map.map t_T (Seq.seq t_U)) : ()
+
+goal vc_flat_map_singleton_T: [@stop_split] [@expl:flat_map_singleton ensures] flat_map_T (Seq.singleton x) f
+  = Map.get f x

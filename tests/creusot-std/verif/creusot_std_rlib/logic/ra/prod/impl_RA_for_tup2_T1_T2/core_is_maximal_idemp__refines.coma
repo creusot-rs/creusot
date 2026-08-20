@@ -1,0 +1,116 @@
+(* <(T1, T2) as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T1
+
+type t_T2
+
+type tup2_T1_T2 = { f0: t_T1; f1: t_T2 }
+
+type t_Option_tup2_T1_T2 = None | Some tup2_T1_T2
+
+type t_Option_T1 = None'0 | Some'0 t_T1
+
+type t_Option_T2 = None'1 | Some'1 t_T2
+
+type tup2_Option_T1_Option_T2 = { f0'0: t_Option_T1; f1'0: t_Option_T2 }
+
+function op_T1 (self: t_T1) (other: t_T1) : t_Option_T1
+
+predicate incl_T1 (self: t_T1) (other: t_T1)
+
+axiom incl_T1_spec: forall self: t_T1, other: t_T1 [incl_T1 self other]. incl_T1 self other
+    = (exists factor: t_T1. op_T1 self factor = Some'0 other)
+
+function incl_transitive_T1 (a: t_T1) (b: t_T1) (c: t_T1) : ()
+
+axiom incl_transitive_T1_spec: forall a: t_T1, b: t_T1, c: t_T1. incl_T1 a b -> incl_T1 b c -> incl_T1 a c
+
+function associative_some_T1 (a: t_T1) (b: t_T1) (c: t_T1) (ab: t_T1) (bc: t_T1) : ()
+
+axiom associative_some_T1_spec: forall a: t_T1, b: t_T1, c: t_T1, ab: t_T1, bc: t_T1. op_T1 a b = Some'0 ab
+    -> op_T1 b c = Some'0 bc -> op_T1 a bc = op_T1 ab c
+
+function associative_none_T1 (a: t_T1) (b: t_T1) (c: t_T1) (bc: t_T1) : ()
+
+axiom associative_none_T1_spec: forall a: t_T1, b: t_T1, c: t_T1, bc: t_T1. op_T1 a b = None'0
+    -> op_T1 b c = Some'0 bc -> op_T1 a bc = None'0
+
+function commutative_T1 (a: t_T1) (b: t_T1) : ()
+
+axiom commutative_T1_spec: forall a: t_T1, b: t_T1. op_T1 a b = op_T1 b a
+
+function incl_op_T1 (self: t_T1) (other: t_T1) (comb: t_T1) : ()
+
+axiom incl_op_T1_spec: forall self: t_T1, other: t_T1, comb: t_T1. op_T1 self other = Some'0 comb -> incl_T1 self comb
+
+function op_T2 (self: t_T2) (other: t_T2) : t_Option_T2
+
+predicate incl_T2 (self: t_T2) (other: t_T2)
+
+axiom incl_T2_spec: forall self: t_T2, other: t_T2 [incl_T2 self other]. incl_T2 self other
+    = (exists factor: t_T2. op_T2 self factor = Some'1 other)
+
+function incl_transitive_T2 (a: t_T2) (b: t_T2) (c: t_T2) : ()
+
+axiom incl_transitive_T2_spec: forall a: t_T2, b: t_T2, c: t_T2. incl_T2 a b -> incl_T2 b c -> incl_T2 a c
+
+function associative_some_T2 (a: t_T2) (b: t_T2) (c: t_T2) (ab: t_T2) (bc: t_T2) : ()
+
+axiom associative_some_T2_spec: forall a: t_T2, b: t_T2, c: t_T2, ab: t_T2, bc: t_T2. op_T2 a b = Some'1 ab
+    -> op_T2 b c = Some'1 bc -> op_T2 a bc = op_T2 ab c
+
+function associative_none_T2 (a: t_T2) (b: t_T2) (c: t_T2) (bc: t_T2) : ()
+
+axiom associative_none_T2_spec: forall a: t_T2, b: t_T2, c: t_T2, bc: t_T2. op_T2 a b = None'1
+    -> op_T2 b c = Some'1 bc -> op_T2 a bc = None'1
+
+function commutative_T2 (a: t_T2) (b: t_T2) : ()
+
+axiom commutative_T2_spec: forall a: t_T2, b: t_T2. op_T2 a b = op_T2 b a
+
+function incl_op_T2 (self: t_T2) (other: t_T2) (comb: t_T2) : ()
+
+axiom incl_op_T2_spec: forall self: t_T2, other: t_T2, comb: t_T2. op_T2 self other = Some'1 comb -> incl_T2 self comb
+
+function op_tup2_T1_T2 (self: tup2_T1_T2) (other: tup2_T1_T2) : t_Option_tup2_T1_T2 =
+  match { f0'0 = op_T1 self.f0 other.f0; f1'0 = op_T2 self.f1 other.f1 } with
+    | {f0'0 = Some'0 v1; f1'0 = Some'1 v2} -> Some { f0 = v1; f1 = v2 }
+    | _ -> None
+    end
+
+function core_T1 (self: t_T1) : t_Option_T1
+
+function core_T2 (self: t_T2) : t_Option_T2
+
+function core_tup2_T1_T2 (self: tup2_T1_T2) : t_Option_tup2_T1_T2 = match { f0'0 = core_T1 self.f0;
+                                                                            f1'0 = core_T2 self.f1 } with
+    | {f0'0 = Some'0 v1; f1'0 = Some'1 v2} -> Some { f0 = v1; f1 = v2 }
+    | _ -> None
+    end
+
+predicate incl_tup2_T1_T2 (self: tup2_T1_T2) (other: tup2_T1_T2) = incl_T1 self.f0 other.f0 /\ incl_T2 self.f1 other.f1
+
+axiom incl_tup2_T1_T2_spec:
+  forall self: tup2_T1_T2, other: tup2_T1_T2 [incl_tup2_T1_T2 self other]. incl_tup2_T1_T2 self other
+    = (exists factor: tup2_T1_T2. op_tup2_T1_T2 self factor = Some other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: tup2_T1_T2, i: tup2_T1_T2. op_tup2_T1_T2 i i = Some i
+    -> op_tup2_T1_T2 i self = Some self
+    -> op_tup2_T1_T2 i i = Some i
+    /\ op_tup2_T1_T2 i self = Some self
+    /\ (forall result: (). match core_tup2_T1_T2 self with
+          | Some c -> incl_tup2_T1_T2 i c
+          | None -> false
+          end
+      -> match core_tup2_T1_T2 self with
+        | Some c -> incl_tup2_T1_T2 i c
+        | None -> false
+        end)

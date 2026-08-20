@@ -1,0 +1,63 @@
+(* <logic::int::Positive as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Positive
+
+type t_Option_Positive = None | Some t_Positive
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+function to_int (self: t_Positive) : int
+
+axiom to_int_spec: forall self: t_Positive [to_int self]. gt_log_Int (to_int self) 0
+
+function view_Positive (self: t_Positive) : int = to_int self
+
+function add_Positive (self: t_Positive) (other: t_Positive) : t_Positive
+
+axiom add_Positive_spec:
+  forall self: t_Positive, other: t_Positive [add_Positive self other]. view_Positive (add_Positive self other)
+    = view_Positive self + view_Positive other
+
+function op_Positive (self: t_Positive) (other: t_Positive) : t_Option_Positive = Some (add_Positive self other)
+
+function core_Positive (self: t_Positive) : t_Option_Positive = None
+
+predicate le_log_Positive (self: t_Positive) (other: t_Positive) = to_int self <= to_int other
+
+predicate lt_log_Positive (self: t_Positive) (other: t_Positive) = to_int self < to_int other
+
+function le_lt_log_Positive (self: t_Positive) (other: t_Positive) : ()
+
+axiom le_lt_log_Positive_spec: forall self: t_Positive, other: t_Positive. le_log_Positive self other
+    = (lt_log_Positive self other \/ self = other)
+
+predicate incl_Positive (self: t_Positive) (other: t_Positive) = let r = lt_log_Positive self other in r
+
+axiom incl_Positive_spec:
+  forall self: t_Positive, other: t_Positive [incl_Positive self other]. incl_Positive self other
+    = (exists factor: t_Positive. op_Positive self factor = Some other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Positive
+
+constant i : t_Positive
+
+function core_is_maximal_idemp_Positive (self: t_Positive) (i: t_Positive) : ()
+
+goal vc_core_is_maximal_idemp_Positive: op_Positive i i = Some i
+  -> op_Positive i self = Some self
+  -> ([@stop_split] [@expl:core_is_maximal_idemp ensures] match core_Positive self with
+    | Some c -> incl_Positive i c
+    | None -> false
+    end)

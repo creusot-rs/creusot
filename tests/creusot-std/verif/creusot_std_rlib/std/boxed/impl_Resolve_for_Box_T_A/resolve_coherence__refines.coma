@@ -1,0 +1,31 @@
+(* <std::boxed::Box<T, A> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_Box_T_A (self: t_T) = inv_T self
+
+predicate inv_Box_T_A [@inline:trivial] (_1: t_T) = invariant_Box_T_A _1
+
+meta "rewrite_def" predicate inv_Box_T_A
+
+predicate resolve_T (_1: t_T)
+
+predicate structural_resolve_Box_T_A (_1: t_T) = resolve_T _1
+
+predicate resolve_Box_T_A [@inline:trivial] (self: t_T) = true
+
+meta "rewrite_def" predicate resolve_Box_T_A
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_T. inv_Box_T_A self
+    -> structural_resolve_Box_T_A self
+    -> structural_resolve_Box_T_A self /\ (forall result: (). resolve_Box_T_A self -> resolve_Box_T_A self)

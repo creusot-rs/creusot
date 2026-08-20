@@ -1,0 +1,36 @@
+(* <std::slice::IterMut<'a, T> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.slice.Slice64
+use seq.Seq
+
+type t_IterMut_T
+
+predicate inv_IterMut_T (_1: t_IterMut_T)
+
+predicate structural_resolve_IterMut_T (_1: t_IterMut_T)
+
+type t_T
+
+function view_IterMut_T (self: t_IterMut_T) : MutBorrow.t (Slice64.slice t_T)
+
+axiom view_IterMut_T_spec:
+  forall self: t_IterMut_T [view_IterMut_T self]. Seq.length (Slice64.view (view_IterMut_T self).final)
+    = Seq.length (Slice64.view (view_IterMut_T self).current)
+
+predicate resolve_IterMut_T [@inline:trivial] (self: t_IterMut_T) =
+  (view_IterMut_T self).current = (view_IterMut_T self).final
+
+meta "rewrite_def" predicate resolve_IterMut_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_IterMut_T. inv_IterMut_T self
+    -> structural_resolve_IterMut_T self
+    -> structural_resolve_IterMut_T self /\ (forall result: (). resolve_IterMut_T self -> resolve_IterMut_T self)

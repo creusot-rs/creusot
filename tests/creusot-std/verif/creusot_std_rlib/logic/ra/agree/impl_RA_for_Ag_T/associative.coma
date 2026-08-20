@@ -1,0 +1,36 @@
+(* <logic::ra::agree::Ag<T> as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_T
+
+type t_Ag_T = { f0: t_T }
+
+type t_Option_Ag_T = None | Some t_Ag_T
+
+function and_then_Option_Ag_T (self: t_Option_Ag_T) (f: Map.map t_Ag_T t_Option_Ag_T) : t_Option_Ag_T = match self with
+    | None -> None
+    | Some x -> Map.get f x
+    end
+
+function op_Ag_T (self: t_Ag_T) (other: t_Ag_T) : t_Option_Ag_T = if self.f0 = other.f0 then Some self else None
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_Ag_T
+
+constant b : t_Ag_T
+
+constant c : t_Ag_T
+
+function associative_Ag_T (a: t_Ag_T) (b: t_Ag_T) (c: t_Ag_T) : ()
+
+goal vc_associative_Ag_T:
+  [@stop_split] [@expl:associative ensures] and_then_Option_Ag_T (op_Ag_T a b) (fun (ab: t_Ag_T) -> op_Ag_T ab c)
+  = and_then_Option_Ag_T (op_Ag_T b c) (fun (bc: t_Ag_T) -> op_Ag_T a bc)

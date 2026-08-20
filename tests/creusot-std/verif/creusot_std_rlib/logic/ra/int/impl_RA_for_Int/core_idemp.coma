@@ -1,0 +1,47 @@
+(* <logic::int::Int as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+type t_Option_Int = None | Some int
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+function such_that_Int (p: Map.map int bool) : int
+
+axiom such_that_Int_spec: forall p: Map.map int bool [such_that_Int p]. (exists x: int. index_Mapping_Int_bool p x)
+    -> index_Mapping_Int_bool p (such_that_Int p)
+
+constant any_Int: int = such_that_Int (fun (__0: int) -> true)
+
+function unwrap_Option_Int (self: t_Option_Int) : int = match self with
+    | Some x -> x
+    | None -> any_Int
+    end
+
+function core_Int [@inline:trivial] (self: int) : t_Option_Int = Some 0
+
+meta "rewrite_def" function core_Int
+
+function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+
+meta "rewrite_def" function op_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : int
+
+function core_idemp_Int (self: int) : ()
+
+goal vc_core_idemp_Int:
+  [@stop_split] [@expl:core_idemp_Int ensures] ([@stop_split] [@expl:core_idemp ensures #0] let c = unwrap_Option_Int (core_Int self) in op_Int c c
+    = Some c)
+  /\ ([@stop_split] [@expl:core_idemp ensures #1] op_Int (unwrap_Option_Int (core_Int self)) self = Some self)

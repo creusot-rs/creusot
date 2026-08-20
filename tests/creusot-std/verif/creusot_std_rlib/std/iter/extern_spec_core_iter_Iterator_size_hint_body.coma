@@ -1,0 +1,59 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use creusot.prelude.Any
+use seq.Seq
+use creusot.prelude.MutBorrow
+use int.Int
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+type t_Self_
+
+predicate inv_Self_ (_1: t_Self_)
+
+predicate invariant_ref_Self_ [@inline:trivial] (self: t_Self_) = inv_Self_ self
+
+meta "rewrite_def" predicate invariant_ref_Self_
+
+predicate inv_ref_Self_ [@inline:trivial] (_1: t_Self_) = invariant_ref_Self_ _1
+
+meta "rewrite_def" predicate inv_ref_Self_
+
+type t_Item
+
+predicate produces_Self_ (self: t_Self_) (visited: Seq.seq t_Item) (o: t_Self_)
+
+function produces_trans_Self_ (a: t_Self_) (ab: Seq.seq t_Item) (b: t_Self_) (bc: Seq.seq t_Item) (c: t_Self_) : ()
+
+axiom produces_trans_Self__spec:
+  forall a: t_Self_, ab: Seq.seq t_Item, b: t_Self_, bc: Seq.seq t_Item, c: t_Self_. produces_Self_ a ab b
+    -> produces_Self_ b bc c -> produces_Self_ a (Seq.(++) ab bc) c
+
+function produces_refl_Self_ (self: t_Self_) : ()
+
+axiom produces_refl_Self__spec: forall self: t_Self_. produces_Self_ self (Seq.empty: Seq.seq t_Item) self
+
+predicate completed_Self_ (self: MutBorrow.t t_Self_)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_core_iter_Iterator_size_hint_body_Self_ (self_: t_Self_) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:extern_spec_core_iter_Iterator_size_hint_body 'self_' type invariant] inv_ref_Self_ self_}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_6 <- None ] s1 | s1 = [ &_ret <- { f0 = (0: UInt64.t); f1 = _6 } ] s2 | s2 = return {_ret} ] ]
+  [ & _ret: tup2_usize_Option_usize = Any.any_l () | & _6: t_Option_usize = Any.any_l () ])
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:extern_spec_core_iter_Iterator_size_hint_body_Self_ ensures] ([@stop_split] [@expl:extern_spec_core_iter_Iterator_size_hint_body ensures #0] forall s: Seq.seq t_Item, i: MutBorrow.t t_Self_. produces_Self_ self_ s i.current
+          /\ completed_Self_ i -> UInt64.t'int result.f0 <= Seq.length s)
+    /\ ([@stop_split] [@expl:extern_spec_core_iter_Iterator_size_hint_body ensures #1] match result.f1 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_Self_. produces_Self_ self_ s i -> Seq.length s <= UInt64.t'int r
+      | None -> true
+      end)}
+    (! return {result}) ]

@@ -1,0 +1,151 @@
+(* <logic::ra::view::ViewUpdate<R, Choice> as logic::ra::update::Update<logic::ra::view::View<R>>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_Choice
+
+type t_Auth
+
+type t_Option_Auth = None | Some t_Auth
+
+type t_Frag
+
+predicate rel_R (a: t_Option_Auth) (f: t_Frag)
+
+type t_Option_Frag = None'0 | Some'0 t_Frag
+
+function op_Frag (self: t_Frag) (other: t_Frag) : t_Option_Frag
+
+predicate incl_Frag (self: t_Frag) (other: t_Frag)
+
+axiom incl_Frag_spec: forall self: t_Frag, other: t_Frag [incl_Frag self other]. incl_Frag self other
+    = (exists factor: t_Frag. op_Frag self factor = Some'0 other)
+
+function incl_transitive_Frag (a: t_Frag) (b: t_Frag) (c: t_Frag) : ()
+
+axiom incl_transitive_Frag_spec: forall a: t_Frag, b: t_Frag, c: t_Frag. incl_Frag a b -> incl_Frag b c -> incl_Frag a c
+
+function associative_some_Frag (a: t_Frag) (b: t_Frag) (c: t_Frag) (ab: t_Frag) (bc: t_Frag) : ()
+
+axiom associative_some_Frag_spec: forall a: t_Frag, b: t_Frag, c: t_Frag, ab: t_Frag, bc: t_Frag. op_Frag a b
+      = Some'0 ab -> op_Frag b c = Some'0 bc -> op_Frag a bc = op_Frag ab c
+
+function associative_none_Frag (a: t_Frag) (b: t_Frag) (c: t_Frag) (bc: t_Frag) : ()
+
+axiom associative_none_Frag_spec: forall a: t_Frag, b: t_Frag, c: t_Frag, bc: t_Frag. op_Frag a b = None'0
+    -> op_Frag b c = Some'0 bc -> op_Frag a bc = None'0
+
+function commutative_Frag (a: t_Frag) (b: t_Frag) : ()
+
+axiom commutative_Frag_spec: forall a: t_Frag, b: t_Frag. op_Frag a b = op_Frag b a
+
+function incl_op_Frag (self: t_Frag) (other: t_Frag) (comb: t_Frag) : ()
+
+axiom incl_op_Frag_spec: forall self: t_Frag, other: t_Frag, comb: t_Frag. op_Frag self other = Some'0 comb
+    -> incl_Frag self comb
+
+function core_Frag (self: t_Frag) : t_Option_Frag
+
+function core_total_Frag (self: t_Frag) : t_Frag
+
+axiom core_total_Frag_spec: forall self: t_Frag [core_total_Frag self]. core_Frag self = Some'0 (core_total_Frag self)
+
+constant unit_Frag : t_Frag
+
+axiom unit_Frag_spec: forall x: t_Frag [op_Frag x unit_Frag]. op_Frag x unit_Frag = Some'0 x
+
+constant unit_core_Frag : ()
+
+axiom unit_core_Frag_spec: core_total_Frag unit_Frag = unit_Frag
+
+constant incl_refl_Frag : ()
+
+axiom incl_refl_Frag_spec: forall x: t_Frag. incl_Frag x x
+
+function rel_unit_R (a: t_Option_Auth) : ()
+
+axiom rel_unit_R_spec: forall a: t_Option_Auth. rel_R a unit_Frag
+
+function rel_none_R (a: t_Option_Auth) (f: t_Frag) : ()
+
+axiom rel_none_R_spec: forall a: t_Option_Auth, f: t_Frag. rel_R a f -> rel_R (None) f
+
+function rel_mono_R (a: t_Option_Auth) (f1: t_Frag) (f2: t_Frag) : ()
+
+axiom rel_mono_R_spec: forall a: t_Option_Auth, f1: t_Frag, f2: t_Frag. rel_R a f1 -> incl_Frag f2 f1 -> rel_R a f2
+
+type tup2_Auth_Frag = { f0: t_Auth; f1: t_Frag }
+
+type t_ViewUpdate_R_Choice = { f0'0: Map.map t_Choice tup2_Auth_Frag }
+
+type t_Subset_ViewInner_R
+
+type t_View_R = { f0'1: t_Subset_ViewInner_R }
+
+type t_ViewInner_R = { auth: t_Option_Auth; frag: t_Frag }
+
+predicate invariant_ViewInner_R (self: t_ViewInner_R) = rel_R self.auth self.frag
+
+function inner_ViewInner_R (self: t_Subset_ViewInner_R) : t_ViewInner_R
+
+axiom inner_ViewInner_R_spec:
+  forall self: t_Subset_ViewInner_R [inner_ViewInner_R self]. invariant_ViewInner_R (inner_ViewInner_R self)
+
+function auth_R (self: t_View_R) : t_Option_Auth = (inner_ViewInner_R self.f0'1).auth
+
+function index_Mapping_Choice_tup2_Auth_Frag [@inline:trivial] (self: Map.map t_Choice tup2_Auth_Frag) (a: t_Choice) : tup2_Auth_Frag
+ = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Choice_tup2_Auth_Frag
+
+function frag_R (self: t_View_R) : t_Frag = (inner_ViewInner_R self.f0'1).frag
+
+axiom frag_R_spec: forall self: t_View_R [frag_R self]. rel_R (auth_R self) (frag_R self)
+
+predicate premise_ViewUpdate_R_Choice [@inline:trivial] (self: t_ViewUpdate_R_Choice) (from: t_View_R) =
+  auth_R from <> None
+  /\ (forall ch: t_Choice. rel_R (Some ((index_Mapping_Choice_tup2_Auth_Frag self.f0'0 ch).f0)) (index_Mapping_Choice_tup2_Auth_Frag self.f0'0 ch).f1)
+  /\ (forall frame: t_Frag. rel_R (auth_R from) frame
+    -> match op_Frag (frag_R from) frame with
+        | Some'0 ff -> rel_R (auth_R from) ff
+        | None'0 -> false
+        end
+    -> (exists ch: t_Choice. match op_Frag (index_Mapping_Choice_tup2_Auth_Frag self.f0'0 ch).f1 frame with
+        | Some'0 ff -> rel_R (Some ((index_Mapping_Choice_tup2_Auth_Frag self.f0'0 ch).f0)) ff
+        | None'0 -> false
+        end))
+
+meta "rewrite_def" predicate premise_ViewUpdate_R_Choice
+
+function new_ViewInner_R (x: t_ViewInner_R) : t_Subset_ViewInner_R
+
+axiom new_ViewInner_R_spec: forall x: t_ViewInner_R [new_ViewInner_R x]. invariant_ViewInner_R x
+    -> inner_ViewInner_R (new_ViewInner_R x) = x
+
+function new_R (auth'0: t_Option_Auth) (frag'0: t_Frag) : t_View_R = { f0'1 = new_ViewInner_R { auth = auth'0;
+                                                                                                frag = frag'0 } }
+
+axiom new_R_spec: forall auth'0: t_Option_Auth, frag'0: t_Frag [new_R auth'0 frag'0]. rel_R auth'0 frag'0
+    -> auth_R (new_R auth'0 frag'0) = auth'0
+
+axiom new_R_spec'0: forall auth'0: t_Option_Auth, frag'0: t_Frag [new_R auth'0 frag'0]. rel_R auth'0 frag'0
+    -> frag_R (new_R auth'0 frag'0) = frag'0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_ViewUpdate_R_Choice
+
+constant from : t_View_R
+
+constant ch : t_Choice
+
+function update_ViewUpdate_R_Choice (self: t_ViewUpdate_R_Choice) (from: t_View_R) (ch: t_Choice) : t_View_R
+
+goal vc_update_ViewUpdate_R_Choice: premise_ViewUpdate_R_Choice self from
+  -> ([@stop_split] [@expl:new requires] rel_R (Some ((index_Mapping_Choice_tup2_Auth_Frag self.f0'0 ch).f0)) (index_Mapping_Choice_tup2_Auth_Frag self.f0'0 ch).f1)

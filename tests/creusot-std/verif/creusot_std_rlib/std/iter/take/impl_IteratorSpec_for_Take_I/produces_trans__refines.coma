@@ -1,0 +1,45 @@
+(* <std::iter::Take<I> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.int.UInt64
+use int.Int
+
+type t_Take_I
+
+type t_Item
+
+function n_Take_I (self: t_Take_I) : UInt64.t
+
+type t_I
+
+predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+
+function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+
+axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+    -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+
+function produces_refl_I (self: t_I) : ()
+
+axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+
+function iter_Take_I (self: t_Take_I) : t_I
+
+predicate produces_Take_I (self: t_Take_I) (visited: Seq.seq t_Item) (o: t_Take_I) =
+  UInt64.t'int (n_Take_I self) = UInt64.t'int (n_Take_I o) + Seq.length visited
+  /\ produces_I (iter_Take_I self) visited (iter_Take_I o)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_Take_I, ab: Seq.seq t_Item, b: t_Take_I, bc: Seq.seq t_Item, c: t_Take_I. produces_Take_I a ab b
+    -> produces_Take_I b bc c
+    -> produces_Take_I a ab b
+    /\ produces_Take_I b bc c
+    /\ (forall result: (). produces_Take_I a (Seq.(++) ab bc) c -> produces_Take_I a (Seq.(++) ab bc) c)

@@ -1,0 +1,36 @@
+(* <std::iter::Rev<I> as std::iter::DoubleEndedIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+
+type t_Rev_I
+
+type t_Item
+
+type t_I
+
+predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+
+function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+
+axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+    -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+
+function produces_refl_I (self: t_I) : ()
+
+axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+
+function iter_Rev_I (self: t_Rev_I) : t_I
+
+predicate produces_back_Rev_I (self: t_Rev_I) (visited: Seq.seq t_Item) (o: t_Rev_I) =
+  produces_I (iter_Rev_I self) visited (iter_Rev_I o)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Rev_I. forall result: (). produces_back_Rev_I self (Seq.empty: Seq.seq t_Item) self
+      -> produces_back_Rev_I self (Seq.empty: Seq.seq t_Item) self

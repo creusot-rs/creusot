@@ -1,0 +1,161 @@
+(* ghost::resource::m::Resource<R> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use set.Set
+use map.Map
+use creusot.prelude.Any
+
+type t_U
+
+predicate inv_U (_1: t_U)
+
+predicate resolve_U (_1: t_U)
+
+type t_Resource_R
+
+type t_R
+
+function val_R (self: t_Resource_R) : t_R
+
+function view_Resource_R [@inline:trivial] (self: t_Resource_R) : t_R = val_R self
+
+meta "rewrite_def" function view_Resource_R
+
+type t_Choice
+
+predicate premise_U (self: t_U) (from: t_R)
+
+function update_U (self: t_U) (from: t_R) (ch: t_Choice) : t_R
+
+predicate contains_R [@inline:trivial] (self: Set.set t_R) (e: t_R) = Set.mem e self
+
+meta "rewrite_def" predicate contains_R
+
+constant any_Choice : t_Choice
+
+type t_Option_R = None | Some t_R
+
+function op_R (self: t_R) (other: t_R) : t_Option_R
+
+predicate incl_R (self: t_R) (other: t_R)
+
+axiom incl_R_spec: forall self: t_R, other: t_R [incl_R self other]. incl_R self other
+    = (exists factor: t_R. op_R self factor = Some other)
+
+function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+
+axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+
+function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+
+axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+    -> op_R b c = Some bc -> op_R a bc = op_R ab c
+
+function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+
+axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+    -> op_R b c = Some bc -> op_R a bc = None
+
+function commutative_R (a: t_R) (b: t_R) : ()
+
+axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+
+function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+
+axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+
+function frame_preserving_U (self: t_U) (from: t_R) (frame: t_R) : t_Choice
+
+axiom frame_preserving_U_spec:
+  forall self: t_U, from: t_R, frame: t_R [frame_preserving_U self from frame]. premise_U self from
+    -> op_R from frame <> None -> op_R (update_U self from (frame_preserving_U self from frame)) frame <> None
+
+type t_Option_Option_R = None'0 | Some'0 t_Option_R
+
+type tup2_Option_R_Option_R = { f0: t_Option_R; f1: t_Option_R }
+
+function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
+function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0 = self; f1 = other } with
+    | {f0 = None} -> Some'0 other
+    | {f1 = None} -> Some'0 self
+    | {f0 = Some x; f1 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
+    end
+
+function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : ()
+
+axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
+
+type t_Id
+
+function id_R (self: t_Resource_R) : t_Id
+
+let update_raw_R (self: MutBorrow.t t_Resource_R) (target_s: Set.set t_R) (return (x: t_R)) =
+{[@stop_split] [@expl:update_raw requires] forall f: t_Option_R. op_Option_R (Some (view_Resource_R self.current)) f
+      <> None'0 -> (exists x: t_R. contains_R target_s x /\ op_Option_R (Some x) f <> None'0)}
+  any
+  [ return (result: t_R) ->
+  {[@stop_split] [@expl:update_raw_R ensures] ([@stop_split] [@expl:update_raw ensures #0] id_R self.final
+      = id_R self.current)
+    /\ ([@stop_split] [@expl:update_raw ensures #1] contains_R target_s result)
+    /\ ([@stop_split] [@expl:update_raw ensures #2] view_Resource_R self.final = result)}
+    (! return {result}) ]
+
+predicate resolve_refmut_Resource_R [@inline:trivial] (_1: MutBorrow.t t_Resource_R) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Resource_R
+
+predicate index_Mapping_Choice_bool [@inline:trivial] (self: Map.map t_Choice bool) (a: t_Choice) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Choice_bool
+
+function such_that_Choice (p: Map.map t_Choice bool) : t_Choice
+
+axiom such_that_Choice_spec:
+  forall p: Map.map t_Choice bool [such_that_Choice p]. (exists x: t_Choice. index_Mapping_Choice_bool p x)
+    -> index_Mapping_Choice_bool p (such_that_Choice p)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let update_R (self: MutBorrow.t t_Resource_R) (upd: t_U) (return (x: t_Choice)) =
+{[@stop_split] [@expl:update_R requires] ([@stop_split] [@expl:update 'upd' type invariant] inv_U upd)
+  /\ ([@stop_split] [@expl:update requires] premise_U upd (view_Resource_R self.current))}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_U upd} any) ]
+    | s1 = -{resolve_U upd}- s2
+    | s2 = [ &v <- view_Resource_R self.current ] s3
+    | s3 = [ &target_s <- fun (r'0: t_R) -> exists ch: t_Choice. update_U upd v ch = r'0 ] s4
+    | s4 = {[@expl:assertion] contains_R target_s (update_U upd v any_Choice)} s5
+    | s5 = {[@expl:assertion] forall f: t_R. op_R v f <> None
+        -> op_R (update_U upd v (frame_preserving_U upd v f)) f <> None}
+      s6
+    | s6 = [ &_27 <- () ] s7
+    | s7 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
+        (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_30 <- _bor ] [ &self <- { self with current = _bor.final } ] s8)
+    | s8 = update_raw_R {_30} {target_s} (fun (_x: t_R) -> [ &r <- _x ] s9)
+    | s9 = -{resolve_refmut_Resource_R self}- s10
+    | s10 = [ &_ret <- such_that_Choice (fun (ch: t_Choice) -> update_U upd v ch = r) ] s11
+    | s11 = return {_ret} ] ]
+  [ & _ret: t_Choice = Any.any_l ()
+  | & self: MutBorrow.t t_Resource_R = self
+  | & upd: t_U = upd
+  | & v: t_R = Any.any_l ()
+  | & target_s: Set.set t_R = Any.any_l ()
+  | & _27: () = Any.any_l ()
+  | & r: t_R = Any.any_l ()
+  | & _30: MutBorrow.t t_Resource_R = Any.any_l () ])
+  [ return (result: t_Choice) ->
+  {[@stop_split] [@expl:update_R ensures] ([@stop_split] [@expl:update ensures #0] id_R self.final = id_R self.current)
+    /\ ([@stop_split] [@expl:update ensures #1] view_Resource_R self.final
+    = update_U upd (view_Resource_R self.current) result)}
+    (! return {result}) ]

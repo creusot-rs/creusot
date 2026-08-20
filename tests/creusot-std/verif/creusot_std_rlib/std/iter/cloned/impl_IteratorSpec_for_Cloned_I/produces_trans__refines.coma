@@ -1,0 +1,50 @@
+(* <std::iter::Cloned<I> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use int.Int
+
+type t_Cloned_I
+
+type t_T
+
+type t_I
+
+predicate produces_I (self: t_I) (visited: Seq.seq t_T) (o: t_I)
+
+function produces_trans_I (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
+
+axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_T, b: t_I, bc: Seq.seq t_T, c: t_I. produces_I a ab b
+    -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+
+function produces_refl_I (self: t_I) : ()
+
+axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_T) self
+
+function iter_Cloned_I (self: t_Cloned_I) : t_I
+
+predicate inv_T (_1: t_T)
+
+predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
+
+axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
+    -> (let self_ = args in inv_T res)
+
+predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
+  exists s: Seq.seq t_T. produces_I (iter_Cloned_I self) s (iter_Cloned_I o)
+    /\ Seq.length visited = Seq.length s
+    /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_Cloned_I, ab: Seq.seq t_T, b: t_Cloned_I, bc: Seq.seq t_T, c: t_Cloned_I. produces_Cloned_I a ab b
+    -> produces_Cloned_I b bc c
+    -> produces_Cloned_I a ab b
+    /\ produces_Cloned_I b bc c
+    /\ (forall result: (). produces_Cloned_I a (Seq.(++) ab bc) c -> produces_Cloned_I a (Seq.(++) ab bc) c)

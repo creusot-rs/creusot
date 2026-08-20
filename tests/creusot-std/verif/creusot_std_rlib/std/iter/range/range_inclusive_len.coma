@@ -1,0 +1,38 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_RangeInclusive_Idx
+
+type t_Idx
+
+function deep_model_Idx (self: t_Idx) : int
+
+function start_log_RangeInclusive_Idx (self: t_RangeInclusive_Idx) : t_Idx
+
+function end_log_RangeInclusive_Idx (self: t_RangeInclusive_Idx) : t_Idx
+
+predicate is_empty_log_RangeInclusive_Idx (self: t_RangeInclusive_Idx)
+
+axiom is_empty_log_RangeInclusive_Idx_spec:
+  forall self: t_RangeInclusive_Idx [is_empty_log_RangeInclusive_Idx self]. not is_empty_log_RangeInclusive_Idx self
+    -> deep_model_Idx (start_log_RangeInclusive_Idx self) <= deep_model_Idx (end_log_RangeInclusive_Idx self)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant r : t_RangeInclusive_Idx
+
+function range_inclusive_len_Idx (r: t_RangeInclusive_Idx) : int
+
+goal vc_range_inclusive_len_Idx: ([@stop_split] [@expl:is_empty_log ensures] not is_empty_log_RangeInclusive_Idx r
+    -> deep_model_Idx (start_log_RangeInclusive_Idx r) <= deep_model_Idx (end_log_RangeInclusive_Idx r))
+  -> (if is_empty_log_RangeInclusive_Idx r then
+    [@stop_split] [@expl:range_inclusive_len ensures] is_empty_log_RangeInclusive_Idx r = (0 = 0)
+  else
+    [@stop_split] [@expl:range_inclusive_len ensures] is_empty_log_RangeInclusive_Idx r
+    = (deep_model_Idx (end_log_RangeInclusive_Idx r) - deep_model_Idx (start_log_RangeInclusive_Idx r) + 1 = 0)
+  )

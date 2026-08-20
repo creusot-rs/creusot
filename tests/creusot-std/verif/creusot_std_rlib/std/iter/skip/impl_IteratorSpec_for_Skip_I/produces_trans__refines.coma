@@ -1,0 +1,55 @@
+(* <std::iter::Skip<I> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.int.UInt64
+use int.Int
+
+type t_Skip_I
+
+type t_Item
+
+function n_Skip_I (self: t_Skip_I) : UInt64.t
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+type t_I
+
+predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+
+function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+
+axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+    -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+
+function produces_refl_I (self: t_I) : ()
+
+axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+
+function iter_Skip_I (self: t_Skip_I) : t_I
+
+predicate resolve_Item (_1: t_Item)
+
+predicate produces_Skip_I (self: t_Skip_I) (visited: Seq.seq t_Item) (o: t_Skip_I) =
+  visited = (Seq.empty: Seq.seq t_Item) /\ self = o
+  \/ UInt64.t'int (n_Skip_I o) = 0
+  /\ gt_log_Int (Seq.length visited) 0
+  /\ (exists s: Seq.seq t_Item. Seq.length s = UInt64.t'int (n_Skip_I self)
+    /\ produces_I (iter_Skip_I self) (Seq.(++) s visited) (iter_Skip_I o)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length s -> resolve_Item (Seq.get s i)))
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_Skip_I, ab: Seq.seq t_Item, b: t_Skip_I, bc: Seq.seq t_Item, c: t_Skip_I. produces_Skip_I a ab b
+    -> produces_Skip_I b bc c
+    -> produces_Skip_I a ab b
+    /\ produces_Skip_I b bc c
+    /\ (forall result: (). produces_Skip_I a (Seq.(++) ab bc) c -> produces_Skip_I a (Seq.(++) ab bc) c)

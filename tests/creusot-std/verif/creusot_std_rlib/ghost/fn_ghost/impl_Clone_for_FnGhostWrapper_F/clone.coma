@@ -1,0 +1,65 @@
+(* <ghost::fn_ghost::FnGhostWrapper<F> as std::clone::Clone> *)
+
+use creusot.prelude.Any
+
+type t_F
+
+type t_FnGhostWrapper_F = { f0: t_F }
+
+predicate inv_F (_1: t_F)
+
+predicate invariant_ref_F [@inline:trivial] (self: t_F) = inv_F self
+
+meta "rewrite_def" predicate invariant_ref_F
+
+predicate inv_ref_F [@inline:trivial] (_1: t_F) = invariant_ref_F _1
+
+meta "rewrite_def" predicate inv_ref_F
+
+predicate precondition_clone (self: ()) (args: t_F)
+
+axiom precondition_fndef: forall args: t_F [precondition_clone () args]. (let self_ = args in inv_ref_F self_)
+    -> precondition_clone () args
+
+predicate postcondition_clone (self: ()) (args: t_F) (result: t_F)
+
+axiom postcondition_fndef: forall args: t_F, res: t_F [postcondition_clone () args res]. postcondition_clone () args res
+    -> (let self_ = args in inv_F res)
+
+predicate postcondition_once_clone (self: ()) (args: t_F) (result: t_F) = postcondition_clone self args result
+
+meta "rewrite_def" predicate postcondition_once_clone
+
+let clone_F (self_: t_F) (return (x: t_F)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+  any
+  [ return (result: t_F) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+    (! return {result}) ]
+
+predicate inv_FnGhostWrapper_F (_1: t_FnGhostWrapper_F)
+
+axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
+
+predicate invariant_ref_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) = inv_FnGhostWrapper_F self
+
+meta "rewrite_def" predicate invariant_ref_FnGhostWrapper_F
+
+predicate inv_ref_FnGhostWrapper_F [@inline:trivial] (_1: t_FnGhostWrapper_F) = invariant_ref_FnGhostWrapper_F _1
+
+meta "rewrite_def" predicate inv_ref_FnGhostWrapper_F
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let clone_FnGhostWrapper_F (self: t_FnGhostWrapper_F) (return (x: t_FnGhostWrapper_F)) =
+{[@stop_split] [@expl:clone 'self' type invariant] inv_ref_FnGhostWrapper_F self}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = clone_F {self.f0} (fun (_x: t_F) -> [ &_4 <- _x ] s1)
+    | s1 = [ &_ret <- { f0 = _4 } ] s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: t_FnGhostWrapper_F = Any.any_l () | & self: t_FnGhostWrapper_F = self | & _4: t_F = Any.any_l () ])
+  [ return (result: t_FnGhostWrapper_F) ->
+  {[@stop_split] [@expl:clone_FnGhostWrapper_F ensures] ([@stop_split] [@expl:clone result type invariant] inv_FnGhostWrapper_F result)
+    /\ ([@stop_split] [@expl:clone ensures] postcondition_clone () self.f0 result.f0)}
+    (! return {result}) ]

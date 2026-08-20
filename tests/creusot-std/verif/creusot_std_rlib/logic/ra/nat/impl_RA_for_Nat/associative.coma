@@ -1,0 +1,56 @@
+(* <logic::int::Nat as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+type t_Nat
+
+type t_Option_Nat = None | Some t_Nat
+
+function and_then_Option_Nat (self: t_Option_Nat) (f: Map.map t_Nat t_Option_Nat) : t_Option_Nat = match self with
+    | None -> None
+    | Some x -> Map.get f x
+    end
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function to_int (self: t_Nat) : int
+
+axiom to_int_spec: forall self: t_Nat [to_int self]. ge_log_Int (to_int self) 0
+
+function view_Nat (self: t_Nat) : int = to_int self
+
+function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+
+axiom add_Nat_spec: forall self: t_Nat, other: t_Nat [add_Nat self other]. view_Nat (add_Nat self other)
+    = view_Nat self + view_Nat other
+
+function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+
+meta "rewrite_def" function op_Nat
+
+predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+
+axiom ext_eq_spec: forall self: t_Nat, other: t_Nat [self = other]. ext_eq self other = (self = other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_Nat
+
+constant b : t_Nat
+
+constant c : t_Nat
+
+function associative_Nat (a: t_Nat) (b: t_Nat) (c: t_Nat) : ()
+
+goal vc_associative_Nat:
+  [@stop_split] [@expl:associative ensures] and_then_Option_Nat (op_Nat a b) (fun (ab: t_Nat) -> op_Nat ab c)
+  = and_then_Option_Nat (op_Nat b c) (fun (bc: t_Nat) -> op_Nat a bc)

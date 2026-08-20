@@ -1,0 +1,35 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt128
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: UInt128.t = (0: UInt128.t)
+
+constant const_MAX: UInt128.t = (340282366920938463463374607431768211455: UInt128.t)
+
+let sub_u128 (self_: UInt128.t) (rhs: UInt128.t) (return (x: UInt128.t)) =
+{[@stop_split] [@expl:sub requires] UInt128.t'int const_MIN <= UInt128.t'int self_ - UInt128.t'int rhs
+  /\ UInt128.t'int self_ - UInt128.t'int rhs <= UInt128.t'int const_MAX}
+  any
+  [ return (result: UInt128.t) -> {[@stop_split] [@expl:sub ensures] UInt128.t'int result
+    = UInt128.t'int self_ - UInt128.t'int rhs}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Sub__ref_u128_u128_sub_body (self_: UInt128.t) (rhs: UInt128.t) (return (x: UInt128.t)) =
+{[@stop_split] [@expl:extern_spec_Sub__ref_u128_u128_sub_body requires] UInt128.t'int const_MIN
+    <= UInt128.t'int self_ - UInt128.t'int rhs
+  /\ UInt128.t'int self_ - UInt128.t'int rhs <= UInt128.t'int const_MAX}
+  (! bb0
+  [ bb0 = s0 [ s0 = sub_u128 {self_} {rhs} (fun (_x: UInt128.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: UInt128.t = Any.any_l () | & self_: UInt128.t = self_ | & rhs: UInt128.t = rhs ])
+  [ return (result: UInt128.t) ->
+  {[@stop_split] [@expl:extern_spec_Sub__ref_u128_u128_sub_body ensures] UInt128.t'int result
+    = UInt128.t'int self_ - UInt128.t'int rhs}
+    (! return {result}) ]

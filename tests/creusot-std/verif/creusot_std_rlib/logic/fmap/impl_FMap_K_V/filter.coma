@@ -1,0 +1,83 @@
+(* logic::fmap::FMap<K, V> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_FMap_K_V
+
+type t_K
+
+type t_V
+
+type tup2_K_V = { f0: t_K; f1: t_V }
+
+type t_Option_V = None | Some t_V
+
+function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+
+function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+
+meta "rewrite_def" function get_K
+
+predicate index_Mapping_tup2_K_V_bool [@inline:trivial] (self: Map.map tup2_K_V bool) (a: tup2_K_V) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_tup2_K_V_bool
+
+function index_Mapping_tup2_K_V_Option_V [@inline:trivial] (self: Map.map tup2_K_V t_Option_V) (a: tup2_K_V) : t_Option_V
+ = Map.get self a
+
+meta "rewrite_def" function index_Mapping_tup2_K_V_Option_V
+
+function filter_map_K (self: t_FMap_K_V) (f: Map.map tup2_K_V t_Option_V) : t_FMap_K_V
+
+axiom filter_map_K_spec:
+  forall self: t_FMap_K_V, f: Map.map tup2_K_V t_Option_V [filter_map_K self f]. forall k: t_K [get_K (filter_map_K self f) k]. get_K (filter_map_K self f) k
+      = match get_K self k with
+        | None -> None
+        | Some v -> index_Mapping_tup2_K_V_Option_V f { f0 = k; f1 = v }
+        end
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_FMap_K_V
+
+constant p : Map.map tup2_K_V bool
+
+function filter_K (self: t_FMap_K_V) (p: Map.map tup2_K_V bool) : t_FMap_K_V
+
+goal vc_filter_K: (forall __0: tup2_K_V. let {f0 = k; f1 = v} = __0 in true)
+  /\ (([@stop_split] [@expl:filter_map ensures] forall k: t_K [get_K (filter_map_K self (fun (__0: tup2_K_V) -> let {f0 = k'0; f1 = v} = __0 in if index_Mapping_tup2_K_V_bool p { f0 = k'0;
+                                                                                                                                                                                   f1 = v } then
+        Some v
+      else
+        None
+      )) k]. get_K (filter_map_K self (fun (__0: tup2_K_V) -> let {f0 = k'0; f1 = v} = __0 in if index_Mapping_tup2_K_V_bool p { f0 = k'0;
+                                                                                                                                 f1 = v } then
+          Some v
+        else
+          None
+        )) k
+      = match get_K self k with
+        | None -> None
+        | Some v -> index_Mapping_tup2_K_V_Option_V (fun (__0: tup2_K_V) -> let {f0 = k'0; f1 = v'0} = __0 in if index_Mapping_tup2_K_V_bool p { f0 = k'0;
+                                                                                                                                                 f1 = v'0 } then
+          Some v'0
+        else
+          None
+        ) { f0 = k; f1 = v }
+        end)
+  -> (let result = filter_map_K self (fun (__0: tup2_K_V) -> let {f0 = k; f1 = v} = __0 in if index_Mapping_tup2_K_V_bool p { f0 = k;
+                                                                                                                              f1 = v } then
+    Some v
+  else
+    None
+  ) in [@stop_split] [@expl:filter ensures] forall k: t_K [get_K result k]. get_K result k
+    = match get_K self k with
+      | None -> None
+      | Some v -> if index_Mapping_tup2_K_V_bool p { f0 = k; f1 = v } then Some v else None
+      end))

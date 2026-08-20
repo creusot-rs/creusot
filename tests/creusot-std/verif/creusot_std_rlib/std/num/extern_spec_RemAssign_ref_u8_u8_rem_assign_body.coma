@@ -1,0 +1,48 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.int.UInt8
+use int.ComputerDivision
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: UInt8.t = (0: UInt8.t)
+
+let rem_assign_u8 (self_: MutBorrow.t UInt8.t) (rhs: UInt8.t) (return (x: ())) =
+{[@stop_split] [@expl:rem_assign_u8 requires] ([@stop_split] [@expl:rem_assign requires #0] UInt8.t'int rhs <> 0)
+  /\ ([@stop_split] [@expl:rem_assign requires #1] not (self_.current = const_MIN /\ UInt8.t'int rhs = - 1))}
+  any
+  [ return (result: ()) -> {[@stop_split] [@expl:rem_assign ensures] UInt8.t'int self_.final
+    = ComputerDivision.mod (UInt8.t'int self_.current) (UInt8.t'int rhs)}
+    (! return {result}) ]
+
+predicate resolve_refmut_u8 [@inline:trivial] (_1: MutBorrow.t UInt8.t) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_u8
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_RemAssign__ref_u8_u8_rem_assign_body (self_: MutBorrow.t UInt8.t) (rhs: UInt8.t) (return (x: ())) =
+{[@stop_split] [@expl:extern_spec_RemAssign__ref_u8_u8_rem_assign_body requires] ([@stop_split] [@expl:extern_spec_RemAssign__ref_u8_u8_rem_assign_body requires #0] UInt8.t'int rhs
+    <> 0)
+  /\ ([@stop_split] [@expl:extern_spec_RemAssign__ref_u8_u8_rem_assign_body requires #1] not (self_.current = const_MIN
+  /\ UInt8.t'int rhs = - 1))}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = MutBorrow.borrow_final <UInt8.t> {self_.current} {MutBorrow.get_id self_}
+        (fun (_bor: MutBorrow.t UInt8.t) -> [ &_11 <- _bor ] [ &self_ <- { self_ with current = _bor.final } ] s1)
+    | s1 = rem_assign_u8 {_11} {rhs} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+    | s2 = -{resolve_refmut_u8 self_}- s3
+    | s3 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l ()
+  | & self_: MutBorrow.t UInt8.t = self_
+  | & rhs: UInt8.t = rhs
+  | & _11: MutBorrow.t UInt8.t = Any.any_l () ])
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:extern_spec_RemAssign__ref_u8_u8_rem_assign_body ensures] UInt8.t'int self_.final
+    = ComputerDivision.mod (UInt8.t'int self_.current) (UInt8.t'int rhs)}
+    (! return {result}) ]

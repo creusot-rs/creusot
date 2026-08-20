@@ -1,0 +1,52 @@
+(* <(T1, T2) as logic::ra::update::Update<(R1, R2)>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T1
+
+type t_T2
+
+type tup2_T1_T2 = { f0: t_T1; f1: t_T2 }
+
+type t_R1
+
+type t_R2
+
+type tup2_R1_R2 = { f0'0: t_R1; f1'0: t_R2 }
+
+type t_Choice
+
+type t_Choice'0
+
+type tup2_Choice_Choice = { f0'1: t_Choice; f1'1: t_Choice'0 }
+
+predicate premise_T1 (self: t_T1) (from: t_R1)
+
+predicate premise_T2 (self: t_T2) (from: t_R2)
+
+predicate premise_tup2_T1_T2 [@inline:trivial] (self: tup2_T1_T2) (from: tup2_R1_R2) =
+  premise_T1 self.f0 from.f0'0 /\ premise_T2 self.f1 from.f1'0
+
+meta "rewrite_def" predicate premise_tup2_T1_T2
+
+function update_T1 (self: t_T1) (from: t_R1) (ch: t_Choice) : t_R1
+
+function update_T2 (self: t_T2) (from: t_R2) (ch: t_Choice'0) : t_R2
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : tup2_T1_T2
+
+constant from : tup2_R1_R2
+
+constant ch : tup2_Choice_Choice
+
+function update_tup2_T1_T2 (self: tup2_T1_T2) (from: tup2_R1_R2) (ch: tup2_Choice_Choice) : tup2_R1_R2
+
+goal vc_update_tup2_T1_T2: premise_tup2_T1_T2 self from
+  -> ([@stop_split] [@expl:update requires] premise_T1 self.f0 from.f0'0)
+  /\ ([@stop_split] [@expl:update requires] premise_T2 self.f1 from.f1'0)

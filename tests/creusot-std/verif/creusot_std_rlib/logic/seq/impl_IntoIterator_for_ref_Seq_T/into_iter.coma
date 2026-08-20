@@ -1,0 +1,88 @@
+(* <&'a logic::seq::Seq<T> as std::iter::IntoIterator> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.prelude.Any
+use int.Int
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+
+meta "rewrite_def" predicate invariant_ref_Seq_T
+
+predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+
+meta "rewrite_def" predicate inv_ref_Seq_T
+
+predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
+
+meta "rewrite_def" predicate invariant_ref_ref_T
+
+predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_ref_T
+
+predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_ref_T
+
+predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
+
+meta "rewrite_def" predicate inv_Seq_ref_T
+
+let as_refs_T (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
+{[@stop_split] [@expl:as_refs 'self' type invariant] inv_ref_Seq_T self}
+  any
+  [ return (result: Seq.seq t_T) ->
+  {[@stop_split] [@expl:as_refs_T ensures] ([@stop_split] [@expl:as_refs result type invariant] inv_Seq_ref_T result)
+    /\ ([@stop_split] [@expl:as_refs ensures] self = result)}
+    (! return {result}) ]
+
+type t_Iter_ref_T = { f0: Seq.seq t_T }
+
+predicate inv_Iter_ref_T (_1: t_Iter_ref_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Iter_ref_T [inv_Iter_ref_T x]. inv_Iter_ref_T x = inv_Seq_ref_T x.f0
+
+function view_Iter_ref_T (self: t_Iter_ref_T) : Seq.seq t_T = self.f0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let into_iter_ref_Seq_T (self: Seq.seq t_T) (return (x: t_Iter_ref_T)) =
+{[@stop_split] [@expl:into_iter 'self' type invariant] inv_ref_Seq_T self}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = as_refs_T {self} (fun (_x: Seq.seq t_T) -> [ &_4 <- _x ] s1)
+    | s1 = [ &_ret <- { f0 = _4 } ] s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: t_Iter_ref_T = Any.any_l () | & self: Seq.seq t_T = self | & _4: Seq.seq t_T = Any.any_l () ])
+  [ return (result: t_Iter_ref_T) ->
+  {[@stop_split] [@expl:into_iter_ref_Seq_T ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_ref_T result)
+    /\ ([@stop_split] [@expl:into_iter ensures] self = view_Iter_ref_T result)}
+    (! return {result}) ]

@@ -1,0 +1,125 @@
+(* <std::ops::RangeInclusive<Idx> as std::iter::DoubleEndedIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use seq.Seq
+use creusot.prelude.MutBorrow
+use int.Int
+
+type t_RangeInclusive_Idx
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+type t_Idx
+
+function deep_model_Idx (self: t_Idx) : int
+
+function start_log_RangeInclusive_Idx (self: t_RangeInclusive_Idx) : t_Idx
+
+function end_log_RangeInclusive_Idx (self: t_RangeInclusive_Idx) : t_Idx
+
+predicate is_empty_log_RangeInclusive_Idx (self: t_RangeInclusive_Idx)
+
+axiom is_empty_log_RangeInclusive_Idx_spec:
+  forall self: t_RangeInclusive_Idx [is_empty_log_RangeInclusive_Idx self]. not is_empty_log_RangeInclusive_Idx self
+    -> deep_model_Idx (start_log_RangeInclusive_Idx self) <= deep_model_Idx (end_log_RangeInclusive_Idx self)
+
+function range_inclusive_len_Idx (r: t_RangeInclusive_Idx) : int = if is_empty_log_RangeInclusive_Idx r then
+    0
+  else
+    deep_model_Idx (end_log_RangeInclusive_Idx r) - deep_model_Idx (start_log_RangeInclusive_Idx r) + 1
+
+
+axiom range_inclusive_len_Idx_spec:
+  forall r: t_RangeInclusive_Idx [range_inclusive_len_Idx r]. is_empty_log_RangeInclusive_Idx r
+    = (range_inclusive_len_Idx r = 0)
+
+constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate postcondition_size_hint (self: ()) (args: t_RangeInclusive_Idx) (result: tup2_usize_Option_usize) =
+  let self_ = args in (let s = range_inclusive_len_Idx self_ in s <= UInt64.t'int const_MAX
+    -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+  /\ (gt_log_Int (range_inclusive_len_Idx self_) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })
+
+meta "rewrite_def" predicate postcondition_size_hint
+
+predicate inv_RangeInclusive_Idx (_1: t_RangeInclusive_Idx)
+
+predicate invariant_ref_RangeInclusive_Idx [@inline:trivial] (self: t_RangeInclusive_Idx) = inv_RangeInclusive_Idx self
+
+meta "rewrite_def" predicate invariant_ref_RangeInclusive_Idx
+
+predicate inv_ref_RangeInclusive_Idx [@inline:trivial] (_1: t_RangeInclusive_Idx) = invariant_ref_RangeInclusive_Idx _1
+
+meta "rewrite_def" predicate inv_ref_RangeInclusive_Idx
+
+let size_hint_RangeInclusive_Idx (self_: t_RangeInclusive_Idx) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_RangeInclusive_Idx self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint_RangeInclusive_Idx ensures] ([@stop_split] [@expl:size_hint ensures #0] let s = range_inclusive_len_Idx self_ in s
+        <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ ([@stop_split] [@expl:size_hint ensures #1] gt_log_Int (range_inclusive_len_Idx self_) (UInt64.t'int const_MAX)
+    -> result = { f0 = const_MAX; f1 = None })}
+    (! return {result}) ]
+
+predicate produces_back_RangeInclusive_Idx (self: t_RangeInclusive_Idx) (visited: Seq.seq t_Idx) (o: t_RangeInclusive_Idx) =
+  Seq.length visited = range_inclusive_len_Idx self - range_inclusive_len_Idx o
+  /\ (is_empty_log_RangeInclusive_Idx self -> is_empty_log_RangeInclusive_Idx o)
+  /\ (is_empty_log_RangeInclusive_Idx o \/ start_log_RangeInclusive_Idx self = start_log_RangeInclusive_Idx o)
+  /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    -> deep_model_Idx (Seq.get visited i) = deep_model_Idx (end_log_RangeInclusive_Idx self) - i)
+
+predicate produces_RangeInclusive_Idx (self: t_RangeInclusive_Idx) (visited: Seq.seq t_Idx) (o: t_RangeInclusive_Idx) =
+  Seq.length visited = range_inclusive_len_Idx self - range_inclusive_len_Idx o
+  /\ (is_empty_log_RangeInclusive_Idx self -> is_empty_log_RangeInclusive_Idx o)
+  /\ (is_empty_log_RangeInclusive_Idx o \/ end_log_RangeInclusive_Idx self = end_log_RangeInclusive_Idx o)
+  /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    -> deep_model_Idx (Seq.get visited i) = deep_model_Idx (start_log_RangeInclusive_Idx self) + i)
+
+function produces_trans_RangeInclusive_Idx (a: t_RangeInclusive_Idx) (ab: Seq.seq t_Idx) (b: t_RangeInclusive_Idx) (bc: Seq.seq t_Idx) (c: t_RangeInclusive_Idx) : ()
+ = ()
+
+axiom produces_trans_RangeInclusive_Idx_spec:
+  forall a: t_RangeInclusive_Idx, ab: Seq.seq t_Idx, b: t_RangeInclusive_Idx, bc: Seq.seq t_Idx, c: t_RangeInclusive_Idx. produces_RangeInclusive_Idx a ab b
+    -> produces_RangeInclusive_Idx b bc c -> produces_RangeInclusive_Idx a (Seq.(++) ab bc) c
+
+function produces_refl_RangeInclusive_Idx (self: t_RangeInclusive_Idx) : () = ()
+
+axiom produces_refl_RangeInclusive_Idx_spec:
+  forall self: t_RangeInclusive_Idx. produces_RangeInclusive_Idx self (Seq.empty: Seq.seq t_Idx) self
+
+predicate completed_RangeInclusive_Idx (self: MutBorrow.t t_RangeInclusive_Idx) =
+  is_empty_log_RangeInclusive_Idx self.current /\ is_empty_log_RangeInclusive_Idx self.final
+
+predicate completed_back_RangeInclusive_Idx (self: MutBorrow.t t_RangeInclusive_Idx) = completed_RangeInclusive_Idx self
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_RangeInclusive_Idx, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> postcondition_size_hint () self r
+    /\ (forall result: (). (forall s: Seq.seq t_Idx, i: MutBorrow.t t_RangeInclusive_Idx. produces_back_RangeInclusive_Idx self s i.current
+              /\ completed_back_RangeInclusive_Idx i -> UInt64.t'int r.f0 <= Seq.length s)
+        /\ match r.f1 with
+          | Some r'0 -> forall s: Seq.seq t_Idx, i: t_RangeInclusive_Idx. produces_back_RangeInclusive_Idx self s i
+            -> Seq.length s <= UInt64.t'int r'0
+          | None -> true
+          end
+      -> (forall s: Seq.seq t_Idx, i: MutBorrow.t t_RangeInclusive_Idx. produces_back_RangeInclusive_Idx self s i.current
+            /\ completed_back_RangeInclusive_Idx i -> UInt64.t'int r.f0 <= Seq.length s)
+      /\ match r.f1 with
+        | Some r'0 -> forall s: Seq.seq t_Idx, i: t_RangeInclusive_Idx. produces_back_RangeInclusive_Idx self s i
+          -> Seq.length s <= UInt64.t'int r'0
+        | None -> true
+        end)

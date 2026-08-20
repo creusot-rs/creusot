@@ -1,0 +1,69 @@
+(* <std::ptr::PtrLive<'_, T> as std::clone::Clone> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use creusot.int.Int64
+use creusot.prelude.Ptr
+use creusot.prelude.Opaque
+use int.ComputerDivision
+use int.Int
+
+type t_PtrLive_T
+
+function len_T (self: t_PtrLive_T) : UInt64.t
+
+constant size_of_T : int
+
+axiom size_of_T_spec: 0 <= size_of_T
+
+constant const_MAX: Int64.t = (9223372036854775807: Int64.t)
+
+function ward_T (self: t_PtrLive_T) : Opaque.ptr
+
+constant const_MAX'0: UInt64.t = (18446744073709551615: UInt64.t)
+
+predicate is_aligned_to_ptr_T (self: Opaque.ptr) (align: UInt64.t) =
+  UInt64.bw_and (Ptr.addr_logic_u64 self) (UInt64.sub align (1: UInt64.t)) = (0: UInt64.t)
+
+constant align_of_T : UInt64.t
+
+axiom align_of_T_spec: (0: UInt64.t) <> align_of_T
+  /\ UInt64.bw_and align_of_T (UInt64.sub align_of_T (1: UInt64.t)) = (0: UInt64.t)
+
+axiom align_of_T_spec'0: ComputerDivision.mod size_of_T (UInt64.t'int align_of_T) = 0
+
+predicate is_aligned_T [@inline:trivial] (ptr: Opaque.ptr) = is_aligned_to_ptr_T ptr align_of_T
+
+meta "rewrite_def" predicate is_aligned_T
+
+predicate is_aligned_ptr_T [@inline:trivial] (self: Opaque.ptr) = is_aligned_T self
+
+meta "rewrite_def" predicate is_aligned_ptr_T
+
+predicate invariant_PtrLive_T (self: t_PtrLive_T) =
+  UInt64.t'int (len_T self) * size_of_T <= Int64.to_int const_MAX
+  /\ UInt64.t'int (Ptr.addr_logic_u64 (ward_T self)) + UInt64.t'int (len_T self) * size_of_T <= UInt64.t'int const_MAX'0
+  /\ is_aligned_ptr_T (ward_T self)
+
+predicate inv_PtrLive_T (_1: t_PtrLive_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_PtrLive_T [inv_PtrLive_T x]. inv_PtrLive_T x = invariant_PtrLive_T x
+
+predicate invariant_ref_PtrLive_T [@inline:trivial] (self: t_PtrLive_T) = inv_PtrLive_T self
+
+meta "rewrite_def" predicate invariant_ref_PtrLive_T
+
+predicate inv_ref_PtrLive_T [@inline:trivial] (_1: t_PtrLive_T) = invariant_ref_PtrLive_T _1
+
+meta "rewrite_def" predicate inv_ref_PtrLive_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self_: t_PtrLive_T. inv_ref_PtrLive_T self_
+    -> inv_ref_PtrLive_T self_
+    /\ (forall result: t_PtrLive_T. inv_PtrLive_T result /\ result = self_ -> inv_PtrLive_T result)

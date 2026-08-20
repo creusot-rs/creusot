@@ -1,0 +1,35 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt8
+use int.ComputerDivision
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: UInt8.t = (0: UInt8.t)
+
+let div_ref_u8 (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
+{[@stop_split] [@expl:div_ref_u8 requires] ([@stop_split] [@expl:div requires #0] UInt8.t'int rhs <> 0)
+  /\ ([@stop_split] [@expl:div requires #1] not (UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1))}
+  any
+  [ return (result: UInt8.t) -> {[@stop_split] [@expl:div ensures] UInt8.t'int result
+    = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Div_u8__ref_u8_div_body (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
+{[@stop_split] [@expl:extern_spec_Div_u8__ref_u8_div_body requires] ([@stop_split] [@expl:extern_spec_Div_u8__ref_u8_div_body requires #0] UInt8.t'int rhs
+    <> 0)
+  /\ ([@stop_split] [@expl:extern_spec_Div_u8__ref_u8_div_body requires #1] not (UInt8.t'int self_
+    = UInt8.t'int const_MIN
+  /\ UInt8.t'int rhs = - 1))}
+  (! bb0
+  [ bb0 = s0 [ s0 = div_ref_u8 {self_} {rhs} (fun (_x: UInt8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: UInt8.t = Any.any_l () | & self_: UInt8.t = self_ | & rhs: UInt8.t = rhs ])
+  [ return (result: UInt8.t) -> {[@stop_split] [@expl:extern_spec_Div_u8__ref_u8_div_body ensures] UInt8.t'int result
+    = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs)}
+    (! return {result}) ]

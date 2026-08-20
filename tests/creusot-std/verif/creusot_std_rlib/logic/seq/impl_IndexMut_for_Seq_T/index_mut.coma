@@ -1,0 +1,145 @@
+(* <logic::seq::Seq<T> as std::ops::IndexMut<logic::int::Int>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use seq.Seq
+use creusot.prelude.Any
+use int.Int
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
+
+predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+  inv_Seq_T self.current /\ inv_Seq_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_Seq_T
+
+predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
+
+meta "rewrite_def" predicate inv_refmut_Seq_T
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Option_refmut_T [inv_Option_refmut_T x]. inv_Option_refmut_T x
+    = match x with
+      | None -> true
+      | Some f0 -> inv_refmut_T f0
+      end
+
+type t_Option_T = None'0 | Some'0 t_T
+
+function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
+    Some'0 (Seq.get self ix)
+  else
+    None'0
+
+
+let get_mut_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t_Option_refmut_T)) =
+{[@stop_split] [@expl:get_mut_ghost 'self' type invariant] inv_refmut_Seq_T self}
+  any
+  [ return (result: t_Option_refmut_T) ->
+  {[@stop_split] [@expl:get_mut_ghost_T ensures] ([@stop_split] [@expl:get_mut_ghost result type invariant] inv_Option_refmut_T result)
+    /\ ([@stop_split] [@expl:get_mut_ghost ensures #0] match result with
+        | None -> get_T self.current index = None'0 /\ self.current = self.final
+        | Some r -> get_T self.current index = Some'0 (r.current) /\ r.final = Seq.get self.final index
+        end)
+    /\ ([@stop_split] [@expl:get_mut_ghost ensures #1] forall i: int. i <> index
+        -> get_T self.current i = get_T self.final i)
+    /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] Seq.length self.current = Seq.length self.final)}
+    (! return {result}) ]
+
+let unwrap_refmut_T (self_: t_Option_refmut_T) (return (x: MutBorrow.t t_T)) =
+{[@stop_split] [@expl:unwrap_refmut_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_refmut_T self_)
+  /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
+  any
+  [ return (result: MutBorrow.t t_T) ->
+  {[@stop_split] [@expl:unwrap_refmut_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_refmut_T result)
+    /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
+    (! return {result}) ]
+
+predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_T
+
+predicate resolve_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Seq_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let index_mut_Seq_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: MutBorrow.t t_T)) =
+{[@stop_split] [@expl:index_mut_Seq_T requires] ([@stop_split] [@expl:index_mut 'self' type invariant] inv_refmut_Seq_T self)
+  /\ ([@stop_split] [@expl:index_mut requires] 0 <= index /\ index < Seq.length self.current)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = MutBorrow.borrow_final <Seq.seq t_T> {self.current} {MutBorrow.get_id self}
+        (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+          [ &_17 <- _bor ] -{inv_Seq_T _bor.final}-
+          [ &self <- { self with current = _bor.final } ] s1)
+      [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
+    | s1 = get_mut_ghost_T {_17} {index} (fun (_x: t_Option_refmut_T) -> [ &_16 <- _x ] s2)
+    | s2 = unwrap_refmut_T {_16} (fun (_x: MutBorrow.t t_T) -> [ &_15 <- _x ] s3)
+    | s3 = MutBorrow.borrow_final <t_T> {_15.current} {MutBorrow.get_id _15}
+        (fun (_bor: MutBorrow.t t_T) ->
+          [ &_3 <- _bor ] -{inv_T _bor.final}-
+          [ &_15 <- { _15 with current = _bor.final } ] s4)
+      [ _ck -> (! {[@expl:type invariant] inv_T _15.current} any) ]
+    | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _15} any) ]
+    | s5 = -{resolve_refmut_T _15}- s6
+    | s6 = MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
+        (fun (_bor: MutBorrow.t t_T) ->
+          [ &_ret <- _bor ] -{inv_T _bor.final}-
+          [ &_3 <- { _3 with current = _bor.final } ] s7) [ _ck -> (! {[@expl:type invariant] inv_T _3.current} any) ]
+    | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _3} any) ]
+    | s8 = -{resolve_refmut_T _3}- s9
+    | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
+    | s10 = -{resolve_refmut_Seq_T self}- s11
+    | s11 = return {_ret} ] ]
+  [ & _ret: MutBorrow.t t_T = Any.any_l ()
+  | & self: MutBorrow.t (Seq.seq t_T) = self
+  | & index: int = index
+  | & _3: MutBorrow.t t_T = Any.any_l ()
+  | & _15: MutBorrow.t t_T = Any.any_l ()
+  | & _16: t_Option_refmut_T = Any.any_l ()
+  | & _17: MutBorrow.t (Seq.seq t_T) = Any.any_l () ])
+  [ return (result: MutBorrow.t t_T) ->
+  {[@stop_split] [@expl:index_mut_Seq_T ensures] ([@stop_split] [@expl:index_mut result type invariant] inv_refmut_T result)
+    /\ ([@stop_split] [@expl:index_mut ensures #0] Seq.length self.current = Seq.length self.final)
+    /\ ([@stop_split] [@expl:index_mut ensures #1] result.current = Seq.get self.current index
+      /\ result.final = Seq.get self.final index)
+    /\ ([@stop_split] [@expl:index_mut ensures #2] forall i: int. i <> index
+      -> get_T self.current i = get_T self.final i)}
+    (! return {result}) ]

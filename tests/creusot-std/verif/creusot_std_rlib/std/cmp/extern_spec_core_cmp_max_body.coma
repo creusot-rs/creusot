@@ -1,0 +1,86 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+type tup2_T_T = { f0: t_T; f1: t_T }
+
+predicate inv_T (_1: t_T)
+
+predicate precondition_max (self: ()) (args: tup2_T_T)
+
+axiom precondition_fndef:
+  forall args: tup2_T_T [precondition_max () args]. (let {f0 = self_; f1 = o} = args in inv_T self_ /\ inv_T o)
+    -> precondition_max () args
+
+type t_DeepModelTy
+
+predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
+
+predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
+
+function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
+
+axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+    = (lt_log_DeepModelTy self other \/ self = other)
+
+function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
+
+axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+    -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
+
+function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
+
+axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
+
+predicate ge_log_DeepModelTy [@inline:trivial] (self: t_DeepModelTy) (other: t_DeepModelTy) =
+  le_log_DeepModelTy other self
+
+meta "rewrite_def" predicate ge_log_DeepModelTy
+
+function deep_model_T (self: t_T) : t_DeepModelTy
+
+predicate postcondition_max (self: ()) (args: tup2_T_T) (result: t_T)
+
+axiom postcondition_fndef:
+  forall args: tup2_T_T, res: t_T [postcondition_max () args res]. postcondition_max () args res
+    -> (let {f0 = self_; f1 = o} = args in inv_T res
+    /\ ge_log_DeepModelTy (deep_model_T res) (deep_model_T self_)
+    /\ ge_log_DeepModelTy (deep_model_T res) (deep_model_T o)
+    /\ (res = self_ \/ res = o)
+    /\ (le_log_DeepModelTy (deep_model_T self_) (deep_model_T o) -> res = o)
+    /\ (lt_log_DeepModelTy (deep_model_T o) (deep_model_T self_) -> res = self_))
+
+predicate postcondition_once_max (self: ()) (args: tup2_T_T) (result: t_T) = postcondition_max self args result
+
+meta "rewrite_def" predicate postcondition_once_max
+
+let max_T (self_: t_T) (o: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:max requires] precondition_max () { f0 = self_; f1 = o }}
+  any
+  [ return (result: t_T) -> {[@stop_split] [@expl:max ensures] postcondition_once_max () { f0 = self_; f1 = o } result}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_core_cmp_max_body_T (v1: t_T) (v2: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:extern_spec_core_cmp_max_body_T requires] ([@stop_split] [@expl:extern_spec_core_cmp_max_body 'v1' type invariant] inv_T v1)
+  /\ ([@stop_split] [@expl:extern_spec_core_cmp_max_body 'v2' type invariant] inv_T v2)}
+  (! bb0
+  [ bb0 = s0 [ s0 = max_T {v1} {v2} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: t_T = Any.any_l () | & v1: t_T = v1 | & v2: t_T = v2 ])
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:extern_spec_core_cmp_max_body_T ensures] ([@stop_split] [@expl:extern_spec_core_cmp_max_body result type invariant] inv_T result)
+    /\ ([@stop_split] [@expl:extern_spec_core_cmp_max_body ensures #0] ge_log_DeepModelTy (deep_model_T result) (deep_model_T v1))
+    /\ ([@stop_split] [@expl:extern_spec_core_cmp_max_body ensures #1] ge_log_DeepModelTy (deep_model_T result) (deep_model_T v2))
+    /\ ([@stop_split] [@expl:extern_spec_core_cmp_max_body ensures #2] result = v1 \/ result = v2)
+    /\ ([@stop_split] [@expl:extern_spec_core_cmp_max_body ensures #3] le_log_DeepModelTy (deep_model_T v1) (deep_model_T v2)
+      -> result = v2)
+    /\ ([@stop_split] [@expl:extern_spec_core_cmp_max_body ensures #4] lt_log_DeepModelTy (deep_model_T v2) (deep_model_T v1)
+    -> result = v1)}
+    (! return {result}) ]

@@ -1,0 +1,85 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+type t_RangeInclusive_T = { start: t_T; last: t_T }
+
+type t_RangeInclusive_T'0
+
+predicate inv_T (_1: t_T)
+
+predicate inv_RangeInclusive_T (_1: t_RangeInclusive_T'0)
+
+function start_log_RangeInclusive_T (self: t_RangeInclusive_T'0) : t_T
+
+function end_log_RangeInclusive_T (self: t_RangeInclusive_T'0) : t_T
+
+type t_DeepModelTy
+
+predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
+
+predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
+
+function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
+
+axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+    = (lt_log_DeepModelTy self other \/ self = other)
+
+function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
+
+axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+    -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
+
+function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
+
+axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
+
+function deep_model_T (self: t_T) : t_DeepModelTy
+
+predicate is_empty_log_RangeInclusive_T (self: t_RangeInclusive_T'0)
+
+axiom is_empty_log_RangeInclusive_T_spec:
+  forall self: t_RangeInclusive_T'0 [is_empty_log_RangeInclusive_T self]. not is_empty_log_RangeInclusive_T self
+    -> le_log_DeepModelTy (deep_model_T (start_log_RangeInclusive_T self)) (deep_model_T (end_log_RangeInclusive_T self))
+
+let new_T (start'0: t_T) (end': t_T) (return (x: t_RangeInclusive_T'0)) =
+{[@stop_split] [@expl:new_T requires] ([@stop_split] [@expl:new 'start' type invariant] inv_T start'0)
+  /\ ([@stop_split] [@expl:new 'end' type invariant] inv_T end')}
+  any
+  [ return (result: t_RangeInclusive_T'0) ->
+  {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_RangeInclusive_T result)
+    /\ ([@stop_split] [@expl:new ensures #0] start_log_RangeInclusive_T result = start'0)
+    /\ ([@stop_split] [@expl:new ensures #1] end_log_RangeInclusive_T result = end')
+    /\ ([@stop_split] [@expl:new ensures #2] le_log_DeepModelTy (deep_model_T start'0) (deep_model_T end')
+    -> not is_empty_log_RangeInclusive_T result)}
+    (! return {result}) ]
+
+predicate inv_RangeInclusive_T'0 (_1: t_RangeInclusive_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_RangeInclusive_T [inv_RangeInclusive_T'0 x]. inv_RangeInclusive_T'0 x
+    = (inv_T x.start /\ inv_T x.last)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body_T (value: t_RangeInclusive_T)
+  (return (x: t_RangeInclusive_T'0)) =
+{[@stop_split] [@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body 'value' type invariant] inv_RangeInclusive_T'0 value}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = new_T {value.start} {value.last} (fun (_x: t_RangeInclusive_T'0) -> [ &_ret <- _x ] s1)
+    | s1 = return {_ret} ] ] [ & _ret: t_RangeInclusive_T'0 = Any.any_l () | & value: t_RangeInclusive_T = value ])
+  [ return (result: t_RangeInclusive_T'0) ->
+  {[@stop_split] [@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body_T ensures] ([@stop_split] [@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body result type invariant] inv_RangeInclusive_T result)
+    /\ ([@stop_split] [@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body ensures #0] start_log_RangeInclusive_T result
+      = value.start)
+    /\ ([@stop_split] [@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body ensures #1] end_log_RangeInclusive_T result
+      = value.last)
+    /\ ([@stop_split] [@expl:extern_spec_T_From_RangeInclusive_T_legacy_RangeInclusive_T_from_body ensures #2] le_log_DeepModelTy (deep_model_T value.start) (deep_model_T value.last)
+    -> not is_empty_log_RangeInclusive_T result)}
+    (! return {result}) ]

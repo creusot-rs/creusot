@@ -1,0 +1,37 @@
+(* <std::ops::Range<Idx> as std::iter::DoubleEndedIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use int.Int
+
+type t_Idx
+
+type t_Range_Idx = { start: t_Idx; end': t_Idx }
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function deep_model_Idx (self: t_Idx) : int
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate produces_back_Range_Idx (self: t_Range_Idx) (visited: Seq.seq t_Idx) (o: t_Range_Idx) =
+  self.start = o.start
+  /\ ge_log_Int (deep_model_Idx self.end') (deep_model_Idx o.end')
+  /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_Int (deep_model_Idx o.end') (deep_model_Idx o.start))
+  /\ Seq.length visited = deep_model_Idx self.end' - deep_model_Idx o.end'
+  /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    -> deep_model_Idx (Seq.get visited i) = deep_model_Idx self.end' - i - 1)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Range_Idx. forall result: (). produces_back_Range_Idx self (Seq.empty: Seq.seq t_Idx) self
+      -> produces_back_Range_Idx self (Seq.empty: Seq.seq t_Idx) self

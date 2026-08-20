@@ -1,0 +1,57 @@
+(* <std::iter::Enumerate<I> as invariant::Invariant> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.int.UInt64
+use creusot.prelude.MutBorrow
+use int.Int
+
+type t_Enumerate_I
+
+type t_I
+
+predicate inv_I (_1: t_I)
+
+function iter_Enumerate_I (self: t_Enumerate_I) : t_I
+
+type t_Item
+
+predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+
+function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+
+axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+    -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+
+function produces_refl_I (self: t_I) : ()
+
+axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+
+function n_Enumerate_I (self: t_Enumerate_I) : UInt64.t
+
+constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+
+predicate completed_I (self: MutBorrow.t t_I)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Enumerate_I
+
+predicate invariant_Enumerate_I (self: t_Enumerate_I)
+
+goal vc_invariant_Enumerate_I: if inv_I (iter_Enumerate_I self) then
+    if forall s: Seq.seq t_Item, i: t_I [produces_I (iter_Enumerate_I self) s i]. produces_I (iter_Enumerate_I self) s i
+      -> UInt64.t'int (n_Enumerate_I self) + Seq.length s < UInt64.t'int const_MAX then
+      [@stop_split] [@expl:invariant ensures] (forall i: MutBorrow.t t_I. completed_I i
+          -> produces_I i.current (Seq.empty: Seq.seq t_Item) i.final) -> inv_I (iter_Enumerate_I self)
+    else
+      [@stop_split] [@expl:invariant ensures] false -> inv_I (iter_Enumerate_I self)
+  
+  else
+    [@stop_split] [@expl:invariant ensures] false -> inv_I (iter_Enumerate_I self)
+  

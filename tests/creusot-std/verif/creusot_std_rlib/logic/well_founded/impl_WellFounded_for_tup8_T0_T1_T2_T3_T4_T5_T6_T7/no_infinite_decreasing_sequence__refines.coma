@@ -1,0 +1,84 @@
+(* <(T0, T1, T2, T3, T4, T5, T6, T7) as logic::well_founded::WellFounded> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+type t_T0
+
+type t_T1
+
+type t_T2
+
+type t_T3
+
+type t_T4
+
+type t_T5
+
+type t_T6
+
+type t_T7
+
+type tup8_T0_T1_T2_T3_T4_T5_T6_T7 = { f0: t_T0; f1: t_T1; f2: t_T2; f3: t_T3; f4: t_T4; f5: t_T5; f6: t_T6; f7: t_T7 }
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate well_founded_relation_T0 (self: t_T0) (other: t_T0)
+
+predicate well_founded_relation_T1 (self: t_T1) (other: t_T1)
+
+predicate well_founded_relation_T2 (self: t_T2) (other: t_T2)
+
+predicate well_founded_relation_T3 (self: t_T3) (other: t_T3)
+
+predicate well_founded_relation_T4 (self: t_T4) (other: t_T4)
+
+predicate well_founded_relation_T5 (self: t_T5) (other: t_T5)
+
+predicate well_founded_relation_T6 (self: t_T6) (other: t_T6)
+
+predicate well_founded_relation_T7 (self: t_T7) (other: t_T7)
+
+predicate well_founded_relation_tup8_T0_T1_T2_T3_T4_T5_T6_T7 [@inline:trivial] (self: tup8_T0_T1_T2_T3_T4_T5_T6_T7) (other: tup8_T0_T1_T2_T3_T4_T5_T6_T7) =
+  well_founded_relation_T0 self.f0 other.f0
+  \/ self.f0 = other.f0 /\ well_founded_relation_T1 self.f1 other.f1
+  \/ self.f0 = other.f0 /\ self.f1 = other.f1 /\ well_founded_relation_T2 self.f2 other.f2
+  \/ self.f0 = other.f0 /\ self.f1 = other.f1 /\ self.f2 = other.f2 /\ well_founded_relation_T3 self.f3 other.f3
+  \/ self.f0 = other.f0
+    /\ self.f1 = other.f1 /\ self.f2 = other.f2 /\ self.f3 = other.f3 /\ well_founded_relation_T4 self.f4 other.f4
+  \/ self.f0 = other.f0
+    /\ self.f1 = other.f1
+    /\ self.f2 = other.f2 /\ self.f3 = other.f3 /\ self.f4 = other.f4 /\ well_founded_relation_T5 self.f5 other.f5
+  \/ self.f0 = other.f0
+    /\ self.f1 = other.f1
+    /\ self.f2 = other.f2
+    /\ self.f3 = other.f3 /\ self.f4 = other.f4 /\ self.f5 = other.f5 /\ well_founded_relation_T6 self.f6 other.f6
+  \/ self.f0 = other.f0
+  /\ self.f1 = other.f1
+  /\ self.f2 = other.f2
+  /\ self.f3 = other.f3
+  /\ self.f4 = other.f4 /\ self.f5 = other.f5 /\ self.f6 = other.f6 /\ well_founded_relation_T7 self.f7 other.f7
+
+meta "rewrite_def" predicate well_founded_relation_tup8_T0_T1_T2_T3_T4_T5_T6_T7
+
+function index_Mapping_Int_tup8_T0_T1_T2_T3_T4_T5_T6_T7 [@inline:trivial] (self: Map.map int tup8_T0_T1_T2_T3_T4_T5_T6_T7) (a: int) : tup8_T0_T1_T2_T3_T4_T5_T6_T7
+ = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_tup8_T0_T1_T2_T3_T4_T5_T6_T7
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall s: Map.map int tup8_T0_T1_T2_T3_T4_T5_T6_T7. forall result: int. ge_log_Int result 0
+        /\ not well_founded_relation_tup8_T0_T1_T2_T3_T4_T5_T6_T7 (index_Mapping_Int_tup8_T0_T1_T2_T3_T4_T5_T6_T7 s result) (index_Mapping_Int_tup8_T0_T1_T2_T3_T4_T5_T6_T7 s (result
+        + 1))
+      -> ge_log_Int result 0
+      /\ not well_founded_relation_tup8_T0_T1_T2_T3_T4_T5_T6_T7 (index_Mapping_Int_tup8_T0_T1_T2_T3_T4_T5_T6_T7 s result) (index_Mapping_Int_tup8_T0_T1_T2_T3_T4_T5_T6_T7 s (result
+      + 1))

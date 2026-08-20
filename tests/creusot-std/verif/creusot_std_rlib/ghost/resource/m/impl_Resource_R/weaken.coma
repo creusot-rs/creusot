@@ -1,0 +1,110 @@
+(* ghost::resource::m::Resource<R> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+
+type t_R
+
+type t_Option_R = None | Some t_R
+
+function op_R (self: t_R) (other: t_R) : t_Option_R
+
+predicate incl_R (self: t_R) (other: t_R)
+
+axiom incl_R_spec: forall self: t_R, other: t_R [incl_R self other]. incl_R self other
+    = (exists factor: t_R. op_R self factor = Some other)
+
+function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+
+axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+
+function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+
+axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+    -> op_R b c = Some bc -> op_R a bc = op_R ab c
+
+function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+
+axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+    -> op_R b c = Some bc -> op_R a bc = None
+
+function commutative_R (a: t_R) (b: t_R) : ()
+
+axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+
+function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+
+axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+
+function factor_R (self: t_R) (factor: t_R) : t_R
+
+axiom factor_R_spec: forall self: t_R, factor: t_R [factor_R self factor]. incl_R factor self
+    -> op_R factor (factor_R self factor) = Some self
+
+type t_Resource_R
+
+function val_R (self: t_Resource_R) : t_R
+
+function view_Resource_R [@inline:trivial] (self: t_Resource_R) : t_R = val_R self
+
+meta "rewrite_def" function view_Resource_R
+
+predicate eq_R (self: t_R) (other: t_R)
+
+axiom eq_R_spec: forall self: t_R, other: t_R [eq_R self other]. eq_R self other = (self = other)
+
+predicate incl_eq_R (self: t_R) (other: t_R) = eq_R self other \/ incl_R self other
+
+predicate incl_eq_op_R (a: t_R) (b: t_R) (x: t_R) =
+  match op_R a b with
+    | None -> false
+    | Some ab -> incl_eq_R ab x
+    end
+
+type t_Id
+
+function id_R (self: t_Resource_R) : t_Id
+
+let split_off_R (self: MutBorrow.t t_Resource_R) (r: t_R) (s: t_R) (return (x: t_Resource_R)) =
+{[@stop_split] [@expl:split_off requires] incl_eq_op_R r s (view_Resource_R self.current)}
+  any
+  [ return (result: t_Resource_R) ->
+  {[@stop_split] [@expl:split_off_R ensures] ([@stop_split] [@expl:split_off ensures #0] id_R self.final
+        = id_R self.current
+      /\ id_R result = id_R self.current)
+    /\ ([@stop_split] [@expl:split_off ensures #1] view_Resource_R self.final = s)
+    /\ ([@stop_split] [@expl:split_off ensures #2] view_Resource_R result = r)}
+    (! return {result}) ]
+
+predicate resolve_refmut_Resource_R [@inline:trivial] (_1: MutBorrow.t t_Resource_R) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Resource_R
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let weaken_R (self: MutBorrow.t t_Resource_R) (target: t_R) (return (x: ())) =
+{[@stop_split] [@expl:weaken requires] incl_R target (view_Resource_R self.current)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = [ &f <- factor_R (view_Resource_R self.current) target ] s1
+    | s1 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
+        (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_16 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
+    | s2 = split_off_R {_16} {f} {target} (fun (_x: t_Resource_R) -> [ &_15 <- _x ] s3)
+    | s3 = -{resolve_refmut_Resource_R self}- s4
+    | s4 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l ()
+  | & self: MutBorrow.t t_Resource_R = self
+  | & target: t_R = target
+  | & f: t_R = Any.any_l ()
+  | & _15: t_Resource_R = Any.any_l ()
+  | & _16: MutBorrow.t t_Resource_R = Any.any_l () ])
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:weaken_R ensures] ([@stop_split] [@expl:weaken ensures #0] id_R self.final = id_R self.current)
+    /\ ([@stop_split] [@expl:weaken ensures #1] view_Resource_R self.final = target)}
+    (! return {result}) ]

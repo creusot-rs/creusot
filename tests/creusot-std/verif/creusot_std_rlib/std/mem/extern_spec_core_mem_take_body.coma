@@ -1,0 +1,80 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+
+type t_T
+
+predicate precondition_default (self: ()) (args: ())
+
+axiom precondition_fndef: forall args: () [precondition_default () args]. (let () = args in true)
+    -> precondition_default () args
+
+predicate inv_T (_1: t_T)
+
+predicate postcondition_default (self: ()) (args: ()) (result: t_T)
+
+axiom postcondition_fndef:
+  forall args: (), res: t_T [postcondition_default () args res]. postcondition_default () args res
+    -> (let () = args in inv_T res)
+
+predicate postcondition_once_default (self: ()) (args: ()) (result: t_T) = postcondition_default self args result
+
+meta "rewrite_def" predicate postcondition_once_default
+
+let default_T (return (x: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
+  any
+  [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () () result}
+    (! return {result}) ]
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+let replace_T (dest: MutBorrow.t t_T) (src: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:replace_T requires] ([@stop_split] [@expl:replace 'dest' type invariant] inv_refmut_T dest)
+  /\ ([@stop_split] [@expl:replace 'src' type invariant] inv_T src)}
+  any
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:replace_T ensures] ([@stop_split] [@expl:replace result type invariant] inv_T result)
+    /\ ([@stop_split] [@expl:replace ensures #0] dest.final = src)
+    /\ ([@stop_split] [@expl:replace ensures #1] result = dest.current)}
+    (! return {result}) ]
+
+predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_core_mem_take_body_T (dest: MutBorrow.t t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:extern_spec_core_mem_take_body 'dest' type invariant] inv_refmut_T dest}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = default_T (fun (_x: t_T) -> [ &_7 <- _x ] s1)
+    | s1 = MutBorrow.borrow_final <t_T> {dest.current} {MutBorrow.get_id dest}
+        (fun (_bor: MutBorrow.t t_T) ->
+          [ &_6 <- _bor ] -{inv_T _bor.final}-
+          [ &dest <- { dest with current = _bor.final } ] s2)
+      [ _ck -> (! {[@expl:type invariant] inv_T dest.current} any) ]
+    | s2 = replace_T {_6} {_7} (fun (_x: t_T) -> [ &_ret <- _x ] s3)
+    | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_T dest} any) ]
+    | s4 = -{resolve_refmut_T dest}- s5
+    | s5 = return {_ret} ] ]
+  [ & _ret: t_T = Any.any_l ()
+  | & dest: MutBorrow.t t_T = dest
+  | & _6: MutBorrow.t t_T = Any.any_l ()
+  | & _7: t_T = Any.any_l () ])
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:extern_spec_core_mem_take_body_T ensures] ([@stop_split] [@expl:extern_spec_core_mem_take_body result type invariant] inv_T result)
+    /\ ([@stop_split] [@expl:extern_spec_core_mem_take_body ensures #0] result = dest.current)
+    /\ ([@stop_split] [@expl:extern_spec_core_mem_take_body ensures #1] postcondition_default () () dest.final)}
+    (! return {result}) ]

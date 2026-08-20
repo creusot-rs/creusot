@@ -1,0 +1,53 @@
+(* <logic::fmap::Iter<K, V> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_FMap_K_V
+
+type t_Iter_K_V = { f0: t_FMap_K_V }
+
+type t_K
+
+type t_V
+
+type t_Option_V = None | Some t_V
+
+function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+
+function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+
+meta "rewrite_def" function get_K
+
+predicate resolve_K (_1: t_K)
+
+predicate resolve_V (_1: t_V)
+
+predicate resolve_FMap_K_V (self: t_FMap_K_V) =
+  forall k: t_K, v: t_V. get_K self k = Some v -> resolve_K k /\ resolve_V v
+
+predicate resolve_FMap_K_V'0 (_1: t_FMap_K_V)
+
+axiom resolve_axiom [@rewrite]: forall x: t_FMap_K_V [resolve_FMap_K_V'0 x]. resolve_FMap_K_V'0 x = resolve_FMap_K_V x
+
+predicate structural_resolve_Iter_K_V (_1: t_Iter_K_V) = resolve_FMap_K_V'0 _1.f0
+
+function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
+
+predicate resolve_Iter_K_V [@inline:trivial] (self: t_Iter_K_V) = resolve_FMap_K_V'0 (view_Iter_K_V self)
+
+meta "rewrite_def" predicate resolve_Iter_K_V
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Iter_K_V
+
+function resolve_coherence_Iter_K_V (self: t_Iter_K_V) : ()
+
+goal vc_resolve_coherence_Iter_K_V: structural_resolve_Iter_K_V self
+  -> ([@stop_split] [@expl:resolve_coherence ensures] resolve_Iter_K_V self)

@@ -1,0 +1,203 @@
+(* logic::seq::Seq<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+use int.Int
+
+let sub_Int (self: int) (other: int) (return (x: int)) = any
+  [ return (result: int) -> {[@stop_split] [@expl:sub ensures] result = self - other} (! return {result}) ]
+
+let le_Int (self: int) (other: int) (return (x: bool)) = any
+  [ return (result: bool) -> {[@stop_split] [@expl:le ensures] result = (self <= other)} (! return {result}) ]
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+
+meta "rewrite_def" predicate invariant_ref_Seq_T
+
+predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+
+meta "rewrite_def" predicate inv_ref_Seq_T
+
+let len_ghost_T (self: Seq.seq t_T) (return (x: int)) =
+{[@stop_split] [@expl:len_ghost 'self' type invariant] inv_ref_Seq_T self}
+  any [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
+
+let lt_Int (self: int) (other: int) (return (x: bool)) = any
+  [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] result = (self < other)} (! return {result}) ]
+
+predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+  inv_Seq_T self.current /\ inv_Seq_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_Seq_T
+
+predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
+
+meta "rewrite_def" predicate inv_refmut_Seq_T
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+predicate invariant_ref_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_refmut_T self
+
+meta "rewrite_def" predicate invariant_ref_refmut_T
+
+predicate inv_ref_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_refmut_T _1
+
+meta "rewrite_def" predicate inv_ref_refmut_T
+
+predicate invariant_Seq_refmut_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_T)) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_refmut_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_refmut_T
+
+predicate inv_Seq_refmut_T [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_T)) = invariant_Seq_refmut_T _1
+
+meta "rewrite_def" predicate inv_Seq_refmut_T
+
+let as_muts_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: Seq.seq (MutBorrow.t t_T))) =
+{[@stop_split] [@expl:as_muts 'self' type invariant] inv_refmut_Seq_T self}
+  any
+  [ return (result: Seq.seq (MutBorrow.t t_T)) ->
+  {[@stop_split] [@expl:as_muts_T ensures] ([@stop_split] [@expl:as_muts result type invariant] inv_Seq_refmut_T result)
+    /\ ([@stop_split] [@expl:as_muts ensures #0] Seq.length result = Seq.length self.current)
+    /\ ([@stop_split] [@expl:as_muts ensures #1] Seq.length self.final = Seq.length self.current)
+    /\ ([@stop_split] [@expl:as_muts ensures #2] forall i: int. 0 <= i /\ i < Seq.length self.current
+        -> (Seq.get result i).current = Seq.get self.current i)
+    /\ ([@stop_split] [@expl:as_muts ensures #3] forall i: int. 0 <= i /\ i < Seq.length self.current
+      -> (Seq.get result i).final = Seq.get self.final i)}
+    (! return {result}) ]
+
+predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_T
+
+let extract_refmut_T (self: Seq.seq (MutBorrow.t t_T)) (index: int) (return (x: MutBorrow.t t_T)) =
+{[@stop_split] [@expl:extract_refmut_T requires] ([@stop_split] [@expl:extract 'self' type invariant] inv_Seq_refmut_T self)
+  /\ ([@stop_split] [@expl:extract requires] 0 <= index /\ index < Seq.length self)}
+  any
+  [ return (result: MutBorrow.t t_T) ->
+  {[@stop_split] [@expl:extract_refmut_T ensures] ([@stop_split] [@expl:extract result type invariant] inv_refmut_T result)
+    /\ ([@stop_split] [@expl:extract ensures #0] result = Seq.get self index)
+    /\ ([@stop_split] [@expl:extract ensures #1] forall i: int. 0 <= i /\ i < Seq.length self /\ i <> index
+      -> resolve_refmut_T (Seq.get self i))}
+    (! return {result}) ]
+
+type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
+
+predicate resolve_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Seq_T
+
+predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Option_refmut_T [inv_Option_refmut_T x]. inv_Option_refmut_T x
+    = match x with
+      | None -> true
+      | Some f0 -> inv_refmut_T f0
+      end
+
+type t_Option_T = None'0 | Some'0 t_T
+
+function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
+    Some'0 (Seq.get self ix)
+  else
+    None'0
+
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let get_mut_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t_Option_refmut_T)) =
+{[@stop_split] [@expl:get_mut_ghost 'self' type invariant] inv_refmut_Seq_T self}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = sub_Int {index} {index} (fun (_x: int) -> [ &_13 <- _x ] s1)
+    | s1 = le_Int {_13} {index} (fun (_x: bool) -> [ &_11 <- _x ] s2)
+    | s2 = any [ br0 -> {_11 = false} (! bb10) | br1 -> {_11} (! bb3) ] ]
+  | bb3 = s0
+    [ s0 = len_ghost_T {self.current} (fun (_x: int) -> [ &_20 <- _x ] s1)
+    | s1 = lt_Int {index} {_20} (fun (_x: bool) -> [ &_17 <- _x ] s2)
+    | s2 = any [ br0 -> {_17 = false} (! bb9) | br1 -> {_17} (! bb6) ] ]
+  | bb6 = s0
+    [ s0 = MutBorrow.borrow_final <Seq.seq t_T> {self.current} {MutBorrow.get_id self}
+        (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+          [ &_25 <- _bor ] -{inv_Seq_T _bor.final}-
+          [ &self <- { self with current = _bor.final } ] s1)
+      [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
+    | s1 = as_muts_T {_25} (fun (_x: Seq.seq (MutBorrow.t t_T)) -> [ &_24 <- _x ] s2)
+    | s2 = extract_refmut_T {_24} {index} (fun (_x: MutBorrow.t t_T) -> [ &_23 <- _x ] s3)
+    | s3 = MutBorrow.borrow_final <t_T> {_23.current} {MutBorrow.get_id _23}
+        (fun (_bor: MutBorrow.t t_T) ->
+          [ &_22 <- _bor ] -{inv_T _bor.final}-
+          [ &_23 <- { _23 with current = _bor.final } ] s4)
+      [ _ck -> (! {[@expl:type invariant] inv_T _23.current} any) ]
+    | s4 = [ &_ret <- Some _22 ] s5
+    | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _23} any) ]
+    | s6 = -{resolve_refmut_T _23}- s7
+    | s7 = bb12 ]
+  | bb9 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
+    | s1 = -{resolve_refmut_Seq_T self}- s2
+    | s2 = bb11 ]
+  | bb10 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
+    | s1 = -{resolve_refmut_Seq_T self}- s2
+    | s2 = bb11 ]
+  | bb11 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = bb12 ]
+  | bb12 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
+    | s1 = -{resolve_refmut_Seq_T self}- s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: t_Option_refmut_T = Any.any_l ()
+  | & self: MutBorrow.t (Seq.seq t_T) = self
+  | & index: int = index
+  | & _11: bool = Any.any_l ()
+  | & _13: int = Any.any_l ()
+  | & _17: bool = Any.any_l ()
+  | & _20: int = Any.any_l ()
+  | & _22: MutBorrow.t t_T = Any.any_l ()
+  | & _23: MutBorrow.t t_T = Any.any_l ()
+  | & _24: Seq.seq (MutBorrow.t t_T) = Any.any_l ()
+  | & _25: MutBorrow.t (Seq.seq t_T) = Any.any_l () ])
+  [ return (result: t_Option_refmut_T) ->
+  {[@stop_split] [@expl:get_mut_ghost_T ensures] ([@stop_split] [@expl:get_mut_ghost result type invariant] inv_Option_refmut_T result)
+    /\ ([@stop_split] [@expl:get_mut_ghost ensures #0] match result with
+        | None -> get_T self.current index = None'0 /\ self.current = self.final
+        | Some r -> get_T self.current index = Some'0 (r.current) /\ r.final = Seq.get self.final index
+        end)
+    /\ ([@stop_split] [@expl:get_mut_ghost ensures #1] forall i: int. i <> index
+        -> get_T self.current i = get_T self.final i)
+    /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] Seq.length self.current = Seq.length self.final)}
+    (! return {result}) ]

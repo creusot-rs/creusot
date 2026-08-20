@@ -1,0 +1,36 @@
+(* <std::iter::Map<I, F> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_Map_I_F
+
+predicate inv_Map_I_F (_1: t_Map_I_F)
+
+predicate structural_resolve_Map_I_F (_1: t_Map_I_F)
+
+type t_I
+
+predicate resolve_I (_1: t_I)
+
+function iter_Map_I_F (self: t_Map_I_F) : t_I
+
+type t_F
+
+predicate resolve_F (_1: t_F)
+
+function func_Map_I_F (self: t_Map_I_F) : t_F
+
+predicate resolve_Map_I_F [@inline:trivial] (self: t_Map_I_F) =
+  resolve_I (iter_Map_I_F self) /\ resolve_F (func_Map_I_F self)
+
+meta "rewrite_def" predicate resolve_Map_I_F
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Map_I_F. inv_Map_I_F self
+    -> structural_resolve_Map_I_F self
+    -> structural_resolve_Map_I_F self /\ (forall result: (). resolve_Map_I_F self -> resolve_Map_I_F self)

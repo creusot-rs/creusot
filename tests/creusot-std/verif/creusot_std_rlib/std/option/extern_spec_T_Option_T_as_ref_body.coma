@@ -1,0 +1,72 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+type t_Option_T = None | Some t_T
+
+let elim_Some (_x: t_Option_T) (return (f0: t_T)) = any
+  [ _k (f0: t_T) -> {Some f0 = _x} (! return {f0})
+  | _chk -> (! {[@expl:elim Some] match _x with
+      | Some _ -> true
+      | _ -> false
+      end}
+    any) ]
+
+type t_Option_ref_T = None'0 | Some'0 t_T
+
+predicate inv_T (_1: t_T)
+
+predicate inv_Option_T (_1: t_Option_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+    = match x with
+      | None -> true
+      | Some f0 -> inv_T f0
+      end
+
+predicate invariant_ref_Option_T [@inline:trivial] (self: t_Option_T) = inv_Option_T self
+
+meta "rewrite_def" predicate invariant_ref_Option_T
+
+predicate inv_ref_Option_T [@inline:trivial] (_1: t_Option_T) = invariant_ref_Option_T _1
+
+meta "rewrite_def" predicate inv_ref_Option_T
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate inv_Option_ref_T (_1: t_Option_ref_T)
+
+axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+    = match x with
+      | None'0 -> true
+      | Some'0 f0 -> inv_ref_T f0
+      end
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_Option_T_as_ref_body_T (self_: t_Option_T) (return (x: t_Option_ref_T)) =
+{[@stop_split] [@expl:extern_spec_T_Option_T_as_ref_body 'self_' type invariant] inv_ref_Option_T self_}
+  (! bb0
+  [ bb0 = any [ br0 -> {self_ = None} (! bb3) | br1 (x0: t_T) -> {self_ = Some x0} (! bb4) ]
+  | bb4 = s0
+    [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- Some'0 t ] s2 | s2 = return {_ret} ]
+  | bb3 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_Option_ref_T = Any.any_l () | & self_: t_Option_T = self_ | & t: t_T = Any.any_l () ])
+  [ return (result: t_Option_ref_T) ->
+  {[@stop_split] [@expl:extern_spec_T_Option_T_as_ref_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Option_T_as_ref_body result type invariant] inv_Option_ref_T result)
+    /\ ([@stop_split] [@expl:extern_spec_T_Option_T_as_ref_body ensures #0] self_ = None -> result = None'0)
+    /\ ([@stop_split] [@expl:extern_spec_T_Option_T_as_ref_body ensures #1] self_ = None
+    \/ (exists r: t_T. result = Some'0 r /\ self_ = Some r))}
+    (! return {result}) ]

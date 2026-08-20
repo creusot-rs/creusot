@@ -1,0 +1,42 @@
+(* <std::option::Option<T> as logic::ord::PartialOrdLogic> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+type t_Option_T = None | Some t_T
+
+predicate le_log_T (self: t_T) (other: t_T)
+
+predicate lt_log_T (self: t_T) (other: t_T)
+
+function le_lt_log_T (self: t_T) (other: t_T) : ()
+
+axiom le_lt_log_T_spec: forall self: t_T, other: t_T. le_log_T self other = (lt_log_T self other \/ self = other)
+
+function transitive_T (x: t_T) (y: t_T) (z: t_T) : ()
+
+axiom transitive_T_spec: forall x: t_T, y: t_T, z: t_T. lt_log_T x y -> lt_log_T y z -> lt_log_T x z
+
+function irreflexive_T (self: t_T) : ()
+
+axiom irreflexive_T_spec: forall self: t_T. not lt_log_T self self
+
+predicate lt_log_Option_T (self: t_Option_T) (o: t_Option_T) =
+  match o with
+    | None -> false
+    | Some o'0 -> match self with
+      | None -> true
+      | Some s -> lt_log_T s o'0
+      end
+    end
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall x: t_Option_T, y: t_Option_T, z: t_Option_T. lt_log_Option_T x y
+    -> lt_log_Option_T y z
+    -> lt_log_Option_T x y /\ lt_log_Option_T y z /\ (forall result: (). lt_log_Option_T x z -> lt_log_Option_T x z)

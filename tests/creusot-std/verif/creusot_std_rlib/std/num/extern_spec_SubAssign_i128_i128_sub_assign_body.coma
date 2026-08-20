@@ -1,0 +1,35 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int128
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+use int.Int
+
+predicate resolve_refmut_i128 [@inline:trivial] (_1: MutBorrow.t Int128.t) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_i128
+
+constant const_MIN: Int128.t = (-170141183460469231731687303715884105728: Int128.t)
+
+constant const_MAX: Int128.t = (170141183460469231731687303715884105727: Int128.t)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_SubAssign_i128_i128_sub_assign_body (self_: MutBorrow.t Int128.t) (rhs: Int128.t) (return (x: ())) =
+{[@stop_split] [@expl:extern_spec_SubAssign_i128_i128_sub_assign_body requires] Int128.to_int const_MIN
+    <= Int128.to_int self_.current - Int128.to_int rhs
+  /\ Int128.to_int self_.current - Int128.to_int rhs <= Int128.to_int const_MAX}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = Int128.sub {self_.current} {rhs} (fun (_x: Int128.t) -> [ &self_ <- { self_ with current = _x } ] s1)
+    | s1 = -{resolve_refmut_i128 self_}- s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l () | & self_: MutBorrow.t Int128.t = self_ | & rhs: Int128.t = rhs ])
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:extern_spec_SubAssign_i128_i128_sub_assign_body ensures] Int128.to_int self_.final
+    = Int128.to_int self_.current - Int128.to_int rhs}
+    (! return {result}) ]

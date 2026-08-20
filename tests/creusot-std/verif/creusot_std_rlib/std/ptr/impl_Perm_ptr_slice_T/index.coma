@@ -1,0 +1,309 @@
+(* ghost::perm::Perm<*const [T]> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.prelude.Opaque
+use creusot.prelude.Ptr
+use creusot.int.UInt64
+use creusot.slice.Slice64
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+use int.Int
+
+type t_Perm_ptr_slice_T
+
+type t_Perm_ptr_T
+
+predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+
+function ward_ptr_slice_T (self: t_Perm_ptr_slice_T) : Opaque.ptr
+
+type t_T
+
+predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
+  Seq.length (Slice64.view _value) = UInt64.t'int _metadata
+
+meta "rewrite_def" predicate metadata_matches_slice_T
+
+function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
+
+function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+
+predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+
+meta "rewrite_def" predicate inv_slice_T
+
+predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+
+meta "rewrite_def" predicate invariant_ref_slice_T
+
+predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+
+meta "rewrite_def" predicate inv_ref_slice_T
+
+predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
+  not is_null_ptr_slice_T (ward_ptr_slice_T self)
+  /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (ward_ptr_slice_T self))
+  /\ inv_ref_slice_T (val_ptr_slice_T self)
+
+predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
+    = invariant_Perm_ptr_slice_T x
+
+predicate invariant_ref_Perm_ptr_slice_T [@inline:trivial] (self: t_Perm_ptr_slice_T) = inv_Perm_ptr_slice_T self
+
+meta "rewrite_def" predicate invariant_ref_Perm_ptr_slice_T
+
+predicate inv_ref_Perm_ptr_slice_T [@inline:trivial] (_1: t_Perm_ptr_slice_T) = invariant_ref_Perm_ptr_slice_T _1
+
+meta "rewrite_def" predicate inv_ref_Perm_ptr_slice_T
+
+predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+
+function ward_ptr_T (self: t_Perm_ptr_T) : Opaque.ptr
+
+predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = true
+
+meta "rewrite_def" predicate metadata_matches_T
+
+function val_ptr_T (self: t_Perm_ptr_T) : t_T
+
+function metadata_T (_1: Opaque.ptr) : ()
+
+predicate invariant_Perm_ptr_T (self: t_Perm_ptr_T) =
+  not is_null_ptr_T (ward_ptr_T self)
+  /\ metadata_matches_T (val_ptr_T self) (metadata_T (ward_ptr_T self)) /\ inv_ref_T (val_ptr_T self)
+
+predicate inv_Perm_ptr_T (_1: t_Perm_ptr_T)
+
+axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_T [inv_Perm_ptr_T x]. inv_Perm_ptr_T x = invariant_Perm_ptr_T x
+
+predicate invariant_ref_Perm_ptr_T [@inline:trivial] (self: t_Perm_ptr_T) = inv_Perm_ptr_T self
+
+meta "rewrite_def" predicate invariant_ref_Perm_ptr_T
+
+predicate inv_ref_Perm_ptr_T [@inline:trivial] (_1: t_Perm_ptr_T) = invariant_ref_Perm_ptr_T _1
+
+meta "rewrite_def" predicate inv_ref_Perm_ptr_T
+
+predicate invariant_ref_ref_Perm_ptr_T [@inline:trivial] (self: t_Perm_ptr_T) = inv_ref_Perm_ptr_T self
+
+meta "rewrite_def" predicate invariant_ref_ref_Perm_ptr_T
+
+predicate inv_ref_ref_Perm_ptr_T [@inline:trivial] (_1: t_Perm_ptr_T) = invariant_ref_ref_Perm_ptr_T _1
+
+meta "rewrite_def" predicate inv_ref_ref_Perm_ptr_T
+
+predicate invariant_Seq_ref_Perm_ptr_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_Perm_ptr_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_ref_Perm_ptr_T
+
+predicate inv_Seq_ref_Perm_ptr_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_T) = invariant_Seq_ref_Perm_ptr_T _1
+
+meta "rewrite_def" predicate inv_Seq_ref_Perm_ptr_T
+
+function len_T [@inline:trivial] (self: t_Perm_ptr_slice_T) : int = Seq.length (Slice64.view (val_ptr_slice_T self))
+
+meta "rewrite_def" function len_T
+
+constant size_of_T : int
+
+axiom size_of_T_spec: 0 <= size_of_T
+
+constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+
+function sub_ptr_T (self: Opaque.ptr) (rhs: Opaque.ptr) : int
+
+function offset_ptr_T (self: Opaque.ptr) (offset: int) : Opaque.ptr
+
+axiom offset_ptr_T_spec: forall self: Opaque.ptr, offset: int [offset_ptr_T self offset]. 0
+      <= UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+    -> UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T <= UInt64.t'int const_MAX
+    -> UInt64.t'int (Ptr.addr_logic_u64 (offset_ptr_T self offset))
+    = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+
+function sub_offset_ptr_T (self: Opaque.ptr) (offset: int) : () = ()
+
+axiom sub_offset_ptr_T_spec: forall self: Opaque.ptr, offset: int. sub_ptr_T (offset_ptr_T self offset) self = offset
+
+axiom sub_offset_ptr_T_spec'0: forall self: Opaque.ptr, offset: int. sub_ptr_T self (offset_ptr_T self offset)
+    = - offset
+
+function sub_logic_refl_ptr_T (self: Opaque.ptr) : () = ()
+
+axiom sub_logic_refl_ptr_T_spec: forall self: Opaque.ptr. sub_ptr_T self self = 0
+
+function offset_logic_assoc_ptr_T (self: Opaque.ptr) (offset1: int) (offset2: int) : () = ()
+
+axiom offset_logic_assoc_ptr_T_spec:
+  forall self: Opaque.ptr, offset1: int, offset2: int. offset_ptr_T (offset_ptr_T self offset1) offset2
+    = offset_ptr_T self (offset1 + offset2)
+
+function offset_logic_zero_ptr_T (self: Opaque.ptr) : () = ()
+
+axiom offset_logic_zero_ptr_T_spec: forall self: Opaque.ptr. offset_ptr_T self 0 = self
+
+function len_ptr_slice_T [@inline:trivial] (self: Opaque.ptr) : UInt64.t = metadata_slice_T self
+
+meta "rewrite_def" function len_ptr_slice_T
+
+function thin_ptr_slice_T [@inline:trivial] (self: Opaque.ptr) : Opaque.ptr = Opaque.thin self
+
+meta "rewrite_def" function thin_ptr_slice_T
+
+function slice_ptr_ext_ptr_slice_T (self: Opaque.ptr) (other: Opaque.ptr) : () = ()
+
+axiom slice_ptr_ext_ptr_slice_T_spec: forall self: Opaque.ptr, other: Opaque.ptr. thin_ptr_slice_T self
+        = thin_ptr_slice_T other
+      /\ len_ptr_slice_T self = len_ptr_slice_T other -> self = other
+
+let elements_T (self: t_Perm_ptr_slice_T) (return (x: Seq.seq t_Perm_ptr_T)) =
+{[@stop_split] [@expl:elements 'self' type invariant] inv_ref_Perm_ptr_slice_T self}
+  any
+  [ return (result: Seq.seq t_Perm_ptr_T) ->
+  {[@stop_split] [@expl:elements_T ensures] ([@stop_split] [@expl:elements result type invariant] inv_Seq_ref_Perm_ptr_T result)
+    /\ ([@stop_split] [@expl:elements ensures #0] Seq.length result = len_T self)
+    /\ ([@stop_split] [@expl:elements ensures #1] forall i: int. 0 <= i /\ i < len_T self
+      -> ward_ptr_T (Seq.get result i) = offset_ptr_T (thin_ptr_slice_T (ward_ptr_slice_T self)) i
+      /\ val_ptr_T (Seq.get result i) = Seq.get (Slice64.view (val_ptr_slice_T self)) i)}
+    (! return {result}) ]
+
+predicate invariant_refmut_Seq_ref_Perm_ptr_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_Perm_ptr_T)) =
+  inv_Seq_ref_Perm_ptr_T self.current /\ inv_Seq_ref_Perm_ptr_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_Seq_ref_Perm_ptr_T
+
+predicate inv_refmut_Seq_ref_Perm_ptr_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_Perm_ptr_T)) =
+  invariant_refmut_Seq_ref_Perm_ptr_T _1
+
+meta "rewrite_def" predicate inv_refmut_Seq_ref_Perm_ptr_T
+
+type t_RangeTo_Int = { end': int }
+
+function index_Seq_ref_Perm_ptr_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_T) (range: t_RangeTo_Int) : Seq.seq t_Perm_ptr_T
+ = Seq.([..]) self 0 range.end'
+
+meta "rewrite_def" function index_Seq_ref_Perm_ptr_T
+
+type t_RangeFrom_Int = { start: int }
+
+function index_Seq_ref_Perm_ptr_T'0 [@inline:trivial] (self: Seq.seq t_Perm_ptr_T) (range: t_RangeFrom_Int) : Seq.seq t_Perm_ptr_T
+ = Seq.([..]) self range.start (Seq.length self)
+
+meta "rewrite_def" function index_Seq_ref_Perm_ptr_T'0
+
+let split_off_ghost_ref_Perm_ptr_T (self: MutBorrow.t (Seq.seq t_Perm_ptr_T)) (mid: int)
+  (return (x: Seq.seq t_Perm_ptr_T)) =
+{[@stop_split] [@expl:split_off_ghost_ref_Perm_ptr_T requires] ([@stop_split] [@expl:split_off_ghost 'self' type invariant] inv_refmut_Seq_ref_Perm_ptr_T self)
+  /\ ([@stop_split] [@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current)}
+  any
+  [ return (result: Seq.seq t_Perm_ptr_T) ->
+  {[@stop_split] [@expl:split_off_ghost_ref_Perm_ptr_T ensures] ([@stop_split] [@expl:split_off_ghost result type invariant] inv_Seq_ref_Perm_ptr_T result)
+    /\ ([@stop_split] [@expl:split_off_ghost ensures #0] self.final
+      = index_Seq_ref_Perm_ptr_T self.current { end' = mid })
+    /\ ([@stop_split] [@expl:split_off_ghost ensures #1] result
+    = index_Seq_ref_Perm_ptr_T'0 self.current { start = mid })}
+    (! return {result}) ]
+
+type t_Option_ref_Perm_ptr_T = None | Some t_Perm_ptr_T
+
+predicate inv_Option_ref_Perm_ptr_T (_1: t_Option_ref_Perm_ptr_T)
+
+axiom inv_axiom'1 [@rewrite]:
+  forall x: t_Option_ref_Perm_ptr_T [inv_Option_ref_Perm_ptr_T x]. inv_Option_ref_Perm_ptr_T x
+    = match x with
+      | None -> true
+      | Some f0 -> inv_ref_Perm_ptr_T f0
+      end
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+function tail_ref_Perm_ptr_T (self: Seq.seq t_Perm_ptr_T) : Seq.seq t_Perm_ptr_T = Seq.([..]) self 1 (Seq.length self)
+
+let pop_front_ghost_ref_Perm_ptr_T (self: MutBorrow.t (Seq.seq t_Perm_ptr_T)) (return (x: t_Option_ref_Perm_ptr_T)) =
+{[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_ref_Perm_ptr_T self}
+  any
+  [ return (result: t_Option_ref_Perm_ptr_T) ->
+  {[@stop_split] [@expl:pop_front_ghost_ref_Perm_ptr_T ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_ref_Perm_ptr_T result)
+    /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
+      | None -> self.current = (Seq.empty: Seq.seq t_Perm_ptr_T) /\ self.current = self.final
+      | Some r -> gt_log_Int (Seq.length self.current) 0
+      /\ r = Seq.get self.current 0 /\ self.final = tail_ref_Perm_ptr_T self.current
+      end)}
+    (! return {result}) ]
+
+let unwrap_ref_Perm_ptr_T (self_: t_Option_ref_Perm_ptr_T) (return (x: t_Perm_ptr_T)) =
+{[@stop_split] [@expl:unwrap_ref_Perm_ptr_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_ref_Perm_ptr_T self_)
+  /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
+  any
+  [ return (result: t_Perm_ptr_T) ->
+  {[@stop_split] [@expl:unwrap_ref_Perm_ptr_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_ref_Perm_ptr_T result)
+    /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let index_T (self: t_Perm_ptr_slice_T) (index: int) (return (x: t_Perm_ptr_T)) =
+{[@stop_split] [@expl:index_T requires] ([@stop_split] [@expl:index 'self' type invariant] inv_ref_Perm_ptr_slice_T self)
+  /\ ([@stop_split] [@expl:index requires] 0 <= index /\ index < len_T self)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = elements_T {self} (fun (_x: Seq.seq t_Perm_ptr_T) -> [ &r <- _x ] s1)
+    | s1 = MutBorrow.borrow_mut <Seq.seq t_Perm_ptr_T> {r}
+        (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_T)) ->
+          [ &_18 <- _bor ] -{inv_Seq_ref_Perm_ptr_T _bor.final}-
+          [ &r <- _bor.final ] s2) [ _ck -> (! {[@expl:type invariant] inv_Seq_ref_Perm_ptr_T r} any) ]
+    | s2 = split_off_ghost_ref_Perm_ptr_T {_18} {index} (fun (_x: Seq.seq t_Perm_ptr_T) -> [ &_17 <- _x ] s3)
+    | s3 = MutBorrow.borrow_mut <Seq.seq t_Perm_ptr_T> {_17}
+        (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_T)) ->
+          [ &_16 <- _bor ] -{inv_Seq_ref_Perm_ptr_T _bor.final}-
+          [ &_17 <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Seq_ref_Perm_ptr_T _17} any) ]
+    | s4 = pop_front_ghost_ref_Perm_ptr_T {_16} (fun (_x: t_Option_ref_Perm_ptr_T) -> [ &_15 <- _x ] s5)
+    | s5 = unwrap_ref_Perm_ptr_T {_15} (fun (_x: t_Perm_ptr_T) -> [ &_14 <- _x ] s6)
+    | s6 = [ &_ret <- _14 ] s7
+    | s7 = return {_ret} ] ]
+  [ & _ret: t_Perm_ptr_T = Any.any_l ()
+  | & self: t_Perm_ptr_slice_T = self
+  | & index: int = index
+  | & r: Seq.seq t_Perm_ptr_T = Any.any_l ()
+  | & _14: t_Perm_ptr_T = Any.any_l ()
+  | & _15: t_Option_ref_Perm_ptr_T = Any.any_l ()
+  | & _16: MutBorrow.t (Seq.seq t_Perm_ptr_T) = Any.any_l ()
+  | & _17: Seq.seq t_Perm_ptr_T = Any.any_l ()
+  | & _18: MutBorrow.t (Seq.seq t_Perm_ptr_T) = Any.any_l () ])
+  [ return (result: t_Perm_ptr_T) ->
+  {[@stop_split] [@expl:index_T ensures] ([@stop_split] [@expl:index result type invariant] inv_ref_Perm_ptr_T result)
+    /\ ([@stop_split] [@expl:index ensures #0] ward_ptr_T result
+      = offset_ptr_T (thin_ptr_slice_T (ward_ptr_slice_T self)) index)
+    /\ ([@stop_split] [@expl:index ensures #1] val_ptr_T result = Seq.get (Slice64.view (val_ptr_slice_T self)) index)}
+    (! return {result}) ]

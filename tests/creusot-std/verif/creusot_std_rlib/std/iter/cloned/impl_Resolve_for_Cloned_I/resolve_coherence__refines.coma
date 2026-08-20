@@ -1,0 +1,37 @@
+(* <std::iter::Cloned<I> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_Cloned_I
+
+type t_I
+
+predicate inv_I (_1: t_I)
+
+function iter_Cloned_I (self: t_Cloned_I) : t_I
+
+predicate invariant_Cloned_I [@inline:trivial] (self: t_Cloned_I) = inv_I (iter_Cloned_I self)
+
+meta "rewrite_def" predicate invariant_Cloned_I
+
+predicate inv_Cloned_I (_1: t_Cloned_I)
+
+axiom inv_axiom: forall x: t_Cloned_I [inv_Cloned_I x]. inv_Cloned_I x -> invariant_Cloned_I x
+
+predicate structural_resolve_Cloned_I (_1: t_Cloned_I)
+
+predicate resolve_I (_1: t_I)
+
+predicate resolve_Cloned_I [@inline:trivial] (self: t_Cloned_I) = resolve_I (iter_Cloned_I self)
+
+meta "rewrite_def" predicate resolve_Cloned_I
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Cloned_I. inv_Cloned_I self
+    -> structural_resolve_Cloned_I self
+    -> structural_resolve_Cloned_I self /\ (forall result: (). resolve_Cloned_I self -> resolve_Cloned_I self)

@@ -1,0 +1,42 @@
+(* <logic::int::NatInner as std::clone::Clone> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+use int.Int
+
+type t_NatInner = { f0: int }
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate invariant_NatInner (self: t_NatInner) = ge_log_Int self.f0 0
+
+predicate inv_NatInner (_1: t_NatInner)
+
+axiom inv_axiom [@rewrite]: forall x: t_NatInner [inv_NatInner x]. inv_NatInner x = invariant_NatInner x
+
+predicate invariant_ref_NatInner [@inline:trivial] (self: t_NatInner) = inv_NatInner self
+
+meta "rewrite_def" predicate invariant_ref_NatInner
+
+predicate inv_ref_NatInner [@inline:trivial] (_1: t_NatInner) = invariant_ref_NatInner _1
+
+meta "rewrite_def" predicate inv_ref_NatInner
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let clone_NatInner (self: t_NatInner) (return (x: t_NatInner)) =
+{[@stop_split] [@expl:clone 'self' type invariant] inv_ref_NatInner self}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_NatInner = Any.any_l () | & self: t_NatInner = self ])
+  [ return (result: t_NatInner) ->
+  {[@stop_split] [@expl:clone_NatInner ensures] ([@stop_split] [@expl:clone result type invariant] inv_NatInner result)
+    /\ ([@stop_split] [@expl:clone ensures] result = self)}
+    (! return {result}) ]

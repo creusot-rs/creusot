@@ -1,0 +1,26 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt16
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: UInt16.t = (0: UInt16.t)
+
+constant const_MAX: UInt16.t = (65535: UInt16.t)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Sub_u16_u16_sub_body (self_: UInt16.t) (rhs: UInt16.t) (return (x: UInt16.t)) =
+{[@stop_split] [@expl:extern_spec_Sub_u16_u16_sub_body requires] UInt16.t'int const_MIN
+    <= UInt16.t'int self_ - UInt16.t'int rhs
+  /\ UInt16.t'int self_ - UInt16.t'int rhs <= UInt16.t'int const_MAX}
+  (! bb0
+  [ bb0 = s0 [ s0 = UInt16.sub {self_} {rhs} (fun (_x: UInt16.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: UInt16.t = Any.any_l () | & self_: UInt16.t = self_ | & rhs: UInt16.t = rhs ])
+  [ return (result: UInt16.t) -> {[@stop_split] [@expl:extern_spec_Sub_u16_u16_sub_body ensures] UInt16.t'int result
+    = UInt16.t'int self_ - UInt16.t'int rhs}
+    (! return {result}) ]

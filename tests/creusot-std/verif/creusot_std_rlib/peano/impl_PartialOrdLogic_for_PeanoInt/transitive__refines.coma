@@ -1,0 +1,21 @@
+(* <peano::PeanoInt as logic::ord::PartialOrdLogic> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+
+type t_PeanoInt = { f0: UInt64.t }
+
+predicate lt_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) = UInt64.lt self.f0 o.f0
+
+meta "rewrite_def" predicate lt_log_PeanoInt
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall x: t_PeanoInt, y: t_PeanoInt, z: t_PeanoInt. lt_log_PeanoInt x y
+    -> lt_log_PeanoInt y z
+    -> lt_log_PeanoInt x y /\ lt_log_PeanoInt y z /\ (forall result: (). lt_log_PeanoInt x z -> lt_log_PeanoInt x z)

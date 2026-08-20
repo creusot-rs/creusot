@@ -1,0 +1,251 @@
+(* <(T0, T1, T2, T3, T4, T5, T6) as logic::well_founded::WellFounded> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+type t_T0
+
+type t_T1
+
+type t_T2
+
+type t_T3
+
+type t_T4
+
+type t_T5
+
+type t_T6
+
+type tup7_T0_T1_T2_T3_T4_T5_T6 = { f0: t_T0; f1: t_T1; f2: t_T2; f3: t_T3; f4: t_T4; f5: t_T5; f6: t_T6 }
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate well_founded_relation_T0 (self: t_T0) (other: t_T0)
+
+predicate well_founded_relation_T1 (self: t_T1) (other: t_T1)
+
+predicate well_founded_relation_T2 (self: t_T2) (other: t_T2)
+
+predicate well_founded_relation_T3 (self: t_T3) (other: t_T3)
+
+predicate well_founded_relation_T4 (self: t_T4) (other: t_T4)
+
+predicate well_founded_relation_T5 (self: t_T5) (other: t_T5)
+
+predicate well_founded_relation_T6 (self: t_T6) (other: t_T6)
+
+predicate well_founded_relation_tup7_T0_T1_T2_T3_T4_T5_T6 [@inline:trivial] (self: tup7_T0_T1_T2_T3_T4_T5_T6) (other: tup7_T0_T1_T2_T3_T4_T5_T6) =
+  well_founded_relation_T0 self.f0 other.f0
+  \/ self.f0 = other.f0 /\ well_founded_relation_T1 self.f1 other.f1
+  \/ self.f0 = other.f0 /\ self.f1 = other.f1 /\ well_founded_relation_T2 self.f2 other.f2
+  \/ self.f0 = other.f0 /\ self.f1 = other.f1 /\ self.f2 = other.f2 /\ well_founded_relation_T3 self.f3 other.f3
+  \/ self.f0 = other.f0
+    /\ self.f1 = other.f1 /\ self.f2 = other.f2 /\ self.f3 = other.f3 /\ well_founded_relation_T4 self.f4 other.f4
+  \/ self.f0 = other.f0
+    /\ self.f1 = other.f1
+    /\ self.f2 = other.f2 /\ self.f3 = other.f3 /\ self.f4 = other.f4 /\ well_founded_relation_T5 self.f5 other.f5
+  \/ self.f0 = other.f0
+  /\ self.f1 = other.f1
+  /\ self.f2 = other.f2
+  /\ self.f3 = other.f3 /\ self.f4 = other.f4 /\ self.f5 = other.f5 /\ well_founded_relation_T6 self.f6 other.f6
+
+meta "rewrite_def" predicate well_founded_relation_tup7_T0_T1_T2_T3_T4_T5_T6
+
+function index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 [@inline:trivial] (self: Map.map int tup7_T0_T1_T2_T3_T4_T5_T6) (a: int) : tup7_T0_T1_T2_T3_T4_T5_T6
+ = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6
+
+type t_Option_Int = None | Some int
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+function such_that_Int (p: Map.map int bool) : int
+
+axiom such_that_Int_spec: forall p: Map.map int bool [such_that_Int p]. (exists x: int. index_Mapping_Int_bool p x)
+    -> index_Mapping_Int_bool p (such_that_Int p)
+
+function try_such_that_Int (p: Map.map int bool) : t_Option_Int = if exists x: int. index_Mapping_Int_bool p x then
+    Some (such_that_Int p)
+  else
+    None
+
+
+axiom try_such_that_Int_spec: forall p: Map.map int bool [try_such_that_Int p]. match try_such_that_Int p with
+      | Some v -> index_Mapping_Int_bool p v
+      | None -> forall x: int. not index_Mapping_Int_bool p x
+      end
+
+type tup6_T1_T2_T3_T4_T5_T6 = { f0'0: t_T1; f1'0: t_T2; f2'0: t_T3; f3'0: t_T4; f4'0: t_T5; f5'0: t_T6 }
+
+type tup2_T0_tup6_T1_T2_T3_T4_T5_T6 = { f0'1: t_T0; f1'1: tup6_T1_T2_T3_T4_T5_T6 }
+
+function tuple_to_pair_tup7_T0_T1_T2_T3_T4_T5_T6 (self: tup7_T0_T1_T2_T3_T4_T5_T6) : tup2_T0_tup6_T1_T2_T3_T4_T5_T6 =
+  { f0'1 = self.f0;
+    f1'1 = { f0'0 = self.f1; f1'0 = self.f2; f2'0 = self.f3; f3'0 = self.f4; f4'0 = self.f5; f5'0 = self.f6 } }
+
+predicate well_founded_relation_tup6_T1_T2_T3_T4_T5_T6 [@inline:trivial] (self: tup6_T1_T2_T3_T4_T5_T6) (other: tup6_T1_T2_T3_T4_T5_T6) =
+  well_founded_relation_T1 self.f0'0 other.f0'0
+  \/ self.f0'0 = other.f0'0 /\ well_founded_relation_T2 self.f1'0 other.f1'0
+  \/ self.f0'0 = other.f0'0 /\ self.f1'0 = other.f1'0 /\ well_founded_relation_T3 self.f2'0 other.f2'0
+  \/ self.f0'0 = other.f0'0
+    /\ self.f1'0 = other.f1'0 /\ self.f2'0 = other.f2'0 /\ well_founded_relation_T4 self.f3'0 other.f3'0
+  \/ self.f0'0 = other.f0'0
+    /\ self.f1'0 = other.f1'0
+    /\ self.f2'0 = other.f2'0 /\ self.f3'0 = other.f3'0 /\ well_founded_relation_T5 self.f4'0 other.f4'0
+  \/ self.f0'0 = other.f0'0
+  /\ self.f1'0 = other.f1'0
+  /\ self.f2'0 = other.f2'0
+  /\ self.f3'0 = other.f3'0 /\ self.f4'0 = other.f4'0 /\ well_founded_relation_T6 self.f5'0 other.f5'0
+
+meta "rewrite_def" predicate well_founded_relation_tup6_T1_T2_T3_T4_T5_T6
+
+predicate well_founded_relation_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 [@inline:trivial] (self: tup2_T0_tup6_T1_T2_T3_T4_T5_T6) (other: tup2_T0_tup6_T1_T2_T3_T4_T5_T6) =
+  well_founded_relation_T0 self.f0'1 other.f0'1
+  \/ self.f0'1 = other.f0'1 /\ well_founded_relation_tup6_T1_T2_T3_T4_T5_T6 self.f1'1 other.f1'1
+
+meta "rewrite_def" predicate well_founded_relation_tup2_T0_tup6_T1_T2_T3_T4_T5_T6
+
+function index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 [@inline:trivial] (self: Map.map int tup2_T0_tup6_T1_T2_T3_T4_T5_T6) (a: int) : tup2_T0_tup6_T1_T2_T3_T4_T5_T6
+ = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6
+
+function index_Mapping_Int_T0 [@inline:trivial] (self: Map.map int t_T0) (a: int) : t_T0 = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_T0
+
+function extract_next_decr_T0 (s: Map.map int tup2_T0_tup6_T1_T2_T3_T4_T5_T6) (i: int) : int
+
+axiom extract_next_decr_T0_def:
+  forall s: Map.map int tup2_T0_tup6_T1_T2_T3_T4_T5_T6, i: int [extract_next_decr_T0 s i]. (forall i'0: int. 0 <= i'0
+        -> well_founded_relation_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s i'0) (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s (i'0
+        + 1)))
+    -> 0 <= i
+    -> extract_next_decr_T0 s i
+    = (if well_founded_relation_T0 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s i).f0'1 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s (i
+    + 1)).f0'1 then
+      i + 1
+    else
+      extract_next_decr_T0 s (i + 1)
+    )
+
+axiom extract_next_decr_T0_spec:
+  forall s: Map.map int tup2_T0_tup6_T1_T2_T3_T4_T5_T6, i: int [extract_next_decr_T0 s i]. (forall i'0: int. 0 <= i'0
+        -> well_founded_relation_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s i'0) (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s (i'0
+        + 1))) -> 0 <= i -> i < extract_next_decr_T0 s i
+
+axiom extract_next_decr_T0_spec'0:
+  forall s: Map.map int tup2_T0_tup6_T1_T2_T3_T4_T5_T6, i: int [extract_next_decr_T0 s i]. (forall i'0: int. 0 <= i'0
+        -> well_founded_relation_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s i'0) (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s (i'0
+        + 1)))
+    -> 0 <= i
+    -> well_founded_relation_T0 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s i).f0'1 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s (extract_next_decr_T0 s i)).f0'1
+
+function extract_nth_T0 (s: Map.map int tup2_T0_tup6_T1_T2_T3_T4_T5_T6) (i: int) : int
+
+axiom extract_nth_T0_def:
+  forall s: Map.map int tup2_T0_tup6_T1_T2_T3_T4_T5_T6, i: int [extract_nth_T0 s i]. (forall i'0: int. 0 <= i'0
+        -> well_founded_relation_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s i'0) (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s (i'0
+        + 1)))
+    -> 0 <= i
+    -> extract_nth_T0 s i = (if i = 0 then 0 else let prev = extract_nth_T0 s (i - 1) in extract_next_decr_T0 s prev)
+
+axiom extract_nth_T0_spec:
+  forall s: Map.map int tup2_T0_tup6_T1_T2_T3_T4_T5_T6, i: int [extract_nth_T0 s i]. (forall i'0: int. 0 <= i'0
+        -> well_founded_relation_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s i'0) (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s (i'0
+        + 1))) -> 0 <= i -> 0 <= extract_nth_T0 s i
+
+axiom extract_nth_T0_spec'0:
+  forall s: Map.map int tup2_T0_tup6_T1_T2_T3_T4_T5_T6, i: int [extract_nth_T0 s i]. (forall i'0: int. 0 <= i'0
+        -> well_founded_relation_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s i'0) (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s (i'0
+        + 1)))
+    -> 0 <= i
+    -> 0 < i
+    -> (let prev = extract_nth_T0 s (i - 1) in prev < extract_nth_T0 s i
+    /\ well_founded_relation_T0 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s prev).f0'1 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s (extract_nth_T0 s i)).f0'1)
+
+predicate index_Mapping_T0_bool [@inline:trivial] (self: Map.map t_T0 bool) (a: t_T0) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_T0_bool
+
+function such_that_T0 (p: Map.map t_T0 bool) : t_T0
+
+axiom such_that_T0_spec: forall p: Map.map t_T0 bool [such_that_T0 p]. (exists x: t_T0. index_Mapping_T0_bool p x)
+    -> index_Mapping_T0_bool p (such_that_T0 p)
+
+constant any_T0: t_T0 = such_that_T0 (fun (__0: t_T0) -> true)
+
+function first_component_decr_T0 (s: Map.map int tup2_T0_tup6_T1_T2_T3_T4_T5_T6) : Map.map int t_T0 =
+  fun (i: int) -> if 0 <= i then
+    (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s (extract_nth_T0 s i)).f0'1
+  else
+    any_T0
+
+
+axiom first_component_decr_T0_spec:
+  forall s: Map.map int tup2_T0_tup6_T1_T2_T3_T4_T5_T6 [first_component_decr_T0 s]. (forall i: int. 0 <= i
+        -> well_founded_relation_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s i) (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 s (i
+        + 1)))
+    -> (forall i: int. 0 <= i
+      -> well_founded_relation_T0 (index_Mapping_Int_T0 (first_component_decr_T0 s) i) (index_Mapping_Int_T0 (first_component_decr_T0 s) (i
+      + 1)))
+
+function no_infinite_decreasing_sequence_T0 (s: Map.map int t_T0) : int
+
+axiom no_infinite_decreasing_sequence_T0_spec:
+  forall s: Map.map int t_T0 [no_infinite_decreasing_sequence_T0 s]. ge_log_Int (no_infinite_decreasing_sequence_T0 s) 0
+
+axiom no_infinite_decreasing_sequence_T0_spec'0:
+  forall s: Map.map int t_T0 [no_infinite_decreasing_sequence_T0 s]. not well_founded_relation_T0 (index_Mapping_Int_T0 s (no_infinite_decreasing_sequence_T0 s)) (index_Mapping_Int_T0 s (no_infinite_decreasing_sequence_T0 s
+    + 1))
+
+constant any_Int: int = such_that_Int (fun (__0: int) -> true)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant s : Map.map int tup7_T0_T1_T2_T3_T4_T5_T6
+
+function no_infinite_decreasing_sequence_tup7_T0_T1_T2_T3_T4_T5_T6 (s: Map.map int tup7_T0_T1_T2_T3_T4_T5_T6) : int
+
+goal vc_no_infinite_decreasing_sequence_tup7_T0_T1_T2_T3_T4_T5_T6:
+  ([@stop_split] [@expl:try_such_that ensures] match try_such_that_Int (fun (r: int) -> ge_log_Int r 0
+    /\ not well_founded_relation_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s r) (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s (r
+    + 1))) with
+      | Some v -> index_Mapping_Int_bool (fun (r: int) -> ge_log_Int r 0
+      /\ not well_founded_relation_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s r) (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s (r
+      + 1))) v
+      | None -> forall x: int. not index_Mapping_Int_bool (fun (r: int) -> ge_log_Int r 0
+        /\ not well_founded_relation_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s r) (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s (r
+        + 1))) x
+      end)
+  -> match try_such_that_Int (fun (r: int) -> ge_log_Int r 0
+  /\ not well_founded_relation_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s r) (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s (r
+  + 1))) with
+    | Some r -> let result = r in [@stop_split] [@expl:no_infinite_decreasing_sequence_tup7_T0_T1_T2_T3_T4_T5_T6 ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int result 0)
+    /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s result) (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s (result
+    + 1)))
+    | None -> ([@stop_split] [@expl:first_component_decr requires] forall i: int. 0 <= i
+        -> well_founded_relation_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 (fun (i'0: int) -> tuple_to_pair_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s i'0)) i) (index_Mapping_Int_tup2_T0_tup6_T1_T2_T3_T4_T5_T6 (fun (i'0: int) -> tuple_to_pair_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s i'0)) (i
+        + 1)))
+    /\ (([@stop_split] [@expl:first_component_decr ensures] forall i: int. 0 <= i
+        -> well_founded_relation_T0 (index_Mapping_Int_T0 (first_component_decr_T0 (fun (i'0: int) -> tuple_to_pair_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s i'0))) i) (index_Mapping_Int_T0 (first_component_decr_T0 (fun (i'0: int) -> tuple_to_pair_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s i'0))) (i
+        + 1)))
+    -> ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int (no_infinite_decreasing_sequence_T0 (first_component_decr_T0 (fun (i: int) -> tuple_to_pair_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s i)))) 0)
+      /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_T0 (index_Mapping_Int_T0 (first_component_decr_T0 (fun (i: int) -> tuple_to_pair_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s i))) (no_infinite_decreasing_sequence_T0 (first_component_decr_T0 (fun (i: int) -> tuple_to_pair_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s i))))) (index_Mapping_Int_T0 (first_component_decr_T0 (fun (i: int) -> tuple_to_pair_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s i))) (no_infinite_decreasing_sequence_T0 (first_component_decr_T0 (fun (i: int) -> tuple_to_pair_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s i)))
+      + 1))))
+    -> (let _ = no_infinite_decreasing_sequence_T0 (first_component_decr_T0 (fun (i: int) -> tuple_to_pair_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s i))) in let result = any_Int in [@stop_split] [@expl:no_infinite_decreasing_sequence_tup7_T0_T1_T2_T3_T4_T5_T6 ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int result 0)
+    /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_tup7_T0_T1_T2_T3_T4_T5_T6 (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s result) (index_Mapping_Int_tup7_T0_T1_T2_T3_T4_T5_T6 s (result
+    + 1)))))
+    end

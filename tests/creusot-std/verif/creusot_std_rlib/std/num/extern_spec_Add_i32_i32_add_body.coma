@@ -1,0 +1,26 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int32
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: Int32.t = (-2147483648: Int32.t)
+
+constant const_MAX: Int32.t = (2147483647: Int32.t)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Add_i32_i32_add_body (self_: Int32.t) (rhs: Int32.t) (return (x: Int32.t)) =
+{[@stop_split] [@expl:extern_spec_Add_i32_i32_add_body requires] Int32.to_int const_MIN
+    <= Int32.to_int self_ + Int32.to_int rhs
+  /\ Int32.to_int self_ + Int32.to_int rhs <= Int32.to_int const_MAX}
+  (! bb0
+  [ bb0 = s0 [ s0 = Int32.add {self_} {rhs} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: Int32.t = Any.any_l () | & self_: Int32.t = self_ | & rhs: Int32.t = rhs ])
+  [ return (result: Int32.t) -> {[@stop_split] [@expl:extern_spec_Add_i32_i32_add_body ensures] Int32.to_int result
+    = Int32.to_int self_ + Int32.to_int rhs}
+    (! return {result}) ]

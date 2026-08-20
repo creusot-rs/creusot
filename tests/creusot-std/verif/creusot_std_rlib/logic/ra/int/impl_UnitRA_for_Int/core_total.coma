@@ -1,0 +1,31 @@
+(* <logic::int::Int as logic::ra::UnitRA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Option_Int = None | Some int
+
+function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+
+meta "rewrite_def" function op_Int
+
+function commutative_Int (a: int) (b: int) : () = ()
+
+axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+
+function core_Int [@inline:trivial] (self: int) : t_Option_Int = Some 0
+
+meta "rewrite_def" function core_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : int
+
+function core_total_Int (self: int) : int
+
+goal vc_core_total_Int: [@stop_split] [@expl:core_total ensures] core_Int self = Some 0

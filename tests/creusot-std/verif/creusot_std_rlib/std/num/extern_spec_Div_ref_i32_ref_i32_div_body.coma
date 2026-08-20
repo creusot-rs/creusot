@@ -1,0 +1,37 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int32
+use int.ComputerDivision
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: Int32.t = (-2147483648: Int32.t)
+
+let div_ref_i32 (self_: Int32.t) (rhs: Int32.t) (return (x: Int32.t)) =
+{[@stop_split] [@expl:div_ref_i32 requires] ([@stop_split] [@expl:div requires #0] Int32.to_int rhs <> 0)
+  /\ ([@stop_split] [@expl:div requires #1] not (Int32.to_int self_ = Int32.to_int const_MIN
+  /\ Int32.to_int rhs = - 1))}
+  any
+  [ return (result: Int32.t) -> {[@stop_split] [@expl:div ensures] Int32.to_int result
+    = ComputerDivision.div (Int32.to_int self_) (Int32.to_int rhs)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Div__ref_i32__ref_i32_div_body (self_: Int32.t) (rhs: Int32.t) (return (x: Int32.t)) =
+{[@stop_split] [@expl:extern_spec_Div__ref_i32__ref_i32_div_body requires] ([@stop_split] [@expl:extern_spec_Div__ref_i32__ref_i32_div_body requires #0] Int32.to_int rhs
+    <> 0)
+  /\ ([@stop_split] [@expl:extern_spec_Div__ref_i32__ref_i32_div_body requires #1] not (Int32.to_int self_
+    = Int32.to_int const_MIN
+  /\ Int32.to_int rhs = - 1))}
+  (! bb0
+  [ bb0 = s0 [ s0 = div_ref_i32 {self_} {rhs} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: Int32.t = Any.any_l () | & self_: Int32.t = self_ | & rhs: Int32.t = rhs ])
+  [ return (result: Int32.t) ->
+  {[@stop_split] [@expl:extern_spec_Div__ref_i32__ref_i32_div_body ensures] Int32.to_int result
+    = ComputerDivision.div (Int32.to_int self_) (Int32.to_int rhs)}
+    (! return {result}) ]

@@ -1,0 +1,18 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int8
+use creusot.int.Int16
+use creusot.prelude.Any
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_From_i8_i16_from_body (small: Int8.t) (return (x: Int16.t)) = (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- Int16.of_int (Int8.to_int small) ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: Int16.t = Any.any_l () | & small: Int8.t = small ])
+  [ return (result: Int16.t) -> {[@stop_split] [@expl:extern_spec_From_i8_i16_from_body ensures] result
+    = Int16.of_int (Int8.to_int small)}
+    (! return {result}) ]

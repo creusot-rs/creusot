@@ -1,0 +1,28 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_Self
+
+type t_Option_Self = None | Some t_Self
+
+function op_Self (self: t_Self) (other: t_Self) : t_Option_Self
+
+predicate incl_Self (self: t_Self) (other: t_Self)
+
+axiom incl_Self_spec: forall self: t_Self, other: t_Self [incl_Self self other]. incl_Self self other
+    = (exists factor: t_Self. op_Self self factor = Some other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Self
+
+constant other : t_Self
+
+constant comb : t_Self
+
+function incl_op_Self (self: t_Self) (other: t_Self) (comb: t_Self) : ()
+
+goal vc_incl_op_Self: op_Self self other = Some comb -> ([@stop_split] [@expl:incl_op ensures] incl_Self self comb)

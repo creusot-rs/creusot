@@ -1,0 +1,57 @@
+(* <(T1, T2, T3, T4) as logic::ra::update::Update<(R1, R2, R3, R4)>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T1
+
+type t_T2
+
+type t_T3
+
+type t_T4
+
+type tup4_T1_T2_T3_T4 = { f0: t_T1; f1: t_T2; f2: t_T3; f3: t_T4 }
+
+type t_R1
+
+type t_R2
+
+type t_R3
+
+type t_R4
+
+type tup4_R1_R2_R3_R4 = { f0'0: t_R1; f1'0: t_R2; f2'0: t_R3; f3'0: t_R4 }
+
+type t_Choice
+
+type t_Choice'0
+
+type t_Choice'1
+
+type t_Choice'2
+
+type tup4_Choice_Choice_Choice_Choice = { f0'1: t_Choice; f1'1: t_Choice'0; f2'1: t_Choice'1; f3'1: t_Choice'2 }
+
+predicate premise_T1 (self: t_T1) (from: t_R1)
+
+predicate premise_T2 (self: t_T2) (from: t_R2)
+
+predicate premise_T3 (self: t_T3) (from: t_R3)
+
+predicate premise_T4 (self: t_T4) (from: t_R4)
+
+predicate premise_tup4_T1_T2_T3_T4 [@inline:trivial] (self: tup4_T1_T2_T3_T4) (from: tup4_R1_R2_R3_R4) =
+  premise_T1 self.f0 from.f0'0
+  /\ premise_T2 self.f1 from.f1'0 /\ premise_T3 self.f2 from.f2'0 /\ premise_T4 self.f3 from.f3'0
+
+meta "rewrite_def" predicate premise_tup4_T1_T2_T3_T4
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall self: tup4_T1_T2_T3_T4, from: tup4_R1_R2_R3_R4, ch: tup4_Choice_Choice_Choice_Choice. premise_tup4_T1_T2_T3_T4 self from
+    -> premise_tup4_T1_T2_T3_T4 self from

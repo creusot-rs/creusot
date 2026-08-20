@@ -1,0 +1,66 @@
+(* <std::iter::Fuse<I> as std::iter::fuse::FusedIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use seq.Seq
+
+type t_Fuse_I
+
+type t_Item
+
+type t_I
+
+type t_Option_I = None | Some t_I
+
+function view_Fuse_I (self: t_Fuse_I) : t_Option_I
+
+predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+
+function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+
+axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+    -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+
+function produces_refl_I (self: t_I) : ()
+
+axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+
+predicate produces_Fuse_I (self: t_Fuse_I) (prod: Seq.seq t_Item) (other: t_Fuse_I) =
+  match view_Fuse_I self with
+    | None -> prod = (Seq.empty: Seq.seq t_Item) /\ view_Fuse_I other = view_Fuse_I self
+    | Some i -> match view_Fuse_I other with
+      | Some i2 -> produces_I i prod i2
+      | None -> false
+      end
+    end
+
+function produces_trans_Fuse_I (a: t_Fuse_I) (ab: Seq.seq t_Item) (b: t_Fuse_I) (bc: Seq.seq t_Item) (c: t_Fuse_I) : ()
+ = ()
+
+axiom produces_trans_Fuse_I_spec:
+  forall a: t_Fuse_I, ab: Seq.seq t_Item, b: t_Fuse_I, bc: Seq.seq t_Item, c: t_Fuse_I. produces_Fuse_I a ab b
+    -> produces_Fuse_I b bc c -> produces_Fuse_I a (Seq.(++) ab bc) c
+
+function produces_refl_Fuse_I (self: t_Fuse_I) : () = ()
+
+axiom produces_refl_Fuse_I_spec: forall self: t_Fuse_I. produces_Fuse_I self (Seq.empty: Seq.seq t_Item) self
+
+predicate completed_I (self: MutBorrow.t t_I)
+
+predicate completed_Fuse_I (self: MutBorrow.t t_Fuse_I) =
+  (view_Fuse_I self.current = None
+    \/ (exists it: MutBorrow.t t_I. completed_I it /\ view_Fuse_I self.current = Some (it.current)))
+  /\ view_Fuse_I self.final = None
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: MutBorrow.t t_Fuse_I, steps: Seq.seq t_Item, next: t_Fuse_I. completed_Fuse_I self
+    -> produces_Fuse_I self.final steps next
+    -> completed_Fuse_I self
+    /\ produces_Fuse_I self.final steps next
+    /\ (forall result: (). steps = (Seq.empty: Seq.seq t_Item) -> steps = (Seq.empty: Seq.seq t_Item))

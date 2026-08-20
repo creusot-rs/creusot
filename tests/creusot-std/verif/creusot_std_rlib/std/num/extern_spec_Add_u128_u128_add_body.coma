@@ -1,0 +1,26 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt128
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: UInt128.t = (0: UInt128.t)
+
+constant const_MAX: UInt128.t = (340282366920938463463374607431768211455: UInt128.t)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Add_u128_u128_add_body (self_: UInt128.t) (rhs: UInt128.t) (return (x: UInt128.t)) =
+{[@stop_split] [@expl:extern_spec_Add_u128_u128_add_body requires] UInt128.t'int const_MIN
+    <= UInt128.t'int self_ + UInt128.t'int rhs
+  /\ UInt128.t'int self_ + UInt128.t'int rhs <= UInt128.t'int const_MAX}
+  (! bb0
+  [ bb0 = s0 [ s0 = UInt128.add {self_} {rhs} (fun (_x: UInt128.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: UInt128.t = Any.any_l () | & self_: UInt128.t = self_ | & rhs: UInt128.t = rhs ])
+  [ return (result: UInt128.t) -> {[@stop_split] [@expl:extern_spec_Add_u128_u128_add_body ensures] UInt128.t'int result
+    = UInt128.t'int self_ + UInt128.t'int rhs}
+    (! return {result}) ]

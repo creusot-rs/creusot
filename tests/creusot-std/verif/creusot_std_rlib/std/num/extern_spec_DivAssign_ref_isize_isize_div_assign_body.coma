@@ -1,0 +1,50 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.int.Int64
+use int.ComputerDivision
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: Int64.t = (-9223372036854775808: Int64.t)
+
+let div_assign_isize (self_: MutBorrow.t Int64.t) (rhs: Int64.t) (return (x: ())) =
+{[@stop_split] [@expl:div_assign_isize requires] ([@stop_split] [@expl:div_assign requires #0] Int64.to_int rhs <> 0)
+  /\ ([@stop_split] [@expl:div_assign requires #1] not (self_.current = const_MIN /\ Int64.to_int rhs = - 1))}
+  any
+  [ return (result: ()) -> {[@stop_split] [@expl:div_assign ensures] Int64.to_int self_.final
+    = ComputerDivision.div (Int64.to_int self_.current) (Int64.to_int rhs)}
+    (! return {result}) ]
+
+predicate resolve_refmut_isize [@inline:trivial] (_1: MutBorrow.t Int64.t) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_isize
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_DivAssign__ref_isize_isize_div_assign_body (self_: MutBorrow.t Int64.t) (rhs: Int64.t)
+  (return (x: ())) =
+{[@stop_split] [@expl:extern_spec_DivAssign__ref_isize_isize_div_assign_body requires] ([@stop_split] [@expl:extern_spec_DivAssign__ref_isize_isize_div_assign_body requires #0] Int64.to_int rhs
+    <> 0)
+  /\ ([@stop_split] [@expl:extern_spec_DivAssign__ref_isize_isize_div_assign_body requires #1] not (self_.current
+    = const_MIN
+  /\ Int64.to_int rhs = - 1))}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = MutBorrow.borrow_final <Int64.t> {self_.current} {MutBorrow.get_id self_}
+        (fun (_bor: MutBorrow.t Int64.t) -> [ &_11 <- _bor ] [ &self_ <- { self_ with current = _bor.final } ] s1)
+    | s1 = div_assign_isize {_11} {rhs} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+    | s2 = -{resolve_refmut_isize self_}- s3
+    | s3 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l ()
+  | & self_: MutBorrow.t Int64.t = self_
+  | & rhs: Int64.t = rhs
+  | & _11: MutBorrow.t Int64.t = Any.any_l () ])
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:extern_spec_DivAssign__ref_isize_isize_div_assign_body ensures] Int64.to_int self_.final
+    = ComputerDivision.div (Int64.to_int self_.current) (Int64.to_int rhs)}
+    (! return {result}) ]

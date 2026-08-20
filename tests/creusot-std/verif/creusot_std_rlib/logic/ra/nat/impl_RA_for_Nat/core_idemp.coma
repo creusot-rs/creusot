@@ -1,0 +1,72 @@
+(* <logic::int::Nat as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+type t_Nat
+
+type t_Option_Nat = None | Some t_Nat
+
+predicate index_Mapping_Nat_bool [@inline:trivial] (self: Map.map t_Nat bool) (a: t_Nat) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Nat_bool
+
+function such_that_Nat (p: Map.map t_Nat bool) : t_Nat
+
+axiom such_that_Nat_spec: forall p: Map.map t_Nat bool [such_that_Nat p]. (exists x: t_Nat. index_Mapping_Nat_bool p x)
+    -> index_Mapping_Nat_bool p (such_that_Nat p)
+
+constant any_Nat: t_Nat = such_that_Nat (fun (__0: t_Nat) -> true)
+
+function unwrap_Option_Nat (self: t_Option_Nat) : t_Nat = match self with
+    | Some x -> x
+    | None -> any_Nat
+    end
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function to_int (self: t_Nat) : int
+
+axiom to_int_spec: forall self: t_Nat [to_int self]. ge_log_Int (to_int self) 0
+
+function new (n: int) : t_Nat
+
+axiom new_spec: forall n: int [new n]. ge_log_Int n 0 -> to_int (new n) = n
+
+function core_Nat [@inline:trivial] (self: t_Nat) : t_Option_Nat = Some (new 0)
+
+meta "rewrite_def" function core_Nat
+
+function view_Nat (self: t_Nat) : int = to_int self
+
+function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+
+axiom add_Nat_spec: forall self: t_Nat, other: t_Nat [add_Nat self other]. view_Nat (add_Nat self other)
+    = view_Nat self + view_Nat other
+
+function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+
+meta "rewrite_def" function op_Nat
+
+predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+
+axiom ext_eq_spec: forall self: t_Nat, other: t_Nat [self = other]. ext_eq self other = (self = other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Nat
+
+function core_idemp_Nat (self: t_Nat) : ()
+
+goal vc_core_idemp_Nat:
+  [@stop_split] [@expl:core_idemp_Nat ensures] ([@stop_split] [@expl:core_idemp ensures #0] let c = unwrap_Option_Nat (core_Nat self) in op_Nat c c
+    = Some c)
+  /\ ([@stop_split] [@expl:core_idemp ensures #1] op_Nat (unwrap_Option_Nat (core_Nat self)) self = Some self)

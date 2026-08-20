@@ -1,0 +1,68 @@
+(* <logic::ra::auth::AuthViewRel<T> as logic::ra::view::ViewRel> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+type t_Option_T = None | Some t_T
+
+function op_T (self: t_T) (other: t_T) : t_Option_T
+
+predicate incl_T (self: t_T) (other: t_T)
+
+axiom incl_T_spec: forall self: t_T, other: t_T [incl_T self other]. incl_T self other
+    = (exists factor: t_T. op_T self factor = Some other)
+
+function incl_transitive_T (a: t_T) (b: t_T) (c: t_T) : ()
+
+axiom incl_transitive_T_spec: forall a: t_T, b: t_T, c: t_T. incl_T a b -> incl_T b c -> incl_T a c
+
+function associative_some_T (a: t_T) (b: t_T) (c: t_T) (ab: t_T) (bc: t_T) : ()
+
+axiom associative_some_T_spec: forall a: t_T, b: t_T, c: t_T, ab: t_T, bc: t_T. op_T a b = Some ab
+    -> op_T b c = Some bc -> op_T a bc = op_T ab c
+
+function associative_none_T (a: t_T) (b: t_T) (c: t_T) (bc: t_T) : ()
+
+axiom associative_none_T_spec: forall a: t_T, b: t_T, c: t_T, bc: t_T. op_T a b = None
+    -> op_T b c = Some bc -> op_T a bc = None
+
+function commutative_T (a: t_T) (b: t_T) : ()
+
+axiom commutative_T_spec: forall a: t_T, b: t_T. op_T a b = op_T b a
+
+function incl_op_T (self: t_T) (other: t_T) (comb: t_T) : ()
+
+axiom incl_op_T_spec: forall self: t_T, other: t_T, comb: t_T. op_T self other = Some comb -> incl_T self comb
+
+predicate rel_AuthViewRel_T (a: t_Option_T) (f: t_T) =
+  match a with
+    | Some a'0 -> incl_T f a'0
+    | None -> true
+    end
+
+function core_T (self: t_T) : t_Option_T
+
+function core_total_T (self: t_T) : t_T
+
+axiom core_total_T_spec: forall self: t_T [core_total_T self]. core_T self = Some (core_total_T self)
+
+constant unit_T : t_T
+
+axiom unit_T_spec: forall x: t_T [op_T x unit_T]. op_T x unit_T = Some x
+
+constant unit_core_T : ()
+
+axiom unit_core_T_spec: core_total_T unit_T = unit_T
+
+constant incl_refl_T : ()
+
+axiom incl_refl_T_spec: forall x: t_T. incl_T x x
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall a: t_Option_T. forall result: (). rel_AuthViewRel_T a unit_T -> rel_AuthViewRel_T a unit_T

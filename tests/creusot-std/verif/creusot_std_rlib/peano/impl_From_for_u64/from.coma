@@ -1,0 +1,22 @@
+(* <u64 as std::convert::From<peano::PeanoInt>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use creusot.prelude.Any
+
+type t_PeanoInt = { f0: UInt64.t }
+
+let to_u64 (self: t_PeanoInt) (return (x: UInt64.t)) = any
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:to_u64 ensures] result = self.f0} (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let from_u64 (val': t_PeanoInt) (return (x: UInt64.t)) = (! bb0
+  [ bb0 = s0 [ s0 = to_u64 {val'} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: UInt64.t = Any.any_l () | & val': t_PeanoInt = val' ])
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:from ensures] result = val'.f0} (! return {result}) ]

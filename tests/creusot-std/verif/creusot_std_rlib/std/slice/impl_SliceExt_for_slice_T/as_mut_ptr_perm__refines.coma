@@ -1,0 +1,126 @@
+(* <[T] as std::slice::SliceExt<T>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.slice.Slice64
+use seq.Seq
+use creusot.prelude.Opaque
+use creusot.prelude.Ptr
+use creusot.int.UInt64
+use int.Int
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+
+predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+
+meta "rewrite_def" predicate inv_slice_T
+
+predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+  inv_slice_T self.current /\ inv_slice_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_slice_T
+
+predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
+
+meta "rewrite_def" predicate inv_refmut_slice_T
+
+type t_Perm_ptr_slice_T
+
+type tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T = { f0: Opaque.ptr; f1: MutBorrow.t t_Perm_ptr_slice_T }
+
+predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+
+function ward_ptr_slice_T (self: t_Perm_ptr_slice_T) : Opaque.ptr
+
+predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
+  Seq.length (Slice64.view _value) = UInt64.t'int _metadata
+
+meta "rewrite_def" predicate metadata_matches_slice_T
+
+function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
+
+function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
+
+predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+
+meta "rewrite_def" predicate invariant_ref_slice_T
+
+predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+
+meta "rewrite_def" predicate inv_ref_slice_T
+
+predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
+  not is_null_ptr_slice_T (ward_ptr_slice_T self)
+  /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (ward_ptr_slice_T self))
+  /\ inv_ref_slice_T (val_ptr_slice_T self)
+
+predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
+    = invariant_Perm_ptr_slice_T x
+
+predicate invariant_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) =
+  inv_Perm_ptr_slice_T self.current /\ inv_Perm_ptr_slice_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_Perm_ptr_slice_T
+
+predicate inv_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_slice_T) =
+  invariant_refmut_Perm_ptr_slice_T _1
+
+meta "rewrite_def" predicate inv_refmut_Perm_ptr_slice_T
+
+predicate invariant_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) =
+  inv_refmut_Perm_ptr_slice_T self
+
+meta "rewrite_def" predicate invariant_Ghost_refmut_Perm_ptr_slice_T
+
+predicate inv_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_slice_T) =
+  invariant_Ghost_refmut_Perm_ptr_slice_T _1
+
+meta "rewrite_def" predicate inv_Ghost_refmut_Perm_ptr_slice_T
+
+predicate inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T) =
+  inv_Ghost_refmut_Perm_ptr_slice_T _1.f1
+
+meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T
+
+function fin_Ghost_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) : t_Perm_ptr_slice_T
+ = self.final
+
+meta "rewrite_def" function fin_Ghost_refmut_Perm_ptr_slice_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: MutBorrow.t (Slice64.slice t_T). inv_refmut_slice_T self
+    -> inv_refmut_slice_T self
+    /\ (forall result: tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T. inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result
+        /\ result.f0 = Opaque.thin (ward_ptr_slice_T result.f1.current)
+        /\ self.current = val_ptr_slice_T result.f1.current
+        /\ self.final = val_ptr_slice_T (fin_Ghost_refmut_Perm_ptr_slice_T result.f1)
+      -> inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_slice_T result)

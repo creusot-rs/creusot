@@ -1,0 +1,24 @@
+(* <std::array::IntoIter<T, N> as std::iter::DoubleEndedIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use seq.Reverse
+
+type t_IntoIter_T
+
+type t_T
+
+function view_IntoIter_T (self: t_IntoIter_T) : Seq.seq t_T
+
+predicate produces_back_IntoIter_T (self: t_IntoIter_T) (visited: Seq.seq t_T) (o: t_IntoIter_T) =
+  view_IntoIter_T self = Seq.(++) (view_IntoIter_T o) (Reverse.reverse visited)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_IntoIter_T. forall result: (). produces_back_IntoIter_T self (Seq.empty: Seq.seq t_T) self
+      -> produces_back_IntoIter_T self (Seq.empty: Seq.seq t_T) self

@@ -1,0 +1,25 @@
+(* <logic::seq::Iter<T> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+
+type t_T
+
+type t_Iter_T = { f0: Seq.seq t_T }
+
+function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
+
+predicate produces_Iter_T [@inline:trivial] (self: t_Iter_T) (visited: Seq.seq t_T) (o: t_Iter_T) =
+  view_Iter_T self = Seq.(++) visited (view_Iter_T o)
+
+meta "rewrite_def" predicate produces_Iter_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Iter_T. forall result: (). produces_Iter_T self (Seq.empty: Seq.seq t_T) self
+      -> produces_Iter_T self (Seq.empty: Seq.seq t_T) self

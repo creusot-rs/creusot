@@ -1,0 +1,30 @@
+(* <ghost::perm::Perm<C> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_Perm_C
+
+predicate inv_Perm_C (_1: t_Perm_C)
+
+predicate structural_resolve_Perm_C (_1: t_Perm_C)
+
+type t_Value
+
+predicate resolve_Value (_1: t_Value)
+
+function val_C (self: t_Perm_C) : t_Value
+
+predicate resolve_Perm_C [@inline:trivial] (self: t_Perm_C) = resolve_Value (val_C self)
+
+meta "rewrite_def" predicate resolve_Perm_C
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Perm_C. inv_Perm_C self
+    -> structural_resolve_Perm_C self
+    -> inv_Perm_C self
+    /\ structural_resolve_Perm_C self /\ (forall result: (). resolve_Perm_C self -> resolve_Perm_C self)

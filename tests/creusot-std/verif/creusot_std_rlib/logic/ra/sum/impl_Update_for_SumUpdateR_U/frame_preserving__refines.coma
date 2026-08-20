@@ -1,0 +1,136 @@
+(* <logic::ra::sum::SumUpdateR<U> as logic::ra::update::Update<logic::ra::sum::Sum<V, R>>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_U
+
+type t_SumUpdateR_U = { f0: t_U }
+
+type t_V
+
+type t_R
+
+type t_Sum_V_R = Left t_V | Right t_R
+
+predicate premise_U (self: t_U) (from: t_R)
+
+predicate premise_SumUpdateR_U [@inline:trivial] (self: t_SumUpdateR_U) (from: t_Sum_V_R) =
+  match from with
+    | Right from'0 -> premise_U self.f0 from'0
+    | Left _ -> false
+    end
+
+meta "rewrite_def" predicate premise_SumUpdateR_U
+
+type t_Option_Sum_V_R = None | Some t_Sum_V_R
+
+type tup2_Sum_V_R_Sum_V_R = { f0'0: t_Sum_V_R; f1'0: t_Sum_V_R }
+
+type t_Option_V = None'0 | Some'0 t_V
+
+function map_Option_V (self: t_Option_V) (f: Map.map t_V t_Sum_V_R) : t_Option_Sum_V_R = match self with
+    | None'0 -> None
+    | Some'0 x -> Some (Map.get f x)
+    end
+
+function op_V (self: t_V) (other: t_V) : t_Option_V
+
+predicate incl_V (self: t_V) (other: t_V)
+
+axiom incl_V_spec: forall self: t_V, other: t_V [incl_V self other]. incl_V self other
+    = (exists factor: t_V. op_V self factor = Some'0 other)
+
+function incl_transitive_V (a: t_V) (b: t_V) (c: t_V) : ()
+
+axiom incl_transitive_V_spec: forall a: t_V, b: t_V, c: t_V. incl_V a b -> incl_V b c -> incl_V a c
+
+function associative_some_V (a: t_V) (b: t_V) (c: t_V) (ab: t_V) (bc: t_V) : ()
+
+axiom associative_some_V_spec: forall a: t_V, b: t_V, c: t_V, ab: t_V, bc: t_V. op_V a b = Some'0 ab
+    -> op_V b c = Some'0 bc -> op_V a bc = op_V ab c
+
+function associative_none_V (a: t_V) (b: t_V) (c: t_V) (bc: t_V) : ()
+
+axiom associative_none_V_spec: forall a: t_V, b: t_V, c: t_V, bc: t_V. op_V a b = None'0
+    -> op_V b c = Some'0 bc -> op_V a bc = None'0
+
+function commutative_V (a: t_V) (b: t_V) : ()
+
+axiom commutative_V_spec: forall a: t_V, b: t_V. op_V a b = op_V b a
+
+function incl_op_V (self: t_V) (other: t_V) (comb: t_V) : ()
+
+axiom incl_op_V_spec: forall self: t_V, other: t_V, comb: t_V. op_V self other = Some'0 comb -> incl_V self comb
+
+type t_Option_R = None'1 | Some'1 t_R
+
+function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Sum_V_R) : t_Option_Sum_V_R = match self with
+    | None'1 -> None
+    | Some'1 x -> Some (Map.get f x)
+    end
+
+function op_R (self: t_R) (other: t_R) : t_Option_R
+
+predicate incl_R (self: t_R) (other: t_R)
+
+axiom incl_R_spec: forall self: t_R, other: t_R [incl_R self other]. incl_R self other
+    = (exists factor: t_R. op_R self factor = Some'1 other)
+
+function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+
+axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+
+function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+
+axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some'1 ab
+    -> op_R b c = Some'1 bc -> op_R a bc = op_R ab c
+
+function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+
+axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None'1
+    -> op_R b c = Some'1 bc -> op_R a bc = None'1
+
+function commutative_R (a: t_R) (b: t_R) : ()
+
+axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+
+function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+
+axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some'1 comb -> incl_R self comb
+
+function op_Sum_V_R (self: t_Sum_V_R) (other: t_Sum_V_R) : t_Option_Sum_V_R = match { f0'0 = self; f1'0 = other } with
+    | {f0'0 = Left x; f1'0 = Left y} -> map_Option_V (op_V x y) (fun (l: t_V) -> Left l)
+    | {f0'0 = Right x; f1'0 = Right y} -> map_Option_R (op_R x y) (fun (r: t_R) -> Right r)
+    | _ -> None
+    end
+
+function commutative_Sum_V_R (a: t_Sum_V_R) (b: t_Sum_V_R) : () = ()
+
+axiom commutative_Sum_V_R_spec: forall a: t_Sum_V_R, b: t_Sum_V_R. op_Sum_V_R a b = op_Sum_V_R b a
+
+type t_Choice
+
+function update_U (self: t_U) (from: t_R) (ch: t_Choice) : t_R
+
+function update_SumUpdateR_U [@inline:trivial] (self: t_SumUpdateR_U) (from: t_Sum_V_R) (ch: t_Choice) : t_Sum_V_R =
+  match from with
+    | Right from'0 -> Right (update_U self.f0 from'0 ch)
+    | x -> x
+    end
+
+meta "rewrite_def" function update_SumUpdateR_U
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_SumUpdateR_U, from: t_Sum_V_R, frame: t_Sum_V_R. premise_SumUpdateR_U self from
+    -> op_Sum_V_R from frame <> None
+    -> premise_SumUpdateR_U self from
+    /\ op_Sum_V_R from frame <> None
+    /\ (forall result: t_Choice. op_Sum_V_R (update_SumUpdateR_U self from result) frame <> None
+      -> op_Sum_V_R (update_SumUpdateR_U self from result) frame <> None)

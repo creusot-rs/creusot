@@ -1,0 +1,54 @@
+(* <std::boxed::Box<T> as logic::well_founded::WellFounded> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+type t_T
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate well_founded_relation_T (self: t_T) (other: t_T)
+
+predicate well_founded_relation_Box_T_Global [@inline:trivial] (self: t_T) (other: t_T) =
+  well_founded_relation_T self other
+
+meta "rewrite_def" predicate well_founded_relation_Box_T_Global
+
+function index_Mapping_Int_Box_T_Global [@inline:trivial] (self: Map.map int t_T) (a: int) : t_T = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_Box_T_Global
+
+function index_Mapping_Int_T [@inline:trivial] (self: Map.map int t_T) (a: int) : t_T = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_T
+
+function no_infinite_decreasing_sequence_T (s: Map.map int t_T) : int
+
+axiom no_infinite_decreasing_sequence_T_spec:
+  forall s: Map.map int t_T [no_infinite_decreasing_sequence_T s]. ge_log_Int (no_infinite_decreasing_sequence_T s) 0
+
+axiom no_infinite_decreasing_sequence_T_spec'0:
+  forall s: Map.map int t_T [no_infinite_decreasing_sequence_T s]. not well_founded_relation_T (index_Mapping_Int_T s (no_infinite_decreasing_sequence_T s)) (index_Mapping_Int_T s (no_infinite_decreasing_sequence_T s
+    + 1))
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant s : Map.map int t_T
+
+function no_infinite_decreasing_sequence_Box_T_Global (s: Map.map int t_T) : int
+
+goal vc_no_infinite_decreasing_sequence_Box_T_Global:
+  ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int (no_infinite_decreasing_sequence_T (fun (i: int) -> index_Mapping_Int_Box_T_Global s i)) 0)
+    /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_T (index_Mapping_Int_T (fun (i: int) -> index_Mapping_Int_Box_T_Global s i) (no_infinite_decreasing_sequence_T (fun (i: int) -> index_Mapping_Int_Box_T_Global s i))) (index_Mapping_Int_T (fun (i: int) -> index_Mapping_Int_Box_T_Global s i) (no_infinite_decreasing_sequence_T (fun (i: int) -> index_Mapping_Int_Box_T_Global s i)
+    + 1))))
+  -> (let result = no_infinite_decreasing_sequence_T (fun (i: int) -> index_Mapping_Int_Box_T_Global s i) in [@stop_split] [@expl:no_infinite_decreasing_sequence_Box_T_Global ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int result 0)
+  /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_Box_T_Global (index_Mapping_Int_Box_T_Global s result) (index_Mapping_Int_Box_T_Global s (result
+  + 1))))

@@ -1,0 +1,22 @@
+(* <ghost::lifetime_logic::LifetimeDead as std::clone::Clone> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_Id
+
+type t_Lifetime = { f0: t_Id }
+
+type t_LifetimeDead = { f0'0: t_Lifetime }
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let clone_LifetimeDead (self: t_LifetimeDead) (return (x: t_LifetimeDead)) = (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_LifetimeDead = Any.any_l () | & self: t_LifetimeDead = self ])
+  [ return (result: t_LifetimeDead) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]

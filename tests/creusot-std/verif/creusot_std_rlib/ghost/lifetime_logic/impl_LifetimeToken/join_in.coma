@@ -1,0 +1,127 @@
+(* ghost::lifetime_logic::LifetimeToken *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use real.Real
+use real.FromInt
+use creusot.prelude.Any
+
+type t_Resource_PositiveReal
+
+type t_LifetimeToken = { f0: t_Resource_PositiveReal }
+
+let deref_mut_Ghost_Resource_PositiveReal (self: MutBorrow.t t_Resource_PositiveReal)
+  (return (x: MutBorrow.t t_Resource_PositiveReal)) = any
+  [ return (result: MutBorrow.t t_Resource_PositiveReal) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
+    (! return {result}) ]
+
+let into_inner_Resource_PositiveReal (self: t_Resource_PositiveReal) (return (x: t_Resource_PositiveReal)) = any
+  [ return (result: t_Resource_PositiveReal) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+    (! return {result}) ]
+
+type t_Id
+
+function id_PositiveReal (self: t_Resource_PositiveReal) : t_Id
+
+type t_PositiveReal
+
+function val_PositiveReal (self: t_Resource_PositiveReal) : t_PositiveReal
+
+function view_Resource_PositiveReal [@inline:trivial] (self: t_Resource_PositiveReal) : t_PositiveReal =
+  val_PositiveReal self
+
+meta "rewrite_def" function view_Resource_PositiveReal
+
+type t_Option_PositiveReal = None | Some t_PositiveReal
+
+predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
+
+meta "rewrite_def" predicate gt_log_Real
+
+function to_real (self: t_PositiveReal) : Real.real
+
+axiom to_real_spec: forall self: t_PositiveReal [to_real self]. gt_log_Real (to_real self) (FromInt.from_int 0)
+
+function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+
+axiom add_PositiveReal_spec:
+  forall self: t_PositiveReal, other: t_PositiveReal [add_PositiveReal self other]. to_real (add_PositiveReal self other)
+    = Real.(+) (to_real self) (to_real other)
+
+function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+  Some (add_PositiveReal self other)
+
+meta "rewrite_def" function op_PositiveReal
+
+function commutative_PositiveReal (a: t_PositiveReal) (b: t_PositiveReal) : ()
+
+axiom commutative_PositiveReal_spec: forall a: t_PositiveReal, b: t_PositiveReal. op_PositiveReal a b
+    = op_PositiveReal b a
+
+let join_in_PositiveReal (self: MutBorrow.t t_Resource_PositiveReal) (other: t_Resource_PositiveReal) (return (x: ())) =
+{[@stop_split] [@expl:join_in requires] id_PositiveReal self.current = id_PositiveReal other}
+  any
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:join_in_PositiveReal ensures] ([@stop_split] [@expl:join_in ensures #0] id_PositiveReal self.final
+      = id_PositiveReal self.current)
+    /\ ([@stop_split] [@expl:join_in ensures #1] Some (view_Resource_PositiveReal self.final)
+    = op_PositiveReal (view_Resource_PositiveReal self.current) (view_Resource_PositiveReal other))}
+    (! return {result}) ]
+
+predicate resolve_refmut_Resource_PositiveReal [@inline:trivial] (_1: MutBorrow.t t_Resource_PositiveReal) =
+  _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Resource_PositiveReal
+
+predicate resolve_refmut_LifetimeToken [@inline:trivial] (_1: MutBorrow.t t_LifetimeToken) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_LifetimeToken
+
+let new_unit (x: ()) (return (x'0: ())) = any
+  [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+
+type t_Lifetime = { f0'0: t_Id }
+
+function lft (self: t_LifetimeToken) : t_Lifetime = { f0'0 = id_PositiveReal self.f0 }
+
+function frac (self: t_LifetimeToken) : t_PositiveReal = val_PositiveReal self.f0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let join_in (self: MutBorrow.t t_LifetimeToken) (other: t_LifetimeToken) (return (x: ())) =
+{[@stop_split] [@expl:join_in requires] lft self.current = lft other}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = MutBorrow.borrow_final <t_Resource_PositiveReal> {self.current.f0}
+        {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
+        (fun (_bor: MutBorrow.t t_Resource_PositiveReal) ->
+          [ &_15 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s1)
+    | s1 = deref_mut_Ghost_Resource_PositiveReal {_15}
+        (fun (_x: MutBorrow.t t_Resource_PositiveReal) -> [ &_14 <- _x ] s2)
+    | s2 = into_inner_Resource_PositiveReal {other.f0} (fun (_x: t_Resource_PositiveReal) -> [ &_16 <- _x ] s3)
+    | s3 = MutBorrow.borrow_final <t_Resource_PositiveReal> {_14.current} {MutBorrow.get_id _14}
+        (fun (_bor: MutBorrow.t t_Resource_PositiveReal) ->
+          [ &_13 <- _bor ] [ &_14 <- { _14 with current = _bor.final } ] s4)
+    | s4 = join_in_PositiveReal {_13} {_16} (fun (_x: ()) -> [ &_12 <- _x ] s5)
+    | s5 = -{resolve_refmut_Resource_PositiveReal _14}- s6
+    | s6 = -{resolve_refmut_LifetimeToken self}- s7
+    | s7 = new_unit {_12} (fun (_x: ()) -> [ &_11 <- _x ] s8)
+    | s8 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l ()
+  | & self: MutBorrow.t t_LifetimeToken = self
+  | & other: t_LifetimeToken = other
+  | & _11: () = Any.any_l ()
+  | & _12: () = Any.any_l ()
+  | & _13: MutBorrow.t t_Resource_PositiveReal = Any.any_l ()
+  | & _14: MutBorrow.t t_Resource_PositiveReal = Any.any_l ()
+  | & _15: MutBorrow.t t_Resource_PositiveReal = Any.any_l ()
+  | & _16: t_Resource_PositiveReal = Any.any_l () ])
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:join_in ensures] ([@stop_split] [@expl:join_in ensures #0] lft self.final = lft self.current)
+    /\ ([@stop_split] [@expl:join_in ensures #1] frac self.final = add_PositiveReal (frac self.current) (frac other))}
+    (! return {result}) ]

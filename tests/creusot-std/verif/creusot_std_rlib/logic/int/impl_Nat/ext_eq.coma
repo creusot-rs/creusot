@@ -1,0 +1,47 @@
+(* logic::int::Nat *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Subset_NatInner
+
+type t_Nat = { f0: t_Subset_NatInner }
+
+type t_NatInner = { f0'0: int }
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate invariant_NatInner (self: t_NatInner) = ge_log_Int self.f0'0 0
+
+function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+
+axiom inner_NatInner_spec:
+  forall self: t_Subset_NatInner [inner_NatInner self]. invariant_NatInner (inner_NatInner self)
+
+function inner_inj_NatInner (self: t_Subset_NatInner) (other: t_Subset_NatInner) : ()
+
+axiom inner_inj_NatInner_spec: forall self: t_Subset_NatInner, other: t_Subset_NatInner. inner_NatInner self
+      = inner_NatInner other -> self = other
+
+function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+
+axiom to_int_spec: forall self: t_Nat [to_int self]. ge_log_Int (to_int self) 0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Nat
+
+constant other : t_Nat
+
+predicate ext_eq (self: t_Nat) (other: t_Nat)
+
+goal vc_ext_eq: ([@stop_split] [@expl:to_int ensures] ge_log_Int (to_int self) 0)
+  -> ([@stop_split] [@expl:to_int ensures] ge_log_Int (to_int other) 0)
+  -> ([@stop_split] [@expl:ext_eq ensures] (to_int self = to_int other) = (self = other))

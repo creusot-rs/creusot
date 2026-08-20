@@ -1,0 +1,54 @@
+(* <peano::PeanoInt as std::cmp::Ord> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use creusot.prelude.Any
+use int.Int
+
+type t_PeanoInt = { f0: UInt64.t }
+
+type t_Ordering = Less | Equal | Greater
+
+function cmp_log_Int (self: int) (other: int) : t_Ordering = if self = other then
+    Equal
+  else
+    if self < other then Less else Greater
+
+
+function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+
+meta "rewrite_def" function deep_model_u64
+
+let cmp_u64 (self_: UInt64.t) (rhs: UInt64.t) (return (x: t_Ordering)) = any
+  [ return (result: t_Ordering) -> {[@stop_split] [@expl:cmp ensures] result
+    = cmp_log_Int (deep_model_u64 self_) (deep_model_u64 rhs)}
+    (! return {result}) ]
+
+predicate lt_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) = UInt64.lt self.f0 o.f0
+
+meta "rewrite_def" predicate lt_log_PeanoInt
+
+function cmp_log_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) : t_Ordering = if self = other then
+    Equal
+  else
+    if lt_log_PeanoInt self other then Less else Greater
+
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let cmp_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: t_Ordering)) = (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_8 <- other.f0 ] s1
+    | s1 = cmp_u64 {self.f0} {_8} (fun (_x: t_Ordering) -> [ &_ret <- _x ] s2)
+    | s2 = return {_ret} ] ]
+  [ & _ret: t_Ordering = Any.any_l ()
+  | & self: t_PeanoInt = self
+  | & other: t_PeanoInt = other
+  | & _8: UInt64.t = Any.any_l () ])
+  [ return (result: t_Ordering) -> {[@stop_split] [@expl:cmp ensures] result = cmp_log_PeanoInt self other}
+    (! return {result}) ]

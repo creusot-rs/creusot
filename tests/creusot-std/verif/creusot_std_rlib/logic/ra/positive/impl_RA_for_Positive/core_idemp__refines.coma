@@ -1,0 +1,60 @@
+(* <logic::int::Positive as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+type t_Positive
+
+type t_Option_Positive = None | Some t_Positive
+
+function core_Positive (self: t_Positive) : t_Option_Positive = None
+
+predicate index_Mapping_Positive_bool [@inline:trivial] (self: Map.map t_Positive bool) (a: t_Positive) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Positive_bool
+
+function such_that_Positive (p: Map.map t_Positive bool) : t_Positive
+
+axiom such_that_Positive_spec:
+  forall p: Map.map t_Positive bool [such_that_Positive p]. (exists x: t_Positive. index_Mapping_Positive_bool p x)
+    -> index_Mapping_Positive_bool p (such_that_Positive p)
+
+constant any_Positive: t_Positive = such_that_Positive (fun (__0: t_Positive) -> true)
+
+function unwrap_Option_Positive (self: t_Option_Positive) : t_Positive = match self with
+    | Some x -> x
+    | None -> any_Positive
+    end
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+function to_int (self: t_Positive) : int
+
+axiom to_int_spec: forall self: t_Positive [to_int self]. gt_log_Int (to_int self) 0
+
+function view_Positive (self: t_Positive) : int = to_int self
+
+function add_Positive (self: t_Positive) (other: t_Positive) : t_Positive
+
+axiom add_Positive_spec:
+  forall self: t_Positive, other: t_Positive [add_Positive self other]. view_Positive (add_Positive self other)
+    = view_Positive self + view_Positive other
+
+function op_Positive (self: t_Positive) (other: t_Positive) : t_Option_Positive = Some (add_Positive self other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Positive. core_Positive self <> None
+    -> core_Positive self <> None
+    /\ (forall result: (). (let c = unwrap_Option_Positive (core_Positive self) in op_Positive c c = Some c)
+        /\ op_Positive (unwrap_Option_Positive (core_Positive self)) self = Some self
+      -> (let c = unwrap_Option_Positive (core_Positive self) in op_Positive c c = Some c)
+      /\ op_Positive (unwrap_Option_Positive (core_Positive self)) self = Some self)

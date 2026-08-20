@@ -1,0 +1,102 @@
+(* <logic::fmap::FMap<K, V> as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_FMap_K_V
+
+type t_K
+
+type t_V
+
+type t_Option_V = None | Some t_V
+
+function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+
+function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+
+meta "rewrite_def" function get_K
+
+predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
+
+axiom ext_eq_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V [self = other]. ext_eq_K self other = (self = other)
+
+type t_Option_Option_V = None'0 | Some'0 t_Option_V
+
+type tup2_Option_V_Option_V = { f0: t_Option_V; f1: t_Option_V }
+
+function map_Option_V (self: t_Option_V) (f: Map.map t_V t_Option_V) : t_Option_Option_V = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
+function op_V (self: t_V) (other: t_V) : t_Option_V
+
+predicate incl_V (self: t_V) (other: t_V)
+
+axiom incl_V_spec: forall self: t_V, other: t_V [incl_V self other]. incl_V self other
+    = (exists factor: t_V. op_V self factor = Some other)
+
+function incl_transitive_V (a: t_V) (b: t_V) (c: t_V) : ()
+
+axiom incl_transitive_V_spec: forall a: t_V, b: t_V, c: t_V. incl_V a b -> incl_V b c -> incl_V a c
+
+function associative_some_V (a: t_V) (b: t_V) (c: t_V) (ab: t_V) (bc: t_V) : ()
+
+axiom associative_some_V_spec: forall a: t_V, b: t_V, c: t_V, ab: t_V, bc: t_V. op_V a b = Some ab
+    -> op_V b c = Some bc -> op_V a bc = op_V ab c
+
+function associative_none_V (a: t_V) (b: t_V) (c: t_V) (bc: t_V) : ()
+
+axiom associative_none_V_spec: forall a: t_V, b: t_V, c: t_V, bc: t_V. op_V a b = None
+    -> op_V b c = Some bc -> op_V a bc = None
+
+function commutative_V (a: t_V) (b: t_V) : ()
+
+axiom commutative_V_spec: forall a: t_V, b: t_V. op_V a b = op_V b a
+
+function incl_op_V (self: t_V) (other: t_V) (comb: t_V) : ()
+
+axiom incl_op_V_spec: forall self: t_V, other: t_V, comb: t_V. op_V self other = Some comb -> incl_V self comb
+
+function op_Option_V (self: t_Option_V) (other: t_Option_V) : t_Option_Option_V = match { f0 = self; f1 = other } with
+    | {f0 = None} -> Some'0 other
+    | {f1 = None} -> Some'0 self
+    | {f0 = Some x; f1 = Some y} -> map_Option_V (op_V x y) (fun (z: t_V) -> Some z)
+    end
+
+function commutative_Option_V (a: t_Option_V) (b: t_Option_V) : ()
+
+axiom commutative_Option_V_spec: forall a: t_Option_V, b: t_Option_V. op_Option_V a b = op_Option_V b a
+
+predicate eq_V (self: t_V) (other: t_V)
+
+axiom eq_V_spec: forall self: t_V, other: t_V [eq_V self other]. eq_V self other = (self = other)
+
+predicate eq_Option_V [@inline:trivial] (self: t_Option_V) (other: t_Option_V) =
+  match { f0 = self; f1 = other } with
+    | {f0 = Some s; f1 = Some o} -> eq_V s o
+    | {f0 = None; f1 = None} -> true
+    | _ -> false
+    end
+
+meta "rewrite_def" predicate eq_Option_V
+
+axiom eq_Option_V_spec: forall self: t_Option_V, other: t_Option_V [self = other]. eq_Option_V self other
+    = (self = other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_FMap_K_V
+
+constant other : t_FMap_K_V
+
+predicate eq_FMap_K_V (self: t_FMap_K_V) (other: t_FMap_K_V)
+
+goal vc_eq_FMap_K_V: [@stop_split] [@expl:eq ensures] (forall k: t_K. eq_Option_V (get_K self k) (get_K other k))
+  = (self = other)

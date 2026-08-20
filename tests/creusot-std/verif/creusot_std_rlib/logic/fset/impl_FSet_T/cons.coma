@@ -1,0 +1,65 @@
+(* logic::fset::FSet<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use set.Fset
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+predicate contains_Seq_T [@inline:trivial] (self: Fset.fset (Seq.seq t_T)) (e: Seq.seq t_T) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_Seq_T
+
+predicate contains_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_T
+
+function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+
+function push_front_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
+
+meta "rewrite_def" function push_front_T
+
+function map_Seq_T (self: Fset.fset (Seq.seq t_T)) (f: Map.map (Seq.seq t_T) (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
+  Fset.map f self
+
+function remove_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) : Fset.fset t_T = Fset.remove e self
+
+meta "rewrite_def" function remove_T
+
+function unions_T (self: Fset.fset t_T) (f: Map.map t_T (Fset.fset (Seq.seq t_T))) : Fset.fset (Seq.seq t_T)
+
+axiom unions_T_def:
+  forall self: Fset.fset t_T, f: Map.map t_T (Fset.fset (Seq.seq t_T)) [unions_T self f]. unions_T self f
+    = (if Fset.cardinal self = 0 then
+      Fset.empty: Fset.fset (Seq.seq t_T)
+    else
+      let x = Fset.pick self in Fset.union (Map.get f x) (unions_T (remove_T self x) f)
+    )
+
+axiom unions_T_spec:
+  forall self: Fset.fset t_T, f: Map.map t_T (Fset.fset (Seq.seq t_T)) [unions_T self f]. forall y: Seq.seq t_T. contains_Seq_T (unions_T self f) y
+      = (exists x: t_T. contains_T self x /\ contains_Seq_T (Map.get f x) y)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant s : Fset.fset t_T
+
+constant ss : Fset.fset (Seq.seq t_T)
+
+function cons_T (s: Fset.fset t_T) (ss: Fset.fset (Seq.seq t_T)) : Fset.fset (Seq.seq t_T)
+
+goal vc_cons_T: (forall x: t_T, xs: Seq.seq t_T. tail_T (push_front_T xs x) = xs)
+  && (forall xs: Seq.seq t_T. 0 < Seq.length xs -> push_front_T (tail_T xs) (Seq.get xs 0) = xs)
+  && (([@stop_split] [@expl:unions ensures] forall y: Seq.seq t_T. contains_Seq_T (unions_T s (fun (x: t_T) -> map_Seq_T ss (fun (xs: Seq.seq t_T) -> push_front_T xs x))) y
+      = (exists x: t_T. contains_T s x
+        /\ contains_Seq_T (Map.get (fun (x'0: t_T) -> map_Seq_T ss (fun (xs: Seq.seq t_T) -> push_front_T xs x'0)) x) y))
+  -> ([@stop_split] [@expl:cons ensures] forall xs: Seq.seq t_T. contains_Seq_T (unions_T s (fun (x: t_T) -> map_Seq_T ss (fun (xs'0: Seq.seq t_T) -> push_front_T xs'0 x))) xs
+    = (0 < Seq.length xs /\ contains_T s (Seq.get xs 0) /\ contains_Seq_T ss (tail_T xs))))

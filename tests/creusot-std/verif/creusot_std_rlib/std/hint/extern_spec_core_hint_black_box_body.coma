@@ -1,0 +1,23 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_core_hint_black_box_body_T (dummy: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:extern_spec_core_hint_black_box_body 'dummy' type invariant] inv_T dummy}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- dummy ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_T = Any.any_l () | & dummy: t_T = dummy ])
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:extern_spec_core_hint_black_box_body_T ensures] ([@stop_split] [@expl:extern_spec_core_hint_black_box_body result type invariant] inv_T result)
+    /\ ([@stop_split] [@expl:extern_spec_core_hint_black_box_body ensures] result = dummy)}
+    (! return {result}) ]

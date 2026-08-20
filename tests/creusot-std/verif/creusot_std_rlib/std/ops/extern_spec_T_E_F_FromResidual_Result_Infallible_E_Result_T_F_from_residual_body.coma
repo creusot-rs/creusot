@@ -1,0 +1,112 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_E
+
+type t_Result_Infallible_E = Ok () | Err t_E
+
+predicate inv_Infallible [@inline:trivial] (_1: ()) = false
+
+meta "rewrite_def" predicate inv_Infallible
+
+predicate inv_E (_1: t_E)
+
+predicate inv_Result_Infallible_E (_1: t_Result_Infallible_E)
+
+axiom inv_axiom [@rewrite]: forall x: t_Result_Infallible_E [inv_Result_Infallible_E x]. inv_Result_Infallible_E x
+    = match x with
+      | Ok f0 -> inv_Infallible f0
+      | Err f0 -> inv_E f0
+      end
+
+predicate resolve_E (_1: t_E)
+
+predicate resolve_Result_Infallible_E (_1: t_Result_Infallible_E)
+
+axiom resolve_axiom [@rewrite]:
+  forall x: t_Result_Infallible_E [resolve_Result_Infallible_E x]. resolve_Result_Infallible_E x
+    = match x with
+      | Ok x0 -> true
+      | Err x0 -> resolve_E x0
+      end
+
+let elim_Err (_x: t_Result_Infallible_E) (return (f0: t_E)) = any
+  [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
+  | _chk -> (! {[@expl:elim Err] match _x with
+      | Err _ -> true
+      | _ -> false
+      end}
+    any) ]
+
+type t_F
+
+predicate precondition_from (self: ()) (args: t_E)
+
+axiom precondition_fndef: forall args: t_E [precondition_from () args]. (let value = args in inv_E value)
+    -> precondition_from () args
+
+predicate inv_F (_1: t_F)
+
+predicate postcondition_from (self: ()) (args: t_E) (result: t_F)
+
+axiom postcondition_fndef: forall args: t_E, res: t_F [postcondition_from () args res]. postcondition_from () args res
+    -> (let value = args in inv_F res)
+
+predicate postcondition_once_from (self: ()) (args: t_E) (result: t_F) = postcondition_from self args result
+
+meta "rewrite_def" predicate postcondition_once_from
+
+let from_F (value: t_E) (return (x: t_F)) = {[@stop_split] [@expl:from requires] precondition_from () value}
+  any
+  [ return (result: t_F) -> {[@stop_split] [@expl:from ensures] postcondition_once_from () value result}
+    (! return {result}) ]
+
+type t_T
+
+type t_Result_T_F = Ok'0 t_T | Err'0 t_F
+
+predicate inv_T (_1: t_T)
+
+predicate inv_Result_T_F (_1: t_Result_T_F)
+
+axiom inv_axiom'0 [@rewrite]: forall x: t_Result_T_F [inv_Result_T_F x]. inv_Result_T_F x
+    = match x with
+      | Ok'0 f0 -> inv_T f0
+      | Err'0 f0 -> inv_F f0
+      end
+
+type tup2_Result_T_F_Result_Infallible_E = { f0: t_Result_T_F; f1: t_Result_Infallible_E }
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body_T (residual: t_Result_Infallible_E)
+  (return (x: t_Result_T_F)) =
+{[@stop_split] [@expl:extern_spec_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body 'residual' type invariant] inv_Result_Infallible_E residual}
+  (! bb0
+  [ bb0 = any [ br0 (x0: ()) -> {residual = Ok x0} (! bb1) | br1 (x0: t_E) -> {residual = Err x0} (! bb2) ]
+  | bb1 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Result_Infallible_E residual} any) ]
+    | s1 = -{resolve_Result_Infallible_E residual}- s2
+    | s2 = {false} any ]
+  | bb2 = s0
+    [ s0 = elim_Err {residual} (fun (r0: t_E) -> [ &e <- r0 ] s1)
+    | s1 = from_F {e} (fun (_x: t_F) -> [ &_6 <- _x ] s2)
+    | s2 = [ &_ret <- Err'0 _6 ] s3
+    | s3 = return {_ret} ] ]
+  [ & _ret: t_Result_T_F = Any.any_l ()
+  | & residual: t_Result_Infallible_E = residual
+  | & e: t_E = Any.any_l ()
+  | & _6: t_F = Any.any_l () ])
+  [ return (result: t_Result_T_F) ->
+  {[@stop_split] [@expl:extern_spec_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body_T ensures] ([@stop_split] [@expl:extern_spec_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body result type invariant] inv_Result_T_F result)
+    /\ ([@stop_split] [@expl:extern_spec_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body ensures] match { f0 = result;
+                                                                                                                               f1 = residual } with
+      | {f0 = Err'0 result'0; f1 = Err residual'0} -> postcondition_from () residual'0 result'0
+      | _ -> false
+      end)}
+    (! return {result}) ]

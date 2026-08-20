@@ -1,0 +1,56 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use int.ComputerDivision
+use creusot.prelude.Opaque
+use creusot.prelude.Ptr
+use creusot.prelude.Any
+use int.Int
+
+constant size_of_T : int
+
+axiom size_of_T_spec: 0 <= size_of_T
+
+constant align_of_T : UInt64.t
+
+axiom align_of_T_spec: (0: UInt64.t) <> align_of_T
+  /\ UInt64.bw_and align_of_T (UInt64.sub align_of_T (1: UInt64.t)) = (0: UInt64.t)
+
+axiom align_of_T_spec'0: ComputerDivision.mod size_of_T (UInt64.t'int align_of_T) = 0
+
+let align_of_T'0 (return (x: UInt64.t)) = any
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:align_of ensures] result = align_of_T} (! return {result}) ]
+
+predicate is_aligned_to_ptr_T (self: Opaque.ptr) (align: UInt64.t) =
+  UInt64.bw_and (Ptr.addr_logic_u64 self) (UInt64.sub align (1: UInt64.t)) = (0: UInt64.t)
+
+let is_aligned_to_T (self_: Opaque.ptr) (align: UInt64.t) (return (x: bool)) =
+{[@stop_split] [@expl:is_aligned_to requires] align <> (0: UInt64.t)
+  /\ UInt64.bw_and align (UInt64.sub align (1: UInt64.t)) = (0: UInt64.t)}
+  any
+  [ return (result: bool) -> {[@stop_split] [@expl:is_aligned_to ensures] result = is_aligned_to_ptr_T self_ align}
+    (! return {result}) ]
+
+predicate is_aligned_T [@inline:trivial] (ptr: Opaque.ptr) = is_aligned_to_ptr_T ptr align_of_T
+
+meta "rewrite_def" predicate is_aligned_T
+
+predicate is_aligned_ptr_T [@inline:trivial] (self: Opaque.ptr) = is_aligned_T self
+
+meta "rewrite_def" predicate is_aligned_ptr_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T__ptrconst_T_is_aligned_body_T (self_: Opaque.ptr) (return (x: bool)) = (! bb0
+  [ bb0 = s0
+    [ s0 = align_of_T'0 (fun (_x: UInt64.t) -> [ &_7 <- _x ] s1)
+    | s1 = is_aligned_to_T {self_} {_7} (fun (_x: bool) -> [ &_ret <- _x ] s2)
+    | s2 = return {_ret} ] ]
+  [ & _ret: bool = Any.any_l () | & self_: Opaque.ptr = self_ | & _7: UInt64.t = Any.any_l () ])
+  [ return (result: bool) -> {[@stop_split] [@expl:extern_spec_T__ptrconst_T_is_aligned_body ensures] result
+    = is_aligned_ptr_T self_}
+    (! return {result}) ]

@@ -1,0 +1,45 @@
+(* <peano::PeanoInt as std::cmp::PartialOrd> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use creusot.prelude.Any
+
+type t_PeanoInt = { f0: UInt64.t }
+
+type t_Ordering = Less | Equal | Greater
+
+predicate lt_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) = UInt64.lt self.f0 o.f0
+
+meta "rewrite_def" predicate lt_log_PeanoInt
+
+function cmp_log_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) : t_Ordering = if self = other then
+    Equal
+  else
+    if lt_log_PeanoInt self other then Less else Greater
+
+
+let cmp_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: t_Ordering)) = any
+  [ return (result: t_Ordering) -> {[@stop_split] [@expl:cmp ensures] result = cmp_log_PeanoInt self other}
+    (! return {result}) ]
+
+type t_Option_Ordering = None | Some t_Ordering
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let partial_cmp_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: t_Option_Ordering)) = (! bb0
+  [ bb0 = s0
+    [ s0 = cmp_PeanoInt {self} {other} (fun (_x: t_Ordering) -> [ &_6 <- _x ] s1)
+    | s1 = [ &_ret <- Some _6 ] s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: t_Option_Ordering = Any.any_l ()
+  | & self: t_PeanoInt = self
+  | & other: t_PeanoInt = other
+  | & _6: t_Ordering = Any.any_l () ])
+  [ return (result: t_Option_Ordering) -> {[@stop_split] [@expl:partial_cmp ensures] result
+    = Some (cmp_log_PeanoInt self other)}
+    (! return {result}) ]

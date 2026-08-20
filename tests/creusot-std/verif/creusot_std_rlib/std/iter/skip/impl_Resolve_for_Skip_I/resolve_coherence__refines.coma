@@ -1,0 +1,29 @@
+(* <std::iter::Skip<I> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_Skip_I
+
+predicate inv_Skip_I (_1: t_Skip_I)
+
+predicate structural_resolve_Skip_I (_1: t_Skip_I)
+
+type t_I
+
+predicate resolve_I (_1: t_I)
+
+function iter_Skip_I (self: t_Skip_I) : t_I
+
+predicate resolve_Skip_I [@inline:trivial] (self: t_Skip_I) = resolve_I (iter_Skip_I self)
+
+meta "rewrite_def" predicate resolve_Skip_I
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Skip_I. inv_Skip_I self
+    -> structural_resolve_Skip_I self
+    -> structural_resolve_Skip_I self /\ (forall result: (). resolve_Skip_I self -> resolve_Skip_I self)

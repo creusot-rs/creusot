@@ -1,0 +1,49 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.int.UInt128
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: UInt128.t = (0: UInt128.t)
+
+constant const_MAX: UInt128.t = (340282366920938463463374607431768211455: UInt128.t)
+
+let mul_assign_u128 (self_: MutBorrow.t UInt128.t) (rhs: UInt128.t) (return (x: ())) =
+{[@stop_split] [@expl:mul_assign requires] UInt128.t'int const_MIN <= UInt128.t'int self_.current * UInt128.t'int rhs
+  /\ UInt128.t'int self_.current * UInt128.t'int rhs <= UInt128.t'int const_MAX}
+  any
+  [ return (result: ()) -> {[@stop_split] [@expl:mul_assign ensures] UInt128.t'int self_.final
+    = UInt128.t'int self_.current * UInt128.t'int rhs}
+    (! return {result}) ]
+
+predicate resolve_refmut_u128 [@inline:trivial] (_1: MutBorrow.t UInt128.t) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_u128
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_MulAssign__ref_u128_u128_mul_assign_body (self_: MutBorrow.t UInt128.t) (rhs: UInt128.t)
+  (return (x: ())) =
+{[@stop_split] [@expl:extern_spec_MulAssign__ref_u128_u128_mul_assign_body requires] UInt128.t'int const_MIN
+    <= UInt128.t'int self_.current * UInt128.t'int rhs
+  /\ UInt128.t'int self_.current * UInt128.t'int rhs <= UInt128.t'int const_MAX}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = MutBorrow.borrow_final <UInt128.t> {self_.current} {MutBorrow.get_id self_}
+        (fun (_bor: MutBorrow.t UInt128.t) -> [ &_9 <- _bor ] [ &self_ <- { self_ with current = _bor.final } ] s1)
+    | s1 = mul_assign_u128 {_9} {rhs} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+    | s2 = -{resolve_refmut_u128 self_}- s3
+    | s3 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l ()
+  | & self_: MutBorrow.t UInt128.t = self_
+  | & rhs: UInt128.t = rhs
+  | & _9: MutBorrow.t UInt128.t = Any.any_l () ])
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:extern_spec_MulAssign__ref_u128_u128_mul_assign_body ensures] UInt128.t'int self_.final
+    = UInt128.t'int self_.current * UInt128.t'int rhs}
+    (! return {result}) ]

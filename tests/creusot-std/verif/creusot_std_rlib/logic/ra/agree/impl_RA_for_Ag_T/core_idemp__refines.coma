@@ -1,0 +1,44 @@
+(* <logic::ra::agree::Ag<T> as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_T
+
+type t_Ag_T = { f0: t_T }
+
+type t_Option_Ag_T = None | Some t_Ag_T
+
+function core_Ag_T (self: t_Ag_T) : t_Option_Ag_T = Some self
+
+predicate index_Mapping_Ag_T_bool [@inline:trivial] (self: Map.map t_Ag_T bool) (a: t_Ag_T) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Ag_T_bool
+
+function such_that_Ag_T (p: Map.map t_Ag_T bool) : t_Ag_T
+
+axiom such_that_Ag_T_spec:
+  forall p: Map.map t_Ag_T bool [such_that_Ag_T p]. (exists x: t_Ag_T. index_Mapping_Ag_T_bool p x)
+    -> index_Mapping_Ag_T_bool p (such_that_Ag_T p)
+
+constant any_Ag_T: t_Ag_T = such_that_Ag_T (fun (__0: t_Ag_T) -> true)
+
+function unwrap_Option_Ag_T (self: t_Option_Ag_T) : t_Ag_T = match self with
+    | Some x -> x
+    | None -> any_Ag_T
+    end
+
+function op_Ag_T (self: t_Ag_T) (other: t_Ag_T) : t_Option_Ag_T = if self.f0 = other.f0 then Some self else None
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Ag_T. core_Ag_T self <> None
+    -> (forall result: (). (let c = unwrap_Option_Ag_T (core_Ag_T self) in op_Ag_T c c = Some c)
+        /\ op_Ag_T (unwrap_Option_Ag_T (core_Ag_T self)) self = Some self
+      -> (let c = unwrap_Option_Ag_T (core_Ag_T self) in op_Ag_T c c = Some c)
+      /\ op_Ag_T (unwrap_Option_Ag_T (core_Ag_T self)) self = Some self)

@@ -1,0 +1,63 @@
+(* logic::seq::Seq<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+type t_U
+
+function index_Mapping_T_U [@inline:trivial] (self: Map.map t_T t_U) (a: t_T) : t_U = Map.get self a
+
+meta "rewrite_def" function index_Mapping_T_U
+
+function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+  ge_log_Int self 0 /\ gt_log_Int self other
+
+meta "rewrite_def" predicate well_founded_relation_Int
+
+function push_front_U [@inline:trivial] (self: Seq.seq t_U) (x: t_U) : Seq.seq t_U = Seq.cons x self
+
+meta "rewrite_def" function push_front_U
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq t_T
+
+constant m : Map.map t_T t_U
+
+function map_T (self: Seq.seq t_T) (m: Map.map t_T t_U) : Seq.seq t_U
+
+goal vc_map_T: if Seq.length self = 0 then
+    let result = Seq.empty: Seq.seq t_U in [@stop_split] [@expl:map_T ensures] ([@stop_split] [@expl:map ensures #0] Seq.length result
+      = Seq.length self)
+    /\ ([@stop_split] [@expl:map ensures #1] forall i: int. 0 <= i /\ i < Seq.length self
+      -> Seq.get result i = index_Mapping_T_U m (Seq.get self i))
+  else
+    ([@expl:variant decreases] well_founded_relation_Int (Seq.length self) (Seq.length (tail_T self)))
+    /\ (([@stop_split] [@expl:map ensures] ([@stop_split] [@expl:map ensures #0] Seq.length (map_T (tail_T self) m)
+        = Seq.length (tail_T self))
+      /\ ([@stop_split] [@expl:map ensures #1] forall i: int. 0 <= i /\ i < Seq.length (tail_T self)
+        -> Seq.get (map_T (tail_T self) m) i = index_Mapping_T_U m (Seq.get (tail_T self) i)))
+    -> (let result = push_front_U (map_T (tail_T self) m) (Map.get m (Seq.get self 0)) in [@stop_split] [@expl:map_T ensures] ([@stop_split] [@expl:map ensures #0] Seq.length result
+      = Seq.length self)
+    /\ ([@stop_split] [@expl:map ensures #1] forall i: int. 0 <= i /\ i < Seq.length self
+      -> Seq.get result i = index_Mapping_T_U m (Seq.get self i))))
+  

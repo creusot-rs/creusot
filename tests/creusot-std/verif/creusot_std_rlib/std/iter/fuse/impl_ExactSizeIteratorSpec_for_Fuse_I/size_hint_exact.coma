@@ -1,0 +1,134 @@
+(* <std::iter::Fuse<I> as std::iter::ExactSizeIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use seq.Seq
+use creusot.prelude.MutBorrow
+use int.Int
+
+type t_Fuse_I
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+type t_I
+
+type t_Option_I = None'0 | Some'0 t_I
+
+function view_Fuse_I (self: t_Fuse_I) : t_Option_I
+
+type t_Item
+
+predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+
+function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+
+axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+    -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+
+function produces_refl_I (self: t_I) : ()
+
+axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+
+predicate completed_I (self: MutBorrow.t t_I)
+
+predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
+
+axiom postcondition_fndef:
+  forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self_ s i.current /\ completed_I i
+        -> UInt64.t'int res.f0 <= Seq.length s)
+    /\ match res.f1 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self_ s i -> Seq.length s <= UInt64.t'int r
+      | None -> true
+      end)
+
+predicate postcondition_size_hint'0 (self: ()) (args: t_Fuse_I) (result: tup2_usize_Option_usize) =
+  let self_ = args in match view_Fuse_I self_ with
+    | Some'0 s -> postcondition_size_hint () s result
+    | None'0 -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) }
+    end
+
+meta "rewrite_def" predicate postcondition_size_hint'0
+
+predicate inv_I (_1: t_I)
+
+predicate inv_Option_I (_1: t_Option_I)
+
+axiom inv_axiom [@rewrite]: forall x: t_Option_I [inv_Option_I x]. inv_Option_I x
+    = match x with
+      | None'0 -> true
+      | Some'0 f0'0 -> inv_I f0'0
+      end
+
+predicate invariant_Fuse_I [@inline:trivial] (self: t_Fuse_I) = inv_Option_I (view_Fuse_I self)
+
+meta "rewrite_def" predicate invariant_Fuse_I
+
+predicate inv_Fuse_I (_1: t_Fuse_I)
+
+axiom inv_axiom'0: forall x: t_Fuse_I [inv_Fuse_I x]. inv_Fuse_I x -> invariant_Fuse_I x
+
+predicate invariant_ref_Fuse_I [@inline:trivial] (self: t_Fuse_I) = inv_Fuse_I self
+
+meta "rewrite_def" predicate invariant_ref_Fuse_I
+
+predicate inv_ref_Fuse_I [@inline:trivial] (_1: t_Fuse_I) = invariant_ref_Fuse_I _1
+
+meta "rewrite_def" predicate inv_ref_Fuse_I
+
+predicate invariant_ref_I [@inline:trivial] (self: t_I) = inv_I self
+
+meta "rewrite_def" predicate invariant_ref_I
+
+predicate inv_ref_I [@inline:trivial] (_1: t_I) = invariant_ref_I _1
+
+meta "rewrite_def" predicate inv_ref_I
+
+predicate precondition_size_hint (self: ()) (args: t_I)
+
+axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self_ = args in inv_ref_I self_)
+    -> precondition_size_hint () args
+
+predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) =
+  postcondition_size_hint self args result
+
+meta "rewrite_def" predicate postcondition_once_size_hint
+
+let size_hint_I (self_: t_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+    (! return {result}) ]
+
+let size_hint_Fuse_I (self_: t_Fuse_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Fuse_I self_}
+  any
+  [ return (result: tup2_usize_Option_usize) -> {[@stop_split] [@expl:size_hint ensures] match view_Fuse_I self_ with
+      | Some'0 s -> postcondition_size_hint () s result
+      | None'0 -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) }
+      end}
+    (! return {result}) ]
+
+function size_hint_exact_I (self: t_I) (r: tup2_usize_Option_usize) : ()
+
+axiom size_hint_exact_I_spec: forall self: t_I, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> r.f1 = Some (r.f0)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Fuse_I
+
+constant r : tup2_usize_Option_usize
+
+function size_hint_exact_Fuse_I (self: t_Fuse_I) (r: tup2_usize_Option_usize) : ()
+
+goal vc_size_hint_exact_Fuse_I: postcondition_size_hint'0 () self r
+  -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))

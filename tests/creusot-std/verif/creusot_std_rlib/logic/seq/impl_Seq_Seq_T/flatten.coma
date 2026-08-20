@@ -1,0 +1,39 @@
+(* logic::seq::Seq<logic::seq::Seq<T>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use int.Int
+
+type t_T
+
+function tail_Seq_T (self: Seq.seq (Seq.seq t_T)) : Seq.seq (Seq.seq t_T) = Seq.([..]) self 1 (Seq.length self)
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+  ge_log_Int self 0 /\ gt_log_Int self other
+
+meta "rewrite_def" predicate well_founded_relation_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq (Seq.seq t_T)
+
+function flatten_T (self: Seq.seq (Seq.seq t_T)) : Seq.seq t_T
+
+goal vc_flatten_T: if Seq.length self = 0 then
+    true
+  else
+    [@expl:variant decreases] well_founded_relation_Int (Seq.length self) (Seq.length (tail_Seq_T self))
+  

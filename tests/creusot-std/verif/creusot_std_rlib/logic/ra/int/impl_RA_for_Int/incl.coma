@@ -1,0 +1,25 @@
+(* <logic::int::Int as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Option_Int = None | Some int
+
+function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+
+meta "rewrite_def" function op_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : int
+
+constant other : int
+
+predicate incl_Int (self: int) (other: int)
+
+goal vc_incl_Int: [@stop_split] [@expl:incl ensures] true = (exists factor: int. op_Int self factor = Some other)

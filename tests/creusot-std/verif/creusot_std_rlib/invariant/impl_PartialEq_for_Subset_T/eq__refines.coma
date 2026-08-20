@@ -1,0 +1,35 @@
+(* <invariant::Subset<T> as std::cmp::PartialEq> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_Subset_T
+
+type t_DeepModelTy
+
+type t_T
+
+function deep_model_T (self: t_T) : t_DeepModelTy
+
+predicate invariant_T (self: t_T)
+
+function inner_T (self: t_Subset_T) : t_T
+
+axiom inner_T_spec: forall self: t_Subset_T [inner_T self]. invariant_T (inner_T self)
+
+function deep_model_Subset_T [@inline:trivial] (self: t_Subset_T) : t_DeepModelTy = deep_model_T (inner_T self)
+
+meta "rewrite_def" function deep_model_Subset_T
+
+function deep_model_ref_Subset_T [@inline:trivial] (self: t_Subset_T) : t_DeepModelTy = deep_model_Subset_T self
+
+meta "rewrite_def" function deep_model_ref_Subset_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self_: t_Subset_T, rhs: t_Subset_T. forall result: bool. result
+        = (deep_model_ref_Subset_T self_ = deep_model_ref_Subset_T rhs)
+      -> result = (deep_model_ref_Subset_T self_ = deep_model_ref_Subset_T rhs)

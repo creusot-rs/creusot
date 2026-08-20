@@ -1,0 +1,40 @@
+(* <ghost::shared::GhostShared<T> as std::convert::AsRef<T>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+predicate resolve_T (_1: t_T)
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_GhostShared_T (self: t_T) = resolve_T self /\ inv_T self
+
+predicate inv_GhostShared_T [@inline:trivial] (_1: t_T) = invariant_GhostShared_T _1
+
+meta "rewrite_def" predicate inv_GhostShared_T
+
+predicate invariant_ref_GhostShared_T [@inline:trivial] (self: t_T) = inv_GhostShared_T self
+
+meta "rewrite_def" predicate invariant_ref_GhostShared_T
+
+predicate inv_ref_GhostShared_T [@inline:trivial] (_1: t_T) = invariant_ref_GhostShared_T _1
+
+meta "rewrite_def" predicate inv_ref_GhostShared_T
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self_: t_T. inv_ref_GhostShared_T self_
+    -> inv_ref_GhostShared_T self_ /\ (forall result: t_T. inv_ref_T result /\ result = self_ -> inv_ref_T result)

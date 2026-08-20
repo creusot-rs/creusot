@@ -1,0 +1,38 @@
+(* <logic::int::Nat as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Nat
+
+type t_Option_Nat = None | Some t_Nat
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function to_int (self: t_Nat) : int
+
+axiom to_int_spec: forall self: t_Nat [to_int self]. ge_log_Int (to_int self) 0
+
+function view_Nat (self: t_Nat) : int = to_int self
+
+function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+
+axiom add_Nat_spec: forall self: t_Nat, other: t_Nat [add_Nat self other]. view_Nat (add_Nat self other)
+    = view_Nat self + view_Nat other
+
+function op_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) : t_Option_Nat = Some (add_Nat self other)
+
+meta "rewrite_def" function op_Nat
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Nat, other: t_Nat. forall result: bool. result
+        = (exists factor: t_Nat. op_Nat self factor = Some other)
+      -> result = (exists factor: t_Nat. op_Nat self factor = Some other)

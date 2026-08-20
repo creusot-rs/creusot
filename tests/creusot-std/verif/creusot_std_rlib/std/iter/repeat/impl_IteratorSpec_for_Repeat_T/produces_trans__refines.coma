@@ -1,0 +1,37 @@
+(* <std::iter::Repeat<T> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use int.Int
+
+type t_Repeat_T
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
+
+axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
+    -> (let self_ = args in inv_T res)
+
+function view_Repeat_T (self: t_Repeat_T) : t_T
+
+predicate produces_Repeat_T (self: t_Repeat_T) (visited: Seq.seq t_T) (o: t_Repeat_T) =
+  self = o
+  /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    -> postcondition_clone () (view_Repeat_T self) (Seq.get visited i))
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_Repeat_T, ab: Seq.seq t_T, b: t_Repeat_T, bc: Seq.seq t_T, c: t_Repeat_T. produces_Repeat_T a ab b
+    -> produces_Repeat_T b bc c
+    -> produces_Repeat_T a ab b
+    /\ produces_Repeat_T b bc c
+    /\ (forall result: (). produces_Repeat_T a (Seq.(++) ab bc) c -> produces_Repeat_T a (Seq.(++) ab bc) c)

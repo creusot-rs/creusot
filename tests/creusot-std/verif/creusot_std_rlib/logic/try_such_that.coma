@@ -1,0 +1,40 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_T
+
+type t_Option_T = None | Some t_T
+
+predicate index_Mapping_T_bool [@inline:trivial] (self: Map.map t_T bool) (a: t_T) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_T_bool
+
+function such_that_T (p: Map.map t_T bool) : t_T
+
+axiom such_that_T_spec: forall p: Map.map t_T bool [such_that_T p]. (exists x: t_T. index_Mapping_T_bool p x)
+    -> index_Mapping_T_bool p (such_that_T p)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant p : Map.map t_T bool
+
+function try_such_that_T (p: Map.map t_T bool) : t_Option_T
+
+goal vc_try_such_that_T: if exists x: t_T. index_Mapping_T_bool p x then
+    ([@stop_split] [@expl:such_that requires] exists x: t_T. index_Mapping_T_bool p x)
+    /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_T_bool p (such_that_T p))
+    -> ([@stop_split] [@expl:try_such_that ensures] match Some (such_that_T p) with
+      | Some v -> index_Mapping_T_bool p v
+      | None -> forall x: t_T. not index_Mapping_T_bool p x
+      end))
+  else
+    [@stop_split] [@expl:try_such_that ensures] match None with
+      | Some v -> index_Mapping_T_bool p v
+      | None -> forall x: t_T. not index_Mapping_T_bool p x
+      end
+  

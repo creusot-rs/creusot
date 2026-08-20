@@ -1,0 +1,38 @@
+(* <logic::fset::FSet<T> as std::clone::Clone> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use set.Fset
+
+type t_T
+
+predicate contains_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_FSet_T [@inline:trivial] (self: Fset.fset t_T) = forall x: t_T. contains_T self x -> inv_T x
+
+meta "rewrite_def" predicate invariant_FSet_T
+
+predicate inv_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_FSet_T _1
+
+meta "rewrite_def" predicate inv_FSet_T
+
+predicate invariant_ref_FSet_T [@inline:trivial] (self: Fset.fset t_T) = inv_FSet_T self
+
+meta "rewrite_def" predicate invariant_ref_FSet_T
+
+predicate inv_ref_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_ref_FSet_T _1
+
+meta "rewrite_def" predicate inv_ref_FSet_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self_: Fset.fset t_T. inv_ref_FSet_T self_
+    -> inv_ref_FSet_T self_ /\ (forall result: Fset.fset t_T. inv_FSet_T result /\ result = self_ -> inv_FSet_T result)

@@ -1,0 +1,33 @@
+(* <std::option::IterMut<'_, T> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use seq.Seq
+
+type t_IterMut_T
+
+type t_T
+
+type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
+
+function view_IterMut_T (self: t_IterMut_T) : t_Option_refmut_T
+
+predicate produces_IterMut_T [@inline:trivial] (self: t_IterMut_T) (visited: Seq.seq (MutBorrow.t t_T)) (o: t_IterMut_T) =
+  visited = (Seq.empty: Seq.seq (MutBorrow.t t_T)) /\ self = o
+  \/ (exists e: MutBorrow.t t_T. view_IterMut_T self = Some e /\ visited = Seq.singleton e /\ view_IterMut_T o = None)
+
+meta "rewrite_def" predicate produces_IterMut_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_IterMut_T
+
+function produces_refl_IterMut_T (self: t_IterMut_T) : ()
+
+goal vc_produces_refl_IterMut_T:
+  [@stop_split] [@expl:produces_refl ensures] produces_IterMut_T self (Seq.empty: Seq.seq (MutBorrow.t t_T)) self

@@ -1,0 +1,56 @@
+(* <std::slice::Iter<'a, T> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.slice.Slice64
+use int.Int
+
+type t_Iter_T
+
+type t_T
+
+function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
+
+meta "rewrite_def" function index_slice_T
+
+function to_ref_seq_slice_T (self: Slice64.slice t_T) : Seq.seq t_T
+
+axiom to_ref_seq_slice_T_spec:
+  forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. Seq.length (to_ref_seq_slice_T self)
+    = Seq.length (Slice64.view self)
+
+axiom to_ref_seq_slice_T_spec'0: forall self: Slice64.slice t_T [to_ref_seq_slice_T self]. forall i: int. 0 <= i
+        /\ i < Seq.length (to_ref_seq_slice_T self) -> Seq.get (to_ref_seq_slice_T self) i = index_slice_T self i
+
+function view_Iter_T (self: t_Iter_T) : Slice64.slice t_T
+
+predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (tl: t_Iter_T) =
+  to_ref_seq_slice_T (view_Iter_T self) = Seq.(++) visited (to_ref_seq_slice_T (view_Iter_T tl))
+
+function concat_assoc_ref_T (self: Seq.seq t_T) (other1: Seq.seq t_T) (other2: Seq.seq t_T) : ()
+
+axiom concat_assoc_ref_T_spec:
+  forall self: Seq.seq t_T, other1: Seq.seq t_T, other2: Seq.seq t_T. Seq.(++) (Seq.(++) self other1) other2
+    = Seq.(++) self (Seq.(++) other1 other2)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_Iter_T
+
+constant ab : Seq.seq t_T
+
+constant b : t_Iter_T
+
+constant bc : Seq.seq t_T
+
+constant c : t_Iter_T
+
+function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : ()
+
+goal vc_produces_trans_Iter_T: produces_Iter_T a ab b
+  -> produces_Iter_T b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Iter_T a (Seq.(++) ab bc) c)
