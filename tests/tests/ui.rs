@@ -375,7 +375,15 @@ fn build_creusot_std(
     build.args(["--only=coma", "--package", "creusot-std", "--no-check-version"]);
     build.arg("--creusot-rustc").arg(&paths.creusot_rustc);
     build
-        .args(["--", "--package", "creusot-std", "--quiet", "-Fsc-drf", "--message-format=json"])
+        .args([
+            "--",
+            "--package",
+            "creusot-std",
+            "--quiet",
+            "-Fsc-drf",
+            "--message-format=json-render-diagnostics,json-diagnostic-rendered-ansi",
+            "--color=always",
+        ])
         .env("CREUSOT_CONTINUE", "true");
     if matches!(erasure_check, ErasureCheck::Warn | ErasureCheck::Error) {
         build.arg("-Zbuild-std=core,std");
