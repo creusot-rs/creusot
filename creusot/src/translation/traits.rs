@@ -10,7 +10,7 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use rustc_infer::{
     infer::{InferCtxt, TyCtxtInferExt},
-    traits::{Obligation, ObligationCause, TraitEngine},
+    traits::{Obligation, ObligationCause, TraitEngine, TraitErrors},
 };
 use rustc_middle::ty::{
     EarlyBinder, GenericArgsRef, ParamEnv, Predicate, Ty, TypingEnv, TypingMode,
@@ -18,7 +18,7 @@ use rustc_middle::ty::{
 use rustc_span::Span;
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt,
-    traits::{FulfillmentError, TraitEngineExt},
+    traits::{FulfillmentEngine, FulfillmentError},
 };
 use std::collections::HashMap;
 
@@ -82,7 +82,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.param_env(impl_item),
                 self.def_span(impl_item),
             );
-            if let Err(errs) = res {
+            if let TraitErrors::HasErrors(errs) = res {
                 infcx.err_ctxt().report_fulfillment_errors(errs);
                 continue;
             }
@@ -168,14 +168,13 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
     p: Vec<Predicate<'tcx>>,
     param_env: ParamEnv<'tcx>,
     sp: Span,
-) -> Result<(), Vec<FulfillmentError<'tcx>>> {
-    let mut fulfill_cx = <dyn TraitEngine<'tcx, _>>::new(infcx);
+) -> TraitErrors<FulfillmentError<'tcx>> {
+    let mut fulfill_cx = FulfillmentEngine::new(infcx);
     for predicate in p {
         let predicate = infcx.tcx.erase_and_anonymize_regions(predicate);
         let cause = ObligationCause::dummy_with_span(sp);
         let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
         fulfill_cx.register_predicate_obligation(infcx, obligation);
     }
-    let errors = fulfill_cx.evaluate_obligations_error_on_ambiguity(infcx);
-    if !errors.is_empty() { Err(errors) } else { Ok(()) }
+    fulfill_cx.evaluate_obligations_error_on_ambiguity(infcx)
 }

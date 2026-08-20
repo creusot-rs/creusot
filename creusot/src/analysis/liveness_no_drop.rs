@@ -1,7 +1,7 @@
 use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
     mir::{
-        self, CallReturnPlaces, Local, Location, Place, TerminatorEdges,
+        self, CallReturnPlaces, Local, Location, Place,
         visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor},
     },
     ty::TyCtxt,
@@ -73,9 +73,8 @@ impl<'a, 'tcx> Analysis<'tcx> for MaybeLiveExceptDrop<'a, 'tcx> {
         trans: &mut Self::Domain,
         terminator: &'mir mir::Terminator<'tcx>,
         location: Location,
-    ) -> TerminatorEdges<'mir, 'tcx> {
+    ) {
         TransferFunction(trans, self).visit_terminator(terminator, location);
-        terminator.edges()
     }
 
     fn apply_call_return_effect(
@@ -197,9 +196,7 @@ impl DefUse {
 
             // All other contexts are uses...
             PlaceContext::MutatingUse(
-                MutatingUseContext::RawBorrow
-                | MutatingUseContext::Borrow
-                | MutatingUseContext::Retag,
+                MutatingUseContext::RawBorrow | MutatingUseContext::Borrow,
             )
             | PlaceContext::NonMutatingUse(
                 NonMutatingUseContext::RawBorrow

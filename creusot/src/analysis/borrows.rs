@@ -9,7 +9,7 @@ use rustc_index::bit_set::MixedBitSet;
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
 use rustc_middle::{
-    mir::{self, Body, Location, Place, TerminatorEdges},
+    mir::{self, Body, Location, Place},
     ty::TyCtxt,
 };
 use rustc_mir_dataflow::{Analysis, GenKill};
@@ -174,7 +174,7 @@ impl<'tcx> Analysis<'tcx> for Borrows<'_, '_, 'tcx> {
         trans: &mut Self::Domain,
         terminator: &'mir mir::Terminator<'tcx>,
         location: Location,
-    ) -> TerminatorEdges<'mir, 'tcx> {
+    ) {
         self.kill_loans_out_of_scope_at_location(trans, location);
 
         if let mir::TerminatorKind::InlineAsm { operands, .. } = &terminator.kind {
@@ -186,6 +186,5 @@ impl<'tcx> Analysis<'tcx> for Borrows<'_, '_, 'tcx> {
                 }
             }
         }
-        terminator.edges()
     }
 }

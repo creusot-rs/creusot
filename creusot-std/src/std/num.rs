@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use crate::{
     ghost::Plain,
     logic::ops::{AddLogic, MulLogic, NegLogic, NthBitLogic, SubLogic},

@@ -12,7 +12,7 @@ use crate::{
     },
 };
 use itertools::Itertools;
-use rustc_infer::infer::TyCtxtInferExt;
+use rustc_infer::{infer::TyCtxtInferExt, traits::TraitErrors};
 use rustc_middle::{
     mir::{
         self, AssertKind, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
@@ -89,7 +89,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             self.typing_env().param_env,
                             span,
                         );
-                        if let Err(errs) = res {
+                        if let TraitErrors::HasErrors(errs) = res {
                             infcx.err_ctxt().report_fulfillment_errors(errs).raise_fatal();
                         }
 

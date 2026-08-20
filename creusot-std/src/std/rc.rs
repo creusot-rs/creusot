@@ -78,7 +78,7 @@ extern_spec! {
         fn as_ref(&self) -> &T;
     }
 
-    impl<T: ?Sized, A: Allocator + Clone> Clone for Rc<T, A> {
+    impl<T: ?Sized, A: std::alloc::AllocatorClone> Clone for Rc<T, A> {
         #[check(terminates)] // Not ghost: see `Rc::new`
         #[ensures(result == *self)]
         fn clone(&self) -> Rc<T, A>;
