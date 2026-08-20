@@ -117,19 +117,19 @@ fn try_scalar_to_literal<'tcx>(
         Char => Literal::Char(char::try_from(scalar).ok()?),
         Int(ity) => {
             let size = Size::from_bits(ity.normalize(target_width).bit_width().unwrap());
-            let bits = size.sign_extend(scalar.try_to_bits(size).ok()?);
+            let bits = size.sign_extend(scalar.to_bits(size));
             Literal::MachSigned(bits, *ity)
         }
         Uint(uty) => {
             let size = Size::from_bits(uty.normalize(target_width).bit_width().unwrap());
-            let bits = scalar.try_to_bits(size).ok()?;
+            let bits = scalar.to_bits(size);
             Literal::MachUnsigned(bits, *uty)
         }
         Bool => Literal::Bool(scalar.try_to_bool().unwrap_or_else(|_| {
             ctx.crash_and_error(span, format!("can't convert {scalar:?} to bool"))
         })),
         Float(FloatTy::F32) => {
-            let float = f32::from_bits(scalar.try_to_bits(Size::from_bits(32)).ok()? as u32);
+            let float = f32::from_bits(scalar.to_bits(Size::from_bits(32)) as u32);
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
@@ -137,7 +137,7 @@ fn try_scalar_to_literal<'tcx>(
             }
         }
         Float(FloatTy::F64) => {
-            let float = f64::from_bits(scalar.try_to_bits(Size::from_bits(64)).ok()? as u64);
+            let float = f64::from_bits(scalar.to_bits(Size::from_bits(64)) as u64);
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {

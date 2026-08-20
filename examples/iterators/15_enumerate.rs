@@ -86,7 +86,7 @@ impl<I: Iterator> Invariant for Enumerate<I> {
             (forall<s: Seq<I::Item>, i: I>
                 #[trigger(self.iter.produces(s, i))]
                 self.iter.produces(s, i) ==>
-                self.count@ + s.len() < std::usize::MAX@)
+                self.count@ + s.len() < usize::MAX@)
             && (forall<i: &mut I> i.completed() ==> i.produces(Seq::empty(), ^i))
         }
     }
@@ -94,7 +94,7 @@ impl<I: Iterator> Invariant for Enumerate<I> {
 
 // These two requirements are here only to prove the absence of overflow.
 #[requires(forall<i: &mut I> i.completed() ==> i.produces(Seq::empty(), ^i))]
-#[requires(forall<s: Seq<I::Item>, i: I> iter.produces(s, i) ==> s.len() < std::usize::MAX@)]
+#[requires(forall<s: Seq<I::Item>, i: I> iter.produces(s, i) ==> s.len() < usize::MAX@)]
 #[ensures(result.iter == iter && result.count@ == 0)]
 pub fn enumerate<I: Iterator>(iter: I) -> Enumerate<I> {
     Enumerate { iter, count: 0 }

@@ -59,10 +59,10 @@ extern_spec! {
         unsafe fn from_utf8_unchecked(bytes: Vec<u8>) -> String;
     }
 
-    impl Clone for Box<str> {
+    impl<A: std::alloc::Allocator + Clone> Clone for Box<str, A> {
         #[check(ghost)]
         #[ensures((*result)@ == (**self)@)]
-        fn clone(&self) -> Box<str>;
+        fn clone(&self) -> Box<str, A>;
     }
 
     impl ToOwned for str {
