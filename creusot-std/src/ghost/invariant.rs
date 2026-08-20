@@ -70,6 +70,7 @@
 
 use crate::{
     ghost::{FnGhost, Plain},
+    invariant::GuardedBorrow,
     logic::Set,
     prelude::*,
 };
@@ -547,6 +548,15 @@ impl<T: Protocol> NonAtomicInvariant<T> {
         f: impl FnOnce(Ghost<&'a mut T>) -> A,
     ) -> A {
         f(Ghost::conjure())
+    }
+
+    #[trusted]
+    #[requires(tokens.contains(self.namespace()))]
+    #[ensures(forall<t: T>
+        result.guard()[t] == (t.public() == self.public() && t.protocol()))]
+    #[check(ghost)]
+    pub fn open_guarded<'a>(&'a self, tokens: Tokens<'a>) -> GuardedBorrow<'a, T> {
+        panic!("Should not be called outside ghost code")
     }
 
     /// Open the invariant to get the data stored inside, immutably.

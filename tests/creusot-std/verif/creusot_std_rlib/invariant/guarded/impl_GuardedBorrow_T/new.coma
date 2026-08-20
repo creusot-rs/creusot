@@ -1,0 +1,77 @@
+(* invariant::guarded::GuardedBorrow<'a, T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use map.Map
+use creusot.prelude.Any
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+type t_GuardedBorrow_T = { borrow: MutBorrow.t t_T; _guard: Map.map t_T bool; _initial: MutBorrow.t t_T }
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_T
+
+predicate index_Mapping_T_bool [@inline:trivial] (self: Map.map t_T bool) (a: t_T) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_T_bool
+
+function guard_T [@inline:trivial] (self: t_GuardedBorrow_T) : Map.map t_T bool = self._guard
+
+meta "rewrite_def" function guard_T
+
+function prophecy_T [@inline:trivial] (self: t_GuardedBorrow_T) : t_T = self._initial.final
+
+meta "rewrite_def" function prophecy_T
+
+predicate invariant_GuardedBorrow_T (self: t_GuardedBorrow_T) =
+  index_Mapping_T_bool (guard_T self) self.borrow.current /\ prophecy_T self = self.borrow.final
+
+predicate inv_GuardedBorrow_T (_1: t_GuardedBorrow_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_GuardedBorrow_T [inv_GuardedBorrow_T x]. inv_GuardedBorrow_T x
+    = (invariant_GuardedBorrow_T x /\ inv_refmut_T x.borrow)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let new_T (borrow'0: MutBorrow.t t_T) (guard: Map.map t_T bool) (return (x: t_GuardedBorrow_T)) =
+{[@stop_split] [@expl:new_T requires] ([@stop_split] [@expl:new 'borrow' type invariant] inv_refmut_T borrow'0)
+  /\ ([@stop_split] [@expl:new requires] index_Mapping_T_bool guard borrow'0.current)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_10 <- borrow'0 ] s1
+    | s1 = MutBorrow.borrow_final <t_T> {borrow'0.current} {MutBorrow.get_id borrow'0}
+        (fun (_bor: MutBorrow.t t_T) ->
+          [ &_13 <- _bor ] -{inv_T _bor.final}-
+          [ &borrow'0 <- { borrow'0 with current = _bor.final } ] s2)
+      [ _ck -> (! {[@expl:type invariant] inv_T borrow'0.current} any) ]
+    | s2 = [ &_ret <- { borrow = _13; _guard = guard; _initial = _10 } ] s3
+    | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_T borrow'0} any) ]
+    | s4 = -{resolve_refmut_T borrow'0}- s5
+    | s5 = return {_ret} ] ]
+  [ & _ret: t_GuardedBorrow_T = Any.any_l ()
+  | & borrow'0: MutBorrow.t t_T = borrow'0
+  | & guard: Map.map t_T bool = guard
+  | & _10: MutBorrow.t t_T = Any.any_l ()
+  | & _13: MutBorrow.t t_T = Any.any_l () ])
+  [ return (result: t_GuardedBorrow_T) ->
+  {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_GuardedBorrow_T result)
+    /\ ([@stop_split] [@expl:new ensures #0] result.borrow = borrow'0)
+    /\ ([@stop_split] [@expl:new ensures #1] guard_T result = guard)}
+    (! return {result}) ]

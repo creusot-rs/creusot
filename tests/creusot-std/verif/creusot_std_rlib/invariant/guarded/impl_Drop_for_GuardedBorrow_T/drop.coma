@@ -1,0 +1,70 @@
+(* <invariant::guarded::GuardedBorrow<'a, T> as std::ops::Drop> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use map.Map
+use creusot.prelude.Any
+
+type t_T
+
+type t_GuardedBorrow_T = { borrow: MutBorrow.t t_T; _guard: Map.map t_T bool; _initial: MutBorrow.t t_T }
+
+predicate index_Mapping_T_bool [@inline:trivial] (self: Map.map t_T bool) (a: t_T) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_T_bool
+
+function guard_T [@inline:trivial] (self: t_GuardedBorrow_T) : Map.map t_T bool = self._guard
+
+meta "rewrite_def" function guard_T
+
+function prophecy_T [@inline:trivial] (self: t_GuardedBorrow_T) : t_T = self._initial.final
+
+meta "rewrite_def" function prophecy_T
+
+predicate invariant_GuardedBorrow_T (self: t_GuardedBorrow_T) =
+  index_Mapping_T_bool (guard_T self) self.borrow.current /\ prophecy_T self = self.borrow.final
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+predicate inv_GuardedBorrow_T (_1: t_GuardedBorrow_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_GuardedBorrow_T [inv_GuardedBorrow_T x]. inv_GuardedBorrow_T x
+    = (invariant_GuardedBorrow_T x /\ inv_refmut_T x.borrow)
+
+predicate invariant_refmut_GuardedBorrow_T [@inline:trivial] (self: MutBorrow.t t_GuardedBorrow_T) =
+  inv_GuardedBorrow_T self.current /\ inv_GuardedBorrow_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_GuardedBorrow_T
+
+predicate inv_refmut_GuardedBorrow_T [@inline:trivial] (_1: MutBorrow.t t_GuardedBorrow_T) =
+  invariant_refmut_GuardedBorrow_T _1
+
+meta "rewrite_def" predicate inv_refmut_GuardedBorrow_T
+
+predicate resolve_refmut_GuardedBorrow_T [@inline:trivial] (_1: MutBorrow.t t_GuardedBorrow_T) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_GuardedBorrow_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let drop_GuardedBorrow_T (self: MutBorrow.t t_GuardedBorrow_T) (return (x: ())) =
+{[@stop_split] [@expl:drop 'self' type invariant] inv_refmut_GuardedBorrow_T self}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_GuardedBorrow_T self} any) ]
+    | s1 = -{resolve_refmut_GuardedBorrow_T self}- s2
+    | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t t_GuardedBorrow_T = self ])
+  [ return (result: ()) -> (! return {result}) ]
