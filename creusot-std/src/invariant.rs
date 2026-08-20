@@ -2,9 +2,13 @@
 //!
 //! See [`Invariant`].
 
+mod guarded;
 mod subset;
 
-pub use self::subset::{InhabitedInvariant, Subset};
+pub use self::{
+    guarded::GuardedBorrow,
+    subset::{InhabitedInvariant, Subset},
+};
 
 use crate::prelude::*;
 
