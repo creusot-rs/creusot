@@ -4,7 +4,7 @@ use rustc_index::{IndexVec, bit_set::MixedBitSet};
 use rustc_middle::{
     mir::{
         Body, Local, Location, Place, PlaceRef, PlaceTy, ProjectionElem, Statement, Terminator,
-        TerminatorEdges, TerminatorKind,
+        TerminatorKind,
         visit::{MutatingUseContext, NonMutatingUseContext, NonUseContext, PlaceContext, Visitor},
     },
     ty::{Ty, TyCtxt, TyKind},
@@ -274,7 +274,7 @@ impl<'a, 'tcx> Analysis<'tcx> for NotFinalPlaces<'a, 'tcx> {
         trans: &mut Self::Domain,
         terminator: &'mir Terminator<'tcx>,
         location: Location,
-    ) -> TerminatorEdges<'mir, 'tcx> {
+    ) {
         let mut visitor = PlaceVisitor { info: self, trans };
         if terminator.kind == TerminatorKind::Return {
             for &l in self.places_per_local.keys() {
@@ -282,7 +282,6 @@ impl<'a, 'tcx> Analysis<'tcx> for NotFinalPlaces<'a, 'tcx> {
             }
         }
         visitor.visit_terminator(terminator, location);
-        terminator.edges()
     }
 }
 

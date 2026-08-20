@@ -11,6 +11,7 @@ use crate::{
     },
 };
 use itertools::Itertools;
+use rustc_infer::traits::TraitErrors;
 use rustc_middle::{
     mir::{
         self, AssertKind, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
@@ -69,7 +70,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         let [arg] = *func_args.into_array().unwrap();
                         self.emit_assignment(destination, RValue::Operand(arg), span);
                     } else {
-                        if let Err(err) = self.ctx.check_additional_predicates(
+                        if let TraitErrors::HasErrors(err) = self.ctx.check_additional_predicates(
                             fun_def_id,
                             subst,
                             self.typing_env().param_env,
