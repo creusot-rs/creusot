@@ -22,7 +22,7 @@ use rustc_middle::{
         TyCtxt, TyKind, UpvarCapture,
     },
 };
-use std::assert_matches;
+use std::{assert_matches, iter::once};
 
 fn closure_captures<'tcx>(
     tcx: TyCtxt<'tcx>,
