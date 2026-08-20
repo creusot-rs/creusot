@@ -1,4 +1,3 @@
-use assert_cmd::prelude::*;
 use clap::Parser;
 use regex::Regex;
 use std::{
@@ -36,8 +35,21 @@ struct Args {
     /// Timeout in seconds
     #[clap(long)]
     time: Option<f64>,
-    /// Only run tests which contain this string
-    filter: Option<String>,
+    /// Only run tests which contain one of these strings
+    filter: Vec<String>,
+}
+
+enum OtherTest {
+    Why3find {
+        tactic: Option<String>,
+        time: Option<String>,
+        depth: Option<String>,
+    },
+    Why3 {
+        /// If None, only check Coma syntax using `why3 prove`, paradoxically.
+        /// If Some, contains directory of session file, as expected by `why3 replay`.
+        prove: Option<PathBuf>,
+    },
 }
 
 fn main() {
@@ -73,20 +85,26 @@ fn main() {
 
     let mut success = true;
     let mut obsolete = false;
-    let coma_files =
-        ["examples/**/*.coma", "tests/**/*.coma"].into_iter().flat_map(|s| glob::glob(s).unwrap());
+    let mut default_tests = vec![];
+    let mut other_tests = vec![];
+    let coma_files = [
+        "examples/**/*.coma",
+        "tests/creusot-std/verif/**/*.coma",
+        "tests/should_succeed/**/*.coma",
+        "tests/should_fail/**/*.coma",
+    ]
+    .into_iter()
+    .flat_map(|s| glob::glob(s).unwrap());
     for file in coma_files {
-        // Check for early abort
-        if args.fail_early && (!success || obsolete) {
-            break;
-        }
-
         let file = file.unwrap();
 
-        if let Some(ref filter) = args.filter {
-            if !file.to_str().map(|file| file.contains(filter)).unwrap_or(false) {
-                continue;
-            }
+        if !args.filter.is_empty()
+            && !args
+                .filter
+                .iter()
+                .any(|filter| file.to_str().is_some_and(|file| file.contains(filter)))
+        {
+            continue;
         }
 
         if let Some(changed_list) = &changed {
@@ -95,9 +113,114 @@ fn main() {
             }
         }
 
-        let rs_file = File::open(&file.with_extension("rs"))
-            .unwrap_or_else(|_| panic!("no rust file for {:?}", file));
-        let header_line = BufReader::new(rs_file).lines().next().unwrap().unwrap();
+        let (has_rs_file, header_line) = match File::open(&file.with_extension("rs")) {
+            Err(_) => (false, String::new()),
+            Ok(rs_file) => (true, BufReader::new(rs_file).lines().next().unwrap().unwrap()),
+        };
+
+        if header_line.contains("WHY3SKIP") {
+            continue;
+        }
+
+        let mut sessiondir = file.clone();
+        sessiondir.set_file_name(file.file_stem().unwrap());
+        let sessionfile = sessiondir.join("why3session.xml");
+
+        if header_line.contains("WHY3PROVE") || (!has_rs_file && sessionfile.is_file()) {
+            let proof_json = sessiondir.join("proof.json");
+            if proof_json.is_file() {
+                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+                writeln!(&mut out, "unused {}", proof_json.display()).unwrap();
+                out.reset().unwrap();
+                success = false;
+            }
+
+            if !sessionfile.is_file() {
+                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+                writeln!(&mut out, "missing why3 session").unwrap();
+                out.reset().unwrap();
+                success = false;
+                continue;
+            }
+
+            other_tests.push((file, OtherTest::Why3 { prove: Some(sessiondir) }));
+        } else if header_line.contains("NO_REPLAY") {
+            other_tests.push((file, OtherTest::Why3 { prove: None }));
+        } else {
+            let sessionfiles = ["why3session.xml", "why3shapes.gz"]
+                .into_iter()
+                .filter(|file| sessiondir.join(file).is_file())
+                .collect::<Vec<_>>();
+            if sessionfiles.len() > 0 {
+                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+                writeln!(&mut out, "unused {sessionfiles:?}. Please do not use Why3 sessions files for this test. Instead, update the proof.json file.").unwrap();
+                out.reset().unwrap();
+                success = false;
+            }
+            let tactic = tactic_re.captures_iter(&header_line).next().map(|c| c[1].to_owned());
+            let time = time_re.captures_iter(&header_line).next().map(|c| c[1].to_owned());
+            let depth = depth_re.captures_iter(&header_line).next().map(|c| c[1].to_owned());
+            if tactic.is_none() && time.is_none() && depth.is_none() {
+                default_tests.push(file);
+            } else {
+                other_tests.push((file, OtherTest::Why3find { tactic, time, depth }));
+            }
+        }
+    }
+
+    let library = std::env::current_dir().unwrap().join("target/creusot");
+
+    let why3find = || {
+        let mut why3find = Command::new(paths.why3find());
+        why3find
+            .env("PATH", paths.bin())
+            .env("WHY3CONFIG", paths.creusot_why3_conf())
+            .env("DUNE_DIR_LOCATIONS", &format!("why3find:lib:{}", library.display()))
+            .arg("prove")
+            .arg("--no-autodetect-provers")
+            .args(["-j", &format!("{}", creusot_setup::default_provers_parallelism())]);
+        if let Some(time) = args.time {
+            why3find.args(["--time", &format!("{}", time)]);
+        }
+        if args.no_cache {
+            why3find.arg("--no-cache");
+        }
+        if !args.update {
+            why3find.arg("-r");
+        }
+        if args.minimize {
+            why3find.arg("-m");
+        }
+        why3find
+    };
+
+    let why3 = || {
+        let mut why3 = Command::new(paths.why3());
+        why3.env("PATH", paths.bin());
+        why3.arg("-C").arg(paths.user_why3_conf());
+        why3.arg("--extra-config").arg(paths.creusot_why3_conf());
+        why3.arg("--warn-off=unused_variable");
+        why3.arg("--warn-off=clone_not_abstract");
+        why3.arg("--warn-off=axiom_abstract");
+        why3.arg("--debug=coma_no_trivial,stack_trace");
+        why3
+    };
+
+    // Run default tests as a single why3find invocation
+    if !default_tests.is_empty() {
+        writeln!(out, "Default tests ({} files)...", default_tests.len()).unwrap();
+        // Reverse `default_tests` because they were pushed in reverse alphabetical order
+        // `spawn` to inherit stdout
+        let result =
+            why3find().args(default_tests.into_iter().rev()).spawn().unwrap().wait().unwrap();
+        success &= result.success();
+    }
+
+    for (file, test) in other_tests.into_iter().rev() {
+        // Check for early abort
+        if args.fail_early && (!success || obsolete) {
+            break;
+        }
 
         // Default (not `quiet`): print "Testing tests/current/test ... " and flush before running the test
         // if `quiet` enabled: postpone printing, store the message in `current`, only print it if the test case fails
@@ -108,207 +231,140 @@ fn main() {
             out.flush().unwrap();
         }
 
-        if header_line.contains("WHY3SKIP") {
-            write!(out, "{current}").unwrap();
-            out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
-            writeln!(out, "skipped").unwrap();
-            out.reset().unwrap();
-            continue;
-        }
-
-        let should_fail = file.to_str().map(|file| file.contains("should_fail")).unwrap_or(false);
-
-        let mut sessiondir = file.clone();
-        sessiondir.set_file_name(file.file_stem().unwrap());
-
         let output;
-        let library = std::env::current_dir().unwrap().join("target/creusot");
-        let mut why3 = Command::new(paths.why3());
-        why3.env("PATH", paths.bin());
-        why3.arg("-C").arg(paths.user_why3_conf());
-        why3.arg("--extra-config").arg(paths.creusot_why3_conf());
-        why3.arg("--warn-off=unused_variable");
-        why3.arg("--warn-off=clone_not_abstract");
-        why3.arg("--warn-off=axiom_abstract");
-        why3.arg("--debug=coma_no_trivial,stack_trace");
 
-        if header_line.contains("WHY3PROVE") || file.file_name().unwrap() == "creusot-std.coma" {
-            if sessiondir.join("proof.json").is_file() {
-                write!(out, "{current}").unwrap();
-                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-                writeln!(&mut out, "unused proof.json").unwrap();
+        match test {
+            OtherTest::Why3find { tactic, time, depth } => {
+                let mut why3find = why3find();
+                if let Some(tactic) = tactic {
+                    why3find.args(["--tactic", &tactic]);
+                }
+                if args.time.is_none()
+                    && let Some(time) = time
+                {
+                    why3find.args(["--time", &time]);
+                }
+                if let Some(depth) = depth {
+                    why3find.args(["--depth", &depth]);
+                }
+                why3find.arg(file);
+                output = why3find.output().unwrap();
+                if !args.quiet && output.status.success() {
+                    if is_tty {
+                        // Move to beginning of line and clear line.
+                        write!(out, "\x1b[G\x1b[2K").unwrap();
+                    } else {
+                        out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
+                        writeln!(&mut out, "proved").unwrap();
+                    }
+                }
                 out.reset().unwrap();
-                success = false;
             }
-
-            let sessionfile = sessiondir.join("why3session.xml");
-            if !sessionfile.is_file() {
-                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-                writeln!(&mut out, "missing why3 session").unwrap();
-                out.reset().unwrap();
-                success = false;
-                continue;
-            }
-
-            let Some(proved) =
-                BufReader::new(File::open(&sessionfile).unwrap()).lines().find_map(|l| {
-                    match l.unwrap().as_str() {
+            OtherTest::Why3 { prove: Some(sessiondir) } => {
+                let sessionfile = sessiondir.join("why3session.xml");
+                let Some(proved) = BufReader::new(File::open(&sessionfile).unwrap())
+                    .lines()
+                    .find_map(|l| match l.unwrap().as_str() {
                         "<file format=\"coma\">" => Some(false),
                         "<file format=\"coma\" proved=\"true\">" => Some(true),
                         _ => None,
-                    }
-                })
-            else {
-                writeln!(out, "{current}error").unwrap();
-                success = false;
-                continue;
-            };
+                    })
+                else {
+                    writeln!(out, "{current}error").unwrap();
+                    success = false;
+                    continue;
+                };
 
-            if !proved && !should_fail {
-                write!(out, "{current}").unwrap();
-                out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
-                writeln!(&mut out, "not proved").unwrap();
-                out.reset().unwrap();
+                let should_fail =
+                    file.to_str().map(|file| file.contains("should_fail")).unwrap_or(false);
 
-                success = false;
-                continue;
-            }
-            if proved && should_fail {
-                write!(out, "{current}").unwrap();
-                out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
-                writeln!(&mut out, "proof exists").unwrap();
-                out.reset().unwrap();
+                if !proved && !should_fail {
+                    write!(out, "{current}").unwrap();
+                    out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
+                    writeln!(&mut out, "not proved").unwrap();
+                    out.reset().unwrap();
+                    success = false;
+                    continue;
+                }
+                if proved && should_fail {
+                    write!(out, "{current}").unwrap();
+                    out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
+                    writeln!(&mut out, "proof exists").unwrap();
+                    out.reset().unwrap();
+                    success = false;
+                    continue;
+                }
 
-                success = false;
-                continue;
-            }
+                // There is a session directory. Try to replay the session.
+                let library = library.join("packages/creusot").display().to_string();
+                let mut why3 = why3();
+                why3.arg("replay");
+                why3.args(&["-L", &library]);
+                why3.arg(sessiondir);
 
-            // There is a session directory. Try to replay the session.
-            let library = library.join("packages/creusot").display().to_string();
-            why3.arg("replay");
-            why3.args(&["-L", &library]);
-            why3.arg(sessiondir.clone());
+                output = why3.output().unwrap();
+                if output.status.success() {
+                    let outputstring = std::str::from_utf8(&output.stderr).unwrap();
 
-            output = why3.ok();
-            if let Ok(output) = &output {
-                let outputstring = std::str::from_utf8(&output.stderr).unwrap();
-
-                match session_obsolete(outputstring) {
-                    Obsolete::Obsolete => {
-                        obsolete = true;
-                        write!(out, "{current}").unwrap();
-                        out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
-                        writeln!(&mut out, "obsolete").unwrap();
-                    }
-                    Obsolete::Detached => {
-                        obsolete = true;
-                        write!(out, "{current}").unwrap();
-                        out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
-                        writeln!(&mut out, "detached goals").unwrap();
-                    }
-                    Obsolete::Good => {
-                        if !args.quiet {
-                            if is_tty {
-                                // Move to beginning of line and clear line.
-                                write!(out, "\x1b[G\x1b[2K").unwrap();
-                            } else {
-                                out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
-                                writeln!(out, "replayed").unwrap();
+                    match session_obsolete(outputstring) {
+                        Obsolete::Obsolete => {
+                            obsolete = true;
+                            write!(out, "{current}").unwrap();
+                            out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
+                            writeln!(&mut out, "obsolete").unwrap();
+                        }
+                        Obsolete::Detached => {
+                            obsolete = true;
+                            write!(out, "{current}").unwrap();
+                            out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
+                            writeln!(&mut out, "detached goals").unwrap();
+                        }
+                        Obsolete::Good => {
+                            if !args.quiet {
+                                if is_tty {
+                                    // Move to beginning of line and clear line.
+                                    write!(out, "\x1b[G\x1b[2K").unwrap();
+                                } else {
+                                    out.set_color(ColorSpec::new().set_fg(Some(Color::Green)))
+                                        .unwrap();
+                                    writeln!(out, "replayed").unwrap();
+                                }
                             }
                         }
                     }
-                }
-                out.reset().unwrap();
-            }
-        } else if header_line.contains("NO_REPLAY") {
-            // Simply parse the file using "why3 prove".
-            let library = library.join("packages/creusot").display().to_string();
-            why3.arg("prove");
-            why3.args(&["-L", &library, "-F", "coma"]);
-            why3.arg(file);
-            output = why3.ok();
-            if output.is_ok() && !args.quiet {
-                if is_tty {
-                    // Move to beginning of line and clear line.
-                    write!(out, "\x1b[G\x1b[2K").unwrap();
-                } else {
-                    out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
-                    writeln!(out, "syntax ok").unwrap();
+                    out.reset().unwrap();
                 }
             }
-        } else {
-            let sessionfiles = ["why3session.xml", "why3shapes.gz"]
-                .into_iter()
-                .filter(|file| sessiondir.join(file).is_file())
-                .collect::<Vec<_>>();
-            if sessionfiles.len() > 0 {
-                write!(out, "{current}").unwrap();
-                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-                writeln!(&mut out, "unused {sessionfiles:?}. Please do not use Why3 sessions files for this test. Instead, update the proof.json file.").unwrap();
-                out.reset().unwrap();
-                success = false;
-            }
-
-            let mut why3find = Command::new(paths.why3find());
-            why3find.env("PATH", paths.bin());
-            why3find.env("WHY3CONFIG", paths.creusot_why3_conf());
-            why3find.env("DUNE_DIR_LOCATIONS", &format!("why3find:lib:{}", library.display()));
-            why3find.arg("prove").arg(file.canonicalize().unwrap());
-            why3find.arg("--no-autodetect-provers");
-            why3find.args(["-j", &format!("{}", creusot_setup::default_provers_parallelism())]);
-            if let Some(tactic) = tactic_re.captures_iter(&header_line).next() {
-                why3find.args(["--tactic", tactic.get(1).unwrap().as_str()]);
-            }
-            if let Some(time) = args.time {
-                why3find.args(["--time", &format!("{}", time)]);
-            } else if let Some(time) = time_re.captures_iter(&header_line).next() {
-                why3find.args(["--time", time.get(1).unwrap().as_str()]);
-            }
-            if let Some(depth) = depth_re.captures_iter(&header_line).next() {
-                why3find.args(["--depth", depth.get(1).unwrap().as_str()]);
-            }
-            if args.no_cache {
-                why3find.arg("--no-cache");
-            }
-            if !args.update {
-                why3find.arg("-r");
-            }
-            if args.minimize {
-                why3find.arg("-m");
-            }
-
-            output = why3find.ok();
-            if output.is_ok() && !args.quiet {
-                if is_tty {
-                    // Move to beginning of line and clear line.
-                    write!(out, "\x1b[G\x1b[2K").unwrap();
-                } else {
-                    out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
-                    writeln!(&mut out, "proved").unwrap();
+            OtherTest::Why3 { prove: None } => {
+                // Simply parse the file using "why3 prove".
+                let library = library.join("packages/creusot").display().to_string();
+                let mut why3 = why3();
+                why3.arg("prove");
+                why3.args(&["-L", &library, "-F", "coma"]);
+                why3.arg(file);
+                output = why3.output().unwrap();
+                if !args.quiet && output.status.success() {
+                    if is_tty {
+                        // Move to beginning of line and clear line.
+                        write!(out, "\x1b[G\x1b[2K").unwrap();
+                    } else {
+                        out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
+                        writeln!(out, "syntax ok").unwrap();
+                    }
                 }
             }
-            out.reset().unwrap();
         }
 
-        if let Err(output) = output {
+        if !output.status.success() {
             write!(out, "{current}").unwrap();
             out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
             writeln!(&mut out, "failure").unwrap();
             out.reset().unwrap();
-
-            if let Some(output) = output.as_output() {
-                // why3 returned an error code
-                writeln!(&mut out, "******** STDOUT ********").unwrap();
-                out.write_all(&output.stdout).unwrap();
-                writeln!(&mut out, "******** STDERR ********").unwrap();
-                out.write_all(&output.stderr).unwrap();
-                writeln!(&mut out, "************************").unwrap();
-            } else {
-                // there was an issue launching the why3 command
-                writeln!(&mut out, "{output}").unwrap();
-                return;
-            }
-
+            writeln!(&mut out, "******** STDOUT ********").unwrap();
+            out.write_all(&output.stdout).unwrap();
+            writeln!(&mut out, "******** STDERR ********").unwrap();
+            out.write_all(&output.stderr).unwrap();
+            writeln!(&mut out, "************************").unwrap();
             success = false;
         }
     }

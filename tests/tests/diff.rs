@@ -1,7 +1,6 @@
-use assert_cmd::output::OutputOkExt as _;
 use regex::Regex;
 use similar::{ChangeTag, TextDiff};
-use std::{error::Error, io::Write as _, path::Path, str::from_utf8, sync::LazyLock};
+use std::{error::Error, io::Write as _, path::Path, sync::LazyLock};
 use termcolor::{Buffer, Color, ColorSpec, WriteColor};
 
 /// Normalize file path between linux/windows for consistency
@@ -16,46 +15,42 @@ pub fn normalize_file_path(input: impl Into<String>) -> String {
 
 pub fn differ(
     output: &std::process::Output,
-    actual: &str,
-    expect: &Path,
-    stderr: Option<&Path>,
+    expected_stdout: &Path,
+    expected_stderr: &Path,
     should_succeed: bool,
     enable_color: bool,
 ) -> Result<(bool, Buffer), Box<dyn Error>> {
     let mut buf = if enable_color { Buffer::ansi() } else { Buffer::no_color() };
-    match output.clone().ok() {
-        Ok(output) => {
-            let expect_out = std::fs::read(expect).unwrap_or_else(|_| Vec::new());
-            let success_out = compare_str(&mut buf, actual, from_utf8(&expect_out)?);
+    let stdout = str::from_utf8(&output.stdout)?;
+    let stderr = str::from_utf8(&output.stderr)?;
+    if output.status.success() {
+        let expect_out =
+            &std::fs::read_to_string(expected_stdout).unwrap_or_else(|_| String::new());
+        let success_out = compare_str(&mut buf, stdout, expect_out, expected_stdout);
 
-            let success_err = if let Some(stderr) = stderr {
-                let expect_err = &std::fs::read(stderr).unwrap_or_else(|_| Vec::new());
-                compare_str(&mut buf, from_utf8(&output.stderr)?, from_utf8(expect_err)?)
-            } else {
-                true
-            };
+        let expect_err =
+            &std::fs::read_to_string(expected_stderr).unwrap_or_else(|_| String::new());
+        let success_err = compare_str(&mut buf, stderr, expect_err, expected_stderr);
 
-            Ok((success_out && success_err, buf))
-        }
-        Err(err) if should_succeed => {
-            let output = err.as_output().unwrap();
-
-            write!(buf, "{}", from_utf8(&output.stderr)?)?;
-            Ok((false, buf))
-        }
-        Err(err) => {
-            let Some(stderr) = stderr else { return Ok((true, buf)) };
-            let expect_err = std::fs::read(stderr).unwrap_or_else(|_| Vec::new());
-
-            let output = err.as_output().unwrap();
-            let success =
-                compare_str(&mut buf, from_utf8(&output.stderr)?, from_utf8(&expect_err)?);
-            Ok((success, buf))
-        }
+        Ok((success_out && success_err, buf))
+    } else if should_succeed {
+        write!(buf, "{stderr}")?;
+        Ok((false, buf))
+    } else {
+        let expect_err =
+            &std::fs::read_to_string(expected_stderr).unwrap_or_else(|_| String::new());
+        let success = compare_str(&mut buf, stderr, expect_err, expected_stderr);
+        Ok((success, buf))
     }
 }
 
-fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
+pub fn differ_simple(buf: &mut Buffer, actual: &Path, expect: &Path) {
+    let actual_str = std::fs::read_to_string(actual).unwrap();
+    let expect_str = std::fs::read_to_string(expect).unwrap();
+    let _ = compare_str(buf, &actual_str, &expect_str, expect);
+}
+
+fn compare_str(buf: &mut Buffer, got: &str, expect: &str, expect_name: &Path) -> bool {
     use similar::Algorithm;
     use std::time::Duration;
 
@@ -64,6 +59,10 @@ fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
     if got == expect {
         return true;
     }
+
+    buf.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
+    writeln!(buf, "{}", expect_name.display()).unwrap();
+    buf.reset().unwrap();
 
     let got = normalize_spans(&normalize_trailing_spaces(&normalize_newlines(&got)));
     let expect = normalize_spans(&normalize_trailing_spaces(&normalize_newlines(&expect)));
