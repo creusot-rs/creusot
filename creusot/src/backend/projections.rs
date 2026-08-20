@@ -257,7 +257,7 @@ pub(crate) fn projection_ty<'tcx, V: Debug>(
     tcx: TyCtxt<'tcx>,
     elem: &ProjectionElem<V, Ty<'tcx>>,
 ) -> PlaceTy<'tcx> {
-    pty.projection_ty_core(tcx, elem, |ty| ty, |_, _, _, ty| ty, |ty| ty)
+    pty.projection_ty_core(tcx, elem, |_, _, _, ty| ty, |ty| ty)
 }
 
 /// Generate the ID for a final reborrow of `original_borrow`.
