@@ -84,7 +84,7 @@ mod arc {
             fn as_ref(&self) -> &T;
         }
 
-        impl<T: ?Sized, A: Allocator + Clone> Clone for Arc<T, A> {
+        impl<T: ?Sized, A: std::alloc::AllocatorClone> Clone for Arc<T, A> {
             #[check(ghost)]
             #[ensures(result == *self)]
             fn clone(&self) -> Arc<T, A>;
