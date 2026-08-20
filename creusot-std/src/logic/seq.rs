@@ -1101,12 +1101,12 @@ impl<T> Iterator for Iter<T> {
 }
 
 impl<T> IteratorSpec for Iter<T> {
-    #[logic(prophetic, open)]
+    #[logic(prophetic, inline, open)]
     fn produces(self, visited: Seq<T>, o: Self) -> bool {
         pearlite! { self@ == visited.concat(o@) }
     }
 
-    #[logic(prophetic, open)]
+    #[logic(prophetic, inline, open)]
     fn completed(&mut self) -> bool {
         pearlite! { self@ == Seq::empty() }
     }
