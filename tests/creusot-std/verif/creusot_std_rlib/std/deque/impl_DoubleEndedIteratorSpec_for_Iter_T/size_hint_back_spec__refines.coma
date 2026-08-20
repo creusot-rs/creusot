@@ -1,0 +1,91 @@
+(* <std::collections::vec_deque::Iter<'a, T> as std::iter::DoubleEndedIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use seq.Seq
+use seq.Reverse
+use creusot.prelude.MutBorrow
+use int.Int
+
+type t_Iter_T
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+type t_T
+
+function view_Iter_T (self: t_Iter_T) : Seq.seq t_T
+
+predicate postcondition_size_hint (self: ()) (args: t_Iter_T) (result: tup2_usize_Option_usize) =
+  let self_ = args in UInt64.t'int result.f0 = Seq.length (view_Iter_T self_) /\ result.f1 = Some (result.f0)
+
+meta "rewrite_def" predicate postcondition_size_hint
+
+predicate inv_Iter_T (_1: t_Iter_T)
+
+predicate invariant_ref_Iter_T [@inline:trivial] (self: t_Iter_T) = inv_Iter_T self
+
+meta "rewrite_def" predicate invariant_ref_Iter_T
+
+predicate inv_ref_Iter_T [@inline:trivial] (_1: t_Iter_T) = invariant_ref_Iter_T _1
+
+meta "rewrite_def" predicate inv_ref_Iter_T
+
+let size_hint_Iter_T (self_: t_Iter_T) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Iter_T self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint_Iter_T ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.t'int result.f0
+      = Seq.length (view_Iter_T self_))
+    /\ ([@stop_split] [@expl:size_hint ensures #1] result.f1 = Some (result.f0))}
+    (! return {result}) ]
+
+predicate produces_back_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (tl: t_Iter_T) =
+  view_Iter_T self = Seq.(++) (view_Iter_T tl) (Reverse.reverse visited)
+
+predicate produces_Iter_T (self: t_Iter_T) (visited: Seq.seq t_T) (tl: t_Iter_T) =
+  view_Iter_T self = Seq.(++) visited (view_Iter_T tl)
+
+function produces_trans_Iter_T (a: t_Iter_T) (ab: Seq.seq t_T) (b: t_Iter_T) (bc: Seq.seq t_T) (c: t_Iter_T) : () = ()
+
+axiom produces_trans_Iter_T_spec:
+  forall a: t_Iter_T, ab: Seq.seq t_T, b: t_Iter_T, bc: Seq.seq t_T, c: t_Iter_T. produces_Iter_T a ab b
+    -> produces_Iter_T b bc c -> produces_Iter_T a (Seq.(++) ab bc) c
+
+function produces_refl_Iter_T (self: t_Iter_T) : () = ()
+
+axiom produces_refl_Iter_T_spec: forall self: t_Iter_T. produces_Iter_T self (Seq.empty: Seq.seq t_T) self
+
+predicate resolve_refmut_Iter_T [@inline:trivial] (_1: MutBorrow.t t_Iter_T) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Iter_T
+
+predicate completed_Iter_T (self: MutBorrow.t t_Iter_T) =
+  resolve_refmut_Iter_T self /\ view_Iter_T self.current = (Seq.empty: Seq.seq t_T)
+
+predicate completed_back_Iter_T (self: MutBorrow.t t_Iter_T) = completed_Iter_T self
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Iter_T, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> postcondition_size_hint () self r
+    /\ (forall result: (). (forall s: Seq.seq t_T, i: MutBorrow.t t_Iter_T. produces_back_Iter_T self s i.current
+              /\ completed_back_Iter_T i -> UInt64.t'int r.f0 <= Seq.length s)
+        /\ match r.f1 with
+          | Some r'0 -> forall s: Seq.seq t_T, i: t_Iter_T. produces_back_Iter_T self s i
+            -> Seq.length s <= UInt64.t'int r'0
+          | None -> true
+          end
+      -> (forall s: Seq.seq t_T, i: MutBorrow.t t_Iter_T. produces_back_Iter_T self s i.current
+            /\ completed_back_Iter_T i -> UInt64.t'int r.f0 <= Seq.length s)
+      /\ match r.f1 with
+        | Some r'0 -> forall s: Seq.seq t_T, i: t_Iter_T. produces_back_Iter_T self s i
+          -> Seq.length s <= UInt64.t'int r'0
+        | None -> true
+        end)

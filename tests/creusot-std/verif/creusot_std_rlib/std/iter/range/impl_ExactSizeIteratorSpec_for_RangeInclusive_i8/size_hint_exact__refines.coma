@@ -1,0 +1,79 @@
+(* <std::ops::RangeInclusive<i8> as std::iter::ExactSizeIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use creusot.int.Int8
+use int.Int
+
+type t_RangeInclusive_i8
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+function deep_model_i8 [@inline:trivial] (self: Int8.t) : int = Int8.to_int self
+
+meta "rewrite_def" function deep_model_i8
+
+function start_log_RangeInclusive_i8 (self: t_RangeInclusive_i8) : Int8.t
+
+function end_log_RangeInclusive_i8 (self: t_RangeInclusive_i8) : Int8.t
+
+predicate is_empty_log_RangeInclusive_i8 (self: t_RangeInclusive_i8)
+
+axiom is_empty_log_RangeInclusive_i8_spec:
+  forall self: t_RangeInclusive_i8 [is_empty_log_RangeInclusive_i8 self]. not is_empty_log_RangeInclusive_i8 self
+    -> deep_model_i8 (start_log_RangeInclusive_i8 self) <= deep_model_i8 (end_log_RangeInclusive_i8 self)
+
+function range_inclusive_len_i8 (r: t_RangeInclusive_i8) : int = if is_empty_log_RangeInclusive_i8 r then
+    0
+  else
+    deep_model_i8 (end_log_RangeInclusive_i8 r) - deep_model_i8 (start_log_RangeInclusive_i8 r) + 1
+
+
+axiom range_inclusive_len_i8_spec:
+  forall r: t_RangeInclusive_i8 [range_inclusive_len_i8 r]. is_empty_log_RangeInclusive_i8 r
+    = (range_inclusive_len_i8 r = 0)
+
+constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate postcondition_size_hint (self: ()) (args: t_RangeInclusive_i8) (result: tup2_usize_Option_usize) =
+  let self_ = args in (let s = range_inclusive_len_i8 self_ in s <= UInt64.t'int const_MAX
+    -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+  /\ (gt_log_Int (range_inclusive_len_i8 self_) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })
+
+meta "rewrite_def" predicate postcondition_size_hint
+
+predicate inv_RangeInclusive_i8 (_1: t_RangeInclusive_i8)
+
+predicate invariant_ref_RangeInclusive_i8 [@inline:trivial] (self: t_RangeInclusive_i8) = inv_RangeInclusive_i8 self
+
+meta "rewrite_def" predicate invariant_ref_RangeInclusive_i8
+
+predicate inv_ref_RangeInclusive_i8 [@inline:trivial] (_1: t_RangeInclusive_i8) = invariant_ref_RangeInclusive_i8 _1
+
+meta "rewrite_def" predicate inv_ref_RangeInclusive_i8
+
+let size_hint_RangeInclusive_i8 (self_: t_RangeInclusive_i8) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_RangeInclusive_i8 self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint_RangeInclusive_i8 ensures] ([@stop_split] [@expl:size_hint ensures #0] let s = range_inclusive_len_i8 self_ in s
+        <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ ([@stop_split] [@expl:size_hint ensures #1] gt_log_Int (range_inclusive_len_i8 self_) (UInt64.t'int const_MAX)
+    -> result = { f0 = const_MAX; f1 = None })}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_RangeInclusive_i8, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> postcondition_size_hint () self r /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))

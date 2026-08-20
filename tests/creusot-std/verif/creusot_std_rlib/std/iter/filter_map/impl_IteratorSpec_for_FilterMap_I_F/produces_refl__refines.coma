@@ -1,0 +1,101 @@
+(* <std::iter::FilterMap<I, F> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_FilterMap_I_F
+
+type t_B
+
+type t_F
+
+type t_Item
+
+predicate inv_Item (_1: t_Item)
+
+predicate precondition_F (self: t_F) (args: t_Item)
+
+predicate no_precondition_Item (f: t_F) = forall i: t_Item. inv_Item i -> precondition_F f i
+
+function func_FilterMap_I_F (self: t_FilterMap_I_F) : t_F
+
+type t_Option_B = None | Some t_B
+
+predicate postcondition_once_F (self: t_F) (args: t_Item) (result: t_Option_B)
+
+predicate resolve_F (_1: t_F)
+
+predicate postcondition_mut_F (self: t_F) (args: t_Item) (result_state: t_F) (result: t_Option_B)
+
+function fn_mut_once_F (self: t_F) (args: t_Item) (res: t_Option_B) : ()
+
+axiom fn_mut_once_F_spec:
+  forall self: t_F, args: t_Item, res: t_Option_B [postcondition_once_F self args res]. postcondition_once_F self args res
+    = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+
+predicate hist_inv_F (self: t_F) (result_state: t_F)
+
+function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
+
+axiom hist_inv_trans_F_spec:
+  forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
+    -> hist_inv_F b c -> hist_inv_F self c
+
+function hist_inv_refl_F (self: t_F) : ()
+
+axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
+
+function postcondition_mut_hist_inv_F (self: t_F) (args: t_Item) (res_state: t_F) (res: t_Option_B) : ()
+
+axiom postcondition_mut_hist_inv_F_spec:
+  forall self: t_F, args: t_Item, res_state: t_F, res: t_Option_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    -> hist_inv_F self res_state
+
+predicate immutable_Item (f: t_F) = forall g: t_F. hist_inv_F f g -> f = g
+
+predicate precise_Item (f1: t_F) =
+  forall f2: t_F, i: t_Item. not ((exists b: t_B. postcondition_mut_F f1 i f2 (Some b))
+    /\ postcondition_mut_F f1 i f2 (None))
+
+predicate private_invariant_B (f: t_FilterMap_I_F) =
+  no_precondition_Item (func_FilterMap_I_F f)
+  /\ immutable_Item (func_FilterMap_I_F f) /\ precise_Item (func_FilterMap_I_F f)
+
+type t_I
+
+predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+
+function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+
+axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+    -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+
+function produces_refl_I (self: t_I) : ()
+
+axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+
+function iter_FilterMap_I_F (self: t_FilterMap_I_F) : t_I
+
+predicate produces_FilterMap_I_F (self: t_FilterMap_I_F) (visited: Seq.seq t_B) (succ: t_FilterMap_I_F) =
+  private_invariant_B self
+  -> hist_inv_F (func_FilterMap_I_F self) (func_FilterMap_I_F succ)
+  /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces_I (iter_FilterMap_I_F self) s (iter_FilterMap_I_F succ)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
+    /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+        -> postcondition_mut_F (func_FilterMap_I_F self) (Seq.get s (Map.get f i)) (func_FilterMap_I_F self) (Some (Seq.get visited i)))
+    /\ (forall j: int. 0 <= j /\ j < Seq.length s
+      -> (not (exists i: int. 0 <= i /\ i < Seq.length visited /\ Map.get f i = j))
+      = postcondition_mut_F (func_FilterMap_I_F self) (Seq.get s j) (func_FilterMap_I_F self) (None)))
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_FilterMap_I_F. forall result: (). produces_FilterMap_I_F self (Seq.empty: Seq.seq t_B) self
+      -> produces_FilterMap_I_F self (Seq.empty: Seq.seq t_B) self

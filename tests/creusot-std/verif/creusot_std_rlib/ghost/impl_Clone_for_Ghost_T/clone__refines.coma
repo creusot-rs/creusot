@@ -1,0 +1,32 @@
+(* <ghost::Ghost<T> as std::clone::Clone> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_Ghost_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_Ghost_T
+
+predicate inv_Ghost_T [@inline:trivial] (_1: t_T) = invariant_Ghost_T _1
+
+meta "rewrite_def" predicate inv_Ghost_T
+
+predicate invariant_ref_Ghost_T [@inline:trivial] (self: t_T) = inv_Ghost_T self
+
+meta "rewrite_def" predicate invariant_ref_Ghost_T
+
+predicate inv_ref_Ghost_T [@inline:trivial] (_1: t_T) = invariant_ref_Ghost_T _1
+
+meta "rewrite_def" predicate inv_ref_Ghost_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self_: t_T. inv_ref_Ghost_T self_
+    -> inv_ref_Ghost_T self_ /\ (forall result: t_T. inv_Ghost_T result /\ result = self_ -> inv_Ghost_T result)

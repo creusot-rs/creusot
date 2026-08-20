@@ -1,0 +1,60 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64BW
+use creusot.prelude.Opaque
+use creusot.prelude.PtrBW
+use creusot.prelude.Any
+
+let is_power_of_two (self_: UInt64BW.t) (return (x: bool)) = any
+  [ return (result: bool) -> {[@stop_split] [@expl:is_power_of_two ensures] result
+    = (self_ <> (0: UInt64BW.t) /\ UInt64BW.bw_and self_ (UInt64BW.sub self_ (1: UInt64BW.t)) = (0: UInt64BW.t))}
+    (! return {result}) ]
+
+let addr_T (self_: Opaque.ptr) (return (x: UInt64BW.t)) = any
+  [ return (result: UInt64BW.t) -> {[@stop_split] [@expl:addr ensures] result = PtrBW.addr_logic_u64 self_}
+    (! return {result}) ]
+
+type t_Arguments
+
+predicate inv_Arguments (_1: t_Arguments)
+
+let from_str (s: string) (return (x: t_Arguments)) = any
+  [ return (result: t_Arguments) -> {[@stop_split] [@expl:from_str result type invariant] inv_Arguments result}
+    (! return {result}) ]
+
+predicate is_aligned_to_ptr_T (self: Opaque.ptr) (align: UInt64BW.t) =
+  UInt64BW.bw_and (PtrBW.addr_logic_u64 self) (UInt64BW.sub align (1: UInt64BW.t)) = (0: UInt64BW.t)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T__ptrconst_T_is_aligned_to_body_T (self_: Opaque.ptr) (align: UInt64BW.t) (return (x: bool)) =
+{[@stop_split] [@expl:extern_spec_T__ptrconst_T_is_aligned_to_body requires] align <> (0: UInt64BW.t)
+  /\ UInt64BW.bw_and align (UInt64BW.sub align (1: UInt64BW.t)) = (0: UInt64BW.t)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = is_power_of_two {align} (fun (_x: bool) -> [ &_12 <- _x ] s1)
+    | s1 = any [ br0 -> {_12 = false} (! bb3) | br1 -> {_12} (! bb2) ] ]
+  | bb2 = s0
+    [ s0 = addr_T {self_} (fun (_x: UInt64BW.t) -> [ &_19 <- _x ] s1)
+    | s1 = UInt64BW.sub {align} {(1: UInt64BW.t)} (fun (_x: UInt64BW.t) -> [ &_21 <- _x ] s2)
+    | s2 = [ &_18 <- UInt64BW.bw_and _19 _21 ] s3
+    | s3 = [ &_ret <- _18 = (0: UInt64BW.t) ] s4
+    | s4 = return {_ret} ]
+  | bb3 = s0
+    [ s0 = from_str {"is_aligned_to: align is not a power-of-two"} (fun (_x: t_Arguments) -> [ &_17 <- _x ] s1)
+    | s1 = {false} any ] ]
+  [ & _ret: bool = Any.any_l ()
+  | & self_: Opaque.ptr = self_
+  | & align: UInt64BW.t = align
+  | & _12: bool = Any.any_l ()
+  | & _17: t_Arguments = Any.any_l ()
+  | & _18: UInt64BW.t = Any.any_l ()
+  | & _19: UInt64BW.t = Any.any_l ()
+  | & _21: UInt64BW.t = Any.any_l () ])
+  [ return (result: bool) -> {[@stop_split] [@expl:extern_spec_T__ptrconst_T_is_aligned_to_body ensures] result
+    = is_aligned_to_ptr_T self_ align}
+    (! return {result}) ]

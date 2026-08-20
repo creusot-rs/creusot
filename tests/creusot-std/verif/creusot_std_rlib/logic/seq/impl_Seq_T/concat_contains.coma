@@ -1,0 +1,23 @@
+(* logic::seq::Seq<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use int.Int
+
+type t_T
+
+predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+function concat_contains_T : ()
+
+goal vc_concat_contains_T:
+  [@stop_split] [@expl:concat_contains ensures] forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. contains_T (Seq.(++) a b) x
+      = contains_T a x
+    \/ contains_T b x

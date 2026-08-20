@@ -1,0 +1,28 @@
+(* <(T,) as ghost::Plain> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate inv_tup1_T [@inline:trivial] (_1: t_T) = inv_T _1
+
+meta "rewrite_def" predicate inv_tup1_T
+
+predicate invariant_Ghost_tup1_T [@inline:trivial] (self: t_T) = inv_tup1_T self
+
+meta "rewrite_def" predicate invariant_Ghost_tup1_T
+
+predicate inv_Ghost_tup1_T [@inline:trivial] (_1: t_T) = invariant_Ghost_tup1_T _1
+
+meta "rewrite_def" predicate inv_Ghost_tup1_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall snap: t_T. forall result: t_T. inv_Ghost_tup1_T result /\ result = snap
+      -> inv_Ghost_tup1_T result /\ result = snap

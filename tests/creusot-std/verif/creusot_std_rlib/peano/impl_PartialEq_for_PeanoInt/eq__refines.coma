@@ -1,0 +1,24 @@
+(* <peano::PeanoInt as std::cmp::PartialEq> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+
+type t_PeanoInt = { f0: UInt64.t }
+
+function deep_model_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = self.f0
+
+meta "rewrite_def" function deep_model_PeanoInt
+
+function deep_model_ref_PeanoInt [@inline:trivial] (self: t_PeanoInt) : UInt64.t = deep_model_PeanoInt self
+
+meta "rewrite_def" function deep_model_ref_PeanoInt
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self_: t_PeanoInt, rhs: t_PeanoInt. forall result: bool. result = (self_ = rhs)
+      -> result = (deep_model_ref_PeanoInt self_ = deep_model_ref_PeanoInt rhs)

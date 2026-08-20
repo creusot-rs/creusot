@@ -1,0 +1,53 @@
+(* <std::ops::RangeInclusive<Idx> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use int.Int
+
+type t_RangeInclusive_Idx
+
+type t_Idx
+
+function deep_model_Idx (self: t_Idx) : int
+
+function start_log_RangeInclusive_Idx (self: t_RangeInclusive_Idx) : t_Idx
+
+function end_log_RangeInclusive_Idx (self: t_RangeInclusive_Idx) : t_Idx
+
+predicate is_empty_log_RangeInclusive_Idx (self: t_RangeInclusive_Idx)
+
+axiom is_empty_log_RangeInclusive_Idx_spec:
+  forall self: t_RangeInclusive_Idx [is_empty_log_RangeInclusive_Idx self]. not is_empty_log_RangeInclusive_Idx self
+    -> deep_model_Idx (start_log_RangeInclusive_Idx self) <= deep_model_Idx (end_log_RangeInclusive_Idx self)
+
+function range_inclusive_len_Idx (r: t_RangeInclusive_Idx) : int = if is_empty_log_RangeInclusive_Idx r then
+    0
+  else
+    deep_model_Idx (end_log_RangeInclusive_Idx r) - deep_model_Idx (start_log_RangeInclusive_Idx r) + 1
+
+
+axiom range_inclusive_len_Idx_spec:
+  forall r: t_RangeInclusive_Idx [range_inclusive_len_Idx r]. is_empty_log_RangeInclusive_Idx r
+    = (range_inclusive_len_Idx r = 0)
+
+predicate produces_RangeInclusive_Idx (self: t_RangeInclusive_Idx) (visited: Seq.seq t_Idx) (o: t_RangeInclusive_Idx) =
+  Seq.length visited = range_inclusive_len_Idx self - range_inclusive_len_Idx o
+  /\ (is_empty_log_RangeInclusive_Idx self -> is_empty_log_RangeInclusive_Idx o)
+  /\ (is_empty_log_RangeInclusive_Idx o \/ end_log_RangeInclusive_Idx self = end_log_RangeInclusive_Idx o)
+  /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    -> deep_model_Idx (Seq.get visited i) = deep_model_Idx (start_log_RangeInclusive_Idx self) + i)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_RangeInclusive_Idx, ab: Seq.seq t_Idx, b: t_RangeInclusive_Idx, bc: Seq.seq t_Idx, c: t_RangeInclusive_Idx. produces_RangeInclusive_Idx a ab b
+    -> produces_RangeInclusive_Idx b bc c
+    -> produces_RangeInclusive_Idx a ab b
+    /\ produces_RangeInclusive_Idx b bc c
+    /\ (forall result: (). produces_RangeInclusive_Idx a (Seq.(++) ab bc) c
+      -> produces_RangeInclusive_Idx a (Seq.(++) ab bc) c)

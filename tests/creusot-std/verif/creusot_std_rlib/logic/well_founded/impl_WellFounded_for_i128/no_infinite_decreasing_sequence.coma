@@ -1,0 +1,71 @@
+(* <i128 as logic::well_founded::WellFounded> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int128
+use map.Map
+use int.Int
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate gt_log_i128 [@inline:trivial] (self: Int128.t) (other: Int128.t) = Int128.lt other self
+
+meta "rewrite_def" predicate gt_log_i128
+
+predicate well_founded_relation_i128 [@inline:trivial] (self: Int128.t) (other: Int128.t) = gt_log_i128 self other
+
+meta "rewrite_def" predicate well_founded_relation_i128
+
+function index_Mapping_Int_i128 [@inline:trivial] (self: Map.map int Int128.t) (a: int) : Int128.t = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_i128
+
+constant const_MIN: Int128.t = (-170141183460469231731687303715884105728: Int128.t)
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+  ge_log_Int self 0 /\ gt_log_Int self other
+
+meta "rewrite_def" predicate well_founded_relation_Int
+
+function index_Mapping_Int_Int [@inline:trivial] (self: Map.map int int) (a: int) : int = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_Int
+
+function no_infinite_decreasing_sequence_Int (s: Map.map int int) : int
+
+axiom no_infinite_decreasing_sequence_Int_spec:
+  forall s: Map.map int int [no_infinite_decreasing_sequence_Int s]. ge_log_Int (no_infinite_decreasing_sequence_Int s) 0
+
+axiom no_infinite_decreasing_sequence_Int_spec'0:
+  forall s: Map.map int int [no_infinite_decreasing_sequence_Int s]. not well_founded_relation_Int (index_Mapping_Int_Int s (no_infinite_decreasing_sequence_Int s)) (index_Mapping_Int_Int s (no_infinite_decreasing_sequence_Int s
+    + 1))
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant s : Map.map int Int128.t
+
+function no_infinite_decreasing_sequence_i128 (s: Map.map int Int128.t) : int
+
+goal vc_no_infinite_decreasing_sequence_i128:
+  ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int (no_infinite_decreasing_sequence_Int (fun (i: int) -> Int128.to_int (index_Mapping_Int_i128 s i)
+      - Int128.to_int const_MIN)) 0)
+    /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_Int (index_Mapping_Int_Int (fun (i: int) -> Int128.to_int (index_Mapping_Int_i128 s i)
+    - Int128.to_int const_MIN) (no_infinite_decreasing_sequence_Int (fun (i: int) -> Int128.to_int (index_Mapping_Int_i128 s i)
+    - Int128.to_int const_MIN))) (index_Mapping_Int_Int (fun (i: int) -> Int128.to_int (index_Mapping_Int_i128 s i)
+    - Int128.to_int const_MIN) (no_infinite_decreasing_sequence_Int (fun (i: int) -> Int128.to_int (index_Mapping_Int_i128 s i)
+      - Int128.to_int const_MIN)
+    + 1))))
+  -> (let result = no_infinite_decreasing_sequence_Int (fun (i: int) -> Int128.to_int (index_Mapping_Int_i128 s i)
+  - Int128.to_int const_MIN) in [@stop_split] [@expl:no_infinite_decreasing_sequence_i128 ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int result 0)
+  /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_i128 (index_Mapping_Int_i128 s result) (index_Mapping_Int_i128 s (result
+  + 1))))

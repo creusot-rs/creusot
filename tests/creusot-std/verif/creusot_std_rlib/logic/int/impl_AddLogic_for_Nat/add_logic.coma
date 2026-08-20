@@ -1,0 +1,56 @@
+(* <logic::int::Nat as logic::ops::arithmetic::AddLogic> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Subset_NatInner
+
+type t_Nat = { f0: t_Subset_NatInner }
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+type t_NatInner = { f0'0: int }
+
+predicate invariant_NatInner (self: t_NatInner) = ge_log_Int self.f0'0 0
+
+function inner_NatInner (self: t_Subset_NatInner) : t_NatInner
+
+axiom inner_NatInner_spec:
+  forall self: t_Subset_NatInner [inner_NatInner self]. invariant_NatInner (inner_NatInner self)
+
+function to_int (self: t_Nat) : int = (inner_NatInner self.f0).f0'0
+
+axiom to_int_spec: forall self: t_Nat [to_int self]. ge_log_Int (to_int self) 0
+
+function view_Nat (self: t_Nat) : int = to_int self
+
+function new_NatInner (x: t_NatInner) : t_Subset_NatInner
+
+axiom new_NatInner_spec: forall x: t_NatInner [new_NatInner x]. invariant_NatInner x
+    -> inner_NatInner (new_NatInner x) = x
+
+function new (n: int) : t_Nat = { f0 = new_NatInner { f0'0 = n } }
+
+axiom new_spec: forall n: int [new n]. ge_log_Int n 0 -> to_int (new n) = n
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Nat
+
+constant other : t_Nat
+
+function add_Nat (self: t_Nat) (other: t_Nat) : t_Nat
+
+goal vc_add_Nat: ([@stop_split] [@expl:to_int ensures] ge_log_Int (to_int self) 0)
+  -> ([@stop_split] [@expl:to_int ensures] ge_log_Int (to_int other) 0)
+  -> ([@stop_split] [@expl:new requires] ge_log_Int (to_int self + to_int other) 0)
+  /\ (([@stop_split] [@expl:new ensures] to_int (new (to_int self + to_int other)) = to_int self + to_int other)
+  -> ([@stop_split] [@expl:add_logic ensures] view_Nat (new (to_int self + to_int other))
+  = view_Nat self + view_Nat other))

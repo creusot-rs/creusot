@@ -1,0 +1,86 @@
+(* <std::iter::Chain<A, B> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.prelude.MutBorrow
+
+type t_Chain_A_B
+
+type t_Item
+
+type t_A
+
+type t_Option_A = None | Some t_A
+
+function iter_a_Chain_A_B (self: t_Chain_A_B) : t_Option_A
+
+predicate produces_A (self: t_A) (visited: Seq.seq t_Item) (o: t_A)
+
+function produces_trans_A (a: t_A) (ab: Seq.seq t_Item) (b: t_A) (bc: Seq.seq t_Item) (c: t_A) : ()
+
+axiom produces_trans_A_spec: forall a: t_A, ab: Seq.seq t_Item, b: t_A, bc: Seq.seq t_Item, c: t_A. produces_A a ab b
+    -> produces_A b bc c -> produces_A a (Seq.(++) ab bc) c
+
+function produces_refl_A (self: t_A) : ()
+
+axiom produces_refl_A_spec: forall self: t_A. produces_A self (Seq.empty: Seq.seq t_Item) self
+
+predicate completed_A (self: MutBorrow.t t_A)
+
+predicate resolve_A (_1: t_A)
+
+type t_B
+
+type t_Option_B = None'0 | Some'0 t_B
+
+function iter_b_Chain_A_B (self: t_Chain_A_B) : t_Option_B
+
+type tup2_Option_B_Option_B = { f0: t_Option_B; f1: t_Option_B }
+
+predicate produces_B (self: t_B) (visited: Seq.seq t_Item) (o: t_B)
+
+function produces_trans_B (a: t_B) (ab: Seq.seq t_Item) (b: t_B) (bc: Seq.seq t_Item) (c: t_B) : ()
+
+axiom produces_trans_B_spec: forall a: t_B, ab: Seq.seq t_Item, b: t_B, bc: Seq.seq t_Item, c: t_B. produces_B a ab b
+    -> produces_B b bc c -> produces_B a (Seq.(++) ab bc) c
+
+function produces_refl_B (self: t_B) : ()
+
+axiom produces_refl_B_spec: forall self: t_B. produces_B self (Seq.empty: Seq.seq t_Item) self
+
+predicate chain_produces_inner_A (x: t_Chain_A_B) (visited_a: Seq.seq t_Item) (visited_b: Seq.seq t_Item) (y: t_Chain_A_B) =
+  match iter_a_Chain_A_B x with
+      | None -> iter_a_Chain_A_B y = None /\ visited_a = (Seq.empty: Seq.seq t_Item)
+      | Some xa -> match iter_a_Chain_A_B y with
+        | None -> exists ya: MutBorrow.t t_A. produces_A xa visited_a ya.current /\ completed_A ya /\ resolve_A ya.final
+        | Some ya -> produces_A xa visited_a ya
+        end
+      end
+  /\ match iter_a_Chain_A_B y with
+    | Some _ -> iter_b_Chain_A_B x = iter_b_Chain_A_B y /\ visited_b = (Seq.empty: Seq.seq t_Item)
+    | None -> match { f0 = iter_b_Chain_A_B x; f1 = iter_b_Chain_A_B y } with
+      | {f0 = None'0} -> iter_b_Chain_A_B y = None'0 /\ visited_b = (Seq.empty: Seq.seq t_Item)
+      | {f0 = Some'0 sb; f1 = Some'0 yb} -> produces_B sb visited_b yb
+      | {f0 = Some'0 _; f1 = None'0} -> false
+      end
+    end
+
+predicate produces_Chain_A_B [@inline:trivial] (self: t_Chain_A_B) (visited: Seq.seq t_Item) (o: t_Chain_A_B) =
+  exists visited_a: Seq.seq t_Item, visited_b: Seq.seq t_Item. visited = Seq.(++) visited_a visited_b
+    /\ chain_produces_inner_A self visited_a visited_b o
+
+meta "rewrite_def" predicate produces_Chain_A_B
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_Chain_A_B, ab: Seq.seq t_Item, b: t_Chain_A_B, bc: Seq.seq t_Item, c: t_Chain_A_B. produces_Chain_A_B a ab b
+    -> produces_Chain_A_B b bc c
+    -> produces_Chain_A_B a ab b
+    /\ produces_Chain_A_B b bc c
+    /\ (forall result: (). produces_Chain_A_B a (Seq.(++) ab bc) c -> produces_Chain_A_B a (Seq.(++) ab bc) c)

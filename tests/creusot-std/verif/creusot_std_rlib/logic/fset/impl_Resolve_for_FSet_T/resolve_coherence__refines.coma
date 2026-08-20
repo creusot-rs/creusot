@@ -1,0 +1,37 @@
+(* <logic::fset::FSet<T> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use set.Fset
+
+type t_T
+
+predicate contains_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_FSet_T [@inline:trivial] (self: Fset.fset t_T) = forall x: t_T. contains_T self x -> inv_T x
+
+meta "rewrite_def" predicate invariant_FSet_T
+
+predicate inv_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_FSet_T _1
+
+meta "rewrite_def" predicate inv_FSet_T
+
+predicate structural_resolve_FSet_T (_1: Fset.fset t_T)
+
+predicate resolve_T (_1: t_T)
+
+predicate resolve_FSet_T (self: Fset.fset t_T) = forall x: t_T. contains_T self x -> resolve_T x
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: Fset.fset t_T. inv_FSet_T self
+    -> structural_resolve_FSet_T self
+    -> structural_resolve_FSet_T self /\ (forall result: (). resolve_FSet_T self -> resolve_FSet_T self)

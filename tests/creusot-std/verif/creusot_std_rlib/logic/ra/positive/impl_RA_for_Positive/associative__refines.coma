@@ -1,0 +1,46 @@
+(* <logic::int::Positive as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+type t_Positive
+
+type t_Option_Positive = None | Some t_Positive
+
+function and_then_Option_Positive (self: t_Option_Positive) (f: Map.map t_Positive t_Option_Positive) : t_Option_Positive
+ = match self with
+    | None -> None
+    | Some x -> Map.get f x
+    end
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+function to_int (self: t_Positive) : int
+
+axiom to_int_spec: forall self: t_Positive [to_int self]. gt_log_Int (to_int self) 0
+
+function view_Positive (self: t_Positive) : int = to_int self
+
+function add_Positive (self: t_Positive) (other: t_Positive) : t_Positive
+
+axiom add_Positive_spec:
+  forall self: t_Positive, other: t_Positive [add_Positive self other]. view_Positive (add_Positive self other)
+    = view_Positive self + view_Positive other
+
+function op_Positive (self: t_Positive) (other: t_Positive) : t_Option_Positive = Some (add_Positive self other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_Positive, b: t_Positive, c: t_Positive. forall result: (). and_then_Option_Positive (op_Positive a b) (fun (ab: t_Positive) -> op_Positive ab c)
+        = and_then_Option_Positive (op_Positive b c) (fun (bc: t_Positive) -> op_Positive a bc)
+      -> and_then_Option_Positive (op_Positive a b) (fun (ab: t_Positive) -> op_Positive ab c)
+      = and_then_Option_Positive (op_Positive b c) (fun (bc: t_Positive) -> op_Positive a bc)

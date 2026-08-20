@@ -1,0 +1,34 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int8
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: Int8.t = (-128: Int8.t)
+
+constant const_MAX: Int8.t = (127: Int8.t)
+
+let sub_ref_i8 (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
+{[@stop_split] [@expl:sub requires] Int8.to_int const_MIN <= Int8.to_int self_ - Int8.to_int rhs
+  /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX}
+  any
+  [ return (result: Int8.t) -> {[@stop_split] [@expl:sub ensures] Int8.to_int result
+    = Int8.to_int self_ - Int8.to_int rhs}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Sub_i8__ref_i8_sub_body (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
+{[@stop_split] [@expl:extern_spec_Sub_i8__ref_i8_sub_body requires] Int8.to_int const_MIN
+    <= Int8.to_int self_ - Int8.to_int rhs
+  /\ Int8.to_int self_ - Int8.to_int rhs <= Int8.to_int const_MAX}
+  (! bb0
+  [ bb0 = s0 [ s0 = sub_ref_i8 {self_} {rhs} (fun (_x: Int8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: Int8.t = Any.any_l () | & self_: Int8.t = self_ | & rhs: Int8.t = rhs ])
+  [ return (result: Int8.t) -> {[@stop_split] [@expl:extern_spec_Sub_i8__ref_i8_sub_body ensures] Int8.to_int result
+    = Int8.to_int self_ - Int8.to_int rhs}
+    (! return {result}) ]

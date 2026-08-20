@@ -1,0 +1,83 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+type t_Option_T = None | Some t_T
+
+predicate inv_T (_1: t_T)
+
+predicate inv_Option_T (_1: t_Option_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+    = match x with
+      | None -> true
+      | Some f0 -> inv_T f0
+      end
+
+predicate resolve_T (_1: t_T)
+
+predicate resolve_Option_T (_1: t_Option_T)
+
+axiom resolve_axiom [@rewrite]: forall x: t_Option_T [resolve_Option_T x]. resolve_Option_T x
+    = match x with
+      | None -> true
+      | Some x0 -> resolve_T x0
+      end
+
+type t_U
+
+type t_Option_U = None'0 | Some'0 t_U
+
+predicate inv_U (_1: t_U)
+
+predicate inv_Option_U (_1: t_Option_U)
+
+axiom inv_axiom'0 [@rewrite]: forall x: t_Option_U [inv_Option_U x]. inv_Option_U x
+    = match x with
+      | None'0 -> true
+      | Some'0 f0 -> inv_U f0
+      end
+
+predicate resolve_U (_1: t_U)
+
+predicate resolve_Option_U (_1: t_Option_U)
+
+axiom resolve_axiom'0 [@rewrite]: forall x: t_Option_U [resolve_Option_U x]. resolve_Option_U x
+    = match x with
+      | None'0 -> true
+      | Some'0 x0 -> resolve_U x0
+      end
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_Option_T_and_body_T (self_: t_Option_T) (optb: t_Option_U) (return (x: t_Option_U)) =
+{[@stop_split] [@expl:extern_spec_T_Option_T_and_body_T requires] ([@stop_split] [@expl:extern_spec_T_Option_T_and_body 'self_' type invariant] inv_Option_T self_)
+  /\ ([@stop_split] [@expl:extern_spec_T_Option_T_and_body 'optb' type invariant] inv_Option_U optb)}
+  (! bb0
+  [ bb0 = any [ br0 -> {self_ = None} (! bb2) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
+  | bb3 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_T self_} any) ]
+    | s1 = -{resolve_Option_T self_}- s2
+    | s2 = [ &_ret <- optb ] s3
+    | s3 = return {_ret} ]
+  | bb2 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_U optb} any) ]
+    | s1 = -{resolve_Option_U optb}- s2
+    | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Option_T self_} any) ]
+    | s3 = -{resolve_Option_T self_}- s4
+    | s4 = [ &_ret <- None'0 ] s5
+    | s5 = return {_ret} ] ]
+  [ & _ret: t_Option_U = Any.any_l () | & self_: t_Option_T = self_ | & optb: t_Option_U = optb ])
+  [ return (result: t_Option_U) ->
+  {[@stop_split] [@expl:extern_spec_T_Option_T_and_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Option_T_and_body result type invariant] inv_Option_U result)
+    /\ ([@stop_split] [@expl:extern_spec_T_Option_T_and_body ensures #0] self_ = None
+      -> result = None'0 /\ resolve_Option_U optb)
+    /\ ([@stop_split] [@expl:extern_spec_T_Option_T_and_body ensures #1] self_ = None
+    \/ result = optb /\ resolve_Option_T self_)}
+    (! return {result}) ]

@@ -1,0 +1,35 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt8
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: UInt8.t = (0: UInt8.t)
+
+constant const_MAX: UInt8.t = (255: UInt8.t)
+
+let mul_ref_u8 (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
+{[@stop_split] [@expl:mul requires] UInt8.t'int const_MIN <= UInt8.t'int self_ * UInt8.t'int rhs
+  /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX}
+  any
+  [ return (result: UInt8.t) -> {[@stop_split] [@expl:mul ensures] UInt8.t'int result
+    = UInt8.t'int self_ * UInt8.t'int rhs}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Mul__ref_u8__ref_u8_mul_body (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
+{[@stop_split] [@expl:extern_spec_Mul__ref_u8__ref_u8_mul_body requires] UInt8.t'int const_MIN
+    <= UInt8.t'int self_ * UInt8.t'int rhs
+  /\ UInt8.t'int self_ * UInt8.t'int rhs <= UInt8.t'int const_MAX}
+  (! bb0
+  [ bb0 = s0 [ s0 = mul_ref_u8 {self_} {rhs} (fun (_x: UInt8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: UInt8.t = Any.any_l () | & self_: UInt8.t = self_ | & rhs: UInt8.t = rhs ])
+  [ return (result: UInt8.t) ->
+  {[@stop_split] [@expl:extern_spec_Mul__ref_u8__ref_u8_mul_body ensures] UInt8.t'int result
+    = UInt8.t'int self_ * UInt8.t'int rhs}
+    (! return {result}) ]

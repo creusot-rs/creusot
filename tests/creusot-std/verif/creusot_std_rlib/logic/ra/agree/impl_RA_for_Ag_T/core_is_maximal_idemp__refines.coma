@@ -1,0 +1,37 @@
+(* <logic::ra::agree::Ag<T> as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+type t_Ag_T = { f0: t_T }
+
+type t_Option_Ag_T = None | Some t_Ag_T
+
+function op_Ag_T (self: t_Ag_T) (other: t_Ag_T) : t_Option_Ag_T = if self.f0 = other.f0 then Some self else None
+
+function core_Ag_T (self: t_Ag_T) : t_Option_Ag_T = Some self
+
+predicate incl_Ag_T (self: t_Ag_T) (other: t_Ag_T) = self.f0 = other.f0
+
+axiom incl_Ag_T_spec: forall self: t_Ag_T, other: t_Ag_T [incl_Ag_T self other]. incl_Ag_T self other
+    = (exists factor: t_Ag_T. op_Ag_T self factor = Some other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Ag_T, i: t_Ag_T. op_Ag_T i i = Some i
+    -> op_Ag_T i self = Some self
+    -> op_Ag_T i i = Some i
+    /\ op_Ag_T i self = Some self
+    /\ (forall result: (). match core_Ag_T self with
+          | Some c -> incl_Ag_T i c
+          | None -> false
+          end
+      -> match core_Ag_T self with
+        | Some c -> incl_Ag_T i c
+        | None -> false
+        end)

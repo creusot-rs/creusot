@@ -1,0 +1,54 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_Rc_T_A
+
+type t_T
+
+predicate inv_Rc_T_A (_1: t_Rc_T_A)
+
+predicate invariant_ref_Rc_T_A [@inline:trivial] (self: t_Rc_T_A) = inv_Rc_T_A self
+
+meta "rewrite_def" predicate invariant_ref_Rc_T_A
+
+predicate inv_ref_Rc_T_A [@inline:trivial] (_1: t_Rc_T_A) = invariant_ref_Rc_T_A _1
+
+meta "rewrite_def" predicate inv_ref_Rc_T_A
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+function view_Rc_T_A (self: t_Rc_T_A) : t_T
+
+let as_ref_Rc_T_A (self_: t_Rc_T_A) (return (x: t_T)) =
+{[@stop_split] [@expl:as_ref 'self_' type invariant] inv_ref_Rc_T_A self_}
+  any
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:as_ref_Rc_T_A ensures] ([@stop_split] [@expl:as_ref result type invariant] inv_ref_T result)
+    /\ ([@stop_split] [@expl:as_ref ensures] result = view_Rc_T_A self_)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_A_Deref_Rc_T_A_deref_body_T (self_: t_Rc_T_A) (return (x: t_T)) =
+{[@stop_split] [@expl:extern_spec_T_A_Deref_Rc_T_A_deref_body 'self_' type invariant] inv_ref_Rc_T_A self_}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = as_ref_Rc_T_A {self_} (fun (_x: t_T) -> [ &_4 <- _x ] s1) | s1 = [ &_ret <- _4 ] s2 | s2 = return {_ret} ] ]
+  [ & _ret: t_T = Any.any_l () | & self_: t_Rc_T_A = self_ | & _4: t_T = Any.any_l () ])
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:extern_spec_T_A_Deref_Rc_T_A_deref_body_T ensures] ([@stop_split] [@expl:extern_spec_T_A_Deref_Rc_T_A_deref_body result type invariant] inv_ref_T result)
+    /\ ([@stop_split] [@expl:extern_spec_T_A_Deref_Rc_T_A_deref_body ensures] result = view_Rc_T_A self_)}
+    (! return {result}) ]

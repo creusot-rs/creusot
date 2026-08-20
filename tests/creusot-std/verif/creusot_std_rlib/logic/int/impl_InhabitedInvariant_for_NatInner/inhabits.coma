@@ -1,0 +1,23 @@
+(* <logic::int::NatInner as invariant::InhabitedInvariant> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_NatInner = { f0: int }
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate invariant_NatInner (self: t_NatInner) = ge_log_Int self.f0 0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+function inhabits_NatInner : t_NatInner
+
+goal vc_inhabits_NatInner: [@stop_split] [@expl:inhabits ensures] invariant_NatInner { f0 = 0 }

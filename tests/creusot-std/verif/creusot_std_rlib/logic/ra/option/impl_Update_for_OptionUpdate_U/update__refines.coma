@@ -1,0 +1,32 @@
+(* <logic::ra::option::OptionUpdate<U> as logic::ra::update::Update<std::option::Option<R>>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_U
+
+type t_OptionUpdate_U = { f0: t_U }
+
+type t_R
+
+type t_Option_R = None | Some t_R
+
+type t_Choice
+
+predicate premise_U (self: t_U) (from: t_R)
+
+predicate premise_OptionUpdate_U [@inline:trivial] (self: t_OptionUpdate_U) (from: t_Option_R) =
+  match from with
+    | Some from'0 -> premise_U self.f0 from'0
+    | None -> false
+    end
+
+meta "rewrite_def" predicate premise_OptionUpdate_U
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_OptionUpdate_U, from: t_Option_R, ch: t_Choice. premise_OptionUpdate_U self from
+    -> premise_OptionUpdate_U self from

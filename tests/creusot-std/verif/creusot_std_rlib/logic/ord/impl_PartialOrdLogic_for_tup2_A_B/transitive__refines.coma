@@ -1,0 +1,54 @@
+(* <(A, B) as logic::ord::PartialOrdLogic> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_A
+
+type t_B
+
+type tup2_A_B = { f0: t_A; f1: t_B }
+
+predicate le_log_B (self: t_B) (other: t_B)
+
+predicate lt_log_B (self: t_B) (other: t_B)
+
+function le_lt_log_B (self: t_B) (other: t_B) : ()
+
+axiom le_lt_log_B_spec: forall self: t_B, other: t_B. le_log_B self other = (lt_log_B self other \/ self = other)
+
+function transitive_B (x: t_B) (y: t_B) (z: t_B) : ()
+
+axiom transitive_B_spec: forall x: t_B, y: t_B, z: t_B. lt_log_B x y -> lt_log_B y z -> lt_log_B x z
+
+function irreflexive_B (self: t_B) : ()
+
+axiom irreflexive_B_spec: forall self: t_B. not lt_log_B self self
+
+predicate le_log_A (self: t_A) (other: t_A)
+
+predicate lt_log_A (self: t_A) (other: t_A)
+
+function le_lt_log_A (self: t_A) (other: t_A) : ()
+
+axiom le_lt_log_A_spec: forall self: t_A, other: t_A. le_log_A self other = (lt_log_A self other \/ self = other)
+
+function transitive_A (x: t_A) (y: t_A) (z: t_A) : ()
+
+axiom transitive_A_spec: forall x: t_A, y: t_A, z: t_A. lt_log_A x y -> lt_log_A y z -> lt_log_A x z
+
+function irreflexive_A (self: t_A) : ()
+
+axiom irreflexive_A_spec: forall self: t_A. not lt_log_A self self
+
+predicate lt_log_tup2_A_B (self: tup2_A_B) (o: tup2_A_B) =
+  self.f0 = o.f0 /\ lt_log_B self.f1 o.f1 \/ lt_log_A self.f0 o.f0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall x: tup2_A_B, y: tup2_A_B, z: tup2_A_B. lt_log_tup2_A_B x y
+    -> lt_log_tup2_A_B y z
+    -> lt_log_tup2_A_B x y /\ lt_log_tup2_A_B y z /\ (forall result: (). lt_log_tup2_A_B x z -> lt_log_tup2_A_B x z)

@@ -1,0 +1,26 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt32
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: UInt32.t = (0: UInt32.t)
+
+constant const_MAX: UInt32.t = (4294967295: UInt32.t)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Sub_u32_u32_sub_body (self_: UInt32.t) (rhs: UInt32.t) (return (x: UInt32.t)) =
+{[@stop_split] [@expl:extern_spec_Sub_u32_u32_sub_body requires] UInt32.t'int const_MIN
+    <= UInt32.t'int self_ - UInt32.t'int rhs
+  /\ UInt32.t'int self_ - UInt32.t'int rhs <= UInt32.t'int const_MAX}
+  (! bb0
+  [ bb0 = s0 [ s0 = UInt32.sub {self_} {rhs} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: UInt32.t = Any.any_l () | & self_: UInt32.t = self_ | & rhs: UInt32.t = rhs ])
+  [ return (result: UInt32.t) -> {[@stop_split] [@expl:extern_spec_Sub_u32_u32_sub_body ensures] UInt32.t'int result
+    = UInt32.t'int self_ - UInt32.t'int rhs}
+    (! return {result}) ]

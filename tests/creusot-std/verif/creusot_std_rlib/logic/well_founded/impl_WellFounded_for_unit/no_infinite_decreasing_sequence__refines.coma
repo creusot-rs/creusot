@@ -1,0 +1,29 @@
+(* <() as logic::well_founded::WellFounded> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate well_founded_relation_unit [@inline:trivial] (self: ()) (_2: ()) = false
+
+meta "rewrite_def" predicate well_founded_relation_unit
+
+function index_Mapping_Int_unit [@inline:trivial] (self: Map.map int ()) (a: int) : () = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_unit
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall s: Map.map int (). forall result: int. ge_log_Int result 0
+        /\ not well_founded_relation_unit (index_Mapping_Int_unit s result) (index_Mapping_Int_unit s (result + 1))
+      -> ge_log_Int result 0
+      /\ not well_founded_relation_unit (index_Mapping_Int_unit s result) (index_Mapping_Int_unit s (result + 1))

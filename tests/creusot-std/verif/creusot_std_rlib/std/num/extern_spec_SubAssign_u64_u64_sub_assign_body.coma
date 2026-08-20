@@ -1,0 +1,35 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+use int.Int
+
+predicate resolve_refmut_u64 [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_u64
+
+constant const_MIN: UInt64.t = (0: UInt64.t)
+
+constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_SubAssign_u64_u64_sub_assign_body (self_: MutBorrow.t UInt64.t) (rhs: UInt64.t) (return (x: ())) =
+{[@stop_split] [@expl:extern_spec_SubAssign_u64_u64_sub_assign_body requires] UInt64.t'int const_MIN
+    <= UInt64.t'int self_.current - UInt64.t'int rhs
+  /\ UInt64.t'int self_.current - UInt64.t'int rhs <= UInt64.t'int const_MAX}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = UInt64.sub {self_.current} {rhs} (fun (_x: UInt64.t) -> [ &self_ <- { self_ with current = _x } ] s1)
+    | s1 = -{resolve_refmut_u64 self_}- s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l () | & self_: MutBorrow.t UInt64.t = self_ | & rhs: UInt64.t = rhs ])
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:extern_spec_SubAssign_u64_u64_sub_assign_body ensures] UInt64.t'int self_.final
+    = UInt64.t'int self_.current - UInt64.t'int rhs}
+    (! return {result}) ]

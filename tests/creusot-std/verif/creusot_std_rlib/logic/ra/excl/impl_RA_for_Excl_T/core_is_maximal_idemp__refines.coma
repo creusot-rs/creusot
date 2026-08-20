@@ -1,0 +1,37 @@
+(* <logic::ra::excl::Excl<T> as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+type t_Excl_T = { f0: t_T }
+
+type t_Option_Excl_T = None | Some t_Excl_T
+
+function op_Excl_T (self: t_Excl_T) (_other: t_Excl_T) : t_Option_Excl_T = None
+
+function core_Excl_T (self: t_Excl_T) : t_Option_Excl_T = None
+
+predicate incl_Excl_T (self: t_Excl_T) (other: t_Excl_T) = false
+
+axiom incl_Excl_T_spec: forall self: t_Excl_T, other: t_Excl_T [incl_Excl_T self other]. incl_Excl_T self other
+    = (exists factor: t_Excl_T. op_Excl_T self factor = Some other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Excl_T, i: t_Excl_T. op_Excl_T i i = Some i
+    -> op_Excl_T i self = Some self
+    -> op_Excl_T i i = Some i
+    /\ op_Excl_T i self = Some self
+    /\ (forall result: (). match core_Excl_T self with
+          | Some c -> incl_Excl_T i c
+          | None -> false
+          end
+      -> match core_Excl_T self with
+        | Some c -> incl_Excl_T i c
+        | None -> false
+        end)

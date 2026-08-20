@@ -1,0 +1,147 @@
+(* logic::seq::Seq<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.prelude.Any
+use int.Int
+
+let sub_Int (self: int) (other: int) (return (x: int)) = any
+  [ return (result: int) -> {[@stop_split] [@expl:sub ensures] result = self - other} (! return {result}) ]
+
+let le_Int (self: int) (other: int) (return (x: bool)) = any
+  [ return (result: bool) -> {[@stop_split] [@expl:le ensures] result = (self <= other)} (! return {result}) ]
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+
+meta "rewrite_def" predicate invariant_ref_Seq_T
+
+predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+
+meta "rewrite_def" predicate inv_ref_Seq_T
+
+let len_ghost_T (self: Seq.seq t_T) (return (x: int)) =
+{[@stop_split] [@expl:len_ghost 'self' type invariant] inv_ref_Seq_T self}
+  any [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
+
+let lt_Int (self: int) (other: int) (return (x: bool)) = any
+  [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] result = (self < other)} (! return {result}) ]
+
+predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
+
+meta "rewrite_def" predicate invariant_ref_ref_T
+
+predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_ref_T
+
+predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_ref_T
+
+predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
+
+meta "rewrite_def" predicate inv_Seq_ref_T
+
+let as_refs_T (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
+{[@stop_split] [@expl:as_refs 'self' type invariant] inv_ref_Seq_T self}
+  any
+  [ return (result: Seq.seq t_T) ->
+  {[@stop_split] [@expl:as_refs_T ensures] ([@stop_split] [@expl:as_refs result type invariant] inv_Seq_ref_T result)
+    /\ ([@stop_split] [@expl:as_refs ensures] self = result)}
+    (! return {result}) ]
+
+predicate resolve_ref_T [@inline:trivial] (_1: t_T) = true
+
+meta "rewrite_def" predicate resolve_ref_T
+
+let extract_ref_T (self: Seq.seq t_T) (index: int) (return (x: t_T)) =
+{[@stop_split] [@expl:extract_ref_T requires] ([@stop_split] [@expl:extract 'self' type invariant] inv_Seq_ref_T self)
+  /\ ([@stop_split] [@expl:extract requires] 0 <= index /\ index < Seq.length self)}
+  any
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:extract_ref_T ensures] ([@stop_split] [@expl:extract result type invariant] inv_ref_T result)
+    /\ ([@stop_split] [@expl:extract ensures #0] result = Seq.get self index)
+    /\ ([@stop_split] [@expl:extract ensures #1] forall i: int. 0 <= i /\ i < Seq.length self /\ i <> index
+      -> resolve_ref_T (Seq.get self i))}
+    (! return {result}) ]
+
+type t_Option_ref_T = None | Some t_T
+
+predicate inv_Option_ref_T (_1: t_Option_ref_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+    = match x with
+      | None -> true
+      | Some f0 -> inv_ref_T f0
+      end
+
+type t_Option_T = None'0 | Some'0 t_T
+
+function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
+    Some'0 (Seq.get self ix)
+  else
+    None'0
+
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let get_ghost_T (self: Seq.seq t_T) (index: int) (return (x: t_Option_ref_T)) =
+{[@stop_split] [@expl:get_ghost 'self' type invariant] inv_ref_Seq_T self}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = sub_Int {index} {index} (fun (_x: int) -> [ &_8 <- _x ] s1)
+    | s1 = le_Int {_8} {index} (fun (_x: bool) -> [ &_6 <- _x ] s2)
+    | s2 = any [ br0 -> {_6 = false} (! bb11) | br1 -> {_6} (! bb3) ] ]
+  | bb3 = s0
+    [ s0 = len_ghost_T {self} (fun (_x: int) -> [ &_15 <- _x ] s1)
+    | s1 = lt_Int {index} {_15} (fun (_x: bool) -> [ &_12 <- _x ] s2)
+    | s2 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb6) ] ]
+  | bb6 = s0
+    [ s0 = as_refs_T {self} (fun (_x: Seq.seq t_T) -> [ &_19 <- _x ] s1)
+    | s1 = extract_ref_T {_19} {index} (fun (_x: t_T) -> [ &_18 <- _x ] s2)
+    | s2 = [ &_ret <- Some _18 ] s3
+    | s3 = return {_ret} ]
+  | bb11 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_Option_ref_T = Any.any_l ()
+  | & self: Seq.seq t_T = self
+  | & index: int = index
+  | & _6: bool = Any.any_l ()
+  | & _8: int = Any.any_l ()
+  | & _12: bool = Any.any_l ()
+  | & _15: int = Any.any_l ()
+  | & _18: t_T = Any.any_l ()
+  | & _19: Seq.seq t_T = Any.any_l () ])
+  [ return (result: t_Option_ref_T) ->
+  {[@stop_split] [@expl:get_ghost_T ensures] ([@stop_split] [@expl:get_ghost result type invariant] inv_Option_ref_T result)
+    /\ ([@stop_split] [@expl:get_ghost ensures] match get_T self index with
+      | None'0 -> result = None
+      | Some'0 v -> result = Some v
+      end)}
+    (! return {result}) ]

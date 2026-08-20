@@ -1,0 +1,85 @@
+(* <invariant::Subset<T> as std::clone::Clone> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_Subset_T
+
+type t_T
+
+predicate invariant_T (self: t_T)
+
+function inner_T (self: t_Subset_T) : t_T
+
+axiom inner_T_spec: forall self: t_Subset_T [inner_T self]. invariant_T (inner_T self)
+
+function inner_inj_T (self: t_Subset_T) (other: t_Subset_T) : ()
+
+axiom inner_inj_T_spec: forall self: t_Subset_T, other: t_Subset_T. inner_T self = inner_T other -> self = other
+
+predicate inv_T (_1: t_T)
+
+axiom inv_axiom: forall x: t_T [inv_T x]. inv_T x -> invariant_T x
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+let deref_Subset_T (self: t_Subset_T) (return (x: t_T)) = any
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:deref_Subset_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_T result)
+    /\ ([@stop_split] [@expl:deref ensures] result = inner_T self)}
+    (! return {result}) ]
+
+predicate precondition_clone (self: ()) (args: t_T)
+
+axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
+    -> precondition_clone () args
+
+predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
+
+axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
+    -> (let self_ = args in inv_T res)
+
+predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T) = postcondition_clone self args result
+
+meta "rewrite_def" predicate postcondition_once_clone
+
+let clone_T (self_: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+  any
+  [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+    (! return {result}) ]
+
+function new_T (x: t_T) : t_Subset_T
+
+axiom new_T_spec: forall x: t_T [new_T x]. invariant_T x -> inner_T (new_T x) = x
+
+let new_T'0 (x: t_T) (return (x'0: t_Subset_T)) = {[@stop_split] [@expl:new 'x' type invariant] inv_T x}
+  any [ return (result: t_Subset_T) -> {[@stop_split] [@expl:new ensures] result = new_T x} (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let clone_Subset_T (self: t_Subset_T) (return (x: t_Subset_T)) = (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_4 <- () ] s1
+    | s1 = deref_Subset_T {self} (fun (_x: t_T) -> [ &_8 <- _x ] s2)
+    | s2 = clone_T {_8} (fun (_x: t_T) -> [ &_6 <- _x ] s3)
+    | s3 = new_T'0 {_6} (fun (_x: t_Subset_T) -> [ &_ret <- _x ] s4)
+    | s4 = return {_ret} ] ]
+  [ & _ret: t_Subset_T = Any.any_l ()
+  | & self: t_Subset_T = self
+  | & _4: () = Any.any_l ()
+  | & _6: t_T = Any.any_l ()
+  | & _8: t_T = Any.any_l () ])
+  [ return (result: t_Subset_T) ->
+  {[@stop_split] [@expl:clone ensures] postcondition_clone () (inner_T self) (inner_T result)}
+    (! return {result}) ]

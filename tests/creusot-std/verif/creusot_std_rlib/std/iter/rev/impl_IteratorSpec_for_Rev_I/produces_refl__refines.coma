@@ -1,0 +1,109 @@
+(* <std::iter::Rev<I> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.int.UInt64
+use creusot.prelude.MutBorrow
+use int.Int
+
+type t_Rev_I
+
+type t_Item
+
+type t_I
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+
+function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+
+axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+    -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+
+function produces_refl_I (self: t_I) : ()
+
+axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+
+predicate completed_I (self: MutBorrow.t t_I)
+
+predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
+
+axiom postcondition_fndef:
+  forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self_ s i.current /\ completed_I i
+        -> UInt64.t'int res.f0 <= Seq.length s)
+    /\ match res.f1 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self_ s i -> Seq.length s <= UInt64.t'int r
+      | None -> true
+      end)
+
+predicate inv_I (_1: t_I)
+
+predicate invariant_ref_I [@inline:trivial] (self: t_I) = inv_I self
+
+meta "rewrite_def" predicate invariant_ref_I
+
+predicate inv_ref_I [@inline:trivial] (_1: t_I) = invariant_ref_I _1
+
+meta "rewrite_def" predicate inv_ref_I
+
+predicate precondition_size_hint (self: ()) (args: t_I)
+
+axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self_ = args in inv_ref_I self_)
+    -> precondition_size_hint () args
+
+predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) =
+  postcondition_size_hint self args result
+
+meta "rewrite_def" predicate postcondition_once_size_hint
+
+let size_hint_I (self_: t_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+    (! return {result}) ]
+
+predicate completed_back_I (self: MutBorrow.t t_I)
+
+predicate produces_back_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+
+function size_hint_back_spec_I (self: t_I) (r: tup2_usize_Option_usize) : ()
+
+axiom size_hint_back_spec_I_spec: forall self: t_I, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_back_I self s i.current /\ completed_back_I i
+      -> UInt64.t'int r.f0 <= Seq.length s)
+
+axiom size_hint_back_spec_I_spec'0: forall self: t_I, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> match r.f1 with
+      | Some r'0 -> forall s: Seq.seq t_Item, i: t_I. produces_back_I self s i -> Seq.length s <= UInt64.t'int r'0
+      | None -> true
+      end
+
+function produces_back_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+
+axiom produces_back_trans_I_spec:
+  forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_back_I a ab b
+    -> produces_back_I b bc c -> produces_back_I a (Seq.(++) ab bc) c
+
+function produces_back_refl_I (self: t_I) : ()
+
+axiom produces_back_refl_I_spec: forall self: t_I. produces_back_I self (Seq.empty: Seq.seq t_Item) self
+
+function iter_Rev_I (self: t_Rev_I) : t_I
+
+predicate produces_Rev_I (self: t_Rev_I) (visited: Seq.seq t_Item) (o: t_Rev_I) =
+  produces_back_I (iter_Rev_I self) visited (iter_Rev_I o)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Rev_I. forall result: (). produces_Rev_I self (Seq.empty: Seq.seq t_Item) self
+      -> produces_Rev_I self (Seq.empty: Seq.seq t_Item) self

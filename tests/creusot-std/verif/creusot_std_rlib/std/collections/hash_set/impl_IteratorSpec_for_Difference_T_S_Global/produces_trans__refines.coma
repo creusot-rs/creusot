@@ -1,0 +1,62 @@
+(* <std::collections::hash_set::Difference<'a, T, S> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use set.Fset
+use int.Int
+
+type t_Difference_T_S_Global
+
+type t_T
+
+type t_DeepModelTy
+
+function view_Difference_T_S_Global (self: t_Difference_T_S_Global) : Fset.fset t_DeepModelTy
+
+predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_DeepModelTy
+
+function deep_model_T (self: t_T) : t_DeepModelTy
+
+function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
+
+meta "rewrite_def" function deep_model_ref_T
+
+predicate contains_ref_T (self: Seq.seq t_T) (x: t_T) =
+  exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+
+predicate set_produces_ref_T (start: t_Difference_T_S_Global) (visited: Seq.seq t_T) (end': t_Difference_T_S_Global) =
+  Fset.cardinal (view_Difference_T_S_Global start)
+    = Seq.length visited + Fset.cardinal (view_Difference_T_S_Global end')
+  /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S_Global start) x
+      -> (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1)
+      \/ contains_DeepModelTy (view_Difference_T_S_Global end') x)
+  /\ (forall x: t_T. contains_ref_T visited x
+      -> contains_DeepModelTy (view_Difference_T_S_Global start) (deep_model_ref_T x)
+      /\ not contains_DeepModelTy (view_Difference_T_S_Global end') (deep_model_ref_T x))
+  /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_Difference_T_S_Global end') x
+      -> contains_DeepModelTy (view_Difference_T_S_Global start) x
+      /\ not (exists x1: t_T. deep_model_ref_T x1 = x /\ contains_ref_T visited x1))
+  /\ (forall i: int, j: int. 0 <= i
+      /\ i < Seq.length visited
+      /\ 0 <= j /\ j < Seq.length visited /\ deep_model_ref_T (Seq.get visited i) = deep_model_ref_T (Seq.get visited j)
+    -> i = j)
+
+predicate produces_Difference_T_S_Global (self: t_Difference_T_S_Global) (visited: Seq.seq t_T) (o: t_Difference_T_S_Global) =
+  set_produces_ref_T self visited o
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_Difference_T_S_Global, ab: Seq.seq t_T, b: t_Difference_T_S_Global, bc: Seq.seq t_T, c: t_Difference_T_S_Global. produces_Difference_T_S_Global a ab b
+    -> produces_Difference_T_S_Global b bc c
+    -> produces_Difference_T_S_Global a ab b
+    /\ produces_Difference_T_S_Global b bc c
+    /\ (forall result: (). produces_Difference_T_S_Global a (Seq.(++) ab bc) c
+      -> produces_Difference_T_S_Global a (Seq.(++) ab bc) c)

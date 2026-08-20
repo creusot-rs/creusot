@@ -1,0 +1,189 @@
+(* <&'a logic::fmap::FMap<K, V> as std::iter::IntoIterator> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use creusot.prelude.Any
+use int.Int
+
+type t_FMap_K_V
+
+type t_FMap_ref_K_ref_V
+
+type t_K
+
+type t_V
+
+type t_Option_V = None | Some t_V
+
+function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+
+function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+
+meta "rewrite_def" function get_K
+
+predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
+
+meta "rewrite_def" predicate contains_K
+
+predicate inv_K (_1: t_K)
+
+predicate inv_V (_1: t_V)
+
+predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_V_bool
+
+function such_that_V (p: Map.map t_V bool) : t_V
+
+axiom such_that_V_spec: forall p: Map.map t_V bool [such_that_V p]. (exists x: t_V. index_Mapping_V_bool p x)
+    -> index_Mapping_V_bool p (such_that_V p)
+
+constant any_V: t_V = such_that_V (fun (__0: t_V) -> true)
+
+function unwrap_Option_V (self: t_Option_V) : t_V = match self with
+    | Some x -> x
+    | None -> any_V
+    end
+
+function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_V = unwrap_Option_V (get_K self k)
+
+meta "rewrite_def" function lookup_K
+
+function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = lookup_K self key
+
+meta "rewrite_def" function index_FMap_K_V
+
+predicate invariant_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) =
+  forall k: t_K. contains_K self k -> inv_K k /\ inv_V (index_FMap_K_V self k)
+
+meta "rewrite_def" predicate invariant_FMap_K_V
+
+predicate inv_FMap_K_V (_1: t_FMap_K_V)
+
+axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V x = invariant_FMap_K_V x
+
+predicate invariant_ref_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) = inv_FMap_K_V self
+
+meta "rewrite_def" predicate invariant_ref_FMap_K_V
+
+predicate inv_ref_FMap_K_V [@inline:trivial] (_1: t_FMap_K_V) = invariant_ref_FMap_K_V _1
+
+meta "rewrite_def" predicate inv_ref_FMap_K_V
+
+type t_Option_ref_V = None'0 | Some'0 t_V
+
+function to_mapping_ref_K (self: t_FMap_ref_K_ref_V) : Map.map t_K t_Option_ref_V
+
+function get_ref_K [@inline:trivial] (self: t_FMap_ref_K_ref_V) (k: t_K) : t_Option_ref_V =
+  Map.get (to_mapping_ref_K self) k
+
+meta "rewrite_def" function get_ref_K
+
+predicate contains_ref_K [@inline:trivial] (self: t_FMap_ref_K_ref_V) (k: t_K) = get_ref_K self k <> None'0
+
+meta "rewrite_def" predicate contains_ref_K
+
+predicate invariant_ref_K [@inline:trivial] (self: t_K) = inv_K self
+
+meta "rewrite_def" predicate invariant_ref_K
+
+predicate inv_ref_K [@inline:trivial] (_1: t_K) = invariant_ref_K _1
+
+meta "rewrite_def" predicate inv_ref_K
+
+predicate invariant_ref_V [@inline:trivial] (self: t_V) = inv_V self
+
+meta "rewrite_def" predicate invariant_ref_V
+
+predicate inv_ref_V [@inline:trivial] (_1: t_V) = invariant_ref_V _1
+
+meta "rewrite_def" predicate inv_ref_V
+
+predicate index_Mapping_ref_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_ref_V_bool
+
+function such_that_ref_V (p: Map.map t_V bool) : t_V
+
+axiom such_that_ref_V_spec:
+  forall p: Map.map t_V bool [such_that_ref_V p]. (exists x: t_V. index_Mapping_ref_V_bool p x)
+    -> index_Mapping_ref_V_bool p (such_that_ref_V p)
+
+constant any_ref_V: t_V = such_that_ref_V (fun (__0: t_V) -> true)
+
+function unwrap_Option_ref_V (self: t_Option_ref_V) : t_V = match self with
+    | Some'0 x -> x
+    | None'0 -> any_ref_V
+    end
+
+function lookup_ref_K [@inline:trivial] (self: t_FMap_ref_K_ref_V) (k: t_K) : t_V =
+  unwrap_Option_ref_V (get_ref_K self k)
+
+meta "rewrite_def" function lookup_ref_K
+
+function index_FMap_ref_K_ref_V [@inline:trivial] (self: t_FMap_ref_K_ref_V) (key: t_K) : t_V = lookup_ref_K self key
+
+meta "rewrite_def" function index_FMap_ref_K_ref_V
+
+predicate invariant_FMap_ref_K_ref_V [@inline:trivial] (self: t_FMap_ref_K_ref_V) =
+  forall k: t_K. contains_ref_K self k -> inv_ref_K k /\ inv_ref_V (index_FMap_ref_K_ref_V self k)
+
+meta "rewrite_def" predicate invariant_FMap_ref_K_ref_V
+
+predicate inv_FMap_ref_K_ref_V (_1: t_FMap_ref_K_ref_V)
+
+axiom inv_axiom'0 [@rewrite]: forall x: t_FMap_ref_K_ref_V [inv_FMap_ref_K_ref_V x]. inv_FMap_ref_K_ref_V x
+    = invariant_FMap_ref_K_ref_V x
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function len_ref_K (self: t_FMap_ref_K_ref_V) : int
+
+axiom len_ref_K_spec: forall self: t_FMap_ref_K_ref_V [len_ref_K self]. ge_log_Int (len_ref_K self) 0
+
+function len_K (self: t_FMap_K_V) : int
+
+axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
+
+let as_ref_ghost_K (self: t_FMap_K_V) (return (x: t_FMap_ref_K_ref_V)) =
+{[@stop_split] [@expl:as_ref_ghost 'self' type invariant] inv_ref_FMap_K_V self}
+  any
+  [ return (result: t_FMap_ref_K_ref_V) ->
+  {[@stop_split] [@expl:as_ref_ghost_K ensures] ([@stop_split] [@expl:as_ref_ghost result type invariant] inv_FMap_ref_K_ref_V result)
+    /\ ([@stop_split] [@expl:as_ref_ghost ensures #0] len_ref_K result = len_K self)
+    /\ ([@stop_split] [@expl:as_ref_ghost ensures #1] forall k: t_K, v: t_V. (get_K self k = Some v)
+      = (get_ref_K result k = Some'0 v))}
+    (! return {result}) ]
+
+type t_Iter_ref_K_ref_V = { f0: t_FMap_ref_K_ref_V }
+
+predicate inv_Iter_ref_K_ref_V (_1: t_Iter_ref_K_ref_V)
+
+axiom inv_axiom'1 [@rewrite]: forall x: t_Iter_ref_K_ref_V [inv_Iter_ref_K_ref_V x]. inv_Iter_ref_K_ref_V x
+    = inv_FMap_ref_K_ref_V x.f0
+
+function view_Iter_ref_K_ref_V (self: t_Iter_ref_K_ref_V) : t_FMap_ref_K_ref_V = self.f0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let into_iter_ref_FMap_K_V (self: t_FMap_K_V) (return (x: t_Iter_ref_K_ref_V)) =
+{[@stop_split] [@expl:into_iter 'self' type invariant] inv_ref_FMap_K_V self}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = as_ref_ghost_K {self} (fun (_x: t_FMap_ref_K_ref_V) -> [ &_6 <- _x ] s1)
+    | s1 = [ &_ret <- { f0 = _6 } ] s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: t_Iter_ref_K_ref_V = Any.any_l () | & self: t_FMap_K_V = self | & _6: t_FMap_ref_K_ref_V = Any.any_l () ])
+  [ return (result: t_Iter_ref_K_ref_V) ->
+  {[@stop_split] [@expl:into_iter_ref_FMap_K_V ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_ref_K_ref_V result)
+    /\ ([@stop_split] [@expl:into_iter ensures #0] len_ref_K (view_Iter_ref_K_ref_V result) = len_K self)
+    /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (get_K self k = Some v)
+      = (get_ref_K (view_Iter_ref_K_ref_V result) k = Some'0 v))}
+    (! return {result}) ]

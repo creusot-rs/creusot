@@ -1,0 +1,34 @@
+(* <logic::int::Int as std::ops::DivAssign> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.ComputerDivision
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+
+let div_Int (self: int) (other: int) (return (x: int)) = {[@stop_split] [@expl:div requires] other <> 0}
+  any
+  [ return (result: int) -> {[@stop_split] [@expl:div ensures] result = ComputerDivision.div self other}
+    (! return {result}) ]
+
+predicate resolve_refmut_Int [@inline:trivial] (_1: MutBorrow.t int) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let div_assign_Int (self: MutBorrow.t int) (rhs: int) (return (x: ())) = {[@stop_split] [@expl:div_assign requires] rhs
+  <> 0}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = div_Int {self.current} {rhs} (fun (_x: int) -> [ &_8 <- _x ] s1)
+    | s1 = [ &self <- { self with current = _8 } ] s2
+    | s2 = -{resolve_refmut_Int self}- s3
+    | s3 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l () | & self: MutBorrow.t int = self | & rhs: int = rhs | & _8: int = Any.any_l () ])
+  [ return (result: ()) -> {[@stop_split] [@expl:div_assign ensures] self.final = ComputerDivision.div self.current rhs}
+    (! return {result}) ]

@@ -1,0 +1,30 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+
+predicate resolve_refmut_str [@inline:trivial] (_1: MutBorrow.t string) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_str
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_AsMut_str_str_as_mut_body (self_: MutBorrow.t string) (return (x: MutBorrow.t string)) = (! bb0
+  [ bb0 = s0
+    [ s0 = MutBorrow.borrow_final <string> {self_.current} {MutBorrow.get_id self_}
+        (fun (_bor: MutBorrow.t string) -> [ &_2 <- _bor ] [ &self_ <- { self_ with current = _bor.final } ] s1)
+    | s1 = MutBorrow.borrow_final <string> {_2.current} {MutBorrow.get_id _2}
+        (fun (_bor: MutBorrow.t string) -> [ &_ret <- _bor ] [ &_2 <- { _2 with current = _bor.final } ] s2)
+    | s2 = -{resolve_refmut_str _2}- s3
+    | s3 = -{resolve_refmut_str self_}- s4
+    | s4 = return {_ret} ] ]
+  [ & _ret: MutBorrow.t string = Any.any_l ()
+  | & self_: MutBorrow.t string = self_
+  | & _2: MutBorrow.t string = Any.any_l () ])
+  [ return (result: MutBorrow.t string) -> {[@stop_split] [@expl:extern_spec_AsMut_str_str_as_mut_body ensures] result
+    = self_}
+    (! return {result}) ]

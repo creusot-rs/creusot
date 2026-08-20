@@ -1,0 +1,87 @@
+(* <logic::fmap::Iter<K, V> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_FMap_K_V
+
+type t_Iter_K_V = { f0: t_FMap_K_V }
+
+type t_K
+
+type t_V
+
+type tup2_K_V = { f0'0: t_K; f1'0: t_V }
+
+type t_Option_tup2_K_V = None | Some tup2_K_V
+
+function get_tup2_K_V (self: Seq.seq tup2_K_V) (ix: int) : t_Option_tup2_K_V = if 0 <= ix /\ ix < Seq.length self then
+    Some (Seq.get self ix)
+  else
+    None
+
+
+type t_Option_V = None'0 | Some'0 t_V
+
+function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+
+function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+
+meta "rewrite_def" function get_K
+
+predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None'0
+
+meta "rewrite_def" predicate contains_K
+
+function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function len_K (self: t_FMap_K_V) : int
+
+axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
+
+predicate produces_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_K_V) (o: t_Iter_K_V) =
+  (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
+      -> (Seq.get visited i).f0'0 <> (Seq.get visited j).f0'0)
+  /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some { f0'0 = k; f1'0 = v }
+      -> not contains_K (view_Iter_K_V o) k /\ get_K (view_Iter_K_V self) k = Some'0 v)
+  /\ len_K (view_Iter_K_V self) = Seq.length visited + len_K (view_Iter_K_V o)
+  /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0'0 <> k)
+    -> get_K (view_Iter_K_V o) k = get_K (view_Iter_K_V self) k)
+
+predicate contains_tup2_K_V (self: Seq.seq tup2_K_V) (x: tup2_K_V) =
+  exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_Iter_K_V
+
+constant ab : Seq.seq tup2_K_V
+
+constant b : t_Iter_K_V
+
+constant bc : Seq.seq tup2_K_V
+
+constant c : t_Iter_K_V
+
+function produces_trans_Iter_K_V (a: t_Iter_K_V) (ab: Seq.seq tup2_K_V) (b: t_Iter_K_V) (bc: Seq.seq tup2_K_V) (c: t_Iter_K_V) : ()
+
+goal vc_produces_trans_Iter_K_V: produces_Iter_K_V a ab b
+  -> produces_Iter_K_V b bc c
+  -> (let ac = Seq.(++) ab bc in (forall x: tup2_K_V. contains_tup2_K_V ab x -> contains_tup2_K_V ac x)
+  && (forall i: int. 0 <= i /\ i < Seq.length bc -> Seq.get ac (i + Seq.length ab) = Seq.get bc i)
+  && (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length ac -> (Seq.get ac i).f0'0 <> k)
+      -> (forall i: int. 0 <= i /\ i < Seq.length ab -> (Seq.get ab i).f0'0 <> k)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length bc -> (Seq.get bc i).f0'0 <> k)
+      /\ get_K (view_Iter_K_V a) k = get_K (view_Iter_K_V b) k /\ get_K (view_Iter_K_V b) k = get_K (view_Iter_K_V c) k)
+  && ([@stop_split] [@expl:produces_trans ensures] produces_Iter_K_V a (Seq.(++) ab bc) c))

@@ -1,0 +1,111 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.slice.Slice64
+use seq.Seq
+use creusot.int.UInt64
+use creusot.prelude.Any
+use int.Int
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+constant const_N : UInt64.t
+
+predicate invariant_array_T_n (self: Slice64.array t_T) =
+  inv_Seq_T (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int const_N
+
+predicate inv_array_T_n [@inline:trivial] (_1: Slice64.array t_T) = invariant_array_T_n _1
+
+meta "rewrite_def" predicate inv_array_T_n
+
+predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+
+predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+
+meta "rewrite_def" predicate inv_slice_T
+
+predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+  inv_slice_T self.current /\ inv_slice_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_slice_T
+
+predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
+
+meta "rewrite_def" predicate inv_refmut_slice_T
+
+predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_slice_T
+
+predicate invariant_refmut_array_T_n [@inline:trivial] (self: MutBorrow.t (Slice64.array t_T)) =
+  inv_array_T_n self.current /\ inv_array_T_n self.final
+
+meta "rewrite_def" predicate invariant_refmut_array_T_n
+
+predicate inv_refmut_array_T_n [@inline:trivial] (_1: MutBorrow.t (Slice64.array t_T)) = invariant_refmut_array_T_n _1
+
+meta "rewrite_def" predicate inv_refmut_array_T_n
+
+predicate resolve_refmut_array_T_n [@inline:trivial] (_1: MutBorrow.t (Slice64.array t_T)) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_array_T_n
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T__constN__array_T_as_mut_slice_body_T (self_: MutBorrow.t (Slice64.array t_T))
+  (return (x: MutBorrow.t (Slice64.slice t_T))) =
+{[@stop_split] [@expl:extern_spec_T__constN__array_T_as_mut_slice_body 'self_' type invariant] inv_refmut_array_T_n self_}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = MutBorrow.borrow_final <Slice64.array t_T> {self_.current} {MutBorrow.get_id self_}
+        (fun (_bor: MutBorrow.t (Slice64.array t_T)) ->
+          [ &_9 <- _bor ] -{inv_array_T_n _bor.final}-
+          [ &self_ <- { self_ with current = _bor.final } ] s1)
+      [ _ck -> (! {[@expl:type invariant] inv_array_T_n self_.current} any) ]
+    | s1 = [ &_2 <- _9 ] s2
+    | s2 = MutBorrow.borrow_final <Slice64.slice t_T> {_2.current} {MutBorrow.get_id _2}
+        (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
+          [ &_ret <- _bor ] -{inv_slice_T _bor.final}-
+          [ &_2 <- { _2 with current = _bor.final } ] s3)
+      [ _ck -> (! {[@expl:type invariant] inv_slice_T _2.current} any) ]
+    | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T _2} any) ]
+    | s4 = -{resolve_refmut_slice_T _2}- s5
+    | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_array_T_n self_} any) ]
+    | s6 = -{resolve_refmut_array_T_n self_}- s7
+    | s7 = return {_ret} ] ]
+  [ & _ret: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
+  | & self_: MutBorrow.t (Slice64.array t_T) = self_
+  | & _2: MutBorrow.t (Slice64.slice t_T) = Any.any_l ()
+  | & _9: MutBorrow.t (Slice64.array t_T) = Any.any_l () ])
+  [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
+  {[@stop_split] [@expl:extern_spec_T__constN__array_T_as_mut_slice_body_T ensures] ([@stop_split] [@expl:extern_spec_T__constN__array_T_as_mut_slice_body result type invariant] inv_refmut_slice_T result)
+    /\ ([@stop_split] [@expl:extern_spec_T__constN__array_T_as_mut_slice_body ensures #0] Slice64.view result.current
+      = Slice64.view self_.current)
+    /\ ([@stop_split] [@expl:extern_spec_T__constN__array_T_as_mut_slice_body ensures #1] Seq.length (Slice64.view self_.final)
+      = Seq.length (Slice64.view self_.current))
+    /\ ([@stop_split] [@expl:extern_spec_T__constN__array_T_as_mut_slice_body ensures #2] Slice64.view result.final
+    = Slice64.view self_.final)}
+    (! return {result}) ]

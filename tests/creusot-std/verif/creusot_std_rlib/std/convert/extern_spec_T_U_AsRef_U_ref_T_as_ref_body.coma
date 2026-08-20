@@ -1,0 +1,73 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+type t_U
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate precondition_as_ref (self: ()) (args: t_T)
+
+axiom precondition_fndef: forall args: t_T [precondition_as_ref () args]. (let self_ = args in inv_ref_T self_)
+    -> precondition_as_ref () args
+
+predicate inv_U (_1: t_U)
+
+predicate invariant_ref_U [@inline:trivial] (self: t_U) = inv_U self
+
+meta "rewrite_def" predicate invariant_ref_U
+
+predicate inv_ref_U [@inline:trivial] (_1: t_U) = invariant_ref_U _1
+
+meta "rewrite_def" predicate inv_ref_U
+
+predicate postcondition_as_ref (self: ()) (args: t_T) (result: t_U)
+
+axiom postcondition_fndef:
+  forall args: t_T, res: t_U [postcondition_as_ref () args res]. postcondition_as_ref () args res
+    -> (let self_ = args in inv_ref_U res)
+
+predicate postcondition_once_as_ref (self: ()) (args: t_T) (result: t_U) = postcondition_as_ref self args result
+
+meta "rewrite_def" predicate postcondition_once_as_ref
+
+let as_ref_T (self_: t_T) (return (x: t_U)) = {[@stop_split] [@expl:as_ref requires] precondition_as_ref () self_}
+  any
+  [ return (result: t_U) -> {[@stop_split] [@expl:as_ref ensures] postcondition_once_as_ref () self_ result}
+    (! return {result}) ]
+
+predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
+
+meta "rewrite_def" predicate invariant_ref_ref_T
+
+predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_ref_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_U_AsRef_U__ref_T_as_ref_body_T (self_: t_T) (return (x: t_U)) =
+{[@stop_split] [@expl:extern_spec_T_U_AsRef_U__ref_T_as_ref_body_T requires] ([@stop_split] [@expl:extern_spec_T_U_AsRef_U__ref_T_as_ref_body 'self_' type invariant] inv_ref_ref_T self_)
+  /\ ([@stop_split] [@expl:extern_spec_T_U_AsRef_U__ref_T_as_ref_body requires] precondition_as_ref () self_)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = as_ref_T {self_} (fun (_x: t_U) -> [ &_6 <- _x ] s1) | s1 = [ &_ret <- _6 ] s2 | s2 = return {_ret} ] ]
+  [ & _ret: t_U = Any.any_l () | & self_: t_T = self_ | & _6: t_U = Any.any_l () ])
+  [ return (result: t_U) ->
+  {[@stop_split] [@expl:extern_spec_T_U_AsRef_U__ref_T_as_ref_body_T ensures] ([@stop_split] [@expl:extern_spec_T_U_AsRef_U__ref_T_as_ref_body result type invariant] inv_ref_U result)
+    /\ ([@stop_split] [@expl:extern_spec_T_U_AsRef_U__ref_T_as_ref_body ensures] postcondition_as_ref () self_ result)}
+    (! return {result}) ]

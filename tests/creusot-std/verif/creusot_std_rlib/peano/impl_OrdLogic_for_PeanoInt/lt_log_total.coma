@@ -1,0 +1,26 @@
+(* <peano::PeanoInt as logic::ord::OrdLogic> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+
+type t_PeanoInt = { f0: UInt64.t }
+
+predicate lt_log_PeanoInt [@inline:trivial] (self: t_PeanoInt) (o: t_PeanoInt) = UInt64.lt self.f0 o.f0
+
+meta "rewrite_def" predicate lt_log_PeanoInt
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_PeanoInt
+
+constant other : t_PeanoInt
+
+function lt_log_total_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) : ()
+
+goal vc_lt_log_total_PeanoInt: [@stop_split] [@expl:lt_log_total ensures] lt_log_PeanoInt self other
+  \/ self = other \/ lt_log_PeanoInt other self

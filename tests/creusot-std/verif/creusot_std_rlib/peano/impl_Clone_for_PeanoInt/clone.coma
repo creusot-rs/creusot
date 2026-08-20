@@ -1,0 +1,34 @@
+(* <peano::PeanoInt as std::clone::Clone> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use creusot.prelude.Any
+
+type t_PeanoInt = { f0: UInt64.t }
+
+let clone_u64 (self_: UInt64.t) (return (x: UInt64.t)) = any
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:clone ensures] result = self_} (! return {result}) ]
+
+predicate postcondition_clone (self: ()) (args: UInt64.t) (result: UInt64.t) = let self_ = args in result = self_
+
+meta "rewrite_def" predicate postcondition_clone
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let clone_PeanoInt (self: t_PeanoInt) (return (x: t_PeanoInt)) = (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_6 <- self.f0 ] s1
+    | s1 = clone_u64 {_6} (fun (_x: UInt64.t) -> [ &_4 <- _x ] s2)
+    | s2 = [ &_ret <- { f0 = _4 } ] s3
+    | s3 = return {_ret} ] ]
+  [ & _ret: t_PeanoInt = Any.any_l ()
+  | & self: t_PeanoInt = self
+  | & _4: UInt64.t = Any.any_l ()
+  | & _6: UInt64.t = Any.any_l () ])
+  [ return (result: t_PeanoInt) -> {[@stop_split] [@expl:clone ensures] postcondition_clone () self.f0 result.f0}
+    (! return {result}) ]

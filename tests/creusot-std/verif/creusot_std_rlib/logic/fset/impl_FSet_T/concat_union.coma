@@ -1,0 +1,62 @@
+(* logic::fset::FSet<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use set.Fset
+use map.Map
+
+type t_T
+
+predicate contains_Seq_T [@inline:trivial] (self: Fset.fset (Seq.seq t_T)) (e: Seq.seq t_T) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_Seq_T
+
+function remove_Seq_T [@inline:trivial] (self: Fset.fset (Seq.seq t_T)) (e: Seq.seq t_T) : Fset.fset (Seq.seq t_T) =
+  Fset.remove e self
+
+meta "rewrite_def" function remove_Seq_T
+
+function unions_Seq_T (self: Fset.fset (Seq.seq t_T)) (f: Map.map (Seq.seq t_T) (Fset.fset (Seq.seq t_T))) : Fset.fset (Seq.seq t_T)
+
+axiom unions_Seq_T_def:
+  forall self: Fset.fset (Seq.seq t_T), f: Map.map (Seq.seq t_T) (Fset.fset (Seq.seq t_T)) [unions_Seq_T self f]. unions_Seq_T self f
+    = (if Fset.cardinal self = 0 then
+      Fset.empty: Fset.fset (Seq.seq t_T)
+    else
+      let x = Fset.pick self in Fset.union (Map.get f x) (unions_Seq_T (remove_Seq_T self x) f)
+    )
+
+axiom unions_Seq_T_spec:
+  forall self: Fset.fset (Seq.seq t_T), f: Map.map (Seq.seq t_T) (Fset.fset (Seq.seq t_T)) [unions_Seq_T self f]. forall y: Seq.seq t_T. contains_Seq_T (unions_Seq_T self f) y
+      = (exists x: Seq.seq t_T. contains_Seq_T self x /\ contains_Seq_T (Map.get f x) y)
+
+function map_Seq_T (self: Fset.fset (Seq.seq t_T)) (f: Map.map (Seq.seq t_T) (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
+  Fset.map f self
+
+function concat_T (s: Fset.fset (Seq.seq t_T)) (t: Fset.fset (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
+  unions_Seq_T s (fun (ys: Seq.seq t_T) -> map_Seq_T t (fun (zs: Seq.seq t_T) -> Seq.(++) ys zs))
+
+axiom concat_T_spec:
+  forall s: Fset.fset (Seq.seq t_T), t: Fset.fset (Seq.seq t_T) [concat_T s t]. forall xs: Seq.seq t_T. contains_Seq_T (concat_T s t) xs
+      = (exists ys: Seq.seq t_T, zs: Seq.seq t_T. contains_Seq_T s ys /\ contains_Seq_T t zs /\ xs = Seq.(++) ys zs)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant s1 : Fset.fset (Seq.seq t_T)
+
+constant s2 : Fset.fset (Seq.seq t_T)
+
+constant t : Fset.fset (Seq.seq t_T)
+
+function concat_union_T (s1: Fset.fset (Seq.seq t_T)) (s2: Fset.fset (Seq.seq t_T)) (t: Fset.fset (Seq.seq t_T)) : ()
+
+goal vc_concat_union_T:
+  [@stop_split] [@expl:concat_union_T ensures] ([@stop_split] [@expl:concat_union ensures #0] concat_T (Fset.union s1 s2) t
+    = Fset.union (concat_T s1 t) (concat_T s2 t))
+  /\ ([@stop_split] [@expl:concat_union ensures #1] concat_T t (Fset.union s1 s2)
+  = Fset.union (concat_T t s1) (concat_T t s2))

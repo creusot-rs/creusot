@@ -1,0 +1,47 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+type t_U
+
+predicate inv_T (_1: t_T)
+
+predicate precondition_from (self: ()) (args: t_T)
+
+axiom precondition_fndef: forall args: t_T [precondition_from () args]. (let value = args in inv_T value)
+    -> precondition_from () args
+
+predicate inv_U (_1: t_U)
+
+predicate postcondition_from (self: ()) (args: t_T) (result: t_U)
+
+axiom postcondition_fndef: forall args: t_T, res: t_U [postcondition_from () args res]. postcondition_from () args res
+    -> (let value = args in inv_U res)
+
+predicate postcondition_once_from (self: ()) (args: t_T) (result: t_U) = postcondition_from self args result
+
+meta "rewrite_def" predicate postcondition_once_from
+
+let from_U (value: t_T) (return (x: t_U)) = {[@stop_split] [@expl:from requires] precondition_from () value}
+  any
+  [ return (result: t_U) -> {[@stop_split] [@expl:from ensures] postcondition_once_from () value result}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_U_Into_U_T_into_body_T (self_: t_T) (return (x: t_U)) =
+{[@stop_split] [@expl:extern_spec_T_U_Into_U_T_into_body_T requires] ([@stop_split] [@expl:extern_spec_T_U_Into_U_T_into_body 'self_' type invariant] inv_T self_)
+  /\ ([@stop_split] [@expl:extern_spec_T_U_Into_U_T_into_body requires] precondition_from () self_)}
+  (! bb0
+  [ bb0 = s0 [ s0 = from_U {self_} (fun (_x: t_U) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: t_U = Any.any_l () | & self_: t_T = self_ ])
+  [ return (result: t_U) ->
+  {[@stop_split] [@expl:extern_spec_T_U_Into_U_T_into_body_T ensures] ([@stop_split] [@expl:extern_spec_T_U_Into_U_T_into_body result type invariant] inv_U result)
+    /\ ([@stop_split] [@expl:extern_spec_T_U_Into_U_T_into_body ensures] postcondition_from () self_ result)}
+    (! return {result}) ]

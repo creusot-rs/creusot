@@ -1,0 +1,56 @@
+(* <logic::real::PositiveReal as logic::ops::arithmetic::DivLogic> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use real.Real
+use real.FromInt
+
+type t_Subset_PositiveRealInner
+
+type t_PositiveReal = { f0: t_Subset_PositiveRealInner }
+
+predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
+
+meta "rewrite_def" predicate gt_log_Real
+
+type t_PositiveRealInner = { f0'0: Real.real }
+
+predicate invariant_PositiveRealInner (self: t_PositiveRealInner) = gt_log_Real self.f0'0 (FromInt.from_int 0)
+
+function inner_PositiveRealInner (self: t_Subset_PositiveRealInner) : t_PositiveRealInner
+
+axiom inner_PositiveRealInner_spec:
+  forall self: t_Subset_PositiveRealInner [inner_PositiveRealInner self]. invariant_PositiveRealInner (inner_PositiveRealInner self)
+
+function to_real (self: t_PositiveReal) : Real.real = (inner_PositiveRealInner self.f0).f0'0
+
+axiom to_real_spec: forall self: t_PositiveReal [to_real self]. gt_log_Real (to_real self) (FromInt.from_int 0)
+
+function new_PositiveRealInner (x: t_PositiveRealInner) : t_Subset_PositiveRealInner
+
+axiom new_PositiveRealInner_spec: forall x: t_PositiveRealInner [new_PositiveRealInner x]. invariant_PositiveRealInner x
+    -> inner_PositiveRealInner (new_PositiveRealInner x) = x
+
+function new (n: Real.real) : t_PositiveReal = { f0 = new_PositiveRealInner { f0'0 = n } }
+
+axiom new_spec: forall n: Real.real [new n]. gt_log_Real n (FromInt.from_int 0) -> to_real (new n) = n
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_PositiveReal
+
+constant other : t_PositiveReal
+
+function div_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+
+goal vc_div_PositiveReal: ([@stop_split] [@expl:to_real ensures] gt_log_Real (to_real self) (FromInt.from_int 0))
+  -> ([@stop_split] [@expl:to_real ensures] gt_log_Real (to_real other) (FromInt.from_int 0))
+  -> ([@stop_split] [@expl:new requires] gt_log_Real (Real.(/) (to_real self) (to_real other)) (FromInt.from_int 0))
+  /\ (([@stop_split] [@expl:new ensures] to_real (new (Real.(/) (to_real self) (to_real other)))
+    = Real.(/) (to_real self) (to_real other))
+  -> ([@stop_split] [@expl:div_logic ensures] to_real (new (Real.(/) (to_real self) (to_real other)))
+  = Real.(/) (to_real self) (to_real other)))

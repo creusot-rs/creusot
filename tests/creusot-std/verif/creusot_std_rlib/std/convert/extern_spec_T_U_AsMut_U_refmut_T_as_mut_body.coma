@@ -1,0 +1,115 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+type t_U
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+predicate precondition_as_mut (self: ()) (args: MutBorrow.t t_T)
+
+axiom precondition_fndef:
+  forall args: MutBorrow.t t_T [precondition_as_mut () args]. (let self_ = args in inv_refmut_T self_)
+    -> precondition_as_mut () args
+
+predicate inv_U (_1: t_U)
+
+predicate invariant_refmut_U [@inline:trivial] (self: MutBorrow.t t_U) = inv_U self.current /\ inv_U self.final
+
+meta "rewrite_def" predicate invariant_refmut_U
+
+predicate inv_refmut_U [@inline:trivial] (_1: MutBorrow.t t_U) = invariant_refmut_U _1
+
+meta "rewrite_def" predicate inv_refmut_U
+
+predicate postcondition_as_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_U)
+
+axiom postcondition_fndef:
+  forall args: MutBorrow.t t_T, res: MutBorrow.t t_U [postcondition_as_mut () args res]. postcondition_as_mut () args res
+    -> (let self_ = args in inv_refmut_U res)
+
+predicate postcondition_once_as_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_U) =
+  postcondition_as_mut self args result
+
+meta "rewrite_def" predicate postcondition_once_as_mut
+
+let as_mut_T (self_: MutBorrow.t t_T) (return (x: MutBorrow.t t_U)) =
+{[@stop_split] [@expl:as_mut requires] precondition_as_mut () self_}
+  any
+  [ return (result: MutBorrow.t t_U) -> {[@stop_split] [@expl:as_mut ensures] postcondition_once_as_mut () self_ result}
+    (! return {result}) ]
+
+predicate resolve_refmut_U [@inline:trivial] (_1: MutBorrow.t t_U) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_U
+
+predicate invariant_refmut_refmut_T [@inline:trivial] (self: MutBorrow.t (MutBorrow.t t_T)) =
+  inv_refmut_T self.current /\ inv_refmut_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_refmut_T
+
+predicate inv_refmut_refmut_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_T)) = invariant_refmut_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_refmut_T
+
+predicate resolve_refmut_refmut_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_T)) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_refmut_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_U_AsMut_U__refmut_T_as_mut_body_T (self_: MutBorrow.t (MutBorrow.t t_T))
+  (return (x: MutBorrow.t t_U)) =
+{[@stop_split] [@expl:extern_spec_T_U_AsMut_U__refmut_T_as_mut_body_T requires] ([@stop_split] [@expl:extern_spec_T_U_AsMut_U__refmut_T_as_mut_body 'self_' type invariant] inv_refmut_refmut_T self_)
+  /\ ([@stop_split] [@expl:extern_spec_T_U_AsMut_U__refmut_T_as_mut_body requires] precondition_as_mut () self_.current)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = MutBorrow.borrow_mut <t_T> {self_.current.current}
+        (fun (_bor: MutBorrow.t t_T) ->
+          [ &_10 <- _bor ] -{inv_T _bor.final}-
+          [ &self_ <- { self_ with current = { self_.current with current = _bor.final } } ] s1)
+      [ _ck -> (! {[@expl:type invariant] inv_T self_.current.current} any) ]
+    | s1 = as_mut_T {_10} (fun (_x: MutBorrow.t t_U) -> [ &_9 <- _x ] s2)
+    | s2 = MutBorrow.borrow_final <t_U> {_9.current} {MutBorrow.get_id _9}
+        (fun (_bor: MutBorrow.t t_U) ->
+          [ &_2 <- _bor ] -{inv_U _bor.final}-
+          [ &_9 <- { _9 with current = _bor.final } ] s3) [ _ck -> (! {[@expl:type invariant] inv_U _9.current} any) ]
+    | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_U _9} any) ]
+    | s4 = -{resolve_refmut_U _9}- s5
+    | s5 = MutBorrow.borrow_final <t_U> {_2.current} {MutBorrow.get_id _2}
+        (fun (_bor: MutBorrow.t t_U) ->
+          [ &_ret <- _bor ] -{inv_U _bor.final}-
+          [ &_2 <- { _2 with current = _bor.final } ] s6) [ _ck -> (! {[@expl:type invariant] inv_U _2.current} any) ]
+    | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_U _2} any) ]
+    | s7 = -{resolve_refmut_U _2}- s8
+    | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_T self_} any) ]
+    | s9 = -{resolve_refmut_refmut_T self_}- s10
+    | s10 = return {_ret} ] ]
+  [ & _ret: MutBorrow.t t_U = Any.any_l ()
+  | & self_: MutBorrow.t (MutBorrow.t t_T) = self_
+  | & _2: MutBorrow.t t_U = Any.any_l ()
+  | & _9: MutBorrow.t t_U = Any.any_l ()
+  | & _10: MutBorrow.t t_T = Any.any_l () ])
+  [ return (result: MutBorrow.t t_U) ->
+  {[@stop_split] [@expl:extern_spec_T_U_AsMut_U__refmut_T_as_mut_body_T ensures] ([@stop_split] [@expl:extern_spec_T_U_AsMut_U__refmut_T_as_mut_body result type invariant] inv_refmut_U result)
+    /\ ([@stop_split] [@expl:extern_spec_T_U_AsMut_U__refmut_T_as_mut_body ensures #0] self_.current.final
+      = self_.final.final)
+    /\ ([@stop_split] [@expl:extern_spec_T_U_AsMut_U__refmut_T_as_mut_body ensures #1] exists s: MutBorrow.t t_T. s.current
+        = self_.current.current
+      /\ s.final = self_.final.current /\ postcondition_as_mut () s result)}
+    (! return {result}) ]

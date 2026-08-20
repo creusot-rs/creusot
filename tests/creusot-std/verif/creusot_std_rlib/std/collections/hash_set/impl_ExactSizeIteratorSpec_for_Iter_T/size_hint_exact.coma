@@ -1,0 +1,55 @@
+(* <std::collections::hash_set::Iter<'a, T> as std::iter::ExactSizeIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use set.Fset
+
+type t_Iter_T
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+type t_DeepModelTy
+
+function view_Iter_T (self: t_Iter_T) : Fset.fset t_DeepModelTy
+
+predicate postcondition_size_hint (self: ()) (args: t_Iter_T) (result: tup2_usize_Option_usize) =
+  let self_ = args in UInt64.t'int result.f0 = Fset.cardinal (view_Iter_T self_) /\ result.f1 = Some (result.f0)
+
+meta "rewrite_def" predicate postcondition_size_hint
+
+predicate inv_Iter_T (_1: t_Iter_T)
+
+predicate invariant_ref_Iter_T [@inline:trivial] (self: t_Iter_T) = inv_Iter_T self
+
+meta "rewrite_def" predicate invariant_ref_Iter_T
+
+predicate inv_ref_Iter_T [@inline:trivial] (_1: t_Iter_T) = invariant_ref_Iter_T _1
+
+meta "rewrite_def" predicate inv_ref_Iter_T
+
+let size_hint_Iter_T (self_: t_Iter_T) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Iter_T self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint_Iter_T ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.t'int result.f0
+      = Fset.cardinal (view_Iter_T self_))
+    /\ ([@stop_split] [@expl:size_hint ensures #1] result.f1 = Some (result.f0))}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Iter_T
+
+constant r : tup2_usize_Option_usize
+
+function size_hint_exact_Iter_T (self: t_Iter_T) (r: tup2_usize_Option_usize) : ()
+
+goal vc_size_hint_exact_Iter_T: postcondition_size_hint () self r
+  -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))

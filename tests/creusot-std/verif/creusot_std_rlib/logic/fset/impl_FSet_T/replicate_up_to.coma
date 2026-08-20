@@ -1,0 +1,121 @@
+(* logic::fset::FSet<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use set.Fset
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate contains_Seq_T [@inline:trivial] (self: Fset.fset (Seq.seq t_T)) (e: Seq.seq t_T) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_Seq_T
+
+predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+
+predicate contains_T'0 [@inline:trivial] (self: Fset.fset t_T) (e: t_T) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_T'0
+
+function insert_Seq_T [@inline:trivial] (self: Fset.fset (Seq.seq t_T)) (e: Seq.seq t_T) : Fset.fset (Seq.seq t_T) =
+  Fset.add e self
+
+meta "rewrite_def" function insert_Seq_T
+
+function singleton_Seq_T (x: Seq.seq t_T) : Fset.fset (Seq.seq t_T) =
+  insert_Seq_T (Fset.empty: Fset.fset (Seq.seq t_T)) x
+
+axiom singleton_Seq_T_spec:
+  forall x: Seq.seq t_T [singleton_Seq_T x]. forall y: Seq.seq t_T. contains_Seq_T (singleton_Seq_T x) y = (x = y)
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+  ge_log_Int self 0 /\ gt_log_Int self other
+
+meta "rewrite_def" predicate well_founded_relation_Int
+
+function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+
+function remove_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) : Fset.fset t_T = Fset.remove e self
+
+meta "rewrite_def" function remove_T
+
+function unions_T (self: Fset.fset t_T) (f: Map.map t_T (Fset.fset (Seq.seq t_T))) : Fset.fset (Seq.seq t_T)
+
+axiom unions_T_def:
+  forall self: Fset.fset t_T, f: Map.map t_T (Fset.fset (Seq.seq t_T)) [unions_T self f]. unions_T self f
+    = (if Fset.cardinal self = 0 then
+      Fset.empty: Fset.fset (Seq.seq t_T)
+    else
+      let x = Fset.pick self in Fset.union (Map.get f x) (unions_T (remove_T self x) f)
+    )
+
+axiom unions_T_spec:
+  forall self: Fset.fset t_T, f: Map.map t_T (Fset.fset (Seq.seq t_T)) [unions_T self f]. forall y: Seq.seq t_T. contains_Seq_T (unions_T self f) y
+      = (exists x: t_T. contains_T'0 self x /\ contains_Seq_T (Map.get f x) y)
+
+function map_Seq_T (self: Fset.fset (Seq.seq t_T)) (f: Map.map (Seq.seq t_T) (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
+  Fset.map f self
+
+function push_front_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
+
+meta "rewrite_def" function push_front_T
+
+function cons_T (s: Fset.fset t_T) (ss: Fset.fset (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
+  unions_T s (fun (x: t_T) -> map_Seq_T ss (fun (xs: Seq.seq t_T) -> push_front_T xs x))
+
+axiom cons_T_spec:
+  forall s: Fset.fset t_T, ss: Fset.fset (Seq.seq t_T) [cons_T s ss]. forall xs: Seq.seq t_T. contains_Seq_T (cons_T s ss) xs
+      = (0 < Seq.length xs /\ contains_T'0 s (Seq.get xs 0) /\ contains_Seq_T ss (tail_T xs))
+
+function replicate_T (self: Fset.fset t_T) (n: int) : Fset.fset (Seq.seq t_T)
+
+axiom replicate_T_def: forall self: Fset.fset t_T, n: int [replicate_T self n]. ge_log_Int n 0
+    -> replicate_T self n
+    = (if n = 0 then singleton_Seq_T (Seq.empty: Seq.seq t_T) else cons_T self (replicate_T self (n - 1)))
+
+axiom replicate_T_spec: forall self: Fset.fset t_T, n: int [replicate_T self n]. ge_log_Int n 0
+    -> (forall xs: Seq.seq t_T. contains_Seq_T (replicate_T self n) xs
+      = (Seq.length xs = n /\ (forall x: t_T. contains_T xs x -> contains_T'0 self x)))
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Fset.fset t_T
+
+constant n : int
+
+function replicate_up_to_T (self: Fset.fset t_T) (n: int) : Fset.fset (Seq.seq t_T)
+
+goal vc_replicate_up_to_T: ge_log_Int n 0
+  -> (if n = 0 then
+    (forall xs: Seq.seq t_T. Seq.length xs = 0 -> xs = (Seq.empty: Seq.seq t_T))
+    && (([@stop_split] [@expl:singleton ensures] forall y: Seq.seq t_T. contains_Seq_T (singleton_Seq_T (Seq.empty: Seq.seq t_T)) y
+        = ((Seq.empty: Seq.seq t_T) = y))
+    -> ([@stop_split] [@expl:replicate_up_to ensures] forall xs: Seq.seq t_T. contains_Seq_T (singleton_Seq_T (Seq.empty: Seq.seq t_T)) xs
+      = (Seq.length xs <= n /\ (forall x: t_T. contains_T xs x -> contains_T'0 self x))))
+  else
+    (([@stop_split] [@expl:replicate_up_to requires] ge_log_Int (n - 1) 0)
+      /\ ([@expl:variant decreases] well_founded_relation_Int n (n - 1)))
+    /\ (([@stop_split] [@expl:replicate_up_to ensures] forall xs: Seq.seq t_T. contains_Seq_T (replicate_up_to_T self (n
+          - 1)) xs
+        = (Seq.length xs <= n - 1 /\ (forall x: t_T. contains_T xs x -> contains_T'0 self x)))
+    -> ([@stop_split] [@expl:replicate requires] ge_log_Int n 0)
+    /\ (([@stop_split] [@expl:replicate ensures] forall xs: Seq.seq t_T. contains_Seq_T (replicate_T self n) xs
+        = (Seq.length xs = n /\ (forall x: t_T. contains_T xs x -> contains_T'0 self x)))
+    -> ([@stop_split] [@expl:replicate_up_to ensures] forall xs: Seq.seq t_T. contains_Seq_T (Fset.union (replicate_up_to_T self (n
+        - 1)) (replicate_T self n)) xs
+      = (Seq.length xs <= n /\ (forall x: t_T. contains_T xs x -> contains_T'0 self x)))))
+  )

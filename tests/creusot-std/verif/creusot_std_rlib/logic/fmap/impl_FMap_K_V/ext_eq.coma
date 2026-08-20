@@ -1,0 +1,38 @@
+(* logic::fmap::FMap<K, V> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_FMap_K_V
+
+type t_K
+
+type t_V
+
+type t_Option_V = None | Some t_V
+
+function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+
+function to_mapping_inj_K (self: t_FMap_K_V) (other: t_FMap_K_V) : () = ()
+
+axiom to_mapping_inj_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V. to_mapping_K self = to_mapping_K other
+    -> self = other
+
+function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+
+meta "rewrite_def" function get_K
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_FMap_K_V
+
+constant other : t_FMap_K_V
+
+predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V)
+
+goal vc_ext_eq_K: [@stop_split] [@expl:ext_eq ensures] (forall k: t_K. get_K self k = get_K other k) = (self = other)

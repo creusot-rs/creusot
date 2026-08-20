@@ -1,0 +1,249 @@
+(* ghost::resource::auth::Fragment<R> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_Resource_View_AuthViewRel_R
+
+type t_View_AuthViewRel_R
+
+type t_Fragment_R = { f0: t_Resource_View_AuthViewRel_R }
+
+type t_R
+
+type t_Option_R = None | Some t_R
+
+function op_R (self: t_R) (other: t_R) : t_Option_R
+
+predicate incl_R (self: t_R) (other: t_R)
+
+axiom incl_R_spec: forall self: t_R, other: t_R [incl_R self other]. incl_R self other
+    = (exists factor: t_R. op_R self factor = Some other)
+
+function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+
+axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+
+function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+
+axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+    -> op_R b c = Some bc -> op_R a bc = op_R ab c
+
+function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+
+axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+    -> op_R b c = Some bc -> op_R a bc = None
+
+function commutative_R (a: t_R) (b: t_R) : ()
+
+axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+
+function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+
+axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+
+function core_R (self: t_R) : t_Option_R
+
+function core_total_R (self: t_R) : t_R
+
+axiom core_total_R_spec: forall self: t_R [core_total_R self]. core_R self = Some (core_total_R self)
+
+constant unit_R : t_R
+
+axiom unit_R_spec: forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x
+
+constant unit_core_R : ()
+
+axiom unit_core_R_spec: core_total_R unit_R = unit_R
+
+constant incl_refl_R : ()
+
+axiom incl_refl_R_spec: forall x: t_R. incl_R x x
+
+predicate rel_AuthViewRel_R (a: t_Option_R) (f: t_R) =
+  match a with
+    | Some a'0 -> incl_R f a'0
+    | None -> true
+    end
+
+function rel_unit_AuthViewRel_R (a: t_Option_R) : ()
+
+axiom rel_unit_AuthViewRel_R_spec: forall a: t_Option_R. rel_AuthViewRel_R a unit_R
+
+function rel_none_AuthViewRel_R (a: t_Option_R) (f: t_R) : ()
+
+axiom rel_none_AuthViewRel_R_spec: forall a: t_Option_R, f: t_R. rel_AuthViewRel_R (None) f
+
+function rel_mono_AuthViewRel_R (a: t_Option_R) (f1: t_R) (f2: t_R) : ()
+
+axiom rel_mono_AuthViewRel_R_spec: forall a: t_Option_R, f1: t_R, f2: t_R. rel_AuthViewRel_R a f1
+    -> incl_R f2 f1 -> rel_AuthViewRel_R a f2
+
+function auth_AuthViewRel_R (self: t_View_AuthViewRel_R) : t_Option_R
+
+function frag_AuthViewRel_R (self: t_View_AuthViewRel_R) : t_R
+
+axiom frag_AuthViewRel_R_spec:
+  forall self: t_View_AuthViewRel_R [frag_AuthViewRel_R self]. rel_AuthViewRel_R (auth_AuthViewRel_R self) (frag_AuthViewRel_R self)
+
+function new_AuthViewRel_R (auth: t_Option_R) (frag: t_R) : t_View_AuthViewRel_R
+
+axiom new_AuthViewRel_R_spec:
+  forall auth: t_Option_R, frag: t_R [new_AuthViewRel_R auth frag]. rel_AuthViewRel_R auth frag
+    -> auth_AuthViewRel_R (new_AuthViewRel_R auth frag) = auth
+
+axiom new_AuthViewRel_R_spec'0:
+  forall auth: t_Option_R, frag: t_R [new_AuthViewRel_R auth frag]. rel_AuthViewRel_R auth frag
+    -> frag_AuthViewRel_R (new_AuthViewRel_R auth frag) = frag
+
+function new_frag_AuthViewRel_R [@inline:trivial] (frag: t_R) : t_View_AuthViewRel_R = new_AuthViewRel_R (None) frag
+
+meta "rewrite_def" function new_frag_AuthViewRel_R
+
+type tup2_Resource_View_AuthViewRel_R_Resource_View_AuthViewRel_R = {
+  f0'0: t_Resource_View_AuthViewRel_R;
+  f1'0: t_Resource_View_AuthViewRel_R }
+
+type t_Option_View_AuthViewRel_R = None'0 | Some'0 t_View_AuthViewRel_R
+
+type tup2_Option_R_Option_R = { f0'1: t_Option_R; f1'1: t_Option_R }
+
+function op_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) : t_Option_View_AuthViewRel_R
+ = match op_R (frag_AuthViewRel_R self) (frag_AuthViewRel_R other) with
+    | Some f -> match { f0'1 = auth_AuthViewRel_R self; f1'1 = auth_AuthViewRel_R other } with
+      | {f0'1 = None; f1'1 = a} -> if rel_AuthViewRel_R a f then Some'0 (new_AuthViewRel_R a f) else None'0
+      | {f0'1 = a; f1'1 = None} -> if rel_AuthViewRel_R a f then Some'0 (new_AuthViewRel_R a f) else None'0
+      | _ -> None'0
+      end
+    | None -> None'0
+    end
+
+function commutative_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) : ()
+
+axiom commutative_View_AuthViewRel_R_spec:
+  forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R. op_View_AuthViewRel_R a b = op_View_AuthViewRel_R b a
+
+predicate incl_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) =
+  let r = incl_R (frag_AuthViewRel_R self) (frag_AuthViewRel_R other)
+  /\ (auth_AuthViewRel_R self = None \/ auth_AuthViewRel_R self = auth_AuthViewRel_R other) in r
+
+axiom incl_View_AuthViewRel_R_spec:
+  forall self: t_View_AuthViewRel_R, other: t_View_AuthViewRel_R [incl_View_AuthViewRel_R self other]. incl_View_AuthViewRel_R self other
+    = (exists factor: t_View_AuthViewRel_R. op_View_AuthViewRel_R self factor = Some'0 other)
+
+function incl_transitive_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) (c: t_View_AuthViewRel_R) : ()
+
+axiom incl_transitive_View_AuthViewRel_R_spec:
+  forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R, c: t_View_AuthViewRel_R. incl_View_AuthViewRel_R a b
+    -> incl_View_AuthViewRel_R b c -> incl_View_AuthViewRel_R a c
+
+function associative_some_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) (c: t_View_AuthViewRel_R) (ab: t_View_AuthViewRel_R) (bc: t_View_AuthViewRel_R) : ()
+
+axiom associative_some_View_AuthViewRel_R_spec:
+  forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R, c: t_View_AuthViewRel_R, ab: t_View_AuthViewRel_R, bc: t_View_AuthViewRel_R. op_View_AuthViewRel_R a b
+      = Some'0 ab -> op_View_AuthViewRel_R b c = Some'0 bc -> op_View_AuthViewRel_R a bc = op_View_AuthViewRel_R ab c
+
+function associative_none_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) (c: t_View_AuthViewRel_R) (bc: t_View_AuthViewRel_R) : ()
+
+axiom associative_none_View_AuthViewRel_R_spec:
+  forall a: t_View_AuthViewRel_R, b: t_View_AuthViewRel_R, c: t_View_AuthViewRel_R, bc: t_View_AuthViewRel_R. op_View_AuthViewRel_R a b
+      = None'0 -> op_View_AuthViewRel_R b c = Some'0 bc -> op_View_AuthViewRel_R a bc = None'0
+
+function incl_op_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) (comb: t_View_AuthViewRel_R) : ()
+
+axiom incl_op_View_AuthViewRel_R_spec:
+  forall self: t_View_AuthViewRel_R, other: t_View_AuthViewRel_R, comb: t_View_AuthViewRel_R. op_View_AuthViewRel_R self other
+      = Some'0 comb -> incl_View_AuthViewRel_R self comb
+
+predicate eq_View_AuthViewRel_R [@inline:trivial] (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) =
+  auth_AuthViewRel_R self = auth_AuthViewRel_R other /\ frag_AuthViewRel_R self = frag_AuthViewRel_R other
+
+meta "rewrite_def" predicate eq_View_AuthViewRel_R
+
+axiom eq_View_AuthViewRel_R_spec: forall self: t_View_AuthViewRel_R, other: t_View_AuthViewRel_R [self
+    = other]. eq_View_AuthViewRel_R self other = (self = other)
+
+predicate incl_eq_View_AuthViewRel_R (self: t_View_AuthViewRel_R) (other: t_View_AuthViewRel_R) =
+  eq_View_AuthViewRel_R self other \/ incl_View_AuthViewRel_R self other
+
+predicate incl_eq_op_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R) (x: t_View_AuthViewRel_R) =
+  match op_View_AuthViewRel_R a b with
+    | None'0 -> false
+    | Some'0 ab -> incl_eq_View_AuthViewRel_R ab x
+    end
+
+function val_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_View_AuthViewRel_R
+
+function view_Resource_View_AuthViewRel_R [@inline:trivial] (self: t_Resource_View_AuthViewRel_R) : t_View_AuthViewRel_R
+ = val_View_AuthViewRel_R self
+
+meta "rewrite_def" function view_Resource_View_AuthViewRel_R
+
+type t_Id
+
+function id_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_Id
+
+let split_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) (a: t_View_AuthViewRel_R) (b: t_View_AuthViewRel_R)
+  (return (x: tup2_Resource_View_AuthViewRel_R_Resource_View_AuthViewRel_R)) =
+{[@stop_split] [@expl:split requires] incl_eq_op_View_AuthViewRel_R a b (view_Resource_View_AuthViewRel_R self)}
+  any
+  [ return (result: tup2_Resource_View_AuthViewRel_R_Resource_View_AuthViewRel_R) ->
+  {[@stop_split] [@expl:split_View_AuthViewRel_R ensures] ([@stop_split] [@expl:split ensures #0] id_View_AuthViewRel_R result.f0'0
+        = id_View_AuthViewRel_R self
+      /\ id_View_AuthViewRel_R result.f1'0 = id_View_AuthViewRel_R self)
+    /\ ([@stop_split] [@expl:split ensures #1] view_Resource_View_AuthViewRel_R result.f0'0 = a)
+    /\ ([@stop_split] [@expl:split ensures #2] view_Resource_View_AuthViewRel_R result.f1'0 = b)}
+    (! return {result}) ]
+
+type tup2_Fragment_R_Fragment_R = { f0'2: t_Fragment_R; f1'2: t_Fragment_R }
+
+predicate eq_R (self: t_R) (other: t_R)
+
+axiom eq_R_spec: forall self: t_R, other: t_R [eq_R self other]. eq_R self other = (self = other)
+
+predicate incl_eq_R (self: t_R) (other: t_R) = eq_R self other \/ incl_R self other
+
+predicate incl_eq_op_R (a: t_R) (b: t_R) (x: t_R) =
+  match op_R a b with
+    | None -> false
+    | Some ab -> incl_eq_R ab x
+    end
+
+function view_Fragment_R (self: t_Fragment_R) : t_R = frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0)
+
+function id_R (self: t_Fragment_R) : t_Id = id_View_AuthViewRel_R self.f0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let split_R (self: t_Fragment_R) (a: t_R) (b: t_R) (return (x: tup2_Fragment_R_Fragment_R)) =
+{[@stop_split] [@expl:split requires] incl_eq_op_R a b (view_Fragment_R self)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = split_View_AuthViewRel_R {self.f0} {new_frag_AuthViewRel_R a} {new_frag_AuthViewRel_R b}
+        (fun (_x: tup2_Resource_View_AuthViewRel_R_Resource_View_AuthViewRel_R) -> [ &_16 <- _x ] s1)
+    | s1 = [ &r1 <- _16.f0'0 ] s2
+    | s2 = [ &r2 <- _16.f1'0 ] s3
+    | s3 = [ &_24 <- { f0 = r1 } ] s4
+    | s4 = [ &_26 <- { f0 = r2 } ] s5
+    | s5 = [ &_ret <- { f0'2 = _24; f1'2 = _26 } ] s6
+    | s6 = return {_ret} ] ]
+  [ & _ret: tup2_Fragment_R_Fragment_R = Any.any_l ()
+  | & self: t_Fragment_R = self
+  | & a: t_R = a
+  | & b: t_R = b
+  | & r1: t_Resource_View_AuthViewRel_R = Any.any_l ()
+  | & r2: t_Resource_View_AuthViewRel_R = Any.any_l ()
+  | & _16: tup2_Resource_View_AuthViewRel_R_Resource_View_AuthViewRel_R = Any.any_l ()
+  | & _24: t_Fragment_R = Any.any_l ()
+  | & _26: t_Fragment_R = Any.any_l () ])
+  [ return (result: tup2_Fragment_R_Fragment_R) ->
+  {[@stop_split] [@expl:split_R ensures] ([@stop_split] [@expl:split ensures #0] id_R result.f0'2 = id_R self
+      /\ id_R result.f1'2 = id_R self)
+    /\ ([@stop_split] [@expl:split ensures #1] view_Fragment_R result.f0'2 = a)
+    /\ ([@stop_split] [@expl:split ensures #2] view_Fragment_R result.f1'2 = b)}
+    (! return {result}) ]

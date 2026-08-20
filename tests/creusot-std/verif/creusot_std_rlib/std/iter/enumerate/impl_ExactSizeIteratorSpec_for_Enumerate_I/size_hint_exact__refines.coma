@@ -1,0 +1,117 @@
+(* <std::iter::Enumerate<I> as std::iter::ExactSizeIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use seq.Seq
+use creusot.prelude.MutBorrow
+use int.Int
+
+type t_Enumerate_I
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+type t_I
+
+type t_Item
+
+predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+
+function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+
+axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+    -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+
+function produces_refl_I (self: t_I) : ()
+
+axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+
+predicate completed_I (self: MutBorrow.t t_I)
+
+predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
+
+axiom postcondition_fndef:
+  forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self_ s i.current /\ completed_I i
+        -> UInt64.t'int res.f0 <= Seq.length s)
+    /\ match res.f1 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self_ s i -> Seq.length s <= UInt64.t'int r
+      | None -> true
+      end)
+
+function iter_Enumerate_I (self: t_Enumerate_I) : t_I
+
+predicate postcondition_size_hint'0 (self: ()) (args: t_Enumerate_I) (result: tup2_usize_Option_usize) =
+  let self_ = args in postcondition_size_hint () (iter_Enumerate_I self_) result
+
+meta "rewrite_def" predicate postcondition_size_hint'0
+
+predicate inv_I (_1: t_I)
+
+function n_Enumerate_I (self: t_Enumerate_I) : UInt64.t
+
+constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+
+predicate invariant_Enumerate_I (self: t_Enumerate_I) =
+  inv_I (iter_Enumerate_I self)
+  /\ (forall s: Seq.seq t_Item, i: t_I [produces_I (iter_Enumerate_I self) s i]. produces_I (iter_Enumerate_I self) s i
+      -> UInt64.t'int (n_Enumerate_I self) + Seq.length s < UInt64.t'int const_MAX)
+  /\ (forall i: MutBorrow.t t_I. completed_I i -> produces_I i.current (Seq.empty: Seq.seq t_Item) i.final)
+
+axiom invariant_Enumerate_I_spec: forall self: t_Enumerate_I [invariant_Enumerate_I self]. invariant_Enumerate_I self
+    -> inv_I (iter_Enumerate_I self)
+
+predicate inv_Enumerate_I (_1: t_Enumerate_I)
+
+axiom inv_axiom: forall x: t_Enumerate_I [inv_Enumerate_I x]. inv_Enumerate_I x -> invariant_Enumerate_I x
+
+predicate invariant_ref_Enumerate_I [@inline:trivial] (self: t_Enumerate_I) = inv_Enumerate_I self
+
+meta "rewrite_def" predicate invariant_ref_Enumerate_I
+
+predicate inv_ref_Enumerate_I [@inline:trivial] (_1: t_Enumerate_I) = invariant_ref_Enumerate_I _1
+
+meta "rewrite_def" predicate inv_ref_Enumerate_I
+
+predicate invariant_ref_I [@inline:trivial] (self: t_I) = inv_I self
+
+meta "rewrite_def" predicate invariant_ref_I
+
+predicate inv_ref_I [@inline:trivial] (_1: t_I) = invariant_ref_I _1
+
+meta "rewrite_def" predicate inv_ref_I
+
+predicate precondition_size_hint (self: ()) (args: t_I)
+
+axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self_ = args in inv_ref_I self_)
+    -> precondition_size_hint () args
+
+predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) =
+  postcondition_size_hint self args result
+
+meta "rewrite_def" predicate postcondition_once_size_hint
+
+let size_hint_I (self_: t_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+    (! return {result}) ]
+
+let size_hint_Enumerate_I (self_: t_Enumerate_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Enumerate_I self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint ensures] postcondition_size_hint () (iter_Enumerate_I self_) result}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Enumerate_I, r: tup2_usize_Option_usize. postcondition_size_hint'0 () self r
+    -> postcondition_size_hint'0 () self r /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))

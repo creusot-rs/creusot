@@ -1,0 +1,37 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int128
+use int.ComputerDivision
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: Int128.t = (-170141183460469231731687303715884105728: Int128.t)
+
+let rem_ref_i128 (self_: Int128.t) (rhs: Int128.t) (return (x: Int128.t)) =
+{[@stop_split] [@expl:rem_ref_i128 requires] ([@stop_split] [@expl:rem requires #0] Int128.to_int rhs <> 0)
+  /\ ([@stop_split] [@expl:rem requires #1] not (Int128.to_int self_ = Int128.to_int const_MIN
+  /\ Int128.to_int rhs = - 1))}
+  any
+  [ return (result: Int128.t) -> {[@stop_split] [@expl:rem ensures] Int128.to_int result
+    = ComputerDivision.mod (Int128.to_int self_) (Int128.to_int rhs)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Rem_i128__ref_i128_rem_body (self_: Int128.t) (rhs: Int128.t) (return (x: Int128.t)) =
+{[@stop_split] [@expl:extern_spec_Rem_i128__ref_i128_rem_body requires] ([@stop_split] [@expl:extern_spec_Rem_i128__ref_i128_rem_body requires #0] Int128.to_int rhs
+    <> 0)
+  /\ ([@stop_split] [@expl:extern_spec_Rem_i128__ref_i128_rem_body requires #1] not (Int128.to_int self_
+    = Int128.to_int const_MIN
+  /\ Int128.to_int rhs = - 1))}
+  (! bb0
+  [ bb0 = s0 [ s0 = rem_ref_i128 {self_} {rhs} (fun (_x: Int128.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: Int128.t = Any.any_l () | & self_: Int128.t = self_ | & rhs: Int128.t = rhs ])
+  [ return (result: Int128.t) ->
+  {[@stop_split] [@expl:extern_spec_Rem_i128__ref_i128_rem_body ensures] Int128.to_int result
+    = ComputerDivision.mod (Int128.to_int self_) (Int128.to_int rhs)}
+    (! return {result}) ]

@@ -1,0 +1,228 @@
+(* <logic::ra::sum::SumLocalUpdateL<U> as logic::ra::update::LocalUpdate<logic::ra::sum::Sum<R1, R2>>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_U
+
+type t_SumLocalUpdateL_U = { f0: t_U }
+
+type t_R1
+
+type t_R2
+
+type t_Sum_R1_R2 = Left t_R1 | Right t_R2
+
+type t_Option_Sum_R1_R2 = None | Some t_Sum_R1_R2
+
+type tup2_Sum_R1_R2_Sum_R1_R2 = { f0'0: t_Sum_R1_R2; f1'0: t_Sum_R1_R2 }
+
+predicate premise_U (self: t_U) (from_auth: t_R1) (from_frag: t_R1)
+
+predicate premise_SumLocalUpdateL_U [@inline:trivial] (self: t_SumLocalUpdateL_U) (from_auth: t_Sum_R1_R2) (from_frag: t_Sum_R1_R2) =
+  match { f0'0 = from_auth; f1'0 = from_frag } with
+    | {f0'0 = Left from_auth'0; f1'0 = Left from_frag'0} -> premise_U self.f0 from_auth'0 from_frag'0
+    | {f0'0 = Right _; f1'0 = Right _} -> false
+    | _ -> true
+    end
+
+meta "rewrite_def" predicate premise_SumLocalUpdateL_U
+
+type t_Option_Option_Sum_R1_R2 = None'0 | Some'0 t_Option_Sum_R1_R2
+
+type tup2_Option_Sum_R1_R2_Option_Sum_R1_R2 = { f0'1: t_Option_Sum_R1_R2; f1'1: t_Option_Sum_R1_R2 }
+
+function map_Option_Sum_R1_R2 (self: t_Option_Sum_R1_R2) (f: Map.map t_Sum_R1_R2 t_Option_Sum_R1_R2) : t_Option_Option_Sum_R1_R2
+ = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
+type t_Option_R1 = None'1 | Some'1 t_R1
+
+function map_Option_R1 (self: t_Option_R1) (f: Map.map t_R1 t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match self with
+    | None'1 -> None
+    | Some'1 x -> Some (Map.get f x)
+    end
+
+function op_R1 (self: t_R1) (other: t_R1) : t_Option_R1
+
+predicate incl_R1 (self: t_R1) (other: t_R1)
+
+axiom incl_R1_spec: forall self: t_R1, other: t_R1 [incl_R1 self other]. incl_R1 self other
+    = (exists factor: t_R1. op_R1 self factor = Some'1 other)
+
+function incl_transitive_R1 (a: t_R1) (b: t_R1) (c: t_R1) : ()
+
+axiom incl_transitive_R1_spec: forall a: t_R1, b: t_R1, c: t_R1. incl_R1 a b -> incl_R1 b c -> incl_R1 a c
+
+function associative_some_R1 (a: t_R1) (b: t_R1) (c: t_R1) (ab: t_R1) (bc: t_R1) : ()
+
+axiom associative_some_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, ab: t_R1, bc: t_R1. op_R1 a b = Some'1 ab
+    -> op_R1 b c = Some'1 bc -> op_R1 a bc = op_R1 ab c
+
+function associative_none_R1 (a: t_R1) (b: t_R1) (c: t_R1) (bc: t_R1) : ()
+
+axiom associative_none_R1_spec: forall a: t_R1, b: t_R1, c: t_R1, bc: t_R1. op_R1 a b = None'1
+    -> op_R1 b c = Some'1 bc -> op_R1 a bc = None'1
+
+function commutative_R1 (a: t_R1) (b: t_R1) : ()
+
+axiom commutative_R1_spec: forall a: t_R1, b: t_R1. op_R1 a b = op_R1 b a
+
+function incl_op_R1 (self: t_R1) (other: t_R1) (comb: t_R1) : ()
+
+axiom incl_op_R1_spec: forall self: t_R1, other: t_R1, comb: t_R1. op_R1 self other = Some'1 comb -> incl_R1 self comb
+
+type t_Option_R2 = None'2 | Some'2 t_R2
+
+function map_Option_R2 (self: t_Option_R2) (f: Map.map t_R2 t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match self with
+    | None'2 -> None
+    | Some'2 x -> Some (Map.get f x)
+    end
+
+function op_R2 (self: t_R2) (other: t_R2) : t_Option_R2
+
+predicate incl_R2 (self: t_R2) (other: t_R2)
+
+axiom incl_R2_spec: forall self: t_R2, other: t_R2 [incl_R2 self other]. incl_R2 self other
+    = (exists factor: t_R2. op_R2 self factor = Some'2 other)
+
+function incl_transitive_R2 (a: t_R2) (b: t_R2) (c: t_R2) : ()
+
+axiom incl_transitive_R2_spec: forall a: t_R2, b: t_R2, c: t_R2. incl_R2 a b -> incl_R2 b c -> incl_R2 a c
+
+function associative_some_R2 (a: t_R2) (b: t_R2) (c: t_R2) (ab: t_R2) (bc: t_R2) : ()
+
+axiom associative_some_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, ab: t_R2, bc: t_R2. op_R2 a b = Some'2 ab
+    -> op_R2 b c = Some'2 bc -> op_R2 a bc = op_R2 ab c
+
+function associative_none_R2 (a: t_R2) (b: t_R2) (c: t_R2) (bc: t_R2) : ()
+
+axiom associative_none_R2_spec: forall a: t_R2, b: t_R2, c: t_R2, bc: t_R2. op_R2 a b = None'2
+    -> op_R2 b c = Some'2 bc -> op_R2 a bc = None'2
+
+function commutative_R2 (a: t_R2) (b: t_R2) : ()
+
+axiom commutative_R2_spec: forall a: t_R2, b: t_R2. op_R2 a b = op_R2 b a
+
+function incl_op_R2 (self: t_R2) (other: t_R2) (comb: t_R2) : ()
+
+axiom incl_op_R2_spec: forall self: t_R2, other: t_R2, comb: t_R2. op_R2 self other = Some'2 comb -> incl_R2 self comb
+
+function op_Sum_R1_R2 (self: t_Sum_R1_R2) (other: t_Sum_R1_R2) : t_Option_Sum_R1_R2 = match { f0'0 = self;
+                                                                                              f1'0 = other } with
+    | {f0'0 = Left x; f1'0 = Left y} -> map_Option_R1 (op_R1 x y) (fun (l: t_R1) -> Left l)
+    | {f0'0 = Right x; f1'0 = Right y} -> map_Option_R2 (op_R2 x y) (fun (r: t_R2) -> Right r)
+    | _ -> None
+    end
+
+function commutative_Sum_R1_R2 (a: t_Sum_R1_R2) (b: t_Sum_R1_R2) : () = ()
+
+axiom commutative_Sum_R1_R2_spec: forall a: t_Sum_R1_R2, b: t_Sum_R1_R2. op_Sum_R1_R2 a b = op_Sum_R1_R2 b a
+
+function op_Option_Sum_R1_R2 (self: t_Option_Sum_R1_R2) (other: t_Option_Sum_R1_R2) : t_Option_Option_Sum_R1_R2 =
+  match { f0'1 = self; f1'1 = other } with
+    | {f0'1 = None} -> Some'0 other
+    | {f1'1 = None} -> Some'0 self
+    | {f0'1 = Some x; f1'1 = Some y} -> map_Option_Sum_R1_R2 (op_Sum_R1_R2 x y) (fun (z: t_Sum_R1_R2) -> Some z)
+    end
+
+function commutative_Option_Sum_R1_R2 (a: t_Option_Sum_R1_R2) (b: t_Option_Sum_R1_R2) : ()
+
+axiom commutative_Option_Sum_R1_R2_spec: forall a: t_Option_Sum_R1_R2, b: t_Option_Sum_R1_R2. op_Option_Sum_R1_R2 a b
+    = op_Option_Sum_R1_R2 b a
+
+type tup2_R1_R1 = { f0'2: t_R1; f1'2: t_R1 }
+
+function update_U (self: t_U) (from_auth: t_R1) (from_frag: t_R1) : tup2_R1_R1
+
+predicate index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool [@inline:trivial] (self: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool) (a: tup2_Sum_R1_R2_Sum_R1_R2) =
+  Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool
+
+function such_that_tup2_Sum_R1_R2_Sum_R1_R2 (p: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool) : tup2_Sum_R1_R2_Sum_R1_R2
+
+axiom such_that_tup2_Sum_R1_R2_Sum_R1_R2_spec:
+  forall p: Map.map tup2_Sum_R1_R2_Sum_R1_R2 bool [such_that_tup2_Sum_R1_R2_Sum_R1_R2 p]. (exists x: tup2_Sum_R1_R2_Sum_R1_R2. index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool p x)
+    -> index_Mapping_tup2_Sum_R1_R2_Sum_R1_R2_bool p (such_that_tup2_Sum_R1_R2_Sum_R1_R2 p)
+
+constant any_tup2_Sum_R1_R2_Sum_R1_R2: tup2_Sum_R1_R2_Sum_R1_R2 = such_that_tup2_Sum_R1_R2_Sum_R1_R2 (fun (__0: tup2_Sum_R1_R2_Sum_R1_R2) -> true)
+
+function update_SumLocalUpdateL_U [@inline:trivial] (self: t_SumLocalUpdateL_U) (from_auth: t_Sum_R1_R2) (from_frag: t_Sum_R1_R2) : tup2_Sum_R1_R2_Sum_R1_R2
+ = match { f0'0 = from_auth; f1'0 = from_frag } with
+    | {f0'0 = Left from_auth'0; f1'0 = Left from_frag'0} -> let {f0'2 = to_auth; f1'2 = to_frag} = update_U self.f0 from_auth'0 from_frag'0 in { f0'0 = Left to_auth;
+                                                                                                                                                 f1'0 = Left to_frag }
+    | _ -> any_tup2_Sum_R1_R2_Sum_R1_R2
+    end
+
+meta "rewrite_def" function update_SumLocalUpdateL_U
+
+type tup3_Sum_R1_R2_Sum_R1_R2_Option_Sum_R1_R2 = { f0'3: t_Sum_R1_R2; f1'3: t_Sum_R1_R2; f2'3: t_Option_Sum_R1_R2 }
+
+type t_Option_Option_R1 = None'3 | Some'3 t_Option_R1
+
+type tup2_Option_R1_Option_R1 = { f0'4: t_Option_R1; f1'4: t_Option_R1 }
+
+function map_Option_R1'0 (self: t_Option_R1) (f: Map.map t_R1 t_Option_R1) : t_Option_Option_R1 = match self with
+    | None'1 -> None'3
+    | Some'1 x -> Some'3 (Map.get f x)
+    end
+
+function op_Option_R1 (self: t_Option_R1) (other: t_Option_R1) : t_Option_Option_R1 = match { f0'4 = self;
+                                                                                              f1'4 = other } with
+    | {f0'4 = None'1} -> Some'3 other
+    | {f1'4 = None'1} -> Some'3 self
+    | {f0'4 = Some'1 x; f1'4 = Some'1 y} -> map_Option_R1'0 (op_R1 x y) (fun (z: t_R1) -> Some'1 z)
+    end
+
+function commutative_Option_R1 (a: t_Option_R1) (b: t_Option_R1) : ()
+
+axiom commutative_Option_R1_spec: forall a: t_Option_R1, b: t_Option_R1. op_Option_R1 a b = op_Option_R1 b a
+
+function frame_preserving_U (self: t_U) (from_auth: t_R1) (from_frag: t_R1) (frame: t_Option_R1) : ()
+
+axiom frame_preserving_U_spec:
+  forall self: t_U, from_auth: t_R1, from_frag: t_R1, frame: t_Option_R1. premise_U self from_auth from_frag
+    -> op_Option_R1 (Some'1 from_frag) frame = Some'3 (Some'1 from_auth)
+    -> (let {f0'2 = to_auth; f1'2 = to_frag} = update_U self from_auth from_frag in op_Option_R1 (Some'1 to_frag) frame
+    = Some'3 (Some'1 to_auth))
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_SumLocalUpdateL_U
+
+constant from_auth : t_Sum_R1_R2
+
+constant from_frag : t_Sum_R1_R2
+
+constant frame : t_Option_Sum_R1_R2
+
+function frame_preserving_SumLocalUpdateL_U (self: t_SumLocalUpdateL_U) (from_auth: t_Sum_R1_R2) (from_frag: t_Sum_R1_R2) (frame: t_Option_Sum_R1_R2) : ()
+
+goal vc_frame_preserving_SumLocalUpdateL_U: premise_SumLocalUpdateL_U self from_auth from_frag
+  -> op_Option_Sum_R1_R2 (Some from_frag) frame = Some'0 (Some from_auth)
+  -> match { f0'3 = from_auth; f1'3 = from_frag; f2'3 = frame } with
+    | {f0'3 = Left from_auth'0; f1'3 = Left from_frag'0; f2'3 = Some (Left frame'0)} -> ([@stop_split] [@expl:frame_preserving requires] ([@stop_split] [@expl:frame_preserving requires #0] premise_U self.f0 from_auth'0 from_frag'0)
+      /\ ([@stop_split] [@expl:frame_preserving requires #1] op_Option_R1 (Some'1 from_frag'0) (Some'1 frame'0)
+      = Some'3 (Some'1 from_auth'0)))
+    /\ (([@stop_split] [@expl:frame_preserving ensures] let {f0'2 = to_auth; f1'2 = to_frag} = update_U self.f0 from_auth'0 from_frag'0 in op_Option_R1 (Some'1 to_frag) (Some'1 frame'0)
+      = Some'3 (Some'1 to_auth))
+    -> ([@stop_split] [@expl:frame_preserving ensures] let {f0'0 = to_auth; f1'0 = to_frag} = update_SumLocalUpdateL_U self from_auth from_frag in op_Option_Sum_R1_R2 (Some to_frag) frame
+    = Some'0 (Some to_auth)))
+    | {f0'3 = Left from_auth'0; f1'3 = Left from_frag'0; f2'3 = None} -> ([@stop_split] [@expl:frame_preserving requires] ([@stop_split] [@expl:frame_preserving requires #0] premise_U self.f0 from_auth'0 from_frag'0)
+      /\ ([@stop_split] [@expl:frame_preserving requires #1] op_Option_R1 (Some'1 from_frag'0) (None'1)
+      = Some'3 (Some'1 from_auth'0)))
+    /\ (([@stop_split] [@expl:frame_preserving ensures] let {f0'2 = to_auth; f1'2 = to_frag} = update_U self.f0 from_auth'0 from_frag'0 in op_Option_R1 (Some'1 to_frag) (None'1)
+      = Some'3 (Some'1 to_auth))
+    -> ([@stop_split] [@expl:frame_preserving ensures] let {f0'0 = to_auth; f1'0 = to_frag} = update_SumLocalUpdateL_U self from_auth from_frag in op_Option_Sum_R1_R2 (Some to_frag) frame
+    = Some'0 (Some to_auth)))
+    | _ -> [@stop_split] [@expl:frame_preserving ensures] let {f0'0 = to_auth; f1'0 = to_frag} = update_SumLocalUpdateL_U self from_auth from_frag in op_Option_Sum_R1_R2 (Some to_frag) frame
+    = Some'0 (Some to_auth)
+    end

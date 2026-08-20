@@ -1,0 +1,113 @@
+(* <logic::ra::auth::CancelLocalUpdateUnit as logic::ra::update::LocalUpdate<R>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_R
+
+type t_Option_R = None | Some t_R
+
+function op_R (self: t_R) (other: t_R) : t_Option_R
+
+predicate incl_R (self: t_R) (other: t_R)
+
+axiom incl_R_spec: forall self: t_R, other: t_R [incl_R self other]. incl_R self other
+    = (exists factor: t_R. op_R self factor = Some other)
+
+function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+
+axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+
+function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+
+axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+    -> op_R b c = Some bc -> op_R a bc = op_R ab c
+
+function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+
+axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+    -> op_R b c = Some bc -> op_R a bc = None
+
+function commutative_R (a: t_R) (b: t_R) : ()
+
+axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+
+function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+
+axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+
+predicate cancelable_R (self: t_R)
+
+axiom cancelable_R_spec: forall self: t_R [cancelable_R self]. cancelable_R self
+    = (forall x: t_R, y: t_R. op_R self x <> None -> op_R self x = op_R self y -> x = y)
+
+predicate premise_CancelLocalUpdateUnit (self: ()) (_2: t_R) (from_frag: t_R) = cancelable_R from_frag
+
+type t_Option_Option_R = None'0 | Some'0 t_Option_R
+
+type tup2_Option_R_Option_R = { f0: t_Option_R; f1: t_Option_R }
+
+function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
+function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0 = self; f1 = other } with
+    | {f0 = None} -> Some'0 other
+    | {f1 = None} -> Some'0 self
+    | {f0 = Some x; f1 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
+    end
+
+function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : ()
+
+axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
+
+type tup2_R_R = { f0'0: t_R; f1'0: t_R }
+
+function factor_R (self: t_R) (factor: t_R) : t_R
+
+axiom factor_R_spec: forall self: t_R, factor: t_R [factor_R self factor]. incl_R factor self
+    -> op_R factor (factor_R self factor) = Some self
+
+function core_R (self: t_R) : t_Option_R
+
+function core_total_R (self: t_R) : t_R
+
+axiom core_total_R_spec: forall self: t_R [core_total_R self]. core_R self = Some (core_total_R self)
+
+constant unit_R : t_R
+
+axiom unit_R_spec: forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x
+
+constant unit_core_R : ()
+
+axiom unit_core_R_spec: core_total_R unit_R = unit_R
+
+constant incl_refl_R : ()
+
+axiom incl_refl_R_spec: forall x: t_R. incl_R x x
+
+function update_CancelLocalUpdateUnit (self: ()) (from_auth: t_R) (from_frag: t_R) : tup2_R_R =
+  { f0'0 = factor_R from_auth from_frag; f1'0 = unit_R }
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : ()
+
+constant from_auth : t_R
+
+constant from_frag : t_R
+
+constant frame : t_Option_R
+
+function frame_preserving_CancelLocalUpdateUnit (self: ()) (from_auth: t_R) (from_frag: t_R) (frame: t_Option_R) : ()
+
+goal vc_frame_preserving_CancelLocalUpdateUnit: premise_CancelLocalUpdateUnit self from_auth from_frag
+  -> op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
+  -> ([@stop_split] [@expl:frame_preserving ensures] let {f0'0 = to_auth; f1'0 = to_frag} = update_CancelLocalUpdateUnit self from_auth from_frag in op_Option_R (Some to_frag) frame
+  = Some'0 (Some to_auth))

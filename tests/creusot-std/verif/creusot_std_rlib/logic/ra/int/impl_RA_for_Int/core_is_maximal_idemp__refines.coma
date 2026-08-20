@@ -1,0 +1,39 @@
+(* <logic::int::Int as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Option_Int = None | Some int
+
+function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+
+meta "rewrite_def" function op_Int
+
+function core_Int [@inline:trivial] (self: int) : t_Option_Int = Some 0
+
+meta "rewrite_def" function core_Int
+
+predicate incl_Int (self: int) (other: int) = true
+
+axiom incl_Int_spec: forall self: int, other: int [incl_Int self other]. incl_Int self other
+    = (exists factor: int. op_Int self factor = Some other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: int, i: int. op_Int i i = Some i
+    -> op_Int i self = Some self
+    -> op_Int i i = Some i
+    /\ op_Int i self = Some self
+    /\ (forall result: (). match core_Int self with
+          | Some c -> incl_Int i c
+          | None -> false
+          end
+      -> match core_Int self with
+        | Some c -> incl_Int i c
+        | None -> false
+        end)

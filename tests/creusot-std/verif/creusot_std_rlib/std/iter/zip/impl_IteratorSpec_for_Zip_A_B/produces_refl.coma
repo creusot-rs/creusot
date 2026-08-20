@@ -1,0 +1,64 @@
+(* <std::iter::Zip<A, B> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use int.Int
+
+type t_Zip_A_B
+
+type t_Item
+
+type t_Item'0
+
+type tup2_Item_Item = { f0: t_Item; f1: t_Item'0 }
+
+type t_A
+
+predicate produces_A (self: t_A) (visited: Seq.seq t_Item) (o: t_A)
+
+function produces_trans_A (a: t_A) (ab: Seq.seq t_Item) (b: t_A) (bc: Seq.seq t_Item) (c: t_A) : ()
+
+axiom produces_trans_A_spec: forall a: t_A, ab: Seq.seq t_Item, b: t_A, bc: Seq.seq t_Item, c: t_A. produces_A a ab b
+    -> produces_A b bc c -> produces_A a (Seq.(++) ab bc) c
+
+function produces_refl_A (self: t_A) : ()
+
+axiom produces_refl_A_spec: forall self: t_A. produces_A self (Seq.empty: Seq.seq t_Item) self
+
+function iter_a_Zip_A_B (self: t_Zip_A_B) : t_A
+
+type t_B
+
+predicate produces_B (self: t_B) (visited: Seq.seq t_Item'0) (o: t_B)
+
+function produces_trans_B (a: t_B) (ab: Seq.seq t_Item'0) (b: t_B) (bc: Seq.seq t_Item'0) (c: t_B) : ()
+
+axiom produces_trans_B_spec:
+  forall a: t_B, ab: Seq.seq t_Item'0, b: t_B, bc: Seq.seq t_Item'0, c: t_B. produces_B a ab b
+    -> produces_B b bc c -> produces_B a (Seq.(++) ab bc) c
+
+function produces_refl_B (self: t_B) : ()
+
+axiom produces_refl_B_spec: forall self: t_B. produces_B self (Seq.empty: Seq.seq t_Item'0) self
+
+function iter_b_Zip_A_B (self: t_Zip_A_B) : t_B
+
+predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (o: t_Zip_A_B) =
+  exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
+    /\ Seq.length p2 = Seq.length visited
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
+    /\ produces_A (iter_a_Zip_A_B self) p1 (iter_a_Zip_A_B o) /\ produces_B (iter_b_Zip_A_B self) p2 (iter_b_Zip_A_B o)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Zip_A_B
+
+function produces_refl_Zip_A_B (self: t_Zip_A_B) : ()
+
+goal vc_produces_refl_Zip_A_B:
+  [@stop_split] [@expl:produces_refl ensures] produces_Zip_A_B self (Seq.empty: Seq.seq tup2_Item_Item) self

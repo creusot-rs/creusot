@@ -1,0 +1,36 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+type t_RangeFrom_T = { start: t_T }
+
+type t_RangeFrom_T'0 = { start'0: t_T }
+
+predicate inv_T (_1: t_T)
+
+predicate inv_RangeFrom_T (_1: t_RangeFrom_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_RangeFrom_T [inv_RangeFrom_T x]. inv_RangeFrom_T x = inv_T x.start
+
+predicate inv_RangeFrom_T'0 (_1: t_RangeFrom_T'0)
+
+axiom inv_axiom'0 [@rewrite]: forall x: t_RangeFrom_T'0 [inv_RangeFrom_T'0 x]. inv_RangeFrom_T'0 x = inv_T x.start'0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_From_RangeFrom_T_legacy_RangeFrom_T_from_body_T (value: t_RangeFrom_T) (return (x: t_RangeFrom_T'0)) =
+{[@stop_split] [@expl:extern_spec_T_From_RangeFrom_T_legacy_RangeFrom_T_from_body 'value' type invariant] inv_RangeFrom_T value}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- { start'0 = value.start } ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_RangeFrom_T'0 = Any.any_l () | & value: t_RangeFrom_T = value ])
+  [ return (result: t_RangeFrom_T'0) ->
+  {[@stop_split] [@expl:extern_spec_T_From_RangeFrom_T_legacy_RangeFrom_T_from_body_T ensures] ([@stop_split] [@expl:extern_spec_T_From_RangeFrom_T_legacy_RangeFrom_T_from_body result type invariant] inv_RangeFrom_T'0 result)
+    /\ ([@stop_split] [@expl:extern_spec_T_From_RangeFrom_T_legacy_RangeFrom_T_from_body ensures] result
+    = { start'0 = value.start })}
+    (! return {result}) ]

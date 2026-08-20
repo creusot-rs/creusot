@@ -1,0 +1,24 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate resolve_T (_1: t_T)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_core_mem_drop_body_T (t: t_T) (return (x: ())) =
+{[@stop_split] [@expl:extern_spec_core_mem_drop_body 't' type invariant] inv_T t}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_T t} any) ] | s1 = -{resolve_T t}- s2 | s2 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l () | & t: t_T = t ])
+  [ return (result: ()) -> {[@stop_split] [@expl:extern_spec_core_mem_drop_body ensures] resolve_T t}
+    (! return {result}) ]

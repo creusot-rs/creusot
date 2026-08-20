@@ -1,0 +1,92 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_Self_
+
+type t_Rhs
+
+predicate inv_Self_ (_1: t_Self_)
+
+predicate invariant_ref_Self_ [@inline:trivial] (self: t_Self_) = inv_Self_ self
+
+meta "rewrite_def" predicate invariant_ref_Self_
+
+predicate inv_ref_Self_ [@inline:trivial] (_1: t_Self_) = invariant_ref_Self_ _1
+
+meta "rewrite_def" predicate inv_ref_Self_
+
+predicate invariant_ref_ref_Self_ [@inline:trivial] (self: t_Self_) = inv_ref_Self_ self
+
+meta "rewrite_def" predicate invariant_ref_ref_Self_
+
+predicate inv_ref_ref_Self_ [@inline:trivial] (_1: t_Self_) = invariant_ref_ref_Self_ _1
+
+meta "rewrite_def" predicate inv_ref_ref_Self_
+
+predicate inv_Rhs (_1: t_Rhs)
+
+predicate invariant_ref_Rhs [@inline:trivial] (self: t_Rhs) = inv_Rhs self
+
+meta "rewrite_def" predicate invariant_ref_Rhs
+
+predicate inv_ref_Rhs [@inline:trivial] (_1: t_Rhs) = invariant_ref_Rhs _1
+
+meta "rewrite_def" predicate inv_ref_Rhs
+
+predicate invariant_ref_ref_Rhs [@inline:trivial] (self: t_Rhs) = inv_ref_Rhs self
+
+meta "rewrite_def" predicate invariant_ref_ref_Rhs
+
+predicate inv_ref_ref_Rhs [@inline:trivial] (_1: t_Rhs) = invariant_ref_ref_Rhs _1
+
+meta "rewrite_def" predicate inv_ref_ref_Rhs
+
+type t_DeepModelTy
+
+function deep_model_Self_ (self: t_Self_) : t_DeepModelTy
+
+function deep_model_ref_Self_ [@inline:trivial] (self: t_Self_) : t_DeepModelTy = deep_model_Self_ self
+
+meta "rewrite_def" function deep_model_ref_Self_
+
+function deep_model_ref_ref_Self_ [@inline:trivial] (self: t_Self_) : t_DeepModelTy = deep_model_ref_Self_ self
+
+meta "rewrite_def" function deep_model_ref_ref_Self_
+
+function deep_model_Rhs (self: t_Rhs) : t_DeepModelTy
+
+function deep_model_ref_Rhs [@inline:trivial] (self: t_Rhs) : t_DeepModelTy = deep_model_Rhs self
+
+meta "rewrite_def" function deep_model_ref_Rhs
+
+function deep_model_ref_ref_Rhs [@inline:trivial] (self: t_Rhs) : t_DeepModelTy = deep_model_ref_Rhs self
+
+meta "rewrite_def" function deep_model_ref_ref_Rhs
+
+let eq_ref_Self_ (self_: t_Self_) (rhs: t_Rhs) (return (x: bool)) =
+{[@stop_split] [@expl:eq_ref_Self_ requires] ([@stop_split] [@expl:eq 'self_' type invariant] inv_ref_ref_Self_ self_)
+  /\ ([@stop_split] [@expl:eq 'rhs' type invariant] inv_ref_ref_Rhs rhs)}
+  any
+  [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
+    = (deep_model_ref_ref_Self_ self_ = deep_model_ref_ref_Rhs rhs)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_core_cmp_PartialEq_Rhs_ne_body_Self_ (self_: t_Self_) (rhs: t_Rhs) (return (x: bool)) =
+{[@stop_split] [@expl:extern_spec_core_cmp_PartialEq_Rhs_ne_body_Self_ requires] ([@stop_split] [@expl:extern_spec_core_cmp_PartialEq_Rhs_ne_body 'self_' type invariant] inv_ref_Self_ self_)
+  /\ ([@stop_split] [@expl:extern_spec_core_cmp_PartialEq_Rhs_ne_body 'rhs' type invariant] inv_ref_Rhs rhs)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = eq_ref_Self_ {self_} {rhs} (fun (_x: bool) -> [ &_6 <- _x ] s1)
+    | s1 = [ &_ret <- not _6 ] s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: bool = Any.any_l () | & self_: t_Self_ = self_ | & rhs: t_Rhs = rhs | & _6: bool = Any.any_l () ])
+  [ return (result: bool) -> {[@stop_split] [@expl:extern_spec_core_cmp_PartialEq_Rhs_ne_body ensures] result
+    = (deep_model_ref_Self_ self_ <> deep_model_ref_Rhs rhs)}
+    (! return {result}) ]

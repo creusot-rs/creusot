@@ -1,0 +1,70 @@
+(* <logic::int::Int as logic::ra::update::LocalUpdate<logic::int::Int>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+type t_Option_Int = None | Some int
+
+predicate premise_Int [@inline:trivial] (self: int) (_2: int) (_3: int) = true
+
+meta "rewrite_def" predicate premise_Int
+
+type t_Option_Option_Int = None'0 | Some'0 t_Option_Int
+
+type tup2_Option_Int_Option_Int = { f0: t_Option_Int; f1: t_Option_Int }
+
+function map_Option_Int (self: t_Option_Int) (f: Map.map int t_Option_Int) : t_Option_Option_Int = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
+function op_Int [@inline:trivial] (self: int) (other: int) : t_Option_Int = Some (self + other)
+
+meta "rewrite_def" function op_Int
+
+function commutative_Int (a: int) (b: int) : () = ()
+
+axiom commutative_Int_spec: forall a: int, b: int. op_Int a b = op_Int b a
+
+function op_Option_Int (self: t_Option_Int) (other: t_Option_Int) : t_Option_Option_Int = match { f0 = self;
+                                                                                                  f1 = other } with
+    | {f0 = None} -> Some'0 other
+    | {f1 = None} -> Some'0 self
+    | {f0 = Some x; f1 = Some y} -> map_Option_Int (op_Int x y) (fun (z: int) -> Some z)
+    end
+
+function commutative_Option_Int (a: t_Option_Int) (b: t_Option_Int) : ()
+
+axiom commutative_Option_Int_spec: forall a: t_Option_Int, b: t_Option_Int. op_Option_Int a b = op_Option_Int b a
+
+type tup2_Int_Int = { f0'0: int; f1'0: int }
+
+function update_Int [@inline:trivial] (self: int) (from_auth: int) (from_frag: int) : tup2_Int_Int = { f0'0 = from_auth
+                                                                                                       + self;
+                                                                                                       f1'0 = from_frag
+                                                                                                       + self }
+
+meta "rewrite_def" function update_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : int
+
+constant from_auth : int
+
+constant from_frag : int
+
+constant frame : t_Option_Int
+
+function frame_preserving_Int (self: int) (from_auth: int) (from_frag: int) (frame: t_Option_Int) : ()
+
+goal vc_frame_preserving_Int: premise_Int self from_auth from_frag
+  -> op_Option_Int (Some from_frag) frame = Some'0 (Some from_auth)
+  -> ([@stop_split] [@expl:frame_preserving ensures] let {f0'0 = to_auth; f1'0 = to_frag} = update_Int self from_auth from_frag in op_Option_Int (Some to_frag) frame
+  = Some'0 (Some to_auth))

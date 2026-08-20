@@ -1,0 +1,83 @@
+(* <logic::real::PositiveReal as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use real.Real
+use real.FromInt
+
+type t_PositiveReal
+
+type t_Option_PositiveReal = None | Some t_PositiveReal
+
+function and_then_Option_PositiveReal (self: t_Option_PositiveReal) (f: Map.map t_PositiveReal t_Option_PositiveReal) : t_Option_PositiveReal
+ = match self with
+    | None -> None
+    | Some x -> Map.get f x
+    end
+
+predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
+
+meta "rewrite_def" predicate gt_log_Real
+
+function to_real (self: t_PositiveReal) : Real.real
+
+axiom to_real_spec: forall self: t_PositiveReal [to_real self]. gt_log_Real (to_real self) (FromInt.from_int 0)
+
+function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+
+axiom add_PositiveReal_spec:
+  forall self: t_PositiveReal, other: t_PositiveReal [add_PositiveReal self other]. to_real (add_PositiveReal self other)
+    = Real.(+) (to_real self) (to_real other)
+
+function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+  Some (add_PositiveReal self other)
+
+meta "rewrite_def" function op_PositiveReal
+
+predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
+
+axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal [self = other]. ext_eq self other = (self = other)
+
+predicate index_Mapping_PositiveReal_bool [@inline:trivial] (self: Map.map t_PositiveReal bool) (a: t_PositiveReal) =
+  Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_PositiveReal_bool
+
+function such_that_PositiveReal (p: Map.map t_PositiveReal bool) : t_PositiveReal
+
+axiom such_that_PositiveReal_spec:
+  forall p: Map.map t_PositiveReal bool [such_that_PositiveReal p]. (exists x: t_PositiveReal. index_Mapping_PositiveReal_bool p x)
+    -> index_Mapping_PositiveReal_bool p (such_that_PositiveReal p)
+
+constant any_PositiveReal: t_PositiveReal = such_that_PositiveReal (fun (__0: t_PositiveReal) -> true)
+
+function unwrap_Option_PositiveReal (self: t_Option_PositiveReal) : t_PositiveReal = match self with
+    | Some x -> x
+    | None -> any_PositiveReal
+    end
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_PositiveReal
+
+constant b : t_PositiveReal
+
+constant c : t_PositiveReal
+
+function associative_PositiveReal (a: t_PositiveReal) (b: t_PositiveReal) (c: t_PositiveReal) : ()
+
+goal vc_associative_PositiveReal: ([@stop_split] [@expl:unwrap_logic requires] op_PositiveReal a b <> None)
+  /\ (let ab = unwrap_Option_PositiveReal (op_PositiveReal a b) in ([@stop_split] [@expl:unwrap_logic requires] op_PositiveReal b c
+    <> None)
+  /\ (let bc = unwrap_Option_PositiveReal (op_PositiveReal b c) in ([@stop_split] [@expl:unwrap_logic requires] op_PositiveReal ab c
+    <> None)
+  /\ (let ab_c = unwrap_Option_PositiveReal (op_PositiveReal ab c) in ([@stop_split] [@expl:unwrap_logic requires] op_PositiveReal a bc
+    <> None)
+  /\ (let a_bc = unwrap_Option_PositiveReal (op_PositiveReal a bc) in ab_c = a_bc
+  && ([@stop_split] [@expl:associative ensures] and_then_Option_PositiveReal (op_PositiveReal a b) (fun (ab'0: t_PositiveReal) -> op_PositiveReal ab'0 c)
+  = and_then_Option_PositiveReal (op_PositiveReal b c) (fun (bc'0: t_PositiveReal) -> op_PositiveReal a bc'0))))))

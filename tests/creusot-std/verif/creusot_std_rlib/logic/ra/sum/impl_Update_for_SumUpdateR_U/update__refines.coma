@@ -1,0 +1,34 @@
+(* <logic::ra::sum::SumUpdateR<U> as logic::ra::update::Update<logic::ra::sum::Sum<V, R>>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_U
+
+type t_SumUpdateR_U = { f0: t_U }
+
+type t_V
+
+type t_R
+
+type t_Sum_V_R = Left t_V | Right t_R
+
+type t_Choice
+
+predicate premise_U (self: t_U) (from: t_R)
+
+predicate premise_SumUpdateR_U [@inline:trivial] (self: t_SumUpdateR_U) (from: t_Sum_V_R) =
+  match from with
+    | Right from'0 -> premise_U self.f0 from'0
+    | Left _ -> false
+    end
+
+meta "rewrite_def" predicate premise_SumUpdateR_U
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_SumUpdateR_U, from: t_Sum_V_R, ch: t_Choice. premise_SumUpdateR_U self from
+    -> premise_SumUpdateR_U self from

@@ -1,0 +1,30 @@
+(* <logic::int::Int as std::ops::SubAssign> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+use int.Int
+
+let sub_Int (self: int) (other: int) (return (x: int)) = any
+  [ return (result: int) -> {[@stop_split] [@expl:sub ensures] result = self - other} (! return {result}) ]
+
+predicate resolve_refmut_Int [@inline:trivial] (_1: MutBorrow.t int) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let sub_assign_Int (self: MutBorrow.t int) (rhs: int) (return (x: ())) = (! bb0
+  [ bb0 = s0
+    [ s0 = sub_Int {self.current} {rhs} (fun (_x: int) -> [ &_6 <- _x ] s1)
+    | s1 = [ &self <- { self with current = _6 } ] s2
+    | s2 = -{resolve_refmut_Int self}- s3
+    | s3 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l () | & self: MutBorrow.t int = self | & rhs: int = rhs | & _6: int = Any.any_l () ])
+  [ return (result: ()) -> {[@stop_split] [@expl:sub_assign ensures] self.final = self.current - rhs}
+    (! return {result}) ]

@@ -1,0 +1,91 @@
+(* <std::collections::hash_map::Iter<'a, K, V> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_Iter_K_V
+
+type t_K
+
+type t_V
+
+type tup2_ref_K_ref_V = { f0: t_K; f1: t_V }
+
+type t_FMap_DeepModelTy_V
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function len_DeepModelTy (self: t_FMap_DeepModelTy_V) : int
+
+axiom len_DeepModelTy_spec:
+  forall self: t_FMap_DeepModelTy_V [len_DeepModelTy self]. ge_log_Int (len_DeepModelTy self) 0
+
+function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_DeepModelTy_V
+
+predicate contains_tup2_ref_K_ref_V (self: Seq.seq tup2_ref_K_ref_V) (x: tup2_ref_K_ref_V) =
+  exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+
+type t_DeepModelTy
+
+type t_Option_V = None | Some t_V
+
+function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
+
+function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
+  Map.get (to_mapping_DeepModelTy self) k
+
+meta "rewrite_def" function get_DeepModelTy
+
+function deep_model_K (self: t_K) : t_DeepModelTy
+
+function deep_model_ref_K [@inline:trivial] (self: t_K) : t_DeepModelTy = deep_model_K self
+
+meta "rewrite_def" function deep_model_ref_K
+
+predicate produces_Iter_K_V [@inline:trivial] (self: t_Iter_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (o: t_Iter_K_V) =
+  len_DeepModelTy (view_Iter_K_V self) = Seq.length visited + len_DeepModelTy (view_Iter_K_V o)
+  /\ (forall k: t_K, v: t_V. contains_tup2_ref_K_ref_V visited { f0 = k; f1 = v }
+      -> get_DeepModelTy (view_Iter_K_V self) (deep_model_ref_K k) = Some v
+      /\ get_DeepModelTy (view_Iter_K_V o) (deep_model_ref_K k) = None)
+  /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_Iter_K_V o) k = Some v
+      -> get_DeepModelTy (view_Iter_K_V self) k = Some v
+      /\ not (exists k2: t_K, v2: t_V. deep_model_ref_K k2 = k
+        /\ contains_tup2_ref_K_ref_V visited { f0 = k2; f1 = v2 }))
+  /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_Iter_K_V self) k = Some v
+      -> (exists k2: t_K. deep_model_ref_K k2 = k /\ contains_tup2_ref_K_ref_V visited { f0 = k2; f1 = v })
+      \/ get_DeepModelTy (view_Iter_K_V o) k = Some v)
+  /\ (forall i1: int, i2: int. 0 <= i1
+      /\ i1 < Seq.length visited
+      /\ 0 <= i2
+      /\ i2 < Seq.length visited /\ deep_model_ref_K (Seq.get visited i1).f0 = deep_model_ref_K (Seq.get visited i2).f0
+    -> i1 = i2)
+
+meta "rewrite_def" predicate produces_Iter_K_V
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_Iter_K_V
+
+constant ab : Seq.seq tup2_ref_K_ref_V
+
+constant b : t_Iter_K_V
+
+constant bc : Seq.seq tup2_ref_K_ref_V
+
+constant c : t_Iter_K_V
+
+function produces_trans_Iter_K_V (a: t_Iter_K_V) (ab: Seq.seq tup2_ref_K_ref_V) (b: t_Iter_K_V) (bc: Seq.seq tup2_ref_K_ref_V) (c: t_Iter_K_V) : ()
+
+goal vc_produces_trans_Iter_K_V: produces_Iter_K_V a ab b
+  -> produces_Iter_K_V b bc c
+  -> (forall i: int. 0 <= i /\ i < Seq.length bc -> Seq.get bc i = Seq.get (Seq.(++) ab bc) (Seq.length ab + i))
+  && ([@stop_split] [@expl:produces_trans ensures] produces_Iter_K_V a (Seq.(++) ab bc) c)

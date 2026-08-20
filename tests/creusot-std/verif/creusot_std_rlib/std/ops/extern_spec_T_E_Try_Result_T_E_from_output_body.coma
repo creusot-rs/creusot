@@ -1,0 +1,37 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+type t_E
+
+type t_Result_T_E = Ok t_T | Err t_E
+
+predicate inv_T (_1: t_T)
+
+predicate inv_E (_1: t_E)
+
+predicate inv_Result_T_E (_1: t_Result_T_E)
+
+axiom inv_axiom [@rewrite]: forall x: t_Result_T_E [inv_Result_T_E x]. inv_Result_T_E x
+    = match x with
+      | Ok f0 -> inv_T f0
+      | Err f0 -> inv_E f0
+      end
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_E_Try_Result_T_E_from_output_body_T (output: t_T) (return (x: t_Result_T_E)) =
+{[@stop_split] [@expl:extern_spec_T_E_Try_Result_T_E_from_output_body 'output' type invariant] inv_T output}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- Ok output ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_Result_T_E = Any.any_l () | & output: t_T = output ])
+  [ return (result: t_Result_T_E) ->
+  {[@stop_split] [@expl:extern_spec_T_E_Try_Result_T_E_from_output_body_T ensures] ([@stop_split] [@expl:extern_spec_T_E_Try_Result_T_E_from_output_body result type invariant] inv_Result_T_E result)
+    /\ ([@stop_split] [@expl:extern_spec_T_E_Try_Result_T_E_from_output_body ensures] result = Ok output)}
+    (! return {result}) ]

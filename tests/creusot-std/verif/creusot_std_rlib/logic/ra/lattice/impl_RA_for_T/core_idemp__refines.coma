@@ -1,0 +1,69 @@
+(* <T as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_T
+
+type t_Option_T = None | Some t_T
+
+function core_T (self: t_T) : t_Option_T = Some self
+
+predicate index_Mapping_T_bool [@inline:trivial] (self: Map.map t_T bool) (a: t_T) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_T_bool
+
+function such_that_T (p: Map.map t_T bool) : t_T
+
+axiom such_that_T_spec: forall p: Map.map t_T bool [such_that_T p]. (exists x: t_T. index_Mapping_T_bool p x)
+    -> index_Mapping_T_bool p (such_that_T p)
+
+constant any_T: t_T = such_that_T (fun (__0: t_T) -> true)
+
+function unwrap_Option_T (self: t_Option_T) : t_T = match self with
+    | Some x -> x
+    | None -> any_T
+    end
+
+predicate lt_log_T (self: t_T) (other: t_T)
+
+predicate le_log_T (self: t_T) (other: t_T)
+
+function le_lt_log_T (self: t_T) (other: t_T) : ()
+
+axiom le_lt_log_T_spec: forall self: t_T, other: t_T. le_log_T self other = (lt_log_T self other \/ self = other)
+
+function transitive_T (x: t_T) (y: t_T) (z: t_T) : ()
+
+axiom transitive_T_spec: forall x: t_T, y: t_T, z: t_T. lt_log_T x y -> lt_log_T y z -> lt_log_T x z
+
+function irreflexive_T (self: t_T) : ()
+
+axiom irreflexive_T_spec: forall self: t_T. not lt_log_T self self
+
+function join_T (self: t_T) (other: t_T) : t_T
+
+axiom join_T_spec: forall self: t_T, other: t_T [join_T self other]. le_log_T self (join_T self other)
+
+axiom join_T_spec'0: forall self: t_T, other: t_T [join_T self other]. le_log_T other (join_T self other)
+
+axiom join_T_spec'1: forall self: t_T, other: t_T [join_T self other]. forall r: t_T. le_log_T self r
+      -> le_log_T other r -> le_log_T (join_T self other) r
+
+function op_T [@inline:trivial] (self: t_T) (other: t_T) : t_Option_T = Some (join_T self other)
+
+meta "rewrite_def" function op_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_T. core_T self <> None
+    -> core_T self <> None
+    /\ (forall result: (). (let c = unwrap_Option_T (core_T self) in op_T c c = Some c)
+        /\ op_T (unwrap_Option_T (core_T self)) self = Some self
+      -> (let c = unwrap_Option_T (core_T self) in op_T c c = Some c)
+      /\ op_T (unwrap_Option_T (core_T self)) self = Some self)

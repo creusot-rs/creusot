@@ -1,0 +1,45 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_Self
+
+type t_Option_Self = None | Some t_Self
+
+function op_Self (self: t_Self) (other: t_Self) : t_Option_Self
+
+predicate incl_Self (self: t_Self) (other: t_Self)
+
+axiom incl_Self_spec: forall self: t_Self, other: t_Self [incl_Self self other]. incl_Self self other
+    = (exists factor: t_Self. op_Self self factor = Some other)
+
+predicate index_Mapping_Self_bool [@inline:trivial] (self: Map.map t_Self bool) (a: t_Self) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Self_bool
+
+function such_that_Self (p: Map.map t_Self bool) : t_Self
+
+axiom such_that_Self_spec:
+  forall p: Map.map t_Self bool [such_that_Self p]. (exists x: t_Self. index_Mapping_Self_bool p x)
+    -> index_Mapping_Self_bool p (such_that_Self p)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Self
+
+constant factor : t_Self
+
+function factor_Self (self: t_Self) (factor: t_Self) : t_Self
+
+goal vc_factor_Self: incl_Self factor self
+  -> ([@stop_split] [@expl:such_that requires] exists x: t_Self. index_Mapping_Self_bool (fun (r: t_Self) -> op_Self factor r
+      = Some self) x)
+  /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_Self_bool (fun (r: t_Self) -> op_Self factor r
+    = Some self) (such_that_Self (fun (r: t_Self) -> op_Self factor r = Some self)))
+  -> ([@stop_split] [@expl:factor ensures] op_Self factor (such_that_Self (fun (r: t_Self) -> op_Self factor r
+    = Some self))
+  = Some self))

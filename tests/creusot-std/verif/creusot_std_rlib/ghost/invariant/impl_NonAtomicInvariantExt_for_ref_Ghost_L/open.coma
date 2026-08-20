@@ -1,0 +1,114 @@
+(* <&'a ghost::Ghost<L> as ghost::invariant::NonAtomicInvariantExt<'a>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_L
+
+predicate inv_L (_1: t_L)
+
+predicate invariant_Ghost_L [@inline:trivial] (self: t_L) = inv_L self
+
+meta "rewrite_def" predicate invariant_Ghost_L
+
+predicate inv_Ghost_L [@inline:trivial] (_1: t_L) = invariant_Ghost_L _1
+
+meta "rewrite_def" predicate inv_Ghost_L
+
+predicate invariant_ref_Ghost_L [@inline:trivial] (self: t_L) = inv_Ghost_L self
+
+meta "rewrite_def" predicate invariant_ref_Ghost_L
+
+predicate inv_ref_Ghost_L [@inline:trivial] (_1: t_L) = invariant_ref_Ghost_L _1
+
+meta "rewrite_def" predicate inv_ref_Ghost_L
+
+predicate invariant_ref_L [@inline:trivial] (self: t_L) = inv_L self
+
+meta "rewrite_def" predicate invariant_ref_L
+
+predicate inv_ref_L [@inline:trivial] (_1: t_L) = invariant_ref_L _1
+
+meta "rewrite_def" predicate inv_ref_L
+
+predicate invariant_Ghost_ref_L [@inline:trivial] (self: t_L) = inv_ref_L self
+
+meta "rewrite_def" predicate invariant_Ghost_ref_L
+
+predicate inv_Ghost_ref_L [@inline:trivial] (_1: t_L) = invariant_Ghost_ref_L _1
+
+meta "rewrite_def" predicate inv_Ghost_ref_L
+
+let borrow_L (self: t_L) (return (x: t_L)) = {[@stop_split] [@expl:borrow 'self' type invariant] inv_ref_Ghost_L self}
+  any
+  [ return (result: t_L) ->
+  {[@stop_split] [@expl:borrow_L ensures] ([@stop_split] [@expl:borrow result type invariant] inv_Ghost_ref_L result)
+    /\ ([@stop_split] [@expl:borrow ensures] result = self)}
+    (! return {result}) ]
+
+type t_Tokens
+
+type t_F
+
+type t_A
+
+type tup3_Ghost_ref_L_Ghost_Tokens_F = { f0: t_L; f1: t_Tokens; f2: t_F }
+
+predicate precondition_open (self: ()) (args: tup3_Ghost_ref_L_Ghost_Tokens_F)
+
+axiom precondition_fndef:
+  forall args: tup3_Ghost_ref_L_Ghost_Tokens_F [precondition_open () args]. (let {f0 = self; f1 = tokens; f2 = f} = args in false)
+    -> precondition_open () args
+
+predicate inv_A (_1: t_A)
+
+predicate postcondition_open (self: ()) (args: tup3_Ghost_ref_L_Ghost_Tokens_F) (result: t_A)
+
+axiom postcondition_fndef:
+  forall args: tup3_Ghost_ref_L_Ghost_Tokens_F, res: t_A [postcondition_open () args res]. postcondition_open () args res
+    -> (let {f0 = self; f1 = tokens; f2 = f} = args in inv_A res)
+
+predicate postcondition_once_open (self: ()) (args: tup3_Ghost_ref_L_Ghost_Tokens_F) (result: t_A) =
+  postcondition_open self args result
+
+meta "rewrite_def" predicate postcondition_once_open
+
+let open_Ghost_ref_L (self: t_L) (tokens: t_Tokens) (f: t_F) (return (x: t_A)) =
+{[@stop_split] [@expl:open requires] precondition_open () { f0 = self; f1 = tokens; f2 = f }}
+  any
+  [ return (result: t_A) -> {[@stop_split] [@expl:open ensures] postcondition_once_open () { f0 = self;
+                                                                                             f1 = tokens;
+                                                                                             f2 = f } result}
+    (! return {result}) ]
+
+predicate inv_F (_1: t_F)
+
+function new_ref_L (x: t_L) : t_L
+
+axiom new_ref_L_spec: forall x: t_L [new_ref_L x]. new_ref_L x = x
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let open_ref_Ghost_L (self: t_L) (tokens: t_Tokens) (f: t_F) (return (x: t_A)) =
+{[@stop_split] [@expl:open_ref_Ghost_L requires] ([@stop_split] [@expl:open 'self' type invariant] inv_ref_Ghost_L self)
+  /\ ([@stop_split] [@expl:open 'f' type invariant] inv_F f)
+  /\ ([@stop_split] [@expl:open requires] precondition_open () { f0 = new_ref_L self; f1 = tokens; f2 = f })}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = borrow_L {self} (fun (_x: t_L) -> [ &_12 <- _x ] s1)
+    | s1 = open_Ghost_ref_L {_12} {tokens} {f} (fun (_x: t_A) -> [ &_ret <- _x ] s2)
+    | s2 = return {_ret} ] ]
+  [ & _ret: t_A = Any.any_l ()
+  | & self: t_L = self
+  | & tokens: t_Tokens = tokens
+  | & f: t_F = f
+  | & _12: t_L = Any.any_l () ])
+  [ return (result: t_A) ->
+  {[@stop_split] [@expl:open_ref_Ghost_L ensures] ([@stop_split] [@expl:open result type invariant] inv_A result)
+    /\ ([@stop_split] [@expl:open ensures] postcondition_open () { f0 = new_ref_L self; f1 = tokens; f2 = f } result)}
+    (! return {result}) ]

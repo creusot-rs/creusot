@@ -1,0 +1,19 @@
+(* peano::PeanoInt *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use creusot.prelude.Any
+
+type t_PeanoInt = { f0: UInt64.t }
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let to_u64 (self: t_PeanoInt) (return (x: UInt64.t)) = (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- self.f0 ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: UInt64.t = Any.any_l () | & self: t_PeanoInt = self ])
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:to_u64 ensures] result = self.f0} (! return {result}) ]

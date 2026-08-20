@@ -1,0 +1,46 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int64
+use creusot.prelude.Bool
+use creusot.prelude.Any
+use int.ComputerDivision
+use int.Int
+
+constant const_MIN: Int64.t = (-9223372036854775808: Int64.t)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Div_i64_i64_div_body (self_: Int64.t) (rhs: Int64.t) (return (x: Int64.t)) =
+{[@stop_split] [@expl:extern_spec_Div_i64_i64_div_body requires] ([@stop_split] [@expl:extern_spec_Div_i64_i64_div_body requires #0] Int64.to_int rhs
+    <> 0)
+  /\ ([@stop_split] [@expl:extern_spec_Div_i64_i64_div_body requires #1] not (Int64.to_int self_
+    = Int64.to_int const_MIN
+  /\ Int64.to_int rhs = - 1))}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_11 <- self_ ] s1
+    | s1 = [ &_12 <- rhs ] s2
+    | s2 = [ &_13 <- _12 = (0: Int64.t) ] s3
+    | s3 = {[@expl:division by zero] not _13} s4
+    | s4 = [ &_14 <- _12 = (-1: Int64.t) ] s5
+    | s5 = [ &_15 <- _11 = (-9223372036854775808: Int64.t) ] s6
+    | s6 = [ &_16 <- Bool.bw_and _14 _15 ] s7
+    | s7 = {[@expl:Div overflow] not _16} s8
+    | s8 = Int64.div {_11} {_12} (fun (_x: Int64.t) -> [ &_ret <- _x ] s9)
+    | s9 = return {_ret} ] ]
+  [ & _ret: Int64.t = Any.any_l ()
+  | & self_: Int64.t = self_
+  | & rhs: Int64.t = rhs
+  | & _11: Int64.t = Any.any_l ()
+  | & _12: Int64.t = Any.any_l ()
+  | & _13: bool = Any.any_l ()
+  | & _14: bool = Any.any_l ()
+  | & _15: bool = Any.any_l ()
+  | & _16: bool = Any.any_l () ])
+  [ return (result: Int64.t) -> {[@stop_split] [@expl:extern_spec_Div_i64_i64_div_body ensures] Int64.to_int result
+    = ComputerDivision.div (Int64.to_int self_) (Int64.to_int rhs)}
+    (! return {result}) ]

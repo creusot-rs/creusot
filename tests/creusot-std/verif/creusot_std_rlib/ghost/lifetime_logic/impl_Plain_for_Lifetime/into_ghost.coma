@@ -1,0 +1,40 @@
+(* <ghost::lifetime_logic::Lifetime as ghost::Plain> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_Id
+
+type t_Lifetime = { f0: t_Id }
+
+let into_ghost_Id (self: t_Id) (return (x: t_Id)) = any
+  [ return (result: t_Id) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+
+let into_inner_Id (self: t_Id) (return (x: t_Id)) = any
+  [ return (result: t_Id) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+
+let new_Lifetime (x: t_Lifetime) (return (x'0: t_Lifetime)) = any
+  [ return (result: t_Lifetime) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let into_ghost_Lifetime (snap: t_Lifetime) (return (x: t_Lifetime)) = (! bb0
+  [ bb0 = s0
+    [ s0 = [ &s <- snap.f0 ] s1
+    | s1 = into_ghost_Id {s} (fun (_x: t_Id) -> [ &_9 <- _x ] s2)
+    | s2 = into_inner_Id {_9} (fun (_x: t_Id) -> [ &_8 <- _x ] s3)
+    | s3 = [ &_7 <- { f0 = _8 } ] s4
+    | s4 = new_Lifetime {_7} (fun (_x: t_Lifetime) -> [ &_ret <- _x ] s5)
+    | s5 = return {_ret} ] ]
+  [ & _ret: t_Lifetime = Any.any_l ()
+  | & snap: t_Lifetime = snap
+  | & s: t_Id = Any.any_l ()
+  | & _7: t_Lifetime = Any.any_l ()
+  | & _8: t_Id = Any.any_l ()
+  | & _9: t_Id = Any.any_l () ])
+  [ return (result: t_Lifetime) -> {[@stop_split] [@expl:into_ghost ensures] result = snap} (! return {result}) ]

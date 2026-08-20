@@ -1,0 +1,24 @@
+(* <logic::ra::excl::Excl<T> as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+type t_Excl_T = { f0: t_T }
+
+type t_Option_Excl_T = None | Some t_Excl_T
+
+function op_Excl_T (self: t_Excl_T) (_other: t_Excl_T) : t_Option_Excl_T = None
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Excl_T
+
+predicate cancelable_Excl_T (self: t_Excl_T)
+
+goal vc_cancelable_Excl_T: [@stop_split] [@expl:cancelable ensures] true
+  = (forall x: t_Excl_T, y: t_Excl_T. op_Excl_T self x <> None -> op_Excl_T self x = op_Excl_T self y -> x = y)

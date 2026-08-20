@@ -1,0 +1,58 @@
+(* <std::option::IntoIter<T> as std::iter::ExactSizeIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+
+type t_IntoIter_T
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+type t_T
+
+type t_Option_T = None'0 | Some'0 t_T
+
+function view_IntoIter_T (self: t_IntoIter_T) : t_Option_T
+
+predicate postcondition_size_hint (self: ()) (args: t_IntoIter_T) (result: tup2_usize_Option_usize) =
+  let self_ = args in result.f0
+    = match view_IntoIter_T self_ with
+      | Some'0 _ -> (1: UInt64.t)
+      | None'0 -> (0: UInt64.t)
+      end
+  /\ result.f1 = Some (result.f0)
+
+meta "rewrite_def" predicate postcondition_size_hint
+
+predicate inv_IntoIter_T (_1: t_IntoIter_T)
+
+predicate invariant_ref_IntoIter_T [@inline:trivial] (self: t_IntoIter_T) = inv_IntoIter_T self
+
+meta "rewrite_def" predicate invariant_ref_IntoIter_T
+
+predicate inv_ref_IntoIter_T [@inline:trivial] (_1: t_IntoIter_T) = invariant_ref_IntoIter_T _1
+
+meta "rewrite_def" predicate inv_ref_IntoIter_T
+
+let size_hint_IntoIter_T (self_: t_IntoIter_T) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_IntoIter_T self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint_IntoIter_T ensures] ([@stop_split] [@expl:size_hint ensures #0] result.f0
+      = match view_IntoIter_T self_ with
+        | Some'0 _ -> (1: UInt64.t)
+        | None'0 -> (0: UInt64.t)
+        end)
+    /\ ([@stop_split] [@expl:size_hint ensures #1] result.f1 = Some (result.f0))}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_IntoIter_T, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> postcondition_size_hint () self r /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))

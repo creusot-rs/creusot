@@ -1,0 +1,99 @@
+(* <logic::seq::Seq<T> as std::ops::Index<logic::int::Int>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.prelude.Any
+use int.Int
+
+type t_T
+
+type t_Option_ref_T = None | Some t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+
+meta "rewrite_def" predicate invariant_ref_Seq_T
+
+predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+
+meta "rewrite_def" predicate inv_ref_Seq_T
+
+predicate inv_Option_ref_T (_1: t_Option_ref_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
+    = match x with
+      | None -> true
+      | Some f0 -> inv_ref_T f0
+      end
+
+type t_Option_T = None'0 | Some'0 t_T
+
+function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
+    Some'0 (Seq.get self ix)
+  else
+    None'0
+
+
+let get_ghost_T (self: Seq.seq t_T) (index: int) (return (x: t_Option_ref_T)) =
+{[@stop_split] [@expl:get_ghost 'self' type invariant] inv_ref_Seq_T self}
+  any
+  [ return (result: t_Option_ref_T) ->
+  {[@stop_split] [@expl:get_ghost_T ensures] ([@stop_split] [@expl:get_ghost result type invariant] inv_Option_ref_T result)
+    /\ ([@stop_split] [@expl:get_ghost ensures] match get_T self index with
+      | None'0 -> result = None
+      | Some'0 v -> result = Some v
+      end)}
+    (! return {result}) ]
+
+let unwrap_ref_T (self_: t_Option_ref_T) (return (x: t_T)) =
+{[@stop_split] [@expl:unwrap_ref_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_ref_T self_)
+  /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
+  any
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:unwrap_ref_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_ref_T result)
+    /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let index_Seq_T (self: Seq.seq t_T) (index: int) (return (x: t_T)) =
+{[@stop_split] [@expl:index_Seq_T requires] ([@stop_split] [@expl:index 'self' type invariant] inv_ref_Seq_T self)
+  /\ ([@stop_split] [@expl:index requires] 0 <= index /\ index < Seq.length self)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = get_ghost_T {self} {index} (fun (_x: t_Option_ref_T) -> [ &_10 <- _x ] s1)
+    | s1 = unwrap_ref_T {_10} (fun (_x: t_T) -> [ &_9 <- _x ] s2)
+    | s2 = [ &_ret <- _9 ] s3
+    | s3 = return {_ret} ] ]
+  [ & _ret: t_T = Any.any_l ()
+  | & self: Seq.seq t_T = self
+  | & index: int = index
+  | & _9: t_T = Any.any_l ()
+  | & _10: t_Option_ref_T = Any.any_l () ])
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:index_Seq_T ensures] ([@stop_split] [@expl:index result type invariant] inv_ref_T result)
+    /\ ([@stop_split] [@expl:index ensures] result = Seq.get self index)}
+    (! return {result}) ]

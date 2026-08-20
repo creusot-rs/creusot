@@ -1,0 +1,102 @@
+(* ghost::lifetime_logic::LifetimeToken *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use real.Real
+use real.FromInt
+use creusot.prelude.Any
+
+type t_Resource_PositiveReal
+
+type t_LifetimeToken = { f0: t_Resource_PositiveReal }
+
+let into_inner_Resource_PositiveReal (self: t_Resource_PositiveReal) (return (x: t_Resource_PositiveReal)) = any
+  [ return (result: t_Resource_PositiveReal) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+    (! return {result}) ]
+
+type t_Id
+
+function id_PositiveReal (self: t_Resource_PositiveReal) : t_Id
+
+type t_PositiveReal
+
+function val_PositiveReal (self: t_Resource_PositiveReal) : t_PositiveReal
+
+function view_Resource_PositiveReal [@inline:trivial] (self: t_Resource_PositiveReal) : t_PositiveReal =
+  val_PositiveReal self
+
+meta "rewrite_def" function view_Resource_PositiveReal
+
+type t_Option_PositiveReal = None | Some t_PositiveReal
+
+predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
+
+meta "rewrite_def" predicate gt_log_Real
+
+function to_real (self: t_PositiveReal) : Real.real
+
+axiom to_real_spec: forall self: t_PositiveReal [to_real self]. gt_log_Real (to_real self) (FromInt.from_int 0)
+
+function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+
+axiom add_PositiveReal_spec:
+  forall self: t_PositiveReal, other: t_PositiveReal [add_PositiveReal self other]. to_real (add_PositiveReal self other)
+    = Real.(+) (to_real self) (to_real other)
+
+function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+  Some (add_PositiveReal self other)
+
+meta "rewrite_def" function op_PositiveReal
+
+function commutative_PositiveReal (a: t_PositiveReal) (b: t_PositiveReal) : ()
+
+axiom commutative_PositiveReal_spec: forall a: t_PositiveReal, b: t_PositiveReal. op_PositiveReal a b
+    = op_PositiveReal b a
+
+let join_PositiveReal (self: t_Resource_PositiveReal) (other: t_Resource_PositiveReal)
+  (return (x: t_Resource_PositiveReal)) = {[@stop_split] [@expl:join requires] id_PositiveReal self
+  = id_PositiveReal other}
+  any
+  [ return (result: t_Resource_PositiveReal) ->
+  {[@stop_split] [@expl:join_PositiveReal ensures] ([@stop_split] [@expl:join ensures #0] id_PositiveReal result
+      = id_PositiveReal self)
+    /\ ([@stop_split] [@expl:join ensures #1] Some (view_Resource_PositiveReal result)
+    = op_PositiveReal (view_Resource_PositiveReal self) (view_Resource_PositiveReal other))}
+    (! return {result}) ]
+
+let new_Resource_PositiveReal (x: t_Resource_PositiveReal) (return (x'0: t_Resource_PositiveReal)) = any
+  [ return (result: t_Resource_PositiveReal) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+
+type t_Lifetime = { f0'0: t_Id }
+
+function lft (self: t_LifetimeToken) : t_Lifetime = { f0'0 = id_PositiveReal self.f0 }
+
+function frac (self: t_LifetimeToken) : t_PositiveReal = val_PositiveReal self.f0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let join (self: t_LifetimeToken) (other: t_LifetimeToken) (return (x: t_LifetimeToken)) =
+{[@stop_split] [@expl:join requires] lft self = lft other}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = into_inner_Resource_PositiveReal {self.f0} (fun (_x: t_Resource_PositiveReal) -> [ &_13 <- _x ] s1)
+    | s1 = into_inner_Resource_PositiveReal {other.f0} (fun (_x: t_Resource_PositiveReal) -> [ &_15 <- _x ] s2)
+    | s2 = join_PositiveReal {_13} {_15} (fun (_x: t_Resource_PositiveReal) -> [ &_12 <- _x ] s3)
+    | s3 = new_Resource_PositiveReal {_12} (fun (_x: t_Resource_PositiveReal) -> [ &_11 <- _x ] s4)
+    | s4 = [ &_ret <- { f0 = _11 } ] s5
+    | s5 = return {_ret} ] ]
+  [ & _ret: t_LifetimeToken = Any.any_l ()
+  | & self: t_LifetimeToken = self
+  | & other: t_LifetimeToken = other
+  | & _11: t_Resource_PositiveReal = Any.any_l ()
+  | & _12: t_Resource_PositiveReal = Any.any_l ()
+  | & _13: t_Resource_PositiveReal = Any.any_l ()
+  | & _15: t_Resource_PositiveReal = Any.any_l () ])
+  [ return (result: t_LifetimeToken) ->
+  {[@stop_split] [@expl:join ensures] ([@stop_split] [@expl:join ensures #0] lft result = lft self)
+    /\ ([@stop_split] [@expl:join ensures #1] frac result = add_PositiveReal (frac self) (frac other))}
+    (! return {result}) ]

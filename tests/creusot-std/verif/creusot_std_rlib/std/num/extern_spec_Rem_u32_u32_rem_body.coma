@@ -1,0 +1,36 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt32
+use creusot.prelude.Any
+use int.ComputerDivision
+use int.Int
+
+constant const_MIN: UInt32.t = (0: UInt32.t)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Rem_u32_u32_rem_body (self_: UInt32.t) (rhs: UInt32.t) (return (x: UInt32.t)) =
+{[@stop_split] [@expl:extern_spec_Rem_u32_u32_rem_body requires] ([@stop_split] [@expl:extern_spec_Rem_u32_u32_rem_body requires #0] UInt32.t'int rhs
+    <> 0)
+  /\ ([@stop_split] [@expl:extern_spec_Rem_u32_u32_rem_body requires #1] not (UInt32.t'int self_
+    = UInt32.t'int const_MIN
+  /\ UInt32.t'int rhs = - 1))}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_12 <- rhs ] s1
+    | s1 = [ &_13 <- _12 = (0: UInt32.t) ] s2
+    | s2 = {[@expl:remainder by zero] not _13} s3
+    | s3 = UInt32.rem {self_} {_12} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s4)
+    | s4 = return {_ret} ] ]
+  [ & _ret: UInt32.t = Any.any_l ()
+  | & self_: UInt32.t = self_
+  | & rhs: UInt32.t = rhs
+  | & _12: UInt32.t = Any.any_l ()
+  | & _13: bool = Any.any_l () ])
+  [ return (result: UInt32.t) -> {[@stop_split] [@expl:extern_spec_Rem_u32_u32_rem_body ensures] UInt32.t'int result
+    = ComputerDivision.mod (UInt32.t'int self_) (UInt32.t'int rhs)}
+    (! return {result}) ]

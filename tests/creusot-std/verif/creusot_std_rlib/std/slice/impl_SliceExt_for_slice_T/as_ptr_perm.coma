@@ -1,0 +1,140 @@
+(* <[T] as std::slice::SliceExt<T>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.slice.Slice64
+use creusot.prelude.Opaque
+use seq.Seq
+use creusot.prelude.Ptr
+use creusot.int.UInt64
+use creusot.prelude.Any
+use int.Int
+
+type t_T
+
+type t_Perm_ptr_slice_T
+
+type tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T = { f0: Opaque.ptr; f1: t_Perm_ptr_slice_T }
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+
+predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+
+meta "rewrite_def" predicate inv_slice_T
+
+predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+
+meta "rewrite_def" predicate invariant_ref_slice_T
+
+predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+
+meta "rewrite_def" predicate inv_ref_slice_T
+
+predicate is_null_ptr_slice_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+
+function ward_ptr_slice_T (self: t_Perm_ptr_slice_T) : Opaque.ptr
+
+predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T) (_metadata: UInt64.t) =
+  Seq.length (Slice64.view _value) = UInt64.t'int _metadata
+
+meta "rewrite_def" predicate metadata_matches_slice_T
+
+function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
+
+function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
+
+predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
+  not is_null_ptr_slice_T (ward_ptr_slice_T self)
+  /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (ward_ptr_slice_T self))
+  /\ inv_ref_slice_T (val_ptr_slice_T self)
+
+predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
+    = invariant_Perm_ptr_slice_T x
+
+predicate invariant_ref_Perm_ptr_slice_T [@inline:trivial] (self: t_Perm_ptr_slice_T) = inv_Perm_ptr_slice_T self
+
+meta "rewrite_def" predicate invariant_ref_Perm_ptr_slice_T
+
+predicate inv_ref_Perm_ptr_slice_T [@inline:trivial] (_1: t_Perm_ptr_slice_T) = invariant_ref_Perm_ptr_slice_T _1
+
+meta "rewrite_def" predicate inv_ref_Perm_ptr_slice_T
+
+predicate invariant_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (self: t_Perm_ptr_slice_T) =
+  inv_ref_Perm_ptr_slice_T self
+
+meta "rewrite_def" predicate invariant_Ghost_ref_Perm_ptr_slice_T
+
+predicate inv_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1: t_Perm_ptr_slice_T) =
+  invariant_Ghost_ref_Perm_ptr_slice_T _1
+
+meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_slice_T
+
+predicate inv_tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T) =
+  inv_Ghost_ref_Perm_ptr_slice_T _1.f1
+
+meta "rewrite_def" predicate inv_tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T
+
+let from_ref_slice_T (r: Slice64.slice t_T) (return (x: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T)) =
+{[@stop_split] [@expl:from_ref 'r' type invariant] inv_ref_slice_T r}
+  any
+  [ return (result: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T) ->
+  {[@stop_split] [@expl:from_ref_slice_T ensures] ([@stop_split] [@expl:from_ref result type invariant] inv_tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T result)
+    /\ ([@stop_split] [@expl:from_ref ensures #0] ward_ptr_slice_T result.f1 = result.f0)
+    /\ ([@stop_split] [@expl:from_ref ensures #1] val_ptr_slice_T result.f1 = r)}
+    (! return {result}) ]
+
+type tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T = { f0'0: Opaque.ptr; f1'0: t_Perm_ptr_slice_T }
+
+predicate inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T [@inline:trivial] (_1: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) =
+  inv_Ghost_ref_Perm_ptr_slice_T _1.f1'0
+
+meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let as_ptr_perm_slice_T (self: Slice64.slice t_T) (return (x: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T)) =
+{[@stop_split] [@expl:as_ptr_perm 'self' type invariant] inv_ref_slice_T self}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = from_ref_slice_T {self} (fun (_x: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T) -> [ &_9 <- _x ] s1)
+    | s1 = [ &ptr <- _9.f0 ] s2
+    | s2 = [ &own <- _9.f1 ] s3
+    | s3 = [ &_12 <- Opaque.thin ptr ] s4
+    | s4 = [ &_ret <- { f0'0 = _12; f1'0 = own } ] s5
+    | s5 = return {_ret} ] ]
+  [ & _ret: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T = Any.any_l ()
+  | & self: Slice64.slice t_T = self
+  | & ptr: Opaque.ptr = Any.any_l ()
+  | & own: t_Perm_ptr_slice_T = Any.any_l ()
+  | & _9: tup2_ptr_slice_T_Ghost_ref_Perm_ptr_slice_T = Any.any_l ()
+  | & _12: Opaque.ptr = Any.any_l () ])
+  [ return (result: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T) ->
+  {[@stop_split] [@expl:as_ptr_perm_slice_T ensures] ([@stop_split] [@expl:as_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result)
+    /\ ([@stop_split] [@expl:as_ptr_perm ensures #0] result.f0'0 = Opaque.thin (ward_ptr_slice_T result.f1'0))
+    /\ ([@stop_split] [@expl:as_ptr_perm ensures #1] self = val_ptr_slice_T result.f1'0)}
+    (! return {result}) ]

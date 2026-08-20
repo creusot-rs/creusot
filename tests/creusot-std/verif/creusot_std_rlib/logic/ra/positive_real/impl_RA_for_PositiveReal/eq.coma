@@ -1,0 +1,35 @@
+(* <logic::real::PositiveReal as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use real.Real
+use real.FromInt
+
+type t_PositiveReal
+
+predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
+
+meta "rewrite_def" predicate gt_log_Real
+
+function to_real (self: t_PositiveReal) : Real.real
+
+axiom to_real_spec: forall self: t_PositiveReal [to_real self]. gt_log_Real (to_real self) (FromInt.from_int 0)
+
+predicate ext_eq (self: t_PositiveReal) (other: t_PositiveReal) = to_real self = to_real other
+
+axiom ext_eq_spec: forall self: t_PositiveReal, other: t_PositiveReal [self = other]. ext_eq self other = (self = other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_PositiveReal
+
+constant other : t_PositiveReal
+
+predicate eq_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal)
+
+goal vc_eq_PositiveReal: ([@stop_split] [@expl:ext_eq ensures] ext_eq self other = (self = other))
+  -> ([@stop_split] [@expl:eq ensures] ext_eq self other = (self = other))

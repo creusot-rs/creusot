@@ -1,0 +1,56 @@
+(* <std::slice::IterMut<'a, T> as std::iter::ExactSizeIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use seq.Seq
+use creusot.slice.Slice64
+use creusot.prelude.MutBorrow
+
+type t_IterMut_T
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+type t_T
+
+function view_IterMut_T (self: t_IterMut_T) : MutBorrow.t (Slice64.slice t_T)
+
+axiom view_IterMut_T_spec:
+  forall self: t_IterMut_T [view_IterMut_T self]. Seq.length (Slice64.view (view_IterMut_T self).final)
+    = Seq.length (Slice64.view (view_IterMut_T self).current)
+
+predicate postcondition_size_hint (self: ()) (args: t_IterMut_T) (result: tup2_usize_Option_usize) =
+  let self_ = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_IterMut_T self_).current)
+  /\ result.f1 = Some (result.f0)
+
+meta "rewrite_def" predicate postcondition_size_hint
+
+predicate inv_IterMut_T (_1: t_IterMut_T)
+
+predicate invariant_ref_IterMut_T [@inline:trivial] (self: t_IterMut_T) = inv_IterMut_T self
+
+meta "rewrite_def" predicate invariant_ref_IterMut_T
+
+predicate inv_ref_IterMut_T [@inline:trivial] (_1: t_IterMut_T) = invariant_ref_IterMut_T _1
+
+meta "rewrite_def" predicate inv_ref_IterMut_T
+
+let size_hint_IterMut_T (self_: t_IterMut_T) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_IterMut_T self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint_IterMut_T ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.t'int result.f0
+      = Seq.length (Slice64.view (view_IterMut_T self_).current))
+    /\ ([@stop_split] [@expl:size_hint ensures #1] result.f1 = Some (result.f0))}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_IterMut_T, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> postcondition_size_hint () self r /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))

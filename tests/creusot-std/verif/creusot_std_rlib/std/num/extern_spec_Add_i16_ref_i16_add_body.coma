@@ -1,0 +1,34 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int16
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: Int16.t = (-32768: Int16.t)
+
+constant const_MAX: Int16.t = (32767: Int16.t)
+
+let add_ref_i16 (self_: Int16.t) (rhs: Int16.t) (return (x: Int16.t)) =
+{[@stop_split] [@expl:add requires] Int16.to_int const_MIN <= Int16.to_int self_ + Int16.to_int rhs
+  /\ Int16.to_int self_ + Int16.to_int rhs <= Int16.to_int const_MAX}
+  any
+  [ return (result: Int16.t) -> {[@stop_split] [@expl:add ensures] Int16.to_int result
+    = Int16.to_int self_ + Int16.to_int rhs}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Add_i16__ref_i16_add_body (self_: Int16.t) (rhs: Int16.t) (return (x: Int16.t)) =
+{[@stop_split] [@expl:extern_spec_Add_i16__ref_i16_add_body requires] Int16.to_int const_MIN
+    <= Int16.to_int self_ + Int16.to_int rhs
+  /\ Int16.to_int self_ + Int16.to_int rhs <= Int16.to_int const_MAX}
+  (! bb0
+  [ bb0 = s0 [ s0 = add_ref_i16 {self_} {rhs} (fun (_x: Int16.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: Int16.t = Any.any_l () | & self_: Int16.t = self_ | & rhs: Int16.t = rhs ])
+  [ return (result: Int16.t) -> {[@stop_split] [@expl:extern_spec_Add_i16__ref_i16_add_body ensures] Int16.to_int result
+    = Int16.to_int self_ + Int16.to_int rhs}
+    (! return {result}) ]

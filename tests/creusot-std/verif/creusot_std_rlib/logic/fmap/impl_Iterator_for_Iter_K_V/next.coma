@@ -1,0 +1,209 @@
+(* <logic::fmap::Iter<K, V> as std::iter::Iterator> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use map.Map
+use map.Const
+use creusot.prelude.Any
+use seq.Seq
+use int.Int
+
+type t_FMap_K_V
+
+type t_Iter_K_V = { f0: t_FMap_K_V }
+
+type t_K
+
+type t_V
+
+type t_Option_V = None | Some t_V
+
+function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+
+function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+
+meta "rewrite_def" function get_K
+
+predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
+
+meta "rewrite_def" predicate contains_K
+
+predicate inv_K (_1: t_K)
+
+predicate inv_V (_1: t_V)
+
+predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_V_bool
+
+function such_that_V (p: Map.map t_V bool) : t_V
+
+axiom such_that_V_spec: forall p: Map.map t_V bool [such_that_V p]. (exists x: t_V. index_Mapping_V_bool p x)
+    -> index_Mapping_V_bool p (such_that_V p)
+
+constant any_V: t_V = such_that_V (fun (__0: t_V) -> true)
+
+function unwrap_Option_V (self: t_Option_V) : t_V = match self with
+    | Some x -> x
+    | None -> any_V
+    end
+
+function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_V = unwrap_Option_V (get_K self k)
+
+meta "rewrite_def" function lookup_K
+
+function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = lookup_K self key
+
+meta "rewrite_def" function index_FMap_K_V
+
+predicate invariant_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) =
+  forall k: t_K. contains_K self k -> inv_K k /\ inv_V (index_FMap_K_V self k)
+
+meta "rewrite_def" predicate invariant_FMap_K_V
+
+predicate inv_FMap_K_V (_1: t_FMap_K_V)
+
+axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V x = invariant_FMap_K_V x
+
+type tup2_K_V = { f0'0: t_K; f1'0: t_V }
+
+type t_Option_tup2_K_V = None'0 | Some'0 tup2_K_V
+
+predicate invariant_refmut_FMap_K_V [@inline:trivial] (self: MutBorrow.t t_FMap_K_V) =
+  inv_FMap_K_V self.current /\ inv_FMap_K_V self.final
+
+meta "rewrite_def" predicate invariant_refmut_FMap_K_V
+
+predicate inv_refmut_FMap_K_V [@inline:trivial] (_1: MutBorrow.t t_FMap_K_V) = invariant_refmut_FMap_K_V _1
+
+meta "rewrite_def" predicate inv_refmut_FMap_K_V
+
+predicate inv_tup2_K_V [@inline:trivial] (_1: tup2_K_V) = inv_K _1.f0'0 /\ inv_V _1.f1'0
+
+meta "rewrite_def" predicate inv_tup2_K_V
+
+predicate inv_Option_tup2_K_V (_1: t_Option_tup2_K_V)
+
+axiom inv_axiom'0 [@rewrite]: forall x: t_Option_tup2_K_V [inv_Option_tup2_K_V x]. inv_Option_tup2_K_V x
+    = match x with
+      | None'0 -> true
+      | Some'0 f0'1 -> inv_tup2_K_V f0'1
+      end
+
+predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
+
+axiom ext_eq_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V [self = other]. ext_eq_K self other = (self = other)
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function len_K (self: t_FMap_K_V) : int
+
+axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
+
+constant empty_K : t_FMap_K_V
+
+axiom empty_K_spec: len_K empty_K = 0
+
+axiom empty_K_spec'0: to_mapping_K empty_K = Const.const (None)
+
+predicate is_empty_K (self: t_FMap_K_V) = ext_eq_K self empty_K
+
+function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
+
+axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V [insert_K self k v]. to_mapping_K (insert_K self k v)
+    = Map.set (to_mapping_K self) k (Some v)
+
+axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V [insert_K self k v]. len_K (insert_K self k v)
+    = (if contains_K self k then len_K self else len_K self + 1)
+
+let remove_one_ghost_K (self: MutBorrow.t t_FMap_K_V) (return (x: t_Option_tup2_K_V)) =
+{[@stop_split] [@expl:remove_one_ghost 'self' type invariant] inv_refmut_FMap_K_V self}
+  any
+  [ return (result: t_Option_tup2_K_V) ->
+  {[@stop_split] [@expl:remove_one_ghost_K ensures] ([@stop_split] [@expl:remove_one_ghost result type invariant] inv_Option_tup2_K_V result)
+    /\ ([@stop_split] [@expl:remove_one_ghost ensures] match result with
+      | None'0 -> self.current = self.final /\ is_empty_K self.current
+      | Some'0 {f0'0 = k; f1'0 = v} -> self.current = insert_K self.final k v /\ not contains_K self.final k
+      end)}
+    (! return {result}) ]
+
+predicate inv_Iter_K_V (_1: t_Iter_K_V)
+
+axiom inv_axiom'1 [@rewrite]: forall x: t_Iter_K_V [inv_Iter_K_V x]. inv_Iter_K_V x = inv_FMap_K_V x.f0
+
+predicate invariant_refmut_Iter_K_V [@inline:trivial] (self: MutBorrow.t t_Iter_K_V) =
+  inv_Iter_K_V self.current /\ inv_Iter_K_V self.final
+
+meta "rewrite_def" predicate invariant_refmut_Iter_K_V
+
+predicate inv_refmut_Iter_K_V [@inline:trivial] (_1: MutBorrow.t t_Iter_K_V) = invariant_refmut_Iter_K_V _1
+
+meta "rewrite_def" predicate inv_refmut_Iter_K_V
+
+predicate resolve_refmut_Iter_K_V [@inline:trivial] (_1: MutBorrow.t t_Iter_K_V) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Iter_K_V
+
+function get_tup2_K_V (self: Seq.seq tup2_K_V) (ix: int) : t_Option_tup2_K_V = if 0 <= ix /\ ix < Seq.length self then
+    Some'0 (Seq.get self ix)
+  else
+    None'0
+
+
+function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
+
+predicate produces_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_K_V) (o: t_Iter_K_V) =
+  (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
+      -> (Seq.get visited i).f0'0 <> (Seq.get visited j).f0'0)
+  /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some'0 { f0'0 = k; f1'0 = v }
+      -> not contains_K (view_Iter_K_V o) k /\ get_K (view_Iter_K_V self) k = Some v)
+  /\ len_K (view_Iter_K_V self) = Seq.length visited + len_K (view_Iter_K_V o)
+  /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0'0 <> k)
+    -> get_K (view_Iter_K_V o) k = get_K (view_Iter_K_V self) k)
+
+function produces_trans_Iter_K_V (a: t_Iter_K_V) (ab: Seq.seq tup2_K_V) (b: t_Iter_K_V) (bc: Seq.seq tup2_K_V) (c: t_Iter_K_V) : ()
+ = let ac = Seq.(++) ab bc in ()
+
+axiom produces_trans_Iter_K_V_spec:
+  forall a: t_Iter_K_V, ab: Seq.seq tup2_K_V, b: t_Iter_K_V, bc: Seq.seq tup2_K_V, c: t_Iter_K_V. produces_Iter_K_V a ab b
+    -> produces_Iter_K_V b bc c -> produces_Iter_K_V a (Seq.(++) ab bc) c
+
+function produces_refl_Iter_K_V (self: t_Iter_K_V) : () = ()
+
+axiom produces_refl_Iter_K_V_spec: forall self: t_Iter_K_V. produces_Iter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
+
+predicate completed_Iter_K_V (self: MutBorrow.t t_Iter_K_V) = is_empty_K (view_Iter_K_V self.current)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let next_Iter_K_V (self: MutBorrow.t t_Iter_K_V) (return (x: t_Option_tup2_K_V)) =
+{[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_K_V self}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = MutBorrow.borrow_final <t_FMap_K_V> {self.current.f0} {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
+        (fun (_bor: MutBorrow.t t_FMap_K_V) ->
+          [ &_4 <- _bor ] -{inv_FMap_K_V _bor.final}-
+          [ &self <- { self with current = { f0 = _bor.final } } ] s1)
+      [ _ck -> (! {[@expl:type invariant] inv_FMap_K_V self.current.f0} any) ]
+    | s1 = remove_one_ghost_K {_4} (fun (_x: t_Option_tup2_K_V) -> [ &_ret <- _x ] s2)
+    | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_K_V self} any) ]
+    | s3 = -{resolve_refmut_Iter_K_V self}- s4
+    | s4 = return {_ret} ] ]
+  [ & _ret: t_Option_tup2_K_V = Any.any_l ()
+  | & self: MutBorrow.t t_Iter_K_V = self
+  | & _4: MutBorrow.t t_FMap_K_V = Any.any_l () ])
+  [ return (result: t_Option_tup2_K_V) ->
+  {[@stop_split] [@expl:next_Iter_K_V ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_tup2_K_V result)
+    /\ ([@stop_split] [@expl:next ensures] match result with
+      | None'0 -> completed_Iter_K_V self
+      | Some'0 {f0'0 = k; f1'0 = v} -> produces_Iter_K_V self.current (Seq.singleton { f0'0 = k; f1'0 = v }) self.final
+      /\ view_Iter_K_V self.current = insert_K (view_Iter_K_V self.final) k v
+      end)}
+    (! return {result}) ]

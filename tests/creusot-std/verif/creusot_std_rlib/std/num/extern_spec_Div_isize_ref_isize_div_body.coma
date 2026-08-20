@@ -1,0 +1,37 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int64
+use int.ComputerDivision
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: Int64.t = (-9223372036854775808: Int64.t)
+
+let div_ref_isize (self_: Int64.t) (rhs: Int64.t) (return (x: Int64.t)) =
+{[@stop_split] [@expl:div_ref_isize requires] ([@stop_split] [@expl:div requires #0] Int64.to_int rhs <> 0)
+  /\ ([@stop_split] [@expl:div requires #1] not (Int64.to_int self_ = Int64.to_int const_MIN
+  /\ Int64.to_int rhs = - 1))}
+  any
+  [ return (result: Int64.t) -> {[@stop_split] [@expl:div ensures] Int64.to_int result
+    = ComputerDivision.div (Int64.to_int self_) (Int64.to_int rhs)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Div_isize__ref_isize_div_body (self_: Int64.t) (rhs: Int64.t) (return (x: Int64.t)) =
+{[@stop_split] [@expl:extern_spec_Div_isize__ref_isize_div_body requires] ([@stop_split] [@expl:extern_spec_Div_isize__ref_isize_div_body requires #0] Int64.to_int rhs
+    <> 0)
+  /\ ([@stop_split] [@expl:extern_spec_Div_isize__ref_isize_div_body requires #1] not (Int64.to_int self_
+    = Int64.to_int const_MIN
+  /\ Int64.to_int rhs = - 1))}
+  (! bb0
+  [ bb0 = s0 [ s0 = div_ref_isize {self_} {rhs} (fun (_x: Int64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: Int64.t = Any.any_l () | & self_: Int64.t = self_ | & rhs: Int64.t = rhs ])
+  [ return (result: Int64.t) ->
+  {[@stop_split] [@expl:extern_spec_Div_isize__ref_isize_div_body ensures] Int64.to_int result
+    = ComputerDivision.div (Int64.to_int self_) (Int64.to_int rhs)}
+    (! return {result}) ]

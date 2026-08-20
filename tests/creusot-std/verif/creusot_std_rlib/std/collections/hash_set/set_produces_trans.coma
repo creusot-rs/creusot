@@ -1,0 +1,77 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use set.Fset
+use int.Int
+
+type t_I
+
+type t_T
+
+type t_DeepModelTy
+
+function view_I (self: t_I) : Fset.fset t_DeepModelTy
+
+predicate contains_DeepModelTy [@inline:trivial] (self: Fset.fset t_DeepModelTy) (e: t_DeepModelTy) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_DeepModelTy
+
+function deep_model_T (self: t_T) : t_DeepModelTy
+
+predicate contains_T (self: Seq.seq t_T) (x: t_T) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+
+predicate set_produces_T (start: t_I) (visited: Seq.seq t_T) (end': t_I) =
+  Fset.cardinal (view_I start) = Seq.length visited + Fset.cardinal (view_I end')
+  /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_I start) x
+      -> (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1) \/ contains_DeepModelTy (view_I end') x)
+  /\ (forall x: t_T. contains_T visited x
+      -> contains_DeepModelTy (view_I start) (deep_model_T x)
+      /\ not contains_DeepModelTy (view_I end') (deep_model_T x))
+  /\ (forall x: t_DeepModelTy. contains_DeepModelTy (view_I end') x
+      -> contains_DeepModelTy (view_I start) x /\ not (exists x1: t_T. deep_model_T x1 = x /\ contains_T visited x1))
+  /\ (forall i: int, j: int. 0 <= i
+      /\ i < Seq.length visited
+      /\ 0 <= j /\ j < Seq.length visited /\ deep_model_T (Seq.get visited i) = deep_model_T (Seq.get visited j)
+    -> i = j)
+
+constant concat_contains_T: () = ()
+
+axiom concat_contains_T_spec: forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. contains_T (Seq.(++) a b) x
+      = contains_T a x
+    \/ contains_T b x
+
+type t_Option_T = None | Some t_T
+
+function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
+    Some (Seq.get self ix)
+  else
+    None
+
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_I
+
+constant ab : Seq.seq t_T
+
+constant b : t_I
+
+constant bc : Seq.seq t_T
+
+constant c : t_I
+
+function set_produces_trans_T (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t_T) (c: t_I) : ()
+
+goal vc_set_produces_trans_T: set_produces_T a ab b
+  -> set_produces_T b bc c
+  -> ([@stop_split] [@expl:concat_contains ensures] forall a'0: Seq.seq t_T, b'0: Seq.seq t_T, x: t_T. contains_T (Seq.(++) a'0 b'0) x
+        = contains_T a'0 x
+      \/ contains_T b'0 x)
+  -> (let _ = concat_contains_T in (forall i: int, x: t_T. Seq.length ab <= i /\ get_T (Seq.(++) ab bc) i = Some x
+      -> contains_T bc x)
+  && (forall i: int. 0 <= i /\ i < Seq.length bc -> Seq.get bc i = Seq.get (Seq.(++) ab bc) (Seq.length ab + i))
+  && ([@stop_split] [@expl:set_produces_trans ensures] set_produces_T a (Seq.(++) ab bc) c))

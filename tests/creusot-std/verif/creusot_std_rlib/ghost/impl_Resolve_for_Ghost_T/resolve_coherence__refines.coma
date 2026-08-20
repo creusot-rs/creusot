@@ -1,0 +1,33 @@
+(* <ghost::Ghost<T> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_Ghost_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_Ghost_T
+
+predicate inv_Ghost_T [@inline:trivial] (_1: t_T) = invariant_Ghost_T _1
+
+meta "rewrite_def" predicate inv_Ghost_T
+
+predicate structural_resolve_Ghost_T (_1: t_T)
+
+predicate resolve_T (_1: t_T)
+
+predicate resolve_Ghost_T [@inline:trivial] (self: t_T) = resolve_T self
+
+meta "rewrite_def" predicate resolve_Ghost_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_T. inv_Ghost_T self
+    -> structural_resolve_Ghost_T self
+    -> structural_resolve_Ghost_T self /\ (forall result: (). resolve_Ghost_T self -> resolve_Ghost_T self)

@@ -1,0 +1,30 @@
+(* <&'a mut T as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+predicate structural_resolve_refmut_T (_1: MutBorrow.t t_T) = _1.final = _1.current
+
+predicate resolve_refmut_T (self: MutBorrow.t t_T) = true
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: MutBorrow.t t_T. inv_refmut_T self
+    -> structural_resolve_refmut_T self -> (forall result: (). resolve_refmut_T self -> resolve_refmut_T self)

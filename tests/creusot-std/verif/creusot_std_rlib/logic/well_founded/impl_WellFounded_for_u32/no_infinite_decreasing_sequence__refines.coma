@@ -1,0 +1,34 @@
+(* <u32 as logic::well_founded::WellFounded> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt32
+use map.Map
+use int.Int
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate gt_log_u32 [@inline:trivial] (self: UInt32.t) (other: UInt32.t) = UInt32.lt other self
+
+meta "rewrite_def" predicate gt_log_u32
+
+predicate well_founded_relation_u32 [@inline:trivial] (self: UInt32.t) (other: UInt32.t) = gt_log_u32 self other
+
+meta "rewrite_def" predicate well_founded_relation_u32
+
+function index_Mapping_Int_u32 [@inline:trivial] (self: Map.map int UInt32.t) (a: int) : UInt32.t = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_u32
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall s: Map.map int UInt32.t. forall result: int. ge_log_Int result 0
+        /\ not well_founded_relation_u32 (index_Mapping_Int_u32 s result) (index_Mapping_Int_u32 s (result + 1))
+      -> ge_log_Int result 0
+      /\ not well_founded_relation_u32 (index_Mapping_Int_u32 s result) (index_Mapping_Int_u32 s (result + 1))

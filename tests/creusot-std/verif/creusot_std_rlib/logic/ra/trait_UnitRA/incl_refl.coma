@@ -1,0 +1,50 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_Self
+
+type t_Option_Self = None | Some t_Self
+
+function op_Self (self: t_Self) (other: t_Self) : t_Option_Self
+
+predicate incl_Self (self: t_Self) (other: t_Self)
+
+axiom incl_Self_spec: forall self: t_Self, other: t_Self [incl_Self self other]. incl_Self self other
+    = (exists factor: t_Self. op_Self self factor = Some other)
+
+function incl_transitive_Self (a: t_Self) (b: t_Self) (c: t_Self) : ()
+
+axiom incl_transitive_Self_spec: forall a: t_Self, b: t_Self, c: t_Self. incl_Self a b -> incl_Self b c -> incl_Self a c
+
+function associative_some_Self (a: t_Self) (b: t_Self) (c: t_Self) (ab: t_Self) (bc: t_Self) : ()
+
+axiom associative_some_Self_spec: forall a: t_Self, b: t_Self, c: t_Self, ab: t_Self, bc: t_Self. op_Self a b = Some ab
+    -> op_Self b c = Some bc -> op_Self a bc = op_Self ab c
+
+function associative_none_Self (a: t_Self) (b: t_Self) (c: t_Self) (bc: t_Self) : ()
+
+axiom associative_none_Self_spec: forall a: t_Self, b: t_Self, c: t_Self, bc: t_Self. op_Self a b = None
+    -> op_Self b c = Some bc -> op_Self a bc = None
+
+function commutative_Self (a: t_Self) (b: t_Self) : ()
+
+axiom commutative_Self_spec: forall a: t_Self, b: t_Self. op_Self a b = op_Self b a
+
+function incl_op_Self (self: t_Self) (other: t_Self) (comb: t_Self) : ()
+
+axiom incl_op_Self_spec: forall self: t_Self, other: t_Self, comb: t_Self. op_Self self other = Some comb
+    -> incl_Self self comb
+
+constant unit_Self : t_Self
+
+axiom unit_Self_spec: forall x: t_Self [op_Self x unit_Self]. op_Self x unit_Self = Some x
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+function incl_refl_Self : ()
+
+goal vc_incl_refl_Self: ([@stop_split] [@expl:unit ensures] forall x: t_Self [op_Self x unit_Self]. op_Self x unit_Self
+      = Some x) -> (let _ = unit_Self in [@stop_split] [@expl:incl_refl ensures] forall x: t_Self. incl_Self x x)

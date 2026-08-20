@@ -1,0 +1,28 @@
+(* logic::fset::FSet<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use set.Fset
+
+type t_T
+
+predicate contains_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_T
+
+function insert_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) : Fset.fset t_T = Fset.add e self
+
+meta "rewrite_def" function insert_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant x : t_T
+
+function singleton_T (x: t_T) : Fset.fset t_T
+
+goal vc_singleton_T:
+  [@stop_split] [@expl:singleton ensures] forall y: t_T. contains_T (insert_T (Fset.empty: Fset.fset t_T) x) y = (x = y)

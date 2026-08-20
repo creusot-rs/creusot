@@ -1,0 +1,59 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int64
+use creusot.prelude.Any
+use int.Int
+
+type t_Ordering = Less | Equal | Greater
+
+type t_Option_Ordering = None | Some t_Ordering
+
+function partial_cmp_log_Int (self: int) (other: int) : t_Option_Ordering = if self = other then
+    Some (Equal)
+  else
+    if self < other then Some (Less) else if other < self then Some (Greater) else None
+
+
+function deep_model_i64 [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
+
+meta "rewrite_def" function deep_model_i64
+
+let partial_cmp_i64 (self_: Int64.t) (rhs: Int64.t) (return (x: t_Option_Ordering)) = any
+  [ return (result: t_Option_Ordering) -> {[@stop_split] [@expl:partial_cmp ensures] result
+    = partial_cmp_log_Int (deep_model_i64 self_) (deep_model_i64 rhs)}
+    (! return {result}) ]
+
+let elim_Some (_x: t_Option_Ordering) (return (f0: t_Ordering)) = any
+  [ _k (f0: t_Ordering) -> {Some f0 = _x} (! return {f0})
+  | _chk -> (! {[@expl:elim Some] match _x with
+      | Some _ -> true
+      | _ -> false
+      end}
+    any) ]
+
+function deep_model_ref_i64 [@inline:trivial] (self: Int64.t) : int = deep_model_i64 self
+
+meta "rewrite_def" function deep_model_ref_i64
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_PartialOrd_i64_i64_lt_body (self_: Int64.t) (other: Int64.t) (return (x: bool)) = (! bb0
+  [ bb0 = s0
+    [ s0 = partial_cmp_i64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+    | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
+  | bb3 = elim_Some {_6}
+      (fun (r0: t_Ordering) ->
+        any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
+  | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
+  | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: bool = Any.any_l ()
+  | & self_: Int64.t = self_
+  | & other: Int64.t = other
+  | & _6: t_Option_Ordering = Any.any_l () ])
+  [ return (result: bool) -> {[@stop_split] [@expl:extern_spec_PartialOrd_i64_i64_lt_body ensures] result
+    = (deep_model_ref_i64 self_ < deep_model_ref_i64 other)}
+    (! return {result}) ]

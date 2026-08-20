@@ -1,0 +1,96 @@
+(* <logic::fmap::FMap<K, V> as std::iter::IntoIterator> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+use map.Map
+use int.Int
+
+type t_FMap_K_V
+
+type t_Iter_K_V = { f0: t_FMap_K_V }
+
+type t_K
+
+type t_V
+
+type t_Option_V = None | Some t_V
+
+function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+
+function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+
+meta "rewrite_def" function get_K
+
+predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
+
+meta "rewrite_def" predicate contains_K
+
+predicate inv_K (_1: t_K)
+
+predicate inv_V (_1: t_V)
+
+predicate index_Mapping_V_bool [@inline:trivial] (self: Map.map t_V bool) (a: t_V) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_V_bool
+
+function such_that_V (p: Map.map t_V bool) : t_V
+
+axiom such_that_V_spec: forall p: Map.map t_V bool [such_that_V p]. (exists x: t_V. index_Mapping_V_bool p x)
+    -> index_Mapping_V_bool p (such_that_V p)
+
+constant any_V: t_V = such_that_V (fun (__0: t_V) -> true)
+
+function unwrap_Option_V (self: t_Option_V) : t_V = match self with
+    | Some x -> x
+    | None -> any_V
+    end
+
+function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_V = unwrap_Option_V (get_K self k)
+
+meta "rewrite_def" function lookup_K
+
+function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = lookup_K self key
+
+meta "rewrite_def" function index_FMap_K_V
+
+predicate invariant_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) =
+  forall k: t_K. contains_K self k -> inv_K k /\ inv_V (index_FMap_K_V self k)
+
+meta "rewrite_def" predicate invariant_FMap_K_V
+
+predicate inv_FMap_K_V (_1: t_FMap_K_V)
+
+axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V x = invariant_FMap_K_V x
+
+predicate inv_Iter_K_V (_1: t_Iter_K_V)
+
+axiom inv_axiom'0 [@rewrite]: forall x: t_Iter_K_V [inv_Iter_K_V x]. inv_Iter_K_V x = inv_FMap_K_V x.f0
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function len_K (self: t_FMap_K_V) : int
+
+axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
+
+function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let into_iter_FMap_K_V (self: t_FMap_K_V) (return (x: t_Iter_K_V)) =
+{[@stop_split] [@expl:into_iter 'self' type invariant] inv_FMap_K_V self}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- { f0 = self } ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_Iter_K_V = Any.any_l () | & self: t_FMap_K_V = self ])
+  [ return (result: t_Iter_K_V) ->
+  {[@stop_split] [@expl:into_iter_FMap_K_V ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_K_V result)
+    /\ ([@stop_split] [@expl:into_iter ensures #0] len_K (view_Iter_K_V result) = len_K self)
+    /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (get_K self k = Some v)
+      = (get_K (view_Iter_K_V result) k = Some v))}
+    (! return {result}) ]

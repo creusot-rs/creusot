@@ -1,0 +1,219 @@
+(* <std::iter::Chain<A, B> as std::iter::DoubleEndedIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.int.UInt64
+use creusot.prelude.MutBorrow
+use int.Int
+
+type t_Chain_A_B
+
+type t_Item
+
+type t_B
+
+type t_Option_B = None | Some t_B
+
+function iter_b_Chain_A_B (self: t_Chain_A_B) : t_Option_B
+
+type t_Option_usize = None'0 | Some'0 UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+predicate produces_B (self: t_B) (visited: Seq.seq t_Item) (o: t_B)
+
+function produces_trans_B (a: t_B) (ab: Seq.seq t_Item) (b: t_B) (bc: Seq.seq t_Item) (c: t_B) : ()
+
+axiom produces_trans_B_spec: forall a: t_B, ab: Seq.seq t_Item, b: t_B, bc: Seq.seq t_Item, c: t_B. produces_B a ab b
+    -> produces_B b bc c -> produces_B a (Seq.(++) ab bc) c
+
+function produces_refl_B (self: t_B) : ()
+
+axiom produces_refl_B_spec: forall self: t_B. produces_B self (Seq.empty: Seq.seq t_Item) self
+
+predicate completed_B (self: MutBorrow.t t_B)
+
+predicate postcondition_size_hint (self: ()) (args: t_B) (result: tup2_usize_Option_usize)
+
+axiom postcondition_fndef:
+  forall args: t_B, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_B. produces_B self_ s i.current /\ completed_B i
+        -> UInt64.t'int res.f0 <= Seq.length s)
+    /\ match res.f1 with
+      | Some'0 r -> forall s: Seq.seq t_Item, i: t_B. produces_B self_ s i -> Seq.length s <= UInt64.t'int r
+      | None'0 -> true
+      end)
+
+predicate inv_B (_1: t_B)
+
+predicate invariant_ref_B [@inline:trivial] (self: t_B) = inv_B self
+
+meta "rewrite_def" predicate invariant_ref_B
+
+predicate inv_ref_B [@inline:trivial] (_1: t_B) = invariant_ref_B _1
+
+meta "rewrite_def" predicate inv_ref_B
+
+predicate precondition_size_hint (self: ()) (args: t_B)
+
+axiom precondition_fndef: forall args: t_B [precondition_size_hint () args]. (let self_ = args in inv_ref_B self_)
+    -> precondition_size_hint () args
+
+predicate postcondition_once_size_hint (self: ()) (args: t_B) (result: tup2_usize_Option_usize) =
+  postcondition_size_hint self args result
+
+meta "rewrite_def" predicate postcondition_once_size_hint
+
+let size_hint_B (self_: t_B) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+    (! return {result}) ]
+
+predicate completed_back_B (self: MutBorrow.t t_B)
+
+predicate produces_back_B (self: t_B) (visited: Seq.seq t_Item) (o: t_B)
+
+function size_hint_back_spec_B (self: t_B) (r: tup2_usize_Option_usize) : ()
+
+axiom size_hint_back_spec_B_spec: forall self: t_B, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> (forall s: Seq.seq t_Item, i: MutBorrow.t t_B. produces_back_B self s i.current /\ completed_back_B i
+      -> UInt64.t'int r.f0 <= Seq.length s)
+
+axiom size_hint_back_spec_B_spec'0: forall self: t_B, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> match r.f1 with
+      | Some'0 r'0 -> forall s: Seq.seq t_Item, i: t_B. produces_back_B self s i -> Seq.length s <= UInt64.t'int r'0
+      | None'0 -> true
+      end
+
+function produces_back_trans_B (a: t_B) (ab: Seq.seq t_Item) (b: t_B) (bc: Seq.seq t_Item) (c: t_B) : ()
+
+axiom produces_back_trans_B_spec:
+  forall a: t_B, ab: Seq.seq t_Item, b: t_B, bc: Seq.seq t_Item, c: t_B. produces_back_B a ab b
+    -> produces_back_B b bc c -> produces_back_B a (Seq.(++) ab bc) c
+
+function produces_back_refl_B (self: t_B) : ()
+
+axiom produces_back_refl_B_spec: forall self: t_B. produces_back_B self (Seq.empty: Seq.seq t_Item) self
+
+predicate resolve_B (_1: t_B)
+
+type t_A
+
+type t_Option_A = None'1 | Some'1 t_A
+
+function iter_a_Chain_A_B (self: t_Chain_A_B) : t_Option_A
+
+type tup2_Option_A_Option_A = { f0'0: t_Option_A; f1'0: t_Option_A }
+
+predicate produces_A (self: t_A) (visited: Seq.seq t_Item) (o: t_A)
+
+function produces_trans_A (a: t_A) (ab: Seq.seq t_Item) (b: t_A) (bc: Seq.seq t_Item) (c: t_A) : ()
+
+axiom produces_trans_A_spec: forall a: t_A, ab: Seq.seq t_Item, b: t_A, bc: Seq.seq t_Item, c: t_A. produces_A a ab b
+    -> produces_A b bc c -> produces_A a (Seq.(++) ab bc) c
+
+function produces_refl_A (self: t_A) : ()
+
+axiom produces_refl_A_spec: forall self: t_A. produces_A self (Seq.empty: Seq.seq t_Item) self
+
+predicate completed_A (self: MutBorrow.t t_A)
+
+predicate postcondition_size_hint'0 (self: ()) (args: t_A) (result: tup2_usize_Option_usize)
+
+axiom postcondition_fndef'0:
+  forall args: t_A, res: tup2_usize_Option_usize [postcondition_size_hint'0 () args res]. postcondition_size_hint'0 () args res
+    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_A self_ s i.current /\ completed_A i
+        -> UInt64.t'int res.f0 <= Seq.length s)
+    /\ match res.f1 with
+      | Some'0 r -> forall s: Seq.seq t_Item, i: t_A. produces_A self_ s i -> Seq.length s <= UInt64.t'int r
+      | None'0 -> true
+      end)
+
+predicate inv_A (_1: t_A)
+
+predicate invariant_ref_A [@inline:trivial] (self: t_A) = inv_A self
+
+meta "rewrite_def" predicate invariant_ref_A
+
+predicate inv_ref_A [@inline:trivial] (_1: t_A) = invariant_ref_A _1
+
+meta "rewrite_def" predicate inv_ref_A
+
+predicate precondition_size_hint'0 (self: ()) (args: t_A)
+
+axiom precondition_fndef'0: forall args: t_A [precondition_size_hint'0 () args]. (let self_ = args in inv_ref_A self_)
+    -> precondition_size_hint'0 () args
+
+predicate postcondition_once_size_hint'0 (self: ()) (args: t_A) (result: tup2_usize_Option_usize) =
+  postcondition_size_hint'0 self args result
+
+meta "rewrite_def" predicate postcondition_once_size_hint'0
+
+let size_hint_A (self_: t_A) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint'0 () self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint'0 () self_ result}
+    (! return {result}) ]
+
+predicate completed_back_A (self: MutBorrow.t t_A)
+
+predicate produces_back_A (self: t_A) (visited: Seq.seq t_Item) (o: t_A)
+
+function size_hint_back_spec_A (self: t_A) (r: tup2_usize_Option_usize) : ()
+
+axiom size_hint_back_spec_A_spec: forall self: t_A, r: tup2_usize_Option_usize. postcondition_size_hint'0 () self r
+    -> (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_back_A self s i.current /\ completed_back_A i
+      -> UInt64.t'int r.f0 <= Seq.length s)
+
+axiom size_hint_back_spec_A_spec'0: forall self: t_A, r: tup2_usize_Option_usize. postcondition_size_hint'0 () self r
+    -> match r.f1 with
+      | Some'0 r'0 -> forall s: Seq.seq t_Item, i: t_A. produces_back_A self s i -> Seq.length s <= UInt64.t'int r'0
+      | None'0 -> true
+      end
+
+function produces_back_trans_A (a: t_A) (ab: Seq.seq t_Item) (b: t_A) (bc: Seq.seq t_Item) (c: t_A) : ()
+
+axiom produces_back_trans_A_spec:
+  forall a: t_A, ab: Seq.seq t_Item, b: t_A, bc: Seq.seq t_Item, c: t_A. produces_back_A a ab b
+    -> produces_back_A b bc c -> produces_back_A a (Seq.(++) ab bc) c
+
+function produces_back_refl_A (self: t_A) : ()
+
+axiom produces_back_refl_A_spec: forall self: t_A. produces_back_A self (Seq.empty: Seq.seq t_Item) self
+
+predicate chain_produces_inner_back_A (x: t_Chain_A_B) (visited_a: Seq.seq t_Item) (visited_b: Seq.seq t_Item) (y: t_Chain_A_B) =
+  match iter_b_Chain_A_B x with
+      | None -> iter_b_Chain_A_B y = None /\ visited_b = (Seq.empty: Seq.seq t_Item)
+      | Some xb -> match iter_b_Chain_A_B y with
+        | None -> exists yb: MutBorrow.t t_B. produces_back_B xb visited_b yb.current
+          /\ completed_back_B yb /\ resolve_B yb.final
+        | Some yb -> produces_back_B xb visited_b yb
+        end
+      end
+  /\ match iter_b_Chain_A_B y with
+    | Some _ -> iter_a_Chain_A_B x = iter_a_Chain_A_B y /\ visited_a = (Seq.empty: Seq.seq t_Item)
+    | None -> match { f0'0 = iter_a_Chain_A_B x; f1'0 = iter_a_Chain_A_B y } with
+      | {f0'0 = None'1} -> iter_a_Chain_A_B y = None'1 /\ visited_a = (Seq.empty: Seq.seq t_Item)
+      | {f0'0 = Some'1 xa; f1'0 = Some'1 ya} -> produces_back_A xa visited_a ya
+      | {f0'0 = Some'1 _; f1'0 = None'1} -> false
+      end
+    end
+
+predicate produces_back_Chain_A_B [@inline:trivial] (self: t_Chain_A_B) (visited: Seq.seq t_Item) (o: t_Chain_A_B) =
+  exists visited_a: Seq.seq t_Item, visited_b: Seq.seq t_Item. visited = Seq.(++) visited_b visited_a
+    /\ chain_produces_inner_back_A self visited_a visited_b o
+
+meta "rewrite_def" predicate produces_back_Chain_A_B
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Chain_A_B. forall result: (). produces_back_Chain_A_B self (Seq.empty: Seq.seq t_Item) self
+      -> produces_back_Chain_A_B self (Seq.empty: Seq.seq t_Item) self

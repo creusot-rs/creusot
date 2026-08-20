@@ -1,0 +1,35 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: UInt64.t = (0: UInt64.t)
+
+constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+
+let sub_ref_u64 (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) =
+{[@stop_split] [@expl:sub requires] UInt64.t'int const_MIN <= UInt64.t'int self_ - UInt64.t'int rhs
+  /\ UInt64.t'int self_ - UInt64.t'int rhs <= UInt64.t'int const_MAX}
+  any
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:sub ensures] UInt64.t'int result
+    = UInt64.t'int self_ - UInt64.t'int rhs}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Sub__ref_u64__ref_u64_sub_body (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) =
+{[@stop_split] [@expl:extern_spec_Sub__ref_u64__ref_u64_sub_body requires] UInt64.t'int const_MIN
+    <= UInt64.t'int self_ - UInt64.t'int rhs
+  /\ UInt64.t'int self_ - UInt64.t'int rhs <= UInt64.t'int const_MAX}
+  (! bb0
+  [ bb0 = s0 [ s0 = sub_ref_u64 {self_} {rhs} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: UInt64.t = Any.any_l () | & self_: UInt64.t = self_ | & rhs: UInt64.t = rhs ])
+  [ return (result: UInt64.t) ->
+  {[@stop_split] [@expl:extern_spec_Sub__ref_u64__ref_u64_sub_body ensures] UInt64.t'int result
+    = UInt64.t'int self_ - UInt64.t'int rhs}
+    (! return {result}) ]

@@ -1,0 +1,57 @@
+(* logic::fset::FSet<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use set.Fset
+use map.Map
+
+type t_T
+
+type t_U
+
+predicate contains_U [@inline:trivial] (self: Fset.fset t_U) (e: t_U) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_U
+
+predicate contains_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_T
+
+function remove_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) : Fset.fset t_T = Fset.remove e self
+
+meta "rewrite_def" function remove_T
+
+function unions_T (self: Fset.fset t_T) (f: Map.map t_T (Fset.fset t_U)) : Fset.fset t_U
+
+axiom unions_T_def: forall self: Fset.fset t_T, f: Map.map t_T (Fset.fset t_U) [unions_T self f]. unions_T self f
+    = (if Fset.cardinal self = 0 then
+      Fset.empty: Fset.fset t_U
+    else
+      let x = Fset.pick self in Fset.union (Map.get f x) (unions_T (remove_T self x) f)
+    )
+
+axiom unions_T_spec:
+  forall self: Fset.fset t_T, f: Map.map t_T (Fset.fset t_U) [unions_T self f]. forall y: t_U. contains_U (unions_T self f) y
+      = (exists x: t_T. contains_T self x /\ contains_U (Map.get f x) y)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Fset.fset t_T
+
+constant other : Fset.fset t_T
+
+constant f : Map.map t_T (Fset.fset t_U)
+
+constant g : Map.map t_T (Fset.fset t_U)
+
+function unions_union_T (self: Fset.fset t_T) (other: Fset.fset t_T) (f: Map.map t_T (Fset.fset t_U)) (g: Map.map t_T (Fset.fset t_U)) : ()
+
+goal vc_unions_union_T:
+  [@stop_split] [@expl:unions_union_T ensures] ([@stop_split] [@expl:unions_union ensures #0] unions_T (Fset.union self other) f
+    = Fset.union (unions_T self f) (unions_T other f))
+  /\ ([@stop_split] [@expl:unions_union ensures #1] unions_T self (fun (x: t_T) -> Fset.union (Map.get f x) (Map.get g x))
+  = Fset.union (unions_T self f) (unions_T self g))

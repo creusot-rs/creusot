@@ -1,0 +1,28 @@
+(* <&'a T as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate structural_resolve_ref_T (_1: t_T) = true
+
+predicate resolve_ref_T (self: t_T) = true
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_T. inv_ref_T self
+    -> structural_resolve_ref_T self -> (forall result: (). resolve_ref_T self -> resolve_ref_T self)

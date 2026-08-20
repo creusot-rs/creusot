@@ -1,0 +1,59 @@
+(* <logic::real::PositiveReal as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use real.Real
+use real.FromInt
+
+type t_PositiveReal
+
+type t_Option_PositiveReal = None | Some t_PositiveReal
+
+predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
+
+meta "rewrite_def" predicate gt_log_Real
+
+function to_real (self: t_PositiveReal) : Real.real
+
+axiom to_real_spec: forall self: t_PositiveReal [to_real self]. gt_log_Real (to_real self) (FromInt.from_int 0)
+
+function add_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+
+axiom add_PositiveReal_spec:
+  forall self: t_PositiveReal, other: t_PositiveReal [add_PositiveReal self other]. to_real (add_PositiveReal self other)
+    = Real.(+) (to_real self) (to_real other)
+
+function op_PositiveReal [@inline:trivial] (self: t_PositiveReal) (other: t_PositiveReal) : t_Option_PositiveReal =
+  Some (add_PositiveReal self other)
+
+meta "rewrite_def" function op_PositiveReal
+
+function core_PositiveReal [@inline:trivial] (self: t_PositiveReal) : t_Option_PositiveReal = None
+
+meta "rewrite_def" function core_PositiveReal
+
+predicate incl_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) =
+  let r = Real.(<) (to_real self) (to_real other) in r
+
+axiom incl_PositiveReal_spec:
+  forall self: t_PositiveReal, other: t_PositiveReal [incl_PositiveReal self other]. incl_PositiveReal self other
+    = (exists factor: t_PositiveReal. op_PositiveReal self factor = Some other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_PositiveReal, i: t_PositiveReal. op_PositiveReal i i = Some i
+    -> op_PositiveReal i self = Some self
+    -> op_PositiveReal i i = Some i
+    /\ op_PositiveReal i self = Some self
+    /\ (forall result: (). match core_PositiveReal self with
+          | Some c -> incl_PositiveReal i c
+          | None -> false
+          end
+      -> match core_PositiveReal self with
+        | Some c -> incl_PositiveReal i c
+        | None -> false
+        end)

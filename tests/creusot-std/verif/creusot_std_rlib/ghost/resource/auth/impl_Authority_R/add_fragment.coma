@@ -1,0 +1,231 @@
+(* ghost::resource::auth::Authority<R> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+
+type t_Resource_View_AuthViewRel_R
+
+type t_Authority_R = { f0: t_Resource_View_AuthViewRel_R }
+
+type t_Id
+
+type t_View_AuthViewRel_R
+
+type t_R
+
+type t_Option_R = None | Some t_R
+
+function auth_AuthViewRel_R (self: t_View_AuthViewRel_R) : t_Option_R
+
+function val_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_View_AuthViewRel_R
+
+function view_Resource_View_AuthViewRel_R [@inline:trivial] (self: t_Resource_View_AuthViewRel_R) : t_View_AuthViewRel_R
+ = val_View_AuthViewRel_R self
+
+meta "rewrite_def" function view_Resource_View_AuthViewRel_R
+
+predicate invariant_Authority_R (self: t_Authority_R) =
+  auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0) <> None
+
+predicate inv_Authority_R (_1: t_Authority_R)
+
+axiom inv_axiom [@rewrite]: forall x: t_Authority_R [inv_Authority_R x]. inv_Authority_R x = invariant_Authority_R x
+
+predicate invariant_ref_Authority_R [@inline:trivial] (self: t_Authority_R) = inv_Authority_R self
+
+meta "rewrite_def" predicate invariant_ref_Authority_R
+
+predicate inv_ref_Authority_R [@inline:trivial] (_1: t_Authority_R) = invariant_ref_Authority_R _1
+
+meta "rewrite_def" predicate inv_ref_Authority_R
+
+function id_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_Id
+
+function id_R (self: t_Authority_R) : t_Id = id_View_AuthViewRel_R self.f0
+
+let id_ghost_R (self: t_Authority_R) (return (x: t_Id)) =
+{[@stop_split] [@expl:id_ghost 'self' type invariant] inv_ref_Authority_R self}
+  any [ return (result: t_Id) -> {[@stop_split] [@expl:id_ghost ensures] result = id_R self} (! return {result}) ]
+
+type t_Fragment_R = { f0'0: t_Resource_View_AuthViewRel_R }
+
+function op_R (self: t_R) (other: t_R) : t_Option_R
+
+predicate incl_R (self: t_R) (other: t_R)
+
+axiom incl_R_spec: forall self: t_R, other: t_R [incl_R self other]. incl_R self other
+    = (exists factor: t_R. op_R self factor = Some other)
+
+function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+
+axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+
+function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+
+axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+    -> op_R b c = Some bc -> op_R a bc = op_R ab c
+
+function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+
+axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+    -> op_R b c = Some bc -> op_R a bc = None
+
+function commutative_R (a: t_R) (b: t_R) : ()
+
+axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+
+function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+
+axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+
+function core_R (self: t_R) : t_Option_R
+
+function core_total_R (self: t_R) : t_R
+
+axiom core_total_R_spec: forall self: t_R [core_total_R self]. core_R self = Some (core_total_R self)
+
+constant unit_R : t_R
+
+axiom unit_R_spec: forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x
+
+constant unit_core_R : ()
+
+axiom unit_core_R_spec: core_total_R unit_R = unit_R
+
+constant incl_refl_R : ()
+
+axiom incl_refl_R_spec: forall x: t_R. incl_R x x
+
+predicate rel_AuthViewRel_R (a: t_Option_R) (f: t_R) =
+  match a with
+    | Some a'0 -> incl_R f a'0
+    | None -> true
+    end
+
+function rel_unit_AuthViewRel_R (a: t_Option_R) : ()
+
+axiom rel_unit_AuthViewRel_R_spec: forall a: t_Option_R. rel_AuthViewRel_R a unit_R
+
+function rel_none_AuthViewRel_R (a: t_Option_R) (f: t_R) : ()
+
+axiom rel_none_AuthViewRel_R_spec: forall a: t_Option_R, f: t_R. rel_AuthViewRel_R (None) f
+
+function rel_mono_AuthViewRel_R (a: t_Option_R) (f1: t_R) (f2: t_R) : ()
+
+axiom rel_mono_AuthViewRel_R_spec: forall a: t_Option_R, f1: t_R, f2: t_R. rel_AuthViewRel_R a f1
+    -> incl_R f2 f1 -> rel_AuthViewRel_R a f2
+
+function frag_AuthViewRel_R (self: t_View_AuthViewRel_R) : t_R
+
+axiom frag_AuthViewRel_R_spec:
+  forall self: t_View_AuthViewRel_R [frag_AuthViewRel_R self]. rel_AuthViewRel_R (auth_AuthViewRel_R self) (frag_AuthViewRel_R self)
+
+function view_Fragment_R (self: t_Fragment_R) : t_R = frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0'0)
+
+function id_R'0 (self: t_Fragment_R) : t_Id = id_View_AuthViewRel_R self.f0'0
+
+let new_unit_R (id: t_Id) (return (x: t_Fragment_R)) = any
+  [ return (result: t_Fragment_R) -> {[@stop_split] [@expl:new_unit ensures] view_Fragment_R result = unit_R
+    /\ id_R'0 result = id}
+    (! return {result}) ]
+
+type t_OpLocalUpdate_R = { f0'1: t_R }
+
+predicate invariant_refmut_Authority_R [@inline:trivial] (self: MutBorrow.t t_Authority_R) =
+  inv_Authority_R self.current /\ inv_Authority_R self.final
+
+meta "rewrite_def" predicate invariant_refmut_Authority_R
+
+predicate inv_refmut_Authority_R [@inline:trivial] (_1: MutBorrow.t t_Authority_R) = invariant_refmut_Authority_R _1
+
+meta "rewrite_def" predicate inv_refmut_Authority_R
+
+predicate premise_OpLocalUpdate_R (self: t_OpLocalUpdate_R) (from_auth: t_R) (_3: t_R) =
+  op_R from_auth self.f0'1 <> None
+
+constant any_R : t_R
+
+function unwrap_Option_R (self: t_Option_R) : t_R = match self with
+    | Some x -> x
+    | None -> any_R
+    end
+
+function view_Authority_R (self: t_Authority_R) : t_R =
+  unwrap_Option_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.f0))
+
+type tup2_R_R = { f0'2: t_R; f1'2: t_R }
+
+function update_OpLocalUpdate_R (self: t_OpLocalUpdate_R) (from_auth: t_R) (from_frag: t_R) : tup2_R_R =
+  { f0'2 = unwrap_Option_R (op_R from_auth self.f0'1); f1'2 = unwrap_Option_R (op_R from_frag self.f0'1) }
+
+let update_R (self: MutBorrow.t t_Authority_R) (frag: MutBorrow.t t_Fragment_R) (upd: t_OpLocalUpdate_R)
+  (return (x: ())) =
+{[@stop_split] [@expl:update_R requires] ([@stop_split] [@expl:update 'self' type invariant] inv_refmut_Authority_R self)
+  /\ ([@stop_split] [@expl:update requires #0] id_R self.current = id_R'0 frag.current)
+  /\ ([@stop_split] [@expl:update requires #1] premise_OpLocalUpdate_R upd (view_Authority_R self.current) (view_Fragment_R frag.current))}
+  any
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:update_R ensures] ([@stop_split] [@expl:update ensures #0] id_R self.current = id_R self.final)
+    /\ ([@stop_split] [@expl:update ensures #1] id_R'0 frag.current = id_R'0 frag.final)
+    /\ ([@stop_split] [@expl:update ensures #2] incl_R (view_Fragment_R frag.current) (view_Authority_R self.current))
+    /\ ([@stop_split] [@expl:update ensures #3] { f0'2 = view_Authority_R self.final;
+                                                  f1'2 = view_Fragment_R frag.final }
+    = update_OpLocalUpdate_R upd (view_Authority_R self.current) (view_Fragment_R frag.current))}
+    (! return {result}) ]
+
+predicate resolve_refmut_Fragment_R [@inline:trivial] (_1: MutBorrow.t t_Fragment_R) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Fragment_R
+
+predicate resolve_refmut_Authority_R [@inline:trivial] (_1: MutBorrow.t t_Authority_R) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Authority_R
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let add_fragment_R (self: MutBorrow.t t_Authority_R) (frag: t_R) (return (x: t_Fragment_R)) =
+{[@stop_split] [@expl:add_fragment_R requires] ([@stop_split] [@expl:add_fragment 'self' type invariant] inv_refmut_Authority_R self)
+  /\ ([@stop_split] [@expl:add_fragment requires] op_R (view_Authority_R self.current) frag <> None)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = id_ghost_R {self.current} (fun (_x: t_Id) -> [ &_14 <- _x ] s1)
+    | s1 = new_unit_R {_14} (fun (_x: t_Fragment_R) -> [ &unit' <- _x ] s2)
+    | s2 = MutBorrow.borrow_mut <t_Fragment_R> {unit'}
+        (fun (_bor: MutBorrow.t t_Fragment_R) -> [ &_19 <- _bor ] [ &unit' <- _bor.final ] s3)
+    | s3 = [ &_20 <- { f0'1 = frag } ] s4
+    | s4 = MutBorrow.borrow_final <t_Authority_R> {self.current} {MutBorrow.get_id self}
+        (fun (_bor: MutBorrow.t t_Authority_R) ->
+          [ &_17 <- _bor ] -{inv_Authority_R _bor.final}-
+          [ &self <- { self with current = _bor.final } ] s5)
+      [ _ck -> (! {[@expl:type invariant] inv_Authority_R self.current} any) ]
+    | s5 = MutBorrow.borrow_final <t_Fragment_R> {_19.current} {MutBorrow.get_id _19}
+        (fun (_bor: MutBorrow.t t_Fragment_R) -> [ &_18 <- _bor ] [ &_19 <- { _19 with current = _bor.final } ] s6)
+    | s6 = update_R {_17} {_18} {_20} (fun (_x: ()) -> [ &_16 <- _x ] s7)
+    | s7 = -{resolve_refmut_Fragment_R _19}- s8
+    | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_R self} any) ]
+    | s9 = -{resolve_refmut_Authority_R self}- s10
+    | s10 = [ &_ret <- unit' ] s11
+    | s11 = return {_ret} ] ]
+  [ & _ret: t_Fragment_R = Any.any_l ()
+  | & self: MutBorrow.t t_Authority_R = self
+  | & frag: t_R = frag
+  | & unit': t_Fragment_R = Any.any_l ()
+  | & _14: t_Id = Any.any_l ()
+  | & _16: () = Any.any_l ()
+  | & _17: MutBorrow.t t_Authority_R = Any.any_l ()
+  | & _18: MutBorrow.t t_Fragment_R = Any.any_l ()
+  | & _19: MutBorrow.t t_Fragment_R = Any.any_l ()
+  | & _20: t_OpLocalUpdate_R = Any.any_l () ])
+  [ return (result: t_Fragment_R) ->
+  {[@stop_split] [@expl:add_fragment_R ensures] ([@stop_split] [@expl:add_fragment ensures #0] view_Authority_R self.final
+      = unwrap_Option_R (op_R (view_Authority_R self.current) frag))
+    /\ ([@stop_split] [@expl:add_fragment ensures #1] view_Fragment_R result = frag)
+    /\ ([@stop_split] [@expl:add_fragment ensures #2] id_R'0 result = id_R self.current
+    /\ id_R self.final = id_R self.current)}
+    (! return {result}) ]

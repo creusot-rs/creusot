@@ -1,0 +1,34 @@
+(* <logic::int::Nat as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Nat
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function to_int (self: t_Nat) : int
+
+axiom to_int_spec: forall self: t_Nat [to_int self]. ge_log_Int (to_int self) 0
+
+predicate ext_eq (self: t_Nat) (other: t_Nat) = to_int self = to_int other
+
+axiom ext_eq_spec: forall self: t_Nat, other: t_Nat [self = other]. ext_eq self other = (self = other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Nat
+
+constant other : t_Nat
+
+predicate eq_Nat (self: t_Nat) (other: t_Nat)
+
+goal vc_eq_Nat: ([@stop_split] [@expl:ext_eq ensures] ext_eq self other = (self = other))
+  -> ([@stop_split] [@expl:eq ensures] ext_eq self other = (self = other))

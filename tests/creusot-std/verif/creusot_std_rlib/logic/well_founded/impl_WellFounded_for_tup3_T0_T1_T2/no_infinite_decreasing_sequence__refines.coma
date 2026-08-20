@@ -1,0 +1,49 @@
+(* <(T0, T1, T2) as logic::well_founded::WellFounded> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use int.Int
+
+type t_T0
+
+type t_T1
+
+type t_T2
+
+type tup3_T0_T1_T2 = { f0: t_T0; f1: t_T1; f2: t_T2 }
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate well_founded_relation_T0 (self: t_T0) (other: t_T0)
+
+predicate well_founded_relation_T1 (self: t_T1) (other: t_T1)
+
+predicate well_founded_relation_T2 (self: t_T2) (other: t_T2)
+
+predicate well_founded_relation_tup3_T0_T1_T2 [@inline:trivial] (self: tup3_T0_T1_T2) (other: tup3_T0_T1_T2) =
+  well_founded_relation_T0 self.f0 other.f0
+  \/ self.f0 = other.f0 /\ well_founded_relation_T1 self.f1 other.f1
+  \/ self.f0 = other.f0 /\ self.f1 = other.f1 /\ well_founded_relation_T2 self.f2 other.f2
+
+meta "rewrite_def" predicate well_founded_relation_tup3_T0_T1_T2
+
+function index_Mapping_Int_tup3_T0_T1_T2 [@inline:trivial] (self: Map.map int tup3_T0_T1_T2) (a: int) : tup3_T0_T1_T2 =
+  Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_tup3_T0_T1_T2
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall s: Map.map int tup3_T0_T1_T2. forall result: int. ge_log_Int result 0
+        /\ not well_founded_relation_tup3_T0_T1_T2 (index_Mapping_Int_tup3_T0_T1_T2 s result) (index_Mapping_Int_tup3_T0_T1_T2 s (result
+        + 1))
+      -> ge_log_Int result 0
+      /\ not well_founded_relation_tup3_T0_T1_T2 (index_Mapping_Int_tup3_T0_T1_T2 s result) (index_Mapping_Int_tup3_T0_T1_T2 s (result
+      + 1))

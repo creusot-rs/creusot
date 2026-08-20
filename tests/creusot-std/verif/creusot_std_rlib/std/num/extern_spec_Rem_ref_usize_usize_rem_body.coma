@@ -1,0 +1,37 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use int.ComputerDivision
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: UInt64.t = (0: UInt64.t)
+
+let rem_usize (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) =
+{[@stop_split] [@expl:rem_usize requires] ([@stop_split] [@expl:rem requires #0] UInt64.t'int rhs <> 0)
+  /\ ([@stop_split] [@expl:rem requires #1] not (UInt64.t'int self_ = UInt64.t'int const_MIN
+  /\ UInt64.t'int rhs = - 1))}
+  any
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:rem ensures] UInt64.t'int result
+    = ComputerDivision.mod (UInt64.t'int self_) (UInt64.t'int rhs)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Rem__ref_usize_usize_rem_body (self_: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) =
+{[@stop_split] [@expl:extern_spec_Rem__ref_usize_usize_rem_body requires] ([@stop_split] [@expl:extern_spec_Rem__ref_usize_usize_rem_body requires #0] UInt64.t'int rhs
+    <> 0)
+  /\ ([@stop_split] [@expl:extern_spec_Rem__ref_usize_usize_rem_body requires #1] not (UInt64.t'int self_
+    = UInt64.t'int const_MIN
+  /\ UInt64.t'int rhs = - 1))}
+  (! bb0
+  [ bb0 = s0 [ s0 = rem_usize {self_} {rhs} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: UInt64.t = Any.any_l () | & self_: UInt64.t = self_ | & rhs: UInt64.t = rhs ])
+  [ return (result: UInt64.t) ->
+  {[@stop_split] [@expl:extern_spec_Rem__ref_usize_usize_rem_body ensures] UInt64.t'int result
+    = ComputerDivision.mod (UInt64.t'int self_) (UInt64.t'int rhs)}
+    (! return {result}) ]

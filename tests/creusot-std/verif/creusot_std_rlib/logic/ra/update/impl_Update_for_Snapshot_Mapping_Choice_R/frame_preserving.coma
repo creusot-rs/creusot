@@ -1,0 +1,90 @@
+(* <snapshot::Snapshot<logic::mapping::Mapping<Choice, R>> as logic::ra::update::Update<R>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_Choice
+
+type t_R
+
+type t_Option_R = None | Some t_R
+
+function op_R (self: t_R) (other: t_R) : t_Option_R
+
+predicate incl_R (self: t_R) (other: t_R)
+
+axiom incl_R_spec: forall self: t_R, other: t_R [incl_R self other]. incl_R self other
+    = (exists factor: t_R. op_R self factor = Some other)
+
+function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+
+axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+
+function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+
+axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+    -> op_R b c = Some bc -> op_R a bc = op_R ab c
+
+function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+
+axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+    -> op_R b c = Some bc -> op_R a bc = None
+
+function commutative_R (a: t_R) (b: t_R) : ()
+
+axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+
+function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+
+axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+
+function index_Mapping_Choice_R [@inline:trivial] (self: Map.map t_Choice t_R) (a: t_Choice) : t_R = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Choice_R
+
+predicate premise_Snapshot_Mapping_Choice_R [@inline:trivial] (self: Map.map t_Choice t_R) (from: t_R) =
+  forall y: t_R. op_R from y <> None -> (exists ch: t_Choice. op_R (index_Mapping_Choice_R self ch) y <> None)
+
+meta "rewrite_def" predicate premise_Snapshot_Mapping_Choice_R
+
+function update_Snapshot_Mapping_Choice_R [@inline:trivial] (self: Map.map t_Choice t_R) (from: t_R) (ch: t_Choice) : t_R
+ = index_Mapping_Choice_R self ch
+
+meta "rewrite_def" function update_Snapshot_Mapping_Choice_R
+
+predicate index_Mapping_Choice_bool [@inline:trivial] (self: Map.map t_Choice bool) (a: t_Choice) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Choice_bool
+
+function such_that_Choice (p: Map.map t_Choice bool) : t_Choice
+
+axiom such_that_Choice_spec:
+  forall p: Map.map t_Choice bool [such_that_Choice p]. (exists x: t_Choice. index_Mapping_Choice_bool p x)
+    -> index_Mapping_Choice_bool p (such_that_Choice p)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Map.map t_Choice t_R
+
+constant from : t_R
+
+constant frame : t_R
+
+function frame_preserving_Snapshot_Mapping_Choice_R (self: Map.map t_Choice t_R) (from: t_R) (frame: t_R) : t_Choice
+
+goal vc_frame_preserving_Snapshot_Mapping_Choice_R: premise_Snapshot_Mapping_Choice_R self from
+  -> op_R from frame <> None
+  -> (forall ch: t_Choice. [@stop_split] [@expl:update requires] premise_Snapshot_Mapping_Choice_R self from)
+  /\ ([@stop_split] [@expl:such_that requires] exists x: t_Choice. index_Mapping_Choice_bool (fun (ch: t_Choice) -> op_R (update_Snapshot_Mapping_Choice_R self from ch) frame
+      <> None) x)
+  /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_Choice_bool (fun (ch: t_Choice) -> op_R (update_Snapshot_Mapping_Choice_R self from ch) frame
+    <> None) (such_that_Choice (fun (ch: t_Choice) -> op_R (update_Snapshot_Mapping_Choice_R self from ch) frame
+    <> None)))
+  -> ([@stop_split] [@expl:frame_preserving ensures] op_R (update_Snapshot_Mapping_Choice_R self from (such_that_Choice (fun (ch: t_Choice) -> op_R (update_Snapshot_Mapping_Choice_R self from ch) frame
+    <> None))) frame
+  <> None))

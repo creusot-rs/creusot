@@ -1,0 +1,214 @@
+(* <std::iter::Map<I, F> as std::iter::ExactSizeIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use seq.Seq
+use creusot.prelude.MutBorrow
+use int.Int
+
+type t_Map_I_F
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+type t_I
+
+type t_Item
+
+predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+
+function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+
+axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
+    -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
+
+function produces_refl_I (self: t_I) : ()
+
+axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
+
+predicate completed_I (self: MutBorrow.t t_I)
+
+predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
+
+axiom postcondition_fndef:
+  forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self_ s i.current /\ completed_I i
+        -> UInt64.t'int res.f0 <= Seq.length s)
+    /\ match res.f1 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self_ s i -> Seq.length s <= UInt64.t'int r
+      | None -> true
+      end)
+
+function iter_Map_I_F (self: t_Map_I_F) : t_I
+
+predicate postcondition_size_hint'0 (self: ()) (args: t_Map_I_F) (result: tup2_usize_Option_usize) =
+  let self_ = args in postcondition_size_hint () (iter_Map_I_F self_) result
+
+meta "rewrite_def" predicate postcondition_size_hint'0
+
+predicate inv_I (_1: t_I)
+
+type t_F
+
+predicate inv_F (_1: t_F)
+
+function func_Map_I_F (self: t_Map_I_F) : t_F
+
+predicate inv_Item (_1: t_Item)
+
+predicate precondition_F (self: t_F) (args: t_Item)
+
+predicate next_precondition_I [@inline:trivial] (iter: t_I) (func: t_F) =
+  forall e: t_Item, i: t_I [produces_I iter (Seq.singleton e) i]. inv_Item e /\ produces_I iter (Seq.singleton e) i
+    -> precondition_F func e
+
+meta "rewrite_def" predicate next_precondition_I
+
+type t_B
+
+predicate postcondition_once_F (self: t_F) (args: t_Item) (result: t_B)
+
+predicate resolve_F (_1: t_F)
+
+predicate postcondition_mut_F (self: t_F) (args: t_Item) (result_state: t_F) (result: t_B)
+
+function fn_mut_once_F (self: t_F) (args: t_Item) (res: t_B) : ()
+
+axiom fn_mut_once_F_spec:
+  forall self: t_F, args: t_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
+    = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+
+predicate hist_inv_F (self: t_F) (result_state: t_F)
+
+function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
+
+axiom hist_inv_trans_F_spec:
+  forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
+    -> hist_inv_F b c -> hist_inv_F self c
+
+function hist_inv_refl_F (self: t_F) : ()
+
+axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
+
+function postcondition_mut_hist_inv_F (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
+
+axiom postcondition_mut_hist_inv_F_spec:
+  forall self: t_F, args: t_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    -> hist_inv_F self res_state
+
+predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+
+meta "rewrite_def" predicate invariant_ref_Item
+
+predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+
+meta "rewrite_def" predicate inv_ref_Item
+
+predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_Item
+
+predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+
+meta "rewrite_def" predicate inv_Seq_Item
+
+predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+
+meta "rewrite_def" predicate invariant_refmut_F
+
+predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
+
+meta "rewrite_def" predicate inv_refmut_F
+
+predicate preservation_I [@inline:trivial] (iter: t_I) (func: t_F) =
+  forall s: Seq.seq t_Item, e1: t_Item, e2: t_Item, f: MutBorrow.t t_F, b: t_B, i: t_I [produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_F f.current e1 f.final b]. hist_inv_F func f.current
+    -> inv_Seq_Item s /\ inv_Item e1 /\ inv_Item e2 /\ inv_refmut_F f
+    -> produces_I iter (Seq.snoc (Seq.snoc s e1) e2) i
+    -> postcondition_mut_F f.current e1 f.final b -> precondition_F f.final e2
+
+meta "rewrite_def" predicate preservation_I
+
+predicate reinitialize_I [@inline:trivial] =
+  forall iter: MutBorrow.t t_I, func: t_F. completed_I iter
+    -> next_precondition_I iter.final func /\ preservation_I iter.final func
+
+meta "rewrite_def" predicate reinitialize_I
+
+predicate invariant_Map_I_F (self: t_Map_I_F) =
+  inv_I (iter_Map_I_F self)
+  /\ inv_F (func_Map_I_F self)
+  /\ reinitialize_I
+  /\ preservation_I (iter_Map_I_F self) (func_Map_I_F self)
+  /\ next_precondition_I (iter_Map_I_F self) (func_Map_I_F self)
+
+axiom invariant_Map_I_F_spec: forall self: t_Map_I_F [invariant_Map_I_F self]. invariant_Map_I_F self
+    -> inv_I (iter_Map_I_F self) /\ inv_F (func_Map_I_F self)
+
+predicate inv_Map_I_F (_1: t_Map_I_F)
+
+axiom inv_axiom: forall x: t_Map_I_F [inv_Map_I_F x]. inv_Map_I_F x -> invariant_Map_I_F x
+
+predicate invariant_ref_Map_I_F [@inline:trivial] (self: t_Map_I_F) = inv_Map_I_F self
+
+meta "rewrite_def" predicate invariant_ref_Map_I_F
+
+predicate inv_ref_Map_I_F [@inline:trivial] (_1: t_Map_I_F) = invariant_ref_Map_I_F _1
+
+meta "rewrite_def" predicate inv_ref_Map_I_F
+
+predicate invariant_ref_I [@inline:trivial] (self: t_I) = inv_I self
+
+meta "rewrite_def" predicate invariant_ref_I
+
+predicate inv_ref_I [@inline:trivial] (_1: t_I) = invariant_ref_I _1
+
+meta "rewrite_def" predicate inv_ref_I
+
+predicate precondition_size_hint (self: ()) (args: t_I)
+
+axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self_ = args in inv_ref_I self_)
+    -> precondition_size_hint () args
+
+predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) =
+  postcondition_size_hint self args result
+
+meta "rewrite_def" predicate postcondition_once_size_hint
+
+let size_hint_I (self_: t_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+    (! return {result}) ]
+
+let size_hint_Map_I_F (self_: t_Map_I_F) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Map_I_F self_}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint ensures] postcondition_size_hint () (iter_Map_I_F self_) result}
+    (! return {result}) ]
+
+function size_hint_exact_I (self: t_I) (r: tup2_usize_Option_usize) : ()
+
+axiom size_hint_exact_I_spec: forall self: t_I, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> r.f1 = Some (r.f0)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Map_I_F
+
+constant r : tup2_usize_Option_usize
+
+function size_hint_exact_Map_I_F (self: t_Map_I_F) (r: tup2_usize_Option_usize) : ()
+
+goal vc_size_hint_exact_Map_I_F: postcondition_size_hint'0 () self r
+  -> ([@stop_split] [@expl:size_hint_exact requires] postcondition_size_hint () (iter_Map_I_F self) r)
+  /\ (([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))
+  -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0)))

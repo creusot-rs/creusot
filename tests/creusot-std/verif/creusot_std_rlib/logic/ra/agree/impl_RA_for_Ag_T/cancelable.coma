@@ -1,0 +1,24 @@
+(* <logic::ra::agree::Ag<T> as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+type t_Ag_T = { f0: t_T }
+
+type t_Option_Ag_T = None | Some t_Ag_T
+
+function op_Ag_T (self: t_Ag_T) (other: t_Ag_T) : t_Option_Ag_T = if self.f0 = other.f0 then Some self else None
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Ag_T
+
+predicate cancelable_Ag_T (self: t_Ag_T)
+
+goal vc_cancelable_Ag_T: [@stop_split] [@expl:cancelable ensures] true
+  = (forall x: t_Ag_T, y: t_Ag_T. op_Ag_T self x <> None -> op_Ag_T self x = op_Ag_T self y -> x = y)

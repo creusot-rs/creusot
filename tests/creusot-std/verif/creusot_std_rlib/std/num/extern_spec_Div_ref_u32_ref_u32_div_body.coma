@@ -1,0 +1,37 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt32
+use int.ComputerDivision
+use creusot.prelude.Any
+use int.Int
+
+constant const_MIN: UInt32.t = (0: UInt32.t)
+
+let div_ref_u32 (self_: UInt32.t) (rhs: UInt32.t) (return (x: UInt32.t)) =
+{[@stop_split] [@expl:div_ref_u32 requires] ([@stop_split] [@expl:div requires #0] UInt32.t'int rhs <> 0)
+  /\ ([@stop_split] [@expl:div requires #1] not (UInt32.t'int self_ = UInt32.t'int const_MIN
+  /\ UInt32.t'int rhs = - 1))}
+  any
+  [ return (result: UInt32.t) -> {[@stop_split] [@expl:div ensures] UInt32.t'int result
+    = ComputerDivision.div (UInt32.t'int self_) (UInt32.t'int rhs)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Div__ref_u32__ref_u32_div_body (self_: UInt32.t) (rhs: UInt32.t) (return (x: UInt32.t)) =
+{[@stop_split] [@expl:extern_spec_Div__ref_u32__ref_u32_div_body requires] ([@stop_split] [@expl:extern_spec_Div__ref_u32__ref_u32_div_body requires #0] UInt32.t'int rhs
+    <> 0)
+  /\ ([@stop_split] [@expl:extern_spec_Div__ref_u32__ref_u32_div_body requires #1] not (UInt32.t'int self_
+    = UInt32.t'int const_MIN
+  /\ UInt32.t'int rhs = - 1))}
+  (! bb0
+  [ bb0 = s0 [ s0 = div_ref_u32 {self_} {rhs} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: UInt32.t = Any.any_l () | & self_: UInt32.t = self_ | & rhs: UInt32.t = rhs ])
+  [ return (result: UInt32.t) ->
+  {[@stop_split] [@expl:extern_spec_Div__ref_u32__ref_u32_div_body ensures] UInt32.t'int result
+    = ComputerDivision.div (UInt32.t'int self_) (UInt32.t'int rhs)}
+    (! return {result}) ]

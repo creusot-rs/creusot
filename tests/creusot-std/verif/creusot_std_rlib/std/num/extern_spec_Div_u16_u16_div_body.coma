@@ -1,0 +1,36 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt16
+use creusot.prelude.Any
+use int.ComputerDivision
+use int.Int
+
+constant const_MIN: UInt16.t = (0: UInt16.t)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Div_u16_u16_div_body (self_: UInt16.t) (rhs: UInt16.t) (return (x: UInt16.t)) =
+{[@stop_split] [@expl:extern_spec_Div_u16_u16_div_body requires] ([@stop_split] [@expl:extern_spec_Div_u16_u16_div_body requires #0] UInt16.t'int rhs
+    <> 0)
+  /\ ([@stop_split] [@expl:extern_spec_Div_u16_u16_div_body requires #1] not (UInt16.t'int self_
+    = UInt16.t'int const_MIN
+  /\ UInt16.t'int rhs = - 1))}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_12 <- rhs ] s1
+    | s1 = [ &_13 <- _12 = (0: UInt16.t) ] s2
+    | s2 = {[@expl:division by zero] not _13} s3
+    | s3 = UInt16.div {self_} {_12} (fun (_x: UInt16.t) -> [ &_ret <- _x ] s4)
+    | s4 = return {_ret} ] ]
+  [ & _ret: UInt16.t = Any.any_l ()
+  | & self_: UInt16.t = self_
+  | & rhs: UInt16.t = rhs
+  | & _12: UInt16.t = Any.any_l ()
+  | & _13: bool = Any.any_l () ])
+  [ return (result: UInt16.t) -> {[@stop_split] [@expl:extern_spec_Div_u16_u16_div_body ensures] UInt16.t'int result
+    = ComputerDivision.div (UInt16.t'int self_) (UInt16.t'int rhs)}
+    (! return {result}) ]

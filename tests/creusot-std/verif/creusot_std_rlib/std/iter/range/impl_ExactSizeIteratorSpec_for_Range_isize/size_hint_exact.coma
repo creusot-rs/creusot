@@ -1,0 +1,63 @@
+(* <std::ops::Range<isize> as std::iter::ExactSizeIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int64
+use creusot.int.UInt64
+use int.Int
+
+type t_Range_isize = { start: Int64.t; end': Int64.t }
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function deep_model_isize [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
+
+meta "rewrite_def" function deep_model_isize
+
+constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate postcondition_size_hint (self: ()) (args: t_Range_isize) (result: tup2_usize_Option_usize) =
+  let self_ = args in (ge_log_Int (deep_model_isize self_.start) (deep_model_isize self_.end')
+    -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+  /\ (let s = deep_model_isize self_.end' - deep_model_isize self_.start in ge_log_Int s 0
+      /\ s <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+  /\ (gt_log_Int (deep_model_isize self_.end' - deep_model_isize self_.start) (UInt64.t'int const_MAX)
+  -> result = { f0 = const_MAX; f1 = None })
+
+meta "rewrite_def" predicate postcondition_size_hint
+
+let size_hint_Range_isize (self_: t_Range_isize) (return (x: tup2_usize_Option_usize)) = any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint_Range_isize ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_isize self_.start) (deep_model_isize self_.end')
+      -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+    /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_isize self_.end'
+      - deep_model_isize self_.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
+      -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
+    /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_isize self_.end'
+      - deep_model_isize self_.start) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Range_isize
+
+constant r : tup2_usize_Option_usize
+
+function size_hint_exact_Range_isize (self: t_Range_isize) (r: tup2_usize_Option_usize) : ()
+
+goal vc_size_hint_exact_Range_isize: postcondition_size_hint () self r
+  -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))

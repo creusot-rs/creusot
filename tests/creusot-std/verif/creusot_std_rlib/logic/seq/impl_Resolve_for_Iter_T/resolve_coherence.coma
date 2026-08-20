@@ -1,0 +1,39 @@
+(* <logic::seq::Iter<T> as resolve::Resolve> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use int.Int
+
+type t_T
+
+type t_Iter_T = { f0: Seq.seq t_T }
+
+predicate resolve_T (_1: t_T)
+
+predicate resolve_Seq_T (self: Seq.seq t_T) = forall i: int. 0 <= i /\ i < Seq.length self -> resolve_T (Seq.get self i)
+
+predicate resolve_Seq_T'0 [@inline:trivial] (_1: Seq.seq t_T) = resolve_Seq_T _1
+
+meta "rewrite_def" predicate resolve_Seq_T'0
+
+predicate structural_resolve_Iter_T (_1: t_Iter_T) = resolve_Seq_T'0 _1.f0
+
+function view_Iter_T (self: t_Iter_T) : Seq.seq t_T = self.f0
+
+predicate resolve_Iter_T [@inline:trivial] (self: t_Iter_T) = resolve_Seq_T'0 (view_Iter_T self)
+
+meta "rewrite_def" predicate resolve_Iter_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Iter_T
+
+function resolve_coherence_Iter_T (self: t_Iter_T) : ()
+
+goal vc_resolve_coherence_Iter_T: structural_resolve_Iter_T self
+  -> ([@stop_split] [@expl:resolve_coherence ensures] resolve_Iter_T self)

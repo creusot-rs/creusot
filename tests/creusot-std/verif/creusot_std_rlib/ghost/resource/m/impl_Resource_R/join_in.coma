@@ -1,0 +1,108 @@
+(* ghost::resource::m::Resource<R> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+
+type t_Resource_R
+
+let dummy_R (return (x: t_Resource_R)) = any [ return (result: t_Resource_R) -> (! return {result}) ]
+
+let replace_Resource_R (dest: MutBorrow.t t_Resource_R) (src: t_Resource_R) (return (x: t_Resource_R)) = any
+  [ return (result: t_Resource_R) ->
+  {[@stop_split] [@expl:replace_Resource_R ensures] ([@stop_split] [@expl:replace ensures #0] dest.final = src)
+    /\ ([@stop_split] [@expl:replace ensures #1] result = dest.current)}
+    (! return {result}) ]
+
+type t_Id
+
+function id_R (self: t_Resource_R) : t_Id
+
+type t_R
+
+function val_R (self: t_Resource_R) : t_R
+
+function view_Resource_R [@inline:trivial] (self: t_Resource_R) : t_R = val_R self
+
+meta "rewrite_def" function view_Resource_R
+
+type t_Option_R = None | Some t_R
+
+function op_R (self: t_R) (other: t_R) : t_Option_R
+
+predicate incl_R (self: t_R) (other: t_R)
+
+axiom incl_R_spec: forall self: t_R, other: t_R [incl_R self other]. incl_R self other
+    = (exists factor: t_R. op_R self factor = Some other)
+
+function incl_transitive_R (a: t_R) (b: t_R) (c: t_R) : ()
+
+axiom incl_transitive_R_spec: forall a: t_R, b: t_R, c: t_R. incl_R a b -> incl_R b c -> incl_R a c
+
+function associative_some_R (a: t_R) (b: t_R) (c: t_R) (ab: t_R) (bc: t_R) : ()
+
+axiom associative_some_R_spec: forall a: t_R, b: t_R, c: t_R, ab: t_R, bc: t_R. op_R a b = Some ab
+    -> op_R b c = Some bc -> op_R a bc = op_R ab c
+
+function associative_none_R (a: t_R) (b: t_R) (c: t_R) (bc: t_R) : ()
+
+axiom associative_none_R_spec: forall a: t_R, b: t_R, c: t_R, bc: t_R. op_R a b = None
+    -> op_R b c = Some bc -> op_R a bc = None
+
+function commutative_R (a: t_R) (b: t_R) : ()
+
+axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
+
+function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
+
+axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
+
+let join_R (self: t_Resource_R) (other: t_Resource_R) (return (x: t_Resource_R)) =
+{[@stop_split] [@expl:join requires] id_R self = id_R other}
+  any
+  [ return (result: t_Resource_R) ->
+  {[@stop_split] [@expl:join_R ensures] ([@stop_split] [@expl:join ensures #0] id_R result = id_R self)
+    /\ ([@stop_split] [@expl:join ensures #1] Some (view_Resource_R result)
+    = op_R (view_Resource_R self) (view_Resource_R other))}
+    (! return {result}) ]
+
+predicate resolve_refmut_Resource_R [@inline:trivial] (_1: MutBorrow.t t_Resource_R) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Resource_R
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let join_in_R (self: MutBorrow.t t_Resource_R) (other: t_Resource_R) (return (x: ())) =
+{[@stop_split] [@expl:join_in requires] id_R self.current = id_R other}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = dummy_R (fun (_x: t_Resource_R) -> [ &_13 <- _x ] s1)
+    | s1 = MutBorrow.borrow_mut <t_Resource_R> {self.current}
+        (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_12 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
+    | s2 = replace_Resource_R {_12} {_13} (fun (_x: t_Resource_R) -> [ &this <- _x ] s3)
+    | s3 = join_R {this} {other} (fun (_x: t_Resource_R) -> [ &this'0 <- _x ] s4)
+    | s4 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
+        (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_18 <- _bor ] [ &self <- { self with current = _bor.final } ] s5)
+    | s5 = replace_Resource_R {_18} {this'0} (fun (_x: t_Resource_R) -> [ &_17 <- _x ] s6)
+    | s6 = -{resolve_refmut_Resource_R self}- s7
+    | s7 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l ()
+  | & self: MutBorrow.t t_Resource_R = self
+  | & other: t_Resource_R = other
+  | & this: t_Resource_R = Any.any_l ()
+  | & _12: MutBorrow.t t_Resource_R = Any.any_l ()
+  | & _13: t_Resource_R = Any.any_l ()
+  | & this'0: t_Resource_R = Any.any_l ()
+  | & _17: t_Resource_R = Any.any_l ()
+  | & _18: MutBorrow.t t_Resource_R = Any.any_l () ])
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:join_in_R ensures] ([@stop_split] [@expl:join_in ensures #0] id_R self.final
+      = id_R self.current)
+    /\ ([@stop_split] [@expl:join_in ensures #1] Some (view_Resource_R self.final)
+    = op_R (view_Resource_R self.current) (view_Resource_R other))}
+    (! return {result}) ]

@@ -1,0 +1,49 @@
+(* <ghost::fn_ghost::FnGhostWrapper<F> as std::ops::FnOnce<I>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_F
+
+type t_FnGhostWrapper_F = { f0: t_F }
+
+type t_I
+
+predicate inv_F (_1: t_F)
+
+predicate inv_FnGhostWrapper_F (_1: t_FnGhostWrapper_F)
+
+axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
+
+predicate inv_I (_1: t_I)
+
+predicate precondition_F (self: t_F) (args: t_I)
+
+predicate precondition_FnGhostWrapper_F (self: t_FnGhostWrapper_F) (args: t_I) = precondition_F self.f0 args
+
+meta "rewrite_def" predicate precondition_FnGhostWrapper_F
+
+type t_Output
+
+predicate inv_Output (_1: t_Output)
+
+predicate postcondition_once_F (self: t_F) (args: t_I) (result: t_Output)
+
+predicate postcondition_once_FnGhostWrapper_F (self: t_FnGhostWrapper_F) (args: t_I) (result: t_Output) =
+  postcondition_once_F self.f0 args result
+
+meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_F
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self_: t_FnGhostWrapper_F, arg: t_I. inv_FnGhostWrapper_F self_
+    -> inv_I arg
+    -> precondition_FnGhostWrapper_F self_ arg
+    -> inv_FnGhostWrapper_F self_
+    /\ inv_I arg
+    /\ precondition_FnGhostWrapper_F self_ arg
+    /\ (forall result: t_Output. inv_Output result /\ postcondition_once_FnGhostWrapper_F self_ arg result
+      -> inv_Output result /\ postcondition_once_FnGhostWrapper_F self_ arg result)

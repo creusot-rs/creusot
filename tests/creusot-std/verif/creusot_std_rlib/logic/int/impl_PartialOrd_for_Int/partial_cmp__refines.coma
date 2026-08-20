@@ -1,0 +1,34 @@
+(* <logic::int::Int as std::cmp::PartialOrd> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use int.Int
+
+type t_Ordering = Less | Equal | Greater
+
+function cmp_log_Int (self: int) (other: int) : t_Ordering = if self = other then
+    Equal
+  else
+    if self < other then Less else Greater
+
+
+type t_Option_Ordering = None | Some t_Ordering
+
+function partial_cmp_log_Int (self: int) (other: int) : t_Option_Ordering = if self = other then
+    Some (Equal)
+  else
+    if self < other then Some (Less) else if other < self then Some (Greater) else None
+
+
+function deep_model_Int [@inline:trivial] (self: int) : int = self
+
+meta "rewrite_def" function deep_model_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self_: int, rhs: int. forall result: t_Option_Ordering. result = Some (cmp_log_Int self_ rhs)
+      -> result = partial_cmp_log_Int (deep_model_Int self_) (deep_model_Int rhs)

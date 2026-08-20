@@ -1,0 +1,59 @@
+(* logic::fset::FSet<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use set.Fset
+use map.Map
+use int.Int
+
+type t_T
+
+type t_U
+
+predicate contains_U [@inline:trivial] (self: Fset.fset t_U) (e: t_U) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_U
+
+predicate contains_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) = Fset.mem e self
+
+meta "rewrite_def" predicate contains_T
+
+function remove_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) : Fset.fset t_T = Fset.remove e self
+
+meta "rewrite_def" function remove_T
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+  ge_log_Int self 0 /\ gt_log_Int self other
+
+meta "rewrite_def" predicate well_founded_relation_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Fset.fset t_T
+
+constant f : Map.map t_T (Fset.fset t_U)
+
+function unions_T (self: Fset.fset t_T) (f: Map.map t_T (Fset.fset t_U)) : Fset.fset t_U
+
+goal vc_unions_T: if Fset.cardinal self = 0 then
+    [@stop_split] [@expl:unions ensures] forall y: t_U. contains_U (Fset.empty: Fset.fset t_U) y
+      = (exists x: t_T. contains_T self x /\ contains_U (Map.get f x) y)
+  else
+    let x = Fset.pick self in ([@expl:variant decreases] well_founded_relation_Int (Fset.cardinal self) (Fset.cardinal (remove_T self x)))
+    /\ (([@stop_split] [@expl:unions ensures] forall y: t_U. contains_U (unions_T (remove_T self x) f) y
+        = (exists x'0: t_T. contains_T (remove_T self x) x'0 /\ contains_U (Map.get f x'0) y))
+    -> ([@stop_split] [@expl:unions ensures] forall y: t_U. contains_U (Fset.union (Map.get f x) (unions_T (remove_T self x) f)) y
+      = (exists x'0: t_T. contains_T self x'0 /\ contains_U (Map.get f x'0) y)))
+  

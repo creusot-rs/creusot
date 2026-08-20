@@ -1,0 +1,100 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+type t_U
+
+type tup2_T_U = { f0: t_T; f1: t_U }
+
+type t_Option_tup2_T_U = None | Some tup2_T_U
+
+let elim_Some (_x: t_Option_tup2_T_U) (return (f0'0: tup2_T_U)) = any
+  [ _k (f0'0: tup2_T_U) -> {Some f0'0 = _x} (! return {f0'0})
+  | _chk -> (! {[@expl:elim Some] match _x with
+      | Some _ -> true
+      | _ -> false
+      end}
+    any) ]
+
+type t_Option_T = None'0 | Some'0 t_T
+
+type t_Option_U = None'1 | Some'1 t_U
+
+type tup2_Option_T_Option_U = { f0'0: t_Option_T; f1'0: t_Option_U }
+
+predicate inv_T (_1: t_T)
+
+predicate inv_U (_1: t_U)
+
+predicate inv_tup2_T_U [@inline:trivial] (_1: tup2_T_U) = inv_T _1.f0 /\ inv_U _1.f1
+
+meta "rewrite_def" predicate inv_tup2_T_U
+
+predicate inv_Option_tup2_T_U (_1: t_Option_tup2_T_U)
+
+axiom inv_axiom [@rewrite]: forall x: t_Option_tup2_T_U [inv_Option_tup2_T_U x]. inv_Option_tup2_T_U x
+    = match x with
+      | None -> true
+      | Some f0'1 -> inv_tup2_T_U f0'1
+      end
+
+predicate inv_Option_T (_1: t_Option_T)
+
+axiom inv_axiom'0 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
+    = match x with
+      | None'0 -> true
+      | Some'0 f0'1 -> inv_T f0'1
+      end
+
+predicate inv_Option_U (_1: t_Option_U)
+
+axiom inv_axiom'1 [@rewrite]: forall x: t_Option_U [inv_Option_U x]. inv_Option_U x
+    = match x with
+      | None'1 -> true
+      | Some'1 f0'1 -> inv_U f0'1
+      end
+
+predicate inv_tup2_Option_T_Option_U [@inline:trivial] (_1: tup2_Option_T_Option_U) =
+  inv_Option_T _1.f0'0 /\ inv_Option_U _1.f1'0
+
+meta "rewrite_def" predicate inv_tup2_Option_T_Option_U
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_U_Option__tuple2_T_U_unzip_body_T (self_: t_Option_tup2_T_U) (return (x: tup2_Option_T_Option_U)) =
+{[@stop_split] [@expl:extern_spec_T_U_Option__tuple2_T_U_unzip_body 'self_' type invariant] inv_Option_tup2_T_U self_}
+  (! bb0
+  [ bb0 = any [ br0 -> {self_ = None} (! bb3) | br1 (x0: tup2_T_U) -> {self_ = Some x0} (! bb4) ]
+  | bb4 = s0
+    [ s0 = elim_Some {self_} (fun (r0: tup2_T_U) -> [ &t <- r0.f0 ] s1)
+    | s1 = elim_Some {self_} (fun (r0: tup2_T_U) -> [ &u <- r0.f1 ] s2)
+    | s2 = [ &_7 <- Some'0 t ] s3
+    | s3 = [ &_9 <- Some'1 u ] s4
+    | s4 = [ &_ret <- { f0'0 = _7; f1'0 = _9 } ] s5
+    | s5 = return {_ret} ]
+  | bb3 = s0
+    [ s0 = [ &_11 <- None'0 ] s1
+    | s1 = [ &_12 <- None'1 ] s2
+    | s2 = [ &_ret <- { f0'0 = _11; f1'0 = _12 } ] s3
+    | s3 = return {_ret} ] ]
+  [ & _ret: tup2_Option_T_Option_U = Any.any_l ()
+  | & self_: t_Option_tup2_T_U = self_
+  | & t: t_T = Any.any_l ()
+  | & u: t_U = Any.any_l ()
+  | & _7: t_Option_T = Any.any_l ()
+  | & _9: t_Option_U = Any.any_l ()
+  | & _11: t_Option_T = Any.any_l ()
+  | & _12: t_Option_U = Any.any_l () ])
+  [ return (result: tup2_Option_T_Option_U) ->
+  {[@stop_split] [@expl:extern_spec_T_U_Option__tuple2_T_U_unzip_body_T ensures] ([@stop_split] [@expl:extern_spec_T_U_Option__tuple2_T_U_unzip_body result type invariant] inv_tup2_Option_T_Option_U result)
+    /\ ([@stop_split] [@expl:extern_spec_T_U_Option__tuple2_T_U_unzip_body ensures] match self_ with
+      | None -> result = { f0'0 = None'0; f1'0 = None'1 }
+      | Some {f0 = t; f1 = u} -> result = { f0'0 = Some'0 t; f1'0 = Some'1 u }
+      end)}
+    (! return {result}) ]

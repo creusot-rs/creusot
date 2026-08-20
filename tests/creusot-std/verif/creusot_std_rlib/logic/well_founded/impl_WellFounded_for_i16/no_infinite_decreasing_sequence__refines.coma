@@ -1,0 +1,34 @@
+(* <i16 as logic::well_founded::WellFounded> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int16
+use map.Map
+use int.Int
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate gt_log_i16 [@inline:trivial] (self: Int16.t) (other: Int16.t) = Int16.lt other self
+
+meta "rewrite_def" predicate gt_log_i16
+
+predicate well_founded_relation_i16 [@inline:trivial] (self: Int16.t) (other: Int16.t) = gt_log_i16 self other
+
+meta "rewrite_def" predicate well_founded_relation_i16
+
+function index_Mapping_Int_i16 [@inline:trivial] (self: Map.map int Int16.t) (a: int) : Int16.t = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Int_i16
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall s: Map.map int Int16.t. forall result: int. ge_log_Int result 0
+        /\ not well_founded_relation_i16 (index_Mapping_Int_i16 s result) (index_Mapping_Int_i16 s (result + 1))
+      -> ge_log_Int result 0
+      /\ not well_founded_relation_i16 (index_Mapping_Int_i16 s result) (index_Mapping_Int_i16 s (result + 1))

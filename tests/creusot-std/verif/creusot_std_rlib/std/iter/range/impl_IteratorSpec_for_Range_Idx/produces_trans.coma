@@ -1,0 +1,45 @@
+(* <std::ops::Range<Idx> as std::iter::IteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use int.Int
+
+type t_Idx
+
+type t_Range_Idx = { start: t_Idx; end': t_Idx }
+
+function deep_model_Idx (self: t_Idx) : int
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate produces_Range_Idx (self: t_Range_Idx) (visited: Seq.seq t_Idx) (o: t_Range_Idx) =
+  self.end' = o.end'
+  /\ deep_model_Idx self.start <= deep_model_Idx o.start
+  /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_Idx o.start <= deep_model_Idx o.end')
+  /\ Seq.length visited = deep_model_Idx o.start - deep_model_Idx self.start
+  /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    -> deep_model_Idx (Seq.get visited i) = deep_model_Idx self.start + i)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_Range_Idx
+
+constant ab : Seq.seq t_Idx
+
+constant b : t_Range_Idx
+
+constant bc : Seq.seq t_Idx
+
+constant c : t_Range_Idx
+
+function produces_trans_Range_Idx (a: t_Range_Idx) (ab: Seq.seq t_Idx) (b: t_Range_Idx) (bc: Seq.seq t_Idx) (c: t_Range_Idx) : ()
+
+goal vc_produces_trans_Range_Idx: produces_Range_Idx a ab b
+  -> produces_Range_Idx b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Range_Idx a (Seq.(++) ab bc) c)

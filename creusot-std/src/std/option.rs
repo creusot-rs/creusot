@@ -795,7 +795,7 @@ impl<T> IteratorSpec for IterMut<'_, T> {
         pearlite! { (*self)@ == None && resolve(self) }
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||

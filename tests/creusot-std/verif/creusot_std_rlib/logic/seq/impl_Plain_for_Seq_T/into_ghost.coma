@@ -1,0 +1,189 @@
+(* <logic::seq::Seq<T> as ghost::Plain> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use creusot.int.Int128
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+use int.Int
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate invariant_Ghost_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+
+meta "rewrite_def" predicate invariant_Ghost_Seq_T
+
+predicate inv_Ghost_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Ghost_Seq_T _1
+
+meta "rewrite_def" predicate inv_Ghost_Seq_T
+
+let new_T (return (x: Seq.seq t_T)) = any
+  [ return (result: Seq.seq t_T) ->
+  {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Seq_T result)
+    /\ ([@stop_split] [@expl:new ensures] result = (Seq.empty: Seq.seq t_T))}
+    (! return {result}) ]
+
+let into_inner_Seq_T (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
+{[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Seq_T self}
+  any
+  [ return (result: Seq.seq t_T) ->
+  {[@stop_split] [@expl:into_inner_Seq_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_Seq_T result)
+    /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+    (! return {result}) ]
+
+let into_ghost_Int (self: int) (return (x: int)) = any
+  [ return (result: int) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+
+let into_inner_Int (self: int) (return (x: int)) = any
+  [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+
+let new (value: Int128.t) (return (x: int)) = any
+  [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+  ge_log_Int self 0 /\ gt_log_Int self other
+
+meta "rewrite_def" predicate well_founded_relation_Int
+
+let lt_Int (self: int) (other: int) (return (x: bool)) = any
+  [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] result = (self < other)} (! return {result}) ]
+
+predicate invariant_Ghost_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_Ghost_T
+
+predicate inv_Ghost_T [@inline:trivial] (_1: t_T) = invariant_Ghost_T _1
+
+meta "rewrite_def" predicate inv_Ghost_T
+
+let into_ghost_T (self: t_T) (return (x: t_T)) = any
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:into_ghost_T ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_T result)
+    /\ ([@stop_split] [@expl:into_ghost ensures] result = self)}
+    (! return {result}) ]
+
+let into_inner_T (self: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_T self}
+  any
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:into_inner_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_T result)
+    /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+    (! return {result}) ]
+
+predicate invariant_refmut_Seq_T [@inline:trivial] (self: MutBorrow.t (Seq.seq t_T)) =
+  inv_Seq_T self.current /\ inv_Seq_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_Seq_T
+
+predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = invariant_refmut_Seq_T _1
+
+meta "rewrite_def" predicate inv_refmut_Seq_T
+
+let push_back_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
+{[@stop_split] [@expl:push_back_ghost_T requires] ([@stop_split] [@expl:push_back_ghost 'self' type invariant] inv_refmut_Seq_T self)
+  /\ ([@stop_split] [@expl:push_back_ghost 'x' type invariant] inv_T x)}
+  any
+  [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
+    (! return {result}) ]
+
+let add_Int (self: int) (other: int) (return (x: int)) = any
+  [ return (result: int) -> {[@stop_split] [@expl:add ensures] result = self + other} (! return {result}) ]
+
+let new_Seq_T (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) = {[@stop_split] [@expl:new 'x' type invariant] inv_Seq_T x}
+  any
+  [ return (result: Seq.seq t_T) ->
+  {[@stop_split] [@expl:new_Seq_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Seq_T result)
+    /\ ([@stop_split] [@expl:new ensures] result = x)}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let into_ghost_Seq_T (snap: Seq.seq t_T) (return (x: Seq.seq t_T)) = (! bb0
+  [ bb0 = s0
+    [ s0 = new_T (fun (_x: Seq.seq t_T) -> [ &_6 <- _x ] s1)
+    | s1 = into_inner_Seq_T {_6} (fun (_x: Seq.seq t_T) -> [ &res <- _x ] s2)
+    | s2 = [ &len <- Seq.length snap ] s3
+    | s3 = into_ghost_Int {len} (fun (_x: int) -> [ &_11 <- _x ] s4)
+    | s4 = into_inner_Int {_11} (fun (_x: int) -> [ &len'0 <- _x ] s5)
+    | s5 = new {(0: Int128.t)} (fun (_x: int) -> [ &_14 <- _x ] s6)
+    | s6 = into_inner_Int {_14} (fun (_x: int) -> [ &i <- _x ] s7)
+    | s7 = bb8 ]
+  | bb8 = bb8invariant
+    [ bb8 = {[@expl:loop variant] well_founded_relation_Int variant_old_bb8 (len'0 - i)} bb8invariant
+    | bb8invariant = {[@expl:inferred invariant: type invariant] inv_Seq_T res}
+      {[@expl:loop invariant #0] i <= len'0}
+      {[@expl:loop invariant #1] Seq.length res = i}
+      {[@expl:loop invariant #2] forall j: int. 0 <= j /\ j < i -> Seq.get res j = Seq.get snap j}
+      (! [ &variant_old_bb8 <- len'0 - i ] s0)
+      [ s0 = lt_Int {i} {len'0} (fun (_x: bool) -> [ &_31 <- _x ] s1)
+      | s1 = any [ br0 -> {_31 = false} (! bb19) | br1 -> {_31} (! bb11) ] ]
+      [ bb11 = s0
+        [ s0 = [ &elem <- Seq.get snap i ] s1
+        | s1 = into_ghost_T {elem} (fun (_x: t_T) -> [ &_41 <- _x ] s2)
+        | s2 = into_inner_T {_41} (fun (_x: t_T) -> [ &_40 <- _x ] s3)
+        | s3 = MutBorrow.borrow_mut <Seq.seq t_T> {res}
+            (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
+              [ &_39 <- _bor ] -{inv_Seq_T _bor.final}-
+              [ &res <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Seq_T res} any) ]
+        | s4 = push_back_ghost_T {_39} {_40} (fun (_x: ()) -> [ &_38 <- _x ] s5)
+        | s5 = new {(1: Int128.t)} (fun (_x: int) -> [ &_46 <- _x ] s6)
+        | s6 = into_inner_Int {_46} (fun (_x: int) -> [ &_45 <- _x ] s7)
+        | s7 = add_Int {i} {_45} (fun (_x: int) -> [ &_43 <- _x ] s8)
+        | s8 = [ &i <- _43 ] s9
+        | s9 = bb8 ] ] ]
+  | bb19 = s0 [ s0 = new_Seq_T {res} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: Seq.seq t_T = Any.any_l ()
+  | & snap: Seq.seq t_T = snap
+  | & res: Seq.seq t_T = Any.any_l ()
+  | & _6: Seq.seq t_T = Any.any_l ()
+  | & len: int = Any.any_l ()
+  | & len'0: int = Any.any_l ()
+  | & _11: int = Any.any_l ()
+  | & i: int = Any.any_l ()
+  | & _14: int = Any.any_l ()
+  | & _31: bool = Any.any_l ()
+  | & elem: t_T = Any.any_l ()
+  | & _38: () = Any.any_l ()
+  | & _39: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
+  | & _40: t_T = Any.any_l ()
+  | & _41: t_T = Any.any_l ()
+  | & _43: int = Any.any_l ()
+  | & _45: int = Any.any_l ()
+  | & _46: int = Any.any_l ()
+  | & variant_old_bb8: int = Any.any_l () ])
+  [ return (result: Seq.seq t_T) ->
+  {[@stop_split] [@expl:into_ghost_Seq_T ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_Seq_T result)
+    /\ ([@stop_split] [@expl:into_ghost ensures] result = snap)}
+    (! return {result}) ]

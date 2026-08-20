@@ -1,0 +1,48 @@
+(* <std::slice::IterMut<'a, T> as std::iter::DoubleEndedIteratorSpec> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use seq.Seq
+use creusot.slice.Slice64
+use seq.Reverse
+use int.Int
+
+type t_IterMut_T
+
+type t_T
+
+function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
+
+meta "rewrite_def" function index_slice_T
+
+function to_mut_seq_slice_T (self: MutBorrow.t (Slice64.slice t_T)) : Seq.seq (MutBorrow.t t_T)
+
+axiom to_mut_seq_slice_T_spec:
+  forall self: MutBorrow.t (Slice64.slice t_T) [to_mut_seq_slice_T self]. Seq.length (to_mut_seq_slice_T self)
+    = Seq.length (Slice64.view self.current)
+
+axiom to_mut_seq_slice_T_spec'0:
+  forall self: MutBorrow.t (Slice64.slice t_T) [to_mut_seq_slice_T self]. forall i: int. 0 <= i
+        /\ i < Seq.length (to_mut_seq_slice_T self)
+      -> Seq.get (to_mut_seq_slice_T self) i
+      = MutBorrow.borrow_logic (index_slice_T self.current i) (index_slice_T self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
+
+function view_IterMut_T (self: t_IterMut_T) : MutBorrow.t (Slice64.slice t_T)
+
+axiom view_IterMut_T_spec:
+  forall self: t_IterMut_T [view_IterMut_T self]. Seq.length (Slice64.view (view_IterMut_T self).final)
+    = Seq.length (Slice64.view (view_IterMut_T self).current)
+
+predicate produces_back_IterMut_T (self: t_IterMut_T) (visited: Seq.seq (MutBorrow.t t_T)) (o: t_IterMut_T) =
+  to_mut_seq_slice_T (view_IterMut_T self) = Seq.(++) (to_mut_seq_slice_T (view_IterMut_T o)) (Reverse.reverse visited)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall self: t_IterMut_T. forall result: (). produces_back_IterMut_T self (Seq.empty: Seq.seq (MutBorrow.t t_T)) self
+      -> produces_back_IterMut_T self (Seq.empty: Seq.seq (MutBorrow.t t_T)) self

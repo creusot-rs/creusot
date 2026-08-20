@@ -1,0 +1,80 @@
+(* logic::seq::Seq<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use seq.Seq
+use int.Int
+
+type t_T
+
+function push_front_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
+
+meta "rewrite_def" function push_front_T
+
+function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+
+function pop_front_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+  ge_log_Int self 0 /\ gt_log_Int self other
+
+meta "rewrite_def" predicate well_founded_relation_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq t_T
+
+constant position : int
+
+constant value : t_T
+
+function insert_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
+
+goal vc_insert_T: 0 <= position /\ position <= Seq.length self
+  -> (if position = 0 then
+    let result = push_front_T self value in [@stop_split] [@expl:insert_T ensures] ([@stop_split] [@expl:insert ensures #0] Seq.length result
+      = Seq.length self + 1)
+    /\ ([@stop_split] [@expl:insert ensures #1] forall i: int. 0 <= i /\ i <= Seq.length self
+      -> (if i < position then
+        Seq.get result i = Seq.get self i
+      else
+        if i = position then Seq.get result i = value else Seq.get result i = Seq.get self (i - 1)
+      ))
+  else
+    (([@stop_split] [@expl:insert requires] 0 <= position - 1 /\ position - 1 <= Seq.length (pop_front_T self))
+      /\ ([@expl:variant decreases] well_founded_relation_Int position (position - 1)))
+    /\ (([@stop_split] [@expl:insert ensures] ([@stop_split] [@expl:insert ensures #0] Seq.length (insert_T (pop_front_T self) (position
+          - 1) value)
+        = Seq.length (pop_front_T self) + 1)
+      /\ ([@stop_split] [@expl:insert ensures #1] forall i: int. 0 <= i /\ i <= Seq.length (pop_front_T self)
+        -> (if i < position - 1 then
+          Seq.get (insert_T (pop_front_T self) (position - 1) value) i = Seq.get (pop_front_T self) i
+        else
+          if i = position - 1 then
+            Seq.get (insert_T (pop_front_T self) (position - 1) value) i = value
+          else
+            Seq.get (insert_T (pop_front_T self) (position - 1) value) i = Seq.get (pop_front_T self) (i - 1)
+        
+        )))
+    -> (let result = push_front_T (insert_T (pop_front_T self) (position
+    - 1) value) (Seq.get self 0) in [@stop_split] [@expl:insert_T ensures] ([@stop_split] [@expl:insert ensures #0] Seq.length result
+      = Seq.length self + 1)
+    /\ ([@stop_split] [@expl:insert ensures #1] forall i: int. 0 <= i /\ i <= Seq.length self
+      -> (if i < position then
+        Seq.get result i = Seq.get self i
+      else
+        if i = position then Seq.get result i = value else Seq.get result i = Seq.get self (i - 1)
+      ))))
+  )

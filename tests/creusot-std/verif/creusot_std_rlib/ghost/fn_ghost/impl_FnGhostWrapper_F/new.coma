@@ -1,0 +1,26 @@
+(* ghost::fn_ghost::FnGhostWrapper<F> *)
+
+use creusot.prelude.Any
+
+type t_F
+
+type t_FnGhostWrapper_F = { f0: t_F }
+
+predicate inv_F (_1: t_F)
+
+predicate inv_FnGhostWrapper_F (_1: t_FnGhostWrapper_F)
+
+axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let __new_F (f: t_F) (return (x: t_FnGhostWrapper_F)) = {[@stop_split] [@expl:__new 'f' type invariant] inv_F f}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- { f0 = f } ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_FnGhostWrapper_F = Any.any_l () | & f: t_F = f ])
+  [ return (result: t_FnGhostWrapper_F) ->
+  {[@stop_split] [@expl:__new_F ensures] ([@stop_split] [@expl:__new result type invariant] inv_FnGhostWrapper_F result)
+    /\ ([@stop_split] [@expl:__new ensures] result.f0 = f)}
+    (! return {result}) ]

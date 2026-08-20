@@ -1,0 +1,28 @@
+(* <*mut T as std::ptr::SizedPointerExt<T>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Opaque
+use creusot.int.UInt64
+use creusot.prelude.Ptr
+use int.Int
+
+constant size_of_T : int
+
+axiom size_of_T_spec: 0 <= size_of_T
+
+constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: Opaque.ptr, offset: int. 0 <= UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+    -> UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T <= UInt64.t'int const_MAX
+    -> 0 <= UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+    /\ UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T <= UInt64.t'int const_MAX
+    /\ (forall result: Opaque.ptr. UInt64.t'int (Ptr.addr_logic_u64 result)
+        = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T
+      -> UInt64.t'int (Ptr.addr_logic_u64 result) = UInt64.t'int (Ptr.addr_logic_u64 self) + offset * size_of_T)

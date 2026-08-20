@@ -1,0 +1,96 @@
+(* ghost::perm::Perm<*const T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Opaque
+use creusot.prelude.Ptr
+use creusot.int.UInt64
+use creusot.prelude.Any
+
+type t_Perm_ptr_T
+
+type t_T
+
+predicate is_null_ptr_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
+
+function ward_ptr_T (self: t_Perm_ptr_T) : Opaque.ptr
+
+type t_Metadata
+
+predicate metadata_matches_T (_value: t_T) (_metadata: t_Metadata)
+
+function val_ptr_T (self: t_Perm_ptr_T) : t_T
+
+function metadata_T (_1: Opaque.ptr) : t_Metadata
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Perm_ptr_T (self: t_Perm_ptr_T) =
+  not is_null_ptr_T (ward_ptr_T self)
+  /\ metadata_matches_T (val_ptr_T self) (metadata_T (ward_ptr_T self)) /\ inv_ref_T (val_ptr_T self)
+
+predicate inv_Perm_ptr_T (_1: t_Perm_ptr_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_T [inv_Perm_ptr_T x]. inv_Perm_ptr_T x = invariant_Perm_ptr_T x
+
+predicate invariant_Box_Perm_ptr_T_Global (self: t_Perm_ptr_T) = inv_Perm_ptr_T self
+
+predicate inv_Box_Perm_ptr_T_Global [@inline:trivial] (_1: t_Perm_ptr_T) = invariant_Box_Perm_ptr_T_Global _1
+
+meta "rewrite_def" predicate inv_Box_Perm_ptr_T_Global
+
+predicate invariant_Ghost_Box_Perm_ptr_T_Global [@inline:trivial] (self: t_Perm_ptr_T) = inv_Box_Perm_ptr_T_Global self
+
+meta "rewrite_def" predicate invariant_Ghost_Box_Perm_ptr_T_Global
+
+predicate inv_Ghost_Box_Perm_ptr_T_Global [@inline:trivial] (_1: t_Perm_ptr_T) =
+  invariant_Ghost_Box_Perm_ptr_T_Global _1
+
+meta "rewrite_def" predicate inv_Ghost_Box_Perm_ptr_T_Global
+
+predicate invariant_Box_T_Global (self: t_T) = inv_T self
+
+predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+
+meta "rewrite_def" predicate inv_Box_T_Global
+
+let to_box_T (ptr: Opaque.ptr) (own: t_Perm_ptr_T) (return (x: t_T)) =
+{[@stop_split] [@expl:to_box_T requires] ([@stop_split] [@expl:to_box 'own' type invariant] inv_Ghost_Box_Perm_ptr_T_Global own)
+  /\ ([@stop_split] [@expl:to_box requires] ptr = ward_ptr_T own)}
+  any
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:to_box_T ensures] ([@stop_split] [@expl:to_box result type invariant] inv_Box_T_Global result)
+    /\ ([@stop_split] [@expl:to_box ensures] result = val_ptr_T own)}
+    (! return {result}) ]
+
+predicate resolve_T (_1: t_T)
+
+predicate resolve_Box_T_Global [@inline:trivial] (_1: t_T) = resolve_T _1
+
+meta "rewrite_def" predicate resolve_Box_T_Global
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let drop_T (ptr: Opaque.ptr) (own: t_Perm_ptr_T) (return (x: ())) =
+{[@stop_split] [@expl:drop_T requires] ([@stop_split] [@expl:drop 'own' type invariant] inv_Ghost_Box_Perm_ptr_T_Global own)
+  /\ ([@stop_split] [@expl:drop requires] ptr = ward_ptr_T own)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = to_box_T {ptr} {own} (fun (_x: t_T) -> [ &_6 <- _x ] s1)
+    | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_Box_T_Global _6} any) ]
+    | s2 = -{resolve_Box_T_Global _6}- s3
+    | s3 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l () | & ptr: Opaque.ptr = ptr | & own: t_Perm_ptr_T = own | & _6: t_T = Any.any_l () ])
+  [ return (result: ()) -> (! return {result}) ]

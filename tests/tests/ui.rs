@@ -13,7 +13,7 @@ use std::{
     },
     thread,
 };
-use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, StandardStream, WriteColor as _};
+use termcolor::{Buffer, BufferWriter, Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 mod diff;
 use diff::differ;
@@ -52,8 +52,8 @@ struct Args {
     /// Run #[erasure] checks on creusot-std (and only that)
     #[clap(long)]
     erasure_check: bool,
-    /// Only run tests which contain this string
-    filter: Option<String>,
+    /// Only run tests which contain one of these strings
+    filter: Vec<String>,
 }
 
 impl Args {
@@ -87,12 +87,8 @@ fn main() {
         return;
     }
 
-    let mut test_creusot_std = true;
-    if let Some(filter) = &args.filter
-        && !"tests/creusot-std/creusot-std.rs".contains(filter)
-    {
-        test_creusot_std = false;
-    }
+    let test_creusot_std =
+        args.filter.is_empty() || args.filter.iter().any(|filter| filter == "creusot-std");
     let creusot_std_success = translate_creusot_std(&args, &mut paths, test_creusot_std);
 
     let (mut failed, mut total) =
@@ -161,10 +157,16 @@ impl CreusotPaths {
     }
 }
 
-/// Run cargo creusot on creusot-std, output to `/tmp/creusot-std.coma`,
-/// and record compiled artifacts in `paths` (for invoking creusot-rustc ourselves, without cargo).
+const CREUSOT_STD_ACTUAL: &'static str = "tests/creusot-std.actual";
+const CREUSOT_STD: &'static str = "tests/creusot-std";
+
+/// Run cargo creusot on creusot-std
 ///
-/// Returns `false` if the translation changed.
+/// - Output translation to `CREUSOT_STD_ACTUAL`, to be compared with `CREUSOT_STD`.
+/// - Record compiled artifacts in `paths` (for invoking creusot-rustc ourselves, without cargo).
+///
+/// - Exit if the translation failed.
+/// - Returns `false` if the translation succeeded but changed.
 /// This will only check the output of `creusot-std` if `test_creusot_std` is true.
 fn translate_creusot_std(args: &Args, paths: &mut CreusotPaths, test_creusot_std: bool) -> bool {
     print!("Translating creusot-std... ");
@@ -174,21 +176,10 @@ fn translate_creusot_std(args: &Args, paths: &mut CreusotPaths, test_creusot_std
     }
 
     let mut out = args.stream();
-    let tmpfile = if test_creusot_std {
-        let mut tmpfile = std::env::temp_dir();
-        tmpfile.push("creusot-std.coma");
-        Some(tmpfile)
-    } else {
-        None
-    };
-    let output = build_creusot_std(
-        paths,
-        tmpfile.as_ref().map(|p| p.as_path()),
-        true,
-        ErasureCheck::No,
-        args.with_spans,
-    )
-    .expect("could not translate `creusot_std`");
+    let _ = std::fs::remove_dir_all(CREUSOT_STD_ACTUAL); // Remove if it exists
+    let output =
+        build_creusot_std(paths, test_creusot_std, true, ErasureCheck::No, args.with_spans)
+            .expect("could not translate `creusot_std`");
     if !output.status.success() {
         writeln_color!(out, Color::Red, "could not translate");
         out.flush().unwrap();
@@ -223,50 +214,127 @@ fn translate_creusot_std(args: &Args, paths: &mut CreusotPaths, test_creusot_std
         paths.libs.push(path);
     }
 
-    let Some(tmpfile) = tmpfile else {
+    if !test_creusot_std {
         println!();
         return true;
     };
 
-    let actual = std::fs::read_to_string(tmpfile).unwrap();
-    let expect = PathBuf::from("tests/creusot-std/creusot-std.coma");
-    let mut succeeded = true;
-    let (success, buf) = differ(&output, &actual, &expect, None, true, args.force_color).unwrap();
+    let has_stderr = !output.stderr.is_empty();
 
     // Warnings in creusot-std will be counted as an error at the end,
     // but we still allow --bless so we can experiment without resolving warnings immediately.
-    if !output.stderr.is_empty() {
+    if has_stderr {
         writeln_color!(out, Color::Yellow, "warnings");
         out.flush().unwrap();
         eprintln!("{}", std::str::from_utf8(&output.stderr).unwrap());
-        succeeded = false;
     }
 
-    if args.bless {
-        if actual.is_empty() {
-            panic!("creusot-std should have an output!")
-        }
+    let diff = diff_creusot_std(args.force_color);
+    let unchanged = diff.len() == 0;
 
-        if success {
+    if args.bless {
+        if unchanged {
             writeln_color!(out, Color::Green, "unchanged");
         } else {
             writeln_color!(out, Color::Blue, "blessed");
-            std::fs::write(expect, &actual).unwrap();
+            promote_creusot_std();
         }
     } else {
-        if success {
+        if unchanged {
             writeln_color!(out, Color::Green, "ok");
         } else {
             writeln_color!(out, Color::Red, "failure");
-            succeeded = false;
         };
 
-        let wrt = BufferWriter::stdout(ColorChoice::Always);
-        wrt.print(&buf).unwrap();
+        const MAX_CHARS: usize = 3000;
+        if diff.len() < MAX_CHARS {
+            out.write(diff.as_slice()).unwrap();
+        } else {
+            out.write(&diff.as_slice()[..MAX_CHARS]).unwrap();
+            writeln!(out).unwrap();
+            writeln_color!(out, Color::Magenta, "... (output truncated)");
+        }
         out.flush().unwrap();
     }
 
-    succeeded
+    unchanged && !has_stderr
+}
+
+/// Compare Coma files in directories `creusot-std.actual` and `creusot-std`
+fn diff_creusot_std(color: bool) -> Buffer {
+    // glob produces paths in alphabetical order, so we can compare them in one pass.
+    let mut actual = glob::glob(&format!("{CREUSOT_STD_ACTUAL}/**/*.coma"))
+        .unwrap()
+        .map(|path| path.unwrap().strip_prefix(CREUSOT_STD_ACTUAL).unwrap().to_path_buf());
+    let mut expected = glob::glob(&format!("{CREUSOT_STD}/**/*.coma"))
+        .unwrap()
+        .map(|path| path.unwrap().strip_prefix(CREUSOT_STD).unwrap().to_path_buf());
+    let mut cur_actual = actual.next();
+    let mut cur_expected = expected.next();
+    let mut actual_only = vec![];
+    let mut expected_only = vec![];
+    let mut to_diff = vec![];
+    use std::cmp::Ordering::*;
+    loop {
+        match (&cur_actual, &cur_expected) {
+            (Some(actual_file), Some(expected_file)) => match actual_file.cmp(expected_file) {
+                Less => {
+                    actual_only.push(actual_file.clone());
+                    cur_actual = actual.next();
+                }
+                Greater => {
+                    expected_only.push(expected_file.clone());
+                    cur_expected = expected.next();
+                }
+                Equal => {
+                    to_diff.push(actual_file.clone());
+                    cur_actual = actual.next();
+                    cur_expected = expected.next();
+                }
+            },
+            (None, Some(expected_file)) => {
+                expected_only.push(expected_file.clone());
+                expected_only.extend(expected);
+                break;
+            }
+            (Some(actual_file), None) => {
+                actual_only.push(actual_file.clone());
+                actual_only.extend(actual);
+                break;
+            }
+            (None, None) => break,
+        }
+    }
+    let mut out = if color { Buffer::ansi() } else { Buffer::no_color() };
+    if !actual_only.is_empty() {
+        writeln_color!(out, Color::Red, "Only in {CREUSOT_STD_ACTUAL}: {actual_only:?}");
+    }
+    if !expected_only.is_empty() {
+        writeln_color!(out, Color::Red, "Only in {CREUSOT_STD}: {expected_only:?}");
+    }
+    for file in to_diff {
+        diff::differ_simple(
+            &mut out,
+            &PathBuf::from(CREUSOT_STD_ACTUAL).join(&file),
+            &PathBuf::from(CREUSOT_STD).join(&file),
+        );
+    }
+    out
+}
+
+/// Move Coma files from `creusot-std.actual` to `creusot-std`.
+fn promote_creusot_std() {
+    // First remove the existing Coma files in case some no longer exist in the new output.
+    for file in glob::glob(&format!("{}/**/*.coma", CREUSOT_STD)).unwrap() {
+        std::fs::remove_file(file.unwrap()).unwrap();
+    }
+    for source in glob::glob(&format!("{}/**/*.coma", CREUSOT_STD_ACTUAL)).unwrap() {
+        let source = source.unwrap();
+        let mut target = PathBuf::from(CREUSOT_STD);
+        target.push(source.strip_prefix(CREUSOT_STD_ACTUAL).unwrap());
+        std::fs::create_dir_all(target.parent().unwrap()).unwrap();
+        std::fs::rename(source, target).unwrap();
+    }
 }
 
 enum ErasureCheck {
@@ -277,7 +345,7 @@ enum ErasureCheck {
 
 fn build_creusot_std(
     paths: &CreusotPaths,
-    outfile: Option<&Path>,
+    output_coma: bool,
     output_cmeta: bool,
     erasure_check: ErasureCheck,
     with_spans: bool,
@@ -289,28 +357,22 @@ fn build_creusot_std(
         ErasureCheck::Warn => "--erasure-check=warn",
         ErasureCheck::Error => "--erasure-check=error",
     });
+    if output_coma {
+        build.args(["--output-dir", CREUSOT_STD_ACTUAL]);
+    } else {
+        build.arg("--no-output");
+    }
     if output_cmeta {
         build.args(["--creusot-extern", &format!("creusot_std={}", paths.cmeta.display())]);
     } else {
         build.arg("--export-metadata=false");
     }
     if with_spans {
-        build.arg("--span-mode=relative");
+        build.arg("--span-mode=absolute");
     } else {
         build.arg("--span-mode=off");
     }
-    build.args([
-        "--only=coma",
-        "--package",
-        "creusot-std",
-        "--no-check-version",
-        "--spans-relative-to=tests/creusot-std",
-    ]);
-    if let Some(outfile) = outfile {
-        build.arg("--output-file").arg(outfile);
-    } else {
-        build.arg("--no-output");
-    }
+    build.args(["--only=coma", "--package", "creusot-std", "--no-check-version"]);
     build.arg("--creusot-rustc").arg(&paths.creusot_rustc);
     build
         .args(["--", "--package", "creusot-std", "--quiet", "-Fsc-drf", "--message-format=json"])
@@ -462,16 +524,18 @@ where
                 test_count.fetch_add(1, SeqCst);
                 let entry = entry.unwrap();
 
-                if let Some(filter) = &args.filter
-                    && let Some(entry) = entry.to_str()
-                    && !entry.contains(filter)
+                if !args.filter.is_empty()
+                    && !args
+                        .filter
+                        .iter()
+                        .any(|filter| entry.to_str().is_some_and(|entry| entry.contains(filter)))
                 {
                     continue;
                 }
 
                 let entry_name = entry.file_stem().unwrap().to_str().unwrap();
 
-                let mut output = match command_builder(&entry) {
+                let output = match command_builder(&entry) {
                     None => continue,
                     Some(mut c) => {
                         if !args.quiet {
@@ -490,17 +554,9 @@ where
 
                 let stderr = entry.with_extension("stderr");
                 let stdout = entry.with_extension("coma");
-                let actual = String::from_utf8(std::mem::take(&mut output.stdout)).unwrap();
 
-                let (success, buf) = differ(
-                    &output,
-                    &actual,
-                    &stdout,
-                    Some(&stderr),
-                    should_succeed,
-                    args.force_color,
-                )
-                .unwrap();
+                let (success, buf) =
+                    differ(&output, &stdout, &stderr, should_succeed, args.force_color).unwrap();
 
                 let mut out = out.lock().unwrap();
                 let (in_flight, out) = &mut *out;
@@ -512,10 +568,10 @@ where
                 }
 
                 if args.bless && !(should_succeed && !output.status.success()) {
-                    if actual.is_empty() {
+                    if output.stdout.is_empty() {
                         let _ = std::fs::remove_file(stdout);
                     } else {
-                        std::fs::write(stdout, &actual).unwrap();
+                        std::fs::write(stdout, &output.stdout).unwrap();
                     }
 
                     let no_warn = output.stderr.is_empty();
@@ -574,7 +630,7 @@ fn erasure_check(paths: &CreusotPaths) {
     let build_once = |erasure_check, msg: &str| {
         print!("{msg}");
         std::io::stdout().flush().unwrap();
-        let output = build_creusot_std(paths, None, false, erasure_check, false).unwrap();
+        let output = build_creusot_std(paths, false, false, erasure_check, false).unwrap();
         if !output.status.success() {
             println!("failed");
             if !output.stderr.is_empty() {
