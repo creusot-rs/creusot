@@ -40,6 +40,9 @@ struct Args {
     /// We use this option to run tests on especially slow machines, like CI.
     #[clap(long, default_value_t = 1.)]
     time_factor: f64,
+    /// Max parallel provers
+    #[clap(short = 'j')]
+    jobs: Option<usize>,
     /// Only run tests which contain one of these strings
     filter: Vec<String>,
 }
@@ -178,6 +181,7 @@ fn main() {
 
     let library = std::env::current_dir().unwrap().join("target/creusot");
 
+    let jobs = &format!("{}", args.jobs.unwrap_or_else(creusot_setup::default_provers_parallelism));
     let why3find = || {
         let mut why3find = Command::new(paths.why3find());
         why3find
@@ -186,7 +190,7 @@ fn main() {
             .env("DUNE_DIR_LOCATIONS", &format!("why3find:lib:{}", library.display()))
             .arg("prove")
             .arg("--no-autodetect-provers")
-            .args(["-j", &format!("{}", creusot_setup::default_provers_parallelism())]);
+            .args(["-j", jobs]);
         if let Some(time) = args.time {
             why3find.args(["--time", &format!("{}", time * args.time_factor)]);
         }
@@ -217,14 +221,12 @@ fn main() {
     // Run default tests as a single why3find invocation
     if !default_tests.is_empty() {
         writeln!(out, "Default tests ({} files)...", default_tests.len()).unwrap();
-        // Reverse `default_tests` because they were pushed in reverse alphabetical order
         // `spawn` to inherit stdout
-        let result =
-            why3find().args(default_tests.into_iter().rev()).spawn().unwrap().wait().unwrap();
+        let result = why3find().args(default_tests).spawn().unwrap().wait().unwrap();
         success &= result.success();
     }
 
-    for (file, test) in other_tests.into_iter().rev() {
+    for (file, test) in other_tests {
         // Check for early abort
         if args.fail_early && (!success || obsolete) {
             break;

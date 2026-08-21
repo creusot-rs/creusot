@@ -16,6 +16,7 @@ for i in "$@"; do
       echo "    --time=[N]   Timeout for why3 tests in seconds"
       echo "    --time-factor=[N]   Timeout multiplier for why3 tests, for slow machines"
       echo "    --no-cache   Ignore Why3find cache for why3 tests"
+      echo "    -j[N]        Max parallel provers"
       echo "    [STRING]     Only run tests for files containing this string (tests: ui, why3)"
       echo "    --debug      Print commands as they are run"
       echo "    --installed  Run tests using installed Creusot (tests: build-new, build-no-std)"
@@ -81,16 +82,12 @@ for i in "$@"; do
       TMP=${i#--tmp=}
       shift
       ;;
-    --no-cache)
-      WHY3_ARGS+=("--no-cache")
-      shift
-      ;;
-    --time=*)
+    --no-cache|--time=*|--time-factor=*|-j=*)
       WHY3_ARGS+=("$i")
       shift
       ;;
-    --time-factor=*)
-      WHY3_ARGS+=("$i")
+    -j*)
+      WHY3_ARGS+=("-j=${i#-j}")
       shift
       ;;
     -*)
