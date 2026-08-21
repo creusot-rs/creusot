@@ -139,8 +139,5 @@ timelimit = 5.000000
 }
 
 pub fn default_provers_parallelism() -> usize {
-    match std::thread::available_parallelism() {
-        Ok(n) => n.get(),
-        Err(_) => 1,
-    }
+    num_cpus::get_physical()
 }

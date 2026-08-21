@@ -33,6 +33,9 @@ pub struct ProveArgs {
     /// Print the Why3find command without running it.
     #[clap(long)]
     pub dry_run_why3find: bool,
+    /// Max parallel provers
+    #[clap(short = 'j')]
+    pub jobs: Option<usize>,
     /// Run why3find on files that match one of the patterns.
     /// Examples: `name`, `name::*`, `m/*/f`, or whole paths `verif/a/b.coma`.
     pub patterns: Vec<String>,
@@ -67,7 +70,8 @@ fn check_why3find_json_exists(root: &Path) -> Result<()> {
 fn raw_prove(args: ProveArgs, paths: &CreusotPaths, files: &[PathBuf]) -> Result<()> {
     let mut why3find = Command::new(&paths.why3find());
     why3find.arg("prove");
-    why3find.args(["-j", &format!("{}", creusot_setup::default_provers_parallelism())]);
+    let jobs = args.jobs.unwrap_or_else(creusot_setup::default_provers_parallelism);
+    why3find.args(["-j", &format!("{}", jobs)]);
     if args.ide.ide_on_fail {
         why3find.arg("-i");
     }

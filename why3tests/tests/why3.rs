@@ -40,6 +40,9 @@ struct Args {
     /// We use this option to run tests on especially slow machines, like CI.
     #[clap(long, default_value_t = 1.)]
     time_factor: f64,
+    /// Max parallel provers
+    #[clap(short = 'j')]
+    jobs: Option<usize>,
     /// Only run tests which contain one of these strings
     filter: Vec<String>,
 }
@@ -178,6 +181,7 @@ fn main() {
 
     let library = std::env::current_dir().unwrap().join("target/creusot");
 
+    let jobs = &format!("{}", args.jobs.unwrap_or_else(creusot_setup::default_provers_parallelism));
     let why3find = || {
         let mut why3find = Command::new(paths.why3find());
         why3find
@@ -186,7 +190,7 @@ fn main() {
             .env("DUNE_DIR_LOCATIONS", &format!("why3find:lib:{}", library.display()))
             .arg("prove")
             .arg("--no-autodetect-provers")
-            .args(["-j", &format!("{}", creusot_setup::default_provers_parallelism())]);
+            .args(["-j", jobs]);
         if let Some(time) = args.time {
             why3find.args(["--time", &format!("{}", time * args.time_factor)]);
         }
