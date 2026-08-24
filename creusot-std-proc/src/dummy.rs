@@ -114,6 +114,10 @@ pub fn constant(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }
 
+pub fn logically_visible(_: TS1, tokens: TS1) -> TS1 {
+    tokens
+}
+
 pub fn derive_deep_model(_: TS1) -> TS1 {
     TS1::new()
 }

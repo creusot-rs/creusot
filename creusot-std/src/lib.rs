@@ -396,6 +396,8 @@ pub mod macros {
     /// ```
     pub use base_macros::opaque;
 
+    pub use base_macros::logically_visible;
+
     /// Instructs Creusot to not emit any VC for a declaration, assuming any contract the declaration has is
     /// valid.
     ///
