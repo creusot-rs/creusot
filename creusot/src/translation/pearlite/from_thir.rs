@@ -69,8 +69,8 @@ pub(crate) fn from_thir_with_triggers<'tcx>(
     let is_closure = ctx.is_closure_like(did);
     let patterns: Box<[Pattern]> = if is_spec(ctx.tcx, did) {
         assert!(is_closure);
-        // Preconditions and variants have all of their variables bound in the parent function.
-        // Postconditions also bind a `result` variable.
+        // Preconditions, invariants, variants, and assertions may bind a `mode` variable.
+        // Postconditions may bind a `result` variable and a `mode` variable, in this order.
         let parent = ctx.parent(did).expect_local();
         let (parent_thir, _) = ctx.thir_body(parent);
         // Parameters of the parent function plus maybe the `result` parameter from the current closure

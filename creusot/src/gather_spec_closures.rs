@@ -7,7 +7,10 @@ use crate::{
     },
     ctx::{HasTyCtxt, TranslationCtx},
     naming::name,
-    translation::{function::Assertion, pearlite::Term},
+    translation::{
+        function::Assertion,
+        pearlite::{SmallRenaming, Substable as _, Term},
+    },
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
@@ -39,7 +42,9 @@ impl<'tcx> SpecClosures<'tcx> {
         for clos in visitor.closures.into_iter() {
             if is_assertion(ctx.tcx, clos) {
                 let is_trusted = is_trusted(ctx.tcx, clos);
-                let term = ctx.term(clos).unwrap().1.clone();
+                let sterm = ctx.term(clos).unwrap();
+                let mut term = sterm.1.clone();
+                term.subst(&SmallRenaming([(sterm.0.last().unwrap().0, name::mode())])); // FIXME: do the substitution in from_thir.rs
                 assertions.insert(clos, Assertion { is_trusted, term });
             } else if is_snapshot_closure(ctx.tcx, clos) {
                 let term = ctx.term(clos).unwrap().1.clone();
