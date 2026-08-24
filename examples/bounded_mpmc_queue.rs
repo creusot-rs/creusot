@@ -5,20 +5,14 @@
 
 #![allow(unused)]
 
-use core::{borrow::BorrowMut, cmp::Ordering, mem::MaybeUninit};
+use core::{cmp::Ordering, mem::MaybeUninit};
 use creusot_std::{
     cell::PermCell,
     ghost::{
         invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
         perm::Perm,
-        resource::{Authority, Fragment, Resource},
     },
-    logic::{
-        FMap, Id,
-        ra::{RA, auth::Auth, excl::Excl, lattice::SemiLattice},
-        seq::Seq,
-        such_that,
-    },
+    logic::{Id, ra::lattice::SemiLattice},
     partial_ord_laws_impl,
     prelude::*,
     std::sync::{
@@ -30,6 +24,9 @@ use creusot_std::{
         view::{AtView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
     },
 };
+
+#[cfg(creusot)]
+use creusot_std::logic::such_that;
 
 declare_namespace! { BOUNDED_MPMC_QUEUE }
 
@@ -72,8 +69,8 @@ mod values {
     use creusot_std::{
         ghost::resource::{self, Resource},
         logic::{
-            Id, Seq,
-            ra::{RA, UnitRA, excl::Excl, update::LocalUpdate},
+            Id,
+            ra::{RA, UnitRA, excl::Excl},
         },
         prelude::*,
     };
@@ -155,7 +152,7 @@ mod statuses {
         ghost::resource::{self, Resource},
         logic::{
             Id, Seq,
-            ra::{RA, UnitRA, auth::Auth, excl::Excl, update::LocalUpdate},
+            ra::{RA, UnitRA, auth::Auth, excl::Excl},
         },
         prelude::*,
     };
@@ -467,8 +464,8 @@ impl<T> Protocol for QueueInv<T> {
     fn protocol(self) -> bool {
         pearlite! {
             let len = self.statuses_own.len();
-            let head = self.head_own.val().get(self.head_last_ts).unwrap_logic().0@;
-            let tail = self.tail_own.val().get(self.tail_last_ts).unwrap_logic().0@;
+            let head = self.head_own.val()[self.head_last_ts].0@;
+            let tail = self.tail_own.val()[self.tail_last_ts].0@;
 
             (len == self.cells_own.len()) &&
             (len == self.statuses_mono_auth.len()) &&
@@ -787,12 +784,56 @@ impl<T> Queue<T> {
         let res = self.head.compare_exchange_weak::<_, Relaxed, Relaxed>(
             head,
             head + 1,
-            ghost! { |c: Result<&mut Committer<_, _, Relaxed, Relaxed>, &_>| {
+            ghost! {
+                #[requires(tokens.contains(BOUNDED_MPMC_QUEUE()))]
+                #[requires(match c {
+                    Ok(c) =>
+                        !c.shot_store() &&
+                        c.ward() == self.head &&
+                        c.val_load() == head &&
+                        c.val_store()@ == head@ + 1,
+                    Err(_) => true
+                })]
+                #[requires(*index_ghost == head@.rem_euclid(self.cells@.len()))]
+                #[requires(match *witness {
+                    Some(witness) =>
+                        witness.id() == self.inv.public().5[*index_ghost] &&
+                        StatusWithView { status: status@, view: *view } <= witness.val(),
+                    None => false
+                })]
+                #[requires(2 * head@ == status@)]
+                #[requires(*self == (**perm_queue).ward())]
+                #[ensures(tokens.contains(BOUNDED_MPMC_QUEUE()))]
+                #[ensures(*self == (**perm_queue).ward())]
+                #[ensures(match c {
+                    Ok(c) =>
+                        old(^*perm_queue) == (^*perm_queue) &&
+                        (^c).shot_store() &&
+                        (*perm_queue)@ == old(*perm_queue)@.push_back(item) &&
+                        match *token {
+                            Some(token) => {
+                                token.id() == self.inv.public().6 &&
+                                token.val() == item &&
+                                token.index() == head@
+                            },
+                            None => false,
+                        } &&
+                        match *cell_own {
+                            Some(cell_own) => {
+                                *cell_own.ward() == self.inv.public().2[*index_ghost]
+                            },
+                            None => false,
+                        },
+                    Err(_) => (*perm_queue)@ == old(*perm_queue)@
+                })]
+                |c: Result<&mut Committer<_, _, Relaxed, Relaxed>, &_>| {
                 let Ok(c) = c else { return; };
 
-                self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                self.inv.open(tokens.reborrow(),
+                    |inv: &mut QueueInv<T>| {
                     c.shoot_load(&inv.head_own, &mut view.borrow_mut());
                     c.shoot_store(&mut inv.head_own, &mut view.borrow_mut(), *ReleaseSyncView::new());
+                    proof_assert!(head == inv.head_own.val()[inv.head_last_ts].0);
 
                     inv.statuses_mono_auth[*index_ghost].frag_lemma(witness.as_ref().unwrap());
 
@@ -824,6 +865,9 @@ impl<T> Queue<T> {
             2 * head + 1,
             ghost! { |c: &mut Committer<_, _, _, Release>| {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                    let _ = snapshot!(rem_euclid_minus);
+                    proof_assert!((head@ - inv.cells_own.len()).rem_euclid(inv.cells_own.len()) == *index_ghost);
+
                     let (mut view, at_view) = AtView::new(Ghost::new(cell_own.into_inner().unwrap())).into_inner();
                     c.shoot_store(&mut inv.statuses_own[*index_ghost], &mut view);
 
