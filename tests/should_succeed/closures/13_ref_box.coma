@@ -1,5 +1,6 @@
 module M_call_fn
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -16,17 +17,17 @@ module M_call_fn
   
   meta "rewrite_def" predicate inv_ref_F
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -40,10 +41,10 @@ module M_call_fn
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -51,48 +52,49 @@ module M_call_fn
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
-  let call_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
+  let call_F (mode: Mode.t) (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
   {[@stop_split] [@expl:call_F requires] ([@stop_split] [@expl:call 'self_' type invariant] inv_ref_F self_)
-    /\ ([@stop_split] [@expl:call requires] precondition_F self_ arg)}
+    /\ ([@stop_split] [@expl:call requires] precondition_F self_ mode arg)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call ensures] postcondition_F self_ arg result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call ensures] postcondition_F self_ mode arg result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let call_fn_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fn_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fn_F requires] ([@stop_split] [@expl:call_fn 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:call_fn requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:call_fn requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = -{resolve_F f}- s2
       | s2 = [ &_10 <- x ] s3
-      | s3 = call_F {f} {_10} (fun (_x: Int32.t) -> [ &_ret <- _x ] s4)
+      | s3 = call_F {mode} {f} {_10} (fun (_x: Int32.t) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _10: Int32.t = Any.any_l () ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fn ensures] postcondition_F f x result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fn ensures] postcondition_F f mode x result}
       (! return {result}) ]
 end
 module M_call_fnmut
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -107,19 +109,19 @@ module M_call_fnmut
   
   meta "rewrite_def" predicate inv_refmut_F
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -133,34 +135,34 @@ module M_call_fnmut
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
-  let call_mut_F (self_: MutBorrow.t t_F) (arg: Int32.t) (return (x: Int32.t)) =
+  let call_mut_F (mode: Mode.t) (self_: MutBorrow.t t_F) (arg: Int32.t) (return (x: Int32.t)) =
   {[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
-    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self_.current arg)}
+    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self_.current mode arg)}
     any
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self_.current mode arg self_.final result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let call_fnmut_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnmut_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnmut_F requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
           (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = [ &_10 <- x ] s2
-      | s2 = call_mut_F {_9} {_10} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
+      | s2 = call_mut_F {mode} {_9} {_10} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s4 = -{resolve_F f}- s5
       | s5 = return {_ret} ] ]
@@ -170,46 +172,48 @@ module M_call_fnmut
     | & _9: MutBorrow.t t_F = Any.any_l ()
     | & _10: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
+    {[@stop_split] [@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_F f mode x f2 result /\ resolve_F f2}
       (! return {result}) ]
 end
 module M_call_fnonce
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
   
   predicate inv_F (_1: t_F)
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  let call_once_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
+  let call_once_F (mode: Mode.t) (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
   {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
-    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ mode arg)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ mode arg result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnonce_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnonce_F requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_10 <- x ] s1
-      | s1 = call_once_F {f} {_10} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s1 = call_once_F {mode} {f} {_10} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _10: Int32.t = Any.any_l () ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_F f x result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_F f mode x result}
       (! return {result}) ]
 end
 module M_test1
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -226,21 +230,21 @@ module M_test1
   
   meta "rewrite_def" predicate inv_ref_F
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_ref_F (self: t_F) (args: Int32.t) = precondition_F self args
+  predicate precondition_ref_F (self: t_F) (mode: Mode.t) (args: Int32.t) = precondition_F self mode args
   
   meta "rewrite_def" predicate precondition_ref_F
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -254,10 +258,10 @@ module M_test1
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -265,49 +269,52 @@ module M_test1
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
-  predicate postcondition_ref_F (self: t_F) (args: Int32.t) (result: Int32.t) = postcondition_F self args result
+  predicate postcondition_ref_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
+    postcondition_F self mode args result
   
   meta "rewrite_def" predicate postcondition_ref_F
   
-  let call_fn_ref_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fn_ref_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fn_ref_F requires] ([@stop_split] [@expl:call_fn 'f' type invariant] inv_ref_F f)
-    /\ ([@stop_split] [@expl:call_fn requires] precondition_ref_F f x)}
+    /\ ([@stop_split] [@expl:call_fn requires] precondition_ref_F f mode x)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fn ensures] postcondition_ref_F f x result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fn ensures] postcondition_ref_F f mode x result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test1_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test1_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test1_F requires] ([@stop_split] [@expl:test1 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test1 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test1 requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = -{resolve_F f}- s2
-      | s2 = call_fn_ref_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
+      | s2 = call_fn_ref_F {mode} {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test1 ensures] postcondition_F f x result} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test1 ensures] postcondition_F f mode x result}
+      (! return {result}) ]
 end
 module M_test10
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -322,23 +329,24 @@ module M_test10
   
   meta "rewrite_def" predicate inv_refmut_F
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) = precondition_F self.current args
+  predicate precondition_refmut_F (self: MutBorrow.t t_F) (mode: Mode.t) (args: Int32.t) =
+    precondition_F self.current mode args
   
   meta "rewrite_def" predicate precondition_refmut_F
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -352,14 +360,14 @@ module M_test10
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_mut_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (result_state: MutBorrow.t t_F) (result: Int32.t) =
-    postcondition_mut_F self.current args result_state.current result /\ self.final = result_state.final
+  predicate postcondition_mut_refmut_F (self: MutBorrow.t t_F) (mode: Mode.t) (args: Int32.t) (result_state: MutBorrow.t t_F) (result: Int32.t) =
+    postcondition_mut_F self.current mode args result_state.current result /\ self.final = result_state.final
   
   meta "rewrite_def" predicate postcondition_mut_refmut_F
   
@@ -367,12 +375,12 @@ module M_test10
   
   meta "rewrite_def" predicate resolve_refmut_F
   
-  let call_fnmut_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnmut_refmut_F (mode: Mode.t) (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnmut_refmut_F requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_refmut_F f)
-    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_refmut_F f x)}
+    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_refmut_F f mode x)}
     any
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_fnmut ensures] exists f2: MutBorrow.t t_F. postcondition_mut_refmut_F f x f2 result
+    {[@stop_split] [@expl:call_fnmut ensures] exists f2: MutBorrow.t t_F. postcondition_mut_refmut_F f mode x f2 result
         /\ resolve_refmut_F f2}
       (! return {result}) ]
   
@@ -380,25 +388,26 @@ module M_test10
   
   meta "select_lsinst" "all"
   
-  let test10_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test10_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test10_F requires] ([@stop_split] [@expl:test10 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test10 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test10 requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
           (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
-      | s1 = call_fnmut_refmut_F {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s1 = call_fnmut_refmut_F {mode} {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s3 = -{resolve_F f}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:test10 ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
+    {[@stop_split] [@expl:test10 ensures] exists f2: t_F. postcondition_mut_F f mode x f2 result /\ resolve_F f2}
       (! return {result}) ]
 end
 module M_test11
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -411,35 +420,36 @@ module M_test11
   
   meta "rewrite_def" predicate inv_Box_F_Global
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_Box_F_Global (self: t_F) (args: Int32.t) = precondition_F self args
+  predicate precondition_Box_F_Global (self: t_F) (mode: Mode.t) (args: Int32.t) = precondition_F self mode args
   
   meta "rewrite_def" predicate precondition_Box_F_Global
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  predicate postcondition_once_Box_F_Global (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once_F self args result
+  predicate postcondition_once_Box_F_Global (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
+    postcondition_once_F self mode args result
   
   meta "rewrite_def" predicate postcondition_once_Box_F_Global
   
-  let call_fnonce_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnonce_Box_F_Global (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnonce_Box_F_Global requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_Box_F_Global f x)}
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_Box_F_Global f mode x)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_Box_F_Global f x result}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_Box_F_Global f mode x result}
       (! return {result}) ]
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -453,30 +463,31 @@ module M_test11
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test11_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test11_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test11_F requires] ([@stop_split] [@expl:test11 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test11 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test11 requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
-      [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+      [ s0 = call_fnonce_Box_F_Global {mode} {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:test11 ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
+    {[@stop_split] [@expl:test11 ensures] exists f2: t_F. postcondition_mut_F f mode x f2 result /\ resolve_F f2}
       (! return {result}) ]
 end
 module M_test12
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -491,23 +502,24 @@ module M_test12
   
   meta "rewrite_def" predicate inv_refmut_F
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) = precondition_F self.current args
+  predicate precondition_refmut_F (self: MutBorrow.t t_F) (mode: Mode.t) (args: Int32.t) =
+    precondition_F self.current mode args
   
   meta "rewrite_def" predicate precondition_refmut_F
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -521,47 +533,49 @@ module M_test12
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_once_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_mut_F self.current args self.final result
+  predicate postcondition_once_refmut_F (self: MutBorrow.t t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
+    postcondition_mut_F self.current mode args self.final result
   
   meta "rewrite_def" predicate postcondition_once_refmut_F
   
-  let call_fnonce_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnonce_refmut_F (mode: Mode.t) (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnonce_refmut_F requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_refmut_F f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_refmut_F f x)}
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_refmut_F f mode x)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_refmut_F f x result}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_refmut_F f mode x result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test12_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test12_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test12_F requires] ([@stop_split] [@expl:test12 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test12 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test12 requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
           (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
-      | s1 = call_fnonce_refmut_F {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s1 = call_fnonce_refmut_F {mode} {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s3 = -{resolve_F f}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:test12 ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
+    {[@stop_split] [@expl:test12 ensures] exists f2: t_F. postcondition_mut_F f mode x f2 result /\ resolve_F f2}
       (! return {result}) ]
 end
 module M_test13
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -574,61 +588,63 @@ module M_test13
   
   meta "rewrite_def" predicate inv_Box_F_Global
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_Box_F_Global (self: t_F) (args: Int32.t) = precondition_F self args
+  predicate precondition_Box_F_Global (self: t_F) (mode: Mode.t) (args: Int32.t) = precondition_F self mode args
   
   meta "rewrite_def" predicate precondition_Box_F_Global
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  predicate postcondition_once_Box_F_Global (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once_F self args result
+  predicate postcondition_once_Box_F_Global (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
+    postcondition_once_F self mode args result
   
   meta "rewrite_def" predicate postcondition_once_Box_F_Global
   
-  let call_fnonce_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnonce_Box_F_Global (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnonce_Box_F_Global requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_Box_F_Global f x)}
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_Box_F_Global f mode x)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_Box_F_Global f x result}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_Box_F_Global f mode x result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test13_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test13_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test13_F requires] ([@stop_split] [@expl:test13 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test13 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test13 requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
-      [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+      [ s0 = call_fnonce_Box_F_Global {mode} {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test13 ensures] postcondition_once_F f x result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test13 ensures] postcondition_once_F f mode x result}
       (! return {result}) ]
 end
 module M_test14
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
   
   predicate inv_F (_1: t_F)
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -642,18 +658,18 @@ module M_test14
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
-  let call_fnmut_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnmut_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnmut_F requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_F f mode x)}
     any
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
+    {[@stop_split] [@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_F f mode x f2 result /\ resolve_F f2}
       (! return {result}) ]
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -661,61 +677,62 @@ module M_test14
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test14_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test14_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test14_F requires] ([@stop_split] [@expl:test14 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test14 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test14 requires] precondition_F f mode x)}
     (! bb0
-    [ bb0 = s0 [ s0 = call_fnmut_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = call_fnmut_F {mode} {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test14 ensures] postcondition_F f x result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test14 ensures] postcondition_F f mode x result}
       (! return {result}) ]
 end
 module M_test15
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
   
   predicate inv_F (_1: t_F)
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  let call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnonce_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnonce_F requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_F f mode x)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_F f x result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_F f mode x result}
       (! return {result}) ]
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -729,10 +746,10 @@ module M_test15
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -740,61 +757,62 @@ module M_test15
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test15_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test15_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test15_F requires] ([@stop_split] [@expl:test15 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test15 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test15 requires] precondition_F f mode x)}
     (! bb0
-    [ bb0 = s0 [ s0 = call_fnonce_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = call_fnonce_F {mode} {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test15 ensures] postcondition_F f x result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test15 ensures] postcondition_F f mode x result}
       (! return {result}) ]
 end
 module M_test16
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
   
   predicate inv_F (_1: t_F)
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  let call_fnonce_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnonce_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnonce_F requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_F f mode x)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_F f x result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_F f mode x result}
       (! return {result}) ]
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -808,28 +826,29 @@ module M_test16
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test16_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test16_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test16_F requires] ([@stop_split] [@expl:test16 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test16 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test16 requires] precondition_F f mode x)}
     (! bb0
-    [ bb0 = s0 [ s0 = call_fnonce_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = call_fnonce_F {mode} {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:test16 ensures] exists f2: t_F. postcondition_mut_F f x f2 result /\ resolve_F f2}
+    {[@stop_split] [@expl:test16 ensures] exists f2: t_F. postcondition_mut_F f mode x f2 result /\ resolve_F f2}
       (! return {result}) ]
 end
 module M_test2
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -842,23 +861,23 @@ module M_test2
   
   meta "rewrite_def" predicate inv_Box_F_Global
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_Box_F_Global (self: t_F) (args: Int32.t) = precondition_F self args
+  predicate precondition_Box_F_Global (self: t_F) (mode: Mode.t) (args: Int32.t) = precondition_F self mode args
   
   meta "rewrite_def" predicate precondition_Box_F_Global
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -872,10 +891,10 @@ module M_test2
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -883,45 +902,49 @@ module M_test2
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
-  predicate postcondition_Box_F_Global (self: t_F) (args: Int32.t) (result: Int32.t) = postcondition_F self args result
+  predicate postcondition_Box_F_Global (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
+    postcondition_F self mode args result
   
   meta "rewrite_def" predicate postcondition_Box_F_Global
   
-  let call_fn_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fn_Box_F_Global (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fn_Box_F_Global requires] ([@stop_split] [@expl:call_fn 'f' type invariant] inv_Box_F_Global f)
-    /\ ([@stop_split] [@expl:call_fn requires] precondition_Box_F_Global f x)}
+    /\ ([@stop_split] [@expl:call_fn requires] precondition_Box_F_Global f mode x)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fn ensures] postcondition_Box_F_Global f x result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fn ensures] postcondition_Box_F_Global f mode x result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test2_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test2_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test2_F requires] ([@stop_split] [@expl:test2 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test2 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test2 requires] precondition_F f mode x)}
     (! bb0
-    [ bb0 = s0 [ s0 = call_fn_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = call_fn_Box_F_Global {mode} {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test2 ensures] postcondition_F f x result} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test2 ensures] postcondition_F f mode x result}
+      (! return {result}) ]
 end
 module M_test3
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -938,21 +961,21 @@ module M_test3
   
   meta "rewrite_def" predicate inv_ref_F
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_ref_F (self: t_F) (args: Int32.t) = precondition_F self args
+  predicate precondition_ref_F (self: t_F) (mode: Mode.t) (args: Int32.t) = precondition_F self mode args
   
   meta "rewrite_def" predicate precondition_ref_F
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -966,10 +989,10 @@ module M_test3
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -977,22 +1000,22 @@ module M_test3
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
-  predicate postcondition_mut_ref_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t) =
-    postcondition_F self args result /\ self = result_state
+  predicate postcondition_mut_ref_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t) =
+    postcondition_F self mode args result /\ self = result_state
   
   meta "rewrite_def" predicate postcondition_mut_ref_F
   
@@ -1000,31 +1023,34 @@ module M_test3
   
   meta "rewrite_def" predicate resolve_ref_F
   
-  let call_fnmut_ref_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnmut_ref_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnmut_ref_F requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_ref_F f)
-    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_ref_F f x)}
+    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_ref_F f mode x)}
     any
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_ref_F f x f2 result /\ resolve_ref_F f2}
+    {[@stop_split] [@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_ref_F f mode x f2 result
+        /\ resolve_ref_F f2}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test3_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test3_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test3_F requires] ([@stop_split] [@expl:test3 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test3 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test3 requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = -{resolve_F f}- s2
-      | s2 = call_fnmut_ref_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
+      | s2 = call_fnmut_ref_F {mode} {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test3 ensures] postcondition_F f x result} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test3 ensures] postcondition_F f mode x result}
+      (! return {result}) ]
 end
 module M_test4
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -1037,23 +1063,23 @@ module M_test4
   
   meta "rewrite_def" predicate inv_Box_F_Global
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_Box_F_Global (self: t_F) (args: Int32.t) = precondition_F self args
+  predicate precondition_Box_F_Global (self: t_F) (mode: Mode.t) (args: Int32.t) = precondition_F self mode args
   
   meta "rewrite_def" predicate precondition_Box_F_Global
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -1067,14 +1093,14 @@ module M_test4
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_mut_Box_F_Global (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t) =
-    postcondition_mut_F self args result_state result
+  predicate postcondition_mut_Box_F_Global (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t) =
+    postcondition_mut_F self mode args result_state result
   
   meta "rewrite_def" predicate postcondition_mut_Box_F_Global
   
@@ -1082,12 +1108,12 @@ module M_test4
   
   meta "rewrite_def" predicate resolve_Box_F_Global
   
-  let call_fnmut_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnmut_Box_F_Global (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnmut_Box_F_Global requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_Box_F_Global f)
-    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_Box_F_Global f x)}
+    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_Box_F_Global f mode x)}
     any
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_Box_F_Global f x f2 result
+    {[@stop_split] [@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_Box_F_Global f mode x f2 result
         /\ resolve_Box_F_Global f2}
       (! return {result}) ]
   
@@ -1096,35 +1122,38 @@ module M_test4
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test4_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test4_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test4_F requires] ([@stop_split] [@expl:test4 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test4 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test4 requires] precondition_F f mode x)}
     (! bb0
-    [ bb0 = s0 [ s0 = call_fnmut_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = call_fnmut_Box_F_Global {mode} {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test4 ensures] postcondition_F f x result} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test4 ensures] postcondition_F f mode x result}
+      (! return {result}) ]
 end
 module M_test5
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -1139,23 +1168,24 @@ module M_test5
   
   meta "rewrite_def" predicate inv_refmut_F
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) = precondition_F self.current args
+  predicate precondition_refmut_F (self: MutBorrow.t t_F) (mode: Mode.t) (args: Int32.t) =
+    precondition_F self.current mode args
   
   meta "rewrite_def" predicate precondition_refmut_F
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -1169,14 +1199,14 @@ module M_test5
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_mut_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (result_state: MutBorrow.t t_F) (result: Int32.t) =
-    postcondition_mut_F self.current args result_state.current result /\ self.final = result_state.final
+  predicate postcondition_mut_refmut_F (self: MutBorrow.t t_F) (mode: Mode.t) (args: Int32.t) (result_state: MutBorrow.t t_F) (result: Int32.t) =
+    postcondition_mut_F self.current mode args result_state.current result /\ self.final = result_state.final
   
   meta "rewrite_def" predicate postcondition_mut_refmut_F
   
@@ -1184,12 +1214,12 @@ module M_test5
   
   meta "rewrite_def" predicate resolve_refmut_F
   
-  let call_fnmut_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnmut_refmut_F (mode: Mode.t) (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnmut_refmut_F requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_refmut_F f)
-    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_refmut_F f x)}
+    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_refmut_F f mode x)}
     any
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_fnmut ensures] exists f2: MutBorrow.t t_F. postcondition_mut_refmut_F f x f2 result
+    {[@stop_split] [@expl:call_fnmut ensures] exists f2: MutBorrow.t t_F. postcondition_mut_refmut_F f mode x f2 result
         /\ resolve_refmut_F f2}
       (! return {result}) ]
   
@@ -1198,41 +1228,43 @@ module M_test5
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test5_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test5_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test5_F requires] ([@stop_split] [@expl:test5 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test5 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test5 requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
           (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
-      | s1 = call_fnmut_refmut_F {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s1 = call_fnmut_refmut_F {mode} {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s3 = -{resolve_F f}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test5 ensures] postcondition_F f x result} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test5 ensures] postcondition_F f mode x result}
+      (! return {result}) ]
 end
 module M_test6
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -1249,21 +1281,21 @@ module M_test6
   
   meta "rewrite_def" predicate inv_ref_F
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_ref_F (self: t_F) (args: Int32.t) = precondition_F self args
+  predicate precondition_ref_F (self: t_F) (mode: Mode.t) (args: Int32.t) = precondition_F self mode args
   
   meta "rewrite_def" predicate precondition_ref_F
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -1277,10 +1309,10 @@ module M_test6
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -1288,48 +1320,51 @@ module M_test6
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
-  predicate postcondition_once_ref_F (self: t_F) (args: Int32.t) (result: Int32.t) = postcondition_F self args result
+  predicate postcondition_once_ref_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
+    postcondition_F self mode args result
   
   meta "rewrite_def" predicate postcondition_once_ref_F
   
-  let call_fnonce_ref_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnonce_ref_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnonce_ref_F requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_ref_F f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_ref_F f x)}
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_ref_F f mode x)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_ref_F f x result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_ref_F f mode x result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test6_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test6_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test6_F requires] ([@stop_split] [@expl:test6 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test6 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test6 requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = -{resolve_F f}- s2
-      | s2 = call_fnonce_ref_F {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
+      | s2 = call_fnonce_ref_F {mode} {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test6 ensures] postcondition_F f x result} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test6 ensures] postcondition_F f mode x result}
+      (! return {result}) ]
 end
 module M_test7
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -1342,35 +1377,36 @@ module M_test7
   
   meta "rewrite_def" predicate inv_Box_F_Global
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_Box_F_Global (self: t_F) (args: Int32.t) = precondition_F self args
+  predicate precondition_Box_F_Global (self: t_F) (mode: Mode.t) (args: Int32.t) = precondition_F self mode args
   
   meta "rewrite_def" predicate precondition_Box_F_Global
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  predicate postcondition_once_Box_F_Global (self: t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_once_F self args result
+  predicate postcondition_once_Box_F_Global (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
+    postcondition_once_F self mode args result
   
   meta "rewrite_def" predicate postcondition_once_Box_F_Global
   
-  let call_fnonce_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnonce_Box_F_Global (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnonce_Box_F_Global requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_Box_F_Global f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_Box_F_Global f x)}
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_Box_F_Global f mode x)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_Box_F_Global f x result}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_Box_F_Global f mode x result}
       (! return {result}) ]
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -1384,10 +1420,10 @@ module M_test7
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -1395,36 +1431,38 @@ module M_test7
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test7_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test7_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test7_F requires] ([@stop_split] [@expl:test7 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test7 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test7 requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
-      [ s0 = call_fnonce_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+      [ s0 = call_fnonce_Box_F_Global {mode} {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test7 ensures] postcondition_F f x result} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test7 ensures] postcondition_F f mode x result}
+      (! return {result}) ]
 end
 module M_test8
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -1439,23 +1477,24 @@ module M_test8
   
   meta "rewrite_def" predicate inv_refmut_F
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) = precondition_F self.current args
+  predicate precondition_refmut_F (self: MutBorrow.t t_F) (mode: Mode.t) (args: Int32.t) =
+    precondition_F self.current mode args
   
   meta "rewrite_def" predicate precondition_refmut_F
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -1469,22 +1508,23 @@ module M_test8
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_once_refmut_F (self: MutBorrow.t t_F) (args: Int32.t) (result: Int32.t) =
-    postcondition_mut_F self.current args self.final result
+  predicate postcondition_once_refmut_F (self: MutBorrow.t t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
+    postcondition_mut_F self.current mode args self.final result
   
   meta "rewrite_def" predicate postcondition_once_refmut_F
   
-  let call_fnonce_refmut_F (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnonce_refmut_F (mode: Mode.t) (f: MutBorrow.t t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnonce_refmut_F requires] ([@stop_split] [@expl:call_fnonce 'f' type invariant] inv_refmut_F f)
-    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_refmut_F f x)}
+    /\ ([@stop_split] [@expl:call_fnonce requires] precondition_refmut_F f mode x)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_refmut_F f x result}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:call_fnonce ensures] postcondition_once_refmut_F f mode x result}
       (! return {result}) ]
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -1492,41 +1532,43 @@ module M_test8
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
-  function fn_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test8_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test8_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test8_F requires] ([@stop_split] [@expl:test8 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test8 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test8 requires] precondition_F f mode x)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
           (fun (_bor: MutBorrow.t t_F) -> [ &_9 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
-      | s1 = call_fnonce_refmut_F {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
+      | s1 = call_fnonce_refmut_F {mode} {_9} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s3 = -{resolve_F f}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x | & _9: MutBorrow.t t_F = Any.any_l () ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test8 ensures] postcondition_F f x result} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:test8 ensures] postcondition_F f mode x result}
+      (! return {result}) ]
 end
 module M_test9
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -1539,23 +1581,23 @@ module M_test9
   
   meta "rewrite_def" predicate inv_Box_F_Global
   
-  predicate precondition_F (self: t_F) (args: Int32.t)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: Int32.t)
   
-  predicate precondition_Box_F_Global (self: t_F) (args: Int32.t) = precondition_F self args
+  predicate precondition_Box_F_Global (self: t_F) (mode: Mode.t) (args: Int32.t) = precondition_F self mode args
   
   meta "rewrite_def" predicate precondition_Box_F_Global
   
-  predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result: Int32.t)
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t)
   
-  function fn_mut_once_F (self: t_F) (args: Int32.t) (res: Int32.t) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res: Int32.t) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: Int32.t, res: Int32.t [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: Int32.t, res: Int32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -1569,14 +1611,14 @@ module M_test9
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: Int32.t) (res_state: t_F) (res: Int32.t) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
-  predicate postcondition_mut_Box_F_Global (self: t_F) (args: Int32.t) (result_state: t_F) (result: Int32.t) =
-    postcondition_mut_F self args result_state result
+  predicate postcondition_mut_Box_F_Global (self: t_F) (mode: Mode.t) (args: Int32.t) (result_state: t_F) (result: Int32.t) =
+    postcondition_mut_F self mode args result_state result
   
   meta "rewrite_def" predicate postcondition_mut_Box_F_Global
   
@@ -1584,12 +1626,12 @@ module M_test9
   
   meta "rewrite_def" predicate resolve_Box_F_Global
   
-  let call_fnmut_Box_F_Global (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let call_fnmut_Box_F_Global (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:call_fnmut_Box_F_Global requires] ([@stop_split] [@expl:call_fnmut 'f' type invariant] inv_Box_F_Global f)
-    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_Box_F_Global f x)}
+    /\ ([@stop_split] [@expl:call_fnmut requires] precondition_Box_F_Global f mode x)}
     any
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_Box_F_Global f x f2 result
+    {[@stop_split] [@expl:call_fnmut ensures] exists f2: t_F. postcondition_mut_Box_F_Global f mode x f2 result
         /\ resolve_Box_F_Global f2}
       (! return {result}) ]
   
@@ -1597,13 +1639,14 @@ module M_test9
   
   meta "select_lsinst" "all"
   
-  let test9_F (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
+  let test9_F (mode: Mode.t) (f: t_F) (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:test9_F requires] ([@stop_split] [@expl:test9 'f' type invariant] inv_F f)
-    /\ ([@stop_split] [@expl:test9 requires] precondition_F f x)}
+    /\ ([@stop_split] [@expl:test9 requires] precondition_F f mode x)}
     (! bb0
-    [ bb0 = s0 [ s0 = call_fnmut_Box_F_Global {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = call_fnmut_Box_F_Global {mode} {f} {x} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l () | & f: t_F = f | & x: Int32.t = x ])
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:test9 ensures] exists f2: t_F. postcondition_mut_F f x f2 result
-        /\ resolve_F f2}
+    [ return (result: Int32.t) ->
+    {[@stop_split] [@expl:test9 ensures] exists f2: t_F. postcondition_mut_F f mode x f2 result /\ resolve_F f2}
       (! return {result}) ]
 end

@@ -4,6 +4,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use map.Map
 use creusot.prelude.Any
 use int.Int
@@ -150,7 +151,7 @@ function len_K (self: t_FMap_K_V) : int
 
 axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
 
-let as_ref_ghost_K (self: t_FMap_K_V) (return (x: t_FMap_ref_K_ref_V)) =
+let as_ref_ghost_K (mode: Mode.t) (self: t_FMap_K_V) (return (x: t_FMap_ref_K_ref_V)) =
 {[@stop_split] [@expl:as_ref_ghost 'self' type invariant] inv_ref_FMap_K_V self}
   any
   [ return (result: t_FMap_ref_K_ref_V) ->
@@ -173,11 +174,11 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let into_iter_ref_FMap_K_V (self: t_FMap_K_V) (return (x: t_Iter_ref_K_ref_V)) =
+let into_iter_ref_FMap_K_V (mode: Mode.t) (self: t_FMap_K_V) (return (x: t_Iter_ref_K_ref_V)) =
 {[@stop_split] [@expl:into_iter 'self' type invariant] inv_ref_FMap_K_V self}
   (! bb0
   [ bb0 = s0
-    [ s0 = as_ref_ghost_K {self} (fun (_x: t_FMap_ref_K_ref_V) -> [ &_6 <- _x ] s1)
+    [ s0 = as_ref_ghost_K {mode} {self} (fun (_x: t_FMap_ref_K_ref_V) -> [ &_6 <- _x ] s1)
     | s1 = [ &_ret <- { f0 = _6 } ] s2
     | s2 = return {_ret} ] ]
   [ & _ret: t_Iter_ref_K_ref_V = Any.any_l () | & self: t_FMap_K_V = self | & _6: t_FMap_ref_K_ref_V = Any.any_l () ])

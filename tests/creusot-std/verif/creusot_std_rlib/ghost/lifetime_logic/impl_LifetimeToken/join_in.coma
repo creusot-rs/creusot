@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use real.Real
 use real.FromInt
 use creusot.prelude.Any
@@ -13,12 +14,13 @@ type t_Resource_PositiveReal
 
 type t_LifetimeToken = { f0: t_Resource_PositiveReal }
 
-let deref_mut_Ghost_Resource_PositiveReal (self: MutBorrow.t t_Resource_PositiveReal)
+let deref_mut_Ghost_Resource_PositiveReal (mode: Mode.t) (self: MutBorrow.t t_Resource_PositiveReal)
   (return (x: MutBorrow.t t_Resource_PositiveReal)) = any
   [ return (result: MutBorrow.t t_Resource_PositiveReal) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
     (! return {result}) ]
 
-let into_inner_Resource_PositiveReal (self: t_Resource_PositiveReal) (return (x: t_Resource_PositiveReal)) = any
+let into_inner_Resource_PositiveReal (mode: Mode.t) (self: t_Resource_PositiveReal)
+  (return (x: t_Resource_PositiveReal)) = any
   [ return (result: t_Resource_PositiveReal) -> {[@stop_split] [@expl:into_inner ensures] result = self}
     (! return {result}) ]
 
@@ -61,8 +63,8 @@ function commutative_PositiveReal (a: t_PositiveReal) (b: t_PositiveReal) : ()
 axiom commutative_PositiveReal_spec: forall a: t_PositiveReal, b: t_PositiveReal. op_PositiveReal a b
     = op_PositiveReal b a
 
-let join_in_PositiveReal (self: MutBorrow.t t_Resource_PositiveReal) (other: t_Resource_PositiveReal) (return (x: ())) =
-{[@stop_split] [@expl:join_in requires] id_PositiveReal self.current = id_PositiveReal other}
+let join_in_PositiveReal (mode: Mode.t) (self: MutBorrow.t t_Resource_PositiveReal) (other: t_Resource_PositiveReal)
+  (return (x: ())) = {[@stop_split] [@expl:join_in requires] id_PositiveReal self.current = id_PositiveReal other}
   any
   [ return (result: ()) ->
   {[@stop_split] [@expl:join_in_PositiveReal ensures] ([@stop_split] [@expl:join_in ensures #0] id_PositiveReal self.final
@@ -80,7 +82,7 @@ predicate resolve_refmut_LifetimeToken [@inline:trivial] (_1: MutBorrow.t t_Life
 
 meta "rewrite_def" predicate resolve_refmut_LifetimeToken
 
-let new_unit (x: ()) (return (x'0: ())) = any
+let new_unit (mode: Mode.t) (x: ()) (return (x'0: ())) = any
   [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
 
 type t_Lifetime = { f0'0: t_Id }
@@ -93,7 +95,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let join_in (self: MutBorrow.t t_LifetimeToken) (other: t_LifetimeToken) (return (x: ())) =
+let join_in (mode: Mode.t) (self: MutBorrow.t t_LifetimeToken) (other: t_LifetimeToken) (return (x: ())) =
 {[@stop_split] [@expl:join_in requires] lft self.current = lft other}
   (! bb0
   [ bb0 = s0
@@ -101,16 +103,17 @@ let join_in (self: MutBorrow.t t_LifetimeToken) (other: t_LifetimeToken) (return
         {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
         (fun (_bor: MutBorrow.t t_Resource_PositiveReal) ->
           [ &_15 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s1)
-    | s1 = deref_mut_Ghost_Resource_PositiveReal {_15}
+    | s1 = deref_mut_Ghost_Resource_PositiveReal {Mode.into_ghost mode} {_15}
         (fun (_x: MutBorrow.t t_Resource_PositiveReal) -> [ &_14 <- _x ] s2)
-    | s2 = into_inner_Resource_PositiveReal {other.f0} (fun (_x: t_Resource_PositiveReal) -> [ &_16 <- _x ] s3)
+    | s2 = into_inner_Resource_PositiveReal {Mode.into_ghost mode} {other.f0}
+        (fun (_x: t_Resource_PositiveReal) -> [ &_16 <- _x ] s3)
     | s3 = MutBorrow.borrow_final <t_Resource_PositiveReal> {_14.current} {MutBorrow.get_id _14}
         (fun (_bor: MutBorrow.t t_Resource_PositiveReal) ->
           [ &_13 <- _bor ] [ &_14 <- { _14 with current = _bor.final } ] s4)
-    | s4 = join_in_PositiveReal {_13} {_16} (fun (_x: ()) -> [ &_12 <- _x ] s5)
+    | s4 = join_in_PositiveReal {Mode.into_ghost mode} {_13} {_16} (fun (_x: ()) -> [ &_12 <- _x ] s5)
     | s5 = -{resolve_refmut_Resource_PositiveReal _14}- s6
     | s6 = -{resolve_refmut_LifetimeToken self}- s7
-    | s7 = new_unit {_12} (fun (_x: ()) -> [ &_11 <- _x ] s8)
+    | s7 = new_unit {Mode.into_ghost mode} {_12} (fun (_x: ()) -> [ &_11 <- _x ] s8)
     | s8 = return {_ret} ] ]
   [ & _ret: () = Any.any_l ()
   | & self: MutBorrow.t t_LifetimeToken = self

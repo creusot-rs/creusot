@@ -63,35 +63,27 @@ impl<I: IteratorSpec> IteratorSpec for Take<I> {
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            self.n()@ == o.n()@ + visited.len() && self.iter().produces(mode, visited, o.iter())
+            self.n()@ == o.n()@ + visited.len() && self.iter().produces(visited, o.iter())
         }
     }
 
     #[logic(law)]
-    #[ensures(forall<mode> self.produces(mode, Seq::empty(), self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(mode, ab, b))]
-    #[requires(b.produces(mode, bc, c))]
-    #[ensures(a.produces(mode, ab.concat(bc), c))]
-    fn produces_trans(
-        mode: Mode,
-        a: Self,
-        ab: Seq<Self::Item>,
-        b: Self,
-        bc: Seq<Self::Item>,
-        c: Self,
-    ) {
-    }
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
 extern_spec! {
     impl<I: Iterator> Iterator for Take<I> {
-        #[ensures(self.n() > 0usize ==> exists<r>
-            I::size_hint.postcondition((&self.iter(),), r) &&
+        #[ensures(|result, mode| self.n() > 0usize ==> exists<r>
+            I::size_hint.postcondition(mode, (&self.iter(),), r) &&
             (r.0 <= self.n() ==> result.0 == r.0) &&
             (r.0 >= self.n() ==> result.0 == self.n()) &&
             match r.1 {
@@ -108,7 +100,7 @@ extern_spec! {
 
 impl<I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Take<I> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {

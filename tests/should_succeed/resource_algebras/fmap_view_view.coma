@@ -1,4 +1,5 @@
 module M_impl_Authority_K_V__contains (* Authority<K, V> *)
+  use creusot.prelude.Mode
   use map.Map
   use map.Const
   use creusot.prelude.Any
@@ -277,8 +278,8 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
   
   meta "rewrite_def" function view_Resource_View_MapRelation_K_V
   
-  let join_shared_View_MapRelation_K_V (self: t_Resource_View_MapRelation_K_V) (other: t_Resource_View_MapRelation_K_V)
-    (return (x: t_Resource_View_MapRelation_K_V)) =
+  let join_shared_View_MapRelation_K_V (mode: Mode.t) (self: t_Resource_View_MapRelation_K_V)
+    (other: t_Resource_View_MapRelation_K_V) (return (x: t_Resource_View_MapRelation_K_V)) =
   {[@stop_split] [@expl:join_shared requires] id_View_MapRelation_K_V self = id_View_MapRelation_K_V other}
     any
     [ return (result: t_Resource_View_MapRelation_K_V) ->
@@ -362,14 +363,14 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
   
   meta "select_lsinst" "all"
   
-  let contains_K'0 (self: t_Authority_K_V) (frag: t_Fragment_K_V) (return (x: ())) =
+  let contains_K'0 (mode: Mode.t) (self: t_Authority_K_V) (frag: t_Fragment_K_V) (return (x: ())) =
   {[@stop_split] [@expl:contains_K requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_Authority_K_V self)
     /\ ([@stop_split] [@expl:contains 'frag' type invariant] inv_ref_Fragment_K_V frag)
     /\ ([@stop_split] [@expl:contains requires] id_K self = id_K'0 frag)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_12 <- frag.f0 ] s1
-      | s1 = join_shared_View_MapRelation_K_V {self.f0'0} {_12}
+      | s1 = join_shared_View_MapRelation_K_V {mode} {self.f0'0} {_12}
           (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &new_resource <- _x ] s2)
       | s2 =
         {[@expl:assertion] get_K (frag_MapRelation_K_V (view_Resource_View_MapRelation_K_V new_resource)) (view_Fragment_K_V frag).f0'4
@@ -390,6 +391,7 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   use map.Map
   use creusot.prelude.MutBorrow
   use map.Const
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -663,7 +665,7 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
     forall self: t_ViewUpdateInsert_MapRelation_K_V, from: t_View_MapRelation_K_V, _3: (). premise_ViewUpdateInsert_MapRelation_K_V self from
       -> rel_MapRelation_K_V (Some'0 (self.f0'1)) self.f1'1
   
-  let update_View_MapRelation_K_V (self: MutBorrow.t t_Resource_View_MapRelation_K_V)
+  let update_View_MapRelation_K_V (mode: Mode.t) (self: MutBorrow.t t_Resource_View_MapRelation_K_V)
     (upd: t_ViewUpdateInsert_MapRelation_K_V) (return (x: ())) =
   {[@stop_split] [@expl:update requires] premise_ViewUpdateInsert_MapRelation_K_V upd (view_Resource_View_MapRelation_K_V self.current)}
     any
@@ -754,8 +756,8 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
       | Some'4 ab -> incl_eq_View_MapRelation_K_V ab x
       end
   
-  let split_off_View_MapRelation_K_V (self: MutBorrow.t t_Resource_View_MapRelation_K_V) (r: t_View_MapRelation_K_V)
-    (s: t_View_MapRelation_K_V) (return (x: t_Resource_View_MapRelation_K_V)) =
+  let split_off_View_MapRelation_K_V (mode: Mode.t) (self: MutBorrow.t t_Resource_View_MapRelation_K_V)
+    (r: t_View_MapRelation_K_V) (s: t_View_MapRelation_K_V) (return (x: t_Resource_View_MapRelation_K_V)) =
   {[@stop_split] [@expl:split_off requires] incl_eq_op_View_MapRelation_K_V r s (view_Resource_View_MapRelation_K_V self.current)}
     any
     [ return (result: t_Resource_View_MapRelation_K_V) ->
@@ -810,7 +812,7 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   meta "select_lsinst" "all"
   
-  let insert_K'1 (self: MutBorrow.t t_Authority_K_V) (k: t_K) (v: t_V) (return (x: t_Fragment_K_V)) =
+  let insert_K'1 (mode: Mode.t) (self: MutBorrow.t t_Authority_K_V) (k: t_K) (v: t_V) (return (x: t_Fragment_K_V)) =
   {[@stop_split] [@expl:insert_K requires] ([@stop_split] [@expl:insert 'self' type invariant] inv_refmut_Authority_K_V self)
     /\ ([@stop_split] [@expl:insert requires] not contains_K (view_Authority_K_V self.current) k)}
     (! bb0
@@ -821,12 +823,12 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
       | s3 = MutBorrow.borrow_mut <t_Resource_View_MapRelation_K_V> {self.current.f0}
           (fun (_bor: MutBorrow.t t_Resource_View_MapRelation_K_V) ->
             [ &_28 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s4)
-      | s4 = update_View_MapRelation_K_V {_28} {_29} (fun (_x: ()) -> [ &_27 <- _x ] s5)
+      | s4 = update_View_MapRelation_K_V {mode} {_28} {_29} (fun (_x: ()) -> [ &_27 <- _x ] s5)
       | s5 = MutBorrow.borrow_final <t_Resource_View_MapRelation_K_V> {self.current.f0}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
           (fun (_bor: MutBorrow.t t_Resource_View_MapRelation_K_V) ->
             [ &_33 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s6)
-      | s6 = split_off_View_MapRelation_K_V {_33} {new_frag_MapRelation_K_V frag} {new_auth_MapRelation_K_V auth}
+      | s6 = split_off_View_MapRelation_K_V {mode} {_33} {new_frag_MapRelation_K_V frag} {new_auth_MapRelation_K_V auth}
           (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &_32 <- _x ] s7)
       | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_K_V self} any) ]
       | s8 = -{resolve_refmut_Authority_K_V self}- s9
@@ -855,6 +857,7 @@ end
 module M_impl_Authority_K_V__new (* Authority<K, V> *)
   use map.Map
   use map.Const
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -1070,12 +1073,13 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   
   meta "rewrite_def" function view_Resource_View_MapRelation_K_V
   
-  let alloc_View_MapRelation_K_V (r: t_View_MapRelation_K_V) (return (x: t_Resource_View_MapRelation_K_V)) = any
+  let alloc_View_MapRelation_K_V (mode: Mode.t) (r: t_View_MapRelation_K_V)
+    (return (x: t_Resource_View_MapRelation_K_V)) = any
     [ return (result: t_Resource_View_MapRelation_K_V) ->
     {[@stop_split] [@expl:alloc ensures] view_Resource_View_MapRelation_K_V result = r}
       (! return {result}) ]
   
-  let into_inner_Resource_View_MapRelation_K_V (self: t_Resource_View_MapRelation_K_V)
+  let into_inner_Resource_View_MapRelation_K_V (mode: Mode.t) (self: t_Resource_View_MapRelation_K_V)
     (return (x: t_Resource_View_MapRelation_K_V)) = any
     [ return (result: t_Resource_View_MapRelation_K_V) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
@@ -1098,7 +1102,7 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   
   meta "rewrite_def" predicate inv_Ghost_Authority_K_V
   
-  let new_Authority_K_V (x: t_Authority_K_V) (return (x'0: t_Authority_K_V)) =
+  let new_Authority_K_V (mode: Mode.t) (x: t_Authority_K_V) (return (x'0: t_Authority_K_V)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_Authority_K_V x}
     any
     [ return (result: t_Authority_K_V) ->
@@ -1120,14 +1124,14 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   
   meta "select_lsinst" "all"
   
-  let new_K (return (x: t_Authority_K_V)) = (! bb0
+  let new_K (mode: Mode.t) (return (x: t_Authority_K_V)) = (! bb0
     [ bb0 = s0
-      [ s0 = alloc_View_MapRelation_K_V {new_auth_MapRelation_K_V empty_K'0}
+      [ s0 = alloc_View_MapRelation_K_V {mode} {new_auth_MapRelation_K_V empty_K'0}
           (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &resource <- _x ] s1)
-      | s1 = into_inner_Resource_View_MapRelation_K_V {resource}
+      | s1 = into_inner_Resource_View_MapRelation_K_V {Mode.into_ghost mode} {resource}
           (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &_6 <- _x ] s2)
       | s2 = [ &_5 <- { f0'1 = _6 } ] s3
-      | s3 = new_Authority_K_V {_5} (fun (_x: t_Authority_K_V) -> [ &_ret <- _x ] s4)
+      | s3 = new_Authority_K_V {Mode.into_ghost mode} {_5} (fun (_x: t_Authority_K_V) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ]
     [ & _ret: t_Authority_K_V = Any.any_l ()
     | & resource: t_Resource_View_MapRelation_K_V = Any.any_l ()
@@ -1139,6 +1143,7 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
       (! return {result}) ]
 end
 module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Clone> *)
+  use creusot.prelude.Mode
   use map.Map
   use map.Const
   use creusot.prelude.Any
@@ -1406,7 +1411,7 @@ module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Cl
   
   function id_View_MapRelation_K_V (self: t_Resource_View_MapRelation_K_V) : t_Id
   
-  let core_View_MapRelation_K_V'0 (self: t_Resource_View_MapRelation_K_V)
+  let core_View_MapRelation_K_V'0 (mode: Mode.t) (self: t_Resource_View_MapRelation_K_V)
     (return (x: t_Resource_View_MapRelation_K_V)) =
   {[@stop_split] [@expl:core requires] core_View_MapRelation_K_V (view_Resource_View_MapRelation_K_V self) <> None}
     any
@@ -1464,11 +1469,12 @@ module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Cl
   
   meta "select_lsinst" "all"
   
-  let clone_Fragment_K_V (self: t_Fragment_K_V) (return (x: t_Fragment_K_V)) =
+  let clone_Fragment_K_V (mode: Mode.t) (self: t_Fragment_K_V) (return (x: t_Fragment_K_V)) =
   {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Fragment_K_V self}
     (! bb0
     [ bb0 = s0
-      [ s0 = core_View_MapRelation_K_V'0 {self.f0} (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &_4 <- _x ] s1)
+      [ s0 = core_View_MapRelation_K_V'0 {mode} {self.f0}
+          (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &_4 <- _x ] s1)
       | s1 = [ &_ret <- { f0 = _4; f1 = self.f1; f2 = self.f2 } ] s2
       | s2 = return {_ret} ] ]
     [ & _ret: t_Fragment_K_V = Any.any_l ()
@@ -1480,6 +1486,7 @@ module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Cl
       (! return {result}) ]
 end
 module M_impl_Clone_for_Fragment_K_V__clone__refines (* <Fragment<K, V> as std::clone::Clone> *)
+  use creusot.prelude.Mode
   use map.Map
   use map.Const
   use int.Int
@@ -1759,7 +1766,7 @@ module M_impl_Clone_for_Fragment_K_V__clone__refines (* <Fragment<K, V> as std::
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: t_Fragment_K_V. inv_ref_Fragment_K_V self_
+  goal refines: forall mode: Mode.t, self_: t_Fragment_K_V. inv_ref_Fragment_K_V self_
       -> inv_ref_Fragment_K_V self_
       /\ (forall result: t_Fragment_K_V. inv_Fragment_K_V result /\ view_Fragment_K_V result = view_Fragment_K_V self_
         -> inv_Fragment_K_V result)

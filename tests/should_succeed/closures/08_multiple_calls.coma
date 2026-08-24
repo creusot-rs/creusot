@@ -1,6 +1,7 @@
 module M_multi_use
   use creusot.int.UInt32
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -36,7 +37,7 @@ module M_multi_use
   
   meta "rewrite_def" predicate inv_ref_closure0
   
-  let closure0 (self: closure0) (return (x: UInt32.t)) =
+  let closure0 (mode: Mode.t) (self: closure0) (return (x: UInt32.t)) =
   {[@stop_split] [@expl:closure0 requires] ([@stop_split] [@expl:closure 'self' type invariant] inv_ref_closure0 self)
     /\ ([@stop_split] [@expl:closure requires] self.c0 = self.c0)}
     (! bb0
@@ -44,37 +45,188 @@ module M_multi_use
     [ & _ret: UInt32.t = Any.any_l () | & res: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> (! return {result}) ]
   
-  predicate precondition_closure0 (self: closure0) (args: ()) = self.c0 = self.c0
+  predicate precondition_closure0 (self: closure0) (mode: Mode.t) (args: ()) = self.c0 = self.c0
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate postcondition_closure0 (self: closure0) (args: ()) (result: UInt32.t) = true
+  predicate postcondition_closure0 (self: closure0) (mode: Mode.t) (args: ()) (result: UInt32.t) = true
   
   meta "rewrite_def" predicate postcondition_closure0
   
-  predicate postcondition_ref_closure0 (self: closure0) (args: ()) (result: UInt32.t) =
-    postcondition_closure0 self args result
+  predicate postcondition_ref_closure0 (self: closure0) (mode: Mode.t) (args: ()) (result: UInt32.t) =
+    postcondition_closure0 self mode args result
   
   meta "rewrite_def" predicate postcondition_ref_closure0
   
-  let uses_fn_closure0 (f: closure0) (return (x: ())) =
+  let uses_fn_closure0 (mode: Mode.t) (f: closure0) (return (x: ())) =
   {[@stop_split] [@expl:uses_fn_closure0 requires] ([@stop_split] [@expl:uses_fn 'f' type invariant] inv_closure0 f)
-    /\ ([@stop_split] [@expl:uses_fn requires] precondition_closure0 f ())}
+    /\ ([@stop_split] [@expl:uses_fn requires] precondition_closure0 f mode ())}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:uses_fn ensures] exists f2: closure0, r: UInt32.t. f2 = f
-        /\ postcondition_ref_closure0 f2 () r}
+        /\ postcondition_ref_closure0 f2 mode () r}
+      (! return {result}) ]
+  
+  predicate hist_inv_closure0 (self: closure0) (result_state: closure0) = self = result_state
+  
+  predicate postcondition_mut_closure0 (self: closure0) (mode: Mode.t) (args: ()) (result_state: closure0) (result: UInt32.t) =
+    hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  let uses_fnmut_closure0 (mode: Mode.t) (f: closure0) (return (x: ())) =
+  {[@stop_split] [@expl:uses_fnmut_closure0 requires] ([@stop_split] [@expl:uses_fnmut 'f' type invariant] inv_closure0 f)
+    /\ ([@stop_split] [@expl:uses_fnmut requires] precondition_closure0 f mode ())}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:uses_fnmut ensures] exists f2: closure0, r: UInt32.t. postcondition_mut_closure0 f mode () f2 r}
+      (! return {result}) ]
+  
+  predicate postcondition_once_closure0 (self: closure0) (mode: Mode.t) (args: ()) (result: UInt32.t) = true
+  
+  meta "rewrite_def" predicate postcondition_once_closure0
+  
+  let uses_fnonce_closure0 (mode: Mode.t) (f: closure0) (return (x: ())) =
+  {[@stop_split] [@expl:uses_fnonce_closure0 requires] ([@stop_split] [@expl:uses_fnonce 'f' type invariant] inv_closure0 f)
+    /\ ([@stop_split] [@expl:uses_fnonce requires] precondition_closure0 f mode ())}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:uses_fnonce ensures] exists r: UInt32.t. postcondition_once_closure0 f mode () r}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let multi_use_T (x: t_T) (return (x'0: ())) = {[@stop_split] [@expl:multi_use 'x' type invariant] inv_ref_T x}
+  let multi_use_T (mode: Mode.t) (x: t_T) (return (x'0: ())) =
+  {[@stop_split] [@expl:multi_use 'x' type invariant] inv_ref_T x}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &c <- { c0 = x } ] s1
-      | s1 = uses_fn_closure0 {c} (fun (_x: ()) -> [ &_4 <- _x ] s2)
-      | s2 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & x: t_T = x | & c: closure0 = Any.any_l () | & _4: () = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+      | s1 = uses_fn_closure0 {mode} {c} (fun (_x: ()) -> [ &_4 <- _x ] s2)
+      | s2 = uses_fnmut_closure0 {mode} {c} (fun (_x: ()) -> [ &_6 <- _x ] s3)
+      | s3 = uses_fnonce_closure0 {mode} {c} (fun (_x: ()) -> [ &_8 <- _x ] s4)
+      | s4 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & x: t_T = x
+    | & c: closure0 = Any.any_l ()
+    | & _4: () = Any.any_l ()
+    | & _6: () = Any.any_l ()
+    | & _8: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_uses_fnmut
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt32
+  use creusot.prelude.Mode
+  use creusot.prelude.Any
+  
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_F
+  
+  predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
+  
+  meta "rewrite_def" predicate inv_refmut_F
+  
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: ())
+  
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: ()) (result: UInt32.t)
+  
+  predicate resolve_F (_1: t_F)
+  
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: ()) (result_state: t_F) (result: UInt32.t)
+  
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: ()) (res: UInt32.t) : ()
+  
+  axiom fn_mut_once_F_spec:
+    forall self: t_F, mode: Mode.t, args: (), res: UInt32.t [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
+  
+  predicate hist_inv_F (self: t_F) (result_state: t_F)
+  
+  function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
+  
+  axiom hist_inv_trans_F_spec:
+    forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
+      -> hist_inv_F b c -> hist_inv_F self c
+  
+  function hist_inv_refl_F (self: t_F) : ()
+  
+  axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
+  
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: ()) (res_state: t_F) (res: UInt32.t) : ()
+  
+  axiom postcondition_mut_hist_inv_F_spec:
+    forall self: t_F, mode: Mode.t, args: (), res_state: t_F, res: UInt32.t [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
+      -> hist_inv_F self res_state
+  
+  let call_mut_F (mode: Mode.t) (self_: MutBorrow.t t_F) (arg: ()) (return (x: UInt32.t)) =
+  {[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
+    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self_.current mode arg)}
+    any
+    [ return (result: UInt32.t) ->
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self_.current mode arg self_.final result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let uses_fnmut_F (mode: Mode.t) (f: t_F) (return (x: ())) =
+  {[@stop_split] [@expl:uses_fnmut_F requires] ([@stop_split] [@expl:uses_fnmut 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:uses_fnmut requires] precondition_F f mode ())}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_mut <t_F> {f}
+          (fun (_bor: MutBorrow.t t_F) -> [ &_7 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s1 = call_mut_F {mode} {_7} {_8} (fun (_x: UInt32.t) -> [ &_6 <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s3 = -{resolve_F f}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & f: t_F = f
+    | & _6: UInt32.t = Any.any_l ()
+    | & _7: MutBorrow.t t_F = Any.any_l ()
+    | & _8: () = Any.any_l () ])
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:uses_fnmut ensures] exists f2: t_F, r: UInt32.t. postcondition_mut_F f mode () f2 r}
+      (! return {result}) ]
+end
+module M_uses_fnonce
+  use creusot.int.UInt32
+  use creusot.prelude.Mode
+  use creusot.prelude.Any
+  
+  type t_F
+  
+  predicate inv_F (_1: t_F)
+  
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: ())
+  
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: ()) (result: UInt32.t)
+  
+  let call_once_F (mode: Mode.t) (self_: t_F) (arg: ()) (return (x: UInt32.t)) =
+  {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ mode arg)}
+    any
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ mode arg result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let uses_fnonce_F (mode: Mode.t) (f: t_F) (return (x: ())) =
+  {[@stop_split] [@expl:uses_fnonce_F requires] ([@stop_split] [@expl:uses_fnonce 'f' type invariant] inv_F f)
+    /\ ([@stop_split] [@expl:uses_fnonce requires] precondition_F f mode ())}
+    (! bb0
+    [ bb0 = s0 [ s0 = call_once_F {mode} {f} {_8} (fun (_x: UInt32.t) -> [ &_6 <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & f: t_F = f | & _6: UInt32.t = Any.any_l () | & _8: () = Any.any_l () ])
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:uses_fnonce ensures] exists r: UInt32.t. postcondition_once_F f mode () r}
+      (! return {result}) ]
 end

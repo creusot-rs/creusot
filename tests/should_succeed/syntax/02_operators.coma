@@ -1,6 +1,7 @@
 module M_add
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.Int
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
@@ -9,9 +10,8 @@ module M_add
   
   meta "select_lsinst" "all"
   
-  let add (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) = {[@stop_split] [@expl:add requires] UInt64.t'int x
-      + UInt64.t'int y
-    <= UInt64.t'int const_MAX}
+  let add (mode: Mode.t) (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) =
+  {[@stop_split] [@expl:add requires] UInt64.t'int x + UInt64.t'int y <= UInt64.t'int const_MAX}
     (! bb0
     [ bb0 = s0 [ s0 = UInt64.add {x} {y} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & x: UInt64.t = x | & y: UInt64.t = y ])
@@ -19,12 +19,13 @@ module M_add
 end
 module M_bool_eq
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let bool_eq (a: bool) (b: bool) (return (x: bool)) = (! bb0
+  let bool_eq (mode: Mode.t) (a: bool) (b: bool) (return (x: bool)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- a = b ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & a: bool = a | & b: bool = b ])
     [ return (result: bool) -> {[@stop_split] [@expl:bool_eq ensures] result = (a = b)} (! return {result}) ]
@@ -32,6 +33,7 @@ end
 module M_division
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.Int
   
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
@@ -42,7 +44,7 @@ module M_division
   
   meta "select_lsinst" "all"
   
-  let division (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) =
+  let division (mode: Mode.t) (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) =
   {[@stop_split] [@expl:division requires] gt_log_Int (UInt64.t'int y) 0}
     (! bb0
     [ bb0 = s0
@@ -60,6 +62,7 @@ end
 module M_expression
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.ComputerDivision
   use int.Int
   
@@ -73,7 +76,7 @@ module M_expression
   
   meta "select_lsinst" "all"
   
-  let expression (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (return (x'0: bool)) =
+  let expression (mode: Mode.t) (x: UInt64.t) (y: UInt64.t) (z: UInt64.t) (return (x'0: bool)) =
   {[@stop_split] [@expl:expression requires] ([@stop_split] [@expl:expression requires #0] gt_log_Int (UInt64.t'int y) 0)
     /\ ([@stop_split] [@expl:expression requires #1] ComputerDivision.div (UInt64.t'int x) (UInt64.t'int y)
       * UInt64.t'int z
@@ -109,6 +112,7 @@ end
 module M_modulus
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.Int
   
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
@@ -119,7 +123,7 @@ module M_modulus
   
   meta "select_lsinst" "all"
   
-  let modulus (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) =
+  let modulus (mode: Mode.t) (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) =
   {[@stop_split] [@expl:modulus requires] gt_log_Int (UInt64.t'int y) 0}
     (! bb0
     [ bb0 = s0
@@ -137,6 +141,7 @@ end
 module M_multiply
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.Int
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
@@ -145,7 +150,7 @@ module M_multiply
   
   meta "select_lsinst" "all"
   
-  let multiply (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) =
+  let multiply (mode: Mode.t) (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) =
   {[@stop_split] [@expl:multiply requires] UInt64.t'int x * UInt64.t'int y <= UInt64.t'int const_MAX}
     (! bb0
     [ bb0 = s0 [ s0 = UInt64.mul {x} {y} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
@@ -154,6 +159,7 @@ module M_multiply
 end
 module M_primitive_comparison
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   
   type t_X = { a: UInt64.t }
@@ -162,7 +168,7 @@ module M_primitive_comparison
   
   meta "select_lsinst" "all"
   
-  let primitive_comparison (x: t_X) (return (x'0: ())) = (! bb0
+  let primitive_comparison (mode: Mode.t) (x: t_X) (return (x'0: ())) = (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:primitive_comparison ensures] UInt64.le x.a x.a}
       (! return {result}) ]
@@ -170,6 +176,7 @@ end
 module M_sub
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.Int
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
@@ -180,7 +187,7 @@ module M_sub
   
   meta "select_lsinst" "all"
   
-  let sub (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) =
+  let sub (mode: Mode.t) (x: UInt64.t) (y: UInt64.t) (return (x'0: UInt64.t)) =
   {[@stop_split] [@expl:sub requires] ge_log_Int (UInt64.t'int x - UInt64.t'int y) 0}
     (! bb0
     [ bb0 = s0 [ s0 = UInt64.sub {x} {y} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]

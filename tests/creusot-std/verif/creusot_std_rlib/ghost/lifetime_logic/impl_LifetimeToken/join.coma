@@ -4,6 +4,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use real.Real
 use real.FromInt
 use creusot.prelude.Any
@@ -12,7 +13,8 @@ type t_Resource_PositiveReal
 
 type t_LifetimeToken = { f0: t_Resource_PositiveReal }
 
-let into_inner_Resource_PositiveReal (self: t_Resource_PositiveReal) (return (x: t_Resource_PositiveReal)) = any
+let into_inner_Resource_PositiveReal (mode: Mode.t) (self: t_Resource_PositiveReal)
+  (return (x: t_Resource_PositiveReal)) = any
   [ return (result: t_Resource_PositiveReal) -> {[@stop_split] [@expl:into_inner ensures] result = self}
     (! return {result}) ]
 
@@ -55,7 +57,7 @@ function commutative_PositiveReal (a: t_PositiveReal) (b: t_PositiveReal) : ()
 axiom commutative_PositiveReal_spec: forall a: t_PositiveReal, b: t_PositiveReal. op_PositiveReal a b
     = op_PositiveReal b a
 
-let join_PositiveReal (self: t_Resource_PositiveReal) (other: t_Resource_PositiveReal)
+let join_PositiveReal (mode: Mode.t) (self: t_Resource_PositiveReal) (other: t_Resource_PositiveReal)
   (return (x: t_Resource_PositiveReal)) = {[@stop_split] [@expl:join requires] id_PositiveReal self
   = id_PositiveReal other}
   any
@@ -66,7 +68,7 @@ let join_PositiveReal (self: t_Resource_PositiveReal) (other: t_Resource_Positiv
     = op_PositiveReal (view_Resource_PositiveReal self) (view_Resource_PositiveReal other))}
     (! return {result}) ]
 
-let new_Resource_PositiveReal (x: t_Resource_PositiveReal) (return (x'0: t_Resource_PositiveReal)) = any
+let new_Resource_PositiveReal (mode: Mode.t) (x: t_Resource_PositiveReal) (return (x'0: t_Resource_PositiveReal)) = any
   [ return (result: t_Resource_PositiveReal) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
 
 type t_Lifetime = { f0'0: t_Id }
@@ -79,14 +81,17 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let join (self: t_LifetimeToken) (other: t_LifetimeToken) (return (x: t_LifetimeToken)) =
+let join (mode: Mode.t) (self: t_LifetimeToken) (other: t_LifetimeToken) (return (x: t_LifetimeToken)) =
 {[@stop_split] [@expl:join requires] lft self = lft other}
   (! bb0
   [ bb0 = s0
-    [ s0 = into_inner_Resource_PositiveReal {self.f0} (fun (_x: t_Resource_PositiveReal) -> [ &_13 <- _x ] s1)
-    | s1 = into_inner_Resource_PositiveReal {other.f0} (fun (_x: t_Resource_PositiveReal) -> [ &_15 <- _x ] s2)
-    | s2 = join_PositiveReal {_13} {_15} (fun (_x: t_Resource_PositiveReal) -> [ &_12 <- _x ] s3)
-    | s3 = new_Resource_PositiveReal {_12} (fun (_x: t_Resource_PositiveReal) -> [ &_11 <- _x ] s4)
+    [ s0 = into_inner_Resource_PositiveReal {Mode.into_ghost mode} {self.f0}
+        (fun (_x: t_Resource_PositiveReal) -> [ &_13 <- _x ] s1)
+    | s1 = into_inner_Resource_PositiveReal {Mode.into_ghost mode} {other.f0}
+        (fun (_x: t_Resource_PositiveReal) -> [ &_15 <- _x ] s2)
+    | s2 = join_PositiveReal {Mode.into_ghost mode} {_13} {_15} (fun (_x: t_Resource_PositiveReal) -> [ &_12 <- _x ] s3)
+    | s3 = new_Resource_PositiveReal {Mode.into_ghost mode} {_12}
+        (fun (_x: t_Resource_PositiveReal) -> [ &_11 <- _x ] s4)
     | s4 = [ &_ret <- { f0 = _11 } ] s5
     | s5 = return {_ret} ] ]
   [ & _ret: t_LifetimeToken = Any.any_l ()

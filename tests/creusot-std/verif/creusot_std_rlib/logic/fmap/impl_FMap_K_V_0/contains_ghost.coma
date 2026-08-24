@@ -4,6 +4,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use map.Map
 use creusot.prelude.Any
 
@@ -101,7 +102,7 @@ function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V =
     | Some'0 x -> Some (Map.get f x)
     end
 
-let get_ghost_K (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
+let get_ghost_K (mode: Mode.t) (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
 {[@stop_split] [@expl:get_ghost_K requires] ([@stop_split] [@expl:get_ghost 'self' type invariant] inv_ref_FMap_K_V self)
   /\ ([@stop_split] [@expl:get_ghost 'key' type invariant] inv_ref_K key)}
   any
@@ -118,7 +119,7 @@ predicate inv_ref_Option_ref_V [@inline:trivial] (_1: t_Option_ref_V) = invarian
 
 meta "rewrite_def" predicate inv_ref_Option_ref_V
 
-let is_some_ref_V (self_: t_Option_ref_V) (return (x: bool)) =
+let is_some_ref_V (mode: Mode.t) (self_: t_Option_ref_V) (return (x: bool)) =
 {[@stop_split] [@expl:is_some 'self_' type invariant] inv_ref_Option_ref_V self_}
   any [ return (result: bool) -> {[@stop_split] [@expl:is_some ensures] result = (self_ <> None)} (! return {result}) ]
 
@@ -126,13 +127,13 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let contains_ghost_K (self: t_FMap_K_V) (key: t_K) (return (x: bool)) =
+let contains_ghost_K (mode: Mode.t) (self: t_FMap_K_V) (key: t_K) (return (x: bool)) =
 {[@stop_split] [@expl:contains_ghost_K requires] ([@stop_split] [@expl:contains_ghost 'self' type invariant] inv_ref_FMap_K_V self)
   /\ ([@stop_split] [@expl:contains_ghost 'key' type invariant] inv_ref_K key)}
   (! bb0
   [ bb0 = s0
-    [ s0 = get_ghost_K {self} {key} (fun (_x: t_Option_ref_V) -> [ &_7 <- _x ] s1)
-    | s1 = is_some_ref_V {_7} (fun (_x: bool) -> [ &_ret <- _x ] s2)
+    [ s0 = get_ghost_K {mode} {self} {key} (fun (_x: t_Option_ref_V) -> [ &_7 <- _x ] s1)
+    | s1 = is_some_ref_V {mode} {_7} (fun (_x: bool) -> [ &_ret <- _x ] s2)
     | s2 = return {_ret} ] ]
   [ & _ret: bool = Any.any_l () | & self: t_FMap_K_V = self | & key: t_K = key | & _7: t_Option_ref_V = Any.any_l () ])
   [ return (result: bool) -> {[@stop_split] [@expl:contains_ghost ensures] result = contains_K self key}

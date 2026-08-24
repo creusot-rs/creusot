@@ -2,6 +2,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -15,6 +16,14 @@ let elim_Some (_x: t_Option_T) (return (f0: t_T)) = any
       | _ -> false
       end}
     any) ]
+
+predicate inv_never [@inline:trivial] (_1: ()) = false
+
+meta "rewrite_def" predicate inv_never
+
+let panic (mode: Mode.t) (expr: string) (return (x: ())) = {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+  any
+  [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
 
 predicate inv_T (_1: t_T)
 
@@ -30,13 +39,14 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_Option_T_unwrap_body_T (self_: t_Option_T) (return (x: t_T)) =
+let extern_spec_T_Option_T_unwrap_body_T (mode: Mode.t) (self_: t_Option_T) (return (x: t_T)) =
 {[@stop_split] [@expl:extern_spec_T_Option_T_unwrap_body_T requires] ([@stop_split] [@expl:extern_spec_T_Option_T_unwrap_body 'self_' type invariant] inv_Option_T self_)
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_unwrap_body requires] self_ <> None)}
   (! bb0
   [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
   | bb3 = s0 [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ]
-  | bb4 = {false} any ] [ & _ret: t_T = Any.any_l () | & self_: t_Option_T = self_ | & t: t_T = Any.any_l () ])
+  | bb4 = s0 [ s0 = panic {mode} {"explicit panic"} (fun (_x: ()) -> [ &_7 <- _x ] s1) | s1 = {false} any ] ]
+  [ & _ret: t_T = Any.any_l () | & self_: t_Option_T = self_ | & _7: () = Any.any_l () | & t: t_T = Any.any_l () ])
   [ return (result: t_T) ->
   {[@stop_split] [@expl:extern_spec_T_Option_T_unwrap_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Option_T_unwrap_body result type invariant] inv_T result)
     /\ ([@stop_split] [@expl:extern_spec_T_Option_T_unwrap_body ensures] Some result = self_)}

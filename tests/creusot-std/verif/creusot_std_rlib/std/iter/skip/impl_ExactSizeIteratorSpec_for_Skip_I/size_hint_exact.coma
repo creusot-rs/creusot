@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use seq.Seq
 use creusot.prelude.MutBorrow
 use int.Int
@@ -32,10 +33,10 @@ axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.se
 
 predicate completed_I (self: MutBorrow.t t_I)
 
-predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
+predicate postcondition_size_hint (self: ()) (mode: Mode.t) (args: t_I) (result: tup2_usize_Option_usize)
 
 axiom postcondition_fndef:
-  forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+  forall mode: Mode.t, args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () mode args res]. postcondition_size_hint () mode args res
     -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self_ s i.current /\ completed_I i
         -> UInt64.t'int res.f0 <= Seq.length s)
     /\ match res.f1 with
@@ -51,8 +52,8 @@ predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
 
 meta "rewrite_def" predicate ge_log_Int
 
-predicate postcondition_size_hint'0 (self: ()) (args: t_Skip_I) (result: tup2_usize_Option_usize) =
-  let self_ = args in exists r: tup2_usize_Option_usize. postcondition_size_hint () (iter_Skip_I self_) r
+predicate postcondition_size_hint'0 (self: ()) (mode: Mode.t) (args: t_Skip_I) (result: tup2_usize_Option_usize) =
+  let self_ = args in exists r: tup2_usize_Option_usize. postcondition_size_hint () mode (iter_Skip_I self_) r
     /\ (UInt64.t'int r.f0 <= UInt64.t'int (n_Skip_I self_) -> result.f0 = (0: UInt64.t))
     /\ (ge_log_Int (UInt64.t'int r.f0) (UInt64.t'int (n_Skip_I self_)) -> result.f0 = UInt64.sub r.f0 (n_Skip_I self_))
     /\ match r.f1 with
@@ -90,28 +91,29 @@ predicate inv_ref_I [@inline:trivial] (_1: t_I) = invariant_ref_I _1
 
 meta "rewrite_def" predicate inv_ref_I
 
-predicate precondition_size_hint (self: ()) (args: t_I)
+predicate precondition_size_hint (self: ()) (mode: Mode.t) (args: t_I)
 
-axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self_ = args in inv_ref_I self_)
-    -> precondition_size_hint () args
+axiom precondition_fndef:
+  forall mode: Mode.t. forall args: t_I [precondition_size_hint () mode args]. (let self_ = args in inv_ref_I self_)
+      -> precondition_size_hint () mode args
 
-predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) =
-  postcondition_size_hint self args result
+predicate postcondition_once_size_hint (self: ()) (mode: Mode.t) (args: t_I) (result: tup2_usize_Option_usize) =
+  postcondition_size_hint self mode args result
 
 meta "rewrite_def" predicate postcondition_once_size_hint
 
-let size_hint_I (self_: t_I) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+let size_hint_I (mode: Mode.t) (self_: t_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () mode self_}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () mode self_ result}
     (! return {result}) ]
 
-let size_hint_Skip_I (self_: t_Skip_I) (return (x: tup2_usize_Option_usize)) =
+let size_hint_Skip_I (mode: Mode.t) (self_: t_Skip_I) (return (x: tup2_usize_Option_usize)) =
 {[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Skip_I self_}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] exists r: tup2_usize_Option_usize. postcondition_size_hint () (iter_Skip_I self_) r
+  {[@stop_split] [@expl:size_hint ensures] exists r: tup2_usize_Option_usize. postcondition_size_hint () mode (iter_Skip_I self_) r
       /\ (UInt64.t'int r.f0 <= UInt64.t'int (n_Skip_I self_) -> result.f0 = (0: UInt64.t))
       /\ (ge_log_Int (UInt64.t'int r.f0) (UInt64.t'int (n_Skip_I self_))
         -> result.f0 = UInt64.sub r.f0 (n_Skip_I self_))
@@ -125,7 +127,8 @@ let size_hint_Skip_I (self_: t_Skip_I) (return (x: tup2_usize_Option_usize)) =
 
 function size_hint_exact_I (self: t_I) (r: tup2_usize_Option_usize) : ()
 
-axiom size_hint_exact_I_spec: forall self: t_I, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+axiom size_hint_exact_I_spec:
+  forall self: t_I, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint () mode self r)
     -> r.f1 = Some (r.f0)
 
 meta "compute_max_steps" 1000000
@@ -138,5 +141,5 @@ constant r : tup2_usize_Option_usize
 
 function size_hint_exact_Skip_I (self: t_Skip_I) (r: tup2_usize_Option_usize) : ()
 
-goal vc_size_hint_exact_Skip_I: postcondition_size_hint'0 () self r
+goal vc_size_hint_exact_Skip_I: (exists mode: Mode.t. postcondition_size_hint'0 () mode self r)
   -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))

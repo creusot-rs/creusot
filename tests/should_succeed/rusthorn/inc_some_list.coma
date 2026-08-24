@@ -29,6 +29,7 @@ module M_impl_List__lemma_sum_nonneg (* List *)
 end
 module M_impl_List__sum_x (* List *)
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -47,7 +48,8 @@ module M_impl_List__sum_x (* List *)
       | Nil -> 0
       end
   
-  let sum_x (self: t_List) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
+  let sum_x (mode: Mode.t) (self: t_List) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self
+    <= 1000000}
     any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:sum_x ensures] UInt32.t'int result = sum self}
       (! return {result}) ]
@@ -56,14 +58,15 @@ module M_impl_List__sum_x (* List *)
   
   meta "select_lsinst" "all"
   
-  let sum_x'0 (self: t_List) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
+  let sum_x'0 (mode: Mode.t) (self: t_List) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self
+    <= 1000000}
     (! bb0
     [ bb0 = any [ br0 (x0: UInt32.t) (x1: t_List) -> {self = Cons x0 x1} (! bb4) | br1 -> {self = Nil} (! bb3) ]
     | bb3 = s0 [ s0 = [ &_ret <- (0: UInt32.t) ] s1 | s1 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Cons {self} (fun (r0: UInt32.t) (r1: t_List) -> [ &a <- r0 ] s1)
       | s1 = elim_Cons {self} (fun (r0: UInt32.t) (r1: t_List) -> [ &l <- r1 ] s2)
-      | s2 = sum_x {l} (fun (_x: UInt32.t) -> [ &_10 <- _x ] s3)
+      | s2 = sum_x {mode} {l} (fun (_x: UInt32.t) -> [ &_10 <- _x ] s3)
       | s3 = UInt32.add {a} {_10} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l ()
@@ -77,6 +80,7 @@ end
 module M_impl_List__take_some (* List *)
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -110,7 +114,7 @@ module M_impl_List__take_some (* List *)
   
   axiom lemma_sum_nonneg_spec: forall self: t_List. ge_log_Int (sum self) 0
   
-  let random (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
+  let random (mode: Mode.t) (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
   
   predicate resolve_refmut_Box_List_Global [@inline:trivial] (_1: MutBorrow.t t_List) = _1.final = _1.current
   
@@ -120,7 +124,7 @@ module M_impl_List__take_some (* List *)
   
   meta "rewrite_def" predicate resolve_refmut_u32
   
-  let take_some (self: MutBorrow.t t_List) (return (x: MutBorrow.t UInt32.t)) = any
+  let take_some (mode: Mode.t) (self: MutBorrow.t t_List) (return (x: MutBorrow.t UInt32.t)) = any
     [ return (result: MutBorrow.t UInt32.t) ->
     {[@stop_split] [@expl:take_some ensures] ([@stop_split] [@expl:take_some ensures #0] sum self.final
           - sum self.current
@@ -132,7 +136,7 @@ module M_impl_List__take_some (* List *)
   
   meta "select_lsinst" "all"
   
-  let take_some'0 (self: MutBorrow.t t_List) (return (x: MutBorrow.t UInt32.t)) = (! bb0
+  let take_some'0 (mode: Mode.t) (self: MutBorrow.t t_List) (return (x: MutBorrow.t UInt32.t)) = (! bb0
     [ bb0 = any
       [ br0 (x0: UInt32.t) (x1: t_List) -> {self.current = Cons x0 x1} (! bb4) | br1 -> {self.current = Nil} (! bb3) ]
     | bb3 = s0 [ s0 = -{resolve_refmut_List self}- s1 | s1 = bb11 ]
@@ -149,7 +153,7 @@ module M_impl_List__take_some (* List *)
               (fun (_bor: MutBorrow.t t_List) ->
                 [ &ml <- _bor ] [ &self <- { self with current = Cons r0 _bor.final } ] s2))
       | s2 = [ &_12 <- lemma_sum_nonneg ml.current ] s3
-      | s3 = random (fun (_x: bool) -> [ &_16 <- _x ] s4)
+      | s3 = random {mode} (fun (_x: bool) -> [ &_16 <- _x ] s4)
       | s4 = any [ br0 -> {_16 = false} (! bb8) | br1 -> {_16} (! bb7) ] ]
     | bb7 = s0
       [ s0 = -{resolve_refmut_Box_List_Global ml}- s1
@@ -163,7 +167,7 @@ module M_impl_List__take_some (* List *)
       [ s0 = -{resolve_refmut_u32 ma}- s1
       | s1 = MutBorrow.borrow_final <t_List> {ml.current} {MutBorrow.get_id ml}
           (fun (_bor: MutBorrow.t t_List) -> [ &_19 <- _bor ] [ &ml <- { ml with current = _bor.final } ] s2)
-      | s2 = take_some {_19} (fun (_x: MutBorrow.t UInt32.t) -> [ &_18 <- _x ] s3)
+      | s2 = take_some {mode} {_19} (fun (_x: MutBorrow.t UInt32.t) -> [ &_18 <- _x ] s3)
       | s3 = MutBorrow.borrow_final <UInt32.t> {_18.current} {MutBorrow.get_id _18}
           (fun (_bor: MutBorrow.t UInt32.t) -> [ &_15 <- _bor ] [ &_18 <- { _18 with current = _bor.final } ] s4)
       | s4 = -{resolve_refmut_u32 _18}- s5
@@ -207,6 +211,7 @@ module M_impl_List__take_some (* List *)
 end
 module M_inc_some_list
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use int.Int
@@ -218,12 +223,13 @@ module M_inc_some_list
       | Nil -> 0
       end
   
-  let sum_x (self: t_List) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self <= 1000000}
+  let sum_x (mode: Mode.t) (self: t_List) (return (x: UInt32.t)) = {[@stop_split] [@expl:sum_x requires] sum self
+    <= 1000000}
     any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:sum_x ensures] UInt32.t'int result = sum self}
       (! return {result}) ]
   
-  let take_some (self: MutBorrow.t t_List) (return (x: MutBorrow.t UInt32.t)) = any
+  let take_some (mode: Mode.t) (self: MutBorrow.t t_List) (return (x: MutBorrow.t UInt32.t)) = any
     [ return (result: MutBorrow.t UInt32.t) ->
     {[@stop_split] [@expl:take_some ensures] ([@stop_split] [@expl:take_some ensures #0] sum self.final
           - sum self.current
@@ -235,27 +241,37 @@ module M_inc_some_list
   
   meta "rewrite_def" predicate resolve_refmut_u32
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let inc_some_list (l: t_List) (k: UInt32.t) (return (x: ())) = {[@stop_split] [@expl:inc_some_list requires] sum l
-      + UInt32.t'int k
-    <= 1000000}
+  let inc_some_list (mode: Mode.t) (l: t_List) (k: UInt32.t) (return (x: ())) =
+  {[@stop_split] [@expl:inc_some_list requires] sum l + UInt32.t'int k <= 1000000}
     (! bb0
     [ bb0 = s0
-      [ s0 = sum_x {l} (fun (_x: UInt32.t) -> [ &sum0 <- _x ] s1)
+      [ s0 = sum_x {mode} {l} (fun (_x: UInt32.t) -> [ &sum0 <- _x ] s1)
       | s1 = MutBorrow.borrow_mut <t_List> {l}
           (fun (_bor: MutBorrow.t t_List) -> [ &_9 <- _bor ] [ &l <- _bor.final ] s2)
-      | s2 = take_some {_9} (fun (_x: MutBorrow.t UInt32.t) -> [ &ma <- _x ] s3)
+      | s2 = take_some {mode} {_9} (fun (_x: MutBorrow.t UInt32.t) -> [ &ma <- _x ] s3)
       | s3 = UInt32.add {ma.current} {k} (fun (_x: UInt32.t) -> [ &ma <- { ma with current = _x } ] s4)
       | s4 = -{resolve_refmut_u32 ma}- s5
-      | s5 = sum_x {l} (fun (_x: UInt32.t) -> [ &_13 <- _x ] s6)
+      | s5 = sum_x {mode} {l} (fun (_x: UInt32.t) -> [ &_13 <- _x ] s6)
       | s6 = UInt32.add {sum0} {k} (fun (_x: UInt32.t) -> [ &_15 <- _x ] s7)
       | s7 = [ &_12 <- _13 = _15 ] s8
       | s8 = any [ br0 -> {_12 = false} (! bb5) | br1 -> {_12} (! bb6) ] ]
     | bb6 = return {_ret}
-    | bb5 = {false} any ]
+    | bb5 = s0
+      [ s0 = panic {mode} {"assertion failed: l.sum_x() == sum0 + k"} (fun (_x: ()) -> [ &_18 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & l: t_List = l
     | & k: UInt32.t = k
@@ -264,5 +280,6 @@ module M_inc_some_list
     | & _9: MutBorrow.t t_List = Any.any_l ()
     | & _12: bool = Any.any_l ()
     | & _13: UInt32.t = Any.any_l ()
-    | & _15: UInt32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _15: UInt32.t = Any.any_l ()
+    | & _18: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

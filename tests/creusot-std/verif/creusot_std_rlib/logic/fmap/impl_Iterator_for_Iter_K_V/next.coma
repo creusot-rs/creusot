@@ -6,6 +6,7 @@ type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
 use map.Map
+use creusot.prelude.Mode
 use map.Const
 use creusot.prelude.Any
 use seq.Seq
@@ -121,7 +122,7 @@ axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V [insert_K self k v]
 axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V [insert_K self k v]. len_K (insert_K self k v)
     = (if contains_K self k then len_K self else len_K self + 1)
 
-let remove_one_ghost_K (self: MutBorrow.t t_FMap_K_V) (return (x: t_Option_tup2_K_V)) =
+let remove_one_ghost_K (mode: Mode.t) (self: MutBorrow.t t_FMap_K_V) (return (x: t_Option_tup2_K_V)) =
 {[@stop_split] [@expl:remove_one_ghost 'self' type invariant] inv_refmut_FMap_K_V self}
   any
   [ return (result: t_Option_tup2_K_V) ->
@@ -183,7 +184,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let next_Iter_K_V (self: MutBorrow.t t_Iter_K_V) (return (x: t_Option_tup2_K_V)) =
+let next_Iter_K_V (mode: Mode.t) (self: MutBorrow.t t_Iter_K_V) (return (x: t_Option_tup2_K_V)) =
 {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_K_V self}
   (! bb0
   [ bb0 = s0
@@ -192,7 +193,7 @@ let next_Iter_K_V (self: MutBorrow.t t_Iter_K_V) (return (x: t_Option_tup2_K_V))
           [ &_4 <- _bor ] -{inv_FMap_K_V _bor.final}-
           [ &self <- { self with current = { f0 = _bor.final } } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_FMap_K_V self.current.f0} any) ]
-    | s1 = remove_one_ghost_K {_4} (fun (_x: t_Option_tup2_K_V) -> [ &_ret <- _x ] s2)
+    | s1 = remove_one_ghost_K {mode} {_4} (fun (_x: t_Option_tup2_K_V) -> [ &_ret <- _x ] s2)
     | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_K_V self} any) ]
     | s3 = -{resolve_refmut_Iter_K_V self}- s4
     | s4 = return {_ret} ] ]

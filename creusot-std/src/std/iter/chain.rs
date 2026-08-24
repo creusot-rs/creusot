@@ -1,5 +1,5 @@
 #[cfg(creusot)]
-use crate::resolve::structural_resolve;
+use crate::{mode::Mode, resolve::structural_resolve};
 use crate::{prelude::*, std::iter::DoubleEndedIteratorSpec};
 use core::iter::Chain;
 
@@ -83,13 +83,13 @@ impl<A: IteratorSpec, B: IteratorSpec<Item = A::Item>> IteratorSpec for Chain<A,
 
 extern_spec! {
     impl<A: Iterator, B: Iterator<Item = A::Item>> Chain<A, B> {
-        #[ensures(exists<sa, sb>
+        #[ensures(|result, mode| exists<sa, sb>
             match self.iter_a() {
-                Some(a) => A::size_hint.postcondition((&a,), sa),
+                Some(a) => A::size_hint.postcondition(mode, (&a,), sa),
                 None => sa == (0usize, Some(0usize)),
             } &&
             match self.iter_b() {
-                Some(b) => B::size_hint.postcondition((&b,), sb),
+                Some(b) => B::size_hint.postcondition(mode, (&b,), sb),
                 None => sb == (0usize, Some(0usize)),
             } &&
             result.0 == if sa.0@ + sb.0@ > usize::MAX@ { usize::MAX } else { sa.0 + sb.0 } &&
@@ -142,7 +142,7 @@ impl<A: DoubleEndedIteratorSpec, B: DoubleEndedIteratorSpec<Item = A::Item>> Dou
     }
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {

@@ -1,9 +1,10 @@
 module M_bitand_ref
   use creusot.int.UInt8BW
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
-  let bitand_ref_u8 (self_: UInt8BW.t) (rhs: UInt8BW.t) (return (x: UInt8BW.t)) = any
+  let bitand_ref_u8 (mode: Mode.t) (self_: UInt8BW.t) (rhs: UInt8BW.t) (return (x: UInt8BW.t)) = any
     [ return (result: UInt8BW.t) -> {[@stop_split] [@expl:bitand ensures] result = UInt8BW.bw_and self_ rhs}
       (! return {result}) ]
   
@@ -11,10 +12,10 @@ module M_bitand_ref
   
   meta "select_lsinst" "all"
   
-  let bitand_ref (a: UInt8BW.t) (return (x: UInt8BW.t)) = (! bb0
+  let bitand_ref (mode: Mode.t) (a: UInt8BW.t) (return (x: UInt8BW.t)) = (! bb0
     [ bb0 = s0
-      [ s0 = bitand_ref_u8 {a} {(15: UInt8BW.t)} (fun (_x: UInt8BW.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: UInt8BW.t = Any.any_l () | & a: UInt8BW.t = a ])
+      [ s0 = bitand_ref_u8 {mode} {a} {(15: UInt8BW.t)} (fun (_x: UInt8BW.t) -> [ &_ret <- _x ] s1)
+      | s1 = return {_ret} ] ] [ & _ret: UInt8BW.t = Any.any_l () | & a: UInt8BW.t = a ])
     [ return (result: UInt8BW.t) ->
     {[@stop_split] [@expl:bitand_ref ensures] ([@stop_split] [@expl:bitand_ref ensures #0] result
         = UInt8BW.bw_and a (15: UInt8BW.t))
@@ -24,13 +25,14 @@ end
 module M_shr_ref
   use creusot.int.UInt8BW
   use creusot.int.Int32BW
+  use creusot.prelude.Mode
   use creusot.int.UInt64BW
   use creusot.int.UInt32BW
   use creusot.prelude.Any
   
   constant const_BITS: UInt32BW.t = (8: UInt32BW.t)
   
-  let shr_ref_u8 (self_: UInt8BW.t) (rhs: Int32BW.t) (return (x: UInt8BW.t)) =
+  let shr_ref_u8 (mode: Mode.t) (self_: UInt8BW.t) (rhs: Int32BW.t) (return (x: UInt8BW.t)) =
   {[@stop_split] [@expl:shr requires] Int32BW.le (Int32BW.of_BV256 (UInt64BW.to_BV256 (0: UInt64BW.t))) rhs
     /\ Int32BW.lt rhs const_BITS}
     any
@@ -42,9 +44,9 @@ module M_shr_ref
   
   meta "select_lsinst" "all"
   
-  let shr_ref (a: UInt8BW.t) (return (x: UInt8BW.t)) = (! bb0
+  let shr_ref (mode: Mode.t) (a: UInt8BW.t) (return (x: UInt8BW.t)) = (! bb0
     [ bb0 = s0
-      [ s0 = shr_ref_u8 {a} {(1: Int32BW.t)} (fun (_x: UInt8BW.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+      [ s0 = shr_ref_u8 {mode} {a} {(1: Int32BW.t)} (fun (_x: UInt8BW.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt8BW.t = Any.any_l () | & a: UInt8BW.t = a ])
     [ return (result: UInt8BW.t) -> {[@stop_split] [@expl:shr_ref ensures] result
       = UInt8BW.shr a (UInt8BW.of_BV256 (UInt64BW.to_BV256 (1: UInt64BW.t)))}
@@ -53,12 +55,13 @@ end
 module M_test
   use creusot.int.UInt8BW
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test (return (x: ())) = (! bb0
+  let test (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:assertion] UInt8BW.nth (0: UInt8BW.t) 42 = false} s1
       | s1 = {[@expl:assertion] UInt8BW.nth (42: UInt8BW.t) 0 = false} s2

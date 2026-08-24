@@ -1,5 +1,6 @@
 module M_f
   use creusot.slice.Slice64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.UInt64
   use creusot.prelude.Any
@@ -21,7 +22,7 @@ module M_f
   
   function view_IntoIter_unit (self: t_IntoIter_unit) : Seq.seq ()
   
-  let into_iter_array_unit_1 (self_: Slice64.array ()) (return (x: t_IntoIter_unit)) =
+  let into_iter_array_unit_1 (mode: Mode.t) (self_: Slice64.array ()) (return (x: t_IntoIter_unit)) =
   {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_array_unit_1 self_}
     any
     [ return (result: t_IntoIter_unit) ->
@@ -29,7 +30,7 @@ module M_f
       /\ ([@stop_split] [@expl:into_iter ensures] Slice64.view self_ = view_IntoIter_unit result)}
       (! return {result}) ]
   
-  let from_iter_S (_1: t_IntoIter_unit) (return (x: ())) =
+  let from_iter_S (mode: Mode.t) (_1: t_IntoIter_unit) (return (x: ())) =
   {[@stop_split] [@expl:from_iter '_1' type invariant] inv_IntoIter_unit _1}
     any [ return (result: ()) -> (! return {result}) ]
   
@@ -37,14 +38,14 @@ module M_f
   
   meta "select_lsinst" "all"
   
-  let f (return (x: ())) = (! bb0
+  let f (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = any
         [ any_ (__arr_temp: Slice64.array ()) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = _4
           /\ Seq.length __arr_temp.Slice64.elts = 1}-
           [ &_3 <- __arr_temp ] s1) ]
-      | s1 = into_iter_array_unit_1 {_3} (fun (_x: t_IntoIter_unit) -> [ &_2 <- _x ] s2)
-      | s2 = from_iter_S {_2} (fun (_x: ()) -> [ &_1 <- _x ] s3)
+      | s1 = into_iter_array_unit_1 {mode} {_3} (fun (_x: t_IntoIter_unit) -> [ &_2 <- _x ] s2)
+      | s2 = from_iter_S {mode} {_2} (fun (_x: ()) -> [ &_1 <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & _1: () = Any.any_l ()
@@ -54,6 +55,7 @@ module M_f
 end
 module M_impl_FromIterator_for_S__from_iter (* <S as std::iter::FromIterator<()>> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_I
   
@@ -65,7 +67,8 @@ module M_impl_FromIterator_for_S__from_iter (* <S as std::iter::FromIterator<()>
   
   meta "select_lsinst" "all"
   
-  let from_iter_S (_1: t_I) (return (x: ())) = {[@stop_split] [@expl:from_iter '_1' type invariant] inv_I _1}
+  let from_iter_S (mode: Mode.t) (_1: t_I) (return (x: ())) =
+  {[@stop_split] [@expl:from_iter '_1' type invariant] inv_I _1}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_I _1} any) ]
@@ -75,40 +78,43 @@ module M_impl_FromIterator_for_S__from_iter (* <S as std::iter::FromIterator<()>
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_impl_FromIterator_for_S__from_iter__refines (* <S as std::iter::FromIterator<()>> *)
+  use creusot.prelude.Mode
+  
   type t_I
   
   predicate inv_I (_1: t_I)
   
-  predicate precondition_into_iter (self: ()) (args: t_I)
+  predicate precondition_into_iter (self: ()) (mode: Mode.t) (args: t_I)
   
-  axiom precondition_fndef: forall args: t_I [precondition_into_iter () args]. (let self = args in false)
-      -> precondition_into_iter () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_I [precondition_into_iter () mode args]. (let self = args in false)
+        -> precondition_into_iter () mode args
   
   type t_IntoIter
   
   predicate inv_IntoIter (_1: t_IntoIter)
   
-  predicate postcondition_into_iter (self: ()) (args: t_I) (result: t_IntoIter)
+  predicate postcondition_into_iter (self: ()) (mode: Mode.t) (args: t_I) (result: t_IntoIter)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: t_IntoIter [postcondition_into_iter () args res]. postcondition_into_iter () args res
+    forall mode: Mode.t, args: t_I, res: t_IntoIter [postcondition_into_iter () mode args res]. postcondition_into_iter () mode args res
       -> (let self = args in inv_IntoIter res)
   
-  predicate postcondition_once_into_iter (self: ()) (args: t_I) (result: t_IntoIter) =
-    postcondition_into_iter self args result
+  predicate postcondition_once_into_iter (self: ()) (mode: Mode.t) (args: t_I) (result: t_IntoIter) =
+    postcondition_into_iter self mode args result
   
   meta "rewrite_def" predicate postcondition_once_into_iter
   
-  let into_iter_I (self: t_I) (return (x: t_IntoIter)) =
-  {[@stop_split] [@expl:into_iter requires] precondition_into_iter () self}
+  let into_iter_I (mode: Mode.t) (self: t_I) (return (x: t_IntoIter)) =
+  {[@stop_split] [@expl:into_iter requires] precondition_into_iter () mode self}
     any
     [ return (result: t_IntoIter) ->
-    {[@stop_split] [@expl:into_iter ensures] postcondition_once_into_iter () self result}
+    {[@stop_split] [@expl:into_iter ensures] postcondition_once_into_iter () mode self result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall iter: t_I. inv_I iter -> precondition_into_iter () iter -> inv_I iter
+  goal refines: forall mode: Mode.t, iter: t_I. inv_I iter -> precondition_into_iter () mode iter -> inv_I iter
 end

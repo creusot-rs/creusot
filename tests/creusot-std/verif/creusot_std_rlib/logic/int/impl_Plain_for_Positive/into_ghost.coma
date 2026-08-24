@@ -4,6 +4,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 use int.Int
 
@@ -32,10 +33,10 @@ predicate ext_eq (self: t_Positive) (other: t_Positive) = to_int self = to_int o
 
 axiom ext_eq_spec: forall self: t_Positive, other: t_Positive [self = other]. ext_eq self other = (self = other)
 
-let into_ghost_Int (self: int) (return (x: int)) = any
+let into_ghost_Int (mode: Mode.t) (self: int) (return (x: int)) = any
   [ return (result: int) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
 
-let into_inner_Int (self: int) (return (x: int)) = any
+let into_inner_Int (mode: Mode.t) (self: int) (return (x: int)) = any
   [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
 
 predicate inv_PositiveInner (_1: t_PositiveInner)
@@ -48,29 +49,29 @@ function new_PositiveInner (x: t_PositiveInner) : t_Subset_PositiveInner
 axiom new_PositiveInner_spec: forall x: t_PositiveInner [new_PositiveInner x]. invariant_PositiveInner x
     -> inner_PositiveInner (new_PositiveInner x) = x
 
-let new_PositiveInner'0 (x: t_PositiveInner) (return (x'0: t_Subset_PositiveInner)) =
+let new_PositiveInner'0 (mode: Mode.t) (x: t_PositiveInner) (return (x'0: t_Subset_PositiveInner)) =
 {[@stop_split] [@expl:new 'x' type invariant] inv_PositiveInner x}
   any
   [ return (result: t_Subset_PositiveInner) -> {[@stop_split] [@expl:new ensures] result = new_PositiveInner x}
     (! return {result}) ]
 
-let new_Positive (x: t_Positive) (return (x'0: t_Positive)) = any
+let new_Positive (mode: Mode.t) (x: t_Positive) (return (x'0: t_Positive)) = any
   [ return (result: t_Positive) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
 
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let into_ghost_Positive (s: t_Positive) (return (x: t_Positive)) = (! bb0
+let into_ghost_Positive (mode: Mode.t) (s: t_Positive) (return (x: t_Positive)) = (! bb0
   [ bb0 = s0
     [ s0 = [ &n <- to_int s ] s1
     | s1 = [ &_8 <- () ] s2
-    | s2 = into_ghost_Int {n} (fun (_x: int) -> [ &_13 <- _x ] s3)
-    | s3 = into_inner_Int {_13} (fun (_x: int) -> [ &_12 <- _x ] s4)
+    | s2 = into_ghost_Int {Mode.into_ghost mode} {n} (fun (_x: int) -> [ &_13 <- _x ] s3)
+    | s3 = into_inner_Int {Mode.into_ghost mode} {_13} (fun (_x: int) -> [ &_12 <- _x ] s4)
     | s4 = [ &_11 <- { f0'0 = _12 } ] s5
-    | s5 = new_PositiveInner'0 {_11} (fun (_x: t_Subset_PositiveInner) -> [ &_10 <- _x ] s6)
+    | s5 = new_PositiveInner'0 {Mode.into_ghost mode} {_11} (fun (_x: t_Subset_PositiveInner) -> [ &_10 <- _x ] s6)
     | s6 = [ &_4 <- { f0 = _10 } ] s7
-    | s7 = new_Positive {_4} (fun (_x: t_Positive) -> [ &_ret <- _x ] s8)
+    | s7 = new_Positive {Mode.into_ghost mode} {_4} (fun (_x: t_Positive) -> [ &_ret <- _x ] s8)
     | s8 = return {_ret} ] ]
   [ & _ret: t_Positive = Any.any_l ()
   | & s: t_Positive = s

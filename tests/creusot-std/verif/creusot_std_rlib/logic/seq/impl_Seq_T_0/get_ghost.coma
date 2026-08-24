@@ -4,14 +4,15 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use seq.Seq
 use creusot.prelude.Any
 use int.Int
 
-let sub_Int (self: int) (other: int) (return (x: int)) = any
+let sub_Int (mode: Mode.t) (self: int) (other: int) (return (x: int)) = any
   [ return (result: int) -> {[@stop_split] [@expl:sub ensures] result = self - other} (! return {result}) ]
 
-let le_Int (self: int) (other: int) (return (x: bool)) = any
+let le_Int (mode: Mode.t) (self: int) (other: int) (return (x: bool)) = any
   [ return (result: bool) -> {[@stop_split] [@expl:le ensures] result = (self <= other)} (! return {result}) ]
 
 type t_T
@@ -43,11 +44,11 @@ predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_
 
 meta "rewrite_def" predicate inv_ref_Seq_T
 
-let len_ghost_T (self: Seq.seq t_T) (return (x: int)) =
+let len_ghost_T (mode: Mode.t) (self: Seq.seq t_T) (return (x: int)) =
 {[@stop_split] [@expl:len_ghost 'self' type invariant] inv_ref_Seq_T self}
   any [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
 
-let lt_Int (self: int) (other: int) (return (x: bool)) = any
+let lt_Int (mode: Mode.t) (self: int) (other: int) (return (x: bool)) = any
   [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] result = (self < other)} (! return {result}) ]
 
 predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
@@ -67,7 +68,7 @@ predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_
 
 meta "rewrite_def" predicate inv_Seq_ref_T
 
-let as_refs_T (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
+let as_refs_T (mode: Mode.t) (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
 {[@stop_split] [@expl:as_refs 'self' type invariant] inv_ref_Seq_T self}
   any
   [ return (result: Seq.seq t_T) ->
@@ -79,7 +80,7 @@ predicate resolve_ref_T [@inline:trivial] (_1: t_T) = true
 
 meta "rewrite_def" predicate resolve_ref_T
 
-let extract_ref_T (self: Seq.seq t_T) (index: int) (return (x: t_T)) =
+let extract_ref_T (mode: Mode.t) (self: Seq.seq t_T) (index: int) (return (x: t_T)) =
 {[@stop_split] [@expl:extract_ref_T requires] ([@stop_split] [@expl:extract 'self' type invariant] inv_Seq_ref_T self)
   /\ ([@stop_split] [@expl:extract requires] 0 <= index /\ index < Seq.length self)}
   any
@@ -112,20 +113,20 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let get_ghost_T (self: Seq.seq t_T) (index: int) (return (x: t_Option_ref_T)) =
+let get_ghost_T (mode: Mode.t) (self: Seq.seq t_T) (index: int) (return (x: t_Option_ref_T)) =
 {[@stop_split] [@expl:get_ghost 'self' type invariant] inv_ref_Seq_T self}
   (! bb0
   [ bb0 = s0
-    [ s0 = sub_Int {index} {index} (fun (_x: int) -> [ &_8 <- _x ] s1)
-    | s1 = le_Int {_8} {index} (fun (_x: bool) -> [ &_6 <- _x ] s2)
+    [ s0 = sub_Int {mode} {index} {index} (fun (_x: int) -> [ &_8 <- _x ] s1)
+    | s1 = le_Int {mode} {_8} {index} (fun (_x: bool) -> [ &_6 <- _x ] s2)
     | s2 = any [ br0 -> {_6 = false} (! bb11) | br1 -> {_6} (! bb3) ] ]
   | bb3 = s0
-    [ s0 = len_ghost_T {self} (fun (_x: int) -> [ &_15 <- _x ] s1)
-    | s1 = lt_Int {index} {_15} (fun (_x: bool) -> [ &_12 <- _x ] s2)
+    [ s0 = len_ghost_T {mode} {self} (fun (_x: int) -> [ &_15 <- _x ] s1)
+    | s1 = lt_Int {mode} {index} {_15} (fun (_x: bool) -> [ &_12 <- _x ] s2)
     | s2 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb6) ] ]
   | bb6 = s0
-    [ s0 = as_refs_T {self} (fun (_x: Seq.seq t_T) -> [ &_19 <- _x ] s1)
-    | s1 = extract_ref_T {_19} {index} (fun (_x: t_T) -> [ &_18 <- _x ] s2)
+    [ s0 = as_refs_T {mode} {self} (fun (_x: Seq.seq t_T) -> [ &_19 <- _x ] s1)
+    | s1 = extract_ref_T {mode} {_19} {index} (fun (_x: t_T) -> [ &_18 <- _x ] s2)
     | s2 = [ &_ret <- Some _18 ] s3
     | s3 = return {_ret} ]
   | bb11 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = return {_ret} ] ]

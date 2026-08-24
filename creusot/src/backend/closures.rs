@@ -22,7 +22,7 @@ use rustc_middle::{
         TyCtxt, TyKind, UpvarCapture,
     },
 };
-use std::assert_matches;
+use std::{assert_matches, iter::once};
 
 fn closure_captures<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -150,8 +150,8 @@ pub(crate) fn closure_post<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     target_kind: ClosureKind,
     def_id: LocalDefId,
-    mode: Term<'tcx>,
     self_: Term<'tcx>,
+    mode: Term<'tcx>,
     args: Term<'tcx>,
     result_state: Option<Term<'tcx>>,
 ) -> Term<'tcx> {
@@ -285,7 +285,7 @@ pub(crate) fn closure_post<'tcx>(
             ClosureKind::FnOnce => {
                 assert_eq!(target_kind, ClosureKind::FnOnce);
                 let params =
-                    [mode, self_.clone()].into_iter().chain(arg_vars).chain([result]).collect();
+                    [self_.clone(), mode].into_iter().chain(arg_vars).chain([result]).collect();
                 to_resolve = vec![];
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },

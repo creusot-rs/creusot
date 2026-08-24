@@ -6,6 +6,7 @@ type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
 use set.Set
+use creusot.prelude.Mode
 use map.Map
 use creusot.prelude.Any
 
@@ -97,7 +98,7 @@ type t_Id
 
 function id_R (self: t_Resource_R) : t_Id
 
-let update_raw_R (self: MutBorrow.t t_Resource_R) (target_s: Set.set t_R) (return (x: t_R)) =
+let update_raw_R (mode: Mode.t) (self: MutBorrow.t t_Resource_R) (target_s: Set.set t_R) (return (x: t_R)) =
 {[@stop_split] [@expl:update_raw requires] forall f: t_Option_R. op_Option_R (Some (view_Resource_R self.current)) f
       <> None'0 -> (exists x: t_R. contains_R target_s x /\ op_Option_R (Some x) f <> None'0)}
   any
@@ -126,7 +127,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let update_R (self: MutBorrow.t t_Resource_R) (upd: t_U) (return (x: t_Choice)) =
+let update_R (mode: Mode.t) (self: MutBorrow.t t_Resource_R) (upd: t_U) (return (x: t_Choice)) =
 {[@stop_split] [@expl:update_R requires] ([@stop_split] [@expl:update 'upd' type invariant] inv_U upd)
   /\ ([@stop_split] [@expl:update requires] premise_U upd (view_Resource_R self.current))}
   (! bb0
@@ -142,7 +143,7 @@ let update_R (self: MutBorrow.t t_Resource_R) (upd: t_U) (return (x: t_Choice)) 
     | s6 = [ &_27 <- () ] s7
     | s7 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
         (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_30 <- _bor ] [ &self <- { self with current = _bor.final } ] s8)
-    | s8 = update_raw_R {_30} {target_s} (fun (_x: t_R) -> [ &r <- _x ] s9)
+    | s8 = update_raw_R {mode} {_30} {target_s} (fun (_x: t_R) -> [ &r <- _x ] s9)
     | s9 = -{resolve_refmut_Resource_R self}- s10
     | s10 = [ &_ret <- such_that_Choice (fun (ch: t_Choice) -> update_U upd v ch = r) ] s11
     | s11 = return {_ret} ] ]

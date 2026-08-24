@@ -2,6 +2,7 @@ module M_add_some
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.ComputerDivision
   use int.Int
   
@@ -19,7 +20,7 @@ module M_add_some
   
   meta "select_lsinst" "all"
   
-  let add_some (a: MutBorrow.t UInt64.t) (return (x: ())) =
+  let add_some (mode: Mode.t) (a: MutBorrow.t UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:add_some requires] UInt64.t'int a.current <= ComputerDivision.div (UInt64.t'int const_MAX) 2}
     (! bb0
     [ bb0 = s0
@@ -31,6 +32,7 @@ end
 module M_foo
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use int.ComputerDivision
   use creusot.prelude.Any
   use int.Int
@@ -41,7 +43,7 @@ module M_foo
   
   meta "rewrite_def" predicate gt_log_u64
   
-  let add_some (a: MutBorrow.t UInt64.t) (return (x: ())) =
+  let add_some (mode: Mode.t) (a: MutBorrow.t UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:add_some requires] UInt64.t'int a.current <= ComputerDivision.div (UInt64.t'int const_MAX) 2}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:add_some ensures] gt_log_u64 a.final a.current} (! return {result}) ]
@@ -54,13 +56,14 @@ module M_foo
   
   meta "select_lsinst" "all"
   
-  let foo (a: MutBorrow.t UInt64.t) (return (x: ())) = {[@stop_split] [@expl:foo requires] a.current = (3: UInt64.t)}
+  let foo (mode: Mode.t) (a: MutBorrow.t UInt64.t) (return (x: ())) = {[@stop_split] [@expl:foo requires] a.current
+    = (3: UInt64.t)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &a_p <- a.current ] s1
       | s1 = MutBorrow.borrow_final <UInt64.t> {a.current} {MutBorrow.get_id a}
           (fun (_bor: MutBorrow.t UInt64.t) -> [ &_10 <- _bor ] [ &a <- { a with current = _bor.final } ] s2)
-      | s2 = add_some {_10} (fun (_x: ()) -> [ &_9 <- _x ] s3)
+      | s2 = add_some {mode} {_10} (fun (_x: ()) -> [ &_9 <- _x ] s3)
       | s3 = -{resolve_refmut_u64 a}- s4
       | s4 = {[@expl:assertion] gt_log_u64 a.current a_p} s5
       | s5 = return {_ret} ] ]

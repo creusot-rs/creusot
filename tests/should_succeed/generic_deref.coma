@@ -1,5 +1,6 @@
 module M_deref_mut_wrap
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
@@ -8,10 +9,11 @@ module M_deref_mut_wrap
   
   type t_Target
   
-  predicate precondition_deref_mut (self: ()) (args: MutBorrow.t t_T)
+  predicate precondition_deref_mut (self: ()) (mode: Mode.t) (args: MutBorrow.t t_T)
   
-  axiom precondition_fndef: forall args: MutBorrow.t t_T [precondition_deref_mut () args]. (let self_ = args in false)
-      -> precondition_deref_mut () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: MutBorrow.t t_T [precondition_deref_mut () mode args]. (let self_ = args in false)
+        -> precondition_deref_mut () mode args
   
   predicate inv_Target (_1: t_Target)
   
@@ -24,22 +26,22 @@ module M_deref_mut_wrap
   
   meta "rewrite_def" predicate inv_refmut_Target
   
-  predicate postcondition_deref_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target)
+  predicate postcondition_deref_mut (self: ()) (mode: Mode.t) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target)
   
   axiom postcondition_fndef:
-    forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_deref_mut () args res]. postcondition_deref_mut () args res
+    forall mode: Mode.t, args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_deref_mut () mode args res]. postcondition_deref_mut () mode args res
       -> (let self_ = args in inv_refmut_Target res)
   
-  predicate postcondition_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target) =
-    postcondition_deref_mut self args result
+  predicate postcondition_once_deref_mut (self: ()) (mode: Mode.t) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target) =
+    postcondition_deref_mut self mode args result
   
   meta "rewrite_def" predicate postcondition_once_deref_mut
   
-  let deref_mut_T (self_: MutBorrow.t t_T) (return (x: MutBorrow.t t_Target)) =
-  {[@stop_split] [@expl:deref_mut requires] precondition_deref_mut () self_}
+  let deref_mut_T (mode: Mode.t) (self_: MutBorrow.t t_T) (return (x: MutBorrow.t t_Target)) =
+  {[@stop_split] [@expl:deref_mut requires] precondition_deref_mut () mode self_}
     any
     [ return (result: MutBorrow.t t_Target) ->
-    {[@stop_split] [@expl:deref_mut ensures] postcondition_once_deref_mut () self_ result}
+    {[@stop_split] [@expl:deref_mut ensures] postcondition_once_deref_mut () mode self_ result}
       (! return {result}) ]
   
   predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
@@ -62,10 +64,10 @@ module M_deref_mut_wrap
   
   meta "select_lsinst" "all"
   
-  let deref_mut_wrap_T (x: MutBorrow.t t_T) (return (x'0: MutBorrow.t t_Target)) =
+  let deref_mut_wrap_T (mode: Mode.t) (x: MutBorrow.t t_T) (return (x'0: MutBorrow.t t_Target)) =
   {[@stop_split] [@expl:deref_mut_wrap_T requires] ([@stop_split] [@expl:deref_mut_wrap 'x' type invariant] inv_refmut_T x)
     /\ ([@stop_split] [@expl:deref_mut_wrap requires] forall y: MutBorrow.t t_T. inv_refmut_T y /\ y.current = x.current
-      -> precondition_deref_mut () y)}
+      -> precondition_deref_mut () mode y)}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_T> {x.current} {MutBorrow.get_id x}
@@ -76,7 +78,7 @@ module M_deref_mut_wrap
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_8 <- _bor ] -{inv_T _bor.final}-
             [ &_9 <- { _9 with current = _bor.final } ] s2) [ _ck -> (! {[@expl:type invariant] inv_T _9.current} any) ]
-      | s2 = deref_mut_T {_8} (fun (_x: MutBorrow.t t_Target) -> [ &_7 <- _x ] s3)
+      | s2 = deref_mut_T {mode} {_8} (fun (_x: MutBorrow.t t_Target) -> [ &_7 <- _x ] s3)
       | s3 = MutBorrow.borrow_final <t_Target> {_7.current} {MutBorrow.get_id _7}
           (fun (_bor: MutBorrow.t t_Target) ->
             [ &_2 <- _bor ] -{inv_Target _bor.final}-
@@ -104,20 +106,22 @@ module M_deref_mut_wrap
     | & _9: MutBorrow.t t_T = Any.any_l () ])
     [ return (result: MutBorrow.t t_Target) ->
     {[@stop_split] [@expl:deref_mut_wrap_T ensures] ([@stop_split] [@expl:deref_mut_wrap result type invariant] inv_refmut_Target result)
-      /\ ([@stop_split] [@expl:deref_mut_wrap ensures] postcondition_deref_mut () x result)}
+      /\ ([@stop_split] [@expl:deref_mut_wrap ensures] postcondition_deref_mut () mode x result)}
       (! return {result}) ]
 end
 module M_deref_wrap
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
   
   type t_Target
   
-  predicate precondition_deref (self: ()) (args: t_T)
+  predicate precondition_deref (self: ()) (mode: Mode.t) (args: t_T)
   
-  axiom precondition_fndef: forall args: t_T [precondition_deref () args]. (let self_ = args in false)
-      -> precondition_deref () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_T [precondition_deref () mode args]. (let self_ = args in false)
+        -> precondition_deref () mode args
   
   predicate inv_Target (_1: t_Target)
   
@@ -129,19 +133,21 @@ module M_deref_wrap
   
   meta "rewrite_def" predicate inv_ref_Target
   
-  predicate postcondition_deref (self: ()) (args: t_T) (result: t_Target)
+  predicate postcondition_deref (self: ()) (mode: Mode.t) (args: t_T) (result: t_Target)
   
   axiom postcondition_fndef:
-    forall args: t_T, res: t_Target [postcondition_deref () args res]. postcondition_deref () args res
+    forall mode: Mode.t, args: t_T, res: t_Target [postcondition_deref () mode args res]. postcondition_deref () mode args res
       -> (let self_ = args in inv_ref_Target res)
   
-  predicate postcondition_once_deref (self: ()) (args: t_T) (result: t_Target) = postcondition_deref self args result
+  predicate postcondition_once_deref (self: ()) (mode: Mode.t) (args: t_T) (result: t_Target) =
+    postcondition_deref self mode args result
   
   meta "rewrite_def" predicate postcondition_once_deref
   
-  let deref_T (self_: t_T) (return (x: t_Target)) = {[@stop_split] [@expl:deref requires] precondition_deref () self_}
+  let deref_T (mode: Mode.t) (self_: t_T) (return (x: t_Target)) =
+  {[@stop_split] [@expl:deref requires] precondition_deref () mode self_}
     any
-    [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self_ result}
+    [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () mode self_ result}
       (! return {result}) ]
   
   predicate inv_T (_1: t_T)
@@ -158,18 +164,18 @@ module M_deref_wrap
   
   meta "select_lsinst" "all"
   
-  let deref_wrap_T (x: t_T) (return (x'0: t_Target)) =
+  let deref_wrap_T (mode: Mode.t) (x: t_T) (return (x'0: t_Target)) =
   {[@stop_split] [@expl:deref_wrap_T requires] ([@stop_split] [@expl:deref_wrap 'x' type invariant] inv_ref_T x)
-    /\ ([@stop_split] [@expl:deref_wrap requires] precondition_deref () x)}
+    /\ ([@stop_split] [@expl:deref_wrap requires] precondition_deref () mode x)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_8 <- x ] s1
-      | s1 = deref_T {_8} (fun (_x: t_Target) -> [ &_6 <- _x ] s2)
+      | s1 = deref_T {mode} {_8} (fun (_x: t_Target) -> [ &_6 <- _x ] s2)
       | s2 = [ &_ret <- _6 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Target = Any.any_l () | & x: t_T = x | & _6: t_Target = Any.any_l () | & _8: t_T = Any.any_l () ])
     [ return (result: t_Target) ->
     {[@stop_split] [@expl:deref_wrap_T ensures] ([@stop_split] [@expl:deref_wrap result type invariant] inv_ref_Target result)
-      /\ ([@stop_split] [@expl:deref_wrap ensures] postcondition_deref () x result)}
+      /\ ([@stop_split] [@expl:deref_wrap ensures] postcondition_deref () mode x result)}
       (! return {result}) ]
 end

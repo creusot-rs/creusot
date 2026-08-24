@@ -551,7 +551,7 @@ impl<'a, T> IteratorSpec for Iter<'a, T> {
     }
 
     #[logic(open)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, tl: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self@.to_ref_seq() == visited.concat(tl@.to_ref_seq())
         }
@@ -618,7 +618,7 @@ impl<'a, T> DoubleEndedIteratorSpec for Iter<'a, T> {
     }
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {
@@ -661,7 +661,7 @@ impl<'a, T> IteratorSpec for IterMut<'a, T> {
     }
 
     #[logic(open)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, tl: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
             self@.to_mut_seq() == visited.concat(tl@.to_mut_seq())
         }
@@ -728,7 +728,7 @@ impl<'a, T> DoubleEndedIteratorSpec for IterMut<'a, T> {
     }
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {

@@ -2,6 +2,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -34,16 +35,16 @@ predicate inv_tup1_ref_T [@inline:trivial] (_1: t_T) = inv_ref_T _1
 
 meta "rewrite_def" predicate inv_tup1_ref_T
 
-predicate precondition_P (self: t_P) (args: t_T)
+predicate precondition_P (self: t_P) (mode: Mode.t) (args: t_T)
 
-predicate postcondition_once_P (self: t_P) (args: t_T) (result: bool)
+predicate postcondition_once_P (self: t_P) (mode: Mode.t) (args: t_T) (result: bool)
 
-let call_once_P (self_: t_P) (arg: t_T) (return (x: bool)) =
+let call_once_P (mode: Mode.t) (self_: t_P) (arg: t_T) (return (x: bool)) =
 {[@stop_split] [@expl:call_once_P requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_P self_)
   /\ ([@stop_split] [@expl:call_once 'arg' type invariant] inv_tup1_ref_T arg)
-  /\ ([@stop_split] [@expl:call_once requires] precondition_P self_ arg)}
+  /\ ([@stop_split] [@expl:call_once requires] precondition_P self_ mode arg)}
   any
-  [ return (result: bool) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_P self_ arg result}
+  [ return (result: bool) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_P self_ mode arg result}
     (! return {result}) ]
 
 predicate resolve_T (_1: t_T)
@@ -62,12 +63,12 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_Option_T_filter_body_T (self_: t_Option_T) (predicate': t_P) (return (x: t_Option_T)) =
+let extern_spec_T_Option_T_filter_body_T (mode: Mode.t) (self_: t_Option_T) (predicate': t_P) (return (x: t_Option_T)) =
 {[@stop_split] [@expl:extern_spec_T_Option_T_filter_body_T requires] ([@stop_split] [@expl:extern_spec_T_Option_T_filter_body 'self_' type invariant] inv_Option_T self_)
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_filter_body 'predicate' type invariant] inv_P predicate')
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_filter_body requires] match self_ with
     | None -> true
-    | Some t -> precondition_P predicate' t
+    | Some t -> precondition_P predicate' mode t
     end)}
   (! bb0
   [ bb0 = any [ br0 -> {self_ = None} (! bb2) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
@@ -75,7 +76,7 @@ let extern_spec_T_Option_T_filter_body_T (self_: t_Option_T) (predicate': t_P) (
     [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1)
     | s1 = [ &_15 <- t ] s2
     | s2 = [ &_13 <- _15 ] s3
-    | s3 = call_once_P {predicate'} {_13} (fun (_x: bool) -> [ &_11 <- _x ] s4)
+    | s3 = call_once_P {mode} {predicate'} {_13} (fun (_x: bool) -> [ &_11 <- _x ] s4)
     | s4 = any [ br0 -> {_11 = false} (! bb8) | br1 -> {_11} (! bb6) ] ]
   | bb6 = s0 [ s0 = [ &_ret <- Some t ] s1 | s1 = return {_ret} ]
   | bb8 = s0
@@ -98,10 +99,10 @@ let extern_spec_T_Option_T_filter_body_T (self_: t_Option_T) (predicate': t_P) (
   [ return (result: t_Option_T) ->
   {[@stop_split] [@expl:extern_spec_T_Option_T_filter_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Option_T_filter_body result type invariant] inv_Option_T result)
     /\ ([@stop_split] [@expl:extern_spec_T_Option_T_filter_body ensures] match self_ with
-      | None -> resolve_P predicate' /\ result = None
+      | None -> result = None
       | Some t -> match result with
-        | None -> postcondition_once_P predicate' t false /\ resolve_T t
-        | Some r -> postcondition_once_P predicate' t true /\ r = t
+        | None -> postcondition_once_P predicate' mode t false /\ resolve_T t
+        | Some r -> postcondition_once_P predicate' mode t true /\ r = t
         end
       end)}
     (! return {result}) ]

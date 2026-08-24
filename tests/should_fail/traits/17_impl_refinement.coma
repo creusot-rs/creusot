@@ -33,6 +33,7 @@ end
 module M_impl_Tr_for_unit__my_function (* <() as Tr> *)
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.Int
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
@@ -43,12 +44,13 @@ module M_impl_Tr_for_unit__my_function (* <() as Tr> *)
   
   meta "select_lsinst" "all"
   
-  let my_function_unit (self: ()) (return (x: UInt64.t)) = (! bb0
+  let my_function_unit (mode: Mode.t) (self: ()) (return (x: UInt64.t)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- (20: UInt64.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:my_function ensures] ge_log_Int (UInt64.t'int result) 15}
       (! return {result}) ]
 end
 module M_impl_Tr_for_unit__my_function__refines (* <() as Tr> *)
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use int.Int
   
@@ -60,6 +62,6 @@ module M_impl_Tr_for_unit__my_function__refines (* <() as Tr> *)
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: (). forall result: UInt64.t. ge_log_Int (UInt64.t'int result) 15
+  goal refines: forall mode: Mode.t, self: (). forall result: UInt64.t. ge_log_Int (UInt64.t'int result) 15
         -> ge_log_Int (UInt64.t'int result) 10
 end

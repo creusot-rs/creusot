@@ -183,7 +183,7 @@ pub fn slice_as_mut_ptr_perm<T>(s: &mut [T]) -> (*mut T, Ghost<&mut Perm<*const 
     s.as_mut_ptr_perm()
 }
 
-#[requires(f.precondition((0i32,)))]
+#[requires(|mode| f.precondition(mode, (0i32,)))]
 pub fn apply<F: FnOnce(i32) -> i32>(f: F) -> i32 {
     f(0)
 }

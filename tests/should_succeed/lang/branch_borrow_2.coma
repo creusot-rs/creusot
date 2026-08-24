@@ -1,17 +1,27 @@
 module M_f
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let f (return (x: ())) = (! bb0
+  let f (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &a <- (10: Int32.t) ] s1
       | s1 = [ &b <- (10: Int32.t) ] s2
@@ -56,7 +66,8 @@ module M_f
       | s4 = [ &_14 <- c = (5: Int32.t) ] s5
       | s5 = any [ br0 -> {_14 = false} (! bb8) | br1 -> {_14} (! bb7) ] ]
     | bb7 = return {_ret}
-    | bb8 = {false} any ]
+    | bb8 = s0
+      [ s0 = panic {mode} {"assertion failed: c == 5"} (fun (_x: ()) -> [ &_16 <- _x ] s1) | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: Int32.t = Any.any_l ()
     | & b: Int32.t = Any.any_l ()
@@ -67,12 +78,14 @@ module M_f
     | & w: MutBorrow.t Int32.t = Any.any_l ()
     | & _11: MutBorrow.t Int32.t = Any.any_l ()
     | & _12: MutBorrow.t Int32.t = Any.any_l ()
-    | & _14: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _14: bool = Any.any_l ()
+    | & _16: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_g
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_MyInt = { f0: UInt64.t }
   
@@ -90,7 +103,7 @@ module M_g
   
   meta "select_lsinst" "all"
   
-  let g (return (x: ())) = (! bb0
+  let g (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_2 <- { f0 = (10: UInt64.t) } ] s1
       | s1 = [ &_3 <- { f0 = (5: UInt64.t) } ] s2
@@ -119,6 +132,7 @@ module M_h
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
@@ -128,7 +142,7 @@ module M_h
   
   meta "select_lsinst" "all"
   
-  let h (return (x: ())) = (! bb0
+  let h (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &a <- (10: Int32.t) ] s1
       | s1 = [ &b <- (10: Int32.t) ] s2

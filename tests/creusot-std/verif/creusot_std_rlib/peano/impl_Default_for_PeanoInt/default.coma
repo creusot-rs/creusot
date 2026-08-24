@@ -5,14 +5,16 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
-let default_u64 (return (x: UInt64.t)) = any
+let default_u64 (mode: Mode.t) (return (x: UInt64.t)) = any
   [ return (result: UInt64.t) -> {[@stop_split] [@expl:default ensures] result = (0: UInt64.t)} (! return {result}) ]
 
 type t_PeanoInt = { f0: UInt64.t }
 
-predicate postcondition_default (self: ()) (args: ()) (result: UInt64.t) = let () = args in result = (0: UInt64.t)
+predicate postcondition_default (self: ()) (mode: Mode.t) (args: ()) (result: UInt64.t) =
+  let () = args in result = (0: UInt64.t)
 
 meta "rewrite_def" predicate postcondition_default
 
@@ -20,10 +22,11 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let default_PeanoInt (return (x: t_PeanoInt)) = (! bb0
+let default_PeanoInt (mode: Mode.t) (return (x: t_PeanoInt)) = (! bb0
   [ bb0 = s0
-    [ s0 = default_u64 (fun (_x: UInt64.t) -> [ &_2 <- _x ] s1)
+    [ s0 = default_u64 {mode} (fun (_x: UInt64.t) -> [ &_2 <- _x ] s1)
     | s1 = [ &_ret <- { f0 = _2 } ] s2
     | s2 = return {_ret} ] ] [ & _ret: t_PeanoInt = Any.any_l () | & _2: UInt64.t = Any.any_l () ])
-  [ return (result: t_PeanoInt) -> {[@stop_split] [@expl:default ensures] true /\ postcondition_default () () result.f0}
+  [ return (result: t_PeanoInt) -> {[@stop_split] [@expl:default ensures] true
+    /\ postcondition_default () mode () result.f0}
     (! return {result}) ]

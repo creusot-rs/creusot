@@ -6,6 +6,7 @@ type t_Namespace = Other namespace_other
 
 use real.Real
 use real.FromInt
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_PositiveReal
@@ -40,7 +41,8 @@ function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.fro
 
 meta "rewrite_def" function from_int
 
-let into_inner_Resource_PositiveReal (self: t_Resource_PositiveReal) (return (x: t_Resource_PositiveReal)) = any
+let into_inner_Resource_PositiveReal (mode: Mode.t) (self: t_Resource_PositiveReal)
+  (return (x: t_Resource_PositiveReal)) = any
   [ return (result: t_Resource_PositiveReal) -> {[@stop_split] [@expl:into_inner ensures] result = self}
     (! return {result}) ]
 
@@ -124,7 +126,7 @@ type t_Id
 
 function id_PositiveReal (self: t_Resource_PositiveReal) : t_Id
 
-let split_PositiveReal (self: t_Resource_PositiveReal) (a: t_PositiveReal) (b: t_PositiveReal)
+let split_PositiveReal (mode: Mode.t) (self: t_Resource_PositiveReal) (a: t_PositiveReal) (b: t_PositiveReal)
   (return (x: tup2_Resource_PositiveReal_Resource_PositiveReal)) =
 {[@stop_split] [@expl:split requires] incl_eq_op_PositiveReal a b (view_Resource_PositiveReal self)}
   any
@@ -136,7 +138,8 @@ let split_PositiveReal (self: t_Resource_PositiveReal) (a: t_PositiveReal) (b: t
     /\ ([@stop_split] [@expl:split ensures #2] view_Resource_PositiveReal result.f1'0 = b)}
     (! return {result}) ]
 
-let new_tup2_Resource_PositiveReal_Resource_PositiveReal (x: tup2_Resource_PositiveReal_Resource_PositiveReal)
+let new_tup2_Resource_PositiveReal_Resource_PositiveReal (mode: Mode.t)
+  (x: tup2_Resource_PositiveReal_Resource_PositiveReal)
   (return (x'0: tup2_Resource_PositiveReal_Resource_PositiveReal)) = any
   [ return (result: tup2_Resource_PositiveReal_Resource_PositiveReal) -> {[@stop_split] [@expl:new ensures] result = x}
     (! return {result}) ]
@@ -145,7 +148,7 @@ type tup2_Ghost_Resource_PositiveReal_Ghost_Resource_PositiveReal = {
   f0'1: t_Resource_PositiveReal;
   f1'1: t_Resource_PositiveReal }
 
-let split_Resource_PositiveReal (self: tup2_Resource_PositiveReal_Resource_PositiveReal)
+let split_Resource_PositiveReal (mode: Mode.t) (self: tup2_Resource_PositiveReal_Resource_PositiveReal)
   (return (x: tup2_Ghost_Resource_PositiveReal_Ghost_Resource_PositiveReal)) = any
   [ return (result: tup2_Ghost_Resource_PositiveReal_Ghost_Resource_PositiveReal) ->
   {[@stop_split] [@expl:split_Resource_PositiveReal ensures] ([@stop_split] [@expl:split ensures #0] self.f0'0
@@ -163,15 +166,16 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let split (self: t_LifetimeToken) (return (x: tup2_LifetimeToken_LifetimeToken)) = (! bb0
+let split (mode: Mode.t) (self: t_LifetimeToken) (return (x: tup2_LifetimeToken_LifetimeToken)) = (! bb0
   [ bb0 = s0
     [ s0 = [ &q <- div_PositiveReal (frac self) (from_int 2) ] s1
-    | s1 = into_inner_Resource_PositiveReal {self.f0} (fun (_x: t_Resource_PositiveReal) -> [ &_16 <- _x ] s2)
-    | s2 = split_PositiveReal {_16} {q} {q}
+    | s1 = into_inner_Resource_PositiveReal {Mode.into_ghost mode} {self.f0}
+        (fun (_x: t_Resource_PositiveReal) -> [ &_16 <- _x ] s2)
+    | s2 = split_PositiveReal {Mode.into_ghost mode} {_16} {q} {q}
         (fun (_x: tup2_Resource_PositiveReal_Resource_PositiveReal) -> [ &_12 <- _x ] s3)
-    | s3 = new_tup2_Resource_PositiveReal_Resource_PositiveReal {_12}
+    | s3 = new_tup2_Resource_PositiveReal_Resource_PositiveReal {Mode.into_ghost mode} {_12}
         (fun (_x: tup2_Resource_PositiveReal_Resource_PositiveReal) -> [ &_11 <- _x ] s4)
-    | s4 = split_Resource_PositiveReal {_11}
+    | s4 = split_Resource_PositiveReal {mode} {_11}
         (fun (_x: tup2_Ghost_Resource_PositiveReal_Ghost_Resource_PositiveReal) -> [ &_10 <- _x ] s5)
     | s5 = [ &r1 <- _10.f0'1 ] s6
     | s6 = [ &r2 <- _10.f1'1 ] s7

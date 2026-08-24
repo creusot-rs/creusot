@@ -6,6 +6,7 @@ use creusot.prelude.MutBorrow
 use creusot.slice.Slice64
 use seq.Seq
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use creusot.prelude.Any
 use int.Int
 
@@ -63,7 +64,8 @@ predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t
 
 meta "rewrite_def" predicate inv_refmut_slice_T
 
-let as_mut_slice_T (self_: MutBorrow.t (Slice64.array t_T)) (return (x: MutBorrow.t (Slice64.slice t_T))) =
+let as_mut_slice_T (mode: Mode.t) (self_: MutBorrow.t (Slice64.array t_T))
+  (return (x: MutBorrow.t (Slice64.slice t_T))) =
 {[@stop_split] [@expl:as_mut_slice 'self_' type invariant] inv_refmut_array_T_n self_}
   any
   [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
@@ -89,26 +91,30 @@ predicate inv_Vec_T_Global (_1: t_Vec_T_Global)
 
 axiom inv_axiom: forall x: t_Vec_T_Global [inv_Vec_T_Global x]. inv_Vec_T_Global x -> invariant_Vec_T_Global x
 
-predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
+predicate postcondition_clone (self: ()) (mode: Mode.t) (args: t_T) (result: t_T)
 
-axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
+axiom postcondition_fndef:
+  forall mode: Mode.t, args: t_T, res: t_T [postcondition_clone () mode args res]. postcondition_clone () mode args res
     -> (let self_ = args in inv_T res)
 
-predicate precondition_clone (self: ()) (args: t_T)
+predicate precondition_clone (self: ()) (mode: Mode.t) (args: t_T)
 
-axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
-    -> precondition_clone () args
+axiom precondition_fndef:
+  forall mode: Mode.t. forall args: t_T [precondition_clone () mode args]. (let self_ = args in inv_ref_T self_)
+      -> precondition_clone () mode args
 
-predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T) = postcondition_clone self args result
+predicate postcondition_once_clone (self: ()) (mode: Mode.t) (args: t_T) (result: t_T) =
+  postcondition_clone self mode args result
 
 meta "rewrite_def" predicate postcondition_once_clone
 
-let clone_T (self_: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+let clone_T (mode: Mode.t) (self_: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:clone requires] precondition_clone () mode self_}
   any
-  [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+  [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () mode self_ result}
     (! return {result}) ]
 
-let from_Vec_T_Global (s: MutBorrow.t (Slice64.slice t_T)) (return (x: t_Vec_T_Global)) =
+let from_Vec_T_Global (mode: Mode.t) (s: MutBorrow.t (Slice64.slice t_T)) (return (x: t_Vec_T_Global)) =
 {[@stop_split] [@expl:from 's' type invariant] inv_refmut_slice_T s}
   any
   [ return (result: t_Vec_T_Global) ->
@@ -116,7 +122,7 @@ let from_Vec_T_Global (s: MutBorrow.t (Slice64.slice t_T)) (return (x: t_Vec_T_G
     /\ ([@stop_split] [@expl:from ensures #0] Seq.length (view_Vec_T_Global result)
       = Seq.length (Slice64.view s.current))
     /\ ([@stop_split] [@expl:from ensures #1] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view s.current)
-        -> postcondition_clone () (Seq.get (Slice64.view s.current) i) (Seq.get (view_Vec_T_Global result) i))
+        -> postcondition_clone () mode (Seq.get (Slice64.view s.current) i) (Seq.get (view_Vec_T_Global result) i))
     /\ ([@stop_split] [@expl:from ensures #2] s.final = s.current)}
     (! return {result}) ]
 
@@ -128,7 +134,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T__constN_From__refmut__array_T_Vec_T_from_body_T (s: MutBorrow.t (Slice64.array t_T))
+let extern_spec_T__constN_From__refmut__array_T_Vec_T_from_body_T (mode: Mode.t) (s: MutBorrow.t (Slice64.array t_T))
   (return (x: t_Vec_T_Global)) =
 {[@stop_split] [@expl:extern_spec_T__constN_From__refmut__array_T_Vec_T_from_body 's' type invariant] inv_refmut_array_T_n s}
   (! bb0
@@ -138,8 +144,8 @@ let extern_spec_T__constN_From__refmut__array_T_Vec_T_from_body_T (s: MutBorrow.
           [ &_8 <- _bor ] -{inv_array_T_n _bor.final}-
           [ &s <- { s with current = _bor.final } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_array_T_n s.current} any) ]
-    | s1 = as_mut_slice_T {_8} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_7 <- _x ] s2)
-    | s2 = from_Vec_T_Global {_7} (fun (_x: t_Vec_T_Global) -> [ &_ret <- _x ] s3)
+    | s1 = as_mut_slice_T {mode} {_8} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_7 <- _x ] s2)
+    | s2 = from_Vec_T_Global {mode} {_7} (fun (_x: t_Vec_T_Global) -> [ &_ret <- _x ] s3)
     | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_array_T_n s} any) ]
     | s4 = -{resolve_refmut_array_T_n s}- s5
     | s5 = return {_ret} ] ]
@@ -154,7 +160,7 @@ let extern_spec_T__constN_From__refmut__array_T_Vec_T_from_body_T (s: MutBorrow.
     /\ ([@stop_split] [@expl:extern_spec_T__constN_From__refmut__array_T_Vec_T_from_body ensures #1] forall i: int. 0
             <= i
           /\ i < Seq.length (Slice64.view s.current)
-        -> postcondition_clone () (Seq.get (Slice64.view s.current) i) (Seq.get (view_Vec_T_Global result) i))
+        -> postcondition_clone () mode (Seq.get (Slice64.view s.current) i) (Seq.get (view_Vec_T_Global result) i))
     /\ ([@stop_split] [@expl:extern_spec_T__constN_From__refmut__array_T_Vec_T_from_body ensures #2] s.final
     = s.current)}
     (! return {result}) ]

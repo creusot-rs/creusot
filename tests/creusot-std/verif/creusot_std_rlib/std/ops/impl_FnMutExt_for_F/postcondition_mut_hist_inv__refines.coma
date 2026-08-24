@@ -4,13 +4,15 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
+
 type t_F
 
 type t_Args
 
 type t_Output
 
-predicate postcondition_mut_F (self: t_F) (args: t_Args) (result_state: t_F) (result: t_Output)
+predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: t_Args) (result_state: t_F) (result: t_Output)
 
 predicate hist_inv_F (self: t_F) (result_state: t_F)
 
@@ -18,6 +20,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self: t_F, args: t_Args, res_state: t_F, res: t_Output. postcondition_mut_F self args res_state res
-    -> postcondition_mut_F self args res_state res
+goal refines:
+  forall self: t_F, mode: Mode.t, args: t_Args, res_state: t_F, res: t_Output. postcondition_mut_F self mode args res_state res
+    -> postcondition_mut_F self mode args res_state res
     /\ (forall result: (). hist_inv_F self res_state -> hist_inv_F self res_state)

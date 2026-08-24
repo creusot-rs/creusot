@@ -21,7 +21,7 @@ impl<T> IteratorSpec for Once<T> {
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, _: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||
             exists<e: Self::Item> self@ == Some(e) && visited == Seq::singleton(e) && o@ == None
@@ -29,30 +29,22 @@ impl<T> IteratorSpec for Once<T> {
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(mode, ab, b))]
-    #[requires(b.produces(mode, bc, c))]
-    #[ensures(a.produces(mode, ab.concat(bc), c))]
-    fn produces_trans(
-        mode: Mode,
-        a: Self,
-        ab: Seq<Self::Item>,
-        b: Self,
-        bc: Seq<Self::Item>,
-        c: Self,
-    ) {
-    }
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
 extern_spec! {
     impl<T> Iterator for Once<T> {
         #[check(ghost)]
-        #[ensures(|result, mode| match result {
+        #[ensures(match result {
             None => self.completed(),
-            Some(v) => (*self).produces(mode, Seq::singleton(v), ^self)
+            Some(v) => (*self).produces(Seq::singleton(v), ^self)
         })]
         fn next(&mut self) -> Option<T>;
 
@@ -65,7 +57,7 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for Once<T> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}

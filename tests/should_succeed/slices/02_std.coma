@@ -1,4 +1,5 @@
 module M_binary_search
+  use creusot.prelude.Mode
   use creusot.int.UInt32
   use creusot.prelude.Any
   use creusot.slice.Slice64
@@ -42,7 +43,8 @@ module M_binary_search
   
   meta "rewrite_def" function deep_model_ref_u32
   
-  let binary_search_u32 (self_: Slice64.slice UInt32.t) (x: UInt32.t) (return (x'0: t_Result_usize_usize)) =
+  let binary_search_u32 (mode: Mode.t) (self_: Slice64.slice UInt32.t) (x: UInt32.t)
+    (return (x'0: t_Result_usize_usize)) =
   {[@stop_split] [@expl:binary_search requires] sorted_Int (deep_model_ref_slice_u32 self_)}
     any
     [ return (result: t_Result_usize_usize) ->
@@ -62,7 +64,7 @@ module M_binary_search
           -> deep_model_ref_u32 x < Seq.get (deep_model_ref_slice_u32 self_) (UInt64.t'int j)))}
       (! return {result}) ]
   
-  let unwrap_usize (self_: t_Result_usize_usize) (return (x: UInt64.t)) =
+  let unwrap_usize (mode: Mode.t) (self_: t_Result_usize_usize) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:unwrap requires] exists t: UInt64.t. self_ = Ok t}
     any [ return (result: UInt64.t) -> {[@stop_split] [@expl:unwrap ensures] Ok result = self_} (! return {result}) ]
   
@@ -70,7 +72,7 @@ module M_binary_search
   
   meta "select_lsinst" "all"
   
-  let binary_search (s: Slice64.slice UInt32.t) (return (x: UInt64.t)) =
+  let binary_search (mode: Mode.t) (s: Slice64.slice UInt32.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:binary_search requires] ([@stop_split] [@expl:binary_search requires #0] forall i: int. 0 <= i
           /\ i < Seq.length (Slice64.view s) -> UInt32.t'int (index_slice_u32 s i) = i)
     /\ ([@stop_split] [@expl:binary_search requires #1] Seq.length (Slice64.view s) = 5)}
@@ -80,8 +82,8 @@ module M_binary_search
         [ bb0'0 = s0'0 [ s0'0 = [ &_ret'0 <- (2: UInt32.t) ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: UInt32.t = Any.any_l () ] [ _const_ret (_const: UInt32.t) -> [ &_15 <- _const ] s1 ]
       | s1 = [ &_10 <- _15 ] s2
-      | s2 = binary_search_u32 {s} {_10} (fun (_x: t_Result_usize_usize) -> [ &_7 <- _x ] s3)
-      | s3 = unwrap_usize {_7} (fun (_x: UInt64.t) -> [ &ix <- _x ] s4)
+      | s2 = binary_search_u32 {mode} {s} {_10} (fun (_x: t_Result_usize_usize) -> [ &_7 <- _x ] s3)
+      | s3 = unwrap_usize {mode} {_7} (fun (_x: UInt64.t) -> [ &ix <- _x ] s4)
       | s4 = {[@expl:assertion] UInt64.t'int ix < 5} s5
       | s5 = [ &_ret <- ix ] s6
       | s6 = return {_ret} ] ]

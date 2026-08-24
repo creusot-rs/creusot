@@ -1,4 +1,5 @@
 module M_uses_generic
+  use creusot.prelude.Mode
   use creusot.int.UInt32
   use creusot.prelude.Any
   
@@ -6,32 +7,36 @@ module M_uses_generic
   
   predicate inv_T (_1: t_T)
   
-  predicate precondition_from_b (self: ()) (args: t_T)
+  predicate precondition_from_b (self: ()) (mode: Mode.t) (args: t_T)
   
-  axiom precondition_fndef: forall args: t_T [precondition_from_b () args]. (let x = args in inv_T x)
-      -> precondition_from_b () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_T [precondition_from_b () mode args]. (let x = args in inv_T x)
+        -> precondition_from_b () mode args
   
-  predicate postcondition_from_b (self: ()) (args: t_T) (result: UInt32.t)
+  predicate postcondition_from_b (self: ()) (mode: Mode.t) (args: t_T) (result: UInt32.t)
   
   axiom postcondition_fndef:
-    forall args: t_T, res: UInt32.t [postcondition_from_b () args res]. postcondition_from_b () args res
+    forall mode: Mode.t, args: t_T, res: UInt32.t [postcondition_from_b () mode args res]. postcondition_from_b () mode args res
       -> (let x = args in true)
   
-  predicate postcondition_once_from_b (self: ()) (args: t_T) (result: UInt32.t) = postcondition_from_b self args result
+  predicate postcondition_once_from_b (self: ()) (mode: Mode.t) (args: t_T) (result: UInt32.t) =
+    postcondition_from_b self mode args result
   
   meta "rewrite_def" predicate postcondition_once_from_b
   
-  let from_b_T (x: t_T) (return (x'0: UInt32.t)) = {[@stop_split] [@expl:from_b requires] precondition_from_b () x}
+  let from_b_T (mode: Mode.t) (x: t_T) (return (x'0: UInt32.t)) =
+  {[@stop_split] [@expl:from_b requires] precondition_from_b () mode x}
     any
-    [ return (result: UInt32.t) -> {[@stop_split] [@expl:from_b ensures] postcondition_once_from_b () x result}
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:from_b ensures] postcondition_once_from_b () mode x result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let uses_generic_T (b: t_T) (return (x: UInt32.t)) = {[@stop_split] [@expl:uses_generic 'b' type invariant] inv_T b}
+  let uses_generic_T (mode: Mode.t) (b: t_T) (return (x: UInt32.t)) =
+  {[@stop_split] [@expl:uses_generic 'b' type invariant] inv_T b}
     (! bb0
-    [ bb0 = s0 [ s0 = from_b_T {b} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = from_b_T {mode} {b} (fun (_x: UInt32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l () | & b: t_T = b ]) [ return (result: UInt32.t) -> (! return {result}) ]
 end

@@ -47,11 +47,10 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
-            forall<mode: Mode>
             (^self).n()@ == 0 &&
             exists<s: Seq<Self::Item>, i: &mut I>
                    s.len() <= (*self).n()@
-                && self.iter().produces(mode, s, *i)
+                && self.iter().produces(s, *i)
                 && (forall<i> 0 <= i && i < s.len() ==> resolve(s[i]))
                 && i.completed()
                 && ^i == (^self).iter()
@@ -59,33 +58,26 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::empty() && self == o ||
             o.n()@ == 0 && visited.len() > 0 &&
             exists<s: Seq<Self::Item>>
                    s.len() == self.n()@
-                && self.iter().produces(mode, s.concat(visited), o.iter())
+                && self.iter().produces(s.concat(visited), o.iter())
                 && forall<i> 0 <= i && i < s.len() ==> resolve(s[i])
         }
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(mode, ab, b))]
-    #[requires(b.produces(mode, bc, c))]
-    #[ensures(a.produces(mode, ab.concat(bc), c))]
-    fn produces_trans(
-        mode: Mode,
-        a: Self,
-        ab: Seq<Self::Item>,
-        b: Self,
-        bc: Seq<Self::Item>,
-        c: Self,
-    ) {
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         // associativity of concat
         proof_assert!(forall<s1: Seq<Self::Item>, s2: Seq<Self::Item>, s3: Seq<Self::Item>> s1.concat(s2.concat(s3)) == s1.concat(s2).concat(s3));
         // empty is neutral for concat
@@ -104,8 +96,8 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
 
 extern_spec! {
     impl<I: Iterator> Iterator for Skip<I> {
-        #[ensures(exists<r>
-            I::size_hint.postcondition((&self.iter(),), r) &&
+        #[ensures(|result, mode| exists<r>
+            I::size_hint.postcondition(mode, (&self.iter(),), r) &&
             (r.0@ <= self.n()@ ==> result.0 == 0usize) &&
             (r.0@ >= self.n()@ ==> result.0 == r.0 - self.n()) &&
             match r.1 {
@@ -121,7 +113,7 @@ extern_spec! {
 
 impl<I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Skip<I> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {

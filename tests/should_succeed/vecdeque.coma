@@ -1,5 +1,6 @@
 module M_test_deque
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
@@ -16,22 +17,22 @@ module M_test_deque
     forall self: t_VecDeque_u32_Global [view_VecDeque_u32_Global self]. Seq.length (view_VecDeque_u32_Global self)
       <= UInt64.t'int const_MAX
   
-  let with_capacity_u32 (capacity: UInt64.t) (return (x: t_VecDeque_u32_Global)) = any
+  let with_capacity_u32 (mode: Mode.t) (capacity: UInt64.t) (return (x: t_VecDeque_u32_Global)) = any
     [ return (result: t_VecDeque_u32_Global) ->
     {[@stop_split] [@expl:with_capacity ensures] Seq.length (view_VecDeque_u32_Global result) = 0}
       (! return {result}) ]
   
-  let is_empty_u32 (self_: t_VecDeque_u32_Global) (return (x: bool)) = any
+  let is_empty_u32 (mode: Mode.t) (self_: t_VecDeque_u32_Global) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_empty ensures] result
       = (Seq.length (view_VecDeque_u32_Global self_) = 0)}
       (! return {result}) ]
   
-  let len_u32 (self_: t_VecDeque_u32_Global) (return (x: UInt64.t)) = any
+  let len_u32 (mode: Mode.t) (self_: t_VecDeque_u32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (view_VecDeque_u32_Global self_)}
       (! return {result}) ]
   
-  let new_u32 (return (x: t_VecDeque_u32_Global)) = any
+  let new_u32 (mode: Mode.t) (return (x: t_VecDeque_u32_Global)) = any
     [ return (result: t_VecDeque_u32_Global) ->
     {[@stop_split] [@expl:new ensures] Seq.length (view_VecDeque_u32_Global result) = 0}
       (! return {result}) ]
@@ -42,7 +43,7 @@ module M_test_deque
   
   meta "rewrite_def" function push_front_u32
   
-  let pop_front_u32 (self_: MutBorrow.t t_VecDeque_u32_Global) (return (x: t_Option_u32)) = any
+  let pop_front_u32 (mode: Mode.t) (self_: MutBorrow.t t_VecDeque_u32_Global) (return (x: t_Option_u32)) = any
     [ return (result: t_Option_u32) -> {[@stop_split] [@expl:pop_front ensures] match result with
         | Some t -> view_VecDeque_u32_Global self_.final
           = Seq.([..]) (view_VecDeque_u32_Global self_.current) 1 (Seq.length (view_VecDeque_u32_Global self_.current))
@@ -68,12 +69,12 @@ module M_test_deque
   
   meta "rewrite_def" function deep_model_ref_Option_u32
   
-  let eq_Option_u32 (self_: t_Option_u32) (rhs: t_Option_u32) (return (x: bool)) = any
+  let eq_Option_u32 (mode: Mode.t) (self_: t_Option_u32) (rhs: t_Option_u32) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
       = (deep_model_ref_Option_u32 self_ = deep_model_ref_Option_u32 rhs)}
       (! return {result}) ]
   
-  let pop_back_u32 (self_: MutBorrow.t t_VecDeque_u32_Global) (return (x: t_Option_u32)) = any
+  let pop_back_u32 (mode: Mode.t) (self_: MutBorrow.t t_VecDeque_u32_Global) (return (x: t_Option_u32)) = any
     [ return (result: t_Option_u32) -> {[@stop_split] [@expl:pop_back ensures] match result with
         | Some t -> view_VecDeque_u32_Global self_.final
           = Seq.([..]) (view_VecDeque_u32_Global self_.current) 0 (Seq.length (view_VecDeque_u32_Global self_.current)
@@ -83,7 +84,8 @@ module M_test_deque
         end}
       (! return {result}) ]
   
-  let push_front_u32'0 (self_: MutBorrow.t t_VecDeque_u32_Global) (value: UInt32.t) (return (x: ())) = any
+  let push_front_u32'0 (mode: Mode.t) (self_: MutBorrow.t t_VecDeque_u32_Global) (value: UInt32.t) (return (x: ())) =
+  any
     [ return (result: ()) ->
     {[@stop_split] [@expl:push_front_u32 ensures] ([@stop_split] [@expl:push_front ensures #0] Seq.length (view_VecDeque_u32_Global self_.final)
         = Seq.length (view_VecDeque_u32_Global self_.current) + 1)
@@ -91,118 +93,151 @@ module M_test_deque
       = push_front_u32 (view_VecDeque_u32_Global self_.current) value)}
       (! return {result}) ]
   
-  let push_back_u32 (self_: MutBorrow.t t_VecDeque_u32_Global) (value: UInt32.t) (return (x: ())) = any
+  let push_back_u32 (mode: Mode.t) (self_: MutBorrow.t t_VecDeque_u32_Global) (value: UInt32.t) (return (x: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:push_back ensures] view_VecDeque_u32_Global self_.final
       = Seq.snoc (view_VecDeque_u32_Global self_.current) value}
       (! return {result}) ]
   
-  let clear_u32 (self_: MutBorrow.t t_VecDeque_u32_Global) (return (x: ())) = any
+  let clear_u32 (mode: Mode.t) (self_: MutBorrow.t t_VecDeque_u32_Global) (return (x: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:clear ensures] Seq.length (view_VecDeque_u32_Global self_.final) = 0}
       (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_deque (return (x: ())) = (! bb0
+  let test_deque (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = with_capacity_u32 {(5: UInt64.t)} (fun (_x: t_VecDeque_u32_Global) -> [ &deque <- _x ] s1)
-      | s1 = is_empty_u32 {deque} (fun (_x: bool) -> [ &_3 <- _x ] s2)
+      [ s0 = with_capacity_u32 {mode} {(5: UInt64.t)} (fun (_x: t_VecDeque_u32_Global) -> [ &deque <- _x ] s1)
+      | s1 = is_empty_u32 {mode} {deque} (fun (_x: bool) -> [ &_3 <- _x ] s2)
       | s2 = any [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = len_u32 {deque} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s1)
+      [ s0 = len_u32 {mode} {deque} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s1)
       | s1 = [ &_7 <- _8 = (0: UInt64.t) ] s2
       | s2 = any [ br0 -> {_7 = false} (! bb7) | br1 -> {_7} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = new_u32 (fun (_x: t_VecDeque_u32_Global) -> [ &deque'0 <- _x ] s1)
-      | s1 = is_empty_u32 {deque'0} (fun (_x: bool) -> [ &_13 <- _x ] s2)
+      [ s0 = new_u32 {mode} (fun (_x: t_VecDeque_u32_Global) -> [ &deque'0 <- _x ] s1)
+      | s1 = is_empty_u32 {mode} {deque'0} (fun (_x: bool) -> [ &_13 <- _x ] s2)
       | s2 = any [ br0 -> {_13 = false} (! bb11) | br1 -> {_13} (! bb10) ] ]
     | bb10 = s0
-      [ s0 = len_u32 {deque'0} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
+      [ s0 = len_u32 {mode} {deque'0} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
       | s1 = [ &_17 <- _18 = (0: UInt64.t) ] s2
       | s2 = any [ br0 -> {_17 = false} (! bb14) | br1 -> {_17} (! bb13) ] ]
     | bb13 = s0
       [ s0 = MutBorrow.borrow_mut <t_VecDeque_u32_Global> {deque'0}
           (fun (_bor: MutBorrow.t t_VecDeque_u32_Global) -> [ &_25 <- _bor ] [ &deque'0 <- _bor.final ] s1)
-      | s1 = pop_front_u32 {_25} (fun (_x: t_Option_u32) -> [ &_24 <- _x ] s2)
+      | s1 = pop_front_u32 {mode} {_25} (fun (_x: t_Option_u32) -> [ &_24 <- _x ] s2)
       | s2 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- None ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: t_Option_u32 = Any.any_l () | & _1: t_Option_u32 = Any.any_l () ]
         [ _const_ret (_const: t_Option_u32) -> [ &_68 <- _const ] s3 ]
-      | s3 = eq_Option_u32 {_24} {_68} (fun (_x: bool) -> [ &_22 <- _x ] s4)
+      | s3 = eq_Option_u32 {mode} {_24} {_68} (fun (_x: bool) -> [ &_22 <- _x ] s4)
       | s4 = any [ br0 -> {_22 = false} (! bb18) | br1 -> {_22} (! bb17) ] ]
     | bb17 = s0
       [ s0 = MutBorrow.borrow_mut <t_VecDeque_u32_Global> {deque'0}
           (fun (_bor: MutBorrow.t t_VecDeque_u32_Global) -> [ &_33 <- _bor ] [ &deque'0 <- _bor.final ] s1)
-      | s1 = pop_back_u32 {_33} (fun (_x: t_Option_u32) -> [ &_32 <- _x ] s2)
+      | s1 = pop_back_u32 {mode} {_33} (fun (_x: t_Option_u32) -> [ &_32 <- _x ] s2)
       | s2 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- None ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: t_Option_u32 = Any.any_l () | & _1: t_Option_u32 = Any.any_l () ]
         [ _const_ret (_const: t_Option_u32) -> [ &_67 <- _const ] s3 ]
-      | s3 = eq_Option_u32 {_32} {_67} (fun (_x: bool) -> [ &_30 <- _x ] s4)
+      | s3 = eq_Option_u32 {mode} {_32} {_67} (fun (_x: bool) -> [ &_30 <- _x ] s4)
       | s4 = any [ br0 -> {_30 = false} (! bb22) | br1 -> {_30} (! bb21) ] ]
     | bb21 = s0
       [ s0 = MutBorrow.borrow_mut <t_VecDeque_u32_Global> {deque'0}
           (fun (_bor: MutBorrow.t t_VecDeque_u32_Global) -> [ &_38 <- _bor ] [ &deque'0 <- _bor.final ] s1)
-      | s1 = push_front_u32'0 {_38} {(1: UInt32.t)} (fun (_x: ()) -> [ &_37 <- _x ] s2)
+      | s1 = push_front_u32'0 {mode} {_38} {(1: UInt32.t)} (fun (_x: ()) -> [ &_37 <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_VecDeque_u32_Global> {deque'0}
           (fun (_bor: MutBorrow.t t_VecDeque_u32_Global) -> [ &_40 <- _bor ] [ &deque'0 <- _bor.final ] s3)
-      | s3 = push_front_u32'0 {_40} {(2: UInt32.t)} (fun (_x: ()) -> [ &_39 <- _x ] s4)
+      | s3 = push_front_u32'0 {mode} {_40} {(2: UInt32.t)} (fun (_x: ()) -> [ &_39 <- _x ] s4)
       | s4 = MutBorrow.borrow_mut <t_VecDeque_u32_Global> {deque'0}
           (fun (_bor: MutBorrow.t t_VecDeque_u32_Global) -> [ &_42 <- _bor ] [ &deque'0 <- _bor.final ] s5)
-      | s5 = push_back_u32 {_42} {(3: UInt32.t)} (fun (_x: ()) -> [ &_41 <- _x ] s6)
+      | s5 = push_back_u32 {mode} {_42} {(3: UInt32.t)} (fun (_x: ()) -> [ &_41 <- _x ] s6)
       | s6 = MutBorrow.borrow_mut <t_VecDeque_u32_Global> {deque'0}
           (fun (_bor: MutBorrow.t t_VecDeque_u32_Global) -> [ &_47 <- _bor ] [ &deque'0 <- _bor.final ] s7)
-      | s7 = pop_front_u32 {_47} (fun (_x: t_Option_u32) -> [ &_46 <- _x ] s8)
+      | s7 = pop_front_u32 {mode} {_47} (fun (_x: t_Option_u32) -> [ &_46 <- _x ] s8)
       | s8 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- Some (2: UInt32.t) ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: t_Option_u32 = Any.any_l () | & _1: t_Option_u32 = Any.any_l () ]
         [ _const_ret (_const: t_Option_u32) -> [ &_66 <- _const ] s9 ]
-      | s9 = eq_Option_u32 {_46} {_66} (fun (_x: bool) -> [ &_44 <- _x ] s10)
+      | s9 = eq_Option_u32 {mode} {_46} {_66} (fun (_x: bool) -> [ &_44 <- _x ] s10)
       | s10 = any [ br0 -> {_44 = false} (! bb29) | br1 -> {_44} (! bb28) ] ]
     | bb28 = s0
       [ s0 = MutBorrow.borrow_mut <t_VecDeque_u32_Global> {deque'0}
           (fun (_bor: MutBorrow.t t_VecDeque_u32_Global) -> [ &_55 <- _bor ] [ &deque'0 <- _bor.final ] s1)
-      | s1 = pop_back_u32 {_55} (fun (_x: t_Option_u32) -> [ &_54 <- _x ] s2)
+      | s1 = pop_back_u32 {mode} {_55} (fun (_x: t_Option_u32) -> [ &_54 <- _x ] s2)
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- Some (3: UInt32.t) ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: t_Option_u32 = Any.any_l () | & _1: t_Option_u32 = Any.any_l () ]
         [ _const_ret (_const: t_Option_u32) -> [ &_65 <- _const ] s3 ]
-      | s3 = eq_Option_u32 {_54} {_65} (fun (_x: bool) -> [ &_52 <- _x ] s4)
+      | s3 = eq_Option_u32 {mode} {_54} {_65} (fun (_x: bool) -> [ &_52 <- _x ] s4)
       | s4 = any [ br0 -> {_52 = false} (! bb33) | br1 -> {_52} (! bb32) ] ]
     | bb32 = s0
       [ s0 = MutBorrow.borrow_mut <t_VecDeque_u32_Global> {deque'0}
           (fun (_bor: MutBorrow.t t_VecDeque_u32_Global) -> [ &_60 <- _bor ] [ &deque'0 <- _bor.final ] s1)
-      | s1 = clear_u32 {_60} (fun (_x: ()) -> [ &_59 <- _x ] s2)
-      | s2 = is_empty_u32 {deque'0} (fun (_x: bool) -> [ &_62 <- _x ] s3)
+      | s1 = clear_u32 {mode} {_60} (fun (_x: ()) -> [ &_59 <- _x ] s2)
+      | s2 = is_empty_u32 {mode} {deque'0} (fun (_x: bool) -> [ &_62 <- _x ] s3)
       | s3 = any [ br0 -> {_62 = false} (! bb37) | br1 -> {_62} (! bb39) ] ]
     | bb39 = return {_ret}
-    | bb37 = {false} any
-    | bb33 = {false} any
-    | bb29 = {false} any
-    | bb22 = {false} any
-    | bb18 = {false} any
-    | bb14 = {false} any
-    | bb11 = {false} any
-    | bb7 = {false} any
-    | bb4 = {false} any ]
+    | bb37 = s0
+      [ s0 = panic {mode} {"assertion failed: deque.is_empty()"} (fun (_x: ()) -> [ &_64 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb33 = s0
+      [ s0 = panic {mode} {"assertion failed: deque.pop_back() == Some(3)"} (fun (_x: ()) -> [ &_58 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb29 = s0
+      [ s0 = panic {mode} {"assertion failed: deque.pop_front() == Some(2)"} (fun (_x: ()) -> [ &_50 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb22 = s0
+      [ s0 = panic {mode} {"assertion failed: deque.pop_back() == None"} (fun (_x: ()) -> [ &_36 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb18 = s0
+      [ s0 = panic {mode} {"assertion failed: deque.pop_front() == None"} (fun (_x: ()) -> [ &_28 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb14 = s0
+      [ s0 = panic {mode} {"assertion failed: deque.len() == 0"} (fun (_x: ()) -> [ &_20 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb11 = s0
+      [ s0 = panic {mode} {"assertion failed: deque.is_empty()"} (fun (_x: ()) -> [ &_15 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb7 = s0
+      [ s0 = panic {mode} {"assertion failed: deque.len() == 0"} (fun (_x: ()) -> [ &_10 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: deque.is_empty()"} (fun (_x: ()) -> [ &_5 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & deque: t_VecDeque_u32_Global = Any.any_l ()
     | & _3: bool = Any.any_l ()
+    | & _5: () = Any.any_l ()
     | & _7: bool = Any.any_l ()
     | & _8: UInt64.t = Any.any_l ()
+    | & _10: () = Any.any_l ()
     | & deque'0: t_VecDeque_u32_Global = Any.any_l ()
     | & _13: bool = Any.any_l ()
+    | & _15: () = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & _18: UInt64.t = Any.any_l ()
+    | & _20: () = Any.any_l ()
     | & _22: bool = Any.any_l ()
     | & _24: t_Option_u32 = Any.any_l ()
     | & _25: MutBorrow.t t_VecDeque_u32_Global = Any.any_l ()
+    | & _28: () = Any.any_l ()
     | & _30: bool = Any.any_l ()
     | & _32: t_Option_u32 = Any.any_l ()
     | & _33: MutBorrow.t t_VecDeque_u32_Global = Any.any_l ()
+    | & _36: () = Any.any_l ()
     | & _37: () = Any.any_l ()
     | & _38: MutBorrow.t t_VecDeque_u32_Global = Any.any_l ()
     | & _39: () = Any.any_l ()
@@ -212,12 +247,15 @@ module M_test_deque
     | & _44: bool = Any.any_l ()
     | & _46: t_Option_u32 = Any.any_l ()
     | & _47: MutBorrow.t t_VecDeque_u32_Global = Any.any_l ()
+    | & _50: () = Any.any_l ()
     | & _52: bool = Any.any_l ()
     | & _54: t_Option_u32 = Any.any_l ()
     | & _55: MutBorrow.t t_VecDeque_u32_Global = Any.any_l ()
+    | & _58: () = Any.any_l ()
     | & _59: () = Any.any_l ()
     | & _60: MutBorrow.t t_VecDeque_u32_Global = Any.any_l ()
     | & _62: bool = Any.any_l ()
+    | & _64: () = Any.any_l ()
     | & _65: t_Option_u32 = Any.any_l ()
     | & _66: t_Option_u32 = Any.any_l ()
     | & _67: t_Option_u32 = Any.any_l ()

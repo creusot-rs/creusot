@@ -1,5 +1,6 @@
 module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_I
@@ -22,11 +23,11 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
   
   meta "rewrite_def" predicate inv_refmut_I
   
-  predicate precondition_next (self: ()) (args: MutBorrow.t t_I)
+  predicate precondition_next (self: ()) (mode: Mode.t) (args: MutBorrow.t t_I)
   
   axiom precondition_fndef:
-    forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_refmut_I self)
-      -> precondition_next () args
+    forall mode: Mode.t. forall args: MutBorrow.t t_I [precondition_next () mode args]. (let self = args in inv_refmut_I self)
+        -> precondition_next () mode args
   
   predicate inv_A (_1: t_A)
   
@@ -38,21 +39,21 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
         | Some f0 -> inv_A f0
         end
   
-  predicate postcondition_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_A)
+  predicate postcondition_next (self: ()) (mode: Mode.t) (args: MutBorrow.t t_I) (result: t_Option_A)
   
   axiom postcondition_fndef:
-    forall args: MutBorrow.t t_I, res: t_Option_A [postcondition_next () args res]. postcondition_next () args res
+    forall mode: Mode.t, args: MutBorrow.t t_I, res: t_Option_A [postcondition_next () mode args res]. postcondition_next () mode args res
       -> (let self = args in inv_Option_A res)
   
-  predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_A) =
-    postcondition_next self args result
+  predicate postcondition_once_next (self: ()) (mode: Mode.t) (args: MutBorrow.t t_I) (result: t_Option_A) =
+    postcondition_next self mode args result
   
   meta "rewrite_def" predicate postcondition_once_next
   
-  let next_I (self: MutBorrow.t t_I) (return (x: t_Option_A)) =
-  {[@stop_split] [@expl:next requires] precondition_next () self}
+  let next_I (mode: Mode.t) (self: MutBorrow.t t_I) (return (x: t_Option_A)) =
+  {[@stop_split] [@expl:next requires] precondition_next () mode self}
     any
-    [ return (result: t_Option_A) -> {[@stop_split] [@expl:next ensures] postcondition_once_next () self result}
+    [ return (result: t_Option_A) -> {[@stop_split] [@expl:next ensures] postcondition_once_next () mode self result}
       (! return {result}) ]
   
   let elim_Some (_x: t_Option_A) (return (f0: t_A)) = any
@@ -96,21 +97,21 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
   
   meta "rewrite_def" predicate inv_tup1_A
   
-  predicate precondition_F (self: t_F) (args: t_A)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: t_A)
   
   predicate inv_B (_1: t_B)
   
-  predicate postcondition_once_F (self: t_F) (args: t_A) (result: t_B)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: t_A) (result: t_B)
   
   predicate resolve_F (_1: t_F)
   
-  predicate postcondition_mut_F (self: t_F) (args: t_A) (result_state: t_F) (result: t_B)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: t_A) (result_state: t_F) (result: t_B)
   
-  function fn_mut_once_F (self: t_F) (args: t_A) (res: t_B) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: t_A) (res: t_B) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: t_A, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: t_A, res: t_B [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -124,10 +125,10 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: t_A) (res_state: t_F) (res: t_B) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: t_A) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: t_A, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: t_A, res_state: t_F, res: t_B [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -135,28 +136,28 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: t_A) (result: t_B)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: t_A) (result: t_B)
   
-  function fn_once_F (self: t_F) (args: t_A) (res: t_B) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: t_A) (res: t_B) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: t_A, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: t_A, res: t_B [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: t_A) (res_state: t_F) (res: t_B) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: t_A) (res_state: t_F) (res: t_B) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: t_A, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: t_A, res_state: t_F, res: t_B [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
-  let call_F (self_: t_F) (arg: t_A) (return (x: t_B)) =
+  let call_F (mode: Mode.t) (self_: t_F) (arg: t_A) (return (x: t_B)) =
   {[@stop_split] [@expl:call_F requires] ([@stop_split] [@expl:call 'self_' type invariant] inv_ref_F self_)
     /\ ([@stop_split] [@expl:call 'arg' type invariant] inv_tup1_A arg)
-    /\ ([@stop_split] [@expl:call requires] precondition_F self_ arg)}
+    /\ ([@stop_split] [@expl:call requires] precondition_F self_ mode arg)}
     any
     [ return (result: t_B) ->
     {[@stop_split] [@expl:call_F ensures] ([@stop_split] [@expl:call result type invariant] inv_B result)
-      /\ ([@stop_split] [@expl:call ensures] postcondition_F self_ arg result)}
+      /\ ([@stop_split] [@expl:call ensures] postcondition_F self_ mode arg result)}
       (! return {result}) ]
   
   type t_Option_B = None'0 | Some'0 t_B
@@ -173,7 +174,7 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
   
   meta "select_lsinst" "all"
   
-  let next_Map_I_F (self: MutBorrow.t t_Map_I_F) (return (x: t_Option_B)) =
+  let next_Map_I_F (mode: Mode.t) (self: MutBorrow.t t_Map_I_F) (return (x: t_Option_B)) =
   {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Map_I_F self}
     (! bb0
     [ bb0 = s0
@@ -182,14 +183,14 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
             [ &_3 <- _bor ] -{inv_I _bor.final}-
             [ &self <- { self with current = { self.current with iter = _bor.final } } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_I self.current.iter} any) ]
-      | s1 = next_I {_3} (fun (_x: t_Option_A) -> [ &_2 <- _x ] s2)
+      | s1 = next_I {mode} {_3} (fun (_x: t_Option_A) -> [ &_2 <- _x ] s2)
       | s2 = any [ br0 -> {_2 = None} (! bb3) | br1 (x0: t_A) -> {_2 = Some x0} (! bb4) ] ]
     | bb4 = s0
       [ s0 = elim_Some {_2} (fun (r0: t_A) -> [ &e <- r0 ] s1)
       | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_Map_I_F self} any) ]
       | s2 = -{resolve_refmut_Map_I_F self}- s3
       | s3 = [ &_8 <- e ] s4
-      | s4 = call_F {self.current.func} {_8} (fun (_x: t_B) -> [ &_6 <- _x ] s5)
+      | s4 = call_F {mode} {self.current.func} {_8} (fun (_x: t_B) -> [ &_6 <- _x ] s5)
       | s5 = [ &_ret <- Some'0 _6 ] s6
       | s6 = return {_ret} ]
     | bb3 = s0
@@ -208,6 +209,7 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
       (! return {result}) ]
 end
 module M_impl_FakeIterator_for_Map_I_F__next__refines (* <Map<I, F> as FakeIterator> *)
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   
   type t_I
@@ -251,6 +253,6 @@ module M_impl_FakeIterator_for_Map_I_F__next__refines (* <Map<I, F> as FakeItera
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_Map_I_F. inv_refmut_Map_I_F self
+  goal refines: forall mode: Mode.t, self: MutBorrow.t t_Map_I_F. inv_refmut_Map_I_F self
       -> inv_refmut_Map_I_F self /\ (forall result: t_Option_B. inv_Option_B result -> inv_Option_B result)
 end

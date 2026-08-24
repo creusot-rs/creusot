@@ -1,4 +1,5 @@
 module M_generic_closure
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_F
@@ -25,19 +26,19 @@ module M_generic_closure
   
   meta "rewrite_def" predicate inv_tup1_A
   
-  predicate precondition_F (self: t_F) (args: t_A)
+  predicate precondition_F (self: t_F) (mode: Mode.t) (args: t_A)
   
   predicate inv_B (_1: t_B)
   
-  predicate postcondition_once_F (self: t_F) (args: t_A) (result: t_B)
+  predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: t_A) (result: t_B)
   
-  predicate postcondition_mut_F (self: t_F) (args: t_A) (result_state: t_F) (result: t_B)
+  predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: t_A) (result_state: t_F) (result: t_B)
   
-  function fn_mut_once_F (self: t_F) (args: t_A) (res: t_B) : ()
+  function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: t_A) (res: t_B) : ()
   
   axiom fn_mut_once_F_spec:
-    forall self: t_F, args: t_A, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+    forall self: t_F, mode: Mode.t, args: t_A, res: t_B [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
   
   predicate hist_inv_F (self: t_F) (result_state: t_F)
   
@@ -51,10 +52,10 @@ module M_generic_closure
   
   axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
   
-  function postcondition_mut_hist_inv_F (self: t_F) (args: t_A) (res_state: t_F) (res: t_B) : ()
+  function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: t_A) (res_state: t_F) (res: t_B) : ()
   
   axiom postcondition_mut_hist_inv_F_spec:
-    forall self: t_F, args: t_A, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    forall self: t_F, mode: Mode.t, args: t_A, res_state: t_F, res: t_B [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
       -> hist_inv_F self res_state
   
   function fn_hist_inv_F (self: t_F) (res_state: t_F) : ()
@@ -62,35 +63,35 @@ module M_generic_closure
   axiom fn_hist_inv_F_spec: forall self: t_F, res_state: t_F [hist_inv_F self res_state]. hist_inv_F self res_state
       = (self = res_state)
   
-  predicate postcondition_F (self: t_F) (args: t_A) (result: t_B)
+  predicate postcondition_F (self: t_F) (mode: Mode.t) (args: t_A) (result: t_B)
   
-  function fn_once_F (self: t_F) (args: t_A) (res: t_B) : ()
+  function fn_once_F (self: t_F) (mode: Mode.t) (args: t_A) (res: t_B) : ()
   
   axiom fn_once_F_spec:
-    forall self: t_F, args: t_A, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
-      = (postcondition_F self args res /\ resolve_F self)
+    forall self: t_F, mode: Mode.t, args: t_A, res: t_B [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+      = (postcondition_F self mode args res /\ resolve_F self)
   
-  function fn_mut_F (self: t_F) (args: t_A) (res_state: t_F) (res: t_B) : ()
+  function fn_mut_F (self: t_F) (mode: Mode.t) (args: t_A) (res_state: t_F) (res: t_B) : ()
   
   axiom fn_mut_F_spec:
-    forall self: t_F, args: t_A, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
-      = (postcondition_F self args res /\ self = res_state)
+    forall self: t_F, mode: Mode.t, args: t_A, res_state: t_F, res: t_B [postcondition_mut_F self mode args res_state res]. postcondition_mut_F self mode args res_state res
+      = (postcondition_F self mode args res /\ self = res_state)
   
-  let call_F (self_: t_F) (arg: t_A) (return (x: t_B)) =
+  let call_F (mode: Mode.t) (self_: t_F) (arg: t_A) (return (x: t_B)) =
   {[@stop_split] [@expl:call_F requires] ([@stop_split] [@expl:call 'self_' type invariant] inv_ref_F self_)
     /\ ([@stop_split] [@expl:call 'arg' type invariant] inv_tup1_A arg)
-    /\ ([@stop_split] [@expl:call requires] precondition_F self_ arg)}
+    /\ ([@stop_split] [@expl:call requires] precondition_F self_ mode arg)}
     any
     [ return (result: t_B) ->
     {[@stop_split] [@expl:call_F ensures] ([@stop_split] [@expl:call result type invariant] inv_B result)
-      /\ ([@stop_split] [@expl:call ensures] postcondition_F self_ arg result)}
+      /\ ([@stop_split] [@expl:call ensures] postcondition_F self_ mode arg result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let generic_closure_A (f: t_F) (a: t_A) (return (x: t_B)) =
+  let generic_closure_A (mode: Mode.t) (f: t_F) (a: t_A) (return (x: t_B)) =
   {[@stop_split] [@expl:generic_closure_A requires] ([@stop_split] [@expl:generic_closure 'f' type invariant] inv_F f)
     /\ ([@stop_split] [@expl:generic_closure 'a' type invariant] inv_A a)}
     (! bb0
@@ -98,13 +99,14 @@ module M_generic_closure
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
       | s1 = -{resolve_F f}- s2
       | s2 = [ &_4 <- a ] s3
-      | s3 = call_F {f} {_4} (fun (_x: t_B) -> [ &_ret <- _x ] s4)
+      | s3 = call_F {mode} {f} {_4} (fun (_x: t_B) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ] [ & _ret: t_B = Any.any_l () | & f: t_F = f | & a: t_A = a | & _4: t_A = Any.any_l () ])
     [ return (result: t_B) -> {[@stop_split] [@expl:generic_closure result type invariant] inv_B result}
       (! return {result}) ]
 end
 module M_mapper
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_A
   
@@ -112,7 +114,7 @@ module M_mapper
   
   predicate resolve_A (_1: t_A)
   
-  let closure0 [@coma:extspec] (self: ()) (_a: t_A) (return (x: ())) =
+  let closure0 [@coma:extspec] (mode: Mode.t) (self: ()) (_a: t_A) (return (x: ())) =
   {[@stop_split] [@expl:closure '_a' type invariant] inv_A _a}
     bb0
     [ bb0 = s0
@@ -123,7 +125,7 @@ module M_mapper
   
   meta "rewrite_def" predicate closure0'post'return
   
-  let generic_closure_A (f: ()) (a: t_A) (return (x: ())) =
+  let generic_closure_A (mode: Mode.t) (f: ()) (a: t_A) (return (x: ())) =
   {[@stop_split] [@expl:generic_closure 'a' type invariant] inv_A a}
     any [ return (result: ()) -> (! return {result}) ]
   
@@ -131,11 +133,11 @@ module M_mapper
   
   meta "select_lsinst" "all"
   
-  let mapper_A (x: t_A) (return (x'0: ())) = {[@stop_split] [@expl:mapper 'x' type invariant] inv_A x}
+  let mapper_A (mode: Mode.t) (x: t_A) (return (x'0: ())) = {[@stop_split] [@expl:mapper 'x' type invariant] inv_A x}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_3 <- () ] s1
-      | s1 = generic_closure_A {_3} {x} (fun (_x: ()) -> [ &_2 <- _x ] s2)
+      | s1 = generic_closure_A {mode} {_3} {x} (fun (_x: ()) -> [ &_2 <- _x ] s2)
       | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & x: t_A = x | & _2: () = Any.any_l () | & _3: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]

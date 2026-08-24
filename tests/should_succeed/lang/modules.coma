@@ -1,41 +1,44 @@
 module M_f
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
-  let inner_func (return (x: bool)) = any
+  let inner_func (mode: Mode.t) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:inner_func ensures] result = true} (! return {result}) ]
   
-  let another (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
+  let another (mode: Mode.t) (return (x: bool)) = any [ return (result: bool) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let f (return (x: ())) = (! bb0
+  let f (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = inner_func (fun (_x: bool) -> [ &_1 <- _x ] s1)
-      | s1 = another (fun (_x: bool) -> [ &_2 <- _x ] s2)
+      [ s0 = inner_func {mode} (fun (_x: bool) -> [ &_1 <- _x ] s1)
+      | s1 = another {mode} (fun (_x: bool) -> [ &_2 <- _x ] s2)
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _1: bool = Any.any_l () | & _2: bool = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_nested__further__another
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let another (return (x: bool)) = (! bb0
+  let another (mode: Mode.t) (return (x: bool)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])
     [ return (result: bool) -> (! return {result}) ]
 end
 module M_nested__inner_func
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let inner_func (return (x: bool)) = (! bb0
+  let inner_func (mode: Mode.t) (return (x: bool)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])
     [ return (result: bool) -> {[@stop_split] [@expl:inner_func ensures] result = true} (! return {result}) ]
 end

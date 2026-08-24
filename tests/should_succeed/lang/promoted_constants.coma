@@ -1,12 +1,22 @@
 module M_promoted_int
+  use creusot.prelude.Mode
   use creusot.int.Int32
   use creusot.prelude.Any
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let promoted_int (return (x: ())) = (! bb0
+  let promoted_int (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = bb0'0
         [ bb0'0 = s0'0
@@ -19,26 +29,37 @@ module M_promoted_int
       | s1 = [ &ix <- _8 ] s2
       | s2 = [ &_4 <- ix <> (16: Int32.t) ] s3
       | s3 = any [ br0 -> {_4 = false} (! bb2) | br1 -> {_4} (! bb1) ] ]
-    | bb1 = {false} any
+    | bb1 = s0 [ s0 = panic {mode} {"explicit panic"} (fun (_x: ()) -> [ &_7 <- _x ] s1) | s1 = {false} any ]
     | bb2 = return {_ret} ]
     [ & _ret: () = Any.any_l ()
     | & ix: Int32.t = Any.any_l ()
     | & _4: bool = Any.any_l ()
+    | & _7: () = Any.any_l ()
     | & _8: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_promoted_none
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Option_i32 = None | Some Int32.t
   
   type tup2_ref_Option_i32_ref_Option_i32 = { f0: t_Option_i32; f1: t_Option_i32 }
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let promoted_none (return (x: t_Option_i32)) = (! bb0
+  let promoted_none (mode: Mode.t) (return (x: t_Option_i32)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_ix <- Some (0: Int32.t) ] s1
       | s1 = bb0'0
@@ -55,21 +76,23 @@ module M_promoted_none
       | s4 = any [ br0 -> {_3.f0 = None} (! bb2) | br1 (x0: Int32.t) -> {_3.f0 = Some x0} (! bb1) ] ]
     | bb2 = any [ br0 -> {_3.f1 = None} (! bb4) | br1 (x0: Int32.t) -> {_3.f1 = Some x0} (! bb1) ]
     | bb1 = s0 [ s0 = [ &_ret <- _ix ] s1 | s1 = return {_ret} ]
-    | bb4 = {false} any ]
+    | bb4 = s0 [ s0 = panic {mode} {"explicit panic"} (fun (_x: ()) -> [ &_10 <- _x ] s1) | s1 = {false} any ] ]
     [ & _ret: t_Option_i32 = Any.any_l ()
     | & _ix: t_Option_i32 = Any.any_l ()
     | & _3: tup2_ref_Option_i32_ref_Option_i32 = Any.any_l ()
+    | & _10: () = Any.any_l ()
     | & _11: t_Option_i32 = Any.any_l ()
     | & _12: t_Option_i32 = Any.any_l () ]) [ return (result: t_Option_i32) -> (! return {result}) ]
 end
 module M_str
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let str (return (x: string)) = (! bb0
+  let str (mode: Mode.t) (return (x: string)) = (! bb0
     [ bb0 = s0
       [ s0 =
         [ &_s <- "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" ]
@@ -80,6 +103,7 @@ module M_str
 end
 module M_string
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_String
   
@@ -91,7 +115,8 @@ module M_string
   
   meta "select_lsinst" "all"
   
-  let string' (_s: t_String) (return (x: ())) = {[@stop_split] [@expl:string '_s' type invariant] inv_String _s}
+  let string' (mode: Mode.t) (_s: t_String) (return (x: ())) =
+  {[@stop_split] [@expl:string '_s' type invariant] inv_String _s}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_String _s} any) ]

@@ -3,6 +3,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.Int32
+use creusot.prelude.Mode
 use creusot.prelude.Any
 use int.Int
 
@@ -20,7 +21,7 @@ function deep_model_i32 [@inline:trivial] (self: Int32.t) : int = Int32.to_int s
 
 meta "rewrite_def" function deep_model_i32
 
-let partial_cmp_i32 (self_: Int32.t) (rhs: Int32.t) (return (x: t_Option_Ordering)) = any
+let partial_cmp_i32 (mode: Mode.t) (self_: Int32.t) (rhs: Int32.t) (return (x: t_Option_Ordering)) = any
   [ return (result: t_Option_Ordering) -> {[@stop_split] [@expl:partial_cmp ensures] result
     = partial_cmp_log_Int (deep_model_i32 self_) (deep_model_i32 rhs)}
     (! return {result}) ]
@@ -45,9 +46,9 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_PartialOrd_i32_i32_ge_body (self_: Int32.t) (other: Int32.t) (return (x: bool)) = (! bb0
+let extern_spec_PartialOrd_i32_i32_ge_body (mode: Mode.t) (self_: Int32.t) (other: Int32.t) (return (x: bool)) = (! bb0
   [ bb0 = s0
-    [ s0 = partial_cmp_i32 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
+    [ s0 = partial_cmp_i32 {mode} {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
     | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
   | bb3 = elim_Some {_6}
       (fun (r0: t_Ordering) ->

@@ -2,6 +2,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_Arc_T_A
@@ -30,7 +31,7 @@ meta "rewrite_def" predicate inv_ref_T
 
 function view_Arc_T_A (self: t_Arc_T_A) : t_T
 
-let as_ref_Arc_T_A (self_: t_Arc_T_A) (return (x: t_T)) =
+let as_ref_Arc_T_A (mode: Mode.t) (self_: t_Arc_T_A) (return (x: t_T)) =
 {[@stop_split] [@expl:as_ref 'self_' type invariant] inv_ref_Arc_T_A self_}
   any
   [ return (result: t_T) ->
@@ -42,12 +43,13 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_A_Deref_Arc_T_A_deref_body_T (self_: t_Arc_T_A) (return (x: t_T)) =
+let extern_spec_T_A_Deref_Arc_T_A_deref_body_T (mode: Mode.t) (self_: t_Arc_T_A) (return (x: t_T)) =
 {[@stop_split] [@expl:extern_spec_T_A_Deref_Arc_T_A_deref_body 'self_' type invariant] inv_ref_Arc_T_A self_}
   (! bb0
   [ bb0 = s0
-    [ s0 = as_ref_Arc_T_A {self_} (fun (_x: t_T) -> [ &_4 <- _x ] s1) | s1 = [ &_ret <- _4 ] s2 | s2 = return {_ret} ] ]
-  [ & _ret: t_T = Any.any_l () | & self_: t_Arc_T_A = self_ | & _4: t_T = Any.any_l () ])
+    [ s0 = as_ref_Arc_T_A {mode} {self_} (fun (_x: t_T) -> [ &_4 <- _x ] s1)
+    | s1 = [ &_ret <- _4 ] s2
+    | s2 = return {_ret} ] ] [ & _ret: t_T = Any.any_l () | & self_: t_Arc_T_A = self_ | & _4: t_T = Any.any_l () ])
   [ return (result: t_T) ->
   {[@stop_split] [@expl:extern_spec_T_A_Deref_Arc_T_A_deref_body_T ensures] ([@stop_split] [@expl:extern_spec_T_A_Deref_Arc_T_A_deref_body result type invariant] inv_ref_T result)
     /\ ([@stop_split] [@expl:extern_spec_T_A_Deref_Arc_T_A_deref_body ensures] result = view_Arc_T_A self_)}

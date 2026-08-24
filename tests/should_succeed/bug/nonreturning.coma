@@ -1,4 +1,6 @@
 module M_f
+  use creusot.prelude.Mode
+  
   predicate inv_never [@inline:trivial] (_1: ()) = false
   
   meta "rewrite_def" predicate inv_never
@@ -7,27 +9,28 @@ module M_f
   
   meta "select_lsinst" "all"
   
-  let f (return (x: ())) = (! bb0
+  let f (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = bb0 [ bb0 = (! bb0) ] ])
     [ return (result: ()) -> {[@stop_split] [@expl:f result type invariant] inv_never result} (! return {result}) ]
 end
 module M_g
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   predicate inv_never [@inline:trivial] (_1: ()) = false
   
   meta "rewrite_def" predicate inv_never
   
-  let f (return (x: ())) = any
+  let f (mode: Mode.t) (return (x: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:f result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let g (b: bool) (return (x: ())) = (! bb0
+  let g (mode: Mode.t) (b: bool) (return (x: ())) = (! bb0
     [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ]
-    | bb1 = s0 [ s0 = f (fun (_x: ()) -> [ &_6 <- _x ] s1) | s1 = {false} any ]
+    | bb1 = s0 [ s0 = f {mode} (fun (_x: ()) -> [ &_6 <- _x ] s1) | s1 = {false} any ]
     | bb2 = return {_ret} ] [ & _ret: () = Any.any_l () | & b: bool = b | & _6: () = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:g ensures] not b} (! return {result}) ]
 end

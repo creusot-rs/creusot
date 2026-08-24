@@ -2,6 +2,7 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
   use creusot.int.Int8
   use creusot.slice.Slice64
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T = A Int8.t Int8.t | B Int8.t Int8.t Int8.t Int8.t Int8.t Int8.t
@@ -36,8 +37,8 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
   
   meta "rewrite_def" predicate inv_refmut_Formatter
   
-  let debug_tuple_fields_finish (self_: MutBorrow.t t_Formatter) (name: string) (values: Slice64.slice dyn_Debug)
-    (return (x: t_Result_unit_Error)) =
+  let debug_tuple_fields_finish (mode: Mode.t) (self_: MutBorrow.t t_Formatter) (name: string)
+    (values: Slice64.slice dyn_Debug) (return (x: t_Result_unit_Error)) =
   {[@stop_split] [@expl:debug_tuple_fields_finish 'self_' type invariant] inv_refmut_Formatter self_}
     any [ return (result: t_Result_unit_Error) -> (! return {result}) ]
   
@@ -53,8 +54,8 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
         end}
       any) ]
   
-  let debug_struct_field2_finish (self_: MutBorrow.t t_Formatter) (name: string) (name1: string) (value1: dyn_Debug)
-    (name2: string) (value2: dyn_Debug) (return (x: t_Result_unit_Error)) =
+  let debug_struct_field2_finish (mode: Mode.t) (self_: MutBorrow.t t_Formatter) (name: string) (name1: string)
+    (value1: dyn_Debug) (name2: string) (value2: dyn_Debug) (return (x: t_Result_unit_Error)) =
   {[@stop_split] [@expl:debug_struct_field2_finish 'self_' type invariant] inv_refmut_Formatter self_}
     any [ return (result: t_Result_unit_Error) -> (! return {result}) ]
   
@@ -62,7 +63,7 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
   
   meta "select_lsinst" "all"
   
-  let fmt_T (self: t_T) (f: MutBorrow.t t_Formatter) (return (x: t_Result_unit_Error)) =
+  let fmt_T (mode: Mode.t) (self: t_T) (f: MutBorrow.t t_Formatter) (return (x: t_Result_unit_Error)) =
   {[@stop_split] [@expl:fmt 'f' type invariant] inv_refmut_Formatter f}
     (! bb0
     [ bb0 = any
@@ -108,7 +109,8 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
             [ &_41 <- _bor ] -{inv_Formatter _bor.final}-
             [ &f <- { f with current = _bor.final } ] s18)
         [ _ck -> (! {[@expl:type invariant] inv_Formatter f.current} any) ]
-      | s18 = debug_tuple_fields_finish {_41} {_43} {values} (fun (_x: t_Result_unit_Error) -> [ &_ret <- _x ] s19)
+      | s18 = debug_tuple_fields_finish {mode} {_41} {_43} {values}
+          (fun (_x: t_Result_unit_Error) -> [ &_ret <- _x ] s19)
       | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_refmut_Formatter f} any) ]
       | s20 = -{resolve_refmut_Formatter f}- s21
       | s21 = return {_ret} ]
@@ -126,7 +128,7 @@ module M_impl_Debug_for_T__fmt (* <T as std::fmt::Debug> *)
             [ &_6 <- _bor ] -{inv_Formatter _bor.final}-
             [ &f <- { f with current = _bor.final } ] s9)
         [ _ck -> (! {[@expl:type invariant] inv_Formatter f.current} any) ]
-      | s9 = debug_struct_field2_finish {_6} {_8} {_10} {_11} {_14} {_15}
+      | s9 = debug_struct_field2_finish {mode} {_6} {_8} {_10} {_11} {_14} {_15}
           (fun (_x: t_Result_unit_Error) -> [ &_ret <- _x ] s10)
       | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_Formatter f} any) ]
       | s11 = -{resolve_refmut_Formatter f}- s12

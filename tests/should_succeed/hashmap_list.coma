@@ -1,4 +1,6 @@
 module M_impl_Clone_for_List_T__clone__refines (* <List<T> as std::clone::Clone> *)
+  use creusot.prelude.Mode
+  
   type t_T
   
   type t_List_T = Nil | Cons t_T t_List_T
@@ -31,12 +33,13 @@ module M_impl_Clone_for_List_T__clone__refines (* <List<T> as std::clone::Clone>
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: t_List_T. inv_ref_List_T self_
+  goal refines: forall mode: Mode.t, self_: t_List_T. inv_ref_List_T self_
       -> inv_ref_List_T self_ /\ (forall result: t_List_T. inv_List_T result /\ result = self_ -> inv_List_T result)
 end
 module M_impl_Hash_for_usize__hash (* <usize as Hash> *)
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   function hash_log_usize (x: int) : int = x
   
@@ -52,7 +55,7 @@ module M_impl_Hash_for_usize__hash (* <usize as Hash> *)
   
   meta "select_lsinst" "all"
   
-  let hash_usize (self: UInt64.t) (return (x: UInt64.t)) = (! bb0
+  let hash_usize (mode: Mode.t) (self: UInt64.t) (return (x: UInt64.t)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & self: UInt64.t = self ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] UInt64.t'int result
@@ -60,6 +63,7 @@ module M_impl_Hash_for_usize__hash (* <usize as Hash> *)
       (! return {result}) ]
 end
 module M_impl_Hash_for_usize__hash__refines (* <usize as Hash> *)
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   
   function hash_log_usize (x: int) : int = x
@@ -76,12 +80,13 @@ module M_impl_Hash_for_usize__hash__refines (* <usize as Hash> *)
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: UInt64.t. forall result: UInt64.t. UInt64.t'int result
+  goal refines: forall mode: Mode.t, self: UInt64.t. forall result: UInt64.t. UInt64.t'int result
           = hash_log_usize (deep_model_ref_usize self)
         -> UInt64.t'int result = hash_log_usize (deep_model_ref_usize self)
 end
 module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.MutBorrow
   use int.EuclideanDivision
@@ -167,7 +172,7 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate inv_ref_Vec_List_tup2_K_V_Global
   
-  let len_List_tup2_K_V (self_: t_Vec_List_tup2_K_V_Global) (return (x: UInt64.t)) =
+  let len_List_tup2_K_V (mode: Mode.t) (self_: t_Vec_List_tup2_K_V_Global) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_Vec_List_tup2_K_V_Global self_}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
@@ -182,10 +187,11 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate inv_ref_K
   
-  predicate precondition_hash (self: ()) (args: t_K)
+  predicate precondition_hash (self: ()) (mode: Mode.t) (args: t_K)
   
-  axiom precondition_fndef: forall args: t_K [precondition_hash () args]. (let self = args in inv_ref_K self)
-      -> precondition_hash () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_K [precondition_hash () mode args]. (let self = args in inv_ref_K self)
+        -> precondition_hash () mode args
   
   type t_DeepModelTy
   
@@ -197,19 +203,21 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
   
   meta "rewrite_def" function deep_model_ref_K
   
-  predicate postcondition_hash (self: ()) (args: t_K) (result: UInt64.t)
+  predicate postcondition_hash (self: ()) (mode: Mode.t) (args: t_K) (result: UInt64.t)
   
   axiom postcondition_fndef:
-    forall args: t_K, res: UInt64.t [postcondition_hash () args res]. postcondition_hash () args res
+    forall mode: Mode.t, args: t_K, res: UInt64.t [postcondition_hash () mode args res]. postcondition_hash () mode args res
       -> (let self = args in UInt64.t'int res = hash_log_K (deep_model_ref_K self))
   
-  predicate postcondition_once_hash (self: ()) (args: t_K) (result: UInt64.t) = postcondition_hash self args result
+  predicate postcondition_once_hash (self: ()) (mode: Mode.t) (args: t_K) (result: UInt64.t) =
+    postcondition_hash self mode args result
   
   meta "rewrite_def" predicate postcondition_once_hash
   
-  let hash_K (self: t_K) (return (x: UInt64.t)) = {[@stop_split] [@expl:hash requires] precondition_hash () self}
+  let hash_K (mode: Mode.t) (self: t_K) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:hash requires] precondition_hash () mode self}
     any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] postcondition_once_hash () self result}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] postcondition_once_hash () mode self result}
       (! return {result}) ]
   
   predicate invariant_refmut_Vec_List_tup2_K_V_Global [@inline:trivial] (self: MutBorrow.t t_Vec_List_tup2_K_V_Global) =
@@ -247,7 +255,7 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate resolve_elswhere_usize
   
-  let index_mut_Vec_List_tup2_K_V_Global (self_: MutBorrow.t t_Vec_List_tup2_K_V_Global) (ix: UInt64.t)
+  let index_mut_Vec_List_tup2_K_V_Global (mode: Mode.t) (self_: MutBorrow.t t_Vec_List_tup2_K_V_Global) (ix: UInt64.t)
     (return (x: MutBorrow.t t_List_tup2_K_V)) =
   {[@stop_split] [@expl:index_mut_Vec_List_tup2_K_V_Global requires] ([@stop_split] [@expl:index_mut 'self_' type invariant] inv_refmut_Vec_List_tup2_K_V_Global self_)
     /\ ([@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_List_tup2_K_V_Global self_.current))}
@@ -311,27 +319,28 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
   
   type tup2_ref_K_ref_K = { f0'0: t_K; f1'0: t_K }
   
-  predicate precondition_eq (self: ()) (args: tup2_ref_K_ref_K)
+  predicate precondition_eq (self: ()) (mode: Mode.t) (args: tup2_ref_K_ref_K)
   
   axiom precondition_fndef'0:
-    forall args: tup2_ref_K_ref_K [precondition_eq () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K self_
-        /\ inv_ref_K rhs) -> precondition_eq () args
+    forall mode: Mode.t. forall args: tup2_ref_K_ref_K [precondition_eq () mode args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K self_
+          /\ inv_ref_K rhs) -> precondition_eq () mode args
   
-  predicate postcondition_eq (self: ()) (args: tup2_ref_K_ref_K) (result: bool)
+  predicate postcondition_eq (self: ()) (mode: Mode.t) (args: tup2_ref_K_ref_K) (result: bool)
   
   axiom postcondition_fndef'0:
-    forall args: tup2_ref_K_ref_K, res: bool [postcondition_eq () args res]. postcondition_eq () args res
+    forall mode: Mode.t, args: tup2_ref_K_ref_K, res: bool [postcondition_eq () mode args res]. postcondition_eq () mode args res
       -> (let {f0'0 = self_; f1'0 = rhs} = args in res = (deep_model_ref_K self_ = deep_model_ref_K rhs))
   
-  predicate postcondition_once_eq (self: ()) (args: tup2_ref_K_ref_K) (result: bool) = postcondition_eq self args result
+  predicate postcondition_once_eq (self: ()) (mode: Mode.t) (args: tup2_ref_K_ref_K) (result: bool) =
+    postcondition_eq self mode args result
   
   meta "rewrite_def" predicate postcondition_once_eq
   
-  let eq_K (self_: t_K) (rhs: t_K) (return (x: bool)) =
-  {[@stop_split] [@expl:eq requires] precondition_eq () { f0'0 = self_; f1'0 = rhs }}
+  let eq_K (mode: Mode.t) (self_: t_K) (rhs: t_K) (return (x: bool)) =
+  {[@stop_split] [@expl:eq requires] precondition_eq () mode { f0'0 = self_; f1'0 = rhs }}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] postcondition_once_eq () { f0'0 = self_;
-                                                                                            f1'0 = rhs } result}
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] postcondition_once_eq () mode { f0'0 = self_;
+                                                                                                 f1'0 = rhs } result}
       (! return {result}) ]
   
   predicate invariant_refmut_V [@inline:trivial] (self: MutBorrow.t t_V) = inv_V self.current /\ inv_V self.final
@@ -432,15 +441,15 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
   
   meta "select_lsinst" "all"
   
-  let add_K (self: MutBorrow.t t_MyHashMap_K_V) (key: t_K) (val': t_V) (return (x: ())) =
+  let add_K (mode: Mode.t) (self: MutBorrow.t t_MyHashMap_K_V) (key: t_K) (val': t_V) (return (x: ())) =
   {[@stop_split] [@expl:add_K requires] ([@stop_split] [@expl:add 'self' type invariant] inv_refmut_MyHashMap_K_V self)
     /\ ([@stop_split] [@expl:add 'key' type invariant] inv_K key)
     /\ ([@stop_split] [@expl:add 'val' type invariant] inv_V val')}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_self <- self ] s1
-      | s1 = len_List_tup2_K_V {self.current.buckets} (fun (_x: UInt64.t) -> [ &length <- _x ] s2)
-      | s2 = hash_K {key} (fun (_x: UInt64.t) -> [ &_15 <- _x ] s3)
+      | s1 = len_List_tup2_K_V {mode} {self.current.buckets} (fun (_x: UInt64.t) -> [ &length <- _x ] s2)
+      | s2 = hash_K {mode} {key} (fun (_x: UInt64.t) -> [ &_15 <- _x ] s3)
       | s3 = [ &_14 <- _15 ] s4
       | s4 = [ &_17 <- length ] s5
       | s5 = [ &_18 <- _17 = (0: UInt64.t) ] s6
@@ -452,7 +461,7 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
             [ &_22 <- _bor ] -{inv_Vec_List_tup2_K_V_Global _bor.final}-
             [ &self <- { self with current = { buckets = _bor.final } } ] s9)
         [ _ck -> (! {[@expl:type invariant] inv_Vec_List_tup2_K_V_Global self.current.buckets} any) ]
-      | s9 = index_mut_Vec_List_tup2_K_V_Global {_22} {index}
+      | s9 = index_mut_Vec_List_tup2_K_V_Global {mode} {_22} {index}
           (fun (_x: MutBorrow.t t_List_tup2_K_V) -> [ &_21 <- _x ] s10)
       | s10 = MutBorrow.borrow_final <t_List_tup2_K_V> {_21.current} {MutBorrow.get_id _21}
           (fun (_bor: MutBorrow.t t_List_tup2_K_V) ->
@@ -512,7 +521,7 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
           | s3 = [ &tl'0 <- tl ] s4
           | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_K k} any) ]
           | s5 = -{resolve_refmut_K k}- s6
-          | s6 = eq_K {k.current} {key} (fun (_x: bool) -> [ &_59 <- _x ] s7)
+          | s6 = eq_K {mode} {k.current} {key} (fun (_x: bool) -> [ &_59 <- _x ] s7)
           | s7 = any [ br0 -> {_59 = false} (! bb13) | br1 -> {_59} (! bb12) ] ]
         | bb13 = s0
           [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_V v} any) ]
@@ -594,6 +603,7 @@ module M_impl_MyHashMap_K_V_0__add (* MyHashMap<K, V> *)
       (! return {result}) ]
 end
 module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use seq.Seq
   use int.EuclideanDivision
@@ -613,10 +623,11 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate inv_ref_K
   
-  predicate precondition_hash (self: ()) (args: t_K)
+  predicate precondition_hash (self: ()) (mode: Mode.t) (args: t_K)
   
-  axiom precondition_fndef: forall args: t_K [precondition_hash () args]. (let self = args in inv_ref_K self)
-      -> precondition_hash () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_K [precondition_hash () mode args]. (let self = args in inv_ref_K self)
+        -> precondition_hash () mode args
   
   type t_DeepModelTy
   
@@ -628,19 +639,21 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
   
   meta "rewrite_def" function deep_model_ref_K
   
-  predicate postcondition_hash (self: ()) (args: t_K) (result: UInt64.t)
+  predicate postcondition_hash (self: ()) (mode: Mode.t) (args: t_K) (result: UInt64.t)
   
   axiom postcondition_fndef:
-    forall args: t_K, res: UInt64.t [postcondition_hash () args res]. postcondition_hash () args res
+    forall mode: Mode.t, args: t_K, res: UInt64.t [postcondition_hash () mode args res]. postcondition_hash () mode args res
       -> (let self = args in UInt64.t'int res = hash_log_K (deep_model_ref_K self))
   
-  predicate postcondition_once_hash (self: ()) (args: t_K) (result: UInt64.t) = postcondition_hash self args result
+  predicate postcondition_once_hash (self: ()) (mode: Mode.t) (args: t_K) (result: UInt64.t) =
+    postcondition_hash self mode args result
   
   meta "rewrite_def" predicate postcondition_once_hash
   
-  let hash_K (self: t_K) (return (x: UInt64.t)) = {[@stop_split] [@expl:hash requires] precondition_hash () self}
+  let hash_K (mode: Mode.t) (self: t_K) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:hash requires] precondition_hash () mode self}
     any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] postcondition_once_hash () self result}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] postcondition_once_hash () mode self result}
       (! return {result}) ]
   
   type t_Vec_List_tup2_K_V_Global
@@ -717,7 +730,7 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate inv_ref_Vec_List_tup2_K_V_Global
   
-  let len_List_tup2_K_V (self_: t_Vec_List_tup2_K_V_Global) (return (x: UInt64.t)) =
+  let len_List_tup2_K_V (mode: Mode.t) (self_: t_Vec_List_tup2_K_V_Global) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_Vec_List_tup2_K_V_Global self_}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
@@ -734,7 +747,8 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_List_tup2_K_V_Global (self_: t_Vec_List_tup2_K_V_Global) (ix: UInt64.t) (return (x: t_List_tup2_K_V)) =
+  let index_Vec_List_tup2_K_V_Global (mode: Mode.t) (self_: t_Vec_List_tup2_K_V_Global) (ix: UInt64.t)
+    (return (x: t_List_tup2_K_V)) =
   {[@stop_split] [@expl:index_Vec_List_tup2_K_V_Global requires] ([@stop_split] [@expl:index 'self_' type invariant] inv_ref_Vec_List_tup2_K_V_Global self_)
     /\ ([@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_List_tup2_K_V_Global self_))}
     any
@@ -771,27 +785,28 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
   
   type tup2_ref_K_ref_K = { f0'0: t_K; f1'0: t_K }
   
-  predicate precondition_eq (self: ()) (args: tup2_ref_K_ref_K)
+  predicate precondition_eq (self: ()) (mode: Mode.t) (args: tup2_ref_K_ref_K)
   
   axiom precondition_fndef'0:
-    forall args: tup2_ref_K_ref_K [precondition_eq () args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K self_
-        /\ inv_ref_K rhs) -> precondition_eq () args
+    forall mode: Mode.t. forall args: tup2_ref_K_ref_K [precondition_eq () mode args]. (let {f0'0 = self_; f1'0 = rhs} = args in inv_ref_K self_
+          /\ inv_ref_K rhs) -> precondition_eq () mode args
   
-  predicate postcondition_eq (self: ()) (args: tup2_ref_K_ref_K) (result: bool)
+  predicate postcondition_eq (self: ()) (mode: Mode.t) (args: tup2_ref_K_ref_K) (result: bool)
   
   axiom postcondition_fndef'0:
-    forall args: tup2_ref_K_ref_K, res: bool [postcondition_eq () args res]. postcondition_eq () args res
+    forall mode: Mode.t, args: tup2_ref_K_ref_K, res: bool [postcondition_eq () mode args res]. postcondition_eq () mode args res
       -> (let {f0'0 = self_; f1'0 = rhs} = args in res = (deep_model_ref_K self_ = deep_model_ref_K rhs))
   
-  predicate postcondition_once_eq (self: ()) (args: tup2_ref_K_ref_K) (result: bool) = postcondition_eq self args result
+  predicate postcondition_once_eq (self: ()) (mode: Mode.t) (args: tup2_ref_K_ref_K) (result: bool) =
+    postcondition_eq self mode args result
   
   meta "rewrite_def" predicate postcondition_once_eq
   
-  let eq_K (self_: t_K) (rhs: t_K) (return (x: bool)) =
-  {[@stop_split] [@expl:eq requires] precondition_eq () { f0'0 = self_; f1'0 = rhs }}
+  let eq_K (mode: Mode.t) (self_: t_K) (rhs: t_K) (return (x: bool)) =
+  {[@stop_split] [@expl:eq requires] precondition_eq () mode { f0'0 = self_; f1'0 = rhs }}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] postcondition_once_eq () { f0'0 = self_;
-                                                                                            f1'0 = rhs } result}
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] postcondition_once_eq () mode { f0'0 = self_;
+                                                                                                 f1'0 = rhs } result}
       (! return {result}) ]
   
   type t_Option_ref_V = None'0 | Some'0 t_V
@@ -847,18 +862,19 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
   
   meta "select_lsinst" "all"
   
-  let get_K'0 (self: t_MyHashMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
+  let get_K'0 (mode: Mode.t) (self: t_MyHashMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
   {[@stop_split] [@expl:get_K requires] ([@stop_split] [@expl:get 'self' type invariant] inv_ref_MyHashMap_K_V self)
     /\ ([@stop_split] [@expl:get 'key' type invariant] inv_K key)}
     (! bb0
     [ bb0 = s0
-      [ s0 = hash_K {key} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s1)
+      [ s0 = hash_K {mode} {key} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s1)
       | s1 = [ &_8 <- _9 ] s2
-      | s2 = len_List_tup2_K_V {self.buckets} (fun (_x: UInt64.t) -> [ &_11 <- _x ] s3)
+      | s2 = len_List_tup2_K_V {mode} {self.buckets} (fun (_x: UInt64.t) -> [ &_11 <- _x ] s3)
       | s3 = [ &_13 <- _11 = (0: UInt64.t) ] s4
       | s4 = {[@expl:remainder by zero] not _13} s5
       | s5 = UInt64.rem {_8} {_11} (fun (_x: UInt64.t) -> [ &index <- _x ] s6)
-      | s6 = index_Vec_List_tup2_K_V_Global {self.buckets} {index} (fun (_x: t_List_tup2_K_V) -> [ &_15 <- _x ] s7)
+      | s6 = index_Vec_List_tup2_K_V_Global {mode} {self.buckets} {index}
+          (fun (_x: t_List_tup2_K_V) -> [ &_15 <- _x ] s7)
       | s7 = [ &l <- _15 ] s8
       | s8 = bb5 ]
     | bb5 = bb5
@@ -872,7 +888,7 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
           [ s0 = elim_Cons {l} (fun (r0: tup2_K_V) (r1: t_List_tup2_K_V) -> [ &k <- r0.f0 ] s1)
           | s1 = elim_Cons {l} (fun (r0: tup2_K_V) (r1: t_List_tup2_K_V) -> [ &v <- r0.f1 ] s2)
           | s2 = elim_Cons {l} (fun (r0: tup2_K_V) (r1: t_List_tup2_K_V) -> [ &tl <- r1 ] s3)
-          | s3 = eq_K {k} {key} (fun (_x: bool) -> [ &_30 <- _x ] s4)
+          | s3 = eq_K {mode} {k} {key} (fun (_x: bool) -> [ &_30 <- _x ] s4)
           | s4 = any [ br0 -> {_30 = false} (! bb11) | br1 -> {_30} (! bb10) ] ]
         | bb11 = s0 [ s0 = [ &_36 <- tl ] s1 | s1 = [ &l <- _36 ] s2 | s2 = bb5 ] ] ]
     | bb12 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ]
@@ -902,6 +918,7 @@ module M_impl_MyHashMap_K_V_0__get (* MyHashMap<K, V> *)
 end
 module M_impl_MyHashMap_K_V_0__new (* MyHashMap<K, V> *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.EuclideanDivision
@@ -979,7 +996,8 @@ module M_impl_MyHashMap_K_V_0__new (* MyHashMap<K, V> *)
   
   meta "rewrite_def" function index_Vec_List_tup2_K_V_Global
   
-  let from_elem_List_tup2_K_V (elem: t_List_tup2_K_V) (n: UInt64.t) (return (x: t_Vec_List_tup2_K_V_Global)) =
+  let from_elem_List_tup2_K_V (mode: Mode.t) (elem: t_List_tup2_K_V) (n: UInt64.t)
+    (return (x: t_Vec_List_tup2_K_V_Global)) =
   {[@stop_split] [@expl:from_elem 'elem' type invariant] inv_List_tup2_K_V elem}
     any
     [ return (result: t_Vec_List_tup2_K_V_Global) ->
@@ -1037,11 +1055,12 @@ module M_impl_MyHashMap_K_V_0__new (* MyHashMap<K, V> *)
   
   meta "select_lsinst" "all"
   
-  let new_K (size: UInt64.t) (return (x: t_MyHashMap_K_V)) = {[@stop_split] [@expl:new requires] 0 < UInt64.t'int size}
+  let new_K (mode: Mode.t) (size: UInt64.t) (return (x: t_MyHashMap_K_V)) = {[@stop_split] [@expl:new requires] 0
+    < UInt64.t'int size}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_7 <- Nil ] s1
-      | s1 = from_elem_List_tup2_K_V {_7} {size} (fun (_x: t_Vec_List_tup2_K_V_Global) -> [ &_6 <- _x ] s2)
+      | s1 = from_elem_List_tup2_K_V {mode} {_7} {size} (fun (_x: t_Vec_List_tup2_K_V_Global) -> [ &_6 <- _x ] s2)
       | s2 = [ &res <- { buckets = _6 } ] s3
       | s3 = [ &_ret <- res ] s4
       | s4 = return {_ret} ] ]
@@ -1057,6 +1076,7 @@ module M_impl_MyHashMap_K_V_0__new (* MyHashMap<K, V> *)
 end
 module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use int.EuclideanDivision
   use map.Map
@@ -1142,7 +1162,7 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate inv_ref_Vec_List_tup2_K_V_Global
   
-  let len_List_tup2_K_V (self_: t_Vec_List_tup2_K_V_Global) (return (x: UInt64.t)) =
+  let len_List_tup2_K_V (mode: Mode.t) (self_: t_Vec_List_tup2_K_V_Global) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_Vec_List_tup2_K_V_Global self_}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
@@ -1196,7 +1216,8 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
   function view_MyHashMap_K_V (self: t_MyHashMap_K_V) : Map.map t_DeepModelTy t_Option_V =
     fun (k: t_DeepModelTy) -> get_K (bucket_K self k) k
   
-  let new_K (size: UInt64.t) (return (x: t_MyHashMap_K_V)) = {[@stop_split] [@expl:new requires] 0 < UInt64.t'int size}
+  let new_K (mode: Mode.t) (size: UInt64.t) (return (x: t_MyHashMap_K_V)) = {[@stop_split] [@expl:new requires] 0
+    < UInt64.t'int size}
     any
     [ return (result: t_MyHashMap_K_V) ->
     {[@stop_split] [@expl:new_K ensures] ([@stop_split] [@expl:new result type invariant] inv_MyHashMap_K_V result)
@@ -1248,7 +1269,7 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
   
   meta "rewrite_def" predicate resolve_elswhere_usize
   
-  let index_mut_Vec_List_tup2_K_V_Global (self_: MutBorrow.t t_Vec_List_tup2_K_V_Global) (ix: UInt64.t)
+  let index_mut_Vec_List_tup2_K_V_Global (mode: Mode.t) (self_: MutBorrow.t t_Vec_List_tup2_K_V_Global) (ix: UInt64.t)
     (return (x: MutBorrow.t t_List_tup2_K_V)) =
   {[@stop_split] [@expl:index_mut_Vec_List_tup2_K_V_Global requires] ([@stop_split] [@expl:index_mut 'self_' type invariant] inv_refmut_Vec_List_tup2_K_V_Global self_)
     /\ ([@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_List_tup2_K_V_Global self_.current))}
@@ -1262,7 +1283,8 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
       = Seq.length (view_Vec_List_tup2_K_V_Global self_.current))}
       (! return {result}) ]
   
-  let replace_List_tup2_K_V (dest: MutBorrow.t t_List_tup2_K_V) (src: t_List_tup2_K_V) (return (x: t_List_tup2_K_V)) =
+  let replace_List_tup2_K_V (mode: Mode.t) (dest: MutBorrow.t t_List_tup2_K_V) (src: t_List_tup2_K_V)
+    (return (x: t_List_tup2_K_V)) =
   {[@stop_split] [@expl:replace_List_tup2_K_V requires] ([@stop_split] [@expl:replace 'dest' type invariant] inv_refmut_List_tup2_K_V dest)
     /\ ([@stop_split] [@expl:replace 'src' type invariant] inv_List_tup2_K_V src)}
     any
@@ -1284,7 +1306,7 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
         end}
       any) ]
   
-  let add_K (self: MutBorrow.t t_MyHashMap_K_V) (key: t_K) (val': t_V) (return (x: ())) =
+  let add_K (mode: Mode.t) (self: MutBorrow.t t_MyHashMap_K_V) (key: t_K) (val': t_V) (return (x: ())) =
   {[@stop_split] [@expl:add_K requires] ([@stop_split] [@expl:add 'self' type invariant] inv_refmut_MyHashMap_K_V self)
     /\ ([@stop_split] [@expl:add 'key' type invariant] inv_K key)
     /\ ([@stop_split] [@expl:add 'val' type invariant] inv_V val')}
@@ -1353,15 +1375,15 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
   
   meta "select_lsinst" "all"
   
-  let resize_K (self: MutBorrow.t t_MyHashMap_K_V) (return (x: ())) =
+  let resize_K (mode: Mode.t) (self: MutBorrow.t t_MyHashMap_K_V) (return (x: ())) =
   {[@stop_split] [@expl:resize_K requires] ([@stop_split] [@expl:resize 'self' type invariant] inv_refmut_MyHashMap_K_V self)
     /\ ([@stop_split] [@expl:resize requires] Seq.length (view_Vec_List_tup2_K_V_Global self.current.buckets) < 1000)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_self <- self ] s1
-      | s1 = len_List_tup2_K_V {self.current.buckets} (fun (_x: UInt64.t) -> [ &_11 <- _x ] s2)
+      | s1 = len_List_tup2_K_V {mode} {self.current.buckets} (fun (_x: UInt64.t) -> [ &_11 <- _x ] s2)
       | s2 = UInt64.mul {_11} {(2: UInt64.t)} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s3)
-      | s3 = new_K {_10} (fun (_x: t_MyHashMap_K_V) -> [ &new <- _x ] s4)
+      | s3 = new_K {mode} {_10} (fun (_x: t_MyHashMap_K_V) -> [ &new <- _x ] s4)
       | s4 = [ &i <- (0: UInt64.t) ] s5
       | s5 = [ &_old <- self.final ] s6
       | s6 = bb4 ]
@@ -1383,7 +1405,7 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
         = Seq.length (view_Vec_List_tup2_K_V_Global self.current.buckets)}
         {[@expl:loop invariant #5] UInt64.t'int i <= Seq.length (view_Vec_List_tup2_K_V_Global self.current.buckets)}
         (! s0)
-        [ s0 = len_List_tup2_K_V {self.current.buckets} (fun (_x: UInt64.t) -> [ &_39 <- _x ] s1)
+        [ s0 = len_List_tup2_K_V {mode} {self.current.buckets} (fun (_x: UInt64.t) -> [ &_39 <- _x ] s1)
         | s1 = [ &_37 <- UInt64.lt i _39 ] s2
         | s2 = any [ br0 -> {_37 = false} (! bb22) | br1 -> {_37} (! bb7) ] ]
         [ bb7 = s0
@@ -1392,7 +1414,7 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
                 [ &_45 <- _bor ] -{inv_Vec_List_tup2_K_V_Global _bor.final}-
                 [ &self <- { self with current = { buckets = _bor.final } } ] s1)
             [ _ck -> (! {[@expl:type invariant] inv_Vec_List_tup2_K_V_Global self.current.buckets} any) ]
-          | s1 = index_mut_Vec_List_tup2_K_V_Global {_45} {i}
+          | s1 = index_mut_Vec_List_tup2_K_V_Global {mode} {_45} {i}
               (fun (_x: MutBorrow.t t_List_tup2_K_V) -> [ &_44 <- _x ] s2)
           | s2 = MutBorrow.borrow_final <t_List_tup2_K_V> {_44.current} {MutBorrow.get_id _44}
               (fun (_bor: MutBorrow.t t_List_tup2_K_V) ->
@@ -1405,7 +1427,7 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
                 [ &_42 <- _bor ] -{inv_List_tup2_K_V _bor.final}-
                 [ &_43 <- { _43 with current = _bor.final } ] s5)
             [ _ck -> (! {[@expl:type invariant] inv_List_tup2_K_V _43.current} any) ]
-          | s5 = replace_List_tup2_K_V {_42} {_47} (fun (_x: t_List_tup2_K_V) -> [ &l <- _x ] s6)
+          | s5 = replace_List_tup2_K_V {mode} {_42} {_47} (fun (_x: t_List_tup2_K_V) -> [ &l <- _x ] s6)
           | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_tup2_K_V _44} any) ]
           | s7 = -{resolve_refmut_List_tup2_K_V _44}- s8
           | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_tup2_K_V _43} any) ]
@@ -1439,7 +1461,7 @@ module M_impl_MyHashMap_K_V_0__resize (* MyHashMap<K, V> *)
                   (fun (_bor: MutBorrow.t t_MyHashMap_K_V) ->
                     [ &_74 <- _bor ] -{inv_MyHashMap_K_V _bor.final}-
                     [ &new <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_MyHashMap_K_V new} any) ]
-              | s4 = add_K {_74} {k} {v} (fun (_x: ()) -> [ &_73 <- _x ] s5)
+              | s4 = add_K {mode} {_74} {k} {v} (fun (_x: ()) -> [ &_73 <- _x ] s5)
               | s5 = [ &l <- tl ] s6
               | s6 = bb10 ] ] ]
         | bb18 = s0
@@ -2003,6 +2025,7 @@ module M_impl_Resolve_for_MyHashMap_K_V__resolve_coherence__refines (* <MyHashMa
 end
 module M_main
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.Int64
   use int.EuclideanDivision
@@ -2075,8 +2098,8 @@ module M_main
   function view_MyHashMap_usize_isize (self: t_MyHashMap_usize_isize) : Map.map int t_Option_isize =
     fun (k: int) -> get_usize (bucket_usize self k) k
   
-  let new_usize (size: UInt64.t) (return (x: t_MyHashMap_usize_isize)) = {[@stop_split] [@expl:new requires] 0
-    < UInt64.t'int size}
+  let new_usize (mode: Mode.t) (size: UInt64.t) (return (x: t_MyHashMap_usize_isize)) =
+  {[@stop_split] [@expl:new requires] 0 < UInt64.t'int size}
     any
     [ return (result: t_MyHashMap_usize_isize) ->
     {[@stop_split] [@expl:new_usize ensures] ([@stop_split] [@expl:new result type invariant] inv_MyHashMap_usize_isize result)
@@ -2095,7 +2118,7 @@ module M_main
   
   meta "rewrite_def" predicate inv_ref_MyHashMap_usize_isize
   
-  let get_usize'0 (self: t_MyHashMap_usize_isize) (key: UInt64.t) (return (x: t_Option_ref_isize)) =
+  let get_usize'0 (mode: Mode.t) (self: t_MyHashMap_usize_isize) (key: UInt64.t) (return (x: t_Option_ref_isize)) =
   {[@stop_split] [@expl:get 'self' type invariant] inv_ref_MyHashMap_usize_isize self}
     any
     [ return (result: t_Option_ref_isize) -> {[@stop_split] [@expl:get ensures] match result with
@@ -2114,8 +2137,8 @@ module M_main
   
   meta "rewrite_def" predicate inv_refmut_MyHashMap_usize_isize
   
-  let add_usize (self: MutBorrow.t t_MyHashMap_usize_isize) (key: UInt64.t) (val': Int64.t) (return (x: ())) =
-  {[@stop_split] [@expl:add 'self' type invariant] inv_refmut_MyHashMap_usize_isize self}
+  let add_usize (mode: Mode.t) (self: MutBorrow.t t_MyHashMap_usize_isize) (key: UInt64.t) (val': Int64.t)
+    (return (x: ())) = {[@stop_split] [@expl:add 'self' type invariant] inv_refmut_MyHashMap_usize_isize self}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:add ensures] forall i: int. Map.get (view_MyHashMap_usize_isize self.final) i
@@ -2169,43 +2192,43 @@ module M_main
   
   meta "select_lsinst" "all"
   
-  let main (return (x: ())) = (! bb0
+  let main (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = new_usize {(17: UInt64.t)} (fun (_x'0: t_MyHashMap_usize_isize) -> [ &h1 <- _x'0 ] s1)
-      | s1 = new_usize {(42: UInt64.t)} (fun (_x'0: t_MyHashMap_usize_isize) -> [ &h2 <- _x'0 ] s2)
-      | s2 = get_usize'0 {h1} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_x <- _x'0 ] s3)
-      | s3 = get_usize'0 {h1} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_y <- _x'0 ] s4)
-      | s4 = get_usize'0 {h2} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_z <- _x'0 ] s5)
-      | s5 = get_usize'0 {h2} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_t <- _x'0 ] s6)
+      [ s0 = new_usize {mode} {(17: UInt64.t)} (fun (_x'0: t_MyHashMap_usize_isize) -> [ &h1 <- _x'0 ] s1)
+      | s1 = new_usize {mode} {(42: UInt64.t)} (fun (_x'0: t_MyHashMap_usize_isize) -> [ &h2 <- _x'0 ] s2)
+      | s2 = get_usize'0 {mode} {h1} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_x <- _x'0 ] s3)
+      | s3 = get_usize'0 {mode} {h1} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_y <- _x'0 ] s4)
+      | s4 = get_usize'0 {mode} {h2} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_z <- _x'0 ] s5)
+      | s5 = get_usize'0 {mode} {h2} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_t <- _x'0 ] s6)
       | s6 = MutBorrow.borrow_mut <t_MyHashMap_usize_isize> {h1}
           (fun (_bor: MutBorrow.t t_MyHashMap_usize_isize) ->
             [ &_12 <- _bor ] -{inv_MyHashMap_usize_isize _bor.final}-
             [ &h1 <- _bor.final ] s7) [ _ck -> (! {[@expl:type invariant] inv_MyHashMap_usize_isize h1} any) ]
-      | s7 = add_usize {_12} {(1: UInt64.t)} {(17: Int64.t)} (fun (_x'0: ()) -> [ &_11 <- _x'0 ] s8)
-      | s8 = get_usize'0 {h1} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_13 <- _x'0 ] s9)
+      | s7 = add_usize {mode} {_12} {(1: UInt64.t)} {(17: Int64.t)} (fun (_x'0: ()) -> [ &_11 <- _x'0 ] s8)
+      | s8 = get_usize'0 {mode} {h1} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_13 <- _x'0 ] s9)
       | s9 = [ &_x <- _13 ] s10
-      | s10 = get_usize'0 {h1} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_15 <- _x'0 ] s11)
+      | s10 = get_usize'0 {mode} {h1} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_15 <- _x'0 ] s11)
       | s11 = [ &_y <- _15 ] s12
-      | s12 = get_usize'0 {h2} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_17 <- _x'0 ] s13)
+      | s12 = get_usize'0 {mode} {h2} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_17 <- _x'0 ] s13)
       | s13 = [ &_z <- _17 ] s14
-      | s14 = get_usize'0 {h2} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_19 <- _x'0 ] s15)
+      | s14 = get_usize'0 {mode} {h2} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_19 <- _x'0 ] s15)
       | s15 = [ &_t <- _19 ] s16
       | s16 = MutBorrow.borrow_mut <t_MyHashMap_usize_isize> {h2}
           (fun (_bor: MutBorrow.t t_MyHashMap_usize_isize) ->
             [ &_22 <- _bor ] -{inv_MyHashMap_usize_isize _bor.final}-
             [ &h2 <- _bor.final ] s17) [ _ck -> (! {[@expl:type invariant] inv_MyHashMap_usize_isize h2} any) ]
-      | s17 = add_usize {_22} {(1: UInt64.t)} {(42: Int64.t)} (fun (_x'0: ()) -> [ &_21 <- _x'0 ] s18)
-      | s18 = get_usize'0 {h1} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_23 <- _x'0 ] s19)
+      | s17 = add_usize {mode} {_22} {(1: UInt64.t)} {(42: Int64.t)} (fun (_x'0: ()) -> [ &_21 <- _x'0 ] s18)
+      | s18 = get_usize'0 {mode} {h1} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_23 <- _x'0 ] s19)
       | s19 = [ &_x <- _23 ] s20
       | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_MyHashMap_usize_isize h1} any) ]
       | s21 = -{resolve_MyHashMap_usize_isize'0 h1}- s22
-      | s22 = get_usize'0 {h1} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_25 <- _x'0 ] s23)
+      | s22 = get_usize'0 {mode} {h1} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_25 <- _x'0 ] s23)
       | s23 = [ &_y <- _25 ] s24
-      | s24 = get_usize'0 {h2} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_27 <- _x'0 ] s25)
+      | s24 = get_usize'0 {mode} {h2} {(1: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_27 <- _x'0 ] s25)
       | s25 = [ &_z <- _27 ] s26
       | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_MyHashMap_usize_isize h2} any) ]
       | s27 = -{resolve_MyHashMap_usize_isize'0 h2}- s28
-      | s28 = get_usize'0 {h2} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_29 <- _x'0 ] s29)
+      | s28 = get_usize'0 {mode} {h2} {(2: UInt64.t)} (fun (_x'0: t_Option_ref_isize) -> [ &_29 <- _x'0 ] s29)
       | s29 = [ &_t <- _29 ] s30
       | s30 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

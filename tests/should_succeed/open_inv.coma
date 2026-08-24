@@ -1,10 +1,11 @@
 module M_impl_Clone_for_IsZero__clone (* <IsZero as std::clone::Clone> *)
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_IsZero = { f0: Int32.t }
   
-  let clone_i32 (self_: Int32.t) (return (x: Int32.t)) = any
+  let clone_i32 (mode: Mode.t) (self_: Int32.t) (return (x: Int32.t)) = any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:clone ensures] result = self_} (! return {result}) ]
   
   predicate invariant_IsZero (self: t_IsZero) = self.f0 = (0: Int32.t)
@@ -21,7 +22,8 @@ module M_impl_Clone_for_IsZero__clone (* <IsZero as std::clone::Clone> *)
   
   meta "rewrite_def" predicate inv_ref_IsZero
   
-  predicate postcondition_clone (self: ()) (args: Int32.t) (result: Int32.t) = let self_ = args in result = self_
+  predicate postcondition_clone (self: ()) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
+    let self_ = args in result = self_
   
   meta "rewrite_def" predicate postcondition_clone
   
@@ -29,12 +31,12 @@ module M_impl_Clone_for_IsZero__clone (* <IsZero as std::clone::Clone> *)
   
   meta "select_lsinst" "all"
   
-  let clone_IsZero (self: t_IsZero) (return (x: t_IsZero)) =
+  let clone_IsZero (mode: Mode.t) (self: t_IsZero) (return (x: t_IsZero)) =
   {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_IsZero self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_6 <- self.f0 ] s1
-      | s1 = clone_i32 {_6} (fun (_x: Int32.t) -> [ &_4 <- _x ] s2)
+      | s1 = clone_i32 {mode} {_6} (fun (_x: Int32.t) -> [ &_4 <- _x ] s2)
       | s2 = [ &_ret <- { f0 = _4 } ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_IsZero = Any.any_l ()
@@ -43,10 +45,11 @@ module M_impl_Clone_for_IsZero__clone (* <IsZero as std::clone::Clone> *)
     | & _6: Int32.t = Any.any_l () ])
     [ return (result: t_IsZero) ->
     {[@stop_split] [@expl:clone_IsZero ensures] ([@stop_split] [@expl:clone result type invariant] inv_IsZero result)
-      /\ ([@stop_split] [@expl:clone ensures] postcondition_clone () self.f0 result.f0)}
+      /\ ([@stop_split] [@expl:clone ensures] postcondition_clone () mode self.f0 result.f0)}
       (! return {result}) ]
 end
 module M_impl_Clone_for_IsZero__clone__refines (* <IsZero as std::clone::Clone> *)
+  use creusot.prelude.Mode
   use creusot.int.Int32
   
   type t_IsZero = { f0: Int32.t }
@@ -65,23 +68,26 @@ module M_impl_Clone_for_IsZero__clone__refines (* <IsZero as std::clone::Clone> 
   
   meta "rewrite_def" predicate inv_ref_IsZero
   
-  predicate postcondition_clone (self: ()) (args: Int32.t) (result: Int32.t) = let self_ = args in result = self_
+  predicate postcondition_clone (self: ()) (mode: Mode.t) (args: Int32.t) (result: Int32.t) =
+    let self_ = args in result = self_
   
   meta "rewrite_def" predicate postcondition_clone
   
-  let clone_i32 (self_: Int32.t) (return (x: Int32.t)) = any
+  let clone_i32 (mode: Mode.t) (self_: Int32.t) (return (x: Int32.t)) = any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:clone ensures] result = self_} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: t_IsZero. inv_ref_IsZero self_
+  goal refines: forall mode: Mode.t, self_: t_IsZero. inv_ref_IsZero self_
       -> inv_ref_IsZero self_
-      /\ (forall result: t_IsZero. inv_IsZero result /\ postcondition_clone () self_.f0 result.f0 -> inv_IsZero result)
+      /\ (forall result: t_IsZero. inv_IsZero result /\ postcondition_clone () mode self_.f0 result.f0
+        -> inv_IsZero result)
 end
 module M_test_open_inv_param
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use creusot.int.Int32
   
   type t_IsZero = { f0: Int32.t }
@@ -90,32 +96,35 @@ module M_test_open_inv_param
   
   meta "select_lsinst" "all"
   
-  let test_open_inv_param (_1: t_IsZero) (return (x: ())) = (! bb0
+  let test_open_inv_param (mode: Mode.t) (_1: t_IsZero) (return (x: ())) = (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_open_inv_param_call
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_IsZero = { f0: Int32.t }
   
-  let test_open_inv_param (_1: t_IsZero) (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
+  let test_open_inv_param (mode: Mode.t) (_1: t_IsZero) (return (x: ())) = any
+    [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_open_inv_param_call (return (x: ())) = (! bb0
+  let test_open_inv_param_call (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &a <- { f0 = (0: Int32.t) } ] s1
       | s1 = Int32.sub {a.f0} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &a <- { f0 = _x } ] s2)
-      | s2 = test_open_inv_param {a} (fun (_x: ()) -> [ &_2 <- _x ] s3)
+      | s2 = test_open_inv_param {mode} {a} (fun (_x: ()) -> [ &_2 <- _x ] s3)
       | s3 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & a: t_IsZero = Any.any_l () | & _2: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_open_inv_result
   use creusot.int.Int32
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_IsZero = { f0: Int32.t }
   
@@ -123,7 +132,7 @@ module M_test_open_inv_result
   
   meta "select_lsinst" "all"
   
-  let test_open_inv_result (return (x: t_IsZero)) = (! bb0
+  let test_open_inv_result (mode: Mode.t) (return (x: t_IsZero)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &a <- { f0 = (0: Int32.t) } ] s1
       | s1 = Int32.sub {a.f0} {(1: Int32.t)} (fun (_x: Int32.t) -> [ &a <- { f0 = _x } ] s2)

@@ -1,12 +1,13 @@
 module M_ghost_vec
   use creusot.int.Int32
   use seq.Seq
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.int.Int128
   use creusot.prelude.Any
   use int.Int
   
-  let new_i32 (return (x: Seq.seq Int32.t)) = any
+  let new_i32 (mode: Mode.t) (return (x: Seq.seq Int32.t)) = any
     [ return (result: Seq.seq Int32.t) -> {[@stop_split] [@expl:new ensures] result = (Seq.empty: Seq.seq Int32.t)}
       (! return {result}) ]
   
@@ -18,18 +19,19 @@ module M_ghost_vec
       None
   
   
-  let deref_Ghost_Seq_i32 (self: Seq.seq Int32.t) (return (x: Seq.seq Int32.t)) = any
+  let deref_Ghost_Seq_i32 (mode: Mode.t) (self: Seq.seq Int32.t) (return (x: Seq.seq Int32.t)) = any
     [ return (result: Seq.seq Int32.t) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
-  let is_empty_ghost_i32 (self: Seq.seq Int32.t) (return (x: bool)) = any
+  let is_empty_ghost_i32 (mode: Mode.t) (self: Seq.seq Int32.t) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_empty_ghost ensures] result = (Seq.length self = 0)}
       (! return {result}) ]
   
-  let deref_mut_Ghost_Seq_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: MutBorrow.t (Seq.seq Int32.t))) = any
+  let deref_mut_Ghost_Seq_i32 (mode: Mode.t) (self: MutBorrow.t (Seq.seq Int32.t))
+    (return (x: MutBorrow.t (Seq.seq Int32.t))) = any
     [ return (result: MutBorrow.t (Seq.seq Int32.t)) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
   
-  let push_back_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (x: Int32.t) (return (x'0: ())) = any
+  let push_back_ghost_i32 (mode: Mode.t) (self: MutBorrow.t (Seq.seq Int32.t)) (x: Int32.t) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
       (! return {result}) ]
   
@@ -37,18 +39,27 @@ module M_ghost_vec
   
   meta "rewrite_def" predicate resolve_refmut_Seq_i32
   
-  let len_ghost_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
+  let len_ghost_i32 (mode: Mode.t) (self: Seq.seq Int32.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
   
-  let new (value: Int128.t) (return (x: int)) = any
+  let new (mode: Mode.t) (value: Int128.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
   
-  let into_inner_Int (self: int) (return (x: int)) = any
+  let into_inner_Int (mode: Mode.t) (self: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
   
   type t_Option_ref_i32 = None'0 | Some'0 Int32.t
   
-  let get_ghost_i32 (self: Seq.seq Int32.t) (index: int) (return (x: t_Option_ref_i32)) = any
+  let get_ghost_i32 (mode: Mode.t) (self: Seq.seq Int32.t) (index: int) (return (x: t_Option_ref_i32)) = any
     [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:get_ghost ensures] match get_i32 self index with
         | None -> result = None'0
         | Some v -> result = Some'0 v
@@ -57,7 +68,8 @@ module M_ghost_vec
   
   type t_Option_refmut_i32 = None'1 | Some'1 (MutBorrow.t Int32.t)
   
-  let get_mut_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (index: int) (return (x: t_Option_refmut_i32)) = any
+  let get_mut_ghost_i32 (mode: Mode.t) (self: MutBorrow.t (Seq.seq Int32.t)) (index: int)
+    (return (x: t_Option_refmut_i32)) = any
     [ return (result: t_Option_refmut_i32) ->
     {[@stop_split] [@expl:get_mut_ghost_i32 ensures] ([@stop_split] [@expl:get_mut_ghost ensures #0] match result with
           | None'1 -> get_i32 self.current index = None /\ self.current = self.final
@@ -80,21 +92,21 @@ module M_ghost_vec
         end}
       any) ]
   
-  let pop_back_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: t_Option_i32)) = any
+  let pop_back_ghost_i32 (mode: Mode.t) (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:pop_back_ghost ensures] match result with
         | None -> self.current = (Seq.empty: Seq.seq Int32.t) /\ self.current = self.final
         | Some r -> self.current = Seq.snoc self.final r
         end}
       (! return {result}) ]
   
-  let new_unit (x: ()) (return (x'0: ())) = any
+  let new_unit (mode: Mode.t) (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   function push_front_i32 [@inline:trivial] (self: Seq.seq Int32.t) (x: Int32.t) : Seq.seq Int32.t = Seq.cons x self
   
   meta "rewrite_def" function push_front_i32
   
-  let push_front_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (x: Int32.t) (return (x'0: ())) = any
+  let push_front_ghost_i32 (mode: Mode.t) (self: MutBorrow.t (Seq.seq Int32.t)) (x: Int32.t) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:push_front_ghost ensures] self.final = push_front_i32 self.current x}
       (! return {result}) ]
   
@@ -104,7 +116,7 @@ module M_ghost_vec
   
   function tail_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = Seq.([..]) self 1 (Seq.length self)
   
-  let pop_front_ghost_i32 (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: t_Option_i32)) = any
+  let pop_front_ghost_i32 (mode: Mode.t) (self: MutBorrow.t (Seq.seq Int32.t)) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:pop_front_ghost ensures] match result with
         | None -> self.current = (Seq.empty: Seq.seq Int32.t) /\ self.current = self.final
         | Some r -> gt_log_Int (Seq.length self.current) 0
@@ -116,70 +128,76 @@ module M_ghost_vec
   
   meta "select_lsinst" "all"
   
-  let ghost_vec (return (x: ())) = (! bb0
+  let ghost_vec (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 (fun (_x: Seq.seq Int32.t) -> [ &v <- _x ] s1)
+      [ s0 = new_i32 {mode} (fun (_x: Seq.seq Int32.t) -> [ &v <- _x ] s1)
       | s1 = {[@expl:assertion] forall i: int. get_i32 v i = None} s2
-      | s2 = deref_Ghost_Seq_i32 {v} (fun (_x: Seq.seq Int32.t) -> [ &_10 <- _x ] s3)
-      | s3 = is_empty_ghost_i32 {_10} (fun (_x: bool) -> [ &_8 <- _x ] s4)
+      | s2 = deref_Ghost_Seq_i32 {Mode.into_ghost mode} {v} (fun (_x: Seq.seq Int32.t) -> [ &_10 <- _x ] s3)
+      | s3 = is_empty_ghost_i32 {Mode.into_ghost mode} {_10} (fun (_x: bool) -> [ &_8 <- _x ] s4)
       | s4 = any [ br0 -> {_8 = false} (! bb5) | br1 -> {_8} (! bb4) ] ]
     | bb4 = s0
       [ s0 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_16 <- _bor ] [ &v <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_Seq_i32 {_16} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_15 <- _x ] s2)
+      | s1 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_16}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_15 <- _x ] s2)
       | s2 = MutBorrow.borrow_final <Seq.seq Int32.t> {_15.current} {MutBorrow.get_id _15}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_14 <- _bor ] [ &_15 <- { _15 with current = _bor.final } ] s3)
-      | s3 = push_back_ghost_i32 {_14} {(21: Int32.t)} (fun (_x: ()) -> [ &_13 <- _x ] s4)
+      | s3 = push_back_ghost_i32 {Mode.into_ghost mode} {_14} {(21: Int32.t)} (fun (_x: ()) -> [ &_13 <- _x ] s4)
       | s4 = -{resolve_refmut_Seq_i32 _15}- s5
-      | s5 = deref_Ghost_Seq_i32 {v} (fun (_x: Seq.seq Int32.t) -> [ &_20 <- _x ] s6)
-      | s6 = is_empty_ghost_i32 {_20} (fun (_x: bool) -> [ &_18 <- _x ] s7)
+      | s5 = deref_Ghost_Seq_i32 {Mode.into_ghost mode} {v} (fun (_x: Seq.seq Int32.t) -> [ &_20 <- _x ] s6)
+      | s6 = is_empty_ghost_i32 {Mode.into_ghost mode} {_20} (fun (_x: bool) -> [ &_18 <- _x ] s7)
       | s7 = any [ br0 -> {_18 = false} (! bb11) | br1 -> {_18} (! bb10) ] ]
-    | bb10 = {false} any
+    | bb10 = s0
+      [ s0 = panic {Mode.into_ghost mode} {"assertion failed: !v.is_empty_ghost()"} (fun (_x: ()) -> [ &_22 <- _x ] s1)
+      | s1 = {false} any ]
     | bb11 = s0
       [ s0 = {[@expl:assertion] Seq.get v 0 = (21: Int32.t)} s1
       | s1 = {[@expl:assertion] Seq.length v = 1} s2
       | s2 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_32 <- _bor ] [ &v <- _bor.final ] s3)
-      | s3 = deref_mut_Ghost_Seq_i32 {_32} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_31 <- _x ] s4)
+      | s3 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_32}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_31 <- _x ] s4)
       | s4 = MutBorrow.borrow_final <Seq.seq Int32.t> {_31.current} {MutBorrow.get_id _31}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_30 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s5)
-      | s5 = push_back_ghost_i32 {_30} {(10: Int32.t)} (fun (_x: ()) -> [ &_29 <- _x ] s6)
+      | s5 = push_back_ghost_i32 {Mode.into_ghost mode} {_30} {(10: Int32.t)} (fun (_x: ()) -> [ &_29 <- _x ] s6)
       | s6 = -{resolve_refmut_Seq_i32 _31}- s7
       | s7 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_36 <- _bor ] [ &v <- _bor.final ] s8)
-      | s8 = deref_mut_Ghost_Seq_i32 {_36} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_35 <- _x ] s9)
+      | s8 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_36}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_35 <- _x ] s9)
       | s9 = MutBorrow.borrow_final <Seq.seq Int32.t> {_35.current} {MutBorrow.get_id _35}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_34 <- _bor ] [ &_35 <- { _35 with current = _bor.final } ] s10)
-      | s10 = push_back_ghost_i32 {_34} {(30: Int32.t)} (fun (_x: ()) -> [ &_33 <- _x ] s11)
+      | s10 = push_back_ghost_i32 {Mode.into_ghost mode} {_34} {(30: Int32.t)} (fun (_x: ()) -> [ &_33 <- _x ] s11)
       | s11 = -{resolve_refmut_Seq_i32 _35}- s12
-      | s12 = deref_Ghost_Seq_i32 {v} (fun (_x: Seq.seq Int32.t) -> [ &_39 <- _x ] s13)
-      | s13 = len_ghost_i32 {_39} (fun (_x: int) -> [ &len <- _x ] s14)
+      | s12 = deref_Ghost_Seq_i32 {Mode.into_ghost mode} {v} (fun (_x: Seq.seq Int32.t) -> [ &_39 <- _x ] s13)
+      | s13 = len_ghost_i32 {Mode.into_ghost mode} {_39} (fun (_x: int) -> [ &len <- _x ] s14)
       | s14 = {[@expl:assertion] len = 3} s15
       | s15 = {[@expl:assertion] Seq.get v 0 = (21: Int32.t)
         /\ Seq.get v 1 = (10: Int32.t) /\ Seq.get v 2 = (30: Int32.t)}
         s16
-      | s16 = deref_Ghost_Seq_i32 {v} (fun (_x: Seq.seq Int32.t) -> [ &_49 <- _x ] s17)
-      | s17 = new {(1: Int128.t)} (fun (_x: int) -> [ &_52 <- _x ] s18)
-      | s18 = into_inner_Int {_52} (fun (_x: int) -> [ &_51 <- _x ] s19)
-      | s19 = get_ghost_i32 {_49} {_51} (fun (_x: t_Option_ref_i32) -> [ &get1 <- _x ] s20)
-      | s20 = deref_Ghost_Seq_i32 {v} (fun (_x: Seq.seq Int32.t) -> [ &_55 <- _x ] s21)
-      | s21 = new {(3: Int128.t)} (fun (_x: int) -> [ &_58 <- _x ] s22)
-      | s22 = into_inner_Int {_58} (fun (_x: int) -> [ &_57 <- _x ] s23)
-      | s23 = get_ghost_i32 {_55} {_57} (fun (_x: t_Option_ref_i32) -> [ &get2 <- _x ] s24)
+      | s16 = deref_Ghost_Seq_i32 {Mode.into_ghost mode} {v} (fun (_x: Seq.seq Int32.t) -> [ &_49 <- _x ] s17)
+      | s17 = new {Mode.into_ghost mode} {(1: Int128.t)} (fun (_x: int) -> [ &_52 <- _x ] s18)
+      | s18 = into_inner_Int {Mode.into_ghost mode} {_52} (fun (_x: int) -> [ &_51 <- _x ] s19)
+      | s19 = get_ghost_i32 {Mode.into_ghost mode} {_49} {_51} (fun (_x: t_Option_ref_i32) -> [ &get1 <- _x ] s20)
+      | s20 = deref_Ghost_Seq_i32 {Mode.into_ghost mode} {v} (fun (_x: Seq.seq Int32.t) -> [ &_55 <- _x ] s21)
+      | s21 = new {Mode.into_ghost mode} {(3: Int128.t)} (fun (_x: int) -> [ &_58 <- _x ] s22)
+      | s22 = into_inner_Int {Mode.into_ghost mode} {_58} (fun (_x: int) -> [ &_57 <- _x ] s23)
+      | s23 = get_ghost_i32 {Mode.into_ghost mode} {_55} {_57} (fun (_x: t_Option_ref_i32) -> [ &get2 <- _x ] s24)
       | s24 = {[@expl:assertion] get1 = Some'0 (10: Int32.t)} s25
       | s25 = {[@expl:assertion] get2 = None'0} s26
       | s26 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_69 <- _bor ] [ &v <- _bor.final ] s27)
-      | s27 = deref_mut_Ghost_Seq_i32 {_69} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_68 <- _x ] s28)
-      | s28 = new {(0: Int128.t)} (fun (_x: int) -> [ &_71 <- _x ] s29)
-      | s29 = into_inner_Int {_71} (fun (_x: int) -> [ &_70 <- _x ] s30)
+      | s27 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_69}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_68 <- _x ] s28)
+      | s28 = new {Mode.into_ghost mode} {(0: Int128.t)} (fun (_x: int) -> [ &_71 <- _x ] s29)
+      | s29 = into_inner_Int {Mode.into_ghost mode} {_71} (fun (_x: int) -> [ &_70 <- _x ] s30)
       | s30 = MutBorrow.borrow_final <Seq.seq Int32.t> {_68.current} {MutBorrow.get_id _68}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_67 <- _bor ] [ &_68 <- { _68 with current = _bor.final } ] s31)
-      | s31 = get_mut_ghost_i32 {_67} {_70} (fun (_x: t_Option_refmut_i32) -> [ &_66 <- _x ] s32)
+      | s31 = get_mut_ghost_i32 {Mode.into_ghost mode} {_67} {_70} (fun (_x: t_Option_refmut_i32) -> [ &_66 <- _x ] s32)
       | s32 = any [ br0 -> {_66 = None'1} (! bb32) | br1 (x0: MutBorrow.t Int32.t) -> {_66 = Some'1 x0} (! bb31) ] ]
     | bb32 = s0
       [ s0 = -{match _66 with
@@ -199,126 +217,142 @@ module M_ghost_vec
       [ s0 = {[@expl:assertion] Seq.get v 0 = (42: Int32.t)} s1
       | s1 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_80 <- _bor ] [ &v <- _bor.final ] s2)
-      | s2 = deref_mut_Ghost_Seq_i32 {_80} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_79 <- _x ] s3)
+      | s2 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_80}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_79 <- _x ] s3)
       | s3 = MutBorrow.borrow_final <Seq.seq Int32.t> {_79.current} {MutBorrow.get_id _79}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_78 <- _bor ] [ &_79 <- { _79 with current = _bor.final } ] s4)
-      | s4 = pop_back_ghost_i32 {_78} (fun (_x: t_Option_i32) -> [ &pop1 <- _x ] s5)
+      | s4 = pop_back_ghost_i32 {Mode.into_ghost mode} {_78} (fun (_x: t_Option_i32) -> [ &pop1 <- _x ] s5)
       | s5 = -{resolve_refmut_Seq_i32 _79}- s6
       | s6 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_84 <- _bor ] [ &v <- _bor.final ] s7)
-      | s7 = deref_mut_Ghost_Seq_i32 {_84} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_83 <- _x ] s8)
+      | s7 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_84}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_83 <- _x ] s8)
       | s8 = MutBorrow.borrow_final <Seq.seq Int32.t> {_83.current} {MutBorrow.get_id _83}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_82 <- _bor ] [ &_83 <- { _83 with current = _bor.final } ] s9)
-      | s9 = pop_back_ghost_i32 {_82} (fun (_x: t_Option_i32) -> [ &pop2 <- _x ] s10)
+      | s9 = pop_back_ghost_i32 {Mode.into_ghost mode} {_82} (fun (_x: t_Option_i32) -> [ &pop2 <- _x ] s10)
       | s10 = -{resolve_refmut_Seq_i32 _83}- s11
       | s11 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_88 <- _bor ] [ &v <- _bor.final ] s12)
-      | s12 = deref_mut_Ghost_Seq_i32 {_88} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_87 <- _x ] s13)
+      | s12 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_88}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_87 <- _x ] s13)
       | s13 = MutBorrow.borrow_final <Seq.seq Int32.t> {_87.current} {MutBorrow.get_id _87}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_86 <- _bor ] [ &_87 <- { _87 with current = _bor.final } ] s14)
-      | s14 = pop_back_ghost_i32 {_86} (fun (_x: t_Option_i32) -> [ &pop3 <- _x ] s15)
+      | s14 = pop_back_ghost_i32 {Mode.into_ghost mode} {_86} (fun (_x: t_Option_i32) -> [ &pop3 <- _x ] s15)
       | s15 = -{resolve_refmut_Seq_i32 _87}- s16
       | s16 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_92 <- _bor ] [ &v <- _bor.final ] s17)
-      | s17 = deref_mut_Ghost_Seq_i32 {_92} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_91 <- _x ] s18)
+      | s17 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_92}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_91 <- _x ] s18)
       | s18 = MutBorrow.borrow_final <Seq.seq Int32.t> {_91.current} {MutBorrow.get_id _91}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_90 <- _bor ] [ &_91 <- { _91 with current = _bor.final } ] s19)
-      | s19 = pop_back_ghost_i32 {_90} (fun (_x: t_Option_i32) -> [ &pop4 <- _x ] s20)
+      | s19 = pop_back_ghost_i32 {Mode.into_ghost mode} {_90} (fun (_x: t_Option_i32) -> [ &pop4 <- _x ] s20)
       | s20 = -{resolve_refmut_Seq_i32 _91}- s21
       | s21 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_96 <- _bor ] [ &v <- _bor.final ] s22)
-      | s22 = deref_mut_Ghost_Seq_i32 {_96} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_95 <- _x ] s23)
+      | s22 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_96}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_95 <- _x ] s23)
       | s23 = MutBorrow.borrow_final <Seq.seq Int32.t> {_95.current} {MutBorrow.get_id _95}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_94 <- _bor ] [ &_95 <- { _95 with current = _bor.final } ] s24)
-      | s24 = pop_back_ghost_i32 {_94} (fun (_x: t_Option_i32) -> [ &pop5 <- _x ] s25)
+      | s24 = pop_back_ghost_i32 {Mode.into_ghost mode} {_94} (fun (_x: t_Option_i32) -> [ &pop5 <- _x ] s25)
       | s25 = -{resolve_refmut_Seq_i32 _95}- s26
       | s26 = {[@expl:assertion] pop1 = Some (30: Int32.t)} s27
       | s27 = {[@expl:assertion] pop2 = Some (10: Int32.t)} s28
       | s28 = {[@expl:assertion] pop3 = Some (42: Int32.t)} s29
       | s29 = {[@expl:assertion] pop4 = None} s30
       | s30 = {[@expl:assertion] pop5 = None} s31
-      | s31 = new_unit {_6} (fun (_x: ()) -> [ &_5 <- _x ] s32)
-      | s32 = new_i32 (fun (_x: Seq.seq Int32.t) -> [ &v'0 <- _x ] s33)
+      | s31 = new_unit {Mode.into_ghost mode} {_6} (fun (_x: ()) -> [ &_5 <- _x ] s32)
+      | s32 = new_i32 {mode} (fun (_x: Seq.seq Int32.t) -> [ &v'0 <- _x ] s33)
       | s33 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v'0}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_118 <- _bor ] [ &v'0 <- _bor.final ] s34)
-      | s34 = deref_mut_Ghost_Seq_i32 {_118} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_117 <- _x ] s35)
+      | s34 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_118}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_117 <- _x ] s35)
       | s35 = MutBorrow.borrow_final <Seq.seq Int32.t> {_117.current} {MutBorrow.get_id _117}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_116 <- _bor ] [ &_117 <- { _117 with current = _bor.final } ] s36)
-      | s36 = push_front_ghost_i32 {_116} {(1: Int32.t)} (fun (_x: ()) -> [ &_115 <- _x ] s37)
+      | s36 = push_front_ghost_i32 {Mode.into_ghost mode} {_116} {(1: Int32.t)} (fun (_x: ()) -> [ &_115 <- _x ] s37)
       | s37 = -{resolve_refmut_Seq_i32 _117}- s38
       | s38 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v'0}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_122 <- _bor ] [ &v'0 <- _bor.final ] s39)
-      | s39 = deref_mut_Ghost_Seq_i32 {_122} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_121 <- _x ] s40)
+      | s39 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_122}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_121 <- _x ] s40)
       | s40 = MutBorrow.borrow_final <Seq.seq Int32.t> {_121.current} {MutBorrow.get_id _121}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_120 <- _bor ] [ &_121 <- { _121 with current = _bor.final } ] s41)
-      | s41 = push_front_ghost_i32 {_120} {(2: Int32.t)} (fun (_x: ()) -> [ &_119 <- _x ] s42)
+      | s41 = push_front_ghost_i32 {Mode.into_ghost mode} {_120} {(2: Int32.t)} (fun (_x: ()) -> [ &_119 <- _x ] s42)
       | s42 = -{resolve_refmut_Seq_i32 _121}- s43
       | s43 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v'0}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_126 <- _bor ] [ &v'0 <- _bor.final ] s44)
-      | s44 = deref_mut_Ghost_Seq_i32 {_126} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_125 <- _x ] s45)
+      | s44 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_126}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_125 <- _x ] s45)
       | s45 = MutBorrow.borrow_final <Seq.seq Int32.t> {_125.current} {MutBorrow.get_id _125}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_124 <- _bor ] [ &_125 <- { _125 with current = _bor.final } ] s46)
-      | s46 = push_front_ghost_i32 {_124} {(3: Int32.t)} (fun (_x: ()) -> [ &_123 <- _x ] s47)
+      | s46 = push_front_ghost_i32 {Mode.into_ghost mode} {_124} {(3: Int32.t)} (fun (_x: ()) -> [ &_123 <- _x ] s47)
       | s47 = -{resolve_refmut_Seq_i32 _125}- s48
       | s48 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v'0}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_130 <- _bor ] [ &v'0 <- _bor.final ] s49)
-      | s49 = deref_mut_Ghost_Seq_i32 {_130} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_129 <- _x ] s50)
+      | s49 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_130}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_129 <- _x ] s50)
       | s50 = MutBorrow.borrow_final <Seq.seq Int32.t> {_129.current} {MutBorrow.get_id _129}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_128 <- _bor ] [ &_129 <- { _129 with current = _bor.final } ] s51)
-      | s51 = pop_front_ghost_i32 {_128} (fun (_x: t_Option_i32) -> [ &pop1'0 <- _x ] s52)
+      | s51 = pop_front_ghost_i32 {Mode.into_ghost mode} {_128} (fun (_x: t_Option_i32) -> [ &pop1'0 <- _x ] s52)
       | s52 = -{resolve_refmut_Seq_i32 _129}- s53
       | s53 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v'0}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_134 <- _bor ] [ &v'0 <- _bor.final ] s54)
-      | s54 = deref_mut_Ghost_Seq_i32 {_134} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_133 <- _x ] s55)
+      | s54 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_134}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_133 <- _x ] s55)
       | s55 = MutBorrow.borrow_final <Seq.seq Int32.t> {_133.current} {MutBorrow.get_id _133}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_132 <- _bor ] [ &_133 <- { _133 with current = _bor.final } ] s56)
-      | s56 = pop_front_ghost_i32 {_132} (fun (_x: t_Option_i32) -> [ &pop2'0 <- _x ] s57)
+      | s56 = pop_front_ghost_i32 {Mode.into_ghost mode} {_132} (fun (_x: t_Option_i32) -> [ &pop2'0 <- _x ] s57)
       | s57 = -{resolve_refmut_Seq_i32 _133}- s58
       | s58 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v'0}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_138 <- _bor ] [ &v'0 <- _bor.final ] s59)
-      | s59 = deref_mut_Ghost_Seq_i32 {_138} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_137 <- _x ] s60)
+      | s59 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_138}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_137 <- _x ] s60)
       | s60 = MutBorrow.borrow_final <Seq.seq Int32.t> {_137.current} {MutBorrow.get_id _137}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_136 <- _bor ] [ &_137 <- { _137 with current = _bor.final } ] s61)
-      | s61 = pop_front_ghost_i32 {_136} (fun (_x: t_Option_i32) -> [ &pop3'0 <- _x ] s62)
+      | s61 = pop_front_ghost_i32 {Mode.into_ghost mode} {_136} (fun (_x: t_Option_i32) -> [ &pop3'0 <- _x ] s62)
       | s62 = -{resolve_refmut_Seq_i32 _137}- s63
       | s63 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v'0}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_142 <- _bor ] [ &v'0 <- _bor.final ] s64)
-      | s64 = deref_mut_Ghost_Seq_i32 {_142} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_141 <- _x ] s65)
+      | s64 = deref_mut_Ghost_Seq_i32 {Mode.into_ghost mode} {_142}
+          (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_141 <- _x ] s65)
       | s65 = MutBorrow.borrow_final <Seq.seq Int32.t> {_141.current} {MutBorrow.get_id _141}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) ->
             [ &_140 <- _bor ] [ &_141 <- { _141 with current = _bor.final } ] s66)
-      | s66 = pop_front_ghost_i32 {_140} (fun (_x: t_Option_i32) -> [ &pop4'0 <- _x ] s67)
+      | s66 = pop_front_ghost_i32 {Mode.into_ghost mode} {_140} (fun (_x: t_Option_i32) -> [ &pop4'0 <- _x ] s67)
       | s67 = -{resolve_refmut_Seq_i32 _141}- s68
       | s68 = {[@expl:assertion] pop1'0 = Some (3: Int32.t)} s69
       | s69 = {[@expl:assertion] pop2'0 = Some (2: Int32.t)} s70
       | s70 = {[@expl:assertion] pop3'0 = Some (1: Int32.t)} s71
       | s71 = {[@expl:assertion] pop4'0 = None} s72
-      | s72 = new_unit {_114} (fun (_x: ()) -> [ &_113 <- _x ] s73)
+      | s72 = new_unit {Mode.into_ghost mode} {_114} (fun (_x: ()) -> [ &_113 <- _x ] s73)
       | s73 = return {_ret} ]
-    | bb5 = {false} any ]
+    | bb5 = s0
+      [ s0 = panic {Mode.into_ghost mode} {"assertion failed: v.is_empty_ghost()"} (fun (_x: ()) -> [ &_12 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & v: Seq.seq Int32.t = Any.any_l ()
     | & _5: () = Any.any_l ()
     | & _6: () = Any.any_l ()
     | & _8: bool = Any.any_l ()
     | & _10: Seq.seq Int32.t = Any.any_l ()
+    | & _12: () = Any.any_l ()
     | & _13: () = Any.any_l ()
     | & _14: MutBorrow.t (Seq.seq Int32.t) = Any.any_l ()
     | & _15: MutBorrow.t (Seq.seq Int32.t) = Any.any_l ()
     | & _16: MutBorrow.t (Seq.seq Int32.t) = Any.any_l ()
     | & _18: bool = Any.any_l ()
     | & _20: Seq.seq Int32.t = Any.any_l ()
+    | & _22: () = Any.any_l ()
     | & _29: () = Any.any_l ()
     | & _30: MutBorrow.t (Seq.seq Int32.t) = Any.any_l ()
     | & _31: MutBorrow.t (Seq.seq Int32.t) = Any.any_l ()

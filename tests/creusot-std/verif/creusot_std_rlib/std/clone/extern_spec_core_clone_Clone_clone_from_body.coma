@@ -2,6 +2,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.MutBorrow
 use creusot.prelude.Any
 
@@ -17,25 +18,27 @@ predicate inv_ref_Self_ [@inline:trivial] (_1: t_Self_) = invariant_ref_Self_ _1
 
 meta "rewrite_def" predicate inv_ref_Self_
 
-predicate precondition_clone (self: ()) (args: t_Self_)
+predicate precondition_clone (self: ()) (mode: Mode.t) (args: t_Self_)
 
-axiom precondition_fndef: forall args: t_Self_ [precondition_clone () args]. (let self_ = args in inv_ref_Self_ self_)
-    -> precondition_clone () args
+axiom precondition_fndef:
+  forall mode: Mode.t. forall args: t_Self_ [precondition_clone () mode args]. (let self_ = args in inv_ref_Self_ self_)
+      -> precondition_clone () mode args
 
-predicate postcondition_clone (self: ()) (args: t_Self_) (result: t_Self_)
+predicate postcondition_clone (self: ()) (mode: Mode.t) (args: t_Self_) (result: t_Self_)
 
 axiom postcondition_fndef:
-  forall args: t_Self_, res: t_Self_ [postcondition_clone () args res]. postcondition_clone () args res
+  forall mode: Mode.t, args: t_Self_, res: t_Self_ [postcondition_clone () mode args res]. postcondition_clone () mode args res
     -> (let self_ = args in inv_Self_ res)
 
-predicate postcondition_once_clone (self: ()) (args: t_Self_) (result: t_Self_) = postcondition_clone self args result
+predicate postcondition_once_clone (self: ()) (mode: Mode.t) (args: t_Self_) (result: t_Self_) =
+  postcondition_clone self mode args result
 
 meta "rewrite_def" predicate postcondition_once_clone
 
-let clone_Self_ (self_: t_Self_) (return (x: t_Self_)) =
-{[@stop_split] [@expl:clone requires] precondition_clone () self_}
+let clone_Self_ (mode: Mode.t) (self_: t_Self_) (return (x: t_Self_)) =
+{[@stop_split] [@expl:clone requires] precondition_clone () mode self_}
   any
-  [ return (result: t_Self_) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+  [ return (result: t_Self_) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () mode self_ result}
     (! return {result}) ]
 
 predicate resolve_Self_ (_1: t_Self_)
@@ -57,12 +60,13 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_core_clone_Clone_clone_from_body_Self_ (self_: MutBorrow.t t_Self_) (source: t_Self_) (return (x: ())) =
+let extern_spec_core_clone_Clone_clone_from_body_Self_ (mode: Mode.t) (self_: MutBorrow.t t_Self_) (source: t_Self_)
+  (return (x: ())) =
 {[@stop_split] [@expl:extern_spec_core_clone_Clone_clone_from_body_Self_ requires] ([@stop_split] [@expl:extern_spec_core_clone_Clone_clone_from_body 'self_' type invariant] inv_refmut_Self_ self_)
   /\ ([@stop_split] [@expl:extern_spec_core_clone_Clone_clone_from_body 'source' type invariant] inv_ref_Self_ source)}
   (! bb0
   [ bb0 = s0
-    [ s0 = clone_Self_ {source} (fun (_x: t_Self_) -> [ &_8 <- _x ] s1)
+    [ s0 = clone_Self_ {mode} {source} (fun (_x: t_Self_) -> [ &_8 <- _x ] s1)
     | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_Self_ self_.current} any) ]
     | s2 = -{resolve_Self_ self_.current}- s3
     | s3 = [ &self_ <- { self_ with current = _8 } ] s4
@@ -75,5 +79,5 @@ let extern_spec_core_clone_Clone_clone_from_body_Self_ (self_: MutBorrow.t t_Sel
   | & _8: t_Self_ = Any.any_l () ])
   [ return (result: ()) ->
   {[@stop_split] [@expl:extern_spec_core_clone_Clone_clone_from_body_Self_ ensures] ([@stop_split] [@expl:extern_spec_core_clone_Clone_clone_from_body ensures #0] resolve_Self_ self_.current)
-    /\ ([@stop_split] [@expl:extern_spec_core_clone_Clone_clone_from_body ensures #1] postcondition_clone () source self_.final)}
+    /\ ([@stop_split] [@expl:extern_spec_core_clone_Clone_clone_from_body ensures #1] postcondition_clone () mode source self_.final)}
     (! return {result}) ]

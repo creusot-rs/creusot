@@ -4,6 +4,7 @@ type t_Namespace = Other namespace_other
 
 use seq.Seq
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use map.Map
 use int.Int
 
@@ -17,17 +18,17 @@ type t_Item
 
 type tup2_Seq_refmut_F_Seq_Item = { f0: Seq.seq (MutBorrow.t t_F); f1: Seq.seq t_Item }
 
-predicate postcondition_once_F (self: t_F) (args: t_Item) (result: t_B)
+predicate postcondition_once_F (self: t_F) (mode: Mode.t) (args: t_Item) (result: t_B)
 
 predicate resolve_F (_1: t_F)
 
-predicate postcondition_mut_F (self: t_F) (args: t_Item) (result_state: t_F) (result: t_B)
+predicate postcondition_mut_F (self: t_F) (mode: Mode.t) (args: t_Item) (result_state: t_F) (result: t_B)
 
-function fn_mut_once_F (self: t_F) (args: t_Item) (res: t_B) : ()
+function fn_mut_once_F (self: t_F) (mode: Mode.t) (args: t_Item) (res: t_B) : ()
 
 axiom fn_mut_once_F_spec:
-  forall self: t_F, args: t_Item, res: t_B [postcondition_once_F self args res]. postcondition_once_F self args res
-    = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+  forall self: t_F, mode: Mode.t, args: t_Item, res: t_B [postcondition_once_F self mode args res]. postcondition_once_F self mode args res
+    = (exists res_state: t_F. postcondition_mut_F self mode args res_state res /\ resolve_F res_state)
 
 predicate hist_inv_F (self: t_F) (result_state: t_F)
 
@@ -41,10 +42,10 @@ function hist_inv_refl_F (self: t_F) : ()
 
 axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
 
-function postcondition_mut_hist_inv_F (self: t_F) (args: t_Item) (res_state: t_F) (res: t_B) : ()
+function postcondition_mut_hist_inv_F (self: t_F) (mode: Mode.t) (args: t_Item) (res_state: t_F) (res: t_B) : ()
 
 axiom postcondition_mut_hist_inv_F_spec:
-  forall self: t_F, args: t_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+  forall self: t_F, mode: Mode.t, args: t_Item, res_state: t_F, res: t_B [postcondition_mut_F self mode args res_state res | hist_inv_F self res_state]. postcondition_mut_F self mode args res_state res
     -> hist_inv_F self res_state
 
 function func_Map_I_F (self: t_Map_I_F) : t_F
@@ -78,7 +79,7 @@ predicate produces_Map_I_F [@inline:trivial] (self: t_Map_I_F) (visited: Seq.seq
         )
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited
         -> hist_inv_F (func_Map_I_F self) (Seq.get fs i).current
-        /\ postcondition_mut_F (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))
+        /\ (forall mode: Mode.t. postcondition_mut_F (Seq.get fs i).current mode (Seq.get s i) (Seq.get fs i).final (Seq.get visited i)))))
 
 meta "rewrite_def" predicate produces_Map_I_F
 
@@ -130,7 +131,7 @@ goal vc_produces_instantiate_existential_I: produces_Map_I_F this visited succ
         )
       /\ (forall i: int. 0 <= i /\ i < Seq.length visited
         -> hist_inv_F (func_Map_I_F this) (Seq.get fs i).current
-        /\ postcondition_mut_F (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))) x)
+        /\ (forall mode: Mode.t. postcondition_mut_F (Seq.get fs i).current mode (Seq.get s i) (Seq.get fs i).final (Seq.get visited i)))) x)
   /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_tup2_Seq_refmut_F_Seq_Item_bool (fun (__0: tup2_Seq_refmut_F_Seq_Item) -> let {f0 = fs; f1 = s} = __0 in Seq.length fs
       = Seq.length visited
     /\ Seq.length s = Seq.length visited
@@ -143,7 +144,7 @@ goal vc_produces_instantiate_existential_I: produces_Map_I_F this visited succ
       )
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> hist_inv_F (func_Map_I_F this) (Seq.get fs i).current
-      /\ postcondition_mut_F (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))) (such_that_tup2_Seq_refmut_F_Seq_Item (fun (__0: tup2_Seq_refmut_F_Seq_Item) -> let {f0 = fs; f1 = s} = __0 in Seq.length fs
+      /\ (forall mode: Mode.t. postcondition_mut_F (Seq.get fs i).current mode (Seq.get s i) (Seq.get fs i).final (Seq.get visited i)))) (such_that_tup2_Seq_refmut_F_Seq_Item (fun (__0: tup2_Seq_refmut_F_Seq_Item) -> let {f0 = fs; f1 = s} = __0 in Seq.length fs
       = Seq.length visited
     /\ Seq.length s = Seq.length visited
     /\ produces_I (iter_Map_I_F this) s (iter_Map_I_F succ)
@@ -155,7 +156,7 @@ goal vc_produces_instantiate_existential_I: produces_Map_I_F this visited succ
       )
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> hist_inv_F (func_Map_I_F this) (Seq.get fs i).current
-      /\ postcondition_mut_F (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i)))))
+      /\ (forall mode: Mode.t. postcondition_mut_F (Seq.get fs i).current mode (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))))))
   -> (let result = such_that_tup2_Seq_refmut_F_Seq_Item (fun (__0: tup2_Seq_refmut_F_Seq_Item) -> let {f0 = fs; f1 = s} = __0 in Seq.length fs
     = Seq.length visited
   /\ Seq.length s = Seq.length visited
@@ -168,7 +169,7 @@ goal vc_produces_instantiate_existential_I: produces_Map_I_F this visited succ
     )
   /\ (forall i: int. 0 <= i /\ i < Seq.length visited
     -> hist_inv_F (func_Map_I_F this) (Seq.get fs i).current
-    /\ postcondition_mut_F (Seq.get fs i).current (Seq.get s i) (Seq.get fs i).final (Seq.get visited i))) in [@stop_split] [@expl:produces_instantiate_existential ensures] Seq.length result.f0
+    /\ (forall mode: Mode.t. postcondition_mut_F (Seq.get fs i).current mode (Seq.get s i) (Seq.get fs i).final (Seq.get visited i)))) in [@stop_split] [@expl:produces_instantiate_existential ensures] Seq.length result.f0
     = Seq.length visited
   /\ Seq.length result.f1 = Seq.length visited
   /\ produces_I (iter_Map_I_F this) result.f1 (iter_Map_I_F succ)
@@ -182,4 +183,4 @@ goal vc_produces_instantiate_existential_I: produces_Map_I_F this visited succ
     )
   /\ (forall i: int. 0 <= i /\ i < Seq.length visited
     -> hist_inv_F (func_Map_I_F this) (Seq.get result.f0 i).current
-    /\ postcondition_mut_F (Seq.get result.f0 i).current (Seq.get result.f1 i) (Seq.get result.f0 i).final (Seq.get visited i))))
+    /\ (forall mode: Mode.t. postcondition_mut_F (Seq.get result.f0 i).current mode (Seq.get result.f1 i) (Seq.get result.f0 i).final (Seq.get visited i)))))

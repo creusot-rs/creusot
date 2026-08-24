@@ -1,5 +1,6 @@
 module M_zst_pointers_may_be_equal
   use creusot.slice.Slice64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
@@ -22,7 +23,7 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" function view_Box_slice_unit_Global
   
-  let into_vec_unit (self_: Slice64.slice ()) (return (x: t_Vec_unit_Global)) = any
+  let into_vec_unit (mode: Mode.t) (self_: Slice64.slice ()) (return (x: t_Vec_unit_Global)) = any
     [ return (result: t_Vec_unit_Global) -> {[@stop_split] [@expl:into_vec ensures] view_Vec_unit_Global result
       = view_Box_slice_unit_Global self_}
       (! return {result}) ]
@@ -41,7 +42,8 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate resolve_elswhere_usize
   
-  let index_mut_Vec_unit_Global (self_: MutBorrow.t t_Vec_unit_Global) (ix: UInt64.t) (return (x: MutBorrow.t ())) =
+  let index_mut_Vec_unit_Global (mode: Mode.t) (self_: MutBorrow.t t_Vec_unit_Global) (ix: UInt64.t)
+    (return (x: MutBorrow.t ())) =
   {[@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_unit_Global self_.current)}
     any
     [ return (result: MutBorrow.t ()) ->
@@ -107,7 +109,7 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate inv_tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit
   
-  let from_mut_unit (r: MutBorrow.t ()) (return (x: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit)) = any
+  let from_mut_unit (mode: Mode.t) (r: MutBorrow.t ()) (return (x: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit)) = any
     [ return (result: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit) ->
     {[@stop_split] [@expl:from_mut_unit ensures] ([@stop_split] [@expl:from_mut result type invariant] inv_tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit result)
       /\ ([@stop_split] [@expl:from_mut ensures #0] ward_ptr_unit result.f1.current = result.f0)
@@ -119,7 +121,7 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate resolve_refmut_unit
   
-  let index_Vec_unit_Global (self_: t_Vec_unit_Global) (ix: UInt64.t) (return (x: ())) =
+  let index_Vec_unit_Global (mode: Mode.t) (self_: t_Vec_unit_Global) (ix: UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_unit_Global self_)}
     any
     [ return (result: ()) ->
@@ -149,14 +151,15 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate inv_tup2_ptr_unit_Ghost_ref_Perm_ptr_unit
   
-  let from_ref_unit (r: ()) (return (x: tup2_ptr_unit_Ghost_ref_Perm_ptr_unit)) = any
+  let from_ref_unit (mode: Mode.t) (r: ()) (return (x: tup2_ptr_unit_Ghost_ref_Perm_ptr_unit)) = any
     [ return (result: tup2_ptr_unit_Ghost_ref_Perm_ptr_unit) ->
     {[@stop_split] [@expl:from_ref_unit ensures] ([@stop_split] [@expl:from_ref result type invariant] inv_tup2_ptr_unit_Ghost_ref_Perm_ptr_unit result)
       /\ ([@stop_split] [@expl:from_ref ensures #0] ward_ptr_unit result.f1'0 = result.f0'0)
       /\ ([@stop_split] [@expl:from_ref ensures #1] val_ptr_unit result.f1'0 = r)}
       (! return {result}) ]
   
-  let into_inner_refmut_Perm_ptr_unit (self: MutBorrow.t t_Perm_ptr_unit) (return (x: MutBorrow.t t_Perm_ptr_unit)) =
+  let into_inner_refmut_Perm_ptr_unit (mode: Mode.t) (self: MutBorrow.t t_Perm_ptr_unit)
+    (return (x: MutBorrow.t t_Perm_ptr_unit)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_refmut_Perm_ptr_unit self}
     any
     [ return (result: MutBorrow.t t_Perm_ptr_unit) ->
@@ -164,7 +167,7 @@ module M_zst_pointers_may_be_equal
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  let into_inner_ref_Perm_ptr_unit (self: t_Perm_ptr_unit) (return (x: t_Perm_ptr_unit)) =
+  let into_inner_ref_Perm_ptr_unit (mode: Mode.t) (self: t_Perm_ptr_unit) (return (x: t_Perm_ptr_unit)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_ref_Perm_ptr_unit self}
     any
     [ return (result: t_Perm_ptr_unit) ->
@@ -190,7 +193,8 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate is_disjoint_ptr_unit
   
-  let disjoint_lemma_ptr_unit (self: MutBorrow.t t_Perm_ptr_unit) (other: t_Perm_ptr_unit) (return (x: ())) =
+  let disjoint_lemma_ptr_unit (mode: Mode.t) (self: MutBorrow.t t_Perm_ptr_unit) (other: t_Perm_ptr_unit)
+    (return (x: ())) =
   {[@stop_split] [@expl:disjoint_lemma_ptr_unit requires] ([@stop_split] [@expl:disjoint_lemma 'self' type invariant] inv_refmut_Perm_ptr_unit self)
     /\ ([@stop_split] [@expl:disjoint_lemma 'other' type invariant] inv_ref_Perm_ptr_unit other)}
     any
@@ -203,53 +207,55 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate resolve_refmut_Perm_ptr_unit
   
-  let new_unit (x: ()) (return (x'0: ())) = any
+  let new_unit (mode: Mode.t) (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let zst_pointers_may_be_equal (return (x: ())) = (! bb0
+  let zst_pointers_may_be_equal (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = any
         [ any_ (__arr_temp: Slice64.array ()) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = _5
           /\ Seq.length __arr_temp.Slice64.elts = 1}-
           [ &_4 <- __arr_temp ] s1) ]
-      | s1 = into_vec_unit {_4} (fun (_x: t_Vec_unit_Global) -> [ &v0 <- _x ] s2)
+      | s1 = into_vec_unit {mode} {_4} (fun (_x: t_Vec_unit_Global) -> [ &v0 <- _x ] s2)
       | s2 = any
         [ any_ (__arr_temp: Slice64.array ()) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = _10
           /\ Seq.length __arr_temp.Slice64.elts = 1}-
           [ &_9 <- __arr_temp ] s3) ]
-      | s3 = into_vec_unit {_9} (fun (_x: t_Vec_unit_Global) -> [ &v1 <- _x ] s4)
+      | s3 = into_vec_unit {mode} {_9} (fun (_x: t_Vec_unit_Global) -> [ &v1 <- _x ] s4)
       | s4 = MutBorrow.borrow_mut <t_Vec_unit_Global> {v0}
           (fun (_bor: MutBorrow.t t_Vec_unit_Global) -> [ &_17 <- _bor ] [ &v0 <- _bor.final ] s5)
-      | s5 = index_mut_Vec_unit_Global {_17} {(0: UInt64.t)} (fun (_x: MutBorrow.t ()) -> [ &_16 <- _x ] s6)
+      | s5 = index_mut_Vec_unit_Global {mode} {_17} {(0: UInt64.t)} (fun (_x: MutBorrow.t ()) -> [ &_16 <- _x ] s6)
       | s6 = MutBorrow.borrow_final <()> {_16.current} {MutBorrow.get_id _16}
           (fun (_bor: MutBorrow.t ()) -> [ &_15 <- _bor ] [ &_16 <- { _16 with current = _bor.final } ] s7)
       | s7 = MutBorrow.borrow_final <()> {_15.current} {MutBorrow.get_id _15}
           (fun (_bor: MutBorrow.t ()) -> [ &_14 <- _bor ] [ &_15 <- { _15 with current = _bor.final } ] s8)
-      | s8 = from_mut_unit {_14} (fun (_x: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit) -> [ &_13 <- _x ] s9)
+      | s8 = from_mut_unit {mode} {_14} (fun (_x: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit) -> [ &_13 <- _x ] s9)
       | s9 = [ &p1 <- _13.f0 ] s10
       | s10 = [ &own1 <- _13.f1 ] s11
       | s11 = -{resolve_refmut_unit _16}- s12
       | s12 = -{resolve_refmut_unit _15}- s13
-      | s13 = index_Vec_unit_Global {v1} {(0: UInt64.t)} (fun (_x: ()) -> [ &_23 <- _x ] s14)
+      | s13 = index_Vec_unit_Global {mode} {v1} {(0: UInt64.t)} (fun (_x: ()) -> [ &_23 <- _x ] s14)
       | s14 = [ &_22 <- _23 ] s15
-      | s15 = from_ref_unit {_22} (fun (_x: tup2_ptr_unit_Ghost_ref_Perm_ptr_unit) -> [ &_20 <- _x ] s16)
+      | s15 = from_ref_unit {mode} {_22} (fun (_x: tup2_ptr_unit_Ghost_ref_Perm_ptr_unit) -> [ &_20 <- _x ] s16)
       | s16 = [ &p2 <- _20.f0'0 ] s17
       | s17 = [ &own2 <- _20.f1'0 ] s18
-      | s18 = into_inner_refmut_Perm_ptr_unit {own1} (fun (_x: MutBorrow.t t_Perm_ptr_unit) -> [ &_28 <- _x ] s19)
-      | s19 = into_inner_ref_Perm_ptr_unit {own2} (fun (_x: t_Perm_ptr_unit) -> [ &_31 <- _x ] s20)
+      | s18 = into_inner_refmut_Perm_ptr_unit {Mode.into_ghost mode} {own1}
+          (fun (_x: MutBorrow.t t_Perm_ptr_unit) -> [ &_28 <- _x ] s19)
+      | s19 = into_inner_ref_Perm_ptr_unit {Mode.into_ghost mode} {own2}
+          (fun (_x: t_Perm_ptr_unit) -> [ &_31 <- _x ] s20)
       | s20 = MutBorrow.borrow_final <t_Perm_ptr_unit> {_28.current} {MutBorrow.get_id _28}
           (fun (_bor: MutBorrow.t t_Perm_ptr_unit) ->
             [ &_27 <- _bor ] -{inv_Perm_ptr_unit _bor.final}-
             [ &_28 <- { _28 with current = _bor.final } ] s21)
         [ _ck -> (! {[@expl:type invariant] inv_Perm_ptr_unit _28.current} any) ]
-      | s21 = disjoint_lemma_ptr_unit {_27} {_31} (fun (_x: ()) -> [ &_26 <- _x ] s22)
+      | s21 = disjoint_lemma_ptr_unit {Mode.into_ghost mode} {_27} {_31} (fun (_x: ()) -> [ &_26 <- _x ] s22)
       | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_unit _28} any) ]
       | s23 = -{resolve_refmut_Perm_ptr_unit _28}- s24
-      | s24 = new_unit {_26} (fun (_x: ()) -> [ &_25 <- _x ] s25)
+      | s24 = new_unit {Mode.into_ghost mode} {_26} (fun (_x: ()) -> [ &_25 <- _x ] s25)
       | s25 = {[@expl:assertion] Ptr.addr_logic_u64 p1 <> Ptr.addr_logic_u64 p2} s26
       | s26 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

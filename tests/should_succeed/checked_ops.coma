@@ -1,5 +1,6 @@
 module M_test_i8_add_example
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -13,7 +14,7 @@ module M_test_i8_add_example
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
@@ -22,13 +23,14 @@ module M_test_i8_add_example
         -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs)}
       (! return {result}) ]
   
-  let unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_
+    <> None}
     any [ return (result: Int8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
-  let is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
+  let is_none_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
       (! return {result}) ]
   
@@ -36,7 +38,7 @@ module M_test_i8_add_example
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let saturating_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
     {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] ge_log_Int (Int8.to_int self_
             + Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -50,7 +52,7 @@ module M_test_i8_add_example
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
-  let overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
+  let overflowing_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
     {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (Int8.to_int self_
             + Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -63,109 +65,155 @@ module M_test_i8_add_example
       \/ gt_log_Int (Int8.to_int self_ + Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_add_example (return (x: ())) = (! bb0
+  let test_i8_add_example (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = checked_add {(5: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_4 <- _x ] s1)
-      | s1 = unwrap_i8 {_4} (fun (_x: Int8.t) -> [ &_3 <- _x ] s2)
+      [ s0 = checked_add {mode} {(5: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_4 <- _x ] s1)
+      | s1 = unwrap_i8 {mode} {_4} (fun (_x: Int8.t) -> [ &_3 <- _x ] s2)
       | s2 = [ &_2 <- _3 = (15: Int8.t) ] s3
       | s3 = any [ br0 -> {_2 = false} (! bb4) | br1 -> {_2} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = checked_add {(120: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_9 <- _x ] s1)
-      | s1 = is_none_i8 {_9} (fun (_x: bool) -> [ &_7 <- _x ] s2)
+      [ s0 = checked_add {mode} {(120: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_9 <- _x ] s1)
+      | s1 = is_none_i8 {mode} {_9} (fun (_x: bool) -> [ &_7 <- _x ] s2)
       | s2 = any [ br0 -> {_7 = false} (! bb8) | br1 -> {_7} (! bb7) ] ]
     | bb7 = s0
-      [ s0 = checked_add {(-120: Int8.t)} {(-10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_14 <- _x ] s1)
-      | s1 = is_none_i8 {_14} (fun (_x: bool) -> [ &_12 <- _x ] s2)
+      [ s0 = checked_add {mode} {(-120: Int8.t)} {(-10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_14 <- _x ] s1)
+      | s1 = is_none_i8 {mode} {_14} (fun (_x: bool) -> [ &_12 <- _x ] s2)
       | s2 = any [ br0 -> {_12 = false} (! bb12) | br1 -> {_12} (! bb11) ] ]
     | bb11 = s0
-      [ s0 = wrapping_add {(5: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_18 <- _x ] s1)
+      [ s0 = wrapping_add {mode} {(5: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_18 <- _x ] s1)
       | s1 = [ &_17 <- _18 = (15: Int8.t) ] s2
       | s2 = any [ br0 -> {_17 = false} (! bb15) | br1 -> {_17} (! bb14) ] ]
     | bb14 = s0
-      [ s0 = wrapping_add {(120: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_22 <- _x ] s1)
+      [ s0 = wrapping_add {mode} {(120: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_22 <- _x ] s1)
       | s1 = [ &_21 <- _22 = (-126: Int8.t) ] s2
       | s2 = any [ br0 -> {_21 = false} (! bb18) | br1 -> {_21} (! bb17) ] ]
     | bb17 = s0
-      [ s0 = wrapping_add {(-120: Int8.t)} {(-10: Int8.t)} (fun (_x: Int8.t) -> [ &_26 <- _x ] s1)
+      [ s0 = wrapping_add {mode} {(-120: Int8.t)} {(-10: Int8.t)} (fun (_x: Int8.t) -> [ &_26 <- _x ] s1)
       | s1 = [ &_25 <- _26 = (126: Int8.t) ] s2
       | s2 = any [ br0 -> {_25 = false} (! bb21) | br1 -> {_25} (! bb20) ] ]
     | bb20 = s0
-      [ s0 = saturating_add {(5: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_30 <- _x ] s1)
+      [ s0 = saturating_add {mode} {(5: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_30 <- _x ] s1)
       | s1 = [ &_29 <- _30 = (15: Int8.t) ] s2
       | s2 = any [ br0 -> {_29 = false} (! bb24) | br1 -> {_29} (! bb23) ] ]
     | bb23 = s0
-      [ s0 = saturating_add {(120: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_34 <- _x ] s1)
+      [ s0 = saturating_add {mode} {(120: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_34 <- _x ] s1)
       | s1 = [ &_33 <- _34 = (127: Int8.t) ] s2
       | s2 = any [ br0 -> {_33 = false} (! bb27) | br1 -> {_33} (! bb26) ] ]
     | bb26 = s0
-      [ s0 = saturating_add {(-120: Int8.t)} {(-10: Int8.t)} (fun (_x: Int8.t) -> [ &_38 <- _x ] s1)
+      [ s0 = saturating_add {mode} {(-120: Int8.t)} {(-10: Int8.t)} (fun (_x: Int8.t) -> [ &_38 <- _x ] s1)
       | s1 = [ &_37 <- _38 = (-128: Int8.t) ] s2
       | s2 = any [ br0 -> {_37 = false} (! bb30) | br1 -> {_37} (! bb29) ] ]
     | bb29 = s0
-      [ s0 = overflowing_add {(5: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_add {mode} {(5: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
       | s1 = [ &_42 <- res.f0 = (15: Int8.t) ] s2
       | s2 = any [ br0 -> {_42 = false} (! bb36) | br1 -> {_42} (! bb32) ] ]
     | bb32 = s0
       [ s0 = [ &_44 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_44 = false} (! bb36) | br1 -> {_44} (! bb33) ] ]
     | bb33 = s0
-      [ s0 = overflowing_add {(120: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'0 <- _x ] s1)
+      [ s0 = overflowing_add {mode} {(120: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'0 <- _x ] s1)
       | s1 = [ &_49 <- res'0.f0 = (-126: Int8.t) ] s2
       | s2 = any [ br0 -> {_49 = false} (! bb42) | br1 -> {_49} (! bb38) ] ]
     | bb38 = s0 [ s0 = [ &_51 <- res'0.f1 ] s1 | s1 = any [ br0 -> {_51 = false} (! bb42) | br1 -> {_51} (! bb39) ] ]
     | bb39 = s0
-      [ s0 = overflowing_add {(-120: Int8.t)} {(-10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'1 <- _x ] s1)
+      [ s0 = overflowing_add {mode} {(-120: Int8.t)} {(-10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'1 <- _x ] s1)
       | s1 = [ &_56 <- res'1.f0 = (126: Int8.t) ] s2
       | s2 = any [ br0 -> {_56 = false} (! bb48) | br1 -> {_56} (! bb44) ] ]
     | bb44 = s0 [ s0 = [ &_58 <- res'1.f1 ] s1 | s1 = any [ br0 -> {_58 = false} (! bb48) | br1 -> {_58} (! bb45) ] ]
     | bb45 = return {_ret}
-    | bb48 = {false} any
-    | bb42 = {false} any
-    | bb36 = {false} any
-    | bb30 = {false} any
-    | bb27 = {false} any
-    | bb24 = {false} any
-    | bb21 = {false} any
-    | bb18 = {false} any
-    | bb15 = {false} any
-    | bb12 = {false} any
-    | bb8 = {false} any
-    | bb4 = {false} any ]
+    | bb48 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 126 && res.1 == true"} (fun (_x: ()) -> [ &_60 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb42 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == -126 && res.1 == true"} (fun (_x: ()) -> [ &_53 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb36 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 15 && res.1 == false"} (fun (_x: ()) -> [ &_46 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb30 = s0
+      [ s0 = panic {mode} {"assertion failed: (-120i8).saturating_add(-10) == -128"} (fun (_x: ()) -> [ &_39 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb27 = s0
+      [ s0 = panic {mode} {"assertion failed: 120i8.saturating_add(10) == 127"} (fun (_x: ()) -> [ &_35 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb24 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.saturating_add(10) == 15"} (fun (_x: ()) -> [ &_31 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb21 = s0
+      [ s0 = panic {mode} {"assertion failed: (-120i8).wrapping_add(-10) == 126"} (fun (_x: ()) -> [ &_27 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb18 = s0
+      [ s0 = panic {mode} {"assertion failed: 120i8.wrapping_add(10) == -126"} (fun (_x: ()) -> [ &_23 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb15 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.wrapping_add(10) == 15"} (fun (_x: ()) -> [ &_19 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb12 = s0
+      [ s0 = panic {mode} {"assertion failed: (-120i8).checked_add(-10).is_none()"} (fun (_x: ()) -> [ &_15 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb8 = s0
+      [ s0 = panic {mode} {"assertion failed: 120i8.checked_add(10).is_none()"} (fun (_x: ()) -> [ &_10 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.checked_add(10).unwrap() == 15"} (fun (_x: ()) -> [ &_5 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & _2: bool = Any.any_l ()
     | & _3: Int8.t = Any.any_l ()
     | & _4: t_Option_i8 = Any.any_l ()
+    | & _5: () = Any.any_l ()
     | & _7: bool = Any.any_l ()
     | & _9: t_Option_i8 = Any.any_l ()
+    | & _10: () = Any.any_l ()
     | & _12: bool = Any.any_l ()
     | & _14: t_Option_i8 = Any.any_l ()
+    | & _15: () = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & _18: Int8.t = Any.any_l ()
+    | & _19: () = Any.any_l ()
     | & _21: bool = Any.any_l ()
     | & _22: Int8.t = Any.any_l ()
+    | & _23: () = Any.any_l ()
     | & _25: bool = Any.any_l ()
     | & _26: Int8.t = Any.any_l ()
+    | & _27: () = Any.any_l ()
     | & _29: bool = Any.any_l ()
     | & _30: Int8.t = Any.any_l ()
+    | & _31: () = Any.any_l ()
     | & _33: bool = Any.any_l ()
     | & _34: Int8.t = Any.any_l ()
+    | & _35: () = Any.any_l ()
     | & _37: bool = Any.any_l ()
     | & _38: Int8.t = Any.any_l ()
+    | & _39: () = Any.any_l ()
     | & res: tup2_i8_bool = Any.any_l ()
     | & _42: bool = Any.any_l ()
     | & _44: bool = Any.any_l ()
+    | & _46: () = Any.any_l ()
     | & res'0: tup2_i8_bool = Any.any_l ()
     | & _49: bool = Any.any_l ()
     | & _51: bool = Any.any_l ()
+    | & _53: () = Any.any_l ()
     | & res'1: tup2_i8_bool = Any.any_l ()
     | & _56: bool = Any.any_l ()
-    | & _58: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _58: bool = Any.any_l ()
+    | & _60: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_add_overflow_neg
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -179,7 +227,7 @@ module M_test_i8_add_overflow_neg
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
@@ -188,10 +236,10 @@ module M_test_i8_add_overflow_neg
         -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs)}
       (! return {result}) ]
   
-  let is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
+  let is_none_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
       (! return {result}) ]
   
@@ -199,7 +247,7 @@ module M_test_i8_add_overflow_neg
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let saturating_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
     {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] ge_log_Int (Int8.to_int self_
             + Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -213,7 +261,7 @@ module M_test_i8_add_overflow_neg
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
-  let overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
+  let overflowing_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
     {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (Int8.to_int self_
             + Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -226,57 +274,81 @@ module M_test_i8_add_overflow_neg
       \/ gt_log_Int (Int8.to_int self_ + Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_add_overflow_neg (a: Int8.t) (return (x: ())) =
+  let test_i8_add_overflow_neg (mode: Mode.t) (a: Int8.t) (return (x: ())) =
   {[@stop_split] [@expl:test_i8_add_overflow_neg requires] Int8.to_int a < 0}
     (! bb0
     [ bb0 = s0
-      [ s0 = checked_add {(-128: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
-      | s1 = is_none_i8 {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
+      [ s0 = checked_add {mode} {(-128: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
+      | s1 = is_none_i8 {mode} {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
       | s2 = any [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = wrapping_add {(-128: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_12 <- _x ] s1)
+      [ s0 = wrapping_add {mode} {(-128: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_12 <- _x ] s1)
       | s1 = Int8.add {a} {(127: Int8.t)} (fun (_x: Int8.t) -> [ &_15 <- _x ] s2)
       | s2 = Int8.add {_15} {(1: Int8.t)} (fun (_x: Int8.t) -> [ &_14 <- _x ] s3)
       | s3 = [ &_11 <- _12 = _14 ] s4
       | s4 = any [ br0 -> {_11 = false} (! bb7) | br1 -> {_11} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = saturating_add {(-128: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_20 <- _x ] s1)
+      [ s0 = saturating_add {mode} {(-128: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_20 <- _x ] s1)
       | s1 = [ &_19 <- _20 = (-128: Int8.t) ] s2
       | s2 = any [ br0 -> {_19 = false} (! bb10) | br1 -> {_19} (! bb9) ] ]
     | bb9 = s0
-      [ s0 = overflowing_add {(-128: Int8.t)} {a} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_add {mode} {(-128: Int8.t)} {a} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
       | s1 = Int8.add {a} {(127: Int8.t)} (fun (_x: Int8.t) -> [ &_29 <- _x ] s2)
       | s2 = Int8.add {_29} {(1: Int8.t)} (fun (_x: Int8.t) -> [ &_28 <- _x ] s3)
       | s3 = [ &_26 <- res.f0 = _28 ] s4
       | s4 = any [ br0 -> {_26 = false} (! bb16) | br1 -> {_26} (! bb12) ] ]
     | bb12 = s0 [ s0 = [ &_31 <- res.f1 ] s1 | s1 = any [ br0 -> {_31 = false} (! bb16) | br1 -> {_31} (! bb13) ] ]
     | bb13 = return {_ret}
-    | bb16 = {false} any
-    | bb10 = {false} any
-    | bb7 = {false} any
-    | bb4 = {false} any ]
+    | bb16 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == a + 127 + 1 && res.1 == true"}
+          (fun (_x: ()) -> [ &_33 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb10 = s0
+      [ s0 = panic {mode} {"assertion failed: (-128i8).saturating_add(a) == -128"} (fun (_x: ()) -> [ &_22 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb7 = s0
+      [ s0 = panic {mode} {"assertion failed: (-128i8).wrapping_add(a) == a + 127 + 1"}
+          (fun (_x: ()) -> [ &_17 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: (-128i8).checked_add(a).is_none()"} (fun (_x: ()) -> [ &_9 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: Int8.t = a
     | & _5: bool = Any.any_l ()
     | & _7: t_Option_i8 = Any.any_l ()
+    | & _9: () = Any.any_l ()
     | & _11: bool = Any.any_l ()
     | & _12: Int8.t = Any.any_l ()
     | & _14: Int8.t = Any.any_l ()
     | & _15: Int8.t = Any.any_l ()
+    | & _17: () = Any.any_l ()
     | & _19: bool = Any.any_l ()
     | & _20: Int8.t = Any.any_l ()
+    | & _22: () = Any.any_l ()
     | & res: tup2_i8_bool = Any.any_l ()
     | & _26: bool = Any.any_l ()
     | & _28: Int8.t = Any.any_l ()
     | & _29: Int8.t = Any.any_l ()
-    | & _31: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _31: bool = Any.any_l ()
+    | & _33: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_add_overflow_pos
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -290,7 +362,7 @@ module M_test_i8_add_overflow_pos
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
@@ -299,10 +371,10 @@ module M_test_i8_add_overflow_pos
         -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs)}
       (! return {result}) ]
   
-  let is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
+  let is_none_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
       (! return {result}) ]
   
@@ -310,7 +382,7 @@ module M_test_i8_add_overflow_pos
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let saturating_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
     {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] ge_log_Int (Int8.to_int self_
             + Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -324,7 +396,7 @@ module M_test_i8_add_overflow_pos
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
-  let overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
+  let overflowing_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
     {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (Int8.to_int self_
             + Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -337,57 +409,80 @@ module M_test_i8_add_overflow_pos
       \/ gt_log_Int (Int8.to_int self_ + Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_add_overflow_pos (a: Int8.t) (return (x: ())) =
+  let test_i8_add_overflow_pos (mode: Mode.t) (a: Int8.t) (return (x: ())) =
   {[@stop_split] [@expl:test_i8_add_overflow_pos requires] gt_log_Int (Int8.to_int a) 0}
     (! bb0
     [ bb0 = s0
-      [ s0 = checked_add {(127: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
-      | s1 = is_none_i8 {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
+      [ s0 = checked_add {mode} {(127: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
+      | s1 = is_none_i8 {mode} {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
       | s2 = any [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = wrapping_add {(127: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_12 <- _x ] s1)
+      [ s0 = wrapping_add {mode} {(127: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_12 <- _x ] s1)
       | s1 = Int8.sub {a} {(127: Int8.t)} (fun (_x: Int8.t) -> [ &_15 <- _x ] s2)
       | s2 = Int8.sub {_15} {(2: Int8.t)} (fun (_x: Int8.t) -> [ &_14 <- _x ] s3)
       | s3 = [ &_11 <- _12 = _14 ] s4
       | s4 = any [ br0 -> {_11 = false} (! bb7) | br1 -> {_11} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = saturating_add {(127: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_20 <- _x ] s1)
+      [ s0 = saturating_add {mode} {(127: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_20 <- _x ] s1)
       | s1 = [ &_19 <- _20 = (127: Int8.t) ] s2
       | s2 = any [ br0 -> {_19 = false} (! bb10) | br1 -> {_19} (! bb9) ] ]
     | bb9 = s0
-      [ s0 = overflowing_add {(127: Int8.t)} {a} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_add {mode} {(127: Int8.t)} {a} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
       | s1 = Int8.sub {a} {(127: Int8.t)} (fun (_x: Int8.t) -> [ &_29 <- _x ] s2)
       | s2 = Int8.sub {_29} {(2: Int8.t)} (fun (_x: Int8.t) -> [ &_28 <- _x ] s3)
       | s3 = [ &_26 <- res.f0 = _28 ] s4
       | s4 = any [ br0 -> {_26 = false} (! bb16) | br1 -> {_26} (! bb12) ] ]
     | bb12 = s0 [ s0 = [ &_31 <- res.f1 ] s1 | s1 = any [ br0 -> {_31 = false} (! bb16) | br1 -> {_31} (! bb13) ] ]
     | bb13 = return {_ret}
-    | bb16 = {false} any
-    | bb10 = {false} any
-    | bb7 = {false} any
-    | bb4 = {false} any ]
+    | bb16 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == a - 127 - 2 && res.1 == true"}
+          (fun (_x: ()) -> [ &_33 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb10 = s0
+      [ s0 = panic {mode} {"assertion failed: 127i8.saturating_add(a) == 127"} (fun (_x: ()) -> [ &_22 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb7 = s0
+      [ s0 = panic {mode} {"assertion failed: 127i8.wrapping_add(a) == a - 127 - 2"} (fun (_x: ()) -> [ &_17 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 127i8.checked_add(a).is_none()"} (fun (_x: ()) -> [ &_9 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: Int8.t = a
     | & _5: bool = Any.any_l ()
     | & _7: t_Option_i8 = Any.any_l ()
+    | & _9: () = Any.any_l ()
     | & _11: bool = Any.any_l ()
     | & _12: Int8.t = Any.any_l ()
     | & _14: Int8.t = Any.any_l ()
     | & _15: Int8.t = Any.any_l ()
+    | & _17: () = Any.any_l ()
     | & _19: bool = Any.any_l ()
     | & _20: Int8.t = Any.any_l ()
+    | & _22: () = Any.any_l ()
     | & res: tup2_i8_bool = Any.any_l ()
     | & _26: bool = Any.any_l ()
     | & _28: Int8.t = Any.any_l ()
     | & _29: Int8.t = Any.any_l ()
-    | & _31: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _31: bool = Any.any_l ()
+    | & _33: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_div_example
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use int.ComputerDivision
   use creusot.prelude.Any
   use int.Int
@@ -396,7 +491,7 @@ module M_test_i8_div_example
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
-  let checked_div (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_div (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_div ensures] ([@stop_split] [@expl:checked_div ensures #0] (result = None)
         = (Int8.to_int rhs = 0 \/ Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1))
@@ -404,13 +499,14 @@ module M_test_i8_div_example
         -> Int8.to_int r = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))}
       (! return {result}) ]
   
-  let is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
+  let is_none_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_
+    <> None}
     any [ return (result: Int8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
-  let wrapping_div (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
+  let wrapping_div (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
   {[@stop_split] [@expl:wrapping_div requires] Int8.to_int rhs <> 0}
     any
     [ return (result: Int8.t) ->
@@ -422,7 +518,7 @@ module M_test_i8_div_example
       \/ Int8.to_int result = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))}
       (! return {result}) ]
   
-  let saturating_div (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
+  let saturating_div (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
   {[@stop_split] [@expl:saturating_div requires] Int8.to_int rhs <> 0}
     any
     [ return (result: Int8.t) ->
@@ -436,7 +532,7 @@ module M_test_i8_div_example
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
-  let overflowing_div (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) =
+  let overflowing_div (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) =
   {[@stop_split] [@expl:overflowing_div requires] Int8.to_int rhs <> 0}
     any
     [ return (result: tup2_i8_bool) ->
@@ -450,119 +546,168 @@ module M_test_i8_div_example
       = (Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_div_example (return (x: ())) = (! bb0
+  let test_i8_div_example (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = checked_div {(5: Int8.t)} {(0: Int8.t)} (fun (_x: t_Option_i8) -> [ &_4 <- _x ] s1)
-      | s1 = is_none_i8 {_4} (fun (_x: bool) -> [ &_2 <- _x ] s2)
+      [ s0 = checked_div {mode} {(5: Int8.t)} {(0: Int8.t)} (fun (_x: t_Option_i8) -> [ &_4 <- _x ] s1)
+      | s1 = is_none_i8 {mode} {_4} (fun (_x: bool) -> [ &_2 <- _x ] s2)
       | s2 = any [ br0 -> {_2 = false} (! bb4) | br1 -> {_2} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = checked_div {(5: Int8.t)} {(2: Int8.t)} (fun (_x: t_Option_i8) -> [ &_9 <- _x ] s1)
-      | s1 = unwrap_i8 {_9} (fun (_x: Int8.t) -> [ &_8 <- _x ] s2)
+      [ s0 = checked_div {mode} {(5: Int8.t)} {(2: Int8.t)} (fun (_x: t_Option_i8) -> [ &_9 <- _x ] s1)
+      | s1 = unwrap_i8 {mode} {_9} (fun (_x: Int8.t) -> [ &_8 <- _x ] s2)
       | s2 = [ &_7 <- _8 = (2: Int8.t) ] s3
       | s3 = any [ br0 -> {_7 = false} (! bb8) | br1 -> {_7} (! bb7) ] ]
     | bb7 = s0
-      [ s0 = checked_div {(5: Int8.t)} {(-2: Int8.t)} (fun (_x: t_Option_i8) -> [ &_14 <- _x ] s1)
-      | s1 = unwrap_i8 {_14} (fun (_x: Int8.t) -> [ &_13 <- _x ] s2)
+      [ s0 = checked_div {mode} {(5: Int8.t)} {(-2: Int8.t)} (fun (_x: t_Option_i8) -> [ &_14 <- _x ] s1)
+      | s1 = unwrap_i8 {mode} {_14} (fun (_x: Int8.t) -> [ &_13 <- _x ] s2)
       | s2 = [ &_12 <- _13 = (-2: Int8.t) ] s3
       | s3 = any [ br0 -> {_12 = false} (! bb12) | br1 -> {_12} (! bb11) ] ]
     | bb11 = s0
-      [ s0 = checked_div {(-128: Int8.t)} {(-1: Int8.t)} (fun (_x: t_Option_i8) -> [ &_19 <- _x ] s1)
-      | s1 = is_none_i8 {_19} (fun (_x: bool) -> [ &_17 <- _x ] s2)
+      [ s0 = checked_div {mode} {(-128: Int8.t)} {(-1: Int8.t)} (fun (_x: t_Option_i8) -> [ &_19 <- _x ] s1)
+      | s1 = is_none_i8 {mode} {_19} (fun (_x: bool) -> [ &_17 <- _x ] s2)
       | s2 = any [ br0 -> {_17 = false} (! bb16) | br1 -> {_17} (! bb15) ] ]
     | bb15 = s0
-      [ s0 = wrapping_div {(5: Int8.t)} {(2: Int8.t)} (fun (_x: Int8.t) -> [ &_23 <- _x ] s1)
+      [ s0 = wrapping_div {mode} {(5: Int8.t)} {(2: Int8.t)} (fun (_x: Int8.t) -> [ &_23 <- _x ] s1)
       | s1 = [ &_22 <- _23 = (2: Int8.t) ] s2
       | s2 = any [ br0 -> {_22 = false} (! bb19) | br1 -> {_22} (! bb18) ] ]
     | bb18 = s0
-      [ s0 = wrapping_div {(5: Int8.t)} {(-2: Int8.t)} (fun (_x: Int8.t) -> [ &_27 <- _x ] s1)
+      [ s0 = wrapping_div {mode} {(5: Int8.t)} {(-2: Int8.t)} (fun (_x: Int8.t) -> [ &_27 <- _x ] s1)
       | s1 = [ &_26 <- _27 = (-2: Int8.t) ] s2
       | s2 = any [ br0 -> {_26 = false} (! bb22) | br1 -> {_26} (! bb21) ] ]
     | bb21 = s0
-      [ s0 = wrapping_div {(-128: Int8.t)} {(-1: Int8.t)} (fun (_x: Int8.t) -> [ &_31 <- _x ] s1)
+      [ s0 = wrapping_div {mode} {(-128: Int8.t)} {(-1: Int8.t)} (fun (_x: Int8.t) -> [ &_31 <- _x ] s1)
       | s1 = [ &_30 <- _31 = (-128: Int8.t) ] s2
       | s2 = any [ br0 -> {_30 = false} (! bb25) | br1 -> {_30} (! bb24) ] ]
     | bb24 = s0
-      [ s0 = saturating_div {(5: Int8.t)} {(2: Int8.t)} (fun (_x: Int8.t) -> [ &_35 <- _x ] s1)
+      [ s0 = saturating_div {mode} {(5: Int8.t)} {(2: Int8.t)} (fun (_x: Int8.t) -> [ &_35 <- _x ] s1)
       | s1 = [ &_34 <- _35 = (2: Int8.t) ] s2
       | s2 = any [ br0 -> {_34 = false} (! bb28) | br1 -> {_34} (! bb27) ] ]
     | bb27 = s0
-      [ s0 = saturating_div {(5: Int8.t)} {(-2: Int8.t)} (fun (_x: Int8.t) -> [ &_39 <- _x ] s1)
+      [ s0 = saturating_div {mode} {(5: Int8.t)} {(-2: Int8.t)} (fun (_x: Int8.t) -> [ &_39 <- _x ] s1)
       | s1 = [ &_38 <- _39 = (-2: Int8.t) ] s2
       | s2 = any [ br0 -> {_38 = false} (! bb31) | br1 -> {_38} (! bb30) ] ]
     | bb30 = s0
-      [ s0 = saturating_div {(-128: Int8.t)} {(-1: Int8.t)} (fun (_x: Int8.t) -> [ &_43 <- _x ] s1)
+      [ s0 = saturating_div {mode} {(-128: Int8.t)} {(-1: Int8.t)} (fun (_x: Int8.t) -> [ &_43 <- _x ] s1)
       | s1 = [ &_42 <- _43 = (-128: Int8.t) ] s2
       | s2 = any [ br0 -> {_42 = false} (! bb34) | br1 -> {_42} (! bb33) ] ]
     | bb33 = s0
-      [ s0 = overflowing_div {(5: Int8.t)} {(2: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_div {mode} {(5: Int8.t)} {(2: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
       | s1 = [ &_47 <- res.f0 = (2: Int8.t) ] s2
       | s2 = any [ br0 -> {_47 = false} (! bb40) | br1 -> {_47} (! bb36) ] ]
     | bb36 = s0
       [ s0 = [ &_49 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_49 = false} (! bb40) | br1 -> {_49} (! bb37) ] ]
     | bb37 = s0
-      [ s0 = overflowing_div {(5: Int8.t)} {(-2: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'0 <- _x ] s1)
+      [ s0 = overflowing_div {mode} {(5: Int8.t)} {(-2: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'0 <- _x ] s1)
       | s1 = [ &_54 <- res'0.f0 = (-2: Int8.t) ] s2
       | s2 = any [ br0 -> {_54 = false} (! bb46) | br1 -> {_54} (! bb42) ] ]
     | bb42 = s0
       [ s0 = [ &_56 <- res'0.f1 = false ] s1 | s1 = any [ br0 -> {_56 = false} (! bb46) | br1 -> {_56} (! bb43) ] ]
     | bb43 = s0
-      [ s0 = overflowing_div {(-128: Int8.t)} {(-1: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'1 <- _x ] s1)
+      [ s0 = overflowing_div {mode} {(-128: Int8.t)} {(-1: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'1 <- _x ] s1)
       | s1 = [ &_61 <- res'1.f0 = (-128: Int8.t) ] s2
       | s2 = any [ br0 -> {_61 = false} (! bb52) | br1 -> {_61} (! bb48) ] ]
     | bb48 = s0 [ s0 = [ &_63 <- res'1.f1 ] s1 | s1 = any [ br0 -> {_63 = false} (! bb52) | br1 -> {_63} (! bb49) ] ]
     | bb49 = return {_ret}
-    | bb52 = {false} any
-    | bb46 = {false} any
-    | bb40 = {false} any
-    | bb34 = {false} any
-    | bb31 = {false} any
-    | bb28 = {false} any
-    | bb25 = {false} any
-    | bb22 = {false} any
-    | bb19 = {false} any
-    | bb16 = {false} any
-    | bb12 = {false} any
-    | bb8 = {false} any
-    | bb4 = {false} any ]
+    | bb52 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == -128 && res.1 == true"} (fun (_x: ()) -> [ &_65 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb46 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == -2 && res.1 == false"} (fun (_x: ()) -> [ &_58 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb40 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 2 && res.1 == false"} (fun (_x: ()) -> [ &_51 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb34 = s0
+      [ s0 = panic {mode} {"assertion failed: (-128i8).saturating_div(-1) == -128"} (fun (_x: ()) -> [ &_44 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb31 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.saturating_div(-2) == -2"} (fun (_x: ()) -> [ &_40 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb28 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.saturating_div(2) == 2"} (fun (_x: ()) -> [ &_36 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb25 = s0
+      [ s0 = panic {mode} {"assertion failed: (-128i8).wrapping_div(-1) == -128"} (fun (_x: ()) -> [ &_32 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb22 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.wrapping_div(-2) == -2"} (fun (_x: ()) -> [ &_28 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb19 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.wrapping_div(2) == 2"} (fun (_x: ()) -> [ &_24 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb16 = s0
+      [ s0 = panic {mode} {"assertion failed: (-128i8).checked_div(-1).is_none()"} (fun (_x: ()) -> [ &_20 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb12 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.checked_div(-2).unwrap() == -2"} (fun (_x: ()) -> [ &_15 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb8 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.checked_div(2).unwrap() == 2"} (fun (_x: ()) -> [ &_10 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.checked_div(0).is_none()"} (fun (_x: ()) -> [ &_5 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & _2: bool = Any.any_l ()
     | & _4: t_Option_i8 = Any.any_l ()
+    | & _5: () = Any.any_l ()
     | & _7: bool = Any.any_l ()
     | & _8: Int8.t = Any.any_l ()
     | & _9: t_Option_i8 = Any.any_l ()
+    | & _10: () = Any.any_l ()
     | & _12: bool = Any.any_l ()
     | & _13: Int8.t = Any.any_l ()
     | & _14: t_Option_i8 = Any.any_l ()
+    | & _15: () = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & _19: t_Option_i8 = Any.any_l ()
+    | & _20: () = Any.any_l ()
     | & _22: bool = Any.any_l ()
     | & _23: Int8.t = Any.any_l ()
+    | & _24: () = Any.any_l ()
     | & _26: bool = Any.any_l ()
     | & _27: Int8.t = Any.any_l ()
+    | & _28: () = Any.any_l ()
     | & _30: bool = Any.any_l ()
     | & _31: Int8.t = Any.any_l ()
+    | & _32: () = Any.any_l ()
     | & _34: bool = Any.any_l ()
     | & _35: Int8.t = Any.any_l ()
+    | & _36: () = Any.any_l ()
     | & _38: bool = Any.any_l ()
     | & _39: Int8.t = Any.any_l ()
+    | & _40: () = Any.any_l ()
     | & _42: bool = Any.any_l ()
     | & _43: Int8.t = Any.any_l ()
+    | & _44: () = Any.any_l ()
     | & res: tup2_i8_bool = Any.any_l ()
     | & _47: bool = Any.any_l ()
     | & _49: bool = Any.any_l ()
+    | & _51: () = Any.any_l ()
     | & res'0: tup2_i8_bool = Any.any_l ()
     | & _54: bool = Any.any_l ()
     | & _56: bool = Any.any_l ()
+    | & _58: () = Any.any_l ()
     | & res'1: tup2_i8_bool = Any.any_l ()
     | & _61: bool = Any.any_l ()
-    | & _63: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _63: bool = Any.any_l ()
+    | & _65: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_div_no_overflow
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use int.ComputerDivision
   use creusot.prelude.Bool
   use creusot.prelude.Any
@@ -572,7 +717,7 @@ module M_test_i8_div_no_overflow
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
-  let checked_div (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_div (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_div ensures] ([@stop_split] [@expl:checked_div ensures #0] (result = None)
         = (Int8.to_int rhs = 0 \/ Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1))
@@ -580,10 +725,11 @@ module M_test_i8_div_no_overflow
         -> Int8.to_int r = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))}
       (! return {result}) ]
   
-  let unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_
+    <> None}
     any [ return (result: Int8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
-  let wrapping_div (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
+  let wrapping_div (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
   {[@stop_split] [@expl:wrapping_div requires] Int8.to_int rhs <> 0}
     any
     [ return (result: Int8.t) ->
@@ -595,7 +741,7 @@ module M_test_i8_div_no_overflow
       \/ Int8.to_int result = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))}
       (! return {result}) ]
   
-  let saturating_div (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
+  let saturating_div (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
   {[@stop_split] [@expl:saturating_div requires] Int8.to_int rhs <> 0}
     any
     [ return (result: Int8.t) ->
@@ -609,7 +755,7 @@ module M_test_i8_div_no_overflow
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
-  let overflowing_div (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) =
+  let overflowing_div (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) =
   {[@stop_split] [@expl:overflowing_div requires] Int8.to_int rhs <> 0}
     any
     [ return (result: tup2_i8_bool) ->
@@ -623,17 +769,26 @@ module M_test_i8_div_no_overflow
       = (Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_div_no_overflow (a: Int8.t) (b: Int8.t) (return (x: ())) =
+  let test_i8_div_no_overflow (mode: Mode.t) (a: Int8.t) (b: Int8.t) (return (x: ())) =
   {[@stop_split] [@expl:test_i8_div_no_overflow requires] Int8.to_int b <> 0
     /\ (Int8.to_int a <> - 128 \/ Int8.to_int b <> - 1)}
     (! bb0
     [ bb0 = s0
-      [ s0 = checked_div {a} {b} (fun (_x: t_Option_i8) -> [ &_9 <- _x ] s1)
-      | s1 = unwrap_i8 {_9} (fun (_x: Int8.t) -> [ &_8 <- _x ] s2)
+      [ s0 = checked_div {mode} {a} {b} (fun (_x: t_Option_i8) -> [ &_9 <- _x ] s1)
+      | s1 = unwrap_i8 {mode} {_9} (fun (_x: Int8.t) -> [ &_8 <- _x ] s2)
       | s2 = [ &_13 <- a ] s3
       | s3 = [ &_14 <- b ] s4
       | s4 = [ &_15 <- _14 = (0: Int8.t) ] s5
@@ -646,7 +801,7 @@ module M_test_i8_div_no_overflow
       | s11 = [ &_7 <- _8 = _12 ] s12
       | s12 = any [ br0 -> {_7 = false} (! bb6) | br1 -> {_7} (! bb5) ] ]
     | bb5 = s0
-      [ s0 = wrapping_div {a} {b} (fun (_x: Int8.t) -> [ &_22 <- _x ] s1)
+      [ s0 = wrapping_div {mode} {a} {b} (fun (_x: Int8.t) -> [ &_22 <- _x ] s1)
       | s1 = [ &_26 <- a ] s2
       | s2 = [ &_27 <- b ] s3
       | s3 = [ &_28 <- _27 = (0: Int8.t) ] s4
@@ -659,7 +814,7 @@ module M_test_i8_div_no_overflow
       | s10 = [ &_21 <- _22 = _25 ] s11
       | s11 = any [ br0 -> {_21 = false} (! bb11) | br1 -> {_21} (! bb10) ] ]
     | bb10 = s0
-      [ s0 = saturating_div {a} {b} (fun (_x: Int8.t) -> [ &_35 <- _x ] s1)
+      [ s0 = saturating_div {mode} {a} {b} (fun (_x: Int8.t) -> [ &_35 <- _x ] s1)
       | s1 = [ &_39 <- a ] s2
       | s2 = [ &_40 <- b ] s3
       | s3 = [ &_41 <- _40 = (0: Int8.t) ] s4
@@ -672,7 +827,7 @@ module M_test_i8_div_no_overflow
       | s10 = [ &_34 <- _35 = _38 ] s11
       | s11 = any [ br0 -> {_34 = false} (! bb16) | br1 -> {_34} (! bb15) ] ]
     | bb15 = s0
-      [ s0 = overflowing_div {a} {b} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_div {mode} {a} {b} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
       | s1 = [ &_53 <- a ] s2
       | s2 = [ &_54 <- b ] s3
       | s3 = [ &_55 <- _54 = (0: Int8.t) ] s4
@@ -687,10 +842,18 @@ module M_test_i8_div_no_overflow
     | bb20 = s0
       [ s0 = [ &_59 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_59 = false} (! bb24) | br1 -> {_59} (! bb21) ] ]
     | bb21 = return {_ret}
-    | bb24 = {false} any
-    | bb16 = {false} any
-    | bb11 = {false} any
-    | bb6 = {false} any ]
+    | bb24 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == a / b && res.1 == false"} (fun (_x: ()) -> [ &_61 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb16 = s0
+      [ s0 = panic {mode} {"assertion failed: a.saturating_div(b) == a / b"} (fun (_x: ()) -> [ &_45 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb11 = s0
+      [ s0 = panic {mode} {"assertion failed: a.wrapping_div(b) == a / b"} (fun (_x: ()) -> [ &_32 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb6 = s0
+      [ s0 = panic {mode} {"assertion failed: a.checked_div(b).unwrap() == a / b"} (fun (_x: ()) -> [ &_19 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: Int8.t = a
     | & b: Int8.t = b
@@ -704,6 +867,7 @@ module M_test_i8_div_no_overflow
     | & _16: bool = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & _18: bool = Any.any_l ()
+    | & _19: () = Any.any_l ()
     | & _21: bool = Any.any_l ()
     | & _22: Int8.t = Any.any_l ()
     | & _25: Int8.t = Any.any_l ()
@@ -713,6 +877,7 @@ module M_test_i8_div_no_overflow
     | & _29: bool = Any.any_l ()
     | & _30: bool = Any.any_l ()
     | & _31: bool = Any.any_l ()
+    | & _32: () = Any.any_l ()
     | & _34: bool = Any.any_l ()
     | & _35: Int8.t = Any.any_l ()
     | & _38: Int8.t = Any.any_l ()
@@ -722,6 +887,7 @@ module M_test_i8_div_no_overflow
     | & _42: bool = Any.any_l ()
     | & _43: bool = Any.any_l ()
     | & _44: bool = Any.any_l ()
+    | & _45: () = Any.any_l ()
     | & res: tup2_i8_bool = Any.any_l ()
     | & _50: bool = Any.any_l ()
     | & _52: Int8.t = Any.any_l ()
@@ -731,10 +897,12 @@ module M_test_i8_div_no_overflow
     | & _56: bool = Any.any_l ()
     | & _57: bool = Any.any_l ()
     | & _58: bool = Any.any_l ()
-    | & _59: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _59: bool = Any.any_l ()
+    | & _61: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_div_zero
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use int.ComputerDivision
   use creusot.prelude.Any
   use int.Int
@@ -743,7 +911,7 @@ module M_test_i8_div_zero
   
   constant const_MIN: Int8.t = (-128: Int8.t)
   
-  let checked_div (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_div (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_div ensures] ([@stop_split] [@expl:checked_div ensures #0] (result = None)
         = (Int8.to_int rhs = 0 \/ Int8.to_int self_ = Int8.to_int const_MIN /\ Int8.to_int rhs = - 1))
@@ -751,25 +919,40 @@ module M_test_i8_div_zero
         -> Int8.to_int r = ComputerDivision.div (Int8.to_int self_) (Int8.to_int rhs))}
       (! return {result}) ]
   
-  let is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
+  let is_none_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_div_zero (a: Int8.t) (return (x: ())) = (! bb0
+  let test_i8_div_zero (mode: Mode.t) (a: Int8.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = checked_div {a} {(0: Int8.t)} (fun (_x: t_Option_i8) -> [ &_5 <- _x ] s1)
-      | s1 = is_none_i8 {_5} (fun (_x: bool) -> [ &_3 <- _x ] s2)
+      [ s0 = checked_div {mode} {a} {(0: Int8.t)} (fun (_x: t_Option_i8) -> [ &_5 <- _x ] s1)
+      | s1 = is_none_i8 {mode} {_5} (fun (_x: bool) -> [ &_3 <- _x ] s2)
       | s2 = any [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb3) ] ]
     | bb3 = return {_ret}
-    | bb4 = {false} any ]
-    [ & _ret: () = Any.any_l () | & a: Int8.t = a | & _3: bool = Any.any_l () | & _5: t_Option_i8 = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: a.checked_div(0).is_none()"} (fun (_x: ()) -> [ &_7 <- _x ] s1)
+      | s1 = {false} any ] ]
+    [ & _ret: () = Any.any_l ()
+    | & a: Int8.t = a
+    | & _3: bool = Any.any_l ()
+    | & _5: t_Option_i8 = Any.any_l ()
+    | & _7: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_mul_example
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -783,7 +966,7 @@ module M_test_i8_mul_example
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let checked_mul (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_mul (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
@@ -792,13 +975,14 @@ module M_test_i8_mul_example
         -> Int8.to_int r = Int8.to_int self_ * Int8.to_int rhs)}
       (! return {result}) ]
   
-  let unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_
+    <> None}
     any [ return (result: Int8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
-  let is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
+  let is_none_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_mul (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = Int8.mul self_ rhs}
       (! return {result}) ]
   
@@ -806,7 +990,7 @@ module M_test_i8_mul_example
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let saturating_mul (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
     {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] ge_log_Int (Int8.to_int self_
             * Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -820,7 +1004,7 @@ module M_test_i8_mul_example
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
-  let overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
+  let overflowing_mul (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
     {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] ge_log_Int (Int8.to_int self_
             * Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -833,109 +1017,155 @@ module M_test_i8_mul_example
       \/ gt_log_Int (Int8.to_int self_ * Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_mul_example (return (x: ())) = (! bb0
+  let test_i8_mul_example (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = checked_mul {(5: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_4 <- _x ] s1)
-      | s1 = unwrap_i8 {_4} (fun (_x: Int8.t) -> [ &_3 <- _x ] s2)
+      [ s0 = checked_mul {mode} {(5: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_4 <- _x ] s1)
+      | s1 = unwrap_i8 {mode} {_4} (fun (_x: Int8.t) -> [ &_3 <- _x ] s2)
       | s2 = [ &_2 <- _3 = (50: Int8.t) ] s3
       | s3 = any [ br0 -> {_2 = false} (! bb4) | br1 -> {_2} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = checked_mul {(50: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_9 <- _x ] s1)
-      | s1 = is_none_i8 {_9} (fun (_x: bool) -> [ &_7 <- _x ] s2)
+      [ s0 = checked_mul {mode} {(50: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_9 <- _x ] s1)
+      | s1 = is_none_i8 {mode} {_9} (fun (_x: bool) -> [ &_7 <- _x ] s2)
       | s2 = any [ br0 -> {_7 = false} (! bb8) | br1 -> {_7} (! bb7) ] ]
     | bb7 = s0
-      [ s0 = checked_mul {(50: Int8.t)} {(-10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_14 <- _x ] s1)
-      | s1 = is_none_i8 {_14} (fun (_x: bool) -> [ &_12 <- _x ] s2)
+      [ s0 = checked_mul {mode} {(50: Int8.t)} {(-10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_14 <- _x ] s1)
+      | s1 = is_none_i8 {mode} {_14} (fun (_x: bool) -> [ &_12 <- _x ] s2)
       | s2 = any [ br0 -> {_12 = false} (! bb12) | br1 -> {_12} (! bb11) ] ]
     | bb11 = s0
-      [ s0 = wrapping_mul {(5: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_18 <- _x ] s1)
+      [ s0 = wrapping_mul {mode} {(5: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_18 <- _x ] s1)
       | s1 = [ &_17 <- _18 = (50: Int8.t) ] s2
       | s2 = any [ br0 -> {_17 = false} (! bb15) | br1 -> {_17} (! bb14) ] ]
     | bb14 = s0
-      [ s0 = wrapping_mul {(50: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_22 <- _x ] s1)
+      [ s0 = wrapping_mul {mode} {(50: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_22 <- _x ] s1)
       | s1 = [ &_21 <- _22 = (-12: Int8.t) ] s2
       | s2 = any [ br0 -> {_21 = false} (! bb18) | br1 -> {_21} (! bb17) ] ]
     | bb17 = s0
-      [ s0 = wrapping_mul {(50: Int8.t)} {(-10: Int8.t)} (fun (_x: Int8.t) -> [ &_26 <- _x ] s1)
+      [ s0 = wrapping_mul {mode} {(50: Int8.t)} {(-10: Int8.t)} (fun (_x: Int8.t) -> [ &_26 <- _x ] s1)
       | s1 = [ &_25 <- _26 = (12: Int8.t) ] s2
       | s2 = any [ br0 -> {_25 = false} (! bb21) | br1 -> {_25} (! bb20) ] ]
     | bb20 = s0
-      [ s0 = saturating_mul {(5: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_30 <- _x ] s1)
+      [ s0 = saturating_mul {mode} {(5: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_30 <- _x ] s1)
       | s1 = [ &_29 <- _30 = (50: Int8.t) ] s2
       | s2 = any [ br0 -> {_29 = false} (! bb24) | br1 -> {_29} (! bb23) ] ]
     | bb23 = s0
-      [ s0 = saturating_mul {(50: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_34 <- _x ] s1)
+      [ s0 = saturating_mul {mode} {(50: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_34 <- _x ] s1)
       | s1 = [ &_33 <- _34 = (127: Int8.t) ] s2
       | s2 = any [ br0 -> {_33 = false} (! bb27) | br1 -> {_33} (! bb26) ] ]
     | bb26 = s0
-      [ s0 = saturating_mul {(50: Int8.t)} {(-10: Int8.t)} (fun (_x: Int8.t) -> [ &_38 <- _x ] s1)
+      [ s0 = saturating_mul {mode} {(50: Int8.t)} {(-10: Int8.t)} (fun (_x: Int8.t) -> [ &_38 <- _x ] s1)
       | s1 = [ &_37 <- _38 = (-128: Int8.t) ] s2
       | s2 = any [ br0 -> {_37 = false} (! bb30) | br1 -> {_37} (! bb29) ] ]
     | bb29 = s0
-      [ s0 = overflowing_mul {(5: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_mul {mode} {(5: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
       | s1 = [ &_42 <- res.f0 = (50: Int8.t) ] s2
       | s2 = any [ br0 -> {_42 = false} (! bb36) | br1 -> {_42} (! bb32) ] ]
     | bb32 = s0
       [ s0 = [ &_44 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_44 = false} (! bb36) | br1 -> {_44} (! bb33) ] ]
     | bb33 = s0
-      [ s0 = overflowing_mul {(50: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'0 <- _x ] s1)
+      [ s0 = overflowing_mul {mode} {(50: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'0 <- _x ] s1)
       | s1 = [ &_49 <- res'0.f0 = (-12: Int8.t) ] s2
       | s2 = any [ br0 -> {_49 = false} (! bb42) | br1 -> {_49} (! bb38) ] ]
     | bb38 = s0 [ s0 = [ &_51 <- res'0.f1 ] s1 | s1 = any [ br0 -> {_51 = false} (! bb42) | br1 -> {_51} (! bb39) ] ]
     | bb39 = s0
-      [ s0 = overflowing_mul {(50: Int8.t)} {(-10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'1 <- _x ] s1)
+      [ s0 = overflowing_mul {mode} {(50: Int8.t)} {(-10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'1 <- _x ] s1)
       | s1 = [ &_56 <- res'1.f0 = (12: Int8.t) ] s2
       | s2 = any [ br0 -> {_56 = false} (! bb48) | br1 -> {_56} (! bb44) ] ]
     | bb44 = s0 [ s0 = [ &_58 <- res'1.f1 ] s1 | s1 = any [ br0 -> {_58 = false} (! bb48) | br1 -> {_58} (! bb45) ] ]
     | bb45 = return {_ret}
-    | bb48 = {false} any
-    | bb42 = {false} any
-    | bb36 = {false} any
-    | bb30 = {false} any
-    | bb27 = {false} any
-    | bb24 = {false} any
-    | bb21 = {false} any
-    | bb18 = {false} any
-    | bb15 = {false} any
-    | bb12 = {false} any
-    | bb8 = {false} any
-    | bb4 = {false} any ]
+    | bb48 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 12 && res.1 == true"} (fun (_x: ()) -> [ &_60 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb42 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == -12 && res.1 == true"} (fun (_x: ()) -> [ &_53 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb36 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 50 && res.1 == false"} (fun (_x: ()) -> [ &_46 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb30 = s0
+      [ s0 = panic {mode} {"assertion failed: 50i8.saturating_mul(-10) == -128"} (fun (_x: ()) -> [ &_39 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb27 = s0
+      [ s0 = panic {mode} {"assertion failed: 50i8.saturating_mul(10) == 127"} (fun (_x: ()) -> [ &_35 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb24 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.saturating_mul(10) == 50"} (fun (_x: ()) -> [ &_31 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb21 = s0
+      [ s0 = panic {mode} {"assertion failed: 50i8.wrapping_mul(-10) == 12"} (fun (_x: ()) -> [ &_27 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb18 = s0
+      [ s0 = panic {mode} {"assertion failed: 50i8.wrapping_mul(10) == -12"} (fun (_x: ()) -> [ &_23 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb15 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.wrapping_mul(10) == 50"} (fun (_x: ()) -> [ &_19 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb12 = s0
+      [ s0 = panic {mode} {"assertion failed: 50i8.checked_mul(-10).is_none()"} (fun (_x: ()) -> [ &_15 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb8 = s0
+      [ s0 = panic {mode} {"assertion failed: 50i8.checked_mul(10).is_none()"} (fun (_x: ()) -> [ &_10 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.checked_mul(10).unwrap() == 50"} (fun (_x: ()) -> [ &_5 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & _2: bool = Any.any_l ()
     | & _3: Int8.t = Any.any_l ()
     | & _4: t_Option_i8 = Any.any_l ()
+    | & _5: () = Any.any_l ()
     | & _7: bool = Any.any_l ()
     | & _9: t_Option_i8 = Any.any_l ()
+    | & _10: () = Any.any_l ()
     | & _12: bool = Any.any_l ()
     | & _14: t_Option_i8 = Any.any_l ()
+    | & _15: () = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & _18: Int8.t = Any.any_l ()
+    | & _19: () = Any.any_l ()
     | & _21: bool = Any.any_l ()
     | & _22: Int8.t = Any.any_l ()
+    | & _23: () = Any.any_l ()
     | & _25: bool = Any.any_l ()
     | & _26: Int8.t = Any.any_l ()
+    | & _27: () = Any.any_l ()
     | & _29: bool = Any.any_l ()
     | & _30: Int8.t = Any.any_l ()
+    | & _31: () = Any.any_l ()
     | & _33: bool = Any.any_l ()
     | & _34: Int8.t = Any.any_l ()
+    | & _35: () = Any.any_l ()
     | & _37: bool = Any.any_l ()
     | & _38: Int8.t = Any.any_l ()
+    | & _39: () = Any.any_l ()
     | & res: tup2_i8_bool = Any.any_l ()
     | & _42: bool = Any.any_l ()
     | & _44: bool = Any.any_l ()
+    | & _46: () = Any.any_l ()
     | & res'0: tup2_i8_bool = Any.any_l ()
     | & _49: bool = Any.any_l ()
     | & _51: bool = Any.any_l ()
+    | & _53: () = Any.any_l ()
     | & res'1: tup2_i8_bool = Any.any_l ()
     | & _56: bool = Any.any_l ()
-    | & _58: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _58: bool = Any.any_l ()
+    | & _60: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_mul_zero
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -949,7 +1179,7 @@ module M_test_i8_mul_zero
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let checked_mul (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_mul (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
@@ -958,10 +1188,11 @@ module M_test_i8_mul_zero
         -> Int8.to_int r = Int8.to_int self_ * Int8.to_int rhs)}
       (! return {result}) ]
   
-  let unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_
+    <> None}
     any [ return (result: Int8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
-  let wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_mul (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = Int8.mul self_ rhs}
       (! return {result}) ]
   
@@ -969,7 +1200,7 @@ module M_test_i8_mul_zero
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let saturating_mul (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
     {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] ge_log_Int (Int8.to_int self_
             * Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -983,7 +1214,7 @@ module M_test_i8_mul_zero
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
-  let overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
+  let overflowing_mul (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
     {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] ge_log_Int (Int8.to_int self_
             * Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -996,50 +1227,72 @@ module M_test_i8_mul_zero
       \/ gt_log_Int (Int8.to_int self_ * Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_mul_zero (a: Int8.t) (return (x: ())) = (! bb0
+  let test_i8_mul_zero (mode: Mode.t) (a: Int8.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = checked_mul {(0: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_5 <- _x ] s1)
-      | s1 = unwrap_i8 {_5} (fun (_x: Int8.t) -> [ &_4 <- _x ] s2)
+      [ s0 = checked_mul {mode} {(0: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_5 <- _x ] s1)
+      | s1 = unwrap_i8 {mode} {_5} (fun (_x: Int8.t) -> [ &_4 <- _x ] s2)
       | s2 = [ &_3 <- _4 = (0: Int8.t) ] s3
       | s3 = any [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = wrapping_mul {(0: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_10 <- _x ] s1)
+      [ s0 = wrapping_mul {mode} {(0: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_10 <- _x ] s1)
       | s1 = [ &_9 <- _10 = (0: Int8.t) ] s2
       | s2 = any [ br0 -> {_9 = false} (! bb7) | br1 -> {_9} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = saturating_mul {(0: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_15 <- _x ] s1)
+      [ s0 = saturating_mul {mode} {(0: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_15 <- _x ] s1)
       | s1 = [ &_14 <- _15 = (0: Int8.t) ] s2
       | s2 = any [ br0 -> {_14 = false} (! bb10) | br1 -> {_14} (! bb9) ] ]
     | bb9 = s0
-      [ s0 = overflowing_mul {(0: Int8.t)} {a} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_mul {mode} {(0: Int8.t)} {a} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
       | s1 = [ &_21 <- res.f0 = (0: Int8.t) ] s2
       | s2 = any [ br0 -> {_21 = false} (! bb16) | br1 -> {_21} (! bb12) ] ]
     | bb12 = s0
       [ s0 = [ &_23 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_23 = false} (! bb16) | br1 -> {_23} (! bb13) ] ]
     | bb13 = return {_ret}
-    | bb16 = {false} any
-    | bb10 = {false} any
-    | bb7 = {false} any
-    | bb4 = {false} any ]
+    | bb16 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 0 && res.1 == false"} (fun (_x: ()) -> [ &_25 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb10 = s0
+      [ s0 = panic {mode} {"assertion failed: 0i8.saturating_mul(a) == 0"} (fun (_x: ()) -> [ &_17 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb7 = s0
+      [ s0 = panic {mode} {"assertion failed: 0i8.wrapping_mul(a) == 0"} (fun (_x: ()) -> [ &_12 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 0i8.checked_mul(a).unwrap() == 0"} (fun (_x: ()) -> [ &_7 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: Int8.t = a
     | & _3: bool = Any.any_l ()
     | & _4: Int8.t = Any.any_l ()
     | & _5: t_Option_i8 = Any.any_l ()
+    | & _7: () = Any.any_l ()
     | & _9: bool = Any.any_l ()
     | & _10: Int8.t = Any.any_l ()
+    | & _12: () = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _15: Int8.t = Any.any_l ()
+    | & _17: () = Any.any_l ()
     | & res: tup2_i8_bool = Any.any_l ()
     | & _21: bool = Any.any_l ()
-    | & _23: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _23: bool = Any.any_l ()
+    | & _25: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_overflowing_add
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -1057,7 +1310,7 @@ module M_test_i8_overflowing_add
   
   meta "rewrite_def" predicate gt_log_Int
   
-  let overflowing_add (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
+  let overflowing_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
     {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (Int8.to_int self_
             + Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -1070,13 +1323,13 @@ module M_test_i8_overflowing_add
       \/ gt_log_Int (Int8.to_int self_ + Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
-  let wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
       (! return {result}) ]
   
   type t_Option_i8 = None | Some Int8.t
   
-  let checked_add (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (Int8.to_int self_ + Int8.to_int rhs < Int8.to_int const_MIN
@@ -1085,41 +1338,59 @@ module M_test_i8_overflowing_add
         -> Int8.to_int r = Int8.to_int self_ + Int8.to_int rhs)}
       (! return {result}) ]
   
-  let is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
+  let is_none_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_overflowing_add (a: Int8.t) (b: Int8.t) (return (x: ())) = (! bb0
+  let test_i8_overflowing_add (mode: Mode.t) (a: Int8.t) (b: Int8.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = overflowing_add {a} {b} (fun (_x: tup2_i8_bool) -> [ &_6 <- _x ] s1)
-      | s1 = wrapping_add {a} {b} (fun (_x: Int8.t) -> [ &_9 <- _x ] s2)
+      [ s0 = overflowing_add {mode} {a} {b} (fun (_x: tup2_i8_bool) -> [ &_6 <- _x ] s1)
+      | s1 = wrapping_add {mode} {a} {b} (fun (_x: Int8.t) -> [ &_9 <- _x ] s2)
       | s2 = [ &_4 <- _6.f0 = _9 ] s3
       | s3 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = overflowing_add {a} {b} (fun (_x: tup2_i8_bool) -> [ &_16 <- _x ] s1)
-      | s1 = checked_add {a} {b} (fun (_x: t_Option_i8) -> [ &_21 <- _x ] s2)
-      | s2 = is_none_i8 {_21} (fun (_x: bool) -> [ &_19 <- _x ] s3)
+      [ s0 = overflowing_add {mode} {a} {b} (fun (_x: tup2_i8_bool) -> [ &_16 <- _x ] s1)
+      | s1 = checked_add {mode} {a} {b} (fun (_x: t_Option_i8) -> [ &_21 <- _x ] s2)
+      | s2 = is_none_i8 {mode} {_21} (fun (_x: bool) -> [ &_19 <- _x ] s3)
       | s3 = [ &_14 <- _16.f1 = _19 ] s4
       | s4 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
     | bb8 = return {_ret}
-    | bb9 = {false} any
-    | bb4 = {false} any ]
+    | bb9 = s0
+      [ s0 = panic {mode} {"assertion failed: a.overflowing_add(b).1 == a.checked_add(b).is_none()"}
+          (fun (_x: ()) -> [ &_24 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: a.overflowing_add(b).0 == a.wrapping_add(b)"}
+          (fun (_x: ()) -> [ &_12 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: Int8.t = a
     | & b: Int8.t = b
     | & _4: bool = Any.any_l ()
     | & _6: tup2_i8_bool = Any.any_l ()
     | & _9: Int8.t = Any.any_l ()
+    | & _12: () = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: tup2_i8_bool = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _21: t_Option_i8 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _21: t_Option_i8 = Any.any_l ()
+    | & _24: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_overflowing_mul
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -1137,7 +1408,7 @@ module M_test_i8_overflowing_mul
   
   meta "rewrite_def" predicate gt_log_Int
   
-  let overflowing_mul (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
+  let overflowing_mul (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
     {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] ge_log_Int (Int8.to_int self_
             * Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -1150,13 +1421,13 @@ module M_test_i8_overflowing_mul
       \/ gt_log_Int (Int8.to_int self_ * Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
-  let wrapping_mul (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_mul (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = Int8.mul self_ rhs}
       (! return {result}) ]
   
   type t_Option_i8 = None | Some Int8.t
   
-  let checked_mul (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_mul (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (Int8.to_int self_ * Int8.to_int rhs < Int8.to_int const_MIN
@@ -1165,41 +1436,59 @@ module M_test_i8_overflowing_mul
         -> Int8.to_int r = Int8.to_int self_ * Int8.to_int rhs)}
       (! return {result}) ]
   
-  let is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
+  let is_none_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_overflowing_mul (a: Int8.t) (b: Int8.t) (return (x: ())) = (! bb0
+  let test_i8_overflowing_mul (mode: Mode.t) (a: Int8.t) (b: Int8.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = overflowing_mul {a} {b} (fun (_x: tup2_i8_bool) -> [ &_6 <- _x ] s1)
-      | s1 = wrapping_mul {a} {b} (fun (_x: Int8.t) -> [ &_9 <- _x ] s2)
+      [ s0 = overflowing_mul {mode} {a} {b} (fun (_x: tup2_i8_bool) -> [ &_6 <- _x ] s1)
+      | s1 = wrapping_mul {mode} {a} {b} (fun (_x: Int8.t) -> [ &_9 <- _x ] s2)
       | s2 = [ &_4 <- _6.f0 = _9 ] s3
       | s3 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = overflowing_mul {a} {b} (fun (_x: tup2_i8_bool) -> [ &_16 <- _x ] s1)
-      | s1 = checked_mul {a} {b} (fun (_x: t_Option_i8) -> [ &_21 <- _x ] s2)
-      | s2 = is_none_i8 {_21} (fun (_x: bool) -> [ &_19 <- _x ] s3)
+      [ s0 = overflowing_mul {mode} {a} {b} (fun (_x: tup2_i8_bool) -> [ &_16 <- _x ] s1)
+      | s1 = checked_mul {mode} {a} {b} (fun (_x: t_Option_i8) -> [ &_21 <- _x ] s2)
+      | s2 = is_none_i8 {mode} {_21} (fun (_x: bool) -> [ &_19 <- _x ] s3)
       | s3 = [ &_14 <- _16.f1 = _19 ] s4
       | s4 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
     | bb8 = return {_ret}
-    | bb9 = {false} any
-    | bb4 = {false} any ]
+    | bb9 = s0
+      [ s0 = panic {mode} {"assertion failed: a.overflowing_mul(b).1 == a.checked_mul(b).is_none()"}
+          (fun (_x: ()) -> [ &_24 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: a.overflowing_mul(b).0 == a.wrapping_mul(b)"}
+          (fun (_x: ()) -> [ &_12 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: Int8.t = a
     | & b: Int8.t = b
     | & _4: bool = Any.any_l ()
     | & _6: tup2_i8_bool = Any.any_l ()
     | & _9: Int8.t = Any.any_l ()
+    | & _12: () = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: tup2_i8_bool = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _21: t_Option_i8 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _21: t_Option_i8 = Any.any_l ()
+    | & _24: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_overflowing_sub
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -1217,7 +1506,7 @@ module M_test_i8_overflowing_sub
   
   meta "rewrite_def" predicate gt_log_Int
   
-  let overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
+  let overflowing_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
     {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (Int8.to_int self_
             - Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -1230,13 +1519,13 @@ module M_test_i8_overflowing_sub
       \/ gt_log_Int (Int8.to_int self_ - Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
-  let wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
       (! return {result}) ]
   
   type t_Option_i8 = None | Some Int8.t
   
-  let checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
@@ -1245,41 +1534,59 @@ module M_test_i8_overflowing_sub
         -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs)}
       (! return {result}) ]
   
-  let is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
+  let is_none_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_overflowing_sub (a: Int8.t) (b: Int8.t) (return (x: ())) = (! bb0
+  let test_i8_overflowing_sub (mode: Mode.t) (a: Int8.t) (b: Int8.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = overflowing_sub {a} {b} (fun (_x: tup2_i8_bool) -> [ &_6 <- _x ] s1)
-      | s1 = wrapping_sub {a} {b} (fun (_x: Int8.t) -> [ &_9 <- _x ] s2)
+      [ s0 = overflowing_sub {mode} {a} {b} (fun (_x: tup2_i8_bool) -> [ &_6 <- _x ] s1)
+      | s1 = wrapping_sub {mode} {a} {b} (fun (_x: Int8.t) -> [ &_9 <- _x ] s2)
       | s2 = [ &_4 <- _6.f0 = _9 ] s3
       | s3 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = overflowing_sub {a} {b} (fun (_x: tup2_i8_bool) -> [ &_16 <- _x ] s1)
-      | s1 = checked_sub {a} {b} (fun (_x: t_Option_i8) -> [ &_21 <- _x ] s2)
-      | s2 = is_none_i8 {_21} (fun (_x: bool) -> [ &_19 <- _x ] s3)
+      [ s0 = overflowing_sub {mode} {a} {b} (fun (_x: tup2_i8_bool) -> [ &_16 <- _x ] s1)
+      | s1 = checked_sub {mode} {a} {b} (fun (_x: t_Option_i8) -> [ &_21 <- _x ] s2)
+      | s2 = is_none_i8 {mode} {_21} (fun (_x: bool) -> [ &_19 <- _x ] s3)
       | s3 = [ &_14 <- _16.f1 = _19 ] s4
       | s4 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
     | bb8 = return {_ret}
-    | bb9 = {false} any
-    | bb4 = {false} any ]
+    | bb9 = s0
+      [ s0 = panic {mode} {"assertion failed: a.overflowing_sub(b).1 == a.checked_sub(b).is_none()"}
+          (fun (_x: ()) -> [ &_24 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: a.overflowing_sub(b).0 == a.wrapping_sub(b)"}
+          (fun (_x: ()) -> [ &_12 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: Int8.t = a
     | & b: Int8.t = b
     | & _4: bool = Any.any_l ()
     | & _6: tup2_i8_bool = Any.any_l ()
     | & _9: Int8.t = Any.any_l ()
+    | & _12: () = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: tup2_i8_bool = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _21: t_Option_i8 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _21: t_Option_i8 = Any.any_l ()
+    | & _24: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_sub_example
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -1293,7 +1600,7 @@ module M_test_i8_sub_example
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
@@ -1302,13 +1609,14 @@ module M_test_i8_sub_example
         -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs)}
       (! return {result}) ]
   
-  let unwrap_i8 (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: Int8.t)) = {[@stop_split] [@expl:unwrap requires] self_
+    <> None}
     any [ return (result: Int8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
-  let is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
+  let is_none_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
       (! return {result}) ]
   
@@ -1316,7 +1624,7 @@ module M_test_i8_sub_example
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let saturating_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
     {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] ge_log_Int (Int8.to_int self_
             - Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -1330,7 +1638,7 @@ module M_test_i8_sub_example
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
-  let overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
+  let overflowing_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
     {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (Int8.to_int self_
             - Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -1343,112 +1651,159 @@ module M_test_i8_sub_example
       \/ gt_log_Int (Int8.to_int self_ - Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_sub_example (return (x: ())) = (! bb0
+  let test_i8_sub_example (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = checked_sub {(5: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_4 <- _x ] s1)
-      | s1 = unwrap_i8 {_4} (fun (_x: Int8.t) -> [ &_3 <- _x ] s2)
+      [ s0 = checked_sub {mode} {(5: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_4 <- _x ] s1)
+      | s1 = unwrap_i8 {mode} {_4} (fun (_x: Int8.t) -> [ &_3 <- _x ] s2)
       | s2 = [ &_2 <- _3 = (-5: Int8.t) ] s3
       | s3 = any [ br0 -> {_2 = false} (! bb4) | br1 -> {_2} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = checked_sub {(120: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_9 <- _x ] s1)
-      | s1 = unwrap_i8 {_9} (fun (_x: Int8.t) -> [ &_8 <- _x ] s2)
+      [ s0 = checked_sub {mode} {(120: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_9 <- _x ] s1)
+      | s1 = unwrap_i8 {mode} {_9} (fun (_x: Int8.t) -> [ &_8 <- _x ] s2)
       | s2 = [ &_7 <- _8 = (110: Int8.t) ] s3
       | s3 = any [ br0 -> {_7 = false} (! bb8) | br1 -> {_7} (! bb7) ] ]
     | bb7 = s0
-      [ s0 = checked_sub {(-120: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_14 <- _x ] s1)
-      | s1 = is_none_i8 {_14} (fun (_x: bool) -> [ &_12 <- _x ] s2)
+      [ s0 = checked_sub {mode} {(-120: Int8.t)} {(10: Int8.t)} (fun (_x: t_Option_i8) -> [ &_14 <- _x ] s1)
+      | s1 = is_none_i8 {mode} {_14} (fun (_x: bool) -> [ &_12 <- _x ] s2)
       | s2 = any [ br0 -> {_12 = false} (! bb12) | br1 -> {_12} (! bb11) ] ]
     | bb11 = s0
-      [ s0 = wrapping_sub {(5: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_18 <- _x ] s1)
+      [ s0 = wrapping_sub {mode} {(5: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_18 <- _x ] s1)
       | s1 = [ &_17 <- _18 = (-5: Int8.t) ] s2
       | s2 = any [ br0 -> {_17 = false} (! bb15) | br1 -> {_17} (! bb14) ] ]
     | bb14 = s0
-      [ s0 = wrapping_sub {(120: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_22 <- _x ] s1)
+      [ s0 = wrapping_sub {mode} {(120: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_22 <- _x ] s1)
       | s1 = [ &_21 <- _22 = (110: Int8.t) ] s2
       | s2 = any [ br0 -> {_21 = false} (! bb18) | br1 -> {_21} (! bb17) ] ]
     | bb17 = s0
-      [ s0 = wrapping_sub {(-120: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_26 <- _x ] s1)
+      [ s0 = wrapping_sub {mode} {(-120: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_26 <- _x ] s1)
       | s1 = [ &_25 <- _26 = (126: Int8.t) ] s2
       | s2 = any [ br0 -> {_25 = false} (! bb21) | br1 -> {_25} (! bb20) ] ]
     | bb20 = s0
-      [ s0 = saturating_sub {(5: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_30 <- _x ] s1)
+      [ s0 = saturating_sub {mode} {(5: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_30 <- _x ] s1)
       | s1 = [ &_29 <- _30 = (-5: Int8.t) ] s2
       | s2 = any [ br0 -> {_29 = false} (! bb24) | br1 -> {_29} (! bb23) ] ]
     | bb23 = s0
-      [ s0 = saturating_sub {(120: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_34 <- _x ] s1)
+      [ s0 = saturating_sub {mode} {(120: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_34 <- _x ] s1)
       | s1 = [ &_33 <- _34 = (110: Int8.t) ] s2
       | s2 = any [ br0 -> {_33 = false} (! bb27) | br1 -> {_33} (! bb26) ] ]
     | bb26 = s0
-      [ s0 = saturating_sub {(-120: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_38 <- _x ] s1)
+      [ s0 = saturating_sub {mode} {(-120: Int8.t)} {(10: Int8.t)} (fun (_x: Int8.t) -> [ &_38 <- _x ] s1)
       | s1 = [ &_37 <- _38 = (-128: Int8.t) ] s2
       | s2 = any [ br0 -> {_37 = false} (! bb30) | br1 -> {_37} (! bb29) ] ]
     | bb29 = s0
-      [ s0 = overflowing_sub {(5: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_sub {mode} {(5: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
       | s1 = [ &_42 <- res.f0 = (-5: Int8.t) ] s2
       | s2 = any [ br0 -> {_42 = false} (! bb36) | br1 -> {_42} (! bb32) ] ]
     | bb32 = s0
       [ s0 = [ &_44 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_44 = false} (! bb36) | br1 -> {_44} (! bb33) ] ]
     | bb33 = s0
-      [ s0 = overflowing_sub {(120: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'0 <- _x ] s1)
+      [ s0 = overflowing_sub {mode} {(120: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'0 <- _x ] s1)
       | s1 = [ &_49 <- res'0.f0 = (110: Int8.t) ] s2
       | s2 = any [ br0 -> {_49 = false} (! bb42) | br1 -> {_49} (! bb38) ] ]
     | bb38 = s0
       [ s0 = [ &_51 <- res'0.f1 = false ] s1 | s1 = any [ br0 -> {_51 = false} (! bb42) | br1 -> {_51} (! bb39) ] ]
     | bb39 = s0
-      [ s0 = overflowing_sub {(-120: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'1 <- _x ] s1)
+      [ s0 = overflowing_sub {mode} {(-120: Int8.t)} {(10: Int8.t)} (fun (_x: tup2_i8_bool) -> [ &res'1 <- _x ] s1)
       | s1 = [ &_56 <- res'1.f0 = (126: Int8.t) ] s2
       | s2 = any [ br0 -> {_56 = false} (! bb48) | br1 -> {_56} (! bb44) ] ]
     | bb44 = s0 [ s0 = [ &_58 <- res'1.f1 ] s1 | s1 = any [ br0 -> {_58 = false} (! bb48) | br1 -> {_58} (! bb45) ] ]
     | bb45 = return {_ret}
-    | bb48 = {false} any
-    | bb42 = {false} any
-    | bb36 = {false} any
-    | bb30 = {false} any
-    | bb27 = {false} any
-    | bb24 = {false} any
-    | bb21 = {false} any
-    | bb18 = {false} any
-    | bb15 = {false} any
-    | bb12 = {false} any
-    | bb8 = {false} any
-    | bb4 = {false} any ]
+    | bb48 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 126 && res.1 == true"} (fun (_x: ()) -> [ &_60 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb42 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 110 && res.1 == false"} (fun (_x: ()) -> [ &_53 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb36 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == -5 && res.1 == false"} (fun (_x: ()) -> [ &_46 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb30 = s0
+      [ s0 = panic {mode} {"assertion failed: (-120i8).saturating_sub(10) == -128"} (fun (_x: ()) -> [ &_39 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb27 = s0
+      [ s0 = panic {mode} {"assertion failed: 120i8.saturating_sub(10) == 110"} (fun (_x: ()) -> [ &_35 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb24 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.saturating_sub(10) == -5"} (fun (_x: ()) -> [ &_31 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb21 = s0
+      [ s0 = panic {mode} {"assertion failed: (-120i8).wrapping_sub(10) == 126"} (fun (_x: ()) -> [ &_27 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb18 = s0
+      [ s0 = panic {mode} {"assertion failed: 120i8.wrapping_sub(10) == 110"} (fun (_x: ()) -> [ &_23 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb15 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.wrapping_sub(10) == -5"} (fun (_x: ()) -> [ &_19 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb12 = s0
+      [ s0 = panic {mode} {"assertion failed: (-120i8).checked_sub(10).is_none()"} (fun (_x: ()) -> [ &_15 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb8 = s0
+      [ s0 = panic {mode} {"assertion failed: 120i8.checked_sub(10).unwrap() == 110"}
+          (fun (_x: ()) -> [ &_10 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 5i8.checked_sub(10).unwrap() == -5"} (fun (_x: ()) -> [ &_5 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & _2: bool = Any.any_l ()
     | & _3: Int8.t = Any.any_l ()
     | & _4: t_Option_i8 = Any.any_l ()
+    | & _5: () = Any.any_l ()
     | & _7: bool = Any.any_l ()
     | & _8: Int8.t = Any.any_l ()
     | & _9: t_Option_i8 = Any.any_l ()
+    | & _10: () = Any.any_l ()
     | & _12: bool = Any.any_l ()
     | & _14: t_Option_i8 = Any.any_l ()
+    | & _15: () = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & _18: Int8.t = Any.any_l ()
+    | & _19: () = Any.any_l ()
     | & _21: bool = Any.any_l ()
     | & _22: Int8.t = Any.any_l ()
+    | & _23: () = Any.any_l ()
     | & _25: bool = Any.any_l ()
     | & _26: Int8.t = Any.any_l ()
+    | & _27: () = Any.any_l ()
     | & _29: bool = Any.any_l ()
     | & _30: Int8.t = Any.any_l ()
+    | & _31: () = Any.any_l ()
     | & _33: bool = Any.any_l ()
     | & _34: Int8.t = Any.any_l ()
+    | & _35: () = Any.any_l ()
     | & _37: bool = Any.any_l ()
     | & _38: Int8.t = Any.any_l ()
+    | & _39: () = Any.any_l ()
     | & res: tup2_i8_bool = Any.any_l ()
     | & _42: bool = Any.any_l ()
     | & _44: bool = Any.any_l ()
+    | & _46: () = Any.any_l ()
     | & res'0: tup2_i8_bool = Any.any_l ()
     | & _49: bool = Any.any_l ()
     | & _51: bool = Any.any_l ()
+    | & _53: () = Any.any_l ()
     | & res'1: tup2_i8_bool = Any.any_l ()
     | & _56: bool = Any.any_l ()
-    | & _58: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _58: bool = Any.any_l ()
+    | & _60: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_sub_overflow_neg
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -1462,7 +1817,7 @@ module M_test_i8_sub_overflow_neg
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
@@ -1471,10 +1826,10 @@ module M_test_i8_sub_overflow_neg
         -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs)}
       (! return {result}) ]
   
-  let is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
+  let is_none_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
       (! return {result}) ]
   
@@ -1482,7 +1837,7 @@ module M_test_i8_sub_overflow_neg
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let saturating_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
     {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] ge_log_Int (Int8.to_int self_
             - Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -1496,7 +1851,7 @@ module M_test_i8_sub_overflow_neg
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
-  let overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
+  let overflowing_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
     {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (Int8.to_int self_
             - Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -1509,30 +1864,39 @@ module M_test_i8_sub_overflow_neg
       \/ gt_log_Int (Int8.to_int self_ - Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_sub_overflow_neg (a: Int8.t) (return (x: ())) =
+  let test_i8_sub_overflow_neg (mode: Mode.t) (a: Int8.t) (return (x: ())) =
   {[@stop_split] [@expl:test_i8_sub_overflow_neg requires] Int8.to_int a < 0}
     (! bb0
     [ bb0 = s0
-      [ s0 = checked_sub {(127: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
-      | s1 = is_none_i8 {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
+      [ s0 = checked_sub {mode} {(127: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
+      | s1 = is_none_i8 {mode} {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
       | s2 = any [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = wrapping_sub {(127: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_12 <- _x ] s1)
+      [ s0 = wrapping_sub {mode} {(127: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_12 <- _x ] s1)
       | s1 = Int8.add {(2: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_16 <- _x ] s2)
       | s2 = Int8.neg {_16} (fun (_x: Int8.t) -> [ &_15 <- _x ] s3)
       | s3 = Int8.sub {_15} {(127: Int8.t)} (fun (_x: Int8.t) -> [ &_14 <- _x ] s4)
       | s4 = [ &_11 <- _12 = _14 ] s5
       | s5 = any [ br0 -> {_11 = false} (! bb7) | br1 -> {_11} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = saturating_sub {(127: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_21 <- _x ] s1)
+      [ s0 = saturating_sub {mode} {(127: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_21 <- _x ] s1)
       | s1 = [ &_20 <- _21 = (127: Int8.t) ] s2
       | s2 = any [ br0 -> {_20 = false} (! bb10) | br1 -> {_20} (! bb9) ] ]
     | bb9 = s0
-      [ s0 = overflowing_sub {(127: Int8.t)} {a} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_sub {mode} {(127: Int8.t)} {a} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
       | s1 = Int8.add {(2: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_31 <- _x ] s2)
       | s2 = Int8.neg {_31} (fun (_x: Int8.t) -> [ &_30 <- _x ] s3)
       | s3 = Int8.sub {_30} {(127: Int8.t)} (fun (_x: Int8.t) -> [ &_29 <- _x ] s4)
@@ -1540,30 +1904,45 @@ module M_test_i8_sub_overflow_neg
       | s5 = any [ br0 -> {_27 = false} (! bb16) | br1 -> {_27} (! bb12) ] ]
     | bb12 = s0 [ s0 = [ &_33 <- res.f1 ] s1 | s1 = any [ br0 -> {_33 = false} (! bb16) | br1 -> {_33} (! bb13) ] ]
     | bb13 = return {_ret}
-    | bb16 = {false} any
-    | bb10 = {false} any
-    | bb7 = {false} any
-    | bb4 = {false} any ]
+    | bb16 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == -(2 + a) - 127 && res.1 == true"}
+          (fun (_x: ()) -> [ &_35 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb10 = s0
+      [ s0 = panic {mode} {"assertion failed: 127i8.saturating_sub(a) == 127"} (fun (_x: ()) -> [ &_23 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb7 = s0
+      [ s0 = panic {mode} {"assertion failed: 127i8.wrapping_sub(a) == -(2 + a) - 127"}
+          (fun (_x: ()) -> [ &_18 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 127i8.checked_sub(a).is_none()"} (fun (_x: ()) -> [ &_9 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: Int8.t = a
     | & _5: bool = Any.any_l ()
     | & _7: t_Option_i8 = Any.any_l ()
+    | & _9: () = Any.any_l ()
     | & _11: bool = Any.any_l ()
     | & _12: Int8.t = Any.any_l ()
     | & _14: Int8.t = Any.any_l ()
     | & _15: Int8.t = Any.any_l ()
     | & _16: Int8.t = Any.any_l ()
+    | & _18: () = Any.any_l ()
     | & _20: bool = Any.any_l ()
     | & _21: Int8.t = Any.any_l ()
+    | & _23: () = Any.any_l ()
     | & res: tup2_i8_bool = Any.any_l ()
     | & _27: bool = Any.any_l ()
     | & _29: Int8.t = Any.any_l ()
     | & _30: Int8.t = Any.any_l ()
     | & _31: Int8.t = Any.any_l ()
-    | & _33: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _33: bool = Any.any_l ()
+    | & _35: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_sub_overflow_pos
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -1577,7 +1956,7 @@ module M_test_i8_sub_overflow_pos
   
   constant const_MAX: Int8.t = (127: Int8.t)
   
-  let checked_sub (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
+  let checked_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: t_Option_i8)) = any
     [ return (result: t_Option_i8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (Int8.to_int self_ - Int8.to_int rhs < Int8.to_int const_MIN
@@ -1586,10 +1965,10 @@ module M_test_i8_sub_overflow_pos
         -> Int8.to_int r = Int8.to_int self_ - Int8.to_int rhs)}
       (! return {result}) ]
   
-  let is_none_i8 (self_: t_Option_i8) (return (x: bool)) = any
+  let is_none_i8 (mode: Mode.t) (self_: t_Option_i8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
       (! return {result}) ]
   
@@ -1597,7 +1976,7 @@ module M_test_i8_sub_overflow_pos
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let saturating_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) ->
     {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] ge_log_Int (Int8.to_int self_
             - Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -1611,7 +1990,7 @@ module M_test_i8_sub_overflow_pos
   
   type tup2_i8_bool = { f0: Int8.t; f1: bool }
   
-  let overflowing_sub (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
+  let overflowing_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: tup2_i8_bool)) = any
     [ return (result: tup2_i8_bool) ->
     {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (Int8.to_int self_
             - Int8.to_int rhs) (Int8.to_int const_MIN)
@@ -1624,61 +2003,85 @@ module M_test_i8_sub_overflow_pos
       \/ gt_log_Int (Int8.to_int self_ - Int8.to_int rhs) (Int8.to_int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_i8_sub_overflow_pos (a: Int8.t) (return (x: ())) =
+  let test_i8_sub_overflow_pos (mode: Mode.t) (a: Int8.t) (return (x: ())) =
   {[@stop_split] [@expl:test_i8_sub_overflow_pos requires] gt_log_Int (Int8.to_int a) 0}
     (! bb0
     [ bb0 = s0
-      [ s0 = checked_sub {(-128: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
-      | s1 = is_none_i8 {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
+      [ s0 = checked_sub {mode} {(-128: Int8.t)} {a} (fun (_x: t_Option_i8) -> [ &_7 <- _x ] s1)
+      | s1 = is_none_i8 {mode} {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
       | s2 = any [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = wrapping_sub {(-128: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_12 <- _x ] s1)
+      [ s0 = wrapping_sub {mode} {(-128: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_12 <- _x ] s1)
       | s1 = Int8.sub {(127: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_15 <- _x ] s2)
       | s2 = Int8.add {_15} {(1: Int8.t)} (fun (_x: Int8.t) -> [ &_14 <- _x ] s3)
       | s3 = [ &_11 <- _12 = _14 ] s4
       | s4 = any [ br0 -> {_11 = false} (! bb7) | br1 -> {_11} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = saturating_sub {(-128: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_20 <- _x ] s1)
+      [ s0 = saturating_sub {mode} {(-128: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_20 <- _x ] s1)
       | s1 = [ &_19 <- _20 = (-128: Int8.t) ] s2
       | s2 = any [ br0 -> {_19 = false} (! bb10) | br1 -> {_19} (! bb9) ] ]
     | bb9 = s0
-      [ s0 = overflowing_sub {(-128: Int8.t)} {a} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_sub {mode} {(-128: Int8.t)} {a} (fun (_x: tup2_i8_bool) -> [ &res <- _x ] s1)
       | s1 = Int8.sub {(127: Int8.t)} {a} (fun (_x: Int8.t) -> [ &_29 <- _x ] s2)
       | s2 = Int8.add {_29} {(1: Int8.t)} (fun (_x: Int8.t) -> [ &_28 <- _x ] s3)
       | s3 = [ &_26 <- res.f0 = _28 ] s4
       | s4 = any [ br0 -> {_26 = false} (! bb16) | br1 -> {_26} (! bb12) ] ]
     | bb12 = s0 [ s0 = [ &_31 <- res.f1 ] s1 | s1 = any [ br0 -> {_31 = false} (! bb16) | br1 -> {_31} (! bb13) ] ]
     | bb13 = return {_ret}
-    | bb16 = {false} any
-    | bb10 = {false} any
-    | bb7 = {false} any
-    | bb4 = {false} any ]
+    | bb16 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 127 - a + 1 && res.1 == true"}
+          (fun (_x: ()) -> [ &_33 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb10 = s0
+      [ s0 = panic {mode} {"assertion failed: (-128i8).saturating_sub(a) == -128"} (fun (_x: ()) -> [ &_22 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb7 = s0
+      [ s0 = panic {mode} {"assertion failed: (-128i8).wrapping_sub(a) == 127 - a + 1"}
+          (fun (_x: ()) -> [ &_17 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: (-128i8).checked_sub(a).is_none()"} (fun (_x: ()) -> [ &_9 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: Int8.t = a
     | & _5: bool = Any.any_l ()
     | & _7: t_Option_i8 = Any.any_l ()
+    | & _9: () = Any.any_l ()
     | & _11: bool = Any.any_l ()
     | & _12: Int8.t = Any.any_l ()
     | & _14: Int8.t = Any.any_l ()
     | & _15: Int8.t = Any.any_l ()
+    | & _17: () = Any.any_l ()
     | & _19: bool = Any.any_l ()
     | & _20: Int8.t = Any.any_l ()
+    | & _22: () = Any.any_l ()
     | & res: tup2_i8_bool = Any.any_l ()
     | & _26: bool = Any.any_l ()
     | & _28: Int8.t = Any.any_l ()
     | & _29: Int8.t = Any.any_l ()
-    | & _31: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _31: bool = Any.any_l ()
+    | & _33: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_i8_wrapping_add
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
-  let wrapping_add (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_add (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int8.add self_ rhs}
       (! return {result}) ]
   
@@ -1686,8 +2089,8 @@ module M_test_i8_wrapping_add
   
   meta "select_lsinst" "all"
   
-  let test_i8_wrapping_add (a: Int8.t) (b: Int8.t) (return (x: Int8.t)) = (! bb0
-    [ bb0 = s0 [ s0 = wrapping_add {a} {b} (fun (_x: Int8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  let test_i8_wrapping_add (mode: Mode.t) (a: Int8.t) (b: Int8.t) (return (x: Int8.t)) = (! bb0
+    [ bb0 = s0 [ s0 = wrapping_add {mode} {a} {b} (fun (_x: Int8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int8.t = Any.any_l () | & a: Int8.t = a | & b: Int8.t = b ])
     [ return (result: Int8.t) -> {[@stop_split] [@expl:test_i8_wrapping_add ensures] Int8.to_int result
         = Int8.to_int a + Int8.to_int b
@@ -1697,10 +2100,11 @@ module M_test_i8_wrapping_add
 end
 module M_test_i8_wrapping_sub
   use creusot.int.Int8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
-  let wrapping_sub (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
+  let wrapping_sub (mode: Mode.t) (self_: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) = any
     [ return (result: Int8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int8.sub self_ rhs}
       (! return {result}) ]
   
@@ -1708,8 +2112,8 @@ module M_test_i8_wrapping_sub
   
   meta "select_lsinst" "all"
   
-  let test_i8_wrapping_sub (a: Int8.t) (b: Int8.t) (return (x: Int8.t)) = (! bb0
-    [ bb0 = s0 [ s0 = wrapping_sub {a} {b} (fun (_x: Int8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  let test_i8_wrapping_sub (mode: Mode.t) (a: Int8.t) (b: Int8.t) (return (x: Int8.t)) = (! bb0
+    [ bb0 = s0 [ s0 = wrapping_sub {mode} {a} {b} (fun (_x: Int8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: Int8.t = Any.any_l () | & a: Int8.t = a | & b: Int8.t = b ])
     [ return (result: Int8.t) -> {[@stop_split] [@expl:test_i8_wrapping_sub ensures] Int8.to_int result
         = Int8.to_int a - Int8.to_int b
@@ -1719,6 +2123,7 @@ module M_test_i8_wrapping_sub
 end
 module M_test_u8_add_example
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -1732,7 +2137,7 @@ module M_test_u8_add_example
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let checked_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
+  let checked_add (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
@@ -1741,13 +2146,14 @@ module M_test_u8_add_example
         -> UInt8.t'int r = UInt8.t'int self_ + UInt8.t'int rhs)}
       (! return {result}) ]
   
-  let unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_
+    <> None}
     any [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
-  let is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
+  let is_none_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let wrapping_add (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt8.add self_ rhs}
       (! return {result}) ]
   
@@ -1755,7 +2161,7 @@ module M_test_u8_add_example
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let saturating_add (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) ->
     {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] ge_log_Int (UInt8.t'int self_
             + UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -1769,7 +2175,7 @@ module M_test_u8_add_example
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
-  let overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
+  let overflowing_add (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
     {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (UInt8.t'int self_
             + UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -1782,79 +2188,113 @@ module M_test_u8_add_example
       \/ gt_log_Int (UInt8.t'int self_ + UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_u8_add_example (return (x: ())) = (! bb0
+  let test_u8_add_example (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = checked_add {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_4 <- _x ] s1)
-      | s1 = unwrap_u8 {_4} (fun (_x: UInt8.t) -> [ &_3 <- _x ] s2)
+      [ s0 = checked_add {mode} {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_4 <- _x ] s1)
+      | s1 = unwrap_u8 {mode} {_4} (fun (_x: UInt8.t) -> [ &_3 <- _x ] s2)
       | s2 = [ &_2 <- _3 = (15: UInt8.t) ] s3
       | s3 = any [ br0 -> {_2 = false} (! bb4) | br1 -> {_2} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = checked_add {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_9 <- _x ] s1)
-      | s1 = is_none_u8 {_9} (fun (_x: bool) -> [ &_7 <- _x ] s2)
+      [ s0 = checked_add {mode} {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_9 <- _x ] s1)
+      | s1 = is_none_u8 {mode} {_9} (fun (_x: bool) -> [ &_7 <- _x ] s2)
       | s2 = any [ br0 -> {_7 = false} (! bb8) | br1 -> {_7} (! bb7) ] ]
     | bb7 = s0
-      [ s0 = wrapping_add {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_13 <- _x ] s1)
+      [ s0 = wrapping_add {mode} {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_13 <- _x ] s1)
       | s1 = [ &_12 <- _13 = (15: UInt8.t) ] s2
       | s2 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb10) ] ]
     | bb10 = s0
-      [ s0 = wrapping_add {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_17 <- _x ] s1)
+      [ s0 = wrapping_add {mode} {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_17 <- _x ] s1)
       | s1 = [ &_16 <- _17 = (4: UInt8.t) ] s2
       | s2 = any [ br0 -> {_16 = false} (! bb14) | br1 -> {_16} (! bb13) ] ]
     | bb13 = s0
-      [ s0 = saturating_add {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_21 <- _x ] s1)
+      [ s0 = saturating_add {mode} {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_21 <- _x ] s1)
       | s1 = [ &_20 <- _21 = (15: UInt8.t) ] s2
       | s2 = any [ br0 -> {_20 = false} (! bb17) | br1 -> {_20} (! bb16) ] ]
     | bb16 = s0
-      [ s0 = saturating_add {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_25 <- _x ] s1)
+      [ s0 = saturating_add {mode} {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_25 <- _x ] s1)
       | s1 = [ &_24 <- _25 = (255: UInt8.t) ] s2
       | s2 = any [ br0 -> {_24 = false} (! bb20) | br1 -> {_24} (! bb19) ] ]
     | bb19 = s0
-      [ s0 = overflowing_add {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_add {mode} {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
       | s1 = [ &_29 <- res.f0 = (15: UInt8.t) ] s2
       | s2 = any [ br0 -> {_29 = false} (! bb26) | br1 -> {_29} (! bb22) ] ]
     | bb22 = s0
       [ s0 = [ &_31 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_31 = false} (! bb26) | br1 -> {_31} (! bb23) ] ]
     | bb23 = s0
-      [ s0 = overflowing_add {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res'0 <- _x ] s1)
+      [ s0 = overflowing_add {mode} {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res'0 <- _x ] s1)
       | s1 = [ &_36 <- res'0.f0 = (4: UInt8.t) ] s2
       | s2 = any [ br0 -> {_36 = false} (! bb32) | br1 -> {_36} (! bb28) ] ]
     | bb28 = s0 [ s0 = [ &_38 <- res'0.f1 ] s1 | s1 = any [ br0 -> {_38 = false} (! bb32) | br1 -> {_38} (! bb29) ] ]
     | bb29 = return {_ret}
-    | bb32 = {false} any
-    | bb26 = {false} any
-    | bb20 = {false} any
-    | bb17 = {false} any
-    | bb14 = {false} any
-    | bb11 = {false} any
-    | bb8 = {false} any
-    | bb4 = {false} any ]
+    | bb32 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 4 && res.1 == true"} (fun (_x: ()) -> [ &_40 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb26 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 15 && res.1 == false"} (fun (_x: ()) -> [ &_33 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb20 = s0
+      [ s0 = panic {mode} {"assertion failed: 250u8.saturating_add(10) == 255"} (fun (_x: ()) -> [ &_26 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb17 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.saturating_add(10) == 15"} (fun (_x: ()) -> [ &_22 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb14 = s0
+      [ s0 = panic {mode} {"assertion failed: 250u8.wrapping_add(10) == 4"} (fun (_x: ()) -> [ &_18 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb11 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.wrapping_add(10) == 15"} (fun (_x: ()) -> [ &_14 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb8 = s0
+      [ s0 = panic {mode} {"assertion failed: 250u8.checked_add(10).is_none()"} (fun (_x: ()) -> [ &_10 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.checked_add(10).unwrap() == 15"} (fun (_x: ()) -> [ &_5 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & _2: bool = Any.any_l ()
     | & _3: UInt8.t = Any.any_l ()
     | & _4: t_Option_u8 = Any.any_l ()
+    | & _5: () = Any.any_l ()
     | & _7: bool = Any.any_l ()
     | & _9: t_Option_u8 = Any.any_l ()
+    | & _10: () = Any.any_l ()
     | & _12: bool = Any.any_l ()
     | & _13: UInt8.t = Any.any_l ()
+    | & _14: () = Any.any_l ()
     | & _16: bool = Any.any_l ()
     | & _17: UInt8.t = Any.any_l ()
+    | & _18: () = Any.any_l ()
     | & _20: bool = Any.any_l ()
     | & _21: UInt8.t = Any.any_l ()
+    | & _22: () = Any.any_l ()
     | & _24: bool = Any.any_l ()
     | & _25: UInt8.t = Any.any_l ()
+    | & _26: () = Any.any_l ()
     | & res: tup2_u8_bool = Any.any_l ()
     | & _29: bool = Any.any_l ()
     | & _31: bool = Any.any_l ()
+    | & _33: () = Any.any_l ()
     | & res'0: tup2_u8_bool = Any.any_l ()
     | & _36: bool = Any.any_l ()
-    | & _38: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _38: bool = Any.any_l ()
+    | & _40: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_u8_add_overflow
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -1868,7 +2308,7 @@ module M_test_u8_add_overflow
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let checked_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
+  let checked_add (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
@@ -1877,10 +2317,10 @@ module M_test_u8_add_overflow
         -> UInt8.t'int r = UInt8.t'int self_ + UInt8.t'int rhs)}
       (! return {result}) ]
   
-  let is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
+  let is_none_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let wrapping_add (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt8.add self_ rhs}
       (! return {result}) ]
   
@@ -1888,7 +2328,7 @@ module M_test_u8_add_overflow
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let saturating_add (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) ->
     {[@stop_split] [@expl:saturating_add ensures] ([@stop_split] [@expl:saturating_add ensures #0] ge_log_Int (UInt8.t'int self_
             + UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -1902,7 +2342,7 @@ module M_test_u8_add_overflow
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
-  let overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
+  let overflowing_add (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
     {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (UInt8.t'int self_
             + UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -1915,53 +2355,75 @@ module M_test_u8_add_overflow
       \/ gt_log_Int (UInt8.t'int self_ + UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_u8_add_overflow (a: UInt8.t) (return (x: ())) =
+  let test_u8_add_overflow (mode: Mode.t) (a: UInt8.t) (return (x: ())) =
   {[@stop_split] [@expl:test_u8_add_overflow requires] UInt8.t'int a <> 0}
     (! bb0
     [ bb0 = s0
-      [ s0 = checked_add {(255: UInt8.t)} {a} (fun (_x: t_Option_u8) -> [ &_7 <- _x ] s1)
-      | s1 = is_none_u8 {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
+      [ s0 = checked_add {mode} {(255: UInt8.t)} {a} (fun (_x: t_Option_u8) -> [ &_7 <- _x ] s1)
+      | s1 = is_none_u8 {mode} {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
       | s2 = any [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = wrapping_add {(255: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_12 <- _x ] s1)
+      [ s0 = wrapping_add {mode} {(255: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_12 <- _x ] s1)
       | s1 = UInt8.sub {a} {(1: UInt8.t)} (fun (_x: UInt8.t) -> [ &_14 <- _x ] s2)
       | s2 = [ &_11 <- _12 = _14 ] s3
       | s3 = any [ br0 -> {_11 = false} (! bb7) | br1 -> {_11} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = saturating_add {(255: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_19 <- _x ] s1)
+      [ s0 = saturating_add {mode} {(255: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_19 <- _x ] s1)
       | s1 = [ &_18 <- _19 = (255: UInt8.t) ] s2
       | s2 = any [ br0 -> {_18 = false} (! bb10) | br1 -> {_18} (! bb9) ] ]
     | bb9 = s0
-      [ s0 = overflowing_add {(255: UInt8.t)} {a} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_add {mode} {(255: UInt8.t)} {a} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
       | s1 = UInt8.sub {a} {(1: UInt8.t)} (fun (_x: UInt8.t) -> [ &_27 <- _x ] s2)
       | s2 = [ &_25 <- res.f0 = _27 ] s3
       | s3 = any [ br0 -> {_25 = false} (! bb16) | br1 -> {_25} (! bb12) ] ]
     | bb12 = s0 [ s0 = [ &_29 <- res.f1 ] s1 | s1 = any [ br0 -> {_29 = false} (! bb16) | br1 -> {_29} (! bb13) ] ]
     | bb13 = return {_ret}
-    | bb16 = {false} any
-    | bb10 = {false} any
-    | bb7 = {false} any
-    | bb4 = {false} any ]
+    | bb16 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == a - 1 && res.1 == true"} (fun (_x: ()) -> [ &_31 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb10 = s0
+      [ s0 = panic {mode} {"assertion failed: 255u8.saturating_add(a) == 255"} (fun (_x: ()) -> [ &_21 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb7 = s0
+      [ s0 = panic {mode} {"assertion failed: 255u8.wrapping_add(a) == a - 1"} (fun (_x: ()) -> [ &_16 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 255u8.checked_add(a).is_none()"} (fun (_x: ()) -> [ &_9 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: UInt8.t = a
     | & _5: bool = Any.any_l ()
     | & _7: t_Option_u8 = Any.any_l ()
+    | & _9: () = Any.any_l ()
     | & _11: bool = Any.any_l ()
     | & _12: UInt8.t = Any.any_l ()
     | & _14: UInt8.t = Any.any_l ()
+    | & _16: () = Any.any_l ()
     | & _18: bool = Any.any_l ()
     | & _19: UInt8.t = Any.any_l ()
+    | & _21: () = Any.any_l ()
     | & res: tup2_u8_bool = Any.any_l ()
     | & _25: bool = Any.any_l ()
     | & _27: UInt8.t = Any.any_l ()
-    | & _29: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _29: bool = Any.any_l ()
+    | & _31: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_u8_div_example
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use int.ComputerDivision
   use creusot.prelude.Any
   use int.Int
@@ -1970,7 +2432,7 @@ module M_test_u8_div_example
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
-  let checked_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
+  let checked_div (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_div ensures] ([@stop_split] [@expl:checked_div ensures #0] (result = None)
         = (UInt8.t'int rhs = 0 \/ UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1))
@@ -1978,13 +2440,14 @@ module M_test_u8_div_example
         -> UInt8.t'int r = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))}
       (! return {result}) ]
   
-  let is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
+  let is_none_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_
+    <> None}
     any [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
-  let wrapping_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
+  let wrapping_div (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
   {[@stop_split] [@expl:wrapping_div requires] UInt8.t'int rhs <> 0}
     any
     [ return (result: UInt8.t) ->
@@ -1996,7 +2459,7 @@ module M_test_u8_div_example
       \/ UInt8.t'int result = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))}
       (! return {result}) ]
   
-  let saturating_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
+  let saturating_div (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
   {[@stop_split] [@expl:saturating_div requires] UInt8.t'int rhs <> 0}
     any
     [ return (result: UInt8.t) ->
@@ -2010,7 +2473,7 @@ module M_test_u8_div_example
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
-  let overflowing_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) =
+  let overflowing_div (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) =
   {[@stop_split] [@expl:overflowing_div requires] UInt8.t'int rhs <> 0}
     any
     [ return (result: tup2_u8_bool) ->
@@ -2024,56 +2487,81 @@ module M_test_u8_div_example
       = (UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_u8_div_example (return (x: ())) = (! bb0
+  let test_u8_div_example (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = checked_div {(5: UInt8.t)} {(0: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_4 <- _x ] s1)
-      | s1 = is_none_u8 {_4} (fun (_x: bool) -> [ &_2 <- _x ] s2)
+      [ s0 = checked_div {mode} {(5: UInt8.t)} {(0: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_4 <- _x ] s1)
+      | s1 = is_none_u8 {mode} {_4} (fun (_x: bool) -> [ &_2 <- _x ] s2)
       | s2 = any [ br0 -> {_2 = false} (! bb4) | br1 -> {_2} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = checked_div {(5: UInt8.t)} {(2: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_9 <- _x ] s1)
-      | s1 = unwrap_u8 {_9} (fun (_x: UInt8.t) -> [ &_8 <- _x ] s2)
+      [ s0 = checked_div {mode} {(5: UInt8.t)} {(2: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_9 <- _x ] s1)
+      | s1 = unwrap_u8 {mode} {_9} (fun (_x: UInt8.t) -> [ &_8 <- _x ] s2)
       | s2 = [ &_7 <- _8 = (2: UInt8.t) ] s3
       | s3 = any [ br0 -> {_7 = false} (! bb8) | br1 -> {_7} (! bb7) ] ]
     | bb7 = s0
-      [ s0 = wrapping_div {(5: UInt8.t)} {(2: UInt8.t)} (fun (_x: UInt8.t) -> [ &_13 <- _x ] s1)
+      [ s0 = wrapping_div {mode} {(5: UInt8.t)} {(2: UInt8.t)} (fun (_x: UInt8.t) -> [ &_13 <- _x ] s1)
       | s1 = [ &_12 <- _13 = (2: UInt8.t) ] s2
       | s2 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb10) ] ]
     | bb10 = s0
-      [ s0 = saturating_div {(5: UInt8.t)} {(2: UInt8.t)} (fun (_x: UInt8.t) -> [ &_17 <- _x ] s1)
+      [ s0 = saturating_div {mode} {(5: UInt8.t)} {(2: UInt8.t)} (fun (_x: UInt8.t) -> [ &_17 <- _x ] s1)
       | s1 = [ &_16 <- _17 = (2: UInt8.t) ] s2
       | s2 = any [ br0 -> {_16 = false} (! bb14) | br1 -> {_16} (! bb13) ] ]
     | bb13 = s0
-      [ s0 = overflowing_div {(5: UInt8.t)} {(2: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_div {mode} {(5: UInt8.t)} {(2: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
       | s1 = [ &_21 <- res.f0 = (2: UInt8.t) ] s2
       | s2 = any [ br0 -> {_21 = false} (! bb20) | br1 -> {_21} (! bb16) ] ]
     | bb16 = s0
       [ s0 = [ &_23 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_23 = false} (! bb20) | br1 -> {_23} (! bb17) ] ]
     | bb17 = return {_ret}
-    | bb20 = {false} any
-    | bb14 = {false} any
-    | bb11 = {false} any
-    | bb8 = {false} any
-    | bb4 = {false} any ]
+    | bb20 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 2 && res.1 == false"} (fun (_x: ()) -> [ &_25 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb14 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.saturating_div(2) == 2"} (fun (_x: ()) -> [ &_18 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb11 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.wrapping_div(2) == 2"} (fun (_x: ()) -> [ &_14 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb8 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.checked_div(2).unwrap() == 2"} (fun (_x: ()) -> [ &_10 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.checked_div(0).is_none()"} (fun (_x: ()) -> [ &_5 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & _2: bool = Any.any_l ()
     | & _4: t_Option_u8 = Any.any_l ()
+    | & _5: () = Any.any_l ()
     | & _7: bool = Any.any_l ()
     | & _8: UInt8.t = Any.any_l ()
     | & _9: t_Option_u8 = Any.any_l ()
+    | & _10: () = Any.any_l ()
     | & _12: bool = Any.any_l ()
     | & _13: UInt8.t = Any.any_l ()
+    | & _14: () = Any.any_l ()
     | & _16: bool = Any.any_l ()
     | & _17: UInt8.t = Any.any_l ()
+    | & _18: () = Any.any_l ()
     | & res: tup2_u8_bool = Any.any_l ()
     | & _21: bool = Any.any_l ()
-    | & _23: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _23: bool = Any.any_l ()
+    | & _25: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_u8_div_no_overflow
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use int.ComputerDivision
   use creusot.prelude.Any
   use int.Int
@@ -2082,7 +2570,7 @@ module M_test_u8_div_no_overflow
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
-  let checked_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
+  let checked_div (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_div ensures] ([@stop_split] [@expl:checked_div ensures #0] (result = None)
         = (UInt8.t'int rhs = 0 \/ UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1))
@@ -2090,10 +2578,11 @@ module M_test_u8_div_no_overflow
         -> UInt8.t'int r = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))}
       (! return {result}) ]
   
-  let unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_
+    <> None}
     any [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
-  let wrapping_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
+  let wrapping_div (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
   {[@stop_split] [@expl:wrapping_div requires] UInt8.t'int rhs <> 0}
     any
     [ return (result: UInt8.t) ->
@@ -2105,7 +2594,7 @@ module M_test_u8_div_no_overflow
       \/ UInt8.t'int result = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))}
       (! return {result}) ]
   
-  let saturating_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
+  let saturating_div (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) =
   {[@stop_split] [@expl:saturating_div requires] UInt8.t'int rhs <> 0}
     any
     [ return (result: UInt8.t) ->
@@ -2119,7 +2608,7 @@ module M_test_u8_div_no_overflow
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
-  let overflowing_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) =
+  let overflowing_div (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) =
   {[@stop_split] [@expl:overflowing_div requires] UInt8.t'int rhs <> 0}
     any
     [ return (result: tup2_u8_bool) ->
@@ -2133,16 +2622,25 @@ module M_test_u8_div_no_overflow
       = (UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_u8_div_no_overflow (a: UInt8.t) (b: UInt8.t) (return (x: ())) =
+  let test_u8_div_no_overflow (mode: Mode.t) (a: UInt8.t) (b: UInt8.t) (return (x: ())) =
   {[@stop_split] [@expl:test_u8_div_no_overflow requires] UInt8.t'int b <> 0}
     (! bb0
     [ bb0 = s0
-      [ s0 = checked_div {a} {b} (fun (_x: t_Option_u8) -> [ &_8 <- _x ] s1)
-      | s1 = unwrap_u8 {_8} (fun (_x: UInt8.t) -> [ &_7 <- _x ] s2)
+      [ s0 = checked_div {mode} {a} {b} (fun (_x: t_Option_u8) -> [ &_8 <- _x ] s1)
+      | s1 = unwrap_u8 {mode} {_8} (fun (_x: UInt8.t) -> [ &_7 <- _x ] s2)
       | s2 = [ &_13 <- b ] s3
       | s3 = [ &_14 <- _13 = (0: UInt8.t) ] s4
       | s4 = {[@expl:division by zero] not _14} s5
@@ -2150,7 +2648,7 @@ module M_test_u8_div_no_overflow
       | s6 = [ &_6 <- _7 = _11 ] s7
       | s7 = any [ br0 -> {_6 = false} (! bb5) | br1 -> {_6} (! bb4) ] ]
     | bb4 = s0
-      [ s0 = wrapping_div {a} {b} (fun (_x: UInt8.t) -> [ &_18 <- _x ] s1)
+      [ s0 = wrapping_div {mode} {a} {b} (fun (_x: UInt8.t) -> [ &_18 <- _x ] s1)
       | s1 = [ &_23 <- b ] s2
       | s2 = [ &_24 <- _23 = (0: UInt8.t) ] s3
       | s3 = {[@expl:division by zero] not _24} s4
@@ -2158,7 +2656,7 @@ module M_test_u8_div_no_overflow
       | s5 = [ &_17 <- _18 = _21 ] s6
       | s6 = any [ br0 -> {_17 = false} (! bb9) | br1 -> {_17} (! bb8) ] ]
     | bb8 = s0
-      [ s0 = saturating_div {a} {b} (fun (_x: UInt8.t) -> [ &_28 <- _x ] s1)
+      [ s0 = saturating_div {mode} {a} {b} (fun (_x: UInt8.t) -> [ &_28 <- _x ] s1)
       | s1 = [ &_33 <- b ] s2
       | s2 = [ &_34 <- _33 = (0: UInt8.t) ] s3
       | s3 = {[@expl:division by zero] not _34} s4
@@ -2166,7 +2664,7 @@ module M_test_u8_div_no_overflow
       | s5 = [ &_27 <- _28 = _31 ] s6
       | s6 = any [ br0 -> {_27 = false} (! bb13) | br1 -> {_27} (! bb12) ] ]
     | bb12 = s0
-      [ s0 = overflowing_div {a} {b} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_div {mode} {a} {b} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
       | s1 = [ &_44 <- b ] s2
       | s2 = [ &_45 <- _44 = (0: UInt8.t) ] s3
       | s3 = {[@expl:division by zero] not _45} s4
@@ -2176,10 +2674,18 @@ module M_test_u8_div_no_overflow
     | bb16 = s0
       [ s0 = [ &_46 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_46 = false} (! bb20) | br1 -> {_46} (! bb17) ] ]
     | bb17 = return {_ret}
-    | bb20 = {false} any
-    | bb13 = {false} any
-    | bb9 = {false} any
-    | bb5 = {false} any ]
+    | bb20 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == a / b && res.1 == false"} (fun (_x: ()) -> [ &_48 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb13 = s0
+      [ s0 = panic {mode} {"assertion failed: a.saturating_div(b) == a / b"} (fun (_x: ()) -> [ &_35 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb9 = s0
+      [ s0 = panic {mode} {"assertion failed: a.wrapping_div(b) == a / b"} (fun (_x: ()) -> [ &_25 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb5 = s0
+      [ s0 = panic {mode} {"assertion failed: a.checked_div(b).unwrap() == a / b"} (fun (_x: ()) -> [ &_15 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: UInt8.t = a
     | & b: UInt8.t = b
@@ -2189,25 +2695,30 @@ module M_test_u8_div_no_overflow
     | & _11: UInt8.t = Any.any_l ()
     | & _13: UInt8.t = Any.any_l ()
     | & _14: bool = Any.any_l ()
+    | & _15: () = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & _18: UInt8.t = Any.any_l ()
     | & _21: UInt8.t = Any.any_l ()
     | & _23: UInt8.t = Any.any_l ()
     | & _24: bool = Any.any_l ()
+    | & _25: () = Any.any_l ()
     | & _27: bool = Any.any_l ()
     | & _28: UInt8.t = Any.any_l ()
     | & _31: UInt8.t = Any.any_l ()
     | & _33: UInt8.t = Any.any_l ()
     | & _34: bool = Any.any_l ()
+    | & _35: () = Any.any_l ()
     | & res: tup2_u8_bool = Any.any_l ()
     | & _40: bool = Any.any_l ()
     | & _42: UInt8.t = Any.any_l ()
     | & _44: UInt8.t = Any.any_l ()
     | & _45: bool = Any.any_l ()
-    | & _46: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _46: bool = Any.any_l ()
+    | & _48: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_u8_div_zero
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use int.ComputerDivision
   use creusot.prelude.Any
   use int.Int
@@ -2216,7 +2727,7 @@ module M_test_u8_div_zero
   
   constant const_MIN: UInt8.t = (0: UInt8.t)
   
-  let checked_div (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
+  let checked_div (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_div ensures] ([@stop_split] [@expl:checked_div ensures #0] (result = None)
         = (UInt8.t'int rhs = 0 \/ UInt8.t'int self_ = UInt8.t'int const_MIN /\ UInt8.t'int rhs = - 1))
@@ -2224,25 +2735,40 @@ module M_test_u8_div_zero
         -> UInt8.t'int r = ComputerDivision.div (UInt8.t'int self_) (UInt8.t'int rhs))}
       (! return {result}) ]
   
-  let is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
+  let is_none_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_u8_div_zero (a: UInt8.t) (return (x: ())) = (! bb0
+  let test_u8_div_zero (mode: Mode.t) (a: UInt8.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = checked_div {a} {(0: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_5 <- _x ] s1)
-      | s1 = is_none_u8 {_5} (fun (_x: bool) -> [ &_3 <- _x ] s2)
+      [ s0 = checked_div {mode} {a} {(0: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_5 <- _x ] s1)
+      | s1 = is_none_u8 {mode} {_5} (fun (_x: bool) -> [ &_3 <- _x ] s2)
       | s2 = any [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb3) ] ]
     | bb3 = return {_ret}
-    | bb4 = {false} any ]
-    [ & _ret: () = Any.any_l () | & a: UInt8.t = a | & _3: bool = Any.any_l () | & _5: t_Option_u8 = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: a.checked_div(0).is_none()"} (fun (_x: ()) -> [ &_7 <- _x ] s1)
+      | s1 = {false} any ] ]
+    [ & _ret: () = Any.any_l ()
+    | & a: UInt8.t = a
+    | & _3: bool = Any.any_l ()
+    | & _5: t_Option_u8 = Any.any_l ()
+    | & _7: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_u8_mul_example
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -2256,7 +2782,7 @@ module M_test_u8_mul_example
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
+  let checked_mul (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
@@ -2265,13 +2791,14 @@ module M_test_u8_mul_example
         -> UInt8.t'int r = UInt8.t'int self_ * UInt8.t'int rhs)}
       (! return {result}) ]
   
-  let unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_
+    <> None}
     any [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
-  let is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
+  let is_none_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let wrapping_mul (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt8.mul self_ rhs}
       (! return {result}) ]
   
@@ -2279,7 +2806,7 @@ module M_test_u8_mul_example
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let saturating_mul (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) ->
     {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] ge_log_Int (UInt8.t'int self_
             * UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -2293,7 +2820,7 @@ module M_test_u8_mul_example
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
-  let overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
+  let overflowing_mul (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
     {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] ge_log_Int (UInt8.t'int self_
             * UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -2306,79 +2833,113 @@ module M_test_u8_mul_example
       \/ gt_log_Int (UInt8.t'int self_ * UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_u8_mul_example (return (x: ())) = (! bb0
+  let test_u8_mul_example (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = checked_mul {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_4 <- _x ] s1)
-      | s1 = unwrap_u8 {_4} (fun (_x: UInt8.t) -> [ &_3 <- _x ] s2)
+      [ s0 = checked_mul {mode} {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_4 <- _x ] s1)
+      | s1 = unwrap_u8 {mode} {_4} (fun (_x: UInt8.t) -> [ &_3 <- _x ] s2)
       | s2 = [ &_2 <- _3 = (50: UInt8.t) ] s3
       | s3 = any [ br0 -> {_2 = false} (! bb4) | br1 -> {_2} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = checked_mul {(50: UInt8.t)} {(10: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_9 <- _x ] s1)
-      | s1 = is_none_u8 {_9} (fun (_x: bool) -> [ &_7 <- _x ] s2)
+      [ s0 = checked_mul {mode} {(50: UInt8.t)} {(10: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_9 <- _x ] s1)
+      | s1 = is_none_u8 {mode} {_9} (fun (_x: bool) -> [ &_7 <- _x ] s2)
       | s2 = any [ br0 -> {_7 = false} (! bb8) | br1 -> {_7} (! bb7) ] ]
     | bb7 = s0
-      [ s0 = wrapping_mul {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_13 <- _x ] s1)
+      [ s0 = wrapping_mul {mode} {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_13 <- _x ] s1)
       | s1 = [ &_12 <- _13 = (50: UInt8.t) ] s2
       | s2 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb10) ] ]
     | bb10 = s0
-      [ s0 = wrapping_mul {(50: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_17 <- _x ] s1)
+      [ s0 = wrapping_mul {mode} {(50: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_17 <- _x ] s1)
       | s1 = [ &_16 <- _17 = (244: UInt8.t) ] s2
       | s2 = any [ br0 -> {_16 = false} (! bb14) | br1 -> {_16} (! bb13) ] ]
     | bb13 = s0
-      [ s0 = saturating_mul {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_21 <- _x ] s1)
+      [ s0 = saturating_mul {mode} {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_21 <- _x ] s1)
       | s1 = [ &_20 <- _21 = (50: UInt8.t) ] s2
       | s2 = any [ br0 -> {_20 = false} (! bb17) | br1 -> {_20} (! bb16) ] ]
     | bb16 = s0
-      [ s0 = saturating_mul {(50: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_25 <- _x ] s1)
+      [ s0 = saturating_mul {mode} {(50: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_25 <- _x ] s1)
       | s1 = [ &_24 <- _25 = (255: UInt8.t) ] s2
       | s2 = any [ br0 -> {_24 = false} (! bb20) | br1 -> {_24} (! bb19) ] ]
     | bb19 = s0
-      [ s0 = overflowing_mul {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_mul {mode} {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
       | s1 = [ &_29 <- res.f0 = (50: UInt8.t) ] s2
       | s2 = any [ br0 -> {_29 = false} (! bb26) | br1 -> {_29} (! bb22) ] ]
     | bb22 = s0
       [ s0 = [ &_31 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_31 = false} (! bb26) | br1 -> {_31} (! bb23) ] ]
     | bb23 = s0
-      [ s0 = overflowing_mul {(50: UInt8.t)} {(10: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res'0 <- _x ] s1)
+      [ s0 = overflowing_mul {mode} {(50: UInt8.t)} {(10: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res'0 <- _x ] s1)
       | s1 = [ &_36 <- res'0.f0 = (244: UInt8.t) ] s2
       | s2 = any [ br0 -> {_36 = false} (! bb32) | br1 -> {_36} (! bb28) ] ]
     | bb28 = s0 [ s0 = [ &_38 <- res'0.f1 ] s1 | s1 = any [ br0 -> {_38 = false} (! bb32) | br1 -> {_38} (! bb29) ] ]
     | bb29 = return {_ret}
-    | bb32 = {false} any
-    | bb26 = {false} any
-    | bb20 = {false} any
-    | bb17 = {false} any
-    | bb14 = {false} any
-    | bb11 = {false} any
-    | bb8 = {false} any
-    | bb4 = {false} any ]
+    | bb32 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 244 && res.1 == true"} (fun (_x: ()) -> [ &_40 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb26 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 50 && res.1 == false"} (fun (_x: ()) -> [ &_33 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb20 = s0
+      [ s0 = panic {mode} {"assertion failed: 50u8.saturating_mul(10) == 255"} (fun (_x: ()) -> [ &_26 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb17 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.saturating_mul(10) == 50"} (fun (_x: ()) -> [ &_22 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb14 = s0
+      [ s0 = panic {mode} {"assertion failed: 50u8.wrapping_mul(10) == 244"} (fun (_x: ()) -> [ &_18 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb11 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.wrapping_mul(10) == 50"} (fun (_x: ()) -> [ &_14 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb8 = s0
+      [ s0 = panic {mode} {"assertion failed: 50u8.checked_mul(10).is_none()"} (fun (_x: ()) -> [ &_10 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.checked_mul(10).unwrap() == 50"} (fun (_x: ()) -> [ &_5 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & _2: bool = Any.any_l ()
     | & _3: UInt8.t = Any.any_l ()
     | & _4: t_Option_u8 = Any.any_l ()
+    | & _5: () = Any.any_l ()
     | & _7: bool = Any.any_l ()
     | & _9: t_Option_u8 = Any.any_l ()
+    | & _10: () = Any.any_l ()
     | & _12: bool = Any.any_l ()
     | & _13: UInt8.t = Any.any_l ()
+    | & _14: () = Any.any_l ()
     | & _16: bool = Any.any_l ()
     | & _17: UInt8.t = Any.any_l ()
+    | & _18: () = Any.any_l ()
     | & _20: bool = Any.any_l ()
     | & _21: UInt8.t = Any.any_l ()
+    | & _22: () = Any.any_l ()
     | & _24: bool = Any.any_l ()
     | & _25: UInt8.t = Any.any_l ()
+    | & _26: () = Any.any_l ()
     | & res: tup2_u8_bool = Any.any_l ()
     | & _29: bool = Any.any_l ()
     | & _31: bool = Any.any_l ()
+    | & _33: () = Any.any_l ()
     | & res'0: tup2_u8_bool = Any.any_l ()
     | & _36: bool = Any.any_l ()
-    | & _38: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _38: bool = Any.any_l ()
+    | & _40: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_u8_mul_zero
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -2392,7 +2953,7 @@ module M_test_u8_mul_zero
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
+  let checked_mul (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
@@ -2401,10 +2962,11 @@ module M_test_u8_mul_zero
         -> UInt8.t'int r = UInt8.t'int self_ * UInt8.t'int rhs)}
       (! return {result}) ]
   
-  let unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_
+    <> None}
     any [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
-  let wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let wrapping_mul (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt8.mul self_ rhs}
       (! return {result}) ]
   
@@ -2412,7 +2974,7 @@ module M_test_u8_mul_zero
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let saturating_mul (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) ->
     {[@stop_split] [@expl:saturating_mul ensures] ([@stop_split] [@expl:saturating_mul ensures #0] ge_log_Int (UInt8.t'int self_
             * UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -2426,7 +2988,7 @@ module M_test_u8_mul_zero
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
-  let overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
+  let overflowing_mul (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
     {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] ge_log_Int (UInt8.t'int self_
             * UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -2439,50 +3001,72 @@ module M_test_u8_mul_zero
       \/ gt_log_Int (UInt8.t'int self_ * UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_u8_mul_zero (a: UInt8.t) (return (x: ())) = (! bb0
+  let test_u8_mul_zero (mode: Mode.t) (a: UInt8.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = checked_mul {(0: UInt8.t)} {a} (fun (_x: t_Option_u8) -> [ &_5 <- _x ] s1)
-      | s1 = unwrap_u8 {_5} (fun (_x: UInt8.t) -> [ &_4 <- _x ] s2)
+      [ s0 = checked_mul {mode} {(0: UInt8.t)} {a} (fun (_x: t_Option_u8) -> [ &_5 <- _x ] s1)
+      | s1 = unwrap_u8 {mode} {_5} (fun (_x: UInt8.t) -> [ &_4 <- _x ] s2)
       | s2 = [ &_3 <- _4 = (0: UInt8.t) ] s3
       | s3 = any [ br0 -> {_3 = false} (! bb4) | br1 -> {_3} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = wrapping_mul {(0: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_10 <- _x ] s1)
+      [ s0 = wrapping_mul {mode} {(0: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_10 <- _x ] s1)
       | s1 = [ &_9 <- _10 = (0: UInt8.t) ] s2
       | s2 = any [ br0 -> {_9 = false} (! bb7) | br1 -> {_9} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = saturating_mul {(0: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_15 <- _x ] s1)
+      [ s0 = saturating_mul {mode} {(0: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_15 <- _x ] s1)
       | s1 = [ &_14 <- _15 = (0: UInt8.t) ] s2
       | s2 = any [ br0 -> {_14 = false} (! bb10) | br1 -> {_14} (! bb9) ] ]
     | bb9 = s0
-      [ s0 = overflowing_mul {(0: UInt8.t)} {a} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_mul {mode} {(0: UInt8.t)} {a} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
       | s1 = [ &_21 <- res.f0 = (0: UInt8.t) ] s2
       | s2 = any [ br0 -> {_21 = false} (! bb16) | br1 -> {_21} (! bb12) ] ]
     | bb12 = s0
       [ s0 = [ &_23 <- res.f1 = false ] s1 | s1 = any [ br0 -> {_23 = false} (! bb16) | br1 -> {_23} (! bb13) ] ]
     | bb13 = return {_ret}
-    | bb16 = {false} any
-    | bb10 = {false} any
-    | bb7 = {false} any
-    | bb4 = {false} any ]
+    | bb16 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 0 && res.1 == false"} (fun (_x: ()) -> [ &_25 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb10 = s0
+      [ s0 = panic {mode} {"assertion failed: 0u8.saturating_mul(a) == 0"} (fun (_x: ()) -> [ &_17 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb7 = s0
+      [ s0 = panic {mode} {"assertion failed: 0u8.wrapping_mul(a) == 0"} (fun (_x: ()) -> [ &_12 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 0u8.checked_mul(a).unwrap() == 0"} (fun (_x: ()) -> [ &_7 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: UInt8.t = a
     | & _3: bool = Any.any_l ()
     | & _4: UInt8.t = Any.any_l ()
     | & _5: t_Option_u8 = Any.any_l ()
+    | & _7: () = Any.any_l ()
     | & _9: bool = Any.any_l ()
     | & _10: UInt8.t = Any.any_l ()
+    | & _12: () = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _15: UInt8.t = Any.any_l ()
+    | & _17: () = Any.any_l ()
     | & res: tup2_u8_bool = Any.any_l ()
     | & _21: bool = Any.any_l ()
-    | & _23: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _23: bool = Any.any_l ()
+    | & _25: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_u8_overflowing_add
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -2500,7 +3084,7 @@ module M_test_u8_overflowing_add
   
   meta "rewrite_def" predicate gt_log_Int
   
-  let overflowing_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
+  let overflowing_add (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
     {[@stop_split] [@expl:overflowing_add ensures] ([@stop_split] [@expl:overflowing_add ensures #0] ge_log_Int (UInt8.t'int self_
             + UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -2513,13 +3097,13 @@ module M_test_u8_overflowing_add
       \/ gt_log_Int (UInt8.t'int self_ + UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
-  let wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let wrapping_add (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt8.add self_ rhs}
       (! return {result}) ]
   
   type t_Option_u8 = None | Some UInt8.t
   
-  let checked_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
+  let checked_add (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_add ensures] ([@stop_split] [@expl:checked_add ensures #0] (result = None)
         = (UInt8.t'int self_ + UInt8.t'int rhs < UInt8.t'int const_MIN
@@ -2528,41 +3112,59 @@ module M_test_u8_overflowing_add
         -> UInt8.t'int r = UInt8.t'int self_ + UInt8.t'int rhs)}
       (! return {result}) ]
   
-  let is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
+  let is_none_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_u8_overflowing_add (a: UInt8.t) (b: UInt8.t) (return (x: ())) = (! bb0
+  let test_u8_overflowing_add (mode: Mode.t) (a: UInt8.t) (b: UInt8.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = overflowing_add {a} {b} (fun (_x: tup2_u8_bool) -> [ &_6 <- _x ] s1)
-      | s1 = wrapping_add {a} {b} (fun (_x: UInt8.t) -> [ &_9 <- _x ] s2)
+      [ s0 = overflowing_add {mode} {a} {b} (fun (_x: tup2_u8_bool) -> [ &_6 <- _x ] s1)
+      | s1 = wrapping_add {mode} {a} {b} (fun (_x: UInt8.t) -> [ &_9 <- _x ] s2)
       | s2 = [ &_4 <- _6.f0 = _9 ] s3
       | s3 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = overflowing_add {a} {b} (fun (_x: tup2_u8_bool) -> [ &_16 <- _x ] s1)
-      | s1 = checked_add {a} {b} (fun (_x: t_Option_u8) -> [ &_21 <- _x ] s2)
-      | s2 = is_none_u8 {_21} (fun (_x: bool) -> [ &_19 <- _x ] s3)
+      [ s0 = overflowing_add {mode} {a} {b} (fun (_x: tup2_u8_bool) -> [ &_16 <- _x ] s1)
+      | s1 = checked_add {mode} {a} {b} (fun (_x: t_Option_u8) -> [ &_21 <- _x ] s2)
+      | s2 = is_none_u8 {mode} {_21} (fun (_x: bool) -> [ &_19 <- _x ] s3)
       | s3 = [ &_14 <- _16.f1 = _19 ] s4
       | s4 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
     | bb8 = return {_ret}
-    | bb9 = {false} any
-    | bb4 = {false} any ]
+    | bb9 = s0
+      [ s0 = panic {mode} {"assertion failed: a.overflowing_add(b).1 == a.checked_add(b).is_none()"}
+          (fun (_x: ()) -> [ &_24 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: a.overflowing_add(b).0 == a.wrapping_add(b)"}
+          (fun (_x: ()) -> [ &_12 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: UInt8.t = a
     | & b: UInt8.t = b
     | & _4: bool = Any.any_l ()
     | & _6: tup2_u8_bool = Any.any_l ()
     | & _9: UInt8.t = Any.any_l ()
+    | & _12: () = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: tup2_u8_bool = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _21: t_Option_u8 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _21: t_Option_u8 = Any.any_l ()
+    | & _24: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_u8_overflowing_mul
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -2580,7 +3182,7 @@ module M_test_u8_overflowing_mul
   
   meta "rewrite_def" predicate gt_log_Int
   
-  let overflowing_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
+  let overflowing_mul (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
     {[@stop_split] [@expl:overflowing_mul ensures] ([@stop_split] [@expl:overflowing_mul ensures #0] ge_log_Int (UInt8.t'int self_
             * UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -2593,13 +3195,13 @@ module M_test_u8_overflowing_mul
       \/ gt_log_Int (UInt8.t'int self_ * UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
-  let wrapping_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let wrapping_mul (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt8.mul self_ rhs}
       (! return {result}) ]
   
   type t_Option_u8 = None | Some UInt8.t
   
-  let checked_mul (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
+  let checked_mul (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_mul ensures] ([@stop_split] [@expl:checked_mul ensures #0] (result = None)
         = (UInt8.t'int self_ * UInt8.t'int rhs < UInt8.t'int const_MIN
@@ -2608,41 +3210,59 @@ module M_test_u8_overflowing_mul
         -> UInt8.t'int r = UInt8.t'int self_ * UInt8.t'int rhs)}
       (! return {result}) ]
   
-  let is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
+  let is_none_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_u8_overflowing_mul (a: UInt8.t) (b: UInt8.t) (return (x: ())) = (! bb0
+  let test_u8_overflowing_mul (mode: Mode.t) (a: UInt8.t) (b: UInt8.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = overflowing_mul {a} {b} (fun (_x: tup2_u8_bool) -> [ &_6 <- _x ] s1)
-      | s1 = wrapping_mul {a} {b} (fun (_x: UInt8.t) -> [ &_9 <- _x ] s2)
+      [ s0 = overflowing_mul {mode} {a} {b} (fun (_x: tup2_u8_bool) -> [ &_6 <- _x ] s1)
+      | s1 = wrapping_mul {mode} {a} {b} (fun (_x: UInt8.t) -> [ &_9 <- _x ] s2)
       | s2 = [ &_4 <- _6.f0 = _9 ] s3
       | s3 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = overflowing_mul {a} {b} (fun (_x: tup2_u8_bool) -> [ &_16 <- _x ] s1)
-      | s1 = checked_mul {a} {b} (fun (_x: t_Option_u8) -> [ &_21 <- _x ] s2)
-      | s2 = is_none_u8 {_21} (fun (_x: bool) -> [ &_19 <- _x ] s3)
+      [ s0 = overflowing_mul {mode} {a} {b} (fun (_x: tup2_u8_bool) -> [ &_16 <- _x ] s1)
+      | s1 = checked_mul {mode} {a} {b} (fun (_x: t_Option_u8) -> [ &_21 <- _x ] s2)
+      | s2 = is_none_u8 {mode} {_21} (fun (_x: bool) -> [ &_19 <- _x ] s3)
       | s3 = [ &_14 <- _16.f1 = _19 ] s4
       | s4 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
     | bb8 = return {_ret}
-    | bb9 = {false} any
-    | bb4 = {false} any ]
+    | bb9 = s0
+      [ s0 = panic {mode} {"assertion failed: a.overflowing_mul(b).1 == a.checked_mul(b).is_none()"}
+          (fun (_x: ()) -> [ &_24 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: a.overflowing_mul(b).0 == a.wrapping_mul(b)"}
+          (fun (_x: ()) -> [ &_12 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: UInt8.t = a
     | & b: UInt8.t = b
     | & _4: bool = Any.any_l ()
     | & _6: tup2_u8_bool = Any.any_l ()
     | & _9: UInt8.t = Any.any_l ()
+    | & _12: () = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: tup2_u8_bool = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _21: t_Option_u8 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _21: t_Option_u8 = Any.any_l ()
+    | & _24: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_u8_overflowing_sub
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -2660,7 +3280,7 @@ module M_test_u8_overflowing_sub
   
   meta "rewrite_def" predicate gt_log_Int
   
-  let overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
+  let overflowing_sub (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
     {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (UInt8.t'int self_
             - UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -2673,13 +3293,13 @@ module M_test_u8_overflowing_sub
       \/ gt_log_Int (UInt8.t'int self_ - UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
-  let wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let wrapping_sub (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs}
       (! return {result}) ]
   
   type t_Option_u8 = None | Some UInt8.t
   
-  let checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
+  let checked_sub (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
@@ -2688,41 +3308,59 @@ module M_test_u8_overflowing_sub
         -> UInt8.t'int r = UInt8.t'int self_ - UInt8.t'int rhs)}
       (! return {result}) ]
   
-  let is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
+  let is_none_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_u8_overflowing_sub (a: UInt8.t) (b: UInt8.t) (return (x: ())) = (! bb0
+  let test_u8_overflowing_sub (mode: Mode.t) (a: UInt8.t) (b: UInt8.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = overflowing_sub {a} {b} (fun (_x: tup2_u8_bool) -> [ &_6 <- _x ] s1)
-      | s1 = wrapping_sub {a} {b} (fun (_x: UInt8.t) -> [ &_9 <- _x ] s2)
+      [ s0 = overflowing_sub {mode} {a} {b} (fun (_x: tup2_u8_bool) -> [ &_6 <- _x ] s1)
+      | s1 = wrapping_sub {mode} {a} {b} (fun (_x: UInt8.t) -> [ &_9 <- _x ] s2)
       | s2 = [ &_4 <- _6.f0 = _9 ] s3
       | s3 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = overflowing_sub {a} {b} (fun (_x: tup2_u8_bool) -> [ &_16 <- _x ] s1)
-      | s1 = checked_sub {a} {b} (fun (_x: t_Option_u8) -> [ &_21 <- _x ] s2)
-      | s2 = is_none_u8 {_21} (fun (_x: bool) -> [ &_19 <- _x ] s3)
+      [ s0 = overflowing_sub {mode} {a} {b} (fun (_x: tup2_u8_bool) -> [ &_16 <- _x ] s1)
+      | s1 = checked_sub {mode} {a} {b} (fun (_x: t_Option_u8) -> [ &_21 <- _x ] s2)
+      | s2 = is_none_u8 {mode} {_21} (fun (_x: bool) -> [ &_19 <- _x ] s3)
       | s3 = [ &_14 <- _16.f1 = _19 ] s4
       | s4 = any [ br0 -> {_14 = false} (! bb9) | br1 -> {_14} (! bb8) ] ]
     | bb8 = return {_ret}
-    | bb9 = {false} any
-    | bb4 = {false} any ]
+    | bb9 = s0
+      [ s0 = panic {mode} {"assertion failed: a.overflowing_sub(b).1 == a.checked_sub(b).is_none()"}
+          (fun (_x: ()) -> [ &_24 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: a.overflowing_sub(b).0 == a.wrapping_sub(b)"}
+          (fun (_x: ()) -> [ &_12 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: UInt8.t = a
     | & b: UInt8.t = b
     | & _4: bool = Any.any_l ()
     | & _6: tup2_u8_bool = Any.any_l ()
     | & _9: UInt8.t = Any.any_l ()
+    | & _12: () = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: tup2_u8_bool = Any.any_l ()
     | & _19: bool = Any.any_l ()
-    | & _21: t_Option_u8 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _21: t_Option_u8 = Any.any_l ()
+    | & _24: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_u8_sub_example
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -2736,7 +3374,7 @@ module M_test_u8_sub_example
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
+  let checked_sub (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
@@ -2745,13 +3383,14 @@ module M_test_u8_sub_example
         -> UInt8.t'int r = UInt8.t'int self_ - UInt8.t'int rhs)}
       (! return {result}) ]
   
-  let is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
+  let is_none_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let unwrap_u8 (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] self_
+    <> None}
     any [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
   
-  let wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let wrapping_sub (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs}
       (! return {result}) ]
   
@@ -2759,7 +3398,7 @@ module M_test_u8_sub_example
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let saturating_sub (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) ->
     {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] ge_log_Int (UInt8.t'int self_
             - UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -2773,7 +3412,7 @@ module M_test_u8_sub_example
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
-  let overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
+  let overflowing_sub (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
     {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (UInt8.t'int self_
             - UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -2786,79 +3425,114 @@ module M_test_u8_sub_example
       \/ gt_log_Int (UInt8.t'int self_ - UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_u8_sub_example (return (x: ())) = (! bb0
+  let test_u8_sub_example (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = checked_sub {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_4 <- _x ] s1)
-      | s1 = is_none_u8 {_4} (fun (_x: bool) -> [ &_2 <- _x ] s2)
+      [ s0 = checked_sub {mode} {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_4 <- _x ] s1)
+      | s1 = is_none_u8 {mode} {_4} (fun (_x: bool) -> [ &_2 <- _x ] s2)
       | s2 = any [ br0 -> {_2 = false} (! bb4) | br1 -> {_2} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = checked_sub {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_9 <- _x ] s1)
-      | s1 = unwrap_u8 {_9} (fun (_x: UInt8.t) -> [ &_8 <- _x ] s2)
+      [ s0 = checked_sub {mode} {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: t_Option_u8) -> [ &_9 <- _x ] s1)
+      | s1 = unwrap_u8 {mode} {_9} (fun (_x: UInt8.t) -> [ &_8 <- _x ] s2)
       | s2 = [ &_7 <- _8 = (240: UInt8.t) ] s3
       | s3 = any [ br0 -> {_7 = false} (! bb8) | br1 -> {_7} (! bb7) ] ]
     | bb7 = s0
-      [ s0 = wrapping_sub {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_13 <- _x ] s1)
+      [ s0 = wrapping_sub {mode} {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_13 <- _x ] s1)
       | s1 = [ &_12 <- _13 = (251: UInt8.t) ] s2
       | s2 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb10) ] ]
     | bb10 = s0
-      [ s0 = wrapping_sub {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_17 <- _x ] s1)
+      [ s0 = wrapping_sub {mode} {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_17 <- _x ] s1)
       | s1 = [ &_16 <- _17 = (240: UInt8.t) ] s2
       | s2 = any [ br0 -> {_16 = false} (! bb14) | br1 -> {_16} (! bb13) ] ]
     | bb13 = s0
-      [ s0 = saturating_sub {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_21 <- _x ] s1)
+      [ s0 = saturating_sub {mode} {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_21 <- _x ] s1)
       | s1 = [ &_20 <- _21 = (0: UInt8.t) ] s2
       | s2 = any [ br0 -> {_20 = false} (! bb17) | br1 -> {_20} (! bb16) ] ]
     | bb16 = s0
-      [ s0 = saturating_sub {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_25 <- _x ] s1)
+      [ s0 = saturating_sub {mode} {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: UInt8.t) -> [ &_25 <- _x ] s1)
       | s1 = [ &_24 <- _25 = (240: UInt8.t) ] s2
       | s2 = any [ br0 -> {_24 = false} (! bb20) | br1 -> {_24} (! bb19) ] ]
     | bb19 = s0
-      [ s0 = overflowing_sub {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_sub {mode} {(5: UInt8.t)} {(10: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
       | s1 = [ &_29 <- res.f0 = (251: UInt8.t) ] s2
       | s2 = any [ br0 -> {_29 = false} (! bb26) | br1 -> {_29} (! bb22) ] ]
     | bb22 = s0 [ s0 = [ &_31 <- res.f1 ] s1 | s1 = any [ br0 -> {_31 = false} (! bb26) | br1 -> {_31} (! bb23) ] ]
     | bb23 = s0
-      [ s0 = overflowing_sub {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res'0 <- _x ] s1)
+      [ s0 = overflowing_sub {mode} {(250: UInt8.t)} {(10: UInt8.t)} (fun (_x: tup2_u8_bool) -> [ &res'0 <- _x ] s1)
       | s1 = [ &_36 <- res'0.f0 = (240: UInt8.t) ] s2
       | s2 = any [ br0 -> {_36 = false} (! bb32) | br1 -> {_36} (! bb28) ] ]
     | bb28 = s0
       [ s0 = [ &_38 <- res'0.f1 = false ] s1 | s1 = any [ br0 -> {_38 = false} (! bb32) | br1 -> {_38} (! bb29) ] ]
     | bb29 = return {_ret}
-    | bb32 = {false} any
-    | bb26 = {false} any
-    | bb20 = {false} any
-    | bb17 = {false} any
-    | bb14 = {false} any
-    | bb11 = {false} any
-    | bb8 = {false} any
-    | bb4 = {false} any ]
+    | bb32 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 240 && res.1 == false"} (fun (_x: ()) -> [ &_40 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb26 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 251 && res.1 == true"} (fun (_x: ()) -> [ &_33 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb20 = s0
+      [ s0 = panic {mode} {"assertion failed: 250u8.saturating_sub(10) == 240"} (fun (_x: ()) -> [ &_26 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb17 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.saturating_sub(10) == 0"} (fun (_x: ()) -> [ &_22 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb14 = s0
+      [ s0 = panic {mode} {"assertion failed: 250u8.wrapping_sub(10) == 240"} (fun (_x: ()) -> [ &_18 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb11 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.wrapping_sub(10) == 251"} (fun (_x: ()) -> [ &_14 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb8 = s0
+      [ s0 = panic {mode} {"assertion failed: 250u8.checked_sub(10).unwrap() == 240"}
+          (fun (_x: ()) -> [ &_10 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 5u8.checked_sub(10).is_none()"} (fun (_x: ()) -> [ &_5 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & _2: bool = Any.any_l ()
     | & _4: t_Option_u8 = Any.any_l ()
+    | & _5: () = Any.any_l ()
     | & _7: bool = Any.any_l ()
     | & _8: UInt8.t = Any.any_l ()
     | & _9: t_Option_u8 = Any.any_l ()
+    | & _10: () = Any.any_l ()
     | & _12: bool = Any.any_l ()
     | & _13: UInt8.t = Any.any_l ()
+    | & _14: () = Any.any_l ()
     | & _16: bool = Any.any_l ()
     | & _17: UInt8.t = Any.any_l ()
+    | & _18: () = Any.any_l ()
     | & _20: bool = Any.any_l ()
     | & _21: UInt8.t = Any.any_l ()
+    | & _22: () = Any.any_l ()
     | & _24: bool = Any.any_l ()
     | & _25: UInt8.t = Any.any_l ()
+    | & _26: () = Any.any_l ()
     | & res: tup2_u8_bool = Any.any_l ()
     | & _29: bool = Any.any_l ()
     | & _31: bool = Any.any_l ()
+    | & _33: () = Any.any_l ()
     | & res'0: tup2_u8_bool = Any.any_l ()
     | & _36: bool = Any.any_l ()
-    | & _38: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _38: bool = Any.any_l ()
+    | & _40: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_u8_sub_overflow
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -2872,7 +3546,7 @@ module M_test_u8_sub_overflow
   
   constant const_MAX: UInt8.t = (255: UInt8.t)
   
-  let checked_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
+  let checked_sub (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: t_Option_u8)) = any
     [ return (result: t_Option_u8) ->
     {[@stop_split] [@expl:checked_sub ensures] ([@stop_split] [@expl:checked_sub ensures #0] (result = None)
         = (UInt8.t'int self_ - UInt8.t'int rhs < UInt8.t'int const_MIN
@@ -2881,10 +3555,10 @@ module M_test_u8_sub_overflow
         -> UInt8.t'int r = UInt8.t'int self_ - UInt8.t'int rhs)}
       (! return {result}) ]
   
-  let is_none_u8 (self_: t_Option_u8) (return (x: bool)) = any
+  let is_none_u8 (mode: Mode.t) (self_: t_Option_u8) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self_ = None)} (! return {result}) ]
   
-  let wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let wrapping_sub (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs}
       (! return {result}) ]
   
@@ -2892,7 +3566,7 @@ module M_test_u8_sub_overflow
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let saturating_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let saturating_sub (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) ->
     {[@stop_split] [@expl:saturating_sub ensures] ([@stop_split] [@expl:saturating_sub ensures #0] ge_log_Int (UInt8.t'int self_
             - UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -2906,7 +3580,7 @@ module M_test_u8_sub_overflow
   
   type tup2_u8_bool = { f0: UInt8.t; f1: bool }
   
-  let overflowing_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
+  let overflowing_sub (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: tup2_u8_bool)) = any
     [ return (result: tup2_u8_bool) ->
     {[@stop_split] [@expl:overflowing_sub ensures] ([@stop_split] [@expl:overflowing_sub ensures #0] ge_log_Int (UInt8.t'int self_
             - UInt8.t'int rhs) (UInt8.t'int const_MIN)
@@ -2919,61 +3593,84 @@ module M_test_u8_sub_overflow
       \/ gt_log_Int (UInt8.t'int self_ - UInt8.t'int rhs) (UInt8.t'int const_MAX)))}
       (! return {result}) ]
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (mode: Mode.t) (expr: string) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let test_u8_sub_overflow (a: UInt8.t) (return (x: ())) =
+  let test_u8_sub_overflow (mode: Mode.t) (a: UInt8.t) (return (x: ())) =
   {[@stop_split] [@expl:test_u8_sub_overflow requires] UInt8.t'int a <> 0}
     (! bb0
     [ bb0 = s0
-      [ s0 = checked_sub {(0: UInt8.t)} {a} (fun (_x: t_Option_u8) -> [ &_7 <- _x ] s1)
-      | s1 = is_none_u8 {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
+      [ s0 = checked_sub {mode} {(0: UInt8.t)} {a} (fun (_x: t_Option_u8) -> [ &_7 <- _x ] s1)
+      | s1 = is_none_u8 {mode} {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
       | s2 = any [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb3) ] ]
     | bb3 = s0
-      [ s0 = wrapping_sub {(0: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_12 <- _x ] s1)
+      [ s0 = wrapping_sub {mode} {(0: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_12 <- _x ] s1)
       | s1 = UInt8.sub {(255: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_15 <- _x ] s2)
       | s2 = UInt8.add {_15} {(1: UInt8.t)} (fun (_x: UInt8.t) -> [ &_14 <- _x ] s3)
       | s3 = [ &_11 <- _12 = _14 ] s4
       | s4 = any [ br0 -> {_11 = false} (! bb7) | br1 -> {_11} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = saturating_sub {(0: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_20 <- _x ] s1)
+      [ s0 = saturating_sub {mode} {(0: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_20 <- _x ] s1)
       | s1 = [ &_19 <- _20 = (0: UInt8.t) ] s2
       | s2 = any [ br0 -> {_19 = false} (! bb10) | br1 -> {_19} (! bb9) ] ]
     | bb9 = s0
-      [ s0 = overflowing_sub {(0: UInt8.t)} {a} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
+      [ s0 = overflowing_sub {mode} {(0: UInt8.t)} {a} (fun (_x: tup2_u8_bool) -> [ &res <- _x ] s1)
       | s1 = UInt8.sub {(255: UInt8.t)} {a} (fun (_x: UInt8.t) -> [ &_29 <- _x ] s2)
       | s2 = UInt8.add {_29} {(1: UInt8.t)} (fun (_x: UInt8.t) -> [ &_28 <- _x ] s3)
       | s3 = [ &_26 <- res.f0 = _28 ] s4
       | s4 = any [ br0 -> {_26 = false} (! bb16) | br1 -> {_26} (! bb12) ] ]
     | bb12 = s0 [ s0 = [ &_31 <- res.f1 ] s1 | s1 = any [ br0 -> {_31 = false} (! bb16) | br1 -> {_31} (! bb13) ] ]
     | bb13 = return {_ret}
-    | bb16 = {false} any
-    | bb10 = {false} any
-    | bb7 = {false} any
-    | bb4 = {false} any ]
+    | bb16 = s0
+      [ s0 = panic {mode} {"assertion failed: res.0 == 255 - a + 1 && res.1 == true"}
+          (fun (_x: ()) -> [ &_33 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb10 = s0
+      [ s0 = panic {mode} {"assertion failed: 0u8.saturating_sub(a) == 0"} (fun (_x: ()) -> [ &_22 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb7 = s0
+      [ s0 = panic {mode} {"assertion failed: 0u8.wrapping_sub(a) == 255 - a + 1"} (fun (_x: ()) -> [ &_17 <- _x ] s1)
+      | s1 = {false} any ]
+    | bb4 = s0
+      [ s0 = panic {mode} {"assertion failed: 0u8.checked_sub(a).is_none()"} (fun (_x: ()) -> [ &_9 <- _x ] s1)
+      | s1 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & a: UInt8.t = a
     | & _5: bool = Any.any_l ()
     | & _7: t_Option_u8 = Any.any_l ()
+    | & _9: () = Any.any_l ()
     | & _11: bool = Any.any_l ()
     | & _12: UInt8.t = Any.any_l ()
     | & _14: UInt8.t = Any.any_l ()
     | & _15: UInt8.t = Any.any_l ()
+    | & _17: () = Any.any_l ()
     | & _19: bool = Any.any_l ()
     | & _20: UInt8.t = Any.any_l ()
+    | & _22: () = Any.any_l ()
     | & res: tup2_u8_bool = Any.any_l ()
     | & _26: bool = Any.any_l ()
     | & _28: UInt8.t = Any.any_l ()
     | & _29: UInt8.t = Any.any_l ()
-    | & _31: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _31: bool = Any.any_l ()
+    | & _33: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_u8_wrapping_add
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
-  let wrapping_add (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let wrapping_add (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt8.add self_ rhs}
       (! return {result}) ]
   
@@ -2981,8 +3678,8 @@ module M_test_u8_wrapping_add
   
   meta "select_lsinst" "all"
   
-  let test_u8_wrapping_add (a: UInt8.t) (b: UInt8.t) (return (x: UInt8.t)) = (! bb0
-    [ bb0 = s0 [ s0 = wrapping_add {a} {b} (fun (_x: UInt8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  let test_u8_wrapping_add (mode: Mode.t) (a: UInt8.t) (b: UInt8.t) (return (x: UInt8.t)) = (! bb0
+    [ bb0 = s0 [ s0 = wrapping_add {mode} {a} {b} (fun (_x: UInt8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt8.t = Any.any_l () | & a: UInt8.t = a | & b: UInt8.t = b ])
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:test_u8_wrapping_add ensures] UInt8.t'int result
         = UInt8.t'int a + UInt8.t'int b
@@ -2991,10 +3688,11 @@ module M_test_u8_wrapping_add
 end
 module M_test_u8_wrapping_sub
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
-  let wrapping_sub (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
+  let wrapping_sub (mode: Mode.t) (self_: UInt8.t) (rhs: UInt8.t) (return (x: UInt8.t)) = any
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = UInt8.sub self_ rhs}
       (! return {result}) ]
   
@@ -3002,8 +3700,8 @@ module M_test_u8_wrapping_sub
   
   meta "select_lsinst" "all"
   
-  let test_u8_wrapping_sub (a: UInt8.t) (b: UInt8.t) (return (x: UInt8.t)) = (! bb0
-    [ bb0 = s0 [ s0 = wrapping_sub {a} {b} (fun (_x: UInt8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  let test_u8_wrapping_sub (mode: Mode.t) (a: UInt8.t) (b: UInt8.t) (return (x: UInt8.t)) = (! bb0
+    [ bb0 = s0 [ s0 = wrapping_sub {mode} {a} {b} (fun (_x: UInt8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt8.t = Any.any_l () | & a: UInt8.t = a | & b: UInt8.t = b ])
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:test_u8_wrapping_sub ensures] UInt8.t'int result
         = UInt8.t'int a - UInt8.t'int b

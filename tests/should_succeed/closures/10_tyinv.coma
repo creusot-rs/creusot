@@ -1,6 +1,7 @@
 module M_f
   use creusot.int.UInt32
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -44,7 +45,7 @@ module M_f
   
   meta "rewrite_def" predicate inv_ref_closure1
   
-  let closure1 (self: closure1) (return (x: UInt32.t)) =
+  let closure1 (mode: Mode.t) (self: closure1) (return (x: UInt32.t)) =
   {[@stop_split] [@expl:closure 'self' type invariant] inv_ref_closure1 self}
     (! bb0
     [ bb0 = s0
@@ -59,19 +60,20 @@ module M_f
     | & _6: t_Zero_T = Any.any_l () ])
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:closure ensures] UInt32.t'int result = 0} (! return {result}) ]
   
-  predicate precondition_closure1 (self: closure1) (args: ()) = true
+  predicate precondition_closure1 (self: closure1) (mode: Mode.t) (args: ()) = true
   
   meta "rewrite_def" predicate precondition_closure1
   
-  predicate postcondition_closure1 (self: closure1) (args: ()) (result: UInt32.t) = UInt32.t'int result = 0
+  predicate postcondition_closure1 (self: closure1) (mode: Mode.t) (args: ()) (result: UInt32.t) =
+    UInt32.t'int result = 0
   
   meta "rewrite_def" predicate postcondition_closure1
   
-  let call_closure1 (self_: closure1) (arg: ()) (return (x: UInt32.t)) =
+  let call_closure1 (mode: Mode.t) (self_: closure1) (arg: ()) (return (x: UInt32.t)) =
   {[@stop_split] [@expl:call_closure1 requires] ([@stop_split] [@expl:call 'self_' type invariant] inv_ref_closure1 self_)
-    /\ ([@stop_split] [@expl:call requires] precondition_closure1 self_ arg)}
+    /\ ([@stop_split] [@expl:call requires] precondition_closure1 self_ mode arg)}
     any
-    [ return (result: UInt32.t) -> {[@stop_split] [@expl:call ensures] postcondition_closure1 self_ arg result}
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:call ensures] postcondition_closure1 self_ mode arg result}
       (! return {result}) ]
   
   predicate inv_closure0 [@inline:trivial] (_1: closure0) =
@@ -87,13 +89,13 @@ module M_f
   
   meta "rewrite_def" predicate inv_ref_closure0
   
-  let closure0 (self: closure0) (return (x: UInt32.t)) =
+  let closure0 (mode: Mode.t) (self: closure0) (return (x: UInt32.t)) =
   {[@stop_split] [@expl:closure 'self' type invariant] inv_ref_closure0 self}
     (! bb0
     [ bb0 = s0
       [ s0 = {[@expl:assertion] UInt32.t'int self.c0.f0 = 0} s1
       | s1 = [ &clos2 <- { c0'0 = self.c1 } ] s2
-      | s2 = call_closure1 {clos2} {_10} (fun (_x: UInt32.t) -> [ &_8 <- _x ] s3)
+      | s2 = call_closure1 {mode} {clos2} {_10} (fun (_x: UInt32.t) -> [ &_8 <- _x ] s3)
       | s3 = [ &_11 <- self.c0 ] s4
       | s4 = [ &res <- _11.f0 ] s5
       | s5 = [ &_ret <- res ] s6
@@ -107,26 +109,27 @@ module M_f
     | & _11: t_Zero_T = Any.any_l () ])
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:closure ensures] UInt32.t'int result = 0} (! return {result}) ]
   
-  predicate precondition_closure0 (self: closure0) (args: ()) = true
+  predicate precondition_closure0 (self: closure0) (mode: Mode.t) (args: ()) = true
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate postcondition_closure0 (self: closure0) (args: ()) (result: UInt32.t) = UInt32.t'int result = 0
+  predicate postcondition_closure0 (self: closure0) (mode: Mode.t) (args: ()) (result: UInt32.t) =
+    UInt32.t'int result = 0
   
   meta "rewrite_def" predicate postcondition_closure0
   
-  let call_closure0 (self_: closure0) (arg: ()) (return (x: UInt32.t)) =
+  let call_closure0 (mode: Mode.t) (self_: closure0) (arg: ()) (return (x: UInt32.t)) =
   {[@stop_split] [@expl:call_closure0 requires] ([@stop_split] [@expl:call 'self_' type invariant] inv_ref_closure0 self_)
-    /\ ([@stop_split] [@expl:call requires] precondition_closure0 self_ arg)}
+    /\ ([@stop_split] [@expl:call requires] precondition_closure0 self_ mode arg)}
     any
-    [ return (result: UInt32.t) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self_ arg result}
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self_ mode arg result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let f_T (x: t_Zero_T) (y: t_Zero_T) (return (x'0: ())) =
+  let f_T (mode: Mode.t) (x: t_Zero_T) (y: t_Zero_T) (return (x'0: ())) =
   {[@stop_split] [@expl:f_T requires] ([@stop_split] [@expl:f 'x' type invariant] inv_Zero_T x)
     /\ ([@stop_split] [@expl:f 'y' type invariant] inv_Zero_T y)}
     (! bb0
@@ -136,7 +139,7 @@ module M_f
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Zero_T y} any) ]
       | s3 = -{resolve_Zero_T y}- s4
       | s4 = [ &clos <- { c0 = x; c1 = y } ] s5
-      | s5 = call_closure0 {clos} {_8} (fun (_x: UInt32.t) -> [ &_6 <- _x ] s6)
+      | s5 = call_closure0 {mode} {clos} {_8} (fun (_x: UInt32.t) -> [ &_6 <- _x ] s6)
       | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: t_Zero_T = x

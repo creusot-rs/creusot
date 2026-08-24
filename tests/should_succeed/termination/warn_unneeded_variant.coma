@@ -1,8 +1,10 @@
 module M_variant_is_not_checked
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
-  let variant_is_not_checked (x: UInt32.t) (return (x'0: ())) = any [ return (result: ()) -> (! return {result}) ]
+  let variant_is_not_checked (mode: Mode.t) (x: UInt32.t) (return (x'0: ())) = any
+    [ return (result: ()) -> (! return {result}) ]
   
   predicate gt_log_u32 [@inline:trivial] (self: UInt32.t) (other: UInt32.t) = UInt32.lt other self
   
@@ -16,10 +18,10 @@ module M_variant_is_not_checked
   
   meta "select_lsinst" "all"
   
-  let variant_is_not_checked'0 (x: UInt32.t) (return (x'0: ())) = (! bb0
+  let variant_is_not_checked'0 (mode: Mode.t) (x: UInt32.t) (return (x'0: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- x <> (0: UInt32.t) ] s1 | s1 = any [ br0 -> {_4 = false} (! bb4) | br1 -> {_4} (! bb1) ] ]
-    | bb1 = s0 [ s0 = variant_is_not_checked {x} (fun (_x: ()) -> [ &_6 <- _x ] s1) | s1 = return {_ret} ]
+    | bb1 = s0 [ s0 = variant_is_not_checked {mode} {x} (fun (_x: ()) -> [ &_6 <- _x ] s1) | s1 = return {_ret} ]
     | bb4 = return {_ret} ]
     [ & _ret: () = Any.any_l () | & x: UInt32.t = x | & _4: bool = Any.any_l () | & _6: () = Any.any_l () ]
     [ function_variant: UInt32.t = x ]) [ return (result: ()) -> (! return {result}) ]

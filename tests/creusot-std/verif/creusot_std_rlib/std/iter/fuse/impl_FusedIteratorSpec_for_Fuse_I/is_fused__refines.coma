@@ -28,12 +28,16 @@ function produces_refl_I (self: t_I) : ()
 
 axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
 
+predicate completed_I (self: MutBorrow.t t_I)
+
+predicate resolve_I (_1: t_I)
+
 predicate produces_Fuse_I (self: t_Fuse_I) (prod: Seq.seq t_Item) (other: t_Fuse_I) =
   match view_Fuse_I self with
     | None -> prod = (Seq.empty: Seq.seq t_Item) /\ view_Fuse_I other = view_Fuse_I self
     | Some i -> match view_Fuse_I other with
       | Some i2 -> produces_I i prod i2
-      | None -> false
+      | None -> exists i2: MutBorrow.t t_I. produces_I i prod i2.current /\ completed_I i2 /\ resolve_I i2.final
       end
     end
 
@@ -47,8 +51,6 @@ axiom produces_trans_Fuse_I_spec:
 function produces_refl_Fuse_I (self: t_Fuse_I) : () = ()
 
 axiom produces_refl_Fuse_I_spec: forall self: t_Fuse_I. produces_Fuse_I self (Seq.empty: Seq.seq t_Item) self
-
-predicate completed_I (self: MutBorrow.t t_I)
 
 predicate completed_Fuse_I (self: MutBorrow.t t_Fuse_I) =
   (view_Fuse_I self.current = None

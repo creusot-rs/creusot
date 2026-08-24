@@ -3,6 +3,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -17,7 +18,7 @@ predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmu
 
 meta "rewrite_def" predicate inv_refmut_T
 
-let swap_T (x: MutBorrow.t t_T) (y: MutBorrow.t t_T) (return (x'0: ())) =
+let swap_T (mode: Mode.t) (x: MutBorrow.t t_T) (y: MutBorrow.t t_T) (return (x'0: ())) =
 {[@stop_split] [@expl:swap_T requires] ([@stop_split] [@expl:swap 'x' type invariant] inv_refmut_T x)
   /\ ([@stop_split] [@expl:swap 'y' type invariant] inv_refmut_T y)}
   any
@@ -34,7 +35,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_core_mem_replace_body_T (dest: MutBorrow.t t_T) (src: t_T) (return (x: t_T)) =
+let extern_spec_core_mem_replace_body_T (mode: Mode.t) (dest: MutBorrow.t t_T) (src: t_T) (return (x: t_T)) =
 {[@stop_split] [@expl:extern_spec_core_mem_replace_body_T requires] ([@stop_split] [@expl:extern_spec_core_mem_replace_body 'dest' type invariant] inv_refmut_T dest)
   /\ ([@stop_split] [@expl:extern_spec_core_mem_replace_body 'src' type invariant] inv_T src)}
   (! bb0
@@ -53,7 +54,7 @@ let extern_spec_core_mem_replace_body_T (dest: MutBorrow.t t_T) (src: t_T) (retu
           [ &_11 <- _bor ] -{inv_T _bor.final}-
           [ &_12 <- { _12 with current = _bor.final } ] s4)
       [ _ck -> (! {[@expl:type invariant] inv_T _12.current} any) ]
-    | s4 = swap_T {_10} {_11} (fun (_x: ()) -> [ &_9 <- _x ] s5)
+    | s4 = swap_T {mode} {_10} {_11} (fun (_x: ()) -> [ &_9 <- _x ] s5)
     | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _12} any) ]
     | s6 = -{resolve_refmut_T _12}- s7
     | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_T dest} any) ]

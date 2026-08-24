@@ -1,6 +1,7 @@
 module M_count_paths
   use creusot.int.Int64
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use seq.Seq
   use int.Int
@@ -15,16 +16,16 @@ module M_count_paths
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let count_paths (i: Int64.t) (return (x: ())) =
+  let count_paths (mode: Mode.t) (i: Int64.t) (return (x: ())) =
   {[@stop_split] [@expl:count_paths requires] ge_log_Int (Int64.to_int i) 0}
     any [ return (result: ()) -> (! return {result}) ]
   
   predicate hist_inv_closure0 (self: ()) (result_state: ()) = true
   
-  let closure0 [@coma:extspec] (self: MutBorrow.t ()) (j: Int64.t) (return (x: ())) = bb0
+  let closure0 [@coma:extspec] (mode: Mode.t) (self: MutBorrow.t ()) (j: Int64.t) (return (x: ())) = bb0
     [ bb0 = s0
       [ s0 = -{resolve_refmut_closure0 self}- s1
-      | s1 = count_paths {j} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+      | s1 = count_paths {mode} {j} (fun (_x: ()) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t () = self | & j: Int64.t = j ]
     [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
       return {result} ]
@@ -66,8 +67,8 @@ module M_count_paths
   
   meta "rewrite_def" predicate inv_isize
   
-  predicate precondition_closure0 (self: ()) (args: Int64.t) =
-    let j = args in forall bor_self: MutBorrow.t (). bor_self.current = self -> closure0'pre bor_self j
+  predicate precondition_closure0 (self: ()) (mode: Mode.t) (args: Int64.t) =
+    let j = args in forall bor_self: MutBorrow.t (). bor_self.current = self -> closure0'pre mode bor_self j
   
   meta "rewrite_def" predicate precondition_closure0
   
@@ -81,7 +82,7 @@ module M_count_paths
   
   predicate next_precondition_Range_isize [@inline:trivial] (iter: t_Range_isize) (func: ()) =
     forall e: Int64.t, i: t_Range_isize [produces_Range_isize iter (Seq.singleton e) i]. inv_isize e
-        /\ produces_Range_isize iter (Seq.singleton e) i -> precondition_closure0 func e
+        /\ produces_Range_isize iter (Seq.singleton e) i -> (forall mode: Mode.t. precondition_closure0 func mode e)
   
   meta "rewrite_def" predicate next_precondition_Range_isize
   
@@ -93,17 +94,18 @@ module M_count_paths
   
   meta "rewrite_def" predicate inv_refmut_closure0
   
-  predicate postcondition_mut_closure0 (self: ()) (args: Int64.t) (result_state: ()) (result: ()) =
+  predicate postcondition_mut_closure0 (self: ()) (mode: Mode.t) (args: Int64.t) (result_state: ()) (result: ()) =
     let j = args in exists bor_self: MutBorrow.t (). bor_self.current = self
-      /\ bor_self.final = result_state /\ closure0'post'return bor_self j result /\ hist_inv_closure0 self result_state
+      /\ bor_self.final = result_state
+      /\ closure0'post'return mode bor_self j result /\ hist_inv_closure0 self result_state
   
   meta "rewrite_def" predicate postcondition_mut_closure0
   
   predicate preservation_Range_isize [@inline:trivial] (iter: t_Range_isize) (func: ()) =
-    forall s: Seq.seq Int64.t, e1: Int64.t, e2: Int64.t, f: MutBorrow.t (), b: (), i: t_Range_isize [produces_Range_isize iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current e1 f.final b]. hist_inv_closure0 func f.current
+    forall s: Seq.seq Int64.t, e1: Int64.t, e2: Int64.t, f: MutBorrow.t (), b: (), i: t_Range_isize, mode: Mode.t [produces_Range_isize iter (Seq.snoc (Seq.snoc s e1) e2) i, postcondition_mut_closure0 f.current mode e1 f.final b]. hist_inv_closure0 func f.current
       -> inv_Seq_isize s /\ inv_isize e1 /\ inv_isize e2 /\ inv_refmut_closure0 f
       -> produces_Range_isize iter (Seq.snoc (Seq.snoc s e1) e2) i
-      -> postcondition_mut_closure0 f.current e1 f.final b -> precondition_closure0 f.final e2
+      -> postcondition_mut_closure0 f.current mode e1 f.final b -> precondition_closure0 f.final mode e2
   
   meta "rewrite_def" predicate preservation_Range_isize
   
@@ -136,9 +138,9 @@ module M_count_paths
   axiom inv_axiom: forall x: t_Map_Range_isize_closure0 [inv_Map_Range_isize_closure0 x]. inv_Map_Range_isize_closure0 x
       -> invariant_Map_Range_isize_closure0 x
   
-  let map_Range_isize (self_: t_Range_isize) (f: ()) (return (x: t_Map_Range_isize_closure0)) =
-  {[@stop_split] [@expl:map_Range_isize requires] ([@stop_split] [@expl:map requires #0] forall e: Int64.t, i2: t_Range_isize. produces_Range_isize self_ (Seq.singleton e) i2
-          /\ inv_isize e -> precondition_closure0 f e)
+  let map_Range_isize (mode: Mode.t) (self_: t_Range_isize) (f: ()) (return (x: t_Map_Range_isize_closure0)) =
+  {[@stop_split] [@expl:map_Range_isize requires] ([@stop_split] [@expl:map requires #0] forall mode'0: Mode.t, e: Int64.t, i2: t_Range_isize. not Mode.terminates mode'0
+          /\ produces_Range_isize self_ (Seq.singleton e) i2 /\ inv_isize e -> precondition_closure0 f mode'0 e)
     /\ ([@stop_split] [@expl:map requires #1] reinitialize_Range_isize)
     /\ ([@stop_split] [@expl:map requires #2] preservation_Range_isize self_ f)}
     any
@@ -171,13 +173,13 @@ module M_count_paths
   
   meta "select_lsinst" "all"
   
-  let count_paths'0 (i: Int64.t) (return (x: ())) =
+  let count_paths'0 (mode: Mode.t) (i: Int64.t) (return (x: ())) =
   {[@stop_split] [@expl:count_paths requires] ge_log_Int (Int64.to_int i) 0}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_5 <- { start = (0: Int64.t); end' = i } ] s1
       | s1 = [ &_7 <- () ] s2
-      | s2 = map_Range_isize {_5} {_7} (fun (_x: t_Map_Range_isize_closure0) -> [ &_4 <- _x ] s3)
+      | s2 = map_Range_isize {mode} {_5} {_7} (fun (_x: t_Map_Range_isize_closure0) -> [ &_4 <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Map_Range_isize_closure0 _4} any) ]
       | s4 = -{resolve_Map_Range_isize_closure0'0 _4}- s5
       | s5 = return {_ret} ] ]

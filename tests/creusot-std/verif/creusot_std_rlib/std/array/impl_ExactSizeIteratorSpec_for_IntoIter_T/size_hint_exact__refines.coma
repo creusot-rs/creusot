@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use seq.Seq
 
 type t_IntoIter_T
@@ -17,7 +18,7 @@ type t_T
 
 function view_IntoIter_T (self: t_IntoIter_T) : Seq.seq t_T
 
-predicate postcondition_size_hint (self: ()) (args: t_IntoIter_T) (result: tup2_usize_Option_usize) =
+predicate postcondition_size_hint (self: ()) (mode: Mode.t) (args: t_IntoIter_T) (result: tup2_usize_Option_usize) =
   let self_ = args in UInt64.t'int result.f0 = Seq.length (view_IntoIter_T self_) /\ result.f1 = Some (result.f0)
 
 meta "rewrite_def" predicate postcondition_size_hint
@@ -32,7 +33,7 @@ predicate inv_ref_IntoIter_T [@inline:trivial] (_1: t_IntoIter_T) = invariant_re
 
 meta "rewrite_def" predicate inv_ref_IntoIter_T
 
-let size_hint_IntoIter_T (self_: t_IntoIter_T) (return (x: tup2_usize_Option_usize)) =
+let size_hint_IntoIter_T (mode: Mode.t) (self_: t_IntoIter_T) (return (x: tup2_usize_Option_usize)) =
 {[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_IntoIter_T self_}
   any
   [ return (result: tup2_usize_Option_usize) ->
@@ -45,5 +46,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self: t_IntoIter_T, r: tup2_usize_Option_usize. postcondition_size_hint () self r
-    -> postcondition_size_hint () self r /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))
+goal refines:
+  forall self: t_IntoIter_T, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint () mode self r)
+    -> (exists mode: Mode.t. postcondition_size_hint () mode self r)
+    /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))

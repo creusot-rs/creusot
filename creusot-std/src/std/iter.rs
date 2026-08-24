@@ -37,7 +37,7 @@ pub use zip::ZipExt;
 
 pub trait IteratorSpec: Iterator {
     #[logic(prophetic)]
-    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool;
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool;
 
     #[logic(prophetic)]
     fn completed(&mut self) -> bool;
@@ -53,10 +53,13 @@ pub trait IteratorSpec: Iterator {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
     #[check(ghost)]
-    #[requires(|mode| forall<e, i2> self.produces(mode, Seq::singleton(e), i2) && inv(e) ==>
-                    func.precondition(mode, (e, Snapshot::new(Seq::empty()))))]
+    #[requires(forall<e, i2> self.produces(Seq::singleton(e), i2) && inv(e) ==>
+        forall<mode: Mode> func.precondition(mode, (e, Snapshot::new(Seq::empty()))))]
     #[requires(MapInv::<Self, F>::reinitialize())]
-    #[requires(forall<mode: Mode> !mode.terminates() ==> MapInv::<Self, F>::preservation(mode, self, func))]
+    #[requires(MapInv::<Self, F>::preservation(self, func))]
+    #[requires(forall<mode1, mode2, arg, f, f_fin, res>
+        func.hist_inv(f) && f.postcondition_mut(mode1, arg, f_fin, res)
+        ==> f.postcondition_mut(mode2, arg, f_fin, res))]
     #[ensures(result == MapInv { iter: self, func, produced: Snapshot::new(Seq::empty())})]
     fn map_inv<B, F>(self, func: F) -> MapInv<Self, F>
     where
@@ -69,7 +72,7 @@ pub trait IteratorSpec: Iterator {
 
 pub trait ExactSizeIteratorSpec: ExactSizeIterator + IteratorSpec {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>));
@@ -77,7 +80,7 @@ pub trait ExactSizeIteratorSpec: ExactSizeIterator + IteratorSpec {
 
 extern_spec! {
     impl FromIterator<()> for () {
-        #[requires(T::into_iter.precondition((iter,)))]
+        #[requires(|mode| T::into_iter.precondition(mode, (iter,)))]
         #[ensures(|result, mode| exists<into_iter: T::IntoIter, prod: Seq<()>, done: &mut T::IntoIter>
             T::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(prod, *done) && done.completed() && resolve(^done))]
@@ -87,7 +90,7 @@ extern_spec! {
 
 pub trait DoubleEndedIteratorSpec: DoubleEndedIterator + IteratorSpec {
     #[logic(prophetic)]
-    fn produces_back(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool;
+    fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool;
 
     #[logic(prophetic)]
     fn completed_back(&mut self) -> bool;
@@ -103,7 +106,7 @@ pub trait DoubleEndedIteratorSpec: DoubleEndedIterator + IteratorSpec {
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {
@@ -278,8 +281,8 @@ extern_spec! {
 
 impl<I: IteratorSpec + ?Sized> IteratorSpec for &mut I {
     #[logic(open, prophetic)]
-    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
-        pearlite! { (*self).produces(mode, visited, *o) && ^self == ^o }
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+        pearlite! { (*self).produces(visited, *o) && ^self == ^o }
     }
 
     #[logic(open, prophetic)]

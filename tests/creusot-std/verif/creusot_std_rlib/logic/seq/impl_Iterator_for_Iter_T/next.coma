@@ -6,6 +6,7 @@ type t_Namespace = Other namespace_other
 
 use seq.Seq
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 use int.Int
 
@@ -57,7 +58,7 @@ meta "rewrite_def" predicate gt_log_Int
 
 function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
 
-let pop_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
+let pop_front_ghost_T (mode: Mode.t) (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
 {[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_T self}
   any
   [ return (result: t_Option_T) ->
@@ -112,7 +113,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let next_Iter_T (self: MutBorrow.t t_Iter_T) (return (x: t_Option_T)) =
+let next_Iter_T (mode: Mode.t) (self: MutBorrow.t t_Iter_T) (return (x: t_Option_T)) =
 {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_T self}
   (! bb0
   [ bb0 = s0
@@ -121,7 +122,7 @@ let next_Iter_T (self: MutBorrow.t t_Iter_T) (return (x: t_Option_T)) =
           [ &_4 <- _bor ] -{inv_Seq_T _bor.final}-
           [ &self <- { self with current = { f0 = _bor.final } } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current.f0} any) ]
-    | s1 = pop_front_ghost_T {_4} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
+    | s1 = pop_front_ghost_T {mode} {_4} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
     | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_T self} any) ]
     | s3 = -{resolve_refmut_Iter_T self}- s4
     | s4 = return {_ret} ] ]

@@ -1,5 +1,6 @@
 module M_concurrent
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use int.ComputerDivision
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -10,11 +11,11 @@ module M_concurrent
   
   predicate inv_Even (self: ()) (x: UInt32.t) = ComputerDivision.mod (UInt32.t'int x) 2 = 0
   
-  let new_u32 (val': UInt32.t) (i: ()) (return (x: t_Mutex_u32_Even)) =
+  let new_u32 (mode: Mode.t) (val': UInt32.t) (i: ()) (return (x: t_Mutex_u32_Even)) =
   {[@stop_split] [@expl:new requires] inv_Even i val'}
     any [ return (result: t_Mutex_u32_Even) -> (! return {result}) ]
   
-  let leak_Mutex_u32_Even (b: t_Mutex_u32_Even) (return (x: MutBorrow.t t_Mutex_u32_Even)) = any
+  let leak_Mutex_u32_Even (mode: Mode.t) (b: t_Mutex_u32_Even) (return (x: MutBorrow.t t_Mutex_u32_Even)) = any
     [ return (result: MutBorrow.t t_Mutex_u32_Even) -> {[@stop_split] [@expl:leak ensures] result.current = b}
       (! return {result}) ]
   
@@ -32,7 +33,7 @@ module M_concurrent
   
   predicate precondition_AddsTwo (self: t_AddsTwo) = true
   
-  let spawn_unit (f'0: t_AddsTwo) (return (x: t_JoinHandle_unit_SpawnPostCond_AddsTwo)) =
+  let spawn_unit (mode: Mode.t) (f'0: t_AddsTwo) (return (x: t_JoinHandle_unit_SpawnPostCond_AddsTwo)) =
   {[@stop_split] [@expl:spawn requires] precondition_AddsTwo f'0}
     any [ return (result: t_JoinHandle_unit_SpawnPostCond_AddsTwo) -> (! return {result}) ]
   
@@ -42,7 +43,7 @@ module M_concurrent
   
   predicate inv_SpawnPostCond_AddsTwo (self: t_SpawnPostCond_AddsTwo) (v: ()) = postcondition_AddsTwo self.f v
   
-  let join_unit (self: t_JoinHandle_unit_SpawnPostCond_AddsTwo) (return (x: t_Result_unit_unit)) = any
+  let join_unit (mode: Mode.t) (self: t_JoinHandle_unit_SpawnPostCond_AddsTwo) (return (x: t_Result_unit_unit)) = any
     [ return (result: t_Result_unit_unit) -> {[@stop_split] [@expl:join ensures] match result with
         | Ok v -> inv_SpawnPostCond_AddsTwo self.f1'0 v
         | _ -> true
@@ -53,21 +54,21 @@ module M_concurrent
   
   meta "select_lsinst" "all"
   
-  let concurrent (return (x: ())) = (! bb0
+  let concurrent (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_5 <- () ] s1
-      | s1 = new_u32 {(0: UInt32.t)} {_5} (fun (_x: t_Mutex_u32_Even) -> [ &_4 <- _x ] s2)
-      | s2 = leak_Mutex_u32_Even {_4} (fun (_x: MutBorrow.t t_Mutex_u32_Even) -> [ &_2 <- _x ] s3)
+      | s1 = new_u32 {mode} {(0: UInt32.t)} {_5} (fun (_x: t_Mutex_u32_Even) -> [ &_4 <- _x ] s2)
+      | s2 = leak_Mutex_u32_Even {mode} {_4} (fun (_x: MutBorrow.t t_Mutex_u32_Even) -> [ &_2 <- _x ] s3)
       | s3 = -{resolve_refmut_Mutex_u32_Even _2}- s4
       | s4 = [ &m <- _2.current ] s5
       | s5 = [ &_8 <- m ] s6
       | s6 = [ &t1 <- { mutex = _8 } ] s7
-      | s7 = spawn_unit {t1} (fun (_x: t_JoinHandle_unit_SpawnPostCond_AddsTwo) -> [ &j1 <- _x ] s8)
+      | s7 = spawn_unit {mode} {t1} (fun (_x: t_JoinHandle_unit_SpawnPostCond_AddsTwo) -> [ &j1 <- _x ] s8)
       | s8 = [ &_13 <- m ] s9
       | s9 = [ &t2 <- { mutex = _13 } ] s10
-      | s10 = spawn_unit {t2} (fun (_x: t_JoinHandle_unit_SpawnPostCond_AddsTwo) -> [ &j2 <- _x ] s11)
-      | s11 = join_unit {j1} (fun (_x: t_Result_unit_unit) -> [ &_16 <- _x ] s12)
-      | s12 = join_unit {j2} (fun (_x: t_Result_unit_unit) -> [ &_18 <- _x ] s13)
+      | s10 = spawn_unit {mode} {t2} (fun (_x: t_JoinHandle_unit_SpawnPostCond_AddsTwo) -> [ &j2 <- _x ] s11)
+      | s11 = join_unit {mode} {j1} (fun (_x: t_Result_unit_unit) -> [ &_16 <- _x ] s12)
+      | s12 = join_unit {mode} {j2} (fun (_x: t_Result_unit_unit) -> [ &_18 <- _x ] s13)
       | s13 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & m: t_Mutex_u32_Even = Any.any_l ()
@@ -84,6 +85,7 @@ module M_concurrent
     | & _18: t_Result_unit_unit = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_impl_FakeFnOnce_for_AddsTwo__call (* <AddsTwo<'a> as FakeFnOnce> *)
+  use creusot.prelude.Mode
   use creusot.int.UInt32
   use int.ComputerDivision
   use creusot.prelude.MutBorrow
@@ -99,16 +101,16 @@ module M_impl_FakeFnOnce_for_AddsTwo__call (* <AddsTwo<'a> as FakeFnOnce> *)
   
   type t_MutexGuard_u32_Even = { f0'0: t_GuardInner_u32; f1'0: () }
   
-  let lock_u32 (self: t_Mutex_u32_Even) (return (x: t_MutexGuard_u32_Even)) = any
+  let lock_u32 (mode: Mode.t) (self: t_Mutex_u32_Even) (return (x: t_MutexGuard_u32_Even)) = any
     [ return (result: t_MutexGuard_u32_Even) -> {[@stop_split] [@expl:lock ensures] self.f1 = result.f1'0}
       (! return {result}) ]
   
   predicate inv_Even (self: ()) (x: UInt32.t) = ComputerDivision.mod (UInt32.t'int x) 2 = 0
   
-  let deref_u32 (self: t_MutexGuard_u32_Even) (return (x: UInt32.t)) = any
+  let deref_u32 (mode: Mode.t) (self: t_MutexGuard_u32_Even) (return (x: UInt32.t)) = any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:deref ensures] inv_Even self.f1'0 result} (! return {result}) ]
   
-  let set_u32 (self: MutBorrow.t t_MutexGuard_u32_Even) (v: UInt32.t) (return (x: ())) =
+  let set_u32 (mode: Mode.t) (self: MutBorrow.t t_MutexGuard_u32_Even) (v: UInt32.t) (return (x: ())) =
   {[@stop_split] [@expl:set requires] inv_Even self.current.f1'0 v}
     any [ return (result: ()) -> (! return {result}) ]
   
@@ -116,10 +118,10 @@ module M_impl_FakeFnOnce_for_AddsTwo__call (* <AddsTwo<'a> as FakeFnOnce> *)
   
   meta "select_lsinst" "all"
   
-  let call_AddsTwo (self: t_AddsTwo) (return (x: ())) = (! bb0
+  let call_AddsTwo (mode: Mode.t) (self: t_AddsTwo) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = lock_u32 {self.mutex} (fun (_x: t_MutexGuard_u32_Even) -> [ &v <- _x ] s1)
-      | s1 = deref_u32 {v} (fun (_x: UInt32.t) -> [ &_5 <- _x ] s2)
+      [ s0 = lock_u32 {mode} {self.mutex} (fun (_x: t_MutexGuard_u32_Even) -> [ &v <- _x ] s1)
+      | s1 = deref_u32 {mode} {v} (fun (_x: UInt32.t) -> [ &_5 <- _x ] s2)
       | s2 = [ &val' <- _5 ] s3
       | s3 = [ &_7 <- UInt32.lt val' (100000: UInt32.t) ] s4
       | s4 = any [ br0 -> {_7 = false} (! bb5) | br1 -> {_7} (! bb3) ] ]
@@ -127,12 +129,12 @@ module M_impl_FakeFnOnce_for_AddsTwo__call (* <AddsTwo<'a> as FakeFnOnce> *)
       [ s0 = UInt32.add {val'} {(2: UInt32.t)} (fun (_x: UInt32.t) -> [ &_11 <- _x ] s1)
       | s1 = MutBorrow.borrow_mut <t_MutexGuard_u32_Even> {v}
           (fun (_bor: MutBorrow.t t_MutexGuard_u32_Even) -> [ &_10 <- _bor ] [ &v <- _bor.final ] s2)
-      | s2 = set_u32 {_10} {_11} (fun (_x: ()) -> [ &_9 <- _x ] s3)
+      | s2 = set_u32 {mode} {_10} {_11} (fun (_x: ()) -> [ &_9 <- _x ] s3)
       | s3 = return {_ret} ]
     | bb5 = s0
       [ s0 = MutBorrow.borrow_mut <t_MutexGuard_u32_Even> {v}
           (fun (_bor: MutBorrow.t t_MutexGuard_u32_Even) -> [ &_14 <- _bor ] [ &v <- _bor.final ] s1)
-      | s1 = set_u32 {_14} {(0: UInt32.t)} (fun (_x: ()) -> [ &_13 <- _x ] s2)
+      | s1 = set_u32 {mode} {_14} {(0: UInt32.t)} (fun (_x: ()) -> [ &_13 <- _x ] s2)
       | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: t_AddsTwo = self
@@ -147,6 +149,8 @@ module M_impl_FakeFnOnce_for_AddsTwo__call (* <AddsTwo<'a> as FakeFnOnce> *)
     | & _14: MutBorrow.t t_MutexGuard_u32_Even = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_impl_FakeFnOnce_for_AddsTwo__call__refines (* <AddsTwo<'a> as FakeFnOnce> *)
+  use creusot.prelude.Mode
+  
   type t_MutexInner_u32
   
   type t_Mutex_u32_Even = { f0: t_MutexInner_u32; f1: () }
@@ -161,6 +165,6 @@ module M_impl_FakeFnOnce_for_AddsTwo__call__refines (* <AddsTwo<'a> as FakeFnOnc
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_AddsTwo. precondition_AddsTwo self
+  goal refines: forall mode: Mode.t, self: t_AddsTwo. precondition_AddsTwo self
       -> (forall result: (). postcondition_AddsTwo self result)
 end

@@ -1,6 +1,7 @@
 module M_impl_IndexMut_for_Memory__index_mut (* <Memory as std::ops::IndexMut<usize>> *)
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
@@ -32,7 +33,7 @@ module M_impl_IndexMut_for_Memory__index_mut (* <Memory as std::ops::IndexMut<us
   
   meta "rewrite_def" predicate resolve_elswhere_usize
   
-  let index_mut_Vec_usize_Global (self_: MutBorrow.t t_Vec_usize_Global) (ix: UInt64.t)
+  let index_mut_Vec_usize_Global (mode: Mode.t) (self_: MutBorrow.t t_Vec_usize_Global) (ix: UInt64.t)
     (return (x: MutBorrow.t UInt64.t)) =
   {[@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_usize_Global self_.current)}
     any
@@ -67,7 +68,7 @@ module M_impl_IndexMut_for_Memory__index_mut (* <Memory as std::ops::IndexMut<us
   
   meta "select_lsinst" "all"
   
-  let index_mut_Memory (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
+  let index_mut_Memory (mode: Mode.t) (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
   {[@stop_split] [@expl:index_mut requires] nonnull_ptr self.current i}
     (! bb0
     [ bb0 = s0
@@ -75,7 +76,7 @@ module M_impl_IndexMut_for_Memory__index_mut (* <Memory as std::ops::IndexMut<us
           {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
           (fun (_bor: MutBorrow.t t_Vec_usize_Global) ->
             [ &_20 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s1)
-      | s1 = index_mut_Vec_usize_Global {_20} {i} (fun (_x: MutBorrow.t UInt64.t) -> [ &_19 <- _x ] s2)
+      | s1 = index_mut_Vec_usize_Global {mode} {_20} {i} (fun (_x: MutBorrow.t UInt64.t) -> [ &_19 <- _x ] s2)
       | s2 = MutBorrow.borrow_final <UInt64.t> {_19.current} {MutBorrow.get_id _19}
           (fun (_bor: MutBorrow.t UInt64.t) -> [ &_18 <- _bor ] [ &_19 <- { _19 with current = _bor.final } ] s3)
       | s3 = MutBorrow.borrow_final <UInt64.t> {_18.current} {MutBorrow.get_id _18}
@@ -106,6 +107,7 @@ module M_impl_IndexMut_for_Memory__index_mut (* <Memory as std::ops::IndexMut<us
 end
 module M_impl_Index_for_Memory__index (* <Memory as std::ops::Index<usize>> *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
@@ -132,7 +134,7 @@ module M_impl_Index_for_Memory__index (* <Memory as std::ops::Index<usize>> *)
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_usize_Global (self_: t_Vec_usize_Global) (ix: UInt64.t) (return (x: UInt64.t)) =
+  let index_Vec_usize_Global (mode: Mode.t) (self_: t_Vec_usize_Global) (ix: UInt64.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_usize_Global self_)}
     any
     [ return (result: UInt64.t) ->
@@ -154,11 +156,11 @@ module M_impl_Index_for_Memory__index (* <Memory as std::ops::Index<usize>> *)
   
   meta "select_lsinst" "all"
   
-  let index_Memory'0 (self: t_Memory) (i: UInt64.t) (return (x: UInt64.t)) =
+  let index_Memory'0 (mode: Mode.t) (self: t_Memory) (i: UInt64.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:index requires] nonnull_ptr self i}
     (! bb0
     [ bb0 = s0
-      [ s0 = index_Vec_usize_Global {self.f0} {i} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s1)
+      [ s0 = index_Vec_usize_Global {mode} {self.f0} {i} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s1)
       | s1 = [ &_9 <- _10 ] s2
       | s2 = [ &_ret <- _9 ] s3
       | s3 = return {_ret} ] ]
@@ -579,6 +581,7 @@ module M_impl_Memory_0__list_reversal_lasso (* Memory *)
   use creusot.prelude.MutBorrow
   use seq.Seq
   use seq.Reverse
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -614,7 +617,7 @@ module M_impl_Memory_0__list_reversal_lasso (* Memory *)
         /\ index_Memory self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
     /\ (forall i: int, j: int. l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j -> Seq.get s i <> Seq.get s j)
   
-  let index_mut_Memory (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
+  let index_mut_Memory (mode: Mode.t) (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
   {[@stop_split] [@expl:index_mut requires] nonnull_ptr self.current i}
     any
     [ return (result: MutBorrow.t UInt64.t) ->
@@ -627,7 +630,7 @@ module M_impl_Memory_0__list_reversal_lasso (* Memory *)
         -> index_Memory self.final j = index_Memory self.current j)}
       (! return {result}) ]
   
-  let replace_usize (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return (x: UInt64.t)) = any
+  let replace_usize (mode: Mode.t) (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) ->
     {[@stop_split] [@expl:replace_usize ensures] ([@stop_split] [@expl:replace ensures #0] dest.final = src)
       /\ ([@stop_split] [@expl:replace ensures #1] result = dest.current)}
@@ -656,8 +659,9 @@ module M_impl_Memory_0__list_reversal_lasso (* Memory *)
   
   meta "select_lsinst" "all"
   
-  let list_reversal_lasso (self: MutBorrow.t t_Memory) (l: UInt64.t) (s1: Seq.seq UInt64.t) (s2: Seq.seq UInt64.t)
-    (return (x: UInt64.t)) = {[@stop_split] [@expl:list_reversal_lasso requires] lasso self.current l s1 s2}
+  let list_reversal_lasso (mode: Mode.t) (self: MutBorrow.t t_Memory) (l: UInt64.t) (s1: Seq.seq UInt64.t)
+    (s2: Seq.seq UInt64.t) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:list_reversal_lasso requires] lasso self.current l s1 s2}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &r <- const_NULL ] s1'0 | s1'0 = [ &n <- 0 ] s2'0 | s2'0 = [ &_old <- self.final ] s3 | s3 = bb2 ]
@@ -691,18 +695,18 @@ module M_impl_Memory_0__list_reversal_lasso (* Memory *)
           [ s0 = MutBorrow.borrow_mut <t_Memory> {self.current}
               (fun (_bor: MutBorrow.t t_Memory) ->
                 [ &_52 <- _bor ] [ &self <- { self with current = _bor.final } ] s1'0)
-          | s1'0 = index_mut_Memory {_52} {l} (fun (_x: MutBorrow.t UInt64.t) -> [ &_51 <- _x ] s2'0)
+          | s1'0 = index_mut_Memory {mode} {_52} {l} (fun (_x: MutBorrow.t UInt64.t) -> [ &_51 <- _x ] s2'0)
           | s2'0 = MutBorrow.borrow_final <UInt64.t> {_51.current} {MutBorrow.get_id _51}
               (fun (_bor: MutBorrow.t UInt64.t) -> [ &_50 <- _bor ] [ &_51 <- { _51 with current = _bor.final } ] s3)
           | s3 = MutBorrow.borrow_mut <UInt64.t> {r}
               (fun (_bor: MutBorrow.t UInt64.t) -> [ &_56 <- _bor ] [ &r <- _bor.final ] s4)
           | s4 = MutBorrow.borrow_final <UInt64.t> {_56.current} {MutBorrow.get_id _56}
               (fun (_bor: MutBorrow.t UInt64.t) -> [ &_55 <- _bor ] [ &_56 <- { _56 with current = _bor.final } ] s5)
-          | s5 = replace_usize {_55} {l} (fun (_x: UInt64.t) -> [ &_54 <- _x ] s6)
+          | s5 = replace_usize {mode} {_55} {l} (fun (_x: UInt64.t) -> [ &_54 <- _x ] s6)
           | s6 = -{resolve_refmut_usize _56}- s7
           | s7 = MutBorrow.borrow_final <UInt64.t> {_50.current} {MutBorrow.get_id _50}
               (fun (_bor: MutBorrow.t UInt64.t) -> [ &_49 <- _bor ] [ &_50 <- { _50 with current = _bor.final } ] s8)
-          | s8 = replace_usize {_49} {_54} (fun (_x: UInt64.t) -> [ &_48 <- _x ] s9)
+          | s8 = replace_usize {mode} {_49} {_54} (fun (_x: UInt64.t) -> [ &_48 <- _x ] s9)
           | s9 = -{resolve_refmut_usize _51}- s10
           | s10 = -{resolve_refmut_usize _50}- s11
           | s11 = [ &l <- _48 ] s12
@@ -735,6 +739,7 @@ module M_impl_Memory_0__list_reversal_list (* Memory *)
   use creusot.prelude.MutBorrow
   use seq.Seq
   use seq.Reverse
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -770,7 +775,7 @@ module M_impl_Memory_0__list_reversal_list (* Memory *)
         /\ index_Memory self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
     /\ (forall i: int, j: int. l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j -> Seq.get s i <> Seq.get s j)
   
-  let index_mut_Memory (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
+  let index_mut_Memory (mode: Mode.t) (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
   {[@stop_split] [@expl:index_mut requires] nonnull_ptr self.current i}
     any
     [ return (result: MutBorrow.t UInt64.t) ->
@@ -783,7 +788,7 @@ module M_impl_Memory_0__list_reversal_list (* Memory *)
         -> index_Memory self.final j = index_Memory self.current j)}
       (! return {result}) ]
   
-  let replace_usize (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return (x: UInt64.t)) = any
+  let replace_usize (mode: Mode.t) (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) ->
     {[@stop_split] [@expl:replace_usize ensures] ([@stop_split] [@expl:replace ensures #0] dest.final = src)
       /\ ([@stop_split] [@expl:replace ensures #1] result = dest.current)}
@@ -804,8 +809,8 @@ module M_impl_Memory_0__list_reversal_list (* Memory *)
   
   meta "select_lsinst" "all"
   
-  let list_reversal_list (self: MutBorrow.t t_Memory) (l: UInt64.t) (s: Seq.seq UInt64.t) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:list_reversal_list requires] list self.current l s}
+  let list_reversal_list (mode: Mode.t) (self: MutBorrow.t t_Memory) (l: UInt64.t) (s: Seq.seq UInt64.t)
+    (return (x: UInt64.t)) = {[@stop_split] [@expl:list_reversal_list requires] list self.current l s}
     (! bb0
     [ bb0 = s0 [ s0 = [ &r <- const_NULL ] s1 | s1 = [ &n <- 0 ] s2 | s2 = [ &_old <- self.final ] s3 | s3 = bb2 ]
     | bb2 = bb2
@@ -819,18 +824,18 @@ module M_impl_Memory_0__list_reversal_list (* Memory *)
         [ bb4 = s0
           [ s0 = MutBorrow.borrow_mut <t_Memory> {self.current}
               (fun (_bor: MutBorrow.t t_Memory) -> [ &_37 <- _bor ] [ &self <- { self with current = _bor.final } ] s1)
-          | s1 = index_mut_Memory {_37} {l} (fun (_x: MutBorrow.t UInt64.t) -> [ &_36 <- _x ] s2)
+          | s1 = index_mut_Memory {mode} {_37} {l} (fun (_x: MutBorrow.t UInt64.t) -> [ &_36 <- _x ] s2)
           | s2 = MutBorrow.borrow_final <UInt64.t> {_36.current} {MutBorrow.get_id _36}
               (fun (_bor: MutBorrow.t UInt64.t) -> [ &_35 <- _bor ] [ &_36 <- { _36 with current = _bor.final } ] s3)
           | s3 = MutBorrow.borrow_mut <UInt64.t> {r}
               (fun (_bor: MutBorrow.t UInt64.t) -> [ &_41 <- _bor ] [ &r <- _bor.final ] s4)
           | s4 = MutBorrow.borrow_final <UInt64.t> {_41.current} {MutBorrow.get_id _41}
               (fun (_bor: MutBorrow.t UInt64.t) -> [ &_40 <- _bor ] [ &_41 <- { _41 with current = _bor.final } ] s5)
-          | s5 = replace_usize {_40} {l} (fun (_x: UInt64.t) -> [ &_39 <- _x ] s6)
+          | s5 = replace_usize {mode} {_40} {l} (fun (_x: UInt64.t) -> [ &_39 <- _x ] s6)
           | s6 = -{resolve_refmut_usize _41}- s7
           | s7 = MutBorrow.borrow_final <UInt64.t> {_35.current} {MutBorrow.get_id _35}
               (fun (_bor: MutBorrow.t UInt64.t) -> [ &_34 <- _bor ] [ &_35 <- { _35 with current = _bor.final } ] s8)
-          | s8 = replace_usize {_34} {_39} (fun (_x: UInt64.t) -> [ &_33 <- _x ] s9)
+          | s8 = replace_usize {mode} {_34} {_39} (fun (_x: UInt64.t) -> [ &_33 <- _x ] s9)
           | s9 = -{resolve_refmut_usize _36}- s10
           | s10 = -{resolve_refmut_usize _35}- s11
           | s11 = [ &l <- _33 ] s12
@@ -862,6 +867,7 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
   use creusot.prelude.MutBorrow
   use seq.Seq
   use seq.Reverse
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -897,7 +903,7 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
         /\ index_Memory self (Seq.get s i) = (if i = h - 1 then last else Seq.get s (i + 1)))
     /\ (forall i: int, j: int. l <= i /\ i < h /\ l <= j /\ j < h /\ i <> j -> Seq.get s i <> Seq.get s j)
   
-  let index_mut_Memory (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
+  let index_mut_Memory (mode: Mode.t) (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
   {[@stop_split] [@expl:index_mut requires] nonnull_ptr self.current i}
     any
     [ return (result: MutBorrow.t UInt64.t) ->
@@ -910,7 +916,7 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
         -> index_Memory self.final j = index_Memory self.current j)}
       (! return {result}) ]
   
-  let replace_usize (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return (x: UInt64.t)) = any
+  let replace_usize (mode: Mode.t) (dest: MutBorrow.t UInt64.t) (src: UInt64.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) ->
     {[@stop_split] [@expl:replace_usize ensures] ([@stop_split] [@expl:replace ensures #0] dest.final = src)
       /\ ([@stop_split] [@expl:replace ensures #1] result = dest.current)}
@@ -940,7 +946,8 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
   
   meta "select_lsinst" "all"
   
-  let list_reversal_loop (self: MutBorrow.t t_Memory) (l: UInt64.t) (s: Seq.seq UInt64.t) (return (x: UInt64.t)) =
+  let list_reversal_loop (mode: Mode.t) (self: MutBorrow.t t_Memory) (l: UInt64.t) (s: Seq.seq UInt64.t)
+    (return (x: UInt64.t)) =
   {[@stop_split] [@expl:list_reversal_loop requires] ([@stop_split] [@expl:list_reversal_loop requires #0] gt_log_Int (Seq.length s) 0)
     /\ ([@stop_split] [@expl:list_reversal_loop requires #1] loop_ self.current l s)}
     (! bb0
@@ -963,18 +970,18 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
           [ s0 = {[@expl:assertion] n = Seq.length s -> l = Seq.get (Reverse.reverse s) (Seq.length s - 1)} s1
           | s1 = MutBorrow.borrow_mut <t_Memory> {self.current}
               (fun (_bor: MutBorrow.t t_Memory) -> [ &_50 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
-          | s2 = index_mut_Memory {_50} {l} (fun (_x: MutBorrow.t UInt64.t) -> [ &_49 <- _x ] s3)
+          | s2 = index_mut_Memory {mode} {_50} {l} (fun (_x: MutBorrow.t UInt64.t) -> [ &_49 <- _x ] s3)
           | s3 = MutBorrow.borrow_final <UInt64.t> {_49.current} {MutBorrow.get_id _49}
               (fun (_bor: MutBorrow.t UInt64.t) -> [ &_48 <- _bor ] [ &_49 <- { _49 with current = _bor.final } ] s4)
           | s4 = MutBorrow.borrow_mut <UInt64.t> {r}
               (fun (_bor: MutBorrow.t UInt64.t) -> [ &_54 <- _bor ] [ &r <- _bor.final ] s5)
           | s5 = MutBorrow.borrow_final <UInt64.t> {_54.current} {MutBorrow.get_id _54}
               (fun (_bor: MutBorrow.t UInt64.t) -> [ &_53 <- _bor ] [ &_54 <- { _54 with current = _bor.final } ] s6)
-          | s6 = replace_usize {_53} {l} (fun (_x: UInt64.t) -> [ &_52 <- _x ] s7)
+          | s6 = replace_usize {mode} {_53} {l} (fun (_x: UInt64.t) -> [ &_52 <- _x ] s7)
           | s7 = -{resolve_refmut_usize _54}- s8
           | s8 = MutBorrow.borrow_final <UInt64.t> {_48.current} {MutBorrow.get_id _48}
               (fun (_bor: MutBorrow.t UInt64.t) -> [ &_47 <- _bor ] [ &_48 <- { _48 with current = _bor.final } ] s9)
-          | s9 = replace_usize {_47} {_52} (fun (_x: UInt64.t) -> [ &_46 <- _x ] s10)
+          | s9 = replace_usize {mode} {_47} {_52} (fun (_x: UInt64.t) -> [ &_46 <- _x ] s10)
           | s10 = -{resolve_refmut_usize _49}- s11
           | s11 = -{resolve_refmut_usize _48}- s12
           | s12 = [ &l <- _46 ] s13
@@ -1012,6 +1019,7 @@ module M_impl_Memory_0__list_reversal_safe (* Memory *)
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use seq.Seq
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -1043,13 +1051,13 @@ module M_impl_Memory_0__list_reversal_safe (* Memory *)
   predicate mem_is_well_formed (self: t_Memory) =
     forall i: UInt64.t. nonnull_ptr self i -> index_Memory self i = const_NULL \/ nonnull_ptr self (index_Memory self i)
   
-  let index_Memory'0 (self: t_Memory) (i: UInt64.t) (return (x: UInt64.t)) =
+  let index_Memory'0 (mode: Mode.t) (self: t_Memory) (i: UInt64.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:index requires] nonnull_ptr self i}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:index ensures] result = index_Memory self i}
       (! return {result}) ]
   
-  let index_mut_Memory (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
+  let index_mut_Memory (mode: Mode.t) (self: MutBorrow.t t_Memory) (i: UInt64.t) (return (x: MutBorrow.t UInt64.t)) =
   {[@stop_split] [@expl:index_mut requires] nonnull_ptr self.current i}
     any
     [ return (result: MutBorrow.t UInt64.t) ->
@@ -1074,7 +1082,7 @@ module M_impl_Memory_0__list_reversal_safe (* Memory *)
   
   meta "select_lsinst" "all"
   
-  let list_reversal_safe (self: MutBorrow.t t_Memory) (l: UInt64.t) (return (x: UInt64.t)) =
+  let list_reversal_safe (mode: Mode.t) (self: MutBorrow.t t_Memory) (l: UInt64.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:list_reversal_safe requires] ([@stop_split] [@expl:list_reversal_safe requires #0] mem_is_well_formed self.current)
     /\ ([@stop_split] [@expl:list_reversal_safe requires #1] l = const_NULL \/ nonnull_ptr self.current l)}
     (! bb0
@@ -1088,11 +1096,11 @@ module M_impl_Memory_0__list_reversal_safe (* Memory *)
         [ s0 = [ &_21 <- l <> const_NULL ] s1 | s1 = any [ br0 -> {_21 = false} (! bb6) | br1 -> {_21} (! bb3) ] ]
         [ bb3 = s0
           [ s0 = [ &tmp <- l ] s1
-          | s1 = index_Memory'0 {self.current} {l} (fun (_x: UInt64.t) -> [ &_25 <- _x ] s2)
+          | s1 = index_Memory'0 {mode} {self.current} {l} (fun (_x: UInt64.t) -> [ &_25 <- _x ] s2)
           | s2 = [ &l <- _25 ] s3
           | s3 = MutBorrow.borrow_mut <t_Memory> {self.current}
               (fun (_bor: MutBorrow.t t_Memory) -> [ &_30 <- _bor ] [ &self <- { self with current = _bor.final } ] s4)
-          | s4 = index_mut_Memory {_30} {tmp} (fun (_x: MutBorrow.t UInt64.t) -> [ &_29 <- _x ] s5)
+          | s4 = index_mut_Memory {mode} {_30} {tmp} (fun (_x: MutBorrow.t UInt64.t) -> [ &_29 <- _x ] s5)
           | s5 = [ &_29 <- { _29 with current = r } ] s6
           | s6 = -{resolve_refmut_usize _29}- s7
           | s7 = [ &r <- tmp ] s8

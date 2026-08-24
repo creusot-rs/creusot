@@ -72,27 +72,27 @@ extern_spec! {
     }
 
     impl FromIterator<char> for String {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
+            I::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(result@, *done) && done.completed() && resolve(^done)
         )]
         fn from_iter<I: IntoIterator<Item = char, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 
     impl FromIterator<char> for Box<str> {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
+            I::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(result@, *done) && done.completed() && resolve(^done)
         )]
         fn from_iter<I: IntoIterator<Item = char, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
 
     impl<'a> FromIterator<&'a char> for String {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.map(|c: &char| *c)
         )]
@@ -100,9 +100,9 @@ extern_spec! {
     }
 
     impl<'a> FromIterator<&'a char> for Box<str> {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.map(|c: &char| *c)
         )]
@@ -110,9 +110,9 @@ extern_spec! {
     }
 
     impl<'a> FromIterator<&'a str> for String {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.flat_map(|s: I::Item| s@)
         )]
@@ -120,9 +120,9 @@ extern_spec! {
     }
 
     impl<'a> FromIterator<&'a str> for Box<str> {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.flat_map(|s: &str| s@)
         )]
@@ -130,9 +130,9 @@ extern_spec! {
     }
 
     impl<A: std::alloc::Allocator> FromIterator<Box<str, A>> for String {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.flat_map(|s: I::Item| s@)
         )]
@@ -140,9 +140,9 @@ extern_spec! {
     }
 
     impl<A: std::alloc::Allocator> FromIterator<Box<str, A>> for Box<str> {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.flat_map(|s: I::Item| s@)
         )]
@@ -150,9 +150,9 @@ extern_spec! {
     }
 
     impl FromIterator<String> for Box<str> {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.flat_map(|s: I::Item| s@)
         )]
@@ -160,9 +160,9 @@ extern_spec! {
     }
 
     impl FromIterator<String> for String {
-        #[requires(I::into_iter.precondition((iter,)))]
-        #[ensures(exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter) &&
+        #[requires(|mode| I::into_iter.precondition(mode, (iter,)))]
+        #[ensures(|result, mode| exists<into_iter: I::IntoIter, produced: Seq<I::Item>, done: &mut I::IntoIter>
+            I::into_iter.postcondition(mode, (iter,), into_iter) &&
             into_iter.produces(produced, *done) && done.completed() && resolve(^done) &&
             result@ == produced.flat_map(|s: I::Item| s@)
         )]

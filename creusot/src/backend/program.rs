@@ -1500,7 +1500,10 @@ pub fn is_unsized(ty: &Ty) -> bool {
 /// check that its preconditions are trivial in `nopanic` mode.
 /// TODO: find a better place for this check
 fn safety_check(ctx: &TranslationCtx, def_id: DefId) {
-    if !is_unsafe(ctx.tcx, def_id) && has_unsafe_block(ctx.tcx, def_id) {
+    if matches!(ctx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
+        && !is_unsafe(ctx.tcx, def_id)
+        && has_unsafe_block(ctx.tcx, def_id)
+    {
         // All preconditions must be guarded by nopanic, terminates, or ghost
         let sig = ctx.sig(def_id);
         let modes = [
@@ -1509,13 +1512,16 @@ fn safety_check(ctx: &TranslationCtx, def_id: DefId) {
             Intrinsic::ModeGhost.get(ctx),
         ];
         for pre in &sig.contract.requires {
-            use crate::translation::pearlite::TermKind::*;
+            use crate::translation::pearlite::{Literal::Bool, TermKind::*};
             if let Impl { lhs: ref arg, .. } = pre.term.kind
                 && let Call { id, ref args, .. } = arg.kind
                 && modes.contains(&id)
                 && let Var(v) = args[0].kind
                 && v.0 == name::mode()
             {
+                continue;
+            }
+            if let Lit(Bool(true)) = pre.term.kind {
                 continue;
             }
             // Warn for now
@@ -1552,7 +1558,8 @@ fn has_unsafe_block(tcx: TyCtxt, def_id: DefId) -> bool {
         }
 
         fn visit_block(&mut self, b: &'tcx hir::Block<'tcx>) -> Self::Result {
-            if let hir::BlockCheckMode::UnsafeBlock(_) = b.rules {
+            use rustc_hir::UnsafeSource::UserProvided;
+            if let hir::BlockCheckMode::UnsafeBlock(UserProvided) = b.rules {
                 return ControlFlow::Break(());
             }
             walk_block(self, b)

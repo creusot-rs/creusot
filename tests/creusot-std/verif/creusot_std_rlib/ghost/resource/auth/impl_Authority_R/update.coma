@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_R
@@ -150,7 +151,7 @@ axiom unit_View_AuthViewRel_R_spec:
   forall x: t_View_AuthViewRel_R [op_View_AuthViewRel_R x unit_View_AuthViewRel_R]. op_View_AuthViewRel_R x unit_View_AuthViewRel_R
     = Some'0 x
 
-let take_View_AuthViewRel_R (self: MutBorrow.t t_Resource_View_AuthViewRel_R)
+let take_View_AuthViewRel_R (mode: Mode.t) (self: MutBorrow.t t_Resource_View_AuthViewRel_R)
   (return (x: t_Resource_View_AuthViewRel_R)) = any
   [ return (result: t_Resource_View_AuthViewRel_R) ->
   {[@stop_split] [@expl:take_View_AuthViewRel_R ensures] ([@stop_split] [@expl:take ensures #0] id_View_AuthViewRel_R self.final
@@ -161,9 +162,9 @@ let take_View_AuthViewRel_R (self: MutBorrow.t t_Resource_View_AuthViewRel_R)
     = view_Resource_View_AuthViewRel_R self.current)}
     (! return {result}) ]
 
-let join_in_View_AuthViewRel_R (self: MutBorrow.t t_Resource_View_AuthViewRel_R) (other: t_Resource_View_AuthViewRel_R)
-  (return (x: ())) = {[@stop_split] [@expl:join_in requires] id_View_AuthViewRel_R self.current
-  = id_View_AuthViewRel_R other}
+let join_in_View_AuthViewRel_R (mode: Mode.t) (self: MutBorrow.t t_Resource_View_AuthViewRel_R)
+  (other: t_Resource_View_AuthViewRel_R) (return (x: ())) =
+{[@stop_split] [@expl:join_in requires] id_View_AuthViewRel_R self.current = id_View_AuthViewRel_R other}
   any
   [ return (result: ()) ->
   {[@stop_split] [@expl:join_in_View_AuthViewRel_R ensures] ([@stop_split] [@expl:join_in ensures #0] id_View_AuthViewRel_R self.final
@@ -180,8 +181,8 @@ axiom incl_View_AuthViewRel_R_spec:
   forall self: t_View_AuthViewRel_R, other: t_View_AuthViewRel_R [incl_View_AuthViewRel_R self other]. incl_View_AuthViewRel_R self other
     = (exists factor: t_View_AuthViewRel_R. op_View_AuthViewRel_R self factor = Some'0 other)
 
-let weaken_View_AuthViewRel_R (self: MutBorrow.t t_Resource_View_AuthViewRel_R) (target: t_View_AuthViewRel_R)
-  (return (x: ())) =
+let weaken_View_AuthViewRel_R (mode: Mode.t) (self: MutBorrow.t t_Resource_View_AuthViewRel_R)
+  (target: t_View_AuthViewRel_R) (return (x: ())) =
 {[@stop_split] [@expl:weaken requires] incl_View_AuthViewRel_R target (view_Resource_View_AuthViewRel_R self.current)}
   any
   [ return (result: ()) ->
@@ -226,7 +227,8 @@ axiom update_AuthUpdate_U_spec'0:
     -> frag_AuthViewRel_R (update_AuthUpdate_U self from _3)
     = (update_U self.f0'2 (unwrap_Option_R (auth_AuthViewRel_R from)) (frag_AuthViewRel_R from)).f1'3
 
-let update_View_AuthViewRel_R (self: MutBorrow.t t_Resource_View_AuthViewRel_R) (upd: t_AuthUpdate_U) (return (x: ())) =
+let update_View_AuthViewRel_R (mode: Mode.t) (self: MutBorrow.t t_Resource_View_AuthViewRel_R) (upd: t_AuthUpdate_U)
+  (return (x: ())) =
 {[@stop_split] [@expl:update_View_AuthViewRel_R requires] ([@stop_split] [@expl:update 'upd' type invariant] inv_AuthUpdate_U upd)
   /\ ([@stop_split] [@expl:update requires] premise_AuthUpdate_U upd (view_Resource_View_AuthViewRel_R self.current))}
   any
@@ -284,8 +286,8 @@ predicate incl_eq_op_View_AuthViewRel_R (a: t_View_AuthViewRel_R) (b: t_View_Aut
     | Some'0 ab -> incl_eq_View_AuthViewRel_R ab x
     end
 
-let split_off_View_AuthViewRel_R (self: MutBorrow.t t_Resource_View_AuthViewRel_R) (r: t_View_AuthViewRel_R)
-  (s: t_View_AuthViewRel_R) (return (x: t_Resource_View_AuthViewRel_R)) =
+let split_off_View_AuthViewRel_R (mode: Mode.t) (self: MutBorrow.t t_Resource_View_AuthViewRel_R)
+  (r: t_View_AuthViewRel_R) (s: t_View_AuthViewRel_R) (return (x: t_Resource_View_AuthViewRel_R)) =
 {[@stop_split] [@expl:split_off requires] incl_eq_op_View_AuthViewRel_R r s (view_Resource_View_AuthViewRel_R self.current)}
   any
   [ return (result: t_Resource_View_AuthViewRel_R) ->
@@ -328,7 +330,8 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let update_R (self: MutBorrow.t t_Authority_R) (frag: MutBorrow.t t_Fragment_R) (upd: t_U) (return (x: ())) =
+let update_R (mode: Mode.t) (self: MutBorrow.t t_Authority_R) (frag: MutBorrow.t t_Fragment_R) (upd: t_U)
+  (return (x: ())) =
 {[@stop_split] [@expl:update_R requires] ([@stop_split] [@expl:update 'self' type invariant] inv_refmut_Authority_R self)
   /\ ([@stop_split] [@expl:update 'upd' type invariant] inv_U upd)
   /\ ([@stop_split] [@expl:update requires #0] id_R self.current = id_R'0 frag.current)
@@ -339,20 +342,20 @@ let update_R (self: MutBorrow.t t_Authority_R) (frag: MutBorrow.t t_Fragment_R) 
     | s1 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_R> {frag.current.f0'0}
         (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_R) ->
           [ &_29 <- _bor ] [ &frag <- { frag with current = { f0'0 = _bor.final } } ] s2)
-    | s2 = take_View_AuthViewRel_R {_29} (fun (_x: t_Resource_View_AuthViewRel_R) -> [ &_28 <- _x ] s3)
+    | s2 = take_View_AuthViewRel_R {mode} {_29} (fun (_x: t_Resource_View_AuthViewRel_R) -> [ &_28 <- _x ] s3)
     | s3 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_R> {self.current.f0}
         (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_R) ->
           [ &_27 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s4)
-    | s4 = join_in_View_AuthViewRel_R {_27} {_28} (fun (_x: ()) -> [ &_26 <- _x ] s5)
+    | s4 = join_in_View_AuthViewRel_R {mode} {_27} {_28} (fun (_x: ()) -> [ &_26 <- _x ] s5)
     | s5 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_R> {self.current.f0}
         (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_R) ->
           [ &_31 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s6)
-    | s6 = weaken_View_AuthViewRel_R {_31} {from} (fun (_x: ()) -> [ &_30 <- _x ] s7)
+    | s6 = weaken_View_AuthViewRel_R {mode} {_31} {from} (fun (_x: ()) -> [ &_30 <- _x ] s7)
     | s7 = [ &_35 <- { f0'2 = upd } ] s8
     | s8 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_R> {self.current.f0}
         (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_R) ->
           [ &_34 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s9)
-    | s9 = update_View_AuthViewRel_R {_34} {_35} (fun (_x: ()) -> [ &_33 <- _x ] s10)
+    | s9 = update_View_AuthViewRel_R {mode} {_34} {_35} (fun (_x: ()) -> [ &_33 <- _x ] s10)
     | s10 =
       [ &rs <- { f0'4 = new_frag_AuthViewRel_R (frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.current.f0));
                  f1'4 = new_AuthViewRel_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R self.current.f0)) unit_R } ]
@@ -361,7 +364,7 @@ let update_R (self: MutBorrow.t t_Authority_R) (frag: MutBorrow.t t_Fragment_R) 
         {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
         (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_R) ->
           [ &_41 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s12)
-    | s12 = split_off_View_AuthViewRel_R {_41} {rs.f0'4} {rs.f1'4}
+    | s12 = split_off_View_AuthViewRel_R {mode} {_41} {rs.f0'4} {rs.f1'4}
         (fun (_x: t_Resource_View_AuthViewRel_R) -> [ &_40 <- _x ] s13)
     | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_R self} any) ]
     | s14 = -{resolve_refmut_Authority_R self}- s15

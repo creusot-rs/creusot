@@ -463,12 +463,12 @@ where
 {
     type Inner = <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::Inner;
 
-    #[requires(|mode| T::deref.precondition(mode, (*self,)))]
-    #[requires(|mode| forall<this> T::deref.postcondition(mode, (*self,), this) ==>
-        <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::open.precondition(mode, (Ghost::new_logic(this), tokens, f))
+    #[requires(|mode| T::deref.precondition(mode.into_ghost(), (*self,)))]
+    #[requires(|mode| forall<this> T::deref.postcondition(mode.into_ghost(), (*self,), this)
+        ==> <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::open.precondition(mode, (Ghost::new_logic(this), tokens, f))
     )]
-    #[ensures(|result, mode| exists<this> T::deref.postcondition(mode, (*self,), this) &&
-        <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::open.postcondition(mode, (Ghost::new_logic(this), tokens, f), result)
+    #[ensures(|result, mode| exists<this> T::deref.postcondition(mode.into_ghost(), (*self,), this)
+        && <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::open.postcondition(mode, (Ghost::new_logic(this), tokens, f), result)
     )]
     fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where

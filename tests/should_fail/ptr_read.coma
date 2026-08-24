@@ -74,8 +74,8 @@ module M_f
   
   meta "rewrite_def" predicate inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_T
   
-  let rec from_mut_T (mode: Mode.t) (r: MutBorrow.t t_T) (return (x: tup2_ptr_T_Ghost_refmut_Perm_ptr_T)) =
-    {[@stop_split] [@expl:from_mut 'r' type invariant] inv_refmut_T r}
+  let from_mut_T (mode: Mode.t) (r: MutBorrow.t t_T) (return (x: tup2_ptr_T_Ghost_refmut_Perm_ptr_T)) =
+  {[@stop_split] [@expl:from_mut 'r' type invariant] inv_refmut_T r}
     any
     [ return (result: tup2_ptr_T_Ghost_refmut_Perm_ptr_T) ->
     {[@stop_split] [@expl:from_mut_T ensures] ([@stop_split] [@expl:from_mut result type invariant] inv_tup2_ptr_T_Ghost_refmut_Perm_ptr_T result)
@@ -90,10 +90,11 @@ module M_f
   
   meta "rewrite_def" function fin_Ghost_refmut_Perm_ptr_T
   
-  let rec read_T (mode: Mode.t) (src: Opaque.ptr) (perm: MutBorrow.t t_Perm_ptr_T)
+  let read_T (mode: Mode.t) (src: Opaque.ptr) (perm: MutBorrow.t t_Perm_ptr_T)
     (return (x: tup2_T_Ghost_refmut_Perm_ptr_T)) =
-    {[@stop_split] [@expl:read_T requires] ([@stop_split] [@expl:read 'perm' type invariant] inv_Ghost_refmut_Perm_ptr_T perm)
-    /\ ([@stop_split] [@expl:read requires] src = ward_ptr_T perm.current)}
+  {[@stop_split] [@expl:read_T requires] ([@stop_split] [@expl:read 'perm' type invariant] inv_Ghost_refmut_Perm_ptr_T perm)
+    /\ ([@stop_split] [@expl:read requires #0] inv_Ghost_refmut_Perm_ptr_T perm)
+    /\ ([@stop_split] [@expl:read requires #1] src = ward_ptr_T perm.current)}
     any
     [ return (result: tup2_T_Ghost_refmut_Perm_ptr_T) ->
     {[@stop_split] [@expl:read_T ensures] ([@stop_split] [@expl:read ensures #0] result.f0'0 = val_ptr_T perm.current)
@@ -107,10 +108,15 @@ module M_f
   
   meta "rewrite_def" predicate resolve_refmut_Perm_ptr_T
   
-  predicate resolve_Ghost_refmut_Perm_ptr_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_T) =
-    resolve_refmut_Perm_ptr_T _1
+  predicate resolve_Ghost_refmut_Perm_ptr_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_T) =
+    resolve_refmut_Perm_ptr_T self
   
   meta "rewrite_def" predicate resolve_Ghost_refmut_Perm_ptr_T
+  
+  predicate resolve_Ghost_refmut_Perm_ptr_T'0 [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_T) =
+    resolve_Ghost_refmut_Perm_ptr_T _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_Perm_ptr_T'0
   
   predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
   
@@ -120,8 +126,8 @@ module M_f
   
   meta "select_lsinst" "all"
   
-  let rec f_T (mode: Mode.t) (r: MutBorrow.t t_T) (return (x: t_T)) =
-    {[@stop_split] [@expl:f 'r' type invariant] inv_refmut_T r}
+  let f_T (mode: Mode.t) (r: MutBorrow.t t_T) (return (x: t_T)) =
+  {[@stop_split] [@expl:f 'r' type invariant] inv_refmut_T r}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_T> {r.current} {MutBorrow.get_id r}
@@ -133,7 +139,7 @@ module M_f
       | s3 = [ &perm <- _6.f1 ] s4
       | s4 = read_T {mode} {ptr} {perm} (fun (_x: tup2_T_Ghost_refmut_Perm_ptr_T) -> [ &_8 <- _x ] s5)
       | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_Perm_ptr_T _8.f1'0} any) ]
-      | s6 = -{resolve_Ghost_refmut_Perm_ptr_T _8.f1'0}- s7
+      | s6 = -{resolve_Ghost_refmut_Perm_ptr_T'0 _8.f1'0}- s7
       | s7 = [ &_ret <- _8.f0'0 ] s8
       | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_T r} any) ]
       | s9 = -{resolve_refmut_T r}- s10

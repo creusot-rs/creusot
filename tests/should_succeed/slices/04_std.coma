@@ -1,6 +1,7 @@
 module M_check_iter_len
   use creusot.slice.Slice64
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
@@ -22,12 +23,12 @@ module M_check_iter_len
   
   meta "rewrite_def" function view_Box_slice_i32_Global
   
-  let into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
+  let into_vec_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:into_vec ensures] view_Vec_i32_Global result
       = view_Box_slice_i32_Global self_}
       (! return {result}) ]
   
-  let deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
+  let deref_Vec_i32_Global (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
     [ return (result: Slice64.slice Int32.t) -> {[@stop_split] [@expl:deref ensures] Slice64.view result
       = view_Vec_i32_Global self_}
       (! return {result}) ]
@@ -38,7 +39,7 @@ module M_check_iter_len
   
   function view_Iter_i32 (self: t_Iter_i32) : Slice64.slice Int32.t
   
-  let iter_i32 (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
+  let iter_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
     [ return (result: t_Iter_i32) ->
     {[@stop_split] [@expl:iter_i32 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_i32 result)
       /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self_)}
@@ -52,7 +53,7 @@ module M_check_iter_len
   
   meta "rewrite_def" predicate inv_ref_Iter_i32
   
-  let len_Iter_i32 (self_: t_Iter_i32) (return (x: UInt64.t)) =
+  let len_Iter_i32 (mode: Mode.t) (self_: t_Iter_i32) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_Iter_i32 self_}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
@@ -106,7 +107,7 @@ module M_check_iter_len
   predicate completed_Iter_i32 (self: MutBorrow.t t_Iter_i32) =
     resolve_refmut_Iter_i32 self /\ Slice64.view (view_Iter_i32 self.current) = (Seq.empty: Seq.seq Int32.t)
   
-  let next_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
+  let next_Iter_i32 (mode: Mode.t) (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
   {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_i32 self_}
     any
     [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:next ensures] match result with
@@ -121,7 +122,7 @@ module M_check_iter_len
   
   meta "select_lsinst" "all"
   
-  let check_iter_len (return (x: ())) = (! bb0
+  let check_iter_len (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = any
         [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
@@ -129,26 +130,26 @@ module M_check_iter_len
           /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t)
           /\ Seq.get __arr_temp.Slice64.elts 3 = (4: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 4}-
           [ &_4 <- __arr_temp ] s1) ]
-      | s1 = into_vec_i32 {_4} (fun (_x: t_Vec_i32_Global) -> [ &numbers <- _x ] s2)
-      | s2 = deref_Vec_i32_Global {numbers} (fun (_x: Slice64.slice Int32.t) -> [ &_7 <- _x ] s3)
-      | s3 = iter_i32 {_7} (fun (_x: t_Iter_i32) -> [ &iter <- _x ] s4)
-      | s4 = len_Iter_i32 {iter} (fun (_x: UInt64.t) -> [ &len <- _x ] s5)
+      | s1 = into_vec_i32 {mode} {_4} (fun (_x: t_Vec_i32_Global) -> [ &numbers <- _x ] s2)
+      | s2 = deref_Vec_i32_Global {mode} {numbers} (fun (_x: Slice64.slice Int32.t) -> [ &_7 <- _x ] s3)
+      | s3 = iter_i32 {mode} {_7} (fun (_x: t_Iter_i32) -> [ &iter <- _x ] s4)
+      | s4 = len_Iter_i32 {mode} {iter} (fun (_x: UInt64.t) -> [ &len <- _x ] s5)
       | s5 = {[@expl:assertion] UInt64.t'int len = 4} s6
       | s6 = MutBorrow.borrow_mut <t_Iter_i32> {iter}
           (fun (_bor: MutBorrow.t t_Iter_i32) ->
             [ &_15 <- _bor ] -{inv_Iter_i32 _bor.final}-
             [ &iter <- _bor.final ] s7) [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 iter} any) ]
-      | s7 = next_Iter_i32 {_15} (fun (_x: t_Option_ref_i32) -> [ &_14 <- _x ] s8)
-      | s8 = len_Iter_i32 {iter} (fun (_x: UInt64.t) -> [ &len'0 <- _x ] s9)
+      | s7 = next_Iter_i32 {mode} {_15} (fun (_x: t_Option_ref_i32) -> [ &_14 <- _x ] s8)
+      | s8 = len_Iter_i32 {mode} {iter} (fun (_x: UInt64.t) -> [ &len'0 <- _x ] s9)
       | s9 = {[@expl:assertion] UInt64.t'int len'0 = 3} s10
       | s10 = MutBorrow.borrow_mut <t_Iter_i32> {iter}
           (fun (_bor: MutBorrow.t t_Iter_i32) ->
             [ &_22 <- _bor ] -{inv_Iter_i32 _bor.final}-
             [ &iter <- _bor.final ] s11) [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 iter} any) ]
-      | s11 = next_Iter_i32 {_22} (fun (_x: t_Option_ref_i32) -> [ &_21 <- _x ] s12)
+      | s11 = next_Iter_i32 {mode} {_22} (fun (_x: t_Option_ref_i32) -> [ &_21 <- _x ] s12)
       | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 iter} any) ]
       | s13 = -{resolve_Iter_i32 iter}- s14
-      | s14 = len_Iter_i32 {iter} (fun (_x: UInt64.t) -> [ &len'1 <- _x ] s15)
+      | s14 = len_Iter_i32 {mode} {iter} (fun (_x: UInt64.t) -> [ &len'1 <- _x ] s15)
       | s15 = {[@expl:assertion] UInt64.t'int len'1 = 2} s16
       | s16 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
@@ -167,6 +168,7 @@ end
 module M_check_iter_mut_len
   use creusot.slice.Slice64
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
@@ -188,12 +190,12 @@ module M_check_iter_mut_len
   
   meta "rewrite_def" function view_Box_slice_i32_Global
   
-  let into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
+  let into_vec_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:into_vec ensures] view_Vec_i32_Global result
       = view_Box_slice_i32_Global self_}
       (! return {result}) ]
   
-  let deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
+  let deref_Vec_i32_Global (mode: Mode.t) (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
     [ return (result: Slice64.slice Int32.t) -> {[@stop_split] [@expl:deref ensures] Slice64.view result
       = view_Vec_i32_Global self_}
       (! return {result}) ]
@@ -204,7 +206,7 @@ module M_check_iter_mut_len
   
   function view_Iter_i32 (self: t_Iter_i32) : Slice64.slice Int32.t
   
-  let iter_i32 (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
+  let iter_i32 (mode: Mode.t) (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
     [ return (result: t_Iter_i32) ->
     {[@stop_split] [@expl:iter_i32 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_i32 result)
       /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self_)}
@@ -218,7 +220,7 @@ module M_check_iter_mut_len
   
   meta "rewrite_def" predicate inv_ref_Iter_i32
   
-  let len_Iter_i32 (self_: t_Iter_i32) (return (x: UInt64.t)) =
+  let len_Iter_i32 (mode: Mode.t) (self_: t_Iter_i32) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_Iter_i32 self_}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
@@ -272,7 +274,7 @@ module M_check_iter_mut_len
   predicate completed_Iter_i32 (self: MutBorrow.t t_Iter_i32) =
     resolve_refmut_Iter_i32 self /\ Slice64.view (view_Iter_i32 self.current) = (Seq.empty: Seq.seq Int32.t)
   
-  let next_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
+  let next_Iter_i32 (mode: Mode.t) (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
   {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_i32 self_}
     any
     [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:next ensures] match result with
@@ -287,7 +289,7 @@ module M_check_iter_mut_len
   
   meta "select_lsinst" "all"
   
-  let check_iter_mut_len (return (x: ())) = (! bb0
+  let check_iter_mut_len (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = any
         [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
@@ -295,26 +297,26 @@ module M_check_iter_mut_len
           /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t)
           /\ Seq.get __arr_temp.Slice64.elts 3 = (4: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 4}-
           [ &_4 <- __arr_temp ] s1) ]
-      | s1 = into_vec_i32 {_4} (fun (_x: t_Vec_i32_Global) -> [ &numbers <- _x ] s2)
-      | s2 = deref_Vec_i32_Global {numbers} (fun (_x: Slice64.slice Int32.t) -> [ &_7 <- _x ] s3)
-      | s3 = iter_i32 {_7} (fun (_x: t_Iter_i32) -> [ &iter <- _x ] s4)
-      | s4 = len_Iter_i32 {iter} (fun (_x: UInt64.t) -> [ &len <- _x ] s5)
+      | s1 = into_vec_i32 {mode} {_4} (fun (_x: t_Vec_i32_Global) -> [ &numbers <- _x ] s2)
+      | s2 = deref_Vec_i32_Global {mode} {numbers} (fun (_x: Slice64.slice Int32.t) -> [ &_7 <- _x ] s3)
+      | s3 = iter_i32 {mode} {_7} (fun (_x: t_Iter_i32) -> [ &iter <- _x ] s4)
+      | s4 = len_Iter_i32 {mode} {iter} (fun (_x: UInt64.t) -> [ &len <- _x ] s5)
       | s5 = {[@expl:assertion] UInt64.t'int len = 4} s6
       | s6 = MutBorrow.borrow_mut <t_Iter_i32> {iter}
           (fun (_bor: MutBorrow.t t_Iter_i32) ->
             [ &_15 <- _bor ] -{inv_Iter_i32 _bor.final}-
             [ &iter <- _bor.final ] s7) [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 iter} any) ]
-      | s7 = next_Iter_i32 {_15} (fun (_x: t_Option_ref_i32) -> [ &_14 <- _x ] s8)
-      | s8 = len_Iter_i32 {iter} (fun (_x: UInt64.t) -> [ &len'0 <- _x ] s9)
+      | s7 = next_Iter_i32 {mode} {_15} (fun (_x: t_Option_ref_i32) -> [ &_14 <- _x ] s8)
+      | s8 = len_Iter_i32 {mode} {iter} (fun (_x: UInt64.t) -> [ &len'0 <- _x ] s9)
       | s9 = {[@expl:assertion] UInt64.t'int len'0 = 3} s10
       | s10 = MutBorrow.borrow_mut <t_Iter_i32> {iter}
           (fun (_bor: MutBorrow.t t_Iter_i32) ->
             [ &_22 <- _bor ] -{inv_Iter_i32 _bor.final}-
             [ &iter <- _bor.final ] s11) [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 iter} any) ]
-      | s11 = next_Iter_i32 {_22} (fun (_x: t_Option_ref_i32) -> [ &_21 <- _x ] s12)
+      | s11 = next_Iter_i32 {mode} {_22} (fun (_x: t_Option_ref_i32) -> [ &_21 <- _x ] s12)
       | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_Iter_i32 iter} any) ]
       | s13 = -{resolve_Iter_i32 iter}- s14
-      | s14 = len_Iter_i32 {iter} (fun (_x: UInt64.t) -> [ &len'1 <- _x ] s15)
+      | s14 = len_Iter_i32 {mode} {iter} (fun (_x: UInt64.t) -> [ &len'1 <- _x ] s15)
       | s15 = {[@expl:assertion] UInt64.t'int len'1 = 2} s16
       | s16 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

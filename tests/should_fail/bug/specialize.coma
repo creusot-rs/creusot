@@ -1,22 +1,25 @@
 module M_f
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Vec_u32_Global
   
-  let x_Vec_u32_Global (self: t_Vec_u32_Global) (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
+  let x_Vec_u32_Global (mode: Mode.t) (self: t_Vec_u32_Global) (return (x: ())) = any
+    [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let f (v: t_Vec_u32_Global) (return (x: ())) = (! bb0
+  let f (mode: Mode.t) (v: t_Vec_u32_Global) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = x_Vec_u32_Global {v} (fun (_x: ()) -> [ &_2 <- _x ] s1)
+      [ s0 = x_Vec_u32_Global {mode} {v} (fun (_x: ()) -> [ &_2 <- _x ] s1)
       | s1 = {[@expl:assertion] false} s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & v: t_Vec_u32_Global = v | & _2: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_g
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.UInt64
   use creusot.prelude.Any
@@ -58,58 +61,64 @@ module M_g
   
   axiom inv_axiom: forall x: t_Vec_T_Global [inv_Vec_T_Global x]. inv_Vec_T_Global x -> invariant_Vec_T_Global x
   
-  predicate precondition_x (self: ()) (args: t_Vec_T_Global)
+  predicate precondition_x (self: ()) (mode: Mode.t) (args: t_Vec_T_Global)
   
   axiom precondition_fndef:
-    forall args: t_Vec_T_Global [precondition_x () args]. (let self = args in inv_Vec_T_Global self)
-      -> precondition_x () args
+    forall mode: Mode.t. forall args: t_Vec_T_Global [precondition_x () mode args]. (let self = args in inv_Vec_T_Global self)
+        -> precondition_x () mode args
   
-  predicate postcondition_x (self: ()) (args: t_Vec_T_Global) (result: ())
+  predicate postcondition_x (self: ()) (mode: Mode.t) (args: t_Vec_T_Global) (result: ())
   
   axiom postcondition_fndef:
-    forall args: t_Vec_T_Global, res: () [postcondition_x () args res]. postcondition_x () args res
+    forall mode: Mode.t, args: t_Vec_T_Global, res: () [postcondition_x () mode args res]. postcondition_x () mode args res
       -> (let self = args in true)
   
-  predicate postcondition_once_x (self: ()) (args: t_Vec_T_Global) (result: ()) = postcondition_x self args result
+  predicate postcondition_once_x (self: ()) (mode: Mode.t) (args: t_Vec_T_Global) (result: ()) =
+    postcondition_x self mode args result
   
   meta "rewrite_def" predicate postcondition_once_x
   
-  let x_Vec_T_Global (self: t_Vec_T_Global) (return (x: ())) = {[@stop_split] [@expl:x requires] precondition_x () self}
+  let x_Vec_T_Global (mode: Mode.t) (self: t_Vec_T_Global) (return (x: ())) =
+  {[@stop_split] [@expl:x requires] precondition_x () mode self}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:x ensures] postcondition_once_x () self result} (! return {result}) ]
+    [ return (result: ()) -> {[@stop_split] [@expl:x ensures] postcondition_once_x () mode self result}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let g_T (v: t_Vec_T_Global) (return (x: ())) = {[@stop_split] [@expl:g 'v' type invariant] inv_Vec_T_Global v}
+  let g_T (mode: Mode.t) (v: t_Vec_T_Global) (return (x: ())) =
+  {[@stop_split] [@expl:g 'v' type invariant] inv_Vec_T_Global v}
     (! bb0
     [ bb0 = s0
-      [ s0 = x_Vec_T_Global {v} (fun (_x: ()) -> [ &_2 <- _x ] s1)
+      [ s0 = x_Vec_T_Global {mode} {v} (fun (_x: ()) -> [ &_2 <- _x ] s1)
       | s1 = {[@expl:assertion] false} s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & v: t_Vec_T_Global = v | & _2: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_h
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Vec_i32_Global
   
-  let x_Vec_i32_Global (self: t_Vec_i32_Global) (return (x: ())) = any
+  let x_Vec_i32_Global (mode: Mode.t) (self: t_Vec_i32_Global) (return (x: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:x ensures] false} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let h (v: t_Vec_i32_Global) (return (x: ())) = (! bb0
+  let h (mode: Mode.t) (v: t_Vec_i32_Global) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = x_Vec_i32_Global {v} (fun (_x: ()) -> [ &_2 <- _x ] s1)
+      [ s0 = x_Vec_i32_Global {mode} {v} (fun (_x: ()) -> [ &_2 <- _x ] s1)
       | s1 = {[@expl:assertion] false} s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & v: t_Vec_i32_Global = v | & _2: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_impl_T_for_Vec_U_Global__x__refines (* <std::vec::Vec<U> as T> *)
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.UInt64
   use int.Int
@@ -154,5 +163,5 @@ module M_impl_T_for_Vec_U_Global__x__refines (* <std::vec::Vec<U> as T> *)
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Vec_U_Global. inv_Vec_U_Global self -> inv_Vec_U_Global self
+  goal refines: forall mode: Mode.t, self: t_Vec_U_Global. inv_Vec_U_Global self -> inv_Vec_U_Global self
 end

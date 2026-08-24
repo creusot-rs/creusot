@@ -9,25 +9,25 @@ pub fn multi_use<T>(x: &T) {
     };
 
     uses_fn(c);
-    // uses_fnmut(c);
-    // uses_fnonce(c);
+    uses_fnmut(c);
+    uses_fnonce(c);
 }
 
 #[trusted]
-#[requires(f.precondition(()))]
-#[ensures(exists<f2: &F, r> *f2 == f && f2.postcondition((), r))]
+#[requires(|mode| f.precondition(mode, ()))]
+#[ensures(|_, mode| exists<f2: &F, r> *f2 == f && f2.postcondition(mode, (), r))]
 fn uses_fn<F: Fn() -> u32>(f: F) {
     f();
 }
 
-// #[requires(f.precondition(()))]
-// #[ensures(exists<f2: F, r> f2.postcondition_mut((), f2, r))]
-// fn uses_fnmut<F: FnMut() -> u32>(mut f: F) {
-//     f();
-// }
+#[requires(|mode| f.precondition(mode, ()))]
+#[ensures(|_, mode| exists<f2: F, r> f.postcondition_mut(mode, (), f2, r))]
+fn uses_fnmut<F: FnMut() -> u32>(mut f: F) {
+    f();
+}
 
-// #[requires(f.precondition(()))]
-// #[ensures(exists<r> f.postcondition_once((), r))]
-// fn uses_fnonce<F: FnOnce() -> u32>(f: F) {
-//     f();
-// }
+#[requires(|mode| f.precondition(mode, ()))]
+#[ensures(|_, mode| exists<r> f.postcondition_once(mode, (), r))]
+fn uses_fnonce<F: FnOnce() -> u32>(f: F) {
+    f();
+}

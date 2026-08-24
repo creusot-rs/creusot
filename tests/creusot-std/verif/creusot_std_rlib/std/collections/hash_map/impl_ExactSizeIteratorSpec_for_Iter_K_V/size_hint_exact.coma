@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use int.Int
 
 type t_Iter_K_V
@@ -26,7 +27,7 @@ axiom len_DeepModelTy_spec:
 
 function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_DeepModelTy_V
 
-predicate postcondition_size_hint (self: ()) (args: t_Iter_K_V) (result: tup2_usize_Option_usize) =
+predicate postcondition_size_hint (self: ()) (mode: Mode.t) (args: t_Iter_K_V) (result: tup2_usize_Option_usize) =
   let self_ = args in UInt64.t'int result.f0 = len_DeepModelTy (view_Iter_K_V self_) /\ result.f1 = Some (result.f0)
 
 meta "rewrite_def" predicate postcondition_size_hint
@@ -41,7 +42,7 @@ predicate inv_ref_Iter_K_V [@inline:trivial] (_1: t_Iter_K_V) = invariant_ref_It
 
 meta "rewrite_def" predicate inv_ref_Iter_K_V
 
-let size_hint_Iter_K_V (self_: t_Iter_K_V) (return (x: tup2_usize_Option_usize)) =
+let size_hint_Iter_K_V (mode: Mode.t) (self_: t_Iter_K_V) (return (x: tup2_usize_Option_usize)) =
 {[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Iter_K_V self_}
   any
   [ return (result: tup2_usize_Option_usize) ->
@@ -60,5 +61,5 @@ constant r : tup2_usize_Option_usize
 
 function size_hint_exact_Iter_K_V (self: t_Iter_K_V) (r: tup2_usize_Option_usize) : ()
 
-goal vc_size_hint_exact_Iter_K_V: postcondition_size_hint () self r
+goal vc_size_hint_exact_Iter_K_V: (exists mode: Mode.t. postcondition_size_hint () mode self r)
   -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))

@@ -20,8 +20,8 @@ pub fn mutable_capture() {
 }
 
 #[trusted]
-#[requires(f.precondition(()))]
-#[ensures(f.postcondition_once((), ()))]
+#[requires(|mode| f.precondition(mode, ()))]
+#[ensures(|_, mode| f.postcondition_once(mode, (), ()))]
 fn calls_closure<F: FnOnce() -> ()>(f: F) {
     f();
 }

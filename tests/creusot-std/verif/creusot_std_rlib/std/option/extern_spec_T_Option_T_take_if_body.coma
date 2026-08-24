@@ -3,6 +3,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -35,16 +36,16 @@ predicate inv_tup1_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = inv_refmut
 
 meta "rewrite_def" predicate inv_tup1_refmut_T
 
-predicate precondition_P (self: t_P) (args: MutBorrow.t t_T)
+predicate precondition_P (self: t_P) (mode: Mode.t) (args: MutBorrow.t t_T)
 
-predicate postcondition_once_P (self: t_P) (args: MutBorrow.t t_T) (result: bool)
+predicate postcondition_once_P (self: t_P) (mode: Mode.t) (args: MutBorrow.t t_T) (result: bool)
 
-let call_once_P (self_: t_P) (arg: MutBorrow.t t_T) (return (x: bool)) =
+let call_once_P (mode: Mode.t) (self_: t_P) (arg: MutBorrow.t t_T) (return (x: bool)) =
 {[@stop_split] [@expl:call_once_P requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_P self_)
   /\ ([@stop_split] [@expl:call_once 'arg' type invariant] inv_tup1_refmut_T arg)
-  /\ ([@stop_split] [@expl:call_once requires] precondition_P self_ arg)}
+  /\ ([@stop_split] [@expl:call_once requires] precondition_P self_ mode arg)}
   any
-  [ return (result: bool) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_P self_ arg result}
+  [ return (result: bool) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_P self_ mode arg result}
     (! return {result}) ]
 
 predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
@@ -68,7 +69,7 @@ predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = i
 
 meta "rewrite_def" predicate inv_refmut_Option_T
 
-let take_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
+let take_T (mode: Mode.t) (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
 {[@stop_split] [@expl:take 'self_' type invariant] inv_refmut_Option_T self_}
   any
   [ return (result: t_Option_T) ->
@@ -86,12 +87,13 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_Option_T_take_if_body_T (self_: MutBorrow.t t_Option_T) (predicate': t_P) (return (x: t_Option_T)) =
+let extern_spec_T_Option_T_take_if_body_T (mode: Mode.t) (self_: MutBorrow.t t_Option_T) (predicate': t_P)
+  (return (x: t_Option_T)) =
 {[@stop_split] [@expl:extern_spec_T_Option_T_take_if_body_T requires] ([@stop_split] [@expl:extern_spec_T_Option_T_take_if_body 'self_' type invariant] inv_refmut_Option_T self_)
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_take_if_body 'predicate' type invariant] inv_P predicate')
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_take_if_body requires] match self_.current with
     | None -> true
-    | Some t -> forall b: MutBorrow.t t_T. inv_refmut_T b /\ b.current = t -> precondition_P predicate' b
+    | Some t -> forall b: MutBorrow.t t_T. inv_refmut_T b /\ b.current = t -> precondition_P predicate' mode b
     end)}
   (! bb0
   [ bb0 = any [ br0 -> {self_.current = None} (! bb2) | br1 (x0: t_T) -> {self_.current = Some x0} (! bb3) ]
@@ -108,7 +110,7 @@ let extern_spec_T_Option_T_take_if_body_T (self_: MutBorrow.t t_Option_T) (predi
           [ &_14 <- _bor ] -{inv_T _bor.final}-
           [ &t <- { t with current = _bor.final } ] s2) [ _ck -> (! {[@expl:type invariant] inv_T t.current} any) ]
     | s2 = [ &_13 <- _14 ] s3
-    | s3 = call_once_P {predicate'} {_13} (fun (_x: bool) -> [ &_11 <- _x ] s4)
+    | s3 = call_once_P {mode} {predicate'} {_13} (fun (_x: bool) -> [ &_11 <- _x ] s4)
     | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
     | s5 = -{resolve_refmut_T t}- s6
     | s6 = any [ br0 -> {_11 = false} (! bb8) | br1 -> {_11} (! bb6) ] ]
@@ -118,7 +120,7 @@ let extern_spec_T_Option_T_take_if_body_T (self_: MutBorrow.t t_Option_T) (predi
           [ &_15 <- _bor ] -{inv_Option_T _bor.final}-
           [ &self_ <- { self_ with current = _bor.final } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_Option_T self_.current} any) ]
-    | s1 = take_T {_15} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
+    | s1 = take_T {mode} {_15} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
     | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_T self_} any) ]
     | s3 = -{resolve_refmut_Option_T self_}- s4
     | s4 = return {_ret} ]
@@ -148,7 +150,7 @@ let extern_spec_T_Option_T_take_if_body_T (self_: MutBorrow.t t_Option_T) (predi
       | None -> result = None /\ self_.final = None
       | Some cur -> exists b: MutBorrow.t t_T, res: bool. inv_refmut_T b
         /\ cur = b.current
-        /\ postcondition_once_P predicate' b res
+        /\ postcondition_once_P predicate' mode b res
         /\ (if res then
           self_.final = None /\ result = Some (b.final)
         else

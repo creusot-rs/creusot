@@ -6,6 +6,7 @@ type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
 use seq.Seq
+use creusot.prelude.Mode
 use creusot.prelude.Any
 use int.Int
 
@@ -64,7 +65,7 @@ predicate inv_Seq_refmut_T [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_T)) = i
 
 meta "rewrite_def" predicate inv_Seq_refmut_T
 
-let as_muts_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: Seq.seq (MutBorrow.t t_T))) =
+let as_muts_T (mode: Mode.t) (self: MutBorrow.t (Seq.seq t_T)) (return (x: Seq.seq (MutBorrow.t t_T))) =
 {[@stop_split] [@expl:as_muts 'self' type invariant] inv_refmut_Seq_T self}
   any
   [ return (result: Seq.seq (MutBorrow.t t_T)) ->
@@ -93,7 +94,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let into_iter_refmut_Seq_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Iter_refmut_T)) =
+let into_iter_refmut_Seq_T (mode: Mode.t) (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Iter_refmut_T)) =
 {[@stop_split] [@expl:into_iter 'self' type invariant] inv_refmut_Seq_T self}
   (! bb0
   [ bb0 = s0
@@ -102,7 +103,7 @@ let into_iter_refmut_Seq_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Iter_
           [ &_11 <- _bor ] -{inv_Seq_T _bor.final}-
           [ &self <- { self with current = _bor.final } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
-    | s1 = as_muts_T {_11} (fun (_x: Seq.seq (MutBorrow.t t_T)) -> [ &_10 <- _x ] s2)
+    | s1 = as_muts_T {mode} {_11} (fun (_x: Seq.seq (MutBorrow.t t_T)) -> [ &_10 <- _x ] s2)
     | s2 = [ &_ret <- { f0 = _10 } ] s3
     | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
     | s4 = -{resolve_refmut_Seq_T self}- s5

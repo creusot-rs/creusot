@@ -41,27 +41,19 @@ impl<I: DoubleEndedIteratorSpec> IteratorSpec for Rev<I> {
     }
 
     #[logic(open, prophetic)]
-    fn produces(self, mode: Mode, visited: Seq<Self::Item>, o: Self) -> bool {
-        self.iter().produces_back(mode, visited, o.iter())
+    fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
+        self.iter().produces_back(visited, o.iter())
     }
 
     #[logic(law)]
-    #[ensures(forall<mode: Mode> self.produces(mode, Seq::empty(), self))]
+    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(mode, ab, b))]
-    #[requires(b.produces(mode, bc, c))]
-    #[ensures(a.produces(mode, ab.concat(bc), c))]
-    fn produces_trans(
-        mode: Mode,
-        a: Self,
-        ab: Seq<Self::Item>,
-        b: Self,
-        bc: Seq<Self::Item>,
-        c: Self,
-    ) {
-    }
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
 impl<I: DoubleEndedIteratorSpec> DoubleEndedIteratorSpec for Rev<I> {
@@ -86,7 +78,7 @@ impl<I: DoubleEndedIteratorSpec> DoubleEndedIteratorSpec for Rev<I> {
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {
@@ -100,14 +92,14 @@ impl<I: DoubleEndedIteratorSpec> DoubleEndedIteratorSpec for Rev<I> {
 
 extern_spec! {
     impl<I: DoubleEndedIterator> Iterator for Rev<I> {
-        #[ensures(I::size_hint.postcondition((&self.iter(),), result))]
+        #[ensures(|result, mode| I::size_hint.postcondition(mode, (&self.iter(),), result))]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }
 
 impl<I: ExactSizeIteratorSpec + DoubleEndedIteratorSpec> ExactSizeIteratorSpec for Rev<I> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition(mode, (self,), r))]
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         self.iter().size_hint_exact(r)

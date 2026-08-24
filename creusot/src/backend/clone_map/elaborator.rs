@@ -114,6 +114,7 @@ impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, '_, 'tcx> {
 fn builtin_clone_posts<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
+    mode: &Term<'tcx>,
     self_val: Term<'tcx>,
     result_val: Term<'tcx>,
 ) -> Vec<Term<'tcx>> {
@@ -136,7 +137,7 @@ fn builtin_clone_posts<'tcx>(
             );
             let args = Term::tuple(ctx.tcx, [self_i.shr_ref(ctx.tcx)]);
             let subst = ctx.mk_args(&[args.ty, fndef_ty].map(GenericArg::from));
-            let post_args = [Term::unit(ctx.tcx).coerce(fndef_ty), args, result_i];
+            let post_args = [Term::unit(ctx.tcx).coerce(fndef_ty), mode.clone(), args, result_i];
             Term::call(ctx.tcx, typing_env, Intrinsic::PostconditionOnce.get(ctx), subst, post_args)
         })
         .collect()
@@ -198,19 +199,21 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                     vec![(Box::new([]), Condition { term: post, expl: expl_post })]
             }
             TraitResolved::BuiltinClone => {
+                let mode = Term::var(name::mode(), mode_ty(&ctx.ctx, &names));
                 let (self_nm, _, self_ty) = pre_sig.inputs[0];
                 let self_val = Term::var(self_nm, self_ty).deref();
                 let result = Term::var(name::result(), pre_sig.output);
                 assert!(pre_sig.contract.ensures.is_empty());
-                pre_sig.contract.ensures = builtin_clone_posts(ctx, typing_env, self_val, result)
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, term)| {
-                        let trig: Box<[_]> = Box::new([]);
-                        let expl = format!("expl:{} ensures #{i}", ctx.item_name(def_id));
-                        (trig, Condition { term, expl })
-                    })
-                    .collect();
+                pre_sig.contract.ensures =
+                    builtin_clone_posts(ctx, typing_env, &mode, self_val, result)
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, term)| {
+                            let trig: Box<[_]> = Box::new([]);
+                            let expl = format!("expl:{} ensures #{i}", ctx.item_name(def_id));
+                            (trig, Condition { term, expl })
+                        })
+                        .collect();
             }
             TraitResolved::Instance { .. }
             | TraitResolved::UnknownFound
@@ -865,6 +868,8 @@ fn postcondition_once_term<'tcx>(
     let &[self_, mode_id, args, result] = bound else {
         panic!("postcondition_once must have 4 arguments. This should not happen. Found: {bound:?}")
     };
+    // index of `result` in the arguments of `postcondition_once`
+    const RESULT_INDEX: usize = 3;
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
     let mode = Term::var(mode_id, mode_ty(&ctx.ctx, names));
@@ -872,13 +877,16 @@ fn postcondition_once_term<'tcx>(
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.tcx, ctx.sig(Intrinsic::PostconditionOnce.get(ctx)).inputs[2].2),
+        EarlyBinder::bind(
+            ctx.tcx,
+            ctx.sig(Intrinsic::PostconditionOnce.get(ctx)).inputs[RESULT_INDEX].2,
+        ),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => {
             let mut post =
-                closure_post(ctx, ClosureKind::FnOnce, did.expect_local(), mode, self_, args, None);
+                closure_post(ctx, ClosureKind::FnOnce, did.expect_local(), self_, mode, args, None);
             post.subst(&SmallRenaming([(name::result(), result), (name::mode(), mode_id)]));
             Some(post)
         }
@@ -918,7 +926,7 @@ fn postcondition_once_term<'tcx>(
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::FnDef(..) => {
-            let post_args = [self_, args, res];
+            let post_args = [self_, mode, args, res];
             let post_fn = Intrinsic::Postcondition.get(ctx);
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst, post_args))
         }
@@ -937,6 +945,8 @@ fn postcondition_mut_term<'tcx>(
     let &[self_, mode_id, args, result_state, result] = bound else {
         panic!("postcondition_mut must have 5 arguments. This should not happen. Found: {bound:?}")
     };
+    // index of `result` in the arguments of `postcondition_mut`
+    const RESULT_INDEX: usize = 4;
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
     let mode = Term::var(mode_id, mode_ty(&ctx.ctx, names));
@@ -945,7 +955,10 @@ fn postcondition_mut_term<'tcx>(
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.tcx, ctx.sig(Intrinsic::PostconditionMut.get(ctx)).inputs[3].2),
+        EarlyBinder::bind(
+            ctx.tcx,
+            ctx.sig(Intrinsic::PostconditionMut.get(ctx)).inputs[RESULT_INDEX].2,
+        ),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
@@ -954,8 +967,8 @@ fn postcondition_mut_term<'tcx>(
                 ctx,
                 ClosureKind::FnMut,
                 did.expect_local(),
-                mode,
                 self_,
+                mode,
                 args,
                 Some(result_state),
             );
@@ -1031,6 +1044,8 @@ fn postcondition_term<'tcx>(
     let &[self_, mode_id, args, result] = bound else {
         panic!("postcondition must have 4 arguments. This should not happen. Found: {bound:?}")
     };
+    // index of `result` in the arguments of `postcondition`
+    const RESULT_INDEX: usize = 3;
     let ty_self = subst.type_at(1);
     let self_ = Term::var(self_, ty_self);
     let mode = Term::var(mode_id, mode_ty(&ctx.ctx, names));
@@ -1038,13 +1053,16 @@ fn postcondition_term<'tcx>(
     let ty_res = ctx.instantiate_and_normalize_erasing_regions(
         subst,
         typing_env,
-        EarlyBinder::bind(ctx.tcx, ctx.sig(Intrinsic::Postcondition.get(ctx)).inputs[2].2),
+        EarlyBinder::bind(
+            ctx.tcx,
+            ctx.sig(Intrinsic::Postcondition.get(ctx)).inputs[RESULT_INDEX].2,
+        ),
     );
     let res = Term::var(result, ty_res);
     match ty_self.kind() {
         TyKind::Closure(did, _) => {
             let mut post =
-                closure_post(ctx, ClosureKind::Fn, did.expect_local(), mode, self_, args, None);
+                closure_post(ctx, ClosureKind::Fn, did.expect_local(), self_, mode, args, None);
             post.subst(&SmallRenaming([(name::result(), result), (name::mode(), mode_id)]));
             Some(post)
         }
@@ -1101,7 +1119,7 @@ fn post_fndef<'tcx>(
             let TyKind::Tuple(argsty) = args.ty.kind() else { unreachable!() };
             assert_eq!((did, argsty.len()), (ctx.lang_items().clone_fn().unwrap(), 1));
             let arg = args.proj(0usize.into(), argsty[0]);
-            let posts = builtin_clone_posts(ctx, names.typing_env(), arg.deref(), res);
+            let posts = builtin_clone_posts(ctx, names.typing_env(), &mode, arg.deref(), res);
             return Some(posts.into_iter().fold(Term::true_(ctx.tcx), Term::conj));
         }
         TraitResolved::UnknownFound if exact => return None,

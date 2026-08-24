@@ -6,6 +6,7 @@ type t_Namespace = Other namespace_other
 
 use seq.Seq
 use creusot.prelude.MutBorrow
+use creusot.prelude.Mode
 use creusot.prelude.Any
 use int.Int
 
@@ -53,7 +54,7 @@ function index_Seq_T'0 [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom
 
 meta "rewrite_def" function index_Seq_T'0
 
-let split_off_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (mid: int) (return (x: Seq.seq t_T)) =
+let split_off_ghost_T (mode: Mode.t) (self: MutBorrow.t (Seq.seq t_T)) (mid: int) (return (x: Seq.seq t_T)) =
 {[@stop_split] [@expl:split_off_ghost_T requires] ([@stop_split] [@expl:split_off_ghost 'self' type invariant] inv_refmut_Seq_T self)
   /\ ([@stop_split] [@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current)}
   any
@@ -63,14 +64,14 @@ let split_off_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (mid: int) (return (x: S
     /\ ([@stop_split] [@expl:split_off_ghost ensures #1] result = index_Seq_T'0 self.current { start = mid })}
     (! return {result}) ]
 
-let push_back_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
+let push_back_ghost_T (mode: Mode.t) (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
 {[@stop_split] [@expl:push_back_ghost_T requires] ([@stop_split] [@expl:push_back_ghost 'self' type invariant] inv_refmut_Seq_T self)
   /\ ([@stop_split] [@expl:push_back_ghost 'x' type invariant] inv_T x)}
   any
   [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
     (! return {result}) ]
 
-let extend_T (self: MutBorrow.t (Seq.seq t_T)) (rhs: Seq.seq t_T) (return (x: ())) =
+let extend_T (mode: Mode.t) (self: MutBorrow.t (Seq.seq t_T)) (rhs: Seq.seq t_T) (return (x: ())) =
 {[@stop_split] [@expl:extend_T requires] ([@stop_split] [@expl:extend 'self' type invariant] inv_refmut_Seq_T self)
   /\ ([@stop_split] [@expl:extend 'rhs' type invariant] inv_Seq_T rhs)}
   any
@@ -133,7 +134,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let insert_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (position: int) (x: t_T) (return (x'0: ())) =
+let insert_ghost_T (mode: Mode.t) (self: MutBorrow.t (Seq.seq t_T)) (position: int) (x: t_T) (return (x'0: ())) =
 {[@stop_split] [@expl:insert_ghost_T requires] ([@stop_split] [@expl:insert_ghost 'self' type invariant] inv_refmut_Seq_T self)
   /\ ([@stop_split] [@expl:insert_ghost 'x' type invariant] inv_T x)
   /\ ([@stop_split] [@expl:insert_ghost requires] 0 <= position /\ position <= Seq.length self.current)}
@@ -144,19 +145,19 @@ let insert_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (position: int) (x: t_T) (r
           [ &_14 <- _bor ] -{inv_Seq_T _bor.final}-
           [ &self <- { self with current = _bor.final } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
-    | s1 = split_off_ghost_T {_14} {position} (fun (_x: Seq.seq t_T) -> [ &after <- _x ] s2)
+    | s1 = split_off_ghost_T {mode} {_14} {position} (fun (_x: Seq.seq t_T) -> [ &after <- _x ] s2)
     | s2 = MutBorrow.borrow_mut <Seq.seq t_T> {self.current}
         (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
           [ &_17 <- _bor ] -{inv_Seq_T _bor.final}-
           [ &self <- { self with current = _bor.final } ] s3)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
-    | s3 = push_back_ghost_T {_17} {x} (fun (_x: ()) -> [ &_16 <- _x ] s4)
+    | s3 = push_back_ghost_T {mode} {_17} {x} (fun (_x: ()) -> [ &_16 <- _x ] s4)
     | s4 = MutBorrow.borrow_final <Seq.seq t_T> {self.current} {MutBorrow.get_id self}
         (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
           [ &_20 <- _bor ] -{inv_Seq_T _bor.final}-
           [ &self <- { self with current = _bor.final } ] s5)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
-    | s5 = extend_T {_20} {after} (fun (_x: ()) -> [ &_19 <- _x ] s6)
+    | s5 = extend_T {mode} {_20} {after} (fun (_x: ()) -> [ &_19 <- _x ] s6)
     | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_T self} any) ]
     | s7 = -{resolve_refmut_Seq_T self}- s8
     | s8 = return {_ret} ] ]

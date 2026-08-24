@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use seq.Seq
 use creusot.prelude.MutBorrow
 use int.Int
@@ -29,7 +30,7 @@ predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
 
 meta "rewrite_def" predicate gt_log_Int
 
-predicate postcondition_size_hint (self: ()) (args: t_Range_Idx) (result: tup2_usize_Option_usize) =
+predicate postcondition_size_hint (self: ()) (mode: Mode.t) (args: t_Range_Idx) (result: tup2_usize_Option_usize) =
   let self_ = args in (ge_log_Int (deep_model_Idx self_.start) (deep_model_Idx self_.end')
     -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
   /\ (let s = deep_model_Idx self_.end' - deep_model_Idx self_.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
@@ -54,7 +55,7 @@ predicate inv_ref_Range_Idx [@inline:trivial] (_1: t_Range_Idx) = invariant_ref_
 
 meta "rewrite_def" predicate inv_ref_Range_Idx
 
-let size_hint_Range_Idx (self_: t_Range_Idx) (return (x: tup2_usize_Option_usize)) =
+let size_hint_Range_Idx (mode: Mode.t) (self_: t_Range_Idx) (return (x: tup2_usize_Option_usize)) =
 {[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Range_Idx self_}
   any
   [ return (result: tup2_usize_Option_usize) ->
@@ -107,8 +108,9 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self: t_Range_Idx, r: tup2_usize_Option_usize. postcondition_size_hint () self r
-    -> postcondition_size_hint () self r
+goal refines:
+  forall self: t_Range_Idx, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint () mode self r)
+    -> (exists mode: Mode.t. postcondition_size_hint () mode self r)
     /\ (forall result: (). (forall s: Seq.seq t_Idx, i: MutBorrow.t t_Range_Idx. produces_back_Range_Idx self s i.current
               /\ completed_back_Range_Idx i -> UInt64.t'int r.f0 <= Seq.length s)
         /\ match r.f1 with

@@ -1,52 +1,59 @@
 module M_impl_Default_for_ENamed_T_U__default (* <ENamed<T, U> as std::default::Default> *)
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_T
   
-  predicate precondition_default (self: ()) (args: ())
+  predicate precondition_default (self: ()) (mode: Mode.t) (args: ())
   
-  axiom precondition_fndef: forall args: () [precondition_default () args]. (let () = args in true)
-      -> precondition_default () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: () [precondition_default () mode args]. (let () = args in true)
+        -> precondition_default () mode args
   
   predicate inv_T (_1: t_T)
   
-  predicate postcondition_default (self: ()) (args: ()) (result: t_T)
+  predicate postcondition_default (self: ()) (mode: Mode.t) (args: ()) (result: t_T)
   
   axiom postcondition_fndef:
-    forall args: (), res: t_T [postcondition_default () args res]. postcondition_default () args res
+    forall mode: Mode.t, args: (), res: t_T [postcondition_default () mode args res]. postcondition_default () mode args res
       -> (let () = args in inv_T res)
   
-  predicate postcondition_once_default (self: ()) (args: ()) (result: t_T) = postcondition_default self args result
+  predicate postcondition_once_default (self: ()) (mode: Mode.t) (args: ()) (result: t_T) =
+    postcondition_default self mode args result
   
   meta "rewrite_def" predicate postcondition_once_default
   
-  let default_T (return (x: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
+  let default_T (mode: Mode.t) (return (x: t_T)) =
+  {[@stop_split] [@expl:default requires] precondition_default () mode ()}
     any
-    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () () result}
+    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () mode () result}
       (! return {result}) ]
   
   type t_U
   
-  predicate precondition_default'0 (self: ()) (args: ())
+  predicate precondition_default'0 (self: ()) (mode: Mode.t) (args: ())
   
-  axiom precondition_fndef'0: forall args: () [precondition_default'0 () args]. (let () = args in true)
-      -> precondition_default'0 () args
+  axiom precondition_fndef'0:
+    forall mode: Mode.t. forall args: () [precondition_default'0 () mode args]. (let () = args in true)
+        -> precondition_default'0 () mode args
   
   predicate inv_U (_1: t_U)
   
-  predicate postcondition_default'0 (self: ()) (args: ()) (result: t_U)
+  predicate postcondition_default'0 (self: ()) (mode: Mode.t) (args: ()) (result: t_U)
   
   axiom postcondition_fndef'0:
-    forall args: (), res: t_U [postcondition_default'0 () args res]. postcondition_default'0 () args res
+    forall mode: Mode.t, args: (), res: t_U [postcondition_default'0 () mode args res]. postcondition_default'0 () mode args res
       -> (let () = args in inv_U res)
   
-  predicate postcondition_once_default'0 (self: ()) (args: ()) (result: t_U) = postcondition_default'0 self args result
+  predicate postcondition_once_default'0 (self: ()) (mode: Mode.t) (args: ()) (result: t_U) =
+    postcondition_default'0 self mode args result
   
   meta "rewrite_def" predicate postcondition_once_default'0
   
-  let default_U (return (x: t_U)) = {[@stop_split] [@expl:default requires] precondition_default'0 () ()}
+  let default_U (mode: Mode.t) (return (x: t_U)) =
+  {[@stop_split] [@expl:default requires] precondition_default'0 () mode ()}
     any
-    [ return (result: t_U) -> {[@stop_split] [@expl:default ensures] postcondition_once_default'0 () () result}
+    [ return (result: t_U) -> {[@stop_split] [@expl:default ensures] postcondition_once_default'0 () mode () result}
       (! return {result}) ]
   
   type t_ENamed_T_U = A t_T t_U | B
@@ -63,22 +70,24 @@ module M_impl_Default_for_ENamed_T_U__default (* <ENamed<T, U> as std::default::
   
   meta "select_lsinst" "all"
   
-  let default_ENamed_T_U (return (x: t_ENamed_T_U)) = (! bb0
+  let default_ENamed_T_U (mode: Mode.t) (return (x: t_ENamed_T_U)) = (! bb0
     [ bb0 = s0
-      [ s0 = default_T (fun (_x: t_T) -> [ &_2 <- _x ] s1)
-      | s1 = default_U (fun (_x: t_U) -> [ &_3 <- _x ] s2)
+      [ s0 = default_T {mode} (fun (_x: t_T) -> [ &_2 <- _x ] s1)
+      | s1 = default_U {mode} (fun (_x: t_U) -> [ &_3 <- _x ] s2)
       | s2 = [ &_ret <- A _2 _3 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_ENamed_T_U = Any.any_l () | & _2: t_T = Any.any_l () | & _3: t_U = Any.any_l () ])
     [ return (result: t_ENamed_T_U) ->
     {[@stop_split] [@expl:default_ENamed_T_U ensures] ([@stop_split] [@expl:default result type invariant] inv_ENamed_T_U result)
       /\ ([@stop_split] [@expl:default ensures] match result with
-        | A x y -> true /\ postcondition_default () () x /\ postcondition_default'0 () () y
+        | A x y -> true /\ postcondition_default () mode () x /\ postcondition_default'0 () mode () y
         | _ -> false
         end)}
       (! return {result}) ]
 end
 module M_impl_Default_for_ENamed_T_U__default__refines (* <ENamed<T, U> as std::default::Default> *)
+  use creusot.prelude.Mode
+  
   type t_T
   
   type t_U
@@ -97,68 +106,76 @@ module M_impl_Default_for_ENamed_T_U__default__refines (* <ENamed<T, U> as std::
         | B -> true
         end
   
-  predicate postcondition_default (self: ()) (args: ()) (result: t_T)
+  predicate postcondition_default (self: ()) (mode: Mode.t) (args: ()) (result: t_T)
   
   axiom postcondition_fndef:
-    forall args: (), res: t_T [postcondition_default () args res]. postcondition_default () args res
+    forall mode: Mode.t, args: (), res: t_T [postcondition_default () mode args res]. postcondition_default () mode args res
       -> (let () = args in inv_T res)
   
-  predicate precondition_default (self: ()) (args: ())
+  predicate precondition_default (self: ()) (mode: Mode.t) (args: ())
   
-  axiom precondition_fndef: forall args: () [precondition_default () args]. (let () = args in true)
-      -> precondition_default () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: () [precondition_default () mode args]. (let () = args in true)
+        -> precondition_default () mode args
   
-  predicate postcondition_once_default (self: ()) (args: ()) (result: t_T) = postcondition_default self args result
+  predicate postcondition_once_default (self: ()) (mode: Mode.t) (args: ()) (result: t_T) =
+    postcondition_default self mode args result
   
   meta "rewrite_def" predicate postcondition_once_default
   
-  let default_T (return (x: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
+  let default_T (mode: Mode.t) (return (x: t_T)) =
+  {[@stop_split] [@expl:default requires] precondition_default () mode ()}
     any
-    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () () result}
+    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () mode () result}
       (! return {result}) ]
   
-  predicate postcondition_default'0 (self: ()) (args: ()) (result: t_U)
+  predicate postcondition_default'0 (self: ()) (mode: Mode.t) (args: ()) (result: t_U)
   
   axiom postcondition_fndef'0:
-    forall args: (), res: t_U [postcondition_default'0 () args res]. postcondition_default'0 () args res
+    forall mode: Mode.t, args: (), res: t_U [postcondition_default'0 () mode args res]. postcondition_default'0 () mode args res
       -> (let () = args in inv_U res)
   
-  predicate precondition_default'0 (self: ()) (args: ())
+  predicate precondition_default'0 (self: ()) (mode: Mode.t) (args: ())
   
-  axiom precondition_fndef'0: forall args: () [precondition_default'0 () args]. (let () = args in true)
-      -> precondition_default'0 () args
+  axiom precondition_fndef'0:
+    forall mode: Mode.t. forall args: () [precondition_default'0 () mode args]. (let () = args in true)
+        -> precondition_default'0 () mode args
   
-  predicate postcondition_once_default'0 (self: ()) (args: ()) (result: t_U) = postcondition_default'0 self args result
+  predicate postcondition_once_default'0 (self: ()) (mode: Mode.t) (args: ()) (result: t_U) =
+    postcondition_default'0 self mode args result
   
   meta "rewrite_def" predicate postcondition_once_default'0
   
-  let default_U (return (x: t_U)) = {[@stop_split] [@expl:default requires] precondition_default'0 () ()}
+  let default_U (mode: Mode.t) (return (x: t_U)) =
+  {[@stop_split] [@expl:default requires] precondition_default'0 () mode ()}
     any
-    [ return (result: t_U) -> {[@stop_split] [@expl:default ensures] postcondition_once_default'0 () () result}
+    [ return (result: t_U) -> {[@stop_split] [@expl:default ensures] postcondition_once_default'0 () mode () result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall result: t_ENamed_T_U. inv_ENamed_T_U result
-        /\ match result with
-          | A x y -> true /\ postcondition_default () () x /\ postcondition_default'0 () () y
-          | _ -> false
-          end -> inv_ENamed_T_U result
+  goal refines: forall mode: Mode.t. forall result: t_ENamed_T_U. inv_ENamed_T_U result
+          /\ match result with
+            | A x y -> true /\ postcondition_default () mode () x /\ postcondition_default'0 () mode () y
+            | _ -> false
+            end -> inv_ENamed_T_U result
 end
 module M_impl_Default_for_ETuple__default (* <ETuple as std::default::Default> *)
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
-  let default_i32 (return (x: Int32.t)) = any
+  let default_i32 (mode: Mode.t) (return (x: Int32.t)) = any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
   type t_Vec_i32_Global
   
   type t_ETuple = A Int32.t Int32.t | B t_Vec_i32_Global
   
-  predicate postcondition_default (self: ()) (args: ()) (result: Int32.t) = let () = args in result = (0: Int32.t)
+  predicate postcondition_default (self: ()) (mode: Mode.t) (args: ()) (result: Int32.t) =
+    let () = args in result = (0: Int32.t)
   
   meta "rewrite_def" predicate postcondition_default
   
@@ -166,21 +183,22 @@ module M_impl_Default_for_ETuple__default (* <ETuple as std::default::Default> *
   
   meta "select_lsinst" "all"
   
-  let default_ETuple (return (x: t_ETuple)) = (! bb0
+  let default_ETuple (mode: Mode.t) (return (x: t_ETuple)) = (! bb0
     [ bb0 = s0
-      [ s0 = default_i32 (fun (_x: Int32.t) -> [ &_2 <- _x ] s1)
-      | s1 = default_i32 (fun (_x: Int32.t) -> [ &_3 <- _x ] s2)
+      [ s0 = default_i32 {mode} (fun (_x: Int32.t) -> [ &_2 <- _x ] s1)
+      | s1 = default_i32 {mode} (fun (_x: Int32.t) -> [ &_3 <- _x ] s2)
       | s2 = [ &_ret <- A _2 _3 ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_ETuple = Any.any_l () | & _2: Int32.t = Any.any_l () | & _3: Int32.t = Any.any_l () ])
     [ return (result: t_ETuple) -> {[@stop_split] [@expl:default ensures] match result with
-        | A x0 x1 -> true /\ postcondition_default () () x0 /\ postcondition_default () () x1
+        | A x0 x1 -> true /\ postcondition_default () mode () x0 /\ postcondition_default () mode () x1
         | _ -> false
         end}
       (! return {result}) ]
 end
 module M_impl_Default_for_EUnit__default (* <EUnit as std::default::Default> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_EUnit = X | Y
   
@@ -188,7 +206,7 @@ module M_impl_Default_for_EUnit__default (* <EUnit as std::default::Default> *)
   
   meta "select_lsinst" "all"
   
-  let default_EUnit (return (x: t_EUnit)) = (! bb0
+  let default_EUnit (mode: Mode.t) (return (x: t_EUnit)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- Y ] s1 | s1 = return {_ret} ] ] [ & _ret: t_EUnit = Any.any_l () ])
     [ return (result: t_EUnit) -> {[@stop_split] [@expl:default ensures] match result with
         | Y -> true
@@ -198,33 +216,37 @@ module M_impl_Default_for_EUnit__default (* <EUnit as std::default::Default> *)
 end
 module M_impl_Default_for_Named_T__default (* <Named<T> as std::default::Default> *)
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
-  let default_i32 (return (x: Int32.t)) = any
+  let default_i32 (mode: Mode.t) (return (x: Int32.t)) = any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
   type t_T
   
-  predicate precondition_default (self: ()) (args: ())
+  predicate precondition_default (self: ()) (mode: Mode.t) (args: ())
   
-  axiom precondition_fndef: forall args: () [precondition_default () args]. (let () = args in true)
-      -> precondition_default () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: () [precondition_default () mode args]. (let () = args in true)
+        -> precondition_default () mode args
   
   predicate inv_T (_1: t_T)
   
-  predicate postcondition_default (self: ()) (args: ()) (result: t_T)
+  predicate postcondition_default (self: ()) (mode: Mode.t) (args: ()) (result: t_T)
   
   axiom postcondition_fndef:
-    forall args: (), res: t_T [postcondition_default () args res]. postcondition_default () args res
+    forall mode: Mode.t, args: (), res: t_T [postcondition_default () mode args res]. postcondition_default () mode args res
       -> (let () = args in inv_T res)
   
-  predicate postcondition_once_default (self: ()) (args: ()) (result: t_T) = postcondition_default self args result
+  predicate postcondition_once_default (self: ()) (mode: Mode.t) (args: ()) (result: t_T) =
+    postcondition_default self mode args result
   
   meta "rewrite_def" predicate postcondition_once_default
   
-  let default_T (return (x: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
+  let default_T (mode: Mode.t) (return (x: t_T)) =
+  {[@stop_split] [@expl:default requires] precondition_default () mode ()}
     any
-    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () () result}
+    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () mode () result}
       (! return {result}) ]
   
   type t_Named_T = { x: Int32.t; y: t_T }
@@ -233,7 +255,8 @@ module M_impl_Default_for_Named_T__default (* <Named<T> as std::default::Default
   
   axiom inv_axiom [@rewrite]: forall x'0: t_Named_T [inv_Named_T x'0]. inv_Named_T x'0 = inv_T x'0.y
   
-  predicate postcondition_default'0 (self: ()) (args: ()) (result: Int32.t) = let () = args in result = (0: Int32.t)
+  predicate postcondition_default'0 (self: ()) (mode: Mode.t) (args: ()) (result: Int32.t) =
+    let () = args in result = (0: Int32.t)
   
   meta "rewrite_def" predicate postcondition_default'0
   
@@ -241,20 +264,21 @@ module M_impl_Default_for_Named_T__default (* <Named<T> as std::default::Default
   
   meta "select_lsinst" "all"
   
-  let default_Named_T (return (x'0: t_Named_T)) = (! bb0
+  let default_Named_T (mode: Mode.t) (return (x'0: t_Named_T)) = (! bb0
     [ bb0 = s0
-      [ s0 = default_i32 (fun (_x: Int32.t) -> [ &_2 <- _x ] s1)
-      | s1 = default_T (fun (_x: t_T) -> [ &_3 <- _x ] s2)
+      [ s0 = default_i32 {mode} (fun (_x: Int32.t) -> [ &_2 <- _x ] s1)
+      | s1 = default_T {mode} (fun (_x: t_T) -> [ &_3 <- _x ] s2)
       | s2 = [ &_ret <- { x = _2; y = _3 } ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Named_T = Any.any_l () | & _2: Int32.t = Any.any_l () | & _3: t_T = Any.any_l () ])
     [ return (result: t_Named_T) ->
     {[@stop_split] [@expl:default_Named_T ensures] ([@stop_split] [@expl:default result type invariant] inv_Named_T result)
       /\ ([@stop_split] [@expl:default ensures] true
-      /\ postcondition_default'0 () () result.x /\ postcondition_default () () result.y)}
+      /\ postcondition_default'0 () mode () result.x /\ postcondition_default () mode () result.y)}
       (! return {result}) ]
 end
 module M_impl_Default_for_Named_T__default__refines (* <Named<T> as std::default::Default> *)
+  use creusot.prelude.Mode
   use creusot.int.Int32
   
   type t_T
@@ -267,58 +291,66 @@ module M_impl_Default_for_Named_T__default__refines (* <Named<T> as std::default
   
   axiom inv_axiom [@rewrite]: forall x'0: t_Named_T [inv_Named_T x'0]. inv_Named_T x'0 = inv_T x'0.y
   
-  predicate postcondition_default (self: ()) (args: ()) (result: Int32.t) = let () = args in result = (0: Int32.t)
+  predicate postcondition_default (self: ()) (mode: Mode.t) (args: ()) (result: Int32.t) =
+    let () = args in result = (0: Int32.t)
   
   meta "rewrite_def" predicate postcondition_default
   
-  let default_i32 (return (x'0: Int32.t)) = any
+  let default_i32 (mode: Mode.t) (return (x'0: Int32.t)) = any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
-  predicate postcondition_default'0 (self: ()) (args: ()) (result: t_T)
+  predicate postcondition_default'0 (self: ()) (mode: Mode.t) (args: ()) (result: t_T)
   
   axiom postcondition_fndef:
-    forall args: (), res: t_T [postcondition_default'0 () args res]. postcondition_default'0 () args res
+    forall mode: Mode.t, args: (), res: t_T [postcondition_default'0 () mode args res]. postcondition_default'0 () mode args res
       -> (let () = args in inv_T res)
   
-  predicate precondition_default (self: ()) (args: ())
+  predicate precondition_default (self: ()) (mode: Mode.t) (args: ())
   
-  axiom precondition_fndef: forall args: () [precondition_default () args]. (let () = args in true)
-      -> precondition_default () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: () [precondition_default () mode args]. (let () = args in true)
+        -> precondition_default () mode args
   
-  predicate postcondition_once_default (self: ()) (args: ()) (result: t_T) = postcondition_default'0 self args result
+  predicate postcondition_once_default (self: ()) (mode: Mode.t) (args: ()) (result: t_T) =
+    postcondition_default'0 self mode args result
   
   meta "rewrite_def" predicate postcondition_once_default
   
-  let default_T (return (x'0: t_T)) = {[@stop_split] [@expl:default requires] precondition_default () ()}
+  let default_T (mode: Mode.t) (return (x'0: t_T)) =
+  {[@stop_split] [@expl:default requires] precondition_default () mode ()}
     any
-    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () () result}
+    [ return (result: t_T) -> {[@stop_split] [@expl:default ensures] postcondition_once_default () mode () result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall result: t_Named_T. inv_Named_T result
-        /\ true /\ postcondition_default () () result.x /\ postcondition_default'0 () () result.y -> inv_Named_T result
+  goal refines: forall mode: Mode.t. forall result: t_Named_T. inv_Named_T result
+          /\ true /\ postcondition_default () mode () result.x /\ postcondition_default'0 () mode () result.y
+        -> inv_Named_T result
 end
 module M_impl_Default_for_Tuple__default (* <Tuple as std::default::Default> *)
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.int.Int64
   use creusot.prelude.Any
   
-  let default_i32 (return (x: Int32.t)) = any
+  let default_i32 (mode: Mode.t) (return (x: Int32.t)) = any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:default ensures] result = (0: Int32.t)} (! return {result}) ]
   
-  let default_i64 (return (x: Int64.t)) = any
+  let default_i64 (mode: Mode.t) (return (x: Int64.t)) = any
     [ return (result: Int64.t) -> {[@stop_split] [@expl:default ensures] result = (0: Int64.t)} (! return {result}) ]
   
   type t_Tuple = { f0: Int32.t; f1: Int64.t }
   
-  predicate postcondition_default (self: ()) (args: ()) (result: Int32.t) = let () = args in result = (0: Int32.t)
+  predicate postcondition_default (self: ()) (mode: Mode.t) (args: ()) (result: Int32.t) =
+    let () = args in result = (0: Int32.t)
   
   meta "rewrite_def" predicate postcondition_default
   
-  predicate postcondition_default'0 (self: ()) (args: ()) (result: Int64.t) = let () = args in result = (0: Int64.t)
+  predicate postcondition_default'0 (self: ()) (mode: Mode.t) (args: ()) (result: Int64.t) =
+    let () = args in result = (0: Int64.t)
   
   meta "rewrite_def" predicate postcondition_default'0
   
@@ -326,25 +358,26 @@ module M_impl_Default_for_Tuple__default (* <Tuple as std::default::Default> *)
   
   meta "select_lsinst" "all"
   
-  let default_Tuple (return (x: t_Tuple)) = (! bb0
+  let default_Tuple (mode: Mode.t) (return (x: t_Tuple)) = (! bb0
     [ bb0 = s0
-      [ s0 = default_i32 (fun (_x: Int32.t) -> [ &_2 <- _x ] s1)
-      | s1 = default_i64 (fun (_x: Int64.t) -> [ &_3 <- _x ] s2)
+      [ s0 = default_i32 {mode} (fun (_x: Int32.t) -> [ &_2 <- _x ] s1)
+      | s1 = default_i64 {mode} (fun (_x: Int64.t) -> [ &_3 <- _x ] s2)
       | s2 = [ &_ret <- { f0 = _2; f1 = _3 } ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: t_Tuple = Any.any_l () | & _2: Int32.t = Any.any_l () | & _3: Int64.t = Any.any_l () ])
     [ return (result: t_Tuple) -> {[@stop_split] [@expl:default ensures] true
-      /\ postcondition_default () () result.f0 /\ postcondition_default'0 () () result.f1}
+      /\ postcondition_default () mode () result.f0 /\ postcondition_default'0 () mode () result.f1}
       (! return {result}) ]
 end
 module M_impl_Default_for_Unit__default (* <Unit as std::default::Default> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let default_Unit (return (x: ())) = (! bb0
+  let default_Unit (mode: Mode.t) (return (x: ())) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- () ] s1 | s1 = return {_ret} ] ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
