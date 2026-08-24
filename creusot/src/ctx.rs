@@ -45,8 +45,8 @@ use rustc_middle::{
     mir::Promoted,
     thir,
     ty::{
-        self, Clause, GenericArg, GenericArgsRef, ParamEnv, Predicate, ResolverAstLowering, Ty,
-        TyCtxt, TypingEnv, TypingMode, Visibility,
+        self, Clause, FieldDef, GenericArg, GenericArgsRef, ParamEnv, Predicate,
+        ResolverAstLowering, Ty, TyCtxt, TypingEnv, TypingMode, Visibility,
     },
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};
@@ -497,6 +497,14 @@ impl<'tcx> TranslationCtx<'tcx> {
                 }
             },
         }
+    }
+
+    /// Determine if a _field_ of a struct is transparent in the scope of `scope`.
+    ///
+    /// Use this instead of `field.vis.is_accessible_from`, to correctly handle the `#[logically_visible]` attribute.
+    pub(crate) fn field_is_transparent_from(&self, field: &FieldDef, scope: DefId) -> bool {
+        crate::contracts_items::is_logically_visible(self.tcx, field.did)
+            || field.vis.is_accessible_from(scope, self.tcx)
     }
 
     fn exported_erased_thir(&mut self) -> Vec<(DefId, AnfBlock<'tcx>)> {

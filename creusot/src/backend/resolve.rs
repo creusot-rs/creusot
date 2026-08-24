@@ -134,7 +134,7 @@ pub(crate) fn structural_resolve<'tcx>(
             AdtKind::Struct { partially_opaque } => {
                 let mut exp = Term::true_(ctx.tcx);
                 for (ix, f) in adt.non_enum_variant().fields.iter_enumerated() {
-                    if f.vis.is_accessible_from(names.source_id(), ctx.tcx) {
+                    if ctx.field_is_transparent_from(f, names.source_id()) {
                         let fty = names.normalize(f.ty(ctx.tcx, subst));
                         exp = exp.conj(ctx.resolve(
                             names.source_id(),

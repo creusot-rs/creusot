@@ -58,6 +58,7 @@ proc_macro_attributes! {
     logic
     trusted
     opaque
+    logically_visible
     builtin
     intrinsic
     open_inv_result
