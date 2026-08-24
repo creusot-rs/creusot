@@ -22,7 +22,7 @@ pub(crate) use self::{
 use crate::common::{ContractSubject, FnOrMethod};
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
-use quote::{TokenStreamExt as _, quote};
+use quote::{ToTokens, TokenStreamExt as _, quote};
 use syn::{
     Error, FnArg, Ident, LitStr, Macro, Result, Token, parse,
     parse::{Parse, ParseStream},
@@ -138,6 +138,15 @@ pub fn opaque(_: TS1, tokens: TS1) -> TS1 {
         #[creusot::decl::opaque]
         #tokens
     })
+}
+
+pub fn logically_visible(_: TS1, tokens: TS1) -> TS1 {
+    let mut s = parse_macro_input!(tokens as syn::ItemStruct);
+    for f in &mut s.fields {
+        f.attrs.push(parse_quote!(#[creusot::decl::logically_visible]));
+    }
+
+    TS1::from(s.into_token_stream())
 }
 
 struct Builtin {

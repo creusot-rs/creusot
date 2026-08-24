@@ -1,6 +1,6 @@
 use crate::{
     analysis::{Borrows, MaybeLiveExceptDrop},
-    ctx::HasTyCtxt,
+    ctx::{HasTyCtxt, TranslationCtx},
 };
 use either::Either;
 use rustc_borrowck::consumers::{BorrowIndex, BorrowSet, PlaceExt, RegionInferenceContext};
@@ -29,12 +29,12 @@ pub struct Resolver<'a, 'tcx> {
     borrow_set: &'a BorrowSet<'tcx>,
     move_data: &'a MoveData<'tcx>,
     pub(super) body: &'a Body<'tcx>,
-    tcx: TyCtxt<'tcx>,
+    pub(super) ctx: &'a TranslationCtx<'tcx>,
 }
 
 impl<'a, 'tcx> HasMoveData<'tcx> for Resolver<'a, 'tcx> {
     fn move_data(&self) -> &MoveData<'tcx> {
-        &self.move_data
+        self.move_data
     }
 }
 
@@ -50,7 +50,7 @@ impl<'tcx, T: HasMoveData<'tcx>> HasMoveDataExt<'tcx> for T {
 
 impl<'a, 'tcx> HasTyCtxt<'tcx> for Resolver<'a, 'tcx> {
     fn tcx(&self) -> TyCtxt<'tcx> {
-        self.tcx
+        self.ctx.tcx
     }
 }
 
@@ -63,28 +63,28 @@ struct State {
 
 impl<'a, 'tcx> Resolver<'a, 'tcx> {
     pub(crate) fn new(
-        tcx: TyCtxt<'tcx>,
+        ctx: &'a TranslationCtx<'tcx>,
         body: &'a Body<'tcx>,
         borrow_set: &'a BorrowSet<'tcx>,
         regioncx: &'a RegionInferenceContext<'tcx>,
         move_data: &'a MoveData<'tcx>,
     ) -> Resolver<'a, 'tcx> {
-        let uninit = MaybeUninitializedPlaces::new(tcx, body, move_data)
+        let uninit = MaybeUninitializedPlaces::new(ctx.tcx, body, move_data)
             .mark_inactive_variants_as_uninit()
-            .iterate_to_fixpoint(tcx, body, None)
+            .iterate_to_fixpoint(ctx.tcx, body, None)
             .into_results_cursor(body);
 
         // MaybeLiveExceptDrop ignores `drop` for the purpose of resolve liveness... unclear that this can
         // be sound.
-        let live = MaybeLiveExceptDrop::new(tcx, body, move_data)
-            .iterate_to_fixpoint(tcx, body, None)
+        let live = MaybeLiveExceptDrop::new(ctx.tcx, body, move_data)
+            .iterate_to_fixpoint(ctx.tcx, body, None)
             .into_results_cursor(body);
 
-        let borrows = Borrows::new(tcx, body, &regioncx, borrow_set)
-            .iterate_to_fixpoint(tcx, body, None)
+        let borrows = Borrows::new(ctx.tcx, body, regioncx, borrow_set)
+            .iterate_to_fixpoint(ctx.tcx, body, None)
             .into_results_cursor(body);
 
-        Resolver { live, uninit, borrows, borrow_set, move_data, body, tcx }
+        Resolver { live, uninit, borrows, borrow_set, move_data, body, ctx }
     }
 
     /// Get the set of frozen move paths corresponding to the given set of borrows.
@@ -98,7 +98,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
                 continue;
             }
             match self.move_data().rev_lookup.find(bdata.borrowed_place().as_ref()) {
-                LookupResult::Exact(mp) => on_all_children_bits(&self.move_data(), mp, |mp| {
+                LookupResult::Exact(mp) => on_all_children_bits(self.move_data(), mp, |mp| {
                     frozen.insert(mp);
                 }),
                 LookupResult::Parent(mp) => drop(frozen.insert(mp.unwrap())),
@@ -165,7 +165,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
                         live.remove(mpi);
                     }),
                     LookupResult::Parent(Some(mp)) => {
-                        if place_contains_borrow_deref(lhs_pl.as_ref(), self.body, self.tcx) {
+                        if place_contains_borrow_deref(lhs_pl.as_ref(), self.body, self.tcx()) {
                             live.insert(mp);
                         }
                     }
@@ -187,9 +187,9 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
                 }) = self.body.stmt_at(loc).left()
                 {
                     if !place.ignore_borrow(
-                        self.tcx,
+                        self.tcx(),
                         self.body,
-                        &self.borrow_set.locals_state_at_exit(),
+                        self.borrow_set.locals_state_at_exit(),
                     ) {
                         for &index in self.borrow_set.borrows_at_location(&loc).unwrap() {
                             borrows.insert(index);

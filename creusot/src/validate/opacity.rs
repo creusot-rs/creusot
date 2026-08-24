@@ -7,7 +7,7 @@ use rustc_span::Span;
 
 use crate::{
     backend::is_trusted_item,
-    contracts_items::{is_logic, is_opaque},
+    contracts_items::{is_logic, is_logically_visible, is_opaque},
     ctx::{HasTyCtxt, ItemType, Opacity, TranslationCtx},
 };
 
@@ -61,25 +61,21 @@ impl<'a, 'tcx> OpacityVisitor<'a, 'tcx> {
     }
 
     fn assert_visible(&self, id: DefId, span: Span) {
-        if !self.is_visible(id) {
-            self.error(id, span)
-        }
-    }
-
-    fn is_visible(&self, id: DefId) -> bool {
-        use std::cmp::Ordering::{Equal, Greater};
-        let Some(Opacity::Transparent(self_vis)) = self.opacity else { return true };
-        matches!(self.ctx.visibility(id).partial_cmp(self_vis, self.ctx.tcx), Some(Greater | Equal))
-    }
-
-    fn error(&self, id: DefId, span: Span) {
-        self.ctx.error(
+        if !self.is_visible(id) && !is_logically_visible(self.ctx.tcx, id) {
+            self.ctx.error(
                 span,
                 format!(
                     "Cannot make `{:?}` transparent in `{:?}` as it would call a less-visible item.",
                     self.ctx.def_path_str(id), self.ctx.def_path_str(self.item)
                 ),
             ).emit();
+        }
+    }
+
+    fn is_visible(&self, id: DefId) -> bool {
+        let Some(Opacity::Transparent(self_vis)) = self.opacity else { return true };
+        let vis = self.ctx.visibility(id);
+        vis == self_vis || vis.greater_than(self_vis, self.ctx.tcx)
     }
 }
 

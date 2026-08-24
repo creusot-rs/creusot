@@ -212,7 +212,7 @@ fn structural_invariant<'tcx>(
             AdtKind::Struct { partially_opaque } => {
                 let mut exp = Term::true_(ctx.tcx);
                 for (field_idx, field_def) in def.non_enum_variant().fields.iter_enumerated() {
-                    if field_def.vis.is_accessible_from(names.source_id(), ctx.tcx) {
+                    if ctx.field_is_transparent_from(field_def, names.source_id()) {
                         let ty = names.normalize(field_def.ty(ctx.tcx, subst));
                         conj_inv_call(ctx, names, &mut exp, subject.clone().proj(field_idx, ty))
                     }
@@ -260,6 +260,7 @@ fn structural_invariant<'tcx>(
     }
 }
 
+/// Call of the `inv` builtin function.
 pub(crate) fn inv_call<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
@@ -270,7 +271,7 @@ pub(crate) fn inv_call<'tcx>(
         typing_env,
         EarlyBinder::bind(ctx.tcx, term.ty).instantiate_identity(),
     );
-    if is_tyinv_trivial(&ctx, scope_id, typing_env, ty, term.span) {
+    if is_tyinv_trivial(ctx, scope_id, typing_env, ty, term.span) {
         return None;
     }
     let subst = ctx.mk_args(&[GenericArg::from(ty)]);
@@ -289,6 +290,7 @@ fn conj_inv_call<'tcx>(
     }
 }
 
+/// Returns the user implementation of `Invariant` for `ty`, if it exists.
 pub(crate) fn resolve_user_inv<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     ty: Ty<'tcx>,
