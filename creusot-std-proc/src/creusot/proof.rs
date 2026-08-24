@@ -4,12 +4,12 @@ use crate::{
     common::{GhostLet, ghost_int_lit_suffix},
     creusot::{invariant::desugar_invariant, pretyping},
 };
-use pearlite_syn::TermBlock;
+use pearlite_syn::{Binder, Term, TermBlock, TermStmt};
 use proc_macro::TokenStream as TS1;
-use proc_macro2::{Delimiter, Group};
-use quote::{ToTokens, quote};
+use proc_macro2::{Delimiter, Group, Span, TokenStream as TS2};
+use quote::{ToTokens, quote, quote_spanned};
 use syn::{
-    Attribute, Block, ExprClosure,
+    Attribute, Block, ExprClosure, Token,
     parse::{self, Parse},
     parse_macro_input, parse_quote, token,
     visit_mut::{VisitMut, visit_expr_closure_mut},
@@ -21,7 +21,7 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
 
 pub fn proof_assert_(assertion: TS1, trusted: bool) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
-    let assert_body = pretyping::encode_block(&assert.0);
+    let assert = assert.encode();
     let attr = if trusted {
         quote! { #[creusot::decl::trusted] }
     } else {
@@ -35,14 +35,14 @@ pub fn proof_assert_(assertion: TS1, trusted: bool) -> TS1 {
                 #[creusot::spec]
                 #[creusot::spec::assert]
                 #attr
-                || -> bool #assert_body;
+                #assert;
         }
     })
 }
 
 pub fn snapshot(snapshot: TS1) -> TS1 {
-    let snap = parse_macro_input!(snapshot as Assertion);
-    let snap_body = pretyping::encode_block(&snap.0);
+    let snap = parse_macro_input!(snapshot as TermStmts);
+    let snap_body = pretyping::encode_stmts(&snap.stmts, snap.span);
 
     TS1::from(quote! {
         ::creusot_std::__stubs::snapshot_from_fn(
@@ -86,15 +86,53 @@ pub fn invariant(invariant: TS1, tokens: TS1) -> TS1 {
         .into()
 }
 
-/// An assertion is a sequence of statements (`Vec<Stmt>`).
-/// The `brace_token` is artificially generated from the span of the body.
-struct Assertion(TermBlock);
+// FIXME: merge with TermContract (which doesn't allow statements before the assertion)
+enum Assertion {
+    /// A plain assertion, possibly preceded by statements
+    Block { stmts: Vec<TermStmt>, span: Span },
+    /// An assertion that binds the proof mode
+    Binder { binder: Binder, term: Term, span: Span },
+}
 
 impl Parse for Assertion {
     fn parse(input: parse::ParseStream) -> syn::Result<Self> {
-        let brace_token = token::Brace(input.span());
+        let span = input.span();
+        if input.peek(Token![|]) {
+            let binder = input.parse()?;
+            let term = input.parse()?;
+            Ok(Assertion::Binder { binder, term, span })
+        } else {
+            let stmts = input.call(TermBlock::parse_within)?;
+            Ok(Assertion::Block { stmts, span })
+        }
+    }
+}
+
+impl Assertion {
+    fn encode(&self) -> TS2 {
+        match self {
+            &Assertion::Block { ref stmts, span } => {
+                let body = pretyping::encode_stmts(stmts, span);
+                quote_spanned! {span=> |_: ::creusot_std::mode::Mode| -> bool { #body } }
+            }
+            &Assertion::Binder { ref binder, ref term, span } => {
+                let body = pretyping::encode_term(term);
+                quote_spanned! {span=> #binder -> bool { #body }}
+            }
+        }
+    }
+}
+
+struct TermStmts {
+    stmts: Vec<TermStmt>,
+    span: Span,
+}
+
+impl Parse for TermStmts {
+    fn parse(input: parse::ParseStream) -> syn::Result<Self> {
+        let span = input.span();
         let stmts = input.call(TermBlock::parse_within)?;
-        Ok(Assertion(TermBlock { brace_token, stmts }))
+        Ok(TermStmts { stmts, span })
     }
 }
 
