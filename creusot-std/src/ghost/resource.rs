@@ -9,7 +9,10 @@ pub use auth::{Authority, Fragment};
 // are opaque to the fmap_view module
 mod m {
     #[cfg(creusot)]
-    use crate::logic::{any, such_that};
+    use crate::{
+        ghost::Objective,
+        logic::{any, such_that}
+    };
     use crate::{
         logic::{
             Id, Set,
@@ -51,6 +54,10 @@ mod m {
     unsafe impl<R> Send for Resource<R> {}
     #[trusted]
     unsafe impl<R> Sync for Resource<R> {}
+
+    #[cfg(creusot)]
+    #[trusted]
+    impl<R> Objective for Resource<R> {}
 
     impl<R: RA> View for Resource<R> {
         type ViewTy = R;
