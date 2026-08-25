@@ -1,27 +1,26 @@
-// DEPTH 7
-
 //! This implementation is an adaption from:
 //! https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
 #![allow(unused)]
+#![recursion_limit = "256"]
 
 use core::{cmp::Ordering, mem::MaybeUninit};
 use creusot_std::{
     cell::PermCell,
     ghost::{
-        invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
+        invariant::{declare_namespace, AtomicInvariant, Protocol, Tokens},
         perm::Perm,
     },
-    logic::{Id, ra::lattice::SemiLattice},
+    logic::{ra::lattice::SemiLattice, Id},
     partial_ord_laws_impl,
     prelude::*,
     std::sync::{
         atomic::{
-            AtomicUsize,
             ordering::{Acquire, Relaxed, Release},
+            AtomicUsize,
         },
         committer::Committer,
-        view::{AtView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
+        view::{AtView, ReleaseSyncView, SyncView, Timestamp},
     },
 };
 
@@ -58,20 +57,18 @@ impl SemiLattice for StatusWithView {
         match self.status.cmp_log(other.status) {
             Ordering::Less => other,
             Ordering::Greater => self,
-            Ordering::Equal => {
-                StatusWithView { status: self.status, view: self.view.meet(other.view) }
-            }
+            Ordering::Equal => StatusWithView {
+                status: self.status,
+                view: self.view.meet(other.view),
+            },
         }
     }
 }
 
 mod values {
     use creusot_std::{
-        ghost::resource::{self, Resource},
-        logic::{
-            Id,
-            ra::{RA, UnitRA, excl::Excl},
-        },
+        ghost::resource,
+        logic::{ra::excl::Excl, Id},
         prelude::*,
     };
 
@@ -114,7 +111,10 @@ mod values {
             let mut auth = ghost!(resource::Authority::alloc().into_inner());
             let frag = ghost!(auth.add_fragment(snapshot!(Some(Excl(*value)))));
 
-            (ghost!(Authority(auth.into_inner())), ghost!(Fragment(frag.into_inner())))
+            (
+                ghost!(Authority(auth.into_inner())),
+                ghost!(Fragment(frag.into_inner())),
+            )
         }
 
         #[check(ghost)]
@@ -150,10 +150,7 @@ mod statuses {
     use crate::StatusWithView;
     use creusot_std::{
         ghost::resource::{self, Resource},
-        logic::{
-            Id, Seq,
-            ra::{RA, UnitRA, auth::Auth, excl::Excl},
-        },
+        logic::{ra::auth::Auth, Id},
         prelude::*,
     };
 
@@ -189,7 +186,9 @@ mod statuses {
         #[ensures(result.val() == *value)]
         pub fn alloc(value: Snapshot<StatusWithView>) -> Ghost<Authority> {
             let resource = Resource::alloc(snapshot!(Auth::new_auth(Some(*value))));
-            ghost!(Authority(resource::Authority::from_resource(resource.into_inner()).0))
+            ghost!(Authority(
+                resource::Authority::from_resource(resource.into_inner()).0
+            ))
         }
 
         #[check(ghost)]
@@ -235,14 +234,11 @@ mod tokens {
     use creusot_std::{
         ghost::resource::{self, Resource},
         logic::{
-            FMap, Id, Seq,
             ra::{
-                RA, UnitRA,
                 auth::{Auth, CancelLocalUpdateUnit},
                 excl::Excl,
-                fmap::FMapKeyLocalUpdate,
-                update::LocalUpdate,
             },
+            FMap, Id,
         },
         prelude::*,
     };
@@ -292,7 +288,9 @@ mod tokens {
         #[ensures(forall<i> result.val(i) == State::None)]
         pub fn alloc() -> Ghost<Authority<T>> {
             let resource = Resource::alloc(snapshot!(Auth::new_auth(FMap::empty())));
-            ghost!(Authority(resource::Authority::from_resource(resource.into_inner()).0))
+            ghost!(Authority(
+                resource::Authority::from_resource(resource.into_inner()).0
+            ))
         }
     }
 
@@ -316,7 +314,8 @@ mod tokens {
         #[ensures(forall<i> i != index ==> (*auth).val(i) == (^auth).val(i))]
         pub fn alloc(mut auth: Ghost<&mut Authority<T>>, index: Int) -> Ghost<TokenR<T>> {
             ghost!(TokenR(
-                auth.0.add_fragment(snapshot!(FMap::singleton(index, Excl(None)))),
+                auth.0
+                    .add_fragment(snapshot!(FMap::singleton(index, Excl(None)))),
                 index
             ))
         }
@@ -365,7 +364,8 @@ mod tokens {
             value: Snapshot<T>,
         ) -> Ghost<TokenW<T>> {
             ghost!(TokenW(
-                auth.0.add_fragment(snapshot!(FMap::singleton(index, Excl(Some(*value))))),
+                auth.0
+                    .add_fragment(snapshot!(FMap::singleton(index, Excl(Some(*value))))),
                 index
             ))
         }
@@ -411,12 +411,10 @@ impl<T> View for PermQueue<T> {
 impl<T> Invariant for PermQueue<T> {
     #[logic(inline)]
     fn invariant(self) -> bool {
-        self.ward.inv.public().4 == self.fragment.id()
+        self.ward.inv.public().3 == self.fragment.id()
     }
 }
 
-// TODO: [VL] Check at compile-time that this struct is Objective: No synchronisation required here.
-// NOTE: https://users.rust-lang.org/t/testing-if-a-type-is-implementing-an-auto-trait/90871/6
 struct QueueInv<T> {
     head_own: Perm<AtomicUsize>,
     tail_own: Perm<AtomicUsize>,
@@ -431,29 +429,19 @@ struct QueueInv<T> {
     tail_last_ts: Timestamp,
     values: Snapshot<Seq<T>>, // in [self.tail; self.head - 1]
 
-    cells_wards: Snapshot<Seq<PermCell<MaybeUninit<T>>>>,
-    statuses_own_wards: Snapshot<Seq<AtomicUsize>>,
+    cells: Snapshot<Seq<QueueCell<T>>>,
     statuses_mono_auth_wards: Snapshot<Seq<Id>>,
 }
 
 impl<T> Protocol for QueueInv<T> {
-    type Public = (
-        AtomicUsize,
-        AtomicUsize,
-        Seq<PermCell<MaybeUninit<T>>>,
-        Seq<AtomicUsize>,
-        Id,
-        Seq<Id>,
-        Id,
-    );
+    type Public = (AtomicUsize, AtomicUsize, Seq<QueueCell<T>>, Id, Seq<Id>, Id);
 
     #[logic]
     fn public(self) -> Self::Public {
         (
             *self.head_own.ward(),
             *self.tail_own.ward(),
-            *self.cells_wards,
-            *self.statuses_own_wards,
+            *self.cells,
             self.values_auth.id(),
             *self.statuses_mono_auth_wards,
             self.tokens_auth.id(),
@@ -463,26 +451,25 @@ impl<T> Protocol for QueueInv<T> {
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
-            let len = self.statuses_own.len();
+            let len = self.cells.len();
             let head = self.head_own.val()[self.head_last_ts].0@;
             let tail = self.tail_own.val()[self.tail_last_ts].0@;
 
+            (len > 0) &&
             (len == self.cells_own.len()) &&
+            (len == self.statuses_own.len()) &&
             (len == self.statuses_mono_auth.len()) &&
-
-            (len == self.cells_wards.len()) &&
-            (len == self.statuses_own_wards.len()) &&
-            (len == self.statuses_mono_auth_wards.len()) &&
 
             (forall<i> 0 <= i && i < len ==>
                 match self.cells_own[i] {
-                    Some(at_view) => *at_view.val().ward() == self.cells_wards[i],
+                    Some(at_view) => *at_view.val().ward() == self.cells[i].item,
                     _ => true
                 }) &&
 
             (forall<i> 0 <= i && i < len ==>
-                *self.statuses_own[i].ward() == self.statuses_own_wards[i]) &&
+                *self.statuses_own[i].ward() == self.cells[i].status) &&
 
+            (len == self.statuses_mono_auth_wards.len()) &&
             (forall<i> 0 <= i && i < len ==>
                 self.statuses_mono_auth[i].id() == self.statuses_mono_auth_wards[i]) &&
 
@@ -507,7 +494,7 @@ impl<T> Protocol for QueueInv<T> {
             // { i -> •(s_i, S_i) | 0 <= i < len }
             (forall<i: Int, ts: Int> #[trigger(self.statuses_own[i].val().get(ts))]
                  0 <= i && i < len ==>
-                 match (self.statuses_own[i].val().get(ts)) {
+                 match self.statuses_own[i].val().get(ts) {
                      Some((status, view)) => StatusWithView { status: status@, view } <= self.statuses_mono_auth[i].val(),
                      _ => true
                  }) &&
@@ -569,20 +556,10 @@ impl<T> Invariant for Queue<T> {
     #[logic(inline)]
     fn invariant(self) -> bool {
         pearlite! {
-            let (head, tail, cells_ward, statuses_ward, _, statuses_mono_auth_wards, _) = self.inv.public();
-            let cells = self.cells@;
-            let len = cells.len();
-
-            0 < len &&
+            let (head, tail, cells, _, _, _) = self.inv.public();
             head == self.head &&
             tail == self.tail &&
-            cells_ward.len() == len &&
-            statuses_ward.len() == len &&
-            statuses_mono_auth_wards.len() == len &&
-
-            (forall<i> 0 <= i && i < cells_ward.len() ==> cells_ward[i] == cells[i].item) &&
-            (forall<i> 0 <= i && i < statuses_ward.len() ==> statuses_ward[i] == cells[i].status) &&
-
+            cells == self.cells@ &&
             self.inv.namespace() == BOUNDED_MPMC_QUEUE()
         }
     }
@@ -635,12 +612,11 @@ impl<T> Invariant for Queue<T> {
 // }
 
 impl<T> Queue<T> {
-    // TODO: [VL] Pê longueur minimale == 2, voir paire
     #[requires(0 < 2 * length@ && 2 * length@ <= usize::MAX@)]
     #[ensures(result.0 == result.1.ward())]
     #[ensures(result.1@ == Seq::empty())]
     pub fn new(length: usize) -> (Self, Ghost<PermQueue<T>>) {
-        let mut tokens_auth: Ghost<tokens::Authority<T>> = tokens::Authority::alloc();
+        let tokens_auth: Ghost<tokens::Authority<T>> = tokens::Authority::alloc();
         let mut statuses_mono_auth: Ghost<Seq<statuses::Authority>> = Seq::new();
         let mut cells_own: Ghost<Seq<Option<AtView<PermPermCell<T>>>>> = Seq::new();
         let mut statuses_own: Ghost<Seq<Perm<AtomicUsize>>> = Seq::new();
@@ -699,10 +675,10 @@ impl<T> Queue<T> {
         let (tail, tail_own) = AtomicUsize::new(0, SyncView::new().borrow_mut());
         let tail_ts = snapshot!(such_that(|t| tail_own.val().contains(t)));
 
-        let cells_wards = snapshot!(
-            cells_own.map(|x: Option<AtView<PermPermCell<T>>>| *x.unwrap_logic().val().ward())
-        );
-        let statuses_own_wards = snapshot!(statuses_own.map(|x: Perm<AtomicUsize>| *x.ward()));
+        // let cells_wards = snapshot!(
+        //     cells_own.map(|x: Option<AtView<PermPermCell<T>>>| *x.unwrap_logic().val().ward())
+        // );
+        // let statuses_own_wards = snapshot!(statuses_own.map(|x: Perm<AtomicUsize>| *x.ward()));
         let statuses_mono_auth_wards =
             snapshot!(statuses_mono_auth.map(|x: statuses::Authority| x.id()));
 
@@ -723,19 +699,91 @@ impl<T> Queue<T> {
                 tail_last_ts: *tail_ts.into_ghost(),
                 values: snapshot!(Seq::empty()),
 
-                cells_wards,
-                statuses_own_wards,
+                cells: snapshot!(cells@),
                 statuses_mono_auth_wards,
             }),
             snapshot!(BOUNDED_MPMC_QUEUE()),
         );
 
-        let queue = Queue { cells, head, tail, inv };
+        let queue = Queue {
+            cells,
+            head,
+            tail,
+            inv,
+        };
 
-        let perm_queue =
-            ghost!(PermQueue { fragment: perm_queue.into_inner(), ward: snapshot!(queue) });
+        let perm_queue = ghost!(PermQueue {
+            fragment: perm_queue.into_inner(),
+            ward: snapshot!(queue)
+        });
 
         (queue, perm_queue)
+    }
+
+    #[check(ghost)]
+    // Invariant opening requirements
+    #[requires((*queue_inv).protocol())]
+    // Committer requirements
+    #[requires(!c.shot_store())]
+    #[requires(c.ward() == *queue_inv.head_own.ward())]
+    #[requires(c.val_store()@ == c.val_load()@ + 1)]
+    // Invariant requirements
+    #[requires(index == c.val_load()@.rem_euclid(queue_inv.statuses_own.len()))]
+    #[requires(witness.id() == queue_inv.statuses_mono_auth[index].id())]
+    #[requires(StatusWithView { status: 2 * c.val_load()@, view: *view } <= witness.val())]
+    #[requires(queue_inv.values_auth.id() == (*perm_queue).fragment.id())]
+    // Invariant closing ensurements
+    #[ensures((*queue_inv).public() == (^queue_inv).public())]
+    #[ensures((^queue_inv).protocol())]
+    // Committer ensurements
+    #[ensures(c.shot_store())]
+    // Invariant ensurements
+    #[ensures((^perm_queue)@ == (*perm_queue)@.push_back(*item))]
+    #[ensures((^perm_queue).ward() == (*perm_queue).ward())]
+    #[ensures(result.0.id() == queue_inv.tokens_auth.id())]
+    #[ensures(result.0.val() == *item)]
+    #[ensures(result.0.index() == c.val_load()@)]
+    #[ensures(*result.1.ward() == queue_inv.cells[index].item)]
+    fn try_enqueue_cas_inv(
+        mut queue_inv: Ghost<&mut QueueInv<T>>,
+        mut c: Ghost<&mut Committer<AtomicUsize, usize, Relaxed, Relaxed>>,
+        index: Int,
+        item: Snapshot<T>,
+        mut perm_queue: Ghost<&mut PermQueue<T>>,
+        witness: statuses::Fragment,
+        mut view: Ghost<SyncView>,
+    ) -> Ghost<(tokens::TokenW<T>, PermPermCell<T>)> {
+        ghost! {
+            let head = snapshot!(c.val_load());
+
+            c.shoot_load(&queue_inv.head_own, &mut view);
+            c.shoot_store(
+                &mut queue_inv.head_own,
+                &mut view,
+                *ReleaseSyncView::new(),
+            );
+            proof_assert!(*head == queue_inv.head_own.val()[queue_inv.head_last_ts].0);
+
+            queue_inv.statuses_mono_auth[index].frag_lemma(&witness);
+
+            let _ = snapshot!(rem_euclid_minus);
+            proof_assert!((head@ - queue_inv.cells_own.len()).rem_euclid(queue_inv.cells_own.len()) == index);
+
+            let cell_own = queue_inv.cells_own[index].take().unwrap().sync(*view);
+
+            let token = tokens::TokenW::alloc(
+                Ghost::new(&mut queue_inv.tokens_auth),
+                *snapshot!(head@).into_ghost(),
+                item,
+            );
+
+            queue_inv.values_auth.update(&mut perm_queue.fragment, item);
+            queue_inv.values = snapshot!(queue_inv.values.push_back(*item));
+
+            queue_inv.head_last_ts += 1int;
+
+            (token.into_inner(), cell_own)
+        }
     }
 
     // TODO [VL]: Add a user committer at the serialisation point
@@ -770,7 +818,6 @@ impl<T> Queue<T> {
                 c.shoot_load(&inv.statuses_own[*index_ghost], &mut view.borrow_mut());
 
                 let status_view = snapshot!(StatusWithView { status: c.val_load()@, view: *view });
-                proof_assert!(*status_view <= inv.statuses_mono_auth[*index_ghost].val()); // TODO: [VL] Try remove proof_assert!
                 *witness = Some(inv.statuses_mono_auth[*index_ghost].get_fragment(status_view));
             });
         } });
@@ -784,82 +831,34 @@ impl<T> Queue<T> {
         let res = self.head.compare_exchange_weak::<_, Relaxed, Relaxed>(
             head,
             head + 1,
-            ghost! {
-                #[requires(tokens.contains(BOUNDED_MPMC_QUEUE()))]
-                #[requires(match c {
-                    Ok(c) =>
-                        !c.shot_store() &&
-                        c.ward() == self.head &&
-                        c.val_load() == head &&
-                        c.val_store()@ == head@ + 1,
-                    Err(_) => true
-                })]
-                #[requires(*index_ghost == head@.rem_euclid(self.cells@.len()))]
-                #[requires(match *witness {
-                    Some(witness) =>
-                        witness.id() == self.inv.public().5[*index_ghost] &&
-                        StatusWithView { status: status@, view: *view } <= witness.val(),
-                    None => false
-                })]
-                #[requires(2 * head@ == status@)]
-                #[requires(*self == (**perm_queue).ward())]
-                #[ensures(tokens.contains(BOUNDED_MPMC_QUEUE()))]
-                #[ensures(*self == (**perm_queue).ward())]
-                #[ensures(match c {
-                    Ok(c) =>
-                        old(^*perm_queue) == (^*perm_queue) &&
-                        (^c).shot_store() &&
-                        (*perm_queue)@ == old(*perm_queue)@.push_back(item) &&
-                        match *token {
-                            Some(token) => {
-                                token.id() == self.inv.public().6 &&
-                                token.val() == item &&
-                                token.index() == head@
-                            },
-                            None => false,
-                        } &&
-                        match *cell_own {
-                            Some(cell_own) => {
-                                *cell_own.ward() == self.inv.public().2[*index_ghost]
-                            },
-                            None => false,
-                        },
-                    Err(_) => (*perm_queue)@ == old(*perm_queue)@
-                })]
-                |c: Result<&mut Committer<_, _, Relaxed, Relaxed>, &_>| {
+            ghost! { |c: Result<&mut Committer<_, _, Relaxed, Relaxed>, &_>| {
                 let Ok(c) = c else { return; };
 
-                self.inv.open(tokens.reborrow(),
-                    |inv: &mut QueueInv<T>| {
-                    c.shoot_load(&inv.head_own, &mut view.borrow_mut());
-                    c.shoot_store(&mut inv.head_own, &mut view.borrow_mut(), *ReleaseSyncView::new());
-                    proof_assert!(head == inv.head_own.val()[inv.head_last_ts].0);
-
-                    inv.statuses_mono_auth[*index_ghost].frag_lemma(witness.as_ref().unwrap());
-
-                    let _ = snapshot!(rem_euclid_minus);
-                    proof_assert!((head@ - inv.cells_own.len()).rem_euclid(inv.cells_own.len()) == *index_ghost);
-
-                    *cell_own = Some(inv.cells_own[*index_ghost].take().unwrap().sync(*view));
-
-                    let head_ghost = *snapshot!(head@).into_ghost();
-                    *token = Some(tokens::TokenW::alloc(Ghost::new(&mut inv.tokens_auth), head_ghost, snapshot!(item)).into_inner());
-
-                    let item_snap = snapshot!(item); // TODO: [VL] Do MWE, then bug report
-                    let pq = &mut **perm_queue;
-                    inv.values_auth.update(&mut pq.fragment, item_snap);
-                    inv.values = snapshot!(inv.values.push_back(item));
-
-                    inv.head_last_ts += 1int;
+                self.inv.open(tokens.reborrow(), |queue_inv: &mut QueueInv<T>| {
+                    let item_snap = snapshot!(item);
+                    let (t, co) = Self::try_enqueue_cas_inv(
+                        Ghost::new(queue_inv),
+                        Ghost::new(c),
+                        *index_ghost,
+                        item_snap,
+                        perm_queue,
+                        witness.take().unwrap(),
+                        view
+                    ).into_inner();
+                    *token = Some(t);
+                    *cell_own = Some(co);
                 });
-            }}
+            }},
         );
 
         if res.is_err() {
             return false;
         }
 
-        unsafe { cell.item.set(ghost!(cell_own.as_mut().unwrap()), MaybeUninit::new(item)) };
+        unsafe {
+            cell.item
+                .set(ghost!(cell_own.as_mut().unwrap()), MaybeUninit::new(item))
+        };
 
         cell.status.store(
             2 * head + 1,
@@ -886,10 +885,14 @@ impl<T> Queue<T> {
     }
 
     pub fn try_dequeue(&self) -> Option<T> {
-        let tail = self.tail.load(ghost! { |c: &Committer<_, _, Relaxed, _>| {} });
+        let tail = self
+            .tail
+            .load(ghost! { |c: &Committer<_, _, Relaxed, _>| {} });
 
         let cell = &self.cells[tail % self.cells.len()];
-        let status = cell.status.load(ghost! { |c: &Committer<_, _, Acquire, _>| {} });
+        let status = cell
+            .status
+            .load(ghost! { |c: &Committer<_, _, Acquire, _>| {} });
 
         if tail + 1 != status {
             return None;
@@ -909,9 +912,30 @@ impl<T> Queue<T> {
             let v = cell.item.replace(Ghost::conjure(), MaybeUninit::uninit());
             v.assume_init()
         };
-        cell.status
-            .store(tail + self.cells.len(), ghost! { |c: &mut Committer<_, _, _, Release>| {} });
+        cell.status.store(
+            tail + self.cells.len(),
+            ghost! { |c: &mut Committer<_, _, _, Release>| {} },
+        );
 
         Some(item)
+    }
+}
+
+/* Checking whether QueueInv is `Objective` */
+#[cfg(creusot)]
+fn test() {
+    use creusot_std::ghost::Objective;
+
+    fn check_objectivity<T: Objective>() {}
+    fn check_send<T: Send>() {}
+    fn check_sync<T: Sync>() {}
+
+    fn foo<T: Send>() {
+        check_objectivity::<PermQueue<T>>();
+        check_send::<PermQueue<T>>();
+        check_sync::<PermQueue<T>>();
+
+        check_send::<Queue<T>>();
+        check_sync::<Queue<T>>();
     }
 }
