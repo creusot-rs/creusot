@@ -7,9 +7,7 @@ pub mod implementation {
         cell::PermCell,
         ghost::{
             GhostShared,
-            invariant::{
-                NonAtomicInvariant, NonAtomicInvariantExt as _, Protocol, Tokens, declare_namespace,
-            },
+            invariant::{NonAtomicInvariant, Protocol, Tokens, declare_namespace},
             perm::Perm,
             resource::{Authority, Fragment},
         },
@@ -164,22 +162,22 @@ pub mod implementation {
             let new_ag = snapshot!(Ag(self@.set(index@, value)));
             let (permcell, perm) =
                 PermCell::new(Inner::Link { index, value, next: self.permcell.clone() });
-            let frag = self.inv.open(tokens, |mut pa| {
-                ghost! {
-                    // prove that self is contained in the map by validity
-                    pa.auth.frag_lemma(&self.frag);
-                    // prove that we are inserting a _new_ value
-                    if let Some(other) = pa.perms.get_mut_ghost(&snapshot!(permcell)) {
-                        Perm::disjoint_lemma(other, &perm);
-                        proof_assert!(false)
-                    }
-                    pa.perms.insert_ghost(snapshot!(permcell), perm.into_inner());
-                    pa.depth = snapshot!(pa.depth.set(permcell, pa.depth[*self.permcell@] + 1));
-                    let mut frag = Fragment::new_unit(pa.auth.id_ghost());
-                    pa.auth.update(&mut frag, FMapInsertLocalUpdate(snapshot!(permcell), new_ag));
-                    frag
+            let frag = ghost! {
+                let pa = self.inv.open_guarded(tokens.into_inner());
+                let pa = &mut *pa.borrow;
+                // prove that self is contained in the map by validity
+                pa.auth.frag_lemma(&self.frag);
+                // prove that we are inserting a _new_ value
+                if let Some(other) = pa.perms.get_mut_ghost(&snapshot!(permcell)) {
+                    Perm::disjoint_lemma(other, &perm);
+                    proof_assert!(false)
                 }
-            });
+                pa.perms.insert_ghost(snapshot!(permcell), perm.into_inner());
+                pa.depth = snapshot!(pa.depth.set(permcell, pa.depth[*self.permcell@] + 1));
+                let mut frag = Fragment::new_unit(pa.auth.id_ghost());
+                pa.auth.update(&mut frag, FMapInsertLocalUpdate(snapshot!(permcell), new_ag));
+                frag
+            };
             Self { permcell: Rc::new(permcell), frag, inv: self.inv }
         }
 
@@ -236,17 +234,19 @@ pub mod implementation {
         #[requires(index@ < self@.len())]
         #[ensures(*result == self@[index@])]
         pub unsafe fn get<'a>(&'a self, index: usize, tokens: Ghost<Tokens<'a>>) -> &'a T {
-            self.inv.open(tokens, |mut pa| {
-                // prove that self is contained in the map by validity
-                ghost! { pa.auth.frag_lemma(&self.frag) };
-                Self::reroot(&self.permcell, ghost!(&mut *pa));
-                let perm =
-                    ghost!(&*pa.into_inner().perms.get_ghost(&snapshot!(*self.permcell@)).unwrap());
-                let Inner::Direct(arr) = (unsafe { self.permcell.borrow(perm) }) else {
-                    unreachable!()
-                };
-                unsafe { arr.get_unchecked(index) }
-            })
+            let mut pa = ghost!(self.inv.open_guarded(tokens.into_inner()));
+            ghost_let!(bor = &mut *pa.borrow);
+            // prove that self is contained in the map by validity
+            ghost! { bor.auth.frag_lemma(&self.frag) };
+            Self::reroot(&self.permcell, bor);
+            let pa = ghost!(pa.into_inner().into_shared());
+            proof_assert!(pa.protocol());
+            let perm =
+                ghost!(&*pa.into_inner().perms.get_ghost(&snapshot!(*self.permcell@)).unwrap());
+            let Inner::Direct(arr) = (unsafe { self.permcell.borrow(perm) }) else {
+                unreachable!()
+            };
+            unsafe { arr.get_unchecked(index) }
         }
 
         /// Reroot the array: at the end of this function, `inner` will point directly
