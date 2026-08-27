@@ -94,8 +94,8 @@ module M_fetch_add
   
   predicate inv_Option_F (_1: t_Option_F)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option_F [inv_Option_F x]. inv_Option_F x
-      = match x with
+  axiom inv_axiom [@rewrite]: forall _1: t_Option_F [inv_Option_F _1]. inv_Option_F _1
+      = match _1 with
         | None -> true
         | Some f0'0 -> inv_F f0'0
         end
@@ -116,8 +116,8 @@ module M_fetch_add
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  let wrapping_add (self_: Int32.t) (rhs: Int32.t) (return (x: Int32.t)) = any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int32.add self_ rhs}
+  let wrapping_add (self: Int32.t) (rhs: Int32.t) (return (x: Int32.t)) = any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = Int32.add self rhs}
       (! return {result}) ]
   
   type t_Committer_AtomicI32_i32_SeqCst_SeqCst
@@ -186,36 +186,36 @@ module M_fetch_add
       /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
-  let take_F (self_: MutBorrow.t t_Option_F) (return (x: t_Option_F)) =
-  {[@stop_split] [@expl:take 'self_' type invariant] inv_refmut_Option_F self_}
+  let take_F (self: MutBorrow.t t_Option_F) (return (x: t_Option_F)) =
+  {[@stop_split] [@expl:take 'self' type invariant] inv_refmut_Option_F self}
     any
     [ return (result: t_Option_F) ->
     {[@stop_split] [@expl:take_F ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_F result)
-      /\ ([@stop_split] [@expl:take ensures] result = self_.current /\ self_.final = None)}
+      /\ ([@stop_split] [@expl:take ensures] result = self.current /\ self.final = None)}
       (! return {result}) ]
   
   predicate resolve_refmut_Option_F [@inline:trivial] (_1: MutBorrow.t t_Option_F) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_Option_F
   
-  let unwrap_F (self_: t_Option_F) (return (x: t_F)) =
-  {[@stop_split] [@expl:unwrap_F requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_F self_)
-    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
+  let unwrap_F (self: t_Option_F) (return (x: t_F)) =
+  {[@stop_split] [@expl:unwrap_F requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_F self)
+    /\ ([@stop_split] [@expl:unwrap requires] self <> None)}
     any
     [ return (result: t_F) ->
     {[@stop_split] [@expl:unwrap_F ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_F result)
-      /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
+      /\ ([@stop_split] [@expl:unwrap ensures] Some result = self)}
       (! return {result}) ]
   
   predicate precondition_F (self: t_F) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst)
   
   predicate postcondition_once_F (self: t_F) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (result: ())
   
-  let call_once_F (self_: t_F) (arg: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (return (x: ())) =
-  {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
-    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+  let call_once_F (self: t_F) (args: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) (return (x: ())) =
+  {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_F self)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self args)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
+    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self args result}
       (! return {result}) ]
   
   predicate hist_inv_closure6 (self: closure6) (result_state: closure6) = result_state.c0.final = self.c0.final
@@ -285,8 +285,8 @@ module M_fetch_add
   predicate inv_FnGhostWrapper_closure6 (_1: t_FnGhostWrapper_closure6)
   
   axiom inv_axiom'0 [@rewrite]:
-    forall x: t_FnGhostWrapper_closure6 [inv_FnGhostWrapper_closure6 x]. inv_FnGhostWrapper_closure6 x
-      = inv_closure6 x.f0'0
+    forall _1: t_FnGhostWrapper_closure6 [inv_FnGhostWrapper_closure6 _1]. inv_FnGhostWrapper_closure6 _1
+      = inv_closure6 _1.f0'0
   
   let __new_closure6 (f: closure6) (return (x: t_FnGhostWrapper_closure6)) =
   {[@stop_split] [@expl:__new 'f' type invariant] inv_closure6 f}
@@ -396,8 +396,8 @@ module M_fetch_add
   
   predicate resolve_Option_F (_1: t_Option_F)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Option_F [resolve_Option_F x]. resolve_Option_F x
-      = match x with
+  axiom resolve_axiom [@rewrite]: forall _1: t_Option_F [resolve_Option_F _1]. resolve_Option_F _1
+      = match _1 with
         | None -> true
         | Some x0 -> resolve_F x0
         end

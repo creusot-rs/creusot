@@ -8,7 +8,7 @@ use crate::{
             Ident, Pattern, Term, TermKind, normalize,
             visit::{TermVisitorMut, super_visit_mut_term},
         },
-        specification::{PreSignature, contract_of, inputs_and_output},
+        specification::{PreSignature, contract_of},
     },
 };
 use itertools::Itertools;
@@ -98,7 +98,7 @@ pub(crate) fn closure_pre<'tcx>(
     let PreSignature { contract, inputs, output: _ } = contract_of(ctx, def_id.into());
 
     let mut pre;
-    if contract.has_user_contract {
+    if contract.has_user_contract() {
         pre = contract.requires_conj(ctx.tcx);
         ClosSubst::pre_or_cur(ctx.tcx, def_id, self_).subst(ctx.tcx, &mut pre);
     } else {
@@ -140,7 +140,7 @@ pub(crate) fn closure_pre<'tcx>(
             inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
             args.ty,
         );
-        pre = Term::let_(pattern, args, pre).span(ctx.def_span(def_id));
+        pre = Term::let_(pattern, args, pre, ctx.def_span(def_id));
     }
 
     normalize(ctx, typing_env, pre)
@@ -164,7 +164,7 @@ pub(crate) fn closure_post<'tcx>(
 
     let to_resolve;
     let mut post;
-    if contract.has_user_contract {
+    if contract.has_user_contract() {
         post = contract.ensures_conj(ctx.tcx);
         match target_kind {
             ClosureKind::Fn => {
@@ -312,7 +312,7 @@ pub(crate) fn closure_post<'tcx>(
             inputs[1..].iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
             args.ty,
         );
-        post = Term::let_(pattern, args, post).span(ctx.def_span(def_id));
+        post = Term::let_(pattern, args, post, ctx.def_span(def_id));
     }
 
     normalize(ctx, typing_env, post)
@@ -326,9 +326,9 @@ pub(crate) fn ctor_pre<'tcx>(
     args: Term<'tcx>,
 ) -> Term<'tcx> {
     let typing_env = ctx.typing_env(scope);
-    let inputs = ctx.normalize_erasing_regions(
+    let inputs: Box<[_]> = ctx.normalize_erasing_regions(
         typing_env,
-        EarlyBinder::bind(ctx.tcx, inputs_and_output(ctx, def_id.into()).0)
+        EarlyBinder::bind(ctx.tcx, ctx.inputs_and_output(def_id.into()).0.into())
             .instantiate(ctx.tcx, subst),
     );
     let params = inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)).collect();
@@ -341,7 +341,7 @@ pub(crate) fn ctor_pre<'tcx>(
         inputs.iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
         args.ty,
     );
-    Term::let_(pattern, args, pre).span(ctx.def_span(def_id))
+    Term::let_(pattern, args, pre, ctx.def_span(def_id))
 }
 
 pub(crate) fn ctor_post<'tcx>(
@@ -353,9 +353,9 @@ pub(crate) fn ctor_post<'tcx>(
     res: Term<'tcx>,
 ) -> Term<'tcx> {
     let typing_env = ctx.typing_env(scope);
-    let inputs = ctx.normalize_erasing_regions(
+    let inputs: Box<[_]> = ctx.normalize_erasing_regions(
         typing_env,
-        EarlyBinder::bind(ctx.tcx, inputs_and_output(ctx, def_id.into()).0)
+        EarlyBinder::bind(ctx.tcx, ctx.inputs_and_output(def_id.into()).0.into())
             .instantiate(ctx.tcx, subst),
     );
     let params = inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)).chain(once(res)).collect();
@@ -368,7 +368,7 @@ pub(crate) fn ctor_post<'tcx>(
         inputs.iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
         args.ty,
     );
-    Term::let_(pattern, args, pre).span(ctx.def_span(def_id))
+    Term::let_(pattern, args, pre, ctx.def_span(def_id))
 }
 
 // Responsible for replacing occurences of captured variables with projections from the closure environment.

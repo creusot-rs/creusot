@@ -32,15 +32,15 @@ meta "rewrite_def" predicate inv_refmut_I
 predicate precondition_next (self: ()) (args: MutBorrow.t t_I)
 
 axiom precondition_fndef:
-  forall args: MutBorrow.t t_I [precondition_next () args]. (let self_ = args in inv_refmut_I self_)
+  forall args: MutBorrow.t t_I [precondition_next () args]. (let self = args in inv_refmut_I self)
     -> precondition_next () args
 
 predicate inv_Item (_1: t_Item)
 
 predicate inv_Option_Item (_1: t_Option_Item)
 
-axiom inv_axiom [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
-    = match x with
+axiom inv_axiom [@rewrite]: forall _1: t_Option_Item [inv_Option_Item _1]. inv_Option_Item _1
+    = match _1 with
       | None -> true
       | Some f0 -> inv_Item f0
       end
@@ -61,11 +61,11 @@ predicate completed_I (self: MutBorrow.t t_I)
 predicate postcondition_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_Item)
 
 axiom postcondition_fndef:
-  forall args: MutBorrow.t t_I, res: t_Option_Item [postcondition_next () args res]. postcondition_next () args res
-    -> (let self_ = args in inv_Option_Item res
-    /\ match res with
-      | None -> completed_I self_
-      | Some v -> produces_I self_.current (Seq.singleton v) self_.final
+  forall args: MutBorrow.t t_I, result: t_Option_Item [postcondition_next () args result]. postcondition_next () args result
+    -> (let self = args in inv_Option_Item result
+    /\ match result with
+      | None -> completed_I self
+      | Some v -> produces_I self.current (Seq.singleton v) self.final
       end)
 
 predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_Item) =
@@ -73,10 +73,10 @@ predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_
 
 meta "rewrite_def" predicate postcondition_once_next
 
-let next_I (self_: MutBorrow.t t_I) (return (x: t_Option_Item)) =
-{[@stop_split] [@expl:next requires] precondition_next () self_}
+let next_I (self: MutBorrow.t t_I) (return (x: t_Option_Item)) =
+{[@stop_split] [@expl:next requires] precondition_next () self}
   any
-  [ return (result: t_Option_Item) -> {[@stop_split] [@expl:next ensures] postcondition_once_next () self_ result}
+  [ return (result: t_Option_Item) -> {[@stop_split] [@expl:next ensures] postcondition_once_next () self result}
     (! return {result}) ]
 
 let elim_Some (_x: t_Option_Item) (return (f0: t_Item)) = any
@@ -139,14 +139,14 @@ axiom postcondition_mut_hist_inv_F_spec:
   forall self: t_F, args: tup2_Item_Snapshot_Seq_Item, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
     -> hist_inv_F self res_state
 
-let call_mut_F (self_: MutBorrow.t t_F) (arg: tup2_Item_Snapshot_Seq_Item) (return (x: t_B)) =
-{[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
-  /\ ([@stop_split] [@expl:call_mut 'arg' type invariant] inv_tup2_Item_Snapshot_Seq_Item arg)
-  /\ ([@stop_split] [@expl:call_mut requires] precondition_F self_.current arg)}
+let call_mut_F (self: MutBorrow.t t_F) (args: tup2_Item_Snapshot_Seq_Item) (return (x: t_B)) =
+{[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self' type invariant] inv_refmut_F self)
+  /\ ([@stop_split] [@expl:call_mut 'args' type invariant] inv_tup2_Item_Snapshot_Seq_Item args)
+  /\ ([@stop_split] [@expl:call_mut requires] precondition_F self.current args)}
   any
   [ return (result: t_B) ->
   {[@stop_split] [@expl:call_mut_F ensures] ([@stop_split] [@expl:call_mut result type invariant] inv_B result)
-    /\ ([@stop_split] [@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result)}
+    /\ ([@stop_split] [@expl:call_mut ensures] postcondition_mut_F self.current args self.final result)}
     (! return {result}) ]
 
 predicate next_precondition_I [@inline:trivial] (iter'0: t_I) (func'0: t_F) (produced'0: Seq.seq t_Item) =
@@ -263,8 +263,8 @@ axiom produces_one_I_spec:
 
 predicate inv_MapInv_I_F (_1: t_MapInv_I_F)
 
-axiom inv_axiom'0 [@rewrite]: forall x: t_MapInv_I_F [inv_MapInv_I_F x]. inv_MapInv_I_F x
-    = (invariant_MapInv_I_F x /\ inv_I x.iter /\ inv_F x.func)
+axiom inv_axiom'0 [@rewrite]: forall _1: t_MapInv_I_F [inv_MapInv_I_F _1]. inv_MapInv_I_F _1
+    = (invariant_MapInv_I_F _1 /\ inv_I _1.iter /\ inv_F _1.func)
 
 predicate invariant_refmut_MapInv_I_F [@inline:trivial] (self: MutBorrow.t t_MapInv_I_F) =
   inv_MapInv_I_F self.current /\ inv_MapInv_I_F self.final
@@ -283,8 +283,8 @@ type t_Option_B = None'0 | Some'0 t_B
 
 predicate inv_Option_B (_1: t_Option_B)
 
-axiom inv_axiom'1 [@rewrite]: forall x: t_Option_B [inv_Option_B x]. inv_Option_B x
-    = match x with
+axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_B [inv_Option_B _1]. inv_Option_B _1
+    = match _1 with
       | None'0 -> true
       | Some'0 f0'0 -> inv_B f0'0
       end

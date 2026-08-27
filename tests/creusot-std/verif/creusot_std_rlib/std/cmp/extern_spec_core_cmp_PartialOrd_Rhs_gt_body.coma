@@ -37,8 +37,8 @@ meta "rewrite_def" predicate inv_ref_Rhs
 predicate precondition_partial_cmp (self: ()) (args: tup2_ref_Self__ref_Rhs)
 
 axiom precondition_fndef:
-  forall args: tup2_ref_Self__ref_Rhs [precondition_partial_cmp () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_Self_ self_
-      /\ inv_ref_Rhs rhs) -> precondition_partial_cmp () args
+  forall args: tup2_ref_Self__ref_Rhs [precondition_partial_cmp () args]. (let {f0 = self; f1 = other} = args in inv_ref_Self_ self
+      /\ inv_ref_Rhs other) -> precondition_partial_cmp () args
 
 type t_DeepModelTy
 
@@ -78,20 +78,20 @@ function deep_model_Rhs (self: t_Rhs) : t_DeepModelTy
 predicate postcondition_partial_cmp (self: ()) (args: tup2_ref_Self__ref_Rhs) (result: t_Option_Ordering)
 
 axiom postcondition_fndef:
-  forall args: tup2_ref_Self__ref_Rhs, res: t_Option_Ordering [postcondition_partial_cmp () args res]. postcondition_partial_cmp () args res
-    -> (let {f0 = self_; f1 = rhs} = args in res
-    = partial_cmp_log_DeepModelTy (deep_model_Self_ self_) (deep_model_Rhs rhs))
+  forall args: tup2_ref_Self__ref_Rhs, result: t_Option_Ordering [postcondition_partial_cmp () args result]. postcondition_partial_cmp () args result
+    -> (let {f0 = self; f1 = other} = args in result
+    = partial_cmp_log_DeepModelTy (deep_model_Self_ self) (deep_model_Rhs other))
 
 predicate postcondition_once_partial_cmp (self: ()) (args: tup2_ref_Self__ref_Rhs) (result: t_Option_Ordering) =
   postcondition_partial_cmp self args result
 
 meta "rewrite_def" predicate postcondition_once_partial_cmp
 
-let partial_cmp_Self_ (self_: t_Self_) (rhs: t_Rhs) (return (x: t_Option_Ordering)) =
-{[@stop_split] [@expl:partial_cmp requires] precondition_partial_cmp () { f0 = self_; f1 = rhs }}
+let partial_cmp_Self_ (self: t_Self_) (other: t_Rhs) (return (x: t_Option_Ordering)) =
+{[@stop_split] [@expl:partial_cmp requires] precondition_partial_cmp () { f0 = self; f1 = other }}
   any
   [ return (result: t_Option_Ordering) ->
-  {[@stop_split] [@expl:partial_cmp ensures] postcondition_once_partial_cmp () { f0 = self_; f1 = rhs } result}
+  {[@stop_split] [@expl:partial_cmp ensures] postcondition_once_partial_cmp () { f0 = self; f1 = other } result}
     (! return {result}) ]
 
 let elim_Some (_x: t_Option_Ordering) (return (f0'0: t_Ordering)) = any
