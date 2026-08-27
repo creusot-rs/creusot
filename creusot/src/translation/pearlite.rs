@@ -1,7 +1,7 @@
 use crate::translation::pearlite::visit::{visit_projections, visit_projections_mut};
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_ast::{Mutability, visit::VisitorResult};
-use rustc_hir::def_id::DefId;
+use rustc_hir::{HirId, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Mutability::*, ProjectionElem},
@@ -22,8 +22,21 @@ mod from_thir;
 mod normalize;
 pub mod visit;
 
-pub(crate) use from_thir::{from_thir, from_thir_with_triggers};
+pub(crate) use from_thir::from_thir;
 pub(crate) use normalize::normalize;
+
+type Inputs<'tcx> = [(PIdent, Span, Ty<'tcx>)];
+
+/// Information about the sort of Pearlite term to be constructed.
+/// This is mainly to provide `from_thir` with the Why3 `Ident` of the arguments
+/// of the enclosing function.
+#[derive(Clone, Copy, Debug)]
+pub enum TermSort<'tcx, 'a> {
+    Contract(&'a Inputs<'tcx>),
+    Logic(&'a Inputs<'tcx>),
+    LogicClosure(&'a Inputs<'tcx>),
+    Other,
+}
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum BinOp {
@@ -218,7 +231,8 @@ pub enum TermKind<'tcx> {
         term: Box<Term<'tcx>>,
     },
     Closure {
-        bound: Box<[(PIdent, Ty<'tcx>)]>,
+        arg: PIdent,
+        arg_ty: Ty<'tcx>,
         body: Box<Term<'tcx>>,
     },
     Reborrow {
@@ -241,12 +255,23 @@ pub enum TermKind<'tcx> {
     /// This allows keeping track of sub-expressions that come directly from the Rust source,
     /// notably in trait refinement goals.
     Spanned(Box<Term<'tcx>>),
+    /// Raw `HirId` can only appear in Pearlite terms inside programs, to be substituted
+    /// during the translation to FMIR.
+    /// FIXME: do the substitution on the fly so this constructor is unneeded.
+    HirId(HirId),
 }
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub struct TermWithTriggers<'tcx> {
     pub triggers: Box<[Trigger<'tcx>]>,
     pub term: Box<Term<'tcx>>,
+}
+
+impl<'tcx> TermWithTriggers<'tcx> {
+    pub fn no_triggers(self) -> Box<Term<'tcx>> {
+        assert!(self.triggers.is_empty());
+        self.term
+    }
 }
 
 impl<I: Interner> TypeFoldable<I> for Literal {
@@ -460,9 +485,14 @@ impl<'tcx> Term<'tcx> {
         matches!(self.kind, TermKind::Lit(Literal::Bool(false)))
     }
 
-    pub(crate) fn let_(pattern: Pattern<'tcx>, arg: Term<'tcx>, body: Term<'tcx>) -> Self {
+    pub(crate) fn let_(
+        pattern: Pattern<'tcx>,
+        arg: Term<'tcx>,
+        body: Term<'tcx>,
+        span: Span,
+    ) -> Self {
         Term {
-            span: pattern.span.until(body.span),
+            span,
             ty: body.ty,
             kind: TermKind::Let { pattern, arg: Box::new(arg), body: Box::new(body) },
         }
@@ -705,7 +735,7 @@ impl<'tcx> Term<'tcx> {
         match &mut self.kind {
             TermKind::Var(v) => match bound.get(&v.0) {
                 Some(w) => v.0 = *w,
-                None if let Some(t) = subst.subst(v.0) => self.kind = t,
+                None if let Some(t) = subst.subst_ident(v.0) => self.kind = t,
                 None => {}
             },
             TermKind::Lit(_)
@@ -756,13 +786,11 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Projection { lhs, .. } => lhs.subst_(bound, subst),
             TermKind::Old { term } => term.subst_(bound, subst),
-            TermKind::Closure { body, bound: bound_new } => {
+            TermKind::Closure { arg, arg_ty: _, body } => {
                 let mut bound = bound.clone();
-                bound.extend(bound_new.iter_mut().map(|(ident, _)| {
-                    let rnm = (ident.0, ident.0.refresh());
-                    ident.0 = rnm.1;
-                    rnm
-                }));
+                let arg2 = arg.0.refresh();
+                bound.insert(arg.0, arg2);
+                arg.0 = arg2;
                 body.subst_(&bound, subst);
             }
             TermKind::Reborrow { inner, projections } => {
@@ -779,6 +807,7 @@ impl<'tcx> Term<'tcx> {
             TermKind::PrivateInv { term } => term.subst_(bound, subst),
             TermKind::PrivateResolve { term } => term.subst_(bound, subst),
             TermKind::Spanned(term) => term.subst_(bound, subst),
+            TermKind::HirId(id) => self.kind = subst.subst_hirid(*id).unwrap(),
         }
     }
 
@@ -798,7 +827,8 @@ impl<'tcx> Term<'tcx> {
             TermKind::Lit(_)
             | TermKind::Capture(_)
             | TermKind::Const(_)
-            | TermKind::ConstItem { .. } => {}
+            | TermKind::ConstItem { .. }
+            | TermKind::HirId(_) => {}
             TermKind::SeqLiteral(fields) => {
                 fields.iter().for_each(|a| a.free_vars_inner(bound, free))
             }
@@ -857,9 +887,9 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Projection { lhs, .. } => lhs.free_vars_inner(bound, free),
             TermKind::Old { term } => term.free_vars_inner(bound, free),
-            TermKind::Closure { body, bound: bound_new } => {
+            TermKind::Closure { arg, arg_ty: _, body } => {
                 let mut bound = bound.clone();
-                bound.extend(bound_new.iter().map(|b| b.0.0));
+                bound.insert(arg.0);
                 body.free_vars_inner(&bound, free);
             }
             TermKind::Reborrow { inner, projections } => {
@@ -898,73 +928,83 @@ pub(crate) trait Substable<'tcx> {
     /// If `inv_subst` containts `("x", 5)`:
     /// - If `self` is `x == 1`, `self.subst(inv_subst)` is `5 + 1`
     /// - If `self` is `forall<x> x == 1`, `self.subst(inv_subst)` is still `forall<x> x == 1`
-    fn subst(&mut self, subst: &impl Subst<'tcx>);
+    fn subst_mut(&mut self, subst: &impl Subst<'tcx>);
+
+    fn subst(mut self, subst: &impl Subst<'tcx>) -> Self
+    where
+        Self: Sized,
+    {
+        self.subst_mut(subst);
+        self
+    }
 }
 
 impl<'tcx> Substable<'tcx> for Term<'tcx> {
-    fn subst(&mut self, subst: &impl Subst<'tcx>) {
+    fn subst_mut(&mut self, subst: &impl Subst<'tcx>) {
         self.subst_(&HashMap::new(), subst)
     }
 }
 
 impl<'tcx> Substable<'tcx> for TermWithTriggers<'tcx> {
-    fn subst(&mut self, subst: &impl Subst<'tcx>) {
-        self.subst_(&HashMap::new(), subst)
+    fn subst_mut(&mut self, subst: &impl Subst<'tcx>) {
+        self.subst_(&HashMap::new(), subst);
+    }
+}
+
+impl<'tcx> Substable<'tcx> for Trigger<'tcx> {
+    fn subst_mut(&mut self, subst: &impl Subst<'tcx>) {
+        self.0.subst_mut(subst)
+    }
+}
+
+impl<'tcx, T: Substable<'tcx>> Substable<'tcx> for Option<T> {
+    fn subst_mut(&mut self, subst: &impl Subst<'tcx>) {
+        self.iter_mut().for_each(|t| t.subst_mut(subst))
+    }
+}
+
+impl<'tcx, T: Substable<'tcx>> Substable<'tcx> for Vec<T> {
+    fn subst_mut(&mut self, subst: &impl Subst<'tcx>) {
+        self.iter_mut().for_each(|t| t.subst_mut(subst))
+    }
+}
+
+impl<'tcx, T: Substable<'tcx>> Substable<'tcx> for Box<[T]> {
+    fn subst_mut(&mut self, subst: &impl Subst<'tcx>) {
+        self.iter_mut().for_each(|t| t.subst_mut(subst))
+    }
+}
+
+impl<'tcx, T: Substable<'tcx>, U: Substable<'tcx>> Substable<'tcx> for (T, U) {
+    fn subst_mut(&mut self, subst: &impl Subst<'tcx>) {
+        self.0.subst_mut(subst);
+        self.1.subst_mut(subst);
     }
 }
 
 pub(crate) trait Subst<'tcx> {
-    fn subst(&self, id: Ident) -> Option<TermKind<'tcx>>;
+    fn subst_hirid(&self, _: HirId) -> Option<TermKind<'tcx>> {
+        None
+    }
+    fn subst_ident(&self, _: Ident) -> Option<TermKind<'tcx>> {
+        None
+    }
 }
 
-/// A substitution from a mapping of `Ident` to `TermKind`.
-pub type MapSubstitution<'tcx> = HashMap<Ident, TermKind<'tcx>>;
+impl<'tcx> Subst<'tcx> for HashMap<Ident, Ident> {
+    fn subst_ident(&self, k: Ident) -> Option<TermKind<'tcx>> {
+        self.get(&k).map(|&x| TermKind::Var(PIdent(x)))
+    }
+}
 
-impl<'tcx> Subst<'tcx> for MapSubstitution<'tcx> {
-    fn subst(&self, k: Ident) -> Option<TermKind<'tcx>> {
+impl<'tcx> Subst<'tcx> for HashMap<Ident, TermKind<'tcx>> {
+    fn subst_ident(&self, k: Ident) -> Option<TermKind<'tcx>> {
         self.get(&k).cloned()
     }
 }
 
-/// A renaming from `Ident` to `Ident` in a small array.
-pub struct SmallRenaming<const N: usize>(pub [(Ident, Ident); N]);
-
-impl<'tcx, const N: usize> Subst<'tcx> for SmallRenaming<N> {
-    fn subst(&self, x: Ident) -> Option<TermKind<'tcx>> {
-        self.0.iter().find(|&&(from, _)| from == x).map(|&(_, to)| TermKind::Var(to.into()))
-    }
-}
-
-impl<'tcx, F: Fn(Ident) -> Option<TermKind<'tcx>>> Subst<'tcx> for F {
-    fn subst(&self, id: Ident) -> Option<TermKind<'tcx>> {
+impl<'tcx, F: Fn(HirId) -> Option<TermKind<'tcx>>> Subst<'tcx> for F {
+    fn subst_hirid(&self, id: HirId) -> Option<TermKind<'tcx>> {
         self(id)
-    }
-}
-
-/// Term paired with its free variables.
-///
-/// When we translate contracts, their arguments are not always the same `Ident`s as the arguments
-/// of the function they specify. The main culprits are contracts for traits, which are desugared to
-/// extra trait methods, with their own `HirId`s, so they are mapped to fresh `Ident`s,
-/// and we use the explicit scope to rename them back to the function's `Ident`s.
-/// Other contracts are desugared to closures inside the functions they specify, so no renaming is
-/// necessary in theory, but the current architecture of Creusot doesn't make this situation easy
-/// to untangle.
-#[derive(Debug, Clone, TyDecodable, TyEncodable)]
-pub struct Scoped<T>(pub Box<[PIdent]>, pub T);
-
-impl<'tcx, T: Clone + Substable<'tcx>> Scoped<T> {
-    /// `idents` must be as long as the slice in `self`.
-    pub fn rename(&self, idents: &[Ident]) -> T {
-        assert_eq!(idents.len(), self.0.len(), "{:?}.len() != {:?}.len()", idents, self.0);
-        let subst: HashMap<_, _> = self
-            .0
-            .iter()
-            .zip(idents)
-            .map(|(&from, &to)| (from.0, TermKind::Var(to.into())))
-            .collect();
-        let mut term = self.1.clone();
-        term.subst(&subst);
-        term
     }
 }

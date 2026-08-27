@@ -96,7 +96,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
 
 pub enum TyInvDef<'tcx> {
     None,
-    Body(Ident, Term<'tcx>),
+    Body(Term<'tcx>),
     Axiom { axiom: Term<'tcx>, rewrite: bool },
 }
 
@@ -106,13 +106,12 @@ pub(crate) fn elaborate_tyinv_def<'tcx>(
     ty: Ty<'tcx>,
     span: Span,
 ) -> TyInvDef<'tcx> {
-    let x_ident = Ident::fresh_local("x");
-    let subject = Term::var(x_ident, ty);
-
     if is_tyinv_trivial(ctx, names.source_id(), names.typing_env(), ty, span) {
-        return TyInvDef::Body(x_ident, Term::true_(ctx.tcx));
+        return TyInvDef::Body(Term::true_(ctx.tcx));
     }
 
+    let arg = ctx.inputs_and_output(Intrinsic::Inv.get(ctx)).0[0].0;
+    let subject = Term::var(arg, ty);
     let mut use_impl = false;
     let mut rhs = Term::true_(ctx.tcx);
     match resolve_user_inv(ctx, ty, names.typing_env()) {
@@ -167,11 +166,11 @@ pub(crate) fn elaborate_tyinv_def<'tcx>(
             if use_impl { Term::implies(lhs.clone(), rhs) } else { lhs.clone().eq(ctx.tcx, rhs) };
 
         TyInvDef::Axiom {
-            axiom: term.forall_trig((x_ident.into(), ty), [Trigger(Box::new([lhs]))]),
+            axiom: term.forall_trig((arg.into(), ty), [Trigger(Box::new([lhs]))]),
             rewrite: !use_impl,
         }
     } else {
-        TyInvDef::Body(x_ident, rhs)
+        TyInvDef::Body(rhs)
     }
 }
 
@@ -251,7 +250,7 @@ fn structural_invariant<'tcx>(
                 idsty.iter().map(|&(fld, id, ty)| (fld, Pattern::binder(id, ty))),
                 ty,
             );
-            Some(Term::let_(pattern, subject, acc))
+            Some(Term::let_(pattern, subject, acc, DUMMY_SP))
         }
         TyKind::Ref(..) | TyKind::Slice(_) | TyKind::Array(..) => Some(Term::true_(ctx.tcx)),
         TyKind::Never => Some(Term::false_(ctx.tcx)),

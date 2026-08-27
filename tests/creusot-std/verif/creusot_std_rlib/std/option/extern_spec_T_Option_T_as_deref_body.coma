@@ -20,7 +20,7 @@ type t_Target
 
 predicate precondition_deref (self: ()) (args: t_T)
 
-axiom precondition_fndef: forall args: t_T [precondition_deref () args]. (let self_ = args in false)
+axiom precondition_fndef: forall args: t_T [precondition_deref () args]. (let self = args in false)
     -> precondition_deref () args
 
 predicate inv_Target (_1: t_Target)
@@ -36,16 +36,16 @@ meta "rewrite_def" predicate inv_ref_Target
 predicate postcondition_deref (self: ()) (args: t_T) (result: t_Target)
 
 axiom postcondition_fndef:
-  forall args: t_T, res: t_Target [postcondition_deref () args res]. postcondition_deref () args res
-    -> (let self_ = args in inv_ref_Target res)
+  forall args: t_T, result: t_Target [postcondition_deref () args result]. postcondition_deref () args result
+    -> (let self = args in inv_ref_Target result)
 
 predicate postcondition_once_deref (self: ()) (args: t_T) (result: t_Target) = postcondition_deref self args result
 
 meta "rewrite_def" predicate postcondition_once_deref
 
-let deref_T (self_: t_T) (return (x: t_Target)) = {[@stop_split] [@expl:deref requires] precondition_deref () self_}
+let deref_T (self: t_T) (return (x: t_Target)) = {[@stop_split] [@expl:deref requires] precondition_deref () self}
   any
-  [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self_ result}
+  [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self result}
     (! return {result}) ]
 
 type t_Option_ref_Target = None'0 | Some'0 t_Target
@@ -54,8 +54,8 @@ predicate inv_T (_1: t_T)
 
 predicate inv_Option_T (_1: t_Option_T)
 
-axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-    = match x with
+axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+    = match _1 with
       | None -> true
       | Some f0 -> inv_T f0
       end
@@ -70,8 +70,8 @@ meta "rewrite_def" predicate inv_ref_Option_T
 
 predicate inv_Option_ref_Target (_1: t_Option_ref_Target)
 
-axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_Target [inv_Option_ref_Target x]. inv_Option_ref_Target x
-    = match x with
+axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_ref_Target [inv_Option_ref_Target _1]. inv_Option_ref_Target _1
+    = match _1 with
       | None'0 -> true
       | Some'0 f0 -> inv_ref_Target f0
       end

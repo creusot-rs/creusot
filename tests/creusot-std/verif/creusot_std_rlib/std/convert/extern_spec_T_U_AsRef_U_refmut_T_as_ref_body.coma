@@ -21,7 +21,7 @@ meta "rewrite_def" predicate inv_ref_T
 
 predicate precondition_as_ref (self: ()) (args: t_T)
 
-axiom precondition_fndef: forall args: t_T [precondition_as_ref () args]. (let self_ = args in inv_ref_T self_)
+axiom precondition_fndef: forall args: t_T [precondition_as_ref () args]. (let self = args in inv_ref_T self)
     -> precondition_as_ref () args
 
 predicate inv_U (_1: t_U)
@@ -37,16 +37,16 @@ meta "rewrite_def" predicate inv_ref_U
 predicate postcondition_as_ref (self: ()) (args: t_T) (result: t_U)
 
 axiom postcondition_fndef:
-  forall args: t_T, res: t_U [postcondition_as_ref () args res]. postcondition_as_ref () args res
-    -> (let self_ = args in inv_ref_U res)
+  forall args: t_T, result: t_U [postcondition_as_ref () args result]. postcondition_as_ref () args result
+    -> (let self = args in inv_ref_U result)
 
 predicate postcondition_once_as_ref (self: ()) (args: t_T) (result: t_U) = postcondition_as_ref self args result
 
 meta "rewrite_def" predicate postcondition_once_as_ref
 
-let as_ref_T (self_: t_T) (return (x: t_U)) = {[@stop_split] [@expl:as_ref requires] precondition_as_ref () self_}
+let as_ref_T (self: t_T) (return (x: t_U)) = {[@stop_split] [@expl:as_ref requires] precondition_as_ref () self}
   any
-  [ return (result: t_U) -> {[@stop_split] [@expl:as_ref ensures] postcondition_once_as_ref () self_ result}
+  [ return (result: t_U) -> {[@stop_split] [@expl:as_ref ensures] postcondition_once_as_ref () self result}
     (! return {result}) ]
 
 predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final

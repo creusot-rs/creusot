@@ -32,8 +32,8 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
   
   predicate inv_Option_A (_1: t_Option_A)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option_A [inv_Option_A x]. inv_Option_A x
-      = match x with
+  axiom inv_axiom [@rewrite]: forall _1: t_Option_A [inv_Option_A _1]. inv_Option_A _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_A f0
         end
@@ -41,8 +41,8 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
   predicate postcondition_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_A)
   
   axiom postcondition_fndef:
-    forall args: MutBorrow.t t_I, res: t_Option_A [postcondition_next () args res]. postcondition_next () args res
-      -> (let self = args in inv_Option_A res)
+    forall args: MutBorrow.t t_I, result: t_Option_A [postcondition_next () args result]. postcondition_next () args result
+      -> (let self = args in inv_Option_A result)
   
   predicate postcondition_once_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_A) =
     postcondition_next self args result
@@ -67,7 +67,7 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
   
   predicate inv_Map_I_F (_1: t_Map_I_F)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Map_I_F [inv_Map_I_F x]. inv_Map_I_F x = (inv_I x.iter /\ inv_F x.func)
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Map_I_F [inv_Map_I_F _1]. inv_Map_I_F _1 = (inv_I _1.iter /\ inv_F _1.func)
   
   predicate invariant_refmut_Map_I_F [@inline:trivial] (self: MutBorrow.t t_Map_I_F) =
     inv_Map_I_F self.current /\ inv_Map_I_F self.final
@@ -149,22 +149,22 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
     forall self: t_F, args: t_A, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
       = (postcondition_F self args res /\ self = res_state)
   
-  let call_F (self_: t_F) (arg: t_A) (return (x: t_B)) =
-  {[@stop_split] [@expl:call_F requires] ([@stop_split] [@expl:call 'self_' type invariant] inv_ref_F self_)
-    /\ ([@stop_split] [@expl:call 'arg' type invariant] inv_tup1_A arg)
-    /\ ([@stop_split] [@expl:call requires] precondition_F self_ arg)}
+  let call_F (self: t_F) (args: t_A) (return (x: t_B)) =
+  {[@stop_split] [@expl:call_F requires] ([@stop_split] [@expl:call 'self' type invariant] inv_ref_F self)
+    /\ ([@stop_split] [@expl:call 'args' type invariant] inv_tup1_A args)
+    /\ ([@stop_split] [@expl:call requires] precondition_F self args)}
     any
     [ return (result: t_B) ->
     {[@stop_split] [@expl:call_F ensures] ([@stop_split] [@expl:call result type invariant] inv_B result)
-      /\ ([@stop_split] [@expl:call ensures] postcondition_F self_ arg result)}
+      /\ ([@stop_split] [@expl:call ensures] postcondition_F self args result)}
       (! return {result}) ]
   
   type t_Option_B = None'0 | Some'0 t_B
   
   predicate inv_Option_B (_1: t_Option_B)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_B [inv_Option_B x]. inv_Option_B x
-      = match x with
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_B [inv_Option_B _1]. inv_Option_B _1
+      = match _1 with
         | None'0 -> true
         | Some'0 f0 -> inv_B f0
         end
@@ -222,7 +222,7 @@ module M_impl_FakeIterator_for_Map_I_F__next__refines (* <Map<I, F> as FakeItera
   
   predicate inv_Map_I_F (_1: t_Map_I_F)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Map_I_F [inv_Map_I_F x]. inv_Map_I_F x = (inv_I x.iter /\ inv_F x.func)
+  axiom inv_axiom [@rewrite]: forall _1: t_Map_I_F [inv_Map_I_F _1]. inv_Map_I_F _1 = (inv_I _1.iter /\ inv_F _1.func)
   
   predicate invariant_refmut_Map_I_F [@inline:trivial] (self: MutBorrow.t t_Map_I_F) =
     inv_Map_I_F self.current /\ inv_Map_I_F self.final
@@ -241,8 +241,8 @@ module M_impl_FakeIterator_for_Map_I_F__next__refines (* <Map<I, F> as FakeItera
   
   predicate inv_Option_B (_1: t_Option_B)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_B [inv_Option_B x]. inv_Option_B x
-      = match x with
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_B [inv_Option_B _1]. inv_Option_B _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_B f0
         end

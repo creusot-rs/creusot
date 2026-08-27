@@ -40,14 +40,14 @@ predicate inv_U (_1: t_U)
 
 predicate postcondition_once_F (self: t_F) (args: t_T) (result: t_U)
 
-let call_once_F (self_: t_F) (arg: t_T) (return (x: t_U)) =
-{[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
-  /\ ([@stop_split] [@expl:call_once 'arg' type invariant] inv_tup1_T arg)
-  /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+let call_once_F (self: t_F) (args: t_T) (return (x: t_U)) =
+{[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_F self)
+  /\ ([@stop_split] [@expl:call_once 'args' type invariant] inv_tup1_T args)
+  /\ ([@stop_split] [@expl:call_once requires] precondition_F self args)}
   any
   [ return (result: t_U) ->
   {[@stop_split] [@expl:call_once_F ensures] ([@stop_split] [@expl:call_once result type invariant] inv_U result)
-    /\ ([@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result)}
+    /\ ([@stop_split] [@expl:call_once ensures] postcondition_once_F self args result)}
     (! return {result}) ]
 
 predicate resolve_F (_1: t_F)
@@ -56,19 +56,19 @@ predicate precondition_D (self: t_D) (args: ())
 
 predicate postcondition_once_D (self: t_D) (args: ()) (result: t_U)
 
-let call_once_D (self_: t_D) (arg: ()) (return (x: t_U)) =
-{[@stop_split] [@expl:call_once_D requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_D self_)
-  /\ ([@stop_split] [@expl:call_once requires] precondition_D self_ arg)}
+let call_once_D (self: t_D) (args: ()) (return (x: t_U)) =
+{[@stop_split] [@expl:call_once_D requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_D self)
+  /\ ([@stop_split] [@expl:call_once requires] precondition_D self args)}
   any
   [ return (result: t_U) ->
   {[@stop_split] [@expl:call_once_D ensures] ([@stop_split] [@expl:call_once result type invariant] inv_U result)
-    /\ ([@stop_split] [@expl:call_once ensures] postcondition_once_D self_ arg result)}
+    /\ ([@stop_split] [@expl:call_once ensures] postcondition_once_D self args result)}
     (! return {result}) ]
 
 predicate inv_Option_T (_1: t_Option_T)
 
-axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-    = match x with
+axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+    = match _1 with
       | None -> true
       | Some f0 -> inv_T f0
       end

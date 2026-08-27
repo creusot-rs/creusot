@@ -25,8 +25,8 @@ module M_uses_invariant
   
   predicate inv_Option_T (_1: t_Option_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-      = match x with
+  axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+      = match _1 with
         | None -> true
         | Some f0'0 -> inv_T f0'0
         end
@@ -40,27 +40,27 @@ module M_uses_invariant
   
   meta "rewrite_def" predicate inv_refmut_Option_T
   
-  let take_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
-  {[@stop_split] [@expl:take 'self_' type invariant] inv_refmut_Option_T self_}
+  let take_T (self: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
+  {[@stop_split] [@expl:take 'self' type invariant] inv_refmut_Option_T self}
     any
     [ return (result: t_Option_T) ->
     {[@stop_split] [@expl:take_T ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_T result)
-      /\ ([@stop_split] [@expl:take ensures] result = self_.current /\ self_.final = None)}
+      /\ ([@stop_split] [@expl:take ensures] result = self.current /\ self.final = None)}
       (! return {result}) ]
   
   predicate resolve_T (_1: t_T)
   
   predicate resolve_Option_T (_1: t_Option_T)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Option_T [resolve_Option_T x]. resolve_Option_T x
-      = match x with
+  axiom resolve_axiom [@rewrite]: forall _1: t_Option_T [resolve_Option_T _1]. resolve_Option_T _1
+      = match _1 with
         | None -> true
         | Some x0 -> resolve_T x0
         end
   
   predicate inv_Once_T (_1: t_Once_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Once_T [inv_Once_T x]. inv_Once_T x = inv_Option_T x.f0
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Once_T [inv_Once_T _1]. inv_Once_T _1 = inv_Option_T _1.f0
   
   predicate invariant_refmut_Once_T [@inline:trivial] (self: MutBorrow.t t_Once_T) =
     inv_Once_T self.current /\ inv_Once_T self.final

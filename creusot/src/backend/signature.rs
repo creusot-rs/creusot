@@ -4,10 +4,11 @@ use crate::{
     backend::{
         DefKind, Why3Generator,
         clone_map::Namer,
-        term::{lower_condition, lower_pure, lower_trigger},
+        term::{lower_condition, lower_pure_spanned, lower_trigger},
         ty::translate_ty,
     },
     contracts_items::why3_attrs,
+    naming::name,
     translation::specification::{PreContract, PreSignature},
 };
 use rustc_hir::def_id::DefId;
@@ -90,37 +91,34 @@ pub(crate) fn lower_program_sig<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     name: Ident,
-    mut pre_sig: PreSignature<'tcx>,
-    // FIXME: Get rid of this def id
-    // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
+    pre_sig: &PreSignature<'tcx>,
     def_id: DefId,
-    return_ident: Ident,
 ) -> ProgramSignature {
-    let span = ctx.tcx.def_span(def_id);
+    let span = ctx.def_span(def_id);
     let return_ty = translate_ty(ctx, names, span, pre_sig.output);
     let params: Box<[Param]> = pre_sig
         .inputs
         .iter()
         .map(|(id, span, ty)| Param::Term(id.0, translate_ty(ctx, names, *span, *ty)))
         .chain([Param::Cont(
-            return_ident,
+            name::return_(),
             [].into(),
             [Param::Term(Ident::fresh_local("x"), return_ty.clone())].into(),
         )])
         .collect();
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);
-    if let Some(attr) =
-        def_id.as_local().map(|d| ctx.def_span(d)).and_then(|span| ctx.span_attr(span))
+    if def_id.is_local()
+        && let Some(attr) = ctx.span_attr(span)
     {
         attrs.push(attr)
     }
 
-    let variant = pre_sig.contract.variant.take().map(|term| {
+    let variant = pre_sig.contract.variant.as_ref().map(|term| {
         let ty = translate_ty(ctx, names, term.span, term.ty);
-        (lower_pure(ctx, names, &term.spanned()), ty)
+        (lower_pure_spanned(ctx, names, term), ty)
     });
-    let contract = lower_contract(ctx, names, pre_sig.contract);
+    let contract = lower_contract(ctx, names, &pre_sig.contract);
 
     ProgramSignature { prototype: Prototype { name, attrs, params }, contract, return_ty, variant }
 }
@@ -140,7 +138,7 @@ pub(crate) fn lower_logic_sig<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     name: Ident,
-    mut pre_sig: PreSignature<'tcx>,
+    pre_sig: &PreSignature<'tcx>,
     // FIXME: Get rid of this def id
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
@@ -170,8 +168,8 @@ pub(crate) fn lower_logic_sig<'tcx>(
         Some(translate_ty(ctx, names, span, pre_sig.output))
     };
     let variant =
-        pre_sig.contract.variant.take().map(|term| lower_pure(ctx, names, &term.spanned()));
-    let contract = lower_contract(ctx, names, pre_sig.contract);
+        pre_sig.contract.variant.as_ref().map(|term| lower_pure_spanned(ctx, names, term));
+    let contract = lower_contract(ctx, names, &pre_sig.contract);
 
     LogicSignature { why_sig: Signature { name, attrs, retty, args }, contract, variant }
 }
@@ -179,13 +177,12 @@ pub(crate) fn lower_logic_sig<'tcx>(
 pub(crate) fn lower_contract<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
-    contract: PreContract<'tcx>,
+    contract: &PreContract<'tcx>,
 ) -> Contract {
-    let requires =
-        contract.requires.into_iter().map(|cond| lower_condition(ctx, names, cond)).collect();
+    let requires = contract.requires.iter().map(|cond| lower_condition(ctx, names, cond)).collect();
     let ensures = contract
         .ensures
-        .into_iter()
+        .iter()
         .map(|(trig, cond)| {
             (
                 trig.into_iter().map(|t| lower_trigger(ctx, names, t)).collect(),
