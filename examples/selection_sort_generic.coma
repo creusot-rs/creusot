@@ -66,7 +66,7 @@ module M_selection_sort
   
   predicate inv_Vec_T_Global (_1: t_Vec_T_Global)
   
-  axiom inv_axiom: forall x: t_Vec_T_Global [inv_Vec_T_Global x]. inv_Vec_T_Global x -> invariant_Vec_T_Global x
+  axiom inv_axiom: forall _1: t_Vec_T_Global [inv_Vec_T_Global _1]. inv_Vec_T_Global _1 -> invariant_Vec_T_Global _1
   
   predicate invariant_ref_Vec_T_Global [@inline:trivial] (self: t_Vec_T_Global) = inv_Vec_T_Global self
   
@@ -76,17 +76,17 @@ module M_selection_sort
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  let len_T (self_: t_Vec_T_Global) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_Vec_T_Global self_}
+  let len_T (self: t_Vec_T_Global) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_T_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_T_Global self_)}
+      = Seq.length (view_Vec_T_Global self)}
       (! return {result}) ]
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
-  let into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
-    [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
+  let into_iter_Range_usize (self: t_Range_usize) (return (x: t_Range_usize)) = any
+    [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
   
@@ -129,10 +129,10 @@ module M_selection_sort
     resolve_refmut_Range_usize self
     /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
-  let next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+  let next_Range_usize (self: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Range_usize self_
-        | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
+        | None -> completed_Range_usize self
+        | Some v -> produces_Range_usize self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
@@ -199,13 +199,13 @@ module M_selection_sort
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_T_Global'0 (self_: t_Vec_T_Global) (ix: UInt64.t) (return (x: t_T)) =
-  {[@stop_split] [@expl:index_Vec_T_Global requires] ([@stop_split] [@expl:index 'self_' type invariant] inv_ref_Vec_T_Global self_)
-    /\ ([@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_T_Global self_))}
+  let index_Vec_T_Global'0 (self: t_Vec_T_Global) (index: UInt64.t) (return (x: t_T)) =
+  {[@stop_split] [@expl:index_Vec_T_Global requires] ([@stop_split] [@expl:index 'self' type invariant] inv_ref_Vec_T_Global self)
+    /\ ([@stop_split] [@expl:index requires] in_bounds_usize index (view_Vec_T_Global self))}
     any
     [ return (result: t_T) ->
     {[@stop_split] [@expl:index_Vec_T_Global ensures] ([@stop_split] [@expl:index result type invariant] inv_ref_T result)
-      /\ ([@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_T_Global self_) result)}
+      /\ ([@stop_split] [@expl:index ensures] has_value_usize index (view_Vec_T_Global self) result)}
       (! return {result}) ]
   
   type tup2_ref_T_ref_T = { f0: t_T; f1: t_T }
@@ -213,7 +213,7 @@ module M_selection_sort
   predicate precondition_lt (self: ()) (args: tup2_ref_T_ref_T)
   
   axiom precondition_fndef:
-    forall args: tup2_ref_T_ref_T [precondition_lt () args]. (let {f0 = self_; f1 = other} = args in inv_ref_T self_
+    forall args: tup2_ref_T_ref_T [precondition_lt () args]. (let {f0 = self; f1 = other} = args in inv_ref_T self
         /\ inv_ref_T other) -> precondition_lt () args
   
   function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
@@ -223,18 +223,18 @@ module M_selection_sort
   predicate postcondition_lt (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_T_ref_T, res: bool [postcondition_lt () args res]. postcondition_lt () args res
-      -> (let {f0 = self_; f1 = other} = args in res
-      = lt_log_DeepModelTy (deep_model_ref_T self_) (deep_model_ref_T other))
+    forall args: tup2_ref_T_ref_T, result: bool [postcondition_lt () args result]. postcondition_lt () args result
+      -> (let {f0 = self; f1 = other} = args in result
+      = lt_log_DeepModelTy (deep_model_ref_T self) (deep_model_ref_T other))
   
   predicate postcondition_once_lt (self: ()) (args: tup2_ref_T_ref_T) (result: bool) = postcondition_lt self args result
   
   meta "rewrite_def" predicate postcondition_once_lt
   
-  let lt_T (self_: t_T) (other: t_T) (return (x: bool)) =
-  {[@stop_split] [@expl:lt requires] precondition_lt () { f0 = self_; f1 = other }}
+  let lt_T (self: t_T) (other: t_T) (return (x: bool)) =
+  {[@stop_split] [@expl:lt requires] precondition_lt () { f0 = self; f1 = other }}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] postcondition_once_lt () { f0 = self_;
+    [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] postcondition_once_lt () { f0 = self;
                                                                                             f1 = other } result}
       (! return {result}) ]
   
@@ -253,24 +253,24 @@ module M_selection_sort
   
   meta "rewrite_def" predicate inv_refmut_slice_T
   
-  let deref_mut_Vec_T_Global (self_: MutBorrow.t t_Vec_T_Global) (return (x: MutBorrow.t (Slice64.slice t_T))) =
-  {[@stop_split] [@expl:deref_mut 'self_' type invariant] inv_refmut_Vec_T_Global self_}
+  let deref_mut_Vec_T_Global (self: MutBorrow.t t_Vec_T_Global) (return (x: MutBorrow.t (Slice64.slice t_T))) =
+  {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Vec_T_Global self}
     any
     [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
     {[@stop_split] [@expl:deref_mut_Vec_T_Global ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_slice_T result)
-      /\ ([@stop_split] [@expl:deref_mut ensures #0] Slice64.view result.current = view_Vec_T_Global self_.current)
-      /\ ([@stop_split] [@expl:deref_mut ensures #1] Seq.length (view_Vec_T_Global self_.final)
-        = Seq.length (view_Vec_T_Global self_.current))
-      /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_T_Global self_.final)}
+      /\ ([@stop_split] [@expl:deref_mut ensures #0] Slice64.view result.current = view_Vec_T_Global self.current)
+      /\ ([@stop_split] [@expl:deref_mut ensures #1] Seq.length (view_Vec_T_Global self.final)
+        = Seq.length (view_Vec_T_Global self.current))
+      /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_T_Global self.final)}
       (! return {result}) ]
   
-  let swap_T (self_: MutBorrow.t (Slice64.slice t_T)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
-  {[@stop_split] [@expl:swap_T requires] ([@stop_split] [@expl:swap 'self_' type invariant] inv_refmut_slice_T self_)
-    /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int i < Seq.length (Slice64.view self_.current))
-    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current))}
+  let swap_T (self: MutBorrow.t (Slice64.slice t_T)) (a: UInt64.t) (b: UInt64.t) (return (x: ())) =
+  {[@stop_split] [@expl:swap_T requires] ([@stop_split] [@expl:swap 'self' type invariant] inv_refmut_slice_T self)
+    /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int a < Seq.length (Slice64.view self.current))
+    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < Seq.length (Slice64.view self.current))}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:swap ensures] Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
+    {[@stop_split] [@expl:swap ensures] Permut.exchange (Slice64.view self.final) (Slice64.view self.current) (UInt64.t'int a) (UInt64.t'int b)}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current

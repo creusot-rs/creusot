@@ -20,7 +20,7 @@ use crate::{
     resolution::TraitResolved,
     translation::{
         constant::try_const_to_term,
-        pearlite::{BinOp, Pattern, QuantKind, SmallRenaming, Substable, Term, Trigger, normalize},
+        pearlite::{BinOp, PIdent, Pattern, QuantKind, Substable as _, Term, Trigger, normalize},
         specification::Condition,
     },
 };
@@ -225,7 +225,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             TraitResolved::NoInstance(..) => unreachable!(),
         }
 
-        let sig = lower_program_sig(ctx, &names, name, pre_sig, def_id, name::return_());
+        let sig = lower_program_sig(ctx, &names, name, &pre_sig, def_id);
         vec![program::val(sig.prototype, sig.contract, sig.return_ty)]
     }
 
@@ -241,7 +241,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         // Inline the body of closures
         let mut decls = vec![Decl::Coma(program::to_why(ctx, &names, name, def_id))];
-        if !pre_sig.contract.has_user_contract {
+        if !pre_sig.contract.has_user_contract() {
             decls.extend(["'pre", "'post'return"].map(|s| {
                 Decl::Meta(Meta {
                     name: MetaIdent("rewrite_def".into()),
@@ -292,7 +292,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             }
         };
 
-        let sig = lower_program_sig(ctx, &names, name, pre_sig, def_id, name::return_());
+        let sig = lower_program_sig(ctx, &names, name, &pre_sig, def_id);
         let prototype =
             Prototype { attrs: vec![Attribute::Attr("coma:extspec".into())], ..sig.prototype };
 
@@ -331,7 +331,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         let typing_env = self.typing_env;
         let pre_sig = ctx.sig(def_id).clone().instantiate_and_normalize(ctx, subst, typing_env);
 
-        let bound: Box<[Ident]> = pre_sig.inputs.iter().map(|(ident, _, _)| ident.0).collect();
         let trait_resol = TraitResolved::resolve_item(self.tcx(), typing_env, def_id, subst);
         assert_matches!(
             trait_resol,
@@ -348,13 +347,15 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         let names = self.namer(dep);
         let name = names.dependency(dep).ident();
-        let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
+        let sig = lower_logic_sig(ctx, &names, name, &pre_sig, def_id);
         let kind = match sig.why_sig.retty {
             None => DeclKind::Predicate,
             Some(_) if sig.why_sig.args.is_empty() => DeclKind::Constant,
             _ => DeclKind::Function,
         };
-        let mut decls = if !opaque && let Some(term) = term(ctx, &names, &bound, def_id, subst) {
+        let mut decls = if !opaque
+            && let Some(term) = term(ctx, &names, def_id, subst, &pre_sig.inputs)
+        {
             lower_logical_defn(ctx, &names, sig, kind, term, def_id)
         } else {
             let mut decls = val(sig, kind);
@@ -373,12 +374,12 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 let args_id = Ident::fresh_local("args").into();
                 let args_tup = Term::var(args_id, subst.type_at(0));
 
-                let res_id = Ident::fresh_local("res").into();
                 let res_ty = ctx.normalize_erasing_late_bound_regions(
                     names.typing_env(),
                     ctx.fn_sig(did_f).instantiate(ctx.tcx, subst_f).skip_normalization().output(),
                 );
-                let res = Term::var(res_id, res_ty);
+                let result = name::result().into();
+                let res = Term::var(result, res_ty);
 
                 let mut args = vec![Term::unit(ctx.tcx).coerce(subst.type_at(1)), args_tup.clone()];
                 match ctx.intrinsic(def_id) {
@@ -410,7 +411,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 {
                     let axiom = call.implies(post).quant(
                         QuantKind::Forall,
-                        Box::new([(args_id, subst.type_at(0)), (res_id, res_ty)]),
+                        Box::new([(args_id, subst.type_at(0)), (result, res_ty)]),
                         trig,
                     );
                     decls.push(Decl::Axiom(Axiom {
@@ -487,14 +488,13 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         if is_self {
             pre_sig.contract.ensures = vec![];
         }
-        let has_user_contract = pre_sig.contract.has_user_contract;
         sig_add_type_invariant_spec(ctx, typing_env, names.source_id(), &mut pre_sig, def_id);
-        let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
+        let sig = lower_logic_sig(ctx, &names, name, &pre_sig, def_id);
 
         let opaque = is_self
-            || has_user_contract
-            || matches!(trait_resol, TraitResolved::UnknownFound)
-            || ctx.def_kind(def_id) == DefKind::ConstParam;
+            || pre_sig.contract.has_user_contract()
+            || pre_sig.contract.const_param()
+            || matches!(trait_resol, TraitResolved::UnknownFound);
         if opaque {
             val(sig, DeclKind::Constant)
         } else if let Some(term) =
@@ -841,27 +841,21 @@ fn postcondition_once_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     subst: GenericArgsRef<'tcx>,
-    bound: &[Ident],
+    inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
-    let &[self_, args, result] = bound else {
-        panic!("postcondition_once must have 3 arguments. This should not happen. Found: {bound:?}")
+    let &[self_, args, result] = inputs else {
+        unreachable!(
+            "postcondition_once must have 3 arguments. This should not happen. Found: {inputs:?}"
+        )
     };
-    let ty_self = subst.type_at(1);
-    let self_ = Term::var(self_, ty_self);
-    let args = Term::var(args, subst.type_at(0));
-    let ty_res = ctx.instantiate_and_normalize_erasing_regions(
-        subst,
-        typing_env,
-        EarlyBinder::bind(ctx.tcx, ctx.sig(Intrinsic::PostconditionOnce.get(ctx)).inputs[2].2),
-    );
-    let res = Term::var(result, ty_res);
-    match ty_self.kind() {
+    assert_eq!(result.0.0, name::result());
+    let self_ = Term::var(self_.0, self_.2);
+    let args = Term::var(args.0, args.2);
+    let res = Term::var(result.0, result.2);
+    match self_.ty.kind() {
         TyKind::Closure(did, _) => {
-            let mut post =
-                closure_post(ctx, ClosureKind::FnOnce, did.expect_local(), self_, args, None);
-            post.subst(&SmallRenaming([(name::result(), result)]));
-            Some(post)
+            Some(closure_post(ctx, ClosureKind::FnOnce, did.expect_local(), self_, args, None))
         }
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
@@ -912,35 +906,28 @@ fn postcondition_mut_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     subst: GenericArgsRef<'tcx>,
-    bound: &[Ident],
+    inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
-    let &[self_, args, result_state, result] = bound else {
-        panic!("postcondition_mut must have 4 arguments. This should not happen. Found: {bound:?}")
+    let &[self_, args, result_state, result] = inputs else {
+        unreachable!(
+            "postcondition_mut must have 4 arguments. This should not happen. Found: {inputs:?}"
+        )
     };
-    let ty_self = subst.type_at(1);
-    let self_ = Term::var(self_, ty_self);
-    let args = Term::var(args, subst.type_at(0));
-    let result_state = Term::var(result_state, ty_self);
-    let ty_res = ctx.instantiate_and_normalize_erasing_regions(
-        subst,
-        typing_env,
-        EarlyBinder::bind(ctx.tcx, ctx.sig(Intrinsic::PostconditionMut.get(ctx)).inputs[3].2),
-    );
-    let res = Term::var(result, ty_res);
-    match ty_self.kind() {
-        TyKind::Closure(did, _) => {
-            let mut post = closure_post(
-                ctx,
-                ClosureKind::FnMut,
-                did.expect_local(),
-                self_,
-                args,
-                Some(result_state),
-            );
-            post.subst(&SmallRenaming([(name::result(), result)]));
-            Some(post)
-        }
+    assert_eq!(result.0.0, name::result());
+    let self_ = Term::var(self_.0, self_.2);
+    let args = Term::var(args.0, args.2);
+    let result_state = Term::var(result_state.0, result_state.2);
+    let res = Term::var(result.0, result.2);
+    match self_.ty.kind() {
+        TyKind::Closure(did, _) => Some(closure_post(
+            ctx,
+            ClosureKind::FnMut,
+            did.expect_local(),
+            self_,
+            args,
+            Some(result_state),
+        )),
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
             let mut subst_postcond = subst.to_vec();
@@ -1002,27 +989,21 @@ fn postcondition_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     subst: GenericArgsRef<'tcx>,
-    bound: &[Ident],
+    inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
-    let &[self_, args, result] = bound else {
-        panic!("postcondition must have 3 arguments. This should not happen. Found: {bound:?}")
+    let &[self_, args, result] = inputs else {
+        unreachable!(
+            "postcondition must have 3 arguments. This should not happen. Found: {inputs:?}"
+        )
     };
-    let ty_self = subst.type_at(1);
-    let self_ = Term::var(self_, ty_self);
-    let args = Term::var(args, subst.type_at(0));
-    let ty_res = ctx.instantiate_and_normalize_erasing_regions(
-        subst,
-        typing_env,
-        EarlyBinder::bind(ctx.tcx, ctx.sig(Intrinsic::Postcondition.get(ctx)).inputs[2].2),
-    );
-    let res = Term::var(result, ty_res);
-    match ty_self.kind() {
+    assert_eq!(result.0.0, name::result());
+    let self_ = Term::var(self_.0, self_.2);
+    let args = Term::var(args.0, args.2);
+    let res = Term::var(result.0, result.2);
+    match self_.ty.kind() {
         TyKind::Closure(did, _) => {
-            let mut post =
-                closure_post(ctx, ClosureKind::Fn, did.expect_local(), self_, args, None);
-            post.subst(&SmallRenaming([(name::result(), result)]));
-            Some(post)
+            Some(closure_post(ctx, ClosureKind::Fn, did.expect_local(), self_, args, None))
         }
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
@@ -1093,13 +1074,12 @@ fn post_fndef<'tcx>(
 
     let mut sig = ctx.sig(did).clone().instantiate_and_normalize(ctx, subst, names.typing_env());
     sig_add_type_invariant_spec(ctx, names.typing_env(), names.source_id(), &mut sig, did);
-    let mut post = sig.contract.ensures_conj(ctx.tcx);
-    post.subst(&HashMap::from([(name::result(), res.kind)]));
+    let post = sig.contract.ensures_conj(ctx.tcx);
     let pattern = Pattern::tuple(
         sig.inputs.iter().map(|&(nm, span, ty)| Pattern::binder_sp(nm, span, ty)),
         args.ty,
     );
-    Some(Term::let_(pattern, args, post).span(ctx.def_span(did)))
+    Some(Term::let_(pattern, args, post, ctx.def_span(did)))
 }
 
 /// Generate body of `precondition` for `FnOnce` closures.
@@ -1107,17 +1087,17 @@ fn precondition_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     subst: GenericArgsRef<'tcx>,
-    bound: &[Ident],
+    inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
-    let &[self_, args] = bound else {
-        panic!("precondition must have 2 arguments. This should not happen. Found: {bound:?}")
+    let &[self_, args] = inputs else {
+        unreachable!(
+            "precondition must have 2 arguments. This should not happen. Found: {inputs:?}"
+        )
     };
-    let ty_self = subst.type_at(1);
-    let self_ = Term::var(self_, ty_self);
-    let args = Term::var(args, subst.type_at(0));
-
-    match ty_self.kind() {
+    let self_ = Term::var(self_.0, self_.2);
+    let args = Term::var(args.0, args.2);
+    match self_.ty.kind() {
         TyKind::Closure(did, _) => {
             Some(closure_pre(ctx, names.source_id(), did.expect_local(), self_, args))
         }
@@ -1191,39 +1171,33 @@ fn pre_fndef<'tcx>(
         args.ty,
     );
 
-    Some(Term::let_(pattern, args, pre).span(ctx.def_span(did)))
+    Some(Term::let_(pattern, args, pre, ctx.def_span(did)))
 }
 
 fn fn_mut_hist_inv_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     subst: GenericArgsRef<'tcx>,
-    bound: &[Ident],
+    inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
-    let &[self_, future] = bound else {
-        panic!("hist_inv must have 2 arguments. This should not happen. Found: {bound:?}")
+    let &[self_, future] = inputs else {
+        unreachable!("hist_inv must have 2 arguments. This should not happen. Found: {inputs:?}")
     };
-    let ty_self = subst.type_at(1);
-
-    match ty_self.kind() {
-        TyKind::Closure(did, _) => Some(closure_hist_inv(
-            ctx,
-            did.expect_local(),
-            Term::var(self_, ty_self),
-            Term::var(future, ty_self),
-        )),
-        TyKind::Ref(_, _, Mutability::Not) => {
-            Some(Term::var(self_, ty_self).eq(ctx.tcx, Term::var(future, ty_self)))
-        }
+    let self_ = Term::var(self_.0, self_.2);
+    let future = Term::var(future.0, future.2);
+    match self_.ty.kind() {
+        TyKind::Closure(did, _) => Some(closure_hist_inv(ctx, did.expect_local(), self_, future)),
+        TyKind::Ref(_, _, Mutability::Not) => Some(self_.eq(ctx.tcx, future)),
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let hist_inv = Intrinsic::HistInv.get(ctx);
             let mut subst_hist_inv = subst.to_vec();
             subst_hist_inv[1] = GenericArg::from(*cl);
             let subst_hist_inv = ctx.mk_args(&subst_hist_inv);
-            let hist_inv_args = [Term::var(self_, ty_self).cur(), Term::var(future, ty_self).cur()];
-            Some(Term::call(ctx.tcx, typing_env, hist_inv, subst_hist_inv, hist_inv_args).conj(
-                Term::var(self_, ty_self).fin().eq(ctx.tcx, Term::var(future, ty_self).fin()),
-            ))
+            let hist_inv_args = [self_.clone().cur(), future.clone().cur()];
+            Some(
+                Term::call(ctx.tcx, typing_env, hist_inv, subst_hist_inv, hist_inv_args)
+                    .conj(self_.fin().eq(ctx.tcx, future.fin())),
+            )
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
             let hist_inv = Intrinsic::HistInv.get(ctx);
@@ -1231,10 +1205,7 @@ fn fn_mut_hist_inv_term<'tcx>(
             subst_hist_inv[1] = bsubst[0];
             let subst_hist_inv = ctx.mk_args(&subst_hist_inv);
             let closure_ty = bsubst.type_at(0);
-            let hist_inv_args = [
-                Term::var(self_, ty_self).coerce(closure_ty),
-                Term::var(future, ty_self).coerce(closure_ty),
-            ];
+            let hist_inv_args = [self_.coerce(closure_ty), future.coerce(closure_ty)];
             Some(Term::call(ctx.tcx, typing_env, hist_inv, subst_hist_inv, hist_inv_args))
         }
         TyKind::FnDef(_, _) => Some(Term::true_(ctx.tcx)),
@@ -1290,21 +1261,25 @@ fn size_of_val_logic_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     subst: GenericArgsRef<'tcx>,
-    args: &[Ident],
+    inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let param = subst.type_at(0);
     if param.is_sized(ctx.tcx, names.typing_env()) {
         let size_of_val_logic_sized = Intrinsic::SizeOfValLogicSized.get(ctx);
-        return term(ctx, names, args, size_of_val_logic_sized, subst);
+        let rnm = &renaming_params(ctx, size_of_val_logic_sized, inputs);
+        return term(ctx, names, size_of_val_logic_sized, subst, inputs).subst(rnm);
     }
     match param.kind() {
         TyKind::Slice(ty) => {
             let size_of_val_logic_slice = Intrinsic::SizeOfValLogicSlice.get(ctx);
-            return term(ctx, names, args, size_of_val_logic_slice, ctx.mk_args(&[(*ty).into()]));
+            let rnm = &renaming_params(ctx, size_of_val_logic_slice, inputs);
+            term(ctx, names, size_of_val_logic_slice, ctx.mk_args(&[(*ty).into()]), inputs)
+                .subst(rnm)
         }
         TyKind::Str => {
             let size_of_val_logic_str = Intrinsic::SizeOfValLogicStr.get(ctx);
-            return term(ctx, names, args, size_of_val_logic_str, ctx.mk_args(&[]));
+            let rnm = &renaming_params(ctx, size_of_val_logic_str, inputs);
+            term(ctx, names, size_of_val_logic_str, ctx.mk_args(&[]), inputs).subst(rnm)
         }
         _ => None,
     }
@@ -1336,17 +1311,20 @@ fn is_aligned_logic_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     ty: Ty<'tcx>,
-    args: &[Ident],
+    inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     use rustc_type_ir::TyKind::*;
     if ty.is_sized(ctx.tcx, names.typing_env()) {
         let is_aligned_logic_sized = Intrinsic::IsAlignedLogicSized.get(ctx);
-        return term(ctx, names, args, is_aligned_logic_sized, ctx.mk_args(&[ty.into()]));
+        let rnm = &renaming_params(ctx, is_aligned_logic_sized, inputs);
+        return term(ctx, names, is_aligned_logic_sized, ctx.mk_args(&[ty.into()]), inputs)
+            .subst(rnm);
     }
     match ty.kind() {
         Slice(t) => {
             let is_aligned_logic_slice = Intrinsic::IsAlignedLogicSlice.get(ctx);
-            term(ctx, names, args, is_aligned_logic_slice, ctx.mk_args(&[(*t).into()]))
+            let rnm = &renaming_params(ctx, is_aligned_logic_slice, inputs);
+            term(ctx, names, is_aligned_logic_slice, ctx.mk_args(&[(*t).into()]), inputs).subst(rnm)
         }
         Str => Some(Term::true_(ctx.tcx)),
         _ => None,
@@ -1358,49 +1336,60 @@ fn metadata_matches_term<'tcx>(
     names: &impl Namer<'tcx>,
     //// The type arguments of `metadata_matches`
     subst: GenericArgsRef<'tcx>,
-    args: &[Ident],
+    inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let param = subst.type_at(0);
     if param.is_sized(ctx.tcx, names.typing_env()) {
         Some(Term::true_(ctx.tcx))
     } else if let TyKind::Slice(ty) = param.kind() {
         let metadata_matches_slice = Intrinsic::MetadataMatchesSlice.get(ctx);
-        term(ctx, names, args, metadata_matches_slice, ctx.mk_args(&[(*ty).into()]))
+        let rnm = &renaming_params(ctx, metadata_matches_slice, inputs);
+        term(ctx, names, metadata_matches_slice, ctx.mk_args(&[(*ty).into()]), inputs).subst(rnm)
     } else if let TyKind::Str = param.kind() {
         let metadata_matches_str = Intrinsic::MetadataMatchesStr.get(ctx);
-        term(ctx, names, args, metadata_matches_str, ctx.mk_args(&[]))
+        let rnm = &renaming_params(ctx, metadata_matches_str, inputs);
+        term(ctx, names, metadata_matches_str, ctx.mk_args(&[]), inputs).subst(rnm)
     } else {
         None
     }
 }
 
+fn renaming_params<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    from: DefId,
+    to: &[(PIdent, Span, Ty<'tcx>)],
+) -> HashMap<Ident, Ident> {
+    let from = ctx.inputs_and_output(from).0;
+    from.iter().zip(to).map(|((x, _, _), (y, _, _))| (x.0, y.0)).collect()
+}
+
 /// Returns a resolved and normalized term for a dependency.
 ///
 /// Currently, it does not handle invariant axioms but otherwise returns all logical terms.
+///
+/// The term will use argument names from `ctx.ctx.inputs_and_output(def_id)`.
 fn term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
-    bound: &[Ident],
     def_id: DefId,
     subst: GenericArgsRef<'tcx>,
+    inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
     match ctx.intrinsic(def_id) {
         Intrinsic::Resolve => {
-            if let ResolveDef::Body(id, mut body) =
+            if let ResolveDef::Body(body) =
                 elaborate_resolve_def(ctx, names, subst.type_at(0), ctx.def_span(names.source_id()))
             {
-                body.subst(&SmallRenaming([(id, bound[0])]));
                 Some(body)
             } else {
                 None
             }
         }
         Intrinsic::Inv => {
-            if let TyInvDef::Body(id, mut body) =
+            if let TyInvDef::Body(body) =
                 elaborate_tyinv_def(ctx, names, subst.type_at(0), ctx.def_span(names.source_id()))
             {
-                body.subst(&SmallRenaming([(id, bound[0])]));
                 Some(body)
             } else {
                 None
@@ -1409,22 +1398,22 @@ fn term<'tcx>(
         Intrinsic::StructuralResolve => structural_resolve(
             ctx,
             names,
-            Term::var(ctx.sig(def_id).inputs[0].0.0, subst.type_at(0)),
+            Term::var(inputs[0].0, inputs[0].2),
             ctx.def_span(names.source_id()),
         )
         .ok(),
-        Intrinsic::PostconditionOnce => postcondition_once_term(ctx, names, subst, bound),
-        Intrinsic::PostconditionMut => postcondition_mut_term(ctx, names, subst, bound),
-        Intrinsic::Postcondition => postcondition_term(ctx, names, subst, bound),
-        Intrinsic::Precondition => precondition_term(ctx, names, subst, bound),
-        Intrinsic::HistInv => fn_mut_hist_inv_term(ctx, typing_env, subst, bound),
+        Intrinsic::PostconditionOnce => postcondition_once_term(ctx, names, subst, inputs),
+        Intrinsic::PostconditionMut => postcondition_mut_term(ctx, names, subst, inputs),
+        Intrinsic::Postcondition => postcondition_term(ctx, names, subst, inputs),
+        Intrinsic::Precondition => precondition_term(ctx, names, subst, inputs),
+        Intrinsic::HistInv => fn_mut_hist_inv_term(ctx, typing_env, subst, inputs),
         Intrinsic::SizeOfLogic => size_of_logic_term(ctx, typing_env, def_id, subst.type_at(0)),
-        Intrinsic::SizeOfValLogic => size_of_val_logic_term(ctx, names, subst, bound),
+        Intrinsic::SizeOfValLogic => size_of_val_logic_term(ctx, names, subst, inputs),
         Intrinsic::AlignOfLogic => align_of_logic_term(ctx, typing_env, def_id, subst.type_at(0)),
-        Intrinsic::IsAlignedLogic => is_aligned_logic_term(ctx, names, subst.type_at(0), bound),
-        Intrinsic::MetadataMatches => metadata_matches_term(ctx, names, subst, bound),
+        Intrinsic::IsAlignedLogic => is_aligned_logic_term(ctx, names, subst.type_at(0), inputs),
+        Intrinsic::MetadataMatches => metadata_matches_term(ctx, names, subst, inputs),
         _ => {
-            let term = EarlyBinder::bind(ctx.tcx, ctx.term(def_id).unwrap().rename(bound));
+            let term = EarlyBinder::bind(ctx.tcx, ctx.logic_term(def_id).unwrap().clone());
             Some(normalize(ctx, typing_env, term.instantiate(ctx.tcx, subst).skip_normalization()))
         }
     }

@@ -65,11 +65,11 @@ module M_call_fn
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
       = (postcondition_F self args res /\ self = res_state)
   
-  let call_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
-  {[@stop_split] [@expl:call_F requires] ([@stop_split] [@expl:call 'self_' type invariant] inv_ref_F self_)
-    /\ ([@stop_split] [@expl:call requires] precondition_F self_ arg)}
+  let call_F (self: t_F) (args: Int32.t) (return (x: Int32.t)) =
+  {[@stop_split] [@expl:call_F requires] ([@stop_split] [@expl:call 'self' type invariant] inv_ref_F self)
+    /\ ([@stop_split] [@expl:call requires] precondition_F self args)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call ensures] postcondition_F self_ arg result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call ensures] postcondition_F self args result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -139,12 +139,12 @@ module M_call_fnmut
     forall self: t_F, args: Int32.t, res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  let call_mut_F (self_: MutBorrow.t t_F) (arg: Int32.t) (return (x: Int32.t)) =
-  {[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
-    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self_.current arg)}
+  let call_mut_F (self: MutBorrow.t t_F) (args: Int32.t) (return (x: Int32.t)) =
+  {[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self' type invariant] inv_refmut_F self)
+    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self.current args)}
     any
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self.current args self.final result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -185,11 +185,11 @@ module M_call_fnonce
   
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
-  let call_once_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
-  {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
-    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+  let call_once_F (self: t_F) (args: Int32.t) (return (x: Int32.t)) =
+  {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_F self)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self args)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self args result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

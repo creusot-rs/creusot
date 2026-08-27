@@ -135,8 +135,8 @@ predicate inv_I (_1: t_I)
 
 predicate inv_MapInv_I_F (_1: t_MapInv_I_F)
 
-axiom inv_axiom [@rewrite]: forall x: t_MapInv_I_F [inv_MapInv_I_F x]. inv_MapInv_I_F x
-    = (invariant_MapInv_I_F x /\ inv_I x.iter /\ inv_F x.func)
+axiom inv_axiom [@rewrite]: forall _1: t_MapInv_I_F [inv_MapInv_I_F _1]. inv_MapInv_I_F _1
+    = (invariant_MapInv_I_F _1 /\ inv_I _1.iter /\ inv_F _1.func)
 
 predicate invariant_ref_MapInv_I_F [@inline:trivial] (self: t_MapInv_I_F) = inv_MapInv_I_F self
 
@@ -153,11 +153,11 @@ type tup2_usize_Option_usize = { f0'0: UInt64.t; f1'0: t_Option_usize }
 predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
 
 axiom postcondition_fndef:
-  forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
-    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self_ s i.current /\ completed_I i
-        -> UInt64.t'int res.f0'0 <= Seq.length s)
-    /\ match res.f1'0 with
-      | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self_ s i -> Seq.length s <= UInt64.t'int r
+  forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
+    -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
+        -> UInt64.t'int result.f0'0 <= Seq.length s)
+    /\ match result.f1'0 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
       | None -> true
       end)
 
@@ -176,7 +176,7 @@ meta "rewrite_def" predicate inv_ref_I
 
 predicate precondition_size_hint (self: ()) (args: t_I)
 
-axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self_ = args in inv_ref_I self_)
+axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self = args in inv_ref_I self)
     -> precondition_size_hint () args
 
 predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) =
@@ -184,11 +184,11 @@ predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usiz
 
 meta "rewrite_def" predicate postcondition_once_size_hint
 
-let size_hint_I (self_: t_I) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+let size_hint_I (self: t_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
     (! return {result}) ]
 
 let size_hint_MapInv_I_F (self: t_MapInv_I_F) (return (x: tup2_usize_Option_usize)) =
@@ -202,7 +202,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self_: t_MapInv_I_F. inv_ref_MapInv_I_F self_
-    -> inv_ref_MapInv_I_F self_
-    /\ (forall result: UInt64.t. postcondition_size_hint'0 () self_ { f0'0 = result; f1'0 = Some result }
-      -> postcondition_size_hint'0 () self_ { f0'0 = result; f1'0 = Some result })
+goal refines: forall self: t_MapInv_I_F. inv_ref_MapInv_I_F self
+    -> inv_ref_MapInv_I_F self
+    /\ (forall result: UInt64.t. postcondition_size_hint'0 () self { f0'0 = result; f1'0 = Some result }
+      -> postcondition_size_hint'0 () self { f0'0 = result; f1'0 = Some result })

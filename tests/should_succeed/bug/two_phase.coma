@@ -23,22 +23,22 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   
   predicate precondition_clone (self: ()) (args: t_K)
   
-  axiom precondition_fndef: forall args: t_K [precondition_clone () args]. (let self_ = args in inv_ref_K self_)
+  axiom precondition_fndef: forall args: t_K [precondition_clone () args]. (let self = args in inv_ref_K self)
       -> precondition_clone () args
   
   predicate postcondition_clone (self: ()) (args: t_K) (result: t_K)
   
   axiom postcondition_fndef:
-    forall args: t_K, res: t_K [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_K res)
+    forall args: t_K, result: t_K [postcondition_clone () args result]. postcondition_clone () args result
+      -> (let self = args in inv_K result)
   
   predicate postcondition_once_clone (self: ()) (args: t_K) (result: t_K) = postcondition_clone self args result
   
   meta "rewrite_def" predicate postcondition_once_clone
   
-  let clone_K (self_: t_K) (return (x: t_K)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+  let clone_K (self: t_K) (return (x: t_K)) = {[@stop_split] [@expl:clone requires] precondition_clone () self}
     any
-    [ return (result: t_K) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+    [ return (result: t_K) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self result}
       (! return {result}) ]
   
   predicate invariant_Seq_K [@inline:trivial] (self: Seq.seq t_K) =
@@ -61,7 +61,7 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   
   predicate inv_Vec_K_Global (_1: t_Vec_K_Global)
   
-  axiom inv_axiom: forall x: t_Vec_K_Global [inv_Vec_K_Global x]. inv_Vec_K_Global x -> invariant_Vec_K_Global x
+  axiom inv_axiom: forall _1: t_Vec_K_Global [inv_Vec_K_Global _1]. inv_Vec_K_Global _1 -> invariant_Vec_K_Global _1
   
   predicate invariant_refmut_Vec_K_Global [@inline:trivial] (self: MutBorrow.t t_Vec_K_Global) =
     inv_Vec_K_Global self.current /\ inv_Vec_K_Global self.final
@@ -78,25 +78,25 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   
   meta "rewrite_def" function index_Vec_K_Global
   
-  let insert_K (self_: MutBorrow.t t_Vec_K_Global) (index'0: UInt64.t) (element: t_K) (return (x: ())) =
-  {[@stop_split] [@expl:insert_K requires] ([@stop_split] [@expl:insert 'self_' type invariant] inv_refmut_Vec_K_Global self_)
+  let insert_K (self: MutBorrow.t t_Vec_K_Global) (index'0: UInt64.t) (element: t_K) (return (x: ())) =
+  {[@stop_split] [@expl:insert_K requires] ([@stop_split] [@expl:insert 'self' type invariant] inv_refmut_Vec_K_Global self)
     /\ ([@stop_split] [@expl:insert 'element' type invariant] inv_K element)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:insert_K ensures] ([@stop_split] [@expl:insert ensures #0] Seq.length (view_Vec_K_Global self_.final)
-        = Seq.length (view_Vec_K_Global self_.current) + 1)
+    {[@stop_split] [@expl:insert_K ensures] ([@stop_split] [@expl:insert ensures #0] Seq.length (view_Vec_K_Global self.final)
+        = Seq.length (view_Vec_K_Global self.current) + 1)
       /\ ([@stop_split] [@expl:insert ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int index'0
-          -> index_Vec_K_Global self_.final i = index_Vec_K_Global self_.current i)
-      /\ ([@stop_split] [@expl:insert ensures #2] index_Vec_K_Global self_.final (UInt64.t'int index'0) = element)
+          -> index_Vec_K_Global self.final i = index_Vec_K_Global self.current i)
+      /\ ([@stop_split] [@expl:insert ensures #2] index_Vec_K_Global self.final (UInt64.t'int index'0) = element)
       /\ ([@stop_split] [@expl:insert ensures #3] forall i: int. UInt64.t'int index'0 < i
-          /\ i < Seq.length (view_Vec_K_Global self_.final)
-        -> index_Vec_K_Global self_.final i = index_Vec_K_Global self_.current (i - 1))}
+          /\ i < Seq.length (view_Vec_K_Global self.final)
+        -> index_Vec_K_Global self.final i = index_Vec_K_Global self.current (i - 1))}
       (! return {result}) ]
   
   predicate inv_VacantEntry_K (_1: t_VacantEntry_K)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_VacantEntry_K [inv_VacantEntry_K x]. inv_VacantEntry_K x
-      = (inv_refmut_Vec_K_Global x.map /\ inv_K x.key)
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_VacantEntry_K [inv_VacantEntry_K _1]. inv_VacantEntry_K _1
+      = (inv_refmut_Vec_K_Global _1.map /\ inv_K _1.key)
   
   predicate invariant_refmut_VacantEntry_K [@inline:trivial] (self: MutBorrow.t t_VacantEntry_K) =
     inv_VacantEntry_K self.current /\ inv_VacantEntry_K self.final
@@ -154,14 +154,14 @@ module M_test
     forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
       <= UInt64.t'int const_MAX
   
-  let len_usize (self_: t_Vec_usize_Global) (return (x: UInt64.t)) = any
+  let len_usize (self: t_Vec_usize_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_usize_Global self_)}
+      = Seq.length (view_Vec_usize_Global self)}
       (! return {result}) ]
   
-  let push_usize (self_: MutBorrow.t t_Vec_usize_Global) (v: UInt64.t) (return (x: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:push ensures] view_Vec_usize_Global self_.final
-      = Seq.snoc (view_Vec_usize_Global self_.current) v}
+  let push_usize (self: MutBorrow.t t_Vec_usize_Global) (value: UInt64.t) (return (x: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:push ensures] view_Vec_usize_Global self.final
+      = Seq.snoc (view_Vec_usize_Global self.current) value}
       (! return {result}) ]
   
   predicate resolve_refmut_Vec_usize_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_usize_Global) =

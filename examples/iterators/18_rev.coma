@@ -45,10 +45,10 @@ module M_common__trait_ExactSizeIterator__is_empty
   predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_Self, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
-            /\ completed_Self i -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+            /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -74,8 +74,8 @@ module M_common__trait_ExactSizeIterator__is_empty
   predicate postcondition_len (self: ()) (args: t_Self) (result: UInt64.t)
   
   axiom postcondition_fndef'0:
-    forall args: t_Self, res: UInt64.t [postcondition_len () args res]. postcondition_len () args res
-      -> (let self = args in postcondition_size_hint () self { f0 = res; f1 = Some res })
+    forall args: t_Self, result: UInt64.t [postcondition_len () args result]. postcondition_len () args result
+      -> (let self = args in postcondition_size_hint () self { f0 = result; f1 = Some result })
   
   predicate postcondition_once_len (self: ()) (args: t_Self) (result: UInt64.t) = postcondition_len self args result
   
@@ -134,10 +134,10 @@ module M_common__trait_ExactSizeIterator__len
   predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_Self, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
-            /\ completed_Self i -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+            /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -194,9 +194,9 @@ module M_common__trait_ExactSizeIterator__len
   
   meta "rewrite_def" function deep_model_ref_Option_usize
   
-  let eq_Option_usize (self_: t_Option_usize) (rhs: t_Option_usize) (return (x: bool)) = any
+  let eq_Option_usize (self: t_Option_usize) (other: t_Option_usize) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
-      = (deep_model_ref_Option_usize self_ = deep_model_ref_Option_usize rhs)}
+      = (deep_model_ref_Option_usize self = deep_model_ref_Option_usize other)}
       (! return {result}) ]
   
   type t_AssertKind = Eq | Ne | Match
@@ -284,8 +284,8 @@ module M_impl_DoubleEndedIterator_for_Rev_I__next_back (* <Rev<I> as common::Dou
   
   predicate inv_Option_Item (_1: t_Option_Item)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
-      = match x with
+  axiom inv_axiom [@rewrite]: forall _1: t_Option_Item [inv_Option_Item _1]. inv_Option_Item _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_Item f0
         end
@@ -295,9 +295,9 @@ module M_impl_DoubleEndedIterator_for_Rev_I__next_back (* <Rev<I> as common::Dou
   predicate postcondition_next (self: ()) (args: MutBorrow.t t_I) (result: t_Option_Item)
   
   axiom postcondition_fndef:
-    forall args: MutBorrow.t t_I, res: t_Option_Item [postcondition_next () args res]. postcondition_next () args res
-      -> (let self = args in inv_Option_Item res
-      /\ match res with
+    forall args: MutBorrow.t t_I, result: t_Option_Item [postcondition_next () args result]. postcondition_next () args result
+      -> (let self = args in inv_Option_Item result
+      /\ match result with
         | None -> completed_I self
         | Some v -> produces_I self.current (Seq.singleton v) self.final
         end)
@@ -315,7 +315,7 @@ module M_impl_DoubleEndedIterator_for_Rev_I__next_back (* <Rev<I> as common::Dou
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_refmut_Rev_I [@inline:trivial] (self: MutBorrow.t t_Rev_I) =
     inv_Rev_I self.current /\ inv_Rev_I self.final
@@ -376,7 +376,7 @@ module M_impl_DoubleEndedIterator_for_Rev_I__next_back__refines (* <Rev<I> as co
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_refmut_Rev_I [@inline:trivial] (self: MutBorrow.t t_Rev_I) =
     inv_Rev_I self.current /\ inv_Rev_I self.final
@@ -406,8 +406,8 @@ module M_impl_DoubleEndedIterator_for_Rev_I__next_back__refines (* <Rev<I> as co
   
   predicate inv_Option_Item (_1: t_Option_Item)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
-      = match x with
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_Item [inv_Option_Item _1]. inv_Option_Item _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_Item f0
         end
@@ -610,10 +610,10 @@ module M_impl_DoubleEndedIterator_for_Rev_I__size_hint_back_spec (* <Rev<I> as c
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -692,7 +692,7 @@ module M_impl_DoubleEndedIterator_for_Rev_I__size_hint_back_spec (* <Rev<I> as c
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_ref_Rev_I [@inline:trivial] (self: t_Rev_I) = inv_Rev_I self
   
@@ -766,10 +766,10 @@ module M_impl_DoubleEndedIterator_for_Rev_I__size_hint_back_spec__refines (* <Re
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -848,7 +848,7 @@ module M_impl_DoubleEndedIterator_for_Rev_I__size_hint_back_spec__refines (* <Re
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_ref_Rev_I [@inline:trivial] (self: t_Rev_I) = inv_Rev_I self
   
@@ -925,10 +925,10 @@ module M_impl_ExactSizeIterator_for_Rev_I__is_empty (* <Rev<I> as common::ExactS
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -973,9 +973,9 @@ module M_impl_ExactSizeIterator_for_Rev_I__is_empty (* <Rev<I> as common::ExactS
   predicate postcondition_is_empty (self: ()) (args: t_I) (result: bool)
   
   axiom postcondition_fndef'0:
-    forall args: t_I, res: bool [postcondition_is_empty () args res]. postcondition_is_empty () args res
+    forall args: t_I, result: bool [postcondition_is_empty () args result]. postcondition_is_empty () args result
       -> (let self = args in exists l: UInt64.t. postcondition_size_hint () self { f0 = l; f1 = Some l }
-        /\ res = (l = (0: UInt64.t)))
+        /\ result = (l = (0: UInt64.t)))
   
   predicate postcondition_once_is_empty (self: ()) (args: t_I) (result: bool) = postcondition_is_empty self args result
   
@@ -989,7 +989,7 @@ module M_impl_ExactSizeIterator_for_Rev_I__is_empty (* <Rev<I> as common::ExactS
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_ref_Rev_I [@inline:trivial] (self: t_Rev_I) = inv_Rev_I self
   
@@ -1082,7 +1082,7 @@ module M_impl_ExactSizeIterator_for_Rev_I__is_empty__refines (* <Rev<I> as commo
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_ref_Rev_I [@inline:trivial] (self: t_Rev_I) = inv_Rev_I self
   
@@ -1114,10 +1114,10 @@ module M_impl_ExactSizeIterator_for_Rev_I__is_empty__refines (* <Rev<I> as commo
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -1243,10 +1243,10 @@ module M_impl_ExactSizeIterator_for_Rev_I__len (* <Rev<I> as common::ExactSizeIt
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -1291,8 +1291,8 @@ module M_impl_ExactSizeIterator_for_Rev_I__len (* <Rev<I> as common::ExactSizeIt
   predicate postcondition_len (self: ()) (args: t_I) (result: UInt64.t)
   
   axiom postcondition_fndef'0:
-    forall args: t_I, res: UInt64.t [postcondition_len () args res]. postcondition_len () args res
-      -> (let self = args in postcondition_size_hint () self { f0 = res; f1 = Some res })
+    forall args: t_I, result: UInt64.t [postcondition_len () args result]. postcondition_len () args result
+      -> (let self = args in postcondition_size_hint () self { f0 = result; f1 = Some result })
   
   predicate postcondition_once_len (self: ()) (args: t_I) (result: UInt64.t) = postcondition_len self args result
   
@@ -1305,7 +1305,7 @@ module M_impl_ExactSizeIterator_for_Rev_I__len (* <Rev<I> as common::ExactSizeIt
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_ref_Rev_I [@inline:trivial] (self: t_Rev_I) = inv_Rev_I self
   
@@ -1394,7 +1394,7 @@ module M_impl_ExactSizeIterator_for_Rev_I__len__refines (* <Rev<I> as common::Ex
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_ref_Rev_I [@inline:trivial] (self: t_Rev_I) = inv_Rev_I self
   
@@ -1426,10 +1426,10 @@ module M_impl_ExactSizeIterator_for_Rev_I__len__refines (* <Rev<I> as common::Ex
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -1552,10 +1552,10 @@ module M_impl_ExactSizeIterator_for_Rev_I__size_hint_exact (* <Rev<I> as common:
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -1634,7 +1634,7 @@ module M_impl_ExactSizeIterator_for_Rev_I__size_hint_exact (* <Rev<I> as common:
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_ref_Rev_I [@inline:trivial] (self: t_Rev_I) = inv_Rev_I self
   
@@ -1703,10 +1703,10 @@ module M_impl_ExactSizeIterator_for_Rev_I__size_hint_exact__refines (* <Rev<I> a
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -1785,7 +1785,7 @@ module M_impl_ExactSizeIterator_for_Rev_I__size_hint_exact__refines (* <Rev<I> a
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_ref_Rev_I [@inline:trivial] (self: t_Rev_I) = inv_Rev_I self
   
@@ -1844,10 +1844,10 @@ module M_impl_Iterator_for_Rev_I__next (* <Rev<I> as common::Iterator> *)
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -1923,8 +1923,8 @@ module M_impl_Iterator_for_Rev_I__next (* <Rev<I> as common::Iterator> *)
   
   predicate inv_Option_Item (_1: t_Option_Item)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
-      = match x with
+  axiom inv_axiom [@rewrite]: forall _1: t_Option_Item [inv_Option_Item _1]. inv_Option_Item _1
+      = match _1 with
         | None'0 -> true
         | Some'0 f0'0 -> inv_Item f0'0
         end
@@ -1932,9 +1932,9 @@ module M_impl_Iterator_for_Rev_I__next (* <Rev<I> as common::Iterator> *)
   predicate postcondition_next_back (self: ()) (args: MutBorrow.t t_I) (result: t_Option_Item)
   
   axiom postcondition_fndef'0:
-    forall args: MutBorrow.t t_I, res: t_Option_Item [postcondition_next_back () args res]. postcondition_next_back () args res
-      -> (let self = args in inv_Option_Item res
-      /\ match res with
+    forall args: MutBorrow.t t_I, result: t_Option_Item [postcondition_next_back () args result]. postcondition_next_back () args result
+      -> (let self = args in inv_Option_Item result
+      /\ match result with
         | None'0 -> completed_back_I self
         | Some'0 v -> produces_back_I self.current (Seq.singleton v) self.final
         end)
@@ -1953,7 +1953,7 @@ module M_impl_Iterator_for_Rev_I__next (* <Rev<I> as common::Iterator> *)
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_refmut_Rev_I [@inline:trivial] (self: MutBorrow.t t_Rev_I) =
     inv_Rev_I self.current /\ inv_Rev_I self.final
@@ -2016,7 +2016,7 @@ module M_impl_Iterator_for_Rev_I__next__refines (* <Rev<I> as common::Iterator> 
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_refmut_Rev_I [@inline:trivial] (self: MutBorrow.t t_Rev_I) =
     inv_Rev_I self.current /\ inv_Rev_I self.final
@@ -2046,8 +2046,8 @@ module M_impl_Iterator_for_Rev_I__next__refines (* <Rev<I> as common::Iterator> 
   
   predicate inv_Option_Item (_1: t_Option_Item)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
-      = match x with
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_Item [inv_Option_Item _1]. inv_Option_Item _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_Item f0
         end
@@ -2061,10 +2061,10 @@ module M_impl_Iterator_for_Rev_I__next__refines (* <Rev<I> as common::Iterator> 
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some'0 r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None'0 -> true
         end)
@@ -2175,10 +2175,10 @@ module M_impl_Iterator_for_Rev_I__produces_refl (* <Rev<I> as common::Iterator> 
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -2282,10 +2282,10 @@ module M_impl_Iterator_for_Rev_I__produces_refl__refines (* <Rev<I> as common::I
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -2385,10 +2385,10 @@ module M_impl_Iterator_for_Rev_I__produces_trans (* <Rev<I> as common::Iterator>
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -2500,10 +2500,10 @@ module M_impl_Iterator_for_Rev_I__produces_trans__refines (* <Rev<I> as common::
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -2622,10 +2622,10 @@ module M_impl_Iterator_for_Rev_I__size_hint (* <Rev<I> as common::Iterator> *)
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -2644,7 +2644,7 @@ module M_impl_Iterator_for_Rev_I__size_hint (* <Rev<I> as common::Iterator> *)
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_ref_Rev_I [@inline:trivial] (self: t_Rev_I) = inv_Rev_I self
   
@@ -2682,7 +2682,7 @@ module M_impl_Iterator_for_Rev_I__size_hint__refines (* <Rev<I> as common::Itera
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   predicate invariant_ref_Rev_I [@inline:trivial] (self: t_Rev_I) = inv_Rev_I self
   
@@ -2714,10 +2714,10 @@ module M_impl_Iterator_for_Rev_I__size_hint__refines (* <Rev<I> as common::Itera
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -2804,7 +2804,7 @@ module M_rev
   
   predicate inv_Rev_I (_1: t_Rev_I)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rev_I [inv_Rev_I x]. inv_Rev_I x = inv_I x.iter
+  axiom inv_axiom [@rewrite]: forall _1: t_Rev_I [inv_Rev_I _1]. inv_Rev_I _1 = inv_I _1.iter
   
   meta "compute_max_steps" 1000000
   

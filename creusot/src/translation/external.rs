@@ -1,4 +1,3 @@
-use super::specification::inputs_and_output_from_thir;
 use crate::{
     contracts_items::{
         ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_eval_constant, is_trusted,
@@ -7,7 +6,7 @@ use crate::{
     resolution::TraitResolved,
     translation::{
         pearlite::PIdent,
-        specification::{ContractClauses, contract_clauses_of},
+        specification::{PreContract, contract_clauses_of},
     },
     util::{eq_nameless_generic_args, erased_identity_for_item, forge_def_id, forge_def_id_from},
     validate::is_ghost_or_snap,
@@ -31,8 +30,7 @@ use rustc_type_ir::{ConstKind, inherent::AdtDef as _};
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
-    pub(crate) contract: ContractClauses,
-    pub(crate) subst: GenericArgsRef<'tcx>,
+    pub(crate) contract: PreContract<'tcx>,
     pub(crate) inputs: Box<[(PIdent, Span, Ty<'tcx>)]>,
     pub(crate) output: Ty<'tcx>,
     // Additional predicates we must verify to call this function
@@ -110,7 +108,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let outer_subst = erased_identity_for_item(ctx.tcx, def_id);
     // Generics of the actual item.
     let inner_generics = erased_identity_for_item(ctx.tcx, id).to_vec();
-    let mut subst = vec![None; inner_generics.len()];
+    let mut subst = vec![None; outer_subst.len()];
     let crash = || -> ! {
         ctx.crash_and_error(
             span,
@@ -167,12 +165,18 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .collect();
 
     let ((inputs, output), eval_constant) = match kind {
-        ItemKind::Fn => (inputs_and_output_from_thir(ctx, def_id, thir), false),
+        ItemKind::Fn => (ctx.inputs_and_output(id), false),
         ItemKind::Const => {
-            (([].into(), ctx.type_of(id).skip_binder()), is_eval_constant(ctx.tcx, def_id))
+            (([].as_slice(), ctx.type_of(id).skip_binder()), is_eval_constant(ctx.tcx, def_id))
         }
     };
-    (id, ExternSpec { contract, additional_predicates, subst, inputs, output, eval_constant })
+    let inputs: Box<[_]> = inputs.into();
+    let fn_name = ctx.item_name(id);
+    let contract = contract
+        .get_pre(ctx, fn_name.as_str(), &inputs)
+        .instantiate(ctx.tcx, subst)
+        .skip_normalization();
+    (id, ExternSpec { contract, additional_predicates, inputs, output, eval_constant })
 }
 
 /// Extract a target item for `extern_spec!` or `#[erasure]`.

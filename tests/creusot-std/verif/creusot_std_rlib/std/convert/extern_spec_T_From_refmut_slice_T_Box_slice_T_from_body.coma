@@ -68,31 +68,33 @@ meta "rewrite_def" function view_Box_slice_T_Global
 
 predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
 
-axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
-    -> (let self_ = args in inv_T res)
+axiom postcondition_fndef:
+  forall args: t_T, result: t_T [postcondition_clone () args result]. postcondition_clone () args result
+    -> (let self = args in inv_T result)
 
 predicate precondition_clone (self: ()) (args: t_T)
 
-axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
+axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self = args in inv_ref_T self)
     -> precondition_clone () args
 
 predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T) = postcondition_clone self args result
 
 meta "rewrite_def" predicate postcondition_once_clone
 
-let clone_T (self_: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+let clone_T (self: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self}
   any
-  [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+  [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self result}
     (! return {result}) ]
 
-let from_Box_slice_T_Global (s: Slice64.slice t_T) (return (x: Slice64.slice t_T)) =
-{[@stop_split] [@expl:from 's' type invariant] inv_ref_slice_T s}
+let from_Box_slice_T_Global (slice: Slice64.slice t_T) (return (x: Slice64.slice t_T)) =
+{[@stop_split] [@expl:from 'slice' type invariant] inv_ref_slice_T slice}
   any
   [ return (result: Slice64.slice t_T) ->
   {[@stop_split] [@expl:from_Box_slice_T_Global ensures] ([@stop_split] [@expl:from result type invariant] inv_Box_slice_T_Global result)
-    /\ ([@stop_split] [@expl:from ensures #0] Seq.length (view_Box_slice_T_Global result) = Seq.length (Slice64.view s))
-    /\ ([@stop_split] [@expl:from ensures #1] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view s)
-      -> postcondition_clone () (Seq.get (Slice64.view s) i) (Seq.get (view_Box_slice_T_Global result) i))}
+    /\ ([@stop_split] [@expl:from ensures #0] Seq.length (view_Box_slice_T_Global result)
+      = Seq.length (Slice64.view slice))
+    /\ ([@stop_split] [@expl:from ensures #1] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view slice)
+      -> postcondition_clone () (Seq.get (Slice64.view slice) i) (Seq.get (view_Box_slice_T_Global result) i))}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000

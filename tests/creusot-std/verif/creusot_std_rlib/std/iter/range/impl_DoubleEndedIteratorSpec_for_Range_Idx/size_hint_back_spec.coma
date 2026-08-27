@@ -30,11 +30,11 @@ predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
 meta "rewrite_def" predicate gt_log_Int
 
 predicate postcondition_size_hint (self: ()) (args: t_Range_Idx) (result: tup2_usize_Option_usize) =
-  let self_ = args in (ge_log_Int (deep_model_Idx self_.start) (deep_model_Idx self_.end')
+  let self'0 = args in (ge_log_Int (deep_model_Idx self'0.start) (deep_model_Idx self'0.end')
     -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-  /\ (let s = deep_model_Idx self_.end' - deep_model_Idx self_.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
+  /\ (let s = deep_model_Idx self'0.end' - deep_model_Idx self'0.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
     -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-  /\ (gt_log_Int (deep_model_Idx self_.end' - deep_model_Idx self_.start) (UInt64.t'int const_MAX)
+  /\ (gt_log_Int (deep_model_Idx self'0.end' - deep_model_Idx self'0.start) (UInt64.t'int const_MAX)
   -> result = { f0 = const_MAX; f1 = None })
 
 meta "rewrite_def" predicate postcondition_size_hint
@@ -43,8 +43,8 @@ predicate inv_Idx (_1: t_Idx)
 
 predicate inv_Range_Idx (_1: t_Range_Idx)
 
-axiom inv_axiom [@rewrite]: forall x: t_Range_Idx [inv_Range_Idx x]. inv_Range_Idx x
-    = (inv_Idx x.start /\ inv_Idx x.end')
+axiom inv_axiom [@rewrite]: forall _1: t_Range_Idx [inv_Range_Idx _1]. inv_Range_Idx _1
+    = (inv_Idx _1.start /\ inv_Idx _1.end')
 
 predicate invariant_ref_Range_Idx [@inline:trivial] (self: t_Range_Idx) = inv_Range_Idx self
 
@@ -54,17 +54,17 @@ predicate inv_ref_Range_Idx [@inline:trivial] (_1: t_Range_Idx) = invariant_ref_
 
 meta "rewrite_def" predicate inv_ref_Range_Idx
 
-let size_hint_Range_Idx (self_: t_Range_Idx) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Range_Idx self_}
+let size_hint_Range_Idx (self: t_Range_Idx) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_Range_Idx self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint_Range_Idx ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_Idx self_.start) (deep_model_Idx self_.end')
+  {[@stop_split] [@expl:size_hint_Range_Idx ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_Idx self.start) (deep_model_Idx self.end')
       -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-    /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_Idx self_.end'
-      - deep_model_Idx self_.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
+    /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_Idx self.end'
+      - deep_model_Idx self.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
       -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-    /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_Idx self_.end'
-      - deep_model_Idx self_.start) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
+    /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_Idx self.end'
+      - deep_model_Idx self.start) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
     (! return {result}) ]
 
 predicate produces_back_Range_Idx (self: t_Range_Idx) (visited: Seq.seq t_Idx) (o: t_Range_Idx) =

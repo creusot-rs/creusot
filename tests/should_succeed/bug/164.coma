@@ -8,8 +8,8 @@ module M_main
   
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
-  let into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
+  let into_iter_Range_i32 (self: t_Range_i32) (return (x: t_Range_i32)) = any
+    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
   
@@ -55,10 +55,10 @@ module M_main
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
     resolve_refmut_Range_i32 self /\ ge_log_Int (deep_model_i32 self.current.start) (deep_model_i32 self.current.end')
   
-  let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
+  let next_Range_i32 (self: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Range_i32 self_
-        | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_Range_i32 self
+        | Some v -> produces_Range_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   

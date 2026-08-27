@@ -6,7 +6,10 @@ use crate::{
         is_trusted,
     },
     ctx::{HasTyCtxt, TranslationCtx},
-    translation::{function::Assertion, pearlite::Term},
+    translation::{
+        function::Assertion,
+        pearlite::{Term, TermSort},
+    },
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
@@ -38,10 +41,10 @@ impl<'tcx> SpecClosures<'tcx> {
         for clos in visitor.closures.into_iter() {
             if is_assertion(ctx.tcx, clos) {
                 let is_trusted = is_trusted(ctx.tcx, clos);
-                let term = ctx.term(clos).unwrap().1.clone();
+                let term = *ctx.term(clos, TermSort::Other).no_triggers();
                 assertions.insert(clos, Assertion { is_trusted, term });
             } else if is_snapshot_closure(ctx.tcx, clos) {
-                let term = ctx.term(clos).unwrap().1.clone();
+                let term = *ctx.term(clos, TermSort::Other).no_triggers();
                 snapshots.insert(clos, term);
             }
         }
@@ -156,7 +159,7 @@ impl<'tcx> Visitor<'tcx> for InvariantsVisitor<'_, 'tcx> {
                 }
                 return;
             };
-            let term = self.ctx.term(id).unwrap().1.clone();
+            let term = *self.ctx.term(id, TermSort::Other).no_triggers();
             match self.find_loop_header(loc) {
                 None if let LoopSpecKind::Invariant(expl) = kind => {
                     self.ctx.warn(

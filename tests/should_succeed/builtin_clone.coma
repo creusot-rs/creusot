@@ -13,7 +13,7 @@ module M_clone_closure
   
   meta "rewrite_def" predicate closure0'post'return
   
-  predicate postcondition_clone (self: ()) (args: UInt32.t) (result: UInt32.t) = let self_ = args in result = self_
+  predicate postcondition_clone (self: ()) (args: UInt32.t) (result: UInt32.t) = let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone
   
@@ -22,9 +22,9 @@ module M_clone_closure
   
   meta "rewrite_def" predicate postcondition_once_clone
   
-  let clone_closure0 (self_: closure0) (return (x: closure0)) = any
+  let clone_closure0 (self: closure0) (return (x: closure0)) = any
     [ return (result: closure0) ->
-    {[@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self_.c0 result.c0}
+    {[@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self.c0 result.c0}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -44,7 +44,7 @@ module M_clone_flat
   
   type tup2_u32_bool = { f0: UInt32.t; f1: bool }
   
-  predicate postcondition_clone (self: ()) (args: UInt32.t) (result: UInt32.t) = let self_ = args in result = self_
+  predicate postcondition_clone (self: ()) (args: UInt32.t) (result: UInt32.t) = let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone
   
@@ -53,7 +53,7 @@ module M_clone_flat
   
   meta "rewrite_def" predicate postcondition_once_clone
   
-  predicate postcondition_clone'0 (self: ()) (args: bool) (result: bool) = let self_ = args in result = self_
+  predicate postcondition_clone'0 (self: ()) (args: bool) (result: bool) = let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone'0
   
@@ -61,10 +61,10 @@ module M_clone_flat
   
   meta "rewrite_def" predicate postcondition_once_clone'0
   
-  let clone_tup2_u32_bool (self_: tup2_u32_bool) (return (x: tup2_u32_bool)) = any
+  let clone_tup2_u32_bool (self: tup2_u32_bool) (return (x: tup2_u32_bool)) = any
     [ return (result: tup2_u32_bool) ->
-    {[@stop_split] [@expl:clone_tup2_u32_bool ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self_.f0 result.f0)
-      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone'0 () self_.f1 result.f1)}
+    {[@stop_split] [@expl:clone_tup2_u32_bool ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self.f0 result.f0)
+      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone'0 () self.f1 result.f1)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -105,8 +105,8 @@ module M_clone_generic
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef:
-    forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_T res)
+    forall args: t_T, result: t_T [postcondition_clone () args result]. postcondition_clone () args result
+      -> (let self = args in inv_T result)
   
   predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T) = postcondition_clone self args result
   
@@ -115,17 +115,17 @@ module M_clone_generic
   predicate postcondition_clone'0 (self: ()) (args: t_U) (result: t_U)
   
   axiom postcondition_fndef'0:
-    forall args: t_U, res: t_U [postcondition_clone'0 () args res]. postcondition_clone'0 () args res
-      -> (let self_ = args in inv_U res)
+    forall args: t_U, result: t_U [postcondition_clone'0 () args result]. postcondition_clone'0 () args result
+      -> (let self = args in inv_U result)
   
   predicate postcondition_once_clone'0 (self: ()) (args: t_U) (result: t_U) = postcondition_clone'0 self args result
   
   meta "rewrite_def" predicate postcondition_once_clone'0
   
-  let clone_tup2_T_U (self_: tup2_T_U) (return (x: tup2_T_U)) = any
+  let clone_tup2_T_U (self: tup2_T_U) (return (x: tup2_T_U)) = any
     [ return (result: tup2_T_U) ->
-    {[@stop_split] [@expl:clone_tup2_T_U ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self_.f0 result.f0)
-      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone'0 () self_.f1 result.f1)}
+    {[@stop_split] [@expl:clone_tup2_T_U ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self.f0 result.f0)
+      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone'0 () self.f1 result.f1)}
       (! return {result}) ]
   
   predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
@@ -138,12 +138,12 @@ module M_clone_generic
   
   predicate precondition_clone (self: ()) (args: t_T)
   
-  axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
+  axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self = args in inv_ref_T self)
       -> precondition_clone () args
   
-  let clone_T (self_: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+  let clone_T (self: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self}
     any
-    [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+    [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self result}
       (! return {result}) ]
   
   predicate invariant_ref_U [@inline:trivial] (self: t_U) = inv_U self
@@ -156,12 +156,12 @@ module M_clone_generic
   
   predicate precondition_clone'0 (self: ()) (args: t_U)
   
-  axiom precondition_fndef'0: forall args: t_U [precondition_clone'0 () args]. (let self_ = args in inv_ref_U self_)
+  axiom precondition_fndef'0: forall args: t_U [precondition_clone'0 () args]. (let self = args in inv_ref_U self)
       -> precondition_clone'0 () args
   
-  let clone_U (self_: t_U) (return (x: t_U)) = {[@stop_split] [@expl:clone requires] precondition_clone'0 () self_}
+  let clone_U (self: t_U) (return (x: t_U)) = {[@stop_split] [@expl:clone requires] precondition_clone'0 () self}
     any
-    [ return (result: t_U) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone'0 () self_ result}
+    [ return (result: t_U) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone'0 () self result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -191,7 +191,7 @@ module M_clone_nested
   
   type tup2_tup2_u32_bool_u8 = { f0'0: tup2_u32_bool; f1'0: UInt8.t }
   
-  predicate postcondition_clone (self: ()) (args: UInt32.t) (result: UInt32.t) = let self_ = args in result = self_
+  predicate postcondition_clone (self: ()) (args: UInt32.t) (result: UInt32.t) = let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone
   
@@ -200,7 +200,7 @@ module M_clone_nested
   
   meta "rewrite_def" predicate postcondition_once_clone
   
-  predicate postcondition_clone'0 (self: ()) (args: bool) (result: bool) = let self_ = args in result = self_
+  predicate postcondition_clone'0 (self: ()) (args: bool) (result: bool) = let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone'0
   
@@ -218,7 +218,7 @@ module M_clone_nested
   
   meta "rewrite_def" predicate postcondition_once_clone'1
   
-  predicate postcondition_clone'2 (self: ()) (args: UInt8.t) (result: UInt8.t) = let self_ = args in result = self_
+  predicate postcondition_clone'2 (self: ()) (args: UInt8.t) (result: UInt8.t) = let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone'2
   
@@ -227,10 +227,10 @@ module M_clone_nested
   
   meta "rewrite_def" predicate postcondition_once_clone'2
   
-  let clone_tup2_tup2_u32_bool_u8 (self_: tup2_tup2_u32_bool_u8) (return (x: tup2_tup2_u32_bool_u8)) = any
+  let clone_tup2_tup2_u32_bool_u8 (self: tup2_tup2_u32_bool_u8) (return (x: tup2_tup2_u32_bool_u8)) = any
     [ return (result: tup2_tup2_u32_bool_u8) ->
-    {[@stop_split] [@expl:clone_tup2_tup2_u32_bool_u8 ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone'1 () self_.f0'0 result.f0'0)
-      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone'2 () self_.f1'0 result.f1'0)}
+    {[@stop_split] [@expl:clone_tup2_tup2_u32_bool_u8 ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone'1 () self.f0'0 result.f0'0)
+      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone'2 () self.f1'0 result.f1'0)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -249,7 +249,7 @@ module M_clone_one
   use creusot.int.UInt32
   use creusot.prelude.Any
   
-  predicate postcondition_clone (self: ()) (args: UInt32.t) (result: UInt32.t) = let self_ = args in result = self_
+  predicate postcondition_clone (self: ()) (args: UInt32.t) (result: UInt32.t) = let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone
   
@@ -258,8 +258,8 @@ module M_clone_one
   
   meta "rewrite_def" predicate postcondition_once_clone
   
-  let clone_tup1_u32 (self_: UInt32.t) (return (x: UInt32.t)) = any
-    [ return (result: UInt32.t) -> {[@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self_ result}
+  let clone_tup1_u32 (self: UInt32.t) (return (x: UInt32.t)) = any
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -277,7 +277,7 @@ module M_clone_ref_leaf
   
   type tup2_bool_ref_u32 = { f0: bool; f1: UInt32.t }
   
-  predicate postcondition_clone (self: ()) (args: bool) (result: bool) = let self_ = args in result = self_
+  predicate postcondition_clone (self: ()) (args: bool) (result: bool) = let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone
   
@@ -285,7 +285,7 @@ module M_clone_ref_leaf
   
   meta "rewrite_def" predicate postcondition_once_clone
   
-  predicate postcondition_clone'0 (self: ()) (args: UInt32.t) (result: UInt32.t) = let self_ = args in result = self_
+  predicate postcondition_clone'0 (self: ()) (args: UInt32.t) (result: UInt32.t) = let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone'0
   
@@ -294,10 +294,10 @@ module M_clone_ref_leaf
   
   meta "rewrite_def" predicate postcondition_once_clone'0
   
-  let clone_tup2_bool_ref_u32 (self_: tup2_bool_ref_u32) (return (x: tup2_bool_ref_u32)) = any
+  let clone_tup2_bool_ref_u32 (self: tup2_bool_ref_u32) (return (x: tup2_bool_ref_u32)) = any
     [ return (result: tup2_bool_ref_u32) ->
-    {[@stop_split] [@expl:clone_tup2_bool_ref_u32 ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self_.f0 result.f0)
-      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone'0 () self_.f1 result.f1)}
+    {[@stop_split] [@expl:clone_tup2_bool_ref_u32 ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self.f0 result.f0)
+      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone'0 () self.f1 result.f1)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -328,7 +328,7 @@ module M_clone_tuple_with_closure
   
   type tup2_bool_closure0 = { f0: bool; f1: closure0 }
   
-  predicate postcondition_clone (self: ()) (args: bool) (result: bool) = let self_ = args in result = self_
+  predicate postcondition_clone (self: ()) (args: bool) (result: bool) = let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone
   
@@ -336,7 +336,7 @@ module M_clone_tuple_with_closure
   
   meta "rewrite_def" predicate postcondition_once_clone
   
-  predicate postcondition_clone'0 (self: ()) (args: UInt32.t) (result: UInt32.t) = let self_ = args in result = self_
+  predicate postcondition_clone'0 (self: ()) (args: UInt32.t) (result: UInt32.t) = let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone'0
   
@@ -355,10 +355,10 @@ module M_clone_tuple_with_closure
   
   meta "rewrite_def" predicate postcondition_once_clone'1
   
-  let clone_tup2_bool_closure0 (self_: tup2_bool_closure0) (return (x: tup2_bool_closure0)) = any
+  let clone_tup2_bool_closure0 (self: tup2_bool_closure0) (return (x: tup2_bool_closure0)) = any
     [ return (result: tup2_bool_closure0) ->
-    {[@stop_split] [@expl:clone_tup2_bool_closure0 ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self_.f0 result.f0)
-      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone'1 () self_.f1 result.f1)}
+    {[@stop_split] [@expl:clone_tup2_bool_closure0 ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self.f0 result.f0)
+      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone'1 () self.f1 result.f1)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -382,7 +382,7 @@ module M_clone_unit_leaf
   
   type tup2_bool_unit = { f0: bool; f1: () }
   
-  predicate postcondition_clone (self: ()) (args: bool) (result: bool) = let self_ = args in result = self_
+  predicate postcondition_clone (self: ()) (args: bool) (result: bool) = let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone
   
@@ -398,10 +398,10 @@ module M_clone_unit_leaf
   
   meta "rewrite_def" predicate postcondition_once_clone'0
   
-  let clone_tup2_bool_unit (self_: tup2_bool_unit) (return (x: tup2_bool_unit)) = any
+  let clone_tup2_bool_unit (self: tup2_bool_unit) (return (x: tup2_bool_unit)) = any
     [ return (result: tup2_bool_unit) ->
-    {[@stop_split] [@expl:clone_tup2_bool_unit ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self_.f0 result.f0)
-      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone'0 () self_.f1 result.f1)}
+    {[@stop_split] [@expl:clone_tup2_bool_unit ensures] ([@stop_split] [@expl:clone ensures #0] postcondition_once_clone () self.f0 result.f0)
+      /\ ([@stop_split] [@expl:clone ensures #1] postcondition_once_clone'0 () self.f1 result.f1)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

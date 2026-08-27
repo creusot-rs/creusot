@@ -43,7 +43,7 @@ use crate::{
     ctx::{HasTyCtxt as _, TranslationCtx},
     resolution::{ImplSelection, ImplSource_, TraitResolved, select_trait_impl},
     translation::pearlite::{
-        Ident, Literal, PIdent, Pattern, Scoped, Term, TermKind,
+        Ident, Literal, Pattern, Term, TermKind,
         visit::{TermVisitor, super_visit_term},
     },
     util::erased_identity_for_item,
@@ -498,7 +498,8 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         self.default_functions_bounds.insert(node, bounds);
 
         let mut visitor = TermCalls { results: IndexSet::new() };
-        visitor.visit_term(&ctx.term(item_id).unwrap().1);
+        let term = ctx.logic_term(item_id).unwrap();
+        visitor.visit_term(term);
         for (called_id, generic_args, call_span) in visitor.results {
             // Instantiate the args for the call with the context we just built up.
             let actual_args = EarlyBinder::bind(ctx.tcx, generic_args)
@@ -786,7 +787,7 @@ fn is_structurally_recursive<'tcx>(ctx: &TranslationCtx<'tcx>, self_id: DefId) -
         self_id: DefId,
         /// Candidate decreasing arguments
         decreasing_args: DenseBitSet<usize>,
-        args: &'a [PIdent],
+        args: &'a [Ident],
     }
 
     impl StructuralRecursion<'_> {
@@ -842,7 +843,7 @@ fn is_structurally_recursive<'tcx>(ctx: &TranslationCtx<'tcx>, self_id: DefId) -
             match &term.kind {
                 TermKind::Call { id, args, .. } if *id == self.self_id => {
                     for (i, (arg, nm)) in args.iter().zip(self.args.iter()).enumerate() {
-                        if !self.is_smaller_than(arg, nm.0) {
+                        if !self.is_smaller_than(arg, *nm) {
                             self.decreasing_args.remove(i);
                         }
                     }
@@ -867,11 +868,18 @@ fn is_structurally_recursive<'tcx>(ctx: &TranslationCtx<'tcx>, self_id: DefId) -
         }
     }
 
-    let Scoped(args, term) = &ctx.term(self_id).unwrap();
+    let term = ctx.logic_term(self_id).unwrap();
+
+    let args: &[Ident] = &ctx
+        .inputs_and_output(self_id)
+        .0
+        .iter()
+        .map(|(ident, _, _)| ident.0)
+        .collect::<Box<[Ident]>>();
 
     let mut s = StructuralRecursion {
         self_id,
-        smaller_than: args.iter().map(|ident| (ident.0, (ident.0, false))).collect(),
+        smaller_than: args.iter().map(|&ident| (ident, (ident, false))).collect(),
         decreasing_args: DenseBitSet::new_filled(args.len()),
         args,
     };

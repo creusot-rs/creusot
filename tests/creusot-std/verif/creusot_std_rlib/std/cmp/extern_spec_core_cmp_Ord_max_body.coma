@@ -46,7 +46,7 @@ meta "rewrite_def" predicate inv_ref_Self_
 predicate precondition_le (self: ()) (args: tup2_ref_Self__ref_Self_)
 
 axiom precondition_fndef:
-  forall args: tup2_ref_Self__ref_Self_ [precondition_le () args]. (let {f0 = self_; f1 = other} = args in inv_ref_Self_ self_
+  forall args: tup2_ref_Self__ref_Self_ [precondition_le () args]. (let {f0 = self; f1 = other} = args in inv_ref_Self_ self
       /\ inv_ref_Self_ other) -> precondition_le () args
 
 function deep_model_Self_ (self: t_Self_) : t_DeepModelTy
@@ -58,19 +58,19 @@ meta "rewrite_def" function deep_model_ref_Self_
 predicate postcondition_le (self: ()) (args: tup2_ref_Self__ref_Self_) (result: bool)
 
 axiom postcondition_fndef:
-  forall args: tup2_ref_Self__ref_Self_, res: bool [postcondition_le () args res]. postcondition_le () args res
-    -> (let {f0 = self_; f1 = other} = args in res
-    = le_log_DeepModelTy (deep_model_ref_Self_ self_) (deep_model_ref_Self_ other))
+  forall args: tup2_ref_Self__ref_Self_, result: bool [postcondition_le () args result]. postcondition_le () args result
+    -> (let {f0 = self; f1 = other} = args in result
+    = le_log_DeepModelTy (deep_model_ref_Self_ self) (deep_model_ref_Self_ other))
 
 predicate postcondition_once_le (self: ()) (args: tup2_ref_Self__ref_Self_) (result: bool) =
   postcondition_le self args result
 
 meta "rewrite_def" predicate postcondition_once_le
 
-let le_Self_ (self_: t_Self_) (other: t_Self_) (return (x: bool)) =
-{[@stop_split] [@expl:le requires] precondition_le () { f0 = self_; f1 = other }}
+let le_Self_ (self: t_Self_) (other: t_Self_) (return (x: bool)) =
+{[@stop_split] [@expl:le requires] precondition_le () { f0 = self; f1 = other }}
   any
-  [ return (result: bool) -> {[@stop_split] [@expl:le ensures] postcondition_once_le () { f0 = self_;
+  [ return (result: bool) -> {[@stop_split] [@expl:le ensures] postcondition_once_le () { f0 = self;
                                                                                           f1 = other } result}
     (! return {result}) ]
 

@@ -343,9 +343,9 @@ module M_y
     forall self: t_Vec_i32_Global [view_Vec_i32_Global self]. Seq.length (view_Vec_i32_Global self)
       <= UInt64.t'int const_MAX
   
-  let len_i32 (self_: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_i32_Global self_)}
+      = Seq.length (view_Vec_i32_Global self)}
       (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
@@ -363,15 +363,16 @@ module M_y
   
   meta "rewrite_def" predicate resolve_elswhere_usize
   
-  let index_mut_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (ix: UInt64.t) (return (x: MutBorrow.t Int32.t)) =
-  {[@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_i32_Global self_.current)}
+  let index_mut_Vec_i32_Global (self: MutBorrow.t t_Vec_i32_Global) (index: UInt64.t)
+    (return (x: MutBorrow.t Int32.t)) =
+  {[@stop_split] [@expl:index_mut requires] in_bounds_usize index (view_Vec_i32_Global self.current)}
     any
     [ return (result: MutBorrow.t Int32.t) ->
-    {[@stop_split] [@expl:index_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize ix (view_Vec_i32_Global self_.current) result.current)
-      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize ix (view_Vec_i32_Global self_.final) result.final)
-      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_i32_Global self_.current) (view_Vec_i32_Global self_.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self_.final)
-      = Seq.length (view_Vec_i32_Global self_.current))}
+    {[@stop_split] [@expl:index_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize index (view_Vec_i32_Global self.current) result.current)
+      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize index (view_Vec_i32_Global self.final) result.final)
+      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize index (view_Vec_i32_Global self.current) (view_Vec_i32_Global self.final))
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self.final)
+      = Seq.length (view_Vec_i32_Global self.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current

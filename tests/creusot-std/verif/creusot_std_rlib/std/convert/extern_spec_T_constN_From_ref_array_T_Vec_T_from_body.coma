@@ -60,12 +60,12 @@ predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_
 
 meta "rewrite_def" predicate inv_ref_slice_T
 
-let as_slice_T (self_: Slice64.array t_T) (return (x: Slice64.slice t_T)) =
-{[@stop_split] [@expl:as_slice 'self_' type invariant] inv_ref_array_T_n self_}
+let as_slice_T (self: Slice64.array t_T) (return (x: Slice64.slice t_T)) =
+{[@stop_split] [@expl:as_slice 'self' type invariant] inv_ref_array_T_n self}
   any
   [ return (result: Slice64.slice t_T) ->
   {[@stop_split] [@expl:as_slice_T ensures] ([@stop_split] [@expl:as_slice result type invariant] inv_ref_slice_T result)
-    /\ ([@stop_split] [@expl:as_slice ensures] Slice64.view result = Slice64.view self_)}
+    /\ ([@stop_split] [@expl:as_slice ensures] Slice64.view result = Slice64.view self)}
     (! return {result}) ]
 
 type t_Vec_T_Global
@@ -81,25 +81,26 @@ predicate invariant_Vec_T_Global (self: t_Vec_T_Global) = inv_Seq_T (view_Vec_T_
 
 predicate inv_Vec_T_Global (_1: t_Vec_T_Global)
 
-axiom inv_axiom: forall x: t_Vec_T_Global [inv_Vec_T_Global x]. inv_Vec_T_Global x -> invariant_Vec_T_Global x
+axiom inv_axiom: forall _1: t_Vec_T_Global [inv_Vec_T_Global _1]. inv_Vec_T_Global _1 -> invariant_Vec_T_Global _1
 
 predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
 
-axiom postcondition_fndef: forall args: t_T, res: t_T [postcondition_clone () args res]. postcondition_clone () args res
-    -> (let self_ = args in inv_T res)
+axiom postcondition_fndef:
+  forall args: t_T, result: t_T [postcondition_clone () args result]. postcondition_clone () args result
+    -> (let self = args in inv_T result)
 
 predicate precondition_clone (self: ()) (args: t_T)
 
-axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self_ = args in inv_ref_T self_)
+axiom precondition_fndef: forall args: t_T [precondition_clone () args]. (let self = args in inv_ref_T self)
     -> precondition_clone () args
 
 predicate postcondition_once_clone (self: ()) (args: t_T) (result: t_T) = postcondition_clone self args result
 
 meta "rewrite_def" predicate postcondition_once_clone
 
-let clone_T (self_: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+let clone_T (self: t_T) (return (x: t_T)) = {[@stop_split] [@expl:clone requires] precondition_clone () self}
   any
-  [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+  [ return (result: t_T) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self result}
     (! return {result}) ]
 
 let from_Vec_T_Global (s: Slice64.slice t_T) (return (x: t_Vec_T_Global)) =

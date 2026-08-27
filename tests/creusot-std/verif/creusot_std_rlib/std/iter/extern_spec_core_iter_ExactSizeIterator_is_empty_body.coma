@@ -22,7 +22,7 @@ meta "rewrite_def" predicate inv_ref_Self_
 
 predicate precondition_len (self: ()) (args: t_Self_)
 
-axiom precondition_fndef: forall args: t_Self_ [precondition_len () args]. (let self_ = args in inv_ref_Self_ self_)
+axiom precondition_fndef: forall args: t_Self_ [precondition_len () args]. (let self = args in inv_ref_Self_ self)
     -> precondition_len () args
 
 type t_Option_usize = None | Some UInt64.t
@@ -48,18 +48,18 @@ predicate completed_Self_ (self: MutBorrow.t t_Self_)
 predicate postcondition_size_hint (self: ()) (args: t_Self_) (result: tup2_usize_Option_usize)
 
 axiom postcondition_fndef:
-  forall args: t_Self_, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
-    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self_. produces_Self_ self_ s i.current
-          /\ completed_Self_ i -> UInt64.t'int res.f0 <= Seq.length s)
-    /\ match res.f1 with
-      | Some r -> forall s: Seq.seq t_Item, i: t_Self_. produces_Self_ self_ s i -> Seq.length s <= UInt64.t'int r
+  forall args: t_Self_, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
+    -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self_. produces_Self_ self s i.current
+          /\ completed_Self_ i -> UInt64.t'int result.f0 <= Seq.length s)
+    /\ match result.f1 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_Self_. produces_Self_ self s i -> Seq.length s <= UInt64.t'int r
       | None -> true
       end)
 
 predicate precondition_size_hint (self: ()) (args: t_Self_)
 
 axiom precondition_fndef'0:
-  forall args: t_Self_ [precondition_size_hint () args]. (let self_ = args in inv_ref_Self_ self_)
+  forall args: t_Self_ [precondition_size_hint () args]. (let self = args in inv_ref_Self_ self)
     -> precondition_size_hint () args
 
 predicate postcondition_once_size_hint (self: ()) (args: t_Self_) (result: tup2_usize_Option_usize) =
@@ -67,26 +67,26 @@ predicate postcondition_once_size_hint (self: ()) (args: t_Self_) (result: tup2_
 
 meta "rewrite_def" predicate postcondition_once_size_hint
 
-let size_hint_Self_ (self_: t_Self_) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+let size_hint_Self_ (self: t_Self_) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
     (! return {result}) ]
 
 predicate postcondition_len (self: ()) (args: t_Self_) (result: UInt64.t)
 
 axiom postcondition_fndef'0:
-  forall args: t_Self_, res: UInt64.t [postcondition_len () args res]. postcondition_len () args res
-    -> (let self_ = args in postcondition_size_hint () self_ { f0 = res; f1 = Some res })
+  forall args: t_Self_, result: UInt64.t [postcondition_len () args result]. postcondition_len () args result
+    -> (let self = args in postcondition_size_hint () self { f0 = result; f1 = Some result })
 
 predicate postcondition_once_len (self: ()) (args: t_Self_) (result: UInt64.t) = postcondition_len self args result
 
 meta "rewrite_def" predicate postcondition_once_len
 
-let len_Self_ (self_: t_Self_) (return (x: UInt64.t)) = {[@stop_split] [@expl:len requires] precondition_len () self_}
+let len_Self_ (self: t_Self_) (return (x: UInt64.t)) = {[@stop_split] [@expl:len requires] precondition_len () self}
   any
-  [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] postcondition_once_len () self_ result}
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] postcondition_once_len () self result}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000

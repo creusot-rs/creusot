@@ -10,11 +10,11 @@ module M_apply
   
   predicate postcondition_once_F (self: t_F) (args: Int32.t) (result: Int32.t)
   
-  let call_once_F (self_: t_F) (arg: Int32.t) (return (x: Int32.t)) =
-  {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
-    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+  let call_once_F (self: t_F) (args: Int32.t) (return (x: Int32.t)) =
+  {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_F self)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self args)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self args result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -365,8 +365,8 @@ module M_slice_as_mut_ptr
   
   meta "rewrite_def" predicate inv_refmut_slice_T
   
-  let as_mut_ptr_T (self_: MutBorrow.t (Slice64.slice t_T)) (return (x: Opaque.ptr)) =
-  {[@stop_split] [@expl:as_mut_ptr 'self_' type invariant] inv_refmut_slice_T self_}
+  let as_mut_ptr_T (self: MutBorrow.t (Slice64.slice t_T)) (return (x: Opaque.ptr)) =
+  {[@stop_split] [@expl:as_mut_ptr 'self' type invariant] inv_refmut_slice_T self}
     any [ return (result: Opaque.ptr) -> (! return {result}) ]
   
   predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
@@ -472,8 +472,8 @@ module M_slice_as_mut_ptr_perm
   
   predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
-      = invariant_Perm_ptr_slice_T x
+  axiom inv_axiom [@rewrite]: forall _1: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T _1]. inv_Perm_ptr_slice_T _1
+      = invariant_Perm_ptr_slice_T _1
   
   predicate invariant_refmut_Perm_ptr_slice_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_slice_T) =
     inv_Perm_ptr_slice_T self.current /\ inv_Perm_ptr_slice_T self.final
@@ -588,8 +588,8 @@ module M_slice_as_ptr
   
   meta "rewrite_def" predicate inv_ref_slice_T
   
-  let as_ptr_T (self_: Slice64.slice t_T) (return (x: Opaque.ptr)) =
-  {[@stop_split] [@expl:as_ptr 'self_' type invariant] inv_ref_slice_T self_}
+  let as_ptr_T (self: Slice64.slice t_T) (return (x: Opaque.ptr)) =
+  {[@stop_split] [@expl:as_ptr 'self' type invariant] inv_ref_slice_T self}
     any [ return (result: Opaque.ptr) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -671,8 +671,8 @@ module M_slice_as_ptr_perm
   
   predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
-      = invariant_Perm_ptr_slice_T x
+  axiom inv_axiom [@rewrite]: forall _1: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T _1]. inv_Perm_ptr_slice_T _1
+      = invariant_Perm_ptr_slice_T _1
   
   predicate invariant_ref_Perm_ptr_slice_T [@inline:trivial] (self: t_Perm_ptr_slice_T) = inv_Perm_ptr_slice_T self
   
@@ -970,7 +970,7 @@ module M_test_ptr2
   
   predicate inv_Perm_ptr_T (_1: t_Perm_ptr_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_T [inv_Perm_ptr_T x]. inv_Perm_ptr_T x = invariant_Perm_ptr_T x
+  axiom inv_axiom [@rewrite]: forall _1: t_Perm_ptr_T [inv_Perm_ptr_T _1]. inv_Perm_ptr_T _1 = invariant_Perm_ptr_T _1
   
   predicate invariant_ref_Perm_ptr_T [@inline:trivial] (self: t_Perm_ptr_T) = inv_Perm_ptr_T self
   
@@ -1050,7 +1050,7 @@ module M_test_ptr_mut2
   
   predicate inv_Perm_ptr_T (_1: t_Perm_ptr_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_T [inv_Perm_ptr_T x]. inv_Perm_ptr_T x = invariant_Perm_ptr_T x
+  axiom inv_axiom [@rewrite]: forall _1: t_Perm_ptr_T [inv_Perm_ptr_T _1]. inv_Perm_ptr_T _1 = invariant_Perm_ptr_T _1
   
   predicate invariant_refmut_Perm_ptr_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_T) =
     inv_Perm_ptr_T self.current /\ inv_Perm_ptr_T self.final

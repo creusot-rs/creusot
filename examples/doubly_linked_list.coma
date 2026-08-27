@@ -11,7 +11,7 @@ module M_example
   
   predicate inv_List_i32 (_1: t_List_i32)
   
-  axiom inv_axiom: forall x: t_List_i32 [inv_List_i32 x]. inv_List_i32 x -> invariant_List_i32 x
+  axiom inv_axiom: forall _1: t_List_i32 [inv_List_i32 _1]. inv_List_i32 _1 -> invariant_List_i32 _1
   
   function view_List_i32 (self: t_List_i32) : Seq.seq Int32.t
   
@@ -63,9 +63,9 @@ module M_example
   
   meta "rewrite_def" function deep_model_ref_Option_i32
   
-  let eq_Option_i32 (self_: t_Option_i32) (rhs: t_Option_i32) (return (x: bool)) = any
+  let eq_Option_i32 (self: t_Option_i32) (other: t_Option_i32) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
-      = (deep_model_ref_Option_i32 self_ = deep_model_ref_Option_i32 rhs)}
+      = (deep_model_ref_Option_i32 self = deep_model_ref_Option_i32 other)}
       (! return {result}) ]
   
   function tail_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = Seq.([..]) self 1 (Seq.length self)
@@ -113,7 +113,7 @@ module M_example
   
   predicate inv_Cursor_i32 (_1: t_Cursor_i32)
   
-  axiom inv_axiom'0: forall x: t_Cursor_i32 [inv_Cursor_i32 x]. inv_Cursor_i32 x -> invariant_Cursor_i32 x
+  axiom inv_axiom'0: forall _1: t_Cursor_i32 [inv_Cursor_i32 _1]. inv_Cursor_i32 _1 -> invariant_Cursor_i32 _1
   
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
@@ -155,9 +155,9 @@ module M_example
       }
       (! return {result}) ]
   
-  let unwrap_ref_i32 (self_: t_Option_ref_i32) (return (x: Int32.t)) = {[@stop_split] [@expl:unwrap requires] self_
+  let unwrap_ref_i32 (self: t_Option_ref_i32) (return (x: Int32.t)) = {[@stop_split] [@expl:unwrap requires] self
     <> None'1}
-    any [ return (result: Int32.t) -> {[@stop_split] [@expl:unwrap ensures] Some'1 result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@stop_split] [@expl:unwrap ensures] Some'1 result = self} (! return {result}) ]
   
   predicate invariant_refmut_Cursor_i32 [@inline:trivial] (self: MutBorrow.t t_Cursor_i32) =
     inv_Cursor_i32 self.current /\ inv_Cursor_i32 self.final
@@ -262,7 +262,8 @@ module M_example
   
   predicate resolve_Cursor_i32'0 (_1: t_Cursor_i32)
   
-  axiom resolve_axiom: forall x: t_Cursor_i32 [resolve_Cursor_i32'0 x]. resolve_Cursor_i32'0 x -> resolve_Cursor_i32 x
+  axiom resolve_axiom: forall _1: t_Cursor_i32 [resolve_Cursor_i32'0 _1]. resolve_Cursor_i32'0 _1
+      -> resolve_Cursor_i32 _1
   
   type tup2_ref_Option_i32_ref_Option_i32 = { f0: t_Option_i32; f1: t_Option_i32 }
   
@@ -646,7 +647,7 @@ module M_imp__impl_Cursor_T__pos (* imp::Cursor<'a, T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -663,8 +664,8 @@ module M_imp__impl_Cursor_T__pos (* imp::Cursor<'a, T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -705,8 +706,8 @@ module M_imp__impl_Cursor_T__pos (* imp::Cursor<'a, T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -758,8 +759,8 @@ module M_imp__impl_Cursor_T__pos (* imp::Cursor<'a, T> *)
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   meta "compute_max_steps" 1000000
   
@@ -822,7 +823,7 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_first (* imp::Cursor<'_, T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -839,8 +840,8 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_first (* imp::Cursor<'_, T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -1037,8 +1038,8 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_first (* imp::Cursor<'_, T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -1090,8 +1091,8 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_first (* imp::Cursor<'_, T> *)
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   predicate invariant_refmut_Cursor_T [@inline:trivial] (self: MutBorrow.t t_Cursor_T) =
     inv_Cursor_T self.current /\ inv_Cursor_T self.final
@@ -1257,7 +1258,7 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_last (* imp::Cursor<'_, T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -1274,8 +1275,8 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_last (* imp::Cursor<'_, T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -1521,8 +1522,8 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_last (* imp::Cursor<'_, T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -1574,8 +1575,8 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_last (* imp::Cursor<'_, T> *)
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   predicate invariant_refmut_Cursor_T [@inline:trivial] (self: MutBorrow.t t_Cursor_T) =
     inv_Cursor_T self.current /\ inv_Cursor_T self.final
@@ -1726,8 +1727,8 @@ module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   type t_T
@@ -1750,7 +1751,7 @@ module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -1767,8 +1768,8 @@ module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -1901,8 +1902,8 @@ module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -1954,8 +1955,8 @@ module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   predicate invariant_ref_Cursor_T [@inline:trivial] (self: t_Cursor_T) = inv_Cursor_T self
   
@@ -1975,8 +1976,8 @@ module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
   
   predicate inv_Option_ref_T (_1: t_Option_ref_T)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
-      = match x with
+  axiom inv_axiom'3 [@rewrite]: forall _1: t_Option_ref_T [inv_Option_ref_T _1]. inv_Option_ref_T _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_ref_T f0
         end
@@ -2044,8 +2045,8 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
@@ -2081,7 +2082,7 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -2098,8 +2099,8 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -2140,8 +2141,8 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -2193,8 +2194,8 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   predicate invariant_refmut_Cursor_T [@inline:trivial] (self: MutBorrow.t t_Cursor_T) =
     inv_Cursor_T self.current /\ inv_Cursor_T self.final
@@ -2309,8 +2310,8 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  let cast_mut_Node_T (self_: Opaque.ptr) (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self_} (! return {result}) ]
+  let cast_mut_Node_T (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
+    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self} (! return {result}) ]
   
   predicate invariant_refmut_Node_T [@inline:trivial] (self: MutBorrow.t t_Node_T) =
     inv_Node_T self.current /\ inv_Node_T self.final
@@ -2356,8 +2357,8 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
   
   predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option_refmut_T [inv_Option_refmut_T x]. inv_Option_refmut_T x
-      = match x with
+  axiom inv_axiom'3 [@rewrite]: forall _1: t_Option_refmut_T [inv_Option_refmut_T _1]. inv_Option_refmut_T _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_refmut_T f0
         end
@@ -2502,8 +2503,8 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   let null_Node_T (return (x: Opaque.ptr)) = any
@@ -2520,7 +2521,7 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
   
@@ -2547,8 +2548,8 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -2689,8 +2690,8 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -2742,8 +2743,8 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   predicate invariant_refmut_Cursor_T [@inline:trivial] (self: MutBorrow.t t_Cursor_T) =
     inv_Cursor_T self.current /\ inv_Cursor_T self.final
@@ -2770,8 +2771,8 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
       = Seq.length self.current.list.current.permissions - 1)}
       (! return {result}) ]
   
-  let cast_mut_Node_T (self_: Opaque.ptr) (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self_} (! return {result}) ]
+  let cast_mut_Node_T (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
+    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self} (! return {result}) ]
   
   predicate inv_Int [@inline:trivial] (_1: int) = true
   
@@ -3367,8 +3368,8 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   let null_Node_T (return (x: Opaque.ptr)) = any
@@ -3385,7 +3386,7 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
   
@@ -3412,8 +3413,8 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -3554,8 +3555,8 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -3607,8 +3608,8 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   predicate invariant_refmut_Cursor_T [@inline:trivial] (self: MutBorrow.t t_Cursor_T) =
     inv_Cursor_T self.current /\ inv_Cursor_T self.final
@@ -3634,8 +3635,8 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
       /\ ([@stop_split] [@expl:ghost_current_at_first ensures #1] self.current.pos = 0)}
       (! return {result}) ]
   
-  let cast_mut_Node_T (self_: Opaque.ptr) (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self_} (! return {result}) ]
+  let cast_mut_Node_T (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
+    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self} (! return {result}) ]
   
   predicate invariant_refmut_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_Node_T) =
     inv_Box_Perm_ptr_Node_T_Global self.current /\ inv_Box_Perm_ptr_Node_T_Global self.final
@@ -4232,8 +4233,8 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
@@ -4269,7 +4270,7 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -4286,8 +4287,8 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -4328,8 +4329,8 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -4381,8 +4382,8 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   predicate invariant_refmut_Cursor_T [@inline:trivial] (self: MutBorrow.t t_Cursor_T) =
     inv_Cursor_T self.current /\ inv_Cursor_T self.final
@@ -4601,8 +4602,8 @@ module M_imp__impl_Cursor_T_1__move_prev (* imp::Cursor<'a, T> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
@@ -4638,7 +4639,7 @@ module M_imp__impl_Cursor_T_1__move_prev (* imp::Cursor<'a, T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -4655,8 +4656,8 @@ module M_imp__impl_Cursor_T_1__move_prev (* imp::Cursor<'a, T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -4697,8 +4698,8 @@ module M_imp__impl_Cursor_T_1__move_prev (* imp::Cursor<'a, T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -4750,8 +4751,8 @@ module M_imp__impl_Cursor_T_1__move_prev (* imp::Cursor<'a, T> *)
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   predicate invariant_refmut_Cursor_T [@inline:trivial] (self: MutBorrow.t t_Cursor_T) =
     inv_Cursor_T self.current /\ inv_Cursor_T self.final
@@ -4962,8 +4963,8 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
@@ -4999,7 +5000,7 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -5016,8 +5017,8 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -5058,8 +5059,8 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -5074,8 +5075,8 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
   
   predicate inv_Option_T (_1: t_Option_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-      = match x with
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_T f0
         end
@@ -5122,8 +5123,8 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
   
   predicate resolve_Option_T (_1: t_Option_T)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Option_T [resolve_Option_T x]. resolve_Option_T x
-      = match x with
+  axiom resolve_axiom [@rewrite]: forall _1: t_Option_T [resolve_Option_T _1]. resolve_Option_T _1
+      = match _1 with
         | None -> true
         | Some x0 -> resolve_T x0
         end
@@ -5217,7 +5218,7 @@ module M_imp__impl_Invariant_for_Cursor_T__invariant (* <imp::Cursor<'a, T> as c
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -5234,8 +5235,8 @@ module M_imp__impl_Invariant_for_Cursor_T__invariant (* <imp::Cursor<'a, T> as c
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -5276,8 +5277,8 @@ module M_imp__impl_Invariant_for_Cursor_T__invariant (* <imp::Cursor<'a, T> as c
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -5392,7 +5393,7 @@ module M_imp__impl_List_T__cursor_front (* imp::List<T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -5409,8 +5410,8 @@ module M_imp__impl_List_T__cursor_front (* imp::List<T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -5451,8 +5452,8 @@ module M_imp__impl_List_T__cursor_front (* imp::List<T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   let new (value: Int128.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
@@ -5519,8 +5520,8 @@ module M_imp__impl_List_T__cursor_front (* imp::List<T> *)
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   function pos_T (self: t_Cursor_T) : int = self.pos
   
@@ -5597,7 +5598,7 @@ module M_imp__impl_List_T__cursor_tail (* imp::List<T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -5614,8 +5615,8 @@ module M_imp__impl_List_T__cursor_tail (* imp::List<T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -5717,8 +5718,8 @@ module M_imp__impl_List_T__cursor_tail (* imp::List<T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   type t_Cursor_T = { list: MutBorrow.t t_List_T; pos: int; current': Opaque.ptr }
   
@@ -5776,8 +5777,8 @@ module M_imp__impl_List_T__cursor_tail (* imp::List<T> *)
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   function pos_T (self: t_Cursor_T) : int = self.pos
   
@@ -5842,8 +5843,8 @@ module M_imp__impl_List_T__get_head (* imp::List<T> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   type t_T
@@ -5866,7 +5867,7 @@ module M_imp__impl_List_T__get_head (* imp::List<T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -5883,8 +5884,8 @@ module M_imp__impl_List_T__get_head (* imp::List<T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -6020,8 +6021,8 @@ module M_imp__impl_List_T__get_head (* imp::List<T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_ref_List_T [@inline:trivial] (self: t_List_T) = inv_List_T self
   
@@ -6041,8 +6042,8 @@ module M_imp__impl_List_T__get_head (* imp::List<T> *)
   
   predicate inv_Option_ref_T (_1: t_Option_ref_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
-      = match x with
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Option_ref_T [inv_Option_ref_T _1]. inv_Option_ref_T _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_ref_T f0
         end
@@ -6128,8 +6129,8 @@ module M_imp__impl_List_T__get_head_mut (* imp::List<T> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
@@ -6165,7 +6166,7 @@ module M_imp__impl_List_T__get_head_mut (* imp::List<T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -6182,8 +6183,8 @@ module M_imp__impl_List_T__get_head_mut (* imp::List<T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -6224,8 +6225,8 @@ module M_imp__impl_List_T__get_head_mut (* imp::List<T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -6242,8 +6243,8 @@ module M_imp__impl_List_T__get_head_mut (* imp::List<T> *)
   
   type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
   
-  let cast_mut_Node_T (self_: Opaque.ptr) (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self_} (! return {result}) ]
+  let cast_mut_Node_T (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
+    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self} (! return {result}) ]
   
   predicate invariant_refmut_Ghost_Seq_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) =
     inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global self.current /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global self.final
@@ -6390,8 +6391,8 @@ module M_imp__impl_List_T__get_head_mut (* imp::List<T> *)
   
   predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option_refmut_T [inv_Option_refmut_T x]. inv_Option_refmut_T x
-      = match x with
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Option_refmut_T [inv_Option_refmut_T _1]. inv_Option_refmut_T _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_refmut_T f0
         end
@@ -6554,8 +6555,8 @@ module M_imp__impl_List_T__get_tail (* imp::List<T> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   type t_T
@@ -6578,7 +6579,7 @@ module M_imp__impl_List_T__get_tail (* imp::List<T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -6595,8 +6596,8 @@ module M_imp__impl_List_T__get_tail (* imp::List<T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -6740,8 +6741,8 @@ module M_imp__impl_List_T__get_tail (* imp::List<T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_ref_List_T [@inline:trivial] (self: t_List_T) = inv_List_T self
   
@@ -6761,8 +6762,8 @@ module M_imp__impl_List_T__get_tail (* imp::List<T> *)
   
   predicate inv_Option_ref_T (_1: t_Option_ref_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
-      = match x with
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Option_ref_T [inv_Option_ref_T _1]. inv_Option_ref_T _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_ref_T f0
         end
@@ -6855,8 +6856,8 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
@@ -6892,7 +6893,7 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -6909,8 +6910,8 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -6951,8 +6952,8 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -6969,8 +6970,8 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
   
   type t_Option_refmut_T = None | Some (MutBorrow.t t_T)
   
-  let cast_mut_Node_T (self_: Opaque.ptr) (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self_} (! return {result}) ]
+  let cast_mut_Node_T (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
+    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self} (! return {result}) ]
   
   predicate invariant_ref_Ghost_Seq_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global self
@@ -7154,8 +7155,8 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
   
   predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Option_refmut_T [inv_Option_refmut_T x]. inv_Option_refmut_T x
-      = match x with
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Option_refmut_T [inv_Option_refmut_T _1]. inv_Option_refmut_T _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_refmut_T f0
         end
@@ -7340,7 +7341,7 @@ module M_imp__impl_List_T__new (* imp::List<T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -7357,8 +7358,8 @@ module M_imp__impl_List_T__new (* imp::List<T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -7426,8 +7427,8 @@ module M_imp__impl_List_T__new (* imp::List<T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   function index_Mapping_Box_Perm_ptr_Node_T_Global_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
@@ -7486,8 +7487,8 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
@@ -7523,7 +7524,7 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -7540,8 +7541,8 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -7582,8 +7583,8 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -7634,8 +7635,8 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
   predicate inv_Option_Box_Perm_ptr_Node_T_Global (_1: t_Option_Box_Perm_ptr_Node_T_Global)
   
   axiom inv_axiom'2 [@rewrite]:
-    forall x: t_Option_Box_Perm_ptr_Node_T_Global [inv_Option_Box_Perm_ptr_Node_T_Global x]. inv_Option_Box_Perm_ptr_Node_T_Global x
-      = match x with
+    forall _1: t_Option_Box_Perm_ptr_Node_T_Global [inv_Option_Box_Perm_ptr_Node_T_Global _1]. inv_Option_Box_Perm_ptr_Node_T_Global _1
+      = match _1 with
         | None'0 -> true
         | Some'0 f0 -> inv_Box_Perm_ptr_Node_T_Global f0
         end
@@ -7657,13 +7658,13 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
   
   meta "rewrite_def" predicate resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global
   
-  let unwrap_Box_Perm_ptr_Node_T_Global (self_: t_Option_Box_Perm_ptr_Node_T_Global) (return (x: t_Perm_ptr_Node_T)) =
-  {[@stop_split] [@expl:unwrap_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_Box_Perm_ptr_Node_T_Global self_)
-    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None'0)}
+  let unwrap_Box_Perm_ptr_Node_T_Global (self: t_Option_Box_Perm_ptr_Node_T_Global) (return (x: t_Perm_ptr_Node_T)) =
+  {[@stop_split] [@expl:unwrap_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_Box_Perm_ptr_Node_T_Global self)
+    /\ ([@stop_split] [@expl:unwrap requires] self <> None'0)}
     any
     [ return (result: t_Perm_ptr_Node_T) ->
     {[@stop_split] [@expl:unwrap_Box_Perm_ptr_Node_T_Global ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_Box_Perm_ptr_Node_T_Global result)
-      /\ ([@stop_split] [@expl:unwrap ensures] Some'0 result = self_)}
+      /\ ([@stop_split] [@expl:unwrap ensures] Some'0 result = self)}
       (! return {result}) ]
   
   predicate invariant_Ghost_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: t_Perm_ptr_Node_T) =
@@ -7745,8 +7746,8 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  let cast_mut_Node_T (self_: Opaque.ptr) (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self_} (! return {result}) ]
+  let cast_mut_Node_T (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
+    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self} (! return {result}) ]
   
   predicate inv_Int [@inline:trivial] (_1: int) = true
   
@@ -7866,8 +7867,8 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
   
   predicate inv_Option_T (_1: t_Option_T)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-      = match x with
+  axiom inv_axiom'3 [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_T f0
         end
@@ -8068,8 +8069,8 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
   function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
@@ -8105,7 +8106,7 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -8122,8 +8123,8 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -8164,8 +8165,8 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -8216,8 +8217,8 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
   predicate inv_Option_Box_Perm_ptr_Node_T_Global (_1: t_Option_Box_Perm_ptr_Node_T_Global)
   
   axiom inv_axiom'2 [@rewrite]:
-    forall x: t_Option_Box_Perm_ptr_Node_T_Global [inv_Option_Box_Perm_ptr_Node_T_Global x]. inv_Option_Box_Perm_ptr_Node_T_Global x
-      = match x with
+    forall _1: t_Option_Box_Perm_ptr_Node_T_Global [inv_Option_Box_Perm_ptr_Node_T_Global _1]. inv_Option_Box_Perm_ptr_Node_T_Global _1
+      = match _1 with
         | None'0 -> true
         | Some'0 f0 -> inv_Box_Perm_ptr_Node_T_Global f0
         end
@@ -8247,13 +8248,13 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
   
   meta "rewrite_def" predicate resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global
   
-  let unwrap_Box_Perm_ptr_Node_T_Global (self_: t_Option_Box_Perm_ptr_Node_T_Global) (return (x: t_Perm_ptr_Node_T)) =
-  {[@stop_split] [@expl:unwrap_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_Box_Perm_ptr_Node_T_Global self_)
-    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None'0)}
+  let unwrap_Box_Perm_ptr_Node_T_Global (self: t_Option_Box_Perm_ptr_Node_T_Global) (return (x: t_Perm_ptr_Node_T)) =
+  {[@stop_split] [@expl:unwrap_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_Box_Perm_ptr_Node_T_Global self)
+    /\ ([@stop_split] [@expl:unwrap requires] self <> None'0)}
     any
     [ return (result: t_Perm_ptr_Node_T) ->
     {[@stop_split] [@expl:unwrap_Box_Perm_ptr_Node_T_Global ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_Box_Perm_ptr_Node_T_Global result)
-      /\ ([@stop_split] [@expl:unwrap ensures] Some'0 result = self_)}
+      /\ ([@stop_split] [@expl:unwrap ensures] Some'0 result = self)}
       (! return {result}) ]
   
   predicate invariant_Ghost_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: t_Perm_ptr_Node_T) =
@@ -8331,8 +8332,8 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
     [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:null ensures] is_null_ptr_Node_T result}
       (! return {result}) ]
   
-  let cast_mut_Node_T (self_: Opaque.ptr) (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self_} (! return {result}) ]
+  let cast_mut_Node_T (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
+    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self} (! return {result}) ]
   
   let new (value: Int128.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
@@ -8448,8 +8449,8 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
   
   predicate inv_Option_T (_1: t_Option_T)
   
-  axiom inv_axiom'3 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-      = match x with
+  axiom inv_axiom'3 [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_T f0
         end
@@ -8663,7 +8664,7 @@ module M_imp__impl_List_T__push_back (* imp::List<T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
   
@@ -8690,8 +8691,8 @@ module M_imp__impl_List_T__push_back (* imp::List<T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -8723,12 +8724,12 @@ module M_imp__impl_List_T__push_back (* imp::List<T> *)
       /\ ([@stop_split] [@expl:new ensures] ward_ptr_Node_T result.f1 = result.f0 /\ val_ptr_Node_T result.f1 = v)}
       (! return {result}) ]
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
-  let cast_mut_Node_T (self_: Opaque.ptr) (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self_} (! return {result}) ]
+  let cast_mut_Node_T (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
+    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self} (! return {result}) ]
   
   predicate invariant_ref_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: t_Perm_ptr_Node_T) =
     inv_Box_Perm_ptr_Node_T_Global self
@@ -8961,8 +8962,8 @@ module M_imp__impl_List_T__push_back (* imp::List<T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -9168,7 +9169,7 @@ module M_imp__impl_List_T__push_front (* imp::List<T> *)
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
   
@@ -9195,8 +9196,8 @@ module M_imp__impl_List_T__push_front (* imp::List<T> *)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -9228,12 +9229,12 @@ module M_imp__impl_List_T__push_front (* imp::List<T> *)
       /\ ([@stop_split] [@expl:new ensures] ward_ptr_Node_T result.f1 = result.f0 /\ val_ptr_Node_T result.f1 = v)}
       (! return {result}) ]
   
-  let is_null_Node_T (self_: Opaque.ptr) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self_}
+  let is_null_Node_T (self: Opaque.ptr) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_null ensures] result = is_null_ptr_Node_T self}
       (! return {result}) ]
   
-  let cast_mut_Node_T (self_: Opaque.ptr) (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self_} (! return {result}) ]
+  let cast_mut_Node_T (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
+    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:cast_mut ensures] result = self} (! return {result}) ]
   
   predicate invariant_ref_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: t_Perm_ptr_Node_T) =
     inv_Box_Perm_ptr_Node_T_Global self
@@ -9435,8 +9436,8 @@ module M_imp__impl_List_T__push_front (* imp::List<T> *)
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -9658,7 +9659,7 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence (* <imp::Cursor<'_, T
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -9675,8 +9676,8 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence (* <imp::Cursor<'_, T
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -9717,8 +9718,8 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence (* <imp::Cursor<'_, T
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -9770,8 +9771,8 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence (* <imp::Cursor<'_, T
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   predicate resolve_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = _1.final = _1.current
   
@@ -9844,7 +9845,7 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence__refines (* <imp::Cur
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x = inv_T x.data
+  axiom inv_axiom [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1 = inv_T _1.data
   
   predicate invariant_ref_Node_T [@inline:trivial] (self: t_Node_T) = inv_Node_T self
   
@@ -9861,8 +9862,8 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence__refines (* <imp::Cur
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T x]. inv_Perm_ptr_Node_T x
-      = invariant_Perm_ptr_Node_T x
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
+      = invariant_Perm_ptr_Node_T _1
   
   predicate invariant_Box_Perm_ptr_Node_T_Global (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -9903,8 +9904,8 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence__refines (* <imp::Cur
   
   predicate inv_List_T (_1: t_List_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_List_T [inv_List_T x]. inv_List_T x
-      = (invariant_List_T x /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global x.permissions)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_List_T [inv_List_T _1]. inv_List_T _1
+      = (invariant_List_T _1 /\ inv_Ghost_Seq_Box_Perm_ptr_Node_T_Global _1.permissions)
   
   predicate invariant_refmut_List_T [@inline:trivial] (self: MutBorrow.t t_List_T) =
     inv_List_T self.current /\ inv_List_T self.final
@@ -9956,8 +9957,8 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence__refines (* <imp::Cur
   
   predicate inv_Cursor_T (_1: t_Cursor_T)
   
-  axiom inv_axiom'2 [@rewrite]: forall x: t_Cursor_T [inv_Cursor_T x]. inv_Cursor_T x
-      = (invariant_Cursor_T x /\ inv_refmut_List_T x.list)
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_Cursor_T [inv_Cursor_T _1]. inv_Cursor_T _1
+      = (invariant_Cursor_T _1 /\ inv_refmut_List_T _1.list)
   
   predicate resolve_refmut_List_T [@inline:trivial] (_1: MutBorrow.t t_List_T) = _1.final = _1.current
   

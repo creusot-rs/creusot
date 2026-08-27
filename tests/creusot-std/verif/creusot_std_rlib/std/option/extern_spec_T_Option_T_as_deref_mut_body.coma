@@ -23,7 +23,7 @@ type t_Target
 
 predicate precondition_deref_mut (self: ()) (args: MutBorrow.t t_T)
 
-axiom precondition_fndef: forall args: MutBorrow.t t_T [precondition_deref_mut () args]. (let self_ = args in false)
+axiom precondition_fndef: forall args: MutBorrow.t t_T [precondition_deref_mut () args]. (let self = args in false)
     -> precondition_deref_mut () args
 
 predicate inv_Target (_1: t_Target)
@@ -40,19 +40,19 @@ meta "rewrite_def" predicate inv_refmut_Target
 predicate postcondition_deref_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target)
 
 axiom postcondition_fndef:
-  forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_deref_mut () args res]. postcondition_deref_mut () args res
-    -> (let self_ = args in inv_refmut_Target res)
+  forall args: MutBorrow.t t_T, result: MutBorrow.t t_Target [postcondition_deref_mut () args result]. postcondition_deref_mut () args result
+    -> (let self = args in inv_refmut_Target result)
 
 predicate postcondition_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target) =
   postcondition_deref_mut self args result
 
 meta "rewrite_def" predicate postcondition_once_deref_mut
 
-let deref_mut_T (self_: MutBorrow.t t_T) (return (x: MutBorrow.t t_Target)) =
-{[@stop_split] [@expl:deref_mut requires] precondition_deref_mut () self_}
+let deref_mut_T (self: MutBorrow.t t_T) (return (x: MutBorrow.t t_Target)) =
+{[@stop_split] [@expl:deref_mut requires] precondition_deref_mut () self}
   any
   [ return (result: MutBorrow.t t_Target) ->
-  {[@stop_split] [@expl:deref_mut ensures] postcondition_once_deref_mut () self_ result}
+  {[@stop_split] [@expl:deref_mut ensures] postcondition_once_deref_mut () self result}
     (! return {result}) ]
 
 type t_Option_refmut_Target = None'0 | Some'0 (MutBorrow.t t_Target)
@@ -75,8 +75,8 @@ meta "rewrite_def" predicate resolve_refmut_Target
 
 predicate inv_Option_T (_1: t_Option_T)
 
-axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-    = match x with
+axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+    = match _1 with
       | None -> true
       | Some f0 -> inv_T f0
       end
@@ -96,8 +96,9 @@ meta "rewrite_def" predicate resolve_refmut_Option_T
 
 predicate inv_Option_refmut_Target (_1: t_Option_refmut_Target)
 
-axiom inv_axiom'0 [@rewrite]: forall x: t_Option_refmut_Target [inv_Option_refmut_Target x]. inv_Option_refmut_Target x
-    = match x with
+axiom inv_axiom'0 [@rewrite]:
+  forall _1: t_Option_refmut_Target [inv_Option_refmut_Target _1]. inv_Option_refmut_Target _1
+    = match _1 with
       | None'0 -> true
       | Some'0 f0 -> inv_refmut_Target f0
       end
