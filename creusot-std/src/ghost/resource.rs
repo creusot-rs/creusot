@@ -11,7 +11,7 @@ mod m {
     #[cfg(creusot)]
     use crate::{
         ghost::Objective,
-        logic::{any, such_that}
+        logic::{any, such_that},
     };
     use crate::{
         logic::{
