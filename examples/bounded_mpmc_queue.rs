@@ -59,14 +59,14 @@ impl SemiLattice for StatusWithView {
     }
 }
 
-mod values {
+mod state {
     use creusot_std::{
         ghost::resource,
         logic::{Id, ra::excl::Excl},
         prelude::*,
     };
 
-    type ValueRA<T> = Option<Excl<Seq<T>>>;
+    type ValueRA<T> = Option<Excl<(Seq<T>, Int)>>;
 
     pub struct Authority<T>(resource::Authority<ValueRA<T>>);
     pub struct Fragment<T>(resource::Fragment<ValueRA<T>>);
@@ -92,31 +92,38 @@ mod values {
         }
 
         #[logic]
-        pub fn val(self) -> Seq<T> {
-            self.0.view().unwrap_logic().0
+        pub fn seq(self) -> Seq<T> {
+            self.0.view().unwrap_logic().0.0
+        }
+
+        #[logic]
+        pub fn budget(self) -> Int {
+            self.0.view().unwrap_logic().0.1
         }
 
         #[check(ghost)]
         #[ensures(result.0.id() == result.1.id())]
-        #[ensures(*value == result.0.val())]
-        #[ensures(*value == result.1.val())]
-        pub fn alloc(value: Snapshot<Seq<T>>) -> (Ghost<Authority<T>>, Ghost<Fragment<T>>) {
-            // TODO: [VL] Use other style, with Auth::new(value, value) instead of Auth::new_auth
-            let mut auth = ghost!(resource::Authority::alloc().into_inner());
-            let frag = ghost!(auth.add_fragment(snapshot!(Some(Excl(*value)))));
+        #[ensures(*seq == result.0.seq() && budget == result.0.budget())]
+        #[ensures(*seq == result.1.seq() && budget == result.1.budget())]
+        pub fn alloc(seq: Snapshot<Seq<T>>, budget: Int) -> Ghost<(Authority<T>, Fragment<T>)> {
+            // TODO: [VL] Use other style, with Auth::new(_, _) instead of Auth::new_auth
+            ghost! {
+                let mut auth = resource::Authority::alloc().into_inner();
+                let frag = auth.add_fragment(snapshot!(Some(Excl((*seq, budget)))));
 
-            (ghost!(Authority(auth.into_inner())), ghost!(Fragment(frag.into_inner())))
+                (Authority(auth), Fragment(frag))
+            }
         }
 
         #[check(ghost)]
         #[requires((*self).id() == (*frag).id())]
         #[ensures((*self).id() == (^self).id())]
         #[ensures((*frag).id() == (^frag).id())]
-        #[ensures((*self).val() == (*frag).val())]
-        #[ensures((^self).val() == *value)]
-        #[ensures((^frag).val() == *value)]
-        pub fn update(&mut self, frag: &mut Fragment<T>, value: Snapshot<Seq<T>>) {
-            let upd = snapshot!(Some(Excl(*value)));
+        #[ensures((*self).seq() == (*frag).seq() && (*self).budget() == (*frag).budget())]
+        #[ensures((^self).seq() == *seq && (^self).budget() == *budget)]
+        #[ensures((^frag).seq() == *seq && (^frag).budget() == *budget)]
+        pub fn update(&mut self, frag: &mut Fragment<T>, seq: Snapshot<Seq<T>>, budget: Snapshot<Int>) {
+            let upd = snapshot!(Some(Excl((*seq, *budget))));
             self.0.update(&mut frag.0, snapshot!((*upd, *upd)));
         }
     }
@@ -128,8 +135,13 @@ mod values {
         }
 
         #[logic]
-        pub fn val(self) -> Seq<T> {
-            self.0.view().unwrap_logic().0
+        pub fn seq(self) -> Seq<T> {
+            self.0.view().unwrap_logic().0.0
+        }
+
+        #[logic]
+        pub fn budget(self) -> Int {
+            self.0.view().unwrap_logic().0.1
         }
     }
 }
@@ -370,7 +382,7 @@ mod tokens {
 type PermPermCell<T> = Perm<PermCell<MaybeUninit<T>>>;
 
 pub struct PermQueue<T> {
-    fragment: values::Fragment<T>,
+    fragment: state::Fragment<T>,
     ward: Snapshot<Queue<T>>,
 }
 
@@ -379,6 +391,11 @@ impl<T> PermQueue<T> {
     fn ward(self) -> Queue<T> {
         *self.ward
     }
+
+    #[logic]
+    fn budget(self) -> Int {
+        self.fragment.budget()
+    }
 }
 
 impl<T> View for PermQueue<T> {
@@ -386,7 +403,7 @@ impl<T> View for PermQueue<T> {
 
     #[logic]
     fn view(self) -> Self::ViewTy {
-        self.fragment.val()
+        self.fragment.seq()
     }
 }
 
@@ -403,7 +420,7 @@ struct QueueInv<T> {
     cells_own: Seq<Option<AtView<PermPermCell<T>>>>, // in [0; N]
     statuses_own: Seq<Perm<AtomicUsize>>,            // in [0; N]
 
-    values_auth: values::Authority<T>,
+    values_auth: state::Authority<T>,
     statuses_mono_auth: Seq<statuses::Authority>, // in [0; N]
     tokens_auth: tokens::Authority<T>,
 
@@ -431,8 +448,8 @@ impl<T> QueueInv<T> {
     }
 
     #[logic]
-    fn values(self) -> Seq<T> {
-        self.values_auth.val()
+    fn seq(self) -> Seq<T> {
+        self.values_auth.seq()
     }
 
     #[logic]
@@ -474,6 +491,9 @@ impl<T> Protocol for QueueInv<T> {
             self.len() == self.statuses_own.len() &&
             self.len() == self.statuses_mono_auth.len() &&
 
+            self.values_auth.budget() == usize::MAX@ - 2*self.len() + 1 - self.head() - self.tail() &&
+            self.values_auth.budget() >= 0 &&
+
             (forall<i> 0 <= i && i < self.len() ==>
                 match self.cells_own[i] {
                     Some(at_view) => *at_view.val().ward() == self.cells[i].item,
@@ -492,16 +512,24 @@ impl<T> Protocol for QueueInv<T> {
 
             // head ~> (h, H)
             (forall<ts> #[trigger(self.head_own.val().get(ts))]
-                self.head_own.val().contains(ts) ==>
-                    ts == self.head_last_ts ||
-                    self.head_own.val().contains(ts + 1)
+                match self.head_own.val().get(ts) {
+                    Some((h, _)) =>
+                        ts == self.head_last_ts ||
+                        self.head_own.val().contains(ts + 1) &&
+                        h@ < self.head(),
+                    None => true
+                }
             ) &&
 
             // tail ~> (t, T)
             (forall<ts> #[trigger(self.tail_own.val().get(ts))]
-                self.tail_own.val().contains(ts) ==>
-                    ts == self.tail_last_ts ||
-                    self.tail_own.val().contains(ts + 1)
+                match self.tail_own.val().get(ts) {
+                    Some((t, _)) =>
+                        ts == self.tail_last_ts ||
+                        self.tail_own.val().contains(ts + 1) &&
+                        t@ < self.tail(),
+                    None => true
+                }
             ) &&
 
             // statuses ~>* [(s_0, S_0), ..., (s_len - 1, S_len - 1)]
@@ -514,19 +542,19 @@ impl<T> Protocol for QueueInv<T> {
                  }) &&
 
             // • [(v_t, V_t), ..., (v_h-1, V_h-1)]
-            self.values().len() == self.head() - self.tail() &&
+            self.seq().len() == self.head() - self.tail() &&
 
             (forall<k: Int> #[trigger(self.tokens_auth.val(k))] self.tail() <= k && k < self.tail() + self.len() ==> {
                 let status_view = self.statuses_mono_auth[self.mod_len(k)].val();
                 match self.tokens_auth.val(k) {
                     tokens::State::R => status_view.status == 2 * (k - self.len()) + 1 && self.head() <= k,
-                    tokens::State::W(value) => status_view.status == 2 * k && k < self.head() && value == self.values()[k - self.tail()],
+                    tokens::State::W(value) => status_view.status == 2 * k && k < self.head() && value == self.seq()[k - self.tail()],
                     tokens::State::None =>
                         match self.cells_own[self.mod_len(k)] {
                             Some(at_view) =>
                                 status_view.view >= at_view.view() &&
                                 if self.head() <= k { status_view.status == 2 * k }
-                                else { status_view.status == 2 * k + 1 && at_view.val().val()@ == Some(self.values()[k - self.tail()]) },
+                                else { status_view.status == 2 * k + 1 && at_view.val().val()@ == Some(self.seq()[k - self.tail()]) },
                             _ => false
                         }
                 }
@@ -564,11 +592,12 @@ impl<T> Invariant for Queue<T> {
 }
 
 pub struct QueueCommitter<'a, T> {
-    auth: &'a mut values::Authority<T>,
+    auth: &'a mut state::Authority<T>,
+    budget: Int,
 
     pub ward: Snapshot<Queue<T>>,
-    pub old_val: Snapshot<Seq<T>>,
-    pub new_val: Snapshot<Seq<T>>,
+    pub old_seq: Snapshot<Seq<T>>,
+    pub new_seq: Snapshot<Seq<T>>,
     pub shot: bool,
 }
 
@@ -579,9 +608,9 @@ impl<T> Invariant for QueueCommitter<'_, T> {
     fn invariant(self) -> bool {
         self.auth.id() == self.ward.inv.public().3
             && if self.shot {
-                self.auth.val() == *self.new_val
+                self.auth.seq() == *self.new_seq && self.auth.budget() == self.budget - 1 && self.auth.budget() >= 0
             } else {
-                self.auth.val() == *self.old_val
+                self.auth.seq() == *self.old_seq && self.auth.budget() == self.budget
             }
     }
 }
@@ -589,21 +618,26 @@ impl<T> Invariant for QueueCommitter<'_, T> {
 impl<T> QueueCommitter<'_, T> {
     #[requires(!(*self).shot)]
     #[requires(*self.ward == perm.ward())]
+    #[requires((*perm).budget() > 0)]
     #[ensures((^self).shot)]
     #[ensures((*self).hist_inv(^self))]
-    #[ensures((*perm)@ == *self.old_val)]
-    #[ensures((^perm)@ == *self.new_val)]
+    #[ensures((*perm)@ == *self.old_seq)]
+    #[ensures((^perm)@ == *self.new_seq)]
     #[ensures((^perm).ward() == (*perm).ward())]
+    #[ensures((^perm).budget() == (*perm).budget()-1)]
     #[check(ghost)]
     pub fn shoot(&mut self, perm: &mut PermQueue<T>) {
-        self.auth.update(&mut perm.fragment, self.new_val);
+        let budget = snapshot!(self.budget - 1);
+        self.auth.update(&mut perm.fragment, self.new_seq, budget);
         self.shot = true;
     }
 
     #[logic(inline, prophetic)]
     pub fn hist_inv(self, other: Self) -> bool {
         pearlite! {
-            self.ward == other.ward && self.old_val == other.old_val && self.new_val == other.new_val && ^self.auth == ^other.auth
+            self.ward == other.ward && ^self.auth == ^other.auth &&
+            self.old_seq == other.old_seq && self.new_seq == other.new_seq &&
+            self.budget == other.budget
         }
     }
 }
@@ -612,6 +646,7 @@ impl<T> Queue<T> {
     #[requires(0 < 2 * length@ && 2 * length@ <= usize::MAX@)]
     #[ensures(result.0 == result.1.ward())]
     #[ensures(result.1@ == Seq::empty())]
+    #[ensures(result.1.budget() == usize::MAX@ - 2 * length@ + 1)]
     pub fn new(length: usize) -> (Self, Ghost<PermQueue<T>>) {
         let tokens_auth: Ghost<tokens::Authority<T>> = tokens::Authority::alloc();
         let mut statuses_mono_auth: Ghost<Seq<statuses::Authority>> = Seq::new();
@@ -675,7 +710,14 @@ impl<T> Queue<T> {
         let statuses_mono_auth_wards =
             snapshot!(statuses_mono_auth.map(|x: statuses::Authority| x.id()));
 
-        let (values_auth, perm_queue) = values::Authority::alloc(snapshot!(Seq::empty()));
+        let (values_auth, values_frag) = ghost!(
+            state::Authority::alloc(
+                snapshot!(Seq::empty()),
+                *snapshot!(usize::MAX@ - 2 * length@ + 1).into_ghost()
+            )
+            .into_inner()
+        )
+        .split();
 
         let inv = AtomicInvariant::new(
             ghost!(QueueInv {
@@ -700,7 +742,7 @@ impl<T> Queue<T> {
         let queue = Queue { cells, head, tail, inv };
 
         let perm_queue =
-            ghost!(PermQueue { fragment: perm_queue.into_inner(), ward: snapshot!(queue) });
+            ghost!(PermQueue { fragment: values_frag.into_inner(), ward: snapshot!(queue) });
 
         (queue, perm_queue)
     }
@@ -722,16 +764,16 @@ impl<T> Queue<T> {
     #[ensures(result.0.id() == inv.tokens_auth.id())]
     #[ensures(result.0.val() == *item)]
     #[ensures(result.0.index() == c.val_load()@)]
-    #[ensures(*result.1.ward() == inv.cells[inv.mod_len(c.val_load()@)].item)]
+    #[ensures(*result.1.ward() == inv.cells[inv.mod_len(result.0.index())].item)]
     // User committer
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        *c.new_val == c.old_val.push_back(*item) ==>
+        *c.new_seq == c.old_seq.push_back(*item) ==>
             f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
-        *c.new_val == c.old_val.push_back(*item) && f.postcondition_once((c,),())
+        *c.new_seq == c.old_seq.push_back(*item) && f.postcondition_once((c,),())
     )]
     fn try_enqueue_cas_inv<F>(
         &self,
@@ -765,14 +807,16 @@ impl<T> Queue<T> {
             proof_assert!(inv.tokens_auth.val(*head - inv.len()) == tokens::State::None);
             proof_assert!(*head < inv.tail() + inv.len());
 
-            let old_val = snapshot!(inv.values());
-            let new_val = snapshot!(old_val.push_back(*item));
+            let old_seq = snapshot!(inv.seq());
+            let new_seq = snapshot!(old_seq.push_back(*item));
+            let budget = *snapshot!(inv.values_auth.budget()).into_ghost();
             f.into_inner()(&mut QueueCommitter {
                 auth: &mut inv.values_auth,
                 ward: snapshot!(*self),
-                old_val,
-                new_val,
+                old_seq,
+                new_seq,
                 shot: false,
+                budget
             });
 
             let cell_own = inv.cells_own[head_mod].take().unwrap().sync(*view);
@@ -828,12 +872,12 @@ impl<T> Queue<T> {
     #[requires(tokens.contains(BOUNDED_MPMC_QUEUE()))]
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        *c.new_val == c.old_val.push_back(item) ==>
+        *c.new_seq == c.old_seq.push_back(item) ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(result ==> exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
-        *c.new_val == c.old_val.push_back(item) && f.postcondition_once((c,),())
+        *c.new_seq == c.old_seq.push_back(item) && f.postcondition_once((c,),())
     )]
     #[ensures(!result ==> resolve(f))]
     pub fn try_enqueue<F>(&self, item: T, mut tokens: Ghost<Tokens>, f: Ghost<F>) -> bool
@@ -931,19 +975,21 @@ impl<T> Queue<T> {
     #[requires(StatusWithView { status: 2 * c.val_load()@ + 1, view: *view } <= witness.val())]
     #[ensures(result.0.id() == inv.tokens_auth.id())]
     #[ensures(result.0.index() == c.val_load()@ + inv.len())]
-    #[ensures(*result.1.ward() == inv.cells[inv.mod_len(c.val_load()@)].item)]
+    #[ensures(*result.1.ward() == inv.cells[inv.mod_len(result.0.index())].item)]
+    #[ensures(inv.mod_len(result.0.index()) == inv.mod_len(c.val_load()@))]
     // User committer
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        c.old_val.len() > 0 && *c.new_val == c.old_val.pop_front() ==>
+        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
-        c.old_val.len() > 0 && *c.new_val == c.old_val.pop_front() &&
+        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() &&
         f.postcondition_once((c,),()) &&
-        result.1.val()@ == Some(c.old_val[0])
+        result.1.val()@ == Some(c.old_seq[0])
     )]
+    #[ensures(2 * (c.val_load()@ + inv.len()) < usize::MAX@)]
     fn try_dequeue_cas_inv<F>(
         &self,
         mut inv: Ghost<&mut QueueInv<T>>,
@@ -977,14 +1023,16 @@ impl<T> Queue<T> {
             proof_assert!(inv.tokens_auth.val(*tail) == tokens::State::None);
             proof_assert!(*tail < inv.head());
 
-            let old_val = snapshot!(inv.values());
-            let new_val = snapshot!(old_val.pop_front());
+            let old_seq = snapshot!(inv.seq());
+            let new_seq = snapshot!(old_seq.pop_front());
+            let budget = *snapshot!(inv.values_auth.budget()).into_ghost();
             f.into_inner()(&mut QueueCommitter {
                 auth: &mut inv.values_auth,
                 ward: snapshot!(*self),
-                old_val,
-                new_val,
+                old_seq,
+                new_seq,
                 shot: false,
+                budget
             });
 
             let cell_own = inv.cells_own[tail_mod].take().unwrap().sync(*view);
@@ -1038,15 +1086,15 @@ impl<T> Queue<T> {
     #[requires(tokens.contains(BOUNDED_MPMC_QUEUE()))]
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        c.old_val.len() > 0 && *c.new_val == c.old_val.pop_front() ==>
+        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(match result {
         Some(result) => exists<c: &mut QueueCommitter<T>>
             !c.shot && *c.ward == *self &&
-            c.old_val.len() > 0 && *c.new_val == c.old_val.pop_front() &&
+            c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() &&
             f.postcondition_once((c,),()) &&
-            result == c.old_val[0],
+            result == c.old_seq[0],
         None => resolve(f)
     })]
     pub fn try_dequeue<F>(&self, mut tokens: Ghost<Tokens>, f: Ghost<F>) -> Option<T>
@@ -1064,7 +1112,6 @@ impl<T> Queue<T> {
 
         let tail_mod = tail % self.cells.len();
         proof_assert!(tail_mod@ == tail@.rem_euclid(self.cells@.len()));
-        proof_assert!(tail_mod@ == (tail@ + self.cells@.len()).rem_euclid(self.cells@.len()));
 
         let cell = &self.cells[tail_mod];
         let status = cell.status.load(ghost! { |c: &Committer<_, _, Acquire, _>| {
