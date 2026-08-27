@@ -51,8 +51,8 @@ meta "rewrite_def" predicate inv_refmut_T
 
 predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
 
-axiom inv_axiom [@rewrite]: forall x: t_Option_refmut_T [inv_Option_refmut_T x]. inv_Option_refmut_T x
-    = match x with
+axiom inv_axiom [@rewrite]: forall _1: t_Option_refmut_T [inv_Option_refmut_T _1]. inv_Option_refmut_T _1
+    = match _1 with
       | None -> true
       | Some f0 -> inv_refmut_T f0
       end
@@ -79,13 +79,13 @@ let get_mut_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t
     /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] Seq.length self.current = Seq.length self.final)}
     (! return {result}) ]
 
-let unwrap_refmut_T (self_: t_Option_refmut_T) (return (x: MutBorrow.t t_T)) =
-{[@stop_split] [@expl:unwrap_refmut_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_refmut_T self_)
-  /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
+let unwrap_refmut_T (self: t_Option_refmut_T) (return (x: MutBorrow.t t_T)) =
+{[@stop_split] [@expl:unwrap_refmut_T requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_refmut_T self)
+  /\ ([@stop_split] [@expl:unwrap requires] self <> None)}
   any
   [ return (result: MutBorrow.t t_T) ->
   {[@stop_split] [@expl:unwrap_refmut_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_refmut_T result)
-    /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
+    /\ ([@stop_split] [@expl:unwrap ensures] Some result = self)}
     (! return {result}) ]
 
 predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current

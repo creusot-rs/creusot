@@ -74,7 +74,7 @@ pub(crate) fn translate_function<'tcx>(
             let sig = ctx.sig(def_id);
             let span = ctx.tcx().def_span(def_id);
             if is_tyinv_trivial(&ctx.ctx, def_id, names.typing_env(), sig.output, span)
-                && !sig.contract.has_user_contract
+                && !sig.contract.has_user_contract()
             {
                 return None;
             }
@@ -179,7 +179,7 @@ pub(crate) fn to_why_body<'tcx>(
             names.normalize(ty::EarlyBinder::bind(ctx.tcx, sig.output).instantiate_identity());
         let variant = sig.contract.variant.clone();
         sig_add_type_invariant_spec(ctx, names.typing_env(), names.source_id(), &mut sig, def_id);
-        (lower_program_sig(ctx, names, name, sig, def_id, name::return_()), variant)
+        (lower_program_sig(ctx, names, name, &sig, def_id), variant)
     };
 
     let fmir_body = ctx.fmir_body(body_id).clone();
@@ -276,7 +276,7 @@ fn to_why_defn<'tcx>(
 
     // We remove the barrier around the definition of closures without contracts
     // (automatic inferrence of specifications)
-    if ctx.is_closure_like(def_id) && !ctx.sig(def_id).contract.has_user_contract {
+    if ctx.is_closure_like(def_id) && !ctx.sig(def_id).contract.has_user_contract() {
         sig.prototype.attrs.push(Attribute::Attr("coma:extspec".into()));
     } else {
         body = body.black_box();

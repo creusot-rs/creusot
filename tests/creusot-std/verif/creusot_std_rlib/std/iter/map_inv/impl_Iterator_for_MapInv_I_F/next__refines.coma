@@ -134,8 +134,8 @@ predicate inv_I (_1: t_I)
 
 predicate inv_MapInv_I_F (_1: t_MapInv_I_F)
 
-axiom inv_axiom [@rewrite]: forall x: t_MapInv_I_F [inv_MapInv_I_F x]. inv_MapInv_I_F x
-    = (invariant_MapInv_I_F x /\ inv_I x.iter /\ inv_F x.func)
+axiom inv_axiom [@rewrite]: forall _1: t_MapInv_I_F [inv_MapInv_I_F _1]. inv_MapInv_I_F _1
+    = (invariant_MapInv_I_F _1 /\ inv_I _1.iter /\ inv_F _1.func)
 
 predicate invariant_refmut_MapInv_I_F [@inline:trivial] (self: MutBorrow.t t_MapInv_I_F) =
   inv_MapInv_I_F self.current /\ inv_MapInv_I_F self.final
@@ -152,8 +152,8 @@ predicate inv_B (_1: t_B)
 
 predicate inv_Option_B (_1: t_Option_B)
 
-axiom inv_axiom'0 [@rewrite]: forall x: t_Option_B [inv_Option_B x]. inv_Option_B x
-    = match x with
+axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_B [inv_Option_B _1]. inv_Option_B _1
+    = match _1 with
       | None -> true
       | Some f0'0 -> inv_B f0'0
       end
@@ -208,15 +208,15 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self_: MutBorrow.t t_MapInv_I_F. inv_refmut_MapInv_I_F self_
-    -> inv_refmut_MapInv_I_F self_
+goal refines: forall self: MutBorrow.t t_MapInv_I_F. inv_refmut_MapInv_I_F self
+    -> inv_refmut_MapInv_I_F self
     /\ (forall result: t_Option_B. inv_Option_B result
         /\ match result with
-          | None -> completed_MapInv_I_F self_
-          | Some v -> produces_one_I self_.current v self_.final
+          | None -> completed_MapInv_I_F self
+          | Some v -> produces_one_I self.current v self.final
           end
       -> inv_Option_B result
       /\ match result with
-        | None -> completed_MapInv_I_F self_
-        | Some v -> produces_MapInv_I_F self_.current (Seq.singleton v) self_.final
+        | None -> completed_MapInv_I_F self
+        | Some v -> produces_MapInv_I_F self.current (Seq.singleton v) self.final
         end)

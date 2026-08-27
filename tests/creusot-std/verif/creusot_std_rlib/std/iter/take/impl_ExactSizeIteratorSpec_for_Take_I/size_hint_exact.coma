@@ -41,11 +41,11 @@ predicate completed_I (self: MutBorrow.t t_I)
 predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
 
 axiom postcondition_fndef:
-  forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
-    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self_ s i.current /\ completed_I i
-        -> UInt64.t'int res.f0 <= Seq.length s)
-    /\ match res.f1 with
-      | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self_ s i -> Seq.length s <= UInt64.t'int r
+  forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
+    -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
+        -> UInt64.t'int result.f0 <= Seq.length s)
+    /\ match result.f1 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
       | None -> true
       end)
 
@@ -56,16 +56,16 @@ predicate ge_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UI
 meta "rewrite_def" predicate ge_log_usize
 
 predicate postcondition_size_hint'0 (self: ()) (args: t_Take_I) (result: tup2_usize_Option_usize) =
-  let self_ = args in (gt_log_usize (n_Take_I self_) (0: UInt64.t)
-    -> (exists r: tup2_usize_Option_usize. postcondition_size_hint () (iter_Take_I self_) r
-      /\ (UInt64.le r.f0 (n_Take_I self_) -> result.f0 = r.f0)
-      /\ (ge_log_usize r.f0 (n_Take_I self_) -> result.f0 = n_Take_I self_)
+  let self'0 = args in (gt_log_usize (n_Take_I self'0) (0: UInt64.t)
+    -> (exists r: tup2_usize_Option_usize. postcondition_size_hint () (iter_Take_I self'0) r
+      /\ (UInt64.le r.f0 (n_Take_I self'0) -> result.f0 = r.f0)
+      /\ (ge_log_usize r.f0 (n_Take_I self'0) -> result.f0 = n_Take_I self'0)
       /\ match r.f1 with
-        | Some ub -> (UInt64.le ub (n_Take_I self_) -> result.f1 = Some ub)
-        /\ (ge_log_usize ub (n_Take_I self_) -> result.f1 = Some (n_Take_I self_))
-        | None -> result.f1 = Some (n_Take_I self_)
+        | Some ub -> (UInt64.le ub (n_Take_I self'0) -> result.f1 = Some ub)
+        /\ (ge_log_usize ub (n_Take_I self'0) -> result.f1 = Some (n_Take_I self'0))
+        | None -> result.f1 = Some (n_Take_I self'0)
         end))
-  /\ (n_Take_I self_ = (0: UInt64.t) -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
+  /\ (n_Take_I self'0 = (0: UInt64.t) -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
 
 meta "rewrite_def" predicate postcondition_size_hint'0
 
@@ -77,7 +77,7 @@ meta "rewrite_def" predicate invariant_Take_I
 
 predicate inv_Take_I (_1: t_Take_I)
 
-axiom inv_axiom: forall x: t_Take_I [inv_Take_I x]. inv_Take_I x -> invariant_Take_I x
+axiom inv_axiom: forall _1: t_Take_I [inv_Take_I _1]. inv_Take_I _1 -> invariant_Take_I _1
 
 predicate invariant_ref_Take_I [@inline:trivial] (self: t_Take_I) = inv_Take_I self
 
@@ -97,7 +97,7 @@ meta "rewrite_def" predicate inv_ref_I
 
 predicate precondition_size_hint (self: ()) (args: t_I)
 
-axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self_ = args in inv_ref_I self_)
+axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self = args in inv_ref_I self)
     -> precondition_size_hint () args
 
 predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) =
@@ -105,27 +105,27 @@ predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usiz
 
 meta "rewrite_def" predicate postcondition_once_size_hint
 
-let size_hint_I (self_: t_I) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+let size_hint_I (self: t_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
     (! return {result}) ]
 
-let size_hint_Take_I (self_: t_Take_I) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Take_I self_}
+let size_hint_Take_I (self: t_Take_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_Take_I self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint_Take_I ensures] ([@stop_split] [@expl:size_hint ensures #0] gt_log_usize (n_Take_I self_) (0: UInt64.t)
-      -> (exists r: tup2_usize_Option_usize. postcondition_size_hint () (iter_Take_I self_) r
-        /\ (UInt64.le r.f0 (n_Take_I self_) -> result.f0 = r.f0)
-        /\ (ge_log_usize r.f0 (n_Take_I self_) -> result.f0 = n_Take_I self_)
+  {[@stop_split] [@expl:size_hint_Take_I ensures] ([@stop_split] [@expl:size_hint ensures #0] gt_log_usize (n_Take_I self) (0: UInt64.t)
+      -> (exists r: tup2_usize_Option_usize. postcondition_size_hint () (iter_Take_I self) r
+        /\ (UInt64.le r.f0 (n_Take_I self) -> result.f0 = r.f0)
+        /\ (ge_log_usize r.f0 (n_Take_I self) -> result.f0 = n_Take_I self)
         /\ match r.f1 with
-          | Some ub -> (UInt64.le ub (n_Take_I self_) -> result.f1 = Some ub)
-          /\ (ge_log_usize ub (n_Take_I self_) -> result.f1 = Some (n_Take_I self_))
-          | None -> result.f1 = Some (n_Take_I self_)
+          | Some ub -> (UInt64.le ub (n_Take_I self) -> result.f1 = Some ub)
+          /\ (ge_log_usize ub (n_Take_I self) -> result.f1 = Some (n_Take_I self))
+          | None -> result.f1 = Some (n_Take_I self)
           end))
-    /\ ([@stop_split] [@expl:size_hint ensures #1] n_Take_I self_ = (0: UInt64.t)
+    /\ ([@stop_split] [@expl:size_hint ensures #1] n_Take_I self = (0: UInt64.t)
     -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })}
     (! return {result}) ]
 

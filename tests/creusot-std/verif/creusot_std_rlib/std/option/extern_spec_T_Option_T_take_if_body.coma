@@ -39,12 +39,12 @@ predicate precondition_P (self: t_P) (args: MutBorrow.t t_T)
 
 predicate postcondition_once_P (self: t_P) (args: MutBorrow.t t_T) (result: bool)
 
-let call_once_P (self_: t_P) (arg: MutBorrow.t t_T) (return (x: bool)) =
-{[@stop_split] [@expl:call_once_P requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_P self_)
-  /\ ([@stop_split] [@expl:call_once 'arg' type invariant] inv_tup1_refmut_T arg)
-  /\ ([@stop_split] [@expl:call_once requires] precondition_P self_ arg)}
+let call_once_P (self: t_P) (args: MutBorrow.t t_T) (return (x: bool)) =
+{[@stop_split] [@expl:call_once_P requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_P self)
+  /\ ([@stop_split] [@expl:call_once 'args' type invariant] inv_tup1_refmut_T args)
+  /\ ([@stop_split] [@expl:call_once requires] precondition_P self args)}
   any
-  [ return (result: bool) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_P self_ arg result}
+  [ return (result: bool) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_P self args result}
     (! return {result}) ]
 
 predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
@@ -53,8 +53,8 @@ meta "rewrite_def" predicate resolve_refmut_T
 
 predicate inv_Option_T (_1: t_Option_T)
 
-axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-    = match x with
+axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+    = match _1 with
       | None -> true
       | Some f0 -> inv_T f0
       end
@@ -68,12 +68,12 @@ predicate inv_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = i
 
 meta "rewrite_def" predicate inv_refmut_Option_T
 
-let take_T (self_: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
-{[@stop_split] [@expl:take 'self_' type invariant] inv_refmut_Option_T self_}
+let take_T (self: MutBorrow.t t_Option_T) (return (x: t_Option_T)) =
+{[@stop_split] [@expl:take 'self' type invariant] inv_refmut_Option_T self}
   any
   [ return (result: t_Option_T) ->
   {[@stop_split] [@expl:take_T ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_T result)
-    /\ ([@stop_split] [@expl:take ensures] result = self_.current /\ self_.final = None)}
+    /\ ([@stop_split] [@expl:take ensures] result = self.current /\ self.final = None)}
     (! return {result}) ]
 
 predicate resolve_refmut_Option_T [@inline:trivial] (_1: MutBorrow.t t_Option_T) = _1.final = _1.current

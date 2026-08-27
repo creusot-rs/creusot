@@ -13,7 +13,7 @@ predicate inv_T (_1: t_T)
 predicate precondition_min (self: ()) (args: tup2_T_T)
 
 axiom precondition_fndef:
-  forall args: tup2_T_T [precondition_min () args]. (let {f0 = self_; f1 = o} = args in inv_T self_ /\ inv_T o)
+  forall args: tup2_T_T [precondition_min () args]. (let {f0 = self; f1 = other} = args in inv_T self /\ inv_T other)
     -> precondition_min () args
 
 type t_DeepModelTy
@@ -41,22 +41,23 @@ function deep_model_T (self: t_T) : t_DeepModelTy
 predicate postcondition_min (self: ()) (args: tup2_T_T) (result: t_T)
 
 axiom postcondition_fndef:
-  forall args: tup2_T_T, res: t_T [postcondition_min () args res]. postcondition_min () args res
-    -> (let {f0 = self_; f1 = o} = args in inv_T res
-    /\ le_log_DeepModelTy (deep_model_T res) (deep_model_T self_)
-    /\ le_log_DeepModelTy (deep_model_T res) (deep_model_T o)
-    /\ (res = self_ \/ res = o)
-    /\ (lt_log_DeepModelTy (deep_model_T self_) (deep_model_T o) -> res = self_)
-    /\ (le_log_DeepModelTy (deep_model_T o) (deep_model_T self_) -> res = o))
+  forall args: tup2_T_T, result: t_T [postcondition_min () args result]. postcondition_min () args result
+    -> (let {f0 = self; f1 = other} = args in inv_T result
+    /\ le_log_DeepModelTy (deep_model_T result) (deep_model_T self)
+    /\ le_log_DeepModelTy (deep_model_T result) (deep_model_T other)
+    /\ (result = self \/ result = other)
+    /\ (lt_log_DeepModelTy (deep_model_T self) (deep_model_T other) -> result = self)
+    /\ (le_log_DeepModelTy (deep_model_T other) (deep_model_T self) -> result = other))
 
 predicate postcondition_once_min (self: ()) (args: tup2_T_T) (result: t_T) = postcondition_min self args result
 
 meta "rewrite_def" predicate postcondition_once_min
 
-let min_T (self_: t_T) (o: t_T) (return (x: t_T)) =
-{[@stop_split] [@expl:min requires] precondition_min () { f0 = self_; f1 = o }}
+let min_T (self: t_T) (other: t_T) (return (x: t_T)) =
+{[@stop_split] [@expl:min requires] precondition_min () { f0 = self; f1 = other }}
   any
-  [ return (result: t_T) -> {[@stop_split] [@expl:min ensures] postcondition_once_min () { f0 = self_; f1 = o } result}
+  [ return (result: t_T) -> {[@stop_split] [@expl:min ensures] postcondition_once_min () { f0 = self;
+                                                                                           f1 = other } result}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000

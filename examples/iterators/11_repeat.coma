@@ -45,10 +45,10 @@ module M_common__trait_ExactSizeIterator__is_empty
   predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_Self, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
-            /\ completed_Self i -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+            /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -74,8 +74,8 @@ module M_common__trait_ExactSizeIterator__is_empty
   predicate postcondition_len (self: ()) (args: t_Self) (result: UInt64.t)
   
   axiom postcondition_fndef'0:
-    forall args: t_Self, res: UInt64.t [postcondition_len () args res]. postcondition_len () args res
-      -> (let self = args in postcondition_size_hint () self { f0 = res; f1 = Some res })
+    forall args: t_Self, result: UInt64.t [postcondition_len () args result]. postcondition_len () args result
+      -> (let self = args in postcondition_size_hint () self { f0 = result; f1 = Some result })
   
   predicate postcondition_once_len (self: ()) (args: t_Self) (result: UInt64.t) = postcondition_len self args result
   
@@ -134,10 +134,10 @@ module M_common__trait_ExactSizeIterator__len
   predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_Self, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
-            /\ completed_Self i -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+            /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -194,9 +194,9 @@ module M_common__trait_ExactSizeIterator__len
   
   meta "rewrite_def" function deep_model_ref_Option_usize
   
-  let eq_Option_usize (self_: t_Option_usize) (rhs: t_Option_usize) (return (x: bool)) = any
+  let eq_Option_usize (self: t_Option_usize) (other: t_Option_usize) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
-      = (deep_model_ref_Option_usize self_ = deep_model_ref_Option_usize rhs)}
+      = (deep_model_ref_Option_usize self = deep_model_ref_Option_usize other)}
       (! return {result}) ]
   
   type t_AssertKind = Eq | Ne | Match
@@ -254,7 +254,7 @@ module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
   
   predicate inv_Repeat_A (_1: t_Repeat_A)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Repeat_A [inv_Repeat_A x]. inv_Repeat_A x = inv_A x.element
+  axiom inv_axiom [@rewrite]: forall _1: t_Repeat_A [inv_Repeat_A _1]. inv_Repeat_A _1 = inv_A _1.element
   
   predicate invariant_refmut_Repeat_A [@inline:trivial] (self: MutBorrow.t t_Repeat_A) =
     inv_Repeat_A self.current /\ inv_Repeat_A self.final
@@ -279,30 +279,30 @@ module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
   
   predicate precondition_clone (self: ()) (args: t_A)
   
-  axiom precondition_fndef: forall args: t_A [precondition_clone () args]. (let self_ = args in inv_ref_A self_)
+  axiom precondition_fndef: forall args: t_A [precondition_clone () args]. (let self = args in inv_ref_A self)
       -> precondition_clone () args
   
   predicate postcondition_clone (self: ()) (args: t_A) (result: t_A)
   
   axiom postcondition_fndef:
-    forall args: t_A, res: t_A [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_A res)
+    forall args: t_A, result: t_A [postcondition_clone () args result]. postcondition_clone () args result
+      -> (let self = args in inv_A result)
   
   predicate postcondition_once_clone (self: ()) (args: t_A) (result: t_A) = postcondition_clone self args result
   
   meta "rewrite_def" predicate postcondition_once_clone
   
-  let clone_A (self_: t_A) (return (x: t_A)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+  let clone_A (self: t_A) (return (x: t_A)) = {[@stop_split] [@expl:clone requires] precondition_clone () self}
     any
-    [ return (result: t_A) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+    [ return (result: t_A) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self result}
       (! return {result}) ]
   
   type t_Option_A = None | Some t_A
   
   predicate inv_Option_A (_1: t_Option_A)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_A [inv_Option_A x]. inv_Option_A x
-      = match x with
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_A [inv_Option_A _1]. inv_Option_A _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_A f0
         end
@@ -348,7 +348,7 @@ module M_impl_Iterator_for_Repeat_A__next__refines (* <Repeat<A> as common::Iter
   
   predicate inv_Repeat_A (_1: t_Repeat_A)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Repeat_A [inv_Repeat_A x]. inv_Repeat_A x = inv_A x.element
+  axiom inv_axiom [@rewrite]: forall _1: t_Repeat_A [inv_Repeat_A _1]. inv_Repeat_A _1 = inv_A _1.element
   
   predicate invariant_refmut_Repeat_A [@inline:trivial] (self: MutBorrow.t t_Repeat_A) =
     inv_Repeat_A self.current /\ inv_Repeat_A self.final
@@ -363,8 +363,8 @@ module M_impl_Iterator_for_Repeat_A__next__refines (* <Repeat<A> as common::Iter
   
   predicate inv_Option_A (_1: t_Option_A)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_A [inv_Option_A x]. inv_Option_A x
-      = match x with
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_A [inv_Option_A _1]. inv_Option_A _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_A f0
         end
@@ -374,8 +374,8 @@ module M_impl_Iterator_for_Repeat_A__next__refines (* <Repeat<A> as common::Iter
   predicate postcondition_clone (self: ()) (args: t_A) (result: t_A)
   
   axiom postcondition_fndef:
-    forall args: t_A, res: t_A [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_A res)
+    forall args: t_A, result: t_A [postcondition_clone () args result]. postcondition_clone () args result
+      -> (let self = args in inv_A result)
   
   predicate produces_Repeat_A (self: t_Repeat_A) (visited: Seq.seq t_A) (o: t_Repeat_A) =
     self = o
@@ -411,8 +411,8 @@ module M_impl_Iterator_for_Repeat_A__produces_refl (* <Repeat<A> as common::Iter
   predicate postcondition_clone (self: ()) (args: t_A) (result: t_A)
   
   axiom postcondition_fndef:
-    forall args: t_A, res: t_A [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_A res)
+    forall args: t_A, result: t_A [postcondition_clone () args result]. postcondition_clone () args result
+      -> (let self = args in inv_A result)
   
   predicate produces_Repeat_A (self: t_Repeat_A) (visited: Seq.seq t_A) (o: t_Repeat_A) =
     self = o
@@ -442,8 +442,8 @@ module M_impl_Iterator_for_Repeat_A__produces_refl__refines (* <Repeat<A> as com
   predicate postcondition_clone (self: ()) (args: t_A) (result: t_A)
   
   axiom postcondition_fndef:
-    forall args: t_A, res: t_A [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_A res)
+    forall args: t_A, result: t_A [postcondition_clone () args result]. postcondition_clone () args result
+      -> (let self = args in inv_A result)
   
   predicate produces_Repeat_A (self: t_Repeat_A) (visited: Seq.seq t_A) (o: t_Repeat_A) =
     self = o
@@ -469,8 +469,8 @@ module M_impl_Iterator_for_Repeat_A__produces_trans (* <Repeat<A> as common::Ite
   predicate postcondition_clone (self: ()) (args: t_A) (result: t_A)
   
   axiom postcondition_fndef:
-    forall args: t_A, res: t_A [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_A res)
+    forall args: t_A, result: t_A [postcondition_clone () args result]. postcondition_clone () args result
+      -> (let self = args in inv_A result)
   
   predicate produces_Repeat_A (self: t_Repeat_A) (visited: Seq.seq t_A) (o: t_Repeat_A) =
     self = o
@@ -508,8 +508,8 @@ module M_impl_Iterator_for_Repeat_A__produces_trans__refines (* <Repeat<A> as co
   predicate postcondition_clone (self: ()) (args: t_A) (result: t_A)
   
   axiom postcondition_fndef:
-    forall args: t_A, res: t_A [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_A res)
+    forall args: t_A, result: t_A [postcondition_clone () args result]. postcondition_clone () args result
+      -> (let self = args in inv_A result)
   
   predicate produces_Repeat_A (self: t_Repeat_A) (visited: Seq.seq t_A) (o: t_Repeat_A) =
     self = o
@@ -544,7 +544,7 @@ module M_impl_Iterator_for_Repeat_A__size_hint (* <Repeat<A> as common::Iterator
   
   predicate inv_Repeat_A (_1: t_Repeat_A)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Repeat_A [inv_Repeat_A x]. inv_Repeat_A x = inv_A x.element
+  axiom inv_axiom [@rewrite]: forall _1: t_Repeat_A [inv_Repeat_A _1]. inv_Repeat_A _1 = inv_A _1.element
   
   predicate invariant_ref_Repeat_A [@inline:trivial] (self: t_Repeat_A) = inv_Repeat_A self
   
@@ -581,7 +581,7 @@ module M_impl_Iterator_for_Repeat_A__size_hint__refines (* <Repeat<A> as common:
   
   predicate inv_Repeat_A (_1: t_Repeat_A)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Repeat_A [inv_Repeat_A x]. inv_Repeat_A x = inv_A x.element
+  axiom inv_axiom [@rewrite]: forall _1: t_Repeat_A [inv_Repeat_A _1]. inv_Repeat_A _1 = inv_A _1.element
   
   predicate invariant_ref_Repeat_A [@inline:trivial] (self: t_Repeat_A) = inv_Repeat_A self
   
@@ -600,8 +600,8 @@ module M_impl_Iterator_for_Repeat_A__size_hint__refines (* <Repeat<A> as common:
   predicate postcondition_clone (self: ()) (args: t_A) (result: t_A)
   
   axiom postcondition_fndef:
-    forall args: t_A, res: t_A [postcondition_clone () args res]. postcondition_clone () args res
-      -> (let self_ = args in inv_A res)
+    forall args: t_A, result: t_A [postcondition_clone () args result]. postcondition_clone () args result
+      -> (let self = args in inv_A result)
   
   predicate produces_Repeat_A (self: t_Repeat_A) (visited: Seq.seq t_A) (o: t_Repeat_A) =
     self = o

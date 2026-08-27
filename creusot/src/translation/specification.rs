@@ -9,15 +9,16 @@ use crate::{
     naming::{lowercase_prefix, name},
     translation::{
         external::ExternSpec,
-        pearlite::{Ident, PIdent, Term, TermWithTriggers, Trigger, normalize},
+        pearlite::{
+            Ident, PIdent, Subst, Substable, Term, TermSort, TermWithTriggers, Trigger, normalize,
+        },
     },
     util::erased_identity_for_item,
 };
 use rustc_hir::{AttrArgs, HirId, Safety, def::DefKind, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
-use rustc_middle::{
-    thir::{BodyTy, Pat, PatKind, Thir},
-    ty::{EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv, Unnormalized},
+use rustc_middle::ty::{
+    EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv, Unnormalized,
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::ClosureKind;
@@ -67,7 +68,7 @@ impl std::fmt::Display for ProgramPurity {
 }
 
 /// A term with an "expl:" label (includes the "expl:" prefix)
-#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable, TyEncodable, TyDecodable)]
 pub struct Condition<'tcx> {
     pub(crate) term: Term<'tcx>,
     /// Label including the "expl:" prefix.
@@ -76,19 +77,38 @@ pub struct Condition<'tcx> {
     pub(crate) expl: String,
 }
 
-#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
+#[derive(Debug, Clone, Copy, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
+enum ContractSource {
+    Basic { has_user_contract: bool },
+    ConstParam,
+    Ctor,
+    Extern,
+    InheritedExtern,
+    ExternNoSpec,
+}
+
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable, TyEncodable, TyDecodable)]
 pub struct PreContract<'tcx> {
     pub(crate) variant: Option<Term<'tcx>>,
     pub(crate) requires: Vec<Condition<'tcx>>,
     pub(crate) ensures: Vec<(Box<[Trigger<'tcx>]>, Condition<'tcx>)>,
     /// Ignored for logic functions
     pub(crate) purity: ProgramPurity,
-    pub(crate) extern_no_spec: bool,
-    /// Are any of the contract clauses here user provided? or merely Creusot inferred / provided?
-    pub(crate) has_user_contract: bool,
+    source: ContractSource,
 }
 
 impl<'tcx> PreContract<'tcx> {
+    // FIXME: is this used?
+    pub fn new_extern() -> Self {
+        PreContract {
+            variant: None,
+            requires: Vec::new(),
+            ensures: Vec::new(),
+            purity: ProgramPurity::Impure,
+            source: ContractSource::Extern,
+        }
+    }
+
     pub(crate) fn normalize(
         mut self,
         ctx: &TranslationCtx<'tcx>,
@@ -144,12 +164,38 @@ impl<'tcx> PreContract<'tcx> {
             }
         }
     }
+
+    pub fn has_user_contract(&self) -> bool {
+        matches!(self.source, ContractSource::Basic { has_user_contract: true })
+    }
+
+    pub fn extern_no_spec(&self) -> bool {
+        matches!(self.source, ContractSource::ExternNoSpec)
+    }
+
+    pub fn const_param(&self) -> bool {
+        matches!(self.source, ContractSource::ConstParam)
+    }
+}
+
+impl<'tcx> Substable<'tcx> for PreContract<'tcx> {
+    fn subst_mut(&mut self, s: &impl Subst<'tcx>) {
+        self.variant.subst_mut(s);
+        self.requires.subst_mut(s);
+        self.ensures.subst_mut(s);
+    }
+}
+
+impl<'tcx> Substable<'tcx> for Condition<'tcx> {
+    fn subst_mut(&mut self, s: &impl Subst<'tcx>) {
+        self.term.subst_mut(s);
+    }
 }
 
 /// [ContractClauses] is the most "raw" form of contract we have in Creusot,
 /// in this stage, we have only gathered the [DefId]s of the items that hold the various contract
 /// expressions.
-#[derive(Clone, Debug, TyEncodable, TyDecodable)]
+#[derive(Clone, Debug)]
 pub struct ContractClauses {
     variant: Option<DefId>,
     requires: Vec<DefId>,
@@ -158,26 +204,16 @@ pub struct ContractClauses {
 }
 
 impl ContractClauses {
-    pub(crate) fn new() -> Self {
-        Self {
-            variant: None,
-            requires: Vec::new(),
-            ensures: Vec::new(),
-            purity: ProgramPurity::Impure,
-        }
-    }
-
-    fn get_pre<'tcx>(
+    pub(crate) fn get_pre<'tcx>(
         self,
         ctx: &TranslationCtx<'tcx>,
         fn_name: &str,
-        bound: impl IntoIterator<Item = Ident>,
+        inputs: &[(PIdent, Span, Ty<'tcx>)],
     ) -> EarlyBinder<'tcx, PreContract<'tcx>> {
-        let bound_with_result =
-            &bound.into_iter().chain(std::iter::once(name::result())).collect::<Box<_>>();
-        let bound = bound_with_result.split_last().unwrap().1;
         let has_user_contract =
             !self.requires.is_empty() || !self.ensures.is_empty() || self.variant.is_some();
+        let source = ContractSource::Basic { has_user_contract };
+        let sort = TermSort::Contract(inputs);
         let n_requires = self.requires.len();
         let requires = self
             .requires
@@ -189,7 +225,9 @@ impl ContractClauses {
                 if n_requires > 1 {
                     expl.push_str(&format!(" #{i}"))
                 }
-                Condition { term: ctx.term(req_id).unwrap().rename(bound), expl }
+                let TermWithTriggers { box term, triggers } = ctx.term(req_id, sort);
+                assert!(triggers.is_empty());
+                Condition { term, expl }
             })
             .collect();
 
@@ -204,29 +242,21 @@ impl ContractClauses {
                 if n_ensures > 1 {
                     expl.push_str(&format!(" #{i}"))
                 }
-                let term = ctx.term_with_triggers(ens_id).unwrap();
-                // ensures does not have a result argument in `const` items
-                let bound = if term.0.len() == bound.len() { bound } else { bound_with_result };
-                let TermWithTriggers { triggers, box term } = term.rename(bound);
+                let TermWithTriggers { box term, triggers } = ctx.term(ens_id, sort);
                 (triggers, Condition { term, expl })
             })
             .collect();
 
         let variant = self.variant.map(|var_id| {
             log::trace!("variant clause {:?}", var_id);
-            ctx.term(var_id).unwrap().rename(bound)
+            let TermWithTriggers { box term, triggers } = ctx.term(var_id, sort);
+            assert!(triggers.is_empty());
+            term
         });
         log::trace!("purity: {}", self.purity);
         EarlyBinder::bind(
             ctx.tcx,
-            PreContract {
-                variant,
-                requires,
-                ensures,
-                purity: self.purity,
-                extern_no_spec: false,
-                has_user_contract,
-            },
+            PreContract { variant, requires, ensures, purity: self.purity, source },
         )
     }
 }
@@ -304,68 +334,40 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         None => "closure",
     };
 
-    let (inputs, output) = inputs_and_output(ctx, def_id);
-    // TODO: handle the "self" argument better
-    let raw_inputs =
-        if !inputs.is_empty() && inputs[0].0.0 == name::self_() { &inputs[1..] } else { &inputs };
-    let bound = raw_inputs.iter().map(|(ident, _, _)| ident.0);
+    let (inputs, output) = ctx.inputs_and_output(def_id);
     let subst = erased_identity_for_item(ctx.tcx, def_id);
     let mut contract = contract_clauses_of(ctx, def_id)
         .unwrap()
-        .get_pre(ctx, fn_name, bound)
+        .get_pre(ctx, fn_name, &inputs)
         .instantiate(ctx.tcx, subst)
         .skip_normalization();
 
-    if let Some(spec) = ctx.extern_spec(def_id).cloned() {
+    if let Some(spec) = ctx.extern_spec(def_id) {
         assert!(contract.is_empty());
         // We do NOT normalize the contract here. See below.
-        let bound = spec.inputs.iter().map(|(ident, _, _)| ident.0);
-        let contract = spec
-            .contract
-            .get_pre(ctx, fn_name, bound)
-            .instantiate(ctx.tcx, spec.subst)
-            .skip_normalization();
-        contract.check_ensures_no_trigger(ctx);
-        PreSignature {
-            inputs: EarlyBinder::bind(ctx.tcx, spec.inputs)
-                .instantiate(ctx.tcx, spec.subst)
-                .skip_normalization(),
-            output: EarlyBinder::bind(ctx.tcx, spec.output)
-                .instantiate(ctx.tcx, spec.subst)
-                .skip_normalization(),
-            contract,
-        }
+        let sig = spec.to_sig();
+        sig.contract.check_ensures_no_trigger(ctx);
+        sig
     } else if let Some((spec, subst)) = inherited_extern_spec(ctx, def_id) {
         assert!(contract.is_empty());
-        let bound = spec.inputs.iter().map(|(ident, _, _)| ident.0);
         // We do NOT normalize the contract here: indeed, we do not have a valid non-redundant param
         // env for doing this. This is still valid because this contract is going to be substituted
         // and normalized in the caller context (such extern specs are only evaluated in the context
         // of a specific call).
-        let contract = spec
-            .contract
-            .clone()
-            .get_pre(ctx, fn_name, bound)
-            .instantiate(ctx.tcx, subst)
-            .skip_normalization();
-        contract.check_ensures_no_trigger(ctx);
-        PreSignature {
-            inputs: EarlyBinder::bind(ctx.tcx, spec.inputs.clone())
-                .instantiate(ctx.tcx, subst)
-                .skip_normalization(),
-            output: EarlyBinder::bind(ctx.tcx, spec.output.clone())
-                .instantiate(ctx.tcx, subst)
-                .skip_normalization(),
-            contract,
-        }
+        let mut sig = spec.to_sig();
+        sig.contract.source = ContractSource::InheritedExtern;
+        sig.contract.check_ensures_no_trigger(ctx);
+        EarlyBinder::bind(ctx.tcx, sig).instantiate(ctx.tcx, subst).skip_normalization()
     } else if matches!(ctx.def_kind(def_id), DefKind::Ctor(..)) {
         contract.purity = ProgramPurity::Ghost;
+        contract.source = ContractSource::Ctor;
+        let inputs = inputs.into();
         PreSignature { inputs, output, contract }
     } else {
         if ctx.non_creusot_crate(def_id.krate) {
             assert!(contract.is_empty());
             assert_matches!(ctx.item_type(def_id), ItemType::Program | ItemType::Constant);
-            contract.extern_no_spec = true;
+            contract.source = ContractSource::ExternNoSpec;
             contract.requires.push(Condition {
                 term: Term::false_(ctx.tcx),
                 expl: format!("expl:{} requires false", fn_name),
@@ -374,13 +376,24 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         if !matches!(ctx.item_type(def_id), ItemType::Logic { .. }) {
             contract.check_ensures_no_trigger(ctx);
         }
+        let inputs = inputs.into();
         let contract = contract.normalize(ctx, ctx.typing_env(def_id));
         PreSignature { inputs, output, contract }
     }
 }
 
+impl<'tcx> ExternSpec<'tcx> {
+    fn to_sig(&self) -> PreSignature<'tcx> {
+        PreSignature {
+            inputs: self.inputs.clone(),
+            output: self.output,
+            contract: self.contract.clone(),
+        }
+    }
+}
+
 /// A function signature, that can be either program or logic.
-#[derive(TypeVisitable, TypeFoldable, Debug, Clone)]
+#[derive(Debug, Clone, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 pub(crate) struct PreSignature<'tcx> {
     pub(crate) inputs: Box<[(PIdent, Span, Ty<'tcx>)]>,
     pub(crate) output: Ty<'tcx>,
@@ -422,8 +435,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             requires: vec![],
             ensures: vec![],
             purity: ProgramPurity::Ghost,
-            extern_no_spec: false,
-            has_user_contract: false,
+            source: ContractSource::ConstParam,
         };
         let output = ctx.type_of(def_id).no_bound_vars().unwrap();
         return PreSignature { inputs: Box::new([]), output, contract };
@@ -500,7 +512,7 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
         assert!(presig.contract.variant.is_none());
     }
 
-    if !presig.contract.extern_no_spec {
+    if def_id.is_local() {
         for &(input, span, _) in &presig.inputs {
             if input.0.name() == why3::Symbol::intern("result")
                 && !matches!(
@@ -521,40 +533,6 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
     ctx.erase_and_anonymize_regions(presig)
 }
 
-pub fn inputs_and_output_from_thir<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
-    def_id: DefId,
-    thir: &Thir<'tcx>,
-) -> (Box<[(PIdent, Span, Ty<'tcx>)]>, Ty<'tcx>) {
-    match thir.body_type {
-        BodyTy::Const(ty) => ([].into(), ty),
-        BodyTy::Fn(fn_sig) => {
-            let inputs = thir
-                .params
-                .iter()
-                .skip(if ctx.tcx.is_closure_like(def_id) { 1 } else { 0 })
-                .enumerate()
-                .map(|(ix, param)| match &param.pat {
-                    Some(box Pat { kind, span, ty, extra: _ }) => {
-                        let ident = match kind {
-                            PatKind::Binding { var, .. } => ctx.rename(var.0),
-                            _ => Ident::fresh_local(format!("_{ix}")),
-                        };
-                        (ident.into(), *span, *ty)
-                    }
-                    None => (Ident::fresh_local(format!("_{ix}")).into(), DUMMY_SP, param.ty),
-                })
-                .collect();
-            (inputs, fn_sig.output())
-        }
-        BodyTy::GlobalAsm(_) => {
-            ctx.crash_and_error(ctx.def_span(def_id), "Inline assembly is not supported")
-        }
-    }
-}
-
-/// Normally this information is easier to extract from THIR (using `inputs_and_output_from_thir` above)
-/// but sometimes there is no THIR available (e.g., trait method sigs). Closures also go through this for some reason.
 pub fn inputs_and_output<'tcx>(
     tcx: &TranslationCtx<'tcx>,
     def_id: DefId,
@@ -573,24 +551,30 @@ pub fn inputs_and_output<'tcx>(
                 DefKind::Ctor(..) => &vec![None; sig.inputs().len()],
                 _ => tcx.fn_arg_idents(def_id),
             };
+            let result_index = match tcx.intrinsic(def_id) {
+                Intrinsic::Postcondition | Intrinsic::PostconditionOnce => Some(3),
+                Intrinsic::PostconditionMut => Some(4),
+                _ => None,
+            };
             let inputs = idents
                 .iter()
                 .cloned()
                 .zip(sig.inputs().iter().cloned())
                 .zip(1..) // We start numbering from 1 to match locals numbering (_0 is the return value)
                 .map(|((ident, ty), ix)| match ident {
+                    _ if result_index == Some(ix) => (name::result().into(), DUMMY_SP, ty),
                     Some(rustc_span::Ident { name, span }) => {
                         let name = name.as_str();
                         let ident = if name.is_empty() || name == "_" {
-                            Ident::fresh_local(format!("_{ix}"))
+                            Ident::fresh(tcx.crate_name(), format!("_{ix}"))
                         } else {
-                            Ident::fresh_local(lowercase_prefix("v_", name))
+                            Ident::fresh(tcx.crate_name(), lowercase_prefix("v_", name))
                         };
                         (ident.into(), span, ty)
                     }
-                    None => (Ident::fresh_local(format!("_{ix}")).into(), DUMMY_SP, ty),
+                    None => (Ident::fresh(tcx.crate_name(), format!("_{ix}")).into(), DUMMY_SP, ty),
                 })
-                .collect();
+                .collect::<Box<[_]>>();
             (inputs, sig.output())
         }
         TyKind::Closure(_, subst) => {
@@ -606,13 +590,15 @@ pub fn inputs_and_output<'tcx>(
                         Some(rustc_span::Ident { name, span }) => {
                             let name = name.as_str();
                             let ident = if name.is_empty() || name == "_" {
-                                Ident::fresh_local(format!("_{ix}"))
+                                Ident::fresh(tcx.crate_name(), format!("_{ix}"))
                             } else {
-                                Ident::fresh_local(lowercase_prefix("v_", name))
+                                Ident::fresh(tcx.crate_name(), lowercase_prefix("v_", name))
                             };
                             (ident.into(), span, ty)
                         }
-                        None => (Ident::fresh_local(format!("_{ix}")).into(), DUMMY_SP, ty),
+                        None => {
+                            (Ident::fresh(tcx.crate_name(), format!("_{ix}")).into(), DUMMY_SP, ty)
+                        }
                     },
                 ))
                 .collect();

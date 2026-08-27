@@ -23,14 +23,14 @@ module M_check_iter
   
   meta "rewrite_def" function view_Box_slice_i32_Global
   
-  let into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
+  let into_vec_i32 (self: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:into_vec ensures] view_Vec_i32_Global result
-      = view_Box_slice_i32_Global self_}
+      = view_Box_slice_i32_Global self}
       (! return {result}) ]
   
-  let deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
+  let deref_Vec_i32_Global (self: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
     [ return (result: Slice64.slice Int32.t) -> {[@stop_split] [@expl:deref ensures] Slice64.view result
-      = view_Vec_i32_Global self_}
+      = view_Vec_i32_Global self}
       (! return {result}) ]
   
   type t_Iter_i32
@@ -39,10 +39,10 @@ module M_check_iter
   
   function view_Iter_i32 (self: t_Iter_i32) : Slice64.slice Int32.t
   
-  let iter_i32 (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
+  let iter_i32 (self: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
     [ return (result: t_Iter_i32) ->
     {[@stop_split] [@expl:iter_i32 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_i32 result)
-      /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self_)}
+      /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self)}
       (! return {result}) ]
   
   type t_Option_ref_i32 = None | Some Int32.t
@@ -61,7 +61,7 @@ module M_check_iter
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
   predicate postcondition_size_hint (self: ()) (args: t_Iter_i32) (result: tup2_usize_Option_usize) =
-    let self_ = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_Iter_i32 self_))
+    let self'0 = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_Iter_i32 self'0))
     /\ result.f1 = Some'0 (result.f0)
   
   meta "rewrite_def" predicate postcondition_size_hint
@@ -74,12 +74,12 @@ module M_check_iter
   
   meta "rewrite_def" predicate inv_ref_Iter_i32
   
-  let size_hint_Iter_i32 (self_: t_Iter_i32) (return (x: tup2_usize_Option_usize)) =
-  {[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Iter_i32 self_}
+  let size_hint_Iter_i32 (self: t_Iter_i32) (return (x: tup2_usize_Option_usize)) =
+  {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_Iter_i32 self}
     any
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint_Iter_i32 ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.t'int result.f0
-        = Seq.length (Slice64.view (view_Iter_i32 self_)))
+        = Seq.length (Slice64.view (view_Iter_i32 self)))
       /\ ([@stop_split] [@expl:size_hint ensures #1] result.f1 = Some'0 (result.f0))}
       (! return {result}) ]
   
@@ -151,25 +151,25 @@ module M_check_iter
   axiom produces_back_refl_Iter_i32_spec:
     forall self: t_Iter_i32. produces_back_Iter_i32 self (Seq.empty: Seq.seq Int32.t) self
   
-  let next_back_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
-  {[@stop_split] [@expl:next_back 'self_' type invariant] inv_refmut_Iter_i32 self_}
+  let next_back_Iter_i32 (self: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
+  {[@stop_split] [@expl:next_back 'self' type invariant] inv_refmut_Iter_i32 self}
     any
     [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:next_back ensures] match result with
-        | None -> completed_back_Iter_i32 self_
-        | Some v -> produces_back_Iter_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_back_Iter_i32 self
+        | Some v -> produces_back_Iter_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
-  let unwrap_ref_i32 (self_: t_Option_ref_i32) (return (x: Int32.t)) = {[@stop_split] [@expl:unwrap requires] self_
+  let unwrap_ref_i32 (self: t_Option_ref_i32) (return (x: Int32.t)) = {[@stop_split] [@expl:unwrap requires] self
     <> None}
-    any [ return (result: Int32.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_} (! return {result}) ]
+    any [ return (result: Int32.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self} (! return {result}) ]
   
-  let next_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
-  {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_i32 self_}
+  let next_Iter_i32 (self: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
+  {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_i32 self}
     any
     [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Iter_i32 self_
-        | Some v -> produces_Iter_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_Iter_i32 self
+        | Some v -> produces_Iter_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
@@ -278,10 +278,10 @@ module M_check_iter_as_slice
   
   function view_Iter_i32 (self: t_Iter_i32) : Slice64.slice Int32.t
   
-  let iter_i32 (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
+  let iter_i32 (self: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
     [ return (result: t_Iter_i32) ->
     {[@stop_split] [@expl:iter_i32 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_i32 result)
-      /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self_)}
+      /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self)}
       (! return {result}) ]
   
   type t_Option_ref_i32 = None | Some Int32.t
@@ -331,12 +331,12 @@ module M_check_iter_as_slice
   predicate completed_Iter_i32 (self: MutBorrow.t t_Iter_i32) =
     resolve_refmut_Iter_i32 self /\ Slice64.view (view_Iter_i32 self.current) = (Seq.empty: Seq.seq Int32.t)
   
-  let next_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
-  {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_i32 self_}
+  let next_Iter_i32 (self: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
+  {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_i32 self}
     any
     [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Iter_i32 self_
-        | Some v -> produces_Iter_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_Iter_i32 self
+        | Some v -> produces_Iter_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
@@ -350,11 +350,11 @@ module M_check_iter_as_slice
   
   meta "rewrite_def" predicate inv_ref_Iter_i32
   
-  let as_slice_i32 (self_: t_Iter_i32) (return (x: Slice64.slice Int32.t)) =
-  {[@stop_split] [@expl:as_slice 'self_' type invariant] inv_ref_Iter_i32 self_}
+  let as_slice_i32 (self: t_Iter_i32) (return (x: Slice64.slice Int32.t)) =
+  {[@stop_split] [@expl:as_slice 'self' type invariant] inv_ref_Iter_i32 self}
     any
     [ return (result: Slice64.slice Int32.t) -> {[@stop_split] [@expl:as_slice ensures] Slice64.view result
-      = Slice64.view (view_Iter_i32 self_)}
+      = Slice64.view (view_Iter_i32 self)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -424,19 +424,19 @@ module M_check_iter_mut
   
   meta "rewrite_def" function view_Box_slice_i32_Global
   
-  let into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
+  let into_vec_i32 (self: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:into_vec ensures] view_Vec_i32_Global result
-      = view_Box_slice_i32_Global self_}
+      = view_Box_slice_i32_Global self}
       (! return {result}) ]
   
-  let deref_mut_Vec_i32_Global (self_: MutBorrow.t t_Vec_i32_Global) (return (x: MutBorrow.t (Slice64.slice Int32.t))) =
+  let deref_mut_Vec_i32_Global (self: MutBorrow.t t_Vec_i32_Global) (return (x: MutBorrow.t (Slice64.slice Int32.t))) =
   any
     [ return (result: MutBorrow.t (Slice64.slice Int32.t)) ->
     {[@stop_split] [@expl:deref_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:deref_mut ensures #0] Slice64.view result.current
-        = view_Vec_i32_Global self_.current)
-      /\ ([@stop_split] [@expl:deref_mut ensures #1] Seq.length (view_Vec_i32_Global self_.final)
-        = Seq.length (view_Vec_i32_Global self_.current))
-      /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_i32_Global self_.final)}
+        = view_Vec_i32_Global self.current)
+      /\ ([@stop_split] [@expl:deref_mut ensures #1] Seq.length (view_Vec_i32_Global self.final)
+        = Seq.length (view_Vec_i32_Global self.current))
+      /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_i32_Global self.final)}
       (! return {result}) ]
   
   type t_IterMut_i32
@@ -449,10 +449,10 @@ module M_check_iter_mut
     forall self: t_IterMut_i32 [view_IterMut_i32 self]. Seq.length (Slice64.view (view_IterMut_i32 self).final)
       = Seq.length (Slice64.view (view_IterMut_i32 self).current)
   
-  let iter_mut_i32 (self_: MutBorrow.t (Slice64.slice Int32.t)) (return (x: t_IterMut_i32)) = any
+  let iter_mut_i32 (self: MutBorrow.t (Slice64.slice Int32.t)) (return (x: t_IterMut_i32)) = any
     [ return (result: t_IterMut_i32) ->
     {[@stop_split] [@expl:iter_mut_i32 ensures] ([@stop_split] [@expl:iter_mut result type invariant] inv_IterMut_i32 result)
-      /\ ([@stop_split] [@expl:iter_mut ensures] view_IterMut_i32 result = self_)}
+      /\ ([@stop_split] [@expl:iter_mut ensures] view_IterMut_i32 result = self)}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
@@ -475,7 +475,7 @@ module M_check_iter_mut
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
   predicate postcondition_size_hint (self: ()) (args: t_IterMut_i32) (result: tup2_usize_Option_usize) =
-    let self_ = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_IterMut_i32 self_).current)
+    let self'0 = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_IterMut_i32 self'0).current)
     /\ result.f1 = Some'0 (result.f0)
   
   meta "rewrite_def" predicate postcondition_size_hint
@@ -488,12 +488,12 @@ module M_check_iter_mut
   
   meta "rewrite_def" predicate inv_ref_IterMut_i32
   
-  let size_hint_IterMut_i32 (self_: t_IterMut_i32) (return (x: tup2_usize_Option_usize)) =
-  {[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_IterMut_i32 self_}
+  let size_hint_IterMut_i32 (self: t_IterMut_i32) (return (x: tup2_usize_Option_usize)) =
+  {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_IterMut_i32 self}
     any
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint_IterMut_i32 ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.t'int result.f0
-        = Seq.length (Slice64.view (view_IterMut_i32 self_).current))
+        = Seq.length (Slice64.view (view_IterMut_i32 self).current))
       /\ ([@stop_split] [@expl:size_hint ensures #1] result.f1 = Some'0 (result.f0))}
       (! return {result}) ]
   
@@ -568,31 +568,31 @@ module M_check_iter_mut
   axiom produces_back_refl_IterMut_i32_spec:
     forall self: t_IterMut_i32. produces_back_IterMut_i32 self (Seq.empty: Seq.seq (MutBorrow.t Int32.t)) self
   
-  let next_back_IterMut_i32 (self_: MutBorrow.t t_IterMut_i32) (return (x: t_Option_refmut_i32)) =
-  {[@stop_split] [@expl:next_back 'self_' type invariant] inv_refmut_IterMut_i32 self_}
+  let next_back_IterMut_i32 (self: MutBorrow.t t_IterMut_i32) (return (x: t_Option_refmut_i32)) =
+  {[@stop_split] [@expl:next_back 'self' type invariant] inv_refmut_IterMut_i32 self}
     any
     [ return (result: t_Option_refmut_i32) -> {[@stop_split] [@expl:next_back ensures] match result with
-        | None -> completed_back_IterMut_i32 self_
-        | Some v -> produces_back_IterMut_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_back_IterMut_i32 self
+        | Some v -> produces_back_IterMut_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
-  let unwrap_refmut_i32 (self_: t_Option_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_refmut_i32 (self: t_Option_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: MutBorrow.t Int32.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: MutBorrow.t Int32.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
-  let next_IterMut_i32 (self_: MutBorrow.t t_IterMut_i32) (return (x: t_Option_refmut_i32)) =
-  {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_IterMut_i32 self_}
+  let next_IterMut_i32 (self: MutBorrow.t t_IterMut_i32) (return (x: t_Option_refmut_i32)) =
+  {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_IterMut_i32 self}
     any
     [ return (result: t_Option_refmut_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_IterMut_i32 self_
-        | Some v -> produces_IterMut_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_IterMut_i32 self
+        | Some v -> produces_IterMut_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
@@ -603,8 +603,8 @@ module M_check_iter_mut
   
   predicate resolve_IterMut_i32'0 (_1: t_IterMut_i32)
   
-  axiom resolve_axiom: forall x: t_IterMut_i32 [resolve_IterMut_i32'0 x]. resolve_IterMut_i32'0 x
-      -> resolve_IterMut_i32 x
+  axiom resolve_axiom: forall _1: t_IterMut_i32 [resolve_IterMut_i32'0 _1]. resolve_IterMut_i32'0 _1
+      -> resolve_IterMut_i32 _1
   
   meta "compute_max_steps" 1000000
   
@@ -714,10 +714,10 @@ module M_check_iter_mut_as_slice
     forall self: t_IterMut_i32 [view_IterMut_i32 self]. Seq.length (Slice64.view (view_IterMut_i32 self).final)
       = Seq.length (Slice64.view (view_IterMut_i32 self).current)
   
-  let iter_mut_i32 (self_: MutBorrow.t (Slice64.slice Int32.t)) (return (x: t_IterMut_i32)) = any
+  let iter_mut_i32 (self: MutBorrow.t (Slice64.slice Int32.t)) (return (x: t_IterMut_i32)) = any
     [ return (result: t_IterMut_i32) ->
     {[@stop_split] [@expl:iter_mut_i32 ensures] ([@stop_split] [@expl:iter_mut result type invariant] inv_IterMut_i32 result)
-      /\ ([@stop_split] [@expl:iter_mut ensures] view_IterMut_i32 result = self_)}
+      /\ ([@stop_split] [@expl:iter_mut ensures] view_IterMut_i32 result = self)}
       (! return {result}) ]
   
   type t_Option_refmut_i32 = None | Some (MutBorrow.t Int32.t)
@@ -770,19 +770,19 @@ module M_check_iter_mut_as_slice
     resolve_refmut_IterMut_i32 self
     /\ Slice64.view (view_IterMut_i32 self.current).current = (Seq.empty: Seq.seq Int32.t)
   
-  let next_IterMut_i32 (self_: MutBorrow.t t_IterMut_i32) (return (x: t_Option_refmut_i32)) =
-  {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_IterMut_i32 self_}
+  let next_IterMut_i32 (self: MutBorrow.t t_IterMut_i32) (return (x: t_Option_refmut_i32)) =
+  {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_IterMut_i32 self}
     any
     [ return (result: t_Option_refmut_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_IterMut_i32 self_
-        | Some v -> produces_IterMut_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_IterMut_i32 self
+        | Some v -> produces_IterMut_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
-  let unwrap_refmut_i32 (self_: t_Option_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_refmut_i32 (self: t_Option_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: MutBorrow.t Int32.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: MutBorrow.t Int32.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
@@ -792,8 +792,8 @@ module M_check_iter_mut_as_slice
   predicate resolve_Option_refmut_i32 (_1: t_Option_refmut_i32)
   
   axiom resolve_axiom [@rewrite]:
-    forall x: t_Option_refmut_i32 [resolve_Option_refmut_i32 x]. resolve_Option_refmut_i32 x
-      = match x with
+    forall _1: t_Option_refmut_i32 [resolve_Option_refmut_i32 _1]. resolve_Option_refmut_i32 _1
+      = match _1 with
         | None -> true
         | Some x0 -> resolve_refmut_i32 x0
         end
@@ -805,8 +805,8 @@ module M_check_iter_mut_as_slice
   
   predicate resolve_IterMut_i32'0 (_1: t_IterMut_i32)
   
-  axiom resolve_axiom'0: forall x: t_IterMut_i32 [resolve_IterMut_i32'0 x]. resolve_IterMut_i32'0 x
-      -> resolve_IterMut_i32 x
+  axiom resolve_axiom'0: forall _1: t_IterMut_i32 [resolve_IterMut_i32'0 _1]. resolve_IterMut_i32'0 _1
+      -> resolve_IterMut_i32 _1
   
   predicate invariant_ref_IterMut_i32 [@inline:trivial] (self: t_IterMut_i32) = inv_IterMut_i32 self
   
@@ -816,11 +816,11 @@ module M_check_iter_mut_as_slice
   
   meta "rewrite_def" predicate inv_ref_IterMut_i32
   
-  let as_slice_i32 (self_: t_IterMut_i32) (return (x: Slice64.slice Int32.t)) =
-  {[@stop_split] [@expl:as_slice 'self_' type invariant] inv_ref_IterMut_i32 self_}
+  let as_slice_i32 (self: t_IterMut_i32) (return (x: Slice64.slice Int32.t)) =
+  {[@stop_split] [@expl:as_slice 'self' type invariant] inv_ref_IterMut_i32 self}
     any
     [ return (result: Slice64.slice Int32.t) -> {[@stop_split] [@expl:as_slice ensures] Slice64.view result
-      = Slice64.view (view_IterMut_i32 self_).current}
+      = Slice64.view (view_IterMut_i32 self).current}
       (! return {result}) ]
   
   predicate invariant_refmut_array_i32_3 [@inline:trivial] (self: MutBorrow.t (Slice64.array Int32.t)) =

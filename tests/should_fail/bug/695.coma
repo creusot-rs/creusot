@@ -64,11 +64,11 @@ module M_inversed_if
     forall self: t_C, args: (), res_state: t_C, res: bool [postcondition_mut_C self args res_state res]. postcondition_mut_C self args res_state res
       = (postcondition_C self args res /\ self = res_state)
   
-  let call_C (self_: t_C) (arg: ()) (return (x: bool)) =
-  {[@stop_split] [@expl:call_C requires] ([@stop_split] [@expl:call 'self_' type invariant] inv_ref_C self_)
-    /\ ([@stop_split] [@expl:call requires] precondition_C self_ arg)}
+  let call_C (self: t_C) (args: ()) (return (x: bool)) =
+  {[@stop_split] [@expl:call_C requires] ([@stop_split] [@expl:call 'self' type invariant] inv_ref_C self)
+    /\ ([@stop_split] [@expl:call requires] precondition_C self args)}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:call ensures] postcondition_C self_ arg result}
+    [ return (result: bool) -> {[@stop_split] [@expl:call ensures] postcondition_C self args result}
       (! return {result}) ]
   
   type t_B
@@ -79,11 +79,11 @@ module M_inversed_if
   
   predicate postcondition_once_B (self: t_B) (args: bool) (result: ())
   
-  let call_once_B (self_: t_B) (arg: bool) (return (x: ())) =
-  {[@stop_split] [@expl:call_once_B requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_B self_)
-    /\ ([@stop_split] [@expl:call_once requires] precondition_B self_ arg)}
+  let call_once_B (self: t_B) (args: bool) (return (x: ())) =
+  {[@stop_split] [@expl:call_once_B requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_B self)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_B self args)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_B self_ arg result}
+    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_B self args result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
