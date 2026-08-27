@@ -917,7 +917,7 @@ impl<T> core::ops::IndexMut<Int> for Seq<T> {
     #[requires(0 <= index && index < self.len())]
     #[ensures((*self).len() == (^self).len())]
     #[ensures(*result == (*self)[index] && ^result == (^self)[index])]
-    #[ensures(forall<i> i != index ==> (*self).get(i) == (^self).get(i))]
+    #[ensures(forall<i> 0 <= i && i < self.len() && i != index ==> (*self)[i] == (^self)[i])]
     fn index_mut(&mut self, index: Int) -> &mut Self::Output {
         self.get_mut_ghost(index).unwrap()
     }
