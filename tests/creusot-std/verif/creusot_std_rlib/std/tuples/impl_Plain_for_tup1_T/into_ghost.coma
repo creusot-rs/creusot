@@ -18,7 +18,8 @@ predicate inv_Ghost_T [@inline:trivial] (_1: t_T) = invariant_Ghost_T _1
 
 meta "rewrite_def" predicate inv_Ghost_T
 
-let into_ghost_T (self: t_T) (return (x: t_T)) = any
+let into_ghost_T (self: t_T) (return (x: t_T)) = {[@stop_split] [@expl:into_ghost requires] inv_T self}
+  any
   [ return (result: t_T) ->
   {[@stop_split] [@expl:into_ghost_T ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_T result)
     /\ ([@stop_split] [@expl:into_ghost ensures] result = self)}
@@ -71,20 +72,21 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let into_ghost_tup1_T (snap: t_T) (return (x: t_T)) = (! bb0
+let into_ghost_tup1_T (snap: t_T) (return (x: t_T)) = {[@stop_split] [@expl:into_ghost requires] inv_tup1_T snap}
+  (! bb0
   [ bb0 = s0
     [ s0 = [ &x <- snap ] s1
-    | s1 = into_ghost_T {x} (fun (_x: t_T) -> [ &_11 <- _x ] s2)
-    | s2 = deref_Ghost_T {_11} (fun (_x: t_T) -> [ &_9 <- _x ] s3)
-    | s3 = [ &_4 <- _9 ] s4
-    | s4 = new_tup1_T {_4} (fun (_x: t_T) -> [ &_ret <- _x ] s5)
+    | s1 = into_ghost_T {x} (fun (_x: t_T) -> [ &_13 <- _x ] s2)
+    | s2 = deref_Ghost_T {_13} (fun (_x: t_T) -> [ &_11 <- _x ] s3)
+    | s3 = [ &_6 <- _11 ] s4
+    | s4 = new_tup1_T {_6} (fun (_x: t_T) -> [ &_ret <- _x ] s5)
     | s5 = return {_ret} ] ]
   [ & _ret: t_T = Any.any_l ()
   | & snap: t_T = snap
-  | & _4: t_T = Any.any_l ()
+  | & _6: t_T = Any.any_l ()
   | & x: t_T = Any.any_l ()
-  | & _9: t_T = Any.any_l ()
-  | & _11: t_T = Any.any_l () ])
+  | & _11: t_T = Any.any_l ()
+  | & _13: t_T = Any.any_l () ])
   [ return (result: t_T) ->
   {[@stop_split] [@expl:into_ghost_tup1_T ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_tup1_T result)
     /\ ([@stop_split] [@expl:into_ghost ensures] result = snap)}

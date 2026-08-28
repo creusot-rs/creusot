@@ -555,8 +555,12 @@ module M_message_passing
     c1'5: MutBorrow.t t_Option_Resource_Excl_unit;
     c2'5: MutBorrow.t t_Option_Perm_PermCell_i32 }
   
-  let into_ghost_bool (self: bool) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+  predicate inv_bool [@inline:trivial] (_1: bool) = true
+  
+  meta "rewrite_def" predicate inv_bool
+  
+  let into_ghost_bool (self: bool) (return (x: bool)) = {[@stop_split] [@expl:into_ghost requires] inv_bool self}
+    any [ return (result: bool) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
   
   let deref_Ghost_bool (self: bool) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]

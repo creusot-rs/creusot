@@ -603,3 +603,89 @@ spec_abs_diff!(u32, i32);
 spec_abs_diff!(u64, i64);
 spec_abs_diff!(u128, i128);
 spec_abs_diff!(usize, isize);
+
+#[cfg(creusot)]
+use core::num::{NonZero, ZeroablePrimitive};
+
+#[cfg(creusot)]
+impl<T: ZeroablePrimitive + View> View for NonZero<T> {
+    type ViewTy = T::ViewTy;
+    #[logic(open, inline)]
+    fn view(self) -> Self::ViewTy {
+        self.get_logic().view()
+    }
+}
+
+#[cfg(creusot)]
+impl<T: ZeroablePrimitive + DeepModel> DeepModel for NonZero<T> {
+    type DeepModelTy = T::DeepModelTy;
+    #[logic(open, inline)]
+    fn deep_model(self) -> Self::DeepModelTy {
+        self.get_logic().deep_model()
+    }
+}
+
+#[cfg(creusot)]
+impl<T: ZeroablePrimitive + Plain + View<ViewTy = Int>> Plain for NonZero<T> {
+    #[requires(inv(*snap))]
+    #[ensures(*result == *snap)]
+    #[check(ghost)]
+    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+        ghost! {
+            unsafe { Self::new_unchecked(*snapshot!(snap.get_logic()).into_ghost()) }
+        }
+    }
+}
+
+#[cfg(creusot)]
+impl<T: ZeroablePrimitive + View<ViewTy = Int>> Invariant for NonZero<T> {
+    #[logic(open, prophetic)]
+    fn invariant(self) -> bool {
+        pearlite! {
+            self@ != 0 &&
+            inv(self.get_logic()) // This is always trivially true, but needed to prove into_ghost generically.
+        }
+    }
+}
+
+#[cfg(creusot)]
+pub trait NonZeroExt {
+    type Inner;
+
+    #[logic]
+    fn get_logic(self) -> Self::Inner;
+}
+
+#[cfg(creusot)]
+impl<T: ZeroablePrimitive> NonZeroExt for NonZero<T> {
+    type Inner = T;
+
+    #[builtin("identity")]
+    #[logic]
+    fn get_logic(self) -> Self::Inner {
+        dead
+    }
+}
+
+#[cfg(creusot)]
+extern_spec! {
+    impl<T: ZeroablePrimitive> NonZero<T> {
+        #[ensures(result == self.get_logic())]
+        #[check(ghost)]
+        fn get(self) -> T;
+    }
+
+    impl<T: ZeroablePrimitive + View<ViewTy = Int>> NonZero<T> {
+        #[ensures(match result {
+            None => n@ == 0,
+            Some(nz) => n@ != 0 && nz.get_logic() == n,
+        })]
+        #[check(ghost)]
+        fn new(n: T) -> Option<Self>;
+
+        #[requires(n@ != 0)]
+        #[ensures(result.get_logic() == n)]
+        #[check(ghost)]
+        unsafe fn new_unchecked(n: T) -> Self;
+    }
+}

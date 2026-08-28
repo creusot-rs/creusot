@@ -464,8 +464,12 @@ module M_parallel_add
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  let into_ghost_Int (self: int) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+  predicate inv_Int [@inline:trivial] (_1: int) = true
+  
+  meta "rewrite_def" predicate inv_Int
+  
+  let into_ghost_Int (self: int) (return (x: int)) = {[@stop_split] [@expl:into_ghost requires] inv_Int self}
+    any [ return (result: int) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
   
   let deref_Ghost_Int (self: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]

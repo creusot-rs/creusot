@@ -10,8 +10,12 @@ type t_Id
 
 type t_Lifetime = { f0: t_Id }
 
-let into_ghost_Id (self: t_Id) (return (x: t_Id)) = any
-  [ return (result: t_Id) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+predicate inv_Id [@inline:trivial] (_1: t_Id) = true
+
+meta "rewrite_def" predicate inv_Id
+
+let into_ghost_Id (self: t_Id) (return (x: t_Id)) = {[@stop_split] [@expl:into_ghost requires] inv_Id self}
+  any [ return (result: t_Id) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
 
 let into_inner_Id (self: t_Id) (return (x: t_Id)) = any
   [ return (result: t_Id) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]

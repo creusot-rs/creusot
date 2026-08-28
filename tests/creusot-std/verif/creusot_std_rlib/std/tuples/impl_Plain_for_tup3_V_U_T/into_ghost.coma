@@ -24,7 +24,8 @@ predicate inv_Ghost_V [@inline:trivial] (_1: t_V) = invariant_Ghost_V _1
 
 meta "rewrite_def" predicate inv_Ghost_V
 
-let into_ghost_V (self: t_V) (return (x: t_V)) = any
+let into_ghost_V (self: t_V) (return (x: t_V)) = {[@stop_split] [@expl:into_ghost requires] inv_V self}
+  any
   [ return (result: t_V) ->
   {[@stop_split] [@expl:into_ghost_V ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_V result)
     /\ ([@stop_split] [@expl:into_ghost ensures] result = self)}
@@ -64,7 +65,8 @@ predicate inv_Ghost_U [@inline:trivial] (_1: t_U) = invariant_Ghost_U _1
 
 meta "rewrite_def" predicate inv_Ghost_U
 
-let into_ghost_U (self: t_U) (return (x: t_U)) = any
+let into_ghost_U (self: t_U) (return (x: t_U)) = {[@stop_split] [@expl:into_ghost requires] inv_U self}
+  any
   [ return (result: t_U) ->
   {[@stop_split] [@expl:into_ghost_U ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_U result)
     /\ ([@stop_split] [@expl:into_ghost ensures] result = self)}
@@ -104,7 +106,8 @@ predicate inv_Ghost_T [@inline:trivial] (_1: t_T) = invariant_Ghost_T _1
 
 meta "rewrite_def" predicate inv_Ghost_T
 
-let into_ghost_T (self: t_T) (return (x: t_T)) = any
+let into_ghost_T (self: t_T) (return (x: t_T)) = {[@stop_split] [@expl:into_ghost requires] inv_T self}
+  any
   [ return (result: t_T) ->
   {[@stop_split] [@expl:into_ghost_T ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_T result)
     /\ ([@stop_split] [@expl:into_ghost ensures] result = self)}
@@ -158,32 +161,34 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let into_ghost_tup3_V_U_T (snap: tup3_V_U_T) (return (x: tup3_V_U_T)) = (! bb0
+let into_ghost_tup3_V_U_T (snap: tup3_V_U_T) (return (x: tup3_V_U_T)) =
+{[@stop_split] [@expl:into_ghost requires] inv_tup3_V_U_T snap}
+  (! bb0
   [ bb0 = s0
     [ s0 = [ &x <- snap.f0 ] s1
-    | s1 = into_ghost_V {x} (fun (_x: t_V) -> [ &_11 <- _x ] s2)
-    | s2 = deref_Ghost_V {_11} (fun (_x: t_V) -> [ &_9 <- _x ] s3)
+    | s1 = into_ghost_V {x} (fun (_x: t_V) -> [ &_13 <- _x ] s2)
+    | s2 = deref_Ghost_V {_13} (fun (_x: t_V) -> [ &_11 <- _x ] s3)
     | s3 = [ &x'0 <- snap.f1 ] s4
-    | s4 = into_ghost_U {x'0} (fun (_x: t_U) -> [ &_19 <- _x ] s5)
-    | s5 = deref_Ghost_U {_19} (fun (_x: t_U) -> [ &_17 <- _x ] s6)
+    | s4 = into_ghost_U {x'0} (fun (_x: t_U) -> [ &_21 <- _x ] s5)
+    | s5 = deref_Ghost_U {_21} (fun (_x: t_U) -> [ &_19 <- _x ] s6)
     | s6 = [ &x'1 <- snap.f2 ] s7
-    | s7 = into_ghost_T {x'1} (fun (_x: t_T) -> [ &_27 <- _x ] s8)
-    | s8 = deref_Ghost_T {_27} (fun (_x: t_T) -> [ &_25 <- _x ] s9)
-    | s9 = [ &_4 <- { f0 = _9; f1 = _17; f2 = _25 } ] s10
-    | s10 = new_tup3_V_U_T {_4} (fun (_x: tup3_V_U_T) -> [ &_ret <- _x ] s11)
+    | s7 = into_ghost_T {x'1} (fun (_x: t_T) -> [ &_29 <- _x ] s8)
+    | s8 = deref_Ghost_T {_29} (fun (_x: t_T) -> [ &_27 <- _x ] s9)
+    | s9 = [ &_6 <- { f0 = _11; f1 = _19; f2 = _27 } ] s10
+    | s10 = new_tup3_V_U_T {_6} (fun (_x: tup3_V_U_T) -> [ &_ret <- _x ] s11)
     | s11 = return {_ret} ] ]
   [ & _ret: tup3_V_U_T = Any.any_l ()
   | & snap: tup3_V_U_T = snap
-  | & _4: tup3_V_U_T = Any.any_l ()
+  | & _6: tup3_V_U_T = Any.any_l ()
   | & x: t_V = Any.any_l ()
-  | & _9: t_V = Any.any_l ()
   | & _11: t_V = Any.any_l ()
+  | & _13: t_V = Any.any_l ()
   | & x'0: t_U = Any.any_l ()
-  | & _17: t_U = Any.any_l ()
   | & _19: t_U = Any.any_l ()
+  | & _21: t_U = Any.any_l ()
   | & x'1: t_T = Any.any_l ()
-  | & _25: t_T = Any.any_l ()
-  | & _27: t_T = Any.any_l () ])
+  | & _27: t_T = Any.any_l ()
+  | & _29: t_T = Any.any_l () ])
   [ return (result: tup3_V_U_T) ->
   {[@stop_split] [@expl:into_ghost_tup3_V_U_T ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_tup3_V_U_T result)
     /\ ([@stop_split] [@expl:into_ghost ensures] result = snap)}

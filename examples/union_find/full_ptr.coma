@@ -2389,8 +2389,13 @@ module M_implementation__impl_Plain_for_Element__into_ghost (* <implementation::
   
   type t_Element = { f0: Opaque.ptr }
   
-  let into_ghost_ptr_unit (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
-    [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+  predicate inv_ptr_unit [@inline:trivial] (_1: Opaque.ptr) = true
+  
+  meta "rewrite_def" predicate inv_ptr_unit
+  
+  let into_ghost_ptr_unit (self: Opaque.ptr) (return (x: Opaque.ptr)) =
+  {[@stop_split] [@expl:into_ghost requires] inv_ptr_unit self}
+    any [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
   
   let deref_Ghost_ptr_unit (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
     [ return (result: Opaque.ptr) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
@@ -2421,11 +2426,15 @@ module M_implementation__impl_Plain_for_Element__into_ghost__refines (* <impleme
   
   type t_Element = { f0: Opaque.ptr }
   
+  predicate inv_Element [@inline:trivial] (_1: t_Element) = true
+  
+  meta "rewrite_def" predicate inv_Element
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall snap: t_Element. forall result: t_Element. result = snap -> result = snap
+  goal refines: forall snap: t_Element. inv_Element snap -> (forall result: t_Element. result = snap -> result = snap)
 end
 module M_implementation__impl_UnionFind_T__domain (* implementation::UnionFind<T> *)
   use creusot.prelude.Opaque
@@ -4250,7 +4259,13 @@ module M_implementation__make
   
   predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
   
-  let into_ghost_Option_Element (self: t_Option_Element) (return (x: t_Option_Element)) = any
+  predicate inv_Option_Element [@inline:trivial] (_1: t_Option_Element) = true
+  
+  meta "rewrite_def" predicate inv_Option_Element
+  
+  let into_ghost_Option_Element (self: t_Option_Element) (return (x: t_Option_Element)) =
+  {[@stop_split] [@expl:into_ghost requires] inv_Option_Element self}
+    any
     [ return (result: t_Option_Element) -> {[@stop_split] [@expl:into_ghost ensures] result = self}
       (! return {result}) ]
   
