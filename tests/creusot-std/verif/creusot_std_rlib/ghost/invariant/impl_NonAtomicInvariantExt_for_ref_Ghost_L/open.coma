@@ -86,10 +86,6 @@ let open_Ghost_ref_L (self: t_L) (tokens: t_Tokens) (f: t_F) (return (x: t_A)) =
 
 predicate inv_F (_1: t_F)
 
-function new_ref_L (x: t_L) : t_L
-
-axiom new_ref_L_spec: forall x: t_L [new_ref_L x]. new_ref_L x = x
-
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
@@ -97,7 +93,7 @@ meta "select_lsinst" "all"
 let open_ref_Ghost_L (self: t_L) (tokens: t_Tokens) (f: t_F) (return (x: t_A)) =
 {[@stop_split] [@expl:open_ref_Ghost_L requires] ([@stop_split] [@expl:open 'self' type invariant] inv_ref_Ghost_L self)
   /\ ([@stop_split] [@expl:open 'f' type invariant] inv_F f)
-  /\ ([@stop_split] [@expl:open requires] precondition_open () { f0 = new_ref_L self; f1 = tokens; f2 = f })}
+  /\ ([@stop_split] [@expl:open requires] precondition_open () { f0 = self; f1 = tokens; f2 = f })}
   (! bb0
   [ bb0 = s0
     [ s0 = borrow_L {self} (fun (_x: t_L) -> [ &_12 <- _x ] s1)
@@ -110,5 +106,5 @@ let open_ref_Ghost_L (self: t_L) (tokens: t_Tokens) (f: t_F) (return (x: t_A)) =
   | & _12: t_L = Any.any_l () ])
   [ return (result: t_A) ->
   {[@stop_split] [@expl:open_ref_Ghost_L ensures] ([@stop_split] [@expl:open result type invariant] inv_A result)
-    /\ ([@stop_split] [@expl:open ensures] postcondition_open () { f0 = new_ref_L self; f1 = tokens; f2 = f } result)}
+    /\ ([@stop_split] [@expl:open ensures] postcondition_open () { f0 = self; f1 = tokens; f2 = f } result)}
     (! return {result}) ]
