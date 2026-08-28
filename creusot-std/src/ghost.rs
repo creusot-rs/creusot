@@ -185,9 +185,9 @@ impl<T: ?Sized> Ghost<T> {
     }
 
     #[trusted]
-    #[logic(opaque)]
-    #[ensures(*result == x)]
-    pub fn new_logic(x: T) -> Self {
+    #[logic]
+    #[builtin("identity")]
+    pub fn new_logic(_x: T) -> Self {
         dead
     }
 
