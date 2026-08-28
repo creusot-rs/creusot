@@ -249,7 +249,7 @@ fn desugar_for(
     // This is indirectly enforced by typechecking the subsequent `produces` invariant.
     // This may thus break if we change the order of invariants.
     quote_spanned! {for_span=> {
-        let mut #it = ::std::iter::IntoIterator::into_iter(#iter);
+        let mut #it = ::core::iter::IntoIterator::into_iter(#iter);
         let #iter_old = snapshot! { #it };
         let mut #produced;
         {#![allow(unused_assignments)]
@@ -261,7 +261,7 @@ fn desugar_for(
             #(#inner)*
             #variant
             #(#invariants)*
-            match ::std::iter::Iterator::next(&mut #it) {
+            match ::core::iter::Iterator::next(&mut #it) {
                 Some(#elem) => {
                     {#![allow(unused_assignments)]
                      #produced = snapshot! { #produced.inner().concat(::creusot_std::logic::Seq::singleton(#elem)) };}
