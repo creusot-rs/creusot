@@ -1,0 +1,37 @@
+(* <std::num::NonZero<T> as ghost::Plain> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+function view_T (self: t_T) : int
+
+function view_NonZero_T [@inline:trivial] (self: t_T) : int = view_T self
+
+meta "rewrite_def" function view_NonZero_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_NonZero_T (self: t_T) = view_NonZero_T self <> 0 /\ inv_T self
+
+predicate inv_NonZero_T [@inline:trivial] (_1: t_T) = invariant_NonZero_T _1
+
+meta "rewrite_def" predicate inv_NonZero_T
+
+predicate invariant_Ghost_NonZero_T [@inline:trivial] (self: t_T) = inv_NonZero_T self
+
+meta "rewrite_def" predicate invariant_Ghost_NonZero_T
+
+predicate inv_Ghost_NonZero_T [@inline:trivial] (_1: t_T) = invariant_Ghost_NonZero_T _1
+
+meta "rewrite_def" predicate inv_Ghost_NonZero_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall snap: t_T. inv_NonZero_T snap
+    -> inv_NonZero_T snap
+    /\ (forall result: t_T. inv_Ghost_NonZero_T result /\ result = snap -> inv_Ghost_NonZero_T result /\ result = snap)

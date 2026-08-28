@@ -264,6 +264,7 @@ split_ghost! { (T1, 0) (T2, 1) (T3, 2) (T4, 3) (T5, 4) (T6, 5) (T7, 6) (T8, 7) }
 /// they mutable or not. Indeed, the ownership of a shared reference can be used
 /// to deduce facts, for example with `Perm::disjoint_lemma`.
 pub trait Plain: Copy {
+    #[requires(inv(*snap))]
     #[ensures(*result == *snap)]
     #[check(ghost)]
     fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self>;

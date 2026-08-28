@@ -963,6 +963,7 @@ impl<T: Clone + Copy> Clone for Seq<T> {
 
 impl<T: Copy> Copy for Seq<T> {}
 impl<T: Plain> Plain for Seq<T> {
+    #[requires(inv(*snap))]
     #[ensures(*result == *snap)]
     #[check(ghost)]
     #[allow(unused_variables)]

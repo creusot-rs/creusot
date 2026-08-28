@@ -10,8 +10,12 @@ type t_T
 
 type t_Option_T = None | Some t_T
 
-let into_ghost_bool (self: bool) (return (x: bool)) = any
-  [ return (result: bool) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+predicate inv_bool [@inline:trivial] (_1: bool) = true
+
+meta "rewrite_def" predicate inv_bool
+
+let into_ghost_bool (self: bool) (return (x: bool)) = {[@stop_split] [@expl:into_ghost requires] inv_bool self}
+  any [ return (result: bool) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
 
 let deref_Ghost_bool (self: bool) (return (x: bool)) = any
   [ return (result: bool) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
@@ -33,7 +37,8 @@ predicate inv_Ghost_T [@inline:trivial] (_1: t_T) = invariant_Ghost_T _1
 
 meta "rewrite_def" predicate inv_Ghost_T
 
-let into_ghost_T (self: t_T) (return (x: t_T)) = any
+let into_ghost_T (self: t_T) (return (x: t_T)) = {[@stop_split] [@expl:into_ghost requires] inv_T self}
+  any
   [ return (result: t_T) ->
   {[@stop_split] [@expl:into_ghost_T ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_T result)
     /\ ([@stop_split] [@expl:into_ghost ensures] result = self)}
@@ -91,29 +96,31 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let into_ghost_Option_T (snap: t_Option_T) (return (x: t_Option_T)) = (! bb0
+let into_ghost_Option_T (snap: t_Option_T) (return (x: t_Option_T)) =
+{[@stop_split] [@expl:into_ghost requires] inv_Option_T snap}
+  (! bb0
   [ bb0 = s0
     [ s0 = [ &c <- snap = None ] s1
-    | s1 = into_ghost_bool {c} (fun (_x: bool) -> [ &_11 <- _x ] s2)
-    | s2 = deref_Ghost_bool {_11} (fun (_x: bool) -> [ &_9 <- _x ] s3)
-    | s3 = any [ br0 -> {_9 = false} (! bb5) | br1 -> {_9} (! bb4) ] ]
-  | bb4 = s0 [ s0 = [ &_4 <- None ] s1 | s1 = bb9 ]
+    | s1 = into_ghost_bool {c} (fun (_x: bool) -> [ &_13 <- _x ] s2)
+    | s2 = deref_Ghost_bool {_13} (fun (_x: bool) -> [ &_11 <- _x ] s3)
+    | s3 = any [ br0 -> {_11 = false} (! bb5) | br1 -> {_11} (! bb4) ] ]
+  | bb4 = s0 [ s0 = [ &_6 <- None ] s1 | s1 = bb9 ]
   | bb5 = s0
     [ s0 = [ &t <- unwrap_Option_T snap ] s1
-    | s1 = into_ghost_T {t} (fun (_x: t_T) -> [ &_19 <- _x ] s2)
-    | s2 = deref_Ghost_T {_19} (fun (_x: t_T) -> [ &_17 <- _x ] s3)
-    | s3 = [ &_4 <- Some _17 ] s4
+    | s1 = into_ghost_T {t} (fun (_x: t_T) -> [ &_21 <- _x ] s2)
+    | s2 = deref_Ghost_T {_21} (fun (_x: t_T) -> [ &_19 <- _x ] s3)
+    | s3 = [ &_6 <- Some _19 ] s4
     | s4 = bb9 ]
-  | bb9 = s0 [ s0 = new_Option_T {_4} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  | bb9 = s0 [ s0 = new_Option_T {_6} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
   [ & _ret: t_Option_T = Any.any_l ()
   | & snap: t_Option_T = snap
-  | & _4: t_Option_T = Any.any_l ()
+  | & _6: t_Option_T = Any.any_l ()
   | & c: bool = Any.any_l ()
-  | & _9: bool = Any.any_l ()
   | & _11: bool = Any.any_l ()
+  | & _13: bool = Any.any_l ()
   | & t: t_T = Any.any_l ()
-  | & _17: t_T = Any.any_l ()
-  | & _19: t_T = Any.any_l () ])
+  | & _19: t_T = Any.any_l ()
+  | & _21: t_T = Any.any_l () ])
   [ return (result: t_Option_T) ->
   {[@stop_split] [@expl:into_ghost_Option_T ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_Option_T result)
     /\ ([@stop_split] [@expl:into_ghost ensures] result = snap)}

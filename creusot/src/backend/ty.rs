@@ -8,7 +8,7 @@ use crate::{
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{AdtDef, AliasTyKind, GenericArgsRef, Ty, TyCtxt, TyKind};
-use rustc_span::{DUMMY_SP, Span};
+use rustc_span::{DUMMY_SP, Span, sym};
 use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
 use why3::{
     Ident, Name,
@@ -47,6 +47,12 @@ pub(crate) fn classify_adt<'tcx>(
         AdtKind::Opaque { always: true }
     } else if def.is_box() {
         AdtKind::Box(subst[0].expect_ty())
+    } else if ctx.tcx.is_diagnostic_item(sym::NonZero, def.did()) {
+        // HACK: we would like to use #[builtin("identity")] on NonZero, but this is not possible
+        // because NonZero is defined in the standard library, and we do not have extern specs for
+        // types.
+        assert_eq!(subst.len(), 1);
+        AdtKind::Identity(subst[0].expect_ty())
     } else if let Some(sym) = get_builtin(ctx.tcx, def.did()) {
         if sym.as_str() == "identity" {
             assert_eq!(subst.len(), 1);

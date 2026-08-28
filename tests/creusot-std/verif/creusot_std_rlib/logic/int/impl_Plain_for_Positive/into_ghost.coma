@@ -32,8 +32,12 @@ predicate ext_eq (self: t_Positive) (other: t_Positive) = to_int self = to_int o
 
 axiom ext_eq_spec: forall self: t_Positive, other: t_Positive [self = other]. ext_eq self other = (self = other)
 
-let into_ghost_Int (self: int) (return (x: int)) = any
-  [ return (result: int) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
+predicate inv_Int [@inline:trivial] (_1: int) = true
+
+meta "rewrite_def" predicate inv_Int
+
+let into_ghost_Int (self: int) (return (x: int)) = {[@stop_split] [@expl:into_ghost requires] inv_Int self}
+  any [ return (result: int) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
 
 let into_inner_Int (self: int) (return (x: int)) = any
   [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]

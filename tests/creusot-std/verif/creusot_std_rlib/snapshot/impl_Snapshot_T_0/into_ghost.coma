@@ -8,12 +8,12 @@ use creusot.prelude.Any
 
 type t_T
 
+predicate inv_T (_1: t_T)
+
 predicate precondition_into_ghost (self: ()) (args: t_T)
 
-axiom precondition_fndef: forall args: t_T [precondition_into_ghost () args]. (let snap = args in true)
+axiom precondition_fndef: forall args: t_T [precondition_into_ghost () args]. (let snap = args in inv_T snap)
     -> precondition_into_ghost () args
-
-predicate inv_T (_1: t_T)
 
 predicate invariant_Ghost_T [@inline:trivial] (self: t_T) = inv_T self
 
@@ -43,7 +43,8 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let into_ghost_T'0 (self: t_T) (return (x: t_T)) = (! bb0
+let into_ghost_T'0 (self: t_T) (return (x: t_T)) = {[@stop_split] [@expl:into_ghost requires] inv_T self}
+  (! bb0
   [ bb0 = s0 [ s0 = into_ghost_T {self} (fun (_x: t_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
   [ & _ret: t_T = Any.any_l () | & self: t_T = self ])
   [ return (result: t_T) ->

@@ -28,6 +28,7 @@ macro_rules! tuple_impls {
         }
 
         impl<$($name: Plain),+> Plain for ($($name,)+) {
+            #[requires(inv(*snap))]
             #[ensures(*result == *snap)]
             #[check(ghost)]
             #[allow(unused_variables)]

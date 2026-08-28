@@ -626,21 +626,25 @@ impl<T: ZeroablePrimitive + DeepModel> DeepModel for NonZero<T> {
 }
 
 #[cfg(creusot)]
-impl<T: ZeroablePrimitive> Plain for NonZero<T> {
-    #[trusted]
+impl<T: ZeroablePrimitive + Plain + View<ViewTy = Int>> Plain for NonZero<T> {
+    #[requires(inv(*snap))]
     #[ensures(*result == *snap)]
     #[check(ghost)]
-    #[allow(unused_variables)]
     fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
-        Ghost::conjure()
+        ghost! {
+            unsafe { Self::new_unchecked(*snapshot!(snap.get_logic()).into_ghost()) }
+        }
     }
 }
 
 #[cfg(creusot)]
 impl<T: ZeroablePrimitive + View<ViewTy = Int>> Invariant for NonZero<T> {
-    #[logic(open)]
+    #[logic(open, prophetic)]
     fn invariant(self) -> bool {
-        pearlite! { self@ != 0 }
+        pearlite! {
+            self@ != 0 &&
+            inv(self.get_logic()) // This is always trivially true, but needed to prove into_ghost generically.
+        }
     }
 }
 
@@ -656,7 +660,8 @@ pub trait NonZeroExt {
 impl<T: ZeroablePrimitive> NonZeroExt for NonZero<T> {
     type Inner = T;
 
-    #[logic(opaque)]
+    #[builtin("identity")]
+    #[logic]
     fn get_logic(self) -> Self::Inner {
         dead
     }
