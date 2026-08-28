@@ -104,7 +104,9 @@ impl<K, V> FMap<K, V> {
 
     /// Returns `true` if the map contains no elements.
     #[logic(open)]
+    #[ensures(result == (self.len() == 0))]
     pub fn is_empty(self) -> bool {
+        proof_assert!(forall<k> self.contains(k) ==> self.len() == self.remove(k).len() + 1);
         self.ext_eq(FMap::empty())
     }
 
@@ -285,7 +287,7 @@ impl<K, V> FMap<K, V> {
 
     #[trusted]
     #[check(ghost)]
-    #[ensures(result == (self.len() == 0 && forall<k> !self.contains(k)))]
+    #[ensures(result == self.is_empty())]
     pub fn is_empty_ghost(&self) -> bool {
         panic!()
     }

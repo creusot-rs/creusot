@@ -9,6 +9,15 @@ module M_resolves
   
   type t_FMap_refmut_usize_refmut_usize
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_refmut_usize (self: t_FMap_refmut_usize_refmut_usize) : int
+  
+  axiom len_refmut_usize_spec:
+    forall self: t_FMap_refmut_usize_refmut_usize [len_refmut_usize self]. ge_log_Int (len_refmut_usize self) 0
+  
   type t_Option_refmut_usize = None | Some (MutBorrow.t UInt64.t)
   
   function to_mapping_refmut_usize (self: t_FMap_refmut_usize_refmut_usize) : Map.map (MutBorrow.t UInt64.t) t_Option_refmut_usize
@@ -25,15 +34,6 @@ module M_resolves
     forall self: t_FMap_refmut_usize_refmut_usize, other: t_FMap_refmut_usize_refmut_usize [self
       = other]. ext_eq_refmut_usize self other = (self = other)
   
-  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
-  
-  meta "rewrite_def" predicate ge_log_Int
-  
-  function len_refmut_usize (self: t_FMap_refmut_usize_refmut_usize) : int
-  
-  axiom len_refmut_usize_spec:
-    forall self: t_FMap_refmut_usize_refmut_usize [len_refmut_usize self]. ge_log_Int (len_refmut_usize self) 0
-  
   constant empty_refmut_usize : t_FMap_refmut_usize_refmut_usize
   
   axiom empty_refmut_usize_spec: len_refmut_usize empty_refmut_usize = 0
@@ -41,6 +41,10 @@ module M_resolves
   axiom empty_refmut_usize_spec'0: to_mapping_refmut_usize empty_refmut_usize = Const.const (None)
   
   predicate is_empty_refmut_usize (self: t_FMap_refmut_usize_refmut_usize) = ext_eq_refmut_usize self empty_refmut_usize
+  
+  axiom is_empty_refmut_usize_spec:
+    forall self: t_FMap_refmut_usize_refmut_usize [is_empty_refmut_usize self]. is_empty_refmut_usize self
+      = (len_refmut_usize self = 0)
   
   let new_refmut_usize (return (x: t_FMap_refmut_usize_refmut_usize)) = any
     [ return (result: t_FMap_refmut_usize_refmut_usize) ->

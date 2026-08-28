@@ -1,0 +1,67 @@
+(* logic::fmap::FMap<K, V> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use map.Const
+use int.Int
+
+type t_FMap_K_V
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function len_K (self: t_FMap_K_V) : int
+
+axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
+
+type t_K
+
+type t_V
+
+type t_Option_V = None | Some t_V
+
+function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+
+function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+
+meta "rewrite_def" function get_K
+
+predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
+
+meta "rewrite_def" predicate contains_K
+
+function remove_K (self: t_FMap_K_V) (k: t_K) : t_FMap_K_V
+
+axiom remove_K_spec: forall self: t_FMap_K_V, k: t_K [remove_K self k]. to_mapping_K (remove_K self k)
+    = Map.set (to_mapping_K self) k (None)
+
+axiom remove_K_spec'0: forall self: t_FMap_K_V, k: t_K [remove_K self k]. len_K (remove_K self k)
+    = (if contains_K self k then len_K self - 1 else len_K self)
+
+constant empty_K : t_FMap_K_V
+
+axiom empty_K_spec: len_K empty_K = 0
+
+axiom empty_K_spec'0: to_mapping_K empty_K = Const.const (None)
+
+predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
+
+axiom ext_eq_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V [self = other]. ext_eq_K self other = (self = other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_FMap_K_V
+
+predicate is_empty_K (self: t_FMap_K_V)
+
+goal vc_is_empty_K: (forall k: t_K. contains_K self k -> len_K self = len_K (remove_K self k) + 1)
+  && (([@stop_split] [@expl:empty ensures] ([@stop_split] [@expl:empty ensures #0] len_K empty_K = 0)
+    /\ ([@stop_split] [@expl:empty ensures #1] to_mapping_K empty_K = Const.const (None)))
+  -> ([@stop_split] [@expl:ext_eq ensures] ext_eq_K self empty_K = (self = empty_K))
+  -> ([@stop_split] [@expl:is_empty ensures] ext_eq_K self empty_K = (len_K self = 0)))

@@ -8,6 +8,14 @@ module M_ghost_map
   
   type t_FMap_i32_i32
   
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_i32 (self: t_FMap_i32_i32) : int
+  
+  axiom len_i32_spec: forall self: t_FMap_i32_i32 [len_i32 self]. ge_log_Int (len_i32 self) 0
+  
   type t_Option_i32 = None | Some Int32.t
   
   function to_mapping_i32 (self: t_FMap_i32_i32) : Map.map Int32.t t_Option_i32
@@ -23,14 +31,6 @@ module M_ghost_map
   axiom ext_eq_i32_spec: forall self: t_FMap_i32_i32, other: t_FMap_i32_i32 [self = other]. ext_eq_i32 self other
       = (self = other)
   
-  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
-  
-  meta "rewrite_def" predicate ge_log_Int
-  
-  function len_i32 (self: t_FMap_i32_i32) : int
-  
-  axiom len_i32_spec: forall self: t_FMap_i32_i32 [len_i32 self]. ge_log_Int (len_i32 self) 0
-  
   constant empty_i32 : t_FMap_i32_i32
   
   axiom empty_i32_spec: len_i32 empty_i32 = 0
@@ -38,6 +38,8 @@ module M_ghost_map
   axiom empty_i32_spec'0: to_mapping_i32 empty_i32 = Const.const (None)
   
   predicate is_empty_i32 (self: t_FMap_i32_i32) = ext_eq_i32 self empty_i32
+  
+  axiom is_empty_i32_spec: forall self: t_FMap_i32_i32 [is_empty_i32 self]. is_empty_i32 self = (len_i32 self = 0)
   
   let new_i32 (return (x: t_FMap_i32_i32)) = any
     [ return (result: t_FMap_i32_i32) -> {[@stop_split] [@expl:new ensures] is_empty_i32 result} (! return {result}) ]
