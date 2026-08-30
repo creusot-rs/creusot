@@ -51,6 +51,7 @@ More examples are found in [examples](examples) and [tests/should_succeed](tests
 ## Projects built with Creusot
 
 - [CreuSAT](https://github.com/sarsko/creusat) is a verified SAT solver written in Rust and verified with Creusot. It really pushes the tool to its limits and gives an idea of what 'use in anger' looks like.
+- [Krabka](https://github.com/krabka-io/krabka-broker/) is a Kafka broker written in Rust and key safety algorithms verified with Creusot
 - Another big project is in the works :)
 
 # Installing Creusot as a user
