@@ -108,7 +108,6 @@ mod state {
         #[ensures(*seq == result.0.seq() && budget == result.0.budget())]
         #[ensures(*seq == result.1.seq() && budget == result.1.budget())]
         pub fn alloc(seq: Snapshot<Seq<T>>, budget: Int) -> Ghost<(Authority<T>, Fragment<T>)> {
-            // TODO: [VL] Use other style, with Auth::new(_, _) instead of Auth::new_auth
             ghost! {
                 let mut auth = resource::Authority::alloc().into_inner();
                 let frag = auth.add_fragment(snapshot!(Some(Excl((*seq, budget)))));
@@ -124,7 +123,12 @@ mod state {
         #[ensures((*self).seq() == (*frag).seq() && (*self).budget() == (*frag).budget())]
         #[ensures((^self).seq() == *seq && (^self).budget() == *budget)]
         #[ensures((^frag).seq() == *seq && (^frag).budget() == *budget)]
-        pub fn update(&mut self, frag: &mut Fragment<T>, seq: Snapshot<Seq<T>>, budget: Snapshot<Int>) {
+        pub fn update(
+            &mut self,
+            frag: &mut Fragment<T>,
+            seq: Snapshot<Seq<T>>,
+            budget: Snapshot<Int>,
+        ) {
             let upd = snapshot!(Some(Excl((*seq, *budget))));
             self.0.update(&mut frag.0, snapshot!((*upd, *upd)));
         }
@@ -597,20 +601,20 @@ pub struct QueueCommitter<'a, T> {
     auth: &'a mut state::Authority<T>,
     budget: Int,
 
-    pub ward: Snapshot<Queue<T>>,
-    pub old_seq: Snapshot<Seq<T>>,
-    pub new_seq: Snapshot<Seq<T>>,
-    pub shot: bool,
+    ward: Snapshot<Queue<T>>,
+    old_seq: Snapshot<Seq<T>>,
+    new_seq: Snapshot<Seq<T>>,
+    shot: bool,
 }
 
 impl<T> Invariant for QueueCommitter<'_, T> {
-    // TODO: [VL] Faire des accesseurs
-
     #[logic(inline)]
     fn invariant(self) -> bool {
         self.auth.id() == self.ward.inv.public().3
             && if self.shot {
-                self.auth.seq() == *self.new_seq && self.auth.budget() == self.budget - 1 && self.auth.budget() >= 0
+                self.auth.seq() == *self.new_seq
+                    && self.auth.budget() == self.budget - 1
+                    && self.auth.budget() >= 0
             } else {
                 self.auth.seq() == *self.old_seq && self.auth.budget() == self.budget
             }
@@ -1183,6 +1187,7 @@ impl<T> Queue<T> {
 
 /* Checking whether QueueInv is `Objective` */
 #[cfg(creusot)]
+#[allow(dead_code)]
 fn test() {
     use creusot_std::ghost::Objective;
 
