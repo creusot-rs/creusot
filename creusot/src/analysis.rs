@@ -33,7 +33,7 @@ use rustc_type_ir::{ClosureKind, TyKind};
 use why3::Ident;
 
 use crate::{
-    analysis::resolve::{HasMoveDataExt as _, Resolver, place_contains_borrow_deref},
+    analysis::resolve::{HasMoveDataExt as _, Resolver},
     backend::closures::ClosSubst,
     callbacks,
     contracts_items::{is_erasure, is_snapshot_closure, is_spec},
@@ -329,18 +329,11 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
         self.resolver.body
     }
 
-    fn resolve_before_assignment(
-        &mut self,
-        need: MixedBitSet<MovePathIndex>,
-        resolved: &MixedBitSet<MovePathIndex>,
-        loc: Location,
-        destination: Place<'tcx>,
-    ) {
-        // The assignement may, in theory, modify a variable that needs to be resolved.
-        // Hence we resolve before the assignment.
-        self.resolve_places(need, resolved);
-
-        // We resolve the destination place, if necessary
+    // When performing an assignment, we are overwriting the destination place, so we may need to resolve
+    // it before the assignment, except if it has already been resolved or if it is uninitialized.
+    fn resolve_before_assignment(&mut self, loc: Location, destination: Place<'tcx>) {
+        let (need_mid, resolved_mid) =
+            self.resolver.need_resolve_resolved_places_at(ExtendedLocation::Mid(loc));
         match self.move_data().rev_lookup.find(destination.as_ref()) {
             LookupResult::Parent(None) => {
                 // for the kind of move data we ask, all the locals should be move paths, so
@@ -348,63 +341,69 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 unreachable!()
             }
             LookupResult::Parent(Some(mp)) => {
-                let uninit = self.resolver.uninit_places_before(loc);
-                // My understanding is that if the destination is not a move path, then it has to
-                // be initialized before the assignment.
-                assert!(!uninit.contains(mp));
-                if !resolved.contains(mp) {
-                    // If destination is a reborrow, then mp cannot be in resolved (since
-                    // we are writting in it), so we will go through this test.
-                    // Otherwise, we resolve only if it is not already resolved.
+                // There are two cases that can lead us here:
+                // - Either we are writing inside a mutable borrow. In that case, we always have to
+                //   resolve the destination place, because the usual resolution mechanism never
+                //   resolves under mutable borrows. Note also that since we are writting in a
+                //   mutable borrow, that mutable borrow cannot be already resolved, and therefore
+                //   `need_mid.contains(mp)` is true.
+                // - Or we are writing in a place which is not a move path (e.g., array index). In
+                //   that case, my understanding is that mp is necessarily initialized (otherwise the
+                //   write is rejected). So we do the resolution iff `need_mid.contains(mp)`
+                //   (because otherwise it is already resolved).
+                // Both cases are handled by the same test.
+
+                // Make sure mp is initialized
+                assert!(resolved_mid.contains(mp) == !need_mid.contains(mp));
+
+                if need_mid.contains(mp) {
                     self.emit_resolve(destination);
                 }
             }
             LookupResult::Exact(mp) => {
-                // need_before can contain mp or its children if a subplace of destination
-                // is reborrowed
-                let (need_before, resolved) =
-                    self.resolver.need_resolve_resolved_places_at(ExtendedLocation::Mid(loc));
+                // need_mid contains exactly the set of places that needs to be resolved at some
+                // point in the future. But the place we are writting to is going to be overwritten,
+                // so it is the last chance to do this resolution.
+                // So the children of mp that are in need_mid are exactly those that we have to
+                // resolve.
                 let mut to_resolve = self.empty_bitset();
                 on_all_children_bits(self.move_data(), mp, |mp| {
-                    if need_before.contains(mp) {
+                    if need_mid.contains(mp) {
                         to_resolve.insert(mp);
                     }
                 });
-                self.resolve_places(to_resolve, &resolved);
+                self.resolve_places(to_resolve, &resolved_mid);
             }
         }
     }
 
+    /// After an assignment, we may have to resolve the place we are writing to, because it is not
+    /// live. This function detects this case and inserts the needed resolve.
     fn resolve_after_assignment(&mut self, next_loc: Location, destination: Place<'tcx>) {
-        let live = self.resolver.live_places_before(next_loc);
-        let (_, resolved) =
-            self.resolver.need_resolve_resolved_places_at(ExtendedLocation::Start(next_loc));
-        let dest = destination.as_ref();
-        match self.move_data().rev_lookup.find(dest) {
+        let resolved_next = self.resolver.resolved_places_at(ExtendedLocation::Start(next_loc));
+        match self.move_data().rev_lookup.find(destination.as_ref()) {
             LookupResult::Parent(None) => {
                 // for the kind of move data we ask, all the locals should be move paths, so
                 // we know we find something here.
                 unreachable!()
             }
             LookupResult::Parent(Some(mp)) => {
-                if !live.contains(mp) {
-                    if place_contains_borrow_deref(dest, self.body(), self.tcx()) {
-                        if resolved.contains(mp) {
-                            self.emit_resolve(self.move_data().move_paths[mp].place);
-                        }
-                    } else {
-                        self.emit_resolve(destination);
-                    }
+                // We have written to a place which is not a move path. We check if the move path should be
+                // resolved after the statement. If yes, then we resolve it.
+                if resolved_next.contains(mp) {
+                    self.emit_resolve(self.move_data().move_paths[mp].place);
                 }
             }
             LookupResult::Exact(mp) => {
+                // We have written to a place which is a move path. Each of the sub-move paths may need to be
+                // resolved. We check that, and resolve if appropriate.
                 let mut to_resolve = self.empty_bitset();
                 on_all_children_bits(self.move_data(), mp, |imp| {
-                    if !live.contains(imp) {
+                    if resolved_next.contains(imp) {
                         to_resolve.insert(imp);
                     }
                 });
-                self.resolve_places(to_resolve, &resolved);
+                self.resolve_places(to_resolve, &resolved_next);
             }
         }
     }
@@ -682,9 +681,8 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
             }
             self.resolve_places_between_blocks(bb);
             if bb == mir::START_BLOCK {
-                let (_, resolved) = self
-                    .resolver
-                    .need_resolve_resolved_places_at(ExtendedLocation::Start(Location::START));
+                let resolved =
+                    self.resolver.resolved_places_at(ExtendedLocation::Start(Location::START));
                 self.resolve_places(resolved.clone(), &resolved)
             }
             let mut loc = bb.start_location();
@@ -701,10 +699,15 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
         use mir::StatementKind::*;
         match statement.kind {
             Assign(box (pl, ref rvalue)) => {
+                self.analyze_assign(rvalue, loc, statement.source_info);
+
+                // We first evaluate the RHS and resolve places that need to be resolved after RHS eval.
                 let (need, resolved) =
                     self.resolver.resolved_places_during(ExtendedLocation::Mid(loc));
-                self.resolve_before_assignment(need, &resolved, loc, pl);
-                self.analyze_assign(rvalue, loc, statement.source_info);
+                self.resolve_places(need, &resolved);
+
+                // And THEN we handle the assignment itself, which may needs special care.
+                self.resolve_before_assignment(loc, pl);
                 self.store_resolved_before(loc);
                 self.resolve_after_assignment(loc.successor_within_block(), pl);
             }
@@ -734,48 +737,34 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 self.resolve_places(need, &resolved);
                 self.store_resolved_before(loc);
             }
-            _ => self.store_resolved_before(loc),
+            SetDiscriminant { .. } | Intrinsic(_) => unimplemented!(),
         }
     }
 
     fn analyze_assign(&mut self, rvalue: &mir::Rvalue<'tcx>, loc: Location, si: mir::SourceInfo) {
-        match rvalue {
-            mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, pl) => {
-                if !self.is_two_phases(loc) {
-                    self.check_final(pl, loc);
-                }
-            }
-            mir::Rvalue::Aggregate(box kind, _ops) => match kind {
-                mir::AggregateKind::Closure(def_id, _subst) => {
-                    let tcx = self.tcx();
-                    if let Some(term) = self
-                        .body_specs
-                        .invariant_assertions
-                        .get_mut(def_id)
-                        .map(|(term, _)| term)
-                        .or_else(|| self.body_specs.assertions.get_mut(def_id).map(|a| &mut a.term))
-                    {
-                        let bad_vars = self.resolver.bad_vars_at(loc);
-                        let subst = self.analysis_env.inline_pearlite_subst(tcx, si.scope);
-                        term.subst(&subst);
-                        if let Some(s) = &self.analysis_env.clos_subst {
-                            s.subst(tcx, term);
-                        }
-                        self.analysis_env.check_use_in_logic(
-                            term,
-                            tcx,
-                            &self.resolver.move_data(),
-                            &bad_vars,
-                        );
-                    }
-                }
-                _ => {}
-            },
-            _ => {}
+        let tcx = self.tcx();
+        if let mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, pl) = rvalue
+            && !self.is_two_phases(loc)
+        {
+            self.check_final(pl, loc)
+        }
+        if let mir::Rvalue::Aggregate(box mir::AggregateKind::Closure(def_id, _), _) = rvalue
+            && let Some(term) = self
+                .body_specs
+                .invariant_assertions
+                .get_mut(def_id)
+                .map(|(term, _)| term)
+                .or_else(|| self.body_specs.assertions.get_mut(def_id).map(|a| &mut a.term))
+        {
+            let bad_vars = self.resolver.bad_vars_at(loc);
+            let subst = self.analysis_env.inline_pearlite_subst(tcx, si.scope);
+            term.subst(&subst);
+            self.analysis_env.clos_subst.iter().for_each(|s| s.subst(tcx, term));
+            self.analysis_env.check_use_in_logic(term, tcx, &self.resolver.move_data(), &bad_vars);
         }
     }
 
-    fn analyze_terminator(&mut self, terminator: &mir::Terminator<'tcx>, mut loc: Location) {
+    fn analyze_terminator(&mut self, terminator: &mir::Terminator<'tcx>, loc: Location) {
         self.update_final_two_phases(loc);
         use mir::TerminatorKind::*;
         match terminator.kind {
@@ -791,10 +780,6 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 self.resolve_places(need, &resolved);
             }
             Call { ref func, destination, target, fn_span, .. } => {
-                let (need, resolved) =
-                    self.resolver.resolved_places_during(ExtendedLocation::End(loc));
-                self.resolve_before_assignment(need, &resolved, loc, destination);
-
                 // If this is a snapshot, check that it doesn't use uninitialized or borrowed variables
                 let &TyKind::FnDef(_fun_def_id, subst) = func.ty(self.body(), self.tcx()).kind()
                 else {
@@ -822,10 +807,18 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                     );
                 }
 
-                self.store_resolved_before(loc);
-                loc = loc.successor_within_block();
-                if let Some(_) = target {
-                    self.resolve_after_assignment(target.unwrap().start_location(), destination)
+                // We first evaluate the parameters and resolve places that need to be resolved after RHS eval.
+                let (need, resolved) =
+                    self.resolver.resolved_places_during(ExtendedLocation::Mid(loc));
+                self.resolve_places(need, &resolved);
+
+                // And THEN we handle the return var assignment, which may needs special care.
+                self.resolve_before_assignment(loc, destination);
+                if let Some(tgt) = target {
+                    self.store_resolved_before(loc);
+                    self.resolve_after_assignment(tgt.start_location(), destination);
+                    self.store_resolved_before(loc.successor_within_block());
+                    return;
                 }
             }
             Drop { place, .. } => {
@@ -845,11 +838,18 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                     self.resolver.resolved_places_during(ExtendedLocation::End(loc));
                 self.resolve_places(need, &resolved)
             }
-            _ => {
+            Goto { .. }
+            | SwitchInt { .. }
+            | Unreachable
+            | Assert { .. }
+            | FalseEdge { .. }
+            | FalseUnwind { .. } => {
                 let (need, resolved) =
                     self.resolver.resolved_places_during(ExtendedLocation::End(loc));
                 self.resolve_places(need, &resolved)
             }
+            UnwindResume | UnwindTerminate(_) => unreachable!(),
+            TailCall { .. } | Yield { .. } | CoroutineDrop | InlineAsm { .. } => unimplemented!(),
         }
         self.store_resolved_before(loc);
     }
