@@ -132,7 +132,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
 
     /// This function computes resolver state corresponding to the given extended location.
     /// It forwards the query to the underlying analyses, but treats specially two cases, by manually
-    /// an partially applying parts of the transfer functions.
+    /// and partially applying parts of the transfer functions.
     ///    - If we ask for the mid state of a statement, then this statement is required to
     ///      be an assignment. In this case, we manually compute the state after RHS is evaluated
     ///      but before LHS is assigned (this more or less matches the mid state for a function call).
@@ -205,7 +205,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
                         analysis.apply_call_return_effect(&mut uninit, loc.block, place)
                     });
 
-                    self.borrows.seek_before_primary_effect(loc);
+                    self.borrows.seek_after_primary_effect(loc);
                     borrows = self.borrows.get().clone();
                     self.borrows.apply_custom_effect(|analysis, _| {
                         analysis.apply_call_return_effect(&mut borrows, loc.block, place)
@@ -234,6 +234,11 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
             }
         }
         State { uninit, live, borrows }
+    }
+
+    pub fn resolved_places_at(&mut self, loc: ExtendedLocation) -> MixedBitSet<MovePathIndex> {
+        let st = self.state_at_loc(loc);
+        self.resolved_places(&st)
     }
 
     pub fn need_resolve_resolved_places_at(
@@ -282,25 +287,10 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
         (res, self.resolved_places(&state_from))
     }
 
-    pub fn uninit_places_before(&mut self, loc: Location) -> MixedBitSet<MovePathIndex> {
-        ExtendedLocation::Start(loc).seek_to(&mut self.uninit);
-        self.uninit.get().clone()
-    }
-
-    pub fn live_places_before(&mut self, loc: Location) -> MixedBitSet<MovePathIndex> {
-        ExtendedLocation::Start(loc).seek_to(&mut self.live);
-        self.live.get().clone()
-    }
-
-    fn frozen_places_before(&mut self, loc: Location) -> MixedBitSet<MovePathIndex> {
-        ExtendedLocation::Start(loc).seek_to(&mut self.borrows);
-        self.frozen_of_borrows(self.borrows.get())
-    }
-
     pub(super) fn bad_vars_at(&mut self, location: Location) -> MixedBitSet<MovePathIndex> {
-        let mut bad_vars = self.frozen_places_before(location);
-        let uninit = self.uninit_places_before(location);
-        bad_vars.union(&uninit);
+        let st = self.state_at_loc(ExtendedLocation::Start(location));
+        let mut bad_vars = self.frozen_of_borrows(&st.borrows);
+        bad_vars.union(&st.uninit);
         bad_vars
     }
 

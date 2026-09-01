@@ -2041,6 +2041,31 @@ module M_implementation__link
   
   meta "rewrite_def" predicate resolve_refmut_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
   
+  predicate resolve_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
+  
+  predicate resolve_Ghost_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [@inline:trivial] (self: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) =
+    resolve_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
+  
+  predicate resolve_Ghost_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T'0 [@inline:trivial] (_1: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) =
+    resolve_Ghost_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T'0
+  
+  predicate resolve_Ghost_refmut_Perm_PermCell_Node_T [@inline:trivial] (self: MutBorrow.t t_Perm_PermCell_Node_T) =
+    resolve_refmut_Perm_PermCell_Node_T self
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_Perm_PermCell_Node_T
+  
+  predicate resolve_Ghost_refmut_Perm_PermCell_Node_T'0 [@inline:trivial] (_1: MutBorrow.t t_Perm_PermCell_Node_T) =
+    resolve_Ghost_refmut_Perm_PermCell_Node_T _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_refmut_Perm_PermCell_Node_T'0
+  
   let elim_Root (_x: t_Node_T) (return (rank: t_PeanoInt) (payload: t_T)) = any
     [ _k (rank: t_PeanoInt) (payload: t_T) -> {Root rank payload = _x} (! return {rank} {payload})
     | _chk -> (! {[@expl:elim Root] match _x with
@@ -2072,21 +2097,6 @@ module M_implementation__link
       = UInt64.lt (deep_model_ref_refmut_PeanoInt self_) (deep_model_ref_refmut_PeanoInt other)}
       (! return {result}) ]
   
-  predicate resolve_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
-  
-  predicate resolve_Ghost_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [@inline:trivial] (self: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) =
-    resolve_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self
-  
-  meta "rewrite_def" predicate resolve_Ghost_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
-  
-  predicate resolve_Ghost_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T'0 [@inline:trivial] (_1: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) =
-    resolve_Ghost_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T _1
-  
-  meta "rewrite_def" predicate resolve_Ghost_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T'0
-  
   let clone_Elem_T (self: t_Elem_T) (return (x: t_Elem_T)) =
   {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Elem_T self}
     any
@@ -2104,16 +2114,6 @@ module M_implementation__link
         | Root x0 x1 -> resolve_T x1
         | Link x0 -> resolve_Elem_T x0
         end
-  
-  predicate resolve_Ghost_refmut_Perm_PermCell_Node_T [@inline:trivial] (self: MutBorrow.t t_Perm_PermCell_Node_T) =
-    resolve_refmut_Perm_PermCell_Node_T self
-  
-  meta "rewrite_def" predicate resolve_Ghost_refmut_Perm_PermCell_Node_T
-  
-  predicate resolve_Ghost_refmut_Perm_PermCell_Node_T'0 [@inline:trivial] (_1: MutBorrow.t t_Perm_PermCell_Node_T) =
-    resolve_Ghost_refmut_Perm_PermCell_Node_T _1
-  
-  meta "rewrite_def" predicate resolve_Ghost_refmut_Perm_PermCell_Node_T'0
   
   let new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
@@ -2286,7 +2286,14 @@ module M_implementation__link
       | s5 = -{resolve_Elem_T y}- s6
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Elem_T x} any) ]
       | s7 = -{resolve_Elem_T x}- s8
-      | s8 = {false} any ]
+      | s8 = -{resolve_Ghost_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T'0 m}- s9
+      | s9 = -{resolve_Ghost_refmut_Perm_PermCell_Node_T'0 perm_x}- s10
+      | s10 = -{resolve_Ghost_refmut_UFInner_T'0 uf'0}- s11
+      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _25} any) ]
+      | s12 = -{resolve_refmut_refmut_UF_T _25}- s13
+      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
+      | s14 = -{resolve_Ghost_refmut_UF_T'0 uf}- s15
+      | s15 = {false} any ]
     | bb24 = s0
       [ s0 = elim_Root {bx.current}
           (fun (rrank: t_PeanoInt) (rpayload: t_T) ->
@@ -2304,7 +2311,16 @@ module M_implementation__link
       | s4 = -{resolve_Elem_T y}- s5
       | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_Elem_T x} any) ]
       | s6 = -{resolve_Elem_T x}- s7
-      | s7 = {false} any ]
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T bx} any) ]
+      | s8 = -{resolve_refmut_Node_T bx}- s9
+      | s9 = -{resolve_Ghost_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T'0 m}- s10
+      | s10 = -{resolve_Ghost_refmut_Perm_PermCell_Node_T'0 perm_x}- s11
+      | s11 = -{resolve_Ghost_refmut_UFInner_T'0 uf'0}- s12
+      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _25} any) ]
+      | s13 = -{resolve_refmut_refmut_UF_T _25}- s14
+      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
+      | s15 = -{resolve_Ghost_refmut_UF_T'0 uf}- s16
+      | s16 = {false} any ]
     | bb27 = s0
       [ s0 = elim_Root {by'.current}
           (fun (rrank: t_PeanoInt) (rpayload: t_T) ->
@@ -2360,10 +2376,10 @@ module M_implementation__link
       | s4 = any [ br0 -> {_101 = false} (! bb42) | br1 -> {_101} (! bb40) ] ]
     | bb40 = s0
       [ s0 = -{resolve_refmut_PeanoInt rx}- s1
-      | s1 = incr {rx.current} (fun (_x: t_PeanoInt) -> [ &_104 <- _x ] s2)
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T bx} any) ]
-      | s3 = -{resolve_refmut_Node_T bx}- s4
-      | s4 = -{resolve_Ghost_refmut_Perm_PermCell_Node_T'0 perm_x}- s5
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T bx} any) ]
+      | s2 = -{resolve_refmut_Node_T bx}- s3
+      | s3 = -{resolve_Ghost_refmut_Perm_PermCell_Node_T'0 perm_x}- s4
+      | s4 = incr {rx.current} (fun (_x: t_PeanoInt) -> [ &_104 <- _x ] s5)
       | s5 = bb43 ]
     | bb42 = s0
       [ s0 = -{resolve_refmut_PeanoInt rx}- s1
