@@ -2,10 +2,11 @@ use crate::{
     backend::resolve::is_resolve_trivial,
     callbacks,
     contracts_items::{
-        Intrinsic, creusot_clause_attrs, gather_intrinsics, get_creusot_item, is_extern_spec,
-        is_extern_type, is_logic, is_opaque, is_open_inv_param, is_prophetic, is_trusted,
-        opacity_witness_name,
+        Intrinsic, creusot_clause_attrs, gather_intrinsics, get_creusot_item, has_logic_alias,
+        is_extern_spec, is_extern_type, is_logic, is_opaque, is_open_inv_param, is_prophetic,
+        is_trusted, opacity_witness_name,
     },
+    logic_alias,
     metadata::{BinaryMetadata, Metadata, encode_def_ids, get_erasure_required},
     naming::{ComaNames, ModulePath, lowercase_prefix},
     translation::{
@@ -182,7 +183,7 @@ pub struct TranslationCtx<'tcx> {
     pub(crate) variant_calls: RefCell<IndexMap<DefId, IndexSet<DefId>>>,
     erasure_required: RefCell<IndexSet<DefId>>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
-    extern_spec_items: HashMap<LocalDefId, DefId>,
+    extern_spec_items: HashMap<DefId, DefId>,
     trusted_positivity: HashMap<DefId, TrustedPositivity>,
     erased_local_defid: HashMap<LocalDefId, Option<Erasure<'tcx>>>,
     erasures_to_check: IndexSet<LocalDefId>,
@@ -195,11 +196,15 @@ pub struct TranslationCtx<'tcx> {
     trait_impl: OnceMap<DefId, Vec<Refinement<'tcx>>>,
     sig: OnceMap<DefId, Box<PreSignature<'tcx>>>,
     opacity: OnceMap<DefId, Box<Opacity>>,
+    /// This is used for logic aliases, see `Self::raw_term(...)`
+    raw_terms: OnceMap<DefId, Box<Option<Scoped<Term<'tcx>>>>>,
     renamer: RefCell<HashMap<HirId, Ident>>,
     pub corenamer: RefCell<HashMap<Ident, HirId>>,
     crate_name: OnceCell<why3::Symbol>,
     inhabited_ty: RefCell<HashMap<Ty<'tcx>, bool>>,
     nonzero_sized_ty: RefCell<HashMap<Ty<'tcx>, bool>>,
+    /// TODO(mael): document this
+    logic_aliases: HashMap<DefId, (Span, DefId)>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -305,11 +310,13 @@ impl<'tcx> TranslationCtx<'tcx> {
             sig: Default::default(),
             opacity: Default::default(),
             params_open_inv,
+            raw_terms: Default::default(),
             renamer: Default::default(),
             corenamer: Default::default(),
             crate_name: Default::default(),
             nonzero_sized_ty: Default::default(),
             inhabited_ty: Default::default(),
+            logic_aliases: Default::default(),
         }
     }
 
@@ -366,6 +373,32 @@ impl<'tcx> TranslationCtx<'tcx> {
                         bound,
                         pearlite::normalize(self, self.typing_env(def_id), term),
                     )))
+                } else {
+                    Box::new(None)
+                }
+            })
+            .as_ref()
+    }
+
+    /// Same as `Self::term`, but does not normalize term.
+    /// This is used for logic aliases, since we do not want our alias closure to be
+    /// optimized out (e.g. builtin("identity") replaces the call to the logic function
+    /// by `self`, which breaks the aliasing machinery).
+    /// For any other purpose you probably want to use `Self::term` instead.
+    pub(crate) fn raw_term<'a>(&'a self, def_id: DefId) -> Option<&'a Scoped<Term<'tcx>>> {
+        let Some(local_id) = def_id.as_local() else {
+            return self.externs.raw_term(def_id);
+        };
+
+        self.raw_terms
+            .insert(def_id, |_| {
+                if self.tcx.hir_maybe_body_owned_by(local_id).is_some() {
+                    let (bound, term) = match pearlite::from_thir(self, local_id) {
+                        Ok(t) => t,
+                        Err(err) => err.raise_fatal(),
+                    };
+                    let bound = bound.iter().map(|b| b.0).collect();
+                    Box::new(Some(Scoped(bound, term)))
                 } else {
                     Box::new(None)
                 }
@@ -445,6 +478,10 @@ impl<'tcx> TranslationCtx<'tcx> {
     // TODO Make private
     pub(crate) fn extern_spec(&self, def_id: DefId) -> Option<&ExternSpec<'tcx>> {
         self.extern_specs.get(&def_id).or_else(|| self.externs.extern_spec(def_id))
+    }
+
+    pub(crate) fn extern_spec_items(&self, def_id: DefId) -> Option<DefId> {
+        self.extern_spec_items.get(&def_id).copied()
     }
 
     pub(crate) fn trusted_positivity(&self, def_id: DefId, index: usize) -> bool {
@@ -528,6 +565,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         BinaryMetadata::from_parts(
             self.terms,
             self.terms_with_triggers,
+            self.raw_terms,
             self.creusot_items,
             self.raw_intrinsics,
             self.extern_specs,
@@ -535,11 +573,19 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.params_open_inv,
             erased_thir,
             self.erased_local_defid,
+            self.logic_aliases,
         )
     }
 
     pub(crate) fn creusot_item(&self, name: Symbol) -> Option<DefId> {
         self.creusot_items.get(&name).cloned().or_else(|| self.externs.creusot_item(name))
+    }
+
+    pub(crate) fn logic_alias(&self, def_id: DefId) -> Option<(Span, DefId)> {
+        self.logic_aliases
+            .get(&def_id)
+            .copied()
+            .or_else(|| self.externs.logic_alias(def_id).copied())
     }
 
     pub(crate) fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {
@@ -599,6 +645,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.load_extern_specs();
         self.load_trusted_positivity();
         self.load_erasures();
+        self.load_logic_aliases();
     }
 
     fn load_extern_specs(&mut self) {
@@ -629,7 +676,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
                 let _ = self.extern_specs.insert(i, es);
 
-                self.extern_spec_items.insert(def_id, i);
+                self.extern_spec_items.insert(def_id.to_def_id(), i);
             }
         }
 
@@ -712,6 +759,46 @@ impl<'tcx> TranslationCtx<'tcx> {
             if let Some(erasure) = extract_erasure_from_child(self, def_id) {
                 self.erased_local_defid.insert(def_id, Some(erasure));
                 self.erasures_to_check.insert(def_id);
+            }
+        }
+    }
+
+    fn load_logic_aliases(&mut self) {
+        for id in self.hir_crate_items(()).definitions() {
+            let def_id = id.to_def_id();
+
+            if let Some(alias) = has_logic_alias(self, def_id) {
+                trace!(
+                    "\t`{}` is an alias for `{}`",
+                    self.def_path_str(def_id),
+                    self.def_path_str(logic_alias::get_logic_id(self, alias.1)),
+                );
+                logic_alias::check_validity(self, def_id, alias.1, alias.0);
+                self.logic_aliases.insert(def_id, alias);
+
+                if let Some(real_id) = self.extern_spec_items(def_id) {
+                    self.logic_aliases.insert(real_id, alias);
+                }
+            } else if let Some(trait_id) = self.tcx.trait_item_of(def_id)
+                && let Some(alias) = has_logic_alias(self, trait_id)
+            {
+                let sp = alias
+                    .0
+                    .find_ancestor_not_from_macro()
+                    .unwrap_or(alias.0)
+                    .to(self.def_span(trait_id));
+                let sid = self.def_span(def_id);
+                let mut err = self
+                    .dcx()
+                    .struct_span_err(sid, "Implicit logic alias in trait impl is not supported");
+                err.span_note(sp, "Trait item has a `#[logic_alias]` attribute");
+                err.span_suggestion_hidden(
+                    sid,
+                    "Trait item and Impl item must have the same `#[logic_alias]` attribute",
+                    "",
+                    rustc_errors::Applicability::MachineApplicable,
+                );
+                err.emit();
             }
         }
     }
