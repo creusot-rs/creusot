@@ -32,6 +32,7 @@
 - [Ghost code](ghost.md)
   - [Ghost structures](ghost/ghost-structures.md)
   - [`Int` in ghost](ghost/int-in-ghost.md)
+- [Proof modes](proof_modes.md)
 - [Type invariants](./type_invariants.md)
 - [Erasure check](./erasure.md)
 - [Known limitations](limitations.md)
