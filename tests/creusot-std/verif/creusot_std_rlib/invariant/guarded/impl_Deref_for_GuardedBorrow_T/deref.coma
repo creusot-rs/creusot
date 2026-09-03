@@ -1,0 +1,73 @@
+(* <invariant::guarded::GuardedBorrow<'a, T> as std::ops::Deref> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use map.Map
+use creusot.prelude.Any
+
+type t_T
+
+type t_GuardedBorrow_T = { borrow: MutBorrow.t t_T; _guard: Map.map t_T bool; _initial: MutBorrow.t t_T }
+
+predicate index_Mapping_T_bool [@inline:trivial] (self: Map.map t_T bool) (a: t_T) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_T_bool
+
+function guard_T [@inline:trivial] (self: t_GuardedBorrow_T) : Map.map t_T bool = self._guard
+
+meta "rewrite_def" function guard_T
+
+function prophecy_T [@inline:trivial] (self: t_GuardedBorrow_T) : t_T = self._initial.final
+
+meta "rewrite_def" function prophecy_T
+
+predicate invariant_GuardedBorrow_T (self: t_GuardedBorrow_T) =
+  index_Mapping_T_bool (guard_T self) self.borrow.current /\ prophecy_T self = self.borrow.final
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+predicate inv_GuardedBorrow_T (_1: t_GuardedBorrow_T)
+
+axiom inv_axiom [@rewrite]: forall x: t_GuardedBorrow_T [inv_GuardedBorrow_T x]. inv_GuardedBorrow_T x
+    = (invariant_GuardedBorrow_T x /\ inv_refmut_T x.borrow)
+
+predicate invariant_ref_GuardedBorrow_T [@inline:trivial] (self: t_GuardedBorrow_T) = inv_GuardedBorrow_T self
+
+meta "rewrite_def" predicate invariant_ref_GuardedBorrow_T
+
+predicate inv_ref_GuardedBorrow_T [@inline:trivial] (_1: t_GuardedBorrow_T) = invariant_ref_GuardedBorrow_T _1
+
+meta "rewrite_def" predicate inv_ref_GuardedBorrow_T
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let deref_GuardedBorrow_T (self: t_GuardedBorrow_T) (return (x: t_T)) =
+{[@stop_split] [@expl:deref 'self' type invariant] inv_ref_GuardedBorrow_T self}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- self.borrow.current ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: t_T = Any.any_l () | & self: t_GuardedBorrow_T = self ])
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:deref_GuardedBorrow_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_T result)
+    /\ ([@stop_split] [@expl:deref ensures] result = self.borrow.current)}
+    (! return {result}) ]
