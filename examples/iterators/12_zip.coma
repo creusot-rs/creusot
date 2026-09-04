@@ -45,10 +45,10 @@ module M_common__trait_ExactSizeIterator__is_empty
   predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_Self, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
-            /\ completed_Self i -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+            /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -74,8 +74,8 @@ module M_common__trait_ExactSizeIterator__is_empty
   predicate postcondition_len (self: ()) (args: t_Self) (result: UInt64.t)
   
   axiom postcondition_fndef'0:
-    forall args: t_Self, res: UInt64.t [postcondition_len () args res]. postcondition_len () args res
-      -> (let self = args in postcondition_size_hint () self { f0 = res; f1 = Some res })
+    forall args: t_Self, result: UInt64.t [postcondition_len () args result]. postcondition_len () args result
+      -> (let self = args in postcondition_size_hint () self { f0 = result; f1 = Some result })
   
   predicate postcondition_once_len (self: ()) (args: t_Self) (result: UInt64.t) = postcondition_len self args result
   
@@ -134,10 +134,10 @@ module M_common__trait_ExactSizeIterator__len
   predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_Self, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
-            /\ completed_Self i -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+            /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -194,9 +194,9 @@ module M_common__trait_ExactSizeIterator__len
   
   meta "rewrite_def" function deep_model_ref_Option_usize
   
-  let eq_Option_usize (self_: t_Option_usize) (rhs: t_Option_usize) (return (x: bool)) = any
+  let eq_Option_usize (self: t_Option_usize) (other: t_Option_usize) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
-      = (deep_model_ref_Option_usize self_ = deep_model_ref_Option_usize rhs)}
+      = (deep_model_ref_Option_usize self = deep_model_ref_Option_usize other)}
       (! return {result}) ]
   
   type t_AssertKind = Eq | Ne | Match
@@ -275,10 +275,10 @@ module M_impl_ExactSizeIterator_for_Zip_A_B__size_hint_exact (* <Zip<A, B> as co
   predicate postcondition_size_hint (self: ()) (args: t_A) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_A, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_A, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_A self s i.current /\ completed_A i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -302,10 +302,10 @@ module M_impl_ExactSizeIterator_for_Zip_A_B__size_hint_exact (* <Zip<A, B> as co
   predicate postcondition_size_hint'0 (self: ()) (args: t_B) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef'0:
-    forall args: t_B, res: tup2_usize_Option_usize [postcondition_size_hint'0 () args res]. postcondition_size_hint'0 () args res
+    forall args: t_B, result: tup2_usize_Option_usize [postcondition_size_hint'0 () args result]. postcondition_size_hint'0 () args result
       -> (let self = args in (forall s: Seq.seq t_Item'0, i: MutBorrow.t t_B. produces_B self s i.current
-            /\ completed_B i -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+            /\ completed_B i -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item'0, i: t_B. produces_B self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -358,7 +358,7 @@ module M_impl_ExactSizeIterator_for_Zip_A_B__size_hint_exact (* <Zip<A, B> as co
   
   predicate inv_Zip_A_B (_1: t_Zip_A_B)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Zip_A_B [inv_Zip_A_B x]. inv_Zip_A_B x = (inv_A x.a /\ inv_B x.b)
+  axiom inv_axiom [@rewrite]: forall _1: t_Zip_A_B [inv_Zip_A_B _1]. inv_Zip_A_B _1 = (inv_A _1.a /\ inv_B _1.b)
   
   predicate invariant_ref_Zip_A_B [@inline:trivial] (self: t_Zip_A_B) = inv_Zip_A_B self
   
@@ -493,10 +493,10 @@ module M_impl_ExactSizeIterator_for_Zip_A_B__size_hint_exact__refines (* <Zip<A,
   predicate postcondition_size_hint (self: ()) (args: t_A) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_A, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_A, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_A self s i.current /\ completed_A i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -520,10 +520,10 @@ module M_impl_ExactSizeIterator_for_Zip_A_B__size_hint_exact__refines (* <Zip<A,
   predicate postcondition_size_hint'0 (self: ()) (args: t_B) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef'0:
-    forall args: t_B, res: tup2_usize_Option_usize [postcondition_size_hint'0 () args res]. postcondition_size_hint'0 () args res
+    forall args: t_B, result: tup2_usize_Option_usize [postcondition_size_hint'0 () args result]. postcondition_size_hint'0 () args result
       -> (let self = args in (forall s: Seq.seq t_Item'0, i: MutBorrow.t t_B. produces_B self s i.current
-            /\ completed_B i -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+            /\ completed_B i -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item'0, i: t_B. produces_B self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -576,7 +576,7 @@ module M_impl_ExactSizeIterator_for_Zip_A_B__size_hint_exact__refines (* <Zip<A,
   
   predicate inv_Zip_A_B (_1: t_Zip_A_B)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Zip_A_B [inv_Zip_A_B x]. inv_Zip_A_B x = (inv_A x.a /\ inv_B x.b)
+  axiom inv_axiom [@rewrite]: forall _1: t_Zip_A_B [inv_Zip_A_B _1]. inv_Zip_A_B _1 = (inv_A _1.a /\ inv_B _1.b)
   
   predicate invariant_ref_Zip_A_B [@inline:trivial] (self: t_Zip_A_B) = inv_Zip_A_B self
   
@@ -708,8 +708,8 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   
   predicate inv_Option_Item (_1: t_Option_Item)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option_Item [inv_Option_Item x]. inv_Option_Item x
-      = match x with
+  axiom inv_axiom [@rewrite]: forall _1: t_Option_Item [inv_Option_Item _1]. inv_Option_Item _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_Item f0
         end
@@ -719,9 +719,9 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   predicate postcondition_next (self: ()) (args: MutBorrow.t t_A) (result: t_Option_Item)
   
   axiom postcondition_fndef:
-    forall args: MutBorrow.t t_A, res: t_Option_Item [postcondition_next () args res]. postcondition_next () args res
-      -> (let self = args in inv_Option_Item res
-      /\ match res with
+    forall args: MutBorrow.t t_A, result: t_Option_Item [postcondition_next () args result]. postcondition_next () args result
+      -> (let self = args in inv_Option_Item result
+      /\ match result with
         | None -> completed_A self
         | Some v -> produces_A self.current (Seq.singleton v) self.final
         end)
@@ -781,8 +781,8 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   
   predicate inv_Option_Item'0 (_1: t_Option_Item'0)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Item'0 [inv_Option_Item'0 x]. inv_Option_Item'0 x
-      = match x with
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_Item'0 [inv_Option_Item'0 _1]. inv_Option_Item'0 _1
+      = match _1 with
         | None'0 -> true
         | Some'0 f0 -> inv_Item'0 f0
         end
@@ -792,9 +792,9 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   predicate postcondition_next'0 (self: ()) (args: MutBorrow.t t_B) (result: t_Option_Item'0)
   
   axiom postcondition_fndef'0:
-    forall args: MutBorrow.t t_B, res: t_Option_Item'0 [postcondition_next'0 () args res]. postcondition_next'0 () args res
-      -> (let self = args in inv_Option_Item'0 res
-      /\ match res with
+    forall args: MutBorrow.t t_B, result: t_Option_Item'0 [postcondition_next'0 () args result]. postcondition_next'0 () args result
+      -> (let self = args in inv_Option_Item'0 result
+      /\ match result with
         | None'0 -> completed_B self
         | Some'0 v -> produces_B self.current (Seq.singleton v) self.final
         end)
@@ -812,7 +812,7 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   
   predicate inv_Zip_A_B (_1: t_Zip_A_B)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Zip_A_B [inv_Zip_A_B x]. inv_Zip_A_B x = (inv_A x.a /\ inv_B x.b)
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_Zip_A_B [inv_Zip_A_B _1]. inv_Zip_A_B _1 = (inv_A _1.a /\ inv_B _1.b)
   
   predicate invariant_refmut_Zip_A_B [@inline:trivial] (self: MutBorrow.t t_Zip_A_B) =
     inv_Zip_A_B self.current /\ inv_Zip_A_B self.final
@@ -848,8 +848,8 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   predicate inv_Option_tup2_Item_Item (_1: t_Option_tup2_Item_Item)
   
   axiom inv_axiom'2 [@rewrite]:
-    forall x: t_Option_tup2_Item_Item [inv_Option_tup2_Item_Item x]. inv_Option_tup2_Item_Item x
-      = match x with
+    forall _1: t_Option_tup2_Item_Item [inv_Option_tup2_Item_Item _1]. inv_Option_tup2_Item_Item _1
+      = match _1 with
         | None'1 -> true
         | Some'1 f0'0 -> inv_tup2_Item_Item f0'0
         end
@@ -947,7 +947,7 @@ module M_impl_Iterator_for_Zip_A_B__next__refines (* <Zip<A, B> as common::Itera
   
   predicate inv_Zip_A_B (_1: t_Zip_A_B)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Zip_A_B [inv_Zip_A_B x]. inv_Zip_A_B x = (inv_A x.a /\ inv_B x.b)
+  axiom inv_axiom [@rewrite]: forall _1: t_Zip_A_B [inv_Zip_A_B _1]. inv_Zip_A_B _1 = (inv_A _1.a /\ inv_B _1.b)
   
   predicate invariant_refmut_Zip_A_B [@inline:trivial] (self: MutBorrow.t t_Zip_A_B) =
     inv_Zip_A_B self.current /\ inv_Zip_A_B self.final
@@ -1001,8 +1001,8 @@ module M_impl_Iterator_for_Zip_A_B__next__refines (* <Zip<A, B> as common::Itera
   predicate inv_Option_tup2_Item_Item (_1: t_Option_tup2_Item_Item)
   
   axiom inv_axiom'0 [@rewrite]:
-    forall x: t_Option_tup2_Item_Item [inv_Option_tup2_Item_Item x]. inv_Option_tup2_Item_Item x
-      = match x with
+    forall _1: t_Option_tup2_Item_Item [inv_Option_tup2_Item_Item _1]. inv_Option_tup2_Item_Item _1
+      = match _1 with
         | None -> true
         | Some f0'0 -> inv_tup2_Item_Item f0'0
         end
@@ -1333,10 +1333,10 @@ module M_impl_Iterator_for_Zip_A_B__size_hint (* <Zip<A, B> as common::Iterator>
   predicate postcondition_size_hint (self: ()) (args: t_A) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_A, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_A, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_A self s i.current /\ completed_A i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -1387,10 +1387,10 @@ module M_impl_Iterator_for_Zip_A_B__size_hint (* <Zip<A, B> as common::Iterator>
   predicate postcondition_size_hint'0 (self: ()) (args: t_B) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef'0:
-    forall args: t_B, res: tup2_usize_Option_usize [postcondition_size_hint'0 () args res]. postcondition_size_hint'0 () args res
+    forall args: t_B, result: tup2_usize_Option_usize [postcondition_size_hint'0 () args result]. postcondition_size_hint'0 () args result
       -> (let self = args in (forall s: Seq.seq t_Item'0, i: MutBorrow.t t_B. produces_B self s i.current
-            /\ completed_B i -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+            /\ completed_B i -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item'0, i: t_B. produces_B self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -1433,7 +1433,7 @@ module M_impl_Iterator_for_Zip_A_B__size_hint (* <Zip<A, B> as common::Iterator>
   
   predicate inv_Zip_A_B (_1: t_Zip_A_B)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Zip_A_B [inv_Zip_A_B x]. inv_Zip_A_B x = (inv_A x.a /\ inv_B x.b)
+  axiom inv_axiom [@rewrite]: forall _1: t_Zip_A_B [inv_Zip_A_B _1]. inv_Zip_A_B _1 = (inv_A _1.a /\ inv_B _1.b)
   
   predicate invariant_ref_Zip_A_B [@inline:trivial] (self: t_Zip_A_B) = inv_Zip_A_B self
   
@@ -1530,7 +1530,7 @@ module M_impl_Iterator_for_Zip_A_B__size_hint__refines (* <Zip<A, B> as common::
   
   predicate inv_Zip_A_B (_1: t_Zip_A_B)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Zip_A_B [inv_Zip_A_B x]. inv_Zip_A_B x = (inv_A x.a /\ inv_B x.b)
+  axiom inv_axiom [@rewrite]: forall _1: t_Zip_A_B [inv_Zip_A_B _1]. inv_Zip_A_B _1 = (inv_A _1.a /\ inv_B _1.b)
   
   predicate invariant_ref_Zip_A_B [@inline:trivial] (self: t_Zip_A_B) = inv_Zip_A_B self
   
@@ -1563,10 +1563,10 @@ module M_impl_Iterator_for_Zip_A_B__size_hint__refines (* <Zip<A, B> as common::
   predicate postcondition_size_hint (self: ()) (args: t_A) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
-    forall args: t_A, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
+    forall args: t_A, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_A self s i.current /\ completed_A i
-          -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+          -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
@@ -1615,10 +1615,10 @@ module M_impl_Iterator_for_Zip_A_B__size_hint__refines (* <Zip<A, B> as common::
   predicate postcondition_size_hint'0 (self: ()) (args: t_B) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef'0:
-    forall args: t_B, res: tup2_usize_Option_usize [postcondition_size_hint'0 () args res]. postcondition_size_hint'0 () args res
+    forall args: t_B, result: tup2_usize_Option_usize [postcondition_size_hint'0 () args result]. postcondition_size_hint'0 () args result
       -> (let self = args in (forall s: Seq.seq t_Item'0, i: MutBorrow.t t_B. produces_B self s i.current
-            /\ completed_B i -> UInt64.t'int res.f0 <= Seq.length s)
-      /\ match res.f1 with
+            /\ completed_B i -> UInt64.t'int result.f0 <= Seq.length s)
+      /\ match result.f1 with
         | Some r -> forall s: Seq.seq t_Item'0, i: t_B. produces_B self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)

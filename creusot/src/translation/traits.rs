@@ -3,7 +3,7 @@ use crate::{
     contracts_items::{is_law, is_pearlite, is_sealed, is_spec},
     ctx::*,
     naming::name,
-    translation::pearlite::{PIdent, Substable, Term, TermKind},
+    translation::pearlite::{PIdent, Substable, Term},
     util::erased_identity_for_item,
     very_stable_hash::get_very_stable_hash,
 };
@@ -142,15 +142,13 @@ fn logic_refinement_term<'tcx>(
     let mut subst = HashMap::new();
     for (&(id, span, _), (id2, _, ty)) in trait_sig.inputs.iter().zip(impl_sig.inputs.iter()) {
         args.push((id, *ty, span));
-        subst.insert(id2.0, TermKind::Var(id));
+        subst.insert(id2.0, id.0);
     }
 
-    let mut impl_precond = impl_sig.contract.requires_conj(ctx.tcx);
-    impl_precond.subst(&subst);
+    let impl_precond = impl_sig.contract.requires_conj(ctx.tcx).subst(&subst);
     let trait_precond = trait_sig.contract.requires();
 
-    let mut impl_postcond = impl_sig.contract.ensures_conj(ctx.tcx);
-    impl_postcond.subst(&subst);
+    let impl_postcond = impl_sig.contract.ensures_conj(ctx.tcx).subst(&subst);
     let trait_postcond = trait_sig.contract.ensures_conj(ctx.tcx);
 
     let retty = impl_sig.output;

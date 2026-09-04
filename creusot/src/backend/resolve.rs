@@ -190,7 +190,7 @@ pub(crate) fn structural_resolve<'tcx>(
 
 pub enum ResolveDef<'tcx> {
     None,
-    Body(Ident, Term<'tcx>),
+    Body(Term<'tcx>),
     Axiom { axiom: Term<'tcx>, rewrite: bool },
 }
 
@@ -200,13 +200,12 @@ pub(crate) fn elaborate_resolve_def<'tcx>(
     ty: Ty<'tcx>,
     span: Span,
 ) -> ResolveDef<'tcx> {
-    let x_ident = Ident::fresh_local("x");
-    let subject = Term::var(x_ident, ty);
-
     if is_resolve_trivial(ctx, names.source_id(), names.typing_env(), ty, span) {
-        return ResolveDef::Body(x_ident, Term::true_(ctx.tcx));
+        return ResolveDef::Body(Term::true_(ctx.tcx));
     }
 
+    let arg = ctx.inputs_and_output(Intrinsic::Resolve.get(ctx)).0[0].0;
+    let subject = Term::var(arg, ty);
     let mut use_impl = false;
     let mut rhs = Term::true_(ctx.tcx);
     match resolve_user_resolve(ctx, ty, names.typing_env()) {
@@ -272,11 +271,11 @@ pub(crate) fn elaborate_resolve_def<'tcx>(
             if use_impl { Term::implies(lhs.clone(), rhs) } else { lhs.clone().eq(ctx.tcx, rhs) };
 
         ResolveDef::Axiom {
-            axiom: term.forall_trig((x_ident.into(), ty), [Trigger(Box::new([lhs]))]),
+            axiom: term.forall_trig((arg.into(), ty), [Trigger(Box::new([lhs]))]),
             rewrite: !use_impl,
         }
     } else {
-        ResolveDef::Body(x_ident, rhs)
+        ResolveDef::Body(rhs)
     }
 }
 

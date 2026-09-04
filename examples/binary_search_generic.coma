@@ -38,7 +38,7 @@ module M_binary_search
   
   predicate inv_Vec_T_Global (_1: t_Vec_T_Global)
   
-  axiom inv_axiom: forall x: t_Vec_T_Global [inv_Vec_T_Global x]. inv_Vec_T_Global x -> invariant_Vec_T_Global x
+  axiom inv_axiom: forall _1: t_Vec_T_Global [inv_Vec_T_Global _1]. inv_Vec_T_Global _1 -> invariant_Vec_T_Global _1
   
   predicate invariant_ref_Vec_T_Global [@inline:trivial] (self: t_Vec_T_Global) = inv_Vec_T_Global self
   
@@ -48,11 +48,11 @@ module M_binary_search
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  let len_T (self_: t_Vec_T_Global) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_Vec_T_Global self_}
+  let len_T (self: t_Vec_T_Global) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_T_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_T_Global self_)}
+      = Seq.length (view_Vec_T_Global self)}
       (! return {result}) ]
   
   predicate resolve_T (_1: t_T)
@@ -111,13 +111,13 @@ module M_binary_search
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_T_Global'0 (self_: t_Vec_T_Global) (ix: UInt64.t) (return (x: t_T)) =
-  {[@stop_split] [@expl:index_Vec_T_Global requires] ([@stop_split] [@expl:index 'self_' type invariant] inv_ref_Vec_T_Global self_)
-    /\ ([@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_T_Global self_))}
+  let index_Vec_T_Global'0 (self: t_Vec_T_Global) (index: UInt64.t) (return (x: t_T)) =
+  {[@stop_split] [@expl:index_Vec_T_Global requires] ([@stop_split] [@expl:index 'self' type invariant] inv_ref_Vec_T_Global self)
+    /\ ([@stop_split] [@expl:index requires] in_bounds_usize index (view_Vec_T_Global self))}
     any
     [ return (result: t_T) ->
     {[@stop_split] [@expl:index_Vec_T_Global ensures] ([@stop_split] [@expl:index result type invariant] inv_ref_T result)
-      /\ ([@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_T_Global self_) result)}
+      /\ ([@stop_split] [@expl:index ensures] has_value_usize index (view_Vec_T_Global self) result)}
       (! return {result}) ]
   
   type tup2_ref_T_ref_T = { f0: t_T; f1: t_T }
@@ -125,7 +125,7 @@ module M_binary_search
   predicate precondition_gt (self: ()) (args: tup2_ref_T_ref_T)
   
   axiom precondition_fndef:
-    forall args: tup2_ref_T_ref_T [precondition_gt () args]. (let {f0 = self_; f1 = other} = args in inv_ref_T self_
+    forall args: tup2_ref_T_ref_T [precondition_gt () args]. (let {f0 = self; f1 = other} = args in inv_ref_T self
         /\ inv_ref_T other) -> precondition_gt () args
   
   predicate gt_log_DeepModelTy [@inline:trivial] (self: t_DeepModelTy) (other: t_DeepModelTy) =
@@ -140,18 +140,18 @@ module M_binary_search
   predicate postcondition_gt (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_T_ref_T, res: bool [postcondition_gt () args res]. postcondition_gt () args res
-      -> (let {f0 = self_; f1 = other} = args in res
-      = gt_log_DeepModelTy (deep_model_ref_T self_) (deep_model_ref_T other))
+    forall args: tup2_ref_T_ref_T, result: bool [postcondition_gt () args result]. postcondition_gt () args result
+      -> (let {f0 = self; f1 = other} = args in result
+      = gt_log_DeepModelTy (deep_model_ref_T self) (deep_model_ref_T other))
   
   predicate postcondition_once_gt (self: ()) (args: tup2_ref_T_ref_T) (result: bool) = postcondition_gt self args result
   
   meta "rewrite_def" predicate postcondition_once_gt
   
-  let gt_T (self_: t_T) (other: t_T) (return (x: bool)) =
-  {[@stop_split] [@expl:gt requires] precondition_gt () { f0 = self_; f1 = other }}
+  let gt_T (self: t_T) (other: t_T) (return (x: bool)) =
+  {[@stop_split] [@expl:gt requires] precondition_gt () { f0 = self; f1 = other }}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:gt ensures] postcondition_once_gt () { f0 = self_;
+    [ return (result: bool) -> {[@stop_split] [@expl:gt ensures] postcondition_once_gt () { f0 = self;
                                                                                             f1 = other } result}
       (! return {result}) ]
   
@@ -160,8 +160,8 @@ module M_binary_search
   predicate precondition_cmp (self: ()) (args: tup2_ref_T_ref_T)
   
   axiom precondition_fndef'0:
-    forall args: tup2_ref_T_ref_T [precondition_cmp () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_T self_
-        /\ inv_ref_T rhs) -> precondition_cmp () args
+    forall args: tup2_ref_T_ref_T [precondition_cmp () args]. (let {f0 = self; f1 = other} = args in inv_ref_T self
+        /\ inv_ref_T other) -> precondition_cmp () args
   
   function lt_log_total_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
   
@@ -177,19 +177,19 @@ module M_binary_search
   predicate postcondition_cmp (self: ()) (args: tup2_ref_T_ref_T) (result: t_Ordering)
   
   axiom postcondition_fndef'0:
-    forall args: tup2_ref_T_ref_T, res: t_Ordering [postcondition_cmp () args res]. postcondition_cmp () args res
-      -> (let {f0 = self_; f1 = rhs} = args in res = cmp_log_DeepModelTy (deep_model_T self_) (deep_model_T rhs))
+    forall args: tup2_ref_T_ref_T, result: t_Ordering [postcondition_cmp () args result]. postcondition_cmp () args result
+      -> (let {f0 = self; f1 = other} = args in result = cmp_log_DeepModelTy (deep_model_T self) (deep_model_T other))
   
   predicate postcondition_once_cmp (self: ()) (args: tup2_ref_T_ref_T) (result: t_Ordering) =
     postcondition_cmp self args result
   
   meta "rewrite_def" predicate postcondition_once_cmp
   
-  let cmp_T (self_: t_T) (rhs: t_T) (return (x: t_Ordering)) =
-  {[@stop_split] [@expl:cmp requires] precondition_cmp () { f0 = self_; f1 = rhs }}
+  let cmp_T (self: t_T) (other: t_T) (return (x: t_Ordering)) =
+  {[@stop_split] [@expl:cmp requires] precondition_cmp () { f0 = self; f1 = other }}
     any
-    [ return (result: t_Ordering) -> {[@stop_split] [@expl:cmp ensures] postcondition_once_cmp () { f0 = self_;
-                                                                                                    f1 = rhs } result}
+    [ return (result: t_Ordering) -> {[@stop_split] [@expl:cmp ensures] postcondition_once_cmp () { f0 = self;
+                                                                                                    f1 = other } result}
       (! return {result}) ]
   
   predicate sorted_range_DeepModelTy (s: Seq.seq t_DeepModelTy) (l: int) (u: int) =

@@ -10,7 +10,7 @@ module M_deref_mut_wrap
   
   predicate precondition_deref_mut (self: ()) (args: MutBorrow.t t_T)
   
-  axiom precondition_fndef: forall args: MutBorrow.t t_T [precondition_deref_mut () args]. (let self_ = args in false)
+  axiom precondition_fndef: forall args: MutBorrow.t t_T [precondition_deref_mut () args]. (let self = args in false)
       -> precondition_deref_mut () args
   
   predicate inv_Target (_1: t_Target)
@@ -27,19 +27,19 @@ module M_deref_mut_wrap
   predicate postcondition_deref_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target)
   
   axiom postcondition_fndef:
-    forall args: MutBorrow.t t_T, res: MutBorrow.t t_Target [postcondition_deref_mut () args res]. postcondition_deref_mut () args res
-      -> (let self_ = args in inv_refmut_Target res)
+    forall args: MutBorrow.t t_T, result: MutBorrow.t t_Target [postcondition_deref_mut () args result]. postcondition_deref_mut () args result
+      -> (let self = args in inv_refmut_Target result)
   
   predicate postcondition_once_deref_mut (self: ()) (args: MutBorrow.t t_T) (result: MutBorrow.t t_Target) =
     postcondition_deref_mut self args result
   
   meta "rewrite_def" predicate postcondition_once_deref_mut
   
-  let deref_mut_T (self_: MutBorrow.t t_T) (return (x: MutBorrow.t t_Target)) =
-  {[@stop_split] [@expl:deref_mut requires] precondition_deref_mut () self_}
+  let deref_mut_T (self: MutBorrow.t t_T) (return (x: MutBorrow.t t_Target)) =
+  {[@stop_split] [@expl:deref_mut requires] precondition_deref_mut () self}
     any
     [ return (result: MutBorrow.t t_Target) ->
-    {[@stop_split] [@expl:deref_mut ensures] postcondition_once_deref_mut () self_ result}
+    {[@stop_split] [@expl:deref_mut ensures] postcondition_once_deref_mut () self result}
       (! return {result}) ]
   
   predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
@@ -116,7 +116,7 @@ module M_deref_wrap
   
   predicate precondition_deref (self: ()) (args: t_T)
   
-  axiom precondition_fndef: forall args: t_T [precondition_deref () args]. (let self_ = args in false)
+  axiom precondition_fndef: forall args: t_T [precondition_deref () args]. (let self = args in false)
       -> precondition_deref () args
   
   predicate inv_Target (_1: t_Target)
@@ -132,16 +132,16 @@ module M_deref_wrap
   predicate postcondition_deref (self: ()) (args: t_T) (result: t_Target)
   
   axiom postcondition_fndef:
-    forall args: t_T, res: t_Target [postcondition_deref () args res]. postcondition_deref () args res
-      -> (let self_ = args in inv_ref_Target res)
+    forall args: t_T, result: t_Target [postcondition_deref () args result]. postcondition_deref () args result
+      -> (let self = args in inv_ref_Target result)
   
   predicate postcondition_once_deref (self: ()) (args: t_T) (result: t_Target) = postcondition_deref self args result
   
   meta "rewrite_def" predicate postcondition_once_deref
   
-  let deref_T (self_: t_T) (return (x: t_Target)) = {[@stop_split] [@expl:deref requires] precondition_deref () self_}
+  let deref_T (self: t_T) (return (x: t_Target)) = {[@stop_split] [@expl:deref requires] precondition_deref () self}
     any
-    [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self_ result}
+    [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self result}
       (! return {result}) ]
   
   predicate inv_T (_1: t_T)

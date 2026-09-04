@@ -54,7 +54,7 @@ type t_Target
 
 predicate precondition_deref (self: ()) (args: t_T)
 
-axiom precondition_fndef: forall args: t_T [precondition_deref () args]. (let self_ = args in false)
+axiom precondition_fndef: forall args: t_T [precondition_deref () args]. (let self = args in false)
     -> precondition_deref () args
 
 predicate inv_Target (_1: t_Target)
@@ -70,16 +70,16 @@ meta "rewrite_def" predicate inv_ref_Target
 predicate postcondition_deref (self: ()) (args: t_T) (result: t_Target)
 
 axiom postcondition_fndef:
-  forall args: t_T, res: t_Target [postcondition_deref () args res]. postcondition_deref () args res
-    -> (let self_ = args in inv_ref_Target res)
+  forall args: t_T, result: t_Target [postcondition_deref () args result]. postcondition_deref () args result
+    -> (let self = args in inv_ref_Target result)
 
 predicate postcondition_once_deref (self: ()) (args: t_T) (result: t_Target) = postcondition_deref self args result
 
 meta "rewrite_def" predicate postcondition_once_deref
 
-let deref_T (self_: t_T) (return (x: t_Target)) = {[@stop_split] [@expl:deref requires] precondition_deref () self_}
+let deref_T (self: t_T) (return (x: t_Target)) = {[@stop_split] [@expl:deref requires] precondition_deref () self}
   any
-  [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self_ result}
+  [ return (result: t_Target) -> {[@stop_split] [@expl:deref ensures] postcondition_once_deref () self result}
     (! return {result}) ]
 
 predicate invariant_Ghost_ref_Target [@inline:trivial] (self: t_Target) = inv_ref_Target self
@@ -117,8 +117,8 @@ predicate inv_A (_1: t_A)
 predicate postcondition_open (self: ()) (args: tup3_Ghost_ref_Target_Ghost_Tokens_F) (result: t_A)
 
 axiom postcondition_fndef'0:
-  forall args: tup3_Ghost_ref_Target_Ghost_Tokens_F, res: t_A [postcondition_open () args res]. postcondition_open () args res
-    -> (let {f0 = self; f1 = tokens; f2 = f} = args in inv_A res)
+  forall args: tup3_Ghost_ref_Target_Ghost_Tokens_F, result: t_A [postcondition_open () args result]. postcondition_open () args result
+    -> (let {f0 = self; f1 = tokens; f2 = f} = args in inv_A result)
 
 predicate postcondition_once_open (self: ()) (args: tup3_Ghost_ref_Target_Ghost_Tokens_F) (result: t_A) =
   postcondition_open self args result

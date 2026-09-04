@@ -38,12 +38,12 @@ predicate precondition_P (self: t_P) (args: t_T)
 
 predicate postcondition_once_P (self: t_P) (args: t_T) (result: bool)
 
-let call_once_P (self_: t_P) (arg: t_T) (return (x: bool)) =
-{[@stop_split] [@expl:call_once_P requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_P self_)
-  /\ ([@stop_split] [@expl:call_once 'arg' type invariant] inv_tup1_ref_T arg)
-  /\ ([@stop_split] [@expl:call_once requires] precondition_P self_ arg)}
+let call_once_P (self: t_P) (args: t_T) (return (x: bool)) =
+{[@stop_split] [@expl:call_once_P requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_P self)
+  /\ ([@stop_split] [@expl:call_once 'args' type invariant] inv_tup1_ref_T args)
+  /\ ([@stop_split] [@expl:call_once requires] precondition_P self args)}
   any
-  [ return (result: bool) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_P self_ arg result}
+  [ return (result: bool) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_P self args result}
     (! return {result}) ]
 
 predicate resolve_T (_1: t_T)
@@ -52,8 +52,8 @@ predicate resolve_P (_1: t_P)
 
 predicate inv_Option_T (_1: t_Option_T)
 
-axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-    = match x with
+axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+    = match _1 with
       | None -> true
       | Some f0 -> inv_T f0
       end

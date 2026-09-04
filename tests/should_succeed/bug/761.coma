@@ -27,8 +27,8 @@ module M_try_option
   
   predicate inv_Option_T (_1: t_Option_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-      = match x with
+  axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+      = match _1 with
         | None -> true
         | Some f0 -> inv_T f0
         end
@@ -39,8 +39,8 @@ module M_try_option
   
   predicate inv_Option_Infallible (_1: t_Option_Infallible)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Option_Infallible [inv_Option_Infallible x]. inv_Option_Infallible x
-      = match x with
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_Infallible [inv_Option_Infallible _1]. inv_Option_Infallible _1
+      = match _1 with
         | None'0 -> true
         | Some'0 f0 -> inv_Infallible f0
         end
@@ -48,18 +48,18 @@ module M_try_option
   predicate inv_ControlFlow_Option_Infallible_T (_1: t_ControlFlow_Option_Infallible_T)
   
   axiom inv_axiom'1 [@rewrite]:
-    forall x: t_ControlFlow_Option_Infallible_T [inv_ControlFlow_Option_Infallible_T x]. inv_ControlFlow_Option_Infallible_T x
-      = match x with
+    forall _1: t_ControlFlow_Option_Infallible_T [inv_ControlFlow_Option_Infallible_T _1]. inv_ControlFlow_Option_Infallible_T _1
+      = match _1 with
         | Continue f0 -> inv_T f0
         | Break f0 -> inv_Option_Infallible f0
         end
   
-  let branch_Option_T (self_: t_Option_T) (return (x: t_ControlFlow_Option_Infallible_T)) =
-  {[@stop_split] [@expl:branch 'self_' type invariant] inv_Option_T self_}
+  let branch_Option_T (self: t_Option_T) (return (x: t_ControlFlow_Option_Infallible_T)) =
+  {[@stop_split] [@expl:branch 'self' type invariant] inv_Option_T self}
     any
     [ return (result: t_ControlFlow_Option_Infallible_T) ->
     {[@stop_split] [@expl:branch_Option_T ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_T result)
-      /\ ([@stop_split] [@expl:branch ensures] match self_ with
+      /\ ([@stop_split] [@expl:branch ensures] match self with
         | Some v -> result = Continue v
         | None -> result = Break (None'0)
         end)}
@@ -137,8 +137,8 @@ module M_try_result
   
   predicate inv_Result_T_E (_1: t_Result_T_E)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Result_T_E [inv_Result_T_E x]. inv_Result_T_E x
-      = match x with
+  axiom inv_axiom [@rewrite]: forall _1: t_Result_T_E [inv_Result_T_E _1]. inv_Result_T_E _1
+      = match _1 with
         | Ok f0 -> inv_T f0
         | Err f0 -> inv_E f0
         end
@@ -149,8 +149,9 @@ module M_try_result
   
   predicate inv_Result_Infallible_E (_1: t_Result_Infallible_E)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Result_Infallible_E [inv_Result_Infallible_E x]. inv_Result_Infallible_E x
-      = match x with
+  axiom inv_axiom'0 [@rewrite]:
+    forall _1: t_Result_Infallible_E [inv_Result_Infallible_E _1]. inv_Result_Infallible_E _1
+      = match _1 with
         | Ok'0 f0 -> inv_Infallible f0
         | Err'0 f0 -> inv_E f0
         end
@@ -158,18 +159,18 @@ module M_try_result
   predicate inv_ControlFlow_Result_Infallible_E_T (_1: t_ControlFlow_Result_Infallible_E_T)
   
   axiom inv_axiom'1 [@rewrite]:
-    forall x: t_ControlFlow_Result_Infallible_E_T [inv_ControlFlow_Result_Infallible_E_T x]. inv_ControlFlow_Result_Infallible_E_T x
-      = match x with
+    forall _1: t_ControlFlow_Result_Infallible_E_T [inv_ControlFlow_Result_Infallible_E_T _1]. inv_ControlFlow_Result_Infallible_E_T _1
+      = match _1 with
         | Continue f0 -> inv_T f0
         | Break f0 -> inv_Result_Infallible_E f0
         end
   
-  let branch_Result_T_E (self_: t_Result_T_E) (return (x: t_ControlFlow_Result_Infallible_E_T)) =
-  {[@stop_split] [@expl:branch 'self_' type invariant] inv_Result_T_E self_}
+  let branch_Result_T_E (self: t_Result_T_E) (return (x: t_ControlFlow_Result_Infallible_E_T)) =
+  {[@stop_split] [@expl:branch 'self' type invariant] inv_Result_T_E self}
     any
     [ return (result: t_ControlFlow_Result_Infallible_E_T) ->
     {[@stop_split] [@expl:branch_Result_T_E ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Result_Infallible_E_T result)
-      /\ ([@stop_split] [@expl:branch ensures] match self_ with
+      /\ ([@stop_split] [@expl:branch ensures] match self with
         | Ok v -> result = Continue v
         | Err e -> result = Break (Err'0 e)
         end)}
@@ -185,15 +186,15 @@ module M_try_result
   
   type tup2_Result_T_E_Result_Infallible_E = { f0: t_Result_T_E; f1: t_Result_Infallible_E }
   
-  predicate postcondition_from (self: ()) (args: t_E) (result: t_E) = let self_ = args in inv_E result /\ result = self_
+  predicate postcondition_from (self: ()) (args: t_E) (result: t_E) = let t = args in inv_E result /\ result = t
   
   meta "rewrite_def" predicate postcondition_from
   
-  let from_E (self_: t_E) (return (x: t_E)) = {[@stop_split] [@expl:from 'self_' type invariant] inv_E self_}
+  let from_E (t: t_E) (return (x: t_E)) = {[@stop_split] [@expl:from 't' type invariant] inv_E t}
     any
     [ return (result: t_E) ->
     {[@stop_split] [@expl:from_E ensures] ([@stop_split] [@expl:from result type invariant] inv_E result)
-      /\ ([@stop_split] [@expl:from ensures] result = self_)}
+      /\ ([@stop_split] [@expl:from ensures] result = t)}
       (! return {result}) ]
   
   let from_residual_Result_T_E (residual: t_Result_Infallible_E) (return (x: t_Result_T_E)) =

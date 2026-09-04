@@ -180,8 +180,8 @@ module M_message_passing
   
   predicate inv_State (_1: t_State)
   
-  axiom inv_axiom [@rewrite]: forall x: t_State [inv_State x]. inv_State x
-      = match x with
+  axiom inv_axiom [@rewrite]: forall _1: t_State [inv_State _1]. inv_State _1
+      = match _1 with
         | NotWrittenYet -> true
         | Synchronisation f0'4 f1'2 -> inv_AtView_Perm_PermCell_i32 f0'4
         | Readable f0'4 f1'2 -> true
@@ -191,8 +191,8 @@ module M_message_passing
   predicate inv_MessagePassingAtomicInv (_1: t_MessagePassingAtomicInv)
   
   axiom inv_axiom'0 [@rewrite]:
-    forall x: t_MessagePassingAtomicInv [inv_MessagePassingAtomicInv x]. inv_MessagePassingAtomicInv x
-      = inv_State x.state
+    forall _1: t_MessagePassingAtomicInv [inv_MessagePassingAtomicInv _1]. inv_MessagePassingAtomicInv _1
+      = inv_State _1.state
   
   predicate invariant_Ghost_MessagePassingAtomicInv [@inline:trivial] (self: t_MessagePassingAtomicInv) =
     inv_MessagePassingAtomicInv self
@@ -440,8 +440,8 @@ module M_message_passing
   
   predicate resolve_State (_1: t_State)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_State [resolve_State x]. resolve_State x
-      = match x with
+  axiom resolve_axiom [@rewrite]: forall _1: t_State [resolve_State _1]. resolve_State _1
+      = match _1 with
         | NotWrittenYet -> true
         | Synchronisation x0 x1 -> resolve_AtView_Perm_PermCell_i32 x0
         | Readable x0 x1 -> true
@@ -908,20 +908,20 @@ module M_message_passing
   
   type t_Option_refmut_Resource_Excl_unit = None'3 | Some'3 (MutBorrow.t t_Resource_Excl_unit)
   
-  let as_mut_Resource_Excl_unit (self_: MutBorrow.t t_Option_Resource_Excl_unit)
+  let as_mut_Resource_Excl_unit (self: MutBorrow.t t_Option_Resource_Excl_unit)
     (return (x: t_Option_refmut_Resource_Excl_unit)) = any
     [ return (result: t_Option_refmut_Resource_Excl_unit) ->
-    {[@stop_split] [@expl:as_mut_Resource_Excl_unit ensures] ([@stop_split] [@expl:as_mut ensures #0] self_.current
-          = None'1 -> result = None'3 /\ self_.final = None'1)
-      /\ ([@stop_split] [@expl:as_mut ensures #1] self_.current = None'1
+    {[@stop_split] [@expl:as_mut_Resource_Excl_unit ensures] ([@stop_split] [@expl:as_mut ensures #0] self.current
+          = None'1 -> result = None'3 /\ self.final = None'1)
+      /\ ([@stop_split] [@expl:as_mut ensures #1] self.current = None'1
       \/ (exists r: MutBorrow.t t_Resource_Excl_unit. result = Some'3 r
-        /\ self_.current = Some'1 (r.current) /\ self_.final = Some'1 (r.final)))}
+        /\ self.current = Some'1 (r.current) /\ self.final = Some'1 (r.final)))}
       (! return {result}) ]
   
-  let unwrap_refmut_Resource_Excl_unit (self_: t_Option_refmut_Resource_Excl_unit)
-    (return (x: MutBorrow.t t_Resource_Excl_unit)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'3}
+  let unwrap_refmut_Resource_Excl_unit (self: t_Option_refmut_Resource_Excl_unit)
+    (return (x: MutBorrow.t t_Resource_Excl_unit)) = {[@stop_split] [@expl:unwrap requires] self <> None'3}
     any
-    [ return (result: MutBorrow.t t_Resource_Excl_unit) -> {[@stop_split] [@expl:unwrap ensures] Some'3 result = self_}
+    [ return (result: MutBorrow.t t_Resource_Excl_unit) -> {[@stop_split] [@expl:unwrap ensures] Some'3 result = self}
       (! return {result}) ]
   
   predicate resolve_refmut_Option_Resource_Excl_unit [@inline:trivial] (_1: MutBorrow.t t_Option_Resource_Excl_unit) =
@@ -982,16 +982,16 @@ module M_message_passing
   
   meta "rewrite_def" predicate resolve_refmut_closure0
   
-  let take_Resource_Excl_unit (self_: MutBorrow.t t_Option_Resource_Excl_unit)
+  let take_Resource_Excl_unit (self: MutBorrow.t t_Option_Resource_Excl_unit)
     (return (x: t_Option_Resource_Excl_unit)) = any
-    [ return (result: t_Option_Resource_Excl_unit) -> {[@stop_split] [@expl:take ensures] result = self_.current
-      /\ self_.final = None'1}
+    [ return (result: t_Option_Resource_Excl_unit) -> {[@stop_split] [@expl:take ensures] result = self.current
+      /\ self.final = None'1}
       (! return {result}) ]
   
-  let unwrap_Resource_Excl_unit (self_: t_Option_Resource_Excl_unit) (return (x: t_Resource_Excl_unit)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None'1}
+  let unwrap_Resource_Excl_unit (self: t_Option_Resource_Excl_unit) (return (x: t_Resource_Excl_unit)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None'1}
     any
-    [ return (result: t_Resource_Excl_unit) -> {[@stop_split] [@expl:unwrap ensures] Some'1 result = self_}
+    [ return (result: t_Resource_Excl_unit) -> {[@stop_split] [@expl:unwrap ensures] Some'1 result = self}
       (! return {result}) ]
   
   let sync_Perm_PermCell_i32 (self: t_AtView_Perm_PermCell_i32) (sync_view: t_SyncView)
@@ -1350,18 +1350,18 @@ module M_message_passing
   
   type t_Option_ref_Perm_PermCell_i32 = None'4 | Some'4 t_Perm_PermCell_i32
   
-  let as_ref_Perm_PermCell_i32 (self_: t_Option_Perm_PermCell_i32) (return (x: t_Option_ref_Perm_PermCell_i32)) = any
+  let as_ref_Perm_PermCell_i32 (self: t_Option_Perm_PermCell_i32) (return (x: t_Option_ref_Perm_PermCell_i32)) = any
     [ return (result: t_Option_ref_Perm_PermCell_i32) ->
-    {[@stop_split] [@expl:as_ref_Perm_PermCell_i32 ensures] ([@stop_split] [@expl:as_ref ensures #0] self_ = None'2
+    {[@stop_split] [@expl:as_ref_Perm_PermCell_i32 ensures] ([@stop_split] [@expl:as_ref ensures #0] self = None'2
         -> result = None'4)
-      /\ ([@stop_split] [@expl:as_ref ensures #1] self_ = None'2
-      \/ (exists r: t_Perm_PermCell_i32. result = Some'4 r /\ self_ = Some'2 r))}
+      /\ ([@stop_split] [@expl:as_ref ensures #1] self = None'2
+      \/ (exists r: t_Perm_PermCell_i32. result = Some'4 r /\ self = Some'2 r))}
       (! return {result}) ]
   
-  let unwrap_ref_Perm_PermCell_i32 (self_: t_Option_ref_Perm_PermCell_i32) (return (x: t_Perm_PermCell_i32)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None'4}
+  let unwrap_ref_Perm_PermCell_i32 (self: t_Option_ref_Perm_PermCell_i32) (return (x: t_Perm_PermCell_i32)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None'4}
     any
-    [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:unwrap ensures] Some'4 result = self_}
+    [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:unwrap ensures] Some'4 result = self}
       (! return {result}) ]
   
   let new_ref_Perm_PermCell_i32 (x: t_Perm_PermCell_i32) (return (x'0: t_Perm_PermCell_i32)) = any

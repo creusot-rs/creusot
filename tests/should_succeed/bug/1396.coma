@@ -46,12 +46,12 @@ module M_apply_mut
     forall self: t_F, args: (), res_state: t_F, res: () [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  let call_mut_F (self_: MutBorrow.t t_F) (arg: ()) (return (x: ())) =
-  {[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
-    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self_.current arg)}
+  let call_mut_F (self: MutBorrow.t t_F) (args: ()) (return (x: ())) =
+  {[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self' type invariant] inv_refmut_F self)
+    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self.current args)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self.current args self.final result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -86,11 +86,11 @@ module M_apply_once
   
   predicate postcondition_once_F (self: t_F) (args: ()) (result: ())
   
-  let call_once_F (self_: t_F) (arg: ()) (return (x: ())) =
-  {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
-    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+  let call_once_F (self: t_F) (args: ()) (return (x: ())) =
+  {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_F self)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self args)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
+    [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self args result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -115,8 +115,8 @@ module M_foo1
   
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
-  let into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
+  let into_iter_Range_i32 (self: t_Range_i32) (return (x: t_Range_i32)) = any
+    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
@@ -158,10 +158,10 @@ module M_foo1
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
     resolve_refmut_Range_i32 self /\ ge_log_Int (deep_model_i32 self.current.start) (deep_model_i32 self.current.end')
   
-  let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
+  let next_Range_i32 (self: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Range_i32 self_
-        | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_Range_i32 self
+        | Some v -> produces_Range_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
@@ -293,8 +293,8 @@ module M_foo2
   
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
-  let into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
+  let into_iter_Range_i32 (self: t_Range_i32) (return (x: t_Range_i32)) = any
+    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
@@ -336,10 +336,10 @@ module M_foo2
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
     resolve_refmut_Range_i32 self /\ ge_log_Int (deep_model_i32 self.current.start) (deep_model_i32 self.current.end')
   
-  let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
+  let next_Range_i32 (self: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Range_i32 self_
-        | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_Range_i32 self
+        | Some v -> produces_Range_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
@@ -476,8 +476,8 @@ module M_foo3
   
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
-  let into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
+  let into_iter_Range_i32 (self: t_Range_i32) (return (x: t_Range_i32)) = any
+    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
@@ -519,10 +519,10 @@ module M_foo3
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
     resolve_refmut_Range_i32 self /\ ge_log_Int (deep_model_i32 self.current.start) (deep_model_i32 self.current.end')
   
-  let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
+  let next_Range_i32 (self: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Range_i32 self_
-        | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_Range_i32 self
+        | Some v -> produces_Range_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
@@ -654,8 +654,8 @@ module M_foo4
   
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
-  let into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
+  let into_iter_Range_i32 (self: t_Range_i32) (return (x: t_Range_i32)) = any
+    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
@@ -697,10 +697,10 @@ module M_foo4
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
     resolve_refmut_Range_i32 self /\ ge_log_Int (deep_model_i32 self.current.start) (deep_model_i32 self.current.end')
   
-  let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
+  let next_Range_i32 (self: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Range_i32 self_
-        | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_Range_i32 self
+        | Some v -> produces_Range_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
@@ -821,8 +821,8 @@ module M_foo5
   
   type t_Range_i32 = { start: Int32.t; end': Int32.t }
   
-  let into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
-    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
+  let into_iter_Range_i32 (self: t_Range_i32) (return (x: t_Range_i32)) = any
+    [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_i32 = None | Some Int32.t
   
@@ -864,10 +864,10 @@ module M_foo5
   predicate completed_Range_i32 (self: MutBorrow.t t_Range_i32) =
     resolve_refmut_Range_i32 self /\ ge_log_Int (deep_model_i32 self.current.start) (deep_model_i32 self.current.end')
   
-  let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
+  let next_Range_i32 (self: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Range_i32 self_
-        | Some v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_Range_i32 self
+        | Some v -> produces_Range_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   

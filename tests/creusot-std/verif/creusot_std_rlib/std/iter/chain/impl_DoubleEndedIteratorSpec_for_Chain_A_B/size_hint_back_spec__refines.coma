@@ -39,11 +39,11 @@ predicate completed_A (self: MutBorrow.t t_A)
 predicate postcondition_size_hint (self: ()) (args: t_A) (result: tup2_usize_Option_usize)
 
 axiom postcondition_fndef:
-  forall args: t_A, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
-    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_A self_ s i.current /\ completed_A i
-        -> UInt64.t'int res.f0 <= Seq.length s)
-    /\ match res.f1 with
-      | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self_ s i -> Seq.length s <= UInt64.t'int r
+  forall args: t_A, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
+    -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_A self s i.current /\ completed_A i
+        -> UInt64.t'int result.f0 <= Seq.length s)
+    /\ match result.f1 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> Seq.length s <= UInt64.t'int r
       | None -> true
       end)
 
@@ -69,11 +69,11 @@ predicate completed_B (self: MutBorrow.t t_B)
 predicate postcondition_size_hint'0 (self: ()) (args: t_B) (result: tup2_usize_Option_usize)
 
 axiom postcondition_fndef'0:
-  forall args: t_B, res: tup2_usize_Option_usize [postcondition_size_hint'0 () args res]. postcondition_size_hint'0 () args res
-    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_B. produces_B self_ s i.current /\ completed_B i
-        -> UInt64.t'int res.f0 <= Seq.length s)
-    /\ match res.f1 with
-      | Some r -> forall s: Seq.seq t_Item, i: t_B. produces_B self_ s i -> Seq.length s <= UInt64.t'int r
+  forall args: t_B, result: tup2_usize_Option_usize [postcondition_size_hint'0 () args result]. postcondition_size_hint'0 () args result
+    -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_B. produces_B self s i.current /\ completed_B i
+        -> UInt64.t'int result.f0 <= Seq.length s)
+    /\ match result.f1 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_B. produces_B self s i -> Seq.length s <= UInt64.t'int r
       | None -> true
       end)
 
@@ -86,11 +86,11 @@ constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
 type tup2_Option_usize_Option_usize = { f0'0: t_Option_usize; f1'0: t_Option_usize }
 
 predicate postcondition_size_hint'1 (self: ()) (args: t_Chain_A_B) (result: tup2_usize_Option_usize) =
-  let self_ = args in exists sa: tup2_usize_Option_usize, sb: tup2_usize_Option_usize. match iter_a_Chain_A_B self_ with
+  let self'0 = args in exists sa: tup2_usize_Option_usize, sb: tup2_usize_Option_usize. match iter_a_Chain_A_B self'0 with
         | Some'0 a -> postcondition_size_hint () a sa
         | None'0 -> sa = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) }
         end
-    /\ match iter_b_Chain_A_B self_ with
+    /\ match iter_b_Chain_A_B self'0 with
         | Some'1 b -> postcondition_size_hint'0 () b sb
         | None'1 -> sb = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) }
         end
@@ -116,8 +116,8 @@ predicate inv_A (_1: t_A)
 
 predicate inv_Option_A (_1: t_Option_A)
 
-axiom inv_axiom [@rewrite]: forall x: t_Option_A [inv_Option_A x]. inv_Option_A x
-    = match x with
+axiom inv_axiom [@rewrite]: forall _1: t_Option_A [inv_Option_A _1]. inv_Option_A _1
+    = match _1 with
       | None'0 -> true
       | Some'0 f0'1 -> inv_A f0'1
       end
@@ -126,8 +126,8 @@ predicate inv_B (_1: t_B)
 
 predicate inv_Option_B (_1: t_Option_B)
 
-axiom inv_axiom'0 [@rewrite]: forall x: t_Option_B [inv_Option_B x]. inv_Option_B x
-    = match x with
+axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_B [inv_Option_B _1]. inv_Option_B _1
+    = match _1 with
       | None'1 -> true
       | Some'1 f0'1 -> inv_B f0'1
       end
@@ -137,7 +137,7 @@ predicate invariant_Chain_A_B (self: t_Chain_A_B) =
 
 predicate inv_Chain_A_B (_1: t_Chain_A_B)
 
-axiom inv_axiom'1: forall x: t_Chain_A_B [inv_Chain_A_B x]. inv_Chain_A_B x -> invariant_Chain_A_B x
+axiom inv_axiom'1: forall _1: t_Chain_A_B [inv_Chain_A_B _1]. inv_Chain_A_B _1 -> invariant_Chain_A_B _1
 
 predicate invariant_ref_Chain_A_B [@inline:trivial] (self: t_Chain_A_B) = inv_Chain_A_B self
 
@@ -157,7 +157,7 @@ meta "rewrite_def" predicate inv_ref_A
 
 predicate precondition_size_hint (self: ()) (args: t_A)
 
-axiom precondition_fndef: forall args: t_A [precondition_size_hint () args]. (let self_ = args in inv_ref_A self_)
+axiom precondition_fndef: forall args: t_A [precondition_size_hint () args]. (let self = args in inv_ref_A self)
     -> precondition_size_hint () args
 
 predicate postcondition_once_size_hint (self: ()) (args: t_A) (result: tup2_usize_Option_usize) =
@@ -165,11 +165,11 @@ predicate postcondition_once_size_hint (self: ()) (args: t_A) (result: tup2_usiz
 
 meta "rewrite_def" predicate postcondition_once_size_hint
 
-let size_hint_A (self_: t_A) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+let size_hint_A (self: t_A) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
     (! return {result}) ]
 
 predicate invariant_ref_B [@inline:trivial] (self: t_B) = inv_B self
@@ -182,7 +182,7 @@ meta "rewrite_def" predicate inv_ref_B
 
 predicate precondition_size_hint'0 (self: ()) (args: t_B)
 
-axiom precondition_fndef'0: forall args: t_B [precondition_size_hint'0 () args]. (let self_ = args in inv_ref_B self_)
+axiom precondition_fndef'0: forall args: t_B [precondition_size_hint'0 () args]. (let self = args in inv_ref_B self)
     -> precondition_size_hint'0 () args
 
 predicate postcondition_once_size_hint'0 (self: ()) (args: t_B) (result: tup2_usize_Option_usize) =
@@ -190,22 +190,22 @@ predicate postcondition_once_size_hint'0 (self: ()) (args: t_B) (result: tup2_us
 
 meta "rewrite_def" predicate postcondition_once_size_hint'0
 
-let size_hint_B (self_: t_B) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint requires] precondition_size_hint'0 () self_}
+let size_hint_B (self: t_B) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint'0 () self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint'0 () self_ result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint'0 () self result}
     (! return {result}) ]
 
-let size_hint_Chain_A_B (self_: t_Chain_A_B) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Chain_A_B self_}
+let size_hint_Chain_A_B (self: t_Chain_A_B) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_Chain_A_B self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] exists sa: tup2_usize_Option_usize, sb: tup2_usize_Option_usize. match iter_a_Chain_A_B self_ with
+  {[@stop_split] [@expl:size_hint ensures] exists sa: tup2_usize_Option_usize, sb: tup2_usize_Option_usize. match iter_a_Chain_A_B self with
           | Some'0 a -> postcondition_size_hint () a sa
           | None'0 -> sa = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) }
           end
-      /\ match iter_b_Chain_A_B self_ with
+      /\ match iter_b_Chain_A_B self with
           | Some'1 b -> postcondition_size_hint'0 () b sb
           | None'1 -> sb = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) }
           end

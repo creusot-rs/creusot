@@ -19,23 +19,23 @@ meta "rewrite_def" predicate inv_ref_Self_
 
 predicate precondition_clone (self: ()) (args: t_Self_)
 
-axiom precondition_fndef: forall args: t_Self_ [precondition_clone () args]. (let self_ = args in inv_ref_Self_ self_)
+axiom precondition_fndef: forall args: t_Self_ [precondition_clone () args]. (let self = args in inv_ref_Self_ self)
     -> precondition_clone () args
 
 predicate postcondition_clone (self: ()) (args: t_Self_) (result: t_Self_)
 
 axiom postcondition_fndef:
-  forall args: t_Self_, res: t_Self_ [postcondition_clone () args res]. postcondition_clone () args res
-    -> (let self_ = args in inv_Self_ res)
+  forall args: t_Self_, result: t_Self_ [postcondition_clone () args result]. postcondition_clone () args result
+    -> (let self = args in inv_Self_ result)
 
 predicate postcondition_once_clone (self: ()) (args: t_Self_) (result: t_Self_) = postcondition_clone self args result
 
 meta "rewrite_def" predicate postcondition_once_clone
 
-let clone_Self_ (self_: t_Self_) (return (x: t_Self_)) =
-{[@stop_split] [@expl:clone requires] precondition_clone () self_}
+let clone_Self_ (self: t_Self_) (return (x: t_Self_)) =
+{[@stop_split] [@expl:clone requires] precondition_clone () self}
   any
-  [ return (result: t_Self_) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+  [ return (result: t_Self_) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self result}
     (! return {result}) ]
 
 predicate resolve_Self_ (_1: t_Self_)

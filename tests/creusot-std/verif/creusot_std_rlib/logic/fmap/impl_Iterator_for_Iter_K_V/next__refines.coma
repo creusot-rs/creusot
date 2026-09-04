@@ -43,7 +43,7 @@ function such_that_V (p: Map.map t_V bool) : t_V
 axiom such_that_V_spec: forall p: Map.map t_V bool [such_that_V p]. (exists x: t_V. index_Mapping_V_bool p x)
     -> index_Mapping_V_bool p (such_that_V p)
 
-constant any_V: t_V = such_that_V (fun (__0: t_V) -> true)
+constant any_V: t_V = such_that_V (fun (_0: t_V) -> true)
 
 function unwrap_Option_V (self: t_Option_V) : t_V = match self with
     | Some x -> x
@@ -65,11 +65,11 @@ meta "rewrite_def" predicate invariant_FMap_K_V
 
 predicate inv_FMap_K_V (_1: t_FMap_K_V)
 
-axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V x = invariant_FMap_K_V x
+axiom inv_axiom [@rewrite]: forall _1: t_FMap_K_V [inv_FMap_K_V _1]. inv_FMap_K_V _1 = invariant_FMap_K_V _1
 
 predicate inv_Iter_K_V (_1: t_Iter_K_V)
 
-axiom inv_axiom'0 [@rewrite]: forall x: t_Iter_K_V [inv_Iter_K_V x]. inv_Iter_K_V x = inv_FMap_K_V x.f0
+axiom inv_axiom'0 [@rewrite]: forall _1: t_Iter_K_V [inv_Iter_K_V _1]. inv_Iter_K_V _1 = inv_FMap_K_V _1.f0
 
 predicate invariant_refmut_Iter_K_V [@inline:trivial] (self: MutBorrow.t t_Iter_K_V) =
   inv_Iter_K_V self.current /\ inv_Iter_K_V self.final
@@ -90,8 +90,8 @@ meta "rewrite_def" predicate inv_tup2_K_V
 
 predicate inv_Option_tup2_K_V (_1: t_Option_tup2_K_V)
 
-axiom inv_axiom'1 [@rewrite]: forall x: t_Option_tup2_K_V [inv_Option_tup2_K_V x]. inv_Option_tup2_K_V x
-    = match x with
+axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_tup2_K_V [inv_Option_tup2_K_V _1]. inv_Option_tup2_K_V _1
+    = match _1 with
       | None'0 -> true
       | Some'0 f0'1 -> inv_tup2_K_V f0'1
       end
@@ -160,17 +160,17 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self_: MutBorrow.t t_Iter_K_V. inv_refmut_Iter_K_V self_
-    -> inv_refmut_Iter_K_V self_
+goal refines: forall self: MutBorrow.t t_Iter_K_V. inv_refmut_Iter_K_V self
+    -> inv_refmut_Iter_K_V self
     /\ (forall result: t_Option_tup2_K_V. inv_Option_tup2_K_V result
         /\ match result with
-          | None'0 -> completed_Iter_K_V self_
-          | Some'0 {f0'0 = k; f1'0 = v} -> produces_Iter_K_V self_.current (Seq.singleton { f0'0 = k;
-                                                                                            f1'0 = v }) self_.final
-          /\ view_Iter_K_V self_.current = insert_K (view_Iter_K_V self_.final) k v
+          | None'0 -> completed_Iter_K_V self
+          | Some'0 {f0'0 = k; f1'0 = v} -> produces_Iter_K_V self.current (Seq.singleton { f0'0 = k;
+                                                                                           f1'0 = v }) self.final
+          /\ view_Iter_K_V self.current = insert_K (view_Iter_K_V self.final) k v
           end
       -> inv_Option_tup2_K_V result
       /\ match result with
-        | None'0 -> completed_Iter_K_V self_
-        | Some'0 v -> produces_Iter_K_V self_.current (Seq.singleton v) self_.final
+        | None'0 -> completed_Iter_K_V self
+        | Some'0 v -> produces_Iter_K_V self.current (Seq.singleton v) self.final
         end)

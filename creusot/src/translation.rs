@@ -133,7 +133,7 @@ fn force_translation(ctx: &TranslationCtx) {
         }
         let _ = ctx.sig(def_id);
         if is_logic(ctx.tcx, def_id) && !is_opaque(ctx.tcx, def_id) {
-            let _ = ctx.term(def_id);
+            let _ = ctx.logic_term(def_id);
         }
     }
 }

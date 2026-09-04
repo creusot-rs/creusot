@@ -7,7 +7,7 @@ use crate::{
         opacity_witness_name,
     },
     metadata::{BinaryMetadata, Metadata, encode_def_ids, get_erasure_required},
-    naming::{ComaNames, ModulePath, lowercase_prefix},
+    naming::{ComaNames, ModulePath},
     translation::{
         self,
         external::{
@@ -16,8 +16,10 @@ use crate::{
             extract_trusted_positivity,
         },
         fmir,
-        pearlite::{self, Scoped, Term, TermWithTriggers},
-        specification::{ContractClauses, PreSignature, inherited_extern_spec, pre_sig_of},
+        pearlite::{self, PIdent, Term, TermSort, TermWithTriggers},
+        specification::{
+            PreContract, PreSignature, inherited_extern_spec, inputs_and_output, pre_sig_of,
+        },
         traits::Refinement,
     },
     util::{erased_identity_for_item, parent_module},
@@ -34,7 +36,6 @@ use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_data_structures::steal::Steal;
 use rustc_errors::{Diag, DiagMessage, FatalAbort};
 use rustc_hir::{
-    HirId,
     def::{CtorKind, DefKind},
     def_id::{CrateNum, DefId, LOCAL_CRATE, LocalDefId, ModId},
 };
@@ -57,7 +58,6 @@ use std::{
     collections::HashMap,
     ops::Deref,
 };
-use why3::Ident;
 
 pub(crate) use crate::{backend::clone_map::*, translated_item::*};
 
@@ -190,13 +190,11 @@ pub struct TranslationCtx<'tcx> {
     params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
     laws: OnceMap<DefId, Vec<DefId>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
-    terms: OnceMap<DefId, Box<Option<Scoped<Term<'tcx>>>>>,
-    terms_with_triggers: OnceMap<DefId, Box<Option<Scoped<TermWithTriggers<'tcx>>>>>,
+    terms: OnceMap<DefId, Box<Option<Term<'tcx>>>>,
+    inputs_and_output: OnceMap<DefId, Box<(Box<[(PIdent, Span, Ty<'tcx>)]>, Ty<'tcx>)>>,
     trait_impl: OnceMap<DefId, Vec<Refinement<'tcx>>>,
     sig: OnceMap<DefId, Box<PreSignature<'tcx>>>,
     opacity: OnceMap<DefId, Box<Opacity>>,
-    renamer: RefCell<HashMap<HirId, Ident>>,
-    pub corenamer: RefCell<HashMap<Ident, HirId>>,
     crate_name: OnceCell<why3::Symbol>,
     inhabited_ty: RefCell<HashMap<Ty<'tcx>, bool>>,
     nonzero_sized_ty: RefCell<HashMap<Ty<'tcx>, bool>>,
@@ -289,7 +287,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             laws: Default::default(),
             externs,
             terms: Default::default(),
-            terms_with_triggers: Default::default(),
+            inputs_and_output: Default::default(),
             creusot_items,
             variant_calls: RefCell::new(IndexMap::new()),
             opts,
@@ -305,8 +303,6 @@ impl<'tcx> TranslationCtx<'tcx> {
             sig: Default::default(),
             opacity: Default::default(),
             params_open_inv,
-            renamer: Default::default(),
-            corenamer: Default::default(),
             crate_name: Default::default(),
             nonzero_sized_ty: Default::default(),
             inhabited_ty: Default::default(),
@@ -344,68 +340,53 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.fmir_body.insert(item, |&item| Box::new(translation::function::fmir(self, item)))
     }
 
-    /// Compute the pearlite term associated with `def_id`.
-    ///
-    /// # Returns
-    /// - `None` if `def_id` does not have a body
-    /// - `Some(term)` if `def_id` has a body, in this crate or in a dependency.
-    pub(crate) fn term<'a>(&'a self, def_id: DefId) -> Option<&'a Scoped<Term<'tcx>>> {
+    /// Compute the term for a `#[logic]` function and memoize it.
+    /// `None` if the logic function has no body.
+    pub(crate) fn logic_term<'a>(&'a self, def_id: DefId) -> Option<&'a Term<'tcx>> {
         let Some(local_id) = def_id.as_local() else {
             return self.externs.term(def_id);
         };
 
         self.terms
             .insert(def_id, |_| {
-                if self.tcx.hir_maybe_body_owned_by(local_id).is_some() {
-                    let (bound, term) = match pearlite::from_thir(self, local_id) {
-                        Ok(t) => t,
-                        Err(err) => err.raise_fatal(),
-                    };
-                    let bound = bound.iter().map(|b| b.0).collect();
-                    Box::new(Some(Scoped(
-                        bound,
-                        pearlite::normalize(self, self.typing_env(def_id), term),
-                    )))
+                Box::new(if self.tcx.hir_maybe_body_owned_by(local_id).is_some() {
+                    let inputs = self.inputs_and_output(def_id).0;
+                    let term = self.term(def_id, TermSort::Logic(inputs)).no_triggers();
+                    Some(*term)
                 } else {
-                    Box::new(None)
-                }
+                    None
+                })
             })
             .as_ref()
     }
 
-    pub(crate) fn term_with_triggers<'a>(
-        &'a self,
+    /// Compute a term, no memoization
+    pub(crate) fn term(&self, def_id: DefId, sort: TermSort<'tcx, '_>) -> TermWithTriggers<'tcx> {
+        let mut t = pearlite::from_thir(self, def_id.expect_local(), &mut HashMap::new(), sort)
+            .unwrap_or_else(|err| err.raise_fatal());
+        *t.term = pearlite::normalize(self, self.typing_env(def_id), *t.term);
+        for trigger in &mut t.triggers {
+            let t = std::mem::take(&mut trigger.0);
+            trigger.0 = t
+                .into_iter()
+                .map(|t| pearlite::normalize(self, self.typing_env(def_id), t))
+                .collect();
+        }
+        t
+    }
+
+    pub(crate) fn inputs_and_output(
+        &self,
         def_id: DefId,
-    ) -> Option<&'a Scoped<TermWithTriggers<'tcx>>> {
-        let Some(local_id) = def_id.as_local() else {
-            return self.externs.term_with_triggers(def_id);
-        };
-
-        self.terms_with_triggers
-            .insert(def_id, |_| {
-                if self.tcx.hir_maybe_body_owned_by(local_id).is_some() {
-                    let (bound, mut term) = match pearlite::from_thir_with_triggers(self, local_id)
-                    {
-                        Ok(t) => t,
-                        Err(err) => err.raise_fatal(),
-                    };
-                    let bound = bound.iter().map(|b| b.0).collect();
-                    for t in std::iter::once(&mut *term.term)
-                        .chain(term.triggers.iter_mut().flat_map(|t| &mut t.0))
-                    {
-                        *t = pearlite::normalize(
-                            self,
-                            self.typing_env(def_id),
-                            std::mem::replace(t, /* dummy */ Term::true_(self.tcx)),
-                        );
-                    }
-
-                    Box::new(Some(Scoped(bound, term)))
-                } else {
-                    Box::new(None)
-                }
-            })
-            .as_ref()
+    ) -> (&[(PIdent, Span, Ty<'tcx>)], Ty<'tcx>) {
+        if !def_id.is_local()
+            && let Some(sig) = self.externs.sig(def_id)
+        {
+            return (&sig.inputs, sig.output);
+        }
+        let (inputs, output) =
+            self.inputs_and_output.insert(def_id, |_| Box::new(inputs_and_output(self, def_id)));
+        (inputs, *output)
     }
 
     pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&DenseBitSet<usize>> {
@@ -415,8 +396,13 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.params_open_inv.get(&def_id)
     }
 
-    pub(crate) fn sig(&self, item: DefId) -> &PreSignature<'tcx> {
-        self.sig.insert(item, |&item| Box::new(pre_sig_of(self, item)))
+    pub(crate) fn sig(&self, def_id: DefId) -> &PreSignature<'tcx> {
+        if !def_id.is_local()
+            && let Some(sig) = self.externs.sig(def_id)
+        {
+            return sig;
+        }
+        self.sig.insert(def_id, |&item| Box::new(pre_sig_of(self, item)))
     }
 
     pub(crate) fn body_with_facts(&self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
@@ -527,7 +513,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         let erased_thir = self.exported_erased_thir();
         BinaryMetadata::from_parts(
             self.terms,
-            self.terms_with_triggers,
+            self.sig,
             self.creusot_items,
             self.raw_intrinsics,
             self.extern_specs,
@@ -584,7 +570,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.tcx.hir_maybe_body_owned_by(local_id).is_some()
         } else {
             match self.item_type(def_id) {
-                ItemType::Logic { .. } => self.term(def_id).is_some(),
+                ItemType::Logic { .. } => self.logic_term(def_id).is_some(),
                 _ => false,
             }
         }
@@ -645,8 +631,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.extern_specs.insert(
                 def_id,
                 ExternSpec {
-                    contract: ContractClauses::new(),
-                    subst: erased_identity_for_item(self.tcx, def_id),
+                    contract: PreContract::new_extern(),
                     inputs: Box::new([]),
                     output: Ty::new_bool(self.tcx), // dummy
                     additional_predicates,
@@ -766,16 +751,6 @@ impl<'tcx> TranslationCtx<'tcx> {
             DefKind::Ctor(_, CtorKind::Fn) => ItemType::CtorFn,
             dk => ItemType::Unsupported(dk),
         }
-    }
-
-    pub(crate) fn rename(&self, ident: HirId) -> Ident {
-        *self.renamer.borrow_mut().entry(ident).or_insert_with(|| {
-            let r = Ident::fresh(self.crate_name(), {
-                lowercase_prefix("v_", self.hir_name(ident).as_str())
-            });
-            self.corenamer.borrow_mut().insert(r, ident);
-            r
-        })
     }
 
     pub(crate) fn module_path(&self, id: DefId) -> ModulePath {

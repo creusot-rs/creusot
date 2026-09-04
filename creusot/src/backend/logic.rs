@@ -14,7 +14,7 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use why3::{
-    Ident, Name,
+    Name,
     declaration::*,
     exp::{BinOp, Exp, Trigger},
 };
@@ -43,16 +43,11 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
         return None;
     }
 
-    let mut body_decls = Vec::new();
-
-    let args = pre_sig.inputs.clone();
-    let bound: Box<[Ident]> = args.iter().map(|(name, _, _)| name.0).collect();
-
     let name = names.source_ident();
-    let sig = lower_logic_sig(ctx, &names, name, pre_sig, def_id);
-    let (param_decls, args_names): (Vec<_>, Vec<_>) = args
-        .into_iter()
-        .map(|(name, span, ty)| {
+    let (mut body_decls, args_names): (Vec<_>, Vec<_>) = pre_sig
+        .inputs
+        .iter()
+        .map(|&(name, span, ty)| {
             let name = name.0;
             let decl = Decl::LogicDecl(LogicDecl {
                 kind: Some(DeclKind::Constant),
@@ -66,7 +61,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
             (decl, name)
         })
         .unzip();
-    body_decls.extend(param_decls);
+    let sig = lower_logic_sig(ctx, &names, name, &pre_sig, def_id);
 
     let val_decl = {
         let sig = sig.why_sig.clone();
@@ -88,7 +83,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
 
     let postcondition = sig.contract.ensures_conj(&name.name().to_string());
 
-    let term = ctx.ctx.term(def_id).unwrap().rename(&bound);
+    let term = ctx.ctx.logic_term(def_id).unwrap();
     let wp = wp(
         ctx,
         &names,

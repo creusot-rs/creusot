@@ -19,7 +19,8 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         | TermKind::Lit(_)
         | TermKind::Capture(_)
         | TermKind::Const(_)
-        | TermKind::ConstItem { .. } => (),
+        | TermKind::ConstItem { .. }
+        | TermKind::HirId(_) => (),
         TermKind::SeqLiteral(fields) => fields.iter().for_each(|a| visitor.visit_term(a)),
         TermKind::Cast { arg } => visitor.visit_term(arg),
         TermKind::Coerce { arg } => visitor.visit_term(arg),
@@ -100,7 +101,8 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         | TermKind::Lit(_)
         | TermKind::Capture(_)
         | TermKind::Const(_)
-        | TermKind::ConstItem { .. } => (),
+        | TermKind::ConstItem { .. }
+        | TermKind::HirId(_) => (),
         TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| visitor.visit_mut_term(a)),
         TermKind::Cast { arg } => visitor.visit_mut_term(arg),
         TermKind::Coerce { arg } => visitor.visit_mut_term(arg),

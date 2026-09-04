@@ -1,8 +1,9 @@
 use crate::{
     contracts_items::{Intrinsic, is_assertion, is_logic_closure, is_spec},
     ctx::TranslationCtx,
+    naming::{lowercase_prefix, name},
     translation::pearlite::{
-        BinOp, Ident, Literal, PIdent, Pattern, PatternKind, QuantKind, Term, TermKind,
+        BinOp, Ident, Literal, PIdent, Pattern, PatternKind, QuantKind, Term, TermKind, TermSort,
         TermWithTriggers, Trigger, UnOp,
     },
 };
@@ -19,114 +20,114 @@ use rustc_middle::{
     },
     ty::{CapturedPlace, Ty, TyKind, TypingEnv, adjustment::PointerCoercion},
 };
-use rustc_span::{ErrorGuaranteed, Symbol, sym};
+use rustc_span::{ErrorGuaranteed, Span, Symbol, sym};
 use std::{
     assert_matches,
+    collections::HashMap,
     fmt::{Display, Formatter},
 };
 
 type Triggers<'tcx> = Box<[Trigger<'tcx>]>;
-type BoundVars<'tcx> = Box<[(PIdent, Ty<'tcx>)]>;
 
 fn deref_mut_method() -> Symbol {
     Symbol::intern("deref_mut_method")
 }
 
-/// Get a Pearlite term together with its free variables.
+/// Get a Pearlite term for `id`
 pub(crate) fn from_thir<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
-) -> Result<(BoundVars<'tcx>, Term<'tcx>), ErrorGuaranteed> {
-    let (bound, term) = from_thir_with_triggers(ctx, id)?;
-    if !term.triggers.is_empty() {
-        Err(ctx.dcx().span_err(
-            ctx.def_span(id),
-            "Triggers can only be used inside quantifiers and ensures clauses of logic functions.",
-        ))
-    } else {
-        Ok((bound, *term.term))
-    }
-}
-
-pub(crate) fn from_thir_with_triggers<'tcx>(
-    ctx: &TranslationCtx<'tcx>,
-    id: LocalDefId,
-) -> Result<(BoundVars<'tcx>, TermWithTriggers<'tcx>), ErrorGuaranteed> {
+    renaming: &mut HashMap<HirId, Ident>,
+    sort: TermSort<'tcx, '_>,
+) -> Result<TermWithTriggers<'tcx>, ErrorGuaranteed> {
+    use crate::contracts_items::is_logic;
     let did = id.into();
     let (thir, expr) = ctx.thir_body(id);
     let thir = &thir.borrow();
     let typing_env = ctx.typing_env(did);
-    let lower = ThirTerm { ctx, item_id: id, thir, typing_env };
+    let mut lower = ThirTerm { ctx, item_id: id, thir, typing_env, renaming };
+
+    let to_pattern = |(ident, param): (Ident, &thir::Param<'tcx>)| -> Result<_, _> {
+        let Some(ref pat) = param.pat else {
+            return Ok((ident, Pattern::binder(ident, param.ty)));
+        };
+        let pattern = match pat.kind {
+            PatKind::Binding { var, subpattern: None, .. } => {
+                lower.renaming.insert(var.0, ident);
+                Pattern::binder(ident, pat.ty)
+            }
+            _ => lower.pattern_term(ctx, pat, true)?,
+        };
+        Ok((ident, pattern))
+    };
+
+    use TermSort::*;
+    let patterns = match sort {
+        Contract(inputs) => {
+            assert!(ctx.is_closure_like(did));
+            let parent = ctx.parent(did);
+            let (parent_thir, _) = ctx.thir_body(parent.expect_local());
+            let parent_thir = parent_thir.borrow();
+            assert!(inputs.len() == parent_thir.params.len());
+            inputs
+                .iter()
+                .map(|(ident, _, _)| ident.0)
+                .zip(&parent_thir.params)
+                .chain(std::iter::once(name::result()).zip(thir.params.iter().skip(1)))
+                .map(to_pattern)
+                .collect::<Result<Box<[(Ident, Pattern)]>, ErrorGuaranteed>>()?
+        }
+        LogicClosure(inputs) => {
+            assert!(inputs.len() == thir.params.len());
+            inputs
+                .iter()
+                .map(|(ident, _, _)| ident.0)
+                .zip(&thir.params)
+                .skip(1)
+                .map(to_pattern)
+                .map(|it| {
+                    it.map(|(ident, pat)| {
+                        (
+                            ident,
+                            match pat.kind {
+                                PatternKind::Deref(pat) => *pat,
+                                _ => pat,
+                            },
+                        )
+                    })
+                })
+                .collect::<Result<Box<[(Ident, Pattern)]>, ErrorGuaranteed>>()?
+        }
+        Logic(inputs) => {
+            assert!(is_logic(ctx.tcx, did));
+            inputs
+                .iter()
+                .map(|(ident, _, _)| ident.0)
+                .zip(&thir.params)
+                .map(to_pattern)
+                .collect::<Result<Box<[(Ident, Pattern)]>, ErrorGuaranteed>>()?
+        }
+        Other => [].into(),
+    };
 
     let (triggers, body) = lower.body_term(expr)?;
-
-    // All that remains is to translate patterns in the parameter list.
-    // Postconditions make this annoying. They are closures with a `result` parameter,
-    // so we have to collect the parameters of the parent function and the current closure.
-    let to_pattern = |param: &thir::Param<'tcx>| {
-        param.pat.as_ref().map(|box pat| lower.pattern_term(ctx, pat, true))
-    };
-    let is_closure = ctx.is_closure_like(did);
-    let patterns: Box<[Pattern]> = if is_spec(ctx.tcx, did) {
-        assert!(is_closure);
-        // Preconditions and variants have all of their variables bound in the parent function.
-        // Postconditions also bind a `result` variable.
-        let parent = ctx.parent(did).expect_local();
-        let (parent_thir, _) = ctx.thir_body(parent);
-        // Parameters of the parent function plus maybe the `result` parameter from the current closure
-        parent_thir
-            .borrow()
-            .params
-            .iter()
-            .chain(thir.params.iter().skip(1))
-            .filter_map(to_pattern)
-            .collect::<Result<_, ErrorGuaranteed>>()
-    } else if is_logic_closure(ctx.tcx, did) {
-        // Skip implicit `self` parameter, and remove the & pattern which is sometimes
-        // added for parameters of mappings.
-        // In other cases, binders are just variables and they are left intact.
-        // The only case where users can write arbitrary patterns in closure binders is
-        // the one where the desugaring wraps it in `&`, so there is no risk of removing
-        // a user-written `&` here.
-        thir.params
-            .iter()
-            .skip(1)
-            .filter_map(to_pattern)
-            .map(|pat| {
-                pat.map(|pat| match pat.kind {
-                    PatternKind::Deref(pat) => *pat,
-                    _ => pat,
-                })
-            })
-            .collect::<Result<_, ErrorGuaranteed>>()
-    } else {
-        assert!(!is_closure);
-        // Case of non-specs
-        thir.params.iter().filter_map(to_pattern).collect::<Result<_, ErrorGuaranteed>>()
-    }?;
-    let bound: BoundVars = patterns
-        .iter()
-        .enumerate()
-        .map(|(idx, pat)| {
-            let ident = match pat.kind {
-                PatternKind::Binder(var, _) => var,
-                _ => Ident::fresh_local(format!("__{}", idx)).into(),
-            };
-            (ident, pat.ty)
-        })
-        .collect();
-    let term = Box::new(patterns.into_iter().zip(bound.iter().cloned()).rev().fold(
-        body,
-        |body: Term<'tcx>, (pattern, (ident, ty))| match pattern.kind {
-            PatternKind::Binder(_, box Pattern { kind: PatternKind::Wildcard, .. })
-            | PatternKind::Wildcard => body,
-            _ => {
-                let span = body.span;
-                Term::let_(pattern, Term::var(ident, ty), body).span(span)
+    let term = patterns
+        .into_iter()
+        .rev()
+        .fold(body, |body: Term<'tcx>, (ident, pattern)| {
+            use PatternKind::*;
+            match pattern.kind {
+                Binder(v, box Pattern { kind: Wildcard, .. }) if v.0 == ident => body,
+                Wildcard | Tuple(box []) => body,
+                _ => {
+                    let span = body.span;
+                    let ty = pattern.ty;
+                    Term::let_(pattern, Term::var(ident, ty), body, span)
+                }
             }
-        },
-    ));
-    Ok((bound, TermWithTriggers { term, triggers }))
+        })
+        .into();
+    Ok(TermWithTriggers { term, triggers })
 }
 
 struct ThirTerm<'a, 'tcx> {
@@ -134,12 +135,29 @@ struct ThirTerm<'a, 'tcx> {
     item_id: LocalDefId,
     thir: &'a Thir<'tcx>,
     typing_env: TypingEnv<'tcx>,
+    renaming: &'a mut HashMap<HirId, Ident>,
+}
+
+fn head<'a, 'tcx>(thir: &'a Thir<'tcx>, expr: ExprId) -> &'a thir::Expr<'tcx> {
+    let e = &thir[expr];
+    match e.kind {
+        ExprKind::Scope { value, .. } => head(thir, value),
+        // `*&expr` is identical to `expr` in Pearlite
+        ExprKind::Deref { arg }
+            if let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } =
+                head(thir, arg).kind =>
+        {
+            assert_eq!(thir[arg].ty, e.ty);
+            head(thir, arg)
+        }
+        _ => e,
+    }
 }
 
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
 impl<'tcx> ThirTerm<'_, 'tcx> {
-    fn body_term(&self, expr: ExprId) -> Result<(Triggers<'tcx>, Term<'tcx>), ErrorGuaranteed> {
+    fn body_term(&mut self, expr: ExprId) -> Result<(Triggers<'tcx>, Term<'tcx>), ErrorGuaranteed> {
         let mut triggers = vec![];
         let expr = self.collect_triggers(expr, &mut triggers)?;
         let body = self.expr_term(expr)?;
@@ -147,11 +165,11 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     }
 
     fn collect_triggers(
-        &self,
+        &mut self,
         expr: ExprId,
         triggers: &mut Vec<Trigger<'tcx>>,
     ) -> Result<ExprId, ErrorGuaranteed> {
-        match self.head(expr).kind {
+        match head(self.thir, expr).kind {
             ExprKind::Call { ty, ref args, .. } => {
                 if let TyKind::FnDef(id, _) = *ty.kind()
                     && Intrinsic::Trigger.is(self.ctx, id)
@@ -179,67 +197,69 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
         }
     }
 
-    fn head(&self, expr: ExprId) -> &thir::Expr<'tcx> {
-        let e = &self.thir[expr];
-        match e.kind {
-            ExprKind::Scope { value, .. } => self.head(value),
-            // `*&expr` is identical to `expr` in Pearlite
-            ExprKind::Deref { arg }
-                if let ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } =
-                    self.head(arg).kind =>
-            {
-                assert_eq!(self.thir[arg].ty, e.ty);
-                self.head(arg)
-            }
-            _ => e,
-        }
+    fn rename(&self, id: HirId) -> Option<PIdent> {
+        self.renaming.get(&id).copied().map(PIdent)
     }
 
-    fn rename(&self, id: HirId) -> PIdent {
-        PIdent(self.ctx.rename(id))
+    fn bind(&mut self, id: HirId) -> PIdent {
+        // The same variable may be bound multiple times by or-patterns so we are careful to insert it only once.
+        PIdent(*self.renaming.entry(id).or_insert_with(|| {
+            Ident::fresh_local(lowercase_prefix("v_", self.ctx.hir_name(id).as_str()))
+        }))
     }
 
-    /// Filter out `ensures`/`requires`, but keep `proof_assert`!
-    fn not_spec(&self, id: StmtId) -> bool {
+    /// Filter out `ensures`/`requires`. NB: keep `proof_assert`!
+    fn is_spec(&self, id: StmtId) -> bool {
         match self.thir[id].kind {
-            StmtKind::Expr { expr, .. } => self.not_spec_expr(expr),
+            StmtKind::Expr { expr, .. } => self.is_spec_expr(expr),
             StmtKind::Let { initializer, .. } => {
                 if let Some(initializer) = initializer {
-                    self.not_spec_expr(initializer)
+                    self.is_spec_expr(initializer)
                 } else {
-                    true
+                    false
                 }
             }
         }
     }
 
-    fn not_spec_expr(&self, id: ExprId) -> bool {
-        match self.head(id).kind {
+    /// `true` for `ensures`/`requires`
+    fn is_spec_expr(&self, id: ExprId) -> bool {
+        match head(self.thir, id).kind {
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 let closure_id = closure_id.to_def_id();
-                !is_spec(self.ctx.tcx, closure_id) || is_assertion(self.ctx.tcx, closure_id)
+                is_spec(self.ctx.tcx, closure_id) && !is_assertion(self.ctx.tcx, closure_id)
             }
-            _ => true,
+            _ => false,
         }
     }
 
     /// Translate a THIR expression into a term.
-    fn expr_term(&self, expr: ExprId) -> Result<Term<'tcx>, ErrorGuaranteed> {
-        let thir::Expr { span, ty, ref kind, .. } = *self.head(expr);
+    fn expr_term(&mut self, expr: ExprId) -> Result<Term<'tcx>, ErrorGuaranteed> {
+        let &thir::Expr { span, ty, ref kind, .. } = head(self.thir, expr);
         if let Some(p) = self.to_capture(expr) {
             return Ok(Term { kind: TermKind::Capture(p), ty, span });
         }
         let res = match *kind {
             ExprKind::Block { block } => {
                 let Block { ref stmts, expr, .. } = self.thir[block];
-                let mut inner = match expr {
+                let mut pstmts = Vec::new();
+                // Traverse stmts in order so that binders are updated correctly
+                for &stmt in stmts.iter() {
+                    if self.is_spec(stmt) {
+                        continue;
+                    }
+                    let Some(stmt) = self.stmt_term(stmt)? else {
+                        continue;
+                    };
+                    pstmts.push(stmt);
+                }
+                let inner = match expr {
                     Some(e) => self.expr_term(e)?,
                     None => Term::unit(self.ctx.tcx).span(span),
                 };
-                for stmt in stmts.iter().rev().filter(|id| self.not_spec(**id)) {
-                    inner = self.stmt_term(*stmt, inner)?;
-                }
-                Ok(inner)
+                Ok(pstmts.into_iter().rev().fold(inner, |inner, (pattern, term, span)| {
+                    Term::let_(pattern, term, inner, span)
+                }))
             }
             ExprKind::Binary { op, lhs, rhs } => {
                 let lhs = self.expr_term(lhs)?;
@@ -302,7 +322,11 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 Ok(Term { ty, span, kind: TermKind::Unary { op, arg: Box::new(arg) } })
             }
             ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => {
-                Ok(Term { ty, span, kind: TermKind::Var(self.rename(id.0)) })
+                let kind = match self.rename(id.0) {
+                    Some(v) => TermKind::Var(v),
+                    None => TermKind::HirId(id.0),
+                };
+                Ok(Term { ty, span, kind })
             }
             ExprKind::Literal { lit, neg } => {
                 let lit = match lit.node {
@@ -343,8 +367,16 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         } else {
                             QuantKind::Exists
                         };
-                        let (binder, body) = self.quant_term(args[0])?;
-                        Ok(body.term.quant(kind, binder, body.triggers).span(span))
+                        let e = head(self.thir, args[0]);
+                            match e.kind {
+                                    ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
+                                        let inputs = self.ctx.inputs_and_output(closure_id.into()).0;
+                                        let TermWithTriggers { term, triggers } = from_thir(self.ctx, closure_id, self.renaming, TermSort::LogicClosure(inputs))?;
+                                        let binders = inputs.iter().skip(1).map(|&(x, _, ty)| (x, ty)).collect();
+                                        Ok(term.quant(kind, binders, triggers).span(span))
+                                    }
+                                    _ => Err(self.ctx.dcx().span_err(e.span, "unexpected error in quantifier")),
+                                }
                     }
                     Intrinsic::Implication => {
                         let lhs = self.expr_term(args[0])?;
@@ -381,7 +413,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         let mut term = args[0];
                         // Peel off everything to get to the array literal
                         let items = loop {
-                            match &self.head(term).kind {
+                            match &head(self.thir, term).kind {
                                 ExprKind::PointerCoercion { source, .. } => term = *source,
                                 ExprKind::Borrow { arg, .. } => term = *arg,
                                 ExprKind::Deref { arg, .. } => term = *arg,
@@ -497,10 +529,11 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 })
             }
             ExprKind::Deref { arg }
-                if let ExprKind::Call { ty, ref args, .. } = self.head(arg).kind
+                if let ExprKind::Call { ty, ref args, .. } = head(self.thir, arg).kind
                     && let &TyKind::FnDef(f_did, subst) = ty.kind()
                     && self.ctx.is_diagnostic_item(deref_mut_method(), f_did)
-                    && let ExprKind::Borrow { borrow_kind, arg } = self.head(args[0]).kind =>
+                    && let ExprKind::Borrow { borrow_kind, arg } =
+                        head(self.thir, args[0]).kind =>
             {
                 // We have just detected `*deref_mut(&mut x)`, which can happen only for Ghost and Snapshot
                 assert_matches!(borrow_kind, BorrowKind::Mut { .. });
@@ -552,12 +585,24 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             ExprKind::NamedConst { def_id, args, .. } => Ok(Term::const_item(def_id, args, ty)),
             ExprKind::ZstLiteral { .. } => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-                let (bound, term) = from_thir(self.ctx, closure_id)?;
-
-                if is_assertion(self.ctx.tcx, closure_id.to_def_id()) {
-                    Ok(Term { ty, span, kind: TermKind::Assert { cond: Box::new(term) } })
+                if is_logic_closure(self.ctx.tcx, closure_id.into()) {
+                    let inputs = self.ctx.inputs_and_output(closure_id.into()).0;
+                    assert!(inputs.len() == 2); // self (ignored) and the actual argument
+                    let body = from_thir(
+                        self.ctx,
+                        closure_id,
+                        self.renaming,
+                        TermSort::LogicClosure(inputs),
+                    )?
+                    .no_triggers();
+                    let (arg, _, arg_ty) = inputs[1];
+                    let kind = TermKind::Closure { arg, arg_ty, body };
+                    Ok(Term { ty, span, kind })
                 } else {
-                    Ok(Term { ty, span, kind: TermKind::Closure { bound, body: Box::new(term) } })
+                    assert!(is_assertion(self.ctx.tcx, closure_id.into()));
+                    let cond = from_thir(self.ctx, closure_id, self.renaming, TermSort::Other)?
+                        .no_triggers();
+                    Ok(Term { ty, span, kind: TermKind::Assert { cond } })
                 }
             }
             ExprKind::Cast { source } => {
@@ -586,7 +631,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
         Ok(Term { ty, ..res? })
     }
 
-    fn arm_term(&self, arm: ArmId) -> Result<(Pattern<'tcx>, Term<'tcx>), ErrorGuaranteed> {
+    fn arm_term(&mut self, arm: ArmId) -> Result<(Pattern<'tcx>, Term<'tcx>), ErrorGuaranteed> {
         let arm = &self.thir[arm];
 
         if arm.guard.is_some() {
@@ -600,7 +645,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     }
 
     fn pattern_term(
-        &self,
+        &mut self,
         ctx: &TranslationCtx<'tcx>,
         pat: &Pat<'tcx>,
         mut_allowed: bool,
@@ -623,7 +668,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         .dcx()
                         .span_err(pat.span, "mut binders are not supported in pearlite"));
                 }
-                let ident = self.rename(var.0);
+                let ident = self.bind(var.0);
                 let subpattern = match subpattern {
                     Some(pat) => self.pattern_term(ctx, pat, mut_allowed)?,
                     None => Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Wildcard },
@@ -689,17 +734,20 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
         }
     }
 
-    fn stmt_term(&self, stmt: StmtId, inner: Term<'tcx>) -> Result<Term<'tcx>, ErrorGuaranteed> {
+    fn stmt_term(
+        &mut self,
+        stmt: StmtId,
+    ) -> Result<Option<(Pattern<'tcx>, Term<'tcx>, Span)>, ErrorGuaranteed> {
         match &self.thir[stmt].kind {
             StmtKind::Expr { expr, .. } => {
                 let arg = self.expr_term(*expr)?;
                 if let TermKind::Tuple { fields } = &arg.kind
                     && fields.is_empty()
                 {
-                    return Ok(inner);
+                    return Ok(None);
                 };
                 let span = self.thir[*expr].span;
-                Ok(Term::let_(Pattern::wildcard(arg.ty), arg, inner).span(span))
+                Ok(Some((Pattern::wildcard(arg.ty), arg, span)))
             }
             StmtKind::Let { pattern, initializer, init_scope, .. } => {
                 let pattern = self.pattern_term(self.ctx, pattern, false)?;
@@ -707,7 +755,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     let initializer = self.expr_term(*initializer)?;
                     let span =
                         init_scope.span(self.ctx.tcx, self.ctx.region_scope_tree(self.item_id));
-                    Ok(Term::let_(pattern, initializer, inner).span(span))
+                    Ok(Some((pattern, initializer, span)))
                 } else {
                     let span = self.ctx.hir_span(HirId {
                         owner: OwnerId { def_id: self.item_id },
@@ -716,20 +764,6 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Err(self.ctx.dcx().span_err(span, "let-bindings must have values"))
                 }
             }
-        }
-    }
-
-    fn quant_term(
-        &self,
-        body: ExprId,
-    ) -> Result<(BoundVars<'tcx>, TermWithTriggers<'tcx>), ErrorGuaranteed> {
-        let e = self.head(body);
-        trace!("{:?}", e.kind);
-        match e.kind {
-            ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-                from_thir_with_triggers(self.ctx, closure_id)
-            }
-            _ => Err(self.ctx.dcx().span_err(e.span, "unexpected error in quantifier")),
         }
     }
 
@@ -749,7 +783,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     /// However we translate `&mut x` should be the same as if we had first substituted `a`.
     /// This is not fully satisfactory, but the other choice where we correspond to the behavior of programs is not stable under
     /// substitution.
-    fn logical_reborrow(&self, rebor_id: ExprId) -> Result<TermKind<'tcx>, ErrorGuaranteed> {
+    fn logical_reborrow(&mut self, rebor_id: ExprId) -> Result<TermKind<'tcx>, ErrorGuaranteed> {
         let (inner, projections) = self.logical_reborrow_inner(rebor_id)?;
         if projections.is_empty() {
             return Ok(inner.kind);
@@ -758,10 +792,10 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
     }
 
     fn logical_reborrow_inner(
-        &self,
+        &mut self,
         rebor_id: ExprId,
     ) -> Result<(Term<'tcx>, Vec<ProjectionElem<Term<'tcx>, Ty<'tcx>>>), ErrorGuaranteed> {
-        let thir::Expr { ty, span, ref kind, .. } = *self.head(rebor_id);
+        let &thir::Expr { ty, span, ref kind, .. } = head(self.thir, rebor_id);
         if self.to_capture(rebor_id).is_some() {
             return Err(self.ctx.dcx().span_err(
                 span,
@@ -780,10 +814,11 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     return Ok((inner.span(span), Vec::new()));
                 }
                 TyKind::Ref(_, _, Mutability::Not)
-                    if let ExprKind::Call { ty, ref args, .. } = self.head(arg).kind
+                    if let ExprKind::Call { ty, ref args, .. } = head(self.thir, arg).kind
                         && let &TyKind::FnDef(f_did, subst) = ty.kind()
                         && self.ctx.is_diagnostic_item(sym::deref_method, f_did)
-                        && let ExprKind::Borrow { borrow_kind, arg } = self.head(args[0]).kind =>
+                        && let ExprKind::Borrow { borrow_kind, arg } =
+                            head(self.thir, args[0]).kind =>
                 {
                     let subst = subst.skip_binder();
                     assert_matches!(borrow_kind, BorrowKind::Shared);
@@ -848,7 +883,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
 
     // Tries to convert the term into a place that could be captured by a closure
     fn to_hir_place(&self, id: ExprId) -> Option<(LocalVarId, Vec<ProjectionKind>)> {
-        let thir::Expr { ref kind, .. } = *self.head(id);
+        let &thir::Expr { ref kind, .. } = head(self.thir, id);
         match *kind {
             ExprKind::UpvarRef { var_hir_id, .. } => Some((var_hir_id, vec![])),
             ExprKind::Deref { arg } => {
