@@ -1,0 +1,77 @@
+(* <logic::ra::lattice::SemiLattice<T> as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+
+type t_T
+
+type t_SemiLattice_T = { f0: t_T }
+
+type t_Option_SemiLattice_T = None | Some t_SemiLattice_T
+
+function core_SemiLattice_T [@inline:trivial] (self: t_SemiLattice_T) : t_Option_SemiLattice_T = Some self
+
+meta "rewrite_def" function core_SemiLattice_T
+
+predicate index_Mapping_SemiLattice_T_bool [@inline:trivial] (self: Map.map t_SemiLattice_T bool) (a: t_SemiLattice_T) =
+  Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_SemiLattice_T_bool
+
+function such_that_SemiLattice_T (p: Map.map t_SemiLattice_T bool) : t_SemiLattice_T
+
+axiom such_that_SemiLattice_T_spec:
+  forall p: Map.map t_SemiLattice_T bool [such_that_SemiLattice_T p]. (exists x: t_SemiLattice_T. index_Mapping_SemiLattice_T_bool p x)
+    -> index_Mapping_SemiLattice_T_bool p (such_that_SemiLattice_T p)
+
+constant any_SemiLattice_T: t_SemiLattice_T = such_that_SemiLattice_T (fun (__0: t_SemiLattice_T) -> true)
+
+function unwrap_Option_SemiLattice_T (self: t_Option_SemiLattice_T) : t_SemiLattice_T = match self with
+    | Some x -> x
+    | None -> any_SemiLattice_T
+    end
+
+predicate lt_log_T (self: t_T) (other: t_T)
+
+predicate le_log_T (self: t_T) (other: t_T)
+
+function le_lt_log_T (self: t_T) (other: t_T) : ()
+
+axiom le_lt_log_T_spec: forall self: t_T, other: t_T. le_log_T self other = (lt_log_T self other \/ self = other)
+
+function transitive_T (x: t_T) (y: t_T) (z: t_T) : ()
+
+axiom transitive_T_spec: forall x: t_T, y: t_T, z: t_T. lt_log_T x y -> lt_log_T y z -> lt_log_T x z
+
+function irreflexive_T (self: t_T) : ()
+
+axiom irreflexive_T_spec: forall self: t_T. not lt_log_T self self
+
+function join_T (self: t_T) (other: t_T) : t_T
+
+axiom join_T_spec: forall self: t_T, other: t_T [join_T self other]. le_log_T self (join_T self other)
+
+axiom join_T_spec'0: forall self: t_T, other: t_T [join_T self other]. le_log_T other (join_T self other)
+
+axiom join_T_spec'1: forall self: t_T, other: t_T [join_T self other]. forall r: t_T. le_log_T self r
+      -> le_log_T other r -> le_log_T (join_T self other) r
+
+function op_SemiLattice_T [@inline:trivial] (self: t_SemiLattice_T) (other: t_SemiLattice_T) : t_Option_SemiLattice_T =
+  Some { f0 = join_T self.f0 other.f0 }
+
+meta "rewrite_def" function op_SemiLattice_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_SemiLattice_T. core_SemiLattice_T self <> None
+    -> core_SemiLattice_T self <> None
+    /\ (forall result: (). (let c = unwrap_Option_SemiLattice_T (core_SemiLattice_T self) in op_SemiLattice_T c c
+          = Some c)
+        /\ op_SemiLattice_T (unwrap_Option_SemiLattice_T (core_SemiLattice_T self)) self = Some self
+      -> (let c = unwrap_Option_SemiLattice_T (core_SemiLattice_T self) in op_SemiLattice_T c c = Some c)
+      /\ op_SemiLattice_T (unwrap_Option_SemiLattice_T (core_SemiLattice_T self)) self = Some self)
