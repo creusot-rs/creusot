@@ -1,6 +1,6 @@
 use crate::{
     contracts_items::{Intrinsic, is_assertion, is_logic_closure, is_spec},
-    ctx::TranslationCtx,
+    ctx::{HasTyCtxt as _, TranslationCtx},
     naming::{lowercase_prefix, name},
     translation::pearlite::{
         BinOp, Ident, Literal, PIdent, Pattern, PatternKind, QuantKind, Term, TermKind, TermSort,
@@ -54,7 +54,7 @@ pub(crate) fn from_thir<'tcx>(
         let pattern = match pat.kind {
             PatKind::Binding { var, subpattern: None, .. } => {
                 lower.renaming.insert(var.0, ident);
-                Pattern::binder(ident, pat.ty)
+                Pattern::binder(ident, pat.ty).span(pat.span)
             }
             _ => lower.pattern_term(ctx, pat, true)?,
         };
@@ -63,7 +63,7 @@ pub(crate) fn from_thir<'tcx>(
 
     use TermSort::*;
     let patterns = match sort {
-        Contract(inputs) => {
+        Contract { inputs, is_logic } => {
             assert!(ctx.is_closure_like(did));
             let parent = ctx.parent(did);
             let (parent_thir, _) = ctx.thir_body(parent.expect_local());
@@ -71,13 +71,20 @@ pub(crate) fn from_thir<'tcx>(
             assert_eq!(inputs.len(), parent_thir.params.len());
             // Note: users write `|result, mode|` in ensures but the desugaring puts `mode` before `result`
             // so that we can reuse the same `zip` for both preconditions as well (discarding the `result`).
-            inputs
+            let patterns = inputs
                 .iter()
                 .map(|(ident, _, _)| ident.0)
                 .zip(&parent_thir.params)
                 .chain([name::mode(), name::result()].into_iter().zip(thir.params.iter().skip(1)))
                 .map(to_pattern)
-                .collect::<Result<Box<[(Ident, Pattern)]>, ErrorGuaranteed>>()?
+                .collect::<Result<Box<[(Ident, Pattern)]>, ErrorGuaranteed>>()?;
+            if is_logic
+                && let Some((_, mode)) = patterns.get(inputs.len())
+                && !matches!(mode.kind, PatternKind::Wildcard)
+            {
+                return Err(ctx.error(mode.span, "Logic functions don't have proof modes").emit());
+            }
+            patterns
         }
         LogicClosure(inputs) => {
             assert_eq!(inputs.len(), thir.params.len());

@@ -1,8 +1,8 @@
 use crate::{
     backend::closures::ClosSubst,
     contracts_items::{
-        Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates, is_trusted_ghost,
-        is_trusted_terminates,
+        Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates, is_logic,
+        is_trusted_ghost, is_trusted_terminates,
     },
     ctx::*,
     lints::{Diagnostics, RESULT_PARAM},
@@ -209,11 +209,12 @@ impl ContractClauses {
         ctx: &TranslationCtx<'tcx>,
         fn_name: &str,
         inputs: &[(PIdent, Span, Ty<'tcx>)],
+        is_logic: bool,
     ) -> EarlyBinder<'tcx, PreContract<'tcx>> {
         let has_user_contract =
             !self.requires.is_empty() || !self.ensures.is_empty() || self.variant.is_some();
         let source = ContractSource::Basic { has_user_contract };
-        let sort = TermSort::Contract(inputs);
+        let sort = TermSort::Contract { inputs, is_logic };
         let n_requires = self.requires.len();
         let requires = self
             .requires
@@ -335,7 +336,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
     let subst = erased_identity_for_item(ctx.tcx, def_id);
     let mut contract = contract_clauses_of(ctx, def_id)
         .unwrap()
-        .get_pre(ctx, fn_name, &inputs)
+        .get_pre(ctx, fn_name, &inputs, is_logic(ctx.tcx, def_id))
         .instantiate(ctx.tcx, subst)
         .skip_normalization();
 

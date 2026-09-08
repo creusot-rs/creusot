@@ -233,7 +233,7 @@ pub(crate) fn closure_post<'tcx>(
             ClosureKind::Fn => {
                 let bor_self = self_.clone().shr_ref(ctx.tcx);
                 let params =
-                    std::iter::once(bor_self).chain(arg_vars).chain([result, mode]).collect();
+                    std::iter::once(bor_self).chain(arg_vars).chain([mode, result]).collect();
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
                     ty: ctx.types.bool,
@@ -253,7 +253,7 @@ pub(crate) fn closure_post<'tcx>(
                 let params = std::iter::once(bor_self.clone())
                     .into_iter()
                     .chain(arg_vars)
-                    .chain([result, mode])
+                    .chain([mode, result])
                     .collect();
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
@@ -291,7 +291,7 @@ pub(crate) fn closure_post<'tcx>(
             }
             ClosureKind::FnOnce => {
                 assert_eq!(target_kind, ClosureKind::FnOnce);
-                let params = std::iter::once(self_).chain(arg_vars).chain([result, mode]).collect();
+                let params = std::iter::once(self_).chain(arg_vars).chain([mode, result]).collect();
                 to_resolve = vec![];
                 post = Term {
                     kind: TermKind::Postcondition { item: def_id.into(), subst, params },
@@ -367,7 +367,7 @@ pub(crate) fn ctor_post<'tcx>(
             .instantiate(ctx.tcx, subst),
     );
     let mode = Term::var(name::mode(), ctx.mode_ty());
-    let params = inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)).chain([res, mode]).collect();
+    let params = inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)).chain([mode, res]).collect();
     let pre = Term {
         kind: TermKind::Postcondition { item: def_id, subst, params },
         ty: ctx.types.bool,

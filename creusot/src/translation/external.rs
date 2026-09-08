@@ -173,7 +173,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let inputs: Box<[_]> = inputs.into();
     let fn_name = ctx.item_name(id);
     let contract = contract
-        .get_pre(ctx, fn_name.as_str(), &inputs)
+        .get_pre(ctx, fn_name.as_str(), &inputs, false)
         .instantiate(ctx.tcx, subst)
         .skip_normalization();
     (id, ExternSpec { contract, additional_predicates, inputs, output, eval_constant })
