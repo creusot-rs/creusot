@@ -1530,7 +1530,7 @@ fn safety_check(ctx: &TranslationCtx, def_id: DefId) {
             let _ = ctx.warn(
                 pre.term.span,
                 format!(
-                    "This precondition of {} may not be trivial in `nopanic` mode",
+                    "This precondition of {} may not guarantee the safety of this function; it should be true in `nopanic` mode",
                     ctx.def_path_str(def_id)
                 ),
             );
