@@ -14,6 +14,7 @@ use crate::{
         fmir::{self, LocalDecls, RValue, Variant},
         pearlite::{Ident, PIdent, Term, TermKind},
     },
+    validate::is_ghost_block,
 };
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
@@ -197,7 +198,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
             // compute an eventual variant assertion to insert in this basic block
             if let Some((term, old_name)) = self.loop_variants.remove(&bb) {
-                variant = Some(Variant { term, old_name: PIdent(old_name) });
+                variant = Some(Variant {
+                    term,
+                    old_name: PIdent(old_name),
+                    in_ghost: self.in_ghost_block(bbd.terminator().source_info.scope),
+                });
             }
 
             let mut loc = bb.start_location();
@@ -472,6 +477,26 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             })
             .collect::<Box<[_]>>();
         fmir::Place { local: self.locals[&pl.local], projection: projections }
+    }
+
+    /// This relies on having set the flag `-Zmaximal-hir-to-mir-coverage`
+    /// for MIR lowering to create a scope for every HIR node.
+    fn in_ghost_block(&self, scope: mir::SourceScope) -> bool {
+        let data = &self.body.source_scopes[scope];
+        let mir::ClearCrossCrate::Set(local) = &data.local_data else {
+            use rustc_hir::def::DefKind;
+            if matches!(
+                self.tcx().def_kind(self.body_id.def_id),
+                DefKind::Const { .. } | DefKind::AssocConst { .. }
+            ) {
+                return false;
+            } else {
+                self.span_bug(data.span, "can't determine whether this is a ghost call")
+            }
+        };
+        // No need to check the initial HirId `local.lint_root` because with
+        // `-Zmaximal-hir-to-mir-coverage` that is going to be the function call, not a ghost block.
+        self.ctx.hir_parent_id_iter(local.lint_root).any(|hir| is_ghost_block(self.ctx.tcx, hir))
     }
 }
 

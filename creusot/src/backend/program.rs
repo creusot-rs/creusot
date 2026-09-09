@@ -218,8 +218,11 @@ pub(crate) fn to_why_body<'tcx>(
                 subst,
                 [Term::var(variant_name, variant_expr.ty), variant_expr.spanned()],
             );
-            lower_pure(ctx, names, &variant_decreases)
-                .with_attr(Attribute::Attr("expl:function variant".to_string()))
+            let variant_decreases = lower_pure(ctx, names, &variant_decreases)
+                .with_attr(Attribute::Attr("expl:function variant".to_string()));
+            Exp::qvar(names.in_pre(PreMod::Mode, "terminates"))
+                .app([Exp::var(name::mode())])
+                .implies(variant_decreases)
         };
 
         for (def_id, (fun_name, params, ret_ty)) in recursive_calls {
@@ -446,9 +449,15 @@ fn component_to_defn<'tcx>(
             subst,
             [Term::var(variant.old_name, variant.term.ty), variant.term.spanned()],
         );
-
-        lower_pure(ctx, lower.names, &variant_decreases)
-            .with_attr(Attribute::Attr("expl:loop variant".to_string()))
+        let variant_decreases = lower_pure(ctx, lower.names, &variant_decreases)
+            .with_attr(Attribute::Attr("expl:loop variant".to_string()));
+        if variant.in_ghost {
+            variant_decreases
+        } else {
+            Exp::qvar(names.in_pre(PreMod::Mode, "terminates"))
+                .app([Exp::var(name::mode())])
+                .implies(variant_decreases)
+        }
     });
     let mut block = block.into_why(&lower, recursive_calls, head);
 

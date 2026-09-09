@@ -340,7 +340,8 @@ pub(crate) fn ctor_pre<'tcx>(
             .instantiate(ctx.tcx, subst),
     );
     let mode = Term::var(name::mode(), ctx.mode_ty());
-    let params = inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)).chain(std::iter::once(mode)).collect();
+    let params =
+        inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)).chain(std::iter::once(mode)).collect();
     let pre = Term {
         kind: TermKind::Precondition { item: def_id, subst, params },
         ty: ctx.types.bool,
