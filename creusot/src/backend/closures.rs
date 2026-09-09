@@ -339,7 +339,8 @@ pub(crate) fn ctor_pre<'tcx>(
         EarlyBinder::bind(ctx.tcx, ctx.inputs_and_output(def_id.into()).0.into())
             .instantiate(ctx.tcx, subst),
     );
-    let params = inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)).collect();
+    let mode = Term::var(name::mode(), ctx.mode_ty());
+    let params = inputs.iter().map(|&(nm, _, ty)| Term::var(nm, ty)).chain(std::iter::once(mode)).collect();
     let pre = Term {
         kind: TermKind::Precondition { item: def_id, subst, params },
         ty: ctx.types.bool,
