@@ -1,0 +1,71 @@
+(* <logic::ra::lattice::SemiLattice<T> as logic::ra::RA> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+type t_T
+
+type t_SemiLattice_T = { f0: t_T }
+
+type t_Option_SemiLattice_T = None | Some t_SemiLattice_T
+
+predicate lt_log_T (self: t_T) (other: t_T)
+
+predicate le_log_T (self: t_T) (other: t_T)
+
+function le_lt_log_T (self: t_T) (other: t_T) : ()
+
+axiom le_lt_log_T_spec: forall self: t_T, other: t_T. le_log_T self other = (lt_log_T self other \/ self = other)
+
+function transitive_T (x: t_T) (y: t_T) (z: t_T) : ()
+
+axiom transitive_T_spec: forall x: t_T, y: t_T, z: t_T. lt_log_T x y -> lt_log_T y z -> lt_log_T x z
+
+function irreflexive_T (self: t_T) : ()
+
+axiom irreflexive_T_spec: forall self: t_T. not lt_log_T self self
+
+function join_T (self: t_T) (other: t_T) : t_T
+
+axiom join_T_spec: forall self: t_T, other: t_T [join_T self other]. le_log_T self (join_T self other)
+
+axiom join_T_spec'0: forall self: t_T, other: t_T [join_T self other]. le_log_T other (join_T self other)
+
+axiom join_T_spec'1: forall self: t_T, other: t_T [join_T self other]. forall r: t_T. le_log_T self r
+      -> le_log_T other r -> le_log_T (join_T self other) r
+
+function op_SemiLattice_T [@inline:trivial] (self: t_SemiLattice_T) (other: t_SemiLattice_T) : t_Option_SemiLattice_T =
+  Some { f0 = join_T self.f0 other.f0 }
+
+meta "rewrite_def" function op_SemiLattice_T
+
+function core_SemiLattice_T [@inline:trivial] (self: t_SemiLattice_T) : t_Option_SemiLattice_T = Some self
+
+meta "rewrite_def" function core_SemiLattice_T
+
+predicate incl_SemiLattice_T [@inline:trivial] (self: t_SemiLattice_T) (other: t_SemiLattice_T) =
+  le_log_T self.f0 other.f0
+
+meta "rewrite_def" predicate incl_SemiLattice_T
+
+axiom incl_SemiLattice_T_spec:
+  forall self: t_SemiLattice_T, other: t_SemiLattice_T [incl_SemiLattice_T self other]. incl_SemiLattice_T self other
+    = (exists factor: t_SemiLattice_T. op_SemiLattice_T self factor = Some other)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_SemiLattice_T
+
+constant i : t_SemiLattice_T
+
+function core_is_maximal_idemp_SemiLattice_T (self: t_SemiLattice_T) (i: t_SemiLattice_T) : ()
+
+goal vc_core_is_maximal_idemp_SemiLattice_T: op_SemiLattice_T i i = Some i
+  -> op_SemiLattice_T i self = Some self
+  -> ([@stop_split] [@expl:core_is_maximal_idemp ensures] match core_SemiLattice_T self with
+    | Some c -> incl_SemiLattice_T i c
+    | None -> false
+    end)

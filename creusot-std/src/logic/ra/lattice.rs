@@ -1,25 +1,21 @@
-use crate::{logic::ra::RA, prelude::*};
+use crate::{
+    logic::{ord, ra::RA},
+    prelude::*,
+};
 
 /// The 'lattice' Resource Algebra.
+pub struct SemiLattice<T>(pub T);
 
-pub trait SemiLattice: PartialOrdLogic + Sized {
-    #[logic]
-    #[ensures(self <= result)]
-    #[ensures(other <= result)]
-    #[ensures(forall<r> self <= r ==> other <= r ==> result <= r)]
-    fn join(self, other: Self) -> Self;
-}
-
-impl<T: SemiLattice> RA for T {
+impl<T: ord::SemiLattice> RA for SemiLattice<T> {
     #[logic(open, inline)]
     fn op(self, other: Self) -> Option<Self> {
-        Some(self.join(other))
+        Some(Self(self.0.join(other.0)))
     }
 
-    #[logic(open)]
+    #[logic(open, inline)]
     #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
     fn incl(self, other: Self) -> bool {
-        self <= other
+        self.0 <= other.0
     }
 
     #[logic(law)]
@@ -30,7 +26,7 @@ impl<T: SemiLattice> RA for T {
     #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {}
 
-    #[logic]
+    #[logic(open, inline)]
     fn core(self) -> Option<Self> {
         Some(self)
     }

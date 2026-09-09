@@ -352,3 +352,22 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
         let _ = B::lt_log_total;
     }
 }
+
+pub trait SemiLattice: PartialOrdLogic + Sized {
+    #[logic]
+    #[ensures(self <= result)]
+    #[ensures(other <= result)]
+    #[ensures(forall<r> self <= r ==> other <= r ==> result <= r)]
+    fn join(self, other: Self) -> Self;
+}
+
+impl<T: OrdLogic> SemiLattice for T {
+    #[logic]
+    #[ensures(self <= result)]
+    #[ensures(other <= result)]
+    #[ensures(forall<r> self <= r ==> other <= r ==> result <= r)]
+    fn join(self, other: Self) -> Self {
+        let _ = Self::lt_log_total;
+        if self < other { other } else { self }
+    }
+}

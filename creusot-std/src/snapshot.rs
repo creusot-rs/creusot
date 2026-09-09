@@ -2,6 +2,8 @@
 
 use crate::{ghost::Plain, logic::ops::Fin, prelude::*};
 
+#[cfg(creusot)]
+use crate::ghost::Objective;
 use core::marker::PhantomData;
 #[cfg(creusot)]
 use core::ops::{Deref, DerefMut};
@@ -69,6 +71,10 @@ impl<T: ?Sized> Clone for Snapshot<T> {
 }
 
 impl<T: ?Sized> Copy for Snapshot<T> {}
+
+#[cfg(creusot)]
+#[trusted]
+impl<T> Objective for Snapshot<T> {}
 
 impl<T: ?Sized> Snapshot<T> {
     /// Create a new snapshot in logic code.
