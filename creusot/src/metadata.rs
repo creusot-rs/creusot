@@ -54,11 +54,6 @@ impl<'tcx> Metadata<'tcx> {
         self.get(def_id.krate)?.term_with_triggers(def_id)
     }
 
-    pub(crate) fn raw_term(&self, def_id: DefId) -> Option<&Scoped<Term<'tcx>>> {
-        assert!(!def_id.is_local());
-        self.get(def_id.krate)?.raw_term(def_id)
-    }
-
     pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&DenseBitSet<usize>> {
         assert!(!def_id.is_local());
         self.get(def_id.krate)?.params_open_inv(def_id)
@@ -140,7 +135,6 @@ impl<'tcx> Metadata<'tcx> {
 pub struct CrateMetadata<'tcx> {
     terms: IndexMap<DefId, Scoped<Term<'tcx>>>,
     terms_with_triggers: IndexMap<DefId, Scoped<TermWithTriggers<'tcx>>>,
-    raw_terms: IndexMap<DefId, Scoped<Term<'tcx>>>,
     creusot_items: HashMap<Symbol, DefId>,
     intrinsics: HashMap<Symbol, DefId>,
     params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
@@ -160,11 +154,6 @@ impl<'tcx> CrateMetadata<'tcx> {
     ) -> Option<&Scoped<TermWithTriggers<'tcx>>> {
         assert!(!def_id.is_local());
         self.terms_with_triggers.get(&def_id)
-    }
-
-    pub(crate) fn raw_term(&self, def_id: DefId) -> Option<&Scoped<Term<'tcx>>> {
-        assert!(!def_id.is_local());
-        self.raw_terms.get(&def_id)
     }
 
     pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&DenseBitSet<usize>> {
@@ -201,7 +190,6 @@ impl<'tcx> CrateMetadata<'tcx> {
         let meta = CrateMetadata {
             terms: metadata.terms.into_iter().collect(),
             terms_with_triggers: metadata.terms_with_triggers.into_iter().collect(),
-            raw_terms: metadata.raw_terms.into_iter().collect(),
             creusot_items: metadata.creusot_items,
             intrinsics: metadata.intrinsics,
             params_open_inv: metadata.params_open_inv,
@@ -227,7 +215,6 @@ impl<'tcx> CrateMetadata<'tcx> {
 pub(crate) struct BinaryMetadata<'tcx> {
     terms: Vec<(DefId, Scoped<Term<'tcx>>)>,
     terms_with_triggers: Vec<(DefId, Scoped<TermWithTriggers<'tcx>>)>,
-    raw_terms: Vec<(DefId, Scoped<Term<'tcx>>)>,
     creusot_items: HashMap<Symbol, DefId>,
     intrinsics: HashMap<Symbol, DefId>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
@@ -243,7 +230,6 @@ impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
         mut terms: OnceMap<DefId, Box<Option<Scoped<Term<'tcx>>>>>,
         mut terms_with_triggers: OnceMap<DefId, Box<Option<Scoped<TermWithTriggers<'tcx>>>>>,
-        mut raw_terms: OnceMap<DefId, Box<Option<Scoped<Term<'tcx>>>>>,
         creusot_items: HashMap<Symbol, DefId>,
         intrinsics: HashMap<Symbol, DefId>,
         extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
@@ -263,17 +249,11 @@ impl<'tcx> BinaryMetadata<'tcx> {
             .filter(|(def_id, t)| def_id.is_local() && t.is_some())
             .map(|(id, t)| (*id, t.clone().unwrap()))
             .collect();
-        let raw_terms = raw_terms
-            .iter_mut()
-            .filter(|(def_id, t)| def_id.is_local() && t.is_some())
-            .map(|(id, t)| (*id, t.clone().unwrap()))
-            .collect();
         let erased_defid =
             erased_local_defid.into_iter().map(|(id, erased)| (id.to_def_id(), erased)).collect();
         BinaryMetadata {
             terms,
             terms_with_triggers,
-            raw_terms,
             creusot_items,
             intrinsics,
             extern_specs,
@@ -290,7 +270,6 @@ impl<'tcx> BinaryMetadata<'tcx> {
         BinaryMetadata {
             terms: Vec::new(),
             terms_with_triggers: Vec::new(),
-            raw_terms: Vec::new(),
             creusot_items: HashMap::new(),
             intrinsics: HashMap::new(),
             extern_specs: HashMap::new(),

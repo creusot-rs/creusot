@@ -1,7 +1,6 @@
 use crate::{
     contracts_items::{Intrinsic, is_assertion, is_logic_closure, is_spec},
     ctx::TranslationCtx,
-    logic_alias,
     translation::pearlite::{
         BinOp, Ident, Literal, PIdent, Pattern, PatternKind, QuantKind, Term, TermKind,
         TermWithTriggers, Trigger, UnOp,
@@ -435,11 +434,6 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                             .iter()
                             .map(|arg| self.expr_term(*arg))
                             .collect::<Result<_, _>>()?;
-
-                        let (id, args, subst) = match logic_alias::subst_call(self.ctx, self.typing_env, id, subst, args.clone()) {
-                            Some((aid, aargs, asubst)) => (aid, aargs, asubst),
-                            None => (id, args, subst)
-                        };
 
                         Ok(Term::call_no_normalize(self.ctx.tcx, id, subst, args).span(span))
                     }

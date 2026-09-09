@@ -303,21 +303,14 @@ pub fn logic_alias(attr: TS1, tokens: TS1) -> TS1 {
                 });
                 quote!(result == #logic_path(#(#args), *)).into()
             }
-            Ok(Term::Call(term_call)) => {
-                quote!(result == #term_call)
-            }
-            Ok(invalid_term) => {
-                return syn::Error::new(
-                   invalid_term.span(),
-                   "`logic_alias` should contain a path to a logic function with the same signature, or \
-                   a logic function call with same return type"
-               ).to_compile_error().into();
+            Ok(term) => {
+                quote!(result == #term)
             }
             Err(err) => {
                 return syn::Error::new(
                     err.span(),
                     "`logic_alias` should contain a path to a logic function with the same signature, or \
-                    a logic function call with same return type"
+                    a valid pearlite term"
                 ).to_compile_error().into();
             }
         }

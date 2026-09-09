@@ -5,7 +5,7 @@ use crate::{
         is_snapshot_closure, is_spec, is_trusted_ghost, is_trusted_terminates,
     },
     ctx::{HasTyCtxt, TranslationCtx},
-    logic_alias,
+    logic_alias::{self, get_logic_id},
     resolution::TraitResolved,
     translation::specification::ProgramPurity,
 };
@@ -154,8 +154,9 @@ pub(crate) fn validate_purity<'tcx>(
                 .emit()
                 .raise_fatal();
         }
-        let logic_id = logic_alias::get_logic_id(ctx, alias_id);
-        if !is_logic(ctx.tcx, logic_id) {
+        if let Some(logic_id) = logic_alias::get_logic_id(ctx, alias_id)
+            && !is_logic(ctx.tcx, logic_id)
+        {
             ctx.dcx()
                 .struct_span_err(span, "Only logic functions can be aliased")
                 .with_note(format!("`{}` is not a logic function", ctx.def_path_str(logic_id)))
@@ -292,14 +293,16 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             .to_opt(func_did, subst)
                             .unwrap();
 
-                    let fn_purity = self.purity(func_did, args);
-                    let base_purity = fn_purity; // backup to get more consistent error messages
-                    let fn_purity = match self.ctx.logic_alias(func_did) {
-                        Some((_, alias_id)) if !self.context.can_call(fn_purity) => {
-                            self.purity(logic_alias::get_logic_id(self.ctx, alias_id), args)
-                        }
-                        _ => fn_purity,
+                    let fn_purity = if self.context.is_logic()
+                        && let Some((_, alias)) = self.ctx.logic_alias(func_did)
+                    {
+                        get_logic_id(self.ctx, alias)
+                            .map(|logic_id| self.purity(logic_id, args))
+                            .unwrap_or(Purity::Logic { prophetic: true }) /* "This should be good for now" D. Golfouse */
+                    } else {
+                        self.purity(func_did, args)
                     };
+
                     if self.context.is_logic()
                         && (
                             // These methods are allowed to cheat the purity restrictions
@@ -312,7 +315,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     {
                     } else if !self.context.can_call(fn_purity) {
                         // Emit a nicer error specifically for calls of ghost functions.
-                        if base_purity == Purity::Ghost && self.context.is_program() {
+                        if fn_purity == Purity::Ghost && self.context.is_program() {
                             match self.ctx.intrinsic(func_did) {
                                 Intrinsic::GhostIntoInner => self
                                     .error(expr.span, "trying to access the contents of a ghost variable in program context").emit(),
@@ -340,7 +343,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 _ => unreachable!(),
                             };
                         } else {
-                            let (caller, callee) = match (self.context, base_purity) {
+                            let (caller, callee) = match (self.context, fn_purity) {
                                 (
                                     LocalPurity::Purity(Purity::Program { .. } | Purity::Ghost),
                                     Purity::Logic { .. },
