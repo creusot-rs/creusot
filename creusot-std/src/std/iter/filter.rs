@@ -89,7 +89,7 @@ impl<I: IteratorSpec, F: FnMut(&I::Item) -> bool> IteratorSpec for Filter<I, F> 
                 // `f` is a monotone mapping
                 (forall<i, j> 0 <= i && i < j && j < visited.len() ==> f.get(i) < f.get(j)) &&
                 (forall<i> 0 <= i && i < visited.len() ==> visited[i] == s[f.get(i)]) &&
-                (forall<i> 0 <= i &&  i < s.len() ==>
+                (forall<i> 0 <= i && i < s.len() ==>
                     forall<mode: Mode>
                     (exists<j> 0 <= j && j < visited.len() && f.get(j) == i) == self.func().postcondition_mut((&s[i],), self.func(), true, mode))
         }
