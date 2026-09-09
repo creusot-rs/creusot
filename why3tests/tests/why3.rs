@@ -95,6 +95,7 @@ fn main() {
     let mut obsolete = false;
     let mut default_tests = vec![];
     let mut other_tests = vec![];
+    let mut unused = vec![];
     let coma_files = [
         "examples/**/*.coma",
         "tests/creusot-std/verif/**/*.coma",
@@ -138,7 +139,7 @@ fn main() {
             let proof_json = sessiondir.join("proof.json");
             if proof_json.is_file() {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-                writeln!(&mut out, "unused {}", proof_json.display()).unwrap();
+                unused.push(proof_json);
                 out.reset().unwrap();
                 success = false;
             }
@@ -155,16 +156,12 @@ fn main() {
         } else if header_line.contains("NO_REPLAY") {
             other_tests.push((file, OtherTest::Why3 { prove: None }));
         } else {
-            let sessionfiles = ["why3session.xml", "why3shapes.gz"]
-                .into_iter()
-                .filter(|file| sessiondir.join(file).is_file())
-                .collect::<Vec<_>>();
-            if sessionfiles.len() > 0 {
-                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-                writeln!(&mut out, "unused {sessionfiles:?}. Please do not use Why3 sessions files for this test. Instead, update the proof.json file.").unwrap();
-                out.reset().unwrap();
-                success = false;
-            }
+            unused.extend(
+                ["why3session.xml", "why3shapes.gz"]
+                    .into_iter()
+                    .map(|file| sessiondir.join(file))
+                    .filter(|file| file.is_file()),
+            );
             let tactic = tactic_re.captures_iter(&header_line).next().map(|c| c[1].to_owned());
             let time = time_re
                 .captures_iter(&header_line)
@@ -177,6 +174,13 @@ fn main() {
                 other_tests.push((file, OtherTest::Why3find { tactic, time, depth }));
             }
         }
+    }
+
+    if unused.len() > 0 {
+        out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+        writeln!(&mut out, "Found unused proof files: {unused:?}").unwrap();
+        out.reset().unwrap();
+        success = false;
     }
 
     let library = std::env::current_dir().unwrap().join("target/creusot");
