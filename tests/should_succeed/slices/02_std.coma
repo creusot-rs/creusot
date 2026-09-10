@@ -42,29 +42,29 @@ module M_binary_search
   
   meta "rewrite_def" function deep_model_ref_u32
   
-  let binary_search_u32 (self_: Slice64.slice UInt32.t) (x: UInt32.t) (return (x'0: t_Result_usize_usize)) =
-  {[@stop_split] [@expl:binary_search requires] sorted_Int (deep_model_ref_slice_u32 self_)}
+  let binary_search_u32 (self: Slice64.slice UInt32.t) (x: UInt32.t) (return (x'0: t_Result_usize_usize)) =
+  {[@stop_split] [@expl:binary_search requires] sorted_Int (deep_model_ref_slice_u32 self)}
     any
     [ return (result: t_Result_usize_usize) ->
     {[@stop_split] [@expl:binary_search_u32 ensures] ([@stop_split] [@expl:binary_search ensures #0] forall i: UInt64.t. result
             = Ok i
-          -> UInt64.t'int i < Seq.length (Slice64.view self_)
-          /\ Seq.get (deep_model_slice_u32 self_) (UInt64.t'int i) = deep_model_ref_u32 x)
+          -> UInt64.t'int i < Seq.length (Slice64.view self)
+          /\ Seq.get (deep_model_slice_u32 self) (UInt64.t'int i) = deep_model_ref_u32 x)
       /\ ([@stop_split] [@expl:binary_search ensures #1] forall i: UInt64.t. result = Err i
-          -> UInt64.t'int i <= Seq.length (Slice64.view self_)
-          /\ (forall j: int. 0 <= j /\ j < Seq.length (Slice64.view self_)
-            -> Seq.get (deep_model_ref_slice_u32 self_) j <> deep_model_ref_u32 x))
+          -> UInt64.t'int i <= Seq.length (Slice64.view self)
+          /\ (forall j: int. 0 <= j /\ j < Seq.length (Slice64.view self)
+            -> Seq.get (deep_model_ref_slice_u32 self) j <> deep_model_ref_u32 x))
       /\ ([@stop_split] [@expl:binary_search ensures #2] forall i: UInt64.t. result = Err i
           -> (forall j: UInt64.t. UInt64.lt j i
-            -> Seq.get (deep_model_ref_slice_u32 self_) (UInt64.t'int j) < deep_model_ref_u32 x))
+            -> Seq.get (deep_model_ref_slice_u32 self) (UInt64.t'int j) < deep_model_ref_u32 x))
       /\ ([@stop_split] [@expl:binary_search ensures #3] forall i: UInt64.t. result = Err i
-        -> (forall j: UInt64.t. UInt64.le i j /\ UInt64.t'int j < Seq.length (Slice64.view self_)
-          -> deep_model_ref_u32 x < Seq.get (deep_model_ref_slice_u32 self_) (UInt64.t'int j)))}
+        -> (forall j: UInt64.t. UInt64.le i j /\ UInt64.t'int j < Seq.length (Slice64.view self)
+          -> deep_model_ref_u32 x < Seq.get (deep_model_ref_slice_u32 self) (UInt64.t'int j)))}
       (! return {result}) ]
   
-  let unwrap_usize (self_: t_Result_usize_usize) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:unwrap requires] exists t: UInt64.t. self_ = Ok t}
-    any [ return (result: UInt64.t) -> {[@stop_split] [@expl:unwrap ensures] Ok result = self_} (! return {result}) ]
+  let unwrap_usize (self: t_Result_usize_usize) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:unwrap requires] exists t: UInt64.t. self = Ok t}
+    any [ return (result: UInt64.t) -> {[@stop_split] [@expl:unwrap ensures] Ok result = self} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

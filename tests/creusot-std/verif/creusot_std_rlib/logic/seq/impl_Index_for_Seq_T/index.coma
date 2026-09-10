@@ -41,8 +41,8 @@ meta "rewrite_def" predicate inv_ref_Seq_T
 
 predicate inv_Option_ref_T (_1: t_Option_ref_T)
 
-axiom inv_axiom [@rewrite]: forall x: t_Option_ref_T [inv_Option_ref_T x]. inv_Option_ref_T x
-    = match x with
+axiom inv_axiom [@rewrite]: forall _1: t_Option_ref_T [inv_Option_ref_T _1]. inv_Option_ref_T _1
+    = match _1 with
       | None -> true
       | Some f0 -> inv_ref_T f0
       end
@@ -66,13 +66,13 @@ let get_ghost_T (self: Seq.seq t_T) (index: int) (return (x: t_Option_ref_T)) =
       end)}
     (! return {result}) ]
 
-let unwrap_ref_T (self_: t_Option_ref_T) (return (x: t_T)) =
-{[@stop_split] [@expl:unwrap_ref_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_ref_T self_)
-  /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
+let unwrap_ref_T (self: t_Option_ref_T) (return (x: t_T)) =
+{[@stop_split] [@expl:unwrap_ref_T requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_ref_T self)
+  /\ ([@stop_split] [@expl:unwrap requires] self <> None)}
   any
   [ return (result: t_T) ->
   {[@stop_split] [@expl:unwrap_ref_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_ref_T result)
-    /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
+    /\ ([@stop_split] [@expl:unwrap ensures] Some result = self)}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000

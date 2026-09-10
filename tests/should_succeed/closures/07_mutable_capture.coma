@@ -47,12 +47,12 @@ module M_call_fnmut
     forall self: t_F, args: (), res_state: t_F, res: Int32.t [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
       -> hist_inv_F self res_state
   
-  let call_mut_F (self_: MutBorrow.t t_F) (arg: ()) (return (x: Int32.t)) =
-  {[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self_' type invariant] inv_refmut_F self_)
-    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self_.current arg)}
+  let call_mut_F (self: MutBorrow.t t_F) (args: ()) (return (x: Int32.t)) =
+  {[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self' type invariant] inv_refmut_F self)
+    /\ ([@stop_split] [@expl:call_mut requires] precondition_F self.current args)}
     any
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self_.current arg self_.final result}
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self.current args self.final result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -101,11 +101,11 @@ module M_call_fnonce
   
   predicate postcondition_once_F (self: t_F) (args: ()) (result: Int32.t)
   
-  let call_once_F (self_: t_F) (arg: ()) (return (x: Int32.t)) =
-  {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
-    /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+  let call_once_F (self: t_F) (args: ()) (return (x: Int32.t)) =
+  {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_F self)
+    /\ ([@stop_split] [@expl:call_once requires] precondition_F self args)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self args result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -166,11 +166,11 @@ module M_test_fnmut
   
   meta "rewrite_def" predicate postcondition_mut_closure1
   
-  let call_mut_closure1 (self_: MutBorrow.t closure1) (arg: ()) (return (x: Int32.t)) =
-  {[@stop_split] [@expl:call_mut requires] precondition_closure1 self_.current arg}
+  let call_mut_closure1 (self: MutBorrow.t closure1) (args: ()) (return (x: Int32.t)) =
+  {[@stop_split] [@expl:call_mut requires] precondition_closure1 self.current args}
     any
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_closure1 self_.current arg self_.final result}
+    {[@stop_split] [@expl:call_mut ensures] postcondition_mut_closure1 self.current args self.final result}
       (! return {result}) ]
   
   predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current

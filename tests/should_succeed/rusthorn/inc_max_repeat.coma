@@ -7,8 +7,8 @@ module M_inc_max_repeat
   
   type t_Range_u32 = { start: UInt32.t; end': UInt32.t }
   
-  let into_iter_Range_u32 (self_: t_Range_u32) (return (x: t_Range_u32)) = any
-    [ return (result: t_Range_u32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
+  let into_iter_Range_u32 (self: t_Range_u32) (return (x: t_Range_u32)) = any
+    [ return (result: t_Range_u32) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_u32 = None | Some UInt32.t
   
@@ -50,10 +50,10 @@ module M_inc_max_repeat
   predicate completed_Range_u32 (self: MutBorrow.t t_Range_u32) =
     resolve_refmut_Range_u32 self /\ ge_log_Int (deep_model_u32 self.current.start) (deep_model_u32 self.current.end')
   
-  let next_Range_u32 (self_: MutBorrow.t t_Range_u32) (return (x: t_Option_u32)) = any
+  let next_Range_u32 (self: MutBorrow.t t_Range_u32) (return (x: t_Option_u32)) = any
     [ return (result: t_Option_u32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Range_u32 self_
-        | Some v -> produces_Range_u32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_Range_u32 self
+        | Some v -> produces_Range_u32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   

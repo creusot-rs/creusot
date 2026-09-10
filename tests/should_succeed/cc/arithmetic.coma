@@ -3,8 +3,8 @@ module M_bitand_ref
   use creusot.prelude.Any
   use int.Int
   
-  let bitand_ref_u8 (self_: UInt8BW.t) (rhs: UInt8BW.t) (return (x: UInt8BW.t)) = any
-    [ return (result: UInt8BW.t) -> {[@stop_split] [@expl:bitand ensures] result = UInt8BW.bw_and self_ rhs}
+  let bitand_ref_u8 (self: UInt8BW.t) (other: UInt8BW.t) (return (x: UInt8BW.t)) = any
+    [ return (result: UInt8BW.t) -> {[@stop_split] [@expl:bitand ensures] result = UInt8BW.bw_and self other}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -30,12 +30,12 @@ module M_shr_ref
   
   constant const_BITS: UInt32BW.t = (8: UInt32BW.t)
   
-  let shr_ref_u8 (self_: UInt8BW.t) (rhs: Int32BW.t) (return (x: UInt8BW.t)) =
-  {[@stop_split] [@expl:shr requires] Int32BW.le (Int32BW.of_BV256 (UInt64BW.to_BV256 (0: UInt64BW.t))) rhs
-    /\ Int32BW.lt rhs const_BITS}
+  let shr_ref_u8 (self: UInt8BW.t) (other: Int32BW.t) (return (x: UInt8BW.t)) =
+  {[@stop_split] [@expl:shr requires] Int32BW.le (Int32BW.of_BV256 (UInt64BW.to_BV256 (0: UInt64BW.t))) other
+    /\ Int32BW.lt other const_BITS}
     any
     [ return (result: UInt8BW.t) -> {[@stop_split] [@expl:shr ensures] result
-      = UInt8BW.shr self_ (UInt8BW.of_BV256 (Int32BW.to_BV256 rhs))}
+      = UInt8BW.shr self (UInt8BW.of_BV256 (Int32BW.to_BV256 other))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

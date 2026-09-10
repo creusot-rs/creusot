@@ -12,7 +12,8 @@ predicate inv_F (_1: t_F)
 
 predicate inv_FnGhostWrapper_F (_1: t_FnGhostWrapper_F)
 
-axiom inv_axiom [@rewrite]: forall x: t_FnGhostWrapper_F [inv_FnGhostWrapper_F x]. inv_FnGhostWrapper_F x = inv_F x.f0
+axiom inv_axiom [@rewrite]: forall _1: t_FnGhostWrapper_F [inv_FnGhostWrapper_F _1]. inv_FnGhostWrapper_F _1
+    = inv_F _1.f0
 
 predicate invariant_ref_FnGhostWrapper_F [@inline:trivial] (self: t_FnGhostWrapper_F) = inv_FnGhostWrapper_F self
 
@@ -24,8 +25,9 @@ meta "rewrite_def" predicate inv_ref_FnGhostWrapper_F
 
 predicate postcondition_clone (self: ()) (args: t_F) (result: t_F)
 
-axiom postcondition_fndef: forall args: t_F, res: t_F [postcondition_clone () args res]. postcondition_clone () args res
-    -> (let self_ = args in inv_F res)
+axiom postcondition_fndef:
+  forall args: t_F, result: t_F [postcondition_clone () args result]. postcondition_clone () args result
+    -> (let self = args in inv_F result)
 
 predicate invariant_ref_F [@inline:trivial] (self: t_F) = inv_F self
 
@@ -37,23 +39,23 @@ meta "rewrite_def" predicate inv_ref_F
 
 predicate precondition_clone (self: ()) (args: t_F)
 
-axiom precondition_fndef: forall args: t_F [precondition_clone () args]. (let self_ = args in inv_ref_F self_)
+axiom precondition_fndef: forall args: t_F [precondition_clone () args]. (let self = args in inv_ref_F self)
     -> precondition_clone () args
 
 predicate postcondition_once_clone (self: ()) (args: t_F) (result: t_F) = postcondition_clone self args result
 
 meta "rewrite_def" predicate postcondition_once_clone
 
-let clone_F (self_: t_F) (return (x: t_F)) = {[@stop_split] [@expl:clone requires] precondition_clone () self_}
+let clone_F (self: t_F) (return (x: t_F)) = {[@stop_split] [@expl:clone requires] precondition_clone () self}
   any
-  [ return (result: t_F) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self_ result}
+  [ return (result: t_F) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self result}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self_: t_FnGhostWrapper_F. inv_ref_FnGhostWrapper_F self_
-    -> inv_ref_FnGhostWrapper_F self_
-    /\ (forall result: t_FnGhostWrapper_F. inv_FnGhostWrapper_F result /\ postcondition_clone () self_.f0 result.f0
+goal refines: forall self: t_FnGhostWrapper_F. inv_ref_FnGhostWrapper_F self
+    -> inv_ref_FnGhostWrapper_F self
+    /\ (forall result: t_FnGhostWrapper_F. inv_FnGhostWrapper_F result /\ postcondition_clone () self.f0 result.f0
       -> inv_FnGhostWrapper_F result)

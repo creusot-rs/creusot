@@ -22,9 +22,9 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" function view_Box_slice_unit_Global
   
-  let into_vec_unit (self_: Slice64.slice ()) (return (x: t_Vec_unit_Global)) = any
+  let into_vec_unit (self: Slice64.slice ()) (return (x: t_Vec_unit_Global)) = any
     [ return (result: t_Vec_unit_Global) -> {[@stop_split] [@expl:into_vec ensures] view_Vec_unit_Global result
-      = view_Box_slice_unit_Global self_}
+      = view_Box_slice_unit_Global self}
       (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq ()) = UInt64.t'int self < Seq.length seq
@@ -41,15 +41,15 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate resolve_elswhere_usize
   
-  let index_mut_Vec_unit_Global (self_: MutBorrow.t t_Vec_unit_Global) (ix: UInt64.t) (return (x: MutBorrow.t ())) =
-  {[@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_unit_Global self_.current)}
+  let index_mut_Vec_unit_Global (self: MutBorrow.t t_Vec_unit_Global) (index: UInt64.t) (return (x: MutBorrow.t ())) =
+  {[@stop_split] [@expl:index_mut requires] in_bounds_usize index (view_Vec_unit_Global self.current)}
     any
     [ return (result: MutBorrow.t ()) ->
-    {[@stop_split] [@expl:index_mut_Vec_unit_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize ix (view_Vec_unit_Global self_.current) result.current)
-      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize ix (view_Vec_unit_Global self_.final) result.final)
-      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_unit_Global self_.current) (view_Vec_unit_Global self_.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_unit_Global self_.final)
-      = Seq.length (view_Vec_unit_Global self_.current))}
+    {[@stop_split] [@expl:index_mut_Vec_unit_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize index (view_Vec_unit_Global self.current) result.current)
+      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize index (view_Vec_unit_Global self.final) result.final)
+      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize index (view_Vec_unit_Global self.current) (view_Vec_unit_Global self.final))
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_unit_Global self.final)
+      = Seq.length (view_Vec_unit_Global self.current))}
       (! return {result}) ]
   
   type t_Perm_ptr_unit
@@ -79,8 +79,8 @@ module M_zst_pointers_may_be_equal
   
   predicate inv_Perm_ptr_unit (_1: t_Perm_ptr_unit)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_unit [inv_Perm_ptr_unit x]. inv_Perm_ptr_unit x
-      = invariant_Perm_ptr_unit x
+  axiom inv_axiom [@rewrite]: forall _1: t_Perm_ptr_unit [inv_Perm_ptr_unit _1]. inv_Perm_ptr_unit _1
+      = invariant_Perm_ptr_unit _1
   
   predicate invariant_refmut_Perm_ptr_unit [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_unit) =
     inv_Perm_ptr_unit self.current /\ inv_Perm_ptr_unit self.final
@@ -119,11 +119,11 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate resolve_refmut_unit
   
-  let index_Vec_unit_Global (self_: t_Vec_unit_Global) (ix: UInt64.t) (return (x: ())) =
-  {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_unit_Global self_)}
+  let index_Vec_unit_Global (self: t_Vec_unit_Global) (index: UInt64.t) (return (x: ())) =
+  {[@stop_split] [@expl:index requires] in_bounds_usize index (view_Vec_unit_Global self)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_unit_Global self_) result}
+    {[@stop_split] [@expl:index ensures] has_value_usize index (view_Vec_unit_Global self) result}
       (! return {result}) ]
   
   type tup2_ptr_unit_Ghost_ref_Perm_ptr_unit = { f0'0: Opaque.ptr; f1'0: t_Perm_ptr_unit }

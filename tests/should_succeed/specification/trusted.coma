@@ -91,8 +91,8 @@ module M_rose
   
   predicate inv_Vec_Rose_T_Global (_1: t_Vec_Rose_T_Global)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Rose_T [inv_Rose_T x]. inv_Rose_T x
-      = (inv_T x.f0 /\ inv_Vec_Rose_T_Global x.f1)
+  axiom inv_axiom [@rewrite]: forall _1: t_Rose_T [inv_Rose_T _1]. inv_Rose_T _1
+      = (inv_T _1.f0 /\ inv_Vec_Rose_T_Global _1.f1)
   
   predicate invariant_ref_Rose_T [@inline:trivial] (self: t_Rose_T) = inv_Rose_T self
   
@@ -113,19 +113,19 @@ module M_rose
   
   predicate invariant_Vec_Rose_T_Global (self: t_Vec_Rose_T_Global) = inv_Seq_Rose_T (view_Vec_Rose_T_Global self)
   
-  axiom inv_axiom'0: forall x: t_Vec_Rose_T_Global [inv_Vec_Rose_T_Global x]. inv_Vec_Rose_T_Global x
-      -> invariant_Vec_Rose_T_Global x
+  axiom inv_axiom'0: forall _1: t_Vec_Rose_T_Global [inv_Vec_Rose_T_Global _1]. inv_Vec_Rose_T_Global _1
+      -> invariant_Vec_Rose_T_Global _1
   
   predicate inv_IntoIter_Rose_T_Global (_1: t_IntoIter_Rose_T_Global)
   
   function view_IntoIter_Rose_T_Global (self: t_IntoIter_Rose_T_Global) : Seq.seq t_Rose_T
   
-  let into_iter_Vec_Rose_T_Global (self_: t_Vec_Rose_T_Global) (return (x: t_IntoIter_Rose_T_Global)) =
-  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Vec_Rose_T_Global self_}
+  let into_iter_Vec_Rose_T_Global (self: t_Vec_Rose_T_Global) (return (x: t_IntoIter_Rose_T_Global)) =
+  {[@stop_split] [@expl:into_iter 'self' type invariant] inv_Vec_Rose_T_Global self}
     any
     [ return (result: t_IntoIter_Rose_T_Global) ->
     {[@stop_split] [@expl:into_iter_Vec_Rose_T_Global ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_IntoIter_Rose_T_Global result)
-      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_Rose_T_Global self_ = view_IntoIter_Rose_T_Global result)}
+      /\ ([@stop_split] [@expl:into_iter ensures] view_Vec_Rose_T_Global self = view_IntoIter_Rose_T_Global result)}
       (! return {result}) ]
   
   type t_Option_Rose_T = None | Some t_Rose_T
@@ -142,8 +142,8 @@ module M_rose
   
   predicate inv_Option_Rose_T (_1: t_Option_Rose_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Option_Rose_T [inv_Option_Rose_T x]. inv_Option_Rose_T x
-      = match x with
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_Rose_T [inv_Option_Rose_T _1]. inv_Option_Rose_T _1
+      = match _1 with
         | None -> true
         | Some f0'0 -> inv_Rose_T f0'0
         end
@@ -171,14 +171,14 @@ module M_rose
     resolve_refmut_IntoIter_Rose_T_Global self
     /\ view_IntoIter_Rose_T_Global self.current = (Seq.empty: Seq.seq t_Rose_T)
   
-  let next_IntoIter_Rose_T_Global (self_: MutBorrow.t t_IntoIter_Rose_T_Global) (return (x: t_Option_Rose_T)) =
-  {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_IntoIter_Rose_T_Global self_}
+  let next_IntoIter_Rose_T_Global (self: MutBorrow.t t_IntoIter_Rose_T_Global) (return (x: t_Option_Rose_T)) =
+  {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_IntoIter_Rose_T_Global self}
     any
     [ return (result: t_Option_Rose_T) ->
     {[@stop_split] [@expl:next_IntoIter_Rose_T_Global ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_Rose_T result)
       /\ ([@stop_split] [@expl:next ensures] match result with
-        | None -> completed_IntoIter_Rose_T_Global self_
-        | Some v -> produces_IntoIter_Rose_T_Global self_.current (Seq.singleton v) self_.final
+        | None -> completed_IntoIter_Rose_T_Global self
+        | Some v -> produces_IntoIter_Rose_T_Global self.current (Seq.singleton v) self.final
         end)}
       (! return {result}) ]
   
@@ -209,11 +209,11 @@ module M_rose
   
   predicate resolve_Vec_Rose_T_Global'0 (_1: t_Vec_Rose_T_Global)
   
-  axiom resolve_axiom: forall x: t_Vec_Rose_T_Global [resolve_Vec_Rose_T_Global'0 x]. resolve_Vec_Rose_T_Global'0 x
-      -> resolve_Vec_Rose_T_Global x
+  axiom resolve_axiom: forall _1: t_Vec_Rose_T_Global [resolve_Vec_Rose_T_Global'0 _1]. resolve_Vec_Rose_T_Global'0 _1
+      -> resolve_Vec_Rose_T_Global _1
   
-  axiom resolve_axiom'0 [@rewrite]: forall x: t_Rose_T [resolve_Rose_T x]. resolve_Rose_T x
-      = (resolve_T x.f0 /\ resolve_Vec_Rose_T_Global'0 x.f1)
+  axiom resolve_axiom'0 [@rewrite]: forall _1: t_Rose_T [resolve_Rose_T _1]. resolve_Rose_T _1
+      = (resolve_T _1.f0 /\ resolve_Vec_Rose_T_Global'0 _1.f1)
   
   predicate resolve_IntoIter_Rose_T_Global [@inline:trivial] (self: t_IntoIter_Rose_T_Global) =
     forall i: int. 0 <= i /\ i < Seq.length (view_IntoIter_Rose_T_Global self)
@@ -224,8 +224,8 @@ module M_rose
   predicate resolve_IntoIter_Rose_T_Global'0 (_1: t_IntoIter_Rose_T_Global)
   
   axiom resolve_axiom'1:
-    forall x: t_IntoIter_Rose_T_Global [resolve_IntoIter_Rose_T_Global'0 x]. resolve_IntoIter_Rose_T_Global'0 x
-      -> resolve_IntoIter_Rose_T_Global x
+    forall _1: t_IntoIter_Rose_T_Global [resolve_IntoIter_Rose_T_Global'0 _1]. resolve_IntoIter_Rose_T_Global'0 _1
+      -> resolve_IntoIter_Rose_T_Global _1
   
   meta "compute_max_steps" 1000000
   

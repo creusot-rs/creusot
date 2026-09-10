@@ -39,16 +39,16 @@ predicate completed_I (self: MutBorrow.t t_I)
 predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
 
 axiom postcondition_fndef:
-  forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
-    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self_ s i.current /\ completed_I i
-        -> UInt64.t'int res.f0 <= Seq.length s)
-    /\ match res.f1 with
-      | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self_ s i -> Seq.length s <= UInt64.t'int r
+  forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
+    -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
+        -> UInt64.t'int result.f0 <= Seq.length s)
+    /\ match result.f1 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
       | None -> true
       end)
 
 predicate postcondition_size_hint'0 (self: ()) (args: t_Fuse_I) (result: tup2_usize_Option_usize) =
-  let self_ = args in match view_Fuse_I self_ with
+  let self'0 = args in match view_Fuse_I self'0 with
     | Some'0 s -> postcondition_size_hint () s result
     | None'0 -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) }
     end
@@ -59,8 +59,8 @@ predicate inv_I (_1: t_I)
 
 predicate inv_Option_I (_1: t_Option_I)
 
-axiom inv_axiom [@rewrite]: forall x: t_Option_I [inv_Option_I x]. inv_Option_I x
-    = match x with
+axiom inv_axiom [@rewrite]: forall _1: t_Option_I [inv_Option_I _1]. inv_Option_I _1
+    = match _1 with
       | None'0 -> true
       | Some'0 f0'0 -> inv_I f0'0
       end
@@ -71,7 +71,7 @@ meta "rewrite_def" predicate invariant_Fuse_I
 
 predicate inv_Fuse_I (_1: t_Fuse_I)
 
-axiom inv_axiom'0: forall x: t_Fuse_I [inv_Fuse_I x]. inv_Fuse_I x -> invariant_Fuse_I x
+axiom inv_axiom'0: forall _1: t_Fuse_I [inv_Fuse_I _1]. inv_Fuse_I _1 -> invariant_Fuse_I _1
 
 predicate invariant_ref_Fuse_I [@inline:trivial] (self: t_Fuse_I) = inv_Fuse_I self
 
@@ -91,7 +91,7 @@ meta "rewrite_def" predicate inv_ref_I
 
 predicate precondition_size_hint (self: ()) (args: t_I)
 
-axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self_ = args in inv_ref_I self_)
+axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self = args in inv_ref_I self)
     -> precondition_size_hint () args
 
 predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) =
@@ -99,17 +99,17 @@ predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usiz
 
 meta "rewrite_def" predicate postcondition_once_size_hint
 
-let size_hint_I (self_: t_I) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+let size_hint_I (self: t_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
     (! return {result}) ]
 
-let size_hint_Fuse_I (self_: t_Fuse_I) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Fuse_I self_}
+let size_hint_Fuse_I (self: t_Fuse_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_Fuse_I self}
   any
-  [ return (result: tup2_usize_Option_usize) -> {[@stop_split] [@expl:size_hint ensures] match view_Fuse_I self_ with
+  [ return (result: tup2_usize_Option_usize) -> {[@stop_split] [@expl:size_hint ensures] match view_Fuse_I self with
       | Some'0 s -> postcondition_size_hint () s result
       | None'0 -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) }
       end}

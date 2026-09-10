@@ -19,7 +19,7 @@ type t_T
 function view_Iter_T (self: t_Iter_T) : Slice64.slice t_T
 
 predicate postcondition_size_hint (self: ()) (args: t_Iter_T) (result: tup2_usize_Option_usize) =
-  let self_ = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_Iter_T self_))
+  let self'0 = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_Iter_T self'0))
   /\ result.f1 = Some (result.f0)
 
 meta "rewrite_def" predicate postcondition_size_hint
@@ -34,12 +34,12 @@ predicate inv_ref_Iter_T [@inline:trivial] (_1: t_Iter_T) = invariant_ref_Iter_T
 
 meta "rewrite_def" predicate inv_ref_Iter_T
 
-let size_hint_Iter_T (self_: t_Iter_T) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Iter_T self_}
+let size_hint_Iter_T (self: t_Iter_T) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_Iter_T self}
   any
   [ return (result: tup2_usize_Option_usize) ->
   {[@stop_split] [@expl:size_hint_Iter_T ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.t'int result.f0
-      = Seq.length (Slice64.view (view_Iter_T self_)))
+      = Seq.length (Slice64.view (view_Iter_T self)))
     /\ ([@stop_split] [@expl:size_hint ensures #1] result.f1 = Some (result.f0))}
     (! return {result}) ]
 

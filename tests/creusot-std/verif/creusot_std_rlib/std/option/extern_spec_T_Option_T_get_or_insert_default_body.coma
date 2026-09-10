@@ -17,8 +17,8 @@ predicate inv_T (_1: t_T)
 predicate postcondition_default (self: ()) (args: ()) (result: t_T)
 
 axiom postcondition_fndef:
-  forall args: (), res: t_T [postcondition_default () args res]. postcondition_default () args res
-    -> (let () = args in inv_T res)
+  forall args: (), result: t_T [postcondition_default () args result]. postcondition_default () args result
+    -> (let () = args in inv_T result)
 
 predicate postcondition_once_default (self: ()) (args: ()) (result: t_T) = postcondition_default self args result
 
@@ -33,8 +33,8 @@ type t_Option_T = None | Some t_T
 
 predicate inv_Option_T (_1: t_Option_T)
 
-axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-    = match x with
+axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+    = match _1 with
       | None -> true
       | Some f0 -> inv_T f0
       end
@@ -58,15 +58,15 @@ meta "rewrite_def" predicate inv_refmut_T
 
 predicate resolve_T (_1: t_T)
 
-let get_or_insert_T (self_: MutBorrow.t t_Option_T) (value: t_T) (return (x: MutBorrow.t t_T)) =
-{[@stop_split] [@expl:get_or_insert_T requires] ([@stop_split] [@expl:get_or_insert 'self_' type invariant] inv_refmut_Option_T self_)
+let get_or_insert_T (self: MutBorrow.t t_Option_T) (value: t_T) (return (x: MutBorrow.t t_T)) =
+{[@stop_split] [@expl:get_or_insert_T requires] ([@stop_split] [@expl:get_or_insert 'self' type invariant] inv_refmut_Option_T self)
   /\ ([@stop_split] [@expl:get_or_insert 'value' type invariant] inv_T value)}
   any
   [ return (result: MutBorrow.t t_T) ->
   {[@stop_split] [@expl:get_or_insert_T ensures] ([@stop_split] [@expl:get_or_insert result type invariant] inv_refmut_T result)
-    /\ ([@stop_split] [@expl:get_or_insert ensures] match self_.current with
-      | None -> result.current = value /\ self_.final = Some (result.final)
-      | Some _ -> self_.current = Some (result.current) /\ self_.final = Some (result.final) /\ resolve_T value
+    /\ ([@stop_split] [@expl:get_or_insert ensures] match self.current with
+      | None -> result.current = value /\ self.final = Some (result.final)
+      | Some _ -> self.current = Some (result.current) /\ self.final = Some (result.final) /\ resolve_T value
       end)}
     (! return {result}) ]
 

@@ -64,13 +64,13 @@ pub(super) fn wp<'tcx>(
     self_id: DefId,
     args_names: Vec<Ident>,
     variant: Option<Exp>,
-    t: Term<'tcx>,
+    t: &Term<'tcx>,
     dest: Ident,
     post: Exp,
 ) -> Exp {
     let vcgen =
         VCGen { typing_env: ctx.typing_env(self_id), ctx, names, self_id, args_names, variant };
-    vcgen.build_wp(&t, &|exp| Exp::let_(dest, exp, post.clone()))
+    vcgen.build_wp(t, &|exp| Exp::let_(dest, exp, post.clone()))
 }
 
 // We use Fn because some continuations may be called several times (in the case
@@ -210,7 +210,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     .map(|((nm, _, _), arg)| (nm.0, arg))
                     .chain(std::iter::once((name::result(), call.clone())))
                     .collect();
-                let mut contract = lower_contract(self.ctx, self.names, pre_sig.contract);
+                let mut contract = lower_contract(self.ctx, self.names, &pre_sig.contract);
                 contract.subst(&call_subst);
 
                 let name = self.ctx.item_name(id);
@@ -388,9 +388,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 })
             }
             // VC(|x| A(x), Q) = (forall<x>, VC(A(x), true)) /\ Q(|x| A(x))
-            TermKind::Closure { bound, body } => {
+            &TermKind::Closure { arg, arg_ty, ref body } => {
                 let body = self.build_wp(body, &|_| Exp::mk_true());
-                Exp::forall(bound.iter().map(|(s, ty)| (s.0, self.ty(*ty, t.span))), body)
+                Exp::forall([(arg.0, self.ty(arg_ty, t.span))], body)
                     .log_and(k(self.lower_pure(t)))
             }
             TermKind::Old { .. } => self.ctx.crash_and_error(t.span, "`old` is not allowed here"),
@@ -402,6 +402,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 self.ctx.span_bug(t.span, "private_inv and private_resolve should not appear here.")
             }
             TermKind::Spanned(term) => self.build_wp(term, k),
+            TermKind::HirId(_) => unreachable!(),
         }
     }
 

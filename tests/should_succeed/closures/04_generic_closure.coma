@@ -76,14 +76,14 @@ module M_generic_closure
     forall self: t_F, args: t_A, res_state: t_F, res: t_B [postcondition_mut_F self args res_state res]. postcondition_mut_F self args res_state res
       = (postcondition_F self args res /\ self = res_state)
   
-  let call_F (self_: t_F) (arg: t_A) (return (x: t_B)) =
-  {[@stop_split] [@expl:call_F requires] ([@stop_split] [@expl:call 'self_' type invariant] inv_ref_F self_)
-    /\ ([@stop_split] [@expl:call 'arg' type invariant] inv_tup1_A arg)
-    /\ ([@stop_split] [@expl:call requires] precondition_F self_ arg)}
+  let call_F (self: t_F) (args: t_A) (return (x: t_B)) =
+  {[@stop_split] [@expl:call_F requires] ([@stop_split] [@expl:call 'self' type invariant] inv_ref_F self)
+    /\ ([@stop_split] [@expl:call 'args' type invariant] inv_tup1_A args)
+    /\ ([@stop_split] [@expl:call requires] precondition_F self args)}
     any
     [ return (result: t_B) ->
     {[@stop_split] [@expl:call_F ensures] ([@stop_split] [@expl:call result type invariant] inv_B result)
-      /\ ([@stop_split] [@expl:call ensures] postcondition_F self_ arg result)}
+      /\ ([@stop_split] [@expl:call ensures] postcondition_F self args result)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

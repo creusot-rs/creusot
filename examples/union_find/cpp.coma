@@ -11,7 +11,7 @@ module M_example
   
   predicate inv_UF_i32 (_1: t_UF_i32)
   
-  axiom inv_axiom: forall x: t_UF_i32 [inv_UF_i32 x]. inv_UF_i32 x -> invariant_UF_i32 x
+  axiom inv_axiom: forall _1: t_UF_i32 [inv_UF_i32 _1]. inv_UF_i32 _1 -> invariant_UF_i32 _1
   
   predicate invariant_Ghost_UF_i32 [@inline:trivial] (self: t_UF_i32) = inv_UF_i32 self
   
@@ -503,7 +503,7 @@ module M_implementation__find
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
+  axiom inv_axiom [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
   predicate invariant_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) =
     inv_UF_T self.current /\ inv_UF_T self.final
@@ -560,10 +560,10 @@ module M_implementation__find
       = map_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self key) (fun (v: t_Perm_PermCell_Node_T) -> v)}
       (! return {result}) ]
   
-  let unwrap_ref_Perm_PermCell_Node_T (self_: t_Option_ref_Perm_PermCell_Node_T) (return (x: t_Perm_PermCell_Node_T)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None'0}
+  let unwrap_ref_Perm_PermCell_Node_T (self: t_Option_ref_Perm_PermCell_Node_T) (return (x: t_Perm_PermCell_Node_T)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None'0}
     any
-    [ return (result: t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self_}
+    [ return (result: t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self}
       (! return {result}) ]
   
   let new_ref_Perm_PermCell_Node_T (x: t_Perm_PermCell_Node_T) (return (x'0: t_Perm_PermCell_Node_T)) = any
@@ -581,23 +581,23 @@ module M_implementation__find
   
   meta "rewrite_def" predicate inv_ref_Rc_PermCell_Node_T_Global
   
-  let deref_Rc_PermCell_Node_T_Global (self_: t_Rc_PermCell_Node_T_Global) (return (x: t_PermCell_Node_T)) =
-  {[@stop_split] [@expl:deref 'self_' type invariant] inv_ref_Rc_PermCell_Node_T_Global self_}
+  let deref_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) (return (x: t_PermCell_Node_T)) =
+  {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Rc_PermCell_Node_T_Global self}
     any
     [ return (result: t_PermCell_Node_T) -> {[@stop_split] [@expl:deref ensures] result
-      = view_Rc_PermCell_Node_T_Global self_}
+      = view_Rc_PermCell_Node_T_Global self}
       (! return {result}) ]
   
   predicate inv_T (_1: t_T)
   
   predicate inv_Elem_T (_1: t_Elem_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PermCell_Node_T_Global _1.f0
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x
-      = match x with
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1
+      = match _1 with
         | Root rank payload -> inv_T payload
         | Link f0'2 -> inv_Elem_T f0'2
         end
@@ -754,11 +754,10 @@ module M_implementation__find
       = len_Snapshot_Elem_T self.final)}
       (! return {result}) ]
   
-  let unwrap_refmut_Perm_PermCell_Node_T (self_: t_Option_refmut_Perm_PermCell_Node_T)
-    (return (x: MutBorrow.t t_Perm_PermCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'1}
+  let unwrap_refmut_Perm_PermCell_Node_T (self: t_Option_refmut_Perm_PermCell_Node_T)
+    (return (x: MutBorrow.t t_Perm_PermCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] self <> None'1}
     any
-    [ return (result: MutBorrow.t t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'1 result
-      = self_}
+    [ return (result: MutBorrow.t t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'1 result = self}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
@@ -775,8 +774,8 @@ module M_implementation__find
   
   predicate resolve_Elem_T (_1: t_Elem_T)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Elem_T [resolve_Elem_T x]. resolve_Elem_T x
-      = resolve_Rc_PermCell_Node_T_Global x.f0
+  axiom resolve_axiom [@rewrite]: forall _1: t_Elem_T [resolve_Elem_T _1]. resolve_Elem_T _1
+      = resolve_Rc_PermCell_Node_T_Global _1.f0
   
   predicate invariant_refmut_Node_T [@inline:trivial] (self: MutBorrow.t t_Node_T) =
     inv_Node_T self.current /\ inv_Node_T self.final
@@ -809,8 +808,8 @@ module M_implementation__find
   
   predicate resolve_Node_T (_1: t_Node_T)
   
-  axiom resolve_axiom'0 [@rewrite]: forall x: t_Node_T [resolve_Node_T x]. resolve_Node_T x
-      = match x with
+  axiom resolve_axiom'0 [@rewrite]: forall _1: t_Node_T [resolve_Node_T _1]. resolve_Node_T _1
+      = match _1 with
         | Root x0 x1 -> resolve_T x1
         | Link x0 -> resolve_Elem_T x0
         end
@@ -1094,7 +1093,7 @@ module M_implementation__get
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
+  axiom inv_axiom [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
   predicate invariant_ref_UF_T [@inline:trivial] (self: t_UF_T) = inv_UF_T self
   
@@ -1150,10 +1149,10 @@ module M_implementation__get
       = map_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self key) (fun (v: t_Perm_PermCell_Node_T) -> v)}
       (! return {result}) ]
   
-  let unwrap_ref_Perm_PermCell_Node_T (self_: t_Option_ref_Perm_PermCell_Node_T) (return (x: t_Perm_PermCell_Node_T)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None'0}
+  let unwrap_ref_Perm_PermCell_Node_T (self: t_Option_ref_Perm_PermCell_Node_T) (return (x: t_Perm_PermCell_Node_T)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None'0}
     any
-    [ return (result: t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self_}
+    [ return (result: t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self}
       (! return {result}) ]
   
   let new_ref_Perm_PermCell_Node_T (x: t_Perm_PermCell_Node_T) (return (x'0: t_Perm_PermCell_Node_T)) = any
@@ -1171,23 +1170,23 @@ module M_implementation__get
   
   meta "rewrite_def" predicate inv_ref_Rc_PermCell_Node_T_Global
   
-  let deref_Rc_PermCell_Node_T_Global (self_: t_Rc_PermCell_Node_T_Global) (return (x: t_PermCell_Node_T)) =
-  {[@stop_split] [@expl:deref 'self_' type invariant] inv_ref_Rc_PermCell_Node_T_Global self_}
+  let deref_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) (return (x: t_PermCell_Node_T)) =
+  {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Rc_PermCell_Node_T_Global self}
     any
     [ return (result: t_PermCell_Node_T) -> {[@stop_split] [@expl:deref ensures] result
-      = view_Rc_PermCell_Node_T_Global self_}
+      = view_Rc_PermCell_Node_T_Global self}
       (! return {result}) ]
   
   predicate inv_T (_1: t_T)
   
   predicate inv_Elem_T (_1: t_Elem_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PermCell_Node_T_Global _1.f0
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x
-      = match x with
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1
+      = match _1 with
         | Root rank payload -> inv_T payload
         | Link f0'2 -> inv_Elem_T f0'2
         end
@@ -1310,17 +1309,17 @@ module M_implementation__impl_Clone_for_Elem_T__clone (* <implementation::Elem<T
   
   meta "rewrite_def" predicate inv_ref_Rc_PermCell_Node_T_Global
   
-  let clone_Rc_PermCell_Node_T_Global (self_: t_Rc_PermCell_Node_T_Global) (return (x: t_Rc_PermCell_Node_T_Global)) =
-  {[@stop_split] [@expl:clone 'self_' type invariant] inv_ref_Rc_PermCell_Node_T_Global self_}
+  let clone_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) (return (x: t_Rc_PermCell_Node_T_Global)) =
+  {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Rc_PermCell_Node_T_Global self}
     any
     [ return (result: t_Rc_PermCell_Node_T_Global) ->
     {[@stop_split] [@expl:clone_Rc_PermCell_Node_T_Global ensures] ([@stop_split] [@expl:clone result type invariant] inv_Rc_PermCell_Node_T_Global result)
-      /\ ([@stop_split] [@expl:clone ensures] result = self_)}
+      /\ ([@stop_split] [@expl:clone ensures] result = self)}
       (! return {result}) ]
   
   predicate inv_Elem_T (_1: t_Elem_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  axiom inv_axiom [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PermCell_Node_T_Global _1.f0
   
   predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
   
@@ -1356,7 +1355,7 @@ module M_implementation__impl_Clone_for_Elem_T__clone__refines (* <implementatio
   
   predicate inv_Elem_T (_1: t_Elem_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  axiom inv_axiom [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PermCell_Node_T_Global _1.f0
   
   predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
   
@@ -1370,8 +1369,8 @@ module M_implementation__impl_Clone_for_Elem_T__clone__refines (* <implementatio
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: t_Elem_T. inv_ref_Elem_T self_
-      -> inv_ref_Elem_T self_ /\ (forall result: t_Elem_T. inv_Elem_T result /\ self_ = result -> inv_Elem_T result)
+  goal refines: forall self: t_Elem_T. inv_ref_Elem_T self
+      -> inv_ref_Elem_T self /\ (forall result: t_Elem_T. inv_Elem_T result /\ self = result -> inv_Elem_T result)
 end
 module M_implementation__impl_PartialEq_for_Elem_T__eq (* <implementation::Elem<T> as std::cmp::PartialEq> *)
   use creusot.prelude.Ptr
@@ -1411,7 +1410,7 @@ module M_implementation__impl_PartialEq_for_Elem_T__eq (* <implementation::Elem<
   
   predicate inv_Elem_T (_1: t_Elem_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  axiom inv_axiom [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PermCell_Node_T_Global _1.f0
   
   predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
   
@@ -1466,7 +1465,7 @@ module M_implementation__impl_PartialEq_for_Elem_T__eq__refines (* <implementati
   
   predicate inv_Elem_T (_1: t_Elem_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  axiom inv_axiom [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PermCell_Node_T_Global _1.f0
   
   predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
   
@@ -1491,12 +1490,12 @@ module M_implementation__impl_PartialEq_for_Elem_T__eq__refines (* <implementati
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self_: t_Elem_T, rhs: t_Elem_T. inv_ref_Elem_T self_
-      -> inv_ref_Elem_T rhs
-      -> inv_ref_Elem_T self_
-      /\ inv_ref_Elem_T rhs
-      /\ (forall result: bool. result = (deep_model_ref_Elem_T self_ = deep_model_ref_Elem_T rhs)
-          /\ (result -> self_ = rhs) -> result = (deep_model_ref_Elem_T self_ = deep_model_ref_Elem_T rhs))
+  goal refines: forall self: t_Elem_T, other: t_Elem_T. inv_ref_Elem_T self
+      -> inv_ref_Elem_T other
+      -> inv_ref_Elem_T self
+      /\ inv_ref_Elem_T other
+      /\ (forall result: bool. result = (deep_model_ref_Elem_T self = deep_model_ref_Elem_T other)
+          /\ (result -> self = other) -> result = (deep_model_ref_Elem_T self = deep_model_ref_Elem_T other))
 end
 module M_implementation__impl_UF_T__roots_map (* implementation::UF<T> *)
   use set.Fset
@@ -1600,7 +1599,7 @@ module M_implementation__impl_UF_T__roots_map (* implementation::UF<T> *)
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
+  axiom inv_axiom [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
   predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
   
@@ -1725,7 +1724,7 @@ module M_implementation__link
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
+  axiom inv_axiom [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
   predicate invariant_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) =
     inv_UF_T self.current /\ inv_UF_T self.final
@@ -1780,7 +1779,7 @@ module M_implementation__link
   
   predicate inv_Elem_T (_1: t_Elem_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PermCell_Node_T_Global _1.f0
   
   predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
   
@@ -1828,8 +1827,8 @@ module M_implementation__link
   
   predicate resolve_Elem_T (_1: t_Elem_T)
   
-  axiom resolve_axiom [@rewrite]: forall x: t_Elem_T [resolve_Elem_T x]. resolve_Elem_T x
-      = resolve_Rc_PermCell_Node_T_Global x.f0
+  axiom resolve_axiom [@rewrite]: forall _1: t_Elem_T [resolve_Elem_T _1]. resolve_Elem_T _1
+      = resolve_Rc_PermCell_Node_T_Global _1.f0
   
   predicate resolve_refmut_refmut_UF_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UF_T)) = _1.final = _1.current
   
@@ -1932,11 +1931,11 @@ module M_implementation__link
   
   meta "rewrite_def" predicate inv_ref_Rc_PermCell_Node_T_Global
   
-  let deref_Rc_PermCell_Node_T_Global (self_: t_Rc_PermCell_Node_T_Global) (return (x: t_PermCell_Node_T)) =
-  {[@stop_split] [@expl:deref 'self_' type invariant] inv_ref_Rc_PermCell_Node_T_Global self_}
+  let deref_Rc_PermCell_Node_T_Global (self: t_Rc_PermCell_Node_T_Global) (return (x: t_PermCell_Node_T)) =
+  {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Rc_PermCell_Node_T_Global self}
     any
     [ return (result: t_PermCell_Node_T) -> {[@stop_split] [@expl:deref ensures] result
-      = view_Rc_PermCell_Node_T_Global self_}
+      = view_Rc_PermCell_Node_T_Global self}
       (! return {result}) ]
   
   let deref_mut_Ghost_refmut_Perm_PermCell_Node_T (self: MutBorrow.t (MutBorrow.t t_Perm_PermCell_Node_T))
@@ -1964,8 +1963,8 @@ module M_implementation__link
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x
-      = match x with
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1
+      = match _1 with
         | Root rank payload -> inv_T payload
         | Link f0'4 -> inv_Elem_T f0'4
         end
@@ -2029,11 +2028,10 @@ module M_implementation__link
       = len_Snapshot_Elem_T self.final)}
       (! return {result}) ]
   
-  let unwrap_refmut_Perm_PermCell_Node_T (self_: t_Option_refmut_Perm_PermCell_Node_T)
-    (return (x: MutBorrow.t t_Perm_PermCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'0}
+  let unwrap_refmut_Perm_PermCell_Node_T (self: t_Option_refmut_Perm_PermCell_Node_T)
+    (return (x: MutBorrow.t t_Perm_PermCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] self <> None'0}
     any
-    [ return (result: MutBorrow.t t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result
-      = self_}
+    [ return (result: MutBorrow.t t_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T)) =
@@ -2092,9 +2090,9 @@ module M_implementation__link
   
   meta "rewrite_def" function deep_model_ref_refmut_PeanoInt
   
-  let lt_refmut_PeanoInt (self_: MutBorrow.t t_PeanoInt) (other: MutBorrow.t t_PeanoInt) (return (x: bool)) = any
+  let lt_refmut_PeanoInt (self: MutBorrow.t t_PeanoInt) (other: MutBorrow.t t_PeanoInt) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] result
-      = UInt64.lt (deep_model_ref_refmut_PeanoInt self_) (deep_model_ref_refmut_PeanoInt other)}
+      = UInt64.lt (deep_model_ref_refmut_PeanoInt self) (deep_model_ref_refmut_PeanoInt other)}
       (! return {result}) ]
   
   let clone_Elem_T (self: t_Elem_T) (return (x: t_Elem_T)) =
@@ -2109,8 +2107,8 @@ module M_implementation__link
   
   predicate resolve_Node_T (_1: t_Node_T)
   
-  axiom resolve_axiom'0 [@rewrite]: forall x: t_Node_T [resolve_Node_T x]. resolve_Node_T x
-      = match x with
+  axiom resolve_axiom'0 [@rewrite]: forall _1: t_Node_T [resolve_Node_T _1]. resolve_Node_T _1
+      = match _1 with
         | Root x0 x1 -> resolve_T x1
         | Link x0 -> resolve_Elem_T x0
         end
@@ -2118,9 +2116,9 @@ module M_implementation__link
   let new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  let eq_refmut_PeanoInt (self_: MutBorrow.t t_PeanoInt) (rhs: MutBorrow.t t_PeanoInt) (return (x: bool)) = any
+  let eq_refmut_PeanoInt (self: MutBorrow.t t_PeanoInt) (other: MutBorrow.t t_PeanoInt) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
-      = (deep_model_ref_refmut_PeanoInt self_ = deep_model_ref_refmut_PeanoInt rhs)}
+      = (deep_model_ref_refmut_PeanoInt self = deep_model_ref_refmut_PeanoInt other)}
       (! return {result}) ]
   
   let incr (self: t_PeanoInt) (return (x: t_PeanoInt)) = any
@@ -2525,12 +2523,12 @@ module M_implementation__make
   
   predicate inv_Elem_T (_1: t_Elem_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0'0
+  axiom inv_axiom [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PermCell_Node_T_Global _1.f0'0
   
   predicate inv_Node_T (_1: t_Node_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Node_T [inv_Node_T x]. inv_Node_T x
-      = match x with
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Node_T [inv_Node_T _1]. inv_Node_T _1
+      = match _1 with
         | Root rank payload -> inv_T payload
         | Link f0'2 -> inv_Elem_T f0'2
         end
@@ -2637,7 +2635,7 @@ module M_implementation__make
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom'1 [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
   predicate invariant_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) =
     inv_UF_T self.current /\ inv_UF_T self.final
@@ -3004,7 +3002,7 @@ module M_implementation__new
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
+  axiom inv_axiom [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
   predicate invariant_Ghost_UF_T [@inline:trivial] (self: t_UF_T) = inv_UF_T self
   
@@ -3151,7 +3149,7 @@ module M_implementation__union
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_UF_T [inv_UF_T x]. inv_UF_T x = invariant_UF_T x
+  axiom inv_axiom [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
   predicate invariant_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) =
     inv_UF_T self.current /\ inv_UF_T self.final
@@ -3219,7 +3217,7 @@ module M_implementation__union
   
   predicate inv_Elem_T (_1: t_Elem_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall x: t_Elem_T [inv_Elem_T x]. inv_Elem_T x = inv_Rc_PermCell_Node_T_Global x.f0
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PermCell_Node_T_Global _1.f0
   
   predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
   

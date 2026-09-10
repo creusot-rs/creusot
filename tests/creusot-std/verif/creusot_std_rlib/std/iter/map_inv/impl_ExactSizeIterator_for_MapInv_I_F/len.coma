@@ -30,7 +30,7 @@ meta "rewrite_def" predicate inv_ref_I
 
 predicate precondition_len (self: ()) (args: t_I)
 
-axiom precondition_fndef: forall args: t_I [precondition_len () args]. (let self_ = args in inv_ref_I self_)
+axiom precondition_fndef: forall args: t_I [precondition_len () args]. (let self = args in inv_ref_I self)
     -> precondition_len () args
 
 type t_Option_usize = None | Some UInt64.t
@@ -53,17 +53,17 @@ predicate completed_I (self: MutBorrow.t t_I)
 predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
 
 axiom postcondition_fndef:
-  forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
-    -> (let self_ = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self_ s i.current /\ completed_I i
-        -> UInt64.t'int res.f0 <= Seq.length s)
-    /\ match res.f1 with
-      | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self_ s i -> Seq.length s <= UInt64.t'int r
+  forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
+    -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
+        -> UInt64.t'int result.f0 <= Seq.length s)
+    /\ match result.f1 with
+      | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
       | None -> true
       end)
 
 predicate precondition_size_hint (self: ()) (args: t_I)
 
-axiom precondition_fndef'0: forall args: t_I [precondition_size_hint () args]. (let self_ = args in inv_ref_I self_)
+axiom precondition_fndef'0: forall args: t_I [precondition_size_hint () args]. (let self = args in inv_ref_I self)
     -> precondition_size_hint () args
 
 predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) =
@@ -71,26 +71,26 @@ predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usiz
 
 meta "rewrite_def" predicate postcondition_once_size_hint
 
-let size_hint_I (self_: t_I) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+let size_hint_I (self: t_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
     (! return {result}) ]
 
 predicate postcondition_len (self: ()) (args: t_I) (result: UInt64.t)
 
 axiom postcondition_fndef'0:
-  forall args: t_I, res: UInt64.t [postcondition_len () args res]. postcondition_len () args res
-    -> (let self_ = args in postcondition_size_hint () self_ { f0 = res; f1 = Some res })
+  forall args: t_I, result: UInt64.t [postcondition_len () args result]. postcondition_len () args result
+    -> (let self = args in postcondition_size_hint () self { f0 = result; f1 = Some result })
 
 predicate postcondition_once_len (self: ()) (args: t_I) (result: UInt64.t) = postcondition_len self args result
 
 meta "rewrite_def" predicate postcondition_once_len
 
-let len_I (self_: t_I) (return (x: UInt64.t)) = {[@stop_split] [@expl:len requires] precondition_len () self_}
+let len_I (self: t_I) (return (x: UInt64.t)) = {[@stop_split] [@expl:len requires] precondition_len () self}
   any
-  [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] postcondition_once_len () self_ result}
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] postcondition_once_len () self result}
     (! return {result}) ]
 
 predicate inv_Item (_1: t_Item)
@@ -196,8 +196,8 @@ predicate invariant_MapInv_I_F (self: t_MapInv_I_F) =
 
 predicate inv_MapInv_I_F (_1: t_MapInv_I_F)
 
-axiom inv_axiom [@rewrite]: forall x: t_MapInv_I_F [inv_MapInv_I_F x]. inv_MapInv_I_F x
-    = (invariant_MapInv_I_F x /\ inv_I x.iter /\ inv_F x.func)
+axiom inv_axiom [@rewrite]: forall _1: t_MapInv_I_F [inv_MapInv_I_F _1]. inv_MapInv_I_F _1
+    = (invariant_MapInv_I_F _1 /\ inv_I _1.iter /\ inv_F _1.func)
 
 predicate invariant_ref_MapInv_I_F [@inline:trivial] (self: t_MapInv_I_F) = inv_MapInv_I_F self
 

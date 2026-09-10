@@ -65,18 +65,28 @@ pub(crate) fn lower_pure_weakdep<'tcx>(
     lower_pure_raw(ctx, names, term, true)
 }
 
+pub(crate) fn lower_pure_spanned<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    names: &impl Namer<'tcx>,
+    term: &Term<'tcx>,
+) -> Exp {
+    let mut term = Lower { ctx, names, weakdep: false }.lower_term_spanned(term);
+    term.reassociate();
+    term
+}
+
 pub(crate) fn lower_condition<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
-    cond: Condition<'tcx>,
+    cond: &Condition<'tcx>,
 ) -> WCondition {
-    WCondition { exp: lower_pure(ctx, names, &cond.term.spanned()), expl: cond.expl }
+    WCondition { exp: lower_pure_spanned(ctx, names, &cond.term), expl: cond.expl.clone() }
 }
 
 pub(crate) fn lower_trigger<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
-    trig: Trigger<'tcx>,
+    trig: &Trigger<'tcx>,
 ) -> WTrigger {
     WTrigger(trig.0.iter().map(|t| lower_pure(ctx, names, t)).collect())
 }
@@ -383,11 +393,8 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     k => unreachable!("Projection from {k:?}"),
                 }
             }
-            TermKind::Closure { bound, body } => {
-                let binders = bound
-                    .iter()
-                    .map(|&(ident, ty)| Binder::typed(ident.0, self.lower_ty(ty)))
-                    .collect();
+            &TermKind::Closure { arg, arg_ty, ref body } => {
+                let binders = [Binder::typed(arg.0, self.lower_ty(arg_ty))].into();
                 let body = self.lower_term(body);
                 Exp::Lam(binders, body.boxed())
             }
@@ -445,15 +452,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 };
                 Exp::var(f).app([arg])
             }
-            TermKind::Spanned(term2) => {
-                let exp = self.lower_term(term2);
-                if let Some(attr) = self.names.span_attr(term.span) {
-                    exp.with_attr(attr)
-                } else {
-                    exp
-                }
-            }
+            TermKind::Spanned(term2) => self.lower_term_spanned(term2),
+            TermKind::HirId(_) => unreachable!(),
         }
+    }
+
+    fn lower_term_spanned(&self, term: &Term<'tcx>) -> Exp {
+        let exp = self.lower_term(term);
+        if let Some(attr) = self.names.span_attr(term.span) { exp.with_attr(attr) } else { exp }
     }
 
     fn lower_pat(&self, pat: &Pattern<'tcx>) -> WPattern {

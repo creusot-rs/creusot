@@ -10,16 +10,16 @@ type t_B
 
 predicate inv_Self_ (_1: t_Self_)
 
-predicate precondition_into_iter (self: ()) (args: t_Self_) = let self_ = args in inv_Self_ self_
+predicate precondition_into_iter (self: ()) (args: t_Self_) = let self'0 = args in inv_Self_ self'0
 
 meta "rewrite_def" predicate precondition_into_iter
 
-let into_iter_Self_ (self_: t_Self_) (return (x: t_Self_)) =
-{[@stop_split] [@expl:into_iter 'self_' type invariant] inv_Self_ self_}
+let into_iter_Self_ (self: t_Self_) (return (x: t_Self_)) =
+{[@stop_split] [@expl:into_iter 'self' type invariant] inv_Self_ self}
   any
   [ return (result: t_Self_) ->
   {[@stop_split] [@expl:into_iter_Self_ ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Self_ result)
-    /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
+    /\ ([@stop_split] [@expl:into_iter ensures] result = self)}
     (! return {result}) ]
 
 predicate precondition_from_iter (self: ()) (args: t_Self_)
@@ -32,8 +32,8 @@ predicate inv_B (_1: t_B)
 predicate postcondition_from_iter (self: ()) (args: t_Self_) (result: t_B)
 
 axiom postcondition_fndef:
-  forall args: t_Self_, res: t_B [postcondition_from_iter () args res]. postcondition_from_iter () args res
-    -> (let iter = args in inv_B res)
+  forall args: t_Self_, result: t_B [postcondition_from_iter () args result]. postcondition_from_iter () args result
+    -> (let iter = args in inv_B result)
 
 predicate postcondition_once_from_iter (self: ()) (args: t_Self_) (result: t_B) =
   postcondition_from_iter self args result
