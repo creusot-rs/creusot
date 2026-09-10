@@ -59,8 +59,9 @@ pub fn immutable<A, B, F: FnMut(A) -> Option<B>>(f: F) -> bool {
 /// Asserts that the postcondition of `f` is *precise*: that there are never two possible values matching the postcondition
 #[logic(open, prophetic)]
 pub fn precise<A, B, F: FnMut(A) -> Option<B>>(f1: F) -> bool {
-    pearlite! { forall<mode: Mode, f2: F, i> !mode.terminates()
-    ==> !((exists<b: B> f1.postcondition_mut((i,), f2, Some(b), mode)) && f1.postcondition_mut((i,), f2, None, mode)) }
+    pearlite! { forall<f2: F, i>
+        !((exists<b: B> f1.postcondition_mut((i,), f2, Some(b), Mode::program_mode())) && f1.postcondition_mut((i,), f2, None, Mode::program_mode()))
+    }
 }
 
 impl<I: IteratorSpec, B, F: FnMut(I::Item) -> Option<B>> IteratorSpec for FilterMap<I, F> {
@@ -68,7 +69,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> Option<B>> IteratorSpec for Filter
     fn completed(&mut self) -> bool {
         pearlite! {
             (exists<s: Seq<_>, e: &mut I > self.iter().produces(s, *e) && e.completed() &&
-                forall<i> 0 <= i && i < s.len() ==> forall<mode: Mode> (*self).func().postcondition_mut((s[i],), (^self).func(), None, mode))
+                forall<i> 0 <= i && i < s.len() ==> (*self).func().postcondition_mut((s[i],), (^self).func(), None, Mode::program_mode()))
             && (*self).func() == (^self).func()
         }
     }
@@ -86,10 +87,10 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> Option<B>> IteratorSpec for Filter
                 // `f` is a monotone mapping
                 (forall<i, j> 0 <= i && i < j && j < visited.len() ==> f.get(i) < f.get(j)) &&
                 // `f` points to elements produced in `s` (by the underlying `iter`) for which the predicate `self.func()` returned `Some`.
-                (forall<i> 0 <= i && i < visited.len() ==> forall<mode: Mode> self.func().postcondition_mut((s[f.get(i)],), self.func(), Some(visited[i]), mode)) &&
+                (forall<i> 0 <= i && i < visited.len() ==> self.func().postcondition_mut((s[f.get(i)],), self.func(), Some(visited[i]), Mode::program_mode())) &&
                 // For other elements not in the image of `f`, the predicate `self.func()` returned `None`.
                 (forall<j> 0 <= j && j < s.len()
-                    ==> forall<mode: Mode> (!exists<i> 0 <= i && i < visited.len() && f.get(i) == j) == self.func().postcondition_mut((s[j],), self.func(), None, mode))
+                    ==> (!exists<i> 0 <= i && i < visited.len() && f.get(i) == j) == self.func().postcondition_mut((s[j],), self.func(), None, Mode::program_mode()))
         }
     }
 

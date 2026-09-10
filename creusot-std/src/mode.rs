@@ -34,10 +34,10 @@ impl Mode {
     pub fn into_ghost(self) -> Self {
         dead
     }
-}
 
-#[logic]
-#[builtin("creusot.prelude.Mode.program_mode")]
-pub fn program_mode() -> Mode {
-    dead
+    #[logic]
+    #[builtin("creusot.prelude.Mode.program_mode")]
+    pub fn program_mode() -> Mode {
+        dead
+    }
 }
