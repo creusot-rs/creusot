@@ -10,29 +10,19 @@ pub trait PermTarget {
     /// Value managed by the type.
     ///
     /// For example, a pointer `*const T` manages a value of type `T`.
-    ///
-    /// In practice, you will use a borrow `&'a T` here, to allow for unsized
-    /// types.
-    type Value<'a>
-    where
-        Self: 'a;
+    type Value: ?Sized;
 
-    /// Variance, objectiveness and sizeness parametrization for the [`Perm`].
+    /// Objectiveness parametrization for the [`Perm`].
     ///
-    /// This type is used to force certain auto-traits to be
-    /// implemented on the [`Perm`] object (or not!). See [this trait
-    /// implementation](crate::cell::PermCell::PermPayload) for `PermCell` for
-    /// an example. You may also add a type like `[bool]` to force unsizeness.
-    type PermPayload: ?Sized;
+    /// This type is used to force the [`Objective`](crate::ghost::Objective)
+    /// auto-trait to be implemented on the [`Perm`] object (or not!). See [this
+    /// trait implementation](crate::cell::PermCell::Objective) for `PermCell`
+    /// for an example.
+    type Objectiveness;
 
     /// Logical function that describes the behavior of [`Perm::disjoint_lemma`].
     #[logic(open, inline)]
-    fn is_disjoint(
-        &self,
-        _self_val: Self::Value<'_>,
-        other: &Self,
-        _other_val: Self::Value<'_>,
-    ) -> bool {
+    fn is_disjoint(&self, _self_val: &Self::Value, other: &Self, _other_val: &Self::Value) -> bool {
         self != other
     }
 }
@@ -83,7 +73,13 @@ pub trait PermTarget {
 /// Certain facts about the layout and alignment of pointers can be made available
 /// through the type invariant of [`crate::std::ptr::PtrLive`] by calling [`Perm::live`].
 #[opaque]
-pub struct Perm<C: ?Sized + PermTarget>(#[allow(unused)] C::PermPayload);
+pub struct Perm<C: ?Sized + PermTarget> {
+    /// For variance
+    #[allow(unused)]
+    value: Snapshot<C::Value>,
+    #[allow(unused)]
+    objective: C::Objectiveness,
+}
 
 impl<C: ?Sized + PermTarget> Perm<C> {
     /// Returns the underlying container that is managed by this permission.
@@ -93,8 +89,17 @@ impl<C: ?Sized + PermTarget> Perm<C> {
     }
 
     /// Get the logical value contained by the container.
+    #[logic(open, inline)]
+    pub fn val(self) -> C::Value
+    where
+        C::Value: Sized,
+    {
+        *self.val_unsized()
+    }
+
+    /// Get the logical value contained by the container.
     #[logic(opaque)]
-    pub fn val<'a>(self) -> C::Value<'a> {
+    pub fn val_unsized<'a>(self) -> &'a C::Value {
         dead
     }
 
@@ -137,14 +142,14 @@ impl<C: ?Sized + PermTarget> Perm<C> {
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(self.val() != other.val() ==> self.ward().is_disjoint(self.val(), other.ward(), other.val()))]
+    #[ensures(self.val_unsized() != other.val_unsized() ==> self.ward().is_disjoint(self.val_unsized(), other.ward(), other.val_unsized()))]
     #[allow(unused_variables)]
     pub fn disjoint_lemma_shared(&self, other: &Self) {}
 
     /// If one owns two permissions in ghost code, then they correspond to different containers.
     #[trusted]
     #[check(ghost)]
-    #[ensures(self.ward().is_disjoint(self.val(), other.ward(), other.val()))]
+    #[ensures(self.ward().is_disjoint(self.val_unsized(), other.ward(), other.val_unsized()))]
     #[ensures(*self == ^self)]
     #[allow(unused_variables)]
     pub fn disjoint_lemma(&mut self, other: &Self) {}
@@ -154,7 +159,7 @@ impl<C: ?Sized + PermTarget> Resolve for Perm<C> {
     #[logic(open, prophetic, inline)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
-        resolve(self.val())
+        resolve(self.val_unsized())
     }
 
     #[trusted]

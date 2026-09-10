@@ -7,7 +7,7 @@ use crate::{
     ghost::{NotObjective, Perm, perm::PermTarget},
     prelude::*,
 };
-use core::{cell::UnsafeCell, marker::PhantomData};
+use core::cell::UnsafeCell;
 
 /// Cell with ghost permissions
 ///
@@ -25,11 +25,10 @@ use core::{cell::UnsafeCell, marker::PhantomData};
 pub struct PermCell<T: ?Sized>(UnsafeCell<T>);
 
 impl<T: ?Sized> PermTarget for PermCell<T> {
-    type Value<'a>
-        = &'a T
-    where
-        Self: 'a;
-    type PermPayload = (NotObjective, PhantomData<T>);
+    type Value = T;
+    /// A `Perm<PermCell<_>>` must not be objective, because its accesses are
+    /// not atomic.
+    type Objectiveness = NotObjective;
 }
 
 #[trusted]
@@ -41,7 +40,7 @@ impl<T: ?Sized> Invariant for Perm<PermCell<T>> {
     #[logic(open, prophetic, inline)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { inv(self.val()) }
+        pearlite! { inv(self.val_unsized()) }
     }
 }
 
@@ -50,7 +49,7 @@ impl<T: ?Sized> PermCell<T> {
     #[trusted]
     #[check(terminates)]
     #[ensures(result.0 == *result.1.ward())]
-    #[ensures(*result.1.val() == value)]
+    #[ensures(result.1.val() == value)]
     pub fn new(value: T) -> (Self, Ghost<Perm<PermCell<T>>>)
     where
         T: Sized,
@@ -72,8 +71,8 @@ impl<T: ?Sized> PermCell<T> {
     #[trusted]
     #[check(terminates)]
     #[requires(self == perm.ward())]
-    #[ensures(val == *(^perm).val())]
-    #[ensures(resolve(*perm.val()))]
+    #[ensures(val == (^perm).val())]
+    #[ensures(resolve(perm.val()))]
     #[ensures(self == (^perm).ward())]
     pub unsafe fn set(&self, perm: Ghost<&mut Perm<PermCell<T>>>, val: T)
     where
@@ -97,8 +96,8 @@ impl<T: ?Sized> PermCell<T> {
     #[trusted]
     #[check(terminates)]
     #[requires(self == perm.ward())]
-    #[ensures(val == *(^perm).val())]
-    #[ensures(result == *perm.val())]
+    #[ensures(val == (^perm).val())]
+    #[ensures(result == perm.val())]
     #[ensures(self == (^perm).ward())]
     pub unsafe fn replace(&self, perm: Ghost<&mut Perm<PermCell<T>>>, val: T) -> T
     where
@@ -112,7 +111,7 @@ impl<T: ?Sized> PermCell<T> {
     #[trusted]
     #[check(terminates)]
     #[requires(self == *perm.ward())]
-    #[ensures(result == *perm.val())]
+    #[ensures(result == perm.val())]
     pub fn into_inner(self, perm: Ghost<Perm<PermCell<T>>>) -> T
     where
         T: Sized,
@@ -136,7 +135,7 @@ impl<T: ?Sized> PermCell<T> {
     #[trusted]
     #[check(terminates)]
     #[requires(self == perm.ward())]
-    #[ensures(*result == *perm.val())]
+    #[ensures(*result == *perm.val_unsized())]
     pub unsafe fn borrow<'a>(&'a self, perm: Ghost<&'a Perm<PermCell<T>>>) -> &'a T {
         let _ = perm;
         unsafe { &*self.0.get() }
@@ -158,8 +157,8 @@ impl<T: ?Sized> PermCell<T> {
     #[check(terminates)]
     #[requires(self == perm.ward())]
     #[ensures(self == (^perm).ward())]
-    #[ensures(*result == *perm.val())]
-    #[ensures(^result == *(^perm).val())]
+    #[ensures(*result == *perm.val_unsized())]
+    #[ensures(^result == *(^perm).val_unsized())]
     pub unsafe fn borrow_mut<'a>(&'a self, perm: Ghost<&'a mut Perm<PermCell<T>>>) -> &'a mut T {
         let _ = perm;
         unsafe { &mut *self.0.get() }
@@ -177,7 +176,7 @@ impl<T: ?Sized> PermCell<T> {
     #[trusted]
     #[check(terminates)]
     #[requires(self == perm.ward())]
-    #[ensures(result == *perm.val())]
+    #[ensures(result == perm.val())]
     pub unsafe fn get(&self, perm: Ghost<&Perm<PermCell<T>>>) -> T
     where
         T: Copy + Sized,
@@ -197,8 +196,8 @@ impl<T: ?Sized> PermCell<T> {
     #[trusted]
     #[check(terminates)]
     #[ensures(result.0 == result.1.ward())]
-    #[ensures(^t == *(^result.1).val())]
-    #[ensures(*t == *result.1.val())]
+    #[ensures(^t == *(^result.1).val_unsized())]
+    #[ensures(*t == *result.1.val_unsized())]
     pub fn from_mut(t: &mut T) -> (&PermCell<T>, Ghost<&mut Perm<PermCell<T>>>) {
         // SAFETY: `PermCell` is layout-compatible with `Cell` and `T` because it is `repr(transparent)`.
         // SAFETY: `&mut` ensures unique access
@@ -218,8 +217,8 @@ impl<T: ?Sized> PermCell<T> {
     /// [type documentation](PermCell#safety).
     #[requires(self == perm.ward())]
     #[ensures(self == (^perm).ward())]
-    #[ensures(result == *perm.val())]
-    #[ensures(T::default.postcondition((), *(^perm).val()))]
+    #[ensures(result == *perm.val_unsized())]
+    #[ensures(T::default.postcondition((), *(^perm).val_unsized()))]
     pub unsafe fn take(&self, perm: Ghost<&mut Perm<PermCell<T>>>) -> T
     where
         T: Default,

@@ -21,7 +21,7 @@ type t_Metadata
 
 predicate metadata_matches_T (_value: t_T) (_metadata: t_Metadata)
 
-function val_ptr_T (self: t_Perm_ptr_T) : t_T
+function val_unsized_ptr_T (self: t_Perm_ptr_T) : t_T
 
 function metadata_T (_1: Opaque.ptr) : t_Metadata
 
@@ -37,7 +37,7 @@ meta "rewrite_def" predicate inv_ref_T
 
 predicate invariant_Perm_ptr_T (self: t_Perm_ptr_T) =
   not is_null_ptr_T (ward_ptr_T self)
-  /\ metadata_matches_T (val_ptr_T self) (metadata_T (ward_ptr_T self)) /\ inv_ref_T (val_ptr_T self)
+  /\ metadata_matches_T (val_unsized_ptr_T self) (metadata_T (ward_ptr_T self)) /\ inv_ref_T (val_unsized_ptr_T self)
 
 predicate inv_Perm_ptr_T (_1: t_Perm_ptr_T)
 
@@ -70,7 +70,7 @@ let to_box_T (ptr: Opaque.ptr) (own: t_Perm_ptr_T) (return (x: t_T)) =
   any
   [ return (result: t_T) ->
   {[@stop_split] [@expl:to_box_T ensures] ([@stop_split] [@expl:to_box result type invariant] inv_Box_T_Global result)
-    /\ ([@stop_split] [@expl:to_box ensures] result = val_ptr_T own)}
+    /\ ([@stop_split] [@expl:to_box ensures] result = val_unsized_ptr_T own)}
     (! return {result}) ]
 
 predicate resolve_T (_1: t_T)

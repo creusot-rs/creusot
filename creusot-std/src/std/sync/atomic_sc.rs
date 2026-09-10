@@ -17,8 +17,8 @@ macro_rules! impl_atomic {
         pub struct $atomic_type $(< $T >)?(::core::sync::atomic::$atomic_type $(< $T >)?);
 
         impl $(< $T >)? PermTarget for $atomic_type $(< $T >)? {
-            type Value<'a> = $type where Self: 'a;
-            type PermPayload = ();
+            type Value = $type;
+            type Objectiveness = ();
         }
 
         impl $(< $T >)? $atomic_type $(< $T >)? {

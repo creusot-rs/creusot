@@ -19,7 +19,7 @@ module M_foo
   
   meta "rewrite_def" predicate metadata_matches_i32
   
-  function val_ptr_i32 (self: t_Perm_ptr_i32) : Int32.t
+  function val_unsized_ptr_i32 (self: t_Perm_ptr_i32) : Int32.t
   
   function metadata_i32 (_1: Opaque.ptr) : ()
   
@@ -29,7 +29,8 @@ module M_foo
   
   predicate invariant_Perm_ptr_i32 (self: t_Perm_ptr_i32) =
     not is_null_ptr_i32 (ward_ptr_i32 self)
-    /\ metadata_matches_i32 (val_ptr_i32 self) (metadata_i32 (ward_ptr_i32 self)) /\ inv_ref_i32 (val_ptr_i32 self)
+    /\ metadata_matches_i32 (val_unsized_ptr_i32 self) (metadata_i32 (ward_ptr_i32 self))
+    /\ inv_ref_i32 (val_unsized_ptr_i32 self)
   
   predicate inv_Perm_ptr_i32 (_1: t_Perm_ptr_i32)
   
@@ -56,6 +57,10 @@ module M_foo
     inv_Ghost_Box_Perm_ptr_i32_Global _1.f1
   
   meta "rewrite_def" predicate inv_tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global
+  
+  function val_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) : Int32.t = val_unsized_ptr_i32 self
+  
+  meta "rewrite_def" function val_ptr_i32
   
   let new_i32 (v: Int32.t) (return (x: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global)) = any
     [ return (result: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global) ->
@@ -161,7 +166,7 @@ module M_foo
     /\ ([@stop_split] [@expl:disjoint_lemma 'other' type invariant] inv_ref_Perm_ptr_i32 other)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:disjoint_lemma_ptr_i32 ensures] ([@stop_split] [@expl:disjoint_lemma ensures #0] is_disjoint_ptr_i32 (ward_ptr_i32 self.current) (val_ptr_i32 self.current) (ward_ptr_i32 other) (val_ptr_i32 other))
+    {[@stop_split] [@expl:disjoint_lemma_ptr_i32 ensures] ([@stop_split] [@expl:disjoint_lemma ensures #0] is_disjoint_ptr_i32 (ward_ptr_i32 self.current) (val_unsized_ptr_i32 self.current) (ward_ptr_i32 other) (val_unsized_ptr_i32 other))
       /\ ([@stop_split] [@expl:disjoint_lemma ensures #1] self.current = self.final)}
       (! return {result}) ]
   
