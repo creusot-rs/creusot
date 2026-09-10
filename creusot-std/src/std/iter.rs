@@ -164,6 +164,7 @@ extern_spec! {
                     ==> f.precondition((e,), mode))]
                 #[requires(map::reinitialize::<Self, B, F>())]
                 #[requires(map::preservation::<Self, B, F>(self, f))]
+                #[requires(modeless(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn map<B, F: FnMut(Self::Item) -> B>(self, f: F) -> Map<Self, F>
                     where Self: Sized;
@@ -172,6 +173,7 @@ extern_spec! {
                 #[requires(filter::immutable(f))]
                 #[requires(filter::no_precondition(f))]
                 #[requires(filter::precise(f))]
+                #[requires(modeless(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn filter<P: for<'a> FnMut(&Self::Item) -> bool>(self, f: P) -> Filter<Self, P>
                     where Self: Sized;
@@ -180,6 +182,7 @@ extern_spec! {
                 #[requires(filter_map::immutable(f))]
                 #[requires(filter_map::no_precondition(f))]
                 #[requires(filter_map::precise(f))]
+                #[requires(modeless(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn filter_map<B, F: for<'a> FnMut(Self::Item) -> Option<B>>(self, f: F) -> FilterMap<Self, F>
                     where Self: Sized;
@@ -314,5 +317,12 @@ impl<I: ExactSizeIteratorSpec + ?Sized> ExactSizeIteratorSpec for &mut I {
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         (**self).size_hint_exact(r)
+    }
+}
+
+#[logic(open, prophetic)]
+pub fn modeless<A, B, F: FnMut(A) -> B>(_: F) -> bool {
+    pearlite! { forall<f: F, args: A, f2: F, res: B, mode: Mode>
+        f.postcondition_mut((args,), f2, res, mode) ==> f.postcondition_mut((args,), f2, res, Mode::program_mode())
     }
 }

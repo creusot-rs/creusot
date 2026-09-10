@@ -60,7 +60,7 @@ pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
 #[logic(open, prophetic)]
 pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
     pearlite! { forall<f1: F, f2: F, i>
-        !(f1.postcondition_mut((i,), f2, true, mode()) && f1.postcondition_mut((i,), f2, false, Mode::program_mode()))
+        !(f1.postcondition_mut((i,), f2, true, Mode::program_mode()) && f1.postcondition_mut((i,), f2, false, Mode::program_mode()))
     }
 }
 
