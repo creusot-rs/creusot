@@ -4,6 +4,7 @@ module M_zst_pointers_may_be_equal
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Opaque
+  use map.Map
   use creusot.prelude.Ptr
   use creusot.prelude.Any
   use int.Int
@@ -54,7 +55,24 @@ module M_zst_pointers_may_be_equal
   
   type t_Perm_ptr_unit
   
-  type tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit = { f0: Opaque.ptr; f1: MutBorrow.t t_Perm_ptr_unit }
+  type t_Guarded_refmut_Perm_ptr_unit = {
+    borrow: MutBorrow.t t_Perm_ptr_unit;
+    _guard: Map.map (MutBorrow.t t_Perm_ptr_unit) bool }
+  
+  type tup2_ptr_unit_Ghost_Guarded_refmut_Perm_ptr_unit = { f0: Opaque.ptr; f1: t_Guarded_refmut_Perm_ptr_unit }
+  
+  predicate index_Mapping_refmut_Perm_ptr_unit_bool [@inline:trivial] (self: Map.map (MutBorrow.t t_Perm_ptr_unit) bool) (a: MutBorrow.t t_Perm_ptr_unit) =
+    Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_refmut_Perm_ptr_unit_bool
+  
+  function guard_refmut_Perm_ptr_unit [@inline:trivial] (self: t_Guarded_refmut_Perm_ptr_unit) : Map.map (MutBorrow.t t_Perm_ptr_unit) bool
+   = self._guard
+  
+  meta "rewrite_def" function guard_refmut_Perm_ptr_unit
+  
+  predicate invariant_Guarded_refmut_Perm_ptr_unit (self: t_Guarded_refmut_Perm_ptr_unit) =
+    index_Mapping_refmut_Perm_ptr_unit_bool (guard_refmut_Perm_ptr_unit self) self.borrow
   
   predicate is_null_ptr_unit (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
@@ -92,27 +110,34 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate inv_refmut_Perm_ptr_unit
   
-  predicate invariant_Ghost_refmut_Perm_ptr_unit [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_unit) =
-    inv_refmut_Perm_ptr_unit self
+  predicate inv_Guarded_refmut_Perm_ptr_unit (_1: t_Guarded_refmut_Perm_ptr_unit)
   
-  meta "rewrite_def" predicate invariant_Ghost_refmut_Perm_ptr_unit
+  axiom inv_axiom'0 [@rewrite]:
+    forall x: t_Guarded_refmut_Perm_ptr_unit [inv_Guarded_refmut_Perm_ptr_unit x]. inv_Guarded_refmut_Perm_ptr_unit x
+      = (invariant_Guarded_refmut_Perm_ptr_unit x /\ inv_refmut_Perm_ptr_unit x.borrow)
   
-  predicate inv_Ghost_refmut_Perm_ptr_unit [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_unit) =
-    invariant_Ghost_refmut_Perm_ptr_unit _1
+  predicate invariant_Ghost_Guarded_refmut_Perm_ptr_unit [@inline:trivial] (self: t_Guarded_refmut_Perm_ptr_unit) =
+    inv_Guarded_refmut_Perm_ptr_unit self
   
-  meta "rewrite_def" predicate inv_Ghost_refmut_Perm_ptr_unit
+  meta "rewrite_def" predicate invariant_Ghost_Guarded_refmut_Perm_ptr_unit
   
-  predicate inv_tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit [@inline:trivial] (_1: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit) =
-    inv_Ghost_refmut_Perm_ptr_unit _1.f1
+  predicate inv_Ghost_Guarded_refmut_Perm_ptr_unit [@inline:trivial] (_1: t_Guarded_refmut_Perm_ptr_unit) =
+    invariant_Ghost_Guarded_refmut_Perm_ptr_unit _1
   
-  meta "rewrite_def" predicate inv_tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit
+  meta "rewrite_def" predicate inv_Ghost_Guarded_refmut_Perm_ptr_unit
   
-  let from_mut_unit (r: MutBorrow.t ()) (return (x: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit)) = any
-    [ return (result: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit) ->
-    {[@stop_split] [@expl:from_mut_unit ensures] ([@stop_split] [@expl:from_mut result type invariant] inv_tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit result)
-      /\ ([@stop_split] [@expl:from_mut ensures #0] ward_ptr_unit result.f1.current = result.f0)
-      /\ ([@stop_split] [@expl:from_mut ensures #1] val_unsized_ptr_unit result.f1.current = r.current)
-      /\ ([@stop_split] [@expl:from_mut ensures #2] val_unsized_ptr_unit result.f1.final = r.final)}
+  predicate inv_tup2_ptr_unit_Ghost_Guarded_refmut_Perm_ptr_unit [@inline:trivial] (_1: tup2_ptr_unit_Ghost_Guarded_refmut_Perm_ptr_unit) =
+    inv_Ghost_Guarded_refmut_Perm_ptr_unit _1.f1
+  
+  meta "rewrite_def" predicate inv_tup2_ptr_unit_Ghost_Guarded_refmut_Perm_ptr_unit
+  
+  let from_mut_unit (r: MutBorrow.t ()) (return (x: tup2_ptr_unit_Ghost_Guarded_refmut_Perm_ptr_unit)) = any
+    [ return (result: tup2_ptr_unit_Ghost_Guarded_refmut_Perm_ptr_unit) ->
+    {[@stop_split] [@expl:from_mut_unit ensures] ([@stop_split] [@expl:from_mut result type invariant] inv_tup2_ptr_unit_Ghost_Guarded_refmut_Perm_ptr_unit result)
+      /\ ([@stop_split] [@expl:from_mut ensures #0] guard_refmut_Perm_ptr_unit result.f1
+        = fun (p: MutBorrow.t t_Perm_ptr_unit) -> ward_ptr_unit p.current = result.f0)
+      /\ ([@stop_split] [@expl:from_mut ensures #1] val_unsized_ptr_unit result.f1.borrow.current = r.current)
+      /\ ([@stop_split] [@expl:from_mut ensures #2] val_unsized_ptr_unit result.f1.borrow.final = r.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_unit [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
@@ -154,6 +179,53 @@ module M_zst_pointers_may_be_equal
     {[@stop_split] [@expl:from_ref_unit ensures] ([@stop_split] [@expl:from_ref result type invariant] inv_tup2_ptr_unit_Ghost_ref_Perm_ptr_unit result)
       /\ ([@stop_split] [@expl:from_ref ensures #0] ward_ptr_unit result.f1'0 = result.f0'0)
       /\ ([@stop_split] [@expl:from_ref ensures #1] val_unsized_ptr_unit result.f1'0 = r)}
+      (! return {result}) ]
+  
+  predicate invariant_refmut_Ghost_Guarded_refmut_Perm_ptr_unit [@inline:trivial] (self: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit) =
+    inv_Ghost_Guarded_refmut_Perm_ptr_unit self.current /\ inv_Ghost_Guarded_refmut_Perm_ptr_unit self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Ghost_Guarded_refmut_Perm_ptr_unit
+  
+  predicate inv_refmut_Ghost_Guarded_refmut_Perm_ptr_unit [@inline:trivial] (_1: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit) =
+    invariant_refmut_Ghost_Guarded_refmut_Perm_ptr_unit _1
+  
+  meta "rewrite_def" predicate inv_refmut_Ghost_Guarded_refmut_Perm_ptr_unit
+  
+  predicate invariant_refmut_Guarded_refmut_Perm_ptr_unit [@inline:trivial] (self: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit) =
+    inv_Guarded_refmut_Perm_ptr_unit self.current /\ inv_Guarded_refmut_Perm_ptr_unit self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Guarded_refmut_Perm_ptr_unit
+  
+  predicate inv_refmut_Guarded_refmut_Perm_ptr_unit [@inline:trivial] (_1: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit) =
+    invariant_refmut_Guarded_refmut_Perm_ptr_unit _1
+  
+  meta "rewrite_def" predicate inv_refmut_Guarded_refmut_Perm_ptr_unit
+  
+  let deref_mut_Ghost_Guarded_refmut_Perm_ptr_unit (self: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit)
+    (return (x: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit)) =
+  {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Guarded_refmut_Perm_ptr_unit self}
+    any
+    [ return (result: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit) ->
+    {[@stop_split] [@expl:deref_mut_Ghost_Guarded_refmut_Perm_ptr_unit ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_Guarded_refmut_Perm_ptr_unit result)
+      /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
+      (! return {result}) ]
+  
+  predicate invariant_Ghost_refmut_Perm_ptr_unit [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_unit) =
+    inv_refmut_Perm_ptr_unit self
+  
+  meta "rewrite_def" predicate invariant_Ghost_refmut_Perm_ptr_unit
+  
+  predicate inv_Ghost_refmut_Perm_ptr_unit [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_unit) =
+    invariant_Ghost_refmut_Perm_ptr_unit _1
+  
+  meta "rewrite_def" predicate inv_Ghost_refmut_Perm_ptr_unit
+  
+  let new_refmut_Perm_ptr_unit (x: MutBorrow.t t_Perm_ptr_unit) (return (x'0: MutBorrow.t t_Perm_ptr_unit)) =
+  {[@stop_split] [@expl:new 'x' type invariant] inv_refmut_Perm_ptr_unit x}
+    any
+    [ return (result: MutBorrow.t t_Perm_ptr_unit) ->
+    {[@stop_split] [@expl:new_refmut_Perm_ptr_unit ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_refmut_Perm_ptr_unit result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
   let into_inner_refmut_Perm_ptr_unit (self: MutBorrow.t t_Perm_ptr_unit) (return (x: MutBorrow.t t_Perm_ptr_unit)) =
@@ -203,6 +275,27 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate resolve_refmut_Perm_ptr_unit
   
+  predicate resolve_refmut_Guarded_refmut_Perm_ptr_unit [@inline:trivial] (_1: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Guarded_refmut_Perm_ptr_unit
+  
+  predicate resolve_Guarded_refmut_Perm_ptr_unit (_1: t_Guarded_refmut_Perm_ptr_unit)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall x: t_Guarded_refmut_Perm_ptr_unit [resolve_Guarded_refmut_Perm_ptr_unit x]. resolve_Guarded_refmut_Perm_ptr_unit x
+      = resolve_refmut_Perm_ptr_unit x.borrow
+  
+  predicate resolve_Ghost_Guarded_refmut_Perm_ptr_unit [@inline:trivial] (self: t_Guarded_refmut_Perm_ptr_unit) =
+    resolve_Guarded_refmut_Perm_ptr_unit self
+  
+  meta "rewrite_def" predicate resolve_Ghost_Guarded_refmut_Perm_ptr_unit
+  
+  predicate resolve_Ghost_Guarded_refmut_Perm_ptr_unit'0 [@inline:trivial] (_1: t_Guarded_refmut_Perm_ptr_unit) =
+    resolve_Ghost_Guarded_refmut_Perm_ptr_unit _1
+  
+  meta "rewrite_def" predicate resolve_Ghost_Guarded_refmut_Perm_ptr_unit'0
+  
   let new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
@@ -229,7 +322,7 @@ module M_zst_pointers_may_be_equal
           (fun (_bor: MutBorrow.t ()) -> [ &_15 <- _bor ] [ &_16 <- { _16 with current = _bor.final } ] s7)
       | s7 = MutBorrow.borrow_final <()> {_15.current} {MutBorrow.get_id _15}
           (fun (_bor: MutBorrow.t ()) -> [ &_14 <- _bor ] [ &_15 <- { _15 with current = _bor.final } ] s8)
-      | s8 = from_mut_unit {_14} (fun (_x: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit) -> [ &_13 <- _x ] s9)
+      | s8 = from_mut_unit {_14} (fun (_x: tup2_ptr_unit_Ghost_Guarded_refmut_Perm_ptr_unit) -> [ &_13 <- _x ] s9)
       | s9 = [ &p1 <- _13.f0 ] s10
       | s10 = [ &own1 <- _13.f1 ] s11
       | s11 = -{resolve_refmut_unit _16}- s12
@@ -239,19 +332,36 @@ module M_zst_pointers_may_be_equal
       | s15 = from_ref_unit {_22} (fun (_x: tup2_ptr_unit_Ghost_ref_Perm_ptr_unit) -> [ &_20 <- _x ] s16)
       | s16 = [ &p2 <- _20.f0'0 ] s17
       | s17 = [ &own2 <- _20.f1'0 ] s18
-      | s18 = into_inner_refmut_Perm_ptr_unit {own1} (fun (_x: MutBorrow.t t_Perm_ptr_unit) -> [ &_28 <- _x ] s19)
-      | s19 = into_inner_ref_Perm_ptr_unit {own2} (fun (_x: t_Perm_ptr_unit) -> [ &_31 <- _x ] s20)
-      | s20 = MutBorrow.borrow_final <t_Perm_ptr_unit> {_28.current} {MutBorrow.get_id _28}
+      | s18 = MutBorrow.borrow_mut <t_Guarded_refmut_Perm_ptr_unit> {own1}
+          (fun (_bor: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit) ->
+            [ &_27 <- _bor ] -{inv_Ghost_Guarded_refmut_Perm_ptr_unit _bor.final}-
+            [ &own1 <- _bor.final ] s19)
+        [ _ck -> (! {[@expl:type invariant] inv_Ghost_Guarded_refmut_Perm_ptr_unit own1} any) ]
+      | s19 = deref_mut_Ghost_Guarded_refmut_Perm_ptr_unit {_27}
+          (fun (_x: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit) -> [ &_26 <- _x ] s20)
+      | s20 = MutBorrow.borrow_mut <t_Perm_ptr_unit> {_26.current.borrow.current}
           (fun (_bor: MutBorrow.t t_Perm_ptr_unit) ->
-            [ &_27 <- _bor ] -{inv_Perm_ptr_unit _bor.final}-
-            [ &_28 <- { _28 with current = _bor.final } ] s21)
-        [ _ck -> (! {[@expl:type invariant] inv_Perm_ptr_unit _28.current} any) ]
-      | s21 = disjoint_lemma_ptr_unit {_27} {_31} (fun (_x: ()) -> [ &_26 <- _x ] s22)
-      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_unit _28} any) ]
-      | s23 = -{resolve_refmut_Perm_ptr_unit _28}- s24
-      | s24 = new_unit {_26} (fun (_x: ()) -> [ &_25 <- _x ] s25)
-      | s25 = {[@expl:assertion] Ptr.addr_logic_u64 p1 <> Ptr.addr_logic_u64 p2} s26
-      | s26 = return {_ret} ] ]
+            [ &__temp <- _bor ] -{inv_Perm_ptr_unit _bor.final}-
+            [ &_26 <- { _26 with current = { _26.current with borrow = { _26.current.borrow with current = _bor.final } } } ]
+            s21) [ _ck -> (! {[@expl:type invariant] inv_Perm_ptr_unit _26.current.borrow.current} any) ]
+      | s21 = new_refmut_Perm_ptr_unit {__temp} (fun (_x: MutBorrow.t t_Perm_ptr_unit) -> [ &own1'0 <- _x ] s22)
+      | s22 = into_inner_refmut_Perm_ptr_unit {own1'0} (fun (_x: MutBorrow.t t_Perm_ptr_unit) -> [ &_33 <- _x ] s23)
+      | s23 = into_inner_ref_Perm_ptr_unit {own2} (fun (_x: t_Perm_ptr_unit) -> [ &_36 <- _x ] s24)
+      | s24 = MutBorrow.borrow_final <t_Perm_ptr_unit> {_33.current} {MutBorrow.get_id _33}
+          (fun (_bor: MutBorrow.t t_Perm_ptr_unit) ->
+            [ &_32 <- _bor ] -{inv_Perm_ptr_unit _bor.final}-
+            [ &_33 <- { _33 with current = _bor.final } ] s25)
+        [ _ck -> (! {[@expl:type invariant] inv_Perm_ptr_unit _33.current} any) ]
+      | s25 = disjoint_lemma_ptr_unit {_32} {_36} (fun (_x: ()) -> [ &_31 <- _x ] s26)
+      | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_refmut_Perm_ptr_unit _33} any) ]
+      | s27 = -{resolve_refmut_Perm_ptr_unit _33}- s28
+      | s28 = s29 [ _ck -> (! {[@expl:type invariant] inv_refmut_Guarded_refmut_Perm_ptr_unit _26} any) ]
+      | s29 = -{resolve_refmut_Guarded_refmut_Perm_ptr_unit _26}- s30
+      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Guarded_refmut_Perm_ptr_unit own1} any) ]
+      | s31 = -{resolve_Ghost_Guarded_refmut_Perm_ptr_unit'0 own1}- s32
+      | s32 = new_unit {_31} (fun (_x: ()) -> [ &_30 <- _x ] s33)
+      | s33 = {[@expl:assertion] Ptr.addr_logic_u64 p1 <> Ptr.addr_logic_u64 p2} s34
+      | s34 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & v0: t_Vec_unit_Global = Any.any_l ()
     | & _4: Slice64.array () = Any.any_l ()
@@ -260,8 +370,8 @@ module M_zst_pointers_may_be_equal
     | & _9: Slice64.array () = Any.any_l ()
     | & _10: () = Any.any_l ()
     | & p1: Opaque.ptr = Any.any_l ()
-    | & own1: MutBorrow.t t_Perm_ptr_unit = Any.any_l ()
-    | & _13: tup2_ptr_unit_Ghost_refmut_Perm_ptr_unit = Any.any_l ()
+    | & own1: t_Guarded_refmut_Perm_ptr_unit = Any.any_l ()
+    | & _13: tup2_ptr_unit_Ghost_Guarded_refmut_Perm_ptr_unit = Any.any_l ()
     | & _14: MutBorrow.t () = Any.any_l ()
     | & _15: MutBorrow.t () = Any.any_l ()
     | & _16: MutBorrow.t () = Any.any_l ()
@@ -271,9 +381,13 @@ module M_zst_pointers_may_be_equal
     | & _20: tup2_ptr_unit_Ghost_ref_Perm_ptr_unit = Any.any_l ()
     | & _22: () = Any.any_l ()
     | & _23: () = Any.any_l ()
-    | & _25: () = Any.any_l ()
-    | & _26: () = Any.any_l ()
-    | & _27: MutBorrow.t t_Perm_ptr_unit = Any.any_l ()
-    | & _28: MutBorrow.t t_Perm_ptr_unit = Any.any_l ()
-    | & _31: t_Perm_ptr_unit = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & __temp: MutBorrow.t t_Perm_ptr_unit = Any.any_l ()
+    | & _26: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit = Any.any_l ()
+    | & _27: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit = Any.any_l ()
+    | & own1'0: MutBorrow.t t_Perm_ptr_unit = Any.any_l ()
+    | & _30: () = Any.any_l ()
+    | & _31: () = Any.any_l ()
+    | & _32: MutBorrow.t t_Perm_ptr_unit = Any.any_l ()
+    | & _33: MutBorrow.t t_Perm_ptr_unit = Any.any_l ()
+    | & _36: t_Perm_ptr_unit = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
