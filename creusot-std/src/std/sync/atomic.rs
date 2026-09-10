@@ -147,7 +147,7 @@ macro_rules! impl_atomic {
                     c.val_load().deep_model() == current.deep_model() &&
                     c.val_store() == new &&
                     result == Ok(c.val_load()) &&
-                    f.postcondition_once((Ok(c),), ()), mode) ||
+                    f.postcondition_once((Ok(c),), (), mode)) ||
                 (exists<c: &Committer<Self, $type, _, _>>
                     !c.shot_store() && c.ward() == *self &&
                     // NOTE: This following line is not present for `weak`
@@ -194,7 +194,7 @@ macro_rules! impl_atomic {
                     c.val_load().deep_model() == current.deep_model() &&
                     c.val_store() == new &&
                     result == Ok(c.val_load()) &&
-                    f.postcondition_once((Ok(c),), ()), mode) ||
+                    f.postcondition_once((Ok(c),), (), mode)) ||
                 (exists<c: &Committer<Self, $type, _, _>>
                     !c.shot_store() && c.ward() == *self &&
                     result == Err(c.val_load()) &&
