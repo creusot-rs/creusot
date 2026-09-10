@@ -422,6 +422,14 @@ impl<'tcx> PreSignature<'tcx> {
             .normalize_erasing_regions(typing_env, Unnormalized::new((sig.inputs, sig.output)));
         sig
     }
+
+    pub(crate) fn terminates(&self) -> bool {
+        use ProgramPurity::*;
+        match self.contract.purity {
+            Terminates | Ghost => true,
+            Impure => false,
+        }
+    }
 }
 
 // Note: the result contains unnormalized types: all `TyKind::Alias` have their first field set to `IsRigid::No`.

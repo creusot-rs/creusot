@@ -93,9 +93,22 @@ pub(crate) fn translate_function<'tcx>(
     };
     let (body, sig) = to_why_body(ctx, &names, name, def_id);
 
+    let not_terminates = if !sig.terminates {
+        Some(
+            Exp::qvar(names.in_pre(PreMod::Mode, "terminates")).app([Exp::var(name::mode())]).not(),
+        )
+    } else {
+        None
+    };
+
     let (mut decls, setters) = names.provide_deps(ctx);
     let body = setters.call_setters(body);
     let mut defn = to_why_defn(ctx, def_id, body, sig, const_name);
+
+    if let Some(not_terminates) = not_terminates {
+        defn.body = Expr::Assert(not_terminates.into(), defn.body.into());
+    }
+
     // Refresh the name of the function. The previous name is already used for recursive calls,
     // which are translated to a separate abstract function.
     defn.prototype.name = defn.prototype.name.refresh();
@@ -599,7 +612,7 @@ impl<'tcx> Operand<'tcx> {
                     lower.names,
                     body_id,
                     subst,
-                    &Exp::qvar(lower.names.in_pre(PreMod::Mode, "program_mode")),
+                    &Exp::qvar(lower.names.in_pre(PreMod::Mode, "const_mode")),
                     &[],
                     ret,
                     &mut RecursiveCalls::new(),
