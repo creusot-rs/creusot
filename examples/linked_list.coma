@@ -25,7 +25,7 @@ module M_impl_List_T__new (* List<T> *)
   
   meta "rewrite_def" predicate metadata_matches_Link_T
   
-  function val_ptr_Link_T (self: t_Perm_ptr_Link_T) : t_Link_T
+  function val_unsized_ptr_Link_T (self: t_Perm_ptr_Link_T) : t_Link_T
   
   function metadata_Link_T (_1: Opaque.ptr) : ()
   
@@ -45,8 +45,8 @@ module M_impl_List_T__new (* List<T> *)
   
   predicate invariant_Perm_ptr_Link_T (self: t_Perm_ptr_Link_T) =
     not is_null_ptr_Link_T (ward_ptr_Link_T self)
-    /\ metadata_matches_Link_T (val_ptr_Link_T self) (metadata_Link_T (ward_ptr_Link_T self))
-    /\ inv_ref_Link_T (val_ptr_Link_T self)
+    /\ metadata_matches_Link_T (val_unsized_ptr_Link_T self) (metadata_Link_T (ward_ptr_Link_T self))
+    /\ inv_ref_Link_T (val_unsized_ptr_Link_T self)
   
   predicate inv_Perm_ptr_Link_T (_1: t_Perm_ptr_Link_T)
   
@@ -101,6 +101,10 @@ module M_impl_List_T__new (* List<T> *)
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
   meta "rewrite_def" predicate gt_log_Int
+  
+  function val_ptr_Link_T [@inline:trivial] (self: t_Perm_ptr_Link_T) : t_Link_T = val_unsized_ptr_Link_T self
+  
+  meta "rewrite_def" function val_ptr_Link_T
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
@@ -189,7 +193,11 @@ module M_impl_List_T__pop_front (* List<T> *)
   
   type t_Link_T = { value: t_T; next: Opaque.ptr }
   
-  function val_ptr_Link_T (self: t_Perm_ptr_Link_T) : t_Link_T
+  function val_unsized_ptr_Link_T (self: t_Perm_ptr_Link_T) : t_Link_T
+  
+  function val_ptr_Link_T [@inline:trivial] (self: t_Perm_ptr_Link_T) : t_Link_T = val_unsized_ptr_Link_T self
+  
+  meta "rewrite_def" function val_ptr_Link_T
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
@@ -224,8 +232,8 @@ module M_impl_List_T__pop_front (* List<T> *)
   
   predicate invariant_Perm_ptr_Link_T (self: t_Perm_ptr_Link_T) =
     not is_null_ptr_Link_T (ward_ptr_Link_T self)
-    /\ metadata_matches_Link_T (val_ptr_Link_T self) (metadata_Link_T (ward_ptr_Link_T self))
-    /\ inv_ref_Link_T (val_ptr_Link_T self)
+    /\ metadata_matches_Link_T (val_unsized_ptr_Link_T self) (metadata_Link_T (ward_ptr_Link_T self))
+    /\ inv_ref_Link_T (val_unsized_ptr_Link_T self)
   
   predicate inv_Perm_ptr_Link_T (_1: t_Perm_ptr_Link_T)
   
@@ -389,7 +397,7 @@ module M_impl_List_T__pop_front (* List<T> *)
     any
     [ return (result: t_Link_T) ->
     {[@stop_split] [@expl:to_box_Link_T ensures] ([@stop_split] [@expl:to_box result type invariant] inv_Box_Link_T_Global result)
-      /\ ([@stop_split] [@expl:to_box ensures] result = val_ptr_Link_T own)}
+      /\ ([@stop_split] [@expl:to_box ensures] result = val_unsized_ptr_Link_T own)}
       (! return {result}) ]
   
   predicate is_null_ptr_Link_T'0 (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
@@ -550,7 +558,7 @@ module M_impl_List_T__push_back (* List<T> *)
   
   meta "rewrite_def" predicate metadata_matches_Link_T
   
-  function val_ptr_Link_T (self: t_Perm_ptr_Link_T) : t_Link_T
+  function val_unsized_ptr_Link_T (self: t_Perm_ptr_Link_T) : t_Link_T
   
   function metadata_Link_T (_1: Opaque.ptr) : ()
   
@@ -564,8 +572,8 @@ module M_impl_List_T__push_back (* List<T> *)
   
   predicate invariant_Perm_ptr_Link_T (self: t_Perm_ptr_Link_T) =
     not is_null_ptr_Link_T (ward_ptr_Link_T self)
-    /\ metadata_matches_Link_T (val_ptr_Link_T self) (metadata_Link_T (ward_ptr_Link_T self))
-    /\ inv_ref_Link_T (val_ptr_Link_T self)
+    /\ metadata_matches_Link_T (val_unsized_ptr_Link_T self) (metadata_Link_T (ward_ptr_Link_T self))
+    /\ inv_ref_Link_T (val_unsized_ptr_Link_T self)
   
   predicate inv_Perm_ptr_Link_T (_1: t_Perm_ptr_Link_T)
   
@@ -600,7 +608,7 @@ module M_impl_List_T__push_back (* List<T> *)
     [ return (result: tup2_ptr_Link_T_Ghost_Box_Perm_ptr_Link_T_Global) ->
     {[@stop_split] [@expl:from_box_Link_T ensures] ([@stop_split] [@expl:from_box result type invariant] inv_tup2_ptr_Link_T_Ghost_Box_Perm_ptr_Link_T_Global result)
       /\ ([@stop_split] [@expl:from_box ensures] ward_ptr_Link_T result.f1 = result.f0
-      /\ val_ptr_Link_T result.f1 = val')}
+      /\ val_unsized_ptr_Link_T result.f1 = val')}
       (! return {result}) ]
   
   type t_List_T = { first: Opaque.ptr; last: Opaque.ptr; seq: Seq.seq t_Perm_ptr_Link_T }
@@ -825,10 +833,11 @@ module M_impl_List_T__push_back (* List<T> *)
     any
     [ return (result: MutBorrow.t t_Link_T) ->
     {[@stop_split] [@expl:as_mut_Link_T ensures] ([@stop_split] [@expl:as_mut result type invariant] inv_refmut_Link_T result)
-      /\ ([@stop_split] [@expl:as_mut ensures #0] result.current = val_ptr_Link_T own.current)
+      /\ ([@stop_split] [@expl:as_mut ensures #0] result.current = val_unsized_ptr_Link_T own.current)
       /\ ([@stop_split] [@expl:as_mut ensures #1] ward_ptr_Link_T (fin_Ghost_refmut_Perm_ptr_Link_T own)
         = ward_ptr_Link_T own.current)
-      /\ ([@stop_split] [@expl:as_mut ensures #2] val_ptr_Link_T (fin_Ghost_refmut_Perm_ptr_Link_T own) = result.final)}
+      /\ ([@stop_split] [@expl:as_mut ensures #2] val_unsized_ptr_Link_T (fin_Ghost_refmut_Perm_ptr_Link_T own)
+      = result.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Link_T [@inline:trivial] (_1: MutBorrow.t t_Link_T) = _1.final = _1.current
@@ -854,6 +863,10 @@ module M_impl_List_T__push_back (* List<T> *)
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
   meta "rewrite_def" predicate gt_log_Int
+  
+  function val_ptr_Link_T [@inline:trivial] (self: t_Perm_ptr_Link_T) : t_Link_T = val_unsized_ptr_Link_T self
+  
+  meta "rewrite_def" function val_ptr_Link_T
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
@@ -1083,7 +1096,7 @@ module M_impl_List_T__push_front (* List<T> *)
   
   meta "rewrite_def" predicate metadata_matches_Link_T
   
-  function val_ptr_Link_T (self: t_Perm_ptr_Link_T) : t_Link_T
+  function val_unsized_ptr_Link_T (self: t_Perm_ptr_Link_T) : t_Link_T
   
   function metadata_Link_T (_1: Opaque.ptr) : ()
   
@@ -1097,8 +1110,8 @@ module M_impl_List_T__push_front (* List<T> *)
   
   predicate invariant_Perm_ptr_Link_T (self: t_Perm_ptr_Link_T) =
     not is_null_ptr_Link_T (ward_ptr_Link_T self)
-    /\ metadata_matches_Link_T (val_ptr_Link_T self) (metadata_Link_T (ward_ptr_Link_T self))
-    /\ inv_ref_Link_T (val_ptr_Link_T self)
+    /\ metadata_matches_Link_T (val_unsized_ptr_Link_T self) (metadata_Link_T (ward_ptr_Link_T self))
+    /\ inv_ref_Link_T (val_unsized_ptr_Link_T self)
   
   predicate inv_Perm_ptr_Link_T (_1: t_Perm_ptr_Link_T)
   
@@ -1126,6 +1139,10 @@ module M_impl_List_T__push_front (* List<T> *)
     inv_Ghost_Box_Perm_ptr_Link_T_Global _1.f1
   
   meta "rewrite_def" predicate inv_tup2_ptr_Link_T_Ghost_Box_Perm_ptr_Link_T_Global
+  
+  function val_ptr_Link_T [@inline:trivial] (self: t_Perm_ptr_Link_T) : t_Link_T = val_unsized_ptr_Link_T self
+  
+  meta "rewrite_def" function val_ptr_Link_T
   
   let new_Link_T (v: t_Link_T) (return (x: tup2_ptr_Link_T_Ghost_Box_Perm_ptr_Link_T_Global)) =
   {[@stop_split] [@expl:new 'v' type invariant] inv_Link_T v}

@@ -19,7 +19,7 @@ module M_impl_S__minimize (* S *)
   
   meta "rewrite_def" predicate metadata_matches_i32
   
-  function val_ptr_i32 (self: t_Perm_ptr_i32) : Int32.t
+  function val_unsized_ptr_i32 (self: t_Perm_ptr_i32) : Int32.t
   
   function metadata_i32 (_1: Opaque.ptr) : ()
   
@@ -29,7 +29,8 @@ module M_impl_S__minimize (* S *)
   
   predicate invariant_Perm_ptr_i32 (self: t_Perm_ptr_i32) =
     not is_null_ptr_i32 (ward_ptr_i32 self)
-    /\ metadata_matches_i32 (val_ptr_i32 self) (metadata_i32 (ward_ptr_i32 self)) /\ inv_ref_i32 (val_ptr_i32 self)
+    /\ metadata_matches_i32 (val_unsized_ptr_i32 self) (metadata_i32 (ward_ptr_i32 self))
+    /\ inv_ref_i32 (val_unsized_ptr_i32 self)
   
   predicate inv_Perm_ptr_i32 (_1: t_Perm_ptr_i32)
   
@@ -124,7 +125,12 @@ module M_impl_S__minimize (* S *)
   {[@stop_split] [@expl:as_ref_i32 requires] ([@stop_split] [@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own)
     /\ ([@stop_split] [@expl:as_ref requires] ptr'0 = ward_ptr_i32 own)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = val_ptr_i32 own} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = val_unsized_ptr_i32 own}
+      (! return {result}) ]
+  
+  function val_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) : Int32.t = val_unsized_ptr_i32 self
+  
+  meta "rewrite_def" function val_ptr_i32
   
   meta "compute_max_steps" 1000000
   

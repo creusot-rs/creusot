@@ -112,7 +112,7 @@ impl<T> SliceExt<T> for [T] {
     /// Convert `&[T]` to `*const T` and a shared ownership token.
     #[check(terminates)]
     #[ensures(result.0 == *result.1.ward() as *const T)]
-    #[ensures(self == result.1.val())]
+    #[ensures(self == result.1.val_unsized())]
     #[erasure(Self::as_ptr)]
     fn as_ptr_perm(&self) -> (*const T, Ghost<&Perm<*const [T]>>) {
         let (ptr, own) = Perm::from_ref(self);
@@ -122,8 +122,8 @@ impl<T> SliceExt<T> for [T] {
     /// Convert `&mut [T]` to `*mut T` and a mutable ownership token.
     #[check(terminates)]
     #[ensures(result.0 as *const T == *result.1.ward() as *const T)]
-    #[ensures(&*self == result.1.val())]
-    #[ensures(&^self == (^result.1).val())]
+    #[ensures(&*self == result.1.val_unsized())]
+    #[ensures(&^self == (^result.1).val_unsized())]
     #[erasure(Self::as_mut_ptr)]
     fn as_mut_ptr_perm(&mut self) -> (*mut T, Ghost<&mut Perm<*const [T]>>) {
         let (ptr, own) = Perm::from_mut(self);

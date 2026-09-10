@@ -8,12 +8,12 @@ module M_unknown_permcell_permission
   
   function ward_PermCell_i32 (self: t_Perm_PermCell_i32) : t_PermCell_i32
   
-  function val_PermCell_i32 (self: t_Perm_PermCell_i32) : Int32.t
+  function val_unsized_PermCell_i32 (self: t_Perm_PermCell_i32) : Int32.t
   
   let borrow_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
   {[@stop_split] [@expl:borrow requires] self = ward_PermCell_i32 perm}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:borrow ensures] result = val_PermCell_i32 perm}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:borrow ensures] result = val_unsized_PermCell_i32 perm}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -44,7 +44,7 @@ module M_unknown_ptr_perm_permission
   
   meta "rewrite_def" predicate metadata_matches_i32
   
-  function val_ptr_i32 (self: t_Perm_ptr_i32) : Int32.t
+  function val_unsized_ptr_i32 (self: t_Perm_ptr_i32) : Int32.t
   
   function metadata_i32 (_1: Opaque.ptr) : ()
   
@@ -54,7 +54,8 @@ module M_unknown_ptr_perm_permission
   
   predicate invariant_Perm_ptr_i32 (self: t_Perm_ptr_i32) =
     not is_null_ptr_i32 (ward_ptr_i32 self)
-    /\ metadata_matches_i32 (val_ptr_i32 self) (metadata_i32 (ward_ptr_i32 self)) /\ inv_ref_i32 (val_ptr_i32 self)
+    /\ metadata_matches_i32 (val_unsized_ptr_i32 self) (metadata_i32 (ward_ptr_i32 self))
+    /\ inv_ref_i32 (val_unsized_ptr_i32 self)
   
   predicate inv_Perm_ptr_i32 (_1: t_Perm_ptr_i32)
   
@@ -81,7 +82,8 @@ module M_unknown_ptr_perm_permission
   {[@stop_split] [@expl:as_ref_i32 requires] ([@stop_split] [@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own)
     /\ ([@stop_split] [@expl:as_ref requires] ptr = ward_ptr_i32 own)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = val_ptr_i32 own} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = val_unsized_ptr_i32 own}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
@@ -108,7 +110,11 @@ module M_wrong_permcell_permission
   
   function ward_PermCell_i32 (self: t_Perm_PermCell_i32) : t_PermCell_i32
   
-  function val_PermCell_i32 (self: t_Perm_PermCell_i32) : Int32.t
+  function val_unsized_PermCell_i32 (self: t_Perm_PermCell_i32) : Int32.t
+  
+  function val_PermCell_i32 [@inline:trivial] (self: t_Perm_PermCell_i32) : Int32.t = val_unsized_PermCell_i32 self
+  
+  meta "rewrite_def" function val_PermCell_i32
   
   let new_i32 (value: Int32.t) (return (x: tup2_PermCell_i32_Ghost_Perm_PermCell_i32)) = any
     [ return (result: tup2_PermCell_i32_Ghost_Perm_PermCell_i32) ->
@@ -126,7 +132,7 @@ module M_wrong_permcell_permission
   let borrow_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
   {[@stop_split] [@expl:borrow requires] self = ward_PermCell_i32 perm}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:borrow ensures] result = val_PermCell_i32 perm}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:borrow ensures] result = val_unsized_PermCell_i32 perm}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -173,7 +179,7 @@ module M_wrong_ptr_perm_permission
   
   meta "rewrite_def" predicate metadata_matches_i32
   
-  function val_ptr_i32 (self: t_Perm_ptr_i32) : Int32.t
+  function val_unsized_ptr_i32 (self: t_Perm_ptr_i32) : Int32.t
   
   function metadata_i32 (_1: Opaque.ptr) : ()
   
@@ -183,7 +189,8 @@ module M_wrong_ptr_perm_permission
   
   predicate invariant_Perm_ptr_i32 (self: t_Perm_ptr_i32) =
     not is_null_ptr_i32 (ward_ptr_i32 self)
-    /\ metadata_matches_i32 (val_ptr_i32 self) (metadata_i32 (ward_ptr_i32 self)) /\ inv_ref_i32 (val_ptr_i32 self)
+    /\ metadata_matches_i32 (val_unsized_ptr_i32 self) (metadata_i32 (ward_ptr_i32 self))
+    /\ inv_ref_i32 (val_unsized_ptr_i32 self)
   
   predicate inv_Perm_ptr_i32 (_1: t_Perm_ptr_i32)
   
@@ -210,6 +217,10 @@ module M_wrong_ptr_perm_permission
     inv_Ghost_Box_Perm_ptr_i32_Global _1.f1
   
   meta "rewrite_def" predicate inv_tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global
+  
+  function val_ptr_i32 [@inline:trivial] (self: t_Perm_ptr_i32) : Int32.t = val_unsized_ptr_i32 self
+  
+  meta "rewrite_def" function val_ptr_i32
   
   let new_i32 (v: Int32.t) (return (x: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global)) = any
     [ return (result: tup2_ptr_i32_Ghost_Box_Perm_ptr_i32_Global) ->
@@ -273,7 +284,8 @@ module M_wrong_ptr_perm_permission
   {[@stop_split] [@expl:as_ref_i32 requires] ([@stop_split] [@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own)
     /\ ([@stop_split] [@expl:as_ref requires] ptr = ward_ptr_i32 own)}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = val_ptr_i32 own} (! return {result}) ]
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = val_unsized_ptr_i32 own}
+      (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   

@@ -26,7 +26,7 @@ predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T)
 
 meta "rewrite_def" predicate metadata_matches_slice_T
 
-function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
+function val_unsized_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
 
 function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
 
@@ -65,8 +65,8 @@ meta "rewrite_def" predicate inv_ref_slice_T
 
 predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
   not is_null_ptr_slice_T (ward_ptr_slice_T self)
-  /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (ward_ptr_slice_T self))
-  /\ inv_ref_slice_T (val_ptr_slice_T self)
+  /\ metadata_matches_slice_T (val_unsized_ptr_slice_T self) (metadata_slice_T (ward_ptr_slice_T self))
+  /\ inv_ref_slice_T (val_unsized_ptr_slice_T self)
 
 predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
 
@@ -93,13 +93,13 @@ predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = t
 
 meta "rewrite_def" predicate metadata_matches_T
 
-function val_ptr_T (self: t_Perm_ptr_T) : t_T
+function val_unsized_ptr_T (self: t_Perm_ptr_T) : t_T
 
 function metadata_T (_1: Opaque.ptr) : ()
 
 predicate invariant_Perm_ptr_T (self: t_Perm_ptr_T) =
   not is_null_ptr_T (ward_ptr_T self)
-  /\ metadata_matches_T (val_ptr_T self) (metadata_T (ward_ptr_T self)) /\ inv_ref_T (val_ptr_T self)
+  /\ metadata_matches_T (val_unsized_ptr_T self) (metadata_T (ward_ptr_T self)) /\ inv_ref_T (val_unsized_ptr_T self)
 
 predicate inv_Perm_ptr_T (_1: t_Perm_ptr_T)
 
@@ -134,7 +134,8 @@ predicate inv_Seq_refmut_Perm_ptr_T [@inline:trivial] (_1: Seq.seq (MutBorrow.t 
 
 meta "rewrite_def" predicate inv_Seq_refmut_Perm_ptr_T
 
-function len_T [@inline:trivial] (self: t_Perm_ptr_slice_T) : int = Seq.length (Slice64.view (val_ptr_slice_T self))
+function len_T [@inline:trivial] (self: t_Perm_ptr_slice_T) : int =
+  Seq.length (Slice64.view (val_unsized_ptr_slice_T self))
 
 meta "rewrite_def" function len_T
 
@@ -197,10 +198,11 @@ let elements_mut_T (self: MutBorrow.t t_Perm_ptr_slice_T) (return (x: Seq.seq (M
     /\ ([@stop_split] [@expl:elements_mut ensures #0] Seq.length result = len_T self.current)
     /\ ([@stop_split] [@expl:elements_mut ensures #1] forall i: int. 0 <= i /\ i < len_T self.current
         -> ward_ptr_T (Seq.get result i).current = offset_ptr_T (thin_ptr_slice_T (ward_ptr_slice_T self.current)) i
-        /\ val_ptr_T (Seq.get result i).current = Seq.get (Slice64.view (val_ptr_slice_T self.current)) i)
+        /\ val_unsized_ptr_T (Seq.get result i).current
+        = Seq.get (Slice64.view (val_unsized_ptr_slice_T self.current)) i)
     /\ ([@stop_split] [@expl:elements_mut ensures #2] ward_ptr_slice_T self.final = ward_ptr_slice_T self.current)
     /\ ([@stop_split] [@expl:elements_mut ensures #3] forall i: int. 0 <= i /\ i < len_T self.current
-      -> val_ptr_T (Seq.get result i).final = Seq.get (Slice64.view (val_ptr_slice_T self.final)) i)}
+      -> val_unsized_ptr_T (Seq.get result i).final = Seq.get (Slice64.view (val_unsized_ptr_slice_T self.final)) i)}
     (! return {result}) ]
 
 function tail_refmut_Perm_ptr_T (self: Seq.seq (MutBorrow.t t_Perm_ptr_T)) : Seq.seq (MutBorrow.t t_Perm_ptr_T) =
@@ -312,8 +314,9 @@ let index_mut_T (self: MutBorrow.t t_Perm_ptr_slice_T) (index: int) (return (x: 
       [ _ck -> (! {[@expl:type invariant] inv_Perm_ptr_slice_T self.current} any) ]
     | s1 = elements_mut_T {_22} (fun (_x: Seq.seq (MutBorrow.t t_Perm_ptr_T)) -> [ &r <- _x ] s2)
     | s2 = {[@expl:assertion] forall k: int. index < k /\ k < Seq.length r
-        -> val_ptr_T (Seq.get r k).current
-        = val_ptr_T (Seq.get (tail_refmut_Perm_ptr_T (index_Seq_refmut_Perm_ptr_T r { start = index })) (k - index
+        -> val_unsized_ptr_T (Seq.get r k).current
+        = val_unsized_ptr_T (Seq.get (tail_refmut_Perm_ptr_T (index_Seq_refmut_Perm_ptr_T r { start = index })) (k
+          - index
         - 1)).current}
       s3
     | s3 = [ &_r <- r ] s4
@@ -367,12 +370,12 @@ let index_mut_T (self: MutBorrow.t t_Perm_ptr_slice_T) (index: int) (return (x: 
   {[@stop_split] [@expl:index_mut_T ensures] ([@stop_split] [@expl:index_mut result type invariant] inv_refmut_Perm_ptr_T result)
     /\ ([@stop_split] [@expl:index_mut ensures #0] ward_ptr_T result.current
       = offset_ptr_T (thin_ptr_slice_T (ward_ptr_slice_T self.current)) index)
-    /\ ([@stop_split] [@expl:index_mut ensures #1] val_ptr_T result.current
-      = Seq.get (Slice64.view (val_ptr_slice_T self.current)) index)
+    /\ ([@stop_split] [@expl:index_mut ensures #1] val_unsized_ptr_T result.current
+      = Seq.get (Slice64.view (val_unsized_ptr_slice_T self.current)) index)
     /\ ([@stop_split] [@expl:index_mut ensures #2] ward_ptr_slice_T self.final = ward_ptr_slice_T self.current)
-    /\ ([@stop_split] [@expl:index_mut ensures #3] val_ptr_T result.final
-      = Seq.get (Slice64.view (val_ptr_slice_T self.final)) index)
+    /\ ([@stop_split] [@expl:index_mut ensures #3] val_unsized_ptr_T result.final
+      = Seq.get (Slice64.view (val_unsized_ptr_slice_T self.final)) index)
     /\ ([@stop_split] [@expl:index_mut ensures #4] forall k: int. 0 <= k /\ k < len_T self.current /\ k <> index
-      -> Seq.get (Slice64.view (val_ptr_slice_T self.final)) k
-      = Seq.get (Slice64.view (val_ptr_slice_T self.current)) k)}
+      -> Seq.get (Slice64.view (val_unsized_ptr_slice_T self.final)) k
+      = Seq.get (Slice64.view (val_unsized_ptr_slice_T self.current)) k)}
     (! return {result}) ]

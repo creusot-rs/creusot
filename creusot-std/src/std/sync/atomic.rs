@@ -63,8 +63,8 @@ macro_rules! impl_atomic {
         pub struct $atomic_type $(< $T >)?(::core::sync::atomic::$atomic_type $(< $T >)?);
 
         impl $(< $T >)? PermTarget for $atomic_type $(< $T >)? {
-            type Value<'a> = FMap<Timestamp, ($type, SyncView)> where Self: 'a;
-            type PermPayload = ();
+            type Value = FMap<Timestamp, ($type, SyncView)>;
+            type Objectiveness = ();
         }
 
         impl $(< $T >)? HasTimestamp for $atomic_type $(< $T >)? {

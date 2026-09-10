@@ -121,7 +121,7 @@ pub mod implementation {
                             // The depth decreases when following the links
                             self.depth[*pc] > self.depth[*next@] &&
                             index@ < self.auth@[*next@].0.len() &&
-                            self.auth@[*pc].0 == self.auth@[*next@].0.set(index@, *value)
+                            self.auth@[*pc].0 == self.auth@[*next@].0.set(index@, value)
                     }
             }
         }
@@ -261,7 +261,7 @@ pub mod implementation {
         #[ensures(forall<id: Snapshot<_>> pa.depth[*id] > pa.depth[*cur@] ==>
             pa.perms.get(id) == (^pa).perms.get(id) && pa.depth[*id] == (^pa).depth[*id])]
         #[ensures(forall<id> (^pa).perms.contains(id) == pa.perms.contains(id))]
-        #[ensures(match *(^pa).perms[Snapshot::new(*cur@)].val() {
+        #[ensures(match (^pa).perms[Snapshot::new(*cur@)].val() {
             Inner::Direct(_) => true,
             Inner::Link { .. } => false,
         })]

@@ -534,7 +534,11 @@ module M_implementation__equiv
   
   type t_Node_T = Root t_PeanoInt t_T | Link t_Element
   
-  function val_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
   
   function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
   
@@ -601,8 +605,8 @@ module M_implementation__equiv
   
   predicate invariant_Perm_ptr_Node_T (self: t_Perm_ptr_Node_T) =
     not is_null_ptr_Node_T (ward_ptr_Node_T self)
-    /\ metadata_matches_Node_T (val_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
-    /\ inv_ref_Node_T (val_ptr_Node_T self)
+    /\ metadata_matches_Node_T (val_unsized_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
+    /\ inv_ref_Node_T (val_unsized_ptr_Node_T self)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
@@ -896,7 +900,11 @@ module M_implementation__find
   
   type t_Node_T = Root t_PeanoInt t_T | Link t_Element
   
-  function val_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
   
   function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
   
@@ -958,8 +966,8 @@ module M_implementation__find
   
   predicate invariant_Perm_ptr_Node_T (self: t_Perm_ptr_Node_T) =
     not is_null_ptr_Node_T (ward_ptr_Node_T self)
-    /\ metadata_matches_Node_T (val_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
-    /\ inv_ref_Node_T (val_ptr_Node_T self)
+    /\ metadata_matches_Node_T (val_unsized_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
+    /\ inv_ref_Node_T (val_unsized_ptr_Node_T self)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
@@ -1153,7 +1161,11 @@ module M_implementation__find_inner
   
   type t_Node_T = Root t_PeanoInt t_T | Link t_Element
   
-  function val_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
   
   function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
   
@@ -1220,8 +1232,8 @@ module M_implementation__find_inner
   
   predicate invariant_Perm_ptr_Node_T (self: t_Perm_ptr_Node_T) =
     not is_null_ptr_Node_T (ward_ptr_Node_T self)
-    /\ metadata_matches_Node_T (val_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
-    /\ inv_ref_Node_T (val_ptr_Node_T self)
+    /\ metadata_matches_Node_T (val_unsized_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
+    /\ inv_ref_Node_T (val_unsized_ptr_Node_T self)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
@@ -1393,7 +1405,7 @@ module M_implementation__find_inner
     any
     [ return (result: t_Node_T) ->
     {[@stop_split] [@expl:as_ref_Node_T ensures] ([@stop_split] [@expl:as_ref result type invariant] inv_ref_Node_T result)
-      /\ ([@stop_split] [@expl:as_ref ensures] result = val_ptr_Node_T own)}
+      /\ ([@stop_split] [@expl:as_ref ensures] result = val_unsized_ptr_Node_T own)}
       (! return {result}) ]
   
   let elim_Link (_x: t_Node_T) (return (f0'2: t_Element)) = any
@@ -1680,10 +1692,11 @@ module M_implementation__find_inner
     any
     [ return (result: MutBorrow.t t_Node_T) ->
     {[@stop_split] [@expl:as_mut_Node_T ensures] ([@stop_split] [@expl:as_mut result type invariant] inv_refmut_Node_T result)
-      /\ ([@stop_split] [@expl:as_mut ensures #0] result.current = val_ptr_Node_T own.current)
+      /\ ([@stop_split] [@expl:as_mut ensures #0] result.current = val_unsized_ptr_Node_T own.current)
       /\ ([@stop_split] [@expl:as_mut ensures #1] ward_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own)
         = ward_ptr_Node_T own.current)
-      /\ ([@stop_split] [@expl:as_mut ensures #2] val_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own) = result.final)}
+      /\ ([@stop_split] [@expl:as_mut ensures #2] val_unsized_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own)
+      = result.final)}
       (! return {result}) ]
   
   predicate resolve_T (_1: t_T)
@@ -1997,7 +2010,11 @@ module M_implementation__get
   
   type t_Node_T = Root t_PeanoInt t_T | Link t_Element
   
-  function val_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
   
   function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
   
@@ -2064,8 +2081,8 @@ module M_implementation__get
   
   predicate invariant_Perm_ptr_Node_T (self: t_Perm_ptr_Node_T) =
     not is_null_ptr_Node_T (ward_ptr_Node_T self)
-    /\ metadata_matches_Node_T (val_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
-    /\ inv_ref_Node_T (val_ptr_Node_T self)
+    /\ metadata_matches_Node_T (val_unsized_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
+    /\ inv_ref_Node_T (val_unsized_ptr_Node_T self)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
@@ -2230,7 +2247,7 @@ module M_implementation__get
     any
     [ return (result: t_Node_T) ->
     {[@stop_split] [@expl:as_ref_Node_T ensures] ([@stop_split] [@expl:as_ref result type invariant] inv_ref_Node_T result)
-      /\ ([@stop_split] [@expl:as_ref ensures] result = val_ptr_Node_T own)}
+      /\ ([@stop_split] [@expl:as_ref ensures] result = val_unsized_ptr_Node_T own)}
       (! return {result}) ]
   
   let elim_Root (_x: t_Node_T) (return (rank: t_PeanoInt) (payload: t_T)) = any
@@ -2513,7 +2530,11 @@ module M_implementation__impl_UnionFind_T__domain (* implementation::UnionFind<T
   
   type t_Node_T = Root t_PeanoInt t_T | Link t_Element
   
-  function val_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
   
   function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
   
@@ -2580,8 +2601,8 @@ module M_implementation__impl_UnionFind_T__domain (* implementation::UnionFind<T
   
   predicate invariant_Perm_ptr_Node_T (self: t_Perm_ptr_Node_T) =
     not is_null_ptr_Node_T (ward_ptr_Node_T self)
-    /\ metadata_matches_Node_T (val_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
-    /\ inv_ref_Node_T (val_ptr_Node_T self)
+    /\ metadata_matches_Node_T (val_unsized_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
+    /\ inv_ref_Node_T (val_unsized_ptr_Node_T self)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
@@ -2706,7 +2727,11 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
   
   type t_Node_T = Root t_PeanoInt t_T | Link t_Element
   
-  function val_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
   
   function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
   
@@ -2773,8 +2798,8 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
   
   predicate invariant_Perm_ptr_Node_T (self: t_Perm_ptr_Node_T) =
     not is_null_ptr_Node_T (ward_ptr_Node_T self)
-    /\ metadata_matches_Node_T (val_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
-    /\ inv_ref_Node_T (val_ptr_Node_T self)
+    /\ metadata_matches_Node_T (val_unsized_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
+    /\ inv_ref_Node_T (val_unsized_ptr_Node_T self)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
@@ -2921,7 +2946,11 @@ module M_implementation__link
   
   type t_Node_T = Root t_PeanoInt t_T | Link t_Element
   
-  function val_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
   
   function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
   
@@ -2988,8 +3017,8 @@ module M_implementation__link
   
   predicate invariant_Perm_ptr_Node_T (self: t_Perm_ptr_Node_T) =
     not is_null_ptr_Node_T (ward_ptr_Node_T self)
-    /\ metadata_matches_Node_T (val_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
-    /\ inv_ref_Node_T (val_ptr_Node_T self)
+    /\ metadata_matches_Node_T (val_unsized_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
+    /\ inv_ref_Node_T (val_unsized_ptr_Node_T self)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
@@ -3372,10 +3401,11 @@ module M_implementation__link
     any
     [ return (result: MutBorrow.t t_Node_T) ->
     {[@stop_split] [@expl:as_mut_Node_T ensures] ([@stop_split] [@expl:as_mut result type invariant] inv_refmut_Node_T result)
-      /\ ([@stop_split] [@expl:as_mut ensures #0] result.current = val_ptr_Node_T own.current)
+      /\ ([@stop_split] [@expl:as_mut ensures #0] result.current = val_unsized_ptr_Node_T own.current)
       /\ ([@stop_split] [@expl:as_mut ensures #1] ward_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own)
         = ward_ptr_Node_T own.current)
-      /\ ([@stop_split] [@expl:as_mut ensures #2] val_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own) = result.final)}
+      /\ ([@stop_split] [@expl:as_mut ensures #2] val_unsized_ptr_Node_T (fin_Ghost_refmut_Perm_ptr_Node_T own)
+      = result.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_Node_T [@inline:trivial] (_1: MutBorrow.t t_Node_T) = _1.final = _1.current
@@ -4053,7 +4083,7 @@ module M_implementation__make
   
   meta "rewrite_def" predicate metadata_matches_Node_T
   
-  function val_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -4067,8 +4097,8 @@ module M_implementation__make
   
   predicate invariant_Perm_ptr_Node_T (self: t_Perm_ptr_Node_T) =
     not is_null_ptr_Node_T (ward_ptr_Node_T self)
-    /\ metadata_matches_Node_T (val_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
-    /\ inv_ref_Node_T (val_ptr_Node_T self)
+    /\ metadata_matches_Node_T (val_unsized_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
+    /\ inv_ref_Node_T (val_unsized_ptr_Node_T self)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
@@ -4096,6 +4126,10 @@ module M_implementation__make
     inv_Ghost_Box_Perm_ptr_Node_T_Global _1.f1'1
   
   meta "rewrite_def" predicate inv_tup2_ptr_Node_T_Ghost_Box_Perm_ptr_Node_T_Global
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
   
   let new_Node_T (v: t_Node_T) (return (x: tup2_ptr_Node_T_Ghost_Box_Perm_ptr_Node_T_Global)) =
   {[@stop_split] [@expl:new 'v' type invariant] inv_Node_T v}
@@ -4401,7 +4435,7 @@ module M_implementation__make
     /\ ([@stop_split] [@expl:disjoint_lemma 'other' type invariant] inv_ref_Perm_ptr_Node_T other)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:disjoint_lemma_ptr_Node_T ensures] ([@stop_split] [@expl:disjoint_lemma ensures #0] is_disjoint_ptr_Node_T (ward_ptr_Node_T self.current) (val_ptr_Node_T self.current) (ward_ptr_Node_T other) (val_ptr_Node_T other))
+    {[@stop_split] [@expl:disjoint_lemma_ptr_Node_T ensures] ([@stop_split] [@expl:disjoint_lemma ensures #0] is_disjoint_ptr_Node_T (ward_ptr_Node_T self.current) (val_unsized_ptr_Node_T self.current) (ward_ptr_Node_T other) (val_unsized_ptr_Node_T other))
       /\ ([@stop_split] [@expl:disjoint_lemma ensures #1] self.current = self.final)}
       (! return {result}) ]
   
@@ -4655,7 +4689,7 @@ module M_implementation__new
   
   meta "rewrite_def" predicate metadata_matches_Node_T
   
-  function val_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -4679,8 +4713,8 @@ module M_implementation__new
   
   predicate invariant_Perm_ptr_Node_T (self: t_Perm_ptr_Node_T) =
     not is_null_ptr_Node_T (ward_ptr_Node_T self)
-    /\ metadata_matches_Node_T (val_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
-    /\ inv_ref_Node_T (val_ptr_Node_T self)
+    /\ metadata_matches_Node_T (val_unsized_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
+    /\ inv_ref_Node_T (val_unsized_ptr_Node_T self)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   
@@ -4805,6 +4839,10 @@ module M_implementation__new
    = Map.get self a
   
   meta "rewrite_def" function index_Mapping_Element_Element
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
   
   function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
   
@@ -4978,7 +5016,11 @@ module M_implementation__union
   
   type t_Node_T = Root t_PeanoInt t_T | Link t_Element
   
-  function val_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
   
   function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
   
@@ -5045,8 +5087,8 @@ module M_implementation__union
   
   predicate invariant_Perm_ptr_Node_T (self: t_Perm_ptr_Node_T) =
     not is_null_ptr_Node_T (ward_ptr_Node_T self)
-    /\ metadata_matches_Node_T (val_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
-    /\ inv_ref_Node_T (val_ptr_Node_T self)
+    /\ metadata_matches_Node_T (val_unsized_ptr_Node_T self) (metadata_Node_T (ward_ptr_Node_T self))
+    /\ inv_ref_Node_T (val_unsized_ptr_Node_T self)
   
   predicate inv_Perm_ptr_Node_T (_1: t_Perm_ptr_Node_T)
   

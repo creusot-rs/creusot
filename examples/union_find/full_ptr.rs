@@ -86,11 +86,11 @@ mod implementation {
                 *self.0.perms[e].ward() == e.0 as *const Node<T> &&
                 self.0.domain.contains(self.0.roots[e]) &&
                 self.0.roots[self.0.roots[e]] == self.0.roots[e] &&
-                match *self.0.perms[e].val() {
+                match self.0.perms[e].val() {
                     Node::Link(e2) => self.0.roots[e] != e && self.0.domain.contains(e2) && self.0.roots[e] == self.0.roots[e2],
                     Node::Root { payload, .. } => self.0.roots[e] == e && self.0.payloads[e] == payload,
                 } &&
-                match *self.0.perms[e].val() {
+                match self.0.perms[e].val() {
                     Node::Link(e2) => self.0.depth[e] < self.0.depth[e2],
                     Node::Root { .. } => true,
                 } &&
