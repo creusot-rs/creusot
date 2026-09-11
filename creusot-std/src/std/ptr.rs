@@ -5,6 +5,7 @@ pub use self::nonnull::NonNullExt;
 use crate::std::mem::{align_of_logic, size_of_logic, size_of_val_logic};
 use crate::{
     ghost::{NotObjective, Perm, perm::PermTarget},
+    invariant::GuardedBorrow,
     prelude::*,
 };
 use core::marker::PhantomData;
@@ -511,11 +512,8 @@ extern_spec! {
 }
 
 impl<T: ?Sized> PermTarget for *const T {
-    type Value<'a>
-        = &'a T
-    where
-        Self: 'a;
-    type PermPayload = (NotObjective, PhantomData<T>, [bool]);
+    type Value = T;
+    type Objectiveness = NotObjective;
 
     /// Two pointers to distinct non-empty allocations are disjoint.
     ///
@@ -535,8 +533,8 @@ impl<T: ?Sized> Invariant for Perm<*const T> {
     fn invariant(self) -> bool {
         pearlite! {
             !self.ward().is_null_logic()
-                && metadata_matches(*self.val(), metadata_logic(*self.ward()))
-                && inv(self.val())
+                && metadata_matches(*self.val_unsized(), metadata_logic(*self.ward()))
+                && inv(self.val_unsized())
         }
     }
 }
@@ -545,7 +543,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// Creates a new `Perm<*const T>` and associated `*const` by allocating a new memory
     /// cell initialized with `v`.
     #[check(terminates)] // can overflow the number of available pointer adresses
-    #[ensures(*result.1.ward() == result.0 && *result.1.val() == v)]
+    #[ensures(*result.1.ward() == result.0 && result.1.val() == v)]
     #[cfg(feature = "std")]
     pub fn new(v: T) -> (*mut T, Ghost<Box<Perm<*const T>>>)
     where
@@ -557,7 +555,7 @@ impl<T: ?Sized> Perm<*const T> {
     /// Creates a ghost `Perm<*const T>` and associated `*const` from an existing [`Box`].
     #[trusted]
     #[check(terminates)] // can overflow the number of available pointer adresses
-    #[ensures(*result.1.ward() == result.0 && *result.1.val() == *val)]
+    #[ensures(*result.1.ward() == result.0 && *result.1.val_unsized() == *val)]
     #[erasure(Box::into_raw)]
     #[cfg(feature = "std")]
     pub fn from_box(val: Box<T>) -> (*mut T, Ghost<Box<Perm<*const T>>>) {
@@ -578,7 +576,7 @@ impl<T: ?Sized> Perm<*const T> {
     #[trusted]
     #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(*result.1.ward() == result.0)]
-    #[ensures(*result.1.val() == *r)]
+    #[ensures(*result.1.val_unsized() == *r)]
     #[intrinsic("perm_from_ref")]
     pub fn from_ref(r: &T) -> (*const T, Ghost<&Perm<*const T>>) {
         (r, Ghost::conjure())
@@ -596,12 +594,14 @@ impl<T: ?Sized> Perm<*const T> {
     /// r as *mut T
     /// ```
     #[trusted]
-    #[check(terminates)] // can overflow the number of available pointer adresses
-    #[ensures(*result.1.ward() == result.0)]
-    #[ensures(*result.1.val() == *r)]
-    #[ensures(*(^result.1.inner_logic()).val() == ^r)]
+    // can overflow the number of available pointer adresses
+    #[check(terminates)]
+    // Ensures that the permission is not stolen (via e.g. `std::mem::replace`)
+    #[ensures(result.1.guard() == |p: &mut Perm<*const T>| *p.ward() == result.0)]
+    #[ensures(*result.1.borrow.val_unsized() == *r)]
+    #[ensures(*(^result.1.borrow).val_unsized() == ^r)]
     #[intrinsic("perm_from_mut")]
-    pub fn from_mut(r: &mut T) -> (*mut T, Ghost<&mut Perm<*const T>>) {
+    pub fn from_mut<'a>(r: &'a mut T) -> (*mut T, Ghost<GuardedBorrow<'a, Perm<*const T>>>) {
         (r, Ghost::conjure())
     }
 
@@ -626,7 +626,7 @@ impl<T: ?Sized> Perm<*const T> {
     #[trusted]
     #[check(terminates)]
     #[requires(ptr == *own.ward())]
-    #[ensures(*result == *own.val())]
+    #[ensures(*result == *own.val_unsized())]
     #[allow(unused_variables)]
     #[intrinsic("perm_as_ref")]
     pub unsafe fn as_ref(ptr: *const T, own: Ghost<&Perm<*const T>>) -> &T {
@@ -655,9 +655,9 @@ impl<T: ?Sized> Perm<*const T> {
     #[check(terminates)]
     #[allow(unused_variables)]
     #[requires(ptr as *const T == *own.ward())]
-    #[ensures(*result == *own.val())]
+    #[ensures(*result == *own.val_unsized())]
     #[ensures((^own).ward() == own.ward())]
-    #[ensures(*(^own).val() == ^result)]
+    #[ensures(*(^own).val_unsized() == ^result)]
     #[intrinsic("perm_as_mut")]
     pub unsafe fn as_mut(ptr: *mut T, own: Ghost<&mut Perm<*const T>>) -> &mut T {
         unsafe { &mut *ptr }
@@ -674,7 +674,7 @@ impl<T: ?Sized> Perm<*const T> {
     #[trusted]
     #[check(terminates)]
     #[requires(ptr as *const T == *own.ward())]
-    #[ensures(*result == *own.val())]
+    #[ensures(*result == *own.val_unsized())]
     #[allow(unused_variables)]
     #[erasure(Box::from_raw)]
     #[cfg(feature = "std")]
@@ -709,7 +709,7 @@ impl<T> Perm<*const [T]> {
     /// The number of elements in the slice.
     #[logic(open, inline)]
     pub fn len(self) -> Int {
-        pearlite! { self.val()@.len() }
+        pearlite! { self.val_unsized()@.len() }
     }
 
     /// Split a `&Perm<*const [T]>` into two subslices of lengths `index` and `self.len() - index`.
@@ -718,8 +718,8 @@ impl<T> Perm<*const [T]> {
     #[requires(0 <= index && index <= self.len())]
     #[ensures(self.ward().thin() == result.0.ward().thin())]
     #[ensures(self.ward().thin().offset_logic(index) == result.1.ward().thin())]
-    #[ensures(self.val()@[..index] == result.0.val()@)]
-    #[ensures(self.val()@[index..] == result.1.val()@)]
+    #[ensures(self.val_unsized()@[..index] == result.0.val_unsized()@)]
+    #[ensures(self.val_unsized()@[index..] == result.1.val_unsized()@)]
     pub fn split_at(&self, index: Int) -> (&Self, &Self) {
         let _ = index;
         panic!("called ghost function in normal code")
@@ -729,15 +729,17 @@ impl<T> Perm<*const [T]> {
     #[trusted]
     #[check(ghost)]
     #[requires(0 <= index && index <= self.len())]
-    #[ensures(self.ward().thin() == result.0.ward().thin())]
-    #[ensures(self.ward().thin().offset_logic(index) == result.1.ward().thin())]
-    #[ensures(self.val()@[..index] == result.0.val()@)]
-    #[ensures(self.val()@[index..] == result.1.val()@)]
+    #[ensures(result.0.guard() == |p: &mut Perm<*const [T]>| p.ward().thin() == self.ward().thin())]
+    #[ensures(result.1.guard() == |p: &mut Perm<*const [T]>| p.ward().thin() == self.ward().thin().offset_logic(index))]
+    #[ensures(self.val_unsized()@[..index] == result.0.borrow.val_unsized()@)]
+    #[ensures(self.val_unsized()@[index..] == result.1.borrow.val_unsized()@)]
     #[ensures((^self).ward() == self.ward())]
-    #[ensures((^result.0).val()@.len() == index)]
-    #[ensures((^self).val()@ == (^result.0).val()@.concat((^result.1).val()@))]
-    pub fn split_at_mut(&mut self, index: Int) -> (&mut Perm<*const [T]>, &mut Perm<*const [T]>) {
-        let _ = index;
+    #[ensures((^result.0.borrow).val_unsized()@.len() == index)]
+    #[ensures((^self).val_unsized()@ == (^result.0.borrow).val_unsized()@.concat((^result.1.borrow).val_unsized()@))]
+    pub fn split_at_mut<'a>(
+        &'a mut self,
+        #[allow(unused)] index: Int,
+    ) -> (GuardedBorrow<'a, Perm<*const [T]>>, GuardedBorrow<'a, Perm<*const [T]>>) {
         panic!("called ghost function in normal code")
     }
 
@@ -747,7 +749,7 @@ impl<T> Perm<*const [T]> {
     #[ensures(result.len() == self.len())]
     #[ensures(forall<i> 0 <= i && i < self.len()
         ==> *result[i].ward() == self.ward().thin().offset_logic(i)
-        && *result[i].val() == self.val()@[i])]
+        && *result[i].val_unsized() == self.val_unsized()@[i])]
     pub fn elements(&self) -> Seq<&Perm<*const T>> {
         panic!("called ghost function in normal code")
     }
@@ -756,12 +758,13 @@ impl<T> Perm<*const [T]> {
     #[trusted]
     #[check(ghost)]
     #[ensures(result.len() == self.len())]
-    #[ensures(forall<i> 0 <= i && i < self.len()
-        ==> *result[i].ward() == self.ward().thin().offset_logic(i)
-        && *result[i].val() == self.val()@[i])]
+    #[ensures(forall<i> 0 <= i && i < self.len() ==>
+        *result[i].borrow.val_unsized() == self.val_unsized()@[i] &&
+        result[i].guard() == |p: &mut Perm<*const T>| *p.ward() == self.ward().thin().offset_logic(i)
+    )]
     #[ensures((^self).ward() == self.ward())]
-    #[ensures(forall<i> 0 <= i && i < self.len() ==> *(^result[i]).val() == (^self).val()@[i])]
-    pub fn elements_mut(&mut self) -> Seq<&mut Perm<*const T>> {
+    #[ensures(forall<i> 0 <= i && i < self.len() ==> *(^result[i].borrow).val_unsized() == (^self).val_unsized()@[i])]
+    pub fn elements_mut<'a>(&'a mut self) -> Seq<GuardedBorrow<'a, Perm<*const T>>> {
         panic!("called ghost function in normal code")
     }
 
@@ -769,7 +772,7 @@ impl<T> Perm<*const [T]> {
     #[check(ghost)]
     #[requires(0 <= index && index < self.len())]
     #[ensures(*result.ward() == self.ward().thin().offset_logic(index))]
-    #[ensures(*result.val() == self.val()@[index])]
+    #[ensures(*result.val_unsized() == self.val_unsized()@[index])]
     pub fn index(&self, index: Int) -> &Perm<*const T> {
         let mut r = self.elements();
         r.split_off_ghost(index).pop_front_ghost().unwrap()
@@ -778,14 +781,14 @@ impl<T> Perm<*const [T]> {
     /// Index a `&mut Perm<*const [T]>` into a `&mut Perm<*const T>`.
     #[check(ghost)]
     #[requires(0 <= index && index < self.len())]
-    #[ensures(*result.ward() == self.ward().thin().offset_logic(index))]
-    #[ensures(*result.val() == self.val()@[index])]
+    #[ensures(result.guard() == |p: &mut Perm<*const T>| *p.ward() == self.ward().thin().offset_logic(index))]
+    #[ensures(*result.borrow.val_unsized() == self.val_unsized()@[index])]
     #[ensures((^self).ward() == self.ward())]
-    #[ensures(*(^result).val() == (^self).val()@[index])]
-    #[ensures(forall<k: Int> 0 <= k && k < self.len() && k != index ==> (^self).val()@[k] == self.val()@[k])]
-    pub fn index_mut(&mut self, index: Int) -> &mut Perm<*const T> {
+    #[ensures(*(^result.borrow).val_unsized() == (^self).val_unsized()@[index])]
+    #[ensures(forall<k: Int> 0 <= k && k < self.len() && k != index ==> (^self).val_unsized()@[k] == self.val_unsized()@[k])]
+    pub fn index_mut<'a>(&'a mut self, index: Int) -> GuardedBorrow<'a, Perm<*const T>> {
         let mut r = self.elements_mut();
-        proof_assert! { forall<k> index < k && k < r.len() ==> r[k].val() == r[index..].tail()[k-index-1].val() };
+        proof_assert! { forall<k> index < k && k < r.len() ==> r[k].borrow.val_unsized() == r[index..].tail()[k-index-1].borrow.val_unsized() };
         let _r = snapshot! { r };
         let result = r.split_off_ghost(index).pop_front_ghost().unwrap();
         proof_assert! { forall<i> 0 <= i && i < index ==> r[i] == _r[i] }; // Unfolding of ensures of split_off_ghost r == _r[..index]

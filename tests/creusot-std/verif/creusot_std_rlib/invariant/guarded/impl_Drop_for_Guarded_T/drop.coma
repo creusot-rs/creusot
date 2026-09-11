@@ -1,0 +1,45 @@
+(* <invariant::guarded::Guarded<T> as std::ops::Drop> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use map.Map
+use creusot.prelude.Any
+
+type t_T
+
+type t_Guarded_T = { borrow: t_T; _guard: Map.map t_T bool }
+
+predicate inv_T (_1: t_T)
+
+predicate inv_Guarded_T (_1: t_Guarded_T)
+
+axiom inv_axiom: forall x: t_Guarded_T [inv_Guarded_T x]. inv_Guarded_T x -> inv_T x.borrow
+
+predicate invariant_refmut_Guarded_T [@inline:trivial] (self: MutBorrow.t t_Guarded_T) =
+  inv_Guarded_T self.current /\ inv_Guarded_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_Guarded_T
+
+predicate inv_refmut_Guarded_T [@inline:trivial] (_1: MutBorrow.t t_Guarded_T) = invariant_refmut_Guarded_T _1
+
+meta "rewrite_def" predicate inv_refmut_Guarded_T
+
+predicate resolve_refmut_Guarded_T [@inline:trivial] (_1: MutBorrow.t t_Guarded_T) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Guarded_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let drop_Guarded_T (self: MutBorrow.t t_Guarded_T) (return (x: ())) =
+{[@stop_split] [@expl:drop 'self' type invariant] inv_refmut_Guarded_T self}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Guarded_T self} any) ]
+    | s1 = -{resolve_refmut_Guarded_T self}- s2
+    | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & self: MutBorrow.t t_Guarded_T = self ])
+  [ return (result: ()) -> (! return {result}) ]

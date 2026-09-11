@@ -31,7 +31,7 @@ predicate metadata_matches_T [@inline:trivial] (_value: t_T) (_metadata: ()) = t
 
 meta "rewrite_def" predicate metadata_matches_T
 
-function val_ptr_T (self: t_Perm_ptr_T) : t_T
+function val_unsized_ptr_T (self: t_Perm_ptr_T) : t_T
 
 function metadata_T (_1: Opaque.ptr) : ()
 
@@ -45,7 +45,7 @@ meta "rewrite_def" predicate inv_ref_T
 
 predicate invariant_Perm_ptr_T (self: t_Perm_ptr_T) =
   not is_null_ptr_T (ward_ptr_T self)
-  /\ metadata_matches_T (val_ptr_T self) (metadata_T (ward_ptr_T self)) /\ inv_ref_T (val_ptr_T self)
+  /\ metadata_matches_T (val_unsized_ptr_T self) (metadata_T (ward_ptr_T self)) /\ inv_ref_T (val_unsized_ptr_T self)
 
 predicate inv_Perm_ptr_T (_1: t_Perm_ptr_T)
 
@@ -76,8 +76,12 @@ let from_box_T (val': t_T) (return (x: tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global)) 
   any
   [ return (result: tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global) ->
   {[@stop_split] [@expl:from_box_T ensures] ([@stop_split] [@expl:from_box result type invariant] inv_tup2_ptr_T_Ghost_Box_Perm_ptr_T_Global result)
-    /\ ([@stop_split] [@expl:from_box ensures] ward_ptr_T result.f1 = result.f0 /\ val_ptr_T result.f1 = val')}
+    /\ ([@stop_split] [@expl:from_box ensures] ward_ptr_T result.f1 = result.f0 /\ val_unsized_ptr_T result.f1 = val')}
     (! return {result}) ]
+
+function val_ptr_T [@inline:trivial] (self: t_Perm_ptr_T) : t_T = val_unsized_ptr_T self
+
+meta "rewrite_def" function val_ptr_T
 
 meta "compute_max_steps" 1000000
 

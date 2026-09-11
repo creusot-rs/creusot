@@ -1,0 +1,48 @@
+(* <invariant::guarded::Guarded<T> as std::ops::Deref> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use map.Map
+use creusot.prelude.Any
+
+type t_T
+
+type t_Guarded_T = { borrow: t_T; _guard: Map.map t_T bool }
+
+predicate inv_T (_1: t_T)
+
+predicate inv_Guarded_T (_1: t_Guarded_T)
+
+axiom inv_axiom: forall x: t_Guarded_T [inv_Guarded_T x]. inv_Guarded_T x -> inv_T x.borrow
+
+predicate invariant_ref_Guarded_T [@inline:trivial] (self: t_Guarded_T) = inv_Guarded_T self
+
+meta "rewrite_def" predicate invariant_ref_Guarded_T
+
+predicate inv_ref_Guarded_T [@inline:trivial] (_1: t_Guarded_T) = invariant_ref_Guarded_T _1
+
+meta "rewrite_def" predicate inv_ref_Guarded_T
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let deref_Guarded_T (self: t_Guarded_T) (return (x: t_T)) =
+{[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Guarded_T self}
+  (! bb0
+  [ bb0 = s0 [ s0 = [ &_4 <- self.borrow ] s1 | s1 = [ &_ret <- _4 ] s2 | s2 = return {_ret} ] ]
+  [ & _ret: t_T = Any.any_l () | & self: t_Guarded_T = self | & _4: t_T = Any.any_l () ])
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:deref_Guarded_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_T result)
+    /\ ([@stop_split] [@expl:deref ensures] result = self.borrow)}
+    (! return {result}) ]

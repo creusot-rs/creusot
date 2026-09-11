@@ -59,14 +59,14 @@ predicate metadata_matches_slice_T [@inline:trivial] (_value: Slice64.slice t_T)
 
 meta "rewrite_def" predicate metadata_matches_slice_T
 
-function val_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
+function val_unsized_ptr_slice_T (self: t_Perm_ptr_slice_T) : Slice64.slice t_T
 
 function metadata_slice_T (_1: Opaque.ptr) : UInt64.t
 
 predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
   not is_null_ptr_slice_T (ward_ptr_slice_T self)
-  /\ metadata_matches_slice_T (val_ptr_slice_T self) (metadata_slice_T (ward_ptr_slice_T self))
-  /\ inv_ref_slice_T (val_ptr_slice_T self)
+  /\ metadata_matches_slice_T (val_unsized_ptr_slice_T self) (metadata_slice_T (ward_ptr_slice_T self))
+  /\ inv_ref_slice_T (val_unsized_ptr_slice_T self)
 
 predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
 
@@ -103,5 +103,5 @@ meta "select_lsinst" "all"
 goal refines: forall self: Slice64.slice t_T. inv_ref_slice_T self
     -> inv_ref_slice_T self
     /\ (forall result: tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T. inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result
-        /\ result.f0 = Opaque.thin (ward_ptr_slice_T result.f1) /\ self = val_ptr_slice_T result.f1
+        /\ result.f0 = Opaque.thin (ward_ptr_slice_T result.f1) /\ self = val_unsized_ptr_slice_T result.f1
       -> inv_tup2_ptr_T_Ghost_ref_Perm_ptr_slice_T result)

@@ -11,7 +11,11 @@ module M_foo
   
   function ward_PermCell_i32 (self: t_Perm_PermCell_i32) : t_PermCell_i32
   
-  function val_PermCell_i32 (self: t_Perm_PermCell_i32) : Int32.t
+  function val_unsized_PermCell_i32 (self: t_Perm_PermCell_i32) : Int32.t
+  
+  function val_PermCell_i32 [@inline:trivial] (self: t_Perm_PermCell_i32) : Int32.t = val_unsized_PermCell_i32 self
+  
+  meta "rewrite_def" function val_PermCell_i32
   
   let new_i32 (value: Int32.t) (return (x: tup2_PermCell_i32_Ghost_Perm_PermCell_i32)) = any
     [ return (result: tup2_PermCell_i32_Ghost_Perm_PermCell_i32) ->
@@ -29,7 +33,7 @@ module M_foo
   let borrow_i32 (self: t_PermCell_i32) (perm: t_Perm_PermCell_i32) (return (x: Int32.t)) =
   {[@stop_split] [@expl:borrow requires] self = ward_PermCell_i32 perm}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:borrow ensures] result = val_PermCell_i32 perm}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:borrow ensures] result = val_unsized_PermCell_i32 perm}
       (! return {result}) ]
   
   let deref_mut_Ghost_Perm_PermCell_i32 (self: MutBorrow.t t_Perm_PermCell_i32)
@@ -58,9 +62,9 @@ module M_foo
     [ return (result: MutBorrow.t Int32.t) ->
     {[@stop_split] [@expl:borrow_mut_i32 ensures] ([@stop_split] [@expl:borrow_mut ensures #0] self
         = ward_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm))
-      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = val_PermCell_i32 perm.current)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = val_unsized_PermCell_i32 perm.current)
       /\ ([@stop_split] [@expl:borrow_mut ensures #2] result.final
-      = val_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm))}
+      = val_unsized_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm))}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
