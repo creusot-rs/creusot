@@ -41,10 +41,10 @@ impl<'tcx> SpecClosures<'tcx> {
         for clos in visitor.closures.into_iter() {
             if is_assertion(ctx.tcx, clos) {
                 let is_trusted = is_trusted(ctx.tcx, clos);
-                let term = *ctx.term(clos, TermSort::InProgram).no_triggers();
+                let term = *ctx.term(clos, TermSort::Other, true).no_triggers();
                 assertions.insert(clos, Assertion { is_trusted, term });
             } else if is_snapshot_closure(ctx.tcx, clos) {
-                let term = *ctx.term(clos, TermSort::InLogic).no_triggers();
+                let term = *ctx.term(clos, TermSort::Other, true).no_triggers();
                 snapshots.insert(clos, term);
             }
         }
@@ -159,7 +159,7 @@ impl<'tcx> Visitor<'tcx> for InvariantsVisitor<'_, 'tcx> {
                 }
                 return;
             };
-            let term = *self.ctx.term(id, TermSort::InProgram).no_triggers();
+            let term = *self.ctx.term(id, TermSort::Other, true).no_triggers();
             match self.find_loop_header(loc) {
                 None if let LoopSpecKind::Invariant(expl) = kind => {
                     self.ctx.warn(

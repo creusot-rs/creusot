@@ -1525,8 +1525,8 @@ pub fn is_unsized(ty: &Ty) -> bool {
 /// TODO: find a better place for this check
 fn safety_check(ctx: &TranslationCtx, def_id: DefId) {
     if matches!(ctx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
-        && !is_unsafe(ctx.tcx, def_id)
-        && has_unsafe_block(ctx.tcx, def_id)
+        && is_safe(ctx.tcx, def_id)
+        && has_nonghost_unsafe_block(ctx.tcx, def_id)
     {
         // All preconditions must be guarded by nopanic, terminates, or ghost
         let sig = ctx.sig(def_id);
@@ -1561,14 +1561,15 @@ fn safety_check(ctx: &TranslationCtx, def_id: DefId) {
     }
 }
 
-fn is_unsafe(tcx: TyCtxt, def_id: DefId) -> bool {
-    tcx.fn_sig(def_id).skip_binder().skip_binder().safety().is_unsafe()
+fn is_safe(tcx: TyCtxt, def_id: DefId) -> bool {
+    tcx.fn_sig(def_id).skip_binder().skip_binder().safety().is_safe()
 }
 
-fn has_unsafe_block(tcx: TyCtxt, def_id: DefId) -> bool {
+// Don't warn about unsafe blocks in ghost blocks.
+fn has_nonghost_unsafe_block(tcx: TyCtxt, def_id: DefId) -> bool {
     use rustc_hir::{
         self as hir,
-        intravisit::{Visitor, walk_block},
+        intravisit::{Visitor, walk_block, walk_expr},
     };
     use rustc_middle::hir::nested_filter::OnlyBodies;
     use std::ops::ControlFlow;
@@ -1587,6 +1588,15 @@ fn has_unsafe_block(tcx: TyCtxt, def_id: DefId) -> bool {
                 return ControlFlow::Break(());
             }
             walk_block(self, b)
+        }
+
+        fn visit_expr(&mut self, e: &'tcx hir::Expr<'tcx>) -> Self::Result {
+            if let hir::ExprKind::Block(..) = e.kind
+                && crate::validate::is_ghost_block(self.0, e.hir_id)
+            {
+                return ControlFlow::Continue(());
+            }
+            walk_expr(self, e)
         }
     }
     HasUnsafeBlock(tcx).visit_body(tcx.hir_body_owned_by(def_id.expect_local())).is_break()

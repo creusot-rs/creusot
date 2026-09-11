@@ -191,7 +191,7 @@ extern_spec! {
 
 impl<'a, T: DeepModel> ExactSizeIteratorSpec for Iter<'a, T> {
     #[logic(law)]
-    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode!()))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}

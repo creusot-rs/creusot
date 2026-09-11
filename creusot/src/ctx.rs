@@ -351,7 +351,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             .insert(def_id, |_| {
                 Box::new(if self.tcx.hir_maybe_body_owned_by(local_id).is_some() {
                     let inputs = self.inputs_and_output(def_id).0;
-                    let term = self.term(def_id, TermSort::Logic(inputs)).no_triggers();
+                    let term = self.term(def_id, TermSort::Logic(inputs), false).no_triggers();
                     Some(*term)
                 } else {
                     None
@@ -361,9 +361,15 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     /// Compute a term, no memoization
-    pub(crate) fn term(&self, def_id: DefId, sort: TermSort<'tcx, '_>) -> TermWithTriggers<'tcx> {
-        let mut t = pearlite::from_thir(self, def_id.expect_local(), &mut HashMap::new(), sort)
-            .unwrap_or_else(|err| err.raise_fatal());
+    pub(crate) fn term(
+        &self,
+        def_id: DefId,
+        sort: TermSort<'tcx, '_>,
+        in_program: bool,
+    ) -> TermWithTriggers<'tcx> {
+        let mut t =
+            pearlite::from_thir(self, def_id.expect_local(), &mut HashMap::new(), sort, in_program)
+                .unwrap_or_else(|err| err.raise_fatal());
         *t.term = pearlite::normalize(self, self.typing_env(def_id), *t.term);
         for trigger in &mut t.triggers {
             let t = std::mem::take(&mut trigger.0);

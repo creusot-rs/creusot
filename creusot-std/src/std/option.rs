@@ -707,7 +707,7 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for IntoIter<T> {
     #[logic(law)]
-    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode!()))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -759,7 +759,7 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for Iter<'_, T> {
     #[logic(law)]
-    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode!()))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -829,7 +829,7 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for IterMut<'_, T> {
     #[logic(law)]
-    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode!()))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}

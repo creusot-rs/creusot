@@ -209,12 +209,12 @@ impl ContractClauses {
         ctx: &TranslationCtx<'tcx>,
         fn_name: &str,
         inputs: &[(PIdent, Span, Ty<'tcx>)],
-        is_logic: bool,
+        in_program: bool,
     ) -> EarlyBinder<'tcx, PreContract<'tcx>> {
         let has_user_contract =
             !self.requires.is_empty() || !self.ensures.is_empty() || self.variant.is_some();
         let source = ContractSource::Basic { has_user_contract };
-        let sort = TermSort::Contract { inputs, is_logic };
+        let sort = TermSort::Contract(inputs);
         let n_requires = self.requires.len();
         let requires = self
             .requires
@@ -226,7 +226,7 @@ impl ContractClauses {
                 if n_requires > 1 {
                     expl.push_str(&format!(" #{i}"))
                 }
-                let term = *ctx.term(req_id, sort).no_triggers();
+                let term = *ctx.term(req_id, sort, in_program).no_triggers();
                 Condition { term, expl }
             })
             .collect();
@@ -242,14 +242,14 @@ impl ContractClauses {
                 if n_ensures > 1 {
                     expl.push_str(&format!(" #{i}"))
                 }
-                let TermWithTriggers { box term, triggers } = ctx.term(ens_id, sort);
+                let TermWithTriggers { box term, triggers } = ctx.term(ens_id, sort, in_program);
                 (triggers, Condition { term, expl })
             })
             .collect();
 
         let variant = self.variant.map(|var_id| {
             log::trace!("variant clause {:?}", var_id);
-            *ctx.term(var_id, sort).no_triggers()
+            *ctx.term(var_id, sort, in_program).no_triggers()
         });
         log::trace!("purity: {}", self.purity);
         EarlyBinder::bind(
@@ -336,7 +336,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
     let subst = erased_identity_for_item(ctx.tcx, def_id);
     let mut contract = contract_clauses_of(ctx, def_id)
         .unwrap()
-        .get_pre(ctx, fn_name, &inputs, is_logic(ctx.tcx, def_id))
+        .get_pre(ctx, fn_name, &inputs, !is_logic(ctx.tcx, def_id))
         .instantiate(ctx.tcx, subst)
         .skip_normalization();
 

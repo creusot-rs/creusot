@@ -32,18 +32,11 @@ type Inputs<'tcx> = [(PIdent, Span, Ty<'tcx>)];
 /// of the enclosing function.
 #[derive(Clone, Copy, Debug)]
 pub enum TermSort<'tcx, 'a> {
-    Contract {
-        inputs: &'a Inputs<'tcx>,
-        is_logic: bool,
-    },
+    Contract(&'a Inputs<'tcx>),
     Logic(&'a Inputs<'tcx>),
     /// `forall` and mappings
     LogicClosure(&'a Inputs<'tcx>),
-    /// Assertions in program contexts, snapshots, loop invariants and variants.
-    /// May bind `mode`.
-    InProgram,
-    /// Assertions in logic contexts.
-    InLogic,
+    Other,
 }
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
