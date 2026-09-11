@@ -1,14 +1,14 @@
 extern crate creusot_std;
 use creusot_std::prelude::*;
 
-#[requires(|mode| f.precondition((), mode))]
-#[ensures(|_, mode| f.postcondition_once((), (), mode))]
+#[requires(f.precondition((), mode!()))]
+#[ensures(f.postcondition_once((), (), mode!()))]
 pub fn apply_once<F: FnOnce()>(f: F) {
     f()
 }
 
-#[requires(|mode| f.precondition((), mode))]
-#[ensures(|_, mode| exists<g: F> f.postcondition_mut((), g, (), mode) && resolve(g))]
+#[requires(f.precondition((), mode!()))]
+#[ensures(exists<g: F> f.postcondition_mut((), g, (), mode!()) && resolve(g))]
 fn apply_mut<F: FnMut()>(mut f: F) {
     f()
 }

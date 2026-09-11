@@ -4,7 +4,7 @@ use crate::{
     common::ContractSubject,
     creusot::{
         doc::{self, document_spec},
-        pat_wild, pretyping,
+        pretyping,
     },
 };
 use pearlite_syn::{ContractTerm, Term, TermPath};
@@ -26,18 +26,15 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
     let term = parse_macro_input!(attr as ContractTerm);
-    let mode = match term.binder {
+    match term.binder {
         Some(binder) => {
-            if binder.pats.len() != 1 {
-                let span = binder.span();
-                return quote::quote_spanned! { span=>
-                    compile_error!{"`#[requires]` clause expects only one mode parameter"}
-                }
-                .into();
+            let span = binder.span();
+            return quote::quote_spanned! { span=>
+                compile_error!{"`#[requires]`clause can't bind anything"}
             }
-            binder.pats.into_iter().next().unwrap()
+            .into();
         }
-        None => pat_wild(),
+        None => {}
     };
     if !term.term.trigger.is_empty() {
         let span = term.term.trigger[0].span();
@@ -51,8 +48,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
     let req_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
     let name_tag = req_name.to_string();
-    let requires_tokens =
-        fn_spec_item(req_name.clone(), FnSpecResultKind::NoResult, mode, req_body);
+    let requires_tokens = fn_spec_item(req_name.clone(), FnSpecResultKind::NoResult, req_body);
     use ContractSubject::*;
     match item {
         FnOrMethod(mut fn_or_meth) => {
@@ -107,14 +103,13 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     }
 }
 
-// TODO: warn if result is named mode
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     const ENSURES_LEN: usize = "#[ensures(".len();
     let documentation = document_spec("ensures", doc::LogicBody::term(ENSURES_LEN, attr.clone()));
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
     let term = parse_macro_input!(attr as ContractTerm);
-    let (result, mode) = match term.binder {
+    let result = match term.binder {
         Some(binder) => {
             if matches!(item, ContractSubject::Closure(_)) {
                 return syn::Error::new(
@@ -124,21 +119,20 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                 .into_compile_error()
                 .into();
             }
-            if binder.pats.len() > 2 {
+            if binder.pats.len() != 1 {
                 let span = binder.span();
                 return quote::quote_spanned! { span=>
-                    compile_error!{"`#[ensures]` clause expects at most two parameters: result and mode"}
+                    compile_error!{"`#[ensures]` clause expects one result parameter"}
                 }
                 .into();
             }
-            let mut pats = binder.pats.into_iter();
-            let result = pats
+            binder
+                .pats
+                .into_iter()
                 .next()
-                .unwrap_or_else(|| ident_to_pat(Ident::new("result", Span::call_site())));
-            let mode = pats.next().unwrap_or(pat_wild());
-            (result, mode)
+                .unwrap_or_else(|| ident_to_pat(Ident::new("result", Span::call_site())))
         }
-        None => (ident_to_pat(Ident::new("result", Span::call_site())), pat_wild()),
+        None => ident_to_pat(Ident::new("result", Span::call_site())),
     };
     let ens_body = pretyping::encode_term_with_triggers(&term.term);
     item.mark_unused();
@@ -155,7 +149,6 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             let ensures_tokens = fn_spec_item(
                 ens_name.clone(),
                 FnSpecResultKind::Typed(result, ty_result.clone()),
-                mode,
                 ens_body,
             );
             let attrs = std::mem::take(&mut fn_or_meth.attrs);
@@ -193,7 +186,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
         }
         Const(mut item) => {
             let ensures_tokens =
-                fn_spec_item(ens_name.clone(), FnSpecResultKind::NoResult, pat_wild(), ens_body);
+                fn_spec_item(ens_name.clone(), FnSpecResultKind::NoResult, ens_body);
             let attrs = std::mem::take(&mut item.attrs);
             let dummy = Expr::Tuple(syn::ExprTuple {
                 attrs: vec![],
@@ -216,12 +209,8 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
         }
         Closure(mut clos) => {
             let res_id = Ident::new("res", Span::mixed_site());
-            let ensures_tokens = fn_spec_item(
-                ens_name,
-                FnSpecResultKind::Unified(result, res_id.clone()),
-                mode,
-                ens_body,
-            );
+            let ensures_tokens =
+                fn_spec_item(ens_name, FnSpecResultKind::Unified(result, res_id.clone()), ens_body);
 
             let body = &clos.body;
             *clos.body = parse_quote!({
@@ -327,12 +316,7 @@ enum FnSpecResultKind {
 
 // Generate a token stream for the item representing a specific
 // `requires` or `ensures`
-fn fn_spec_item(
-    tag: Ident,
-    reskind: FnSpecResultKind,
-    mode: Pat,
-    fn_spec_body: TokenStream,
-) -> TokenStream {
+fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, fn_spec_body: TokenStream) -> TokenStream {
     let name_tag = tag.to_string();
 
     let unify_ty_result = if let FnSpecResultKind::Unified(result, res) = &reskind {
@@ -342,7 +326,7 @@ fn fn_spec_item(
         quote! {}
     };
 
-    let result_bind = match &reskind {
+    let bind = match &reskind {
         FnSpecResultKind::NoResult => quote! {},
         FnSpecResultKind::Unified(result, _) => {
             quote! { #result, }
@@ -351,7 +335,6 @@ fn fn_spec_item(
             quote! { #result: #ty }
         }
     };
-    let bind = quote! { #mode: ::creusot_std::mode::Mode, #result_bind };
 
     quote! {
         #[allow(let_underscore_drop)]

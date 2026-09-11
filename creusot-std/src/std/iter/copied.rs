@@ -66,7 +66,7 @@ impl<'a, I: IteratorSpec<Item = &'a T>, T: Copy + 'a> IteratorSpec for Copied<I>
 
 extern_spec! {
     impl<'a, I: Iterator<Item = &'a T>, T: Copy + 'a> Iterator for Copied<I> {
-        #[ensures(|result, mode| I::size_hint.postcondition((&self.iter(),), result, mode))]
+        #[ensures(I::size_hint.postcondition((&self.iter(),), result, mode!()))]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }

@@ -44,19 +44,19 @@ macro_rules! impl_atomic {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
-            #[requires(|mode| forall<c: &mut Committer<Self, $type, ordering::SeqCst, ordering::SeqCst>>
+            #[requires(forall<c: &mut Committer<Self, $type, ordering::SeqCst, ordering::SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==>
                 c.val_load().deep_model() == current.deep_model() ==>
                 c.val_store() == new ==>
-                f.precondition((Ok(c),), mode) && (f.postcondition_once((Ok(c),), (), mode) ==> (^c).shot_store())
+                f.precondition((Ok(c),), mode!().into_ghost()) && (f.postcondition_once((Ok(c),), (), mode!().into_ghost()) ==> (^c).shot_store())
             )]
-            #[requires(|mode| forall<c: &Committer<Self, $type, ordering::SeqCst, ordering::None>>
+            #[requires(forall<c: &Committer<Self, $type, ordering::SeqCst, ordering::None>>
                 !c.shot_store() ==> c.ward() == *self ==>
                 // NOTE: This following line is not present for `weak`
                 c.val_load().deep_model() != current.deep_model() ==>
-                f.precondition((Err(c),), mode)
+                f.precondition((Err(c),), mode!().into_ghost())
             )]
-            #[ensures(|result, mode|
+            #[ensures(
                 match result {
                     Ok(result) => {
                         exists<c: &mut Committer<Self, $type, ordering::SeqCst, ordering::SeqCst>>
@@ -64,7 +64,7 @@ macro_rules! impl_atomic {
                             c.val_load().deep_model() == current.deep_model() &&
                             c.val_store() == new &&
                             result == c.val_load() &&
-                            f.postcondition_once((Ok(c),), (), mode)
+                            f.postcondition_once((Ok(c),), (), mode!().into_ghost())
                     },
                     Err(result) => {
                        exists<c: &Committer<Self, $type, ordering::SeqCst, ordering::None>>
@@ -72,7 +72,7 @@ macro_rules! impl_atomic {
                             // NOTE: This following line is not present for `weak`
                             c.val_load().deep_model() != current.deep_model() &&
                             result == c.val_load() &&
-                            f.postcondition_once((Err(c),), (), mode)
+                            f.postcondition_once((Err(c),), (), mode!().into_ghost())
                     }
                 }
             )]
@@ -93,17 +93,17 @@ macro_rules! impl_atomic {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange_weak`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
-            #[requires(|mode| forall<c: &mut Committer<Self, $type, ordering::SeqCst, ordering::SeqCst>>
+            #[requires(forall<c: &mut Committer<Self, $type, ordering::SeqCst, ordering::SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==>
                 c.val_load().deep_model() == current.deep_model() ==>
                 c.val_store() == new ==>
-                f.precondition((Ok(c),), mode) && (f.postcondition_once((Ok(c),), (), mode) ==> (^c).shot_store())
+                f.precondition((Ok(c),), mode!().into_ghost()) && (f.postcondition_once((Ok(c),), (), mode!().into_ghost()) ==> (^c).shot_store())
             )]
-            #[requires(|mode| forall<c: &Committer<Self, $type, ordering::SeqCst, ordering::None>>
+            #[requires(forall<c: &Committer<Self, $type, ordering::SeqCst, ordering::None>>
                 !c.shot_store() ==> c.ward() == *self ==>
-                f.precondition((Err(c),), mode)
+                f.precondition((Err(c),), mode!().into_ghost())
             )]
-            #[ensures(|result, mode|
+            #[ensures(
                 match result {
                     Ok(result) => {
                         exists<c: &mut Committer<Self, $type, ordering::SeqCst, ordering::SeqCst>>
@@ -111,13 +111,13 @@ macro_rules! impl_atomic {
                             c.val_load().deep_model() == current.deep_model() &&
                             c.val_store() == new &&
                             result == c.val_load() &&
-                            f.postcondition_once((Ok(c),), (), mode)
+                            f.postcondition_once((Ok(c),), (), mode!().into_ghost())
                     },
                     Err(result) => {
                        exists<c: &Committer<Self, $type, ordering::SeqCst, ordering::None>>
                             !c.shot_store() && c.ward() == *self &&
                             result == c.val_load() &&
-                            f.postcondition_once((Err(c),), (), mode)
+                            f.postcondition_once((Err(c),), (), mode!().into_ghost())
                     }
                 }
             )]
@@ -138,11 +138,11 @@ macro_rules! impl_atomic {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
             #[doc = ""]
             #[doc = "The load is always sequentially consistent."]
-            #[requires(|mode| forall<c: &Committer<Self, $type, ordering::SeqCst, ordering::None>>
-                !c.shot_store() ==> c.ward() == *self ==> f.precondition((c,), mode)
+            #[requires(forall<c: &Committer<Self, $type, ordering::SeqCst, ordering::None>>
+                !c.shot_store() ==> c.ward() == *self ==> f.precondition((c,), mode!().into_ghost())
             )]
-            #[ensures(|result, mode| exists<c: &Committer<Self, $type, ordering::SeqCst, ordering::None>>
-                !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), (), mode)
+            #[ensures(exists<c: &Committer<Self, $type, ordering::SeqCst, ordering::None>>
+                !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), (), mode!().into_ghost())
             )]
             #[inline(always)]
             #[trusted]
@@ -157,13 +157,13 @@ macro_rules! impl_atomic {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
             #[doc = ""]
             #[doc = "The store is always sequentially consistent."]
-            #[requires(|mode| forall<c: &mut Committer<Self, $type, ordering::None, ordering::SeqCst>>
+            #[requires(forall<c: &mut Committer<Self, $type, ordering::None, ordering::SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
-                f.precondition((c,), mode.into_ghost()) && (f.postcondition_once((c,), (), mode.into_ghost()) ==> (^c).shot_store())
+                f.precondition((c,), mode!().into_ghost()) && (f.postcondition_once((c,), (), mode!().into_ghost()) ==> (^c).shot_store())
             )]
-            #[ensures(|result, mode| exists<c: &mut Committer<Self, $type, ordering::None, ordering::SeqCst>>
+            #[ensures(exists<c: &mut Committer<Self, $type, ordering::None, ordering::SeqCst>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val &&
-                f.postcondition_once((c,), (), mode.into_ghost())
+                f.postcondition_once((c,), (), mode!().into_ghost())
             )]
             #[inline(always)]
             #[trusted]
@@ -188,13 +188,13 @@ macro_rules! impl_atomic_int {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::fetch_add`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
-            #[requires(|mode| forall<c: &mut Committer<Self, $int_type, ordering::SeqCst, ordering::SeqCst>>
+            #[requires(forall<c: &mut Committer<Self, $int_type, ordering::SeqCst, ordering::SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val + c.val_load() ==>
-                f.precondition((c,), mode.into_ghost()) && (f.postcondition_once((c,), (), mode.into_ghost()) ==> (^c).shot_store())
+                f.precondition((c,), mode!().into_ghost()) && (f.postcondition_once((c,), (), mode!().into_ghost()) ==> (^c).shot_store())
             )]
-            #[ensures(|result, mode| exists<c: &mut Committer<Self, $int_type, ordering::SeqCst, ordering::SeqCst>>
+            #[ensures(exists<c: &mut Committer<Self, $int_type, ordering::SeqCst, ordering::SeqCst>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val + c.val_load() &&
-                c.val_load() == result && f.postcondition_once((c,), (), mode.into_ghost())
+                c.val_load() == result && f.postcondition_once((c,), (), mode!().into_ghost())
             )]
             #[inline(always)]
             #[trusted]

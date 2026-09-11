@@ -105,14 +105,14 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item) -> B> IteratorSpec for Map<I, F> {
 
 extern_spec! {
     impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
-        #[ensures(|result, mode|I::size_hint.postcondition((&self.iter(),), result, mode))]
+        #[ensures(I::size_hint.postcondition((&self.iter(),), result, mode!()))]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }
 
 impl<I: ExactSizeIteratorSpec, B, F: FnMut(I::Item) -> B> ExactSizeIteratorSpec for Map<I, F> {
     #[logic(law)]
-    #[requires(exists<mode: Mode>Self::size_hint.postcondition((self,), r, mode))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         self.iter().size_hint_exact(r)
@@ -146,7 +146,6 @@ fn produces_instantiate_existential<'a, I: IteratorSpec, B, F: FnMut(I::Item) ->
             && forall<i> 0 <= i && i < visited.len() ==>
                  this.func().hist_inv(*fs[i])
                  && forall<mode: Mode> (*fs[i]).postcondition_mut((s[i],), ^fs[i], visited[i], mode)
-
         }
     })
 }
@@ -170,7 +169,7 @@ pub fn preservation<I: IteratorSpec, B, F: FnMut(I::Item) -> B>(iter: I, func: F
             inv(s) && inv(e1) && inv(e2) && inv(f) ==>
             iter.produces(s.push_back(e1).push_back(e2), i) ==>
             (*f).postcondition_mut((e1,), ^f, b, mode) ==>
-            (^f).precondition((e2, ), mode)
+            (^f).precondition((e2,), mode)
     }
 }
 

@@ -82,8 +82,8 @@ impl<I: IteratorSpec> IteratorSpec for Take<I> {
 
 extern_spec! {
     impl<I: Iterator> Iterator for Take<I> {
-        #[ensures(|result, mode| self.n() > 0usize ==> exists<r>
-            I::size_hint.postcondition((&self.iter(),), r, mode) &&
+        #[ensures(self.n() > 0usize ==> exists<r>
+            I::size_hint.postcondition((&self.iter(),), r, mode!()) &&
             (r.0 <= self.n() ==> result.0 == r.0) &&
             (r.0 >= self.n() ==> result.0 == self.n()) &&
             match r.1 {

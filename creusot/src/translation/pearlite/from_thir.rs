@@ -69,22 +69,13 @@ pub(crate) fn from_thir<'tcx>(
             let (parent_thir, _) = ctx.thir_body(parent.expect_local());
             let parent_thir = parent_thir.borrow();
             assert_eq!(inputs.len(), parent_thir.params.len());
-            // Note: users write `|result, mode|` in ensures but the desugaring puts `mode` before `result`
-            // so that we can reuse the same `zip` for both preconditions as well (discarding the `result`).
-            let patterns = inputs
+            inputs
                 .iter()
                 .map(|(ident, _, _)| ident.0)
                 .zip(&parent_thir.params)
-                .chain([name::mode(), name::result()].into_iter().zip(thir.params.iter().skip(1)))
+                .chain([name::result()].into_iter().zip(thir.params.iter().skip(1)))
                 .map(to_pattern)
-                .collect::<Result<Box<[(Ident, Pattern)]>, ErrorGuaranteed>>()?;
-            if is_logic
-                && let Some((_, mode)) = patterns.get(inputs.len())
-                && !matches!(mode.kind, PatternKind::Wildcard)
-            {
-                return Err(ctx.error(mode.span, "Logic functions don't have proof modes").emit());
-            }
-            patterns
+                .collect::<Result<Box<[(Ident, Pattern)]>, ErrorGuaranteed>>()?
         }
         LogicClosure(inputs) => {
             assert_eq!(inputs.len(), thir.params.len());
@@ -470,6 +461,9 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                             [term],
                         )
                         .span(span))
+                    }
+                    Intrinsic::ModeVar => {
+                        Ok(Term::var(name::mode(), ty))
                     }
                     _ if self.ctx.is_diagnostic_item(sym::deref_method, id)
                         && let Some(adt) = subst.type_at(0).ty_adt_def()

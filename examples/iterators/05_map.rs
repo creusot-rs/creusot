@@ -69,7 +69,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
             Some(v) => {
-                proof_assert!(|mode| self.func.precondition((v,), mode));
+                proof_assert!(self.func.precondition((v,), mode!()));
                 snapshot! { Self::produces_one_invariant };
                 Some((self.func)(v))
             }
@@ -77,7 +77,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
         }
     }
 
-    #[ensures(|result, mode| I::size_hint.postcondition((&self.iter,), result, mode))]
+    #[ensures(I::size_hint.postcondition((&self.iter,), result, mode!()))]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -91,12 +91,12 @@ impl<I: ExactSizeIterator, B, F: FnMut(I::Item) -> B> ExactSizeIterator for Map<
         self.iter.size_hint_exact(r)
     }
 
-    #[ensures(|result, mode| Self::size_hint.postcondition((self,), (result, Some(result)), mode))]
+    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result)), mode!()))]
     fn len(&self) -> usize {
         self.iter.len()
     }
 
-    #[ensures(|result, mode| exists<l> Self::size_hint.postcondition((self,), (l, Some(l)), mode) && result == (l == 0usize))]
+    #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l)), mode!()) && result == (l == 0usize))]
     fn is_empty(&self) -> bool {
         proof_assert!(forall<s: Seq<I::Item>> s.len() == 0 ==> s == Seq::empty());
         self.iter.is_empty()

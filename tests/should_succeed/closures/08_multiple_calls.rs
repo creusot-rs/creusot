@@ -14,20 +14,20 @@ pub fn multi_use<T>(x: &T) {
 }
 
 #[trusted]
-#[requires(|mode| f.precondition((), mode))]
-#[ensures(|_, mode| exists<f2: &F, r> *f2 == f && f2.postcondition((), r, mode))]
+#[requires(f.precondition((), mode!()))]
+#[ensures(exists<f2: &F, r> *f2 == f && f2.postcondition((), r, mode!()))]
 fn uses_fn<F: Fn() -> u32>(f: F) {
     f();
 }
 
-#[requires(|mode| f.precondition((), mode))]
-#[ensures(|_, mode| exists<f2: F, r> f.postcondition_mut((), f2, r, mode))]
+#[requires(f.precondition((), mode!()))]
+#[ensures(exists<f2: F, r> f.postcondition_mut((), f2, r, mode!()))]
 fn uses_fnmut<F: FnMut() -> u32>(mut f: F) {
     f();
 }
 
-#[requires(|mode| f.precondition((), mode))]
-#[ensures(|_, mode| exists<r> f.postcondition_once((), r, mode))]
+#[requires(f.precondition((), mode!()))]
+#[ensures(exists<r> f.postcondition_once((), r, mode!()))]
 fn uses_fnonce<F: FnOnce() -> u32>(f: F) {
     f();
 }

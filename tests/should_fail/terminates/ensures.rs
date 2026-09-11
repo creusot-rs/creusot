@@ -1,12 +1,12 @@
 extern crate creusot_std;
 use creusot_std::{mode::Mode, prelude::*};
 
-#[ensures(|_, mode| !g(mode))]
+#[ensures(!g(mode!()))]
 pub fn f() {}
 
 #[logic(prophetic)]
 pub fn g(mode: Mode) -> bool {
     pearlite! {
-        f.postcondition((), (), mode)
+        f.postcondition((), (), mode!())
     }
 }

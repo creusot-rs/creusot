@@ -112,7 +112,7 @@ extern_spec! {
 
 impl<T, const N: usize> ExactSizeIteratorSpec for IntoIter<T, N> {
     #[logic(law)]
-    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode!()))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -168,8 +168,8 @@ extern_spec! {
     }
 
     impl<T: Clone, const N: usize> Clone for [T; N] {
-        #[ensures(|result, mode| forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i], mode))]
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition((&self@[i],), result@[i], mode!()))]
         fn clone(&self) -> [T; N];
     }
 

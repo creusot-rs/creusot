@@ -85,7 +85,7 @@ extern_spec! {
     }
 
     impl<T: Clone, A: Allocator + Clone> Clone for Box<T, A> {
-        #[ensures(|result, mode| T::clone.postcondition((&**self,), *result, mode))]
+        #[ensures(T::clone.postcondition((&**self,), *result, mode!()))]
         fn clone(&self) -> Box<T, A>;
     }
 

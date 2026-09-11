@@ -156,6 +156,7 @@ contracts_items! {
     "mode_nopanic"              ModeNoPanic
     "mode_terminates"           ModeTerminates
     "mode_ghost"                ModeGhost
+    "mode_var"                  ModeVar
     "namespace"                 Namespace
     "neq"                       Neq
     "old"                       Old

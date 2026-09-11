@@ -8,12 +8,12 @@ extern_spec! {
             if self { Some(t) } else { None }
         }
 
-        #[requires(|mode| self ==> f.precondition((), mode))]
-        #[ensures(|result| !self ==> result == None)]
-        #[ensures(|result, mode| self ==>
+        #[requires(self ==> f.precondition((), mode!()))]
+        #[ensures(!self ==> result == None)]
+        #[ensures(self ==>
             match result {
                 None => false,
-                Some(t) => f.postcondition_once((), t, mode)
+                Some(t) => f.postcondition_once((), t, mode!())
             }
         )]
         fn then<T, F: FnOnce() -> T>(self, f: F) -> Option<T> {

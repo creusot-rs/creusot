@@ -171,10 +171,10 @@ extern_spec! {
     }
 
     impl<T, A: Allocator> Extend<T> for Vec<T, A> {
-        #[requires(|mode| I::into_iter.precondition((iter,), mode))]
-        #[ensures(|_, mode| exists<start_: I::IntoIter, done: &mut I::IntoIter, prod: Seq<T>>
+        #[requires(I::into_iter.precondition((iter,), mode!()))]
+        #[ensures(exists<start_: I::IntoIter, done: &mut I::IntoIter, prod: Seq<T>>
             inv(start_) && inv(done) && inv(prod) &&
-            I::into_iter.postcondition((iter,), start_, mode) &&
+            I::into_iter.postcondition((iter,), start_, mode!()) &&
             done.completed() && start_.produces(prod, *done) && (^self)@ == self@.concat(prod)
         )]
         fn extend<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(&mut self, iter: I);
@@ -239,15 +239,15 @@ extern_spec! {
     impl<T: Clone, A: Allocator + Clone> Clone for Vec<T, A> {
         #[check(terminates)]
         #[ensures(self@.len() == result@.len())]
-        #[ensures(|result, mode| forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i], mode))]
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition((&self@[i],), result@[i], mode!()))]
         fn clone(&self) -> Vec<T, A>;
     }
 
     impl<T> FromIterator<T> for Vec<T> {
-        #[requires(|mode| I::into_iter.precondition((iter,), mode))]
-        #[ensures(|result, mode| exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter, mode) &&
+        #[requires(I::into_iter.precondition((iter,), mode!()))]
+        #[ensures(exists<into_iter: I::IntoIter, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter, mode!()) &&
             into_iter.produces(result@, *done) && done.completed() && resolve(^done))]
         fn from_iter<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }

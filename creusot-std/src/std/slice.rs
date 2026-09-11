@@ -524,13 +524,13 @@ extern_spec! {
 
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == self@.len())]
-        #[ensures(|result, mode| forall<i> 0 <= i && i < self@.len() ==> <T as Clone>::clone.postcondition((&self@[i],), result@[i], mode))]
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==> <T as Clone>::clone.postcondition((&self@[i],), result@[i], mode!()))]
         fn to_vec(&self) -> Vec<T> where T: Clone;
     }
 
     impl<T: Clone, A: Allocator + Clone> Clone for Box<[T], A> {
-        #[ensures(|result, mode| forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i], mode))]
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==>
+            T::clone.postcondition((&self@[i],), result@[i], mode!()))]
         fn clone(&self) -> Box<[T], A>;
     }
 }

@@ -80,9 +80,9 @@ pub trait ExactSizeIteratorSpec: ExactSizeIterator + IteratorSpec {
 
 extern_spec! {
     impl FromIterator<()> for () {
-        #[requires(|mode| T::into_iter.precondition((iter,), mode))]
-        #[ensures(|(), mode| exists<into_iter: T::IntoIter, prod: Seq<()>, done: &mut T::IntoIter>
-            T::into_iter.postcondition((iter,), into_iter, mode) &&
+        #[requires(T::into_iter.precondition((iter,), mode!()))]
+        #[ensures(|()| exists<into_iter: T::IntoIter, prod: Seq<()>, done: &mut T::IntoIter>
+            T::into_iter.postcondition((iter,), into_iter, mode!()) &&
             into_iter.produces(prod, *done) && done.completed() && resolve(^done))]
         fn from_iter<T: IntoIterator<Item = (), IntoIter: IteratorSpec>>(iter: T);
     }
@@ -139,10 +139,10 @@ extern_spec! {
                     where Self: Sized;
 
                 #[check(ghost)]
-                #[requires(|mode| U::into_iter.precondition((other,), mode))]
+                #[requires(U::into_iter.precondition((other,), mode!()))]
                 #[ensures(result.iter_a() == Some(self))]
-                #[ensures(|result, mode| match result.iter_b() {
-                    Some(b) => U::into_iter.postcondition((other,), b, mode),
+                #[ensures(match result.iter_b() {
+                    Some(b) => U::into_iter.postcondition((other,), b, mode!()),
                     None => false
                 })]
                 fn chain<U: IntoIterator<Item = Self::Item>>(self, other: U) -> Chain<Self, U::IntoIter>
@@ -201,14 +201,14 @@ extern_spec! {
                     where Self: Sized;
 
                 #[check(ghost)]
-                #[requires(|mode| U::into_iter.precondition((other,), mode))]
+                #[requires(U::into_iter.precondition((other,), mode!()))]
                 #[ensures(result.iter_a() == self)]
-                #[ensures(|result, mode| U::into_iter.postcondition((other,), result.iter_b(), mode))]
+                #[ensures(U::into_iter.postcondition((other,), result.iter_b(), mode!()))]
                 fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U::IntoIter>
                     where Self: Sized;
 
-                #[requires(|mode| B::from_iter.precondition((self,), mode))]
-                #[ensures(|result, mode| B::from_iter.postcondition((self,), result, mode))]
+                #[requires(B::from_iter.precondition((self,), mode!()))]
+                #[ensures(B::from_iter.postcondition((self,), result, mode!()))]
                 fn collect<B: FromIterator<Self::Item>>(self) -> B
                     where Self: Sized
                 {
@@ -234,13 +234,13 @@ extern_spec! {
             }
 
             trait FromIterator<A>: Sized {
-                #[requires(|mode| T::into_iter.precondition((iter,), mode))]
+                #[requires(T::into_iter.precondition((iter,), mode!()))]
                 fn from_iter<T>(iter: T) -> Self
                     where T: IntoIterator<Item = A>;
             }
 
             trait ExactSizeIterator: ExactSizeIteratorSpec {
-                #[ensures(|result, mode| Self::size_hint.postcondition((self,), (result, Some(result)), mode))]
+                #[ensures(Self::size_hint.postcondition((self,), (result, Some(result)), mode!()))]
                 fn len(&self) -> usize {
                     snapshot!(Self::size_hint_exact);
                     let (lower, upper) = self.size_hint();
@@ -248,7 +248,7 @@ extern_spec! {
                     lower
                 }
 
-                #[ensures(|result, mode| exists<l> Self::size_hint.postcondition((self,), (l, Some(l)), mode) && result == (l == 0usize))]
+                #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l)), mode!()) && result == (l == 0usize))]
                 fn is_empty(&self) -> bool {
                     self.len() == 0
                 }
@@ -306,7 +306,7 @@ impl<I: IteratorSpec + ?Sized> IteratorSpec for &mut I {
 
 extern_spec! {
     impl<I: Iterator + ?Sized> Iterator for &mut I {
-        #[ensures(|result, mode| I::size_hint.postcondition((&*self,), result, mode))]
+        #[ensures(I::size_hint.postcondition((&*self,), result, mode!()))]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }

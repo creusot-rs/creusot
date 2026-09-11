@@ -58,8 +58,8 @@ extern_spec! {
 /// Creusot wrapper around [`std::thread::spawn`].
 ///
 /// The only difference is that the closure gives access to a fresh token object
-#[requires(|mode| forall<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) ==> f.precondition((t,), mode))]
-#[ensures(|result, mode| exists<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) && forall<r> result.valid_result(r) ==> f.postcondition_once((t,), r, mode))]
+#[requires(forall<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) ==> f.precondition((t,), mode!()))]
+#[ensures(exists<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) && forall<r> result.valid_result(r) ==> f.postcondition_once((t,), r, mode!()))]
 #[trusted]
 pub fn spawn<F, T>(f: F) -> JoinHandle<T>
 where
@@ -75,8 +75,8 @@ pub struct Scope<'scope, 'env: 'scope> {
 }
 
 impl<'scope, 'env: 'scope> Scope<'scope, 'env> {
-    #[requires(|mode| forall<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) ==> f.precondition((t,), mode))]
-    #[ensures(|result, mode| exists<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) && forall<r> result.valid_result(r) ==> f.postcondition_once((t,), r, mode))]
+    #[requires(forall<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) ==> f.precondition((t,), mode!()))]
+    #[ensures(exists<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) && forall<r> result.valid_result(r) ==> f.postcondition_once((t,), r, mode!()))]
     #[trusted]
     pub fn spawn<F, T>(&mut self, f: F) -> ScopedJoinHandle<'scope, T>
     where
@@ -88,8 +88,8 @@ impl<'scope, 'env: 'scope> Scope<'scope, 'env> {
 }
 
 /// Creusot wrapper around [`std::thread::scope`].
-#[requires(|mode| forall<s> inv(s) ==> f.precondition((s,), mode))]
-#[ensures(|result, mode| exists<s> inv(s) && f.postcondition_once((s,), result, mode))]
+#[requires(forall<s> inv(s) ==> f.precondition((s,), mode!()))]
+#[ensures(exists<s> inv(s) && f.postcondition_once((s,), result, mode!()))]
 #[trusted]
 pub fn scope<'env, F, T>(f: F) -> T
 where

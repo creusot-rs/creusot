@@ -92,7 +92,7 @@ impl<I: DoubleEndedIteratorSpec> DoubleEndedIteratorSpec for Rev<I> {
 
 extern_spec! {
     impl<I: DoubleEndedIterator> Iterator for Rev<I> {
-        #[ensures(|result, mode| I::size_hint.postcondition((&self.iter(),), result, mode))]
+        #[ensures(I::size_hint.postcondition((&self.iter(),), result, mode!()))]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }

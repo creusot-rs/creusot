@@ -96,8 +96,8 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
 
 extern_spec! {
     impl<I: Iterator> Iterator for Skip<I> {
-        #[ensures(|result, mode| exists<r>
-            I::size_hint.postcondition((&self.iter(),), r, mode) &&
+        #[ensures(exists<r>
+            I::size_hint.postcondition((&self.iter(),), r, mode!()) &&
             (r.0@ <= self.n()@ ==> result.0 == 0usize) &&
             (r.0@ >= self.n()@ ==> result.0 == r.0 - self.n()) &&
             match r.1 {

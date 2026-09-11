@@ -52,9 +52,9 @@ extern_spec! {
 
 
     impl<T: Eq + Hash + DeepModel, S: BuildHasher + Default> FromIterator<T> for HashSet<T, S> {
-        #[requires(|mode| I::into_iter.precondition((iter,), mode))]
-        #[ensures(|result, mode| exists<into_iter: I::IntoIter, prod: Seq<T>, done: &mut I::IntoIter>
-            I::into_iter.postcondition((iter,), into_iter, mode) &&
+        #[requires(I::into_iter.precondition((iter,), mode!()))]
+        #[ensures(exists<into_iter: I::IntoIter, prod: Seq<T>, done: &mut I::IntoIter>
+            I::into_iter.postcondition((iter,), into_iter, mode!()) &&
             into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&
             forall<x: T::DeepModelTy>
                 result@.contains(x) == exists<x1: T> x1.deep_model() == x && prod.contains(x1)
@@ -191,7 +191,7 @@ extern_spec! {
 
 impl<'a, T: DeepModel> ExactSizeIteratorSpec for Iter<'a, T> {
     #[logic(law)]
-    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode!()))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}

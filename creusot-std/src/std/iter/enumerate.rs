@@ -88,7 +88,7 @@ impl<I: IteratorSpec> IteratorSpec for Enumerate<I> {
 
 extern_spec! {
     impl<I: Iterator> Iterator for Enumerate<I> {
-        #[ensures(|result, mode| I::size_hint.postcondition((&self.iter(),), result, mode))]
+        #[ensures(I::size_hint.postcondition((&self.iter(),), result, mode!()))]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }

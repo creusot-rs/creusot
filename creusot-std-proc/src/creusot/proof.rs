@@ -4,12 +4,12 @@ use crate::{
     common::{GhostLet, ghost_int_lit_suffix},
     creusot::{invariant::desugar_invariant, pretyping},
 };
-use pearlite_syn::{Binder, Term, TermBlock, TermStmt};
+use pearlite_syn::{TermBlock, TermStmt};
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Delimiter, Group, Span, TokenStream as TS2};
 use quote::{ToTokens, quote, quote_spanned};
 use syn::{
-    Attribute, Block, ExprClosure, Token,
+    Attribute, Block, ExprClosure,
     parse::{self, Parse},
     parse_macro_input, parse_quote,
     visit_mut::{VisitMut, visit_expr_closure_mut},
@@ -87,39 +87,24 @@ pub fn invariant(invariant: TS1, tokens: TS1) -> TS1 {
 }
 
 // FIXME: merge with TermContract (which doesn't allow statements before the assertion)
-enum Assertion {
+struct Assertion {
     /// A plain assertion, possibly preceded by statements
-    Block { stmts: Vec<TermStmt>, span: Span },
-    /// An assertion that binds the proof mode
-    Binder { binder: Binder, term: Term, span: Span },
+    stmts: Vec<TermStmt>,
+    span: Span,
 }
 
 impl Parse for Assertion {
     fn parse(input: parse::ParseStream) -> syn::Result<Self> {
         let span = input.span();
-        if input.peek(Token![|]) {
-            let binder = input.parse()?;
-            let term = input.parse()?;
-            Ok(Assertion::Binder { binder, term, span })
-        } else {
-            let stmts = input.call(TermBlock::parse_within)?;
-            Ok(Assertion::Block { stmts, span })
-        }
+        let stmts = input.call(TermBlock::parse_within)?;
+        Ok(Assertion { stmts, span })
     }
 }
 
 impl Assertion {
     fn encode(&self) -> TS2 {
-        match self {
-            &Assertion::Block { ref stmts, span } => {
-                let body = pretyping::encode_stmts(stmts, span);
-                quote_spanned! {span=> |_: ::creusot_std::mode::Mode| -> bool { #body } }
-            }
-            &Assertion::Binder { ref binder, ref term, span } => {
-                let body = pretyping::encode_term(term);
-                quote_spanned! {span=> #binder -> bool { #body }}
-            }
-        }
+        let body = pretyping::encode_stmts(&self.stmts, self.span);
+        quote_spanned! {self.span=> || -> bool { #body } }
     }
 }
 

@@ -40,18 +40,7 @@ struct Variant {
 impl ToTokens for Invariant {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let span = self.span;
-        let (mode, term) = match &self.term {
-            pearlite_syn::Term::Closure(closure) => {
-                if closure.inputs.len() != 1 {
-                    tokens.extend(quote!{compile_error!("unexpected closure arguments: expected only one mode argument")});
-                    return;
-                }
-                let arg = closure.inputs.iter().next().unwrap();
-                (quote! { #arg: ::creusot_std::mode::Mode }, &*closure.body)
-            }
-            term => (quote!(), &*term),
-        };
-        let term = pretyping::encode_term(term);
+        let term = pretyping::encode_term(&self.term);
         let expl = match self.kind {
             LoopInvariant(Some(n)) => format!("expl:loop invariant #{}", n),
             LoopInvariant(None) => "expl:loop invariant".to_string(),
@@ -63,7 +52,7 @@ impl ToTokens for Invariant {
                 #[creusot::no_translate]
                 #[creusot::spec]
                 #[creusot::spec::invariant = #expl]
-                |#mode| { #term }
+                || { #term }
             ;
         })
     }

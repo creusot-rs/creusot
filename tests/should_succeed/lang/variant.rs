@@ -10,7 +10,7 @@ pub fn frec(x: usize) {
 }
 
 #[check(terminates)]
-#[requires(|mode| mode.terminates() ==> x@ >= 1)]
+#[requires(mode!().terminates() ==> x@ >= 1)]
 #[variant(x@)]
 pub fn frec_partial(x: usize) {
     if x == 0 {
@@ -37,10 +37,10 @@ pub fn gloop(x: usize) {
 }
 
 #[check(terminates)]
-#[requires(|mode| mode.terminates() ==> x@ >= 1)]
+#[requires(mode!().terminates() ==> x@ >= 1)]
 pub fn gloop_partial(x: usize) {
     let mut i = x;
-    #[invariant(|mode| mode.terminates() ==> i@ >= 1)]
+    #[invariant(mode!().terminates() ==> i@ >= 1)]
     #[variant(i@)]
     loop {
         if i == 0 {

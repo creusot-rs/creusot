@@ -83,13 +83,13 @@ impl<A: IteratorSpec, B: IteratorSpec<Item = A::Item>> IteratorSpec for Chain<A,
 
 extern_spec! {
     impl<A: Iterator, B: Iterator<Item = A::Item>> Chain<A, B> {
-        #[ensures(|result, mode| exists<sa, sb>
+        #[ensures(exists<sa, sb>
             match self.iter_a() {
-                Some(a) => A::size_hint.postcondition((&a,), sa, mode),
+                Some(a) => A::size_hint.postcondition((&a,), sa, mode!()),
                 None => sa == (0usize, Some(0usize)),
             } &&
             match self.iter_b() {
-                Some(b) => B::size_hint.postcondition((&b,), sb, mode),
+                Some(b) => B::size_hint.postcondition((&b,), sb, mode!()),
                 None => sb == (0usize, Some(0usize)),
             } &&
             result.0 == if sa.0@ + sb.0@ > usize::MAX@ { usize::MAX } else { sa.0 + sb.0 } &&

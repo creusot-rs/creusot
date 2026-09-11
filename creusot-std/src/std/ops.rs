@@ -216,20 +216,20 @@ extern_spec! {
     mod core {
         mod ops {
             trait FnOnce<Args: Tuple> {
-                #[requires(|mode| self.precondition(arg, mode))]
-                #[ensures(|result, mode| self.postcondition_once(arg, result, mode))]
+                #[requires(self.precondition(arg, mode!()))]
+                #[ensures(self.postcondition_once(arg, result, mode!()))]
                 fn call_once(self, arg: Args) -> Self::Output;
             }
 
             trait FnMut<Args: Tuple> {
-                #[requires(|mode| (*self).precondition(arg, mode))]
-                #[ensures(|result, mode| (*self).postcondition_mut(arg, ^self, result, mode))]
+                #[requires((*self).precondition(arg, mode!()))]
+                #[ensures((*self).postcondition_mut(arg, ^self, result, mode!()))]
                 fn call_mut(&mut self, arg: Args) -> Self::Output;
             }
 
             trait Fn<Args: Tuple> {
-                #[requires(|mode| (*self).precondition(arg, mode))]
-                #[ensures(|result, mode| (*self).postcondition(arg, result, mode))]
+                #[requires((*self).precondition(arg, mode!()))]
+                #[ensures((*self).postcondition(arg, result, mode!()))]
                 fn call(&self, arg: Args) -> Self::Output;
             }
 
@@ -740,14 +740,14 @@ extern_spec! {
     }
 
     impl<T, E, F: From<E>> FromResidual<Result<Infallible, E>> for Result<T, F> {
-        #[requires(|mode|
+        #[requires(
             match residual {
-                Err(e) => F::from.precondition((e,), mode),
+                Err(e) => F::from.precondition((e,), mode!()),
                 Ok(_) => false,
             }
         )]
-        #[ensures(|result, mode| match (result, residual) {
-            (Err(result), Err(e)) => F::from.postcondition((e,), result, mode),
+        #[ensures(match (result, residual) {
+            (Err(result), Err(e)) => F::from.postcondition((e,), result, mode!()),
             _ => false,
         })]
         fn from_residual(residual: Result<Infallible, E>) -> Self {
@@ -761,7 +761,7 @@ extern_spec! {
 // Specification stub for `residual_into_try_type`, used by the `try` desugarization.
 #[cfg(creusot)]
 #[allow(dead_code)]
-#[ensures(|result, mode| FromResidual::from_residual.postcondition((r,), result, mode))]
+#[ensures(FromResidual::from_residual.postcondition((r,), result, mode!()))]
 #[intrinsic("residual_into_try_type")]
 #[creusot::extern_spec]
 fn residual_into_try_type<R: Residual<O>, O>(r: R) -> <R as Residual<O>>::TryType {

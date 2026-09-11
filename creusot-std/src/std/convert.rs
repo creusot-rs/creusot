@@ -18,7 +18,7 @@ extern_spec! {
             trait From<T> {
                 // Some implementations may be callable in ghost code.
                 #[check(ghost)]
-                #[requires(|mode| !mode.ghost())]
+                #[requires(!mode!().ghost())]
                 fn from(value: T) -> Self;
             }
         }
@@ -28,8 +28,8 @@ extern_spec! {
     where
         T: AsRef<U>,
     {
-        #[requires(|mode| <T as AsRef<U>>::as_ref.precondition((*self,), mode))]
-        #[ensures(|result, mode| <T as AsRef<U>>::as_ref.postcondition((*self,), result, mode))]
+        #[requires(<T as AsRef<U>>::as_ref.precondition((*self,), mode!()))]
+        #[ensures(<T as AsRef<U>>::as_ref.postcondition((*self,), result, mode!()))]
         fn as_ref<'b>(&'b self) -> &'b U {
             <T as AsRef<U>>::as_ref(*self)
         }
@@ -39,8 +39,8 @@ extern_spec! {
     where
         T: AsRef<U>,
     {
-        #[requires(|mode| <T as AsRef<U>>::as_ref.precondition((*self,), mode))]
-        #[ensures(|result, mode| <T as AsRef<U>>::as_ref.postcondition((*self,), result, mode))]
+        #[requires(<T as AsRef<U>>::as_ref.precondition((*self,), mode!()))]
+        #[ensures(<T as AsRef<U>>::as_ref.postcondition((*self,), result, mode!()))]
         fn as_ref<'b>(&'b self) -> &'b U {
             <T as AsRef<U>>::as_ref(*self)
         }
@@ -66,10 +66,10 @@ extern_spec! {
     where
         T: AsMut<U>,
     {
-        #[requires(|mode| <T as AsMut<U>>::as_mut.precondition((*self,), mode))]
+        #[requires(<T as AsMut<U>>::as_mut.precondition((*self,), mode!()))]
         #[ensures(^*self == ^^self)]
-        #[ensures(|result, mode| exists<s: &mut T> *s == **self && ^s == *^self &&
-            <T as AsMut<U>>::as_mut.postcondition((s,), result, mode)
+        #[ensures(exists<s: &mut T> *s == **self && ^s == *^self &&
+            <T as AsMut<U>>::as_mut.postcondition((s,), result, mode!())
         )]
         fn as_mut<'b>(&'b mut self) -> &'b mut U {
             (*self).as_mut()
@@ -100,8 +100,8 @@ extern_spec! {
 
     impl<T, U: From<T>> Into<U> for T {
         // FIXME: inherit terminates/ghost status
-        #[requires(|mode| <U as From<T>>::from.precondition((self,), mode))]
-        #[ensures(|result, mode| <U as From<T>>::from.postcondition((self,), result, mode))]
+        #[requires(<U as From<T>>::from.precondition((self,), mode!()))]
+        #[ensures(<U as From<T>>::from.postcondition((self,), result, mode!()))]
         fn into(self) -> U {
             U::from(self)
         }
@@ -126,7 +126,7 @@ extern_spec! {
     {
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == s@.len())]
-        #[ensures(|result, mode| forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i], mode))]
+        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i], mode!()))]
         fn from(s: &[T]) -> Self;
         // To verify: uses CloneToUninit
     }
@@ -135,7 +135,7 @@ extern_spec! {
     {
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == s@.len())]
-        #[ensures(|result, mode| forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i], mode))]
+        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i], mode!()))]
         #[ensures(^s == *s)]
         fn from(s: &mut [T]) -> Self {
             Box::<[T]>::from(&*s)
@@ -154,7 +154,7 @@ extern_spec! {
     {
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == s@.len())]
-        #[ensures(|result, mode| forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i], mode))]
+        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i], mode!()))]
         fn from(s: &[T]) -> Self {
             s.to_vec()
         }
@@ -164,7 +164,7 @@ extern_spec! {
     {
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == s@.len())]
-        #[ensures(|result, mode| forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i], mode))]
+        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i], mode!()))]
         #[ensures(^s == *s)]
         fn from(s: &mut [T]) -> Self {
             s.to_vec()
@@ -182,7 +182,7 @@ extern_spec! {
     impl<T: Clone, const N: usize> From<&[T; N]> for Vec<T> {
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == N@)]
-        #[ensures(|result, mode| forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i], mode))]
+        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i], mode!()))]
         fn from(s: &[T; N]) -> Self {
             Vec::<T>::from(s.as_slice())
         }
@@ -191,7 +191,7 @@ extern_spec! {
     impl<T: Clone, const N: usize> From<&mut [T; N]> for Vec<T> {
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == N@)]
-        #[ensures(|result, mode| forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i], mode))]
+        #[ensures(forall<i> 0 <= i && i < s@.len() ==> <T as Clone>::clone.postcondition((&s@[i],), result@[i], mode!()))]
         #[ensures(^s == *s)]
         fn from(s: &mut [T; N]) -> Self {
             Vec::<T>::from(s.as_mut_slice())

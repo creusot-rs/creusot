@@ -22,7 +22,7 @@ macro_rules! tuple_impls {
 
         extern_spec! {
             impl<$($name: Default),+> Default for ($($name,)+) {
-                #[ensures(|result, mode| $($name::default.postcondition((), result.$idx, mode))&&+)]
+                #[ensures($($name::default.postcondition((), result.$idx, mode!()))&&+)]
                 fn default() -> ($($name,)+);
             }
         }

@@ -67,9 +67,9 @@ impl<A: IteratorSpec, B: IteratorSpec> IteratorSpec for Zip<A, B> {
 
 extern_spec! {
     impl<A: Iterator, B: Iterator> Iterator for Zip<A, B> {
-        #[ensures(|result, mode| exists<ra, rb>
-            A::size_hint.postcondition((&self.iter_a(),), ra, mode) &&
-            B::size_hint.postcondition((&self.iter_b(),), rb, mode) &&
+        #[ensures(exists<ra, rb>
+            A::size_hint.postcondition((&self.iter_a(),), ra, mode!()) &&
+            B::size_hint.postcondition((&self.iter_b(),), rb, mode!()) &&
             (ra.0@ <= rb.0@ ==> result.0 == ra.0) &&
             (ra.0@ >= rb.0@ ==> result.0 == rb.0) &&
             match (ra.1, rb.1) {

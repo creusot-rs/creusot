@@ -23,9 +23,9 @@ impl<T: DeepModel> DeepModel for Option<T> {
 
 extern_spec! {
     impl<T: Clone> Clone for Option<T> {
-        #[ensures(|result, mode| match (*self, result) {
+        #[ensures(match (*self, result) {
             (None, None) => true,
-            (Some(s), Some(r)) => T::clone.postcondition((&s,), r, mode),
+            (Some(s), Some(r)) => T::clone.postcondition((&s,), r, mode!()),
             _ => false
         })]
         fn clone(&self) -> Option<T> {
@@ -48,10 +48,10 @@ extern_spec! {
         }
 
         #[erasure]
-        #[requires(|mode| match self { None => true, Some(t) => f.precondition((t,), mode) })]
-        #[ensures(|result, mode| match self {
+        #[requires(match self { None => true, Some(t) => f.precondition((t,), mode!()) })]
+        #[ensures(match self {
             None => resolve(f) && result == false,
-            Some(t) => f.postcondition_once((t,), result, mode),
+            Some(t) => f.postcondition_once((t,), result, mode!()),
         })]
         fn is_some_and(self, f: impl FnOnce(T) -> bool + Destruct) -> bool {
             match self {
@@ -157,9 +157,9 @@ extern_spec! {
         }
 
         #[erasure]
-        #[requires(|mode| self == None ==> f.precondition((), mode))]
-        #[ensures(|result, mode| match self {
-            None => f.postcondition_once((), result, mode),
+        #[requires(self == None ==> f.precondition((), mode!()))]
+        #[ensures(match self {
+            None => f.postcondition_once((), result, mode!()),
             Some(t) => resolve(f) && result == t
         })]
         fn unwrap_or_else<F: FnOnce() -> T>(self, f: F) -> T {
@@ -170,7 +170,7 @@ extern_spec! {
         }
 
         #[erasure]
-        #[ensures(|result, mode| self == None ==> T::default.postcondition((), result, mode))]
+        #[ensures(self == None ==> T::default.postcondition((), result, mode!()))]
         #[ensures(self == None || self == Some(result))]
         fn unwrap_or_default(self) -> T
         where
@@ -192,10 +192,10 @@ extern_spec! {
         }
 
         #[erasure]
-        #[requires(|mode| match self { None => true, Some(t) => f.precondition((t,), mode) })]
-        #[ensures(|result, mode| match self {
+        #[requires(match self { None => true, Some(t) => f.precondition((t,), mode!()) })]
+        #[ensures(match self {
             None => resolve(f) && result == None,
-            Some(t) => exists<r> result == Some(r) && f.postcondition_once((t,), r, mode),
+            Some(t) => exists<r> result == Some(r) && f.postcondition_once((t,), r, mode!()),
         })]
         fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Option<U> {
             match self {
@@ -204,11 +204,11 @@ extern_spec! {
             }
         }
 
-        #[requires(|mode| match self { None => true, Some(t) => f.precondition((&t,), mode) })]
+        #[requires(match self { None => true, Some(t) => f.precondition((&t,), mode!()) })]
         #[ensures(result == self)]
-        #[ensures(|_, mode| match self {
+        #[ensures(match self {
             None => resolve(f),
-            Some(t) => f.postcondition_once((&t,), (), mode),
+            Some(t) => f.postcondition_once((&t,), (), mode!()),
         })]
         fn inspect<F: FnOnce(&T)>(self, f: F) -> Option<T> {
             match self {
@@ -217,10 +217,10 @@ extern_spec! {
             }
         }
 
-        #[requires(|mode| match self { None => true, Some(t) => f.precondition((t,), mode) })]
-        #[ensures(|result, mode| match self {
+        #[requires(match self { None => true, Some(t) => f.precondition((t,), mode!()) })]
+        #[ensures(match self {
             None => resolve(f) && result == default,
-            Some(t) => f.postcondition_once((t,), result, mode)
+            Some(t) => f.postcondition_once((t,), result, mode!())
         })]
         fn map_or<U, F: FnOnce(T) -> U>(self, default: U, f: F) -> U {
             match self {
@@ -229,13 +229,13 @@ extern_spec! {
             }
         }
 
-        #[requires(|mode| match self {
-            None => default.precondition((), mode),
-            Some(t) => f.precondition((t,), mode),
+        #[requires(match self {
+            None => default.precondition((), mode!()),
+            Some(t) => f.precondition((t,), mode!()),
         })]
-        #[ensures(|result, mode| match self {
-            None => resolve(f) && default.postcondition_once((), result, mode),
-            Some(t) => resolve(default) && f.postcondition_once((t,), result, mode),
+        #[ensures(match self {
+            None => resolve(f) && default.postcondition_once((), result, mode!()),
+            Some(t) => resolve(default) && f.postcondition_once((t,), result, mode!()),
         })]
         fn map_or_else<U, D: FnOnce() -> U, F: FnOnce(T) -> U>(self, default: D, f: F) -> U {
             match self {
@@ -256,9 +256,9 @@ extern_spec! {
             }
         }
 
-        #[requires(|mode| self == None ==> err.precondition((), mode))]
-        #[ensures(|result, mode| match self {
-            None => exists<r> result == Err(r) && err.postcondition_once((), r, mode),
+        #[requires(self == None ==> err.precondition((), mode!()))]
+        #[ensures(match self {
+            None => exists<r> result == Err(r) && err.postcondition_once((), r, mode!()),
             Some(t) => resolve(err) && result == Ok(t),
         })]
         fn ok_or_else<E, F: FnOnce() -> E>(self, err: F) -> Result<T, E> {
@@ -268,13 +268,13 @@ extern_spec! {
             }
         }
 
-        #[requires(|mode| match self {
+        #[requires(match self {
             None => true,
-            Some(x) => T::deref.precondition((x,), mode),
+            Some(x) => T::deref.precondition((x,), mode!()),
         })]
-        #[ensures(|result, mode| match (self, result) {
+        #[ensures(match (self, result) {
             (None, None) => true,
-            (Some(x), Some(r)) => T::deref.postcondition((x,), r, mode),
+            (Some(x), Some(r)) => T::deref.postcondition((x,), r, mode!()),
             _ => false,
         })]
         fn as_deref(&self) -> Option<&<T as ::core::ops::Deref>::Target>
@@ -286,13 +286,13 @@ extern_spec! {
             }
         }
 
-        #[requires(|mode| match *self {
+        #[requires(match *self {
             None => true,
-            Some(cur) => forall<bor: &mut T> *bor == cur ==> T::deref_mut.precondition((bor,), mode),
+            Some(cur) => forall<bor: &mut T> *bor == cur ==> T::deref_mut.precondition((bor,), mode!()),
         })]
-        #[ensures(|result, mode| match (*self, ^self, result) {
+        #[ensures(match (*self, ^self, result) {
             (None, None, None) => true,
-            (Some(cur), Some(fin), Some(r)) => exists<bor: &mut T> *bor == cur && ^bor == fin && T::deref_mut.postcondition((bor,), r, mode),
+            (Some(cur), Some(fin), Some(r)) => exists<bor: &mut T> *bor == cur && ^bor == fin && T::deref_mut.postcondition((bor,), r, mode!()),
             _ => false,
         })]
         fn as_deref_mut(&mut self) -> Option<&mut<T as ::core::ops::Deref>::Target>
@@ -332,10 +332,10 @@ extern_spec! {
             }
         }
 
-        #[requires(|mode| match self { None => true, Some(t) => f.precondition((t,), mode) })]
-        #[ensures(|result, mode| match self {
+        #[requires(match self { None => true, Some(t) => f.precondition((t,), mode!()) })]
+        #[ensures(match self {
             None => resolve(f) &&result == None,
-            Some(t) => f.postcondition_once( (t,), result, mode),
+            Some(t) => f.postcondition_once( (t,), result, mode!()),
         })]
         fn and_then<U, F: FnOnce(T) -> Option<U>>(self, f: F) -> Option<U> {
             match self {
@@ -344,12 +344,12 @@ extern_spec! {
             }
         }
 
-        #[requires(|mode| match self { None => true, Some(t) => predicate.precondition((&t,), mode) })]
-        #[ensures(|result, mode| match self {
+        #[requires(match self { None => true, Some(t) => predicate.precondition((&t,), mode!()) })]
+        #[ensures(match self {
             None => result == None,
             Some(t) => match result {
-                None => predicate.postcondition_once((&t,), false, mode) && resolve(t),
-                Some(r) => predicate.postcondition_once((&t,), true, mode) && r == t,
+                None => predicate.postcondition_once((&t,), false, mode!()) && resolve(t),
+                Some(r) => predicate.postcondition_once((&t,), true, mode!()) && r == t,
             },
         })]
         fn filter<P: FnOnce(&T) -> bool>(self, predicate: P) -> Option<T> {
@@ -369,9 +369,9 @@ extern_spec! {
             }
         }
 
-        #[requires(|mode| self == None ==> f.precondition((), mode))]
-        #[ensures(|result, mode| match self {
-            None => f.postcondition_once((), result, mode),
+        #[requires(self == None ==> f.precondition((), mode!()))]
+        #[ensures(match self {
+            None => f.postcondition_once((), result, mode!()),
             Some(t) => resolve(f) && result == Some(t),
         })]
         fn or_else<F: FnOnce() -> Option<T>>(self, f: F) -> Option<T> {
@@ -422,12 +422,12 @@ extern_spec! {
             }
         }
 
-        #[requires(|mode| match self {
-            None => T::default.precondition((), mode),
+        #[requires(match self {
+            None => T::default.precondition((), mode!()),
             Some(_) => true,
         })]
-        #[ensures(|result, mode| match *self {
-            None => T::default.postcondition((), *result, mode) && ^self == Some(^result),
+        #[ensures(match *self {
+            None => T::default.postcondition((), *result, mode!()) && ^self == Some(^result),
             Some(_) => *self == Some(*result) && ^self == Some(^result),
         })]
         fn get_or_insert_default(&mut self) -> &mut T
@@ -436,9 +436,9 @@ extern_spec! {
             self.get_or_insert(T::default())
         }
 
-        #[requires(|mode| *self == None ==> f.precondition((), mode))]
-        #[ensures(|result, mode| match *self {
-            None => f.postcondition_once((), *result, mode) && ^self == Some(^result),
+        #[requires(*self == None ==> f.precondition((), mode!()))]
+        #[ensures(match *self {
+            None => f.postcondition_once((), *result, mode!()) && ^self == Some(^result),
             Some(_) => *self == Some(*result) && ^self == Some(^result),
         })]
         fn get_or_insert_with<F: FnOnce() -> T>(&mut self, f: F) -> &mut T {
@@ -454,14 +454,14 @@ extern_spec! {
             core::mem::replace(self, None)
         }
 
-        #[requires(|mode| match *self {
+        #[requires(match *self {
             None => true,
-            Some(t) => forall<b:&mut T> inv(b) && *b == t ==> predicate.precondition((b,), mode),
+            Some(t) => forall<b:&mut T> inv(b) && *b == t ==> predicate.precondition((b,), mode!()),
         })]
-        #[ensures(|result, mode| match *self {
+        #[ensures(match *self {
             None => result == None && ^self == None,
             Some(cur) =>
-                exists<b: &mut T, res: bool> inv(b) && cur == *b && predicate.postcondition_once((b,), res, mode) &&
+                exists<b: &mut T, res: bool> inv(b) && cur == *b && predicate.postcondition_once((b,), res, mode!()) &&
                     if res {
                         ^self == None && result == Some(^b)
                     } else {
@@ -525,9 +525,9 @@ extern_spec! {
             }
         }
 
-        #[ensures(|result, mode| match (self, result) {
+        #[ensures(match (self, result) {
             (None, None) => true,
-            (Some(s), Some(r)) =>T::clone.postcondition((s,), r, mode),
+            (Some(s), Some(r)) =>T::clone.postcondition((s,), r, mode!()),
             _ => false
         })]
         fn cloned(self) -> Option<T>
@@ -557,9 +557,9 @@ extern_spec! {
             }
         }
 
-        #[ensures(|result, mode| match (self, result) {
+        #[ensures(match (self, result) {
             (None, None) => true,
-            (Some(s), Some(r)) => T::clone.postcondition((s,), r, mode) && ^s == *s,
+            (Some(s), Some(r)) => T::clone.postcondition((s,), r, mode!()) && ^s == *s,
             _ => false
         })]
         fn cloned(self) -> Option<T>
@@ -707,7 +707,7 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for IntoIter<T> {
     #[logic(law)]
-    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode!()))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -759,7 +759,7 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for Iter<'_, T> {
     #[logic(law)]
-    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode!()))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -829,7 +829,7 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for IterMut<'_, T> {
     #[logic(law)]
-    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode!()))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
