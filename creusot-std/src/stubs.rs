@@ -83,6 +83,12 @@ pub fn seq_literal<T>(_: &[T]) -> crate::logic::Seq<T> {
     dead
 }
 
+#[logic(opaque)]
+#[intrinsic("mode_var")]
+pub fn mode() -> crate::mode::Mode {
+    dead
+}
+
 // The following three traits make it possible to leverage auto-deref for these operators
 // without importing the traits in the context.
 

@@ -578,6 +578,11 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
             }
             .into())
         }
+        Term::Mode(mode) => {
+            Ok(quote_spanned! {sp=>
+                ::creusot_std::__stubs::mode()
+            }.into())
+        }
         Term::__Nonexhaustive => todo!(),
     }
 }

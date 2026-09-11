@@ -17,6 +17,7 @@ mod kw {
     syn::custom_keyword!(pearlite);
     syn::custom_keyword!(seq);
     syn::custom_keyword!(proof_assert);
+    syn::custom_keyword!(mode);
 }
 
 ast_enum_of_structs! {
@@ -131,6 +132,9 @@ ast_enum_of_structs! {
 
         /// A closure expresion: |a, b| a + b.
         Closure(TermClosure),
+
+        /// Macro `mode!()`.
+        Mode(TermMode),
 
         #[doc(hidden)]
         __Nonexhaustive,
@@ -494,6 +498,14 @@ ast_struct! {
         pub proof_assert_token: kw::proof_assert,
         pub bang_token: Token![!],
         pub block: TermBlock,
+    }
+}
+
+ast_struct! {
+    pub struct TermMode {
+        pub mode_token: kw::mode,
+        pub bang_token: Token![!],
+        pub bracket_token: token::Bracket,
     }
 }
 
@@ -1239,7 +1251,16 @@ pub(crate) mod parsing {
             // or we don't translate parameters, but then we let the user write non-pearlite code
             // in pearlite... So we only treat well known macros.
 
-            if expr.inner.path.is_ident("proof_assert") {
+            if expr.inner.path.is_ident("mode") {
+                if !tokens.is_empty() {
+                    return Err(Error::new_spanned(expr, " macro `mode!` expects no argument"));
+                }
+                return Ok(Term::Mode(TermMode {
+                    mode_token: kw::mode(expr.inner.span()),
+                    bang_token,
+                    bracket_token: token::Bracket(span_delim),
+                }));
+            } else if expr.inner.path.is_ident("proof_assert") {
                 return Ok(Term::ProofAssert(TermProofAssert {
                     proof_assert_token: kw::proof_assert(expr.inner.span()),
                     bang_token,
@@ -1267,7 +1288,7 @@ pub(crate) mod parsing {
             } else {
                 return Err(Error::new_spanned(
                     expr,
-                    " Unsupported expression: macros other than `pearlite!`, `proof_assert!` or `seq!` are unsupported in Pearlite code.",
+                    " Unsupported expression: macros other than `mode!`, `pearlite!`, `proof_assert!` or `seq!` are unsupported in Pearlite code.",
                 ));
             }
         }
@@ -2086,6 +2107,14 @@ pub(crate) mod printing {
             self.proof_assert_token.to_tokens(tokens);
             self.bang_token.to_tokens(tokens);
             self.block.to_tokens(tokens);
+        }
+    }
+
+    impl ToTokens for TermMode {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            self.mode_token.to_tokens(tokens);
+            self.bang_token.to_tokens(tokens);
+            self.bracket_token.surround(tokens, |_| ());
         }
     }
 
