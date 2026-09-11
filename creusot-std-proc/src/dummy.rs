@@ -62,10 +62,6 @@ pub fn logic_alias(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }
 
-pub fn hybrid(_: TS1, tokens: TS1) -> TS1 {
-    tokens
-}
-
 pub fn variant(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }

@@ -66,7 +66,6 @@ proc_macro_attributes! {
     erasure
     constant
     logic_alias
-    hybrid
 }
 
 macro_rules! proc_macros {

@@ -22,12 +22,9 @@ trait Number {
     fn number() -> usize;
 }
 
-
 struct Zero;
 struct One;
 struct Two;
-
-
 
 impl Number for Zero {
     #[logic_alias(zero)]
@@ -49,8 +46,6 @@ impl Number for Two {
         2
     }
 }
-
-
 
 #[ensures(result == forall<i> 0 <= i && i < elems@.len() ==> elems@[i] == Zero::number())]
 fn all_zero(elems: &[usize]) -> bool {
