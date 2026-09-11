@@ -70,8 +70,8 @@ pub fn message_passing() {
         ghost!(MessagePassingAtomicInv {
             atomic_own: atomic_own.into_inner(),
             at_view: None,
-            tok_write: Resource::new_unit(excl_write.id_ghost()),
-            tok_read: Resource::new_unit(excl_read.id_ghost()),
+            tok_write: Resource::new_unit(excl_write.id()),
+            tok_read: Resource::new_unit(excl_read.id()),
             data: snapshot!(data),
         }),
         snapshot!(MESSAGE_PASSING()),

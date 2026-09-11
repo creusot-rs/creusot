@@ -136,7 +136,7 @@ pub mod implementation {
             let new_ag = snapshot!(Ag(v@));
             let (permcell, perm) = PermCell::new(Inner::Direct(v));
             let mut auth = Authority::alloc();
-            let mut frag = ghost!(Fragment::new_unit(auth.id_ghost()));
+            let mut frag = ghost!(Fragment::new_unit(auth.id()));
             ghost!(auth.update(&mut frag, FMapInsertLocalUpdate(snapshot!(*perm.ward()), new_ag)));
 
             let inv = GhostShared::new(ghost! {
@@ -175,7 +175,7 @@ pub mod implementation {
                     }
                     pa.perms.insert_ghost(snapshot!(permcell), perm.into_inner());
                     pa.depth = snapshot!(pa.depth.set(permcell, pa.depth[*self.permcell@] + 1));
-                    let mut frag = Fragment::new_unit(pa.auth.id_ghost());
+                    let mut frag = Fragment::new_unit(pa.auth.id());
                     pa.auth.update(&mut frag, FMapInsertLocalUpdate(snapshot!(permcell), new_ag));
                     frag
                 }

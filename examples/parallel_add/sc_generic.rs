@@ -69,7 +69,7 @@ pub fn parallel_add(n: i32) {
 
     // Create our ghost state
     let mut auth = Authority::alloc();
-    let mut frag = ghost!(Fragment::new_unit(auth.id_ghost()));
+    let mut frag = ghost!(Fragment::new_unit(auth.id()));
     ghost! {
         auth.update(&mut frag, snapshot!((Some((PR::from_int(1), 0)), Some((PR::from_int(1), 0)))));
     };

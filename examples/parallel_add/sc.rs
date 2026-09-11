@@ -50,8 +50,8 @@ pub fn parallel_add() {
     // Create our ghost state
     let mut auth1 = Authority::alloc();
     let mut auth2 = Authority::alloc();
-    let mut frag1 = ghost!(Fragment::new_unit(auth1.id_ghost()));
-    let mut frag2 = ghost!(Fragment::new_unit(auth2.id_ghost()));
+    let mut frag1 = ghost!(Fragment::new_unit(auth1.id()));
+    let mut frag2 = ghost!(Fragment::new_unit(auth2.id()));
     ghost! {
         auth1.update(&mut frag1, snapshot!((Some(Excl(false)), Some(Excl(false)))));
         auth2.update(&mut frag2, snapshot!((Some(Excl(false)), Some(Excl(false)))));

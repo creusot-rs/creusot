@@ -73,7 +73,7 @@ mod m {
         ///
         /// This prevents mixing resources of different origins.
         #[logic(opaque)]
-        pub fn id(self) -> Id {
+        pub fn id_logic(self) -> Id {
             dead
         }
 
@@ -82,8 +82,8 @@ mod m {
         /// This is the same as [`Self::id`], but for ghost code.
         #[trusted]
         #[check(ghost)]
-        #[logic_alias(Self::id(*self))]
-        pub fn id_ghost(&self) -> Id {
+        #[logic_alias(self.id_logic())]
+        pub fn id(&self) -> Id {
             panic!("ghost code only")
         }
 
