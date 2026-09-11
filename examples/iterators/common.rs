@@ -39,12 +39,12 @@ pub trait Iterator {
 
 pub trait ExactSizeIterator: Iterator {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(Self::size_hint.postcondition((self,), r, mode!()))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>));
 
-    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
+    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result)), mode!()))]
     fn len(&self) -> usize {
         snapshot!(Self::size_hint_exact);
         let (lower, upper) = self.size_hint();
@@ -52,7 +52,7 @@ pub trait ExactSizeIterator: Iterator {
         lower
     }
 
-    #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l))) && result == (l == 0usize))]
+    #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l)), mode!()) && result == (l == 0usize))]
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -76,7 +76,7 @@ pub trait DoubleEndedIterator: Iterator {
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
     #[logic(law, prophetic)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(Self::size_hint.postcondition((self,), r, mode!()))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {
