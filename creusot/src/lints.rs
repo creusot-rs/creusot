@@ -2,6 +2,7 @@ mod contractless_external_function;
 mod experimental_types;
 mod result_param;
 mod trusted;
+mod unchecked_unsafe;
 
 use rustc_lint::LintStore;
 use rustc_macros::Diagnostic;
@@ -10,6 +11,7 @@ use rustc_span::{Span, Symbol};
 
 pub(crate) use contractless_external_function::CONTRACTLESS_EXTERNAL_FUNCTION;
 pub(crate) use result_param::RESULT_PARAM;
+pub(crate) use unchecked_unsafe::UNCHECKED_UNSAFE;
 
 use crate::validate;
 
@@ -39,6 +41,8 @@ pub(crate) enum Diagnostics {
         "`result` used as a parameter name. It is confusing because it is also the default name of the function's result"
     )]
     ResultParam,
+    #[diag("the safety of this function can't be guaranteed")]
+    UncheckedUnsafe,
 }
 
 pub fn register_lints(_sess: &Session, store: &mut LintStore) {
@@ -47,6 +51,7 @@ pub fn register_lints(_sess: &Session, store: &mut LintStore) {
         contractless_external_function::CONTRACTLESS_EXTERNAL_FUNCTION,
         trusted::TRUSTED_CODE,
         result_param::RESULT_PARAM,
+        unchecked_unsafe::UNCHECKED_UNSAFE,
     ]);
     store.register_late_lint_pass(Box::new(move |_| Box::new(validate::GhostValidate {})));
     store.register_late_lint_pass(Box::new(move |_| Box::new(experimental_types::Experimental {})));

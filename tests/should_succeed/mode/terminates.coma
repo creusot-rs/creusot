@@ -1,0 +1,42 @@
+module M_f
+  use creusot.prelude.Any
+  use creusot.prelude.Mode
+  use creusot.int.UInt64
+  use int.Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let f (x: UInt64.t) (mode: Mode.t) (return (x'0: ())) = {[@stop_split] [@expl:f requires] Mode.terminates mode
+    -> gt_log_Int (UInt64.t'int x) 0}
+    (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_g
+  use creusot.int.UInt64
+  use creusot.prelude.Mode
+  use creusot.prelude.Any
+  use int.Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  let f (x: UInt64.t) (mode: Mode.t) (return (x'0: ())) = {[@stop_split] [@expl:f requires] Mode.terminates mode
+    -> gt_log_Int (UInt64.t'int x) 0}
+    any [ return (result: ()) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let g (mode: Mode.t) (return (x: ())) = {not Mode.terminates mode}
+    (! bb0
+    [ bb0 = s0 [ s0 = f {(0: UInt64.t)} {mode} (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end

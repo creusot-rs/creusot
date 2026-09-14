@@ -6,6 +6,7 @@ mod incorrect_attributes;
 mod opacity;
 mod purity;
 mod recursive_types;
+mod safety;
 mod terminates;
 mod tokens_new;
 mod traits;
@@ -34,11 +35,11 @@ use crate::{
     ctx::TranslationCtx,
     validate::{
         erasure::validate_erasures, recursive_types::validate_recursive_types,
-        tokens_new::validate_tokens_new,
+        safety::validate_safety, tokens_new::validate_tokens_new,
     },
 };
 
-fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
+pub fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
     let attrs = tcx.hir_attrs(id);
     attrs
         .iter()
@@ -80,5 +81,6 @@ pub(crate) fn validate(ctx: &TranslationCtx) {
     *ctx.variant_calls.borrow_mut() = variant_calls;
     validate_traits(ctx);
     validate_impls(ctx);
+    validate_safety(ctx);
     validate_erasures(ctx);
 }
