@@ -304,8 +304,8 @@ impl<T: Protocol> AtomicInvariantSC<T> {
 
     /// Gives the actual invariant held by the `AtomicInvariantSC`.
     #[trusted]
-    #[ensures(result.public() == self.public() && result.protocol())]
     #[check(ghost)]
+    #[ensures(result.public() == self.public() && result.protocol())]
     pub fn into_inner(self) -> T {
         panic!("Should not be called outside ghost code")
     }
@@ -318,14 +318,14 @@ impl<T: Protocol> AtomicInvariantSC<T> {
     /// NOTE: This function can only be called from ghost code, because atomic
     /// invariants are always wrapped in `Ghost`. This guarantees atomicity.
     #[trusted]
+    #[check(ghost)]
     #[requires(tokens.contains(self.namespace()))]
     #[requires(forall<t: &mut T> t.public() == self.public() && t.protocol() && inv(t) ==>
-        f.precondition((t,)) &&
+        f.precondition((t,), mode!()) &&
         // f must restore the invariant
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).public() == self.public() && (^t).protocol()))]
+        (forall<res: A> f.postcondition_once((t,), res, mode!()) ==> (^t).public() == self.public() && (^t).protocol()))]
     #[ensures(exists<t: &mut T> t.public() == self.public() && t.protocol() && inv(t) &&
-        f.postcondition_once((t,), result))]
-    #[check(ghost)]
+        f.postcondition_once((t,), result, mode!()))]
     pub fn open<A>(&self, tokens: Tokens, f: impl FnGhost + for<'a> FnOnce(&'a mut T) -> A) -> A {
         panic!("Should not be called outside ghost code")
     }
@@ -381,8 +381,8 @@ impl<T: Protocol> AtomicInvariant<T> {
 
     /// Gives the actual invariant held by the `AtomicInvariant`.
     #[trusted]
-    #[ensures(result.public() == self.public() && result.protocol())]
     #[check(ghost)]
+    #[ensures(result.public() == self.public() && result.protocol())]
     pub fn into_inner(self) -> T {
         panic!("Should not be called outside ghost code")
     }
@@ -395,14 +395,14 @@ impl<T: Protocol> AtomicInvariant<T> {
     /// NOTE: This function can only be called from ghost code, because atomic
     /// invariants are always wrapped in `Ghost`. This guarantees atomicity.
     #[trusted]
+    #[check(ghost)]
     #[requires(tokens.contains(self.namespace()))]
     #[requires(forall<t: &mut T> t.public() == self.public() && t.protocol() && inv(t) ==>
-        f.precondition((t,)) &&
+        f.precondition((t,), mode!()) &&
         // f must restore the invariant
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).public() == self.public() && (^t).protocol()))]
+        (forall<res: A> f.postcondition_once((t,), res, mode!()) ==> (^t).public() == self.public() && (^t).protocol()))]
     #[ensures(exists<t: &mut T> t.public() == self.public() && t.protocol() && inv(t) &&
-        f.postcondition_once((t,), result))]
-    #[check(ghost)]
+        f.postcondition_once((t,), result, mode!()))]
     pub fn open<A>(&self, tokens: Tokens, f: impl FnGhost + for<'a> FnOnce(&'a mut T) -> A) -> A {
         panic!("Should not be called outside ghost code")
     }
@@ -441,10 +441,10 @@ impl<'a, T: Protocol> NonAtomicInvariantExt<'a> for Ghost<&'a NonAtomicInvariant
 
     #[requires(tokens.contains(self.namespace()))]
     #[requires(forall<t: Ghost<&mut T>> t.public() == self.public() && t.protocol() && inv(t) ==>
-        f.precondition((t,)) &&
+        f.precondition((t,), mode!()) &&
         // f must restore the invariant
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).public() == self.public() && (^t).protocol()))]
-    #[ensures(exists<t: Ghost<&mut T>> t.public() == self.public() && t.protocol() && inv(t) && f.postcondition_once((t,), result))]
+        (forall<res: A> f.postcondition_once((t,), res, mode!()) ==> (^t).public() == self.public() && (^t).protocol()))]
+    #[ensures(exists<t: Ghost<&mut T>> t.public() == self.public() && t.protocol() && inv(t) && f.postcondition_once((t,), result, mode!()))]
     fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
@@ -460,12 +460,12 @@ where
 {
     type Inner = <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::Inner;
 
-    #[requires(T::deref.precondition((*self,)))]
-    #[requires(forall<this> T::deref.postcondition((*self,), this) ==>
-        <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::open.precondition((Ghost::new_logic(this), tokens, f))
+    #[requires(T::deref.precondition((*self,), mode!().into_ghost()))]
+    #[requires(forall<this> T::deref.postcondition((*self,), this, mode!().into_ghost())
+        ==> <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::open.precondition((Ghost::new_logic(this), tokens, f), mode!())
     )]
-    #[ensures(exists<this> T::deref.postcondition((*self,), this) &&
-        <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::open.postcondition((Ghost::new_logic(this), tokens, f), result)
+    #[ensures(exists<this> T::deref.postcondition((*self,), this, mode!().into_ghost())
+        && <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::open.postcondition((Ghost::new_logic(this), tokens, f), result, mode!())
     )]
     fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
@@ -482,8 +482,8 @@ where
 {
     type Inner = <Ghost<&'a L> as NonAtomicInvariantExt<'a>>::Inner;
 
-    #[requires(<Ghost<&'a L> as NonAtomicInvariantExt<'a>>::open.precondition((Ghost::new_logic(&**self), tokens, f)))]
-    #[ensures(<Ghost<&'a L> as NonAtomicInvariantExt<'a>>::open.postcondition((Ghost::new_logic(&**self), tokens, f), result))]
+    #[requires(<Ghost<&'a L> as NonAtomicInvariantExt<'a>>::open.precondition((Ghost::new_logic(&**self), tokens, f), mode!()))]
+    #[ensures(<Ghost<&'a L> as NonAtomicInvariantExt<'a>>::open.postcondition((Ghost::new_logic(&**self), tokens, f), result, mode!()))]
     fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
     where
         F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
@@ -536,11 +536,11 @@ impl<T: Protocol> NonAtomicInvariant<T> {
     /// contained [`Protocol`] before returning from the closure.
     #[requires(tokens.contains(this.namespace()))]
     #[requires(forall<t: Ghost<&mut T>> t.public() == this.public() && t.protocol() && inv(t) ==>
-        f.precondition((t,)) &&
+        f.precondition((t,), mode!()) &&
         // f must restore the invariant
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).public() == this.public() && (^t).protocol()))]
+        (forall<res: A> f.postcondition_once((t,), res, mode!()) ==> (^t).public() == this.public() && (^t).protocol()))]
     #[ensures(exists<t: Ghost<&mut T>> t.public() == this.public() && t.protocol() && inv(t) &&
-        f.postcondition_once((t,), result))]
+        f.postcondition_once((t,), result, mode!()))]
     pub fn open<'a, A>(
         this: Ghost<&'a Self>,
         tokens: Ghost<Tokens<'a>>,
@@ -577,10 +577,10 @@ impl<T: Protocol> NonAtomicInvariant<T> {
     #[trusted]
     #[check(ghost)]
     #[requires(forall<t: Ghost<&mut T>> t.protocol() && t.public() == this.public() && inv(t) ==>
-        f.precondition((t,)) &&
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).protocol()))]
+        f.precondition((t,), mode!()) &&
+        (forall<res: A> f.postcondition_once((t,), res, mode!()) ==> (^t).protocol()))]
     #[ensures(exists<t: Ghost<&mut T>> t.protocol() && t.public() == this.public() && inv(t) &&
-        f.postcondition_once((t,), result) && (^this).public() == (^t).public())]
+        f.postcondition_once((t,), result, mode!()) && (^this).public() == (^t).public())]
     #[ensures(this.namespace() == (^this).namespace())]
     pub fn open_mut<'a, A>(this: Ghost<&'a mut Self>, f: impl FnOnce(Ghost<&'a mut T>) -> A) -> A {
         unreachable!("ghost code only")

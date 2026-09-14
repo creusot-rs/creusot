@@ -8,7 +8,7 @@ use crate::{
     ctx::{HasTyCtxt, TranslationCtx},
     translation::{
         function::Assertion,
-        pearlite::{Term, TermSort},
+        pearlite::{InProgram, Term, TermSort},
     },
 };
 use rustc_hir::def_id::DefId;
@@ -16,6 +16,21 @@ use rustc_middle::{
     mir::{AggregateKind, BasicBlock, Body, Location, Operand, Rvalue, visit::Visitor},
     ty::{Ty, TyCtxt, TyKind},
 };
+
+fn in_ghost(tcx: TyCtxt, def_id: DefId) -> bool {
+    let mut hir_id = tcx.local_def_id_to_hir_id(def_id.expect_local());
+    let owner = hir_id.owner;
+    loop {
+        if crate::validate::is_ghost_block(tcx, hir_id) {
+            return true;
+        }
+        let parent = tcx.parent_hir_id(hir_id);
+        if parent.owner != owner {
+            return false;
+        }
+        hir_id = parent;
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum LoopSpecKind {
@@ -33,35 +48,50 @@ pub(crate) struct SpecClosures<'tcx> {
 
 impl<'tcx> SpecClosures<'tcx> {
     pub(crate) fn collect(ctx: &TranslationCtx<'tcx>, body: &Body<'tcx>) -> Self {
-        let mut visitor = Closures::new(ctx.tcx);
+        let mut visitor = Closures::new(ctx);
         visitor.visit_body(body);
-
-        let mut assertions = HashMap::new();
-        let mut snapshots = HashMap::new();
-        for clos in visitor.closures.into_iter() {
-            if is_assertion(ctx.tcx, clos) {
-                let is_trusted = is_trusted(ctx.tcx, clos);
-                let term = *ctx.term(clos, TermSort::Other).no_triggers();
-                assertions.insert(clos, Assertion { is_trusted, term });
-            } else if is_snapshot_closure(ctx.tcx, clos) {
-                let term = *ctx.term(clos, TermSort::Other).no_triggers();
-                snapshots.insert(clos, term);
-            }
-        }
-        Self { assertions, snapshots }
+        visitor.specs
     }
 }
 
 // Collect the closures in thir, so that we can do typechecking ourselves, and
 // translate the invariant closure from thir.
-struct Closures<'tcx> {
-    pub tcx: TyCtxt<'tcx>,
-    pub closures: HashSet<DefId>,
+struct Closures<'tcx, 'a> {
+    ctx: &'a TranslationCtx<'tcx>,
+    specs: SpecClosures<'tcx>,
 }
 
-impl<'tcx> Closures<'tcx> {
-    fn new(tcx: TyCtxt<'tcx>) -> Self {
-        Closures { tcx, closures: HashSet::new() }
+impl<'tcx, 'a> Closures<'tcx, 'a> {
+    fn new(ctx: &'a TranslationCtx<'tcx>) -> Self {
+        Closures {
+            ctx,
+            specs: SpecClosures { assertions: HashMap::new(), snapshots: HashMap::new() },
+        }
+    }
+
+    fn add_closure(&mut self, def_id: DefId) {
+        if is_assertion(self.ctx.tcx, def_id) {
+            let is_trusted = is_trusted(self.ctx.tcx, def_id);
+            let term = *self
+                .ctx
+                .term(
+                    def_id,
+                    TermSort::Other,
+                    InProgram::Yes { in_ghost: in_ghost(self.ctx.tcx, def_id) },
+                )
+                .no_triggers();
+            self.specs.assertions.insert(def_id, Assertion { is_trusted, term });
+        } else if is_snapshot_closure(self.ctx.tcx, def_id) {
+            let term = *self
+                .ctx
+                .term(
+                    def_id,
+                    TermSort::Other,
+                    InProgram::Yes { in_ghost: in_ghost(self.ctx.tcx, def_id) },
+                )
+                .no_triggers();
+            self.specs.snapshots.insert(def_id, term);
+        }
     }
 }
 
@@ -73,15 +103,15 @@ fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
     }
 }
 
-impl<'tcx> Visitor<'tcx> for Closures<'tcx> {
+impl<'tcx> Visitor<'tcx> for Closures<'tcx, '_> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) => {
-                self.closures.insert(*id);
+                self.add_closure(*id);
             }
             Rvalue::Use(Operand::Constant(box ck), _) => {
-                if let Some(def_id) = snapshot_closure_id(self.tcx, ck.const_.ty()) {
-                    self.closures.insert(def_id);
+                if let Some(def_id) = snapshot_closure_id(self.ctx.tcx, ck.const_.ty()) {
+                    self.add_closure(def_id);
                 }
             }
             _ => {}
@@ -159,7 +189,9 @@ impl<'tcx> Visitor<'tcx> for InvariantsVisitor<'_, 'tcx> {
                 }
                 return;
             };
-            let term = *self.ctx.term(id, TermSort::Other).no_triggers();
+            let in_ghost = in_ghost(self.ctx.tcx, id);
+            let term =
+                *self.ctx.term(id, TermSort::Other, InProgram::Yes { in_ghost }).no_triggers();
             match self.find_loop_header(loc) {
                 None if let LoopSpecKind::Invariant(expl) = kind => {
                     self.ctx.warn(

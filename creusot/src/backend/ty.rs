@@ -469,3 +469,7 @@ pub fn bool() -> MlT {
 pub fn int<'tcx>(ctx: &Why3Generator<'tcx>, names: &impl Namer<'tcx>) -> MlT {
     translate_ty(ctx, names, DUMMY_SP, ctx.int_ty())
 }
+
+pub fn mode<'tcx>(names: &impl Namer<'tcx>) -> MlT {
+    MlT::qconstructor(names.in_pre(PreMod::Mode, "t"))
+}

@@ -19,7 +19,7 @@ impl<T: Clone> IteratorSpec for Repeat<T> {
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self == o &&
-            forall<i> 0 <= i && i < visited.len() ==> T::clone.postcondition((&self@,), visited[i])
+            forall<i> 0 <= i && i < visited.len() ==> exists<mode> Self::Item::clone.postcondition((&self@,), visited[i], mode)
         }
     }
 
