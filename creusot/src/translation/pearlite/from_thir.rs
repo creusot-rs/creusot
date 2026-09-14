@@ -3,8 +3,8 @@ use crate::{
     ctx::TranslationCtx,
     naming::{lowercase_prefix, name},
     translation::pearlite::{
-        BinOp, Ident, Literal, PIdent, Pattern, PatternKind, QuantKind, Term, TermKind, TermSort,
-        TermWithTriggers, Trigger, UnOp,
+        BinOp, Ident, InProgram, Literal, PIdent, Pattern, PatternKind, QuantKind, Term, TermKind,
+        TermSort, TermWithTriggers, Trigger, UnOp,
     },
 };
 use rustc_abi::{FieldIdx, VariantIdx};
@@ -18,7 +18,7 @@ use rustc_middle::{
         self, AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, LocalVarId, Pat, PatKind,
         StmtId, StmtKind, Thir,
     },
-    ty::{CapturedPlace, Ty, TyKind, TypingEnv, adjustment::PointerCoercion},
+    ty::{CapturedPlace, GenericArgs, Ty, TyKind, TypingEnv, adjustment::PointerCoercion},
 };
 use rustc_span::{ErrorGuaranteed, Span, Symbol, sym};
 use std::{
@@ -34,18 +34,20 @@ fn deref_mut_method() -> Symbol {
 }
 
 /// Get a Pearlite term for `id`
+/// Note: the `in_program` flag is independent of `sort`. For example, we may be inside a logic closure inside an assertion.
 pub(crate) fn from_thir<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
     renaming: &mut HashMap<HirId, Ident>,
     sort: TermSort<'tcx, '_>,
+    in_program: InProgram,
 ) -> Result<TermWithTriggers<'tcx>, ErrorGuaranteed> {
     use crate::contracts_items::is_logic;
     let did = id.into();
     let (thir, expr) = ctx.thir_body(id);
     let thir = &thir.borrow();
     let typing_env = ctx.typing_env(did);
-    let mut lower = ThirTerm { ctx, item_id: id, thir, typing_env, renaming };
+    let mut lower = ThirTerm { ctx, item_id: id, thir, typing_env, renaming, in_program };
 
     let to_pattern = |(ident, param): (Ident, &thir::Param<'tcx>)| -> Result<_, _> {
         let Some(ref pat) = param.pat else {
@@ -54,7 +56,7 @@ pub(crate) fn from_thir<'tcx>(
         let pattern = match pat.kind {
             PatKind::Binding { var, subpattern: None, .. } => {
                 lower.renaming.insert(var.0, ident);
-                Pattern::binder(ident, pat.ty)
+                Pattern::binder(ident, pat.ty).span(pat.span)
             }
             _ => lower.pattern_term(ctx, pat, true)?,
         };
@@ -68,17 +70,17 @@ pub(crate) fn from_thir<'tcx>(
             let parent = ctx.parent(did);
             let (parent_thir, _) = ctx.thir_body(parent.expect_local());
             let parent_thir = parent_thir.borrow();
-            assert!(inputs.len() == parent_thir.params.len());
+            assert_eq!(inputs.len(), parent_thir.params.len());
             inputs
                 .iter()
                 .map(|(ident, _, _)| ident.0)
                 .zip(&parent_thir.params)
-                .chain(std::iter::once(name::result()).zip(thir.params.iter().skip(1)))
+                .chain([name::result()].into_iter().zip(thir.params.iter().skip(1)))
                 .map(to_pattern)
                 .collect::<Result<Box<[(Ident, Pattern)]>, ErrorGuaranteed>>()?
         }
         LogicClosure(inputs) => {
-            assert!(inputs.len() == thir.params.len());
+            assert_eq!(inputs.len(), thir.params.len());
             inputs
                 .iter()
                 .map(|(ident, _, _)| ident.0)
@@ -107,7 +109,7 @@ pub(crate) fn from_thir<'tcx>(
                 .map(to_pattern)
                 .collect::<Result<Box<[(Ident, Pattern)]>, ErrorGuaranteed>>()?
         }
-        Other => [].into(),
+        Other { .. } => [].into(),
     };
 
     let (triggers, body) = lower.body_term(expr)?;
@@ -136,6 +138,7 @@ struct ThirTerm<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
     typing_env: TypingEnv<'tcx>,
     renaming: &'a mut HashMap<HirId, Ident>,
+    in_program: InProgram,
 }
 
 fn head<'a, 'tcx>(thir: &'a Thir<'tcx>, expr: ExprId) -> &'a thir::Expr<'tcx> {
@@ -371,7 +374,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                             match e.kind {
                                     ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                                         let inputs = self.ctx.inputs_and_output(closure_id.into()).0;
-                                        let TermWithTriggers { term, triggers } = from_thir(self.ctx, closure_id, self.renaming, TermSort::LogicClosure(inputs))?;
+                                        let TermWithTriggers { term, triggers } = from_thir(self.ctx, closure_id, self.renaming, TermSort::LogicClosure(inputs), self.in_program)?;
                                         let binders = inputs.iter().skip(1).map(|&(x, _, ty)| (x, ty)).collect();
                                         Ok(term.quant(kind, binders, triggers).span(span))
                                     }
@@ -453,6 +456,17 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                             [term],
                         )
                         .span(span))
+                    }
+                    Intrinsic::ModeVar => {
+                        if let InProgram::Yes { in_ghost } = self.in_program {
+                            if in_ghost {
+                                Ok(Term::call_no_normalize(self.ctx.tcx, Intrinsic::ModeIntoGhost.get(self.ctx), GenericArgs::empty(), [Term::var(name::mode(), ty)]))
+                            } else {
+                                Ok(Term::var(name::mode(), ty))
+                            }
+                        } else {
+                            return Err(self.ctx.dcx().span_err(span, "Forbidden `mode!()` in logic function. It can only be used in program functions."))
+                        }
                     }
                     _ if self.ctx.is_diagnostic_item(sym::deref_method, id)
                         && let Some(adt) = subst.type_at(0).ty_adt_def()
@@ -593,6 +607,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         closure_id,
                         self.renaming,
                         TermSort::LogicClosure(inputs),
+                        self.in_program,
                     )?
                     .no_triggers();
                     let (arg, _, arg_ty) = inputs[1];
@@ -600,8 +615,14 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Ok(Term { ty, span, kind })
                 } else {
                     assert!(is_assertion(self.ctx.tcx, closure_id.into()));
-                    let cond = from_thir(self.ctx, closure_id, self.renaming, TermSort::Other)?
-                        .no_triggers();
+                    let cond = from_thir(
+                        self.ctx,
+                        closure_id,
+                        self.renaming,
+                        TermSort::Other,
+                        self.in_program,
+                    )?
+                    .no_triggers();
                     Ok(Term { ty, span, kind: TermKind::Assert { cond } })
                 }
             }

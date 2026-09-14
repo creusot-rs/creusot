@@ -82,6 +82,7 @@ pub(crate) struct ProgramSignature {
     /// Return type of the function
     pub(crate) return_ty: why3::ty::Type,
     pub(crate) variant: Option<(why3::Exp, why3::ty::Type)>,
+    pub(crate) terminates: bool,
 }
 
 /// Translates a Rust (program) function signature to a coma signature.
@@ -100,11 +101,14 @@ pub(crate) fn lower_program_sig<'tcx>(
         .inputs
         .iter()
         .map(|(id, span, ty)| Param::Term(id.0, translate_ty(ctx, names, *span, *ty)))
-        .chain([Param::Cont(
-            name::return_(),
-            [].into(),
-            [Param::Term(Ident::fresh_local("x"), return_ty.clone())].into(),
-        )])
+        .chain([
+            Param::Term(name::mode(), super::ty::mode(names)),
+            Param::Cont(
+                name::return_(),
+                [].into(),
+                [Param::Term(Ident::fresh_local("x"), return_ty.clone())].into(),
+            ),
+        ])
         .collect();
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);
@@ -119,8 +123,14 @@ pub(crate) fn lower_program_sig<'tcx>(
         (lower_pure_spanned(ctx, names, term), ty)
     });
     let contract = lower_contract(ctx, names, &pre_sig.contract);
-
-    ProgramSignature { prototype: Prototype { name, attrs, params }, contract, return_ty, variant }
+    let terminates = pre_sig.terminates();
+    ProgramSignature {
+        prototype: Prototype { name, attrs, params },
+        contract,
+        return_ty,
+        variant,
+        terminates,
+    }
 }
 
 /// The signature of a logical function

@@ -98,7 +98,12 @@ pub enum StatementKind<'tcx> {
         check: bool,  // Whether we generate a VC for this assertion
         assume: bool, // Whether this assertion stays in context
     },
-    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>, Span),
+    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, CallMode, Box<[Operand<'tcx>]>, Span),
+}
+
+#[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
+pub struct CallMode {
+    pub ghost: bool,
 }
 
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
@@ -264,6 +269,10 @@ pub(crate) struct Variant<'tcx> {
     pub(crate) term: Term<'tcx>,
     /// The name of the variable that holds the previous value of the term.
     pub(crate) old_name: PIdent,
+    /// Whether the loop occurs in a ghost block.
+    /// If `true`, the loop must terminate, the variant check is asserted unconditionally.
+    /// If `false`, the variant check is guarded by `mode.terminates()`.
+    pub(crate) in_ghost: bool,
 }
 
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
@@ -527,7 +536,7 @@ pub(crate) fn super_visit_stmt<'tcx, V: FmirVisitor<'tcx>>(
             visitor.visit_place(rhs);
         }
         StatementKind::Assertion { cond, .. } => visitor.visit_term(cond),
-        StatementKind::Call(place, _, _, operands, _) => {
+        StatementKind::Call(place, _, _, _, operands, _) => {
             visitor.visit_place(place);
             for operand in operands {
                 visitor.visit_operand(operand);
@@ -660,7 +669,7 @@ pub(crate) fn super_visit_mut_stmt<'tcx, V: FmirVisitorMut<'tcx>>(
             visitor.visit_mut_place(rhs);
         }
         StatementKind::Assertion { cond, .. } => visitor.visit_mut_term(cond),
-        StatementKind::Call(place, _, _, operands, _) => {
+        StatementKind::Call(place, _, _, _, operands, _) => {
             visitor.visit_mut_place(place);
             for operand in operands {
                 visitor.visit_mut_operand(operand);

@@ -1,3 +1,5 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::{invariant::Invariant, prelude::*, std::iter::ExactSizeIteratorSpec};
 use core::iter::Iterator;
 
@@ -40,7 +42,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
             && forall<i> 0 <= i && i < visited.len() ==>
                  self.func.hist_inv(*fs[i])
-                 && (*fs[i]).postcondition_mut((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
+                 && (*fs[i]).postcondition_mut((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i], Mode::program_mode())
         }
     }
 }
@@ -53,7 +55,8 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invaria
         pearlite! {
             Self::reinitialize() &&
             Self::preservation_inv(self.iter, self.func, *self.produced) &&
-            Self::next_precondition(self.iter, self.func, *self.produced)
+            Self::next_precondition(self.iter, self.func, *self.produced) &&
+            super::modeless(self.func)
         }
     }
 }
@@ -69,11 +72,10 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
         let _old_self: Snapshot<Self> = snapshot! { *self };
         match self.iter.next() {
             Some(v) => {
-                proof_assert! { self.func.precondition((v, self.produced)) };
+                proof_assert! { self.func.precondition((v, self.produced), mode!()) };
                 let produced = snapshot! { self.produced.push_back(v) };
                 let r = (self.func)(v, self.produced);
                 self.produced = produced;
-                #[allow(path_statements)]
                 let _ = snapshot! { Self::produces_one_invariant };
                 proof_assert! { _old_self.produces_one(r, *self) };
                 let _ = self; // Make sure self is not resolve until here.
@@ -86,7 +88,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterato
         }
     }
 
-    #[ensures(I::size_hint.postcondition((&self.iter,), result))]
+    #[ensures(I::size_hint.postcondition((&self.iter,), result, mode!()))]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -98,7 +100,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
         pearlite! {
             forall<e: I::Item, i: I>
                 inv(e) && iter.produces(Seq::singleton(e), i) ==>
-                func.precondition((e, Snapshot::new(produced)))
+                forall<mode> func.precondition((e, Snapshot::new(produced)), mode)
         }
     }
 
@@ -110,8 +112,8 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
                 func.hist_inv(*f) ==>
                 inv(s) && inv(e1) && inv(e2) && inv(f) ==>
                 iter.produces(s.push_back(e1).push_back(e2), i) ==>
-                (*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b) ==>
-                (^f).precondition((e2, Snapshot::new(produced.concat(s).push_back(e1))))
+                (*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b, Mode::program_mode()) ==>
+                forall<mode> (^f).precondition((e2, Snapshot::new(produced.concat(s).push_back(e1))), mode)
         }
     }
 
@@ -119,11 +121,10 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
     pub fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                func.hist_inv(*f) ==>
-                inv(s) && inv(e1) && inv(e2) && inv(f) ==>
-                iter.produces(s.push_back(e1).push_back(e2), i) ==>
-                (*f).postcondition_mut((e1, Snapshot::new(s)), ^f, b) ==>
-                (^f).precondition((e2, Snapshot::new(s.push_back(e1))))
+                func.hist_inv(*f) && inv(s) && inv(e1) && inv(e2) && inv(f)
+                    && iter.produces(s.push_back(e1).push_back(e2), i)
+                    && (*f).postcondition_mut((e1, Snapshot::new(s)), ^f, b, Mode::program_mode())
+                    ==> forall<mode> (^f).precondition((e2, Snapshot::new(s.push_back(e1))), mode)
         }
     }
 
@@ -142,7 +143,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
     #[requires(self.invariant())]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
     #[requires(*f == self.func)]
-    #[requires((*f).postcondition_mut((e, self.produced), ^f, r) )]
+    #[requires((*f).postcondition_mut((e, self.produced), ^f, r, Mode::program_mode()))]
     #[ensures(Self::preservation_inv(iter, ^f, self.produced.push_back(e)))]
     #[ensures(Self::next_precondition(iter, ^f, self.produced.push_back(e)))]
     fn produces_one_invariant(self, e: I::Item, r: B, f: &mut F, iter: I) {
@@ -161,7 +162,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
                 *f == self.func && ^f == succ.func
                 && self.iter.produces(Seq::singleton(e), succ.iter)
                 && succ.produced.inner() == self.produced.push_back(e)
-                && (*f).postcondition_mut((e, self.produced), ^f, visited)
+                && (*f).postcondition_mut((e, self.produced), ^f, visited, Mode::program_mode())
         }
     }
 }
@@ -169,7 +170,7 @@ impl<I: IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> MapInv<
 impl<I: ExactSizeIteratorSpec + IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B>
     ExactSizeIterator for MapInv<I, F>
 {
-    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
+    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result)), mode!()))]
     fn len(&self) -> usize {
         self.iter.len()
     }
@@ -179,7 +180,7 @@ impl<I: ExactSizeIteratorSpec + IteratorSpec, B, F: FnMut(I::Item, Snapshot<Seq<
     ExactSizeIteratorSpec for MapInv<I, F>
 {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         self.iter.size_hint_exact(r)
