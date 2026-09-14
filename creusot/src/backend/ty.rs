@@ -20,16 +20,28 @@ use why3::{
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum AdtKind<'tcx> {
-    Opaque { always: bool },           // An opaque type for the current context
-    Enum,                              // A transparent enum
-    Struct { partially_opaque: bool }, // A struct, with potentially some opaque fields
-    Unit,                              // Adt with only one element
-    Empty,                             // Empty Adt
-    Snapshot(Ty<'tcx>),                // Snapshot<T>
-    Identity(Ty<'tcx>),                // A type annotated with #[builtin("identity")]
-    Namespace,                         // Namespace
-    Box(Ty<'tcx>),                     // Box<T>
-    Builtin(Box<[Ty<'tcx>]>),          // A type directly defined in Why3
+    /// An opaque type for the current context
+    Opaque {
+        always: bool,
+    },
+    /// A transparent enum
+    Enum,
+    /// A struct, with potentially some opaque fields
+    Struct {
+        partially_opaque: bool,
+    },
+    /// Adt with only one element
+    Unit,
+    /// Empty Adt
+    Empty,
+    /// `Snapshot<T>`
+    Snapshot(Ty<'tcx>),
+    /// A type annotated with `#[builtin("identity")]`
+    Identity(Ty<'tcx>),
+    Namespace,
+    Box(Ty<'tcx>),
+    /// A type directly defined in Why3
+    Builtin(Box<[Ty<'tcx>]>),
 }
 
 pub(crate) fn classify_adt<'tcx>(
@@ -68,11 +80,7 @@ pub(crate) fn classify_adt<'tcx>(
         AdtKind::Unit
     } else if def.is_enum() {
         AdtKind::Enum
-    } else if def
-        .non_enum_variant()
-        .fields
-        .iter()
-        .all(|f| !f.vis.is_accessible_from(scope, ctx.tcx))
+    } else if def.non_enum_variant().fields.iter().all(|f| !ctx.field_is_transparent_from(f, scope))
     {
         AdtKind::Opaque { always: false }
     } else {
@@ -81,7 +89,7 @@ pub(crate) fn classify_adt<'tcx>(
                 .non_enum_variant()
                 .fields
                 .iter()
-                .all(|f| f.vis.is_accessible_from(scope, ctx.tcx)),
+                .all(|f| ctx.field_is_transparent_from(f, scope)),
         }
     }
 }
@@ -275,7 +283,7 @@ pub(crate) fn translate_adtdecl<'tcx>(
                 .non_enum_variant()
                 .fields
                 .iter_enumerated()
-                .filter(|f| f.1.vis.is_accessible_from(names.source_id(), ctx.tcx))
+                .filter(|(_, f)| ctx.field_is_transparent_from(f, names.source_id()))
                 .map(|(ix, f)| {
                     let ty = names.normalize(f.ty(ctx.tcx, subst));
                     FieldDecl {

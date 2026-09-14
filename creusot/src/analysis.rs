@@ -300,7 +300,7 @@ fn local_typing_env(tcx: TyCtxt<'_>, def_id: DefId) -> TypingEnv<'_> {
 
 impl<'a, 'tcx> Analysis<'a, 'tcx> {
     pub fn new(
-        tcx: TyCtxt<'tcx>,
+        ctx: &'a TranslationCtx<'tcx>,
         analysis_env: AnalysisEnv<'a, 'tcx>,
         body: &'a BodyWithBorrowckFacts<'tcx>,
         body_specs: &'a mut BodySpecs<'tcx>,
@@ -308,17 +308,17 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
     ) -> Self {
         Self {
             analysis_env,
-            typing_env: local_typing_env(tcx, body.body.source.def_id()),
+            typing_env: local_typing_env(ctx.tcx, body.body.source.def_id()),
             resolver: Resolver::new(
-                tcx,
+                ctx,
                 &body.body,
                 &body.borrow_set,
                 &body.region_inference_context,
                 move_data,
             ),
             current_resolved: Default::default(),
-            not_final_places: NotFinalPlaces::new(tcx, &body.body)
-                .iterate_to_fixpoint(tcx, &body.body, None)
+            not_final_places: NotFinalPlaces::new(ctx.tcx, &body.body)
+                .iterate_to_fixpoint(ctx.tcx, &body.body, None)
                 .into_results_cursor(&body.body),
             data: BorrowData::new(&body.borrow_set),
             body_specs,
@@ -491,7 +491,11 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                     } else {
                         let mut has_priv = false;
                         for (fi, fd) in adt_def.non_enum_variant().fields.iter_enumerated() {
-                            if fd.vis.is_accessible_from(self.body().source.def_id(), tcx) {
+                            if self
+                                .resolver
+                                .ctx
+                                .field_is_transparent_from(fd, self.body().source.def_id())
+                            {
                                 let ty = tcx
                                     .normalize_erasing_regions(self.typing_env, fd.ty(tcx, subst));
                                 res_partial.push(All(tcx.mk_place_field(pl, fi, ty)));
@@ -888,19 +892,19 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
 /// Analysis to run from crates that don't have access to creusot-std.
 // TODO: this will be used very soon
 #[allow(dead_code)]
-pub(crate) fn run_without_specs<'a, 'tcx>(
-    tcx: TyCtxt<'tcx>,
+pub(crate) fn run_without_specs<'tcx>(
+    ctx: &'tcx TranslationCtx<'tcx>,
     def_id: LocalDefId,
 ) -> BorrowData<'tcx> {
-    debug!("run_without_specs for {}", tcx.def_path_str(def_id.to_def_id()));
-    let body = callbacks::get_body(tcx, def_id);
+    debug!("run_without_specs for {}", ctx.def_path_str(def_id.to_def_id()));
+    let body = callbacks::get_body(ctx.tcx, def_id);
     let mut body_specs = BodySpecs::empty();
     let corenamer = HashMap::new();
     let locals = HashMap::new();
     let analysis_env = AnalysisEnv::new(fmir::ScopeTree::empty(), &corenamer, &locals, None);
 
-    let move_data = MoveData::gather_moves(&body.body, tcx, |_| true);
-    let mut analysis = Analysis::new(tcx, analysis_env, &body, &mut body_specs, &move_data);
+    let move_data = MoveData::gather_moves(&body.body, ctx.tcx, |_| true);
+    let mut analysis = Analysis::new(ctx, analysis_env, &body, &mut body_specs, &move_data);
     analysis.run();
     analysis.data
 }
@@ -938,7 +942,7 @@ pub(crate) fn run_with_specs<'tcx>(
     });
     let analysis_env = AnalysisEnv::new(tree, corenamer, &body_locals.locals, clos_subst);
     let move_data = MoveData::gather_moves(&body.body, tcx, |_| true);
-    let mut analysis = Analysis::new(tcx, analysis_env, body, body_specs, &move_data);
+    let mut analysis = Analysis::new(ctx, analysis_env, body, body_specs, &move_data);
     analysis.run();
     analysis.data
 }

@@ -15,7 +15,7 @@ mod imp {
     ///
     /// To insert elements in the middle of the list, use a [`Cursor`].
     pub struct List<T> {
-        permissions: Ghost<Seq<Box<Perm<*const Node<T>>>>>,
+        permissions: Ghost<Seq<Perm<*const Node<T>>>>,
         head: *const Node<T>,
         tail: *const Node<T>,
     }
@@ -83,7 +83,7 @@ mod imp {
         type ViewTy = Seq<T>;
         #[logic]
         fn view(self) -> Seq<T> {
-            self.permissions.map(|p: Box<Perm<*const Node<T>>>| p.val().data)
+            self.permissions.map(|p: Perm<*const Node<T>>| p.val().data)
         }
     }
 
@@ -130,7 +130,7 @@ mod imp {
             if self.head.is_null() {
                 return None;
             }
-            Some(&unsafe { Perm::as_ref(self.head, ghost!(&*self.permissions[0int])) }.data)
+            Some(&unsafe { Perm::as_ref(self.head, ghost!(&self.permissions[0int])) }.data)
         }
 
         /// Returns a reference to the last element of the list if it exists.
@@ -147,7 +147,7 @@ mod imp {
                 &unsafe {
                     Perm::as_ref(
                         self.tail,
-                        ghost!(&*self.permissions[self.permissions.len_ghost() - 1int]),
+                        ghost!(&self.permissions[self.permissions.len_ghost() - 1int]),
                     )
                 }
                 .data,
@@ -169,7 +169,7 @@ mod imp {
             }
             Some(
                 &mut unsafe {
-                    Perm::as_mut(self.head.cast_mut(), ghost!(&mut *self.permissions[0int]))
+                    Perm::as_mut(self.head.cast_mut(), ghost!(&mut self.permissions[0int]))
                 }
                 .data,
             )
@@ -198,7 +198,7 @@ mod imp {
                         self.tail.cast_mut(),
                         ghost! {
                             let last = self.permissions.len_ghost() - 1int;
-                            &mut *self.permissions[last]
+                            &mut self.permissions[last]
                         },
                     )
                 }
@@ -263,7 +263,7 @@ mod imp {
             }
             let head_perm = ghost!(self.permissions.pop_front_ghost().unwrap());
             let elem = self.head;
-            self.head = unsafe { Perm::as_ref(elem, ghost!(&**head_perm)) }.next;
+            self.head = unsafe { Perm::as_ref(elem, ghost!(&*head_perm)) }.next;
             if !self.head.is_null() {
                 unsafe {
                     Perm::as_mut(self.head.cast_mut(), ghost!(&mut self.permissions[0int])).prev =
@@ -287,7 +287,7 @@ mod imp {
             }
             let tail_perm = ghost!(self.permissions.pop_back_ghost().unwrap());
             let elem = self.tail;
-            self.tail = unsafe { Perm::as_ref(elem, ghost!(&**tail_perm)) }.prev;
+            self.tail = unsafe { Perm::as_ref(elem, ghost!(&*tail_perm)) }.prev;
             if !self.tail.is_null() {
                 proof_assert!(self.permissions.len() > 0);
                 let last_idx: Snapshot<Int> = snapshot!(self.permissions.len() - 1);
@@ -378,7 +378,7 @@ mod imp {
             if self.list.head.is_null() {
                 return None;
             }
-            let perm = ghost!(&*self.list.permissions[*self.pos]);
+            let perm = ghost!(&self.list.permissions[*self.pos]);
             Some(&unsafe { Perm::as_ref(self.current, perm) }.data)
         }
 
@@ -400,7 +400,7 @@ mod imp {
             if self.list.head.is_null() {
                 return None;
             }
-            let perm = ghost!(&mut *self.list.permissions[*self.pos]);
+            let perm = ghost!(&mut self.list.permissions[*self.pos]);
             Some(&mut unsafe { Perm::as_mut(self.current.cast_mut(), perm) }.data)
         }
 
@@ -425,7 +425,7 @@ mod imp {
                 return;
             }
             let next = unsafe {
-                Perm::as_ref(self.current, ghost!(&*self.list.permissions[*self.pos])).next
+                Perm::as_ref(self.current, ghost!(&self.list.permissions[*self.pos])).next
             };
             self.current = next;
             self.pos = ghost!(*self.pos + 1int);
@@ -452,7 +452,7 @@ mod imp {
                 return;
             }
             let prev = unsafe {
-                Perm::as_ref(self.current, ghost!(&*self.list.permissions[*self.pos])).prev
+                Perm::as_ref(self.current, ghost!(&self.list.permissions[*self.pos])).prev
             };
             self.current = prev;
             self.pos = ghost!(*self.pos - 1int);
