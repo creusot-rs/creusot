@@ -15,14 +15,14 @@ module M_f
   
   type t_FMap_Int_tup2_ptr_T_SyncView
   
-  predicate resolve_FMap_Int_tup2_ptr_T_SyncView [@inline:trivial] (_1: t_FMap_Int_tup2_ptr_T_SyncView) = true
+  predicate resolve_ref_FMap_Int_tup2_ptr_T_SyncView [@inline:trivial] (_1: t_FMap_Int_tup2_ptr_T_SyncView) = true
   
-  meta "rewrite_def" predicate resolve_FMap_Int_tup2_ptr_T_SyncView
+  meta "rewrite_def" predicate resolve_ref_FMap_Int_tup2_ptr_T_SyncView
   
-  function val_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
+  function val_unsized_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
   
   predicate resolve_Perm_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) =
-    resolve_FMap_Int_tup2_ptr_T_SyncView (val_AtomicPtr_T self)
+    resolve_ref_FMap_Int_tup2_ptr_T_SyncView (val_unsized_AtomicPtr_T self)
   
   meta "rewrite_def" predicate resolve_Perm_AtomicPtr_T
   
@@ -104,6 +104,11 @@ module M_f
     Map.get (to_mapping_Int self) k
   
   meta "rewrite_def" function get_Int
+  
+  function val_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView =
+    val_unsized_AtomicPtr_T self
+  
+  meta "rewrite_def" function val_AtomicPtr_T
   
   function val_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) : Opaque.ptr
   
@@ -249,13 +254,14 @@ module M_g
   
   type t_Perm_AtomicPtr_T
   
-  predicate resolve_ptr_T [@inline:trivial] (_1: Opaque.ptr) = true
+  predicate resolve_ref_ptr_T [@inline:trivial] (_1: Opaque.ptr) = true
   
-  meta "rewrite_def" predicate resolve_ptr_T
+  meta "rewrite_def" predicate resolve_ref_ptr_T
   
-  function val_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : Opaque.ptr
+  function val_unsized_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : Opaque.ptr
   
-  predicate resolve_Perm_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) = resolve_ptr_T (val_AtomicPtr_T self)
+  predicate resolve_Perm_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) =
+    resolve_ref_ptr_T (val_unsized_AtomicPtr_T self)
   
   meta "rewrite_def" predicate resolve_Perm_AtomicPtr_T
   
@@ -289,6 +295,10 @@ module M_g
   function ward_AtomicPtr_T'0 (self: t_Perm_AtomicPtr_T) : t_AtomicPtr_T
   
   function val_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None) : Opaque.ptr
+  
+  function val_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) : Opaque.ptr = val_unsized_AtomicPtr_T self
+  
+  meta "rewrite_def" function val_AtomicPtr_T
   
   let shoot_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_None) (own: t_Perm_AtomicPtr_T)
     (return (x: ())) =

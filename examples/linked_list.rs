@@ -11,7 +11,7 @@ pub struct List<T> {
     first: *const Link<T>,
     last: *const Link<T>,
     // ghost
-    seq: Ghost<Seq<Box<Perm<*const Link<T>>>>>,
+    seq: Ghost<Seq<Perm<*const Link<T>>>>,
 }
 
 impl<T> Invariant for List<T> {
@@ -39,7 +39,7 @@ impl<T> View for List<T> {
     #[logic]
     fn view(self) -> Self::ViewTy {
         pearlite! {
-            (*self.seq).map(|ptr_perm: Box<Perm<*const Link<T>>>| ptr_perm.val().value)
+            (*self.seq).map(|ptr_perm: Perm<*const Link<T>>| ptr_perm.val().value)
         }
     }
 }

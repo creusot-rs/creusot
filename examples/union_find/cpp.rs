@@ -74,7 +74,7 @@ mod implementation {
                     *self.0.perms[Snapshot::new(e)].ward() == *e.0.view() &&
                     self.domain().contains(self.0.roots[e]) &&
                     self.0.roots[self.0.roots[e]] == self.0.roots[e] &&
-                    match *self.0.perms[Snapshot::new(e)].val() {
+                    match self.0.perms[Snapshot::new(e)].val() {
                         Node::Link(e2) =>
                             self.domain().contains(e2) &&
                             self.0.roots[e] != e &&

@@ -1,6 +1,6 @@
 #![feature(core_intrinsics)]
 extern crate creusot_std;
-use creusot_std::{ghost::perm::Perm, prelude::*};
+use creusot_std::{ghost::perm::Perm, invariant::GuardedBorrow, prelude::*};
 
 fn foo(x: i32) -> i32 {
     x
@@ -179,7 +179,9 @@ pub fn slice_as_mut_ptr<T>(s: &mut [T]) -> *mut T {
 }
 
 #[erasure(slice_as_mut_ptr)]
-pub fn slice_as_mut_ptr_perm<T>(s: &mut [T]) -> (*mut T, Ghost<&mut Perm<*const [T]>>) {
+pub fn slice_as_mut_ptr_perm<'a, T>(
+    s: &'a mut [T],
+) -> (*mut T, Ghost<GuardedBorrow<'a, Perm<*const [T]>>>) {
     s.as_mut_ptr_perm()
 }
 

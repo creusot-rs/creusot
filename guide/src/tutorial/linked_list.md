@@ -65,7 +65,6 @@ The first step is to make permissions explicit in the data structure.
 > [!TIP]
 >
 > - The type of permissions for pointers `*const T` is [`Perm<*const T>`][perm].
-> - [`Perm`][perm] is an unsized type; we can put it in a `Box` when a sized type is expected.
 > - As a linked list is essentially a sequence of `Link<T>`, we can store permissions in a sequence ([`Seq`][seq]).
 > - To make it compile, we will also need to update `List::new()` to call [`Seq::new()`][seq-new] to conjure an empty ghost sequence.
 
@@ -81,7 +80,7 @@ pub struct List<T> {
     first: *const Link<T>,
     last: *const Link<T>,
     /// Pointer permissions of all list links
-    seq: Ghost<Seq<Box<Perm<*const Link<T>>>>>,
+    seq: Ghost<Seq<Perm<*const Link<T>>>>,
 }
 
 impl<T> List<T> {
@@ -183,7 +182,7 @@ impl<T> View for List<T> {
     #[logic]
     fn view(self) -> Self::ViewTy {
         pearlite! {
-            (*self.seq).map(|ptr_perm: Box<Perm<*const Link<T>>>| ptr_perm.val().value)
+            (*self.seq).map(|ptr_perm: Perm<*const Link<T>>| ptr_perm.val().value)
         }
     }
 }

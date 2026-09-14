@@ -46,7 +46,7 @@ impl<'a, 'tcx> Deref for InvariantAnalysisCtx<'a, 'tcx> {
     type Target = TranslationCtx<'tcx>;
 
     fn deref(&self) -> &TranslationCtx<'tcx> {
-        return &self.ctx;
+        self.ctx
     }
 }
 
@@ -244,7 +244,7 @@ impl ChangedPlacesTree {
                                 t.clone().proj(idx, ty),
                                 acc,
                             );
-                        } else if fdef.vis.is_accessible_from(scope, ctx.tcx) {
+                        } else if ctx.field_is_transparent_from(fdef, scope) {
                             acc.push(t.clone().proj(idx, ty));
                         }
                     }
@@ -460,9 +460,10 @@ impl TyInvPlacesTree {
                             .map(|(idx, ty)| {
                                 if let TyKind::Adt(def, _) = place_ty.ty.kind()
                                     && def.is_struct()
-                                    && !def.non_enum_variant().fields[idx]
-                                        .vis
-                                        .is_accessible_from(ctx.scope, ctx.tcx)
+                                    && !ctx.field_is_transparent_from(
+                                        &def.non_enum_variant().fields[idx],
+                                        ctx.scope,
+                                    )
                                 {
                                     Self::Top
                                 } else if is_tyinv_trivial(*ty) {
