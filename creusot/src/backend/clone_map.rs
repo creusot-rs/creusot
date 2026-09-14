@@ -57,6 +57,7 @@ pub enum PreMod {
     Slice,
     Opaque,
     Any,
+    Mode,
 }
 
 pub(crate) trait Namer<'tcx> {
@@ -185,6 +186,7 @@ pub(crate) trait Namer<'tcx> {
                 &["creusot", "slice", &format!("Slice{}BW", self.tcx().sess.target.pointer_width)]
             }
             (PreMod::Any, _) => &["creusot", "prelude", "Any"],
+            (PreMod::Mode, _) => &["creusot", "prelude", "Mode"],
         };
         name.into_iter().copied().map(Symbol::intern).collect()
     }
@@ -648,8 +650,8 @@ impl Setters {
         self.0.is_empty()
     }
 
-    pub fn call_setters(self, mut body: why3::coma::Expr) -> why3::coma::Expr {
-        for setter in self.0.into_iter() {
+    pub fn call_setters(&self, mut body: why3::coma::Expr) -> why3::coma::Expr {
+        for setter in self.0.iter().cloned() {
             body = why3::coma::Expr::var(setter).app([why3::coma::Arg::Cont(body)]);
         }
         body

@@ -16,7 +16,7 @@ use crate::{
             extract_trusted_positivity,
         },
         fmir,
-        pearlite::{self, PIdent, Term, TermSort, TermWithTriggers},
+        pearlite::{self, InProgram, PIdent, Term, TermSort, TermWithTriggers},
         specification::{
             PreContract, PreSignature, inherited_extern_spec, inputs_and_output, pre_sig_of,
         },
@@ -351,7 +351,8 @@ impl<'tcx> TranslationCtx<'tcx> {
             .insert(def_id, |_| {
                 Box::new(if self.tcx.hir_maybe_body_owned_by(local_id).is_some() {
                     let inputs = self.inputs_and_output(def_id).0;
-                    let term = self.term(def_id, TermSort::Logic(inputs)).no_triggers();
+                    let term =
+                        self.term(def_id, TermSort::Logic(inputs), InProgram::No).no_triggers();
                     Some(*term)
                 } else {
                     None
@@ -361,9 +362,15 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     /// Compute a term, no memoization
-    pub(crate) fn term(&self, def_id: DefId, sort: TermSort<'tcx, '_>) -> TermWithTriggers<'tcx> {
-        let mut t = pearlite::from_thir(self, def_id.expect_local(), &mut HashMap::new(), sort)
-            .unwrap_or_else(|err| err.raise_fatal());
+    pub(crate) fn term(
+        &self,
+        def_id: DefId,
+        sort: TermSort<'tcx, '_>,
+        in_program: InProgram,
+    ) -> TermWithTriggers<'tcx> {
+        let mut t =
+            pearlite::from_thir(self, def_id.expect_local(), &mut HashMap::new(), sort, in_program)
+                .unwrap_or_else(|err| err.raise_fatal());
         *t.term = pearlite::normalize(self, self.typing_env(def_id), *t.term);
         for trigger in &mut t.triggers {
             let t = std::mem::take(&mut trigger.0);
@@ -784,6 +791,14 @@ impl<'tcx> TranslationCtx<'tcx> {
             &mut self.nonzero_sized_ty.borrow_mut(),
             &mut self.inhabited_ty.borrow_mut(),
             ty,
+        )
+    }
+
+    pub fn mode_ty(&self) -> Ty<'tcx> {
+        Ty::new_adt(
+            self.tcx,
+            self.tcx.adt_def(Intrinsic::ModeType.get(self)),
+            self.tcx.mk_args(&[]),
         )
     }
 }
