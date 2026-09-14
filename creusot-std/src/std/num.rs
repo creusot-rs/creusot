@@ -811,9 +811,6 @@ extern_spec! {
     }
 }
 
-// `Wrapping<T>` is a transparent newtype whose arithmetic operators wrap around on overflow,
-// i.e. `Wrapping(a) + Wrapping(b) == Wrapping(a.wrapping_add(b))`, and likewise for `-`, `*` and
-// unary `-`. Its model is the model of the wrapped value.
 impl<T: DeepModel> DeepModel for Wrapping<T> {
     type DeepModelTy = Wrapping<T::DeepModelTy>;
 
@@ -823,14 +820,10 @@ impl<T: DeepModel> DeepModel for Wrapping<T> {
     }
 }
 
-/// Adds specifications for the wrapping arithmetic operators (`+`, `-`, `*`, unary `-`) of
-/// [`Wrapping`] on the given integer type. Each operator performs the operation on the wrapped
-/// value and wraps around on overflow, matching the corresponding `wrapping_*` method.
 macro_rules! spec_wrapping {
     ($($type:ty)*) => {$(
         extern_spec! {
             impl Add<Wrapping<$type>> for Wrapping<$type> {
-                #[allow(dead_code)]
                 #[check(ghost)]
                 #[ensures(result.0 == self.0 + rhs.0)]
                 fn add(self, rhs: Wrapping<$type>) -> Wrapping<$type> {
@@ -839,8 +832,6 @@ macro_rules! spec_wrapping {
             }
 
             impl Sub<Wrapping<$type>> for Wrapping<$type> {
-                #[allow(dead_code)]
-                #[check(ghost)]
                 #[ensures(result.0 == self.0 - rhs.0)]
                 fn sub(self, rhs: Wrapping<$type>) -> Wrapping<$type> {
                     Wrapping(self.0.wrapping_sub(rhs.0))
@@ -848,8 +839,6 @@ macro_rules! spec_wrapping {
             }
 
             impl Mul<Wrapping<$type>> for Wrapping<$type> {
-                #[allow(dead_code)]
-                #[check(ghost)]
                 #[ensures(result.0 == self.0 * rhs.0)]
                 fn mul(self, rhs: Wrapping<$type>) -> Wrapping<$type> {
                     Wrapping(self.0.wrapping_mul(rhs.0))
@@ -857,7 +846,6 @@ macro_rules! spec_wrapping {
             }
 
             impl Neg for Wrapping<$type> {
-                #[allow(dead_code)]
                 #[check(ghost)]
                 #[ensures(result.0 == -self.0)]
                 fn neg(self) -> Wrapping<$type> {
