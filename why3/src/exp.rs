@@ -602,10 +602,11 @@ impl Exp {
 }
 
 /// Precedence ordered from lowest to highest priority
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u8)]
 pub(crate) enum Precedence {
-    /// if then else / let in
-    IfLet,
+    IfLet, // if then else / let in
+    Abs,   // Function abstraction
     Attr,
     Cast,
     Impl,     // -> / <-> / by / so
@@ -617,12 +618,13 @@ pub(crate) enum Precedence {
     Infix3,   // infix-op level 3 (left-assoc)
     Infix4,   // infix-op level 4 (left-assoc)
     Prefix,   // prefix-op
-    Abs,      // Function abstraction
+    Match,    // pattern matching
     App,      // Function application
     Field,    // Record field accesses (from observing the why3 parser)
     Brackets, // Brackets ([_])
     Atom,     // Syntactically closed or atomic expressions
     BangOp,   // !
+              // If you change the final constructor, please change it in [`Self::next`]!
 }
 
 #[derive(PartialEq, Debug)]
@@ -632,38 +634,19 @@ pub enum AssocDir {
 }
 
 impl Precedence {
-    pub fn next(&self) -> Self {
-        match self {
-            Precedence::IfLet => Precedence::Attr,
-            Precedence::Attr => Precedence::Cast,
-            Precedence::Cast => Precedence::Impl,
-            Precedence::Impl => Precedence::Disj,
-            Precedence::Disj => Precedence::Conj,
-            Precedence::Conj => Precedence::Not,
-            Precedence::Not => Precedence::Infix1,
-            Precedence::Infix1 => Precedence::Infix2,
-            Precedence::Infix2 => Precedence::Infix3,
-            Precedence::Infix3 => Precedence::Infix4,
-            Precedence::Infix4 => Precedence::Prefix,
-            Precedence::Prefix => Precedence::Abs,
-            Precedence::Abs => Precedence::App,
-            Precedence::App => Precedence::Field,
-            Precedence::Field => Precedence::Brackets,
-            Precedence::Brackets => Precedence::Atom,
-            Precedence::Atom => Precedence::BangOp,
-            Precedence::BangOp => Precedence::BangOp,
-        }
+    pub fn next(self) -> Self {
+        let last = Self::BangOp as u8;
+        let this = self as u8;
+        let next = (this + 1) % (last + 1);
+        unsafe { std::mem::transmute(next) }
     }
 
-    pub fn associativity(&self) -> Option<AssocDir> {
+    pub fn associativity(self) -> Option<AssocDir> {
         use Precedence::*;
         match self {
             Infix1 => None,
-            Infix2 | Infix3 => Some(AssocDir::Left),
-            Conj => Some(AssocDir::Right),
-            Disj => Some(AssocDir::Right),
-            App => Some(AssocDir::Left),
-            Abs => Some(AssocDir::Right),
+            Infix2 | Infix3 | App => Some(AssocDir::Left),
+            Conj | Disj | Abs | Match => Some(AssocDir::Right),
             _ => None,
         }
     }
@@ -686,7 +669,7 @@ impl Exp {
             Exp::Tuple(_) => Atom,
             Exp::Constructor { .. } => App,
             Exp::FunLiteral(_) => Atom,
-            Exp::Match(_, _) => Abs,
+            Exp::Match(_, _) => Match,
             Exp::IfThenElse(_, _, _) => IfLet,
             Exp::Const(_) => Atom,
             Exp::UnaryOp(UnOp::Neg | UnOp::FloatNeg, _) => Prefix,
