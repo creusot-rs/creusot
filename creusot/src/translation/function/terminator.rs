@@ -105,7 +105,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         if contract.extern_no_spec()
                             && !matches!(tr_res, TraitResolved::UnknownFound)
                             && let Some(lint_root) =
-                                self.body.source_info(loc).scope.lint_root(&self.body.source_scopes)
+                                terminator.source_info.scope.lint_root(&self.body.source_scopes)
                         {
                             let name = self.ctx.tcx.item_name(fun_def_id);
                             self.ctx.emit_node_span_lint(
@@ -125,11 +125,15 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             target = None
                         } else {
                             let subst = self.ctx.erase_and_anonymize_regions(subst);
+                            let mode = CallMode {
+                                ghost: self.in_ghost_block(terminator.source_info.scope),
+                            };
                             self.emit_statement(Statement {
                                 kind: fmir::StatementKind::Call(
                                     self.translate_place(destination, span),
                                     fun_def_id,
                                     subst,
+                                    mode,
                                     func_args,
                                     span,
                                 ),

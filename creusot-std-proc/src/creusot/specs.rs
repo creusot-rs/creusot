@@ -7,7 +7,7 @@ use crate::{
         pretyping,
     },
 };
-use pearlite_syn::{EnsuresTerm, Term, TermPath};
+use pearlite_syn::{ContractTerm, Term, TermPath};
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
@@ -25,7 +25,25 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     let documentation = document_spec("requires", doc::LogicBody::term(REQUIRES_LEN, attr.clone()));
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
-    let req_body = pretyping::encode_term(&parse_macro_input!(attr as Term));
+    let term = parse_macro_input!(attr as ContractTerm);
+    match term.binder {
+        Some(binder) => {
+            let span = binder.span();
+            return quote::quote_spanned! { span=>
+                compile_error!{"`#[requires]`clause can't bind anything"}
+            }
+            .into();
+        }
+        None => {}
+    };
+    if !term.term.trigger.is_empty() {
+        let span = term.term.trigger[0].span();
+        return quote::quote_spanned! { span =>
+            compile_error!{"`#[requires]` cannot contain top-level triggers"}
+        }
+        .into();
+    }
+    let req_body = pretyping::encode_term(&term.term.term);
     item.mark_unused();
 
     let req_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
@@ -90,23 +108,33 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     let documentation = document_spec("ensures", doc::LogicBody::term(ENSURES_LEN, attr.clone()));
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
-    let (result, ens_body) = match parse_macro_input!(attr as EnsuresTerm) {
-        EnsuresTerm::EnsuresClosure(closure) => {
+    let term = parse_macro_input!(attr as ContractTerm);
+    let result = match term.binder {
+        Some(binder) => {
             if matches!(item, ContractSubject::Closure(_)) {
                 return syn::Error::new(
-                    closure.span(),
+                    binder.span(),
                     "The syntax #[ensures(|res| ...)] is not supported for specifying closures.",
                 )
                 .into_compile_error()
                 .into();
             }
-            (closure.result, pretyping::encode_term_with_triggers(&closure.body))
+            if binder.pats.len() != 1 {
+                let span = binder.span();
+                return quote::quote_spanned! { span=>
+                    compile_error!{"`#[ensures]` clause expects one result parameter"}
+                }
+                .into();
+            }
+            binder
+                .pats
+                .into_iter()
+                .next()
+                .unwrap_or_else(|| ident_to_pat(Ident::new("result", Span::call_site())))
         }
-        EnsuresTerm::TermWithTriggers(term) => {
-            let result = ident_to_pat(Ident::new("result", Span::call_site()));
-            (result, pretyping::encode_term_with_triggers(&term))
-        }
+        None => ident_to_pat(Ident::new("result", Span::call_site())),
     };
+    let ens_body = pretyping::encode_term_with_triggers(&term.term);
     item.mark_unused();
 
     let ens_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
@@ -290,6 +318,7 @@ enum FnSpecResultKind {
 // `requires` or `ensures`
 fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, fn_spec_body: TokenStream) -> TokenStream {
     let name_tag = tag.to_string();
+
     let unify_ty_result = if let FnSpecResultKind::Unified(result, res) = &reskind {
         // Tell type inference that res and result have the same type
         quote! { ::creusot_std::__stubs::closure_result(#res, #result); }
@@ -297,10 +326,14 @@ fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, fn_spec_body: TokenStream
         quote! {}
     };
 
-    let result_bind = match &reskind {
+    let bind = match &reskind {
         FnSpecResultKind::NoResult => quote! {},
-        FnSpecResultKind::Unified(result, _) => quote! { #result },
-        FnSpecResultKind::Typed(result, ty) => quote! { #result: #ty },
+        FnSpecResultKind::Unified(result, _) => {
+            quote! { #result, }
+        }
+        FnSpecResultKind::Typed(result, ty) => {
+            quote! { #result: #ty }
+        }
     };
 
     quote! {
@@ -309,7 +342,7 @@ fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, fn_spec_body: TokenStream
             #[creusot::no_translate]
             #[creusot::item=#name_tag]
             #[creusot::spec]
-            |#result_bind| -> bool { #unify_ty_result #fn_spec_body }
+            |#bind| -> bool { #unify_ty_result #fn_spec_body }
         ;
     }
 }

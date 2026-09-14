@@ -174,7 +174,7 @@ pub(crate) fn translate_closure_ty<'tcx>(
         .enumerate()
         .map(|(ix, uv)| FieldDecl {
             ty: translate_ty(ctx, names, DUMMY_SP, uv),
-            name: names.field(did, subst, ix.into()),
+            name: names.field(did, subst, ix.into()).to_ident(),
         })
         .collect();
 
@@ -203,7 +203,7 @@ pub(crate) fn translate_tuple_ty<'tcx>(
         .enumerate()
         .map(|(ix, ty)| FieldDecl {
             ty: translate_ty(ctx, names, DUMMY_SP, ty),
-            name: names.tuple_field(args, ix.into()),
+            name: names.tuple_field(args, ix.into()).to_ident(),
         })
         .collect();
 
@@ -287,7 +287,7 @@ pub(crate) fn translate_adtdecl<'tcx>(
                 .map(|(ix, f)| {
                     let ty = names.normalize(f.ty(ctx.tcx, subst));
                     FieldDecl {
-                        name: names.field(def.did(), subst, ix),
+                        name: names.field(def.did(), subst, ix).to_ident(),
                         ty: translate_ty(ctx, names, ctx.def_span(f.did), ty),
                     }
                 })
@@ -397,7 +397,7 @@ pub(crate) fn constructor<'tcx>(
                 let fields = fields
                     .into_iter()
                     .enumerate()
-                    .map(|(ix, f)| (Name::local(names.field(did, subst, ix.into())), f))
+                    .map(|(ix, f)| (names.field(did, subst, ix.into()), f))
                     .collect();
                 Exp::Record { fields }
             }
@@ -468,4 +468,8 @@ pub fn bool() -> MlT {
 
 pub fn int<'tcx>(ctx: &Why3Generator<'tcx>, names: &impl Namer<'tcx>) -> MlT {
     translate_ty(ctx, names, DUMMY_SP, ctx.int_ty())
+}
+
+pub fn mode<'tcx>(names: &impl Namer<'tcx>) -> MlT {
+    MlT::qconstructor(names.in_pre(PreMod::Mode, "t"))
 }
