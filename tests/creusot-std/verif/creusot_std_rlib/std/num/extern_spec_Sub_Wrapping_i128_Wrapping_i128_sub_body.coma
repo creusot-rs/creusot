@@ -1,0 +1,31 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int128
+use creusot.prelude.Any
+
+type t_Wrapping_i128 = { f0: Int128.t }
+
+let wrapping_sub (self_: Int128.t) (rhs: Int128.t) (return (x: Int128.t)) = any
+  [ return (result: Int128.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = Int128.sub self_ rhs}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Sub_Wrapping_i128_Wrapping_i128_sub_body (self_: t_Wrapping_i128) (rhs: t_Wrapping_i128)
+  (return (x: t_Wrapping_i128)) = (! bb0
+  [ bb0 = s0
+    [ s0 = wrapping_sub {self_.f0} {rhs.f0} (fun (_x: Int128.t) -> [ &_6 <- _x ] s1)
+    | s1 = [ &_ret <- { f0 = _6 } ] s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: t_Wrapping_i128 = Any.any_l ()
+  | & self_: t_Wrapping_i128 = self_
+  | & rhs: t_Wrapping_i128 = rhs
+  | & _6: Int128.t = Any.any_l () ])
+  [ return (result: t_Wrapping_i128) ->
+  {[@stop_split] [@expl:extern_spec_Sub_Wrapping_i128_Wrapping_i128_sub_body ensures] result.f0
+    = Int128.sub self_.f0 rhs.f0}
+    (! return {result}) ]
