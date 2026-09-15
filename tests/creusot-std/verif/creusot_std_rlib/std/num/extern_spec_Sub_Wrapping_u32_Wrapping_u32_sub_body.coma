@@ -1,0 +1,31 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt32
+use creusot.prelude.Any
+
+type t_Wrapping_u32 = { f0: UInt32.t }
+
+let wrapping_sub (self_: UInt32.t) (rhs: UInt32.t) (return (x: UInt32.t)) = any
+  [ return (result: UInt32.t) -> {[@stop_split] [@expl:wrapping_sub ensures] result = UInt32.sub self_ rhs}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Sub_Wrapping_u32_Wrapping_u32_sub_body (self_: t_Wrapping_u32) (rhs: t_Wrapping_u32)
+  (return (x: t_Wrapping_u32)) = (! bb0
+  [ bb0 = s0
+    [ s0 = wrapping_sub {self_.f0} {rhs.f0} (fun (_x: UInt32.t) -> [ &_6 <- _x ] s1)
+    | s1 = [ &_ret <- { f0 = _6 } ] s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: t_Wrapping_u32 = Any.any_l ()
+  | & self_: t_Wrapping_u32 = self_
+  | & rhs: t_Wrapping_u32 = rhs
+  | & _6: UInt32.t = Any.any_l () ])
+  [ return (result: t_Wrapping_u32) ->
+  {[@stop_split] [@expl:extern_spec_Sub_Wrapping_u32_Wrapping_u32_sub_body ensures] result.f0
+    = UInt32.sub self_.f0 rhs.f0}
+    (! return {result}) ]

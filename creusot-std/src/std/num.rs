@@ -3,10 +3,12 @@ use crate::{
     logic::ops::{AddLogic, MulLogic, NegLogic, NthBitLogic, SubLogic},
     prelude::*,
 };
+use core::num::Wrapping;
+// Resolve links like [`i8::add`] in the generated documentation
 #[cfg(creusot)]
 use core::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
-    Mul, MulAssign, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
+    Mul, MulAssign, Neg, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
 };
 
 macro_rules! mach_int {
@@ -689,3 +691,50 @@ extern_spec! {
         unsafe fn new_unchecked(n: T) -> Self;
     }
 }
+
+impl<T: DeepModel> DeepModel for Wrapping<T> {
+    type DeepModelTy = Wrapping<T::DeepModelTy>;
+
+    #[logic(open, inline)]
+    fn deep_model(self) -> Self::DeepModelTy {
+        pearlite! { Wrapping(self.0.deep_model()) }
+    }
+}
+
+macro_rules! spec_wrapping {
+    ($($type:ty)*) => {$(
+        extern_spec! {
+            impl Add<Wrapping<$type>> for Wrapping<$type> {
+                #[check(ghost)]
+                #[ensures(result.0 == self.0 + rhs.0)]
+                fn add(self, rhs: Wrapping<$type>) -> Wrapping<$type> {
+                    Wrapping(self.0.wrapping_add(rhs.0))
+                }
+            }
+
+            impl Sub<Wrapping<$type>> for Wrapping<$type> {
+                #[ensures(result.0 == self.0 - rhs.0)]
+                fn sub(self, rhs: Wrapping<$type>) -> Wrapping<$type> {
+                    Wrapping(self.0.wrapping_sub(rhs.0))
+                }
+            }
+
+            impl Mul<Wrapping<$type>> for Wrapping<$type> {
+                #[ensures(result.0 == self.0 * rhs.0)]
+                fn mul(self, rhs: Wrapping<$type>) -> Wrapping<$type> {
+                    Wrapping(self.0.wrapping_mul(rhs.0))
+                }
+            }
+
+            impl Neg for Wrapping<$type> {
+                #[check(ghost)]
+                #[ensures(result.0 == -self.0)]
+                fn neg(self) -> Wrapping<$type> {
+                    Wrapping(self.0.wrapping_neg())
+                }
+            }
+        }
+    )*};
+}
+
+spec_wrapping!(u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize);
