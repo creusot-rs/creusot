@@ -32,14 +32,6 @@ struct Args {
     /// Ignore why3find cache
     #[clap(long)]
     no_cache: bool,
-    /// Timeout in seconds, does not override the TIME comment in .rs files
-    #[clap(long)]
-    time: Option<f64>,
-    /// Multiply all timeouts by this factor
-    /// The `--time=N` option must also be provided for the factor to affect tests without explicit TIME comments
-    /// We use this option to run tests on especially slow machines, like CI.
-    #[clap(long, default_value_t = 1.)]
-    time_factor: f64,
     /// Max parallel provers
     #[clap(short = 'j')]
     jobs: Option<usize>,
@@ -195,9 +187,6 @@ fn main() {
             .arg("prove")
             .arg("--no-autodetect-provers")
             .args(["-j", jobs]);
-        if let Some(time) = args.time {
-            why3find.args(["--time", &format!("{}", time * args.time_factor)]);
-        }
         if args.no_cache {
             why3find.arg("--no-cache");
         }
@@ -254,7 +243,7 @@ fn main() {
                     why3find.args(["--tactic", &tactic]);
                 }
                 if let Some(time) = time {
-                    why3find.args(["--time", &format!("{}", time * args.time_factor)]);
+                    why3find.args(["--time", &format!("{}", time)]);
                 }
                 if let Some(depth) = depth {
                     why3find.args(["--depth", &depth]);
