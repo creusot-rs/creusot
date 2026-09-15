@@ -10,12 +10,12 @@ use int.Int
 
 constant const_MIN: UInt128.t = (0: UInt128.t)
 
-let rem_assign_u128 (self_: MutBorrow.t UInt128.t) (rhs: UInt128.t) (return (x: ())) =
-{[@stop_split] [@expl:rem_assign_u128 requires] ([@stop_split] [@expl:rem_assign requires #0] UInt128.t'int rhs <> 0)
-  /\ ([@stop_split] [@expl:rem_assign requires #1] not (self_.current = const_MIN /\ UInt128.t'int rhs = - 1))}
+let rem_assign_u128 (self: MutBorrow.t UInt128.t) (other: UInt128.t) (return (x: ())) =
+{[@stop_split] [@expl:rem_assign_u128 requires] ([@stop_split] [@expl:rem_assign requires #0] UInt128.t'int other <> 0)
+  /\ ([@stop_split] [@expl:rem_assign requires #1] not (self.current = const_MIN /\ UInt128.t'int other = - 1))}
   any
-  [ return (result: ()) -> {[@stop_split] [@expl:rem_assign ensures] UInt128.t'int self_.final
-    = ComputerDivision.mod (UInt128.t'int self_.current) (UInt128.t'int rhs)}
+  [ return (result: ()) -> {[@stop_split] [@expl:rem_assign ensures] UInt128.t'int self.final
+    = ComputerDivision.mod (UInt128.t'int self.current) (UInt128.t'int other)}
     (! return {result}) ]
 
 predicate resolve_refmut_u128 [@inline:trivial] (_1: MutBorrow.t UInt128.t) = _1.final = _1.current

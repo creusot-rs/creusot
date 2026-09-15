@@ -22,14 +22,14 @@ module M_check_iter_len
   
   meta "rewrite_def" function view_Box_slice_i32_Global
   
-  let into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
+  let into_vec_i32 (self: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:into_vec ensures] view_Vec_i32_Global result
-      = view_Box_slice_i32_Global self_}
+      = view_Box_slice_i32_Global self}
       (! return {result}) ]
   
-  let deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
+  let deref_Vec_i32_Global (self: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
     [ return (result: Slice64.slice Int32.t) -> {[@stop_split] [@expl:deref ensures] Slice64.view result
-      = view_Vec_i32_Global self_}
+      = view_Vec_i32_Global self}
       (! return {result}) ]
   
   type t_Iter_i32
@@ -38,10 +38,10 @@ module M_check_iter_len
   
   function view_Iter_i32 (self: t_Iter_i32) : Slice64.slice Int32.t
   
-  let iter_i32 (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
+  let iter_i32 (self: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
     [ return (result: t_Iter_i32) ->
     {[@stop_split] [@expl:iter_i32 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_i32 result)
-      /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self_)}
+      /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self)}
       (! return {result}) ]
   
   predicate invariant_ref_Iter_i32 [@inline:trivial] (self: t_Iter_i32) = inv_Iter_i32 self
@@ -52,11 +52,11 @@ module M_check_iter_len
   
   meta "rewrite_def" predicate inv_ref_Iter_i32
   
-  let len_Iter_i32 (self_: t_Iter_i32) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_Iter_i32 self_}
+  let len_Iter_i32 (self: t_Iter_i32) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Iter_i32 self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (Slice64.view (view_Iter_i32 self_))}
+      = Seq.length (Slice64.view (view_Iter_i32 self))}
       (! return {result}) ]
   
   type t_Option_ref_i32 = None | Some Int32.t
@@ -106,12 +106,12 @@ module M_check_iter_len
   predicate completed_Iter_i32 (self: MutBorrow.t t_Iter_i32) =
     resolve_refmut_Iter_i32 self /\ Slice64.view (view_Iter_i32 self.current) = (Seq.empty: Seq.seq Int32.t)
   
-  let next_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
-  {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_i32 self_}
+  let next_Iter_i32 (self: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
+  {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_i32 self}
     any
     [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Iter_i32 self_
-        | Some v -> produces_Iter_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_Iter_i32 self
+        | Some v -> produces_Iter_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
@@ -188,14 +188,14 @@ module M_check_iter_mut_len
   
   meta "rewrite_def" function view_Box_slice_i32_Global
   
-  let into_vec_i32 (self_: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
+  let into_vec_i32 (self: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:into_vec ensures] view_Vec_i32_Global result
-      = view_Box_slice_i32_Global self_}
+      = view_Box_slice_i32_Global self}
       (! return {result}) ]
   
-  let deref_Vec_i32_Global (self_: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
+  let deref_Vec_i32_Global (self: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
     [ return (result: Slice64.slice Int32.t) -> {[@stop_split] [@expl:deref ensures] Slice64.view result
-      = view_Vec_i32_Global self_}
+      = view_Vec_i32_Global self}
       (! return {result}) ]
   
   type t_Iter_i32
@@ -204,10 +204,10 @@ module M_check_iter_mut_len
   
   function view_Iter_i32 (self: t_Iter_i32) : Slice64.slice Int32.t
   
-  let iter_i32 (self_: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
+  let iter_i32 (self: Slice64.slice Int32.t) (return (x: t_Iter_i32)) = any
     [ return (result: t_Iter_i32) ->
     {[@stop_split] [@expl:iter_i32 ensures] ([@stop_split] [@expl:iter result type invariant] inv_Iter_i32 result)
-      /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self_)}
+      /\ ([@stop_split] [@expl:iter ensures] view_Iter_i32 result = self)}
       (! return {result}) ]
   
   predicate invariant_ref_Iter_i32 [@inline:trivial] (self: t_Iter_i32) = inv_Iter_i32 self
@@ -218,11 +218,11 @@ module M_check_iter_mut_len
   
   meta "rewrite_def" predicate inv_ref_Iter_i32
   
-  let len_Iter_i32 (self_: t_Iter_i32) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:len 'self_' type invariant] inv_ref_Iter_i32 self_}
+  let len_Iter_i32 (self: t_Iter_i32) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Iter_i32 self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (Slice64.view (view_Iter_i32 self_))}
+      = Seq.length (Slice64.view (view_Iter_i32 self))}
       (! return {result}) ]
   
   type t_Option_ref_i32 = None | Some Int32.t
@@ -272,12 +272,12 @@ module M_check_iter_mut_len
   predicate completed_Iter_i32 (self: MutBorrow.t t_Iter_i32) =
     resolve_refmut_Iter_i32 self /\ Slice64.view (view_Iter_i32 self.current) = (Seq.empty: Seq.seq Int32.t)
   
-  let next_Iter_i32 (self_: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
-  {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_Iter_i32 self_}
+  let next_Iter_i32 (self: MutBorrow.t t_Iter_i32) (return (x: t_Option_ref_i32)) =
+  {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_i32 self}
     any
     [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Iter_i32 self_
-        | Some v -> produces_Iter_i32 self_.current (Seq.singleton v) self_.final
+        | None -> completed_Iter_i32 self
+        | Some v -> produces_Iter_i32 self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   

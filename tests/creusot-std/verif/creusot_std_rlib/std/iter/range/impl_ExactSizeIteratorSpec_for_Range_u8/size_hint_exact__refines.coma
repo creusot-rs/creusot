@@ -29,24 +29,24 @@ predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
 meta "rewrite_def" predicate gt_log_Int
 
 predicate postcondition_size_hint (self: ()) (args: t_Range_u8) (result: tup2_usize_Option_usize) =
-  let self_ = args in (ge_log_Int (deep_model_u8 self_.start) (deep_model_u8 self_.end')
+  let self'0 = args in (ge_log_Int (deep_model_u8 self'0.start) (deep_model_u8 self'0.end')
     -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-  /\ (let s = deep_model_u8 self_.end' - deep_model_u8 self_.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
+  /\ (let s = deep_model_u8 self'0.end' - deep_model_u8 self'0.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
     -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-  /\ (gt_log_Int (deep_model_u8 self_.end' - deep_model_u8 self_.start) (UInt64.t'int const_MAX)
+  /\ (gt_log_Int (deep_model_u8 self'0.end' - deep_model_u8 self'0.start) (UInt64.t'int const_MAX)
   -> result = { f0 = const_MAX; f1 = None })
 
 meta "rewrite_def" predicate postcondition_size_hint
 
-let size_hint_Range_u8 (self_: t_Range_u8) (return (x: tup2_usize_Option_usize)) = any
+let size_hint_Range_u8 (self: t_Range_u8) (return (x: tup2_usize_Option_usize)) = any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint_Range_u8 ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_u8 self_.start) (deep_model_u8 self_.end')
+  {[@stop_split] [@expl:size_hint_Range_u8 ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_u8 self.start) (deep_model_u8 self.end')
       -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-    /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_u8 self_.end'
-      - deep_model_u8 self_.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
+    /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_u8 self.end'
+      - deep_model_u8 self.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
       -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-    /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_u8 self_.end'
-      - deep_model_u8 self_.start) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
+    /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_u8 self.end'
+      - deep_model_u8 self.start) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000

@@ -35,18 +35,18 @@ predicate completed_I (self: MutBorrow.t t_I)
 predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
 
 axiom postcondition_fndef:
-  forall args: t_I, res: tup2_usize_Option_usize [postcondition_size_hint () args res]. postcondition_size_hint () args res
-    -> (let self_ = args in (forall s: Seq.seq t_T, i: MutBorrow.t t_I. produces_I self_ s i.current /\ completed_I i
-        -> UInt64.t'int res.f0 <= Seq.length s)
-    /\ match res.f1 with
-      | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self_ s i -> Seq.length s <= UInt64.t'int r
+  forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
+    -> (let self = args in (forall s: Seq.seq t_T, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
+        -> UInt64.t'int result.f0 <= Seq.length s)
+    /\ match result.f1 with
+      | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
       | None -> true
       end)
 
 function iter_Copied_I (self: t_Copied_I) : t_I
 
 predicate postcondition_size_hint'0 (self: ()) (args: t_Copied_I) (result: tup2_usize_Option_usize) =
-  let self_ = args in postcondition_size_hint () (iter_Copied_I self_) result
+  let self'0 = args in postcondition_size_hint () (iter_Copied_I self'0) result
 
 meta "rewrite_def" predicate postcondition_size_hint'0
 
@@ -58,7 +58,7 @@ meta "rewrite_def" predicate invariant_Copied_I
 
 predicate inv_Copied_I (_1: t_Copied_I)
 
-axiom inv_axiom: forall x: t_Copied_I [inv_Copied_I x]. inv_Copied_I x -> invariant_Copied_I x
+axiom inv_axiom: forall _1: t_Copied_I [inv_Copied_I _1]. inv_Copied_I _1 -> invariant_Copied_I _1
 
 predicate invariant_ref_Copied_I [@inline:trivial] (self: t_Copied_I) = inv_Copied_I self
 
@@ -78,7 +78,7 @@ meta "rewrite_def" predicate inv_ref_I
 
 predicate precondition_size_hint (self: ()) (args: t_I)
 
-axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self_ = args in inv_ref_I self_)
+axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self = args in inv_ref_I self)
     -> precondition_size_hint () args
 
 predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) =
@@ -86,18 +86,18 @@ predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usiz
 
 meta "rewrite_def" predicate postcondition_once_size_hint
 
-let size_hint_I (self_: t_I) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self_}
+let size_hint_I (self: t_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self_ result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
     (! return {result}) ]
 
-let size_hint_Copied_I (self_: t_Copied_I) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint 'self_' type invariant] inv_ref_Copied_I self_}
+let size_hint_Copied_I (self: t_Copied_I) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_Copied_I self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_size_hint () (iter_Copied_I self_) result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_size_hint () (iter_Copied_I self) result}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000

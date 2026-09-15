@@ -39,7 +39,7 @@ module M_read_write
   
   predicate inv_Vec_T_Global (_1: t_Vec_T_Global)
   
-  axiom inv_axiom: forall x: t_Vec_T_Global [inv_Vec_T_Global x]. inv_Vec_T_Global x -> invariant_Vec_T_Global x
+  axiom inv_axiom: forall _1: t_Vec_T_Global [inv_Vec_T_Global _1]. inv_Vec_T_Global _1 -> invariant_Vec_T_Global _1
   
   predicate invariant_refmut_Vec_T_Global [@inline:trivial] (self: MutBorrow.t t_Vec_T_Global) =
     inv_Vec_T_Global self.current /\ inv_Vec_T_Global self.final
@@ -73,17 +73,17 @@ module M_read_write
   
   meta "rewrite_def" predicate resolve_elswhere_usize
   
-  let index_mut_Vec_T_Global (self_: MutBorrow.t t_Vec_T_Global) (ix: UInt64.t) (return (x: MutBorrow.t t_T)) =
-  {[@stop_split] [@expl:index_mut_Vec_T_Global requires] ([@stop_split] [@expl:index_mut 'self_' type invariant] inv_refmut_Vec_T_Global self_)
-    /\ ([@stop_split] [@expl:index_mut requires] in_bounds_usize ix (view_Vec_T_Global self_.current))}
+  let index_mut_Vec_T_Global (self: MutBorrow.t t_Vec_T_Global) (index: UInt64.t) (return (x: MutBorrow.t t_T)) =
+  {[@stop_split] [@expl:index_mut_Vec_T_Global requires] ([@stop_split] [@expl:index_mut 'self' type invariant] inv_refmut_Vec_T_Global self)
+    /\ ([@stop_split] [@expl:index_mut requires] in_bounds_usize index (view_Vec_T_Global self.current))}
     any
     [ return (result: MutBorrow.t t_T) ->
     {[@stop_split] [@expl:index_mut_Vec_T_Global ensures] ([@stop_split] [@expl:index_mut result type invariant] inv_refmut_T result)
-      /\ ([@stop_split] [@expl:index_mut ensures #0] has_value_usize ix (view_Vec_T_Global self_.current) result.current)
-      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize ix (view_Vec_T_Global self_.final) result.final)
-      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize ix (view_Vec_T_Global self_.current) (view_Vec_T_Global self_.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_T_Global self_.final)
-      = Seq.length (view_Vec_T_Global self_.current))}
+      /\ ([@stop_split] [@expl:index_mut ensures #0] has_value_usize index (view_Vec_T_Global self.current) result.current)
+      /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize index (view_Vec_T_Global self.final) result.final)
+      /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize index (view_Vec_T_Global self.current) (view_Vec_T_Global self.final))
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_T_Global self.final)
+      = Seq.length (view_Vec_T_Global self.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
@@ -102,13 +102,13 @@ module M_read_write
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  let index_Vec_T_Global (self_: t_Vec_T_Global) (ix: UInt64.t) (return (x: t_T)) =
-  {[@stop_split] [@expl:index_Vec_T_Global requires] ([@stop_split] [@expl:index 'self_' type invariant] inv_ref_Vec_T_Global self_)
-    /\ ([@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_T_Global self_))}
+  let index_Vec_T_Global (self: t_Vec_T_Global) (index: UInt64.t) (return (x: t_T)) =
+  {[@stop_split] [@expl:index_Vec_T_Global requires] ([@stop_split] [@expl:index 'self' type invariant] inv_ref_Vec_T_Global self)
+    /\ ([@stop_split] [@expl:index requires] in_bounds_usize index (view_Vec_T_Global self))}
     any
     [ return (result: t_T) ->
     {[@stop_split] [@expl:index_Vec_T_Global ensures] ([@stop_split] [@expl:index result type invariant] inv_ref_T result)
-      /\ ([@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_T_Global self_) result)}
+      /\ ([@stop_split] [@expl:index ensures] has_value_usize index (view_Vec_T_Global self) result)}
       (! return {result}) ]
   
   type tup2_ref_T_ref_T = { f0: t_T; f1: t_T }
@@ -116,8 +116,8 @@ module M_read_write
   predicate precondition_eq (self: ()) (args: tup2_ref_T_ref_T)
   
   axiom precondition_fndef:
-    forall args: tup2_ref_T_ref_T [precondition_eq () args]. (let {f0 = self_; f1 = rhs} = args in inv_ref_T self_
-        /\ inv_ref_T rhs) -> precondition_eq () args
+    forall args: tup2_ref_T_ref_T [precondition_eq () args]. (let {f0 = self; f1 = other} = args in inv_ref_T self
+        /\ inv_ref_T other) -> precondition_eq () args
   
   type t_DeepModelTy
   
@@ -130,18 +130,18 @@ module M_read_write
   predicate postcondition_eq (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_T_ref_T, res: bool [postcondition_eq () args res]. postcondition_eq () args res
-      -> (let {f0 = self_; f1 = rhs} = args in res = (deep_model_ref_T self_ = deep_model_ref_T rhs))
+    forall args: tup2_ref_T_ref_T, result: bool [postcondition_eq () args result]. postcondition_eq () args result
+      -> (let {f0 = self; f1 = other} = args in result = (deep_model_ref_T self = deep_model_ref_T other))
   
   predicate postcondition_once_eq (self: ()) (args: tup2_ref_T_ref_T) (result: bool) = postcondition_eq self args result
   
   meta "rewrite_def" predicate postcondition_once_eq
   
-  let eq_T (self_: t_T) (rhs: t_T) (return (x: bool)) =
-  {[@stop_split] [@expl:eq requires] precondition_eq () { f0 = self_; f1 = rhs }}
+  let eq_T (self: t_T) (other: t_T) (return (x: bool)) =
+  {[@stop_split] [@expl:eq requires] precondition_eq () { f0 = self; f1 = other }}
     any
-    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] postcondition_once_eq () { f0 = self_;
-                                                                                            f1 = rhs } result}
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] postcondition_once_eq () { f0 = self;
+                                                                                            f1 = other } result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

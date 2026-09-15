@@ -10,12 +10,12 @@ use int.Int
 
 constant const_MIN: Int16.t = (-32768: Int16.t)
 
-let rem_assign_i16 (self_: MutBorrow.t Int16.t) (rhs: Int16.t) (return (x: ())) =
-{[@stop_split] [@expl:rem_assign_i16 requires] ([@stop_split] [@expl:rem_assign requires #0] Int16.to_int rhs <> 0)
-  /\ ([@stop_split] [@expl:rem_assign requires #1] not (self_.current = const_MIN /\ Int16.to_int rhs = - 1))}
+let rem_assign_i16 (self: MutBorrow.t Int16.t) (other: Int16.t) (return (x: ())) =
+{[@stop_split] [@expl:rem_assign_i16 requires] ([@stop_split] [@expl:rem_assign requires #0] Int16.to_int other <> 0)
+  /\ ([@stop_split] [@expl:rem_assign requires #1] not (self.current = const_MIN /\ Int16.to_int other = - 1))}
   any
-  [ return (result: ()) -> {[@stop_split] [@expl:rem_assign ensures] Int16.to_int self_.final
-    = ComputerDivision.mod (Int16.to_int self_.current) (Int16.to_int rhs)}
+  [ return (result: ()) -> {[@stop_split] [@expl:rem_assign ensures] Int16.to_int self.final
+    = ComputerDivision.mod (Int16.to_int self.current) (Int16.to_int other)}
     (! return {result}) ]
 
 predicate resolve_refmut_i16 [@inline:trivial] (_1: MutBorrow.t Int16.t) = _1.final = _1.current

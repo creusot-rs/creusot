@@ -71,8 +71,8 @@ predicate invariant_Perm_ptr_slice_T (self: t_Perm_ptr_slice_T) =
 
 predicate inv_Perm_ptr_slice_T (_1: t_Perm_ptr_slice_T)
 
-axiom inv_axiom [@rewrite]: forall x: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T x]. inv_Perm_ptr_slice_T x
-    = invariant_Perm_ptr_slice_T x
+axiom inv_axiom [@rewrite]: forall _1: t_Perm_ptr_slice_T [inv_Perm_ptr_slice_T _1]. inv_Perm_ptr_slice_T _1
+    = invariant_Perm_ptr_slice_T _1
 
 type t_Perm_ptr_T
 
@@ -119,7 +119,7 @@ predicate invariant_Perm_ptr_T (self: t_Perm_ptr_T) =
 
 predicate inv_Perm_ptr_T (_1: t_Perm_ptr_T)
 
-axiom inv_axiom'0 [@rewrite]: forall x: t_Perm_ptr_T [inv_Perm_ptr_T x]. inv_Perm_ptr_T x = invariant_Perm_ptr_T x
+axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_T [inv_Perm_ptr_T _1]. inv_Perm_ptr_T _1 = invariant_Perm_ptr_T _1
 
 predicate invariant_refmut_Perm_ptr_T [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_T) =
   inv_Perm_ptr_T self.current /\ inv_Perm_ptr_T self.final
@@ -133,8 +133,8 @@ meta "rewrite_def" predicate inv_refmut_Perm_ptr_T
 predicate inv_Guarded_refmut_Perm_ptr_T (_1: t_Guarded_refmut_Perm_ptr_T)
 
 axiom inv_axiom'1 [@rewrite]:
-  forall x: t_Guarded_refmut_Perm_ptr_T [inv_Guarded_refmut_Perm_ptr_T x]. inv_Guarded_refmut_Perm_ptr_T x
-    = (invariant_Guarded_refmut_Perm_ptr_T x /\ inv_refmut_Perm_ptr_T x.borrow)
+  forall _1: t_Guarded_refmut_Perm_ptr_T [inv_Guarded_refmut_Perm_ptr_T _1]. inv_Guarded_refmut_Perm_ptr_T _1
+    = (invariant_Guarded_refmut_Perm_ptr_T _1 /\ inv_refmut_Perm_ptr_T _1.borrow)
 
 predicate invariant_ref_Guarded_refmut_Perm_ptr_T [@inline:trivial] (self: t_Guarded_refmut_Perm_ptr_T) =
   inv_Guarded_refmut_Perm_ptr_T self
@@ -277,8 +277,8 @@ meta "rewrite_def" predicate resolve_refmut_Perm_ptr_T
 predicate resolve_Guarded_refmut_Perm_ptr_T (_1: t_Guarded_refmut_Perm_ptr_T)
 
 axiom resolve_axiom [@rewrite]:
-  forall x: t_Guarded_refmut_Perm_ptr_T [resolve_Guarded_refmut_Perm_ptr_T x]. resolve_Guarded_refmut_Perm_ptr_T x
-    = resolve_refmut_Perm_ptr_T x.borrow
+  forall _1: t_Guarded_refmut_Perm_ptr_T [resolve_Guarded_refmut_Perm_ptr_T _1]. resolve_Guarded_refmut_Perm_ptr_T _1
+    = resolve_refmut_Perm_ptr_T _1.borrow
 
 predicate resolve_Seq_Guarded_refmut_Perm_ptr_T (self: Seq.seq t_Guarded_refmut_Perm_ptr_T) =
   forall i: int. 0 <= i /\ i < Seq.length self -> resolve_Guarded_refmut_Perm_ptr_T (Seq.get self i)
@@ -293,8 +293,8 @@ type t_Option_Guarded_refmut_Perm_ptr_T = None | Some t_Guarded_refmut_Perm_ptr_
 predicate inv_Option_Guarded_refmut_Perm_ptr_T (_1: t_Option_Guarded_refmut_Perm_ptr_T)
 
 axiom inv_axiom'2 [@rewrite]:
-  forall x: t_Option_Guarded_refmut_Perm_ptr_T [inv_Option_Guarded_refmut_Perm_ptr_T x]. inv_Option_Guarded_refmut_Perm_ptr_T x
-    = match x with
+  forall _1: t_Option_Guarded_refmut_Perm_ptr_T [inv_Option_Guarded_refmut_Perm_ptr_T _1]. inv_Option_Guarded_refmut_Perm_ptr_T _1
+    = match _1 with
       | None -> true
       | Some f0 -> inv_Guarded_refmut_Perm_ptr_T f0
       end
@@ -316,14 +316,14 @@ let pop_front_ghost_Guarded_refmut_Perm_ptr_T (self: MutBorrow.t (Seq.seq t_Guar
       end)}
     (! return {result}) ]
 
-let unwrap_Guarded_refmut_Perm_ptr_T (self_: t_Option_Guarded_refmut_Perm_ptr_T)
+let unwrap_Guarded_refmut_Perm_ptr_T (self: t_Option_Guarded_refmut_Perm_ptr_T)
   (return (x: t_Guarded_refmut_Perm_ptr_T)) =
-{[@stop_split] [@expl:unwrap_Guarded_refmut_Perm_ptr_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_Guarded_refmut_Perm_ptr_T self_)
-  /\ ([@stop_split] [@expl:unwrap requires] self_ <> None)}
+{[@stop_split] [@expl:unwrap_Guarded_refmut_Perm_ptr_T requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_Guarded_refmut_Perm_ptr_T self)
+  /\ ([@stop_split] [@expl:unwrap requires] self <> None)}
   any
   [ return (result: t_Guarded_refmut_Perm_ptr_T) ->
   {[@stop_split] [@expl:unwrap_Guarded_refmut_Perm_ptr_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_Guarded_refmut_Perm_ptr_T result)
-    /\ ([@stop_split] [@expl:unwrap ensures] Some result = self_)}
+    /\ ([@stop_split] [@expl:unwrap ensures] Some result = self)}
     (! return {result}) ]
 
 predicate resolve_refmut_Perm_ptr_slice_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_slice_T) = _1.final = _1.current
