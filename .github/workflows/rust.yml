@@ -161,12 +161,14 @@ jobs:
         opam init --bare
         opam --cli=2.1 var --global in-creusot-ci=true
     - name: Install solvers
-      # Use only 2 parallel provers, because more provers (4) makes replaying proofs unstable
+      # We use a custom why3find.json with a false baseline calibration because timing in CI are so
+      # unstable and make the proofs fail in many cases.
       run: |
-        ./INSTALL --provers-parallelism 2 prelude why3 provers why3-conf
+        mv -f ci/why3find.json .
+        ./INSTALL prelude why3 provers why3-conf
         echo -e "\n>> ~/.config/creusot/why3.conf:\n"
         cat ~/.config/creusot/why3.conf
-    - run: ./t why3 --why3-all --time=2 --time-factor=2
+    - run: ./t why3 --why3-all
     - name: Save Why3find cache
       uses: actions/cache/save@v4
       with:
