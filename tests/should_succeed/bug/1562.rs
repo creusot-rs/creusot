@@ -11,7 +11,7 @@ pub struct List<T> {
 
 impl<T> List<T> {
     #[requires(false)]
-    pub fn foo(&mut self, mut perm: Ghost<Perm<PermCell<List<T>>>>) {
+    pub unsafe fn foo(&mut self, mut perm: Ghost<Perm<PermCell<List<T>>>>) {
         let mut p = self;
         let mut next;
 

@@ -2,6 +2,7 @@ module M_breaks_inv
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
   
@@ -11,7 +12,8 @@ module M_breaks_inv
   
   meta "select_lsinst" "all"
   
-  let breaks_inv (bor: MutBorrow.t Int32.t) (return (x: ())) = (! bb0
+  let breaks_inv (bor: MutBorrow.t Int32.t) (mode: Mode.t) (return (x: ())) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = s0
       [ s0 = [ &bor <- { bor with current = (0: Int32.t) } ] s1
       | s1 = -{resolve_refmut_i32 bor}- s2
@@ -21,9 +23,10 @@ end
 module M_breaks_inv_ghost
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
-  let deref_mut_Ghost_refmut_i32 (self: MutBorrow.t (MutBorrow.t Int32.t))
+  let deref_mut_Ghost_refmut_i32 (self: MutBorrow.t (MutBorrow.t Int32.t)) (mode: Mode.t)
     (return (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
     [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
@@ -44,7 +47,7 @@ module M_breaks_inv_ghost
   
   meta "rewrite_def" predicate resolve_Ghost_refmut_i32'0
   
-  let new_unit (x: ()) (return (x'0: ())) = any
+  let new_unit (x: ()) (mode: Mode.t) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   function fin_Ghost_refmut_i32 [@inline:trivial] (self: MutBorrow.t Int32.t) : Int32.t = self.final
@@ -55,15 +58,17 @@ module M_breaks_inv_ghost
   
   meta "select_lsinst" "all"
   
-  let breaks_inv_ghost (bor: MutBorrow.t Int32.t) (return (x: ())) = (! bb0
+  let breaks_inv_ghost (bor: MutBorrow.t Int32.t) (mode: Mode.t) (return (x: ())) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <MutBorrow.t Int32.t> {bor}
           (fun (_bor: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_7 <- _bor ] [ &bor <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_refmut_i32 {_7} (fun (_x: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_6 <- _x ] s2)
+      | s1 = deref_mut_Ghost_refmut_i32 {_7} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_6 <- _x ] s2)
       | s2 = [ &_6 <- { _6 with current = { _6.current with current = (0: Int32.t) } } ] s3
       | s3 = -{resolve_refmut_refmut_i32 _6}- s4
       | s4 = -{resolve_Ghost_refmut_i32'0 bor}- s5
-      | s5 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s6)
+      | s5 = new_unit {_5} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_4 <- _x ] s6)
       | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & bor: MutBorrow.t Int32.t = bor
@@ -78,6 +83,7 @@ module M_example
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use map.Map
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Guarded_refmut_i32 = { borrow: MutBorrow.t Int32.t; _guard: Map.map (MutBorrow.t Int32.t) bool }
@@ -104,7 +110,8 @@ module M_example
   
   meta "rewrite_def" predicate index_Mapping_i32_bool
   
-  let new_i32 (borrow'0: MutBorrow.t Int32.t) (guard: Map.map Int32.t bool) (return (x: t_Guarded_refmut_i32)) = any
+  let new_i32 (borrow'0: MutBorrow.t Int32.t) (guard: Map.map Int32.t bool) (mode: Mode.t)
+    (return (x: t_Guarded_refmut_i32)) = any
     [ return (result: t_Guarded_refmut_i32) ->
     {[@stop_split] [@expl:new_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Guarded_refmut_i32 result)
       /\ ([@stop_split] [@expl:new ensures #0] result.borrow = borrow'0)
@@ -113,10 +120,10 @@ module M_example
       /\ ([@stop_split] [@expl:new ensures #2] index_Mapping_i32_bool guard borrow'0.final)}
       (! return {result}) ]
   
-  let breaks_inv (bor: MutBorrow.t Int32.t) (return (x: ())) = any
+  let breaks_inv (bor: MutBorrow.t Int32.t) (mode: Mode.t) (return (x: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:breaks_inv ensures] bor.final = (0: Int32.t)} (! return {result}) ]
   
-  let takes_guarded (guarded: t_Guarded_refmut_i32) (return (x: ())) =
+  let takes_guarded (guarded: t_Guarded_refmut_i32) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:takes_guarded 'guarded' type invariant] inv_Guarded_refmut_i32 guarded}
     any
     [ return (result: ()) ->
@@ -131,21 +138,22 @@ module M_example
   
   meta "select_lsinst" "all"
   
-  let example (return (x: Int32.t)) = (! bb0
+  let example (mode: Mode.t) (return (x: Int32.t)) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = s0
       [ s0 = [ &x <- (1: Int32.t) ] s1
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &bor <- _bor ] [ &x <- _bor.final ] s2)
       | s2 = MutBorrow.borrow_final <Int32.t> {bor.current} {MutBorrow.get_id bor}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_5 <- _bor ] [ &bor <- { bor with current = _bor.final } ] s3)
-      | s3 = new_i32 {_5} {fun (x'0: Int32.t) -> x'0 = (1: Int32.t)}
+      | s3 = new_i32 {_5} {fun (x'0: Int32.t) -> x'0 = (1: Int32.t)} {mode}
           (fun (_x: t_Guarded_refmut_i32) -> [ &guarded <- _x ] s4)
       | s4 = MutBorrow.borrow_mut <Int32.t> {guarded.borrow.current}
           (fun (_bor: MutBorrow.t Int32.t) ->
             [ &_9 <- _bor ] [ &guarded <- { guarded with borrow = { guarded.borrow with current = _bor.final } } ] s5)
-      | s5 = breaks_inv {_9} (fun (_x: ()) -> [ &_8 <- _x ] s6)
+      | s5 = breaks_inv {_9} {mode} (fun (_x: ()) -> [ &_8 <- _x ] s6)
       | s6 = [ &guarded <- { guarded with borrow = { guarded.borrow with current = (1: Int32.t) } } ] s7
-      | s7 = takes_guarded {guarded} (fun (_x: ()) -> [ &_10 <- _x ] s8)
+      | s7 = takes_guarded {guarded} {mode} (fun (_x: ()) -> [ &_10 <- _x ] s8)
       | s8 = -{resolve_refmut_i32 bor}- s9
       | s9 = [ &_ret <- x ] s10
       | s10 = return {_ret} ] ]
@@ -161,14 +169,15 @@ module M_example
 end
 module M_ghostified
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use map.Map
   use creusot.prelude.Any
   
-  let new_i32 (x: Int32.t) (return (x'0: Int32.t)) = any
+  let new_i32 (x: Int32.t) (mode: Mode.t) (return (x'0: Int32.t)) = any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  let deref_mut_Ghost_i32 (self: MutBorrow.t Int32.t) (return (x: MutBorrow.t Int32.t)) = any
+  let deref_mut_Ghost_i32 (self: MutBorrow.t Int32.t) (mode: Mode.t) (return (x: MutBorrow.t Int32.t)) = any
     [ return (result: MutBorrow.t Int32.t) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
   
@@ -176,10 +185,10 @@ module M_ghostified
   
   meta "rewrite_def" predicate resolve_refmut_i32
   
-  let new_refmut_i32 (x: MutBorrow.t Int32.t) (return (x'0: MutBorrow.t Int32.t)) = any
+  let new_refmut_i32 (x: MutBorrow.t Int32.t) (mode: Mode.t) (return (x'0: MutBorrow.t Int32.t)) = any
     [ return (result: MutBorrow.t Int32.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  let into_inner_refmut_i32 (self: MutBorrow.t Int32.t) (return (x: MutBorrow.t Int32.t)) = any
+  let into_inner_refmut_i32 (self: MutBorrow.t Int32.t) (mode: Mode.t) (return (x: MutBorrow.t Int32.t)) = any
     [ return (result: MutBorrow.t Int32.t) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
@@ -207,7 +216,8 @@ module M_ghostified
   
   meta "rewrite_def" predicate index_Mapping_i32_bool
   
-  let new_i32'0 (borrow'0: MutBorrow.t Int32.t) (guard: Map.map Int32.t bool) (return (x: t_Guarded_refmut_i32)) = any
+  let new_i32'0 (borrow'0: MutBorrow.t Int32.t) (guard: Map.map Int32.t bool) (mode: Mode.t)
+    (return (x: t_Guarded_refmut_i32)) = any
     [ return (result: t_Guarded_refmut_i32) ->
     {[@stop_split] [@expl:new_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Guarded_refmut_i32 result)
       /\ ([@stop_split] [@expl:new ensures #0] result.borrow = borrow'0)
@@ -226,7 +236,7 @@ module M_ghostified
   
   meta "rewrite_def" predicate inv_Ghost_Guarded_refmut_i32
   
-  let new_Guarded_refmut_i32 (x: t_Guarded_refmut_i32) (return (x'0: t_Guarded_refmut_i32)) =
+  let new_Guarded_refmut_i32 (x: t_Guarded_refmut_i32) (mode: Mode.t) (return (x'0: t_Guarded_refmut_i32)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_Guarded_refmut_i32 x}
     any
     [ return (result: t_Guarded_refmut_i32) ->
@@ -254,7 +264,7 @@ module M_ghostified
   
   meta "rewrite_def" predicate inv_refmut_Guarded_refmut_i32
   
-  let deref_mut_Ghost_Guarded_refmut_i32 (self: MutBorrow.t t_Guarded_refmut_i32)
+  let deref_mut_Ghost_Guarded_refmut_i32 (self: MutBorrow.t t_Guarded_refmut_i32) (mode: Mode.t)
     (return (x: MutBorrow.t t_Guarded_refmut_i32)) =
   {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Guarded_refmut_i32 self}
     any
@@ -263,7 +273,7 @@ module M_ghostified
       /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
-  let deref_mut_Ghost_refmut_i32 (self: MutBorrow.t (MutBorrow.t Int32.t))
+  let deref_mut_Ghost_refmut_i32 (self: MutBorrow.t (MutBorrow.t Int32.t)) (mode: Mode.t)
     (return (x: MutBorrow.t (MutBorrow.t Int32.t))) = any
     [ return (result: MutBorrow.t (MutBorrow.t Int32.t)) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
@@ -276,7 +286,7 @@ module M_ghostified
   
   meta "rewrite_def" function fin_Ghost_refmut_i32
   
-  let breaks_inv_ghost (bor: MutBorrow.t Int32.t) (return (x: ())) = any
+  let breaks_inv_ghost (bor: MutBorrow.t Int32.t) (mode: Mode.t) (return (x: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:breaks_inv_ghost ensures] fin_Ghost_refmut_i32 bor = (0: Int32.t)}
       (! return {result}) ]
   
@@ -293,10 +303,10 @@ module M_ghostified
   
   meta "rewrite_def" predicate resolve_refmut_Guarded_refmut_i32
   
-  let new_unit (x: ()) (return (x'0: ())) = any
+  let new_unit (x: ()) (mode: Mode.t) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  let into_inner_Guarded_refmut_i32 (self: t_Guarded_refmut_i32) (return (x: t_Guarded_refmut_i32)) =
+  let into_inner_Guarded_refmut_i32 (self: t_Guarded_refmut_i32) (mode: Mode.t) (return (x: t_Guarded_refmut_i32)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Guarded_refmut_i32 self}
     any
     [ return (result: t_Guarded_refmut_i32) ->
@@ -304,7 +314,7 @@ module M_ghostified
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  let takes_guarded (guarded: t_Guarded_refmut_i32) (return (x: ())) =
+  let takes_guarded (guarded: t_Guarded_refmut_i32) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:takes_guarded 'guarded' type invariant] inv_Guarded_refmut_i32 guarded}
     any
     [ return (result: ()) ->
@@ -315,12 +325,13 @@ module M_ghostified
   
   meta "select_lsinst" "all"
   
-  let ghostified (return (x: Int32.t)) = (! bb0
+  let ghostified (mode: Mode.t) (return (x: Int32.t)) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 {(1: Int32.t)} (fun (_x: Int32.t) -> [ &x <- _x ] s1)
+      [ s0 = new_i32 {(1: Int32.t)} {Mode.into_ghost mode} (fun (_x: Int32.t) -> [ &x <- _x ] s1)
       | s1 = MutBorrow.borrow_mut <Int32.t> {x}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_9 <- _bor ] [ &x <- _bor.final ] s2)
-      | s2 = deref_mut_Ghost_i32 {_9} (fun (_x: MutBorrow.t Int32.t) -> [ &_8 <- _x ] s3)
+      | s2 = deref_mut_Ghost_i32 {_9} {Mode.into_ghost mode} (fun (_x: MutBorrow.t Int32.t) -> [ &_8 <- _x ] s3)
       | s3 = MutBorrow.borrow_final <Int32.t> {_8.current} {MutBorrow.get_id _8}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s4)
       | s4 = -{resolve_refmut_i32 _8}- s5
@@ -329,31 +340,33 @@ module M_ghostified
       | s6 = -{resolve_refmut_i32 _7}- s7
       | s7 = MutBorrow.borrow_final <Int32.t> {_6.current} {MutBorrow.get_id _6}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_5 <- _bor ] [ &_6 <- { _6 with current = _bor.final } ] s8)
-      | s8 = new_refmut_i32 {_5} (fun (_x: MutBorrow.t Int32.t) -> [ &bor <- _x ] s9)
+      | s8 = new_refmut_i32 {_5} {Mode.into_ghost mode} (fun (_x: MutBorrow.t Int32.t) -> [ &bor <- _x ] s9)
       | s9 = -{resolve_refmut_i32 _6}- s10
-      | s10 = into_inner_refmut_i32 {bor} (fun (_x: MutBorrow.t Int32.t) -> [ &_13 <- _x ] s11)
+      | s10 = into_inner_refmut_i32 {bor} {Mode.into_ghost mode} (fun (_x: MutBorrow.t Int32.t) -> [ &_13 <- _x ] s11)
       | s11 = MutBorrow.borrow_final <Int32.t> {_13.current} {MutBorrow.get_id _13}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_12 <- _bor ] [ &_13 <- { _13 with current = _bor.final } ] s12)
-      | s12 = new_i32'0 {_12} {fun (x'0: Int32.t) -> x'0 = (1: Int32.t)}
+      | s12 = new_i32'0 {_12} {fun (x'0: Int32.t) -> x'0 = (1: Int32.t)} {Mode.into_ghost mode}
           (fun (_x: t_Guarded_refmut_i32) -> [ &_11 <- _x ] s13)
       | s13 = -{resolve_refmut_i32 _13}- s14
-      | s14 = new_Guarded_refmut_i32 {_11} (fun (_x: t_Guarded_refmut_i32) -> [ &guarded <- _x ] s15)
+      | s14 = new_Guarded_refmut_i32 {_11} {Mode.into_ghost mode}
+          (fun (_x: t_Guarded_refmut_i32) -> [ &guarded <- _x ] s15)
       | s15 = MutBorrow.borrow_mut <t_Guarded_refmut_i32> {guarded}
           (fun (_bor: MutBorrow.t t_Guarded_refmut_i32) ->
             [ &_19 <- _bor ] -{inv_Ghost_Guarded_refmut_i32 _bor.final}-
             [ &guarded <- _bor.final ] s16)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Guarded_refmut_i32 guarded} any) ]
-      | s16 = deref_mut_Ghost_Guarded_refmut_i32 {_19}
+      | s16 = deref_mut_Ghost_Guarded_refmut_i32 {_19} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t t_Guarded_refmut_i32) -> [ &_18 <- _x ] s17)
       | s17 = MutBorrow.borrow_mut <Int32.t> {_18.current.borrow.current}
           (fun (_bor: MutBorrow.t Int32.t) ->
             [ &__temp <- _bor ]
             [ &_18 <- { _18 with current = { _18.current with borrow = { _18.current.borrow with current = _bor.final } } } ]
             s18)
-      | s18 = new_refmut_i32 {__temp} (fun (_x: MutBorrow.t Int32.t) -> [ &borrow'0 <- _x ] s19)
+      | s18 = new_refmut_i32 {__temp} {mode} (fun (_x: MutBorrow.t Int32.t) -> [ &borrow'0 <- _x ] s19)
       | s19 = MutBorrow.borrow_mut <MutBorrow.t Int32.t> {borrow'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_29 <- _bor ] [ &borrow'0 <- _bor.final ] s20)
-      | s20 = deref_mut_Ghost_refmut_i32 {_29} (fun (_x: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_28 <- _x ] s21)
+      | s20 = deref_mut_Ghost_refmut_i32 {_29} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_28 <- _x ] s21)
       | s21 = MutBorrow.borrow_mut <Int32.t> {_28.current.current}
           (fun (_bor: MutBorrow.t Int32.t) ->
             [ &_27 <- _bor ] [ &_28 <- { _28 with current = { _28.current with current = _bor.final } } ] s22)
@@ -366,21 +379,23 @@ module M_ghostified
       | s26 = -{resolve_refmut_i32 _26}- s27
       | s27 = MutBorrow.borrow_final <Int32.t> {_25.current} {MutBorrow.get_id _25}
           (fun (_bor: MutBorrow.t Int32.t) -> [ &_24 <- _bor ] [ &_25 <- { _25 with current = _bor.final } ] s28)
-      | s28 = new_refmut_i32 {_24} (fun (_x: MutBorrow.t Int32.t) -> [ &_23 <- _x ] s29)
+      | s28 = new_refmut_i32 {_24} {Mode.into_ghost mode} (fun (_x: MutBorrow.t Int32.t) -> [ &_23 <- _x ] s29)
       | s29 = -{resolve_refmut_i32 _25}- s30
-      | s30 = breaks_inv_ghost {_23} (fun (_x: ()) -> [ &_22 <- _x ] s31)
+      | s30 = breaks_inv_ghost {_23} {mode} (fun (_x: ()) -> [ &_22 <- _x ] s31)
       | s31 = MutBorrow.borrow_mut <MutBorrow.t Int32.t> {borrow'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_33 <- _bor ] [ &borrow'0 <- _bor.final ] s32)
-      | s32 = deref_mut_Ghost_refmut_i32 {_33} (fun (_x: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_32 <- _x ] s33)
+      | s32 = deref_mut_Ghost_refmut_i32 {_33} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t (MutBorrow.t Int32.t)) -> [ &_32 <- _x ] s33)
       | s33 = [ &_32 <- { _32 with current = { _32.current with current = (1: Int32.t) } } ] s34
       | s34 = -{resolve_refmut_refmut_i32 _32}- s35
       | s35 = -{resolve_Ghost_refmut_i32'0 borrow'0}- s36
       | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_refmut_Guarded_refmut_i32 _18} any) ]
       | s37 = -{resolve_refmut_Guarded_refmut_i32 _18}- s38
-      | s38 = new_unit {_31} (fun (_x: ()) -> [ &_30 <- _x ] s39)
-      | s39 = into_inner_Guarded_refmut_i32 {guarded} (fun (_x: t_Guarded_refmut_i32) -> [ &_36 <- _x ] s40)
-      | s40 = takes_guarded {_36} (fun (_x: ()) -> [ &_35 <- _x ] s41)
-      | s41 = new_unit {_35} (fun (_x: ()) -> [ &_34 <- _x ] s42)
+      | s38 = new_unit {_31} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_30 <- _x ] s39)
+      | s39 = into_inner_Guarded_refmut_i32 {guarded} {Mode.into_ghost mode}
+          (fun (_x: t_Guarded_refmut_i32) -> [ &_36 <- _x ] s40)
+      | s40 = takes_guarded {_36} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_35 <- _x ] s41)
+      | s41 = new_unit {_35} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_34 <- _x ] s42)
       | s42 = [ &_ret <- x ] s43
       | s43 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l ()
@@ -421,6 +436,7 @@ module M_takes_guarded
   use creusot.int.Int32
   use map.Map
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_Guarded_refmut_i32 = { borrow: MutBorrow.t Int32.t; _guard: Map.map (MutBorrow.t Int32.t) bool }
   
@@ -456,7 +472,7 @@ module M_takes_guarded
   
   meta "select_lsinst" "all"
   
-  let takes_guarded (guarded: t_Guarded_refmut_i32) (return (x: ())) =
+  let takes_guarded (guarded: t_Guarded_refmut_i32) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:takes_guarded 'guarded' type invariant] inv_Guarded_refmut_i32 guarded}
     (! bb0
     [ bb0 = s0

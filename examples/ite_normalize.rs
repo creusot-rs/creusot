@@ -76,12 +76,14 @@ impl Clone for Expr {
 }
 
 impl From<usize> for Expr {
+    #[check(ghost)]
     fn from(a: usize) -> Self {
         Self::variable(a)
     }
 }
 
 impl From<bool> for Expr {
+    #[check(ghost)]
     fn from(b: bool) -> Self {
         if b { Self::True } else { Self::False }
     }
@@ -93,6 +95,7 @@ impl Expr {
         Self::IfThenElse { c: Box::new(c), t: Box::new(t), e: Box::new(e) }
     }
 
+    #[check(ghost)]
     #[ensures(result == Expr::Var { v })]
     pub fn variable(v: usize) -> Self {
         Self::Var { v }
