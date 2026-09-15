@@ -103,8 +103,16 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
         self.op(x) == self.op(y) ==> x == y))]
     fn cancelable(self) -> bool {
         match self {
-            Self::Left(l) => l.cancelable(),
-            Self::Right(r) => r.cancelable(),
+            Self::Left(l) => {
+                proof_assert!(forall<b, c> l.op(b) == l.op(c) ==>
+                    self.op(Self::Left(b)) == self.op(Self::Left(c)));
+                l.cancelable()
+            }
+            Self::Right(r) => {
+                proof_assert!(forall<b, c> r.op(b) == r.op(c) ==>
+                    self.op(Self::Right(b)) == self.op(Self::Right(c)));
+                r.cancelable()
+            }
         }
     }
 }
