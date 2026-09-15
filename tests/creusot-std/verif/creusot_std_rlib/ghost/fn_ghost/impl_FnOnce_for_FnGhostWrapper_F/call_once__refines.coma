@@ -4,6 +4,8 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
+
 type t_F
 
 type t_FnGhostWrapper_F = { f0: t_F }
@@ -19,9 +21,10 @@ axiom inv_axiom [@rewrite]: forall _1: t_FnGhostWrapper_F [inv_FnGhostWrapper_F 
 
 predicate inv_I (_1: t_I)
 
-predicate precondition_F (self: t_F) (args: t_I)
+predicate precondition_F (self: t_F) (args: t_I) (mode: Mode.t)
 
-predicate precondition_FnGhostWrapper_F (self: t_FnGhostWrapper_F) (args: t_I) = precondition_F self.f0 args
+predicate precondition_FnGhostWrapper_F (self: t_FnGhostWrapper_F) (args: t_I) (mode: Mode.t) =
+  precondition_F self.f0 args mode
 
 meta "rewrite_def" predicate precondition_FnGhostWrapper_F
 
@@ -29,10 +32,10 @@ type t_Output
 
 predicate inv_Output (_1: t_Output)
 
-predicate postcondition_once_F (self: t_F) (args: t_I) (result: t_Output)
+predicate postcondition_once_F (self: t_F) (args: t_I) (result: t_Output) (mode: Mode.t)
 
-predicate postcondition_once_FnGhostWrapper_F (self: t_FnGhostWrapper_F) (args: t_I) (result: t_Output) =
-  postcondition_once_F self.f0 args result
+predicate postcondition_once_FnGhostWrapper_F (self: t_FnGhostWrapper_F) (args: t_I) (result: t_Output) (mode: Mode.t) =
+  postcondition_once_F self.f0 args result mode
 
 meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_F
 
@@ -40,11 +43,11 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self: t_FnGhostWrapper_F, args: t_I. inv_FnGhostWrapper_F self
+goal refines: forall mode: Mode.t, self: t_FnGhostWrapper_F, args: t_I. inv_FnGhostWrapper_F self
     -> inv_I args
-    -> precondition_FnGhostWrapper_F self args
+    -> precondition_FnGhostWrapper_F self args mode
     -> inv_FnGhostWrapper_F self
     /\ inv_I args
-    /\ precondition_FnGhostWrapper_F self args
-    /\ (forall result: t_Output. inv_Output result /\ postcondition_once_FnGhostWrapper_F self args result
-      -> inv_Output result /\ postcondition_once_FnGhostWrapper_F self args result)
+    /\ precondition_FnGhostWrapper_F self args mode
+    /\ (forall result: t_Output. inv_Output result /\ postcondition_once_FnGhostWrapper_F self args result mode
+      -> inv_Output result /\ postcondition_once_FnGhostWrapper_F self args result mode)

@@ -1,5 +1,6 @@
 module M_f
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -19,7 +20,7 @@ module M_f
   
   meta "rewrite_def" predicate inv_ref_closure1
   
-  let closure1 (self: closure1) (return (x: ())) =
+  let closure1 (self: closure1) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:closure 'self' type invariant] inv_ref_closure1 self}
     (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () | & self: closure1 = self ])
@@ -27,7 +28,7 @@ module M_f
   
   predicate resolve_T (_1: t_T)
   
-  predicate postcondition_once_closure1 (self: closure1) (args: ()) (result: ()) = resolve_T self.c0
+  predicate postcondition_once_closure1 (self: closure1) (args: ()) (result: ()) (mode: Mode.t) = resolve_T self.c0
   
   meta "rewrite_def" predicate postcondition_once_closure1
   
@@ -35,34 +36,35 @@ module M_f
   
   meta "rewrite_def" predicate resolve_closure1
   
-  predicate precondition_closure1 (self: closure1) (args: ()) = true
+  predicate precondition_closure1 (self: closure1) (args: ()) (mode: Mode.t) = true
   
   meta "rewrite_def" predicate precondition_closure1
   
-  predicate postcondition_closure1 (self: closure1) (args: ()) (result: ()) = true
+  predicate postcondition_closure1 (self: closure1) (args: ()) (result: ()) (mode: Mode.t) = true
   
   meta "rewrite_def" predicate postcondition_closure1
   
-  let call_closure1 (self: closure1) (args: ()) (return (x: ())) =
+  let call_closure1 (self: closure1) (args: ()) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:call_closure1 requires] ([@stop_split] [@expl:call 'self' type invariant] inv_ref_closure1 self)
-    /\ ([@stop_split] [@expl:call requires] precondition_closure1 self args)}
+    /\ ([@stop_split] [@expl:call requires] precondition_closure1 self args mode)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:call ensures] postcondition_closure1 self args result}
+    [ return (result: ()) -> {[@stop_split] [@expl:call ensures] postcondition_closure1 self args result mode}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let f_T (x: t_T) (return (x'0: ())) = {[@stop_split] [@expl:f 'x' type invariant] inv_T x}
+  let f_T (x: t_T) (mode: Mode.t) (return (x'0: ())) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:f 'x' type invariant] inv_T x}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &xx <- x ] s1
       | s1 = [ &f <- { c0 = x } ] s2
-      | s2 = {[@expl:assertion] postcondition_once_closure1 f () () -> resolve_T xx} s3
+      | s2 = {[@expl:assertion] postcondition_once_closure1 f () () mode -> resolve_T xx} s3
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_closure1 f} any) ]
       | s4 = -{resolve_closure1 f}- s5
-      | s5 = call_closure1 {f} {_11} (fun (_x: ()) -> [ &_ret <- _x ] s6)
+      | s5 = call_closure1 {f} {_11} {mode} (fun (_x: ()) -> [ &_ret <- _x ] s6)
       | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: t_T = x
@@ -72,6 +74,7 @@ module M_f
 end
 module M_g
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_T
   
@@ -91,7 +94,7 @@ module M_g
   
   meta "rewrite_def" predicate inv_ref_closure0
   
-  let closure0 [@coma:extspec] (self: closure0) (return (x: ())) =
+  let closure0 [@coma:extspec] (self: closure0) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:closure 'self' type invariant] inv_ref_closure0 self}
     bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () | & self: closure0 = self ]
@@ -107,39 +110,41 @@ module M_g
   
   meta "rewrite_def" predicate resolve_closure0
   
-  predicate postcondition_once_closure0 (self: closure0) (args: ()) (result: ()) =
-    closure0'post'return self result /\ resolve_closure0 self
+  predicate postcondition_once_closure0 (self: closure0) (args: ()) (result: ()) (mode: Mode.t) =
+    closure0'post'return self mode result /\ resolve_closure0 self
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate precondition_closure0 (self: closure0) (args: ()) = closure0'pre self
+  predicate precondition_closure0 (self: closure0) (args: ()) (mode: Mode.t) = closure0'pre self mode
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate postcondition_closure0 (self: closure0) (args: ()) (result: ()) = closure0'post'return self result
+  predicate postcondition_closure0 (self: closure0) (args: ()) (result: ()) (mode: Mode.t) =
+    closure0'post'return self mode result
   
   meta "rewrite_def" predicate postcondition_closure0
   
-  let call_closure0 (self: closure0) (args: ()) (return (x: ())) =
+  let call_closure0 (self: closure0) (args: ()) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:call_closure0 requires] ([@stop_split] [@expl:call 'self' type invariant] inv_ref_closure0 self)
-    /\ ([@stop_split] [@expl:call requires] precondition_closure0 self args)}
+    /\ ([@stop_split] [@expl:call requires] precondition_closure0 self args mode)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self args result}
+    [ return (result: ()) -> {[@stop_split] [@expl:call ensures] postcondition_closure0 self args result mode}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let g_T (x: t_T) (return (x'0: ())) = {[@stop_split] [@expl:g 'x' type invariant] inv_T x}
+  let g_T (x: t_T) (mode: Mode.t) (return (x'0: ())) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:g 'x' type invariant] inv_T x}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &xx <- x ] s1
       | s1 = [ &f <- { c0 = x } ] s2
-      | s2 = {[@expl:assertion] postcondition_once_closure0 f () () -> resolve_T xx} s3
+      | s2 = {[@expl:assertion] postcondition_once_closure0 f () () mode -> resolve_T xx} s3
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_closure0 f} any) ]
       | s4 = -{resolve_closure0 f}- s5
-      | s5 = call_closure0 {f} {_11} (fun (_x: ()) -> [ &_ret <- _x ] s6)
+      | s5 = call_closure0 {f} {_11} {mode} (fun (_x: ()) -> [ &_ret <- _x ] s6)
       | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: t_T = x
