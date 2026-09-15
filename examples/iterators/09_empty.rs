@@ -45,7 +45,7 @@ impl<T> Iterator for Empty<T> {
 
 impl<T> ExactSizeIterator for Empty<T> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}

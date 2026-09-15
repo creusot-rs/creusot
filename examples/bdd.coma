@@ -1,4 +1,5 @@
 module M_hashmap__impl_Hash_for_tup2_U_V__hash (* <(U, V) as hashmap::Hash> *)
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use creusot.prelude.Any
   use int.ComputerDivision
@@ -20,10 +21,11 @@ module M_hashmap__impl_Hash_for_tup2_U_V__hash (* <(U, V) as hashmap::Hash> *)
   
   meta "rewrite_def" predicate inv_ref_U
   
-  predicate precondition_hash (self: ()) (args: t_U)
+  predicate precondition_hash (self: ()) (args: t_U) (mode: Mode.t)
   
-  axiom precondition_fndef: forall args: t_U [precondition_hash () args]. (let self = args in inv_ref_U self)
-      -> precondition_hash () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_U [precondition_hash () args mode]. (let self = args in inv_ref_U self)
+        -> precondition_hash () args mode
   
   type t_DeepModelTy
   
@@ -35,19 +37,21 @@ module M_hashmap__impl_Hash_for_tup2_U_V__hash (* <(U, V) as hashmap::Hash> *)
   
   meta "rewrite_def" function deep_model_ref_U
   
-  predicate postcondition_hash (self: ()) (args: t_U) (result: UInt64.t)
+  predicate postcondition_hash (self: ()) (args: t_U) (result: UInt64.t) (mode: Mode.t)
   
   axiom postcondition_fndef:
-    forall args: t_U, result: UInt64.t [postcondition_hash () args result]. postcondition_hash () args result
+    forall args: t_U, result: UInt64.t, mode: Mode.t [postcondition_hash () args result mode]. postcondition_hash () args result mode
       -> (let self = args in UInt64.t'int result = hash_log_U (deep_model_ref_U self))
   
-  predicate postcondition_once_hash (self: ()) (args: t_U) (result: UInt64.t) = postcondition_hash self args result
+  predicate postcondition_once_hash (self: ()) (args: t_U) (result: UInt64.t) (mode: Mode.t) =
+    postcondition_hash self args result mode
   
   meta "rewrite_def" predicate postcondition_once_hash
   
-  let hash_U (self: t_U) (return (x: UInt64.t)) = {[@stop_split] [@expl:hash requires] precondition_hash () self}
+  let hash_U (self: t_U) (mode: Mode.t) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:hash requires] precondition_hash () self mode}
     any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] postcondition_once_hash () self result}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] postcondition_once_hash () self result mode}
       (! return {result}) ]
   
   predicate inv_V (_1: t_V)
@@ -60,10 +64,11 @@ module M_hashmap__impl_Hash_for_tup2_U_V__hash (* <(U, V) as hashmap::Hash> *)
   
   meta "rewrite_def" predicate inv_ref_V
   
-  predicate precondition_hash'0 (self: ()) (args: t_V)
+  predicate precondition_hash'0 (self: ()) (args: t_V) (mode: Mode.t)
   
-  axiom precondition_fndef'0: forall args: t_V [precondition_hash'0 () args]. (let self = args in inv_ref_V self)
-      -> precondition_hash'0 () args
+  axiom precondition_fndef'0:
+    forall mode: Mode.t. forall args: t_V [precondition_hash'0 () args mode]. (let self = args in inv_ref_V self)
+        -> precondition_hash'0 () args mode
   
   type t_DeepModelTy'0
   
@@ -75,26 +80,28 @@ module M_hashmap__impl_Hash_for_tup2_U_V__hash (* <(U, V) as hashmap::Hash> *)
   
   meta "rewrite_def" function deep_model_ref_V
   
-  predicate postcondition_hash'0 (self: ()) (args: t_V) (result: UInt64.t)
+  predicate postcondition_hash'0 (self: ()) (args: t_V) (result: UInt64.t) (mode: Mode.t)
   
   axiom postcondition_fndef'0:
-    forall args: t_V, result: UInt64.t [postcondition_hash'0 () args result]. postcondition_hash'0 () args result
+    forall args: t_V, result: UInt64.t, mode: Mode.t [postcondition_hash'0 () args result mode]. postcondition_hash'0 () args result mode
       -> (let self = args in UInt64.t'int result = hash_log_V (deep_model_ref_V self))
   
-  predicate postcondition_once_hash'0 (self: ()) (args: t_V) (result: UInt64.t) = postcondition_hash'0 self args result
+  predicate postcondition_once_hash'0 (self: ()) (args: t_V) (result: UInt64.t) (mode: Mode.t) =
+    postcondition_hash'0 self args result mode
   
   meta "rewrite_def" predicate postcondition_once_hash'0
   
-  let hash_V (self: t_V) (return (x: UInt64.t)) = {[@stop_split] [@expl:hash requires] precondition_hash'0 () self}
+  let hash_V (self: t_V) (mode: Mode.t) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:hash requires] precondition_hash'0 () self mode}
     any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] postcondition_once_hash'0 () self result}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] postcondition_once_hash'0 () self result mode}
       (! return {result}) ]
   
-  let wrapping_mul (self: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
+  let wrapping_mul (self: UInt64.t) (rhs: UInt64.t) (mode: Mode.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt64.mul self rhs}
       (! return {result}) ]
   
-  let wrapping_add (self: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
+  let wrapping_add (self: UInt64.t) (rhs: UInt64.t) (mode: Mode.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt64.add self rhs}
       (! return {result}) ]
   
@@ -131,14 +138,14 @@ module M_hashmap__impl_Hash_for_tup2_U_V__hash (* <(U, V) as hashmap::Hash> *)
   
   meta "select_lsinst" "all"
   
-  let hash_tup2_U_V (self: tup2_U_V) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:hash 'self' type invariant] inv_ref_tup2_U_V self}
+  let hash_tup2_U_V (self: tup2_U_V) (mode: Mode.t) (return (x: UInt64.t)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:hash 'self' type invariant] inv_ref_tup2_U_V self}
     (! bb0
     [ bb0 = s0
-      [ s0 = hash_U {self.f0} (fun (_x: UInt64.t) -> [ &_4 <- _x ] s1)
-      | s1 = hash_V {self.f1} (fun (_x: UInt64.t) -> [ &_7 <- _x ] s2)
-      | s2 = wrapping_mul {_7} {(17: UInt64.t)} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s3)
-      | s3 = wrapping_add {_4} {_6} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
+      [ s0 = hash_U {self.f0} {mode} (fun (_x: UInt64.t) -> [ &_4 <- _x ] s1)
+      | s1 = hash_V {self.f1} {mode} (fun (_x: UInt64.t) -> [ &_7 <- _x ] s2)
+      | s2 = wrapping_mul {_7} {(17: UInt64.t)} {mode} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s3)
+      | s3 = wrapping_add {_4} {_6} {mode} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & self: tup2_U_V = self
@@ -150,6 +157,7 @@ module M_hashmap__impl_Hash_for_tup2_U_V__hash (* <(U, V) as hashmap::Hash> *)
       (! return {result}) ]
 end
 module M_hashmap__impl_Hash_for_tup2_U_V__hash__refines (* <(U, V) as hashmap::Hash> *)
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use int.ComputerDivision
   use int.Int
@@ -209,7 +217,7 @@ module M_hashmap__impl_Hash_for_tup2_U_V__hash__refines (* <(U, V) as hashmap::H
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: tup2_U_V. inv_ref_tup2_U_V self
+  goal refines: forall mode: Mode.t, self: tup2_U_V. inv_ref_tup2_U_V self
       -> inv_ref_tup2_U_V self
       /\ (forall result: UInt64.t. UInt64.t'int result = hash_log_tup2_U_V (deep_model_ref_tup2_U_V self)
         -> UInt64.t'int result = hash_log_tup2_U_V (deep_model_ref_tup2_U_V self))
@@ -244,6 +252,7 @@ end
 module M_impl_Clone_for_Bdd__clone (* <Bdd<'arena> as std::clone::Clone> *)
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
   with t_Bdd = { f0: t_Node; f1: UInt64.t }
@@ -252,13 +261,15 @@ module M_impl_Clone_for_Bdd__clone (* <Bdd<'arena> as std::clone::Clone> *)
   
   meta "select_lsinst" "all"
   
-  let clone_Bdd (self: t_Bdd) (return (x: t_Bdd)) = (! bb0
+  let clone_Bdd (self: t_Bdd) (mode: Mode.t) (return (x: t_Bdd)) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Bdd = Any.any_l () | & self: t_Bdd = self ])
     [ return (result: t_Bdd) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
 end
 module M_impl_Clone_for_Node__clone (* <Node<'arena> as std::clone::Clone> *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Bdd = { f0: t_Node; f1: UInt64.t }
@@ -272,19 +283,21 @@ module M_impl_Clone_for_Node__clone (* <Node<'arena> as std::clone::Clone> *)
         end}
       any) ]
   
-  let clone_u64 (self: UInt64.t) (return (x: UInt64.t)) = any
+  let clone_u64 (self: UInt64.t) (mode: Mode.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
   
-  let clone_Bdd (self: t_Bdd) (return (x: t_Bdd)) = any
+  let clone_Bdd (self: t_Bdd) (mode: Mode.t) (return (x: t_Bdd)) = any
     [ return (result: t_Bdd) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
   
   type tup2_Node_Node = { f0'0: t_Node; f1'0: t_Node }
   
-  predicate postcondition_clone (self: ()) (args: UInt64.t) (result: UInt64.t) = let self'0 = args in result = self'0
+  predicate postcondition_clone (self: ()) (args: UInt64.t) (result: UInt64.t) (mode: Mode.t) =
+    let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone
   
-  predicate postcondition_clone'0 (self: ()) (args: t_Bdd) (result: t_Bdd) = let self'0 = args in result = self'0
+  predicate postcondition_clone'0 (self: ()) (args: t_Bdd) (result: t_Bdd) (mode: Mode.t) =
+    let self'0 = args in result = self'0
   
   meta "rewrite_def" predicate postcondition_clone'0
   
@@ -292,7 +305,8 @@ module M_impl_Clone_for_Node__clone (* <Node<'arena> as std::clone::Clone> *)
   
   meta "select_lsinst" "all"
   
-  let clone_Node (self: t_Node) (return (x: t_Node)) = (! bb0
+  let clone_Node (self: t_Node) (mode: Mode.t) (return (x: t_Node)) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = any
       [ br0 -> {self = False'} (! bb6)
       | br1 -> {self = True'} (! bb5)
@@ -302,11 +316,11 @@ module M_impl_Clone_for_Node__clone (* <Node<'arena> as std::clone::Clone> *)
       | s1 = elim_If {self} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childt_1 <- rchildt ] s2)
       | s2 = elim_If {self} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childf_1 <- rchildf ] s3)
       | s3 = [ &_10 <- v_1 ] s4
-      | s4 = clone_u64 {_10} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s4 = clone_u64 {_10} {mode} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
       | s5 = [ &_13 <- childt_1 ] s6
-      | s6 = clone_Bdd {_13} (fun (_x: t_Bdd) -> [ &_11 <- _x ] s7)
+      | s6 = clone_Bdd {_13} {mode} (fun (_x: t_Bdd) -> [ &_11 <- _x ] s7)
       | s7 = [ &_16 <- childf_1 ] s8
-      | s8 = clone_Bdd {_16} (fun (_x: t_Bdd) -> [ &_14 <- _x ] s9)
+      | s8 = clone_Bdd {_16} {mode} (fun (_x: t_Bdd) -> [ &_14 <- _x ] s9)
       | s9 = [ &_ret <- If _8 _11 _14 ] s10
       | s10 = return {_ret} ]
     | bb5 = s0 [ s0 = [ &_ret <- True' ] s1 | s1 = return {_ret} ]
@@ -325,8 +339,8 @@ module M_impl_Clone_for_Node__clone (* <Node<'arena> as std::clone::Clone> *)
     [ return (result: t_Node) -> {[@stop_split] [@expl:clone ensures] match { f0'0 = self; f1'0 = result } with
         | {f0'0 = False'; f1'0 = False'} -> true
         | {f0'0 = True'; f1'0 = True'} -> true
-        | {f0'0 = If v_1 childt_1 childf_1; f1'0 = If v_r childt_r childf_r} -> postcondition_clone () v_1 v_r
-        /\ postcondition_clone'0 () childt_1 childt_r /\ postcondition_clone'0 () childf_1 childf_r
+        | {f0'0 = If v_1 childt_1 childf_1; f1'0 = If v_r childt_r childf_r} -> postcondition_clone () v_1 v_r mode
+        /\ postcondition_clone'0 () childt_1 childt_r mode /\ postcondition_clone'0 () childf_1 childf_r mode
         | _ -> false
         end}
       (! return {result}) ]
@@ -1049,6 +1063,7 @@ end
 module M_impl_Context_0__and (* Context<'arena> *)
   use creusot.int.UInt64
   use map.Map
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use int.Int
@@ -1098,7 +1113,8 @@ module M_impl_Context_0__and (* Context<'arena> *)
   
   meta "rewrite_def" function deep_model_ref_tup2_Bdd_Bdd
   
-  let get_tup2_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) (key: tup2_Bdd_Bdd) (return (x: t_Option_ref_Bdd)) = any
+  let get_tup2_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) (key: tup2_Bdd_Bdd) (mode: Mode.t)
+    (return (x: t_Option_ref_Bdd)) = any
     [ return (result: t_Option_ref_Bdd) -> {[@stop_split] [@expl:get ensures] match result with
         | Some v -> Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self) (deep_model_ref_tup2_Bdd_Bdd key) = Some'0 v
         | None -> Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self) (deep_model_ref_tup2_Bdd_Bdd key) = None'0
@@ -1217,7 +1233,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
   
   meta "rewrite_def" function deep_model_u64
   
-  let cmp_u64 (self: UInt64.t) (other: UInt64.t) (return (x: t_Ordering)) = any
+  let cmp_u64 (self: UInt64.t) (other: UInt64.t) (mode: Mode.t) (return (x: t_Ordering)) = any
     [ return (result: t_Ordering) -> {[@stop_split] [@expl:cmp ensures] result
       = cmp_log_Int (deep_model_u64 self) (deep_model_u64 other)}
       (! return {result}) ]
@@ -1241,7 +1257,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
         | None'0 -> true
         end)
   
-  let and (self: MutBorrow.t t_Context) (a: t_Bdd) (b: t_Bdd) (return (x: t_Bdd)) =
+  let and (self: MutBorrow.t t_Context) (a: t_Bdd) (b: t_Bdd) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:and requires] ([@stop_split] [@expl:and 'self' type invariant] inv_refmut_Context self)
     /\ ([@stop_split] [@expl:and requires #0] is_valid_bdd self.current a)
     /\ ([@stop_split] [@expl:and requires #1] is_valid_bdd self.current b)}
@@ -1253,7 +1269,8 @@ module M_impl_Context_0__and (* Context<'arena> *)
       /\ ([@stop_split] [@expl:and ensures #3] leastvar a <= leastvar result \/ leastvar b <= leastvar result)}
       (! return {result}) ]
   
-  let node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (return (x'0: t_Bdd)) =
+  let node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (mode: Mode.t)
+    (return (x'0: t_Bdd)) =
   {[@stop_split] [@expl:node requires] ([@stop_split] [@expl:node 'self' type invariant] inv_refmut_Context self)
     /\ ([@stop_split] [@expl:node requires #0] is_valid_bdd self.current childt)
     /\ ([@stop_split] [@expl:node requires #1] is_valid_bdd self.current childf)
@@ -1266,7 +1283,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
       /\ ([@stop_split] [@expl:node ensures #3] UInt64.t'int x <= leastvar result)}
       (! return {result}) ]
   
-  let false_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
+  let false_ (self: MutBorrow.t t_Context) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:false_ 'self' type invariant] inv_refmut_Context self}
     any
     [ return (result: t_Bdd) ->
@@ -1276,7 +1293,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
       /\ ([@stop_split] [@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
       (! return {result}) ]
   
-  let add_tup2_Bdd_Bdd (self: MutBorrow.t t_MyHashMap_tup2_Bdd_Bdd_Bdd) (key: tup2_Bdd_Bdd) (val': t_Bdd)
+  let add_tup2_Bdd_Bdd (self: MutBorrow.t t_MyHashMap_tup2_Bdd_Bdd_Bdd) (key: tup2_Bdd_Bdd) (val': t_Bdd) (mode: Mode.t)
     (return (x: ())) = any
     [ return (result: ()) ->
     {[@stop_split] [@expl:add ensures] forall i: tup2_u64_u64. Map.get (view_MyHashMap_tup2_Bdd_Bdd_Bdd self.final) i
@@ -1308,7 +1325,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
   
   meta "select_lsinst" "all"
   
-  let and'0 (self: MutBorrow.t t_Context) (a: t_Bdd) (b: t_Bdd) (return (x: t_Bdd)) =
+  let and'0 (self: MutBorrow.t t_Context) (a: t_Bdd) (b: t_Bdd) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:and requires] ([@stop_split] [@expl:and 'self' type invariant] inv_refmut_Context self)
     /\ ([@stop_split] [@expl:and requires #0] is_valid_bdd self.current a)
     /\ ([@stop_split] [@expl:and requires #1] is_valid_bdd self.current b)}
@@ -1316,7 +1333,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
     [ bb0 = s0
       [ s0 = [ &_28 <- { f0'0 = a; f1'0 = b } ] s1
       | s1 = [ &_27 <- _28 ] s2
-      | s2 = get_tup2_Bdd_Bdd {self.current.and_memo} {_27} (fun (_x: t_Option_ref_Bdd) -> [ &_24 <- _x ] s3)
+      | s2 = get_tup2_Bdd_Bdd {self.current.and_memo} {_27} {mode} (fun (_x: t_Option_ref_Bdd) -> [ &_24 <- _x ] s3)
       | s3 = any [ br0 -> {_24 = None} (! bb4) | br1 (x0: t_Bdd) -> {_24 = Some x0} (! bb2) ] ]
     | bb4 = s0
       [ s0 = [ &_35 <- { f0'3 = a.f0; f1'3 = b.f0 } ] s1
@@ -1352,7 +1369,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
       | s4 = elim_If {_35.f1'3} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childtb <- rchildt ] s5)
       | s5 = elim_If {_35.f1'3} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childfb <- rchildf ] s6)
       | s6 = [ &_57 <- vb ] s7
-      | s7 = cmp_u64 {va} {_57} (fun (_x: t_Ordering) -> [ &_54 <- _x ] s8)
+      | s7 = cmp_u64 {va} {_57} {mode} (fun (_x: t_Ordering) -> [ &_54 <- _x ] s8)
       | s8 = any [ br0 -> {_54 = Less} (! bb23) | br1 -> {_54 = Equal} (! bb22) | br2 -> {_54 = Greater} (! bb24) ] ]
     | bb24 = s0
       [ s0 = [ &v <- vb ] s1
@@ -1361,14 +1378,14 @@ module M_impl_Context_0__and (* Context<'arena> *)
             [ &_61 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s2 = and {_61} {a} {childtb} (fun (_x: t_Bdd) -> [ &_60 <- _x ] s3)
+      | s2 = and {_61} {a} {childtb} {mode} (fun (_x: t_Bdd) -> [ &_60 <- _x ] s3)
       | s3 = [ &childt <- _60 ] s4
       | s4 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_65 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s5)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s5 = and {_65} {a} {childfb} (fun (_x: t_Bdd) -> [ &_64 <- _x ] s6)
+      | s5 = and {_65} {a} {childfb} {mode} (fun (_x: t_Bdd) -> [ &_64 <- _x ] s6)
       | s6 = [ &childf <- _64 ] s7
       | s7 = bb31 ]
     | bb22 = s0
@@ -1378,14 +1395,14 @@ module M_impl_Context_0__and (* Context<'arena> *)
             [ &_79 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s2 = and {_79} {childta} {childtb} (fun (_x: t_Bdd) -> [ &_78 <- _x ] s3)
+      | s2 = and {_79} {childta} {childtb} {mode} (fun (_x: t_Bdd) -> [ &_78 <- _x ] s3)
       | s3 = [ &childt <- _78 ] s4
       | s4 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_83 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s5)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s5 = and {_83} {childfa} {childfb} (fun (_x: t_Bdd) -> [ &_82 <- _x ] s6)
+      | s5 = and {_83} {childfa} {childfb} {mode} (fun (_x: t_Bdd) -> [ &_82 <- _x ] s6)
       | s6 = [ &childf <- _82 ] s7
       | s7 = bb31 ]
     | bb23 = s0
@@ -1395,14 +1412,14 @@ module M_impl_Context_0__and (* Context<'arena> *)
             [ &_70 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s2 = and {_70} {childta} {b} (fun (_x: t_Bdd) -> [ &_69 <- _x ] s3)
+      | s2 = and {_70} {childta} {b} {mode} (fun (_x: t_Bdd) -> [ &_69 <- _x ] s3)
       | s3 = [ &childt <- _69 ] s4
       | s4 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_74 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s5)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s5 = and {_74} {childfa} {b} (fun (_x: t_Bdd) -> [ &_73 <- _x ] s6)
+      | s5 = and {_74} {childfa} {b} {mode} (fun (_x: t_Bdd) -> [ &_73 <- _x ] s6)
       | s6 = [ &childf <- _73 ] s7
       | s7 = bb31 ]
     | bb31 = s0
@@ -1411,7 +1428,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
             [ &_86 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s1 = node {_86} {v} {childt} {childf} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s2)
+      | s1 = node {_86} {v} {childt} {childf} {mode} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s2)
       | s2 = bb33 ]
     | bb14 = s0
       [ s0 = MutBorrow.borrow_mut <t_Context> {self.current}
@@ -1419,7 +1436,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
             [ &_43 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s1 = false_ {_43} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s2)
+      | s1 = false_ {_43} {mode} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s2)
       | s2 = bb33 ]
     | bb15 = s0 [ s0 = [ &r'0 <- a ] s1 | s1 = bb33 ]
     | bb16 = s0 [ s0 = [ &r'0 <- b ] s1 | s1 = bb33 ]
@@ -1429,7 +1446,7 @@ module M_impl_Context_0__and (* Context<'arena> *)
           {MutBorrow.inherit_id (MutBorrow.get_id self) 4}
           (fun (_bor: MutBorrow.t t_MyHashMap_tup2_Bdd_Bdd_Bdd) ->
             [ &_91 <- _bor ] [ &self <- { self with current = { self.current with and_memo = _bor.final } } ] s2)
-      | s2 = add_tup2_Bdd_Bdd {_91} {_92} {r'0} (fun (_x: ()) -> [ &_90 <- _x ] s3)
+      | s2 = add_tup2_Bdd_Bdd {_91} {_92} {r'0} {mode} (fun (_x: ()) -> [ &_90 <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
       | s4 = -{resolve_refmut_Context self}- s5
       | s5 = [ &_ret <- r'0 ] s6
@@ -1478,9 +1495,9 @@ module M_impl_Context_0__and (* Context<'arena> *)
     | & _90: () = Any.any_l ()
     | & _91: MutBorrow.t t_MyHashMap_tup2_Bdd_Bdd_Bdd = Any.any_l ()
     | & _92: tup2_Bdd_Bdd = Any.any_l () ]
-    [ and (self: MutBorrow.t t_Context) (a: t_Bdd) (b: t_Bdd) (_k (_ret: t_Bdd)) ->
-    {[@expl:function variant] well_founded_relation_Int function_variant (size a + size b)}
-      and {self} {a} {b} (_k) ] [ function_variant: int = size a + size b ])
+    [ and (self: MutBorrow.t t_Context) (a: t_Bdd) (b: t_Bdd) (mode: Mode.t) (_k (_ret: t_Bdd)) -> {Mode.terminates mode
+      -> ([@expl:function variant] well_founded_relation_Int function_variant (size a + size b))}
+      and {self} {a} {b} {mode} (_k) ] [ function_variant: int = size a + size b ])
     [ return (result: t_Bdd) -> {[@stop_split] [@expl:and ensures] ([@stop_split] [@expl:and ensures #0] grows self)
       /\ ([@stop_split] [@expl:and ensures #1] is_valid_bdd self.final result)
       /\ ([@stop_split] [@expl:and ensures #2] forall v: Map.map UInt64.t bool. interp result v
@@ -1492,6 +1509,7 @@ module M_impl_Context_0__false (* Context<'arena> *)
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use map.Map
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -1615,7 +1633,7 @@ module M_impl_Context_0__false (* Context<'arena> *)
         | None -> true
         end)
   
-  let hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
+  let hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
     /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
     any
@@ -1633,7 +1651,7 @@ module M_impl_Context_0__false (* Context<'arena> *)
   
   meta "select_lsinst" "all"
   
-  let false_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
+  let false_ (self: MutBorrow.t t_Context) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:false_ 'self' type invariant] inv_refmut_Context self}
     (! bb0
     [ bb0 = s0
@@ -1643,7 +1661,7 @@ module M_impl_Context_0__false (* Context<'arena> *)
             [ &_8 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s2 = hashcons'0 {_8} {_9} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
+      | s2 = hashcons'0 {_8} {_9} {mode} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
       | s4 = -{resolve_refmut_Context self}- s5
       | s5 = return {_ret} ] ]
@@ -1661,6 +1679,7 @@ end
 module M_impl_Context_0__hashcons (* Context<'arena> *)
   use creusot.int.UInt64
   use map.Map
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use int.Int
@@ -1704,14 +1723,14 @@ module M_impl_Context_0__hashcons (* Context<'arena> *)
   
   meta "rewrite_def" function deep_model_ref_Node
   
-  let get_Node (self: t_MyHashMap_Node_Bdd) (key: t_Node) (return (x: t_Option_ref_Bdd)) = any
+  let get_Node (self: t_MyHashMap_Node_Bdd) (key: t_Node) (mode: Mode.t) (return (x: t_Option_ref_Bdd)) = any
     [ return (result: t_Option_ref_Bdd) -> {[@stop_split] [@expl:get ensures] match result with
         | Some v -> Map.get (view_MyHashMap_Node_Bdd self) (deep_model_ref_Node key) = Some'0 v
         | None -> Map.get (view_MyHashMap_Node_Bdd self) (deep_model_ref_Node key) = None'0
         end}
       (! return {result}) ]
   
-  let alloc_Node (self: t_Bump) (val': t_Node) (return (x: MutBorrow.t t_Node)) = any
+  let alloc_Node (self: t_Bump) (val': t_Node) (mode: Mode.t) (return (x: MutBorrow.t t_Node)) = any
     [ return (result: MutBorrow.t t_Node) -> {[@stop_split] [@expl:alloc ensures] result.current = val'}
       (! return {result}) ]
   
@@ -1719,13 +1738,14 @@ module M_impl_Context_0__hashcons (* Context<'arena> *)
   
   meta "rewrite_def" predicate resolve_refmut_Node
   
-  let add_Node (self: MutBorrow.t t_MyHashMap_Node_Bdd) (key: t_Node) (val': t_Bdd) (return (x: ())) = any
+  let add_Node (self: MutBorrow.t t_MyHashMap_Node_Bdd) (key: t_Node) (val': t_Bdd) (mode: Mode.t) (return (x: ())) =
+  any
     [ return (result: ()) ->
     {[@stop_split] [@expl:add ensures] forall i: t_NodeLog. Map.get (view_MyHashMap_Node_Bdd self.final) i
         = (if i = deep_model_Node key then Some'0 val' else Map.get (view_MyHashMap_Node_Bdd self.current) i)}
       (! return {result}) ]
   
-  let incr (self: t_PeanoInt) (return (x: t_PeanoInt)) = any
+  let incr (self: t_PeanoInt) (mode: Mode.t) (return (x: t_PeanoInt)) = any
     [ return (result: t_PeanoInt) -> {[@stop_split] [@expl:incr ensures] UInt64.t'int result.f0'0
       = UInt64.t'int self.f0'0 + 1}
       (! return {result}) ]
@@ -1833,27 +1853,27 @@ module M_impl_Context_0__hashcons (* Context<'arena> *)
   
   meta "select_lsinst" "all"
   
-  let hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
+  let hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
     /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_16 <- n ] s1
-      | s1 = get_Node {self.current.hashcons} {_16} (fun (_x: t_Option_ref_Bdd) -> [ &_13 <- _x ] s2)
+      | s1 = get_Node {self.current.hashcons} {_16} {mode} (fun (_x: t_Option_ref_Bdd) -> [ &_13 <- _x ] s2)
       | s2 = any [ br0 -> {_13 = None} (! bb4) | br1 (x0: t_Bdd) -> {_13 = Some x0} (! bb2) ] ]
     | bb4 = s0
-      [ s0 = alloc_Node {self.current.alloc} {n} (fun (_x: MutBorrow.t t_Node) -> [ &_26 <- _x ] s1)
+      [ s0 = alloc_Node {self.current.alloc} {n} {mode} (fun (_x: MutBorrow.t t_Node) -> [ &_26 <- _x ] s1)
       | s1 = -{resolve_refmut_Node _26}- s2
       | s2 = [ &r'0 <- { f0 = _26.current; f1 = self.current.cnt.f0'0 } ] s3
       | s3 = MutBorrow.borrow_final <t_MyHashMap_Node_Bdd> {self.current.hashcons}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
           (fun (_bor: MutBorrow.t t_MyHashMap_Node_Bdd) ->
             [ &_31 <- _bor ] [ &self <- { self with current = { self.current with hashcons = _bor.final } } ] s4)
-      | s4 = add_Node {_31} {n} {r'0} (fun (_x: ()) -> [ &_30 <- _x ] s5)
+      | s4 = add_Node {_31} {n} {r'0} {mode} (fun (_x: ()) -> [ &_30 <- _x ] s5)
       | s5 =
         [ &self <- { self with current = { self.current with hashcons_ghost = Map.set self.current.hashcons_ghost r'0.f1 r'0.f0 } } ]
         s6
-      | s6 = incr {self.current.cnt} (fun (_x: t_PeanoInt) -> [ &_39 <- _x ] s7)
+      | s6 = incr {self.current.cnt} {mode} (fun (_x: t_PeanoInt) -> [ &_39 <- _x ] s7)
       | s7 = [ &self <- { self with current = { self.current with cnt = _39 } } ] s8
       | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
       | s9 = -{resolve_refmut_Context self}- s10
@@ -1884,6 +1904,7 @@ module M_impl_Context_0__hashcons (* Context<'arena> *)
       (! return {result}) ]
 end
 module M_impl_Context_0__new (* Context<'arena> *)
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use map.Map
   use map.Const
@@ -1901,7 +1922,7 @@ module M_impl_Context_0__new (* Context<'arena> *)
   
   function view_MyHashMap_Node_Bdd (self: t_MyHashMap_Node_Bdd) : Map.map t_NodeLog t_Option_Bdd
   
-  let new_Node (return (x: t_MyHashMap_Node_Bdd)) = any
+  let new_Node (mode: Mode.t) (return (x: t_MyHashMap_Node_Bdd)) = any
     [ return (result: t_MyHashMap_Node_Bdd) -> {[@stop_split] [@expl:new ensures] view_MyHashMap_Node_Bdd result
       = Const.const (None)}
       (! return {result}) ]
@@ -1910,7 +1931,7 @@ module M_impl_Context_0__new (* Context<'arena> *)
   
   function view_MyHashMap_Bdd_Bdd (self: t_MyHashMap_Bdd_Bdd) : Map.map UInt64.t t_Option_Bdd
   
-  let new_Bdd (return (x: t_MyHashMap_Bdd_Bdd)) = any
+  let new_Bdd (mode: Mode.t) (return (x: t_MyHashMap_Bdd_Bdd)) = any
     [ return (result: t_MyHashMap_Bdd_Bdd) -> {[@stop_split] [@expl:new ensures] view_MyHashMap_Bdd_Bdd result
       = Const.const (None)}
       (! return {result}) ]
@@ -1921,14 +1942,14 @@ module M_impl_Context_0__new (* Context<'arena> *)
   
   function view_MyHashMap_tup2_Bdd_Bdd_Bdd (self: t_MyHashMap_tup2_Bdd_Bdd_Bdd) : Map.map tup2_u64_u64 t_Option_Bdd
   
-  let new_tup2_Bdd_Bdd (return (x: t_MyHashMap_tup2_Bdd_Bdd_Bdd)) = any
+  let new_tup2_Bdd_Bdd (mode: Mode.t) (return (x: t_MyHashMap_tup2_Bdd_Bdd_Bdd)) = any
     [ return (result: t_MyHashMap_tup2_Bdd_Bdd_Bdd) ->
     {[@stop_split] [@expl:new ensures] view_MyHashMap_tup2_Bdd_Bdd_Bdd result = Const.const (None)}
       (! return {result}) ]
   
   type t_PeanoInt = { f0'1: UInt64.t }
   
-  let new (return (x: t_PeanoInt)) = any
+  let new (mode: Mode.t) (return (x: t_PeanoInt)) = any
     [ return (result: t_PeanoInt) -> {[@stop_split] [@expl:new ensures] result.f0'1 = (0: UInt64.t)}
       (! return {result}) ]
   
@@ -2017,12 +2038,12 @@ module M_impl_Context_0__new (* Context<'arena> *)
   
   meta "select_lsinst" "all"
   
-  let new'0 (alloc'0: t_Bump) (return (x: t_Context)) = (! bb0
+  let new'0 (alloc'0: t_Bump) (mode: Mode.t) (return (x: t_Context)) = (! bb0
     [ bb0 = s0
-      [ s0 = new_Node (fun (_x: t_MyHashMap_Node_Bdd) -> [ &_3 <- _x ] s1)
-      | s1 = new_Bdd (fun (_x: t_MyHashMap_Bdd_Bdd) -> [ &_6 <- _x ] s2)
-      | s2 = new_tup2_Bdd_Bdd (fun (_x: t_MyHashMap_tup2_Bdd_Bdd_Bdd) -> [ &_7 <- _x ] s3)
-      | s3 = new (fun (_x: t_PeanoInt) -> [ &_8 <- _x ] s4)
+      [ s0 = new_Node {mode} (fun (_x: t_MyHashMap_Node_Bdd) -> [ &_3 <- _x ] s1)
+      | s1 = new_Bdd {mode} (fun (_x: t_MyHashMap_Bdd_Bdd) -> [ &_6 <- _x ] s2)
+      | s2 = new_tup2_Bdd_Bdd {mode} (fun (_x: t_MyHashMap_tup2_Bdd_Bdd_Bdd) -> [ &_7 <- _x ] s3)
+      | s3 = new {mode} (fun (_x: t_PeanoInt) -> [ &_8 <- _x ] s4)
       | s4 = [ &_ret <- { alloc = alloc'0;
                           hashcons = _3;
                           hashcons_ghost = Const.const (True''0);
@@ -2041,6 +2062,7 @@ module M_impl_Context_0__new (* Context<'arena> *)
 end
 module M_impl_Context_0__node (* Context<'arena> *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use map.Map
   use creusot.prelude.Any
@@ -2057,7 +2079,7 @@ module M_impl_Context_0__node (* Context<'arena> *)
   
   meta "rewrite_def" function view_Bdd
   
-  let eq_Bdd (self: t_Bdd) (o: t_Bdd) (return (x: bool)) = any
+  let eq_Bdd (self: t_Bdd) (o: t_Bdd) (mode: Mode.t) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (view_Bdd self = view_Bdd o)}
       (! return {result}) ]
   
@@ -2182,7 +2204,7 @@ module M_impl_Context_0__node (* Context<'arena> *)
         | None -> true
         end)
   
-  let hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
+  let hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
     /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
     any
@@ -2196,14 +2218,15 @@ module M_impl_Context_0__node (* Context<'arena> *)
   
   meta "select_lsinst" "all"
   
-  let node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (return (x'0: t_Bdd)) =
+  let node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (mode: Mode.t)
+    (return (x'0: t_Bdd)) =
   {[@stop_split] [@expl:node requires] ([@stop_split] [@expl:node 'self' type invariant] inv_refmut_Context self)
     /\ ([@stop_split] [@expl:node requires #0] is_valid_bdd self.current childt)
     /\ ([@stop_split] [@expl:node requires #1] is_valid_bdd self.current childf)
     /\ ([@stop_split] [@expl:node requires #2] UInt64.t'int x < leastvar childt /\ UInt64.t'int x < leastvar childf)}
     (! bb0
     [ bb0 = s0
-      [ s0 = eq_Bdd {childt} {childf} (fun (_x: bool) -> [ &_26 <- _x ] s1)
+      [ s0 = eq_Bdd {childt} {childf} {mode} (fun (_x: bool) -> [ &_26 <- _x ] s1)
       | s1 = any [ br0 -> {_26 = false} (! bb3) | br1 -> {_26} (! bb2) ] ]
     | bb2 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
@@ -2217,7 +2240,7 @@ module M_impl_Context_0__node (* Context<'arena> *)
             [ &_30 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s2 = hashcons'0 {_30} {_31} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
+      | s2 = hashcons'0 {_30} {_31} {mode} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
       | s4 = -{resolve_refmut_Context self}- s5
       | s5 = return {_ret} ] ]
@@ -2239,6 +2262,7 @@ end
 module M_impl_Context_0__not (* Context<'arena> *)
   use creusot.int.UInt64
   use map.Map
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use int.Int
@@ -2278,7 +2302,7 @@ module M_impl_Context_0__not (* Context<'arena> *)
   
   meta "rewrite_def" function deep_model_ref_Bdd
   
-  let get_Bdd (self: t_MyHashMap_Bdd_Bdd) (key: t_Bdd) (return (x: t_Option_ref_Bdd)) = any
+  let get_Bdd (self: t_MyHashMap_Bdd_Bdd) (key: t_Bdd) (mode: Mode.t) (return (x: t_Option_ref_Bdd)) = any
     [ return (result: t_Option_ref_Bdd) -> {[@stop_split] [@expl:get ensures] match result with
         | Some v -> Map.get (view_MyHashMap_Bdd_Bdd self) (deep_model_ref_Bdd key) = Some'0 v
         | None -> Map.get (view_MyHashMap_Bdd_Bdd self) (deep_model_ref_Bdd key) = None'0
@@ -2400,7 +2424,7 @@ module M_impl_Context_0__not (* Context<'arena> *)
         | None'0 -> true
         end)
   
-  let not' (self: MutBorrow.t t_Context) (x: t_Bdd) (return (x'0: t_Bdd)) =
+  let not' (self: MutBorrow.t t_Context) (x: t_Bdd) (mode: Mode.t) (return (x'0: t_Bdd)) =
   {[@stop_split] [@expl:not requires] ([@stop_split] [@expl:not 'self' type invariant] inv_refmut_Context self)
     /\ ([@stop_split] [@expl:not requires] is_valid_bdd self.current x)}
     any
@@ -2410,7 +2434,8 @@ module M_impl_Context_0__not (* Context<'arena> *)
       /\ ([@stop_split] [@expl:not ensures #3] leastvar x <= leastvar result)}
       (! return {result}) ]
   
-  let node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (return (x'0: t_Bdd)) =
+  let node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (mode: Mode.t)
+    (return (x'0: t_Bdd)) =
   {[@stop_split] [@expl:node requires] ([@stop_split] [@expl:node 'self' type invariant] inv_refmut_Context self)
     /\ ([@stop_split] [@expl:node requires #0] is_valid_bdd self.current childt)
     /\ ([@stop_split] [@expl:node requires #1] is_valid_bdd self.current childf)
@@ -2423,7 +2448,7 @@ module M_impl_Context_0__not (* Context<'arena> *)
       /\ ([@stop_split] [@expl:node ensures #3] UInt64.t'int x <= leastvar result)}
       (! return {result}) ]
   
-  let false_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
+  let false_ (self: MutBorrow.t t_Context) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:false_ 'self' type invariant] inv_refmut_Context self}
     any
     [ return (result: t_Bdd) ->
@@ -2433,7 +2458,7 @@ module M_impl_Context_0__not (* Context<'arena> *)
       /\ ([@stop_split] [@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
       (! return {result}) ]
   
-  let true_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
+  let true_ (self: MutBorrow.t t_Context) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:true_ 'self' type invariant] inv_refmut_Context self}
     any
     [ return (result: t_Bdd) -> {[@stop_split] [@expl:true_ ensures] ([@stop_split] [@expl:true_ ensures #0] grows self)
@@ -2442,7 +2467,7 @@ module M_impl_Context_0__not (* Context<'arena> *)
       /\ ([@stop_split] [@expl:true_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
       (! return {result}) ]
   
-  let add_Bdd (self: MutBorrow.t t_MyHashMap_Bdd_Bdd) (key: t_Bdd) (val': t_Bdd) (return (x: ())) = any
+  let add_Bdd (self: MutBorrow.t t_MyHashMap_Bdd_Bdd) (key: t_Bdd) (val': t_Bdd) (mode: Mode.t) (return (x: ())) = any
     [ return (result: ()) ->
     {[@stop_split] [@expl:add ensures] forall i: UInt64.t. Map.get (view_MyHashMap_Bdd_Bdd self.final) i
         = (if i = deep_model_Bdd key then Some'0 val' else Map.get (view_MyHashMap_Bdd_Bdd self.current) i)}
@@ -2473,13 +2498,13 @@ module M_impl_Context_0__not (* Context<'arena> *)
   
   meta "select_lsinst" "all"
   
-  let not''0 (self: MutBorrow.t t_Context) (x: t_Bdd) (return (x'0: t_Bdd)) =
+  let not''0 (self: MutBorrow.t t_Context) (x: t_Bdd) (mode: Mode.t) (return (x'0: t_Bdd)) =
   {[@stop_split] [@expl:not requires] ([@stop_split] [@expl:not 'self' type invariant] inv_refmut_Context self)
     /\ ([@stop_split] [@expl:not requires] is_valid_bdd self.current x)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_20 <- x ] s1
-      | s1 = get_Bdd {self.current.not_memo} {_20} (fun (_x: t_Option_ref_Bdd) -> [ &_17 <- _x ] s2)
+      | s1 = get_Bdd {self.current.not_memo} {_20} {mode} (fun (_x: t_Option_ref_Bdd) -> [ &_17 <- _x ] s2)
       | s2 = any [ br0 -> {_17 = None} (! bb4) | br1 (x0: t_Bdd) -> {_17 = Some x0} (! bb2) ] ]
     | bb4 = any
       [ br0 -> {x.f0 = False'} (! bb9)
@@ -2494,19 +2519,19 @@ module M_impl_Context_0__not (* Context<'arena> *)
             [ &_32 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s4)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s4 = not' {_32} {childt} (fun (_x: t_Bdd) -> [ &childt'0 <- _x ] s5)
+      | s4 = not' {_32} {childt} {mode} (fun (_x: t_Bdd) -> [ &childt'0 <- _x ] s5)
       | s5 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_35 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s6)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s6 = not' {_35} {childf} (fun (_x: t_Bdd) -> [ &childf'0 <- _x ] s7)
+      | s6 = not' {_35} {childf} {mode} (fun (_x: t_Bdd) -> [ &childf'0 <- _x ] s7)
       | s7 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_37 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s8)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s8 = node {_37} {v} {childt'0} {childf'0} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s9)
+      | s8 = node {_37} {v} {childt'0} {childf'0} {mode} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s9)
       | s9 = bb16 ]
     | bb10 = s0
       [ s0 = MutBorrow.borrow_mut <t_Context> {self.current}
@@ -2514,7 +2539,7 @@ module M_impl_Context_0__not (* Context<'arena> *)
             [ &_26 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s1 = false_ {_26} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s2)
+      | s1 = false_ {_26} {mode} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s2)
       | s2 = bb16 ]
     | bb9 = s0
       [ s0 = MutBorrow.borrow_mut <t_Context> {self.current}
@@ -2522,14 +2547,14 @@ module M_impl_Context_0__not (* Context<'arena> *)
             [ &_27 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s1 = true_ {_27} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s2)
+      | s1 = true_ {_27} {mode} (fun (_x: t_Bdd) -> [ &r'0 <- _x ] s2)
       | s2 = bb16 ]
     | bb16 = s0
       [ s0 = MutBorrow.borrow_final <t_MyHashMap_Bdd_Bdd> {self.current.not_memo}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 3}
           (fun (_bor: MutBorrow.t t_MyHashMap_Bdd_Bdd) ->
             [ &_42 <- _bor ] [ &self <- { self with current = { self.current with not_memo = _bor.final } } ] s1)
-      | s1 = add_Bdd {_42} {x} {r'0} (fun (_x: ()) -> [ &_41 <- _x ] s2)
+      | s1 = add_Bdd {_42} {x} {r'0} {mode} (fun (_x: ()) -> [ &_41 <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
       | s3 = -{resolve_refmut_Context self}- s4
       | s4 = [ &_ret <- r'0 ] s5
@@ -2559,9 +2584,9 @@ module M_impl_Context_0__not (* Context<'arena> *)
     | & _37: MutBorrow.t t_Context = Any.any_l ()
     | & _41: () = Any.any_l ()
     | & _42: MutBorrow.t t_MyHashMap_Bdd_Bdd = Any.any_l () ]
-    [ not' (self: MutBorrow.t t_Context) (x: t_Bdd) (_k (_ret: t_Bdd)) ->
-    {[@expl:function variant] well_founded_relation_Int function_variant (size x)}
-      not' {self} {x} (_k) ] [ function_variant: int = size x ])
+    [ not' (self: MutBorrow.t t_Context) (x: t_Bdd) (mode: Mode.t) (_k (_ret: t_Bdd)) -> {Mode.terminates mode
+      -> ([@expl:function variant] well_founded_relation_Int function_variant (size x))}
+      not' {self} {x} {mode} (_k) ] [ function_variant: int = size x ])
     [ return (result: t_Bdd) -> {[@stop_split] [@expl:not ensures] ([@stop_split] [@expl:not ensures #0] grows self)
       /\ ([@stop_split] [@expl:not ensures #1] is_valid_bdd self.final result)
       /\ ([@stop_split] [@expl:not ensures #2] forall v: Map.map UInt64.t bool. interp result v = (not interp x v))
@@ -2572,6 +2597,7 @@ module M_impl_Context_0__true (* Context<'arena> *)
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use map.Map
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -2695,7 +2721,7 @@ module M_impl_Context_0__true (* Context<'arena> *)
         | None -> true
         end)
   
-  let hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (return (x: t_Bdd)) =
+  let hashcons'0 (self: MutBorrow.t t_Context) (n: t_Node) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:hashcons requires] ([@stop_split] [@expl:hashcons 'self' type invariant] inv_refmut_Context self)
     /\ ([@stop_split] [@expl:hashcons requires] is_valid_node self.current n)}
     any
@@ -2713,7 +2739,7 @@ module M_impl_Context_0__true (* Context<'arena> *)
   
   meta "select_lsinst" "all"
   
-  let true_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
+  let true_ (self: MutBorrow.t t_Context) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:true_ 'self' type invariant] inv_refmut_Context self}
     (! bb0
     [ bb0 = s0
@@ -2723,7 +2749,7 @@ module M_impl_Context_0__true (* Context<'arena> *)
             [ &_8 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s2 = hashcons'0 {_8} {_9} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
+      | s2 = hashcons'0 {_8} {_9} {mode} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
       | s4 = -{resolve_refmut_Context self}- s5
       | s5 = return {_ret} ] ]
@@ -2741,6 +2767,7 @@ module M_impl_Context_0__v (* Context<'arena> *)
   use creusot.int.UInt64
   use map.Map
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -2864,7 +2891,7 @@ module M_impl_Context_0__v (* Context<'arena> *)
         | None -> true
         end)
   
-  let true_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
+  let true_ (self: MutBorrow.t t_Context) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:true_ 'self' type invariant] inv_refmut_Context self}
     any
     [ return (result: t_Bdd) -> {[@stop_split] [@expl:true_ ensures] ([@stop_split] [@expl:true_ ensures #0] grows self)
@@ -2873,7 +2900,7 @@ module M_impl_Context_0__v (* Context<'arena> *)
       /\ ([@stop_split] [@expl:true_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
       (! return {result}) ]
   
-  let false_ (self: MutBorrow.t t_Context) (return (x: t_Bdd)) =
+  let false_ (self: MutBorrow.t t_Context) (mode: Mode.t) (return (x: t_Bdd)) =
   {[@stop_split] [@expl:false_ 'self' type invariant] inv_refmut_Context self}
     any
     [ return (result: t_Bdd) ->
@@ -2883,7 +2910,8 @@ module M_impl_Context_0__v (* Context<'arena> *)
       /\ ([@stop_split] [@expl:false_ ensures #3] UInt64.t'int const_MAX + 1 = leastvar result)}
       (! return {result}) ]
   
-  let node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (return (x'0: t_Bdd)) =
+  let node (self: MutBorrow.t t_Context) (x: UInt64.t) (childt: t_Bdd) (childf: t_Bdd) (mode: Mode.t)
+    (return (x'0: t_Bdd)) =
   {[@stop_split] [@expl:node requires] ([@stop_split] [@expl:node 'self' type invariant] inv_refmut_Context self)
     /\ ([@stop_split] [@expl:node requires #0] is_valid_bdd self.current childt)
     /\ ([@stop_split] [@expl:node requires #1] is_valid_bdd self.current childf)
@@ -2904,7 +2932,7 @@ module M_impl_Context_0__v (* Context<'arena> *)
   
   meta "select_lsinst" "all"
   
-  let v (self: MutBorrow.t t_Context) (x: UInt64.t) (return (x'0: t_Bdd)) =
+  let v (self: MutBorrow.t t_Context) (x: UInt64.t) (mode: Mode.t) (return (x'0: t_Bdd)) =
   {[@stop_split] [@expl:v 'self' type invariant] inv_refmut_Context self}
     (! bb0
     [ bb0 = s0
@@ -2913,19 +2941,19 @@ module M_impl_Context_0__v (* Context<'arena> *)
             [ &_10 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s1 = true_ {_10} (fun (_x: t_Bdd) -> [ &t <- _x ] s2)
+      | s1 = true_ {_10} {mode} (fun (_x: t_Bdd) -> [ &t <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_Context> {self.current}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_12 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s3)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s3 = false_ {_12} (fun (_x: t_Bdd) -> [ &f <- _x ] s4)
+      | s3 = false_ {_12} {mode} (fun (_x: t_Bdd) -> [ &f <- _x ] s4)
       | s4 = MutBorrow.borrow_final <t_Context> {self.current} {MutBorrow.get_id self}
           (fun (_bor: MutBorrow.t t_Context) ->
             [ &_13 <- _bor ] -{inv_Context _bor.final}-
             [ &self <- { self with current = _bor.final } ] s5)
         [ _ck -> (! {[@expl:type invariant] inv_Context self.current} any) ]
-      | s5 = node {_13} {x} {t} {f} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s6)
+      | s5 = node {_13} {x} {t} {f} {mode} (fun (_x: t_Bdd) -> [ &_ret <- _x ] s6)
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_Context self} any) ]
       | s7 = -{resolve_refmut_Context self}- s8
       | s8 = return {_ret} ] ]
@@ -2944,6 +2972,7 @@ module M_impl_Context_0__v (* Context<'arena> *)
 end
 module M_impl_Eq_for_Bdd__assert_fields_are_eq (* <Bdd<'arena> as std::cmp::Eq> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   
   type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
@@ -2953,11 +2982,13 @@ module M_impl_Eq_for_Bdd__assert_fields_are_eq (* <Bdd<'arena> as std::cmp::Eq> 
   
   meta "select_lsinst" "all"
   
-  let assert_fields_are_eq_Bdd (self: t_Bdd) (return (x: ())) = (! bb0
+  let assert_fields_are_eq_Bdd (self: t_Bdd) (mode: Mode.t) (return (x: ())) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_impl_Eq_for_Node__assert_fields_are_eq (* <Node<'arena> as std::cmp::Eq> *)
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   
   type t_Bdd = { f0: t_Node; f1: UInt64.t }
@@ -2967,12 +2998,14 @@ module M_impl_Eq_for_Node__assert_fields_are_eq (* <Node<'arena> as std::cmp::Eq
   
   meta "select_lsinst" "all"
   
-  let assert_fields_are_eq_Node (self: t_Node) (return (x: ())) = (! bb0
+  let assert_fields_are_eq_Node (self: t_Node) (mode: Mode.t) (return (x: ())) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_impl_Hash_for_Bdd__hash (* <Bdd<'arena> as hashmap::Hash> *)
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
   with t_Bdd = { f0: t_Node; f1: UInt64.t }
@@ -2993,7 +3026,8 @@ module M_impl_Hash_for_Bdd__hash (* <Bdd<'arena> as hashmap::Hash> *)
   
   meta "select_lsinst" "all"
   
-  let hash_Bdd (self: t_Bdd) (return (x: UInt64.t)) = (! bb0
+  let hash_Bdd (self: t_Bdd) (mode: Mode.t) (return (x: UInt64.t)) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- self.f1 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & self: t_Bdd = self ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:hash ensures] UInt64.t'int result
@@ -3001,6 +3035,7 @@ module M_impl_Hash_for_Bdd__hash (* <Bdd<'arena> as hashmap::Hash> *)
       (! return {result}) ]
 end
 module M_impl_Hash_for_Bdd__hash__refines (* <Bdd<'arena> as hashmap::Hash> *)
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   
   type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
@@ -3026,11 +3061,12 @@ module M_impl_Hash_for_Bdd__hash__refines (* <Bdd<'arena> as hashmap::Hash> *)
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Bdd. forall result: UInt64.t. UInt64.t'int result = hash_log_Bdd (view_Bdd self)
-        -> UInt64.t'int result = hash_log_Bdd (deep_model_ref_Bdd self)
+  goal refines: forall mode: Mode.t, self: t_Bdd. forall result: UInt64.t. UInt64.t'int result
+          = hash_log_Bdd (view_Bdd self) -> UInt64.t'int result = hash_log_Bdd (deep_model_ref_Bdd self)
 end
 module M_impl_Hash_for_Node__hash (* <Node<'arena> as hashmap::Hash> *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.ComputerDivision
   use int.Int
@@ -3046,11 +3082,11 @@ module M_impl_Hash_for_Node__hash (* <Node<'arena> as hashmap::Hash> *)
         end}
       any) ]
   
-  let wrapping_mul (self: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
+  let wrapping_mul (self: UInt64.t) (rhs: UInt64.t) (mode: Mode.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt64.mul self rhs}
       (! return {result}) ]
   
-  let wrapping_add (self: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
+  let wrapping_add (self: UInt64.t) (rhs: UInt64.t) (mode: Mode.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt64.add self rhs}
       (! return {result}) ]
   
@@ -3079,7 +3115,8 @@ module M_impl_Hash_for_Node__hash (* <Node<'arena> as hashmap::Hash> *)
   
   meta "select_lsinst" "all"
   
-  let hash_Node (self: t_Node) (return (x: UInt64.t)) = (! bb0
+  let hash_Node (self: t_Node) (mode: Mode.t) (return (x: UInt64.t)) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = any
       [ br0 -> {self = False'} (! bb6)
       | br1 -> {self = True'} (! bb5)
@@ -3088,10 +3125,10 @@ module M_impl_Hash_for_Node__hash (* <Node<'arena> as hashmap::Hash> *)
       [ s0 = elim_If {self} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &v <- rv ] s1)
       | s1 = elim_If {self} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childt <- rchildt ] s2)
       | s2 = elim_If {self} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childf <- rchildf ] s3)
-      | s3 = wrapping_mul {childt.f1} {(5: UInt64.t)} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s4)
-      | s4 = wrapping_add {v} {_10} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
-      | s5 = wrapping_mul {childf.f1} {(7: UInt64.t)} (fun (_x: UInt64.t) -> [ &_12 <- _x ] s6)
-      | s6 = wrapping_add {_8} {_12} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s7)
+      | s3 = wrapping_mul {childt.f1} {(5: UInt64.t)} {mode} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s4)
+      | s4 = wrapping_add {v} {_10} {mode} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s5 = wrapping_mul {childf.f1} {(7: UInt64.t)} {mode} (fun (_x: UInt64.t) -> [ &_12 <- _x ] s6)
+      | s6 = wrapping_add {_8} {_12} {mode} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s7)
       | s7 = return {_ret} ]
     | bb5 = s0 [ s0 = [ &_ret <- (2: UInt64.t) ] s1 | s1 = return {_ret} ]
     | bb6 = s0 [ s0 = [ &_ret <- (1: UInt64.t) ] s1 | s1 = return {_ret} ] ]
@@ -3108,6 +3145,7 @@ module M_impl_Hash_for_Node__hash (* <Node<'arena> as hashmap::Hash> *)
       (! return {result}) ]
 end
 module M_impl_Hash_for_Node__hash__refines (* <Node<'arena> as hashmap::Hash> *)
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use int.ComputerDivision
   use int.Int
@@ -3144,12 +3182,13 @@ module M_impl_Hash_for_Node__hash__refines (* <Node<'arena> as hashmap::Hash> *)
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Node. forall result: UInt64.t. UInt64.t'int result = hash_log_Node (view_Node self)
-        -> UInt64.t'int result = hash_log_Node (deep_model_ref_Node self)
+  goal refines: forall mode: Mode.t, self: t_Node. forall result: UInt64.t. UInt64.t'int result
+          = hash_log_Node (view_Node self) -> UInt64.t'int result = hash_log_Node (deep_model_ref_Node self)
 end
 module M_impl_PartialEq_for_Bdd__eq (* <Bdd<'arena> as std::cmp::PartialEq> *)
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
   with t_Bdd = { f0: t_Node; f1: UInt64.t }
@@ -3166,13 +3205,14 @@ module M_impl_PartialEq_for_Bdd__eq (* <Bdd<'arena> as std::cmp::PartialEq> *)
   
   meta "select_lsinst" "all"
   
-  let eq_Bdd (self: t_Bdd) (o: t_Bdd) (return (x: bool)) = (! bb0
+  let eq_Bdd (self: t_Bdd) (o: t_Bdd) (mode: Mode.t) (return (x: bool)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- self.f1 = o.f1 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l () | & self: t_Bdd = self | & o: t_Bdd = o ])
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (view_Bdd self = view_Bdd o)}
       (! return {result}) ]
 end
 module M_impl_PartialEq_for_Bdd__eq__refines (* <Bdd<'arena> as std::cmp::PartialEq> *)
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   
   type t_Node = False' | True' | If UInt64.t t_Bdd t_Bdd
@@ -3194,11 +3234,12 @@ module M_impl_PartialEq_for_Bdd__eq__refines (* <Bdd<'arena> as std::cmp::Partia
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Bdd, other: t_Bdd. forall result: bool. result = (view_Bdd self = view_Bdd other)
-        -> result = (deep_model_ref_Bdd self = deep_model_ref_Bdd other)
+  goal refines: forall mode: Mode.t, self: t_Bdd, other: t_Bdd. forall result: bool. result
+          = (view_Bdd self = view_Bdd other) -> result = (deep_model_ref_Bdd self = deep_model_ref_Bdd other)
 end
 module M_impl_PartialEq_for_Node__eq (* <Node<'arena> as std::cmp::PartialEq> *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Bdd = { f0: t_Node; f1: UInt64.t }
@@ -3222,7 +3263,7 @@ module M_impl_PartialEq_for_Node__eq (* <Node<'arena> as std::cmp::PartialEq> *)
   
   meta "rewrite_def" function view_Bdd
   
-  let eq_Bdd (self: t_Bdd) (o: t_Bdd) (return (x: bool)) = any
+  let eq_Bdd (self: t_Bdd) (o: t_Bdd) (mode: Mode.t) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (view_Bdd self = view_Bdd o)}
       (! return {result}) ]
   
@@ -3242,7 +3283,8 @@ module M_impl_PartialEq_for_Node__eq (* <Node<'arena> as std::cmp::PartialEq> *)
   
   meta "select_lsinst" "all"
   
-  let eq_Node (self: t_Node) (rhs: t_Node) (return (x: bool)) = (! bb0
+  let eq_Node (self: t_Node) (rhs: t_Node) (mode: Mode.t) (return (x: bool)) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = s0
       [ s0 = [ &_6 <- { f0'0 = self; f1'0 = rhs } ] s1
       | s1 = any
@@ -3260,10 +3302,10 @@ module M_impl_PartialEq_for_Node__eq (* <Node<'arena> as std::cmp::PartialEq> *)
       | s3 = elim_If {_6.f1'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &v_2 <- rv ] s4)
       | s4 = elim_If {_6.f1'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childt_2 <- rchildt ] s5)
       | s5 = elim_If {_6.f1'0} (fun (rv: UInt64.t) (rchildt: t_Bdd) (rchildf: t_Bdd) -> [ &childf_2 <- rchildf ] s6)
-      | s6 = eq_Bdd {childf_1} {childf_2} (fun (_x: bool) -> [ &_19 <- _x ] s7)
+      | s6 = eq_Bdd {childf_1} {childf_2} {mode} (fun (_x: bool) -> [ &_19 <- _x ] s7)
       | s7 = any [ br0 -> {_19 = false} (! bb19) | br1 -> {_19} (! bb12) ] ]
     | bb12 = s0
-      [ s0 = eq_Bdd {childt_1} {childt_2} (fun (_x: bool) -> [ &_22 <- _x ] s1)
+      [ s0 = eq_Bdd {childt_1} {childt_2} {mode} (fun (_x: bool) -> [ &_22 <- _x ] s1)
       | s1 = any [ br0 -> {_22 = false} (! bb19) | br1 -> {_22} (! bb14) ] ]
     | bb14 = s0 [ s0 = [ &_25 <- v_1 = v_2 ] s1 | s1 = any [ br0 -> {_25 = false} (! bb19) | br1 -> {_25} (! bb15) ] ]
     | bb15 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ]
@@ -3297,6 +3339,7 @@ module M_impl_PartialEq_for_Node__eq (* <Node<'arena> as std::cmp::PartialEq> *)
       (! return {result}) ]
 end
 module M_impl_PartialEq_for_Node__eq__refines (* <Node<'arena> as std::cmp::PartialEq> *)
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   
   type t_Bdd = { f0: t_Node; f1: UInt64.t }
@@ -3318,7 +3361,7 @@ module M_impl_PartialEq_for_Node__eq__refines (* <Node<'arena> as std::cmp::Part
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Node, other: t_Node. forall result: bool. result
+  goal refines: forall mode: Mode.t, self: t_Node, other: t_Node. forall result: bool. result
           = (deep_model_ref_Node self = deep_model_ref_Node other)
         -> result = (deep_model_ref_Node self = deep_model_ref_Node other)
 end

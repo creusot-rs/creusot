@@ -4,6 +4,7 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   type t_Namespace = Namespace_TICKET_LOCK int | Other namespace_other
   
   use map.Map
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use real.Real
   use real.FromInt
@@ -102,7 +103,7 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   
   meta "rewrite_def" predicate inv_ref_Guarded_FullBorrow_Perm_PermCell_T
   
-  let deref_Ghost_Guarded_FullBorrow_Perm_PermCell_T (self: t_Guarded_FullBorrow_Perm_PermCell_T)
+  let deref_Ghost_Guarded_FullBorrow_Perm_PermCell_T (self: t_Guarded_FullBorrow_Perm_PermCell_T) (mode: Mode.t)
     (return (x: t_Guarded_FullBorrow_Perm_PermCell_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T self}
     any
@@ -137,7 +138,7 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   
   meta "rewrite_def" predicate inv_ref_LifetimeToken
   
-  let deref_Ghost_LifetimeToken (self: t_LifetimeToken) (return (x: t_LifetimeToken)) =
+  let deref_Ghost_LifetimeToken (self: t_LifetimeToken) (mode: Mode.t) (return (x: t_LifetimeToken)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_LifetimeToken self}
     any
     [ return (result: t_LifetimeToken) ->
@@ -153,7 +154,7 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   
   function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
   
-  let borrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) (token: t_LifetimeToken)
+  let borrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) (token: t_LifetimeToken) (mode: Mode.t)
     (return (x: t_Perm_PermCell_T)) =
   {[@stop_split] [@expl:borrow_Perm_PermCell_T requires] ([@stop_split] [@expl:borrow 'token' type invariant] inv_ref_LifetimeToken token)
     /\ ([@stop_split] [@expl:borrow requires] lft_Perm_PermCell_T self = lft token)}
@@ -161,7 +162,7 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
     [ return (result: t_Perm_PermCell_T) -> {[@stop_split] [@expl:borrow ensures] result = cur_Perm_PermCell_T self}
       (! return {result}) ]
   
-  let new_ref_Perm_PermCell_T (x: t_Perm_PermCell_T) (return (x'0: t_Perm_PermCell_T)) = any
+  let new_ref_Perm_PermCell_T (x: t_Perm_PermCell_T) (mode: Mode.t) (return (x'0: t_Perm_PermCell_T)) = any
     [ return (result: t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
@@ -178,7 +179,7 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   
   function val_unsized_PermCell_T (self: t_Perm_PermCell_T) : t_T
   
-  let borrow_T (self: t_PermCell_T) (perm: t_Perm_PermCell_T) (return (x: t_T)) =
+  let borrow_T (self: t_PermCell_T) (perm: t_Perm_PermCell_T) (mode: Mode.t) (return (x: t_T)) =
   {[@stop_split] [@expl:borrow requires] self = ward_PermCell_T perm}
     any
     [ return (result: t_T) ->
@@ -290,17 +291,18 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   
   meta "select_lsinst" "all"
   
-  let deref_T (self: t_TicketLockGuard_T) (return (x: t_T)) =
-  {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_TicketLockGuard_T self}
+  let deref_T (self: t_TicketLockGuard_T) (mode: Mode.t) (return (x: t_T)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_TicketLockGuard_T self}
     (! bb0
     [ bb0 = s0
-      [ s0 = deref_Ghost_Guarded_FullBorrow_Perm_PermCell_T {self.perm'0}
+      [ s0 = deref_Ghost_Guarded_FullBorrow_Perm_PermCell_T {self.perm'0} {Mode.into_ghost mode}
           (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_10 <- _x ] s1)
       | s1 = [ &_15 <- self.lock'0.lft_tok ] s2
-      | s2 = deref_Ghost_LifetimeToken {_15} (fun (_x: t_LifetimeToken) -> [ &_13 <- _x ] s3)
-      | s3 = borrow_Perm_PermCell_T {_10.inner} {_13} (fun (_x: t_Perm_PermCell_T) -> [ &_8 <- _x ] s4)
-      | s4 = new_ref_Perm_PermCell_T {_8} (fun (_x: t_Perm_PermCell_T) -> [ &_6 <- _x ] s5)
-      | s5 = borrow_T {self.lock'0.data} {_6} (fun (_x: t_T) -> [ &_4 <- _x ] s6)
+      | s2 = deref_Ghost_LifetimeToken {_15} {Mode.into_ghost mode} (fun (_x: t_LifetimeToken) -> [ &_13 <- _x ] s3)
+      | s3 = borrow_Perm_PermCell_T {_10.inner} {_13} {Mode.into_ghost mode}
+          (fun (_x: t_Perm_PermCell_T) -> [ &_8 <- _x ] s4)
+      | s4 = new_ref_Perm_PermCell_T {_8} {Mode.into_ghost mode} (fun (_x: t_Perm_PermCell_T) -> [ &_6 <- _x ] s5)
+      | s5 = borrow_T {self.lock'0.data} {_6} {mode} (fun (_x: t_T) -> [ &_4 <- _x ] s6)
       | s6 = [ &_ret <- _4 ] s7
       | s7 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
@@ -323,6 +325,7 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   
   use map.Map
   use creusot.prelude.MutBorrow
+  use creusot.prelude.Mode
   use real.Real
   use real.FromInt
   use creusot.prelude.Any
@@ -422,7 +425,7 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   meta "rewrite_def" predicate inv_refmut_Guarded_FullBorrow_Perm_PermCell_T
   
   let deref_mut_Ghost_Guarded_FullBorrow_Perm_PermCell_T (self: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T)) =
+    (mode: Mode.t) (return (x: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T)) =
   {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T self}
     any
     [ return (result: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T) ->
@@ -430,12 +433,12 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
       /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
-  let new_refmut_FullBorrow_Perm_PermCell_T (x: MutBorrow.t t_FullBorrow_Perm_PermCell_T)
+  let new_refmut_FullBorrow_Perm_PermCell_T (x: MutBorrow.t t_FullBorrow_Perm_PermCell_T) (mode: Mode.t)
     (return (x'0: MutBorrow.t t_FullBorrow_Perm_PermCell_T)) = any
     [ return (result: MutBorrow.t t_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
   
-  let into_inner_refmut_FullBorrow_Perm_PermCell_T (self: MutBorrow.t t_FullBorrow_Perm_PermCell_T)
+  let into_inner_refmut_FullBorrow_Perm_PermCell_T (self: MutBorrow.t t_FullBorrow_Perm_PermCell_T) (mode: Mode.t)
     (return (x: MutBorrow.t t_FullBorrow_Perm_PermCell_T)) = any
     [ return (result: MutBorrow.t t_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:into_inner ensures] result
       = self}
@@ -467,7 +470,7 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   
   meta "rewrite_def" predicate inv_ref_LifetimeToken
   
-  let deref_Ghost_LifetimeToken (self: t_LifetimeToken) (return (x: t_LifetimeToken)) =
+  let deref_Ghost_LifetimeToken (self: t_LifetimeToken) (mode: Mode.t) (return (x: t_LifetimeToken)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_LifetimeToken self}
     any
     [ return (result: t_LifetimeToken) ->
@@ -484,7 +487,7 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
   
   let borrow_mut_Perm_PermCell_T (self: MutBorrow.t t_FullBorrow_Perm_PermCell_T) (token: t_LifetimeToken)
-    (return (x: MutBorrow.t t_Perm_PermCell_T)) =
+    (mode: Mode.t) (return (x: MutBorrow.t t_Perm_PermCell_T)) =
   {[@stop_split] [@expl:borrow_mut_Perm_PermCell_T requires] ([@stop_split] [@expl:borrow_mut 'token' type invariant] inv_ref_LifetimeToken token)
     /\ ([@stop_split] [@expl:borrow_mut requires] lft_Perm_PermCell_T self.current = lft token)}
     any
@@ -506,7 +509,8 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   
   meta "rewrite_def" predicate resolve_refmut_Perm_PermCell_T
   
-  let new_refmut_Perm_PermCell_T (x: MutBorrow.t t_Perm_PermCell_T) (return (x'0: MutBorrow.t t_Perm_PermCell_T)) = any
+  let new_refmut_Perm_PermCell_T (x: MutBorrow.t t_Perm_PermCell_T) (mode: Mode.t)
+    (return (x'0: MutBorrow.t t_Perm_PermCell_T)) = any
     [ return (result: MutBorrow.t t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
   
@@ -529,8 +533,8 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   
   function val_unsized_PermCell_T (self: t_Perm_PermCell_T) : t_T
   
-  let borrow_mut_T (self: t_PermCell_T) (perm: MutBorrow.t t_Perm_PermCell_T) (return (x: MutBorrow.t t_T)) =
-  {[@stop_split] [@expl:borrow_mut requires] self = ward_PermCell_T perm.current}
+  let borrow_mut_T (self: t_PermCell_T) (perm: MutBorrow.t t_Perm_PermCell_T) (mode: Mode.t)
+    (return (x: MutBorrow.t t_T)) = {[@stop_split] [@expl:borrow_mut requires] self = ward_PermCell_T perm.current}
     any
     [ return (result: MutBorrow.t t_T) ->
     {[@stop_split] [@expl:borrow_mut_T ensures] ([@stop_split] [@expl:borrow_mut result type invariant] inv_refmut_T result)
@@ -660,8 +664,9 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   
   meta "select_lsinst" "all"
   
-  let deref_mut_T (self: MutBorrow.t t_TicketLockGuard_T) (return (x: MutBorrow.t t_T)) =
-  {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_TicketLockGuard_T self}
+  let deref_mut_T (self: MutBorrow.t t_TicketLockGuard_T) (mode: Mode.t) (return (x: MutBorrow.t t_T)) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_TicketLockGuard_T self}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_Guarded_FullBorrow_Perm_PermCell_T> {self.current.perm'0}
@@ -670,22 +675,23 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
             [ &_9 <- _bor ] -{inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T _bor.final}-
             [ &self <- { self with current = { self.current with perm'0 = _bor.final } } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T self.current.perm'0} any) ]
-      | s1 = deref_mut_Ghost_Guarded_FullBorrow_Perm_PermCell_T {_9}
+      | s1 = deref_mut_Ghost_Guarded_FullBorrow_Perm_PermCell_T {_9} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_8 <- _x ] s2)
       | s2 = MutBorrow.borrow_final <t_FullBorrow_Perm_PermCell_T> {_8.current.inner}
           {MutBorrow.inherit_id (MutBorrow.get_id _8) 0}
           (fun (_bor: MutBorrow.t t_FullBorrow_Perm_PermCell_T) ->
             [ &__temp <- _bor ] [ &_8 <- { _8 with current = { _8.current with inner = _bor.final } } ] s3)
-      | s3 = new_refmut_FullBorrow_Perm_PermCell_T {__temp}
+      | s3 = new_refmut_FullBorrow_Perm_PermCell_T {__temp} {mode}
           (fun (_x: MutBorrow.t t_FullBorrow_Perm_PermCell_T) -> [ &p <- _x ] s4)
-      | s4 = into_inner_refmut_FullBorrow_Perm_PermCell_T {p}
+      | s4 = into_inner_refmut_FullBorrow_Perm_PermCell_T {p} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t t_FullBorrow_Perm_PermCell_T) -> [ &_21 <- _x ] s5)
       | s5 = [ &_26 <- self.current.lock'0.lft_tok ] s6
-      | s6 = deref_Ghost_LifetimeToken {_26} (fun (_x: t_LifetimeToken) -> [ &_24 <- _x ] s7)
+      | s6 = deref_Ghost_LifetimeToken {_26} {Mode.into_ghost mode} (fun (_x: t_LifetimeToken) -> [ &_24 <- _x ] s7)
       | s7 = MutBorrow.borrow_final <t_FullBorrow_Perm_PermCell_T> {_21.current} {MutBorrow.get_id _21}
           (fun (_bor: MutBorrow.t t_FullBorrow_Perm_PermCell_T) ->
             [ &_20 <- _bor ] [ &_21 <- { _21 with current = _bor.final } ] s8)
-      | s8 = borrow_mut_Perm_PermCell_T {_20} {_24} (fun (_x: MutBorrow.t t_Perm_PermCell_T) -> [ &_19 <- _x ] s9)
+      | s8 = borrow_mut_Perm_PermCell_T {_20} {_24} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t t_Perm_PermCell_T) -> [ &_19 <- _x ] s9)
       | s9 = MutBorrow.borrow_final <t_Perm_PermCell_T> {_19.current} {MutBorrow.get_id _19}
           (fun (_bor: MutBorrow.t t_Perm_PermCell_T) ->
             [ &_18 <- _bor ] [ &_19 <- { _19 with current = _bor.final } ] s10)
@@ -698,9 +704,10 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
       | s14 = MutBorrow.borrow_final <t_Perm_PermCell_T> {_17.current} {MutBorrow.get_id _17}
           (fun (_bor: MutBorrow.t t_Perm_PermCell_T) ->
             [ &_16 <- _bor ] [ &_17 <- { _17 with current = _bor.final } ] s15)
-      | s15 = new_refmut_Perm_PermCell_T {_16} (fun (_x: MutBorrow.t t_Perm_PermCell_T) -> [ &_15 <- _x ] s16)
+      | s15 = new_refmut_Perm_PermCell_T {_16} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t t_Perm_PermCell_T) -> [ &_15 <- _x ] s16)
       | s16 = -{resolve_refmut_Perm_PermCell_T _17}- s17
-      | s17 = borrow_mut_T {self.current.lock'0.data} {_15} (fun (_x: MutBorrow.t t_T) -> [ &_13 <- _x ] s18)
+      | s17 = borrow_mut_T {self.current.lock'0.data} {_15} {mode} (fun (_x: MutBorrow.t t_T) -> [ &_13 <- _x ] s18)
       | s18 = MutBorrow.borrow_final <t_T> {_13.current} {MutBorrow.get_id _13}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_12 <- _bor ] -{inv_T _bor.final}-
@@ -758,6 +765,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   type t_Namespace = Namespace_TICKET_LOCK int | Other namespace_other
   
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use map.Map
   use creusot.int.UInt32
   use creusot.prelude.MutBorrow
@@ -768,7 +776,8 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   type t_Committer_AtomicU32_u32_SeqCst_None
   
-  let closure2 [@coma:extspec] (self: ()) (_0: t_Committer_AtomicU32_u32_SeqCst_None) (return (x: ())) = bb0
+  let closure2 [@coma:extspec] (self: ()) (_0: t_Committer_AtomicU32_u32_SeqCst_None) (mode: Mode.t) (return (x: ())) =
+  bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure2'pre
@@ -777,11 +786,12 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   type t_FnGhostWrapper_closure2 = { f0: () }
   
-  let __new_closure2 (f: ()) (return (x: t_FnGhostWrapper_closure2)) = any
+  let __new_closure2 (f: ()) (mode: Mode.t) (return (x: t_FnGhostWrapper_closure2)) = any
     [ return (result: t_FnGhostWrapper_closure2) -> {[@stop_split] [@expl:__new ensures] result.f0 = f}
       (! return {result}) ]
   
-  let new_FnGhostWrapper_closure2 (x: t_FnGhostWrapper_closure2) (return (x'0: t_FnGhostWrapper_closure2)) = any
+  let new_FnGhostWrapper_closure2 (x: t_FnGhostWrapper_closure2) (mode: Mode.t)
+    (return (x'0: t_FnGhostWrapper_closure2)) = any
     [ return (result: t_FnGhostWrapper_closure2) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   type t_AtomicU32
@@ -831,40 +841,41 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   function ward_AtomicU32 (self: t_Committer_AtomicU32_u32_SeqCst_None) : t_AtomicU32
   
-  predicate precondition_closure2 (self: ()) (args: t_Committer_AtomicU32_u32_SeqCst_None) =
-    let _0 = args in closure2'pre self _0
+  predicate precondition_closure2 (self: ()) (args: t_Committer_AtomicU32_u32_SeqCst_None) (mode: Mode.t) =
+    let _0 = args in closure2'pre self _0 mode
   
   meta "rewrite_def" predicate precondition_closure2
   
-  predicate precondition_FnGhostWrapper_closure2 (self: t_FnGhostWrapper_closure2) (args: t_Committer_AtomicU32_u32_SeqCst_None) =
-    precondition_closure2 self.f0 args
+  predicate precondition_FnGhostWrapper_closure2 (self: t_FnGhostWrapper_closure2) (args: t_Committer_AtomicU32_u32_SeqCst_None) (mode: Mode.t) =
+    precondition_closure2 self.f0 args mode
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure2
   
   function val_load_AtomicU32 (self: t_Committer_AtomicU32_u32_SeqCst_None) : UInt32.t
   
-  predicate postcondition_once_closure2 (self: ()) (args: t_Committer_AtomicU32_u32_SeqCst_None) (result: ()) =
-    let _0 = args in closure2'post'return self _0 result
+  predicate postcondition_once_closure2 (self: ()) (args: t_Committer_AtomicU32_u32_SeqCst_None) (result: ()) (mode: Mode.t) =
+    let _0 = args in closure2'post'return self _0 mode result
   
   meta "rewrite_def" predicate postcondition_once_closure2
   
-  predicate postcondition_once_FnGhostWrapper_closure2 (self: t_FnGhostWrapper_closure2) (args: t_Committer_AtomicU32_u32_SeqCst_None) (result: ()) =
-    postcondition_once_closure2 self.f0 args result
+  predicate postcondition_once_FnGhostWrapper_closure2 (self: t_FnGhostWrapper_closure2) (args: t_Committer_AtomicU32_u32_SeqCst_None) (result: ()) (mode: Mode.t) =
+    postcondition_once_closure2 self.f0 args result mode
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure2
   
-  let load_FnGhostWrapper_closure2 (self: t_AtomicU32) (f: t_FnGhostWrapper_closure2) (return (x: UInt32.t)) =
+  let load_FnGhostWrapper_closure2 (self: t_AtomicU32) (f: t_FnGhostWrapper_closure2) (mode: Mode.t)
+    (return (x: UInt32.t)) =
   {[@stop_split] [@expl:load_FnGhostWrapper_closure2 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicU32 self)
     /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicU32_u32_SeqCst_None. not shot_store_AtomicU32 c
-      -> ward_AtomicU32 c = self -> precondition_FnGhostWrapper_closure2 f c)}
+      -> ward_AtomicU32 c = self -> precondition_FnGhostWrapper_closure2 f c (Mode.into_ghost mode))}
     any
     [ return (result: UInt32.t) ->
     {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicU32_u32_SeqCst_None. not shot_store_AtomicU32 c
         /\ ward_AtomicU32 c = self
-        /\ val_load_AtomicU32 c = result /\ postcondition_once_FnGhostWrapper_closure2 f c ()}
+        /\ val_load_AtomicU32 c = result /\ postcondition_once_FnGhostWrapper_closure2 f c () (Mode.into_ghost mode)}
       (! return {result}) ]
   
-  let wrapping_add (self: UInt32.t) (rhs: UInt32.t) (return (x: UInt32.t)) = any
+  let wrapping_add (self: UInt32.t) (rhs: UInt32.t) (mode: Mode.t) (return (x: UInt32.t)) = any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:wrapping_add ensures] result = UInt32.add self rhs}
       (! return {result}) ]
   
@@ -872,12 +883,12 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   type closure3 = { c0: t_TicketLock_T; c1: t_Guarded_FullBorrow_Perm_PermCell_T; c2: t_Tokens }
   
-  let deref_Ghost_AtomicInvariantSC_TicketLockInv_T (self: t_AtomicInvariantSC_TicketLockInv_T)
+  let deref_Ghost_AtomicInvariantSC_TicketLockInv_T (self: t_AtomicInvariantSC_TicketLockInv_T) (mode: Mode.t)
     (return (x: t_AtomicInvariantSC_TicketLockInv_T)) = any
     [ return (result: t_AtomicInvariantSC_TicketLockInv_T) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let into_inner_Tokens (self: t_Tokens) (return (x: t_Tokens)) = any
+  let into_inner_Tokens (self: t_Tokens) (mode: Mode.t) (return (x: t_Tokens)) = any
     [ return (result: t_Tokens) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
   
   type t_Committer_AtomicU32_u32_None_SeqCst
@@ -929,7 +940,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   meta "rewrite_def" function val_AtomicU32
   
   let shoot_store_AtomicU32 (self: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst)
-    (own: MutBorrow.t t_Perm_AtomicU32) (return (x: ())) =
+    (own: MutBorrow.t t_Perm_AtomicU32) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:shoot_store_AtomicU32 requires] ([@stop_split] [@expl:shoot_store requires #0] not shot_store_AtomicU32'0 self.current)
     /\ ([@stop_split] [@expl:shoot_store requires #1] ward_AtomicU32'0 self.current = ward_AtomicU32'1 own.current)}
     any
@@ -990,7 +1001,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   meta "rewrite_def" predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T
   
-  let into_inner_Guarded_FullBorrow_Perm_PermCell_T (self: t_Guarded_FullBorrow_Perm_PermCell_T)
+  let into_inner_Guarded_FullBorrow_Perm_PermCell_T (self: t_Guarded_FullBorrow_Perm_PermCell_T) (mode: Mode.t)
     (return (x: t_Guarded_FullBorrow_Perm_PermCell_T)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T self}
     any
@@ -1066,7 +1077,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   meta "rewrite_def" predicate inv_closure0
   
-  let closure0 [@coma:extspec] (self: closure0) (inv'2: MutBorrow.t t_TicketLockInv_T) (return (x: ())) =
+  let closure0 [@coma:extspec] (self: closure0) (inv'2: MutBorrow.t t_TicketLockInv_T) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:closure0 requires] ([@stop_split] [@expl:closure 'self' type invariant] inv_closure0 self)
     /\ ([@stop_split] [@expl:closure 'inv' type invariant] inv_refmut_TicketLockInv_T inv'2)}
     bb0
@@ -1082,14 +1093,14 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
             [ &_4 <- _bor ] [ &self <- { self with c0'0 = { self.c0'0 with current = _bor.final } } ] s2)
       | s2 = MutBorrow.borrow_final <t_Perm_AtomicU32> {_6.current} {MutBorrow.get_id _6}
           (fun (_bor: MutBorrow.t t_Perm_AtomicU32) -> [ &_5 <- _bor ] [ &_6 <- { _6 with current = _bor.final } ] s3)
-      | s3 = shoot_store_AtomicU32 {_4} {_5} (fun (_x: ()) -> [ &_3 <- _x ] s4)
+      | s3 = shoot_store_AtomicU32 {_4} {_5} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_3 <- _x ] s4)
       | s4 = -{resolve_refmut_Perm_AtomicU32 _6}- s5
       | s5 = -{match self with
           | {c0'0 = x} -> resolve_refmut_Committer_AtomicU32_u32_None_SeqCst x
           | _ -> true
           end}-
         s6
-      | s6 = into_inner_Guarded_FullBorrow_Perm_PermCell_T {self.c1'0}
+      | s6 = into_inner_Guarded_FullBorrow_Perm_PermCell_T {self.c1'0} {Mode.into_ghost mode}
           (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_8 <- _x ] s7)
       | s7 = [ &_7 <- Some _8 ] s8
       | s8 = s9
@@ -1121,7 +1132,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     forall _1: t_FnGhostWrapper_closure0 [inv_FnGhostWrapper_closure0 _1]. inv_FnGhostWrapper_closure0 _1
       = inv_closure0 _1.f0'0
   
-  let __new_closure0 (f: closure0) (return (x: t_FnGhostWrapper_closure0)) =
+  let __new_closure0 (f: closure0) (mode: Mode.t) (return (x: t_FnGhostWrapper_closure0)) =
   {[@stop_split] [@expl:__new 'f' type invariant] inv_closure0 f}
     any
     [ return (result: t_FnGhostWrapper_closure0) ->
@@ -1207,42 +1218,42 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   meta "rewrite_def" predicate protocol_TicketLockInv_T
   
-  predicate precondition_closure0 (self: closure0) (args: MutBorrow.t t_TicketLockInv_T) =
-    let inv'2 = args in closure0'pre self inv'2
+  predicate precondition_closure0 (self: closure0) (args: MutBorrow.t t_TicketLockInv_T) (mode: Mode.t) =
+    let inv'2 = args in closure0'pre self inv'2 mode
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate precondition_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_TicketLockInv_T) =
-    precondition_closure0 self.f0'0 args
+  predicate precondition_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_TicketLockInv_T) (mode: Mode.t) =
+    precondition_closure0 self.f0'0 args mode
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0
   
-  predicate postcondition_once_closure0 (self: closure0) (args: MutBorrow.t t_TicketLockInv_T) (result: ()) =
-    let inv'2 = args in closure0'post'return self inv'2 result
+  predicate postcondition_once_closure0 (self: closure0) (args: MutBorrow.t t_TicketLockInv_T) (result: ()) (mode: Mode.t) =
+    let inv'2 = args in closure0'post'return self inv'2 mode result
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate postcondition_once_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_TicketLockInv_T) (result: ()) =
-    postcondition_once_closure0 self.f0'0 args result
+  predicate postcondition_once_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_TicketLockInv_T) (result: ()) (mode: Mode.t) =
+    postcondition_once_closure0 self.f0'0 args result mode
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0
   
   let open_TicketLockInv_T (self: t_AtomicInvariantSC_TicketLockInv_T) (tokens: t_Tokens) (f: t_FnGhostWrapper_closure0)
-    (return (x: ())) =
+    (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:open_TicketLockInv_T requires] ([@stop_split] [@expl:open 'f' type invariant] inv_FnGhostWrapper_closure0 f)
     /\ ([@stop_split] [@expl:open requires #0] contains tokens (namespace_TicketLockInv_T self))
     /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_TicketLockInv_T. public_TicketLockInv_T t.current
           = public_TicketLockInv_T'0 self
         /\ protocol_TicketLockInv_T t.current /\ inv_refmut_TicketLockInv_T t
-      -> precondition_FnGhostWrapper_closure0 f t
-      /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res
+      -> precondition_FnGhostWrapper_closure0 f t mode
+      /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res mode
         -> public_TicketLockInv_T t.final = public_TicketLockInv_T'0 self /\ protocol_TicketLockInv_T t.final))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_TicketLockInv_T. public_TicketLockInv_T t.current
           = public_TicketLockInv_T'0 self
         /\ protocol_TicketLockInv_T t.current
-        /\ inv_refmut_TicketLockInv_T t /\ postcondition_once_FnGhostWrapper_closure0 f t result}
+        /\ inv_refmut_TicketLockInv_T t /\ postcondition_once_FnGhostWrapper_closure0 f t result mode}
       (! return {result}) ]
   
   function lft (self: t_LifetimeToken) : t_Lifetime
@@ -1315,19 +1326,19 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   meta "rewrite_def" predicate inv_closure3
   
-  let closure3 [@coma:extspec] (self: closure3) (c: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst)
+  let closure3 [@coma:extspec] (self: closure3) (c: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst) (mode: Mode.t)
     (return (x: ())) = {[@stop_split] [@expl:closure 'self' type invariant] inv_closure3 self}
     bb0
     [ bb0 = s0
-      [ s0 = deref_Ghost_AtomicInvariantSC_TicketLockInv_T {self.c0.inner_inv}
+      [ s0 = deref_Ghost_AtomicInvariantSC_TicketLockInv_T {self.c0.inner_inv} {Mode.into_ghost mode}
           (fun (_x: t_AtomicInvariantSC_TicketLockInv_T) -> [ &_4 <- _x ] s1)
-      | s1 = into_inner_Tokens {self.c2} (fun (_x: t_Tokens) -> [ &_6 <- _x ] s2)
+      | s1 = into_inner_Tokens {self.c2} {Mode.into_ghost mode} (fun (_x: t_Tokens) -> [ &_6 <- _x ] s2)
       | s2 = MutBorrow.borrow_final <t_Committer_AtomicU32_u32_None_SeqCst> {c.current} {MutBorrow.get_id c}
           (fun (_bor: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst) ->
             [ &_10 <- _bor ] [ &c <- { c with current = _bor.final } ] s3)
       | s3 = [ &_9 <- { c0'0 = _10; c1'0 = self.c1 } ] s4
-      | s4 = __new_closure0 {_9} (fun (_x: t_FnGhostWrapper_closure0) -> [ &_8 <- _x ] s5)
-      | s5 = open_TicketLockInv_T {_4} {_6} {_8} (fun (_x: ()) -> [ &_ret <- _x ] s6)
+      | s4 = __new_closure0 {_9} {Mode.into_ghost mode} (fun (_x: t_FnGhostWrapper_closure0) -> [ &_8 <- _x ] s5)
+      | s5 = open_TicketLockInv_T {_4} {_6} {_8} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_ret <- _x ] s6)
       | s6 = -{resolve_refmut_Committer_AtomicU32_u32_None_SeqCst c}- s7
       | s7 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
@@ -1352,7 +1363,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     forall _1: t_FnGhostWrapper_closure3 [inv_FnGhostWrapper_closure3 _1]. inv_FnGhostWrapper_closure3 _1
       = inv_closure3 _1.f0'4
   
-  let __new_closure3 (f: closure3) (return (x: t_FnGhostWrapper_closure3)) =
+  let __new_closure3 (f: closure3) (mode: Mode.t) (return (x: t_FnGhostWrapper_closure3)) =
   {[@stop_split] [@expl:__new 'f' type invariant] inv_closure3 f}
     any
     [ return (result: t_FnGhostWrapper_closure3) ->
@@ -1370,7 +1381,8 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   meta "rewrite_def" predicate inv_Ghost_FnGhostWrapper_closure3
   
-  let new_FnGhostWrapper_closure3 (x: t_FnGhostWrapper_closure3) (return (x'0: t_FnGhostWrapper_closure3)) =
+  let new_FnGhostWrapper_closure3 (x: t_FnGhostWrapper_closure3) (mode: Mode.t)
+    (return (x'0: t_FnGhostWrapper_closure3)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_FnGhostWrapper_closure3 x}
     any
     [ return (result: t_FnGhostWrapper_closure3) ->
@@ -1378,40 +1390,41 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  predicate precondition_closure3 (self: closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst) =
-    let c = args in closure3'pre self c
+  predicate precondition_closure3 (self: closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst) (mode: Mode.t) =
+    let c = args in closure3'pre self c mode
   
   meta "rewrite_def" predicate precondition_closure3
   
-  predicate precondition_FnGhostWrapper_closure3 (self: t_FnGhostWrapper_closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst) =
-    precondition_closure3 self.f0'4 args
+  predicate precondition_FnGhostWrapper_closure3 (self: t_FnGhostWrapper_closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst) (mode: Mode.t) =
+    precondition_closure3 self.f0'4 args mode
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure3
   
-  predicate postcondition_once_closure3 (self: closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst) (result: ()) =
-    let c = args in closure3'post'return self c result
+  predicate postcondition_once_closure3 (self: closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst) (result: ()) (mode: Mode.t) =
+    let c = args in closure3'post'return self c mode result
   
   meta "rewrite_def" predicate postcondition_once_closure3
   
-  predicate postcondition_once_FnGhostWrapper_closure3 (self: t_FnGhostWrapper_closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst) (result: ()) =
-    postcondition_once_closure3 self.f0'4 args result
+  predicate postcondition_once_FnGhostWrapper_closure3 (self: t_FnGhostWrapper_closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst) (result: ()) (mode: Mode.t) =
+    postcondition_once_closure3 self.f0'4 args result mode
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure3
   
-  let store_FnGhostWrapper_closure3 (self: t_AtomicU32) (val': UInt32.t) (f: t_FnGhostWrapper_closure3)
+  let store_FnGhostWrapper_closure3 (self: t_AtomicU32) (val': UInt32.t) (f: t_FnGhostWrapper_closure3) (mode: Mode.t)
     (return (x: ())) =
   {[@stop_split] [@expl:store_FnGhostWrapper_closure3 requires] ([@stop_split] [@expl:store 'self' type invariant] inv_ref_AtomicU32 self)
     /\ ([@stop_split] [@expl:store 'f' type invariant] inv_Ghost_FnGhostWrapper_closure3 f)
     /\ ([@stop_split] [@expl:store requires] forall c: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst. not shot_store_AtomicU32'0 c.current
       -> ward_AtomicU32'0 c.current = self
       -> val_store_AtomicU32 c.current = val'
-      -> precondition_FnGhostWrapper_closure3 f c
-      /\ (postcondition_once_FnGhostWrapper_closure3 f c () -> shot_store_AtomicU32'0 c.final))}
+      -> precondition_FnGhostWrapper_closure3 f c (Mode.into_ghost mode)
+      /\ (postcondition_once_FnGhostWrapper_closure3 f c () (Mode.into_ghost mode) -> shot_store_AtomicU32'0 c.final))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:store ensures] exists c: MutBorrow.t t_Committer_AtomicU32_u32_None_SeqCst. not shot_store_AtomicU32'0 c.current
         /\ ward_AtomicU32'0 c.current = self
-        /\ val_store_AtomicU32 c.current = val' /\ postcondition_once_FnGhostWrapper_closure3 f c ()}
+        /\ val_store_AtomicU32 c.current = val'
+        /\ postcondition_once_FnGhostWrapper_closure3 f c () (Mode.into_ghost mode)}
       (! return {result}) ]
   
   predicate invariant_TicketLockGuard_T [@inline:trivial] (self: t_TicketLockGuard_T) =
@@ -1434,21 +1447,26 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   meta "select_lsinst" "all"
   
-  let unlock_T (self: t_TicketLockGuard_T) (tokens: t_Tokens) (return (x: ())) =
-  {[@stop_split] [@expl:unlock_T requires] ([@stop_split] [@expl:unlock 'self' type invariant] inv_TicketLockGuard_T self)
+  let unlock_T (self: t_TicketLockGuard_T) (tokens: t_Tokens) (mode: Mode.t) (return (x: ())) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:unlock_T requires] ([@stop_split] [@expl:unlock 'self' type invariant] inv_TicketLockGuard_T self)
     /\ ([@stop_split] [@expl:unlock requires #0] contains tokens (Namespace_TICKET_LOCK 0))
     /\ ([@stop_split] [@expl:unlock requires #1] Map.get self.inv'0 (view_TicketLockGuard_T self))}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_11 <- () ] s1
-      | s1 = __new_closure2 {_11} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_10 <- _x ] s2)
-      | s2 = new_FnGhostWrapper_closure2 {_10} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_9 <- _x ] s3)
-      | s3 = load_FnGhostWrapper_closure2 {self.lock'0.now_serving} {_9} (fun (_x: UInt32.t) -> [ &ticket <- _x ] s4)
-      | s4 = wrapping_add {ticket} {(1: UInt32.t)} (fun (_x: UInt32.t) -> [ &_14 <- _x ] s5)
+      | s1 = __new_closure2 {_11} {Mode.into_ghost mode} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_10 <- _x ] s2)
+      | s2 = new_FnGhostWrapper_closure2 {_10} {Mode.into_ghost mode}
+          (fun (_x: t_FnGhostWrapper_closure2) -> [ &_9 <- _x ] s3)
+      | s3 = load_FnGhostWrapper_closure2 {self.lock'0.now_serving} {_9} {mode}
+          (fun (_x: UInt32.t) -> [ &ticket <- _x ] s4)
+      | s4 = wrapping_add {ticket} {(1: UInt32.t)} {mode} (fun (_x: UInt32.t) -> [ &_14 <- _x ] s5)
       | s5 = [ &_18 <- { c0 = self.lock'0; c1 = self.perm'0; c2 = tokens } ] s6
-      | s6 = __new_closure3 {_18} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_17 <- _x ] s7)
-      | s7 = new_FnGhostWrapper_closure3 {_17} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_16 <- _x ] s8)
-      | s8 = store_FnGhostWrapper_closure3 {self.lock'0.now_serving} {_14} {_16} (fun (_x: ()) -> [ &_12 <- _x ] s9)
+      | s6 = __new_closure3 {_18} {Mode.into_ghost mode} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_17 <- _x ] s7)
+      | s7 = new_FnGhostWrapper_closure3 {_17} {Mode.into_ghost mode}
+          (fun (_x: t_FnGhostWrapper_closure3) -> [ &_16 <- _x ] s8)
+      | s8 = store_FnGhostWrapper_closure3 {self.lock'0.now_serving} {_14} {_16} {mode}
+          (fun (_x: ()) -> [ &_12 <- _x ] s9)
       | s9 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: t_TicketLockGuard_T = self
@@ -1469,6 +1487,7 @@ module M_impl_TicketLock_T__into_inner (* TicketLock<T> *)
   type t_Namespace = Namespace_TICKET_LOCK int | Other namespace_other
   
   use map.Map
+  use creusot.prelude.Mode
   use real.Real
   use real.FromInt
   use creusot.prelude.Any
@@ -1508,7 +1527,7 @@ module M_impl_TicketLock_T__into_inner (* TicketLock<T> *)
   
   meta "rewrite_def" predicate inv_Ghost_LifetimeToken
   
-  let into_inner_LifetimeToken (self: t_LifetimeToken) (return (x: t_LifetimeToken)) =
+  let into_inner_LifetimeToken (self: t_LifetimeToken) (mode: Mode.t) (return (x: t_LifetimeToken)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_LifetimeToken self}
     any
     [ return (result: t_LifetimeToken) ->
@@ -1546,7 +1565,7 @@ module M_impl_TicketLock_T__into_inner (* TicketLock<T> *)
   
   function lft'0 (self: t_LifetimeToken) : t_Lifetime
   
-  let end''0 (self: t_LifetimeToken) (return (x: t_LifetimeDead)) =
+  let end''0 (self: t_LifetimeToken) (mode: Mode.t) (return (x: t_LifetimeDead)) =
   {[@stop_split] [@expl:end requires] ([@stop_split] [@expl:end 'self' type invariant] inv_LifetimeToken self)
     /\ ([@stop_split] [@expl:end requires] frac self = from_int 1)}
     any
@@ -1555,7 +1574,7 @@ module M_impl_TicketLock_T__into_inner (* TicketLock<T> *)
       /\ ([@stop_split] [@expl:end ensures] lft result = lft'0 self)}
       (! return {result}) ]
   
-  let into_inner_EndBorrow_Perm_PermCell_T (self: t_EndBorrow_Perm_PermCell_T)
+  let into_inner_EndBorrow_Perm_PermCell_T (self: t_EndBorrow_Perm_PermCell_T) (mode: Mode.t)
     (return (x: t_EndBorrow_Perm_PermCell_T)) = any
     [ return (result: t_EndBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
@@ -1566,7 +1585,7 @@ module M_impl_TicketLock_T__into_inner (* TicketLock<T> *)
   
   function fin_EndBorrow_Perm_PermCell_T (self: t_EndBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
   
-  let get_Perm_PermCell_T (self: t_EndBorrow_Perm_PermCell_T) (lft_dead: t_LifetimeDead)
+  let get_Perm_PermCell_T (self: t_EndBorrow_Perm_PermCell_T) (lft_dead: t_LifetimeDead) (mode: Mode.t)
     (return (x: t_Perm_PermCell_T)) =
   {[@stop_split] [@expl:get_Perm_PermCell_T requires] ([@stop_split] [@expl:get 'lft_dead' type invariant] inv_LifetimeDead lft_dead)
     /\ ([@stop_split] [@expl:get requires] lft_Perm_PermCell_T self = lft lft_dead)}
@@ -1575,7 +1594,7 @@ module M_impl_TicketLock_T__into_inner (* TicketLock<T> *)
       = fin_EndBorrow_Perm_PermCell_T self}
       (! return {result}) ]
   
-  let new_Perm_PermCell_T (x: t_Perm_PermCell_T) (return (x'0: t_Perm_PermCell_T)) = any
+  let new_Perm_PermCell_T (x: t_Perm_PermCell_T) (mode: Mode.t) (return (x'0: t_Perm_PermCell_T)) = any
     [ return (result: t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
@@ -1588,7 +1607,7 @@ module M_impl_TicketLock_T__into_inner (* TicketLock<T> *)
   
   meta "rewrite_def" function val_PermCell_T
   
-  let into_inner_T (self: t_PermCell_T) (perm: t_Perm_PermCell_T) (return (x: t_T)) =
+  let into_inner_T (self: t_PermCell_T) (perm: t_Perm_PermCell_T) (mode: Mode.t) (return (x: t_T)) =
   {[@stop_split] [@expl:into_inner requires] self = ward_PermCell_T perm}
     any
     [ return (result: t_T) ->
@@ -1638,21 +1657,22 @@ module M_impl_TicketLock_T__into_inner (* TicketLock<T> *)
   
   meta "select_lsinst" "all"
   
-  let into_inner_T'0 (self: t_TicketLock_T) (return (x: t_T)) =
-  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_TicketLock_T self}
+  let into_inner_T'0 (self: t_TicketLock_T) (mode: Mode.t) (return (x: t_T)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:into_inner 'self' type invariant] inv_TicketLock_T self}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_AtomicU32 self.now_serving} any) ]
       | s1 = -{resolve_AtomicU32 self.now_serving}- s2
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_AtomicU32 self.next_ticket} any) ]
       | s3 = -{resolve_AtomicU32 self.next_ticket}- s4
-      | s4 = into_inner_LifetimeToken {self.lft_tok} (fun (_x: t_LifetimeToken) -> [ &_5 <- _x ] s5)
-      | s5 = end''0 {_5} (fun (_x: t_LifetimeDead) -> [ &dead <- _x ] s6)
-      | s6 = into_inner_EndBorrow_Perm_PermCell_T {self.end'}
+      | s4 = into_inner_LifetimeToken {self.lft_tok} {Mode.into_ghost mode}
+          (fun (_x: t_LifetimeToken) -> [ &_5 <- _x ] s5)
+      | s5 = end''0 {_5} {Mode.into_ghost mode} (fun (_x: t_LifetimeDead) -> [ &dead <- _x ] s6)
+      | s6 = into_inner_EndBorrow_Perm_PermCell_T {self.end'} {Mode.into_ghost mode}
           (fun (_x: t_EndBorrow_Perm_PermCell_T) -> [ &_7 <- _x ] s7)
-      | s7 = get_Perm_PermCell_T {_7} {dead} (fun (_x: t_Perm_PermCell_T) -> [ &_3 <- _x ] s8)
-      | s8 = new_Perm_PermCell_T {_3} (fun (_x: t_Perm_PermCell_T) -> [ &perm <- _x ] s9)
-      | s9 = into_inner_T {self.data} {perm} (fun (_x: t_T) -> [ &_ret <- _x ] s10)
+      | s7 = get_Perm_PermCell_T {_7} {dead} {Mode.into_ghost mode} (fun (_x: t_Perm_PermCell_T) -> [ &_3 <- _x ] s8)
+      | s8 = new_Perm_PermCell_T {_3} {Mode.into_ghost mode} (fun (_x: t_Perm_PermCell_T) -> [ &perm <- _x ] s9)
+      | s9 = into_inner_T {self.data} {perm} {mode} (fun (_x: t_T) -> [ &_ret <- _x ] s10)
       | s10 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & self: t_TicketLock_T = self
@@ -1669,6 +1689,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   type t_Namespace = Namespace_TICKET_LOCK int | Other namespace_other
   
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
   use map.Map
@@ -1685,7 +1706,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   type t_Option_Fragment_FMap_Int_Excl_unit = None | Some t_Fragment_FMap_Int_Excl_unit
   
-  let new_Option_Fragment_FMap_Int_Excl_unit (x: t_Option_Fragment_FMap_Int_Excl_unit)
+  let new_Option_Fragment_FMap_Int_Excl_unit (x: t_Option_Fragment_FMap_Int_Excl_unit) (mode: Mode.t)
     (return (x'0: t_Option_Fragment_FMap_Int_Excl_unit)) = any
     [ return (result: t_Option_Fragment_FMap_Int_Excl_unit) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
@@ -1721,16 +1742,16 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   type closure3 = { c0: t_TicketLock_T; c1: MutBorrow.t t_Tokens; c2: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit }
   
-  let deref_Ghost_AtomicInvariantSC_TicketLockInv_T (self: t_AtomicInvariantSC_TicketLockInv_T)
+  let deref_Ghost_AtomicInvariantSC_TicketLockInv_T (self: t_AtomicInvariantSC_TicketLockInv_T) (mode: Mode.t)
     (return (x: t_AtomicInvariantSC_TicketLockInv_T)) = any
     [ return (result: t_AtomicInvariantSC_TicketLockInv_T) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let deref_mut_Ghost_Tokens (self: MutBorrow.t t_Tokens) (return (x: MutBorrow.t t_Tokens)) = any
+  let deref_mut_Ghost_Tokens (self: MutBorrow.t t_Tokens) (mode: Mode.t) (return (x: MutBorrow.t t_Tokens)) = any
     [ return (result: MutBorrow.t t_Tokens) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
   
-  let reborrow (self: MutBorrow.t t_Tokens) (return (x: t_Tokens)) = any
+  let reborrow (self: MutBorrow.t t_Tokens) (mode: Mode.t) (return (x: t_Tokens)) = any
     [ return (result: t_Tokens) -> {[@stop_split] [@expl:reborrow ensures] result = self.current
       /\ self.final = self.current}
       (! return {result}) ]
@@ -1775,7 +1796,8 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" function val_AtomicU32
   
-  let shoot_load_AtomicU32 (self: t_Committer_AtomicU32_u32_SeqCst_SeqCst) (own: t_Perm_AtomicU32) (return (x: ())) =
+  let shoot_load_AtomicU32 (self: t_Committer_AtomicU32_u32_SeqCst_SeqCst) (own: t_Perm_AtomicU32) (mode: Mode.t)
+    (return (x: ())) =
   {[@stop_split] [@expl:shoot_load_AtomicU32 requires] ([@stop_split] [@expl:shoot_load requires #0] not shot_store_AtomicU32 self)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicU32 self = ward_AtomicU32'0 own)}
     any
@@ -1794,7 +1816,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   meta "rewrite_def" predicate hist_inv_AtomicU32
   
   let shoot_store_AtomicU32 (self: MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst)
-    (own: MutBorrow.t t_Perm_AtomicU32) (return (x: ())) =
+    (own: MutBorrow.t t_Perm_AtomicU32) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:shoot_store_AtomicU32 requires] ([@stop_split] [@expl:shoot_store requires #0] not shot_store_AtomicU32 self.current)
     /\ ([@stop_split] [@expl:shoot_store requires #1] ward_AtomicU32 self.current = ward_AtomicU32'0 own.current)}
     any
@@ -2042,7 +2064,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   function id_FMap_Int_Excl_unit'0 (self: t_Authority_FMap_Int_Excl_unit) : t_Id
   
   let add_fragment_FMap_Int_Excl_unit (self: MutBorrow.t t_Authority_FMap_Int_Excl_unit) (frag: t_FMap_Int_Excl_unit)
-    (return (x: t_Fragment_FMap_Int_Excl_unit)) =
+    (mode: Mode.t) (return (x: t_Fragment_FMap_Int_Excl_unit)) =
   {[@stop_split] [@expl:add_fragment_FMap_Int_Excl_unit requires] ([@stop_split] [@expl:add_fragment 'self' type invariant] inv_refmut_Authority_FMap_Int_Excl_unit self)
     /\ ([@stop_split] [@expl:add_fragment requires] op_FMap_Int_Excl_unit (view_Authority_FMap_Int_Excl_unit self.current) frag
     <> None'2)}
@@ -2116,7 +2138,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   meta "rewrite_def" predicate resolve_refmut_TicketLockInv_T
   
   let deref_mut_Ghost_Option_Fragment_FMap_Int_Excl_unit (self: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit)
-    (return (x: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit)) = any
+    (mode: Mode.t) (return (x: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit)) = any
     [ return (result: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) ->
     {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
@@ -2133,12 +2155,13 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   predicate hist_inv_closure1 (self: closure1) (result_state: closure1) =
     result_state.c0'0.final = self.c0'0.final /\ result_state.c1'0.final = self.c1'0.final
   
-  let closure1 [@coma:extspec] (self: MutBorrow.t closure1) (inv'1: MutBorrow.t t_TicketLockInv_T) (return (x: ())) =
-  {[@stop_split] [@expl:closure 'inv' type invariant] inv_refmut_TicketLockInv_T inv'1}
+  let closure1 [@coma:extspec] (self: MutBorrow.t closure1) (inv'1: MutBorrow.t t_TicketLockInv_T) (mode: Mode.t)
+    (return (x: ())) = {[@stop_split] [@expl:closure 'inv' type invariant] inv_refmut_TicketLockInv_T inv'1}
     bb0
     [ bb0 = s0
       [ s0 = [ &_6 <- inv'1.current.perm_next_ticket'0 ] s1
-      | s1 = shoot_load_AtomicU32 {self.current.c0'0.current.current} {_6} (fun (_x: ()) -> [ &_3 <- _x ] s2)
+      | s1 = shoot_load_AtomicU32 {self.current.c0'0.current.current} {_6} {Mode.into_ghost mode}
+          (fun (_x: ()) -> [ &_3 <- _x ] s2)
       | s2 = MutBorrow.borrow_final <t_Perm_AtomicU32> {inv'1.current.perm_next_ticket'0}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 3}
           (fun (_bor: MutBorrow.t t_Perm_AtomicU32) ->
@@ -2151,7 +2174,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
             s4)
       | s4 = MutBorrow.borrow_final <t_Perm_AtomicU32> {_10.current} {MutBorrow.get_id _10}
           (fun (_bor: MutBorrow.t t_Perm_AtomicU32) -> [ &_9 <- _bor ] [ &_10 <- { _10 with current = _bor.final } ] s5)
-      | s5 = shoot_store_AtomicU32 {_8} {_9} (fun (_x: ()) -> [ &_7 <- _x ] s6)
+      | s5 = shoot_store_AtomicU32 {_8} {_9} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_7 <- _x ] s6)
       | s6 = -{resolve_refmut_Perm_AtomicU32 _10}- s7
       | s7 = MutBorrow.borrow_final <t_Authority_FMap_Int_Excl_unit> {inv'1.current.auth_tickets'0}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 5}
@@ -2161,7 +2184,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_FMap_Int_Excl_unit inv'1.current.auth_tickets'0} any) ]
       | s8 = add_fragment_FMap_Int_Excl_unit {_13}
           {singleton_Int (UInt32.t'int (val_load_AtomicU32 self.current.c0'0.current.current)) { f0'0 = () }}
-          (fun (_x: t_Fragment_FMap_Int_Excl_unit) -> [ &_12 <- _x ] s9)
+          {Mode.into_ghost mode} (fun (_x: t_Fragment_FMap_Int_Excl_unit) -> [ &_12 <- _x ] s9)
       | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_TicketLockInv_T inv'1} any) ]
       | s10 = -{resolve_refmut_TicketLockInv_T inv'1}- s11
       | s11 = [ &_11 <- Some _12 ] s12
@@ -2170,7 +2193,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
             [ &_18 <- _bor ]
             [ &self <- { self with current = { self.current with c1'0 = { self.current.c1'0 with current = _bor.final } } } ]
             s13)
-      | s13 = deref_mut_Ghost_Option_Fragment_FMap_Int_Excl_unit {_18}
+      | s13 = deref_mut_Ghost_Option_Fragment_FMap_Int_Excl_unit {_18} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) -> [ &_17 <- _x ] s14)
       | s14 = [ &_17 <- { _17 with current = _11 } ] s15
       | s15 = -{resolve_refmut_Option_Fragment_FMap_Int_Excl_unit _17}- s16
@@ -2199,7 +2222,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   type t_FnGhostWrapper_closure1 = { f0'2: closure1 }
   
-  let __new_closure1 (f: closure1) (return (x: t_FnGhostWrapper_closure1)) = any
+  let __new_closure1 (f: closure1) (mode: Mode.t) (return (x: t_FnGhostWrapper_closure1)) = any
     [ return (result: t_FnGhostWrapper_closure1) -> {[@stop_split] [@expl:__new ensures] result.f0'2 = f}
       (! return {result}) ]
   
@@ -2260,13 +2283,14 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate protocol_TicketLockInv_T
   
-  predicate precondition_closure1 (self: closure1) (args: MutBorrow.t t_TicketLockInv_T) =
-    let inv'1 = args in forall bor_self: MutBorrow.t closure1. bor_self.current = self -> closure1'pre bor_self inv'1
+  predicate precondition_closure1 (self: closure1) (args: MutBorrow.t t_TicketLockInv_T) (mode: Mode.t) =
+    let inv'1 = args in forall bor_self: MutBorrow.t closure1. bor_self.current = self
+      -> closure1'pre bor_self inv'1 mode
   
   meta "rewrite_def" predicate precondition_closure1
   
-  predicate precondition_FnGhostWrapper_closure1 (self: t_FnGhostWrapper_closure1) (args: MutBorrow.t t_TicketLockInv_T) =
-    precondition_closure1 self.f0'2 args
+  predicate precondition_FnGhostWrapper_closure1 (self: t_FnGhostWrapper_closure1) (args: MutBorrow.t t_TicketLockInv_T) (mode: Mode.t) =
+    precondition_closure1 self.f0'2 args mode
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure1
   
@@ -2286,33 +2310,33 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate resolve_closure1
   
-  predicate postcondition_once_closure1 (self: closure1) (args: MutBorrow.t t_TicketLockInv_T) (result: ()) =
+  predicate postcondition_once_closure1 (self: closure1) (args: MutBorrow.t t_TicketLockInv_T) (result: ()) (mode: Mode.t) =
     let inv'1 = args in exists e: closure1. (exists bor_self: MutBorrow.t closure1. bor_self.current = self
-          /\ bor_self.final = e /\ closure1'post'return bor_self inv'1 result /\ hist_inv_closure1 self e)
+          /\ bor_self.final = e /\ closure1'post'return bor_self inv'1 mode result /\ hist_inv_closure1 self e)
       /\ resolve_closure1 e
   
   meta "rewrite_def" predicate postcondition_once_closure1
   
-  predicate postcondition_once_FnGhostWrapper_closure1 (self: t_FnGhostWrapper_closure1) (args: MutBorrow.t t_TicketLockInv_T) (result: ()) =
-    postcondition_once_closure1 self.f0'2 args result
+  predicate postcondition_once_FnGhostWrapper_closure1 (self: t_FnGhostWrapper_closure1) (args: MutBorrow.t t_TicketLockInv_T) (result: ()) (mode: Mode.t) =
+    postcondition_once_closure1 self.f0'2 args result mode
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure1
   
   let open_TicketLockInv_T (self: t_AtomicInvariantSC_TicketLockInv_T) (tokens: t_Tokens) (f: t_FnGhostWrapper_closure1)
-    (return (x: ())) =
+    (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:open_TicketLockInv_T requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_TicketLockInv_T self))
     /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_TicketLockInv_T. public_TicketLockInv_T t.current
           = public_TicketLockInv_T'0 self
         /\ protocol_TicketLockInv_T t.current /\ inv_refmut_TicketLockInv_T t
-      -> precondition_FnGhostWrapper_closure1 f t
-      /\ (forall res: (). postcondition_once_FnGhostWrapper_closure1 f t res
+      -> precondition_FnGhostWrapper_closure1 f t mode
+      /\ (forall res: (). postcondition_once_FnGhostWrapper_closure1 f t res mode
         -> public_TicketLockInv_T t.final = public_TicketLockInv_T'0 self /\ protocol_TicketLockInv_T t.final))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_TicketLockInv_T. public_TicketLockInv_T t.current
           = public_TicketLockInv_T'0 self
         /\ protocol_TicketLockInv_T t.current
-        /\ inv_refmut_TicketLockInv_T t /\ postcondition_once_FnGhostWrapper_closure1 f t result}
+        /\ inv_refmut_TicketLockInv_T t /\ postcondition_once_FnGhostWrapper_closure1 f t result mode}
       (! return {result}) ]
   
   predicate resolve_refmut_Tokens [@inline:trivial] (_1: MutBorrow.t t_Tokens) = _1.final = _1.current
@@ -2413,21 +2437,21 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     result_state.c0 = self.c0 /\ result_state.c1.final = self.c1.final /\ result_state.c2.final = self.c2.final
   
   let closure3 [@coma:extspec] (self: MutBorrow.t closure3) (c: MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst)
-    (return (x: ())) = {[@stop_split] [@expl:closure 'self' type invariant] inv_refmut_closure3 self}
+    (mode: Mode.t) (return (x: ())) = {[@stop_split] [@expl:closure 'self' type invariant] inv_refmut_closure3 self}
     bb0
     [ bb0 = s0
       [ s0 = -{[@expl:assertion] UInt32.lt (val_load_AtomicU32 c.current) const_MAX}- s1
-      | s1 = deref_Ghost_AtomicInvariantSC_TicketLockInv_T {self.current.c0.inner_inv}
+      | s1 = deref_Ghost_AtomicInvariantSC_TicketLockInv_T {self.current.c0.inner_inv} {Mode.into_ghost mode}
           (fun (_x: t_AtomicInvariantSC_TicketLockInv_T) -> [ &_7 <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_Tokens> {self.current.c1.current}
           (fun (_bor: MutBorrow.t t_Tokens) ->
             [ &_12 <- _bor ]
             [ &self <- { self with current = { self.current with c1 = { self.current.c1 with current = _bor.final } } } ]
             s3)
-      | s3 = deref_mut_Ghost_Tokens {_12} (fun (_x: MutBorrow.t t_Tokens) -> [ &_11 <- _x ] s4)
+      | s3 = deref_mut_Ghost_Tokens {_12} {Mode.into_ghost mode} (fun (_x: MutBorrow.t t_Tokens) -> [ &_11 <- _x ] s4)
       | s4 = MutBorrow.borrow_final <t_Tokens> {_11.current} {MutBorrow.get_id _11}
           (fun (_bor: MutBorrow.t t_Tokens) -> [ &_10 <- _bor ] [ &_11 <- { _11 with current = _bor.final } ] s5)
-      | s5 = reborrow {_10} (fun (_x: t_Tokens) -> [ &_9 <- _x ] s6)
+      | s5 = reborrow {_10} {Mode.into_ghost mode} (fun (_x: t_Tokens) -> [ &_9 <- _x ] s6)
       | s6 = MutBorrow.borrow_mut <MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst> {c}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst)) ->
             [ &_15 <- _bor ] [ &c <- _bor.final ] s7)
@@ -2437,8 +2461,8 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
             [ &self <- { self with current = { self.current with c2 = { self.current.c2 with current = _bor.final } } } ]
             s8)
       | s8 = [ &_14 <- { c0'0 = _15; c1'0 = _16 } ] s9
-      | s9 = __new_closure1 {_14} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_13 <- _x ] s10)
-      | s10 = open_TicketLockInv_T {_7} {_9} {_13} (fun (_x: ()) -> [ &_ret <- _x ] s11)
+      | s9 = __new_closure1 {_14} {Mode.into_ghost mode} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_13 <- _x ] s10)
+      | s10 = open_TicketLockInv_T {_7} {_9} {_13} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_ret <- _x ] s11)
       | s11 = -{resolve_refmut_Tokens _11}- s12
       | s12 = -{resolve_refmut_Committer_AtomicU32_u32_SeqCst_SeqCst c}- s13
       | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure3 self} any) ]
@@ -2471,7 +2495,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     forall _1: t_FnGhostWrapper_closure3 [inv_FnGhostWrapper_closure3 _1]. inv_FnGhostWrapper_closure3 _1
       = inv_closure3 _1.f0'5
   
-  let __new_closure3 (f: closure3) (return (x: t_FnGhostWrapper_closure3)) =
+  let __new_closure3 (f: closure3) (mode: Mode.t) (return (x: t_FnGhostWrapper_closure3)) =
   {[@stop_split] [@expl:__new 'f' type invariant] inv_closure3 f}
     any
     [ return (result: t_FnGhostWrapper_closure3) ->
@@ -2489,7 +2513,8 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate inv_Ghost_FnGhostWrapper_closure3
   
-  let new_FnGhostWrapper_closure3 (x: t_FnGhostWrapper_closure3) (return (x'0: t_FnGhostWrapper_closure3)) =
+  let new_FnGhostWrapper_closure3 (x: t_FnGhostWrapper_closure3) (mode: Mode.t)
+    (return (x'0: t_FnGhostWrapper_closure3)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_FnGhostWrapper_closure3 x}
     any
     [ return (result: t_FnGhostWrapper_closure3) ->
@@ -2505,14 +2530,14 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate inv_ref_AtomicU32
   
-  predicate precondition_closure3 (self: closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst) =
+  predicate precondition_closure3 (self: closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst) (mode: Mode.t) =
     let c = args in forall bor_self: MutBorrow.t closure3. bor_self.current = self /\ inv_closure3 bor_self.final
-      -> closure3'pre bor_self c
+      -> closure3'pre bor_self c mode
   
   meta "rewrite_def" predicate precondition_closure3
   
-  predicate precondition_FnGhostWrapper_closure3 (self: t_FnGhostWrapper_closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst) =
-    precondition_closure3 self.f0'5 args
+  predicate precondition_FnGhostWrapper_closure3 (self: t_FnGhostWrapper_closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst) (mode: Mode.t) =
+    precondition_closure3 self.f0'5 args mode
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure3
   
@@ -2525,33 +2550,34 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate resolve_closure3
   
-  predicate postcondition_once_closure3 (self: closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst) (result: ()) =
+  predicate postcondition_once_closure3 (self: closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst) (result: ()) (mode: Mode.t) =
     let c = args in exists e: closure3. (exists bor_self: MutBorrow.t closure3. bor_self.current = self
-          /\ bor_self.final = e /\ closure3'post'return bor_self c result /\ hist_inv_closure3 self e)
+          /\ bor_self.final = e /\ closure3'post'return bor_self c mode result /\ hist_inv_closure3 self e)
       /\ resolve_closure3 e
   
   meta "rewrite_def" predicate postcondition_once_closure3
   
-  predicate postcondition_once_FnGhostWrapper_closure3 (self: t_FnGhostWrapper_closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst) (result: ()) =
-    postcondition_once_closure3 self.f0'5 args result
+  predicate postcondition_once_FnGhostWrapper_closure3 (self: t_FnGhostWrapper_closure3) (args: MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst) (result: ()) (mode: Mode.t) =
+    postcondition_once_closure3 self.f0'5 args result mode
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure3
   
   let fetch_add_FnGhostWrapper_closure3 (self: t_AtomicU32) (val': UInt32.t) (f: t_FnGhostWrapper_closure3)
-    (return (x: UInt32.t)) =
+    (mode: Mode.t) (return (x: UInt32.t)) =
   {[@stop_split] [@expl:fetch_add_FnGhostWrapper_closure3 requires] ([@stop_split] [@expl:fetch_add 'self' type invariant] inv_ref_AtomicU32 self)
     /\ ([@stop_split] [@expl:fetch_add 'f' type invariant] inv_Ghost_FnGhostWrapper_closure3 f)
     /\ ([@stop_split] [@expl:fetch_add requires] forall c: MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst. not shot_store_AtomicU32 c.current
       -> ward_AtomicU32 c.current = self
       -> val_store_AtomicU32 c.current = UInt32.add val' (val_load_AtomicU32 c.current)
-      -> precondition_FnGhostWrapper_closure3 f c
-      /\ (postcondition_once_FnGhostWrapper_closure3 f c () -> shot_store_AtomicU32 c.final))}
+      -> precondition_FnGhostWrapper_closure3 f c (Mode.into_ghost mode)
+      /\ (postcondition_once_FnGhostWrapper_closure3 f c () (Mode.into_ghost mode) -> shot_store_AtomicU32 c.final))}
     any
     [ return (result: UInt32.t) ->
     {[@stop_split] [@expl:fetch_add ensures] exists c: MutBorrow.t t_Committer_AtomicU32_u32_SeqCst_SeqCst. not shot_store_AtomicU32 c.current
         /\ ward_AtomicU32 c.current = self
         /\ val_store_AtomicU32 c.current = UInt32.add val' (val_load_AtomicU32 c.current)
-        /\ val_load_AtomicU32 c.current = result /\ postcondition_once_FnGhostWrapper_closure3 f c ()}
+        /\ val_load_AtomicU32 c.current = result
+        /\ postcondition_once_FnGhostWrapper_closure3 f c () (Mode.into_ghost mode)}
       (! return {result}) ]
   
   predicate invariant_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Option_Guarded_FullBorrow_Perm_PermCell_T) =
@@ -2564,7 +2590,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T
   
-  let new_Option_Guarded_FullBorrow_Perm_PermCell_T (x: t_Option_Guarded_FullBorrow_Perm_PermCell_T)
+  let new_Option_Guarded_FullBorrow_Perm_PermCell_T (x: t_Option_Guarded_FullBorrow_Perm_PermCell_T) (mode: Mode.t)
     (return (x'0: t_Option_Guarded_FullBorrow_Perm_PermCell_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_Option_Guarded_FullBorrow_Perm_PermCell_T x}
     any
@@ -2594,10 +2620,11 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate inv_bool
   
-  let into_ghost_bool (self: bool) (return (x: bool)) = {[@stop_split] [@expl:into_ghost requires] inv_bool self}
+  let into_ghost_bool (self: bool) (mode: Mode.t) (return (x: bool)) =
+  {[@stop_split] [@expl:into_ghost requires] inv_bool self}
     any [ return (result: bool) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
   
-  let deref_Ghost_bool (self: bool) (return (x: bool)) = any
+  let deref_Ghost_bool (self: bool) (mode: Mode.t) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
   predicate invariant_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) =
@@ -2633,7 +2660,8 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   function ward_AtomicU32'1 (self: t_Committer_AtomicU32_u32_SeqCst_None) : t_AtomicU32
   
-  let shoot_load_AtomicU32'0 (self: t_Committer_AtomicU32_u32_SeqCst_None) (own: t_Perm_AtomicU32) (return (x: ())) =
+  let shoot_load_AtomicU32'0 (self: t_Committer_AtomicU32_u32_SeqCst_None) (own: t_Perm_AtomicU32) (mode: Mode.t)
+    (return (x: ())) =
   {[@stop_split] [@expl:shoot_load_AtomicU32 requires] ([@stop_split] [@expl:shoot_load requires #0] not shot_store_AtomicU32'0 self)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicU32'1 self = ward_AtomicU32'0 own)}
     any
@@ -2642,7 +2670,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   type t_Option_refmut_Fragment_FMap_Int_Excl_unit = None'4 | Some'4 (MutBorrow.t t_Fragment_FMap_Int_Excl_unit)
   
-  let as_mut_Fragment_FMap_Int_Excl_unit (self: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit)
+  let as_mut_Fragment_FMap_Int_Excl_unit (self: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) (mode: Mode.t)
     (return (x: t_Option_refmut_Fragment_FMap_Int_Excl_unit)) = any
     [ return (result: t_Option_refmut_Fragment_FMap_Int_Excl_unit) ->
     {[@stop_split] [@expl:as_mut_Fragment_FMap_Int_Excl_unit ensures] ([@stop_split] [@expl:as_mut ensures #0] self.current
@@ -2652,7 +2680,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         /\ self.current = Some (r.current) /\ self.final = Some (r.final)))}
       (! return {result}) ]
   
-  let unwrap_refmut_Fragment_FMap_Int_Excl_unit (self: t_Option_refmut_Fragment_FMap_Int_Excl_unit)
+  let unwrap_refmut_Fragment_FMap_Int_Excl_unit (self: t_Option_refmut_Fragment_FMap_Int_Excl_unit) (mode: Mode.t)
     (return (x: MutBorrow.t t_Fragment_FMap_Int_Excl_unit)) = {[@stop_split] [@expl:unwrap requires] self <> None'4}
     any
     [ return (result: MutBorrow.t t_Fragment_FMap_Int_Excl_unit) -> {[@stop_split] [@expl:unwrap ensures] Some'4 result
@@ -2725,7 +2753,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
    = { f0'6 = factor_FMap_Int_Excl_unit from_auth from_frag; f1'6 = unit_FMap_Int_Excl_unit }
   
   let update_FMap_Int_Excl_unit (self: MutBorrow.t t_Authority_FMap_Int_Excl_unit)
-    (frag: MutBorrow.t t_Fragment_FMap_Int_Excl_unit) (upd: ()) (return (x: ())) =
+    (frag: MutBorrow.t t_Fragment_FMap_Int_Excl_unit) (upd: ()) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:update_FMap_Int_Excl_unit requires] ([@stop_split] [@expl:update 'self' type invariant] inv_refmut_Authority_FMap_Int_Excl_unit self)
     /\ ([@stop_split] [@expl:update requires #0] id_FMap_Int_Excl_unit'0 self.current
       = id_FMap_Int_Excl_unit frag.current)
@@ -2758,7 +2786,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   meta "rewrite_def" predicate inv_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T
   
   let take_Guarded_FullBorrow_Perm_PermCell_T (self: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: t_Option_Guarded_FullBorrow_Perm_PermCell_T)) =
+    (mode: Mode.t) (return (x: t_Option_Guarded_FullBorrow_Perm_PermCell_T)) =
   {[@stop_split] [@expl:take 'self' type invariant] inv_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T self}
     any
     [ return (result: t_Option_Guarded_FullBorrow_Perm_PermCell_T) ->
@@ -2767,7 +2795,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       (! return {result}) ]
   
   let deref_mut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T
-    (self: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T)
+    (self: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) (mode: Mode.t)
     (return (x: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T)) =
   {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T self}
     any
@@ -2810,14 +2838,15 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     /\ result_state.c1'2 = self.c1'2
     /\ result_state.c2'2.final = self.c2'2.final /\ result_state.c3'2.final = self.c3'2.final
   
-  let closure0 [@coma:extspec] (self: MutBorrow.t closure0) (inv'1: MutBorrow.t t_TicketLockInv_T) (return (x: ())) =
+  let closure0 [@coma:extspec] (self: MutBorrow.t closure0) (inv'1: MutBorrow.t t_TicketLockInv_T) (mode: Mode.t)
+    (return (x: ())) =
   {[@stop_split] [@expl:closure0 requires] ([@stop_split] [@expl:closure 'self' type invariant] inv_refmut_closure0 self)
     /\ ([@stop_split] [@expl:closure 'inv' type invariant] inv_refmut_TicketLockInv_T inv'1)}
     bb0
     [ bb0 = s0
-      [ s0 = into_ghost_bool {val_load_AtomicU32'0 self.current.c0'2 <> self.current.c1'2}
+      [ s0 = into_ghost_bool {val_load_AtomicU32'0 self.current.c0'2 <> self.current.c1'2} {Mode.into_ghost mode}
           (fun (_x: bool) -> [ &_7 <- _x ] s1)
-      | s1 = deref_Ghost_bool {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
+      | s1 = deref_Ghost_bool {_7} {Mode.into_ghost mode} (fun (_x: bool) -> [ &_5 <- _x ] s2)
       | s2 = any [ br0 -> {_5 = false} (! bb5) | br1 -> {_5} (! bb4) ] ]
     | bb4 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_TicketLockInv_T inv'1} any) ]
@@ -2827,20 +2856,20 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       | s4 = return {_ret} ]
     | bb5 = s0
       [ s0 = [ &_16 <- inv'1.current.perm_now_serving'0 ] s1
-      | s1 = shoot_load_AtomicU32'0 {self.current.c0'2} {_16} (fun (_x: ()) -> [ &_13 <- _x ] s2)
+      | s1 = shoot_load_AtomicU32'0 {self.current.c0'2} {_16} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_13 <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_Option_Fragment_FMap_Int_Excl_unit> {self.current.c2'2.current}
           (fun (_bor: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) ->
             [ &_24 <- _bor ]
             [ &self <- { self with current = { self.current with c2'2 = { self.current.c2'2 with current = _bor.final } } } ]
             s3)
-      | s3 = deref_mut_Ghost_Option_Fragment_FMap_Int_Excl_unit {_24}
+      | s3 = deref_mut_Ghost_Option_Fragment_FMap_Int_Excl_unit {_24} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) -> [ &_23 <- _x ] s4)
       | s4 = MutBorrow.borrow_final <t_Option_Fragment_FMap_Int_Excl_unit> {_23.current} {MutBorrow.get_id _23}
           (fun (_bor: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) ->
             [ &_22 <- _bor ] [ &_23 <- { _23 with current = _bor.final } ] s5)
-      | s5 = as_mut_Fragment_FMap_Int_Excl_unit {_22}
+      | s5 = as_mut_Fragment_FMap_Int_Excl_unit {_22} {Mode.into_ghost mode}
           (fun (_x: t_Option_refmut_Fragment_FMap_Int_Excl_unit) -> [ &_21 <- _x ] s6)
-      | s6 = unwrap_refmut_Fragment_FMap_Int_Excl_unit {_21}
+      | s6 = unwrap_refmut_Fragment_FMap_Int_Excl_unit {_21} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t t_Fragment_FMap_Int_Excl_unit) -> [ &_20 <- _x ] s7)
       | s7 = [ &_25 <- () ] s8
       | s8 = MutBorrow.borrow_final <t_Authority_FMap_Int_Excl_unit> {inv'1.current.auth_tickets'0}
@@ -2852,7 +2881,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       | s9 = MutBorrow.borrow_final <t_Fragment_FMap_Int_Excl_unit> {_20.current} {MutBorrow.get_id _20}
           (fun (_bor: MutBorrow.t t_Fragment_FMap_Int_Excl_unit) ->
             [ &_19 <- _bor ] [ &_20 <- { _20 with current = _bor.final } ] s10)
-      | s10 = update_FMap_Int_Excl_unit {_18} {_19} {_25} (fun (_x: ()) -> [ &_17 <- _x ] s11)
+      | s10 = update_FMap_Int_Excl_unit {_18} {_19} {_25} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_17 <- _x ] s11)
       | s11 = -{resolve_refmut_Option_Fragment_FMap_Int_Excl_unit _23}- s12
       | s12 = -{resolve_refmut_Fragment_FMap_Int_Excl_unit _20}- s13
       | s13 = MutBorrow.borrow_final <t_Option_Guarded_FullBorrow_Perm_PermCell_T> {inv'1.current.perm'0}
@@ -2861,7 +2890,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
             [ &_27 <- _bor ] -{inv_Option_Guarded_FullBorrow_Perm_PermCell_T _bor.final}-
             [ &inv'1 <- { inv'1 with current = { inv'1.current with perm'0 = _bor.final } } ] s14)
         [ _ck -> (! {[@expl:type invariant] inv_Option_Guarded_FullBorrow_Perm_PermCell_T inv'1.current.perm'0} any) ]
-      | s14 = take_Guarded_FullBorrow_Perm_PermCell_T {_27}
+      | s14 = take_Guarded_FullBorrow_Perm_PermCell_T {_27} {Mode.into_ghost mode}
           (fun (_x: t_Option_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_26 <- _x ] s15)
       | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_refmut_TicketLockInv_T inv'1} any) ]
       | s16 = -{resolve_refmut_TicketLockInv_T inv'1}- s17
@@ -2873,7 +2902,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         [ _ck ->
         (! {[@expl:type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T self.current.c3'2.current}
           any) ]
-      | s18 = deref_mut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T {_29}
+      | s18 = deref_mut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T {_29} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_28 <- _x ] s19)
       | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_Option_Guarded_FullBorrow_Perm_PermCell_T _28.current} any) ]
       | s20 = -{resolve_Option_Guarded_FullBorrow_Perm_PermCell_T _28.current}- s21
@@ -2918,7 +2947,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     forall _1: t_FnGhostWrapper_closure0 [inv_FnGhostWrapper_closure0 _1]. inv_FnGhostWrapper_closure0 _1
       = inv_closure0 _1.f0'7
   
-  let __new_closure0 (f: closure0) (return (x: t_FnGhostWrapper_closure0)) =
+  let __new_closure0 (f: closure0) (mode: Mode.t) (return (x: t_FnGhostWrapper_closure0)) =
   {[@stop_split] [@expl:__new 'f' type invariant] inv_closure0 f}
     any
     [ return (result: t_FnGhostWrapper_closure0) ->
@@ -2926,14 +2955,14 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       /\ ([@stop_split] [@expl:__new ensures] result.f0'7 = f)}
       (! return {result}) ]
   
-  predicate precondition_closure0 (self: closure0) (args: MutBorrow.t t_TicketLockInv_T) =
+  predicate precondition_closure0 (self: closure0) (args: MutBorrow.t t_TicketLockInv_T) (mode: Mode.t) =
     let inv'1 = args in forall bor_self: MutBorrow.t closure0. bor_self.current = self /\ inv_closure0 bor_self.final
-      -> closure0'pre bor_self inv'1
+      -> closure0'pre bor_self inv'1 mode
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate precondition_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_TicketLockInv_T) =
-    precondition_closure0 self.f0'7 args
+  predicate precondition_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_TicketLockInv_T) (mode: Mode.t) =
+    precondition_closure0 self.f0'7 args mode
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0
   
@@ -2948,34 +2977,34 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate resolve_closure0
   
-  predicate postcondition_once_closure0 (self: closure0) (args: MutBorrow.t t_TicketLockInv_T) (result: ()) =
+  predicate postcondition_once_closure0 (self: closure0) (args: MutBorrow.t t_TicketLockInv_T) (result: ()) (mode: Mode.t) =
     let inv'1 = args in exists e: closure0. (exists bor_self: MutBorrow.t closure0. bor_self.current = self
-          /\ bor_self.final = e /\ closure0'post'return bor_self inv'1 result /\ hist_inv_closure0 self e)
+          /\ bor_self.final = e /\ closure0'post'return bor_self inv'1 mode result /\ hist_inv_closure0 self e)
       /\ resolve_closure0 e
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate postcondition_once_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_TicketLockInv_T) (result: ()) =
-    postcondition_once_closure0 self.f0'7 args result
+  predicate postcondition_once_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_TicketLockInv_T) (result: ()) (mode: Mode.t) =
+    postcondition_once_closure0 self.f0'7 args result mode
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0
   
   let open_TicketLockInv_T'0 (self: t_AtomicInvariantSC_TicketLockInv_T) (tokens: t_Tokens)
-    (f: t_FnGhostWrapper_closure0) (return (x: ())) =
+    (f: t_FnGhostWrapper_closure0) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:open_TicketLockInv_T requires] ([@stop_split] [@expl:open 'f' type invariant] inv_FnGhostWrapper_closure0 f)
     /\ ([@stop_split] [@expl:open requires #0] contains tokens (namespace_TicketLockInv_T self))
     /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_TicketLockInv_T. public_TicketLockInv_T t.current
           = public_TicketLockInv_T'0 self
         /\ protocol_TicketLockInv_T t.current /\ inv_refmut_TicketLockInv_T t
-      -> precondition_FnGhostWrapper_closure0 f t
-      /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res
+      -> precondition_FnGhostWrapper_closure0 f t mode
+      /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res mode
         -> public_TicketLockInv_T t.final = public_TicketLockInv_T'0 self /\ protocol_TicketLockInv_T t.final))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_TicketLockInv_T. public_TicketLockInv_T t.current
           = public_TicketLockInv_T'0 self
         /\ protocol_TicketLockInv_T t.current
-        /\ inv_refmut_TicketLockInv_T t /\ postcondition_once_FnGhostWrapper_closure0 f t result}
+        /\ inv_refmut_TicketLockInv_T t /\ postcondition_once_FnGhostWrapper_closure0 f t result mode}
       (! return {result}) ]
   
   predicate inv_closure9 [@inline:trivial] (_1: closure9) =
@@ -3003,21 +3032,21 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     /\ result_state.c2'1 = self.c2'1
     /\ result_state.c3'1.final = self.c3'1.final /\ result_state.c4'1.final = self.c4'1.final
   
-  let closure9 [@coma:extspec] (self: MutBorrow.t closure9) (c: t_Committer_AtomicU32_u32_SeqCst_None)
+  let closure9 [@coma:extspec] (self: MutBorrow.t closure9) (c: t_Committer_AtomicU32_u32_SeqCst_None) (mode: Mode.t)
     (return (x: ())) = {[@stop_split] [@expl:closure 'self' type invariant] inv_refmut_closure9 self}
     bb0
     [ bb0 = s0
-      [ s0 = deref_Ghost_AtomicInvariantSC_TicketLockInv_T {self.current.c0'1.inner_inv}
+      [ s0 = deref_Ghost_AtomicInvariantSC_TicketLockInv_T {self.current.c0'1.inner_inv} {Mode.into_ghost mode}
           (fun (_x: t_AtomicInvariantSC_TicketLockInv_T) -> [ &_4 <- _x ] s1)
       | s1 = MutBorrow.borrow_mut <t_Tokens> {self.current.c1'1.current}
           (fun (_bor: MutBorrow.t t_Tokens) ->
             [ &_9 <- _bor ]
             [ &self <- { self with current = { self.current with c1'1 = { self.current.c1'1 with current = _bor.final } } } ]
             s2)
-      | s2 = deref_mut_Ghost_Tokens {_9} (fun (_x: MutBorrow.t t_Tokens) -> [ &_8 <- _x ] s3)
+      | s2 = deref_mut_Ghost_Tokens {_9} {Mode.into_ghost mode} (fun (_x: MutBorrow.t t_Tokens) -> [ &_8 <- _x ] s3)
       | s3 = MutBorrow.borrow_final <t_Tokens> {_8.current} {MutBorrow.get_id _8}
           (fun (_bor: MutBorrow.t t_Tokens) -> [ &_7 <- _bor ] [ &_8 <- { _8 with current = _bor.final } ] s4)
-      | s4 = reborrow {_7} (fun (_x: t_Tokens) -> [ &_6 <- _x ] s5)
+      | s4 = reborrow {_7} {Mode.into_ghost mode} (fun (_x: t_Tokens) -> [ &_6 <- _x ] s5)
       | s5 = [ &_13 <- self.current.c2'1 ] s6
       | s6 = MutBorrow.borrow_mut <t_Option_Fragment_FMap_Int_Excl_unit> {self.current.c3'1.current}
           (fun (_bor: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) ->
@@ -3033,8 +3062,8 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         (! {[@expl:type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T self.current.c4'1.current}
           any) ]
       | s8 = [ &_11 <- { c0'2 = c; c1'2 = _13; c2'2 = _14; c3'2 = _15 } ] s9
-      | s9 = __new_closure0 {_11} (fun (_x: t_FnGhostWrapper_closure0) -> [ &_10 <- _x ] s10)
-      | s10 = open_TicketLockInv_T'0 {_4} {_6} {_10} (fun (_x: ()) -> [ &_ret <- _x ] s11)
+      | s9 = __new_closure0 {_11} {Mode.into_ghost mode} (fun (_x: t_FnGhostWrapper_closure0) -> [ &_10 <- _x ] s10)
+      | s10 = open_TicketLockInv_T'0 {_4} {_6} {_10} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_ret <- _x ] s11)
       | s11 = -{resolve_refmut_Tokens _8}- s12
       | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure9 self} any) ]
       | s13 = -{resolve_refmut_closure9 self}- s14
@@ -3067,7 +3096,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     forall _1: t_FnGhostWrapper_closure9 [inv_FnGhostWrapper_closure9 _1]. inv_FnGhostWrapper_closure9 _1
       = inv_closure9 _1.f0'8
   
-  let __new_closure9 (f: closure9) (return (x: t_FnGhostWrapper_closure9)) =
+  let __new_closure9 (f: closure9) (mode: Mode.t) (return (x: t_FnGhostWrapper_closure9)) =
   {[@stop_split] [@expl:__new 'f' type invariant] inv_closure9 f}
     any
     [ return (result: t_FnGhostWrapper_closure9) ->
@@ -3085,7 +3114,8 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate inv_Ghost_FnGhostWrapper_closure9
   
-  let new_FnGhostWrapper_closure9 (x: t_FnGhostWrapper_closure9) (return (x'0: t_FnGhostWrapper_closure9)) =
+  let new_FnGhostWrapper_closure9 (x: t_FnGhostWrapper_closure9) (mode: Mode.t)
+    (return (x'0: t_FnGhostWrapper_closure9)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_FnGhostWrapper_closure9 x}
     any
     [ return (result: t_FnGhostWrapper_closure9) ->
@@ -3093,14 +3123,14 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  predicate precondition_closure9 (self: closure9) (args: t_Committer_AtomicU32_u32_SeqCst_None) =
+  predicate precondition_closure9 (self: closure9) (args: t_Committer_AtomicU32_u32_SeqCst_None) (mode: Mode.t) =
     let c = args in forall bor_self: MutBorrow.t closure9. bor_self.current = self /\ inv_closure9 bor_self.final
-      -> closure9'pre bor_self c
+      -> closure9'pre bor_self c mode
   
   meta "rewrite_def" predicate precondition_closure9
   
-  predicate precondition_FnGhostWrapper_closure9 (self: t_FnGhostWrapper_closure9) (args: t_Committer_AtomicU32_u32_SeqCst_None) =
-    precondition_closure9 self.f0'8 args
+  predicate precondition_FnGhostWrapper_closure9 (self: t_FnGhostWrapper_closure9) (args: t_Committer_AtomicU32_u32_SeqCst_None) (mode: Mode.t) =
+    precondition_closure9 self.f0'8 args mode
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure9
   
@@ -3110,28 +3140,29 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate resolve_closure9
   
-  predicate postcondition_once_closure9 (self: closure9) (args: t_Committer_AtomicU32_u32_SeqCst_None) (result: ()) =
+  predicate postcondition_once_closure9 (self: closure9) (args: t_Committer_AtomicU32_u32_SeqCst_None) (result: ()) (mode: Mode.t) =
     let c = args in exists e: closure9. (exists bor_self: MutBorrow.t closure9. bor_self.current = self
-          /\ bor_self.final = e /\ closure9'post'return bor_self c result /\ hist_inv_closure9 self e)
+          /\ bor_self.final = e /\ closure9'post'return bor_self c mode result /\ hist_inv_closure9 self e)
       /\ resolve_closure9 e
   
   meta "rewrite_def" predicate postcondition_once_closure9
   
-  predicate postcondition_once_FnGhostWrapper_closure9 (self: t_FnGhostWrapper_closure9) (args: t_Committer_AtomicU32_u32_SeqCst_None) (result: ()) =
-    postcondition_once_closure9 self.f0'8 args result
+  predicate postcondition_once_FnGhostWrapper_closure9 (self: t_FnGhostWrapper_closure9) (args: t_Committer_AtomicU32_u32_SeqCst_None) (result: ()) (mode: Mode.t) =
+    postcondition_once_closure9 self.f0'8 args result mode
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure9
   
-  let load_FnGhostWrapper_closure9 (self: t_AtomicU32) (f: t_FnGhostWrapper_closure9) (return (x: UInt32.t)) =
+  let load_FnGhostWrapper_closure9 (self: t_AtomicU32) (f: t_FnGhostWrapper_closure9) (mode: Mode.t)
+    (return (x: UInt32.t)) =
   {[@stop_split] [@expl:load_FnGhostWrapper_closure9 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicU32 self)
     /\ ([@stop_split] [@expl:load 'f' type invariant] inv_Ghost_FnGhostWrapper_closure9 f)
     /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicU32_u32_SeqCst_None. not shot_store_AtomicU32'0 c
-      -> ward_AtomicU32'1 c = self -> precondition_FnGhostWrapper_closure9 f c)}
+      -> ward_AtomicU32'1 c = self -> precondition_FnGhostWrapper_closure9 f c (Mode.into_ghost mode))}
     any
     [ return (result: UInt32.t) ->
     {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicU32_u32_SeqCst_None. not shot_store_AtomicU32'0 c
         /\ ward_AtomicU32'1 c = self
-        /\ val_load_AtomicU32'0 c = result /\ postcondition_once_FnGhostWrapper_closure9 f c ()}
+        /\ val_load_AtomicU32'0 c = result /\ postcondition_once_FnGhostWrapper_closure9 f c () (Mode.into_ghost mode)}
       (! return {result}) ]
   
   constant any_Fragment_FMap_Int_Excl_unit : t_Fragment_FMap_Int_Excl_unit
@@ -3143,7 +3174,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       end
   
   let into_inner_Option_Guarded_FullBorrow_Perm_PermCell_T (self: t_Option_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: t_Option_Guarded_FullBorrow_Perm_PermCell_T)) =
+    (mode: Mode.t) (return (x: t_Option_Guarded_FullBorrow_Perm_PermCell_T)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T self}
     any
     [ return (result: t_Option_Guarded_FullBorrow_Perm_PermCell_T) ->
@@ -3151,7 +3182,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  let unwrap_Guarded_FullBorrow_Perm_PermCell_T (self: t_Option_Guarded_FullBorrow_Perm_PermCell_T)
+  let unwrap_Guarded_FullBorrow_Perm_PermCell_T (self: t_Option_Guarded_FullBorrow_Perm_PermCell_T) (mode: Mode.t)
     (return (x: t_Guarded_FullBorrow_Perm_PermCell_T)) =
   {[@stop_split] [@expl:unwrap_Guarded_FullBorrow_Perm_PermCell_T requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_Guarded_FullBorrow_Perm_PermCell_T self)
     /\ ([@stop_split] [@expl:unwrap requires] self <> None'0)}
@@ -3171,7 +3202,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T
   
-  let new_Guarded_FullBorrow_Perm_PermCell_T (x: t_Guarded_FullBorrow_Perm_PermCell_T)
+  let new_Guarded_FullBorrow_Perm_PermCell_T (x: t_Guarded_FullBorrow_Perm_PermCell_T) (mode: Mode.t)
     (return (x'0: t_Guarded_FullBorrow_Perm_PermCell_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_Guarded_FullBorrow_Perm_PermCell_T x}
     any
@@ -3205,13 +3236,14 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "select_lsinst" "all"
   
-  let lock_T (self: t_TicketLock_T) (tokens: t_Tokens) (return (x: t_TicketLockGuard_T)) =
-  {[@stop_split] [@expl:lock_T requires] ([@stop_split] [@expl:lock 'self' type invariant] inv_ref_TicketLock_T self)
+  let lock_T (self: t_TicketLock_T) (tokens: t_Tokens) (mode: Mode.t) (return (x: t_TicketLockGuard_T)) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:lock_T requires] ([@stop_split] [@expl:lock 'self' type invariant] inv_ref_TicketLock_T self)
     /\ ([@stop_split] [@expl:lock requires] contains tokens (Namespace_TICKET_LOCK 0))}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_10 <- None ] s1
-      | s1 = new_Option_Fragment_FMap_Int_Excl_unit {_10}
+      | s1 = new_Option_Fragment_FMap_Int_Excl_unit {_10} {Mode.into_ghost mode}
           (fun (_x: t_Option_Fragment_FMap_Int_Excl_unit) -> [ &ticket_own <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_Tokens> {tokens}
           (fun (_bor: MutBorrow.t t_Tokens) -> [ &_17 <- _bor ] [ &tokens <- _bor.final ] s3)
@@ -3219,12 +3251,13 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
           (fun (_bor: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) ->
             [ &_18 <- _bor ] [ &ticket_own <- _bor.final ] s4)
       | s4 = [ &_15 <- { c0 = self; c1 = _17; c2 = _18 } ] s5
-      | s5 = __new_closure3 {_15} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_14 <- _x ] s6)
-      | s6 = new_FnGhostWrapper_closure3 {_14} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_13 <- _x ] s7)
-      | s7 = fetch_add_FnGhostWrapper_closure3 {self.next_ticket} {(1: UInt32.t)} {_13}
+      | s5 = __new_closure3 {_15} {Mode.into_ghost mode} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_14 <- _x ] s6)
+      | s6 = new_FnGhostWrapper_closure3 {_14} {Mode.into_ghost mode}
+          (fun (_x: t_FnGhostWrapper_closure3) -> [ &_13 <- _x ] s7)
+      | s7 = fetch_add_FnGhostWrapper_closure3 {self.next_ticket} {(1: UInt32.t)} {_13} {mode}
           (fun (_x: UInt32.t) -> [ &ticket <- _x ] s8)
       | s8 = [ &_20 <- None'0 ] s9
-      | s9 = new_Option_Guarded_FullBorrow_Perm_PermCell_T {_20}
+      | s9 = new_Option_Guarded_FullBorrow_Perm_PermCell_T {_20} {Mode.into_ghost mode}
           (fun (_x: t_Option_Guarded_FullBorrow_Perm_PermCell_T) -> [ &perm <- _x ] s10)
       | s10 = bb6 ]
     | bb6 = bb6
@@ -3247,17 +3280,18 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
               [ &perm <- _bor.final ] s3)
           [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T perm} any) ]
         | s3 = [ &_39 <- { c0'1 = self; c1'1 = _41; c2'1 = ticket; c3'1 = _43; c4'1 = _44 } ] s4
-        | s4 = __new_closure9 {_39} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_38 <- _x ] s5)
-        | s5 = new_FnGhostWrapper_closure9 {_38} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_37 <- _x ] s6)
-        | s6 = load_FnGhostWrapper_closure9 {self.now_serving} {_37} (fun (_x: UInt32.t) -> [ &_35 <- _x ] s7)
+        | s4 = __new_closure9 {_39} {Mode.into_ghost mode} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_38 <- _x ] s5)
+        | s5 = new_FnGhostWrapper_closure9 {_38} {Mode.into_ghost mode}
+            (fun (_x: t_FnGhostWrapper_closure9) -> [ &_37 <- _x ] s6)
+        | s6 = load_FnGhostWrapper_closure9 {self.now_serving} {_37} {mode} (fun (_x: UInt32.t) -> [ &_35 <- _x ] s7)
         | s7 = [ &_34 <- _35 <> ticket ] s8
         | s8 = any [ br0 -> {_34 = false} (! bb12) | br1 -> {_34} (! bb6) ] ] ]
     | bb12 = s0
-      [ s0 = into_inner_Option_Guarded_FullBorrow_Perm_PermCell_T {perm}
+      [ s0 = into_inner_Option_Guarded_FullBorrow_Perm_PermCell_T {perm} {Mode.into_ghost mode}
           (fun (_x: t_Option_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_50 <- _x ] s1)
-      | s1 = unwrap_Guarded_FullBorrow_Perm_PermCell_T {_50}
+      | s1 = unwrap_Guarded_FullBorrow_Perm_PermCell_T {_50} {Mode.into_ghost mode}
           (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_49 <- _x ] s2)
-      | s2 = new_Guarded_FullBorrow_Perm_PermCell_T {_49}
+      | s2 = new_Guarded_FullBorrow_Perm_PermCell_T {_49} {Mode.into_ghost mode}
           (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_48 <- _x ] s3)
       | s3 = [ &_ret <- { lock'1 = self; perm'1 = _48; inv'1 = self.inv } ] s4
       | s4 = return {_ret} ] ]
@@ -3297,6 +3331,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   type t_Namespace = Namespace_TICKET_LOCK int | Other namespace_other
   
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use real.Real
   use real.FromInt
   use map.Map
@@ -3325,7 +3360,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   function ward_AtomicU32 (self: t_Perm_AtomicU32) : t_AtomicU32
   
-  let new (val': UInt32.t) (return (x: tup2_AtomicU32_Ghost_Perm_AtomicU32)) = any
+  let new (val': UInt32.t) (mode: Mode.t) (return (x: tup2_AtomicU32_Ghost_Perm_AtomicU32)) = any
     [ return (result: tup2_AtomicU32_Ghost_Perm_AtomicU32) ->
     {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new result type invariant] inv_tup2_AtomicU32_Ghost_Perm_AtomicU32 result)
       /\ ([@stop_split] [@expl:new ensures #0] val_AtomicU32 result.f1 = val')
@@ -3350,7 +3385,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   meta "rewrite_def" function val_PermCell_T
   
-  let new_T (value: t_T) (return (x: tup2_PermCell_T_Ghost_Perm_PermCell_T)) =
+  let new_T (value: t_T) (mode: Mode.t) (return (x: tup2_PermCell_T_Ghost_Perm_PermCell_T)) =
   {[@stop_split] [@expl:new 'value' type invariant] inv_T value}
     any
     [ return (result: tup2_PermCell_T_Ghost_Perm_PermCell_T) ->
@@ -3383,7 +3418,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   meta "rewrite_def" function from_int
   
-  let new'1 (return (x: t_LifetimeToken)) = any
+  let new'1 (mode: Mode.t) (return (x: t_LifetimeToken)) = any
     [ return (result: t_LifetimeToken) ->
     {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new result type invariant] inv_LifetimeToken result)
       /\ ([@stop_split] [@expl:new ensures] frac result = from_int 1)}
@@ -3397,7 +3432,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   meta "rewrite_def" predicate inv_Ghost_LifetimeToken
   
-  let new_LifetimeToken (x: t_LifetimeToken) (return (x'0: t_LifetimeToken)) =
+  let new_LifetimeToken (x: t_LifetimeToken) (mode: Mode.t) (return (x'0: t_LifetimeToken)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_LifetimeToken x}
     any
     [ return (result: t_LifetimeToken) ->
@@ -3437,7 +3472,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   meta "rewrite_def" function fin_Ghost_EndBorrow_Perm_PermCell_T
   
-  let new_Perm_PermCell_T (x: t_Perm_PermCell_T) (lft'0: t_Lifetime)
+  let new_Perm_PermCell_T (x: t_Perm_PermCell_T) (lft'0: t_Lifetime) (mode: Mode.t)
     (return (x'0: tup2_Ghost_FullBorrow_Perm_PermCell_T_Ghost_EndBorrow_Perm_PermCell_T)) = any
     [ return (result: tup2_Ghost_FullBorrow_Perm_PermCell_T_Ghost_EndBorrow_Perm_PermCell_T) ->
     {[@stop_split] [@expl:new_Perm_PermCell_T ensures] ([@stop_split] [@expl:new ensures #0] cur_Perm_PermCell_T result.f0'1
@@ -3448,7 +3483,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
       = fin_Ghost_EndBorrow_Perm_PermCell_T result.f1'1)}
       (! return {result}) ]
   
-  let into_inner_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T)
+  let into_inner_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) (mode: Mode.t)
     (return (x: t_FullBorrow_Perm_PermCell_T)) = any
     [ return (result: t_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
@@ -3491,7 +3526,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
       = invariant_Guarded_FullBorrow_Perm_PermCell_T _1
   
   let add_guard_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) (guard: Map.map t_Perm_PermCell_T bool)
-    (return (x: t_Guarded_FullBorrow_Perm_PermCell_T)) =
+    (mode: Mode.t) (return (x: t_Guarded_FullBorrow_Perm_PermCell_T)) =
   {[@stop_split] [@expl:add_guard requires] index_Mapping_Perm_PermCell_T_bool guard (cur_Perm_PermCell_T self)}
     any
     [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T) ->
@@ -3504,7 +3539,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   type t_Option_Guarded_FullBorrow_Perm_PermCell_T = None | Some t_Guarded_FullBorrow_Perm_PermCell_T
   
-  let into_inner_Perm_AtomicU32 (self: t_Perm_AtomicU32) (return (x: t_Perm_AtomicU32)) = any
+  let into_inner_Perm_AtomicU32 (self: t_Perm_AtomicU32) (mode: Mode.t) (return (x: t_Perm_AtomicU32)) = any
     [ return (result: t_Perm_AtomicU32) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
@@ -3613,13 +3648,13 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
     forall x: t_FMap_Int_Excl_unit [op_FMap_Int_Excl_unit x unit_FMap_Int_Excl_unit]. op_FMap_Int_Excl_unit x unit_FMap_Int_Excl_unit
       = Some'0 x
   
-  let alloc_FMap_Int_Excl_unit (return (x: t_Authority_FMap_Int_Excl_unit)) = any
+  let alloc_FMap_Int_Excl_unit (mode: Mode.t) (return (x: t_Authority_FMap_Int_Excl_unit)) = any
     [ return (result: t_Authority_FMap_Int_Excl_unit) ->
     {[@stop_split] [@expl:alloc_FMap_Int_Excl_unit ensures] ([@stop_split] [@expl:alloc result type invariant] inv_Ghost_Authority_FMap_Int_Excl_unit result)
       /\ ([@stop_split] [@expl:alloc ensures] view_Authority_FMap_Int_Excl_unit result = unit_FMap_Int_Excl_unit)}
       (! return {result}) ]
   
-  let into_inner_Authority_FMap_Int_Excl_unit (self: t_Authority_FMap_Int_Excl_unit)
+  let into_inner_Authority_FMap_Int_Excl_unit (self: t_Authority_FMap_Int_Excl_unit) (mode: Mode.t)
     (return (x: t_Authority_FMap_Int_Excl_unit)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Authority_FMap_Int_Excl_unit self}
     any
@@ -3659,7 +3694,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   meta "rewrite_def" predicate inv_Ghost_TicketLockInv_T
   
-  let new_TicketLockInv_T (x: t_TicketLockInv_T) (return (x'0: t_TicketLockInv_T)) =
+  let new_TicketLockInv_T (x: t_TicketLockInv_T) (mode: Mode.t) (return (x'0: t_TicketLockInv_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_TicketLockInv_T x}
     any
     [ return (result: t_TicketLockInv_T) ->
@@ -3714,7 +3749,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   function namespace_TicketLockInv_T (self: t_AtomicInvariantSC_TicketLockInv_T) : t_Namespace
   
-  let new_TicketLockInv_T'0 (value: t_TicketLockInv_T) (namespace: t_Namespace)
+  let new_TicketLockInv_T'0 (value: t_TicketLockInv_T) (namespace: t_Namespace) (mode: Mode.t)
     (return (x: t_AtomicInvariantSC_TicketLockInv_T)) =
   {[@stop_split] [@expl:new_TicketLockInv_T requires] ([@stop_split] [@expl:new 'value' type invariant] inv_Ghost_TicketLockInv_T value)
     /\ ([@stop_split] [@expl:new requires] protocol_TicketLockInv_T value)}
@@ -3754,34 +3789,39 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   meta "select_lsinst" "all"
   
-  let new_T'0 (data'0: t_T) (inv'1: Map.map t_T bool) (return (x: t_TicketLock_T)) =
-  {[@stop_split] [@expl:new_T requires] ([@stop_split] [@expl:new 'data' type invariant] inv_T data'0)
+  let new_T'0 (data'0: t_T) (inv'1: Map.map t_T bool) (mode: Mode.t) (return (x: t_TicketLock_T)) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:new_T requires] ([@stop_split] [@expl:new 'data' type invariant] inv_T data'0)
     /\ ([@stop_split] [@expl:new requires] Map.get inv'1 data'0)}
     (! bb0
     [ bb0 = s0
-      [ s0 = new {(0: UInt32.t)} (fun (_x: tup2_AtomicU32_Ghost_Perm_AtomicU32) -> [ &_10 <- _x ] s1)
+      [ s0 = new {(0: UInt32.t)} {mode} (fun (_x: tup2_AtomicU32_Ghost_Perm_AtomicU32) -> [ &_10 <- _x ] s1)
       | s1 = [ &next_ticket'0 <- _10.f0 ] s2
       | s2 = [ &perm_next_ticket <- _10.f1 ] s3
-      | s3 = new {(0: UInt32.t)} (fun (_x: tup2_AtomicU32_Ghost_Perm_AtomicU32) -> [ &_13 <- _x ] s4)
+      | s3 = new {(0: UInt32.t)} {mode} (fun (_x: tup2_AtomicU32_Ghost_Perm_AtomicU32) -> [ &_13 <- _x ] s4)
       | s4 = [ &now_serving'0 <- _13.f0 ] s5
       | s5 = [ &perm_now_serving <- _13.f1 ] s6
-      | s6 = new_T {data'0} (fun (_x: tup2_PermCell_T_Ghost_Perm_PermCell_T) -> [ &_16 <- _x ] s7)
+      | s6 = new_T {data'0} {mode} (fun (_x: tup2_PermCell_T_Ghost_Perm_PermCell_T) -> [ &_16 <- _x ] s7)
       | s7 = [ &data'1 <- _16.f0'0 ] s8
       | s8 = [ &perm_data <- _16.f1'0 ] s9
-      | s9 = new'1 (fun (_x: t_LifetimeToken) -> [ &_19 <- _x ] s10)
-      | s10 = new_LifetimeToken {_19} (fun (_x: t_LifetimeToken) -> [ &lft_tok'0 <- _x ] s11)
-      | s11 = new_Perm_PermCell_T {perm_data} {lft lft_tok'0}
+      | s9 = new'1 {Mode.into_ghost mode} (fun (_x: t_LifetimeToken) -> [ &_19 <- _x ] s10)
+      | s10 = new_LifetimeToken {_19} {Mode.into_ghost mode} (fun (_x: t_LifetimeToken) -> [ &lft_tok'0 <- _x ] s11)
+      | s11 = new_Perm_PermCell_T {perm_data} {lft lft_tok'0} {mode}
           (fun (_x: tup2_Ghost_FullBorrow_Perm_PermCell_T_Ghost_EndBorrow_Perm_PermCell_T) -> [ &_22 <- _x ] s12)
       | s12 = [ &bor <- _22.f0'1 ] s13
       | s13 = [ &end''0 <- _22.f1'1 ] s14
-      | s14 = into_inner_FullBorrow_Perm_PermCell_T {bor} (fun (_x: t_FullBorrow_Perm_PermCell_T) -> [ &_38 <- _x ] s15)
+      | s14 = into_inner_FullBorrow_Perm_PermCell_T {bor} {Mode.into_ghost mode}
+          (fun (_x: t_FullBorrow_Perm_PermCell_T) -> [ &_38 <- _x ] s15)
       | s15 = add_guard_Perm_PermCell_T {_38} {fun (p: t_Perm_PermCell_T) -> ward_PermCell_T p = data'1}
-          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_37 <- _x ] s16)
+          {Mode.into_ghost mode} (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_37 <- _x ] s16)
       | s16 = [ &_36 <- Some _37 ] s17
-      | s17 = into_inner_Perm_AtomicU32 {perm_next_ticket} (fun (_x: t_Perm_AtomicU32) -> [ &_43 <- _x ] s18)
-      | s18 = into_inner_Perm_AtomicU32 {perm_now_serving} (fun (_x: t_Perm_AtomicU32) -> [ &_45 <- _x ] s19)
-      | s19 = alloc_FMap_Int_Excl_unit (fun (_x: t_Authority_FMap_Int_Excl_unit) -> [ &_48 <- _x ] s20)
-      | s20 = into_inner_Authority_FMap_Int_Excl_unit {_48}
+      | s17 = into_inner_Perm_AtomicU32 {perm_next_ticket} {Mode.into_ghost mode}
+          (fun (_x: t_Perm_AtomicU32) -> [ &_43 <- _x ] s18)
+      | s18 = into_inner_Perm_AtomicU32 {perm_now_serving} {Mode.into_ghost mode}
+          (fun (_x: t_Perm_AtomicU32) -> [ &_45 <- _x ] s19)
+      | s19 = alloc_FMap_Int_Excl_unit {Mode.into_ghost mode}
+          (fun (_x: t_Authority_FMap_Int_Excl_unit) -> [ &_48 <- _x ] s20)
+      | s20 = into_inner_Authority_FMap_Int_Excl_unit {_48} {Mode.into_ghost mode}
           (fun (_x: t_Authority_FMap_Int_Excl_unit) -> [ &_47 <- _x ] s21)
       | s21 = [ &_29 <- { cell'0 = data'1;
                           lft'0 = lft lft_tok'0;
@@ -3790,8 +3830,8 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
                           perm_now_serving'0 = _45;
                           auth_tickets'0 = _47;
                           inv'0 = inv'1 } ] s22
-      | s22 = new_TicketLockInv_T {_29} (fun (_x: t_TicketLockInv_T) -> [ &_28 <- _x ] s23)
-      | s23 = new_TicketLockInv_T'0 {_28} {Namespace_TICKET_LOCK 0}
+      | s22 = new_TicketLockInv_T {_29} {Mode.into_ghost mode} (fun (_x: t_TicketLockInv_T) -> [ &_28 <- _x ] s23)
+      | s23 = new_TicketLockInv_T'0 {_28} {Namespace_TICKET_LOCK 0} {mode}
           (fun (_x: t_AtomicInvariantSC_TicketLockInv_T) -> [ &inner_inv'0 <- _x ] s24)
       | s24 = [ &_ret <- { next_ticket = next_ticket'0;
                            now_serving = now_serving'0;

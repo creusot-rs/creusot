@@ -5,6 +5,7 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use seq.Seq
 use creusot.prelude.MutBorrow
 use int.Int
@@ -32,10 +33,10 @@ axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.se
 
 predicate completed_I (self: MutBorrow.t t_I)
 
-predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
+predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) (mode: Mode.t)
 
 axiom postcondition_fndef:
-  forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
+  forall args: t_I, result: tup2_usize_Option_usize, mode: Mode.t [postcondition_size_hint () args result mode]. postcondition_size_hint () args result mode
     -> (let self = args in (forall s: Seq.seq t_T, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
         -> UInt64.t'int result.f0 <= Seq.length s)
     /\ match result.f1 with
@@ -45,8 +46,8 @@ axiom postcondition_fndef:
 
 function iter_Copied_I (self: t_Copied_I) : t_I
 
-predicate postcondition_size_hint'0 (self: ()) (args: t_Copied_I) (result: tup2_usize_Option_usize) =
-  let self'0 = args in postcondition_size_hint () (iter_Copied_I self'0) result
+predicate postcondition_size_hint'0 (self: ()) (args: t_Copied_I) (result: tup2_usize_Option_usize) (mode: Mode.t) =
+  let self'0 = args in postcondition_size_hint () (iter_Copied_I self'0) result mode
 
 meta "rewrite_def" predicate postcondition_size_hint'0
 
@@ -76,33 +77,36 @@ predicate inv_ref_I [@inline:trivial] (_1: t_I) = invariant_ref_I _1
 
 meta "rewrite_def" predicate inv_ref_I
 
-predicate precondition_size_hint (self: ()) (args: t_I)
+predicate precondition_size_hint (self: ()) (args: t_I) (mode: Mode.t)
 
-axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self = args in inv_ref_I self)
-    -> precondition_size_hint () args
+axiom precondition_fndef:
+  forall mode: Mode.t. forall args: t_I [precondition_size_hint () args mode]. (let self = args in inv_ref_I self)
+      -> precondition_size_hint () args mode
 
-predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) =
-  postcondition_size_hint self args result
+predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) (mode: Mode.t) =
+  postcondition_size_hint self args result mode
 
 meta "rewrite_def" predicate postcondition_once_size_hint
 
-let size_hint_I (self: t_I) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
+let size_hint_I (self: t_I) (mode: Mode.t) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self mode}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result mode}
     (! return {result}) ]
 
-let size_hint_Copied_I (self: t_Copied_I) (return (x: tup2_usize_Option_usize)) =
+let size_hint_Copied_I (self: t_Copied_I) (mode: Mode.t) (return (x: tup2_usize_Option_usize)) =
 {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_Copied_I self}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_size_hint () (iter_Copied_I self) result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_size_hint () (iter_Copied_I self) result mode}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self: t_Copied_I, r: tup2_usize_Option_usize. postcondition_size_hint'0 () self r
-    -> postcondition_size_hint'0 () self r /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))
+goal refines:
+  forall self: t_Copied_I, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint'0 () self r mode)
+    -> (exists mode: Mode.t. postcondition_size_hint'0 () self r mode)
+    /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))
