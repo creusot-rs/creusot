@@ -1,5 +1,3 @@
-// TIME 2
-
 extern crate creusot_std;
 
 use creusot_std::{
@@ -127,12 +125,12 @@ pub fn parallel_add(n: i32) {
             let f = h.join_unwrap();
             ghost! { frag.join_in(f.into_inner()) };
         }
+        proof_assert!(frag@ == Some((PR::from_int(1), n@)));
     });
 
     let own = ghost! {
         // Destroy the invariant, get back the ownership of the atomic
         let inv = inv.into_inner().into_inner();
-        proof_assert!(inv.auth@.unwrap_logic().0 == PR::from_int(1));
         inv.auth.frag_lemma(&frag);
         inv.own
     };

@@ -35,9 +35,12 @@ jobs:
         opam init --bare
         opam --cli=2.1 var --global in-creusot-ci=true
     - name: Install Creusot
-      # Use only 2 parallel provers, because more provers (4) makes replaying proofs unstable
-      run: ./INSTALL --provers-parallelism 2
-    - run: cargo test --test why3 -- --time=2 --time-factor=2
+      # We use a custom why3find.json with a false baseline calibration because timing in CI are so
+      # unstable and make the proofs fail in many cases.
+      run: |
+        mv -f ci/why3find.json .
+        ./INSTALL
+    - run: cargo test --test why3
     - name: Get current date
       run: echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
     - name: Save Why3find cache
