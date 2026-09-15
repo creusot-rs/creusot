@@ -207,6 +207,7 @@ mod implementation {
     }
 
     /// Inner function, to hide specifications that only concern the depth.
+    #[allow(creusot::unchecked_unsafe)]
     #[check(terminates)]
     #[requires(uf.in_domain(elem))]
     #[ensures(result == uf.root(elem))]
@@ -244,6 +245,7 @@ mod implementation {
     /// Get the payload of `elem`, provided it is a root.
     ///
     /// To guarantee that `elem` is a root, call [`Self::find`] before.
+    #[allow(creusot::unchecked_unsafe)]
     #[check(terminates)]
     #[requires(uf.in_domain(*elem))]
     #[requires(uf.root(*elem) == *elem)]
@@ -269,6 +271,7 @@ mod implementation {
     }
 
     /// If `x` and `y` are two roots, try to link them together.
+    #[allow(creusot::unchecked_unsafe)]
     #[check(terminates)]
     #[requires(uf.in_domain(x) && uf.in_domain(y))]
     #[requires(uf.root(x) == x && uf.root(y) == y)]
