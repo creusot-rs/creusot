@@ -53,12 +53,12 @@ impl<T> Iterator for Once<T> {
 
 impl<T> ExactSizeIterator for Once<T> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 
-    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
+    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result)), mode!()))]
     fn len(&self) -> usize {
         match self.0 {
             Some(_) => 1,

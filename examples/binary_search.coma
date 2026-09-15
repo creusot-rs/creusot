@@ -1,5 +1,6 @@
 module M_binary_search
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.UInt32
   use creusot.prelude.Any
@@ -15,7 +16,7 @@ module M_binary_search
     forall self: t_Vec_u32_Global [view_Vec_u32_Global self]. Seq.length (view_Vec_u32_Global self)
       <= UInt64.t'int const_MAX
   
-  let len_u32 (self: t_Vec_u32_Global) (return (x: UInt64.t)) = any
+  let len_u32 (self: t_Vec_u32_Global) (mode: Mode.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (view_Vec_u32_Global self)}
       (! return {result}) ]
@@ -37,7 +38,7 @@ module M_binary_search
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_u32_Global'0 (self: t_Vec_u32_Global) (index: UInt64.t) (return (x: UInt32.t)) =
+  let index_Vec_u32_Global'0 (self: t_Vec_u32_Global) (index: UInt64.t) (mode: Mode.t) (return (x: UInt32.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_usize index (view_Vec_u32_Global self)}
     any
     [ return (result: UInt32.t) ->
@@ -53,18 +54,21 @@ module M_binary_search
   
   meta "select_lsinst" "all"
   
-  let binary_search (arr: t_Vec_u32_Global) (elem: UInt32.t) (return (x: t_Result_usize_usize)) =
-  {[@stop_split] [@expl:binary_search requires] ([@stop_split] [@expl:binary_search requires #0] Seq.length (view_Vec_u32_Global arr)
+  let binary_search (arr: t_Vec_u32_Global) (elem: UInt32.t) (mode: Mode.t) (return (x: t_Result_usize_usize)) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:binary_search requires] ([@stop_split] [@expl:binary_search requires #0] Seq.length (view_Vec_u32_Global arr)
       <= UInt64.t'int const_MAX)
     /\ ([@stop_split] [@expl:binary_search requires #1] sorted (view_Vec_u32_Global arr))}
     (! bb0
     [ bb0 = s0
-      [ s0 = len_u32 {arr} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
+      [ s0 = len_u32 {arr} {mode} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
       | s1 = [ &_17 <- _18 = (0: UInt64.t) ] s2
       | s2 = any [ br0 -> {_17 = false} (! bb3) | br1 -> {_17} (! bb2) ] ]
     | bb2 = s0 [ s0 = [ &_ret <- Err (0: UInt64.t) ] s1 | s1 = return {_ret} ]
     | bb3 = s0
-      [ s0 = len_u32 {arr} (fun (_x: UInt64.t) -> [ &size <- _x ] s1) | s1 = [ &base <- (0: UInt64.t) ] s2 | s2 = bb5 ]
+      [ s0 = len_u32 {arr} {mode} (fun (_x: UInt64.t) -> [ &size <- _x ] s1)
+      | s1 = [ &base <- (0: UInt64.t) ] s2
+      | s2 = bb5 ]
     | bb5 = bb5
       [ bb5 = {[@expl:loop invariant #0] 0 < UInt64.t'int size
         /\ UInt64.t'int size + UInt64.t'int base <= Seq.length (view_Vec_u32_Global arr)}
@@ -81,7 +85,7 @@ module M_binary_search
           | s1 = {[@expl:division by zero] not _44} s2
           | s2 = UInt64.div {size} {(2: UInt64.t)} (fun (_x: UInt64.t) -> [ &half <- _x ] s3)
           | s3 = UInt64.add {base} {half} (fun (_x: UInt64.t) -> [ &mid <- _x ] s4)
-          | s4 = index_Vec_u32_Global'0 {arr} {mid} (fun (_x: UInt32.t) -> [ &_51 <- _x ] s5)
+          | s4 = index_Vec_u32_Global'0 {arr} {mid} {mode} (fun (_x: UInt32.t) -> [ &_51 <- _x ] s5)
           | s5 = [ &_49 <- UInt32.gt _51 elem ] s6
           | s6 = any [ br0 -> {_49 = false} (! bb11) | br1 -> {_49} (! bb10) ] ]
         | bb10 = s0 [ s0 = [ &_48 <- base ] s1 | s1 = bb12 ]
@@ -91,7 +95,7 @@ module M_binary_search
           | s1 = UInt64.sub {size} {half} (fun (_x: UInt64.t) -> [ &size <- _x ] s2)
           | s2 = bb5 ] ] ]
     | bb13 = s0
-      [ s0 = index_Vec_u32_Global'0 {arr} {base} (fun (_x: UInt32.t) -> [ &_58 <- _x ] s1)
+      [ s0 = index_Vec_u32_Global'0 {arr} {base} {mode} (fun (_x: UInt32.t) -> [ &_58 <- _x ] s1)
       | s1 = [ &cmp <- _58 ] s2
       | s2 = [ &_61 <- cmp = elem ] s3
       | s3 = any [ br0 -> {_61 = false} (! bb16) | br1 -> {_61} (! bb15) ] ]

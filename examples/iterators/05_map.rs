@@ -1,6 +1,6 @@
 #![feature(unboxed_closures)]
 extern crate creusot_std;
-use creusot_std::{invariant::Invariant, logic::such_that, prelude::*};
+use creusot_std::{invariant::Invariant, logic::such_that, mode::Mode, prelude::*};
 
 pub mod common;
 use common::{ExactSizeIterator, Iterator};
@@ -41,7 +41,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
                else { *fs[0] == a.func &&  ^fs[ac.len() - 1] == c.func }
             && forall<i> 0 <= i && i < ac.len() ==>
                  a.func.hist_inv(*fs[i])
-                 && (*fs[i]).postcondition_mut((s[i],), ^fs[i], ac[i])
+                 && (*fs[i]).postcondition_mut((s[i],), ^fs[i], ac[i], Mode::program_mode())
         }
     }
 
@@ -58,7 +58,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
             && forall<i> 0 <= i && i < visited.len() ==>
                  self.func.hist_inv(*fs[i])
-                 && (*fs[i]).postcondition_mut((s[i],), ^fs[i], visited[i])
+                 && (*fs[i]).postcondition_mut((s[i],), ^fs[i], visited[i], Mode::program_mode())
         }
     }
 
@@ -69,7 +69,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
             Some(v) => {
-                proof_assert! { self.func.precondition((v,)) };
+                proof_assert!(self.func.precondition((v,), mode!()));
                 snapshot! { Self::produces_one_invariant };
                 Some((self.func)(v))
             }
@@ -77,7 +77,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
         }
     }
 
-    #[ensures(I::size_hint.postcondition((&self.iter,), result))]
+    #[ensures(I::size_hint.postcondition((&self.iter,), result, mode!()))]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -85,18 +85,18 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
 
 impl<I: ExactSizeIterator, B, F: FnMut(I::Item) -> B> ExactSizeIterator for Map<I, F> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         self.iter.size_hint_exact(r)
     }
 
-    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
+    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result)), mode!()))]
     fn len(&self) -> usize {
         self.iter.len()
     }
 
-    #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l))) && result == (l == 0usize))]
+    #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l)), mode!()) && result == (l == 0usize))]
     fn is_empty(&self) -> bool {
         proof_assert!(forall<s: Seq<I::Item>> s.len() == 0 ==> s == Seq::empty());
         self.iter.is_empty()
@@ -109,8 +109,8 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
         pearlite! {
             forall<e: I::Item, i: I>
                 #[trigger(iter.produces(Seq::singleton(e), i))]
-                inv(e) && iter.produces(Seq::singleton(e), i) ==>
-                func.precondition((e,))
+                inv(e) && iter.produces(Seq::singleton(e), i)
+                ==> forall<mode: Mode> func.precondition((e,), mode)
         }
     }
 
@@ -118,12 +118,11 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     pub fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                #[trigger(iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b))]
-                func.hist_inv(*f) ==>
-                inv(s) && inv(e1) && inv(e2) && inv(f) ==>
-                iter.produces(s.push_back(e1).push_back(e2), i) ==>
-                (*f).postcondition_mut((e1,), ^f, b) ==>
-                (^f).precondition((e2, ))
+                #[trigger(iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b, Mode::program_mode()))]
+                func.hist_inv(*f) && inv(s) && inv(e1) && inv(e2) && inv(f)
+                && iter.produces(s.push_back(e1).push_back(e2), i)
+                && (*f).postcondition_mut((e1,), ^f, b, Mode::program_mode())
+                ==> forall<mode> (^f).precondition((e2,), mode)
         }
     }
 
@@ -141,7 +140,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     #[requires(self.invariant())]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
     #[requires(*f == self.func)]
-    #[requires((*f).postcondition_mut((e,), ^f, r) )]
+    #[requires((*f).postcondition_mut((e,), ^f, r, Mode::program_mode()))]
     #[ensures(Self::preservation(iter, ^f))]
     #[ensures(Self::next_precondition(iter, ^f))]
     fn produces_one_invariant(self, e: I::Item, r: B, f: &mut F, iter: I) {
@@ -168,7 +167,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
            else { *result.0[0] == self.func &&  ^result.0[visited.len() - 1] == succ.func }
         && forall<i> 0 <= i && i < visited.len() ==>
              self.func.hist_inv(*result.0[i])
-             && (*result.0[i]).postcondition_mut((result.1[i],), ^result.0[i], visited[i])
+             && (*result.0[i]).postcondition_mut((result.1[i],), ^result.0[i], visited[i], Mode::program_mode())
     )]
     fn produces_instantiate_existential<'a>(
         self,
@@ -184,7 +183,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
                    else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
                 && forall<i> 0 <= i && i < visited.len() ==>
                      self.func.hist_inv(*fs[i])
-                     && (*fs[i]).postcondition_mut((s[i],), ^fs[i], visited[i])
+                     && (*fs[i]).postcondition_mut((s[i],), ^fs[i], visited[i], Mode::program_mode())
 
             }
         })
@@ -198,10 +197,10 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
 
         pearlite! {
             exists<f: &mut F, e: I::Item>
-                #[trigger((*f).postcondition_mut((e,), ^f, visited))]
+                #[trigger((*f).postcondition_mut((e,), ^f, visited, Mode::program_mode()))]
                 *f == self.func && ^f == succ.func
                 && self.iter.produces(Seq::singleton(e), succ.iter)
-                && (*f).postcondition_mut((e,), ^f, visited)
+                && (*f).postcondition_mut((e,), ^f, visited, Mode::program_mode())
         }
     }
 }
@@ -212,16 +211,18 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
         pearlite! {
             Self::reinitialize() &&
             Self::preservation(self.iter, self.func) &&
-            Self::next_precondition(self.iter, self.func)
+            Self::next_precondition(self.iter, self.func) &&
+            creusot_std::std::iter::modeless(self.func)
         }
     }
 }
 
-#[requires(forall<e: I::Item, i2: I>
+#[requires(forall<e: I::Item, i2: I, mode>
                 iter.produces(Seq::singleton(e), i2) && inv(e) ==>
-                func.precondition((e,)))]
+                func.precondition((e,), mode))]
 #[requires(Map::<I, F>::reinitialize())]
 #[requires(Map::<I, F>::preservation(iter, func))]
+#[requires(creusot_std::std::iter::modeless(func))]
 #[ensures(result == Map { iter, func })]
 pub fn map<I: Iterator, B, F: FnMut(I::Item) -> B>(iter: I, func: F) -> Map<I, F> {
     Map { iter, func }

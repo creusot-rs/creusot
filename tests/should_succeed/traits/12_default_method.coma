@@ -1,8 +1,10 @@
 module M_should_use_impl
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
-  let default_u32 (self: UInt32.t) (return (x: UInt32.t)) = any [ return (result: UInt32.t) -> (! return {result}) ]
+  let default_u32 (self: UInt32.t) (mode: Mode.t) (return (x: UInt32.t)) = any
+    [ return (result: UInt32.t) -> (! return {result}) ]
   
   predicate logic_default_u32 (self: UInt32.t) = true
   
@@ -10,14 +12,16 @@ module M_should_use_impl
   
   meta "select_lsinst" "all"
   
-  let should_use_impl (x: UInt32.t) (return (x'0: ())) = (! bb0
-    [ bb0 = s0 [ s0 = default_u32 {x} (fun (_x: UInt32.t) -> [ &_4 <- _x ] s1) | s1 = return {_ret} ] ]
+  let should_use_impl (x: UInt32.t) (mode: Mode.t) (return (x'0: ())) = {not Mode.terminates mode}
+    (! bb0
+    [ bb0 = s0 [ s0 = default_u32 {x} {mode} (fun (_x: UInt32.t) -> [ &_4 <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & x: UInt32.t = x | & _4: UInt32.t = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:should_use_impl ensures] logic_default_u32 x} (! return {result}) ]
 end
 module M_trait_T__default
   use creusot.int.UInt32
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_Self
   
@@ -35,8 +39,8 @@ module M_trait_T__default
   
   meta "select_lsinst" "all"
   
-  let default_Self (self: t_Self) (return (x: UInt32.t)) =
-  {[@stop_split] [@expl:default 'self' type invariant] inv_ref_Self self}
+  let default_Self (self: t_Self) (mode: Mode.t) (return (x: UInt32.t)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:default 'self' type invariant] inv_ref_Self self}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- (0: UInt32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: UInt32.t = Any.any_l () ])
     [ return (result: UInt32.t) -> (! return {result}) ]

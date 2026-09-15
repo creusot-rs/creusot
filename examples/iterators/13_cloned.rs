@@ -1,5 +1,5 @@
 extern crate creusot_std;
-use creusot_std::prelude::*;
+use creusot_std::{mode::Mode, prelude::*};
 
 pub mod common;
 pub use common::{ExactSizeIterator, Iterator};
@@ -16,13 +16,14 @@ impl<'a, I: Iterator<Item = &'a T>, T: Clone + 'a> Iterator for Cloned<I> {
         pearlite! { self.iter.completed() }
     }
 
+    // TODO: what mode to pass to clone?
     #[logic(open, prophetic)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             exists<s: Seq<&'a T>>
                    self.iter.produces(s, o.iter)
                 && visited.len() == s.len()
-                && forall<i> 0 <= i && i < s.len() ==> T::clone.postcondition((s[i],), visited[i])
+                && forall<i> 0 <= i && i < s.len() ==> T::clone.postcondition((s[i],), visited[i], Mode::program_mode())
         }
     }
 
@@ -44,7 +45,7 @@ impl<'a, I: Iterator<Item = &'a T>, T: Clone + 'a> Iterator for Cloned<I> {
         self.iter.next().cloned()
     }
 
-    #[ensures(I::size_hint.postcondition((&self.iter,), result))]
+    #[ensures(I::size_hint.postcondition((&self.iter,), result, mode!()))]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -52,18 +53,18 @@ impl<'a, I: Iterator<Item = &'a T>, T: Clone + 'a> Iterator for Cloned<I> {
 
 impl<'a, I: ExactSizeIterator<Item = &'a T>, T: Clone + 'a> ExactSizeIterator for Cloned<I> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         self.iter.size_hint_exact(r)
     }
 
-    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
+    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result)), mode!()))]
     fn len(&self) -> usize {
         self.iter.len()
     }
 
-    #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l))) && result == (l == 0usize))]
+    #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l)), mode!()) && result == (l == 0usize))]
     fn is_empty(&self) -> bool {
         proof_assert!(forall<s: Seq<I::Item>> s.len() == 0 ==> s == Seq::empty());
         self.iter.is_empty()

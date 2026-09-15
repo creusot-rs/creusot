@@ -698,11 +698,11 @@ impl<T> Queue<T> {
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
         *c.new_seq == c.old_seq.push_back(*item) ==>
-            f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
+            f.precondition((c,), mode!().into_ghost()) && (f.postcondition_once((c,), (), mode!().into_ghost()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
-        *c.new_seq == c.old_seq.push_back(*item) && f.postcondition_once((c,),())
+        *c.new_seq == c.old_seq.push_back(*item) && f.postcondition_once((c,), (), mode!().into_ghost())
     )]
     fn try_enqueue_cas_inv<F>(
         &self,
@@ -795,11 +795,11 @@ impl<T> Queue<T> {
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
         *c.new_seq == c.old_seq.push_back(item) ==>
-        f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
+        f.precondition((c,), mode!().into_ghost()) && (f.postcondition_once((c,), (), mode!().into_ghost()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(result ==> exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
-        *c.new_seq == c.old_seq.push_back(item) && f.postcondition_once((c,),())
+        *c.new_seq == c.old_seq.push_back(item) && f.postcondition_once((c,), (), mode!().into_ghost())
     )]
     #[ensures(!result ==> resolve(f))]
     pub fn try_enqueue<F>(&self, item: T, mut tokens: Ghost<Tokens>, f: Ghost<F>) -> bool
@@ -901,12 +901,12 @@ impl<T> Queue<T> {
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
         c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() ==>
-        f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
+        f.precondition((c,), mode!().into_ghost()) && (f.postcondition_once((c,), (), mode!().into_ghost()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
         c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() &&
-        f.postcondition_once((c,),()) &&
+        f.postcondition_once((c,), (), mode!().into_ghost()) &&
         result.1.val()@ == Some(c.old_seq[0])
     )]
     #[ensures(2 * (c.val_load()@ + inv.len()) < usize::MAX@)]
@@ -1000,13 +1000,13 @@ impl<T> Queue<T> {
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
         c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() ==>
-        f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
+        f.precondition((c,), mode!().into_ghost()) && (f.postcondition_once((c,), (), mode!().into_ghost()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(match result {
         Some(result) => exists<c: &mut QueueCommitter<T>>
             !c.shot && *c.ward == *self &&
             c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() &&
-            f.postcondition_once((c,),()) &&
+            f.postcondition_once((c,), (), mode!().into_ghost()) &&
             result == c.old_seq[0],
         None => resolve(f)
     })]
