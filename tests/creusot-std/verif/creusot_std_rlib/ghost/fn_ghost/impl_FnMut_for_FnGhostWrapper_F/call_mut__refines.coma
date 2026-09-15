@@ -4,6 +4,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.MutBorrow
 
 type t_F
@@ -31,9 +32,10 @@ meta "rewrite_def" predicate inv_refmut_FnGhostWrapper_F
 
 predicate inv_I (_1: t_I)
 
-predicate precondition_F (self: t_F) (args: t_I)
+predicate precondition_F (self: t_F) (args: t_I) (mode: Mode.t)
 
-predicate precondition_FnGhostWrapper_F (self: t_FnGhostWrapper_F) (args: t_I) = precondition_F self.f0 args
+predicate precondition_FnGhostWrapper_F (self: t_FnGhostWrapper_F) (args: t_I) (mode: Mode.t) =
+  precondition_F self.f0 args mode
 
 meta "rewrite_def" predicate precondition_FnGhostWrapper_F
 
@@ -41,17 +43,17 @@ type t_Output
 
 predicate inv_Output (_1: t_Output)
 
-predicate postcondition_once_F (self: t_F) (args: t_I) (result: t_Output)
+predicate postcondition_once_F (self: t_F) (args: t_I) (result: t_Output) (mode: Mode.t)
 
 predicate resolve_F (_1: t_F)
 
-predicate postcondition_mut_F (self: t_F) (args: t_I) (result_state: t_F) (result: t_Output)
+predicate postcondition_mut_F (self: t_F) (args: t_I) (result_state: t_F) (result: t_Output) (mode: Mode.t)
 
-function fn_mut_once_F (self: t_F) (args: t_I) (res: t_Output) : ()
+function fn_mut_once_F (self: t_F) (args: t_I) (res: t_Output) (mode: Mode.t) : ()
 
 axiom fn_mut_once_F_spec:
-  forall self: t_F, args: t_I, res: t_Output [postcondition_once_F self args res]. postcondition_once_F self args res
-    = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+  forall self: t_F, args: t_I, res: t_Output, mode: Mode.t [postcondition_once_F self args res mode]. postcondition_once_F self args res mode
+    = (exists res_state: t_F. postcondition_mut_F self args res_state res mode /\ resolve_F res_state)
 
 predicate hist_inv_F (self: t_F) (result_state: t_F)
 
@@ -65,14 +67,14 @@ function hist_inv_refl_F (self: t_F) : ()
 
 axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
 
-function postcondition_mut_hist_inv_F (self: t_F) (args: t_I) (res_state: t_F) (res: t_Output) : ()
+function postcondition_mut_hist_inv_F (self: t_F) (args: t_I) (res_state: t_F) (res: t_Output) (mode: Mode.t) : ()
 
 axiom postcondition_mut_hist_inv_F_spec:
-  forall self: t_F, args: t_I, res_state: t_F, res: t_Output [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+  forall self: t_F, args: t_I, res_state: t_F, res: t_Output, mode: Mode.t [postcondition_mut_F self args res_state res mode | hist_inv_F self res_state]. postcondition_mut_F self args res_state res mode
     -> hist_inv_F self res_state
 
-predicate postcondition_mut_FnGhostWrapper_F (self: t_FnGhostWrapper_F) (args: t_I) (result_state: t_FnGhostWrapper_F) (result: t_Output) =
-  postcondition_mut_F self.f0 args result_state.f0 result
+predicate postcondition_mut_FnGhostWrapper_F (self: t_FnGhostWrapper_F) (args: t_I) (result_state: t_FnGhostWrapper_F) (result: t_Output) (mode: Mode.t) =
+  postcondition_mut_F self.f0 args result_state.f0 result mode
 
 meta "rewrite_def" predicate postcondition_mut_FnGhostWrapper_F
 
@@ -80,12 +82,12 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self: MutBorrow.t t_FnGhostWrapper_F, args: t_I. inv_refmut_FnGhostWrapper_F self
+goal refines: forall mode: Mode.t, self: MutBorrow.t t_FnGhostWrapper_F, args: t_I. inv_refmut_FnGhostWrapper_F self
     -> inv_I args
-    -> precondition_FnGhostWrapper_F self.current args
+    -> precondition_FnGhostWrapper_F self.current args mode
     -> inv_refmut_FnGhostWrapper_F self
     /\ inv_I args
-    /\ precondition_FnGhostWrapper_F self.current args
+    /\ precondition_FnGhostWrapper_F self.current args mode
     /\ (forall result: t_Output. inv_Output result
-        /\ postcondition_mut_FnGhostWrapper_F self.current args self.final result
-      -> inv_Output result /\ postcondition_mut_FnGhostWrapper_F self.current args self.final result)
+        /\ postcondition_mut_FnGhostWrapper_F self.current args self.final result mode
+      -> inv_Output result /\ postcondition_mut_FnGhostWrapper_F self.current args self.final result mode)

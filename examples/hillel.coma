@@ -1,6 +1,7 @@
 module M_fulcrum
   use creusot.int.UInt32
   use creusot.slice.Slice64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
@@ -13,7 +14,7 @@ module M_fulcrum
   
   function view_Iter_u32 (self: t_Iter_u32) : Slice64.slice UInt32.t
   
-  let into_iter_ref_slice_u32 (self: Slice64.slice UInt32.t) (return (x: t_Iter_u32)) = any
+  let into_iter_ref_slice_u32 (self: Slice64.slice UInt32.t) (mode: Mode.t) (return (x: t_Iter_u32)) = any
     [ return (result: t_Iter_u32) ->
     {[@stop_split] [@expl:into_iter_ref_slice_u32 ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_u32 result)
       /\ ([@stop_split] [@expl:into_iter ensures] self = view_Iter_u32 result)}
@@ -66,7 +67,7 @@ module M_fulcrum
   predicate completed_Iter_u32 (self: MutBorrow.t t_Iter_u32) =
     resolve_refmut_Iter_u32 self /\ Slice64.view (view_Iter_u32 self.current) = (Seq.empty: Seq.seq UInt32.t)
   
-  let next_Iter_u32 (self: MutBorrow.t t_Iter_u32) (return (x: t_Option_ref_u32)) =
+  let next_Iter_u32 (self: MutBorrow.t t_Iter_u32) (mode: Mode.t) (return (x: t_Option_ref_u32)) =
   {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_u32 self}
     any
     [ return (result: t_Option_ref_u32) -> {[@stop_split] [@expl:next ensures] match result with
@@ -107,14 +108,14 @@ module M_fulcrum
   
   predicate resolve_Iter_u32 (_1: t_Iter_u32)
   
-  let len_u32 (self: Slice64.slice UInt32.t) (return (x: UInt64.t)) = any
+  let len_u32 (self: Slice64.slice UInt32.t) (mode: Mode.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
       = UInt64.t'int result}
       (! return {result}) ]
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
-  let into_iter_Range_usize (self: t_Range_usize) (return (x: t_Range_usize)) = any
+  let into_iter_Range_usize (self: t_Range_usize) (mode: Mode.t) (return (x: t_Range_usize)) = any
     [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_usize = None'0 | Some'0 UInt64.t
@@ -150,7 +151,7 @@ module M_fulcrum
     resolve_refmut_Range_usize self
     /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
-  let next_Range_usize (self: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+  let next_Range_usize (self: MutBorrow.t t_Range_usize) (mode: Mode.t) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
         | None'0 -> completed_Range_usize self
         | Some'0 v -> produces_Range_usize self.current (Seq.singleton v) self.final
@@ -192,7 +193,7 @@ module M_fulcrum
         end}
       any) ]
   
-  let abs_diff'0 (self: UInt32.t) (other: UInt32.t) (return (x: UInt32.t)) = any
+  let abs_diff'0 (self: UInt32.t) (other: UInt32.t) (mode: Mode.t) (return (x: UInt32.t)) = any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:abs_diff ensures] UInt32.t'int result
       = abs_diff (UInt32.t'int self) (UInt32.t'int other)}
       (! return {result}) ]
@@ -201,14 +202,14 @@ module M_fulcrum
   
   meta "select_lsinst" "all"
   
-  let fulcrum (s: Slice64.slice UInt32.t) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:fulcrum requires] ([@stop_split] [@expl:fulcrum requires #0] sum_range (Slice64.view s) 0 (Seq.length (Slice64.view s))
+  let fulcrum (s: Slice64.slice UInt32.t) (mode: Mode.t) (return (x: UInt64.t)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:fulcrum requires] ([@stop_split] [@expl:fulcrum requires #0] sum_range (Slice64.view s) 0 (Seq.length (Slice64.view s))
       <= 1000)
     /\ ([@stop_split] [@expl:fulcrum requires #1] gt_log_Int (Seq.length (Slice64.view s)) 0)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &total <- (0: UInt32.t) ] s1
-      | s1 = into_iter_ref_slice_u32 {s} (fun (_x: t_Iter_u32) -> [ &iter <- _x ] s2)
+      | s1 = into_iter_ref_slice_u32 {s} {mode} (fun (_x: t_Iter_u32) -> [ &iter <- _x ] s2)
       | s2 = [ &iter_old <- iter ] s3
       | s3 = [ &produced <- Seq.empty: Seq.seq UInt32.t ] s4
       | s4 = bb4 ]
@@ -228,7 +229,7 @@ module M_fulcrum
               [ &_37 <- _bor ] -{inv_Iter_u32 _bor.final}-
               [ &_38 <- { _38 with current = _bor.final } ] s2)
           [ _ck -> (! {[@expl:type invariant] inv_Iter_u32 _38.current} any) ]
-        | s2 = next_Iter_u32 {_37} (fun (_x: t_Option_ref_u32) -> [ &_36 <- _x ] s3)
+        | s2 = next_Iter_u32 {_37} {mode} (fun (_x: t_Option_ref_u32) -> [ &_36 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_u32 _38} any) ]
         | s4 = -{resolve_refmut_Iter_u32 _38}- s5
         | s5 = any [ br0 -> {_36 = None} (! bb9) | br1 (x0: UInt32.t) -> {_36 = Some x0} (! bb10) ] ]
@@ -245,9 +246,9 @@ module M_fulcrum
       | s3 = [ &min_i <- (0: UInt64.t) ] s4
       | s4 = [ &min_dist <- total ] s5
       | s5 = [ &sum <- (0: UInt32.t) ] s6
-      | s6 = len_u32 {s} (fun (_x: UInt64.t) -> [ &_59 <- _x ] s7)
+      | s6 = len_u32 {s} {mode} (fun (_x: UInt64.t) -> [ &_59 <- _x ] s7)
       | s7 = [ &_58 <- { start = (0: UInt64.t); end' = _59 } ] s8
-      | s8 = into_iter_Range_usize {_58} (fun (_x: t_Range_usize) -> [ &iter'0 <- _x ] s9)
+      | s8 = into_iter_Range_usize {_58} {mode} (fun (_x: t_Range_usize) -> [ &iter'0 <- _x ] s9)
       | s9 = [ &iter_old'0 <- iter'0 ] s10
       | s10 = [ &produced'0 <- Seq.empty: Seq.seq UInt64.t ] s11
       | s11 = bb16 ]
@@ -266,7 +267,7 @@ module M_fulcrum
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_96 <- _bor ] [ &iter'0 <- _bor.final ] s1)
         | s1 = MutBorrow.borrow_final <t_Range_usize> {_96.current} {MutBorrow.get_id _96}
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_95 <- _bor ] [ &_96 <- { _96 with current = _bor.final } ] s2)
-        | s2 = next_Range_usize {_95} (fun (_x: t_Option_usize) -> [ &_94 <- _x ] s3)
+        | s2 = next_Range_usize {_95} {mode} (fun (_x: t_Option_usize) -> [ &_94 <- _x ] s3)
         | s3 = -{resolve_refmut_Range_usize _96}- s4
         | s4 = any [ br0 -> {_94 = None'0} (! bb21) | br1 (x0: UInt64.t) -> {_94 = Some'0 x0} (! bb22) ] ]
         [ bb22 = s0
@@ -274,7 +275,7 @@ module M_fulcrum
           | s1 = [ &produced'0 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
           | s2 = [ &i <- __creusot_proc_iter_elem'0 ] s3
           | s3 = UInt32.sub {total} {sum} (fun (_x: UInt32.t) -> [ &_107 <- _x ] s4)
-          | s4 = abs_diff'0 {sum} {_107} (fun (_x: UInt32.t) -> [ &dist <- _x ] s5)
+          | s4 = abs_diff'0 {sum} {_107} {mode} (fun (_x: UInt32.t) -> [ &dist <- _x ] s5)
           | s5 = [ &_111 <- UInt32.lt dist min_dist ] s6
           | s6 = any [ br0 -> {_111 = false} (! bb27) | br1 -> {_111} (! bb25) ] ]
         | bb25 = s0 [ s0 = [ &min_i <- i ] s1 | s1 = [ &min_dist <- dist ] s2 | s2 = bb27 ]
@@ -330,6 +331,7 @@ module M_insert_unique
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
   use creusot.slice.Slice64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -427,7 +429,7 @@ module M_insert_unique
   
   meta "rewrite_def" predicate inv_ref_slice_T
   
-  let deref_Vec_T_Global (self: t_Vec_T_Global) (return (x: Slice64.slice t_T)) =
+  let deref_Vec_T_Global (self: t_Vec_T_Global) (mode: Mode.t) (return (x: Slice64.slice t_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Vec_T_Global self}
     any
     [ return (result: Slice64.slice t_T) ->
@@ -441,7 +443,7 @@ module M_insert_unique
   
   function view_Iter_T (self: t_Iter_T) : Slice64.slice t_T
   
-  let iter_T (self: Slice64.slice t_T) (return (x: t_Iter_T)) =
+  let iter_T (self: Slice64.slice t_T) (mode: Mode.t) (return (x: t_Iter_T)) =
   {[@stop_split] [@expl:iter 'self' type invariant] inv_ref_slice_T self}
     any
     [ return (result: t_Iter_T) ->
@@ -449,7 +451,7 @@ module M_insert_unique
       /\ ([@stop_split] [@expl:iter ensures] view_Iter_T result = self)}
       (! return {result}) ]
   
-  let into_iter_Iter_T (self: t_Iter_T) (return (x: t_Iter_T)) =
+  let into_iter_Iter_T (self: t_Iter_T) (mode: Mode.t) (return (x: t_Iter_T)) =
   {[@stop_split] [@expl:into_iter 'self' type invariant] inv_Iter_T self}
     any
     [ return (result: t_Iter_T) ->
@@ -509,7 +511,7 @@ module M_insert_unique
   predicate completed_Iter_T (self: MutBorrow.t t_Iter_T) =
     resolve_refmut_Iter_T self /\ Slice64.view (view_Iter_T self.current) = (Seq.empty: Seq.seq t_T)
   
-  let next_Iter_T (self: MutBorrow.t t_Iter_T) (return (x: t_Option_ref_T)) =
+  let next_Iter_T (self: MutBorrow.t t_Iter_T) (mode: Mode.t) (return (x: t_Option_ref_T)) =
   {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_T self}
     any
     [ return (result: t_Option_ref_T) ->
@@ -553,7 +555,7 @@ module M_insert_unique
   
   meta "rewrite_def" function deep_model_ref_ref_T
   
-  let eq_ref_T (self: t_T) (other: t_T) (return (x: bool)) =
+  let eq_ref_T (self: t_T) (other: t_T) (mode: Mode.t) (return (x: bool)) =
   {[@stop_split] [@expl:eq_ref_T requires] ([@stop_split] [@expl:eq 'self' type invariant] inv_ref_ref_T self)
     /\ ([@stop_split] [@expl:eq 'other' type invariant] inv_ref_ref_T other)}
     any
@@ -583,7 +585,7 @@ module M_insert_unique
     forall i: int, j: int. 0 <= i /\ i < Seq.length s /\ 0 <= j /\ j < Seq.length s
       -> Seq.get s i = Seq.get s j -> i = j
   
-  let push_T (self: MutBorrow.t t_Vec_T_Global) (value: t_T) (return (x: ())) =
+  let push_T (self: MutBorrow.t t_Vec_T_Global) (value: t_T) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:push_T requires] ([@stop_split] [@expl:push 'self' type invariant] inv_refmut_Vec_T_Global self)
     /\ ([@stop_split] [@expl:push 'value' type invariant] inv_T value)}
     any
@@ -595,8 +597,9 @@ module M_insert_unique
   
   meta "select_lsinst" "all"
   
-  let insert_unique_T (vec: MutBorrow.t t_Vec_T_Global) (elem: t_T) (return (x: ())) =
-  {[@stop_split] [@expl:insert_unique_T requires] ([@stop_split] [@expl:insert_unique 'vec' type invariant] inv_refmut_Vec_T_Global vec)
+  let insert_unique_T (vec: MutBorrow.t t_Vec_T_Global) (elem: t_T) (mode: Mode.t) (return (x: ())) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:insert_unique_T requires] ([@stop_split] [@expl:insert_unique 'vec' type invariant] inv_refmut_Vec_T_Global vec)
     /\ ([@stop_split] [@expl:insert_unique 'elem' type invariant] inv_T elem)
     /\ ([@stop_split] [@expl:insert_unique requires] is_unique_DeepModelTy (deep_model_refmut_Vec_T_Global vec))}
     (! bb0
@@ -606,9 +609,9 @@ module M_insert_unique
         {[@expl:assertion] is_subset_DeepModelTy (deep_model_refmut_Vec_T_Global vec) (Seq.snoc (deep_model_refmut_Vec_T_Global vec) (deep_model_T elem))}
         s2
       | s2 = [ &ghost_vec <- vec ] s3
-      | s3 = deref_Vec_T_Global {vec.current} (fun (_x: Slice64.slice t_T) -> [ &_28 <- _x ] s4)
-      | s4 = iter_T {_28} (fun (_x: t_Iter_T) -> [ &_26 <- _x ] s5)
-      | s5 = into_iter_Iter_T {_26} (fun (_x: t_Iter_T) -> [ &iter <- _x ] s6)
+      | s3 = deref_Vec_T_Global {vec.current} {mode} (fun (_x: Slice64.slice t_T) -> [ &_28 <- _x ] s4)
+      | s4 = iter_T {_28} {mode} (fun (_x: t_Iter_T) -> [ &_26 <- _x ] s5)
+      | s5 = into_iter_Iter_T {_26} {mode} (fun (_x: t_Iter_T) -> [ &iter <- _x ] s6)
       | s6 = [ &iter_old <- iter ] s7
       | s7 = [ &produced <- Seq.empty: Seq.seq t_T ] s8
       | s8 = bb8 ]
@@ -627,7 +630,7 @@ module M_insert_unique
               [ &_49 <- _bor ] -{inv_Iter_T _bor.final}-
               [ &_50 <- { _50 with current = _bor.final } ] s2)
           [ _ck -> (! {[@expl:type invariant] inv_Iter_T _50.current} any) ]
-        | s2 = next_Iter_T {_49} (fun (_x: t_Option_ref_T) -> [ &_48 <- _x ] s3)
+        | s2 = next_Iter_T {_49} {mode} (fun (_x: t_Option_ref_T) -> [ &_48 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_T _50} any) ]
         | s4 = -{resolve_refmut_Iter_T _50}- s5
         | s5 = any [ br0 -> {_48 = None} (! bb13) | br1 (x0: t_T) -> {_48 = Some x0} (! bb14) ] ]
@@ -636,7 +639,7 @@ module M_insert_unique
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &e <- __creusot_proc_iter_elem ] s3
           | s3 = {[@expl:assertion] e = index_Vec_T_Global ghost_vec.current (Seq.length produced - 1)} s4
-          | s4 = eq_ref_T {e} {elem} (fun (_x: bool) -> [ &_64 <- _x ] s5)
+          | s4 = eq_ref_T {e} {elem} {mode} (fun (_x: bool) -> [ &_64 <- _x ] s5)
           | s5 = any [ br0 -> {_64 = false} (! bb8) | br1 -> {_64} (! bb17) ] ] ] ]
     | bb17 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
@@ -659,7 +662,7 @@ module M_insert_unique
             [ &_83 <- _bor ] -{inv_Vec_T_Global _bor.final}-
             [ &vec <- { vec with current = _bor.final } ] s5)
         [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global vec.current} any) ]
-      | s5 = push_T {_83} {elem} (fun (_x: ()) -> [ &_82 <- _x ] s6)
+      | s5 = push_T {_83} {elem} {mode} (fun (_x: ()) -> [ &_82 <- _x ] s6)
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T_Global vec} any) ]
       | s7 = -{resolve_refmut_Vec_T_Global vec}- s8
       | s8 = return {_ret} ] ]
@@ -691,6 +694,7 @@ end
 module M_left_pad
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
@@ -739,7 +743,7 @@ module M_left_pad
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  let len_T (self: t_Vec_T_Global) (return (x: UInt64.t)) =
+  let len_T (self: t_Vec_T_Global) (mode: Mode.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_T_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
@@ -765,7 +769,7 @@ module M_left_pad
   
   meta "rewrite_def" predicate inv_refmut_Vec_T_Global
   
-  let insert_T (self: MutBorrow.t t_Vec_T_Global) (index: UInt64.t) (element: t_T) (return (x: ())) =
+  let insert_T (self: MutBorrow.t t_Vec_T_Global) (index: UInt64.t) (element: t_T) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:insert_T requires] ([@stop_split] [@expl:insert 'self' type invariant] inv_refmut_Vec_T_Global self)
     /\ ([@stop_split] [@expl:insert 'element' type invariant] inv_T element)}
     any
@@ -792,8 +796,9 @@ module M_left_pad
   
   meta "select_lsinst" "all"
   
-  let left_pad_T (str: MutBorrow.t t_Vec_T_Global) (len: UInt64.t) (pad: t_T) (return (x: ())) =
-  {[@stop_split] [@expl:left_pad_T requires] ([@stop_split] [@expl:left_pad 'str' type invariant] inv_refmut_Vec_T_Global str)
+  let left_pad_T (str: MutBorrow.t t_Vec_T_Global) (len: UInt64.t) (pad: t_T) (mode: Mode.t) (return (x: ())) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:left_pad_T requires] ([@stop_split] [@expl:left_pad 'str' type invariant] inv_refmut_Vec_T_Global str)
     /\ ([@stop_split] [@expl:left_pad 'pad' type invariant] inv_T pad)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &old_str <- str ] s1 | s1 = [ &c <- 0 ] s2 | s2 = [ &_old <- str.final ] s3 | s3 = bb3 ]
@@ -812,7 +817,7 @@ module M_left_pad
           -> index_Vec_T_Global str.current i = index_Vec_T_Global old_str.current (i - c)}
         {[@expl:loop invariant #5] forall i: int. 0 <= i /\ i < c -> index_Vec_T_Global str.current i = pad}
         (! s0)
-        [ s0 = len_T {str.current} (fun (_x: UInt64.t) -> [ &_46 <- _x ] s1)
+        [ s0 = len_T {str.current} {mode} (fun (_x: UInt64.t) -> [ &_46 <- _x ] s1)
         | s1 = [ &_45 <- UInt64.lt _46 len ] s2
         | s2 = any [ br0 -> {_45 = false} (! bb9) | br1 -> {_45} (! bb6) ] ]
         [ bb6 = s0
@@ -821,7 +826,7 @@ module M_left_pad
                 [ &_50 <- _bor ] -{inv_Vec_T_Global _bor.final}-
                 [ &str <- { str with current = _bor.final } ] s1)
             [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global str.current} any) ]
-          | s1 = insert_T {_50} {(0: UInt64.t)} {pad} (fun (_x: ()) -> [ &_49 <- _x ] s2)
+          | s1 = insert_T {_50} {(0: UInt64.t)} {pad} {mode} (fun (_x: ()) -> [ &_49 <- _x ] s2)
           | s2 = [ &c <- 1 + c ] s3
           | s3 = bb3 ] ] ]
     | bb9 = s0
@@ -857,6 +862,7 @@ end
 module M_right_pad
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
@@ -905,7 +911,7 @@ module M_right_pad
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  let len_T (self: t_Vec_T_Global) (return (x: UInt64.t)) =
+  let len_T (self: t_Vec_T_Global) (mode: Mode.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_T_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
@@ -931,7 +937,7 @@ module M_right_pad
   
   meta "rewrite_def" predicate inv_refmut_Vec_T_Global
   
-  let push_T (self: MutBorrow.t t_Vec_T_Global) (value: t_T) (return (x: ())) =
+  let push_T (self: MutBorrow.t t_Vec_T_Global) (value: t_T) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:push_T requires] ([@stop_split] [@expl:push 'self' type invariant] inv_refmut_Vec_T_Global self)
     /\ ([@stop_split] [@expl:push 'value' type invariant] inv_T value)}
     any
@@ -951,8 +957,9 @@ module M_right_pad
   
   meta "select_lsinst" "all"
   
-  let right_pad_T (str: MutBorrow.t t_Vec_T_Global) (len: UInt64.t) (pad: t_T) (return (x: ())) =
-  {[@stop_split] [@expl:right_pad_T requires] ([@stop_split] [@expl:right_pad 'str' type invariant] inv_refmut_Vec_T_Global str)
+  let right_pad_T (str: MutBorrow.t t_Vec_T_Global) (len: UInt64.t) (pad: t_T) (mode: Mode.t) (return (x: ())) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:right_pad_T requires] ([@stop_split] [@expl:right_pad 'str' type invariant] inv_refmut_Vec_T_Global str)
     /\ ([@stop_split] [@expl:right_pad 'pad' type invariant] inv_T pad)}
     (! bb0
     [ bb0 = s0 [ s0 = [ &old_str <- str ] s1 | s1 = [ &_old <- str.final ] s2 | s2 = bb2 ]
@@ -970,7 +977,7 @@ module M_right_pad
         {[@expl:loop invariant #4] forall i: int. Seq.length (view_Vec_T_Global old_str.current) <= i
             /\ i < Seq.length (view_Vec_T_Global str.current) -> index_Vec_T_Global str.current i = pad}
         (! s0)
-        [ s0 = len_T {str.current} (fun (_x: UInt64.t) -> [ &_46 <- _x ] s1)
+        [ s0 = len_T {str.current} {mode} (fun (_x: UInt64.t) -> [ &_46 <- _x ] s1)
         | s1 = [ &_45 <- UInt64.lt _46 len ] s2
         | s2 = any [ br0 -> {_45 = false} (! bb7) | br1 -> {_45} (! bb5) ] ]
         [ bb5 = s0
@@ -979,7 +986,7 @@ module M_right_pad
                 [ &_50 <- _bor ] -{inv_Vec_T_Global _bor.final}-
                 [ &str <- { str with current = _bor.final } ] s1)
             [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global str.current} any) ]
-          | s1 = push_T {_50} {pad} (fun (_x: ()) -> [ &_49 <- _x ] s2)
+          | s1 = push_T {_50} {pad} {mode} (fun (_x: ()) -> [ &_49 <- _x ] s2)
           | s2 = bb2 ] ] ]
     | bb7 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T_Global str} any) ]
@@ -1196,6 +1203,7 @@ module M_sum_range_split
     )
 end
 module M_unique
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.UInt64
   use creusot.slice.Slice64
@@ -1239,7 +1247,7 @@ module M_unique
   
   axiom inv_axiom: forall _1: t_Vec_T_Global [inv_Vec_T_Global _1]. inv_Vec_T_Global _1 -> invariant_Vec_T_Global _1
   
-  let new_T (return (x: t_Vec_T_Global)) = any
+  let new_T (mode: Mode.t) (return (x: t_Vec_T_Global)) = any
     [ return (result: t_Vec_T_Global) ->
     {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Vec_T_Global result)
       /\ ([@stop_split] [@expl:new ensures] Seq.length (view_Vec_T_Global result) = 0)}
@@ -1259,7 +1267,7 @@ module M_unique
   
   meta "rewrite_def" predicate inv_ref_slice_T
   
-  let len_T (self: Slice64.slice t_T) (return (x: UInt64.t)) =
+  let len_T (self: Slice64.slice t_T) (mode: Mode.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_slice_T self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
@@ -1268,7 +1276,7 @@ module M_unique
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
-  let into_iter_Range_usize (self: t_Range_usize) (return (x: t_Range_usize)) = any
+  let into_iter_Range_usize (self: t_Range_usize) (mode: Mode.t) (return (x: t_Range_usize)) = any
     [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
@@ -1312,7 +1320,7 @@ module M_unique
     resolve_refmut_Range_usize self
     /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
-  let next_Range_usize (self: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+  let next_Range_usize (self: MutBorrow.t t_Range_usize) (mode: Mode.t) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_usize self
         | Some v -> produces_Range_usize self.current (Seq.singleton v) self.final
@@ -1395,7 +1403,7 @@ module M_unique
   
   meta "rewrite_def" function deep_model_refmut_Vec_T_Global
   
-  let insert_unique_T (vec: MutBorrow.t t_Vec_T_Global) (elem: t_T) (return (x: ())) =
+  let insert_unique_T (vec: MutBorrow.t t_Vec_T_Global) (elem: t_T) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:insert_unique_T requires] ([@stop_split] [@expl:insert_unique 'vec' type invariant] inv_refmut_Vec_T_Global vec)
     /\ ([@stop_split] [@expl:insert_unique 'elem' type invariant] inv_T elem)
     /\ ([@stop_split] [@expl:insert_unique requires] is_unique_DeepModelTy (deep_model_refmut_Vec_T_Global vec))}
@@ -1415,15 +1423,15 @@ module M_unique
   
   meta "select_lsinst" "all"
   
-  let unique_T (str: Slice64.slice t_T) (return (x: t_Vec_T_Global)) =
-  {[@stop_split] [@expl:unique 'str' type invariant] inv_ref_slice_T str}
+  let unique_T (str: Slice64.slice t_T) (mode: Mode.t) (return (x: t_Vec_T_Global)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:unique 'str' type invariant] inv_ref_slice_T str}
     (! bb0
     [ bb0 = s0
-      [ s0 = new_T (fun (_x: t_Vec_T_Global) -> [ &unique <- _x ] s1)
+      [ s0 = new_T {mode} (fun (_x: t_Vec_T_Global) -> [ &unique <- _x ] s1)
       | s1 = [ &sub_str <- Seq.empty: Seq.seq t_T ] s2
-      | s2 = len_T {str} (fun (_x: UInt64.t) -> [ &_13 <- _x ] s3)
+      | s2 = len_T {str} {mode} (fun (_x: UInt64.t) -> [ &_13 <- _x ] s3)
       | s3 = [ &_12 <- { start = (0: UInt64.t); end' = _13 } ] s4
-      | s4 = into_iter_Range_usize {_12} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s5)
+      | s4 = into_iter_Range_usize {_12} {mode} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s5)
       | s5 = [ &iter_old <- iter ] s6
       | s6 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s7
       | s7 = bb7 ]
@@ -1439,7 +1447,7 @@ module M_unique
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_41 <- _bor ] [ &iter <- _bor.final ] s1)
         | s1 = MutBorrow.borrow_final <t_Range_usize> {_41.current} {MutBorrow.get_id _41}
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_40 <- _bor ] [ &_41 <- { _41 with current = _bor.final } ] s2)
-        | s2 = next_Range_usize {_40} (fun (_x: t_Option_usize) -> [ &_39 <- _x ] s3)
+        | s2 = next_Range_usize {_40} {mode} (fun (_x: t_Option_usize) -> [ &_39 <- _x ] s3)
         | s3 = -{resolve_refmut_Range_usize _41}- s4
         | s4 = any [ br0 -> {_39 = None} (! bb12) | br1 (x0: UInt64.t) -> {_39 = Some x0} (! bb13) ] ]
         [ bb13 = s0
@@ -1460,7 +1468,7 @@ module M_unique
                 [ &_55 <- _bor ] -{inv_Vec_T_Global _bor.final}-
                 [ &_56 <- { _56 with current = _bor.final } ] s10)
             [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global _56.current} any) ]
-          | s10 = insert_unique_T {_55} {elem} (fun (_x: ()) -> [ &_54 <- _x ] s11)
+          | s10 = insert_unique_T {_55} {elem} {mode} (fun (_x: ()) -> [ &_54 <- _x ] s11)
           | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T_Global _56} any) ]
           | s12 = -{resolve_refmut_Vec_T_Global _56}- s13
           | s13 = [ &sub_str <- Seq.snoc sub_str elem ] s14

@@ -1,5 +1,6 @@
 module M_search
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.int.UInt8
   use creusot.prelude.MutBorrow
@@ -16,7 +17,7 @@ module M_search
     forall self: t_Vec_u8_Global [view_Vec_u8_Global self]. Seq.length (view_Vec_u8_Global self)
       <= UInt64.t'int const_MAX
   
-  let len_u8 (self: t_Vec_u8_Global) (return (x: UInt64.t)) = any
+  let len_u8 (self: t_Vec_u8_Global) (mode: Mode.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (view_Vec_u8_Global self)}
       (! return {result}) ]
@@ -39,7 +40,7 @@ module M_search
     forall self: t_RangeInclusive_usize [is_empty_log_RangeInclusive_usize self]. not is_empty_log_RangeInclusive_usize self
       -> deep_model_usize (start_log_RangeInclusive_usize self) <= deep_model_usize (end_log_RangeInclusive_usize self)
   
-  let new_usize (start: UInt64.t) (end': UInt64.t) (return (x: t_RangeInclusive_usize)) = any
+  let new_usize (start: UInt64.t) (end': UInt64.t) (mode: Mode.t) (return (x: t_RangeInclusive_usize)) = any
     [ return (result: t_RangeInclusive_usize) ->
     {[@stop_split] [@expl:new_usize ensures] ([@stop_split] [@expl:new result type invariant] inv_RangeInclusive_usize result)
       /\ ([@stop_split] [@expl:new ensures #0] start_log_RangeInclusive_usize result = start)
@@ -48,7 +49,8 @@ module M_search
       -> not is_empty_log_RangeInclusive_usize result)}
       (! return {result}) ]
   
-  let into_iter_RangeInclusive_usize (self: t_RangeInclusive_usize) (return (x: t_RangeInclusive_usize)) =
+  let into_iter_RangeInclusive_usize (self: t_RangeInclusive_usize) (mode: Mode.t)
+    (return (x: t_RangeInclusive_usize)) =
   {[@stop_split] [@expl:into_iter 'self' type invariant] inv_RangeInclusive_usize self}
     any
     [ return (result: t_RangeInclusive_usize) ->
@@ -99,7 +101,7 @@ module M_search
   predicate completed_RangeInclusive_usize (self: MutBorrow.t t_RangeInclusive_usize) =
     is_empty_log_RangeInclusive_usize self.current /\ is_empty_log_RangeInclusive_usize self.final
   
-  let next_RangeInclusive_usize (self: MutBorrow.t t_RangeInclusive_usize) (return (x: t_Option_usize)) =
+  let next_RangeInclusive_usize (self: MutBorrow.t t_RangeInclusive_usize) (mode: Mode.t) (return (x: t_Option_usize)) =
   {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_RangeInclusive_usize self}
     any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
@@ -137,7 +139,7 @@ module M_search
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
-  let into_iter_Range_usize (self: t_Range_usize) (return (x: t_Range_usize)) = any
+  let into_iter_Range_usize (self: t_Range_usize) (mode: Mode.t) (return (x: t_Range_usize)) = any
     [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
@@ -175,7 +177,7 @@ module M_search
     resolve_refmut_Range_usize self
     /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
-  let next_Range_usize (self: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+  let next_Range_usize (self: MutBorrow.t t_Range_usize) (mode: Mode.t) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_usize self
         | Some v -> produces_Range_usize self.current (Seq.singleton v) self.final
@@ -192,7 +194,7 @@ module M_search
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_u8_Global'0 (self: t_Vec_u8_Global) (index: UInt64.t) (return (x: UInt8.t)) =
+  let index_Vec_u8_Global'0 (self: t_Vec_u8_Global) (index: UInt64.t) (mode: Mode.t) (return (x: UInt8.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_usize index (view_Vec_u8_Global self)}
     any
     [ return (result: UInt8.t) ->
@@ -205,16 +207,17 @@ module M_search
   
   meta "select_lsinst" "all"
   
-  let search (needle: t_Vec_u8_Global) (haystack: t_Vec_u8_Global) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:search requires] ge_log_Int (Seq.length (view_Vec_u8_Global needle)) 1
+  let search (needle: t_Vec_u8_Global) (haystack: t_Vec_u8_Global) (mode: Mode.t) (return (x: UInt64.t)) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:search requires] ge_log_Int (Seq.length (view_Vec_u8_Global needle)) 1
     /\ Seq.length (view_Vec_u8_Global needle) <= Seq.length (view_Vec_u8_Global haystack)}
     (! bb0
     [ bb0 = s0
-      [ s0 = len_u8 {haystack} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1)
-      | s1 = len_u8 {needle} (fun (_x: UInt64.t) -> [ &_22 <- _x ] s2)
+      [ s0 = len_u8 {haystack} {mode} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1)
+      | s1 = len_u8 {needle} {mode} (fun (_x: UInt64.t) -> [ &_22 <- _x ] s2)
       | s2 = UInt64.sub {_20} {_22} (fun (_x: UInt64.t) -> [ &_19 <- _x ] s3)
-      | s3 = new_usize {(0: UInt64.t)} {_19} (fun (_x: t_RangeInclusive_usize) -> [ &_18 <- _x ] s4)
-      | s4 = into_iter_RangeInclusive_usize {_18} (fun (_x: t_RangeInclusive_usize) -> [ &iter <- _x ] s5)
+      | s3 = new_usize {(0: UInt64.t)} {_19} {mode} (fun (_x: t_RangeInclusive_usize) -> [ &_18 <- _x ] s4)
+      | s4 = into_iter_RangeInclusive_usize {_18} {mode} (fun (_x: t_RangeInclusive_usize) -> [ &iter <- _x ] s5)
       | s5 = [ &iter_old <- iter ] s6
       | s6 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s7
       | s7 = bb7 ]
@@ -234,7 +237,7 @@ module M_search
               [ &_44 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
               [ &_45 <- { _45 with current = _bor.final } ] s2)
           [ _ck -> (! {[@expl:type invariant] inv_RangeInclusive_usize _45.current} any) ]
-        | s2 = next_RangeInclusive_usize {_44} (fun (_x: t_Option_usize) -> [ &_43 <- _x ] s3)
+        | s2 = next_RangeInclusive_usize {_44} {mode} (fun (_x: t_Option_usize) -> [ &_43 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_RangeInclusive_usize _45} any) ]
         | s4 = -{resolve_refmut_RangeInclusive_usize _45}- s5
         | s5 = any [ br0 -> {_43 = None} (! bb12) | br1 (x0: UInt64.t) -> {_43 = Some x0} (! bb13) ] ]
@@ -242,9 +245,9 @@ module M_search
           [ s0 = elim_Some {_43} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &i <- __creusot_proc_iter_elem ] s3
-          | s3 = len_u8 {needle} (fun (_x: UInt64.t) -> [ &_58 <- _x ] s4)
+          | s3 = len_u8 {needle} {mode} (fun (_x: UInt64.t) -> [ &_58 <- _x ] s4)
           | s4 = [ &_57 <- { start = (0: UInt64.t); end' = _58 } ] s5
-          | s5 = into_iter_Range_usize {_57} (fun (_x: t_Range_usize) -> [ &iter'0 <- _x ] s6)
+          | s5 = into_iter_Range_usize {_57} {mode} (fun (_x: t_Range_usize) -> [ &iter'0 <- _x ] s6)
           | s6 = [ &iter_old'0 <- iter'0 ] s7
           | s7 = [ &produced'0 <- Seq.empty: Seq.seq UInt64.t ] s8
           | s8 = bb19 ]
@@ -258,16 +261,16 @@ module M_search
             | s1 = MutBorrow.borrow_final <t_Range_usize> {_81.current} {MutBorrow.get_id _81}
                 (fun (_bor: MutBorrow.t t_Range_usize) ->
                   [ &_80 <- _bor ] [ &_81 <- { _81 with current = _bor.final } ] s2)
-            | s2 = next_Range_usize {_80} (fun (_x: t_Option_usize) -> [ &_79 <- _x ] s3)
+            | s2 = next_Range_usize {_80} {mode} (fun (_x: t_Option_usize) -> [ &_79 <- _x ] s3)
             | s3 = -{resolve_refmut_Range_usize _81}- s4
             | s4 = any [ br0 -> {_79 = None} (! bb24) | br1 (x0: UInt64.t) -> {_79 = Some x0} (! bb25) ] ]
             [ bb25 = s0
               [ s0 = elim_Some {_79} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
               | s1 = [ &produced'0 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
               | s2 = [ &j <- __creusot_proc_iter_elem'0 ] s3
-              | s3 = index_Vec_u8_Global'0 {needle} {j} (fun (_x: UInt8.t) -> [ &_92 <- _x ] s4)
+              | s3 = index_Vec_u8_Global'0 {needle} {j} {mode} (fun (_x: UInt8.t) -> [ &_92 <- _x ] s4)
               | s4 = UInt64.add {i} {j} (fun (_x: UInt64.t) -> [ &_98 <- _x ] s5)
-              | s5 = index_Vec_u8_Global'0 {haystack} {_98} (fun (_x: UInt8.t) -> [ &_96 <- _x ] s6)
+              | s5 = index_Vec_u8_Global'0 {haystack} {_98} {mode} (fun (_x: UInt8.t) -> [ &_96 <- _x ] s6)
               | s6 = [ &_90 <- _92 <> _96 ] s7
               | s7 = any [ br0 -> {_90 = false} (! bb19) | br1 -> {_90} (! bb7) ] ] ] ] ] ]
     | bb24 = s0
@@ -278,7 +281,7 @@ module M_search
     | bb12 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_RangeInclusive_usize iter} any) ]
       | s1 = -{resolve_RangeInclusive_usize iter}- s2
-      | s2 = len_u8 {haystack} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s3)
+      | s2 = len_u8 {haystack} {mode} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & needle: t_Vec_u8_Global = needle

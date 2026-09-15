@@ -41,13 +41,13 @@ impl<T> Protocol for PermCellNAInv<T> {
 
 impl<T> CellInv<T> {
     #[requires(tokens.contains(PERMCELL()))]
-    pub fn read<'a>(&'a self, tokens: Ghost<Tokens<'a>>) -> &'a T {
+    pub unsafe fn read<'a>(&'a self, tokens: Ghost<Tokens<'a>>) -> &'a T {
         self.permission
             .open(tokens, move |perm| unsafe { self.data.borrow(ghost!(&perm.into_inner().0)) })
     }
 
     #[requires(tokens.contains(PERMCELL()))]
-    pub fn write(&self, x: T, tokens: Ghost<Tokens>) {
+    pub unsafe fn write(&self, x: T, tokens: Ghost<Tokens>) {
         self.permission.open(tokens, move |perm| unsafe {
             *self.data.borrow_mut(ghost!(&mut perm.into_inner().0)) = x
         })

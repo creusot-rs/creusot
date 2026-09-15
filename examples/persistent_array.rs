@@ -249,6 +249,7 @@ pub mod implementation {
 
         /// Reroot the array: at the end of this function, `inner` will point directly
         /// to the underlying array.
+        #[allow(creusot::unchecked_unsafe)]
         #[requires(pa.partial_invariant())]
         #[requires(pa.auth@.contains(*cur@))]
         #[requires(forall<id> pa.auth@.contains(id) && pa.depth[id] <= pa.depth[*cur@]
