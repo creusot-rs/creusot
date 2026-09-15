@@ -114,14 +114,18 @@ constant self : t_Sum_R1_R2
 predicate cancelable_Sum_R1_R2 (self: t_Sum_R1_R2)
 
 goal vc_cancelable_Sum_R1_R2: match self with
-    | Left l -> ([@stop_split] [@expl:cancelable ensures] cancelable_R1 l
+    | Left l -> (forall b: t_R1, c: t_R1. op_R1 l b = op_R1 l c
+        -> op_Sum_R1_R2 self (Left b) = op_Sum_R1_R2 self (Left c))
+    && (([@stop_split] [@expl:cancelable ensures] cancelable_R1 l
       = (forall x: t_R1, y: t_R1. op_R1 l x <> None'0 -> op_R1 l x = op_R1 l y -> x = y))
     -> ([@stop_split] [@expl:cancelable ensures] cancelable_R1 l
     = (forall x: t_Sum_R1_R2, y: t_Sum_R1_R2. op_Sum_R1_R2 self x <> None
-      -> op_Sum_R1_R2 self x = op_Sum_R1_R2 self y -> x = y))
-    | Right r -> ([@stop_split] [@expl:cancelable ensures] cancelable_R2 r
+      -> op_Sum_R1_R2 self x = op_Sum_R1_R2 self y -> x = y)))
+    | Right r -> (forall b: t_R2, c: t_R2. op_R2 r b = op_R2 r c
+        -> op_Sum_R1_R2 self (Right b) = op_Sum_R1_R2 self (Right c))
+    && (([@stop_split] [@expl:cancelable ensures] cancelable_R2 r
       = (forall x: t_R2, y: t_R2. op_R2 r x <> None'1 -> op_R2 r x = op_R2 r y -> x = y))
     -> ([@stop_split] [@expl:cancelable ensures] cancelable_R2 r
     = (forall x: t_Sum_R1_R2, y: t_Sum_R1_R2. op_Sum_R1_R2 self x <> None
-      -> op_Sum_R1_R2 self x = op_Sum_R1_R2 self y -> x = y))
+      -> op_Sum_R1_R2 self x = op_Sum_R1_R2 self y -> x = y)))
     end
