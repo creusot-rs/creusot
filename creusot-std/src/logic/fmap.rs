@@ -232,7 +232,7 @@ impl<K, V> FMap<K, V> {
     /// Returns the set of keys in the map.
     #[trusted]
     #[logic(opaque)]
-    #[ensures(forall<k: K> result.contains(k) == self.contains(&k))]
+    #[ensures(forall<k: &K> result.contains(k) == self.contains(k))]
     #[ensures(result.len() == self.len())]
     pub fn keys(self) -> FSet<K> {
         dead
