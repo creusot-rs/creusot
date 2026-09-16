@@ -1004,9 +1004,9 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
   axiom bounded_fset_len_T_spec: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int s x
           -> 0 <= x /\ x < bnd) -> ge_log_Int bnd 0 -> Fset.cardinal s <= bnd
   
-  function insert_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.add e self
+  function add_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.add e self
   
-  meta "rewrite_def" function insert_Int
+  meta "rewrite_def" function add_Int
   
   function lemma_permutation_aux_T (self: t_Sparse_T) (seen: Fset.fset int) (i: int) (cur: int) : int
   
@@ -1024,7 +1024,7 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
       = (if UInt64.t'int (index_array_usize_n self.back cur) = i then
         cur
       else
-        let _ = bounded_fset_len_T seen (UInt64.t'int const_SIZE) in lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
+        let _ = bounded_fset_len_T seen (UInt64.t'int const_SIZE) in lemma_permutation_aux_T self (add_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
       )
   
   axiom lemma_permutation_aux_T_spec:
@@ -1180,9 +1180,9 @@ module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
   axiom bounded_fset_len_T_spec: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int s x
           -> 0 <= x /\ x < bnd) -> ge_log_Int bnd 0 -> Fset.cardinal s <= bnd
   
-  function insert_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.add e self
+  function add_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.add e self
   
-  meta "rewrite_def" function insert_Int
+  meta "rewrite_def" function add_Int
   
   predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
     ge_log_Int self 0 /\ gt_log_Int self other
@@ -1227,24 +1227,24 @@ module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
           /\ ([@stop_split] [@expl:lemma_permutation_aux requires #2] 0
               <= UInt64.t'int (index_array_usize_n self.back cur)
             /\ UInt64.t'int (index_array_usize_n self.back cur) < UInt64.t'int const_SIZE)
-          /\ ([@stop_split] [@expl:lemma_permutation_aux requires #3] forall k: int. contains_Int (insert_Int seen cur) k
+          /\ ([@stop_split] [@expl:lemma_permutation_aux requires #3] forall k: int. contains_Int (add_Int seen cur) k
               -> 0 <= k
               /\ k < UInt64.t'int const_SIZE
-              /\ (k = i \/ contains_Int (insert_Int seen cur) (UInt64.t'int (index_array_usize_n self.idx k))))
+              /\ (k = i \/ contains_Int (add_Int seen cur) (UInt64.t'int (index_array_usize_n self.idx k))))
           /\ ([@stop_split] [@expl:lemma_permutation_aux requires #4] i
               = UInt64.t'int (index_array_usize_n self.back cur)
-            \/ contains_Int (insert_Int seen cur) i
-            /\ contains_Int (insert_Int seen cur) (UInt64.t'int (index_array_usize_n self.idx (UInt64.t'int (index_array_usize_n self.back cur)))))
-          /\ ([@stop_split] [@expl:lemma_permutation_aux requires #5] not contains_Int (insert_Int seen cur) (UInt64.t'int (index_array_usize_n self.back cur))))
+            \/ contains_Int (add_Int seen cur) i
+            /\ contains_Int (add_Int seen cur) (UInt64.t'int (index_array_usize_n self.idx (UInt64.t'int (index_array_usize_n self.back cur)))))
+          /\ ([@stop_split] [@expl:lemma_permutation_aux requires #5] not contains_Int (add_Int seen cur) (UInt64.t'int (index_array_usize_n self.back cur))))
         /\ ([@expl:variant decreases] well_founded_relation_Int (UInt64.t'int const_SIZE
-        - Fset.cardinal seen) (UInt64.t'int const_SIZE - Fset.cardinal (insert_Int seen cur))))
+        - Fset.cardinal seen) (UInt64.t'int const_SIZE - Fset.cardinal (add_Int seen cur))))
       /\ (([@stop_split] [@expl:lemma_permutation_aux ensures] ([@stop_split] [@expl:lemma_permutation_aux ensures #0] 0
-            <= lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
-          /\ lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
+            <= lemma_permutation_aux_T self (add_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
+          /\ lemma_permutation_aux_T self (add_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
           < UInt64.t'int const_SIZE)
-        /\ ([@stop_split] [@expl:lemma_permutation_aux ensures #1] UInt64.t'int (index_array_usize_n self.back (lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))))
+        /\ ([@stop_split] [@expl:lemma_permutation_aux ensures #1] UInt64.t'int (index_array_usize_n self.back (lemma_permutation_aux_T self (add_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))))
         = i))
-      -> (let result = lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur)) in [@stop_split] [@expl:lemma_permutation_aux_T ensures] ([@stop_split] [@expl:lemma_permutation_aux ensures #0] 0
+      -> (let result = lemma_permutation_aux_T self (add_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur)) in [@stop_split] [@expl:lemma_permutation_aux_T ensures] ([@stop_split] [@expl:lemma_permutation_aux ensures #0] 0
           <= result
         /\ result < UInt64.t'int const_SIZE)
       /\ ([@stop_split] [@expl:lemma_permutation_aux ensures #1] UInt64.t'int (index_array_usize_n self.back result)
@@ -1374,9 +1374,9 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
   axiom bounded_fset_len_T_spec: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int s x
           -> 0 <= x /\ x < bnd) -> ge_log_Int bnd 0 -> Fset.cardinal s <= bnd
   
-  function insert_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.add e self
+  function add_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.add e self
   
-  meta "rewrite_def" function insert_Int
+  meta "rewrite_def" function add_Int
   
   function lemma_permutation_aux_T (self: t_Sparse_T) (seen: Fset.fset int) (i: int) (cur: int) : int
   
@@ -1394,7 +1394,7 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
       = (if UInt64.t'int (index_array_usize_n self.back cur) = i then
         cur
       else
-        let _ = bounded_fset_len_T seen (UInt64.t'int const_SIZE) in lemma_permutation_aux_T self (insert_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
+        let _ = bounded_fset_len_T seen (UInt64.t'int const_SIZE) in lemma_permutation_aux_T self (add_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
       )
   
   axiom lemma_permutation_aux_T_spec:

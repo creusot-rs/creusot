@@ -77,10 +77,10 @@ module M_example
   
   meta "rewrite_def" function fin_Ghost_refmut_UF_i32
   
-  function insert_Elem_i32 [@inline:trivial] (self: Fset.fset t_Elem_i32) (e: t_Elem_i32) : Fset.fset t_Elem_i32 =
+  function add_Elem_i32 [@inline:trivial] (self: Fset.fset t_Elem_i32) (e: t_Elem_i32) : Fset.fset t_Elem_i32 =
     Fset.add e self
   
-  meta "rewrite_def" function insert_Elem_i32
+  meta "rewrite_def" function add_Elem_i32
   
   function index_Mapping_Elem_i32_Elem_i32 [@inline:trivial] (self: Map.map t_Elem_i32 t_Elem_i32) (a: t_Elem_i32) : t_Elem_i32
    = Map.get self a
@@ -104,7 +104,7 @@ module M_example
     {[@stop_split] [@expl:make_i32 ensures] ([@stop_split] [@expl:make result type invariant] inv_Elem_i32 result)
       /\ ([@stop_split] [@expl:make ensures #0] not in_domain_i32 uf.current result)
       /\ ([@stop_split] [@expl:make ensures #1] domain_i32 (fin_Ghost_refmut_UF_i32 uf)
-        = insert_Elem_i32 (domain_i32 uf.current) result)
+        = add_Elem_i32 (domain_i32 uf.current) result)
       /\ ([@stop_split] [@expl:make ensures #2] roots_map_i32 (fin_Ghost_refmut_UF_i32 uf)
         = Map.set (roots_map_i32 uf.current) result result)
       /\ ([@stop_split] [@expl:make ensures #3] payloads_map_i32 (fin_Ghost_refmut_UF_i32 uf)
@@ -2701,10 +2701,9 @@ module M_implementation__make
   
   meta "rewrite_def" predicate resolve_refmut_Perm_PermCell_Node_T
   
-  function insert_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) (e: t_Elem_T) : Fset.fset t_Elem_T =
-    Fset.add e self
+  function add_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) (e: t_Elem_T) : Fset.fset t_Elem_T = Fset.add e self
   
-  meta "rewrite_def" function insert_Elem_T
+  meta "rewrite_def" function add_Elem_T
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -2794,7 +2793,7 @@ module M_implementation__make
       | s5 = bb18 ]
     | bb18 = s0
       [ s0 =
-        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with domain = insert_Elem_T uf'0.current.f0'2.domain elt } } } ]
+        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with domain = add_Elem_T uf'0.current.f0'2.domain elt } } } ]
         s1
       | s1 = MutBorrow.borrow_final <t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T> {uf'0.current.f0'2.perms}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id uf'0) 0) 1}
@@ -2843,7 +2842,7 @@ module M_implementation__make
     {[@stop_split] [@expl:make_T ensures] ([@stop_split] [@expl:make result type invariant] inv_Elem_T result)
       /\ ([@stop_split] [@expl:make ensures #0] not in_domain_T uf.current result)
       /\ ([@stop_split] [@expl:make ensures #1] domain_T (fin_Ghost_refmut_UF_T uf)
-        = insert_Elem_T (domain_T uf.current) result)
+        = add_Elem_T (domain_T uf.current) result)
       /\ ([@stop_split] [@expl:make ensures #2] roots_map_T (fin_Ghost_refmut_UF_T uf)
         = Map.set (roots_map_T uf.current) result result)
       /\ ([@stop_split] [@expl:make ensures #3] payloads_map_T (fin_Ghost_refmut_UF_T uf)

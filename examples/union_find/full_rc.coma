@@ -82,10 +82,10 @@ module M_example
   
   meta "rewrite_def" function fin_Ghost_refmut_UnionFind_i32
   
-  function insert_Element_i32 [@inline:trivial] (self: Fset.fset t_Element_i32) (e: t_Element_i32) : Fset.fset t_Element_i32
+  function add_Element_i32 [@inline:trivial] (self: Fset.fset t_Element_i32) (e: t_Element_i32) : Fset.fset t_Element_i32
    = Fset.add e self
   
-  meta "rewrite_def" function insert_Element_i32
+  meta "rewrite_def" function add_Element_i32
   
   function index_Mapping_Element_i32_Element_i32 [@inline:trivial] (self: Map.map t_Element_i32 t_Element_i32) (a: t_Element_i32) : t_Element_i32
    = Map.get self a
@@ -109,7 +109,7 @@ module M_example
     {[@stop_split] [@expl:make_i32 ensures] ([@stop_split] [@expl:make result type invariant] inv_Element_i32 result)
       /\ ([@stop_split] [@expl:make ensures #0] not in_domain_i32 uf.current result)
       /\ ([@stop_split] [@expl:make ensures #1] domain_i32 (fin_Ghost_refmut_UnionFind_i32 uf)
-        = insert_Element_i32 (domain_i32 uf.current) result)
+        = add_Element_i32 (domain_i32 uf.current) result)
       /\ ([@stop_split] [@expl:make ensures #2] roots_map_i32 (fin_Ghost_refmut_UnionFind_i32 uf)
         = Map.set (roots_map_i32 uf.current) result result)
       /\ ([@stop_split] [@expl:make ensures #3] payloads_map_i32 (fin_Ghost_refmut_UnionFind_i32 uf)
@@ -3514,10 +3514,10 @@ module M_implementation__make
       /\ ([@stop_split] [@expl:insert ensures #1] result = get_Snapshot_Element_T self.current key)}
       (! return {result}) ]
   
-  function insert_Element_T [@inline:trivial] (self: Fset.fset t_Element_T) (e: t_Element_T) : Fset.fset t_Element_T =
+  function add_Element_T [@inline:trivial] (self: Fset.fset t_Element_T) (e: t_Element_T) : Fset.fset t_Element_T =
     Fset.add e self
   
-  meta "rewrite_def" function insert_Element_T
+  meta "rewrite_def" function add_Element_T
   
   predicate resolve_refmut_UnionFind_T [@inline:trivial] (_1: MutBorrow.t t_UnionFind_T) = _1.final = _1.current
   
@@ -3589,7 +3589,7 @@ module M_implementation__make
       | s1 = insert_Snapshot_Element_T {_48} {elt} {perm'0}
           (fun (_x: t_Option_Perm_PermCell_Node_T) -> [ &_47 <- _x ] s2)
       | s2 =
-        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with domain = insert_Element_T uf'0.current.f0'2.domain elt } } } ]
+        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with domain = add_Element_T uf'0.current.f0'2.domain elt } } } ]
         s3
       | s3 =
         [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with payloads = Map.set uf'0.current.f0'2.payloads elt payload_snap } } } ]
@@ -3635,7 +3635,7 @@ module M_implementation__make
     {[@stop_split] [@expl:make_T ensures] ([@stop_split] [@expl:make result type invariant] inv_Element_T result)
       /\ ([@stop_split] [@expl:make ensures #0] not in_domain_T uf.current result)
       /\ ([@stop_split] [@expl:make ensures #1] domain_T (fin_Ghost_refmut_UnionFind_T uf)
-        = insert_Element_T (domain_T uf.current) result)
+        = add_Element_T (domain_T uf.current) result)
       /\ ([@stop_split] [@expl:make ensures #2] roots_map_T (fin_Ghost_refmut_UnionFind_T uf)
         = Map.set (roots_map_T uf.current) result result)
       /\ ([@stop_split] [@expl:make ensures #3] payloads_map_T (fin_Ghost_refmut_UnionFind_T uf)

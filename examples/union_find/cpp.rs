@@ -69,14 +69,14 @@ mod implementation {
         #[logic(inline)]
         fn invariant(self) -> bool {
             pearlite! {
-                forall<e> self.domain().contains(e) ==>
+                forall<e> self.domain().contains(&e) ==>
                     self.0.perms.contains(&Snapshot::new(e)) &&
                     *self.0.perms[Snapshot::new(e)].ward() == *e.0.view() &&
-                    self.domain().contains(self.0.roots[e]) &&
+                    self.domain().contains(&self.0.roots[e]) &&
                     self.0.roots[self.0.roots[e]] == self.0.roots[e] &&
                     match *self.0.perms[Snapshot::new(e)].val() {
                         Node::Link(e2) =>
-                            self.domain().contains(e2) &&
+                            self.domain().contains(&e2) &&
                             self.0.roots[e] != e &&
                             self.0.roots[e] == self.0.roots[e2],
                         Node::Root { payload, .. } =>
@@ -97,7 +97,7 @@ mod implementation {
         /// Returns all the elements that are handled by this union-find structure.
         #[logic(open)]
         pub fn in_domain(self, e: Elem<T>) -> bool {
-            self.domain().contains(e)
+            self.domain().contains(&e)
         }
 
         /// Returns the map of roots of the union find.
@@ -176,7 +176,7 @@ mod implementation {
     }
 
     #[ensures(!uf.in_domain(result))]
-    #[ensures((^uf).domain() == uf.domain().insert(result))]
+    #[ensures((^uf).domain() == uf.domain().add(result))]
     #[ensures((^uf).roots_map() == uf.roots_map().set(result, result))]
     #[ensures((^uf).payloads_map() == uf.payloads_map().set(result, payload))]
     pub fn make<T>(mut uf: Ghost<&mut UF<T>>, payload: T) -> Elem<T> {
@@ -191,7 +191,7 @@ mod implementation {
                 Some(other_perm) => { Perm::disjoint_lemma(&mut perm, other_perm) },
             }
 
-            uf.0.domain = snapshot!(uf.0.domain.insert(elt));
+            uf.0.domain = snapshot!(uf.0.domain.add(elt));
             uf.0.perms.insert(snapshot!(elt), perm);
             uf.0.payloads = snapshot!(uf.0.payloads.set(elt, *payload_snap));
             uf.0.roots = snapshot!(uf.0.roots.set(elt, elt));
