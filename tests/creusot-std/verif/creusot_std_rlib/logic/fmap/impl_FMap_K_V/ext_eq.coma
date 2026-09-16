@@ -25,6 +25,13 @@ function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.
 
 meta "rewrite_def" function get_K
 
+type t_Option_ref_V = None'0 | Some'0 t_V
+
+function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
@@ -35,4 +42,6 @@ constant other : t_FMap_K_V
 
 predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V)
 
-goal vc_ext_eq_K: [@stop_split] [@expl:ext_eq ensures] (forall k: t_K. get_K self k = get_K other k) = (self = other)
+goal vc_ext_eq_K: [@stop_split] [@expl:ext_eq ensures] (forall k: t_K. map_Option_V (get_K self k) (fun (v: t_V) -> v)
+      = map_Option_V (get_K other k) (fun (v: t_V) -> v))
+  = (self = other)

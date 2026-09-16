@@ -63,12 +63,24 @@ axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V 
 
 predicate structural_resolve_FMap_K_V (_1: t_FMap_K_V)
 
-predicate resolve_K (_1: t_K)
+type t_Option_ref_V = None'0 | Some'0 t_V
 
-predicate resolve_V (_1: t_V)
+function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
+predicate resolve_ref_K [@inline:trivial] (_1: t_K) = true
+
+meta "rewrite_def" predicate resolve_ref_K
+
+predicate resolve_ref_V [@inline:trivial] (_1: t_V) = true
+
+meta "rewrite_def" predicate resolve_ref_V
 
 predicate resolve_FMap_K_V (self: t_FMap_K_V) =
-  forall k: t_K, v: t_V. get_K self k = Some v -> resolve_K k /\ resolve_V v
+  forall k: t_K, v: t_V. map_Option_V (get_K self k) (fun (v'0: t_V) -> v'0) = Some'0 v
+    -> resolve_ref_K k /\ resolve_ref_V v
 
 meta "compute_max_steps" 1000000
 

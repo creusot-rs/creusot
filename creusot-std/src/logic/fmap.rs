@@ -52,30 +52,30 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[logic(opaque)]
     #[ensures(result >= 0)]
-    pub fn len(self) -> Int {
+    pub fn len_logic(self) -> Int {
         dead
     }
 
-    /// Returns a new map, where the key-value pair `(k, v)` has been inserted.
+    /// Returns a new map, where the key-value pair `(k, v)` has been added.
     #[trusted]
     #[logic(opaque)]
     #[ensures(result.to_mapping() == self.to_mapping().set(k, Some(v)))]
-    #[ensures(result.len() == if self.contains(k) { self.len() } else { self.len() + 1 })]
-    pub fn insert(self, k: K, v: V) -> Self {
+    #[ensures(result.len() == if self.contains(&k) { self.len() } else { self.len() + 1 })]
+    pub fn add(self, k: K, v: V) -> Self {
         dead
     }
 
     /// Returns the map where containing the only key-value pair `(k, v)`.
     #[logic(open)]
     pub fn singleton(k: K, v: V) -> Self {
-        Self::empty().insert(k, v)
+        Self::empty().add(k, v)
     }
 
     /// Returns a new map, where the key `k` is no longer present.
     #[trusted]
     #[logic(opaque)]
     #[ensures(result.to_mapping() == self.to_mapping().set(k, None))]
-    #[ensures(result.len() == if self.contains(k) {self.len() - 1} else {self.len()})]
+    #[ensures(result.len() == if self.contains(&k) {self.len() - 1} else {self.len()})]
     pub fn remove(self, k: K) -> Self {
         dead
     }
@@ -84,7 +84,7 @@ impl<K, V> FMap<K, V> {
     ///
     /// If no value is present, returns [`None`].
     #[logic(open, inline)]
-    pub fn get(self, k: K) -> Option<V> {
+    pub fn get_logic(self, k: K) -> Option<V> {
         self.to_mapping().get(k)
     }
 
@@ -93,34 +93,34 @@ impl<K, V> FMap<K, V> {
     /// If no value is present, the returned value is meaningless.
     #[logic(open, inline)]
     pub fn lookup(self, k: K) -> V {
-        self.get(k).unwrap_logic()
+        self.get_logic(k).unwrap_logic()
     }
 
     /// Returns `true` if the map contains a value for the specified key.
     #[logic(open, inline)]
-    pub fn contains(self, k: K) -> bool {
-        self.get(k) != None
+    pub fn contains_logic(self, k: K) -> bool {
+        self.get_logic(k) != None
     }
 
     /// Returns `true` if the map contains no elements.
     #[logic(open)]
     #[ensures(result == (self.len() == 0))]
-    pub fn is_empty(self) -> bool {
-        proof_assert!(forall<k> self.contains(k) ==> self.len() == self.remove(k).len() + 1);
+    pub fn is_empty_logic(self) -> bool {
+        proof_assert!(forall<k> self.contains(&k) ==> self.len() == self.remove(k).len() + 1);
         self.ext_eq(FMap::empty())
     }
 
     /// Returns `true` if the two maps have no key in common.
     #[logic(open)]
     pub fn disjoint(self, other: Self) -> bool {
-        pearlite! {forall<k: K> !self.contains(k) || !other.contains(k)}
+        pearlite! {forall<k: K> !self.contains(&k) || !other.contains(&k)}
     }
 
     /// Returns `true` if all key-value pairs in `self` are also in `other`.
     #[logic(open)]
     pub fn subset(self, other: Self) -> bool {
         pearlite! {
-            forall<k: K> self.contains(k) ==> other.get(k) == self.get(k)
+            forall<k: K> self.contains(&k) ==> other.get_logic(k) == self.get_logic(k)
         }
     }
 
@@ -130,8 +130,8 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[logic(opaque)]
     #[requires(self.disjoint(other))]
-    #[ensures(forall<k: K> #[trigger(result.get(k))] !self.contains(k) ==> result.get(k) == other.get(k))]
-    #[ensures(forall<k: K> #[trigger(result.get(k))] !other.contains(k) ==> result.get(k) == self.get(k))]
+    #[ensures(forall<k: K> #[trigger(result.get_logic(k))] !self.contains(&k) ==> result.get_logic(k) == other.get_logic(k))]
+    #[ensures(forall<k: K> #[trigger(result.get_logic(k))] !other.contains(&k) ==> result.get_logic(k) == self.get_logic(k))]
     #[ensures(result.len() == self.len() + other.len())]
     pub fn union(self, other: Self) -> Self {
         dead
@@ -143,11 +143,11 @@ impl<K, V> FMap<K, V> {
     #[logic(opaque)]
     #[ensures(result.disjoint(other))]
     #[ensures(other.subset(self) ==> other.union(result) == self)]
-    #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) ==
-        if other.contains(k) {
+    #[ensures(forall<k: K> #[trigger(result.get_logic(k))] result.get_logic(k) ==
+        if other.contains(&k) {
             None
         } else {
-            self.get(k)
+            self.get_logic(k)
         }
     )]
     pub fn subtract(self, other: Self) -> Self {
@@ -171,7 +171,7 @@ impl<K, V> FMap<K, V> {
     pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
             let _ = Self::to_mapping_inj;
-            forall<k: K> self.get(k) == other.get(k)
+            forall<k: &K> self.get(k) == other.get(k)
         }
     }
 
@@ -181,11 +181,11 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[logic(opaque)]
     #[ensures(
-        forall<k: K> #[trigger(result.get(k))]
-            match (self.get(k), m.get(k)) {
-                (None, y) => result.get(k) == y,
-                (x, None) => result.get(k) == x,
-                (Some(x), Some(y)) => result.get(k) == Some(f[(x, y)]),
+        forall<k: K> #[trigger(result.get_logic(k))]
+            match (self.get_logic(k), m.get_logic(k)) {
+                (None, y) => result.get_logic(k) == y,
+                (x, None) => result.get_logic(k) == x,
+                (Some(x), Some(y)) => result.get_logic(k) == Some(f[(x, y)]),
             }
     )]
     pub fn merge(self, m: FMap<K, V>, f: Mapping<(V, V), V>) -> FMap<K, V> {
@@ -195,7 +195,7 @@ impl<K, V> FMap<K, V> {
     /// Map every value in `self` according to `f`. Keys are unchanged.
     #[logic]
     #[trusted] // The ensures clause that says the lenght do not change is rather difficult
-    #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) == match self.get(k) {
+    #[ensures(forall<k: K> #[trigger(result.get_logic(k))] result.get_logic(k) == match self.get_logic(k) {
         None => None,
         Some(v) => Some(f[(k, v)]),
     })]
@@ -209,7 +209,7 @@ impl<K, V> FMap<K, V> {
     /// A key-value pair will be in the result map if and only if it is in `self` and
     /// `p` returns `true` on this pair.
     #[logic]
-    #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) == match self.get(k) {
+    #[ensures(forall<k: K> #[trigger(result.get_logic(k))] result.get_logic(k) == match self.get_logic(k) {
         None => None,
         Some(v) => if p[(k, v)] { Some(v) } else { None },
     })]
@@ -221,7 +221,7 @@ impl<K, V> FMap<K, V> {
     /// If `f` returns `false`, remove the key-value from the map.
     #[trusted]
     #[logic(opaque)]
-    #[ensures(forall<k: K> #[trigger(result.get(k))] result.get(k) == match self.get(k) {
+    #[ensures(forall<k: K> #[trigger(result.get_logic(k))] result.get_logic(k) == match self.get_logic(k) {
         None => None,
         Some(v) => f[(k, v)],
     })]
@@ -232,7 +232,7 @@ impl<K, V> FMap<K, V> {
     /// Returns the set of keys in the map.
     #[trusted]
     #[logic(opaque)]
-    #[ensures(forall<k: K> result.contains(k) == self.contains(k))]
+    #[ensures(forall<k: K> result.contains(k) == self.contains(&k))]
     #[ensures(result.len() == self.len())]
     pub fn keys(self) -> FSet<K> {
         dead
@@ -269,27 +269,27 @@ impl<K, V> FMap<K, V> {
     ///
     /// let mut map = FMap::new();
     /// ghost! {
-    ///     let len1 = map.len_ghost();
-    ///     map.insert_ghost(1, 21);
-    ///     map.insert_ghost(1, 42);
-    ///     map.insert_ghost(2, 50);
-    ///     let len2 = map.len_ghost();
+    ///     let len1 = map.len();
+    ///     map.insert(1, 21);
+    ///     map.insert(1, 42);
+    ///     map.insert(2, 50);
+    ///     let len2 = map.len();
     ///     proof_assert!(len1 == 0);
     ///     proof_assert!(len2 == 2);
     /// };
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[logic_alias(Self::len(*self))]
-    pub fn len_ghost(&self) -> Int {
+    #[logic_alias(self.len_logic())]
+    pub fn len(&self) -> Int {
         panic!()
     }
 
     #[trusted]
     #[check(ghost)]
     #[ensures(result == self.is_empty())]
-    #[logic_alias(Self::is_empty(*self))]
-    pub fn is_empty_ghost(&self) -> bool {
+    #[logic_alias(self.is_empty_logic())]
+    pub fn is_empty(&self) -> bool {
         panic!()
     }
 
@@ -301,16 +301,16 @@ impl<K, V> FMap<K, V> {
     ///
     /// let mut map = FMap::new();
     /// ghost! {
-    ///     map.insert_ghost(1, 42);
-    ///     let (b1, b2) = (map.contains_ghost(&1), map.contains_ghost(&2));
+    ///     map.insert(1, 42);
+    ///     let (b1, b2) = (map.contains(&1), map.contains(&2));
     ///     proof_assert!(b1);
     ///     proof_assert!(!b2);
     /// };
     /// ```
     #[check(ghost)]
-    #[logic_alias(Self::contains(*self, *key))]
-    pub fn contains_ghost(&self, key: &K) -> bool {
-        self.get_ghost(key).is_some()
+    #[logic_alias(self.contains_logic(*key))]
+    pub fn contains(&self, key: &K) -> bool {
+        self.get(key).is_some()
     }
 
     /// Returns a reference to the value corresponding to the key.
@@ -321,17 +321,17 @@ impl<K, V> FMap<K, V> {
     ///
     /// let mut map = FMap::new();
     /// ghost! {
-    ///     map.insert_ghost(1, 2);
-    ///     let x1 = map.get_ghost(&1);
-    ///     let x2 = map.get_ghost(&2);
+    ///     map.insert(1, 2);
+    ///     let x1 = map.get(&1);
+    ///     let x2 = map.get(&2);
     ///     proof_assert!(x1 == Some(&2));
     ///     proof_assert!(x2 == None);
     /// };
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(result == self.get(*key).map_logic(|v|&v))]
-    pub fn get_ghost(&self, key: &K) -> Option<&V> {
+    #[logic_alias(self.get_logic(*key).map_logic(|v|&v))]
+    pub fn get(&self, key: &K) -> Option<&V> {
         let _ = key;
         panic!()
     }
@@ -344,8 +344,8 @@ impl<K, V> FMap<K, V> {
     ///
     /// let mut map = FMap::new();
     /// ghost! {
-    ///     map.insert_ghost(1, 21);
-    ///     if let Some(x) = map.get_mut_ghost(&1) {
+    ///     map.insert(1, 21);
+    ///     if let Some(x) = map.get_mut(&1) {
     ///         *x = 42;
     ///     }
     ///     proof_assert!(map[1i32] == 42i32);
@@ -353,18 +353,18 @@ impl<K, V> FMap<K, V> {
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(if self.contains(*key) {
+    #[ensures(if self.contains(key) {
             match result {
                 None => false,
                 Some(r) =>
-                    (^self).contains(*key) && self[*key] == *r && (^self)[*key] == ^r,
+                    (^self).contains(key) && self[*key] == *r && (^self)[*key] == ^r,
             }
         } else {
             result == None && *self == ^self
         })]
-    #[ensures(forall<k: K> k != *key ==> (*self).get(k) == (^self).get(k))]
+    #[ensures(forall<k: K> k != *key ==> (*self).get_logic(k) == (^self).get_logic(k))]
     #[ensures((*self).len() == (^self).len())]
-    pub fn get_mut_ghost(&mut self, key: &K) -> Option<&mut V> {
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         let _ = key;
         panic!()
     }
@@ -378,12 +378,12 @@ impl<K, V> FMap<K, V> {
     ///
     /// let mut map = FMap::new();
     /// ghost! {
-    ///     map.insert_ghost(1, 21);
-    ///     map.insert_ghost(2, 42);
-    ///     let (x, map2) = map.split_mut_ghost(&1);
+    ///     map.insert(1, 21);
+    ///     map.insert(2, 42);
+    ///     let (x, map2) = map.split_mut(&1);
     ///     *x = 22;
-    ///     map2.insert_ghost(3, 30);
-    ///     map2.insert_ghost(1, 56); // This modification will be ignored on `map`
+    ///     map2.insert(3, 30);
+    ///     map2.insert(1, 56); // This modification will be ignored on `map`
     ///     proof_assert!(map[1i32] == 22i32);
     ///     proof_assert!(map[2i32] == 42i32);
     ///     proof_assert!(map[3i32] == 30i32);
@@ -391,10 +391,10 @@ impl<K, V> FMap<K, V> {
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[requires(self.contains(*key))]
+    #[requires(self.contains(key))]
     #[ensures(*result.1 == (*self).remove(*key))]
-    #[ensures(self[*key] == *result.0 && ^self == (^result.1).insert(*key, ^result.0))]
-    pub fn split_mut_ghost(&mut self, key: &K) -> (&mut V, &mut Self) {
+    #[ensures(self[*key] == *result.0 && ^self == (^result.1).add(*key, ^result.0))]
+    pub fn split_mut(&mut self, key: &K) -> (&mut V, &mut Self) {
         let _ = key;
         panic!()
     }
@@ -409,20 +409,20 @@ impl<K, V> FMap<K, V> {
     ///
     /// let mut map = FMap::new();
     /// ghost! {
-    ///     let res1 = map.insert_ghost(37, 41);
+    ///     let res1 = map.insert(37, 41);
     ///     proof_assert!(res1 == None);
     ///     proof_assert!(map.is_empty() == false);
     ///
-    ///     let res2 = map.insert_ghost(37, 42);
+    ///     let res2 = map.insert(37, 42);
     ///     proof_assert!(res2 == Some(41));
     ///     proof_assert!(map[37i32] == 42i32);
     /// };
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(^self == (*self).insert(key, value))]
-    #[ensures(result == (*self).get(key))]
-    pub fn insert_ghost(&mut self, key: K, value: V) -> Option<V> {
+    #[ensures(^self == (*self).add(key, value))]
+    #[ensures(result == (*self).get_logic(key))]
+    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         let _ = key;
         let _ = value;
         panic!()
@@ -436,9 +436,9 @@ impl<K, V> FMap<K, V> {
     ///
     /// let mut map = FMap::new();
     /// let res = ghost! {
-    ///     map.insert_ghost(1, 42);
-    ///     let res1 = map.remove_ghost(&1);
-    ///     let res2 = map.remove_ghost(&1);
+    ///     map.insert(1, 42);
+    ///     let res1 = map.delete(&1);
+    ///     let res2 = map.delete(&1);
     ///     proof_assert!(res1 == Some(42i32));
     ///     proof_assert!(res2 == None);
     /// };
@@ -446,8 +446,8 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[check(ghost)]
     #[ensures(^self == (*self).remove(*key))]
-    #[ensures(result == (*self).get(*key))]
-    pub fn remove_ghost(&mut self, key: &K) -> Option<V> {
+    #[ensures(result == (*self).get_logic(*key))]
+    pub fn delete(&mut self, key: &K) -> Option<V> {
         let _ = key;
         panic!()
     }
@@ -460,25 +460,25 @@ impl<K, V> FMap<K, V> {
     ///
     /// let mut s = FMap::new();
     /// ghost! {
-    ///     s.insert_ghost(1, 2);
-    ///     s.insert_ghost(2, 3);
-    ///     s.insert_ghost(3, 42);
-    ///     s.clear_ghost();
+    ///     s.insert(1, 2);
+    ///     s.insert(2, 3);
+    ///     s.insert(3, 42);
+    ///     s.clear();
     ///     proof_assert!(s == FMap::empty());
     /// };
     /// ```
     #[trusted]
     #[check(ghost)]
     #[ensures(^self == Self::empty())]
-    pub fn clear_ghost(&mut self) {}
+    pub fn clear(&mut self) {}
 
     #[trusted]
     #[check(ghost)]
     #[ensures(match result {
         None => *self == ^self && self.is_empty(),
-        Some((k, v)) => *self == (^self).insert(k, v) && !(^self).contains(k),
+        Some((k, v)) => *self == (^self).add(k, v) && !(^self).contains(&k),
     })]
-    pub fn remove_one_ghost(&mut self) -> Option<(K, V)> {
+    pub fn remove_one(&mut self) -> Option<(K, V)> {
         panic!()
     }
 
@@ -486,7 +486,7 @@ impl<K, V> FMap<K, V> {
     #[check(ghost)]
     #[ensures(result.len() == self.len())]
     #[ensures(forall<i, j> 0 <= i && i < self.len() && 0 <= j && j < self.len() && result[i].0 == result[j].0 ==> i == j)]
-    #[ensures(forall<k, v> (self.get(k) == Some(v)) == result.contains((k, v)))]
+    #[ensures(forall<k, v> (self.get(&k) == Some(&v)) == result.contains((k, v)))]
     pub fn to_seq(self) -> Seq<(K, V)> {
         panic!()
     }
@@ -495,7 +495,7 @@ impl<K, V> FMap<K, V> {
     #[check(ghost)]
     #[ensures(result.len() == self.len())]
     #[ensures(forall<k, v> (self.get(k) == Some(v)) == (result.get(&k) == Some(&v)))]
-    pub fn as_ref_ghost(&self) -> FMap<&K, &V> {
+    pub fn as_ref(&self) -> FMap<&K, &V> {
         panic!()
     }
 
@@ -503,11 +503,11 @@ impl<K, V> FMap<K, V> {
     #[check(ghost)]
     #[ensures(result.len() == self.len())]
     #[ensures((^self).len() == self.len())]
-    #[ensures(forall<k> match result.get(&k) {
-        None => !(*self).contains(k) && !(^self).contains(k),
-        Some(v) => (*self).get(k) == Some(*v) && (^self).get(k) == Some(^v),
+    #[ensures(forall<k> match result.get_logic(&k) {
+        None => !(*self).contains(&k) && !(^self).contains(&k),
+        Some(v) => (*self).get_logic(k) == Some(*v) && (^self).get_logic(k) == Some(^v),
     })]
-    pub fn as_mut_ghost(&mut self) -> FMap<&K, &mut V> {
+    pub fn as_mut(&mut self) -> FMap<&K, &mut V> {
         panic!()
     }
 }
@@ -516,10 +516,10 @@ impl<'a, K, V> core::ops::Index<&'a K> for FMap<K, V> {
     type Output = V;
 
     #[check(ghost)]
-    #[requires(self.contains(*key))]
-    #[ensures(Some(*result) == self.get(*key))]
+    #[requires(self.contains(key))]
+    #[ensures(Some(*result) == self.get_logic(*key))]
     fn index(&self, key: &'a K) -> &Self::Output {
-        self.get_ghost(key).unwrap()
+        self.get(key).unwrap()
     }
 }
 
@@ -539,7 +539,7 @@ impl<K, V> Invariant for FMap<K, V> {
     #[logic(open, prophetic, inline)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { forall<k: K> self.contains(k) ==> inv(k) && inv(self[k]) }
+        pearlite! { forall<k: K> self.contains(&k) ==> inv(k) && inv(self[k]) }
     }
 }
 
@@ -561,10 +561,10 @@ impl<K, V> Iterator for Iter<K, V> {
     #[check(ghost)]
     #[ensures(match result {
         None => self.completed(),
-        Some((k, v)) => (*self).produces(Seq::singleton((k, v)), ^self) && (*self)@ == (^self)@.insert(k, v),
+        Some((k, v)) => (*self).produces(Seq::singleton((k, v)), ^self) && (*self)@ == (^self)@.add(k, v),
     })]
     fn next(&mut self) -> Option<(K, V)> {
-        self.0.remove_one_ghost()
+        self.0.remove_one()
     }
 }
 
@@ -575,11 +575,11 @@ impl<K, V> IteratorSpec for Iter<K, V> {
             // We cannot visit the same key twice
             (forall<i, j> 0 <= i && i < j && j < visited.len() ==> visited[i].0 != visited[j].0) &&
             // If a key-value is visited, it was in `self` but not in `o`
-            (forall<k, v, i> visited.get(i) == Some((k, v)) ==> !o@.contains(k) && self@.get(k) == Some(v)) &&
+            (forall<k, v, i> visited.get(i) == Some((k, v)) ==> !o@.contains(&k) && self@.get(&k) == Some(&v)) &&
             // Helper for the length
             self@.len() == visited.len() + o@.len() &&
             // else, the key-value is the same in `self` and `o`
-            (forall<k> (forall<i> 0 <= i && i < visited.len() ==> visited[i].0 != k) ==> o@.get(k) == self@.get(k))
+            (forall<k> (forall<i> 0 <= i && i < visited.len() ==> visited[i].0 != k) ==> o@.get(&k) == self@.get(&k))
         }
     }
 
@@ -603,7 +603,7 @@ impl<K, V> IteratorSpec for Iter<K, V> {
         proof_assert!(forall<k> (forall<i> 0 <= i && i < ac.len() ==> ac[i].0 != k) ==> {
             (forall<i> 0 <= i && i < ab.len() ==> ab[i].0 != k) &&
             (forall<i> 0 <= i && i < bc.len() ==> bc[i].0 != k) &&
-            a@.get(k) == b@.get(k) && b@.get(k) == c@.get(k)
+            a@.get(&k) == b@.get(&k) && b@.get(&k) == c@.get(&k)
         });
     }
 }
@@ -628,7 +628,7 @@ impl<'a, K, V> IntoIterator for &'a FMap<K, V> {
     #[ensures(result@.len() == self.len())]
     #[ensures(forall<k, v> (self.get(k) == Some(v)) == (result@.get(&k) == Some(&v)))]
     fn into_iter(self) -> Self::IntoIter {
-        Iter(self.as_ref_ghost())
+        Iter(self.as_ref())
     }
 }
 
@@ -639,10 +639,10 @@ impl<'a, K, V> IntoIterator for &'a mut FMap<K, V> {
     #[check(ghost)]
     #[ensures(result@.len() == (*self).len())]
     #[ensures((^self).len() == (*self).len())]
-    #[ensures(forall<k, v> (*self).get(k) == Some(v) ==> exists<w> result@.get(&k) == Some(w) && v == *w && (^self).get(k) == Some(^w))]
-    #[ensures(forall<k, w> result@.get(&k) == Some(w) ==> (*self).get(k) == Some(*w) && (^self).get(k) == Some(^w))]
+    #[ensures(forall<k, v> (*self).get(&k) == Some(&v) ==> exists<w> result@.get(&&k) == Some(&w) && v == *w && (^self).get(&k) == Some(&^w))]
+    #[ensures(forall<k, w> result@.get(&k) == Some(&w) ==> (*self).get(&&k) == Some(&*w) && (^self).get(&k) == Some(&^w))]
     fn into_iter(self) -> Self::IntoIter {
-        Iter(self.as_mut_ghost())
+        Iter(self.as_mut())
     }
 }
 
@@ -650,7 +650,7 @@ impl<K, V> Resolve for FMap<K, V> {
     #[logic(open, prophetic)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
-        pearlite! { forall<k: K, v: V> self.get(k) == Some(v) ==> resolve(k) && resolve(v) }
+        pearlite! { forall<k: &K, v: &V> self.get(k) == Some(v) ==> resolve(k) && resolve(v) }
     }
 
     #[trusted]

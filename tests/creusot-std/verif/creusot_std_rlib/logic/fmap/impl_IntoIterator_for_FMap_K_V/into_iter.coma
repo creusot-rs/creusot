@@ -79,6 +79,13 @@ axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 
 
 function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
 
+type t_Option_ref_V = None'0 | Some'0 t_V
+
+function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
@@ -91,6 +98,7 @@ let into_iter_FMap_K_V (self: t_FMap_K_V) (return (x: t_Iter_K_V)) =
   [ return (result: t_Iter_K_V) ->
   {[@stop_split] [@expl:into_iter_FMap_K_V ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_K_V result)
     /\ ([@stop_split] [@expl:into_iter ensures #0] len_K (view_Iter_K_V result) = len_K self)
-    /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (get_K self k = Some v)
-      = (get_K (view_Iter_K_V result) k = Some v))}
+    /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (map_Option_V (get_K self k) (fun (v'0: t_V) -> v'0)
+        = Some'0 v)
+      = (map_Option_V (get_K (view_Iter_K_V result) k) (fun (v'0: t_V) -> v'0) = Some'0 v))}
     (! return {result}) ]

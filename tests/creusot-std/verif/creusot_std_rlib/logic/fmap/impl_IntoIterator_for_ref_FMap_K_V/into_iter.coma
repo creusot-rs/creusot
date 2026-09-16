@@ -150,14 +150,27 @@ function len_K (self: t_FMap_K_V) : int
 
 axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
 
-let as_ref_ghost_K (self: t_FMap_K_V) (return (x: t_FMap_ref_K_ref_V)) =
-{[@stop_split] [@expl:as_ref_ghost 'self' type invariant] inv_ref_FMap_K_V self}
+function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
+type t_Option_ref_ref_V = None'1 | Some'1 t_V
+
+function map_Option_ref_V (self: t_Option_ref_V) (f: Map.map t_V t_V) : t_Option_ref_ref_V = match self with
+    | None'0 -> None'1
+    | Some'0 x -> Some'1 (Map.get f x)
+    end
+
+let as_ref_K (self: t_FMap_K_V) (return (x: t_FMap_ref_K_ref_V)) =
+{[@stop_split] [@expl:as_ref 'self' type invariant] inv_ref_FMap_K_V self}
   any
   [ return (result: t_FMap_ref_K_ref_V) ->
-  {[@stop_split] [@expl:as_ref_ghost_K ensures] ([@stop_split] [@expl:as_ref_ghost result type invariant] inv_FMap_ref_K_ref_V result)
-    /\ ([@stop_split] [@expl:as_ref_ghost ensures #0] len_ref_K result = len_K self)
-    /\ ([@stop_split] [@expl:as_ref_ghost ensures #1] forall k: t_K, v: t_V. (get_K self k = Some v)
-      = (get_ref_K result k = Some'0 v))}
+  {[@stop_split] [@expl:as_ref_K ensures] ([@stop_split] [@expl:as_ref result type invariant] inv_FMap_ref_K_ref_V result)
+    /\ ([@stop_split] [@expl:as_ref ensures #0] len_ref_K result = len_K self)
+    /\ ([@stop_split] [@expl:as_ref ensures #1] forall k: t_K, v: t_V. (map_Option_V (get_K self k) (fun (v'0: t_V) -> v'0)
+        = Some'0 v)
+      = (map_Option_ref_V (get_ref_K result k) (fun (v'0: t_V) -> v'0) = Some'1 v))}
     (! return {result}) ]
 
 type t_Iter_ref_K_ref_V = { f0: t_FMap_ref_K_ref_V }
@@ -177,13 +190,14 @@ let into_iter_ref_FMap_K_V (self: t_FMap_K_V) (return (x: t_Iter_ref_K_ref_V)) =
 {[@stop_split] [@expl:into_iter 'self' type invariant] inv_ref_FMap_K_V self}
   (! bb0
   [ bb0 = s0
-    [ s0 = as_ref_ghost_K {self} (fun (_x: t_FMap_ref_K_ref_V) -> [ &_6 <- _x ] s1)
+    [ s0 = as_ref_K {self} (fun (_x: t_FMap_ref_K_ref_V) -> [ &_6 <- _x ] s1)
     | s1 = [ &_ret <- { f0 = _6 } ] s2
     | s2 = return {_ret} ] ]
   [ & _ret: t_Iter_ref_K_ref_V = Any.any_l () | & self: t_FMap_K_V = self | & _6: t_FMap_ref_K_ref_V = Any.any_l () ])
   [ return (result: t_Iter_ref_K_ref_V) ->
   {[@stop_split] [@expl:into_iter_ref_FMap_K_V ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_ref_K_ref_V result)
     /\ ([@stop_split] [@expl:into_iter ensures #0] len_ref_K (view_Iter_ref_K_ref_V result) = len_K self)
-    /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (get_K self k = Some v)
-      = (get_ref_K (view_Iter_ref_K_ref_V result) k = Some'0 v))}
+    /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (map_Option_V (get_K self k) (fun (v'0: t_V) -> v'0)
+        = Some'0 v)
+      = (map_Option_ref_V (get_ref_K (view_Iter_ref_K_ref_V result) k) (fun (v'0: t_V) -> v'0) = Some'1 v))}
     (! return {result}) ]

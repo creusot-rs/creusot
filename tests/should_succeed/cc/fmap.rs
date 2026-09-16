@@ -11,7 +11,7 @@ pub fn resolves() -> Ghost<usize> {
         let bor_v = &mut v;
         let snap_k = snapshot!{ bor_k };
         let snap_v = snapshot!{ bor_v };
-        s.insert_ghost(bor_k, bor_v);
+        s.insert(bor_k, bor_v);
         #[invariant(produced.len() <= 1)]
         #[invariant(produced.len() == 0 || ^snap_k == 1usize && ^snap_v == 1usize)]
         #[variant(1 - produced.len())]

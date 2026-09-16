@@ -48,7 +48,15 @@ axiom empty_K_spec: len_K empty_K = 0
 
 axiom empty_K_spec'0: to_mapping_K empty_K = Const.const (None)
 
-predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
+type t_Option_ref_V = None'0 | Some'0 t_V
+
+function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
+predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) =
+  forall k: t_K. map_Option_V (get_K self k) (fun (v: t_V) -> v) = map_Option_V (get_K other k) (fun (v: t_V) -> v)
 
 axiom ext_eq_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V [self = other]. ext_eq_K self other = (self = other)
 
@@ -64,4 +72,4 @@ goal vc_is_empty_K: (forall k: t_K. contains_K self k -> len_K self = len_K (rem
   && (([@stop_split] [@expl:empty ensures] ([@stop_split] [@expl:empty ensures #0] len_K empty_K = 0)
     /\ ([@stop_split] [@expl:empty ensures #1] to_mapping_K empty_K = Const.const (None)))
   -> ([@stop_split] [@expl:ext_eq ensures] ext_eq_K self empty_K = (self = empty_K))
-  -> ([@stop_split] [@expl:is_empty ensures] ext_eq_K self empty_K = (len_K self = 0)))
+  -> ([@stop_split] [@expl:is_empty_logic ensures] ext_eq_K self empty_K = (len_K self = 0)))

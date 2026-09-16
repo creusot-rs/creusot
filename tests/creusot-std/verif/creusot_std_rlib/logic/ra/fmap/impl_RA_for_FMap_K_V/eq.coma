@@ -8,11 +8,18 @@ use map.Map
 
 type t_FMap_K_V
 
-type t_K
-
 type t_V
 
 type t_Option_V = None | Some t_V
+
+type t_Option_ref_V = None'0 | Some'0 t_V
+
+function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
+type t_K
 
 function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
 
@@ -20,17 +27,18 @@ function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.
 
 meta "rewrite_def" function get_K
 
-predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
+predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) =
+  forall k: t_K. map_Option_V (get_K self k) (fun (v: t_V) -> v) = map_Option_V (get_K other k) (fun (v: t_V) -> v)
 
 axiom ext_eq_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V [self = other]. ext_eq_K self other = (self = other)
 
-type t_Option_Option_V = None'0 | Some'0 t_Option_V
+type t_Option_Option_V = None'1 | Some'1 t_Option_V
 
 type tup2_Option_V_Option_V = { f0: t_Option_V; f1: t_Option_V }
 
-function map_Option_V (self: t_Option_V) (f: Map.map t_V t_Option_V) : t_Option_Option_V = match self with
-    | None -> None'0
-    | Some x -> Some'0 (Map.get f x)
+function map_Option_V'0 (self: t_Option_V) (f: Map.map t_V t_Option_V) : t_Option_Option_V = match self with
+    | None -> None'1
+    | Some x -> Some'1 (Map.get f x)
     end
 
 function op_V (self: t_V) (other: t_V) : t_Option_V
@@ -63,9 +71,9 @@ function incl_op_V (self: t_V) (other: t_V) (comb: t_V) : ()
 axiom incl_op_V_spec: forall self: t_V, other: t_V, comb: t_V. op_V self other = Some comb -> incl_V self comb
 
 function op_Option_V (self: t_Option_V) (other: t_Option_V) : t_Option_Option_V = match { f0 = self; f1 = other } with
-    | {f0 = None} -> Some'0 other
-    | {f1 = None} -> Some'0 self
-    | {f0 = Some x; f1 = Some y} -> map_Option_V (op_V x y) (fun (z: t_V) -> Some z)
+    | {f0 = None} -> Some'1 other
+    | {f1 = None} -> Some'1 self
+    | {f0 = Some x; f1 = Some y} -> map_Option_V'0 (op_V x y) (fun (z: t_V) -> Some z)
     end
 
 function commutative_Option_V (a: t_Option_V) (b: t_Option_V) : ()

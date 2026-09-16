@@ -554,9 +554,9 @@ module M_implementation__find
       | Some x -> Some'0 (Map.get f x)
       end
   
-  let get_ghost_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
+  let get_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
     (return (x: t_Option_ref_Perm_PermCell_Node_T)) = any
-    [ return (result: t_Option_ref_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:get_ghost ensures] result
+    [ return (result: t_Option_ref_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:get ensures] result
       = map_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self key) (fun (v: t_Perm_PermCell_Node_T) -> v)}
       (! return {result}) ]
   
@@ -735,10 +735,10 @@ module M_implementation__find
   axiom len_Snapshot_Elem_T_spec:
     forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [len_Snapshot_Elem_T self]. ge_log_Int (len_Snapshot_Elem_T self) 0
   
-  let get_mut_ghost_Snapshot_Elem_T (self: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
+  let get_mut_Snapshot_Elem_T (self: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
     (return (x: t_Option_refmut_Perm_PermCell_Node_T)) = any
     [ return (result: t_Option_refmut_Perm_PermCell_Node_T) ->
-    {[@stop_split] [@expl:get_mut_ghost_Snapshot_Elem_T ensures] ([@stop_split] [@expl:get_mut_ghost ensures #0] if contains_Snapshot_Elem_T self.current key then
+    {[@stop_split] [@expl:get_mut_Snapshot_Elem_T ensures] ([@stop_split] [@expl:get_mut ensures #0] if contains_Snapshot_Elem_T self.current key then
           match result with
             | None'1 -> false
             | Some'1 r -> contains_Snapshot_Elem_T self.final key
@@ -748,10 +748,9 @@ module M_implementation__find
         else
           result = None'1 /\ self.current = self.final
         )
-      /\ ([@stop_split] [@expl:get_mut_ghost ensures #1] forall k: t_Elem_T. k <> key
+      /\ ([@stop_split] [@expl:get_mut ensures #1] forall k: t_Elem_T. k <> key
           -> get_Snapshot_Elem_T self.current k = get_Snapshot_Elem_T self.final k)
-      /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] len_Snapshot_Elem_T self.current
-      = len_Snapshot_Elem_T self.final)}
+      /\ ([@stop_split] [@expl:get_mut ensures #2] len_Snapshot_Elem_T self.current = len_Snapshot_Elem_T self.final)}
       (! return {result}) ]
   
   let unwrap_refmut_Perm_PermCell_Node_T (self_: t_Option_refmut_Perm_PermCell_Node_T)
@@ -853,94 +852,93 @@ module M_implementation__find
     [ bb0 = s0
       [ s0 = deref_Ghost_refmut_UF_T {uf} (fun (_x: MutBorrow.t t_UF_T) -> [ &_14 <- _x ] s1)
       | s1 = [ &_17 <- elem ] s2
-      | s2 = get_ghost_Snapshot_Elem_T {_14.current.f0'0.perms} {_17}
+      | s2 = get_Snapshot_Elem_T'0 {_14.current.f0'0.perms} {_17}
           (fun (_x: t_Option_ref_Perm_PermCell_Node_T) -> [ &_12 <- _x ] s3)
       | s3 = unwrap_ref_Perm_PermCell_Node_T {_12} (fun (_x: t_Perm_PermCell_Node_T) -> [ &__temp <- _x ] s4)
       | s4 = new_ref_Perm_PermCell_Node_T {__temp} (fun (_x: t_Perm_PermCell_Node_T) -> [ &perm <- _x ] s5)
-      | s5 = deref_Rc_PermCell_Node_T_Global {elem.f0} (fun (_x: t_PermCell_Node_T) -> [ &_25 <- _x ] s6)
-      | s6 = borrow_Node_T {_25} {perm} (fun (_x: t_Node_T) -> [ &_23 <- _x ] s7)
+      | s5 = deref_Rc_PermCell_Node_T_Global {elem.f0} (fun (_x: t_PermCell_Node_T) -> [ &_26 <- _x ] s6)
+      | s6 = borrow_Node_T {_26} {perm} (fun (_x: t_Node_T) -> [ &_24 <- _x ] s7)
       | s7 = any
-        [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_23 = Root x0 x1} (! bb9)
-        | br1 (x0: t_Elem_T) -> {_23 = Link x0} (! bb10) ] ]
+        [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_24 = Root x0 x1} (! bb9)
+        | br1 (x0: t_Elem_T) -> {_24 = Link x0} (! bb10) ] ]
     | bb10 = s0
-      [ s0 = elim_Link {_23} (fun (r0: t_Elem_T) -> [ &e <- r0 ] s1)
+      [ s0 = elim_Link {_24} (fun (r0: t_Elem_T) -> [ &e <- r0 ] s1)
       | s1 = clone_Elem_T {e} (fun (_x: t_Elem_T) -> [ &e'0 <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
-            [ &_39 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
+            [ &_40 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
             [ &uf <- _bor.final ] s3) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
-      | s3 = deref_mut_Ghost_refmut_UF_T {_39} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_38 <- _x ] s4)
-      | s4 = MutBorrow.borrow_mut <t_UF_T> {_38.current.current}
+      | s3 = deref_mut_Ghost_refmut_UF_T {_40} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_39 <- _x ] s4)
+      | s4 = MutBorrow.borrow_mut <t_UF_T> {_39.current.current}
+          (fun (_bor: MutBorrow.t t_UF_T) ->
+            [ &_38 <- _bor ] -{inv_UF_T _bor.final}-
+            [ &_39 <- { _39 with current = { _39.current with current = _bor.final } } ] s5)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _39.current.current} any) ]
+      | s5 = MutBorrow.borrow_final <t_UF_T> {_38.current} {MutBorrow.get_id _38}
           (fun (_bor: MutBorrow.t t_UF_T) ->
             [ &_37 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_38 <- { _38 with current = { _38.current with current = _bor.final } } ] s5)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _38.current.current} any) ]
-      | s5 = MutBorrow.borrow_final <t_UF_T> {_37.current} {MutBorrow.get_id _37}
+            [ &_38 <- { _38 with current = _bor.final } ] s6)
+        [ _ck -> (! {[@expl:type invariant] inv_UF_T _38.current} any) ]
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _39} any) ]
+      | s7 = -{resolve_refmut_refmut_UF_T _39}- s8
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _38} any) ]
+      | s9 = -{resolve_refmut_UF_T _38}- s10
+      | s10 = MutBorrow.borrow_final <t_UF_T> {_37.current} {MutBorrow.get_id _37}
           (fun (_bor: MutBorrow.t t_UF_T) ->
             [ &_36 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_37 <- { _37 with current = _bor.final } ] s6)
+            [ &_37 <- { _37 with current = _bor.final } ] s11)
         [ _ck -> (! {[@expl:type invariant] inv_UF_T _37.current} any) ]
-      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _38} any) ]
-      | s7 = -{resolve_refmut_refmut_UF_T _38}- s8
-      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _37} any) ]
-      | s9 = -{resolve_refmut_UF_T _37}- s10
-      | s10 = MutBorrow.borrow_final <t_UF_T> {_36.current} {MutBorrow.get_id _36}
+      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _37} any) ]
+      | s12 = -{resolve_refmut_UF_T _37}- s13
+      | s13 = MutBorrow.borrow_final <t_UF_T> {_36.current} {MutBorrow.get_id _36}
           (fun (_bor: MutBorrow.t t_UF_T) ->
             [ &_35 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_36 <- { _36 with current = _bor.final } ] s11)
+            [ &_36 <- { _36 with current = _bor.final } ] s14)
         [ _ck -> (! {[@expl:type invariant] inv_UF_T _36.current} any) ]
-      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _36} any) ]
-      | s12 = -{resolve_refmut_UF_T _36}- s13
-      | s13 = MutBorrow.borrow_final <t_UF_T> {_35.current} {MutBorrow.get_id _35}
-          (fun (_bor: MutBorrow.t t_UF_T) ->
-            [ &_34 <- _bor ] -{inv_UF_T _bor.final}-
-            [ &_35 <- { _35 with current = _bor.final } ] s14)
-        [ _ck -> (! {[@expl:type invariant] inv_UF_T _35.current} any) ]
-      | s14 = new_refmut_UF_T {_34} (fun (_x: MutBorrow.t t_UF_T) -> [ &_33 <- _x ] s15)
-      | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _35} any) ]
-      | s16 = -{resolve_refmut_UF_T _35}- s17
-      | s17 = find_T {_33} {e'0} (fun (_x: t_Elem_T) -> [ &root <- _x ] s18)
+      | s14 = new_refmut_UF_T {_35} (fun (_x: MutBorrow.t t_UF_T) -> [ &_34 <- _x ] s15)
+      | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_refmut_UF_T _36} any) ]
+      | s16 = -{resolve_refmut_UF_T _36}- s17
+      | s17 = find_T {_34} {e'0} (fun (_x: t_Elem_T) -> [ &root <- _x ] s18)
       | s18 = MutBorrow.borrow_mut <MutBorrow.t t_UF_T> {uf}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UF_T)) ->
-            [ &_43 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
+            [ &_44 <- _bor ] -{inv_Ghost_refmut_UF_T _bor.final}-
             [ &uf <- _bor.final ] s19) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
-      | s19 = deref_mut_Ghost_refmut_UF_T {_43} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_42 <- _x ] s20)
-      | s20 = MutBorrow.borrow_mut <t_UFInner_T> {_42.current.current.f0'0}
+      | s19 = deref_mut_Ghost_refmut_UF_T {_44} (fun (_x: MutBorrow.t (MutBorrow.t t_UF_T)) -> [ &_43 <- _x ] s20)
+      | s20 = MutBorrow.borrow_mut <t_UFInner_T> {_43.current.current.f0'0}
           (fun (_bor: MutBorrow.t t_UFInner_T) ->
             [ &__temp'0 <- _bor ]
-            [ &_42 <- { _42 with current = { _42.current with current = { f0'0 = _bor.final } } } ] s21)
+            [ &_43 <- { _43 with current = { _43.current with current = { f0'0 = _bor.final } } } ] s21)
       | s21 = new_refmut_UFInner_T {__temp'0} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s22)
       | s22 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
-          (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_50 <- _bor ] [ &uf'0 <- _bor.final ] s23)
-      | s23 = deref_mut_Ghost_refmut_UFInner_T {_50}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_49 <- _x ] s24)
-      | s24 = [ &_52 <- elem ] s25
-      | s25 = MutBorrow.borrow_mut <t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T> {_49.current.current.perms}
+          (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_51 <- _bor ] [ &uf'0 <- _bor.final ] s23)
+      | s23 = deref_mut_Ghost_refmut_UFInner_T {_51}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_50 <- _x ] s24)
+      | s24 = [ &_53 <- elem ] s25
+      | s25 = MutBorrow.borrow_mut <t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T> {_50.current.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) ->
-            [ &_48 <- _bor ]
-            [ &_49 <- { _49 with current = { _49.current with current = { _49.current.current with perms = _bor.final } } } ]
+            [ &_49 <- _bor ]
+            [ &_50 <- { _50 with current = { _50.current with current = { _50.current.current with perms = _bor.final } } } ]
             s26)
-      | s26 = get_mut_ghost_Snapshot_Elem_T {_48} {_52}
-          (fun (_x: t_Option_refmut_Perm_PermCell_Node_T) -> [ &_47 <- _x ] s27)
-      | s27 = unwrap_refmut_Perm_PermCell_Node_T {_47}
+      | s26 = get_mut_Snapshot_Elem_T {_49} {_53} (fun (_x: t_Option_refmut_Perm_PermCell_Node_T) -> [ &_48 <- _x ] s27)
+      | s27 = unwrap_refmut_Perm_PermCell_Node_T {_48}
           (fun (_x: MutBorrow.t t_Perm_PermCell_Node_T) -> [ &__temp'1 <- _x ] s28)
-      | s28 = -{resolve_refmut_refmut_UFInner_T _49}- s29
+      | s28 = -{resolve_refmut_refmut_UFInner_T _50}- s29
       | s29 = new_refmut_Perm_PermCell_Node_T {__temp'1}
           (fun (_x: MutBorrow.t t_Perm_PermCell_Node_T) -> [ &mut_perm <- _x ] s30)
-      | s30 = clone_Elem_T {root} (fun (_x: t_Elem_T) -> [ &_60 <- _x ] s31)
-      | s31 = [ &_59 <- Link _60 ] s32
+      | s30 = clone_Elem_T {root} (fun (_x: t_Elem_T) -> [ &_61 <- _x ] s31)
+      | s31 = [ &_60 <- Link _61 ] s32
       | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_Elem_T elem} any) ]
       | s33 = -{resolve_Elem_T elem}- s34
-      | s34 = deref_Rc_PermCell_Node_T_Global {elem.f0} (fun (_x: t_PermCell_Node_T) -> [ &_64 <- _x ] s35)
-      | s35 = borrow_mut_Node_T {_64} {mut_perm} (fun (_x: MutBorrow.t t_Node_T) -> [ &_62 <- _x ] s36)
-      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_Node_T _62.current} any) ]
-      | s37 = -{resolve_Node_T _62.current}- s38
-      | s38 = [ &_62 <- { _62 with current = _59 } ] s39
-      | s39 = s40 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _62} any) ]
-      | s40 = -{resolve_refmut_Node_T _62}- s41
+      | s34 = deref_Rc_PermCell_Node_T_Global {elem.f0} (fun (_x: t_PermCell_Node_T) -> [ &_65 <- _x ] s35)
+      | s35 = borrow_mut_Node_T {_65} {mut_perm} (fun (_x: MutBorrow.t t_Node_T) -> [ &_63 <- _x ] s36)
+      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_Node_T _63.current} any) ]
+      | s37 = -{resolve_Node_T _63.current}- s38
+      | s38 = [ &_63 <- { _63 with current = _60 } ] s39
+      | s39 = s40 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _63} any) ]
+      | s40 = -{resolve_refmut_Node_T _63}- s41
       | s41 = -{resolve_Ghost_refmut_UFInner_T'0 uf'0}- s42
-      | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _42} any) ]
-      | s43 = -{resolve_refmut_refmut_UF_T _42}- s44
+      | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_UF_T _43} any) ]
+      | s43 = -{resolve_refmut_refmut_UF_T _43}- s44
       | s44 = s45 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UF_T uf} any) ]
       | s45 = -{resolve_Ghost_refmut_UF_T'0 uf}- s46
       | s46 = [ &_ret <- root ] s47
@@ -958,33 +956,33 @@ module M_implementation__find
     | & _14: MutBorrow.t t_UF_T = Any.any_l ()
     | & _17: t_Elem_T = Any.any_l ()
     | & perm: t_Perm_PermCell_Node_T = Any.any_l ()
-    | & _23: t_Node_T = Any.any_l ()
-    | & _25: t_PermCell_Node_T = Any.any_l ()
+    | & _24: t_Node_T = Any.any_l ()
+    | & _26: t_PermCell_Node_T = Any.any_l ()
     | & e: t_Elem_T = Any.any_l ()
     | & e'0: t_Elem_T = Any.any_l ()
     | & root: t_Elem_T = Any.any_l ()
-    | & _33: MutBorrow.t t_UF_T = Any.any_l ()
     | & _34: MutBorrow.t t_UF_T = Any.any_l ()
     | & _35: MutBorrow.t t_UF_T = Any.any_l ()
     | & _36: MutBorrow.t t_UF_T = Any.any_l ()
     | & _37: MutBorrow.t t_UF_T = Any.any_l ()
-    | & _38: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _38: MutBorrow.t t_UF_T = Any.any_l ()
     | & _39: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _40: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
     | & __temp'0: MutBorrow.t t_UFInner_T = Any.any_l ()
-    | & _42: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
     | & _43: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
+    | & _44: MutBorrow.t (MutBorrow.t t_UF_T) = Any.any_l ()
     | & uf'0: MutBorrow.t t_UFInner_T = Any.any_l ()
     | & __temp'1: MutBorrow.t t_Perm_PermCell_Node_T = Any.any_l ()
-    | & _47: t_Option_refmut_Perm_PermCell_Node_T = Any.any_l ()
-    | & _48: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T = Any.any_l ()
-    | & _49: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
+    | & _48: t_Option_refmut_Perm_PermCell_Node_T = Any.any_l ()
+    | & _49: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T = Any.any_l ()
     | & _50: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
-    | & _52: t_Elem_T = Any.any_l ()
+    | & _51: MutBorrow.t (MutBorrow.t t_UFInner_T) = Any.any_l ()
+    | & _53: t_Elem_T = Any.any_l ()
     | & mut_perm: MutBorrow.t t_Perm_PermCell_Node_T = Any.any_l ()
-    | & _59: t_Node_T = Any.any_l ()
-    | & _60: t_Elem_T = Any.any_l ()
-    | & _62: MutBorrow.t t_Node_T = Any.any_l ()
-    | & _64: t_PermCell_Node_T = Any.any_l () ])
+    | & _60: t_Node_T = Any.any_l ()
+    | & _61: t_Elem_T = Any.any_l ()
+    | & _63: MutBorrow.t t_Node_T = Any.any_l ()
+    | & _65: t_PermCell_Node_T = Any.any_l () ])
     [ return (result: t_Elem_T) ->
     {[@stop_split] [@expl:find_T ensures] ([@stop_split] [@expl:find result type invariant] inv_Elem_T result)
       /\ ([@stop_split] [@expl:find ensures #0] result = root_T uf.current elem)
@@ -1144,9 +1142,9 @@ module M_implementation__get
       | Some x -> Some'0 (Map.get f x)
       end
   
-  let get_ghost_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
+  let get_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
     (return (x: t_Option_ref_Perm_PermCell_Node_T)) = any
-    [ return (result: t_Option_ref_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:get_ghost ensures] result
+    [ return (result: t_Option_ref_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:get ensures] result
       = map_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self key) (fun (v: t_Perm_PermCell_Node_T) -> v)}
       (! return {result}) ]
   
@@ -1261,18 +1259,18 @@ module M_implementation__get
     [ bb0 = s0
       [ s0 = deref_Ghost_ref_UF_T {uf} (fun (_x: t_UF_T) -> [ &_16 <- _x ] s1)
       | s1 = [ &_19 <- elem ] s2
-      | s2 = get_ghost_Snapshot_Elem_T {_16.f0'0.perms} {_19}
+      | s2 = get_Snapshot_Elem_T'0 {_16.f0'0.perms} {_19}
           (fun (_x: t_Option_ref_Perm_PermCell_Node_T) -> [ &_14 <- _x ] s3)
       | s3 = unwrap_ref_Perm_PermCell_Node_T {_14} (fun (_x: t_Perm_PermCell_Node_T) -> [ &_13 <- _x ] s4)
       | s4 = new_ref_Perm_PermCell_Node_T {_13} (fun (_x: t_Perm_PermCell_Node_T) -> [ &perm <- _x ] s5)
-      | s5 = deref_Rc_PermCell_Node_T_Global {elem.f0} (fun (_x: t_PermCell_Node_T) -> [ &_25 <- _x ] s6)
-      | s6 = borrow_Node_T {_25} {perm} (fun (_x: t_Node_T) -> [ &_23 <- _x ] s7)
+      | s5 = deref_Rc_PermCell_Node_T_Global {elem.f0} (fun (_x: t_PermCell_Node_T) -> [ &_26 <- _x ] s6)
+      | s6 = borrow_Node_T {_26} {perm} (fun (_x: t_Node_T) -> [ &_24 <- _x ] s7)
       | s7 = any
-        [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_23 = Root x0 x1} (! bb10)
-        | br1 (x0: t_Elem_T) -> {_23 = Link x0} (! bb8) ] ]
+        [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_24 = Root x0 x1} (! bb10)
+        | br1 (x0: t_Elem_T) -> {_24 = Link x0} (! bb8) ] ]
     | bb8 = {false} any
     | bb10 = s0
-      [ s0 = elim_Root {_23} (fun (rrank: t_PeanoInt) (rpayload: t_T) -> [ &payload <- rpayload ] s1)
+      [ s0 = elim_Root {_24} (fun (rrank: t_PeanoInt) (rpayload: t_T) -> [ &payload <- rpayload ] s1)
       | s1 = [ &_ret <- payload ] s2
       | s2 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
@@ -1283,8 +1281,8 @@ module M_implementation__get
     | & _14: t_Option_ref_Perm_PermCell_Node_T = Any.any_l ()
     | & _16: t_UF_T = Any.any_l ()
     | & _19: t_Elem_T = Any.any_l ()
-    | & _23: t_Node_T = Any.any_l ()
-    | & _25: t_PermCell_Node_T = Any.any_l ()
+    | & _24: t_Node_T = Any.any_l ()
+    | & _26: t_PermCell_Node_T = Any.any_l ()
     | & payload: t_T = Any.any_l () ])
     [ return (result: t_T) ->
     {[@stop_split] [@expl:get_T ensures] ([@stop_split] [@expl:get result type invariant] inv_ref_T result)
@@ -1875,26 +1873,26 @@ module M_implementation__link
     forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T, k: t_Elem_T [remove_Snapshot_Elem_T self k]. len_Snapshot_Elem_T (remove_Snapshot_Elem_T self k)
       = (if contains_Snapshot_Elem_T self k then len_Snapshot_Elem_T self - 1 else len_Snapshot_Elem_T self)
   
-  function insert_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) (v: t_Perm_PermCell_Node_T) : t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
+  function add_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) (v: t_Perm_PermCell_Node_T) : t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
   
-  axiom insert_Snapshot_Elem_T_spec:
-    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T, k: t_Elem_T, v: t_Perm_PermCell_Node_T [insert_Snapshot_Elem_T self k v]. to_mapping_Snapshot_Elem_T (insert_Snapshot_Elem_T self k v)
+  axiom add_Snapshot_Elem_T_spec:
+    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T, k: t_Elem_T, v: t_Perm_PermCell_Node_T [add_Snapshot_Elem_T self k v]. to_mapping_Snapshot_Elem_T (add_Snapshot_Elem_T self k v)
       = Map.set (to_mapping_Snapshot_Elem_T self) k (Some v)
   
-  axiom insert_Snapshot_Elem_T_spec'0:
-    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T, k: t_Elem_T, v: t_Perm_PermCell_Node_T [insert_Snapshot_Elem_T self k v]. len_Snapshot_Elem_T (insert_Snapshot_Elem_T self k v)
+  axiom add_Snapshot_Elem_T_spec'0:
+    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T, k: t_Elem_T, v: t_Perm_PermCell_Node_T [add_Snapshot_Elem_T self k v]. len_Snapshot_Elem_T (add_Snapshot_Elem_T self k v)
       = (if contains_Snapshot_Elem_T self k then len_Snapshot_Elem_T self else len_Snapshot_Elem_T self + 1)
   
-  let split_mut_ghost_Snapshot_Elem_T (self: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
+  let split_mut_Snapshot_Elem_T (self: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
     (return (x: tup2_refmut_Perm_PermCell_Node_T_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T)) =
-  {[@stop_split] [@expl:split_mut_ghost requires] contains_Snapshot_Elem_T self.current key}
+  {[@stop_split] [@expl:split_mut requires] contains_Snapshot_Elem_T self.current key}
     any
     [ return (result: tup2_refmut_Perm_PermCell_Node_T_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) ->
-    {[@stop_split] [@expl:split_mut_ghost_Snapshot_Elem_T ensures] ([@stop_split] [@expl:split_mut_ghost ensures #0] result.f1'2.current
+    {[@stop_split] [@expl:split_mut_Snapshot_Elem_T ensures] ([@stop_split] [@expl:split_mut ensures #0] result.f1'2.current
         = remove_Snapshot_Elem_T self.current key)
-      /\ ([@stop_split] [@expl:split_mut_ghost ensures #1] index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.current key
+      /\ ([@stop_split] [@expl:split_mut ensures #1] index_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T self.current key
         = result.f0'2.current
-      /\ self.final = insert_Snapshot_Elem_T result.f1'2.final key result.f0'2.final)}
+      /\ self.final = add_Snapshot_Elem_T result.f1'2.final key result.f0'2.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_UFInner_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_UFInner_T)) =
@@ -2010,10 +2008,10 @@ module M_implementation__link
   
   type t_Option_refmut_Perm_PermCell_Node_T = None'0 | Some'0 (MutBorrow.t t_Perm_PermCell_Node_T)
   
-  let get_mut_ghost_Snapshot_Elem_T (self: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
+  let get_mut_Snapshot_Elem_T (self: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
     (return (x: t_Option_refmut_Perm_PermCell_Node_T)) = any
     [ return (result: t_Option_refmut_Perm_PermCell_Node_T) ->
-    {[@stop_split] [@expl:get_mut_ghost_Snapshot_Elem_T ensures] ([@stop_split] [@expl:get_mut_ghost ensures #0] if contains_Snapshot_Elem_T self.current key then
+    {[@stop_split] [@expl:get_mut_Snapshot_Elem_T ensures] ([@stop_split] [@expl:get_mut ensures #0] if contains_Snapshot_Elem_T self.current key then
           match result with
             | None'0 -> false
             | Some'0 r -> contains_Snapshot_Elem_T self.final key
@@ -2023,10 +2021,9 @@ module M_implementation__link
         else
           result = None'0 /\ self.current = self.final
         )
-      /\ ([@stop_split] [@expl:get_mut_ghost ensures #1] forall k: t_Elem_T. k <> key
+      /\ ([@stop_split] [@expl:get_mut ensures #1] forall k: t_Elem_T. k <> key
           -> get_Snapshot_Elem_T self.current k = get_Snapshot_Elem_T self.final k)
-      /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] len_Snapshot_Elem_T self.current
-      = len_Snapshot_Elem_T self.final)}
+      /\ ([@stop_split] [@expl:get_mut ensures #2] len_Snapshot_Elem_T self.current = len_Snapshot_Elem_T self.final)}
       (! return {result}) ]
   
   let unwrap_refmut_Perm_PermCell_Node_T (self_: t_Option_refmut_Perm_PermCell_Node_T)
@@ -2195,7 +2192,7 @@ module M_implementation__link
             [ &_39 <- _bor ]
             [ &_40 <- { _40 with current = { _40.current with current = { _40.current.current with perms = _bor.final } } } ]
             s4)
-      | s4 = split_mut_ghost_Snapshot_Elem_T {_39} {_43}
+      | s4 = split_mut_Snapshot_Elem_T {_39} {_43}
           (fun (_x: tup2_refmut_Perm_PermCell_Node_T_refmut_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) ->
             [ &_38 <- _x ] s5)
       | s5 = -{resolve_refmut_refmut_UFInner_T _40}- s6
@@ -2248,8 +2245,7 @@ module M_implementation__link
       | s30 = MutBorrow.borrow_mut <t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T> {_71.current.current}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) ->
             [ &_70 <- _bor ] [ &_71 <- { _71 with current = { _71.current with current = _bor.final } } ] s31)
-      | s31 = get_mut_ghost_Snapshot_Elem_T {_70} {_74}
-          (fun (_x: t_Option_refmut_Perm_PermCell_Node_T) -> [ &_69 <- _x ] s32)
+      | s31 = get_mut_Snapshot_Elem_T {_70} {_74} (fun (_x: t_Option_refmut_Perm_PermCell_Node_T) -> [ &_69 <- _x ] s32)
       | s32 = unwrap_refmut_Perm_PermCell_Node_T {_69}
           (fun (_x: MutBorrow.t t_Perm_PermCell_Node_T) -> [ &_68 <- _x ] s33)
       | s33 = MutBorrow.borrow_final <t_Perm_PermCell_Node_T> {_68.current} {MutBorrow.get_id _68}
@@ -2674,9 +2670,9 @@ module M_implementation__make
       | Some x -> Some'0 (Map.get f x)
       end
   
-  let get_ghost_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
+  let get_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
     (return (x: t_Option_ref_Perm_PermCell_Node_T)) = any
-    [ return (result: t_Option_ref_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:get_ghost ensures] result
+    [ return (result: t_Option_ref_Perm_PermCell_Node_T) -> {[@stop_split] [@expl:get ensures] result
       = map_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self key) (fun (v: t_Perm_PermCell_Node_T) -> v)}
       (! return {result}) ]
   
@@ -2719,22 +2715,22 @@ module M_implementation__make
   axiom len_Snapshot_Elem_T_spec:
     forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [len_Snapshot_Elem_T self]. ge_log_Int (len_Snapshot_Elem_T self) 0
   
-  function insert_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) (v: t_Perm_PermCell_Node_T) : t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
+  function add_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (k: t_Elem_T) (v: t_Perm_PermCell_Node_T) : t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T
   
-  axiom insert_Snapshot_Elem_T_spec:
-    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T, k: t_Elem_T, v: t_Perm_PermCell_Node_T [insert_Snapshot_Elem_T self k v]. to_mapping_Snapshot_Elem_T (insert_Snapshot_Elem_T self k v)
+  axiom add_Snapshot_Elem_T_spec:
+    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T, k: t_Elem_T, v: t_Perm_PermCell_Node_T [add_Snapshot_Elem_T self k v]. to_mapping_Snapshot_Elem_T (add_Snapshot_Elem_T self k v)
       = Map.set (to_mapping_Snapshot_Elem_T self) k (Some v)
   
-  axiom insert_Snapshot_Elem_T_spec'0:
-    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T, k: t_Elem_T, v: t_Perm_PermCell_Node_T [insert_Snapshot_Elem_T self k v]. len_Snapshot_Elem_T (insert_Snapshot_Elem_T self k v)
+  axiom add_Snapshot_Elem_T_spec'0:
+    forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T, k: t_Elem_T, v: t_Perm_PermCell_Node_T [add_Snapshot_Elem_T self k v]. len_Snapshot_Elem_T (add_Snapshot_Elem_T self k v)
       = (if contains_Snapshot_Elem_T self k then len_Snapshot_Elem_T self else len_Snapshot_Elem_T self + 1)
   
-  let insert_ghost_Snapshot_Elem_T (self: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
+  let insert_Snapshot_Elem_T (self: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (key: t_Elem_T)
     (value: t_Perm_PermCell_Node_T) (return (x: t_Option_Perm_PermCell_Node_T)) = any
     [ return (result: t_Option_Perm_PermCell_Node_T) ->
-    {[@stop_split] [@expl:insert_ghost_Snapshot_Elem_T ensures] ([@stop_split] [@expl:insert_ghost ensures #0] self.final
-        = insert_Snapshot_Elem_T self.current key value)
-      /\ ([@stop_split] [@expl:insert_ghost ensures #1] result = get_Snapshot_Elem_T self.current key)}
+    {[@stop_split] [@expl:insert_Snapshot_Elem_T ensures] ([@stop_split] [@expl:insert ensures #0] self.final
+        = add_Snapshot_Elem_T self.current key value)
+      /\ ([@stop_split] [@expl:insert ensures #1] result = get_Snapshot_Elem_T self.current key)}
       (! return {result}) ]
   
   predicate resolve_refmut_UF_T [@inline:trivial] (_1: MutBorrow.t t_UF_T) = _1.final = _1.current
@@ -2783,18 +2779,18 @@ module M_implementation__make
       | s11 = [ &perm'0 <- _28.f0'3 ] s12
       | s12 = [ &uf'0 <- _28.f1'3 ] s13
       | s13 = [ &_37 <- elt ] s14
-      | s14 = get_ghost_Snapshot_Elem_T {uf'0.current.f0'2.perms} {_37}
+      | s14 = get_Snapshot_Elem_T'0 {uf'0.current.f0'2.perms} {_37}
           (fun (_x: t_Option_ref_Perm_PermCell_Node_T) -> [ &_34 <- _x ] s15)
       | s15 = any [ br0 -> {_34 = None'0} (! bb18) | br1 (x0: t_Perm_PermCell_Node_T) -> {_34 = Some'0 x0} (! bb14) ] ]
     | bb14 = s0
       [ s0 = elim_Some {_34} (fun (r0: t_Perm_PermCell_Node_T) -> [ &other_perm <- r0 ] s1)
       | s1 = MutBorrow.borrow_mut <t_Perm_PermCell_Node_T> {perm'0}
-          (fun (_bor: MutBorrow.t t_Perm_PermCell_Node_T) -> [ &_44 <- _bor ] [ &perm'0 <- _bor.final ] s2)
-      | s2 = MutBorrow.borrow_final <t_Perm_PermCell_Node_T> {_44.current} {MutBorrow.get_id _44}
+          (fun (_bor: MutBorrow.t t_Perm_PermCell_Node_T) -> [ &_45 <- _bor ] [ &perm'0 <- _bor.final ] s2)
+      | s2 = MutBorrow.borrow_final <t_Perm_PermCell_Node_T> {_45.current} {MutBorrow.get_id _45}
           (fun (_bor: MutBorrow.t t_Perm_PermCell_Node_T) ->
-            [ &_43 <- _bor ] [ &_44 <- { _44 with current = _bor.final } ] s3)
-      | s3 = disjoint_lemma_PermCell_Node_T {_43} {other_perm} (fun (_x: ()) -> [ &_33 <- _x ] s4)
-      | s4 = -{resolve_refmut_Perm_PermCell_Node_T _44}- s5
+            [ &_44 <- _bor ] [ &_45 <- { _45 with current = _bor.final } ] s3)
+      | s3 = disjoint_lemma_PermCell_Node_T {_44} {other_perm} (fun (_x: ()) -> [ &_33 <- _x ] s4)
+      | s4 = -{resolve_refmut_Perm_PermCell_Node_T _45}- s5
       | s5 = bb18 ]
     | bb18 = s0
       [ s0 =
@@ -2803,10 +2799,9 @@ module M_implementation__make
       | s1 = MutBorrow.borrow_final <t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T> {uf'0.current.f0'2.perms}
           {MutBorrow.inherit_id (MutBorrow.inherit_id (MutBorrow.get_id uf'0) 0) 1}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) ->
-            [ &_51 <- _bor ]
+            [ &_52 <- _bor ]
             [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with perms = _bor.final } } } ] s2)
-      | s2 = insert_ghost_Snapshot_Elem_T {_51} {elt} {perm'0}
-          (fun (_x: t_Option_Perm_PermCell_Node_T) -> [ &_50 <- _x ] s3)
+      | s2 = insert_Snapshot_Elem_T {_52} {elt} {perm'0} (fun (_x: t_Option_Perm_PermCell_Node_T) -> [ &_51 <- _x ] s3)
       | s3 =
         [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with payloads = Map.set uf'0.current.f0'2.payloads elt payload_snap } } } ]
         s4
@@ -2840,10 +2835,10 @@ module M_implementation__make
     | & _34: t_Option_ref_Perm_PermCell_Node_T = Any.any_l ()
     | & _37: t_Elem_T = Any.any_l ()
     | & other_perm: t_Perm_PermCell_Node_T = Any.any_l ()
-    | & _43: MutBorrow.t t_Perm_PermCell_Node_T = Any.any_l ()
     | & _44: MutBorrow.t t_Perm_PermCell_Node_T = Any.any_l ()
-    | & _50: t_Option_Perm_PermCell_Node_T = Any.any_l ()
-    | & _51: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T = Any.any_l () ])
+    | & _45: MutBorrow.t t_Perm_PermCell_Node_T = Any.any_l ()
+    | & _51: t_Option_Perm_PermCell_Node_T = Any.any_l ()
+    | & _52: MutBorrow.t t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T = Any.any_l () ])
     [ return (result: t_Elem_T) ->
     {[@stop_split] [@expl:make_T ensures] ([@stop_split] [@expl:make result type invariant] inv_Elem_T result)
       /\ ([@stop_split] [@expl:make ensures #0] not in_domain_T uf.current result)
@@ -2874,13 +2869,21 @@ module M_implementation__new
   axiom len_Snapshot_Elem_T_spec:
     forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [len_Snapshot_Elem_T self]. ge_log_Int (len_Snapshot_Elem_T self) 0
   
-  type t_Rc_PermCell_Node_T_Global
-  
-  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
-  
   type t_Perm_PermCell_Node_T
   
   type t_Option_Perm_PermCell_Node_T = None | Some t_Perm_PermCell_Node_T
+  
+  type t_Option_ref_Perm_PermCell_Node_T = None'0 | Some'0 t_Perm_PermCell_Node_T
+  
+  function map_Option_Perm_PermCell_Node_T (self: t_Option_Perm_PermCell_Node_T) (f: Map.map t_Perm_PermCell_Node_T t_Perm_PermCell_Node_T) : t_Option_ref_Perm_PermCell_Node_T
+   = match self with
+      | None -> None'0
+      | Some x -> Some'0 (Map.get f x)
+      end
+  
+  type t_Rc_PermCell_Node_T_Global
+  
+  type t_Elem_T = { f0: t_Rc_PermCell_Node_T_Global }
   
   function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PermCell_Node_T
   
@@ -2890,7 +2893,8 @@ module M_implementation__new
   meta "rewrite_def" function get_Snapshot_Elem_T
   
   predicate ext_eq_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) (other: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T) =
-    forall k: t_Elem_T. get_Snapshot_Elem_T self k = get_Snapshot_Elem_T other k
+    forall k: t_Elem_T. map_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T self k) (fun (v: t_Perm_PermCell_Node_T) -> v)
+      = map_Option_Perm_PermCell_Node_T (get_Snapshot_Elem_T other k) (fun (v: t_Perm_PermCell_Node_T) -> v)
   
   axiom ext_eq_Snapshot_Elem_T_spec:
     forall self: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T, other: t_FMap_Snapshot_Elem_T_Perm_PermCell_Node_T [self

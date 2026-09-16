@@ -172,14 +172,14 @@ module M_parallel_add
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_i32_SyncView) (k: int) (v: tup2_i32_SyncView) : t_FMap_Int_tup2_i32_SyncView
+  function add_Int (self: t_FMap_Int_tup2_i32_SyncView) (k: int) (v: tup2_i32_SyncView) : t_FMap_Int_tup2_i32_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_i32_SyncView, k: int, v: tup2_i32_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_i32_SyncView, k: int, v: tup2_i32_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_i32_SyncView, k: int, v: tup2_i32_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_i32_SyncView, k: int, v: tup2_i32_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_tup2_i32_SyncView
@@ -188,7 +188,7 @@ module M_parallel_add
   
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None)
   
-  function singleton_Int (k: int) (v: tup2_i32_SyncView) : t_FMap_Int_tup2_i32_SyncView = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: tup2_i32_SyncView) : t_FMap_Int_tup2_i32_SyncView = add_Int empty_Int k v
   
   predicate lt_log_SyncView (self: t_SyncView) (_2: t_SyncView)
   
@@ -757,13 +757,21 @@ module M_parallel_add
   
   type t_AtomicInvariant_ParallelAddAtomicInv
   
+  type t_Option_ref_tup2_i32_SyncView = None'5 | Some'5 tup2_i32_SyncView
+  
+  function map_Option_tup2_i32_SyncView (self: t_Option_tup2_i32_SyncView) (f: Map.map tup2_i32_SyncView tup2_i32_SyncView) : t_Option_ref_tup2_i32_SyncView
+   = match self with
+      | None -> None'5
+      | Some x -> Some'5 (Map.get f x)
+      end
+  
   predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) =
     (forall t: int. contains_Int (val_AtomicI32 self.own) t
         -> t = self.t_last \/ contains_Int (val_AtomicI32 self.own) (t + 1))
-    /\ match get_Int (val_AtomicI32 self.own) self.t_last with
-      | Some {f0'0 = v} -> exists k: int. view_Authority_Option_tup2_PositiveReal_Int self.auth
+    /\ match map_Option_tup2_i32_SyncView (get_Int (val_AtomicI32 self.own) self.t_last) (fun (v: tup2_i32_SyncView) -> v) with
+      | Some'5 {f0'0 = v} -> exists k: int. view_Authority_Option_tup2_PositiveReal_Int self.auth
         = Some'0 { f0'2 = from_int 1; f1'2 = k * Pow2int.pow2 32 + Int32.to_int v }
-      | None -> false
+      | None'5 -> false
       end
   
   meta "rewrite_def" predicate protocol_ParallelAddAtomicInv
@@ -856,7 +864,7 @@ module M_parallel_add
   let into_iter_Range_i32 (self_: t_Range_i32) (return (x: t_Range_i32)) = any
     [ return (result: t_Range_i32) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
   
-  type t_Option_i32 = None'5 | Some'5 Int32.t
+  type t_Option_i32 = None'6 | Some'6 Int32.t
   
   function deep_model_i32 [@inline:trivial] (self: Int32.t) : int = Int32.to_int self
   
@@ -890,8 +898,8 @@ module M_parallel_add
   
   let next_Range_i32 (self_: MutBorrow.t t_Range_i32) (return (x: t_Option_i32)) = any
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
-        | None'5 -> completed_Range_i32 self_
-        | Some'5 v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
+        | None'6 -> completed_Range_i32 self_
+        | Some'6 v -> produces_Range_i32 self_.current (Seq.singleton v) self_.final
         end}
       (! return {result}) ]
   
@@ -928,9 +936,9 @@ module M_parallel_add
   meta "rewrite_def" predicate inv_refmut_Scope
   
   let elim_Some (_x: t_Option_i32) (return (f0'8: Int32.t)) = any
-    [ _k (f0'8: Int32.t) -> {Some'5 f0'8 = _x} (! return {f0'8})
+    [ _k (f0'8: Int32.t) -> {Some'6 f0'8 = _x} (! return {f0'8})
     | _chk -> (! {[@expl:elim Some] match _x with
-        | Some'5 _ -> true
+        | Some'6 _ -> true
         | _ -> false
         end}
       any) ]
@@ -1133,8 +1141,8 @@ module M_parallel_add
         <= timestamp_AtomicI32 self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicI32 self
         <= get_timestamp_AtomicI32 (ward_AtomicI32'0 self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] get_Int (val_AtomicI32 own'0) (timestamp_AtomicI32 self)
-      = Some { f0'0 = val_load_AtomicI32 self; f1'0 = view_AcquireSyncView result })}
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] map_Option_tup2_i32_SyncView (get_Int (val_AtomicI32 own'0) (timestamp_AtomicI32 self)) (fun (v: tup2_i32_SyncView) -> v)
+      = Some'5 { f0'0 = val_load_AtomicI32 self; f1'0 = view_AcquireSyncView result })}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -1178,7 +1186,7 @@ module M_parallel_add
           + 1)
         = None)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicI32 own'0.final
-      = insert_Int (val_AtomicI32 own'0.current) (timestamp_AtomicI32 self.current
+      = add_Int (val_AtomicI32 own'0.current) (timestamp_AtomicI32 self.current
       + 1) { f0'0 = val_store_AtomicI32 self.current; f1'0 = view_ReleaseSyncView rel_view })}
       (! return {result}) ]
   
@@ -1588,8 +1596,8 @@ module M_parallel_add
       (! return {result}) ]
   
   type t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int =
-    | None'6
-    | Some'6 t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
+    | None'7
+    | Some'7 t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
   
   predicate invariant_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global [@inline:trivial] (self: MutBorrow.t t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
     inv_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self.current
@@ -1607,8 +1615,8 @@ module M_parallel_add
   axiom inv_axiom'2 [@rewrite]:
     forall x: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int [inv_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int x]. inv_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int x
       = match x with
-        | None'6 -> true
-        | Some'6 f0'15 -> inv_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int f0'15
+        | None'7 -> true
+        | Some'7 f0'15 -> inv_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int f0'15
         end
   
   predicate produces_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global (self: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) (visited: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) (rhs: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) =
@@ -1645,17 +1653,17 @@ module M_parallel_add
     [ return (result: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) ->
     {[@stop_split] [@expl:next_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int result)
       /\ ([@stop_split] [@expl:next ensures] match result with
-        | None'6 -> completed_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self_
-        | Some'6 v -> produces_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self_.current (Seq.singleton v) self_.final
+        | None'7 -> completed_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self_
+        | Some'7 v -> produces_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global self_.current (Seq.singleton v) self_.final
         end)}
       (! return {result}) ]
   
   let elim_Some'0 (_x: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)
     (return (f0'15: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)) = any
-    [ _k (f0'15: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) -> {Some'6 f0'15 = _x}
+    [ _k (f0'15: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) -> {Some'7 f0'15 = _x}
       (! return {f0'15})
     | _chk -> (! {[@expl:elim Some] match _x with
-        | Some'6 _ -> true
+        | Some'7 _ -> true
         | _ -> false
         end}
       any) ]
@@ -1763,7 +1771,7 @@ module M_parallel_add
             (fun (_bor: MutBorrow.t t_Range_i32) -> [ &_42 <- _bor ] [ &_43 <- { _43 with current = _bor.final } ] s2)
         | s2 = next_Range_i32 {_42} (fun (_x: t_Option_i32) -> [ &_41 <- _x ] s3)
         | s3 = -{resolve_refmut_Range_i32 _43}- s4
-        | s4 = any [ br0 -> {_41 = None'5} (! bb11) | br1 (x0: Int32.t) -> {_41 = Some'5 x0} (! bb12) ] ]
+        | s4 = any [ br0 -> {_41 = None'6} (! bb11) | br1 (x0: Int32.t) -> {_41 = Some'6 x0} (! bb12) ] ]
         [ bb12 = s0
           [ s0 = elim_Some {_41} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
@@ -1859,8 +1867,8 @@ module M_parallel_add
             any) ]
         | s4 = -{resolve_refmut_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global _100}- s5
         | s5 = any
-          [ br0 -> {_98 = None'6} (! bb31)
-          | br1 (x0: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) -> {_98 = Some'6 x0} (! bb32) ] ]
+          [ br0 -> {_98 = None'7} (! bb31)
+          | br1 (x0: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) -> {_98 = Some'7 x0} (! bb32) ] ]
         [ bb32 = s0
           [ s0 = elim_Some'0 {_98}
               (fun (r0: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) ->
@@ -2015,13 +2023,13 @@ module M_parallel_add
     /\ ([@stop_split] [@expl:into_inner requires] self = ward_AtomicI32 own'0)}
     any
     [ return (result: tup2_i32_Ghost_SyncView) ->
-    {[@stop_split] [@expl:into_inner ensures] ([@stop_split] [@expl:into_inner ensures #0] match get_Int (val_AtomicI32 own'0) (get_timestamp_AtomicI32 self result.f1'15) with
-          | Some {f0'0 = v} -> result.f0'15 = v
-          | None -> false
+    {[@stop_split] [@expl:into_inner ensures] ([@stop_split] [@expl:into_inner ensures #0] match map_Option_tup2_i32_SyncView (get_Int (val_AtomicI32 own'0) (get_timestamp_AtomicI32 self result.f1'15)) (fun (v: tup2_i32_SyncView) -> v) with
+          | Some'5 {f0'0 = v} -> result.f0'15 = v
+          | None'5 -> false
           end)
-      /\ ([@stop_split] [@expl:into_inner ensures #1] forall t: int. match get_Int (val_AtomicI32 own'0) t with
-          | Some {f1'0 = view} -> t <= get_timestamp_AtomicI32 self result.f1'15 /\ le_log_SyncView view result.f1'15
-          | None -> true
+      /\ ([@stop_split] [@expl:into_inner ensures #1] forall t: int. match map_Option_tup2_i32_SyncView (get_Int (val_AtomicI32 own'0) t) (fun (v: tup2_i32_SyncView) -> v) with
+          | Some'5 {f1'0 = view} -> t <= get_timestamp_AtomicI32 self result.f1'15 /\ le_log_SyncView view result.f1'15
+          | None'5 -> true
           end)}
       (! return {result}) ]
   

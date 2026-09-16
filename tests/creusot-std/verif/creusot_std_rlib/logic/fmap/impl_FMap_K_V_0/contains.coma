@@ -101,13 +101,13 @@ function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V =
     | Some'0 x -> Some (Map.get f x)
     end
 
-let get_ghost_K (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
-{[@stop_split] [@expl:get_ghost_K requires] ([@stop_split] [@expl:get_ghost 'self' type invariant] inv_ref_FMap_K_V self)
-  /\ ([@stop_split] [@expl:get_ghost 'key' type invariant] inv_ref_K key)}
+let get_K'0 (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
+{[@stop_split] [@expl:get_K requires] ([@stop_split] [@expl:get 'self' type invariant] inv_ref_FMap_K_V self)
+  /\ ([@stop_split] [@expl:get 'key' type invariant] inv_ref_K key)}
   any
   [ return (result: t_Option_ref_V) ->
-  {[@stop_split] [@expl:get_ghost_K ensures] ([@stop_split] [@expl:get_ghost result type invariant] inv_Option_ref_V result)
-    /\ ([@stop_split] [@expl:get_ghost ensures] result = map_Option_V (get_K self key) (fun (v: t_V) -> v))}
+  {[@stop_split] [@expl:get_K ensures] ([@stop_split] [@expl:get result type invariant] inv_Option_ref_V result)
+    /\ ([@stop_split] [@expl:get ensures] result = map_Option_V (get_K self key) (fun (v: t_V) -> v))}
     (! return {result}) ]
 
 predicate invariant_ref_Option_ref_V [@inline:trivial] (self: t_Option_ref_V) = inv_Option_ref_V self
@@ -126,14 +126,13 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let contains_ghost_K (self: t_FMap_K_V) (key: t_K) (return (x: bool)) =
-{[@stop_split] [@expl:contains_ghost_K requires] ([@stop_split] [@expl:contains_ghost 'self' type invariant] inv_ref_FMap_K_V self)
-  /\ ([@stop_split] [@expl:contains_ghost 'key' type invariant] inv_ref_K key)}
+let contains_K'0 (self: t_FMap_K_V) (key: t_K) (return (x: bool)) =
+{[@stop_split] [@expl:contains_K requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FMap_K_V self)
+  /\ ([@stop_split] [@expl:contains 'key' type invariant] inv_ref_K key)}
   (! bb0
   [ bb0 = s0
-    [ s0 = get_ghost_K {self} {key} (fun (_x: t_Option_ref_V) -> [ &_7 <- _x ] s1)
+    [ s0 = get_K'0 {self} {key} (fun (_x: t_Option_ref_V) -> [ &_7 <- _x ] s1)
     | s1 = is_some_ref_V {_7} (fun (_x: bool) -> [ &_ret <- _x ] s2)
     | s2 = return {_ret} ] ]
   [ & _ret: bool = Any.any_l () | & self: t_FMap_K_V = self | & key: t_K = key | & _7: t_Option_ref_V = Any.any_l () ])
-  [ return (result: bool) -> {[@stop_split] [@expl:contains_ghost ensures] result = contains_K self key}
-    (! return {result}) ]
+  [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_K self key} (! return {result}) ]

@@ -246,10 +246,10 @@ mod tokens {
 
         #[logic]
         pub fn val(self, idx: Int) -> State<T> {
-            match self.0.view().get(idx) {
+            match self.0.view().get(&idx) {
                 None => State::None,
-                Some(Excl(None)) => State::R,
-                Some(Excl(Some(data))) => State::W(data),
+                Some(&Excl(None)) => State::R,
+                Some(&Excl(Some(data))) => State::W(data),
             }
         }
 

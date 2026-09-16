@@ -59,14 +59,14 @@ module M_message_passing
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_bool_SyncView) (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView
+  function add_Int (self: t_FMap_Int_tup2_bool_SyncView) (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_tup2_bool_SyncView
@@ -75,7 +75,7 @@ module M_message_passing
   
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None)
   
-  function singleton_Int (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView = add_Int empty_Int k v
   
   predicate lt_log_SyncView (self: t_SyncView) (_2: t_SyncView)
   
@@ -262,13 +262,21 @@ module M_message_passing
   
   type t_AtomicInvariant_MessagePassingAtomicInv
   
+  type t_Option_ref_tup2_bool_SyncView = None'3 | Some'3 tup2_bool_SyncView
+  
+  function map_Option_tup2_bool_SyncView (self: t_Option_tup2_bool_SyncView) (f: Map.map tup2_bool_SyncView tup2_bool_SyncView) : t_Option_ref_tup2_bool_SyncView
+   = match self with
+      | None -> None'3
+      | Some x -> Some'3 (Map.get f x)
+      end
+  
   function val_Perm_PermCell_i32 (self: t_AtView_Perm_PermCell_i32) : t_Perm_PermCell_i32
   
   function view_Perm_PermCell_i32 (self: t_AtView_Perm_PermCell_i32) : t_SyncView
   
   predicate protocol_MessagePassingAtomicInv [@inline:trivial] (self: t_MessagePassingAtomicInv) =
-    forall t: int. match get_Int (val_AtomicBool self.atomic_own) t with
-        | Some {f0'0 = b; f1'0 = view} -> not b
+    forall t: int. match map_Option_tup2_bool_SyncView (get_Int (val_AtomicBool self.atomic_own) t) (fun (v: tup2_bool_SyncView) -> v) with
+        | Some'3 {f0'0 = b; f1'0 = view} -> not b
         \/ b
         /\ val_Option_Excl_unit self.tok_write = Some'0 { f0'2 = () }
         /\ match self.at_view with
@@ -277,7 +285,7 @@ module M_message_passing
           /\ le_log_SyncView (view_Perm_PermCell_i32 at_view'0) view
           | None'1 -> val_Option_Excl_unit self.tok_read = Some'0 { f0'2 = () }
           end
-        | None -> true
+        | None'3 -> true
         end
   
   meta "rewrite_def" predicate protocol_MessagePassingAtomicInv
@@ -512,7 +520,7 @@ module M_message_passing
           + 1)
         = None)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicBool own.final
-      = insert_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
+      = add_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
       + 1) { f0'0 = val_store_AtomicBool self.current; f1'0 = sync_view.final })}
       (! return {result}) ]
   
@@ -918,7 +926,7 @@ module M_message_passing
     c2'3: t_AtomicInvariant_MessagePassingAtomicInv;
     c3'3: t_PermCell_i32 }
   
-  type t_Option_Perm_PermCell_i32 = None'3 | Some'3 t_Perm_PermCell_i32
+  type t_Option_Perm_PermCell_i32 = None'4 | Some'4 t_Perm_PermCell_i32
   
   let new_Option_Perm_PermCell_i32 (x: t_Option_Perm_PermCell_i32) (return (x'0: t_Option_Perm_PermCell_i32)) = any
     [ return (result: t_Option_Perm_PermCell_i32) -> {[@stop_split] [@expl:new ensures] result = x}
@@ -978,9 +986,9 @@ module M_message_passing
         <= timestamp_AtomicBool'0 self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicBool'0 self
         <= get_timestamp_AtomicBool (ward_AtomicBool'1 self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicBool own) (timestamp_AtomicBool'0 self) with
-        | Some {f0'0 = v; f1'0 = v_view} -> v = val_load_AtomicBool'0 self /\ le_log_SyncView v_view sync_view.final
-        | None -> false
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] match map_Option_tup2_bool_SyncView (get_Int (val_AtomicBool own) (timestamp_AtomicBool'0 self)) (fun (v: tup2_bool_SyncView) -> v) with
+        | Some'3 {f0'0 = v; f1'0 = v_view} -> v = val_load_AtomicBool'0 self /\ le_log_SyncView v_view sync_view.final
+        | None'3 -> false
         end)}
       (! return {result}) ]
   
@@ -1095,7 +1103,7 @@ module M_message_passing
       | s27 = -{resolve_refmut_MessagePassingAtomicInv inv}- s28
       | s28 = unwrap_AtView_Perm_PermCell_i32 {_39} (fun (_x: t_AtView_Perm_PermCell_i32) -> [ &_38 <- _x ] s29)
       | s29 = sync_Perm_PermCell_i32 {_38} {sync_view} (fun (_x: t_Perm_PermCell_i32) -> [ &_37 <- _x ] s30)
-      | s30 = [ &_36 <- Some'3 _37 ] s31
+      | s30 = [ &_36 <- Some'4 _37 ] s31
       | s31 = new_Option_Perm_PermCell_i32 {_36} (fun (_x: t_Option_Perm_PermCell_i32) -> [ &_35 <- _x ] s32)
       | s32 = [ &self <- { self with current = { self.current with c2'5 = { self.current.c2'5 with current = _35 } } } ]
         s33
@@ -1318,20 +1326,20 @@ module M_message_passing
     [ return (result: t_Option_Perm_PermCell_i32) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  type t_Option_ref_Perm_PermCell_i32 = None'4 | Some'4 t_Perm_PermCell_i32
+  type t_Option_ref_Perm_PermCell_i32 = None'5 | Some'5 t_Perm_PermCell_i32
   
   let as_ref_Perm_PermCell_i32 (self_: t_Option_Perm_PermCell_i32) (return (x: t_Option_ref_Perm_PermCell_i32)) = any
     [ return (result: t_Option_ref_Perm_PermCell_i32) ->
-    {[@stop_split] [@expl:as_ref_Perm_PermCell_i32 ensures] ([@stop_split] [@expl:as_ref ensures #0] self_ = None'3
-        -> result = None'4)
-      /\ ([@stop_split] [@expl:as_ref ensures #1] self_ = None'3
-      \/ (exists r: t_Perm_PermCell_i32. result = Some'4 r /\ self_ = Some'3 r))}
+    {[@stop_split] [@expl:as_ref_Perm_PermCell_i32 ensures] ([@stop_split] [@expl:as_ref ensures #0] self_ = None'4
+        -> result = None'5)
+      /\ ([@stop_split] [@expl:as_ref ensures #1] self_ = None'4
+      \/ (exists r: t_Perm_PermCell_i32. result = Some'5 r /\ self_ = Some'4 r))}
       (! return {result}) ]
   
   let unwrap_ref_Perm_PermCell_i32 (self_: t_Option_ref_Perm_PermCell_i32) (return (x: t_Perm_PermCell_i32)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None'4}
+  {[@stop_split] [@expl:unwrap requires] self_ <> None'5}
     any
-    [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:unwrap ensures] Some'4 result = self_}
+    [ return (result: t_Perm_PermCell_i32) -> {[@stop_split] [@expl:unwrap ensures] Some'5 result = self_}
       (! return {result}) ]
   
   let new_ref_Perm_PermCell_i32 (x: t_Perm_PermCell_i32) (return (x'0: t_Perm_PermCell_i32)) = any
@@ -1356,7 +1364,7 @@ module M_message_passing
           (fun (_x: t_Resource_Option_Excl_unit) -> [ &_4 <- _x ] s1)
       | s1 = new_Resource_Option_Excl_unit {_4} (fun (_x: t_Resource_Option_Excl_unit) -> [ &excl <- _x ] s2)
       | s2 = [ &excl_snap <- excl ] s3
-      | s3 = [ &_10 <- None'3 ] s4
+      | s3 = [ &_10 <- None'4 ] s4
       | s4 = new_Option_Perm_PermCell_i32 {_10} (fun (_x: t_Option_Perm_PermCell_i32) -> [ &data_own <- _x ] s5)
       | s5 = bb5 ]
     | bb5 = bb5

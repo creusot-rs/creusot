@@ -926,7 +926,15 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   type tup2_usize_SyncView = { f0: UInt64.t; f1: t_SyncView }
   
-  type t_Option_tup2_usize_SyncView = None'2 | Some'2 tup2_usize_SyncView
+  type t_Option_ref_tup2_usize_SyncView = None'2 | Some'2 tup2_usize_SyncView
+  
+  type t_Option_tup2_usize_SyncView = None'3 | Some'3 tup2_usize_SyncView
+  
+  function map_Option_tup2_usize_SyncView (self: t_Option_tup2_usize_SyncView) (f: Map.map tup2_usize_SyncView tup2_usize_SyncView) : t_Option_ref_tup2_usize_SyncView
+   = match self with
+      | None'3 -> None'2
+      | Some'3 x -> Some'2 (Map.get f x)
+      end
   
   type t_FMap_Int_tup2_usize_SyncView
   
@@ -969,13 +977,13 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   function ward_AtomicUsize (self: t_Perm_AtomicUsize) : t_AtomicUsize
   
-  type t_Option_Authority = None'3 | Some'3 t_Authority
+  type t_Option_Authority = None'4 | Some'4 t_Authority
   
   function get_Authority (self: Seq.seq t_Authority) (ix: int) : t_Option_Authority = if 0 <= ix
     /\ ix < Seq.length self then
-      Some'3 (Seq.get self ix)
+      Some'4 (Seq.get self ix)
     else
-      None'3
+      None'4
   
   
   type t_Perm_PermCell_MaybeUninit_T
@@ -998,12 +1006,12 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   type t_MaybeUninit_T
   
-  type t_Option_T = None'4 | Some'4 t_T
+  type t_Option_T = None'5 | Some'5 t_T
   
   function view_MaybeUninit_T (self: t_MaybeUninit_T) : t_Option_T
   
   let uninit_T (return (x: t_MaybeUninit_T)) = any
-    [ return (result: t_MaybeUninit_T) -> {[@stop_split] [@expl:uninit ensures] view_MaybeUninit_T result = None'4}
+    [ return (result: t_MaybeUninit_T) -> {[@stop_split] [@expl:uninit ensures] view_MaybeUninit_T result = None'5}
       (! return {result}) ]
   
   type tup2_PermCell_MaybeUninit_T_Ghost_Perm_PermCell_MaybeUninit_T = {
@@ -1124,27 +1132,27 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_tup2_usize_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_usize_SyncView) (k: int) = get_Int self k <> None'2
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_usize_SyncView) (k: int) = get_Int self k <> None'3
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_usize_SyncView) (k: int) (v: tup2_usize_SyncView) : t_FMap_Int_tup2_usize_SyncView
+  function add_Int (self: t_FMap_Int_tup2_usize_SyncView) (k: int) (v: tup2_usize_SyncView) : t_FMap_Int_tup2_usize_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
-      = Map.set (to_mapping_Int self) k (Some'2 v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
+      = Map.set (to_mapping_Int self) k (Some'3 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_tup2_usize_SyncView
   
   axiom empty_Int_spec: len_Int empty_Int = 0
   
-  axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None'2)
+  axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None'3)
   
-  function singleton_Int (k: int) (v: tup2_usize_SyncView) : t_FMap_Int_tup2_usize_SyncView = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: tup2_usize_SyncView) : t_FMap_Int_tup2_usize_SyncView = add_Int empty_Int k v
   
   function get_timestamp_AtomicUsize (self: t_AtomicUsize) (_2: t_SyncView) : int
   
@@ -1551,8 +1559,8 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   function unwrap_Option_tup2_usize_SyncView (self: t_Option_tup2_usize_SyncView) : tup2_usize_SyncView =
     match self with
-      | Some'2 x -> x
-      | None'2 -> any_tup2_usize_SyncView
+      | Some'3 x -> x
+      | None'3 -> any_tup2_usize_SyncView
       end
   
   function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_usize_SyncView) (k: int) : tup2_usize_SyncView =
@@ -1596,18 +1604,20 @@ module M_impl_Queue_T__new (* Queue<T> *)
     /\ 0 <= tail_T self
     /\ tail_T self <= head_T self
     /\ head_T self <= tail_T self + len_T self
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.head_own) ts]. match get_Int (val_AtomicUsize self.head_own) ts with
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own) ts) (fun (v: tup2_usize_SyncView) -> v) with
           | Some'2 {f0 = h} -> ts = self.head_last_ts
           \/ contains_Int (val_AtomicUsize self.head_own) (ts + 1) /\ UInt64.t'int h < head_T self
           | None'2 -> true
           end)
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.tail_own) ts]. match get_Int (val_AtomicUsize self.tail_own) ts with
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own) ts) (fun (v: tup2_usize_SyncView) -> v) with
           | Some'2 {f0 = t} -> ts = self.tail_last_ts
           \/ contains_Int (val_AtomicUsize self.tail_own) (ts + 1) /\ UInt64.t'int t < tail_T self
           | None'2 -> true
           end)
-    /\ (forall i: int, ts: int [get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts]. 0 <= i /\ i < len_T self
-        -> match get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts with
+    /\ (forall i: int, ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts) (fun (v: tup2_usize_SyncView) -> v)]. 0
+            <= i
+          /\ i < len_T self
+        -> match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts) (fun (v: tup2_usize_SyncView) -> v) with
           | Some'2 {f0 = status'1; f1 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
                                                                          view'0 = view } (val' (Seq.get self.statuses_mono_auth i))
           | _ -> true
@@ -1625,7 +1635,7 @@ module M_impl_Queue_T__new (* Queue<T> *)
             else
               status_view.status'0 = 2 * k + 1
               /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T (val_Perm_PermCell_MaybeUninit_T at_view))
-              = Some'4 (Seq.get (seq_T'1 self) (k - tail_T self))
+              = Some'5 (Seq.get (seq_T'1 self) (k - tail_T self))
             )
             | _ -> false
             end
@@ -1772,11 +1782,11 @@ module M_impl_Queue_T__new (* Queue<T> *)
             | None'0 -> false
             end}
         {[@expl:loop invariant #5] forall i'0: int. Seq.length produced <= i'0
-          -> get_Authority statuses_mono_auth'0 i'0 = None'3}
+          -> get_Authority statuses_mono_auth'0 i'0 = None'4}
         {[@expl:loop invariant #6] forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length produced
           -> ward_AtomicUsize (Seq.get statuses_own'0 i'0) = (Seq.get (view_Vec_QueueCell_T_Global cells'1) i'0).status}
         {[@expl:loop invariant #7] forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length produced
-          -> (forall ts: int. match get_Int (val_AtomicUsize (Seq.get statuses_own'0 i'0)) ts with
+          -> (forall ts: int. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get statuses_own'0 i'0)) ts) (fun (v: tup2_usize_SyncView) -> v) with
               | Some'2 {f0 = status'3; f1 = view'1} -> le_log_StatusWithView { status'0 = UInt64.t'int status'3;
                                                                                view'0 = view'1 } (val' (Seq.get statuses_mono_auth'0 i'0))
               | _ -> true
@@ -2290,11 +2300,19 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   function timestamp_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_None) : int
   
-  type t_FMap_Int_tup2_usize_SyncView
-  
   type tup2_usize_SyncView = { f0: UInt64.t; f1: t_SyncView }
   
   type t_Option_tup2_usize_SyncView = None'1 | Some'1 tup2_usize_SyncView
+  
+  type t_Option_ref_tup2_usize_SyncView = None'2 | Some'2 tup2_usize_SyncView
+  
+  function map_Option_tup2_usize_SyncView (self: t_Option_tup2_usize_SyncView) (f: Map.map tup2_usize_SyncView tup2_usize_SyncView) : t_Option_ref_tup2_usize_SyncView
+   = match self with
+      | None'1 -> None'2
+      | Some'1 x -> Some'2 (Map.get f x)
+      end
+  
+  type t_FMap_Int_tup2_usize_SyncView
   
   function to_mapping_Int (self: t_FMap_Int_tup2_usize_SyncView) : Map.map int t_Option_tup2_usize_SyncView
   
@@ -2320,8 +2338,8 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
         <= timestamp_AtomicUsize self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicUsize self
         <= get_timestamp_AtomicUsize (ward_AtomicUsize self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] get_Int (val_AtomicUsize own) (timestamp_AtomicUsize self)
-      = Some'1 { f0 = val_load_AtomicUsize self; f1 = view_AcquireSyncView result })}
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize own) (timestamp_AtomicUsize self)) (fun (v: tup2_usize_SyncView) -> v)
+      = Some'2 { f0 = val_load_AtomicUsize self; f1 = view_AcquireSyncView result })}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -2494,7 +2512,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   function mod_len_T (self: t_QueueInv_T) (i: int) : int = EuclideanDivision.mod i (len_T self)
   
-  type t_State_T = R'2 | W'2 t_T | None'2
+  type t_State_T = R'3 | W'3 t_T | None'3
   
   function val_T (self: t_Authority_T'0) (idx: int) : t_State_T
   
@@ -2506,7 +2524,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   type t_MaybeUninit_T
   
-  type t_Option_T = None'3 | Some'3 t_T
+  type t_Option_T = None'4 | Some'4 t_T
   
   function view_MaybeUninit_T (self: t_MaybeUninit_T) : t_Option_T
   
@@ -2533,41 +2551,43 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     /\ 0 <= tail_T self
     /\ tail_T self <= head_T self
     /\ head_T self <= tail_T self + len_T self
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.head_own'0) ts]. match get_Int (val_AtomicUsize self.head_own'0) ts with
-          | Some'1 {f0 = h} -> ts = self.head_last_ts'0
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own'0) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own'0) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'2 {f0 = h} -> ts = self.head_last_ts'0
           \/ contains_Int (val_AtomicUsize self.head_own'0) (ts + 1) /\ UInt64.t'int h < head_T self
-          | None'1 -> true
+          | None'2 -> true
           end)
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.tail_own'0) ts]. match get_Int (val_AtomicUsize self.tail_own'0) ts with
-          | Some'1 {f0 = t} -> ts = self.tail_last_ts'0
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own'0) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own'0) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'2 {f0 = t} -> ts = self.tail_last_ts'0
           \/ contains_Int (val_AtomicUsize self.tail_own'0) (ts + 1) /\ UInt64.t'int t < tail_T self
-          | None'1 -> true
+          | None'2 -> true
           end)
-    /\ (forall i: int, ts: int [get_Int (val_AtomicUsize (Seq.get self.statuses_own'0 i)) ts]. 0 <= i /\ i < len_T self
-        -> match get_Int (val_AtomicUsize (Seq.get self.statuses_own'0 i)) ts with
-          | Some'1 {f0 = status'1; f1 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
+    /\ (forall i: int, ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own'0 i)) ts) (fun (v: tup2_usize_SyncView) -> v)]. 0
+            <= i
+          /\ i < len_T self
+        -> match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own'0 i)) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'2 {f0 = status'1; f1 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
                                                                          view'0 = view } (val' (Seq.get self.statuses_mono_auth'0 i))
           | _ -> true
           end)
     /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
     /\ (forall k: int [val_T self.tokens_auth'0 k]. tail_T self <= k /\ k < tail_T self + len_T self
         -> (let status_view = val' (Seq.get self.statuses_mono_auth'0 (mod_len_T self k)) in match val_T self.tokens_auth'0 k with
-          | R'2 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
-          | W'2 value -> status_view.status'0 = 2 * k
+          | R'3 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
+          | W'3 value -> status_view.status'0 = 2 * k
           /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
-          | None'2 -> match Seq.get self.cells_own'0 (mod_len_T self k) with
+          | None'3 -> match Seq.get self.cells_own'0 (mod_len_T self k) with
             | Some'0 at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PermCell_MaybeUninit_T at_view)
             /\ (if head_T self <= k then
               status_view.status'0 = 2 * k
             else
               status_view.status'0 = 2 * k + 1
               /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T (val_Perm_PermCell_MaybeUninit_T at_view))
-              = Some'3 (Seq.get (seq_T'0 self) (k - tail_T self))
+              = Some'4 (Seq.get (seq_T'0 self) (k - tail_T self))
             )
             | _ -> false
             end
           end))
-    /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth'0 k = None'2)
+    /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth'0 k = None'3)
   
   meta "rewrite_def" predicate protocol_QueueInv_T
   
@@ -2911,9 +2931,9 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
         <= timestamp_AtomicUsize'0 self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicUsize'0 self
         <= get_timestamp_AtomicUsize (ward_AtomicUsize'1 self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicUsize own) (timestamp_AtomicUsize'0 self) with
-        | Some'1 {f0 = v; f1 = v_view} -> v = val_load_AtomicUsize'0 self /\ le_log_SyncView v_view sync_view.final
-        | None'1 -> false
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize own) (timestamp_AtomicUsize'0 self)) (fun (v: tup2_usize_SyncView) -> v) with
+        | Some'2 {f0 = v; f1 = v_view} -> v = val_load_AtomicUsize'0 self /\ le_log_SyncView v_view sync_view.final
+        | None'2 -> false
         end)}
       (! return {result}) ]
   
@@ -3406,7 +3426,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   type t_TokenR_T
   
-  type t_Option_TokenR_T = None'4 | Some'4 t_TokenR_T
+  type t_Option_TokenR_T = None'5 | Some'5 t_TokenR_T
   
   predicate invariant_TokenR_T (self: t_TokenR_T)
   
@@ -3418,8 +3438,8 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   axiom inv_axiom'12 [@rewrite]: forall x: t_Option_TokenR_T [inv_Option_TokenR_T x]. inv_Option_TokenR_T x
       = match x with
-        | None'4 -> true
-        | Some'4 f0'5 -> inv_TokenR_T f0'5
+        | None'5 -> true
+        | Some'5 f0'5 -> inv_TokenR_T f0'5
         end
   
   predicate invariant_Ghost_Option_TokenR_T [@inline:trivial] (self: t_Option_TokenR_T) = inv_Option_TokenR_T self
@@ -3438,7 +3458,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  type t_Option_Perm_PermCell_MaybeUninit_T = None'5 | Some'5 t_Perm_PermCell_MaybeUninit_T
+  type t_Option_Perm_PermCell_MaybeUninit_T = None'6 | Some'6 t_Perm_PermCell_MaybeUninit_T
   
   let new_Option_Perm_PermCell_MaybeUninit_T (x: t_Option_Perm_PermCell_MaybeUninit_T)
     (return (x'0: t_Option_Perm_PermCell_MaybeUninit_T)) = any
@@ -3664,7 +3684,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
           /\ gt_log_Int (Seq.length c'0.current.old_seq) 0
           /\ c'0.current.new_seq = pop_front_T c'0.current.old_seq
           /\ postcondition_once_F f c'0 ()
-          /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T result.f1'5) = Some'3 (Seq.get c'0.current.old_seq 0))
+          /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T result.f1'5) = Some'4 (Seq.get c'0.current.old_seq 0))
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #8] 2
         * (UInt64.t'int (val_load_AtomicUsize'1 c.current) + len_T inv'0.current)
       < UInt64.t'int const_MAX)}
@@ -3704,8 +3724,8 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   axiom resolve_axiom'0 [@rewrite]: forall x: t_Option_TokenR_T [resolve_Option_TokenR_T x]. resolve_Option_TokenR_T x
       = match x with
-        | None'4 -> true
-        | Some'4 x0 -> resolve_TokenR_T x0
+        | None'5 -> true
+        | Some'5 x0 -> resolve_TokenR_T x0
         end
   
   predicate resolve_refmut_Option_TokenR_T [@inline:trivial] (_1: MutBorrow.t t_Option_TokenR_T) = _1.final = _1.current
@@ -3771,7 +3791,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
           (fun (_x: tup2_TokenR_T_Perm_PermCell_MaybeUninit_T) -> [ &_5 <- _x ] s17)
       | s17 = [ &t <- _5.f0'5 ] s18
       | s18 = [ &co <- _5.f1'5 ] s19
-      | s19 = [ &_19 <- Some'4 t ] s20
+      | s19 = [ &_19 <- Some'5 t ] s20
       | s20 = MutBorrow.borrow_final <t_Option_TokenR_T> {self.c5'4.current} {MutBorrow.get_id self.c5'4}
           (fun (_bor: MutBorrow.t t_Option_TokenR_T) ->
             [ &_22 <- _bor ] -{inv_Ghost_Option_TokenR_T _bor.final}-
@@ -3783,7 +3803,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       | s24 = [ &_21 <- { _21 with current = _19 } ] s25
       | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_TokenR_T _21} any) ]
       | s26 = -{resolve_refmut_Option_TokenR_T _21}- s27
-      | s27 = [ &_23 <- Some'5 co ] s28
+      | s27 = [ &_23 <- Some'6 co ] s28
       | s28 = MutBorrow.borrow_final <t_Option_Perm_PermCell_MaybeUninit_T> {self.c6'4.current}
           {MutBorrow.get_id self.c6'4}
           (fun (_bor: MutBorrow.t t_Option_Perm_PermCell_MaybeUninit_T) ->
@@ -4114,22 +4134,22 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   meta "rewrite_def" predicate resolve_Ghost_Option_TokenR_T'0
   
-  type t_Option_refmut_Perm_PermCell_MaybeUninit_T = None'6 | Some'6 (MutBorrow.t t_Perm_PermCell_MaybeUninit_T)
+  type t_Option_refmut_Perm_PermCell_MaybeUninit_T = None'7 | Some'7 (MutBorrow.t t_Perm_PermCell_MaybeUninit_T)
   
   let as_mut_Perm_PermCell_MaybeUninit_T (self_: MutBorrow.t t_Option_Perm_PermCell_MaybeUninit_T)
     (return (x: t_Option_refmut_Perm_PermCell_MaybeUninit_T)) = any
     [ return (result: t_Option_refmut_Perm_PermCell_MaybeUninit_T) ->
     {[@stop_split] [@expl:as_mut_Perm_PermCell_MaybeUninit_T ensures] ([@stop_split] [@expl:as_mut ensures #0] self_.current
-          = None'5 -> result = None'6 /\ self_.final = None'5)
-      /\ ([@stop_split] [@expl:as_mut ensures #1] self_.current = None'5
-      \/ (exists r: MutBorrow.t t_Perm_PermCell_MaybeUninit_T. result = Some'6 r
-        /\ self_.current = Some'5 (r.current) /\ self_.final = Some'5 (r.final)))}
+          = None'6 -> result = None'7 /\ self_.final = None'6)
+      /\ ([@stop_split] [@expl:as_mut ensures #1] self_.current = None'6
+      \/ (exists r: MutBorrow.t t_Perm_PermCell_MaybeUninit_T. result = Some'7 r
+        /\ self_.current = Some'6 (r.current) /\ self_.final = Some'6 (r.final)))}
       (! return {result}) ]
   
   let unwrap_refmut_Perm_PermCell_MaybeUninit_T (self_: t_Option_refmut_Perm_PermCell_MaybeUninit_T)
-    (return (x: MutBorrow.t t_Perm_PermCell_MaybeUninit_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'6}
+    (return (x: MutBorrow.t t_Perm_PermCell_MaybeUninit_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'7}
     any
-    [ return (result: MutBorrow.t t_Perm_PermCell_MaybeUninit_T) -> {[@stop_split] [@expl:unwrap ensures] Some'6 result
+    [ return (result: MutBorrow.t t_Perm_PermCell_MaybeUninit_T) -> {[@stop_split] [@expl:unwrap ensures] Some'7 result
       = self_}
       (! return {result}) ]
   
@@ -4144,7 +4164,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       (! return {result}) ]
   
   let uninit_T (return (x: t_MaybeUninit_T)) = any
-    [ return (result: t_MaybeUninit_T) -> {[@stop_split] [@expl:uninit ensures] view_MaybeUninit_T result = None'3}
+    [ return (result: t_MaybeUninit_T) -> {[@stop_split] [@expl:uninit ensures] view_MaybeUninit_T result = None'4}
       (! return {result}) ]
   
   function fin_Ghost_refmut_Perm_PermCell_MaybeUninit_T [@inline:trivial] (self: MutBorrow.t t_Perm_PermCell_MaybeUninit_T) : t_Perm_PermCell_MaybeUninit_T
@@ -4167,11 +4187,11 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   predicate inv_T (_1: t_T)
   
   let assume_init_T (self_: t_MaybeUninit_T) (return (x: t_T)) =
-  {[@stop_split] [@expl:assume_init requires] view_MaybeUninit_T self_ <> None'3}
+  {[@stop_split] [@expl:assume_init requires] view_MaybeUninit_T self_ <> None'4}
     any
     [ return (result: t_T) ->
     {[@stop_split] [@expl:assume_init_T ensures] ([@stop_split] [@expl:assume_init result type invariant] inv_T result)
-      /\ ([@stop_split] [@expl:assume_init ensures] view_MaybeUninit_T self_ = Some'3 result)}
+      /\ ([@stop_split] [@expl:assume_init ensures] view_MaybeUninit_T self_ = Some'4 result)}
       (! return {result}) ]
   
   type closure7 = {
@@ -4198,16 +4218,16 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     any
     [ return (result: t_Option_TokenR_T) ->
     {[@stop_split] [@expl:take_TokenR_T ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_TokenR_T result)
-      /\ ([@stop_split] [@expl:take ensures] result = self_.current /\ self_.final = None'4)}
+      /\ ([@stop_split] [@expl:take ensures] result = self_.current /\ self_.final = None'5)}
       (! return {result}) ]
   
   let unwrap_TokenR_T (self_: t_Option_TokenR_T) (return (x: t_TokenR_T)) =
   {[@stop_split] [@expl:unwrap_TokenR_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_TokenR_T self_)
-    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None'4)}
+    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None'5)}
     any
     [ return (result: t_TokenR_T) ->
     {[@stop_split] [@expl:unwrap_TokenR_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_TokenR_T result)
-      /\ ([@stop_split] [@expl:unwrap ensures] Some'4 result = self_)}
+      /\ ([@stop_split] [@expl:unwrap ensures] Some'5 result = self_)}
       (! return {result}) ]
   
   predicate invariant_Ghost_TokenR_T [@inline:trivial] (self: t_TokenR_T) = inv_TokenR_T self
@@ -4230,13 +4250,13 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     (return (x: t_Option_Perm_PermCell_MaybeUninit_T)) = any
     [ return (result: t_Option_Perm_PermCell_MaybeUninit_T) -> {[@stop_split] [@expl:take ensures] result
         = self_.current
-      /\ self_.final = None'5}
+      /\ self_.final = None'6}
       (! return {result}) ]
   
   let unwrap_Perm_PermCell_MaybeUninit_T (self_: t_Option_Perm_PermCell_MaybeUninit_T)
-    (return (x: t_Perm_PermCell_MaybeUninit_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'5}
+    (return (x: t_Perm_PermCell_MaybeUninit_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'6}
     any
-    [ return (result: t_Perm_PermCell_MaybeUninit_T) -> {[@stop_split] [@expl:unwrap ensures] Some'5 result = self_}
+    [ return (result: t_Perm_PermCell_MaybeUninit_T) -> {[@stop_split] [@expl:unwrap ensures] Some'6 result = self_}
       (! return {result}) ]
   
   let new_Perm_PermCell_MaybeUninit_T (x: t_Perm_PermCell_MaybeUninit_T) (return (x'0: t_Perm_PermCell_MaybeUninit_T)) =
@@ -4611,8 +4631,8 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   axiom inv_axiom'17 [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
       = match x with
-        | None'3 -> true
-        | Some'3 f0'10 -> inv_T f0'10
+        | None'4 -> true
+        | Some'4 f0'10 -> inv_T f0'10
         end
   
   meta "compute_max_steps" 1000000
@@ -4669,12 +4689,12 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       | s1 = -{resolve_Ghost_Option_Fragment'0 witness}- s2
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Ghost_F f} any) ]
       | s3 = -{resolve_Ghost_F'0 f}- s4
-      | s4 = [ &_ret <- None'3 ] s5
+      | s4 = [ &_ret <- None'4 ] s5
       | s5 = return {_ret} ]
     | bb13 = s0
-      [ s0 = [ &_54 <- None'4 ] s1
+      [ s0 = [ &_54 <- None'5 ] s1
       | s1 = new_Option_TokenR_T {_54} (fun (_x: t_Option_TokenR_T) -> [ &token <- _x ] s2)
-      | s2 = [ &_56 <- None'5 ] s3
+      | s2 = [ &_56 <- None'6 ] s3
       | s3 = new_Option_Perm_PermCell_MaybeUninit_T {_56}
           (fun (_x: t_Option_Perm_PermCell_MaybeUninit_T) -> [ &cell_own <- _x ] s4)
       | s4 = UInt64.add {tail'0} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_60 <- _x ] s5)
@@ -4703,7 +4723,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     | bb20 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T token} any) ]
       | s1 = -{resolve_Ghost_Option_TokenR_T'0 token}- s2
-      | s2 = [ &_ret <- None'3 ] s3
+      | s2 = [ &_ret <- None'4 ] s3
       | s3 = return {_ret} ]
     | bb21 = s0
       [ s0 = MutBorrow.borrow_mut <t_Option_Perm_PermCell_MaybeUninit_T> {cell_own}
@@ -4754,7 +4774,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       | s25 = store_FnGhostWrapper_closure7 {cell.status} {_90} {_95} (fun (_x: ()) -> [ &_88 <- _x ] s26)
       | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T token} any) ]
       | s27 = -{resolve_Ghost_Option_TokenR_T'0 token}- s28
-      | s28 = [ &_ret <- Some'3 item'0 ] s29
+      | s28 = [ &_ret <- Some'4 item'0 ] s29
       | s29 = return {_ret} ] ]
     [ & _ret: t_Option_T = Any.any_l ()
     | & self: t_Queue_T = self
@@ -4822,12 +4842,12 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     [ return (result: t_Option_T) ->
     {[@stop_split] [@expl:try_dequeue_T ensures] ([@stop_split] [@expl:try_dequeue result type invariant] inv_Option_T result)
       /\ ([@stop_split] [@expl:try_dequeue ensures] match result with
-        | Some'3 result'0 -> exists c: MutBorrow.t t_QueueCommitter_T. not c.current.shot
+        | Some'4 result'0 -> exists c: MutBorrow.t t_QueueCommitter_T. not c.current.shot
           /\ c.current.ward = self
           /\ gt_log_Int (Seq.length c.current.old_seq) 0
           /\ c.current.new_seq = pop_front_T c.current.old_seq
           /\ postcondition_once_F f c () /\ result'0 = Seq.get c.current.old_seq 0
-        | None'3 -> resolve_Ghost_F'0 f
+        | None'4 -> resolve_Ghost_F'0 f
         end)}
       (! return {result}) ]
 end
@@ -5102,6 +5122,14 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   function timestamp_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_Relaxed) : int
   
+  type t_Option_ref_tup2_usize_SyncView = None'1 | Some'1 tup2_usize_SyncView
+  
+  function map_Option_tup2_usize_SyncView (self: t_Option_tup2_usize_SyncView) (f: Map.map tup2_usize_SyncView tup2_usize_SyncView) : t_Option_ref_tup2_usize_SyncView
+   = match self with
+      | None'0 -> None'1
+      | Some'0 x -> Some'1 (Map.get f x)
+      end
+  
   function val_load_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_Relaxed) : UInt64.t
   
   function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
@@ -5117,8 +5145,8 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
         <= timestamp_AtomicUsize self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicUsize self
         <= get_timestamp_AtomicUsize (ward_AtomicUsize self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] get_Int (val_AtomicUsize own) (timestamp_AtomicUsize self)
-      = Some'0 { f0 = val_load_AtomicUsize self; f1 = view_AcquireSyncView result })}
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize own) (timestamp_AtomicUsize self)) (fun (v: tup2_usize_SyncView) -> v)
+      = Some'1 { f0 = val_load_AtomicUsize self; f1 = view_AcquireSyncView result })}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -5165,14 +5193,14 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_usize_SyncView) (k: int) (v: tup2_usize_SyncView) : t_FMap_Int_tup2_usize_SyncView
+  function add_Int (self: t_FMap_Int_tup2_usize_SyncView) (k: int) (v: tup2_usize_SyncView) : t_FMap_Int_tup2_usize_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'0 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
@@ -5196,7 +5224,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
           + 1)
         = None'0)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicUsize own.final
-      = insert_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
+      = add_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
       + 1) { f0 = val_store_AtomicUsize self.current; f1 = view_ReleaseSyncView rel_view })}
       (! return {result}) ]
   
@@ -5318,7 +5346,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   type t_T
   
-  type t_State_T = R'1 | W'1 t_T | None'1
+  type t_State_T = R'2 | W'2 t_T | None'2
   
   function val_T (self: t_Authority_T'0) (idx: int) : t_State_T
   
@@ -5587,12 +5615,12 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   let alloc_T (auth'0: MutBorrow.t t_Authority_T'0) (index: int) (return (x: t_TokenR_T)) =
   {[@stop_split] [@expl:alloc_T requires] ([@stop_split] [@expl:alloc 'auth' type invariant] inv_Ghost_refmut_Authority_T auth'0)
-    /\ ([@stop_split] [@expl:alloc requires] val_T auth'0.current index = None'1)}
+    /\ ([@stop_split] [@expl:alloc requires] val_T auth'0.current index = None'2)}
     any
     [ return (result: t_TokenR_T) ->
     {[@stop_split] [@expl:alloc_T ensures] ([@stop_split] [@expl:alloc result type invariant] inv_Ghost_TokenR_T result)
       /\ ([@stop_split] [@expl:alloc ensures #0] id_T'0 auth'0.current = id_T'0 (fin_Ghost_refmut_Authority_T auth'0))
-      /\ ([@stop_split] [@expl:alloc ensures #1] val_T (fin_Ghost_refmut_Authority_T auth'0) index = R'1)
+      /\ ([@stop_split] [@expl:alloc ensures #1] val_T (fin_Ghost_refmut_Authority_T auth'0) index = R'2)
       /\ ([@stop_split] [@expl:alloc ensures #2] index_T result = index)
       /\ ([@stop_split] [@expl:alloc ensures #3] id_T'1 result = id_T'0 auth'0.current)
       /\ ([@stop_split] [@expl:alloc ensures #4] forall i: int. i <> index
@@ -5732,7 +5760,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   type t_MaybeUninit_T
   
-  type t_Option_T = None'2 | Some'2 t_T
+  type t_Option_T = None'3 | Some'3 t_T
   
   function view_MaybeUninit_T (self: t_MaybeUninit_T) : t_Option_T
   
@@ -5759,41 +5787,43 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
     /\ 0 <= tail_T self
     /\ tail_T self <= head_T self
     /\ head_T self <= tail_T self + len_T self
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.head_own) ts]. match get_Int (val_AtomicUsize self.head_own) ts with
-          | Some'0 {f0 = h} -> ts = self.head_last_ts
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'1 {f0 = h} -> ts = self.head_last_ts
           \/ contains_Int (val_AtomicUsize self.head_own) (ts + 1) /\ UInt64.t'int h < head_T self
-          | None'0 -> true
+          | None'1 -> true
           end)
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.tail_own) ts]. match get_Int (val_AtomicUsize self.tail_own) ts with
-          | Some'0 {f0 = t} -> ts = self.tail_last_ts
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'1 {f0 = t} -> ts = self.tail_last_ts
           \/ contains_Int (val_AtomicUsize self.tail_own) (ts + 1) /\ UInt64.t'int t < tail_T self
-          | None'0 -> true
+          | None'1 -> true
           end)
-    /\ (forall i: int, ts: int [get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts]. 0 <= i /\ i < len_T self
-        -> match get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts with
-          | Some'0 {f0 = status'1; f1 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
+    /\ (forall i: int, ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts) (fun (v: tup2_usize_SyncView) -> v)]. 0
+            <= i
+          /\ i < len_T self
+        -> match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'1 {f0 = status'1; f1 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
                                                                          view'0 = view } (val''0 (Seq.get self.statuses_mono_auth i))
           | _ -> true
           end)
     /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
     /\ (forall k: int [val_T self.tokens_auth k]. tail_T self <= k /\ k < tail_T self + len_T self
         -> (let status_view = val''0 (Seq.get self.statuses_mono_auth (mod_len_T self k)) in match val_T self.tokens_auth k with
-          | R'1 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
-          | W'1 value -> status_view.status'0 = 2 * k
+          | R'2 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
+          | W'2 value -> status_view.status'0 = 2 * k
           /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
-          | None'1 -> match Seq.get self.cells_own (mod_len_T self k) with
+          | None'2 -> match Seq.get self.cells_own (mod_len_T self k) with
             | Some at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PermCell_MaybeUninit_T at_view)
             /\ (if head_T self <= k then
               status_view.status'0 = 2 * k
             else
               status_view.status'0 = 2 * k + 1
               /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T (val_Perm_PermCell_MaybeUninit_T at_view))
-              = Some'2 (Seq.get (seq_T'0 self) (k - tail_T self))
+              = Some'3 (Seq.get (seq_T'0 self) (k - tail_T self))
             )
             | _ -> false
             end
           end))
-    /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None'1)
+    /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None'2)
   
   meta "rewrite_def" predicate protocol_QueueInv_T
   
@@ -5928,7 +5958,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
       | s43 = -{resolve_Fragment witness}- s44
       | s44 = [ &_117 <- witness ] s45
       | s45 = frag_lemma {_113} {_117} (fun (_x: ()) -> [ &_111 <- _x ] s46)
-      | s46 = {[@expl:assertion] val_T inv'1.current.tokens_auth tail = None'1} s47
+      | s46 = {[@expl:assertion] val_T inv'1.current.tokens_auth tail = None'2} s47
       | s47 = {[@expl:assertion] tail < head_T inv'1.current} s48
       | s48 = [ &old_seq'0 <- seq_T'0 inv'1.current ] s49
       | s49 = [ &new_seq'0 <- pop_front_T old_seq'0 ] s50
@@ -6110,7 +6140,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
           /\ gt_log_Int (Seq.length c'0.current.old_seq) 0
           /\ c'0.current.new_seq = pop_front_T c'0.current.old_seq
           /\ postcondition_once_F f c'0 ()
-          /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T result.f1'1) = Some'2 (Seq.get c'0.current.old_seq 0))
+          /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T result.f1'1) = Some'3 (Seq.get c'0.current.old_seq 0))
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #8] 2
         * (UInt64.t'int (val_load_AtomicUsize c.current) + len_T inv.current)
       < UInt64.t'int const_MAX)}
@@ -6437,14 +6467,14 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_usize_SyncView) (k: int) (v: tup2_usize_SyncView) : t_FMap_Int_tup2_usize_SyncView
+  function add_Int (self: t_FMap_Int_tup2_usize_SyncView) (k: int) (v: tup2_usize_SyncView) : t_FMap_Int_tup2_usize_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'0 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   let shoot_store_AtomicUsize (self: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)
@@ -6465,7 +6495,7 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
           + 1)
         = None'0)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicUsize own.final
-      = insert_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
+      = add_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
       + 1) { f0'0 = val_store_AtomicUsize self.current; f1'0 = sync_view.final })}
       (! return {result}) ]
   
@@ -6766,6 +6796,14 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
   
   function ward_PermCell_MaybeUninit_T (self: t_Perm_PermCell_MaybeUninit_T) : t_PermCell_MaybeUninit_T
   
+  type t_Option_ref_tup2_usize_SyncView = None'2 | Some'2 tup2_usize_SyncView
+  
+  function map_Option_tup2_usize_SyncView (self: t_Option_tup2_usize_SyncView) (f: Map.map tup2_usize_SyncView tup2_usize_SyncView) : t_Option_ref_tup2_usize_SyncView
+   = match self with
+      | None'0 -> None'2
+      | Some'0 x -> Some'2 (Map.get f x)
+      end
+  
   function seq_T (self: t_Authority_T) : Seq.seq t_T
   
   function seq_T'0 (self: t_QueueInv_T) : Seq.seq t_T = seq_T self.values_auth
@@ -6776,7 +6814,7 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
   
   type t_MaybeUninit_T
   
-  type t_Option_T = None'2 | Some'2 t_T
+  type t_Option_T = None'3 | Some'3 t_T
   
   function view_MaybeUninit_T (self: t_MaybeUninit_T) : t_Option_T
   
@@ -6803,19 +6841,21 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
     /\ 0 <= tail_T self
     /\ tail_T self <= head_T self
     /\ head_T self <= tail_T self + len_T self
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.head_own) ts]. match get_Int (val_AtomicUsize self.head_own) ts with
-          | Some'0 {f0'0 = h} -> ts = self.head_last_ts
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'2 {f0'0 = h} -> ts = self.head_last_ts
           \/ contains_Int (val_AtomicUsize self.head_own) (ts + 1) /\ UInt64.t'int h < head_T self
-          | None'0 -> true
+          | None'2 -> true
           end)
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.tail_own) ts]. match get_Int (val_AtomicUsize self.tail_own) ts with
-          | Some'0 {f0'0 = t} -> ts = self.tail_last_ts
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'2 {f0'0 = t} -> ts = self.tail_last_ts
           \/ contains_Int (val_AtomicUsize self.tail_own) (ts + 1) /\ UInt64.t'int t < tail_T self
-          | None'0 -> true
+          | None'2 -> true
           end)
-    /\ (forall i: int, ts: int [get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts]. 0 <= i /\ i < len_T self
-        -> match get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts with
-          | Some'0 {f0'0 = status'1; f1'0 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
+    /\ (forall i: int, ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts) (fun (v: tup2_usize_SyncView) -> v)]. 0
+            <= i
+          /\ i < len_T self
+        -> match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'2 {f0'0 = status'1; f1'0 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
                                                                              view'0 = view } (val' (Seq.get self.statuses_mono_auth i))
           | _ -> true
           end)
@@ -6832,7 +6872,7 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
             else
               status_view.status'0 = 2 * k + 1
               /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T (val_Perm_PermCell_MaybeUninit_T at_view))
-              = Some'2 (Seq.get (seq_T'0 self) (k - tail_T self))
+              = Some'3 (Seq.get (seq_T'0 self) (k - tail_T self))
             )
             | _ -> false
             end
@@ -7283,11 +7323,19 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   function timestamp_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_None) : int
   
-  type t_FMap_Int_tup2_usize_SyncView
-  
   type tup2_usize_SyncView = { f0: UInt64.t; f1: t_SyncView }
   
   type t_Option_tup2_usize_SyncView = None'1 | Some'1 tup2_usize_SyncView
+  
+  type t_Option_ref_tup2_usize_SyncView = None'2 | Some'2 tup2_usize_SyncView
+  
+  function map_Option_tup2_usize_SyncView (self: t_Option_tup2_usize_SyncView) (f: Map.map tup2_usize_SyncView tup2_usize_SyncView) : t_Option_ref_tup2_usize_SyncView
+   = match self with
+      | None'1 -> None'2
+      | Some'1 x -> Some'2 (Map.get f x)
+      end
+  
+  type t_FMap_Int_tup2_usize_SyncView
   
   function to_mapping_Int (self: t_FMap_Int_tup2_usize_SyncView) : Map.map int t_Option_tup2_usize_SyncView
   
@@ -7313,8 +7361,8 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
         <= timestamp_AtomicUsize self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicUsize self
         <= get_timestamp_AtomicUsize (ward_AtomicUsize self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] get_Int (val_AtomicUsize own) (timestamp_AtomicUsize self)
-      = Some'1 { f0 = val_load_AtomicUsize self; f1 = view_AcquireSyncView result })}
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize own) (timestamp_AtomicUsize self)) (fun (v: tup2_usize_SyncView) -> v)
+      = Some'2 { f0 = val_load_AtomicUsize self; f1 = view_AcquireSyncView result })}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -7487,7 +7535,7 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   function mod_len_T (self: t_QueueInv_T) (i: int) : int = EuclideanDivision.mod i (len_T self)
   
-  type t_State_T = R'2 | W'2 t_T | None'2
+  type t_State_T = R'3 | W'3 t_T | None'3
   
   function val_T (self: t_Authority_T'0) (idx: int) : t_State_T
   
@@ -7499,7 +7547,7 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   type t_MaybeUninit_T
   
-  type t_Option_T = None'3 | Some'3 t_T
+  type t_Option_T = None'4 | Some'4 t_T
   
   function view_MaybeUninit_T (self: t_MaybeUninit_T) : t_Option_T
   
@@ -7526,41 +7574,43 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     /\ 0 <= tail_T self
     /\ tail_T self <= head_T self
     /\ head_T self <= tail_T self + len_T self
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.head_own'0) ts]. match get_Int (val_AtomicUsize self.head_own'0) ts with
-          | Some'1 {f0 = h} -> ts = self.head_last_ts'0
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own'0) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own'0) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'2 {f0 = h} -> ts = self.head_last_ts'0
           \/ contains_Int (val_AtomicUsize self.head_own'0) (ts + 1) /\ UInt64.t'int h < head_T self
-          | None'1 -> true
+          | None'2 -> true
           end)
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.tail_own'0) ts]. match get_Int (val_AtomicUsize self.tail_own'0) ts with
-          | Some'1 {f0 = t} -> ts = self.tail_last_ts'0
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own'0) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own'0) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'2 {f0 = t} -> ts = self.tail_last_ts'0
           \/ contains_Int (val_AtomicUsize self.tail_own'0) (ts + 1) /\ UInt64.t'int t < tail_T self
-          | None'1 -> true
+          | None'2 -> true
           end)
-    /\ (forall i: int, ts: int [get_Int (val_AtomicUsize (Seq.get self.statuses_own'0 i)) ts]. 0 <= i /\ i < len_T self
-        -> match get_Int (val_AtomicUsize (Seq.get self.statuses_own'0 i)) ts with
-          | Some'1 {f0 = status'1; f1 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
+    /\ (forall i: int, ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own'0 i)) ts) (fun (v: tup2_usize_SyncView) -> v)]. 0
+            <= i
+          /\ i < len_T self
+        -> match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own'0 i)) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'2 {f0 = status'1; f1 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
                                                                          view'0 = view } (val' (Seq.get self.statuses_mono_auth'0 i))
           | _ -> true
           end)
     /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
     /\ (forall k: int [val_T self.tokens_auth'0 k]. tail_T self <= k /\ k < tail_T self + len_T self
         -> (let status_view = val' (Seq.get self.statuses_mono_auth'0 (mod_len_T self k)) in match val_T self.tokens_auth'0 k with
-          | R'2 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
-          | W'2 value -> status_view.status'0 = 2 * k
+          | R'3 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
+          | W'3 value -> status_view.status'0 = 2 * k
           /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
-          | None'2 -> match Seq.get self.cells_own'0 (mod_len_T self k) with
+          | None'3 -> match Seq.get self.cells_own'0 (mod_len_T self k) with
             | Some'0 at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PermCell_MaybeUninit_T at_view)
             /\ (if head_T self <= k then
               status_view.status'0 = 2 * k
             else
               status_view.status'0 = 2 * k + 1
               /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T (val_Perm_PermCell_MaybeUninit_T at_view))
-              = Some'3 (Seq.get (seq_T'0 self) (k - tail_T self))
+              = Some'4 (Seq.get (seq_T'0 self) (k - tail_T self))
             )
             | _ -> false
             end
           end))
-    /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth'0 k = None'2)
+    /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth'0 k = None'3)
   
   meta "rewrite_def" predicate protocol_QueueInv_T
   
@@ -7904,9 +7954,9 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
         <= timestamp_AtomicUsize'0 self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicUsize'0 self
         <= get_timestamp_AtomicUsize (ward_AtomicUsize'1 self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicUsize own) (timestamp_AtomicUsize'0 self) with
-        | Some'1 {f0 = v; f1 = v_view} -> v = val_load_AtomicUsize'0 self /\ le_log_SyncView v_view sync_view.final
-        | None'1 -> false
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize own) (timestamp_AtomicUsize'0 self)) (fun (v: tup2_usize_SyncView) -> v) with
+        | Some'2 {f0 = v; f1 = v_view} -> v = val_load_AtomicUsize'0 self /\ le_log_SyncView v_view sync_view.final
+        | None'2 -> false
         end)}
       (! return {result}) ]
   
@@ -8403,7 +8453,7 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   type t_TokenW_T
   
-  type t_Option_TokenW_T = None'4 | Some'4 t_TokenW_T
+  type t_Option_TokenW_T = None'5 | Some'5 t_TokenW_T
   
   predicate invariant_TokenW_T (self: t_TokenW_T)
   
@@ -8415,8 +8465,8 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   axiom inv_axiom'12 [@rewrite]: forall x: t_Option_TokenW_T [inv_Option_TokenW_T x]. inv_Option_TokenW_T x
       = match x with
-        | None'4 -> true
-        | Some'4 f0'5 -> inv_TokenW_T f0'5
+        | None'5 -> true
+        | Some'5 f0'5 -> inv_TokenW_T f0'5
         end
   
   predicate invariant_Ghost_Option_TokenW_T [@inline:trivial] (self: t_Option_TokenW_T) = inv_Option_TokenW_T self
@@ -8435,7 +8485,7 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  type t_Option_Perm_PermCell_MaybeUninit_T = None'5 | Some'5 t_Perm_PermCell_MaybeUninit_T
+  type t_Option_Perm_PermCell_MaybeUninit_T = None'6 | Some'6 t_Perm_PermCell_MaybeUninit_T
   
   let new_Option_Perm_PermCell_MaybeUninit_T (x: t_Option_Perm_PermCell_MaybeUninit_T)
     (return (x'0: t_Option_Perm_PermCell_MaybeUninit_T)) = any
@@ -8701,8 +8751,8 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   axiom resolve_axiom'0 [@rewrite]: forall x: t_Option_TokenW_T [resolve_Option_TokenW_T x]. resolve_Option_TokenW_T x
       = match x with
-        | None'4 -> true
-        | Some'4 x0 -> resolve_TokenW_T x0
+        | None'5 -> true
+        | Some'5 x0 -> resolve_TokenW_T x0
         end
   
   predicate resolve_refmut_Option_TokenW_T [@inline:trivial] (_1: MutBorrow.t t_Option_TokenW_T) = _1.final = _1.current
@@ -8770,7 +8820,7 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
           (fun (_x: tup2_TokenW_T_Perm_PermCell_MaybeUninit_T) -> [ &_8 <- _x ] s18)
       | s18 = [ &t <- _8.f0'5 ] s19
       | s19 = [ &co <- _8.f1'5 ] s20
-      | s20 = [ &_23 <- Some'4 t ] s21
+      | s20 = [ &_23 <- Some'5 t ] s21
       | s21 = MutBorrow.borrow_final <t_Option_TokenW_T> {self.c6'4.current} {MutBorrow.get_id self.c6'4}
           (fun (_bor: MutBorrow.t t_Option_TokenW_T) ->
             [ &_26 <- _bor ] -{inv_Ghost_Option_TokenW_T _bor.final}-
@@ -8782,7 +8832,7 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
       | s25 = [ &_25 <- { _25 with current = _23 } ] s26
       | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_TokenW_T _25} any) ]
       | s27 = -{resolve_refmut_Option_TokenW_T _25}- s28
-      | s28 = [ &_27 <- Some'5 co ] s29
+      | s28 = [ &_27 <- Some'6 co ] s29
       | s29 = MutBorrow.borrow_final <t_Option_Perm_PermCell_MaybeUninit_T> {self.c7'4.current}
           {MutBorrow.get_id self.c7'4}
           (fun (_bor: MutBorrow.t t_Option_Perm_PermCell_MaybeUninit_T) ->
@@ -9122,22 +9172,22 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   meta "rewrite_def" predicate resolve_Ghost_Option_TokenW_T'0
   
-  type t_Option_refmut_Perm_PermCell_MaybeUninit_T = None'6 | Some'6 (MutBorrow.t t_Perm_PermCell_MaybeUninit_T)
+  type t_Option_refmut_Perm_PermCell_MaybeUninit_T = None'7 | Some'7 (MutBorrow.t t_Perm_PermCell_MaybeUninit_T)
   
   let as_mut_Perm_PermCell_MaybeUninit_T (self_: MutBorrow.t t_Option_Perm_PermCell_MaybeUninit_T)
     (return (x: t_Option_refmut_Perm_PermCell_MaybeUninit_T)) = any
     [ return (result: t_Option_refmut_Perm_PermCell_MaybeUninit_T) ->
     {[@stop_split] [@expl:as_mut_Perm_PermCell_MaybeUninit_T ensures] ([@stop_split] [@expl:as_mut ensures #0] self_.current
-          = None'5 -> result = None'6 /\ self_.final = None'5)
-      /\ ([@stop_split] [@expl:as_mut ensures #1] self_.current = None'5
-      \/ (exists r: MutBorrow.t t_Perm_PermCell_MaybeUninit_T. result = Some'6 r
-        /\ self_.current = Some'5 (r.current) /\ self_.final = Some'5 (r.final)))}
+          = None'6 -> result = None'7 /\ self_.final = None'6)
+      /\ ([@stop_split] [@expl:as_mut ensures #1] self_.current = None'6
+      \/ (exists r: MutBorrow.t t_Perm_PermCell_MaybeUninit_T. result = Some'7 r
+        /\ self_.current = Some'6 (r.current) /\ self_.final = Some'6 (r.final)))}
       (! return {result}) ]
   
   let unwrap_refmut_Perm_PermCell_MaybeUninit_T (self_: t_Option_refmut_Perm_PermCell_MaybeUninit_T)
-    (return (x: MutBorrow.t t_Perm_PermCell_MaybeUninit_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'6}
+    (return (x: MutBorrow.t t_Perm_PermCell_MaybeUninit_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'7}
     any
-    [ return (result: MutBorrow.t t_Perm_PermCell_MaybeUninit_T) -> {[@stop_split] [@expl:unwrap ensures] Some'6 result
+    [ return (result: MutBorrow.t t_Perm_PermCell_MaybeUninit_T) -> {[@stop_split] [@expl:unwrap ensures] Some'7 result
       = self_}
       (! return {result}) ]
   
@@ -9153,7 +9203,7 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   let new_T (val''1: t_T) (return (x: t_MaybeUninit_T)) = {[@stop_split] [@expl:new 'val' type invariant] inv_T val''1}
     any
-    [ return (result: t_MaybeUninit_T) -> {[@stop_split] [@expl:new ensures] view_MaybeUninit_T result = Some'3 val''1}
+    [ return (result: t_MaybeUninit_T) -> {[@stop_split] [@expl:new ensures] view_MaybeUninit_T result = Some'4 val''1}
       (! return {result}) ]
   
   function fin_Ghost_refmut_Perm_PermCell_MaybeUninit_T [@inline:trivial] (self: MutBorrow.t t_Perm_PermCell_MaybeUninit_T) : t_Perm_PermCell_MaybeUninit_T
@@ -9201,16 +9251,16 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     any
     [ return (result: t_Option_TokenW_T) ->
     {[@stop_split] [@expl:take_TokenW_T ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_TokenW_T result)
-      /\ ([@stop_split] [@expl:take ensures] result = self_.current /\ self_.final = None'4)}
+      /\ ([@stop_split] [@expl:take ensures] result = self_.current /\ self_.final = None'5)}
       (! return {result}) ]
   
   let unwrap_TokenW_T (self_: t_Option_TokenW_T) (return (x: t_TokenW_T)) =
   {[@stop_split] [@expl:unwrap_TokenW_T requires] ([@stop_split] [@expl:unwrap 'self_' type invariant] inv_Option_TokenW_T self_)
-    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None'4)}
+    /\ ([@stop_split] [@expl:unwrap requires] self_ <> None'5)}
     any
     [ return (result: t_TokenW_T) ->
     {[@stop_split] [@expl:unwrap_TokenW_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_TokenW_T result)
-      /\ ([@stop_split] [@expl:unwrap ensures] Some'4 result = self_)}
+      /\ ([@stop_split] [@expl:unwrap ensures] Some'5 result = self_)}
       (! return {result}) ]
   
   predicate invariant_Ghost_TokenW_T [@inline:trivial] (self: t_TokenW_T) = inv_TokenW_T self
@@ -9233,13 +9283,13 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     (return (x: t_Option_Perm_PermCell_MaybeUninit_T)) = any
     [ return (result: t_Option_Perm_PermCell_MaybeUninit_T) -> {[@stop_split] [@expl:take ensures] result
         = self_.current
-      /\ self_.final = None'5}
+      /\ self_.final = None'6}
       (! return {result}) ]
   
   let unwrap_Perm_PermCell_MaybeUninit_T (self_: t_Option_Perm_PermCell_MaybeUninit_T)
-    (return (x: t_Perm_PermCell_MaybeUninit_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'5}
+    (return (x: t_Perm_PermCell_MaybeUninit_T)) = {[@stop_split] [@expl:unwrap requires] self_ <> None'6}
     any
-    [ return (result: t_Perm_PermCell_MaybeUninit_T) -> {[@stop_split] [@expl:unwrap ensures] Some'5 result = self_}
+    [ return (result: t_Perm_PermCell_MaybeUninit_T) -> {[@stop_split] [@expl:unwrap ensures] Some'6 result = self_}
       (! return {result}) ]
   
   let new_Perm_PermCell_MaybeUninit_T (x: t_Perm_PermCell_MaybeUninit_T) (return (x'0: t_Perm_PermCell_MaybeUninit_T)) =
@@ -9271,7 +9321,7 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
       = 2 * index_T token + 1)
     /\ ([@stop_split] [@expl:try_enqueue_store_inv requires #4] id_T'1 token = id_T'0 inv'0.current.tokens_auth'0)
     /\ ([@stop_split] [@expl:try_enqueue_store_inv requires #5] view_MaybeUninit_T (val_PermCell_MaybeUninit_T cell_own)
-      = Some'3 (val_T'0 token))
+      = Some'4 (val_T'0 token))
     /\ ([@stop_split] [@expl:try_enqueue_store_inv requires #6] ward_PermCell_MaybeUninit_T cell_own
     = (Seq.get inv'0.current.cells'0 (mod_len_T inv'0.current (index_T token))).item)}
     any
@@ -9671,9 +9721,9 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
       | s6 = [ &_ret <- false ] s7
       | s7 = return {_ret} ]
     | bb13 = s0
-      [ s0 = [ &_58 <- None'4 ] s1
+      [ s0 = [ &_58 <- None'5 ] s1
       | s1 = new_Option_TokenW_T {_58} (fun (_x: t_Option_TokenW_T) -> [ &token <- _x ] s2)
-      | s2 = [ &_60 <- None'5 ] s3
+      | s2 = [ &_60 <- None'6 ] s3
       | s3 = new_Option_Perm_PermCell_MaybeUninit_T {_60}
           (fun (_x: t_Option_Perm_PermCell_MaybeUninit_T) -> [ &cell_own <- _x ] s4)
       | s4 = UInt64.add {head'0} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_64 <- _x ] s5)
@@ -10098,6 +10148,14 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   function timestamp_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_Relaxed) : int
   
+  type t_Option_ref_tup2_usize_SyncView = None'1 | Some'1 tup2_usize_SyncView
+  
+  function map_Option_tup2_usize_SyncView (self: t_Option_tup2_usize_SyncView) (f: Map.map tup2_usize_SyncView tup2_usize_SyncView) : t_Option_ref_tup2_usize_SyncView
+   = match self with
+      | None'0 -> None'1
+      | Some'0 x -> Some'1 (Map.get f x)
+      end
+  
   function val_load_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_Relaxed) : UInt64.t
   
   function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
@@ -10113,8 +10171,8 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
         <= timestamp_AtomicUsize self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicUsize self
         <= get_timestamp_AtomicUsize (ward_AtomicUsize self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] get_Int (val_AtomicUsize own) (timestamp_AtomicUsize self)
-      = Some'0 { f0 = val_load_AtomicUsize self; f1 = view_AcquireSyncView result })}
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize own) (timestamp_AtomicUsize self)) (fun (v: tup2_usize_SyncView) -> v)
+      = Some'1 { f0 = val_load_AtomicUsize self; f1 = view_AcquireSyncView result })}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -10161,14 +10219,14 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_usize_SyncView) (k: int) (v: tup2_usize_SyncView) : t_FMap_Int_tup2_usize_SyncView
+  function add_Int (self: t_FMap_Int_tup2_usize_SyncView) (k: int) (v: tup2_usize_SyncView) : t_FMap_Int_tup2_usize_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'0 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
@@ -10192,7 +10250,7 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
           + 1)
         = None'0)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicUsize own.final
-      = insert_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
+      = add_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
       + 1) { f0 = val_store_AtomicUsize self.current; f1 = view_ReleaseSyncView rel_view })}
       (! return {result}) ]
   
@@ -10314,7 +10372,7 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   type t_T
   
-  type t_State_T = R'1 | W'1 t_T | None'1
+  type t_State_T = R'2 | W'2 t_T | None'2
   
   function val_T (self: t_Authority_T'0) (idx: int) : t_State_T
   
@@ -10581,12 +10639,12 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   let alloc_T (auth'0: MutBorrow.t t_Authority_T'0) (index: int) (value: t_T) (return (x: t_TokenW_T)) =
   {[@stop_split] [@expl:alloc_T requires] ([@stop_split] [@expl:alloc 'auth' type invariant] inv_Ghost_refmut_Authority_T auth'0)
-    /\ ([@stop_split] [@expl:alloc requires] val_T auth'0.current index = None'1)}
+    /\ ([@stop_split] [@expl:alloc requires] val_T auth'0.current index = None'2)}
     any
     [ return (result: t_TokenW_T) ->
     {[@stop_split] [@expl:alloc_T ensures] ([@stop_split] [@expl:alloc result type invariant] inv_Ghost_TokenW_T result)
       /\ ([@stop_split] [@expl:alloc ensures #0] id_T'0 auth'0.current = id_T'0 (fin_Ghost_refmut_Authority_T auth'0))
-      /\ ([@stop_split] [@expl:alloc ensures #1] val_T (fin_Ghost_refmut_Authority_T auth'0) index = W'1 value)
+      /\ ([@stop_split] [@expl:alloc ensures #1] val_T (fin_Ghost_refmut_Authority_T auth'0) index = W'2 value)
       /\ ([@stop_split] [@expl:alloc ensures #2] index_T result = index)
       /\ ([@stop_split] [@expl:alloc ensures #3] id_T'1 result = id_T'0 auth'0.current)
       /\ ([@stop_split] [@expl:alloc ensures #4] val_T'0 result = value)
@@ -10727,7 +10785,7 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   type t_MaybeUninit_T
   
-  type t_Option_T = None'2 | Some'2 t_T
+  type t_Option_T = None'3 | Some'3 t_T
   
   function view_MaybeUninit_T (self: t_MaybeUninit_T) : t_Option_T
   
@@ -10754,41 +10812,43 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
     /\ 0 <= tail_T self
     /\ tail_T self <= head_T self
     /\ head_T self <= tail_T self + len_T self
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.head_own) ts]. match get_Int (val_AtomicUsize self.head_own) ts with
-          | Some'0 {f0 = h} -> ts = self.head_last_ts
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'1 {f0 = h} -> ts = self.head_last_ts
           \/ contains_Int (val_AtomicUsize self.head_own) (ts + 1) /\ UInt64.t'int h < head_T self
-          | None'0 -> true
+          | None'1 -> true
           end)
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.tail_own) ts]. match get_Int (val_AtomicUsize self.tail_own) ts with
-          | Some'0 {f0 = t} -> ts = self.tail_last_ts
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'1 {f0 = t} -> ts = self.tail_last_ts
           \/ contains_Int (val_AtomicUsize self.tail_own) (ts + 1) /\ UInt64.t'int t < tail_T self
-          | None'0 -> true
+          | None'1 -> true
           end)
-    /\ (forall i: int, ts: int [get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts]. 0 <= i /\ i < len_T self
-        -> match get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts with
-          | Some'0 {f0 = status'1; f1 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
+    /\ (forall i: int, ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts) (fun (v: tup2_usize_SyncView) -> v)]. 0
+            <= i
+          /\ i < len_T self
+        -> match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'1 {f0 = status'1; f1 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
                                                                          view'0 = view } (val''0 (Seq.get self.statuses_mono_auth i))
           | _ -> true
           end)
     /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
     /\ (forall k: int [val_T self.tokens_auth k]. tail_T self <= k /\ k < tail_T self + len_T self
         -> (let status_view = val''0 (Seq.get self.statuses_mono_auth (mod_len_T self k)) in match val_T self.tokens_auth k with
-          | R'1 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
-          | W'1 value -> status_view.status'0 = 2 * k
+          | R'2 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
+          | W'2 value -> status_view.status'0 = 2 * k
           /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
-          | None'1 -> match Seq.get self.cells_own (mod_len_T self k) with
+          | None'2 -> match Seq.get self.cells_own (mod_len_T self k) with
             | Some at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PermCell_MaybeUninit_T at_view)
             /\ (if head_T self <= k then
               status_view.status'0 = 2 * k
             else
               status_view.status'0 = 2 * k + 1
               /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T (val_Perm_PermCell_MaybeUninit_T at_view))
-              = Some'2 (Seq.get (seq_T'0 self) (k - tail_T self))
+              = Some'3 (Seq.get (seq_T'0 self) (k - tail_T self))
             )
             | _ -> false
             end
           end))
-    /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None'1)
+    /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None'2)
   
   meta "rewrite_def" predicate protocol_QueueInv_T
   
@@ -10919,8 +10979,8 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
       | s40 = -{resolve_Fragment witness}- s41
       | s41 = [ &_104 <- witness ] s42
       | s42 = frag_lemma {_100} {_104} (fun (_x: ()) -> [ &_98 <- _x ] s43)
-      | s43 = {[@expl:assertion] val_T inv'1.current.tokens_auth head = None'1} s44
-      | s44 = {[@expl:assertion] val_T inv'1.current.tokens_auth (head - len_T inv'1.current) = None'1} s45
+      | s43 = {[@expl:assertion] val_T inv'1.current.tokens_auth head = None'2} s44
+      | s44 = {[@expl:assertion] val_T inv'1.current.tokens_auth (head - len_T inv'1.current) = None'2} s45
       | s45 = {[@expl:assertion] head < tail_T inv'1.current + len_T inv'1.current} s46
       | s46 = [ &old_seq'0 <- seq_T'0 inv'1.current ] s47
       | s47 = [ &new_seq'0 <- Seq.snoc old_seq'0 item'0 ] s48
@@ -11421,14 +11481,14 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_usize_SyncView) (k: int) (v: tup2_usize_SyncView) : t_FMap_Int_tup2_usize_SyncView
+  function add_Int (self: t_FMap_Int_tup2_usize_SyncView) (k: int) (v: tup2_usize_SyncView) : t_FMap_Int_tup2_usize_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'0 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   let shoot_store_AtomicUsize (self: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)
@@ -11449,7 +11509,7 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
           + 1)
         = None'0)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicUsize own.final
-      = insert_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
+      = add_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
       + 1) { f0'0 = val_store_AtomicUsize self.current; f1'0 = sync_view.final })}
       (! return {result}) ]
   
@@ -11752,6 +11812,14 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
   
   function ward_PermCell_MaybeUninit_T (self: t_Perm_PermCell_MaybeUninit_T) : t_PermCell_MaybeUninit_T
   
+  type t_Option_ref_tup2_usize_SyncView = None'2 | Some'2 tup2_usize_SyncView
+  
+  function map_Option_tup2_usize_SyncView (self: t_Option_tup2_usize_SyncView) (f: Map.map tup2_usize_SyncView tup2_usize_SyncView) : t_Option_ref_tup2_usize_SyncView
+   = match self with
+      | None'0 -> None'2
+      | Some'0 x -> Some'2 (Map.get f x)
+      end
+  
   function seq_T (self: t_Authority_T) : Seq.seq t_T
   
   function seq_T'0 (self: t_QueueInv_T) : Seq.seq t_T = seq_T self.values_auth
@@ -11762,7 +11830,7 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
   
   type t_MaybeUninit_T
   
-  type t_Option_T = None'2 | Some'2 t_T
+  type t_Option_T = None'3 | Some'3 t_T
   
   function view_MaybeUninit_T (self: t_MaybeUninit_T) : t_Option_T
   
@@ -11789,19 +11857,21 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
     /\ 0 <= tail_T self
     /\ tail_T self <= head_T self
     /\ head_T self <= tail_T self + len_T self
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.head_own) ts]. match get_Int (val_AtomicUsize self.head_own) ts with
-          | Some'0 {f0'0 = h} -> ts = self.head_last_ts
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.head_own) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'2 {f0'0 = h} -> ts = self.head_last_ts
           \/ contains_Int (val_AtomicUsize self.head_own) (ts + 1) /\ UInt64.t'int h < head_T self
-          | None'0 -> true
+          | None'2 -> true
           end)
-    /\ (forall ts: int [get_Int (val_AtomicUsize self.tail_own) ts]. match get_Int (val_AtomicUsize self.tail_own) ts with
-          | Some'0 {f0'0 = t} -> ts = self.tail_last_ts
+    /\ (forall ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own) ts) (fun (v: tup2_usize_SyncView) -> v)]. match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize self.tail_own) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'2 {f0'0 = t} -> ts = self.tail_last_ts
           \/ contains_Int (val_AtomicUsize self.tail_own) (ts + 1) /\ UInt64.t'int t < tail_T self
-          | None'0 -> true
+          | None'2 -> true
           end)
-    /\ (forall i: int, ts: int [get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts]. 0 <= i /\ i < len_T self
-        -> match get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts with
-          | Some'0 {f0'0 = status'1; f1'0 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
+    /\ (forall i: int, ts: int [map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts) (fun (v: tup2_usize_SyncView) -> v)]. 0
+            <= i
+          /\ i < len_T self
+        -> match map_Option_tup2_usize_SyncView (get_Int (val_AtomicUsize (Seq.get self.statuses_own i)) ts) (fun (v: tup2_usize_SyncView) -> v) with
+          | Some'2 {f0'0 = status'1; f1'0 = view} -> le_log_StatusWithView { status'0 = UInt64.t'int status'1;
                                                                              view'0 = view } (val' (Seq.get self.statuses_mono_auth i))
           | _ -> true
           end)
@@ -11818,7 +11888,7 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
             else
               status_view.status'0 = 2 * k + 1
               /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T (val_Perm_PermCell_MaybeUninit_T at_view))
-              = Some'2 (Seq.get (seq_T'0 self) (k - tail_T self))
+              = Some'3 (Seq.get (seq_T'0 self) (k - tail_T self))
             )
             | _ -> false
             end
@@ -11871,7 +11941,7 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
       = 2 * index_T token + 1)
     /\ ([@stop_split] [@expl:try_enqueue_store_inv requires #4] id_T token = id_T'0 inv.current.tokens_auth)
     /\ ([@stop_split] [@expl:try_enqueue_store_inv requires #5] view_MaybeUninit_T (val_PermCell_MaybeUninit_T cell_own)
-      = Some'2 (val_T'0 token))
+      = Some'3 (val_T'0 token))
     /\ ([@stop_split] [@expl:try_enqueue_store_inv requires #6] ward_PermCell_MaybeUninit_T cell_own
     = (Seq.get inv.current.cells (mod_len_T inv.current (index_T token))).item)}
     (! bb0
@@ -14859,11 +14929,19 @@ module M_tokens__impl_Authority_T__alloc (* tokens::Authority<T> *)
   
   type t_State_T = R'3 | W'3 t_T | None'3
   
+  type t_Option_ref_Excl_Option_T = None'4 | Some'4 t_Excl_Option_T
+  
+  function map_Option_Excl_Option_T'0 (self: t_Option_Excl_Option_T) (f: Map.map t_Excl_Option_T t_Excl_Option_T) : t_Option_ref_Excl_Option_T
+   = match self with
+      | None'1 -> None'4
+      | Some'1 x -> Some'4 (Map.get f x)
+      end
+  
   function val_T (self: t_Authority_T) (idx: int) : t_State_T =
-    match get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0'3) idx with
-      | None'1 -> None'3
-      | Some'1 {f0 = None'0} -> R'3
-      | Some'1 {f0 = Some'0 data} -> W'3 data
+    match map_Option_Excl_Option_T'0 (get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0'3) idx) (fun (v: t_Excl_Option_T) -> v) with
+      | None'4 -> None'3
+      | Some'4 {f0 = None'0} -> R'3
+      | Some'4 {f0 = Some'0 data} -> W'3 data
       end
   
   meta "compute_max_steps" 1000000
@@ -14992,14 +15070,14 @@ module M_tokens__impl_TokenR_T__alloc (* tokens::TokenR<T> *)
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
+  function add_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'0 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_Excl_Option_T
@@ -15008,7 +15086,7 @@ module M_tokens__impl_TokenR_T__alloc (* tokens::TokenR<T> *)
   
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None'0)
   
-  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = add_Int empty_Int k v
   
   type t_Resource_View_AuthViewRel_FMap_Int_Excl_Option_T
   
@@ -15265,11 +15343,19 @@ module M_tokens__impl_TokenR_T__alloc (* tokens::TokenR<T> *)
   
   type t_State_T = R'3 | W'3 t_T | None'3
   
+  type t_Option_ref_Excl_Option_T = None'4 | Some'4 t_Excl_Option_T
+  
+  function map_Option_Excl_Option_T'0 (self: t_Option_Excl_Option_T) (f: Map.map t_Excl_Option_T t_Excl_Option_T) : t_Option_ref_Excl_Option_T
+   = match self with
+      | None'0 -> None'4
+      | Some'0 x -> Some'4 (Map.get f x)
+      end
+  
   function val_T (self: t_Authority_T) (idx: int) : t_State_T =
-    match get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0) idx with
-      | None'0 -> None'3
-      | Some'0 {f0'0 = None} -> R'3
-      | Some'0 {f0'0 = Some data} -> W'3 data
+    match map_Option_Excl_Option_T'0 (get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0) idx) (fun (v: t_Excl_Option_T) -> v) with
+      | None'4 -> None'3
+      | Some'4 {f0'0 = None} -> R'3
+      | Some'4 {f0'0 = Some data} -> W'3 data
       end
   
   function id_T (self: t_Authority_T) : t_Id = id_FMap_Int_Excl_Option_T'0 self.f0
@@ -15536,17 +15622,17 @@ module M_tokens__impl_TokenR_T__discard (* tokens::TokenR<T> *)
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
+  function add_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'1 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
-  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = add_Int empty_Int k v
   
   predicate invariant_TokenR_T [@inline:trivial] (self: t_TokenR_T) =
     view_Fragment_FMap_Int_Excl_Option_T self.f0'0 = singleton_Int self.f1'0 { f0'1 = None'0 }
@@ -15783,11 +15869,19 @@ module M_tokens__impl_TokenR_T__discard (* tokens::TokenR<T> *)
   
   type t_State_T = R'3 | W'3 t_T | None'3
   
+  type t_Option_ref_Excl_Option_T = None'4 | Some'4 t_Excl_Option_T
+  
+  function map_Option_Excl_Option_T'0 (self: t_Option_Excl_Option_T) (f: Map.map t_Excl_Option_T t_Excl_Option_T) : t_Option_ref_Excl_Option_T
+   = match self with
+      | None'1 -> None'4
+      | Some'1 x -> Some'4 (Map.get f x)
+      end
+  
   function val_T (self: t_Authority_T) (idx: int) : t_State_T =
-    match get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0'3) idx with
-      | None'1 -> None'3
-      | Some'1 {f0'1 = None'0} -> R'3
-      | Some'1 {f0'1 = Some'0 data} -> W'3 data
+    match map_Option_Excl_Option_T'0 (get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0'3) idx) (fun (v: t_Excl_Option_T) -> v) with
+      | None'4 -> None'3
+      | Some'4 {f0'1 = None'0} -> R'3
+      | Some'4 {f0'1 = Some'0 data} -> W'3 data
       end
   
   function index_T (self: t_TokenR_T) : int = self.f1'0
@@ -15953,14 +16047,14 @@ module M_tokens__impl_TokenW_T__alloc (* tokens::TokenW<T> *)
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
+  function add_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'0 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_Excl_Option_T
@@ -15969,7 +16063,7 @@ module M_tokens__impl_TokenW_T__alloc (* tokens::TokenW<T> *)
   
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None'0)
   
-  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = add_Int empty_Int k v
   
   type t_Resource_View_AuthViewRel_FMap_Int_Excl_Option_T
   
@@ -16226,11 +16320,19 @@ module M_tokens__impl_TokenW_T__alloc (* tokens::TokenW<T> *)
   
   type t_State_T = R'3 | W'3 t_T | None'3
   
+  type t_Option_ref_Excl_Option_T = None'4 | Some'4 t_Excl_Option_T
+  
+  function map_Option_Excl_Option_T'0 (self: t_Option_Excl_Option_T) (f: Map.map t_Excl_Option_T t_Excl_Option_T) : t_Option_ref_Excl_Option_T
+   = match self with
+      | None'0 -> None'4
+      | Some'0 x -> Some'4 (Map.get f x)
+      end
+  
   function val_T (self: t_Authority_T) (idx: int) : t_State_T =
-    match get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0) idx with
-      | None'0 -> None'3
-      | Some'0 {f0'0 = None} -> R'3
-      | Some'0 {f0'0 = Some data} -> W'3 data
+    match map_Option_Excl_Option_T'0 (get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0) idx) (fun (v: t_Excl_Option_T) -> v) with
+      | None'4 -> None'3
+      | Some'4 {f0'0 = None} -> R'3
+      | Some'4 {f0'0 = Some data} -> W'3 data
       end
   
   function id_T (self: t_Authority_T) : t_Id = id_FMap_Int_Excl_Option_T'0 self.f0
@@ -16526,17 +16628,17 @@ module M_tokens__impl_TokenW_T__discard (* tokens::TokenW<T> *)
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
+  function add_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'1 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
-  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = add_Int empty_Int k v
   
   predicate invariant_TokenW_T [@inline:trivial] (self: t_TokenW_T) =
     exists value: t_T. view_Fragment_FMap_Int_Excl_Option_T self.f0'0 = singleton_Int self.f1'0 { f0'1 = Some'0 value }
@@ -16773,11 +16875,19 @@ module M_tokens__impl_TokenW_T__discard (* tokens::TokenW<T> *)
   
   type t_State_T = R'3 | W'3 t_T | None'3
   
+  type t_Option_ref_Excl_Option_T = None'4 | Some'4 t_Excl_Option_T
+  
+  function map_Option_Excl_Option_T'0 (self: t_Option_Excl_Option_T) (f: Map.map t_Excl_Option_T t_Excl_Option_T) : t_Option_ref_Excl_Option_T
+   = match self with
+      | None'1 -> None'4
+      | Some'1 x -> Some'4 (Map.get f x)
+      end
+  
   function val_T (self: t_Authority_T) (idx: int) : t_State_T =
-    match get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0'3) idx with
-      | None'1 -> None'3
-      | Some'1 {f0'1 = None'0} -> R'3
-      | Some'1 {f0'1 = Some'0 data} -> W'3 data
+    match map_Option_Excl_Option_T'0 (get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0'3) idx) (fun (v: t_Excl_Option_T) -> v) with
+      | None'4 -> None'3
+      | Some'4 {f0'1 = None'0} -> R'3
+      | Some'4 {f0'1 = Some'0 data} -> W'3 data
       end
   
   function index_T (self: t_TokenW_T) : int = self.f1'0

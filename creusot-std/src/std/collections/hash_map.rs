@@ -27,9 +27,9 @@ extern_spec! {
         #[ensures(self@ == result@)]
         fn iter(&self) -> Iter<'_, K, V>;
 
-        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == (^self)@.contains(k))]
-        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == result@.contains(k))]
-        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) ==> (*self)@[k] == *result@[k] && (^self)@[k] == ^result@[k])]
+        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(&k) == (^self)@.contains(&k))]
+        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(&k) == result@.contains(&k))]
+        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(&k) ==> (*self)@[k] == *result@[k] && (^self)@[k] == ^result@[k])]
         fn iter_mut(&mut self) -> IterMut<'_, K, V>;
     }
 
@@ -44,9 +44,9 @@ extern_spec! {
     }
 
     impl<'a, K: DeepModel, V, S, A: Allocator> IntoIterator for &'a mut HashMap<K, V, S, A> {
-        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == (^self)@.contains(k))]
-        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) == result@.contains(k))]
-        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(k) ==> (*self)@[k] == *result@[k] && (^self)@[k] == ^result@[k])]
+        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(&k) == (^self)@.contains(&k))]
+        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(&k) == result@.contains(&k))]
+        #[ensures(forall<k: K::DeepModelTy> (*self)@.contains(&k) ==> (*self)@[k] == *result@[k] && (^self)@[k] == ^result@[k])]
         fn into_iter(self) -> IterMut<'a, K, V>;
     }
 
@@ -57,7 +57,7 @@ extern_spec! {
         #[ensures(exists<into_iter: T::IntoIter, prod: Seq<(K, V)>, done: &mut T::IntoIter>
             T::into_iter.postcondition((iter,), into_iter) &&
             into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&
-            forall<k: K::DeepModelTy, v: V> (result@.get(k) == Some(v))
+            forall<k: K::DeepModelTy, v: V> (result@.get(&k) == Some(&v))
                 == (exists<i, k1: K> 0 <= i && i < prod.len() && k1.deep_model() == k && prod[i] == (k1, v)
                     && forall<j> i < j && j < prod.len() ==> prod[j].0.deep_model() != k)
         )]
@@ -83,11 +83,11 @@ impl<K: DeepModel, V, A: Allocator> IteratorSpec for IntoIter<K, V, A> {
         pearlite! {
             self@.len() == visited.len() + o@.len()
             && (forall<k: K, v: V> visited.contains((k, v))
-                ==> self@.get(k.deep_model()) == Some(v) && o@.get(k.deep_model()) == None)
-            && (forall<k: K::DeepModelTy, v: V> o@.get(k) == Some(v)
-                ==> self@.get(k) == Some(v) && !exists<k2: K, v2: V> k2.deep_model() == k && visited.contains((k2, v2)))
-            && (forall<k: K::DeepModelTy, v: V> self@.get(k) == Some(v)
-                ==> (exists<k1: K> k1.deep_model() == k && visited.contains((k1, v))) || o@.get(k) == Some(v))
+                ==> self@.get(&k.deep_model()) == Some(&v) && o@.get(&k.deep_model()) == None)
+            && (forall<k: K::DeepModelTy, v: V> o@.get(&k) == Some(&v)
+                ==> self@.get(&k) == Some(&v) && !exists<k2: K, v2: V> k2.deep_model() == k && visited.contains((k2, v2)))
+            && (forall<k: K::DeepModelTy, v: V> self@.get(&k) == Some(&v)
+                ==> (exists<k1: K> k1.deep_model() == k && visited.contains((k1, v))) || o@.get(&k) == Some(&v))
             && (forall<i1, i2>
                 0 <= i1 && i1 < visited.len() && 0 <= i2 && i2 < visited.len()
                 && visited[i1].0.deep_model() == visited[i2].0.deep_model()
@@ -146,11 +146,11 @@ impl<'a, K: DeepModel, V> IteratorSpec for Iter<'a, K, V> {
         pearlite! {
             self@.len() == visited.len() + o@.len()
             && (forall<k: &K, v: &V> visited.contains((k, v))
-                ==> self@.get(k.deep_model()) == Some(*v) && o@.get(k.deep_model()) == None)
-            && (forall<k: K::DeepModelTy, v: V> o@.get(k) == Some(v)
-                ==> self@.get(k) == Some(v) && !exists<k2: &K, v2: &V> k2.deep_model() == k && visited.contains((k2, v2)))
-            && (forall<k: K::DeepModelTy, v: V> self@.get(k) == Some(v)
-                ==> (exists<k2: &K> k2.deep_model() == k && visited.contains((k2, &v))) || o@.get(k) == Some(v))
+                ==> self@.get(&k.deep_model()) == Some(v) && o@.get(&k.deep_model()) == None)
+            && (forall<k: K::DeepModelTy, v: V> o@.get(&k) == Some(&v)
+                ==> self@.get(&k) == Some(&v) && !exists<k2: &K, v2: &V> k2.deep_model() == k && visited.contains((k2, v2)))
+            && (forall<k: K::DeepModelTy, v: V> self@.get(&k) == Some(&v)
+                ==> (exists<k2: &K> k2.deep_model() == k && visited.contains((k2, &v))) || o@.get(&k) == Some(&v))
             && (forall<i1, i2>
                 0 <= i1 && i1 < visited.len() && 0 <= i2 && i2 < visited.len()
                 && visited[i1].0.deep_model() == visited[i2].0.deep_model()
@@ -208,11 +208,11 @@ impl<'a, K: DeepModel, V> IteratorSpec for IterMut<'a, K, V> {
         pearlite! {
             self@.len() == visited.len() + o@.len()
             && (forall<k: K, v: &mut V> visited.contains((&k, v))
-                ==> self@.get(k.deep_model()) == Some(v) && o@.get(k.deep_model()) == None)
-            && (forall<k: K::DeepModelTy, v: &mut V> o@.get(k) == Some(v)
-                ==> self@.get(k) == Some(v) && !exists<k2: &K, v2: &mut V> k2.deep_model() == k && visited.contains((k2, v2)))
-            && (forall<k: K::DeepModelTy, v: &mut V> self@.get(k) == Some(v)
-                ==> (exists<k1: &K> k1.deep_model() == k && visited.contains((k1, v))) || o@.get(k) == Some(v))
+                ==> self@.get(&k.deep_model()) == Some(&v) && o@.get(&k.deep_model()) == None)
+            && (forall<k: K::DeepModelTy, v: &mut V> o@.get(&k) == Some(&v)
+                ==> self@.get(&k) == Some(&v) && !exists<k2: &K, v2: &mut V> k2.deep_model() == k && visited.contains((k2, v2)))
+            && (forall<k: K::DeepModelTy, v: &mut V> self@.get(&k) == Some(&v)
+                ==> (exists<k1: &K> k1.deep_model() == k && visited.contains((k1, v))) || o@.get(&k) == Some(&v))
             && (forall<i1, i2>
                 0 <= i1 && i1 < visited.len() && 0 <= i2 && i2 < visited.len()
                 && visited[i1].0.deep_model() == visited[i2].0.deep_model()
