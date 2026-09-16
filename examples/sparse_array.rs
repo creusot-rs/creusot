@@ -113,11 +113,11 @@ impl<T, const SIZE: usize> Sparse<T, SIZE> {
     #[requires(inv(self))]
     #[requires(self.n == SIZE)]
     #[requires(0 <= cur && cur < SIZE@)]
-    #[requires(forall<k> seen.contains(k) ==>
+    #[requires(forall<k> seen.contains(&k) ==>
         0 <= k && k < SIZE@ &&
-        (k == i || seen.contains(self.idx[k]@)))]
-    #[requires(i == cur || (seen.contains(i) && seen.contains(self.idx[cur]@)))]
-    #[requires(!seen.contains(cur))]
+        (k == i || seen.contains(&self.idx[k]@)))]
+    #[requires(i == cur || (seen.contains(&i) && seen.contains(&self.idx[cur]@)))]
+    #[requires(!seen.contains(&cur))]
     #[ensures(0 <= result && result < SIZE@)]
     #[ensures(self.back[result]@ == i)]
     fn lemma_permutation_aux(self, seen: FSet<Int>, i: Int, cur: Int) -> Int {
@@ -126,14 +126,14 @@ impl<T, const SIZE: usize> Sparse<T, SIZE> {
                 cur
             } else {
                 Self::bounded_fset_len(seen, SIZE@);
-                self.lemma_permutation_aux(seen.insert(cur), i, self.back[cur]@)
+                self.lemma_permutation_aux(seen.add(cur), i, self.back[cur]@)
             }
         }
     }
 
     #[logic]
     #[variant(bnd)]
-    #[requires(forall<x> s.contains(x) ==> 0 <= x && x < bnd)]
+    #[requires(forall<x> s.contains(&x) ==> 0 <= x && x < bnd)]
     #[requires(bnd >= 0)]
     #[ensures(s.len() <= bnd)]
     fn bounded_fset_len(s: FSet<Int>, bnd: Int) {

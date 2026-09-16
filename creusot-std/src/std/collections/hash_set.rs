@@ -32,7 +32,7 @@ extern_spec! {
         #[ensures(result@ == self@.difference(other@))]
         fn difference<'a>(&'a self, other: &'a HashSet<T, S, A>) -> Difference<'a, T, S, A>;
 
-        #[ensures(result == self@.contains(value.deep_model()))]
+        #[ensures(result == self@.contains(&value.deep_model()))]
         fn contains<Q: ?Sized + Eq + Hash + DeepModel<DeepModelTy = T::DeepModelTy>>(&self, value: &Q) -> bool
         where
             T: Borrow<Q>;
@@ -55,7 +55,7 @@ extern_spec! {
             I::into_iter.postcondition((iter,), into_iter) &&
             into_iter.produces(prod, *done) && done.completed() && resolve(^done) &&
             forall<x: T::DeepModelTy>
-                result@.contains(x) == exists<x1: T> x1.deep_model() == x && prod.contains(x1)
+                result@.contains(&x) == exists<x1: T> x1.deep_model() == x && prod.contains(x1)
         )]
         fn from_iter<I: IntoIterator<Item = T, IntoIter: IteratorSpec>>(iter: I) -> Self;
     }
@@ -78,9 +78,9 @@ pub fn set_produces<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
     end: I,
 ) -> bool {
     pearlite! { start@.len() == visited.len() + end@.len()
-        && (forall<x: T::DeepModelTy> start@.contains(x) ==> (exists<x1: T> x1.deep_model() == x && visited.contains(x1)) || end@.contains(x))
-        && (forall<x: T> visited.contains(x) ==> start@.contains(x.deep_model()) && !end@.contains(x.deep_model()))
-        && (forall<x: T::DeepModelTy> end@.contains(x) ==> start@.contains(x) && !exists<x1: T> x1.deep_model() == x && visited.contains(x1))
+        && (forall<x: T::DeepModelTy> start@.contains(&x) ==> (exists<x1: T> x1.deep_model() == x && visited.contains(x1)) || end@.contains(&x))
+        && (forall<x: T> visited.contains(x) ==> start@.contains(&x.deep_model()) && !end@.contains(&x.deep_model()))
+        && (forall<x: T::DeepModelTy> end@.contains(&x) ==> start@.contains(&x) && !exists<x1: T> x1.deep_model() == x && visited.contains(x1))
         && (forall<i, j>
             0 <= i && i < visited.len() && 0 <= j && j < visited.len()
             && visited[i].deep_model() == visited[j].deep_model()

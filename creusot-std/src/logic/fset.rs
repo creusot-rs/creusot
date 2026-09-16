@@ -40,7 +40,7 @@ impl<T> FSet<T> {
 
     /// Returns `true` if `e` is in the set.
     #[logic(open, inline)]
-    pub fn contains(self, e: T) -> bool {
+    pub fn contains_logic(self, e: T) -> bool {
         Self::mem(e, self)
     }
 
@@ -56,8 +56,8 @@ impl<T> FSet<T> {
 
     /// Returns a new set, where `e` has been added if it was not present.
     #[logic(open, inline)]
-    pub fn insert(self, e: T) -> Self {
-        Self::add(e, self)
+    pub fn add(self, e: T) -> Self {
+        Self::add2(e, self)
     }
 
     /// [`Self::insert`], but with the order of arguments flipped.
@@ -66,7 +66,7 @@ impl<T> FSet<T> {
     #[doc(hidden)]
     #[logic]
     #[builtin("set.Fset.add")]
-    pub fn add(_: T, _: Self) -> Self {
+    pub fn add2(_: T, _: Self) -> Self {
         dead
     }
 
@@ -148,7 +148,7 @@ impl<T> FSet<T> {
     /// Returns the number of elements in the set, also called its length.
     #[logic]
     #[builtin("set.Fset.cardinal")]
-    pub fn len(self) -> Int {
+    pub fn len_logic(self) -> Int {
         dead
     }
 
@@ -173,20 +173,20 @@ impl<T> FSet<T> {
     #[ensures(#[trigger(self == other)] result == (self == other))]
     pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
-            forall <e: T> self.contains(e) == other.contains(e)
+            forall <e: &T> self.contains(e) == other.contains(e)
         }
     }
 
     /// Returns the set containing only `x`.
     #[logic(open)]
-    #[ensures(forall<y: T> result.contains(y) == (x == y))]
+    #[ensures(forall<y: T> result.contains(&y) == (x == y))]
     pub fn singleton(x: T) -> Self {
-        FSet::empty().insert(x)
+        FSet::empty().add(x)
     }
 
     /// Returns the union of sets `f(t)` over all `t: T`.
     #[logic(open)]
-    #[ensures(forall<y: U> result.contains(y) == exists<x: T> self.contains(x) && f.get(x).contains(y))]
+    #[ensures(forall<y: U> result.contains(&y) == exists<x: T> self.contains(&x) && f.get(x).contains(&y))]
     #[variant(self.len())]
     pub fn unions<U>(self, f: Mapping<T, FSet<U>>) -> FSet<U> {
         if self.len() == 0 {
@@ -220,7 +220,7 @@ impl<T> FSet<T> {
 
     /// Returns the set of sequences whose head is in `s` and whose tail is in `ss`.
     #[logic(open)]
-    #[ensures(forall<xs: Seq<T>> result.contains(xs) == (0 < xs.len() && s.contains(xs[0]) && ss.contains(xs.tail())))]
+    #[ensures(forall<xs: Seq<T>> result.contains(&xs) == (0 < xs.len() && s.contains(&xs[0]) && ss.contains(&xs.tail())))]
     pub fn cons(s: FSet<T>, ss: FSet<Seq<T>>) -> FSet<Seq<T>> {
         proof_assert!(forall<x:T, xs: Seq<T>> xs.push_front(x).tail() == xs);
         proof_assert!(forall<xs: Seq<T>> 0 < xs.len() ==> xs.tail().push_front(xs[0]) == xs);
@@ -229,7 +229,7 @@ impl<T> FSet<T> {
 
     /// Returns the set of concatenations of a sequence in `s` and a sequence in `t`.
     #[logic(open)]
-    #[ensures(forall<xs: Seq<T>> result.contains(xs) == (exists<ys: Seq<T>, zs: Seq<T>> s.contains(ys) && t.contains(zs) && xs == ys.concat(zs)))]
+    #[ensures(forall<xs: Seq<T>> result.contains(&xs) == (exists<ys: Seq<T>, zs: Seq<T>> s.contains(&ys) && t.contains(&zs) && xs == ys.concat(zs)))]
     pub fn concat(s: FSet<Seq<T>>, t: FSet<Seq<T>>) -> FSet<Seq<T>> {
         s.unions(|ys: Seq<_>| t.map(|zs| ys.concat(zs)))
     }
@@ -237,7 +237,7 @@ impl<T> FSet<T> {
     /// Returns the set of sequences of length `n` whose elements are in `self`.
     #[logic(open)]
     #[requires(n >= 0)]
-    #[ensures(forall<xs: Seq<T>> result.contains(xs) == (xs.len() == n && forall<x: T> xs.contains(x) ==> self.contains(x)))]
+    #[ensures(forall<xs: Seq<T>> result.contains(&xs) == (xs.len() == n && forall<x: T> xs.contains(x) ==> self.contains(&x)))]
     #[variant(n)]
     pub fn replicate(self, n: Int) -> FSet<Seq<T>> {
         pearlite! {
@@ -254,7 +254,7 @@ impl<T> FSet<T> {
     /// Returns the set of sequences of length at most `n` whose elements are in `self`.
     #[logic(open)]
     #[requires(n >= 0)]
-    #[ensures(forall<xs: Seq<T>> result.contains(xs) == (xs.len() <= n && forall<x: T> xs.contains(x) ==> self.contains(x)))]
+    #[ensures(forall<xs: Seq<T>> result.contains(&xs) == (xs.len() <= n && forall<x: T> xs.contains(x) ==> self.contains(&x)))]
     #[variant(n)]
     pub fn replicate_up_to(self, n: Int) -> FSet<Seq<T>> {
         pearlite! {
@@ -370,19 +370,19 @@ impl<T> FSet<T> {
     ///
     /// let mut set = FSet::new();
     /// ghost! {
-    ///     let len1 = set.len_ghost();
-    ///     set.insert_ghost(1);
-    ///     set.insert_ghost(2);
-    ///     set.insert_ghost(1);
-    ///     let len2 = set.len_ghost();
+    ///     let len1 = set.len();
+    ///     set.insert(1);
+    ///     set.insert(2);
+    ///     set.insert(1);
+    ///     let len2 = set.len();
     ///     proof_assert!(len1 == 0);
     ///     proof_assert!(len2 == 2);
     /// };
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[logic_alias(Self::len(*self))]
-    pub fn len_ghost(&self) -> Int {
+    #[logic_alias(self.len_logic())]
+    pub fn len(&self) -> Int {
         panic!()
     }
 
@@ -394,16 +394,17 @@ impl<T> FSet<T> {
     ///
     /// let mut set = FSet::new();
     /// ghost! {
-    ///     set.insert_ghost(1);
-    ///     let (b1, b2) = (set.contains_ghost(&1), set.contains_ghost(&2));
+    ///     set.insert(1);
+    ///     let (b1, b2) = (set.contains(&1), set.contains(&2));
     ///     proof_assert!(b1);
     ///     proof_assert!(!b2);
     /// };
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[logic_alias(Self::contains(*self, *value))]
-    pub fn contains_ghost(&self, value: &T) -> bool {
+    //#[logic_alias(Self::contains(*self, *value))]
+    #[logic_alias(self.contains_logic(*value))]
+    pub fn contains(&self, value: &T) -> bool {
         let _ = value;
         panic!()
     }
@@ -422,12 +423,12 @@ impl<T> FSet<T> {
     ///
     /// let mut set = FSet::new();
     /// ghost! {
-    ///     let res1 = set.insert_ghost(42);
+    ///     let res1 = set.insert(42);
     ///     proof_assert!(res1);
     ///     proof_assert!(set.contains(42i32));
     ///
-    ///     let res2 = set.insert_ghost(41);
-    ///     let res3 = set.insert_ghost(42);
+    ///     let res2 = set.insert(41);
+    ///     let res3 = set.insert(42);
     ///     proof_assert!(res2);
     ///     proof_assert!(!res3);
     ///     proof_assert!(set.len() == 2);
@@ -435,9 +436,9 @@ impl<T> FSet<T> {
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(^self == (*self).insert(value))]
-    #[ensures(result == !(*self).contains(value))]
-    pub fn insert_ghost(&mut self, value: T) -> bool {
+    #[ensures(^self == (*self).add(value))]
+    #[ensures(result == !(*self).contains(&value))]
+    pub fn insert(&mut self, value: T) -> bool {
         let _ = value;
         panic!()
     }
@@ -450,17 +451,17 @@ impl<T> FSet<T> {
     ///
     /// let mut set = FSet::new();
     /// let res = ghost! {
-    ///     set.insert_ghost(1);
-    ///     let res1 = set.remove_ghost(&1);
-    ///     let res2 = set.remove_ghost(&1);
+    ///     set.insert(1);
+    ///     let res1 = set.delete(&1);
+    ///     let res2 = set.delete(&1);
     ///     proof_assert!(res1 && !res2);
     /// };
     /// ```
     #[trusted]
     #[check(ghost)]
     #[ensures(^self == (*self).remove(*value))]
-    #[ensures(result == (*self).contains(*value))]
-    pub fn remove_ghost(&mut self, value: &T) -> bool {
+    #[ensures(result == (*self).contains(value))]
+    pub fn delete(&mut self, value: &T) -> bool {
         let _ = value;
         panic!()
     }
@@ -473,17 +474,17 @@ impl<T> FSet<T> {
     ///
     /// let mut s = FSet::new();
     /// ghost! {
-    ///     s.insert_ghost(1);
-    ///     s.insert_ghost(2);
-    ///     s.insert_ghost(3);
-    ///     s.clear_ghost();
+    ///     s.insert(1);
+    ///     s.insert(2);
+    ///     s.insert(3);
+    ///     s.clear();
     ///     proof_assert!(s == FSet::empty());
     /// };
     /// ```
     #[trusted]
     #[check(ghost)]
     #[ensures(^self == Self::empty())]
-    pub fn clear_ghost(&mut self) {}
+    pub fn clear(&mut self) {}
 }
 
 impl<T: Clone + Copy> Clone for FSet<T> {
@@ -502,14 +503,14 @@ impl<T> Invariant for FSet<T> {
     #[logic(open, prophetic, inline)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
-        pearlite! { forall<x: T> self.contains(x) ==> inv(x) }
+        pearlite! { forall<x: T> self.contains(&x) ==> inv(x) }
     }
 }
 impl<T> Resolve for FSet<T> {
     #[logic(open, prophetic)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
-        pearlite! { forall<x: T> self.contains(x) ==> resolve(x) }
+        pearlite! { forall<x: T> self.contains(&x) ==> resolve(x) }
     }
 
     #[trusted]
