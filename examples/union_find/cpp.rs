@@ -70,7 +70,7 @@ mod implementation {
         fn invariant(self) -> bool {
             pearlite! {
                 forall<e> self.domain().contains(e) ==>
-                    self.0.perms.contains(Snapshot::new(e)) &&
+                    self.0.perms.contains(&Snapshot::new(e)) &&
                     *self.0.perms[Snapshot::new(e)].ward() == *e.0.view() &&
                     self.domain().contains(self.0.roots[e]) &&
                     self.0.roots[self.0.roots[e]] == self.0.roots[e] &&
@@ -186,13 +186,13 @@ mod implementation {
         ghost! {
             let (mut perm, uf) = (perm.into_inner(), uf.into_inner());
 
-            match uf.0.perms.get_ghost(&snapshot!(elt)) {
+            match uf.0.perms.get(&&snapshot!(elt)) {
                 None => {},
                 Some(other_perm) => { Perm::disjoint_lemma(&mut perm, other_perm) },
             }
 
             uf.0.domain = snapshot!(uf.0.domain.insert(elt));
-            uf.0.perms.insert_ghost(snapshot!(elt), perm);
+            uf.0.perms.insert(snapshot!(elt), perm);
             uf.0.payloads = snapshot!(uf.0.payloads.set(elt, *payload_snap));
             uf.0.roots = snapshot!(uf.0.roots.set(elt, elt));
         };
@@ -204,7 +204,7 @@ mod implementation {
     #[ensures(result == uf.root(elem))]
     #[ensures(uf.unchanged())]
     pub fn find<T>(mut uf: Ghost<&mut UF<T>>, elem: Elem<T>) -> Elem<T> {
-        ghost_let!(perm = uf.0.perms.get_ghost(&snapshot!(elem)).unwrap());
+        ghost_let!(perm = uf.0.perms.get(&&snapshot!(elem)).unwrap());
         match unsafe { elem.0.borrow(perm) } {
             Node::Root { .. } => elem,
             Node::Link(e) => {
@@ -212,7 +212,7 @@ mod implementation {
                 let root = find(ghost! {&mut **uf}, e);
                 // path compression
                 ghost_let!(mut uf = &mut uf.0);
-                ghost_let!(mut_perm = uf.perms.get_mut_ghost(&snapshot!(elem)).unwrap());
+                ghost_let!(mut_perm = uf.perms.get_mut(&snapshot!(elem)).unwrap());
                 unsafe { *elem.0.borrow_mut(mut_perm) = Node::Link(root.clone()) };
                 root
             }
@@ -226,7 +226,7 @@ mod implementation {
     #[requires(uf.root(*elem) == *elem)]
     #[ensures(*result == uf.payload(*elem))]
     pub fn get<'a, T>(uf: Ghost<&'a UF<T>>, elem: &'a Elem<T>) -> &'a T {
-        let perm = ghost!(uf.0.perms.get_ghost(&snapshot!(*elem)).unwrap());
+        let perm = ghost!(uf.0.perms.get(&&snapshot!(*elem)).unwrap());
         match unsafe { elem.0.borrow(perm) } {
             Node::Root { payload, .. } => payload,
             _ => unreachable!(),
@@ -249,9 +249,9 @@ mod implementation {
             return x;
         }
 
-        let (mut perm_x, mut m) = ghost!(uf.perms.split_mut_ghost(&snapshot!(x))).split();
+        let (mut perm_x, mut m) = ghost!(uf.perms.split_mut(&snapshot!(x))).split();
         let bx = unsafe { x.0.borrow_mut(ghost!(&mut **perm_x)) };
-        let by = unsafe { y.0.borrow_mut(ghost!(m.get_mut_ghost(&snapshot!(y)).unwrap())) };
+        let by = unsafe { y.0.borrow_mut(ghost!(m.get_mut(&snapshot!(y)).unwrap())) };
 
         let Node::Root { rank: rx, .. } = bx else { unreachable!() };
         let Node::Root { rank: ry, .. } = by else { unreachable!() };

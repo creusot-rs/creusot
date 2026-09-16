@@ -32,9 +32,16 @@ function view_IntoIter_K_V_A (self: t_IntoIter_K_V_A) : t_FMap_DeepModelTy_V
 predicate contains_tup2_K_V (self: Seq.seq tup2_K_V) (x: tup2_K_V) =
   exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
 
-type t_DeepModelTy
-
 type t_Option_V = None | Some t_V
+
+type t_Option_ref_V = None'0 | Some'0 t_V
+
+function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
+    | None -> None'0
+    | Some x -> Some'0 (Map.get f x)
+    end
+
+type t_DeepModelTy
 
 function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
 
@@ -48,14 +55,16 @@ function deep_model_K (self: t_K) : t_DeepModelTy
 predicate produces_IntoIter_K_V_A [@inline:trivial] (self: t_IntoIter_K_V_A) (visited: Seq.seq tup2_K_V) (o: t_IntoIter_K_V_A) =
   len_DeepModelTy (view_IntoIter_K_V_A self) = Seq.length visited + len_DeepModelTy (view_IntoIter_K_V_A o)
   /\ (forall k: t_K, v: t_V. contains_tup2_K_V visited { f0 = k; f1 = v }
-      -> get_DeepModelTy (view_IntoIter_K_V_A self) (deep_model_K k) = Some v
-      /\ get_DeepModelTy (view_IntoIter_K_V_A o) (deep_model_K k) = None)
-  /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_A o) k = Some v
-      -> get_DeepModelTy (view_IntoIter_K_V_A self) k = Some v
+      -> map_Option_V (get_DeepModelTy (view_IntoIter_K_V_A self) (deep_model_K k)) (fun (v'0: t_V) -> v'0) = Some'0 v
+      /\ map_Option_V (get_DeepModelTy (view_IntoIter_K_V_A o) (deep_model_K k)) (fun (v'0: t_V) -> v'0) = None'0)
+  /\ (forall k: t_DeepModelTy, v: t_V. map_Option_V (get_DeepModelTy (view_IntoIter_K_V_A o) k) (fun (v'0: t_V) -> v'0)
+        = Some'0 v
+      -> map_Option_V (get_DeepModelTy (view_IntoIter_K_V_A self) k) (fun (v'0: t_V) -> v'0) = Some'0 v
       /\ not (exists k2: t_K, v2: t_V. deep_model_K k2 = k /\ contains_tup2_K_V visited { f0 = k2; f1 = v2 }))
-  /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_A self) k = Some v
+  /\ (forall k: t_DeepModelTy, v: t_V. map_Option_V (get_DeepModelTy (view_IntoIter_K_V_A self) k) (fun (v'0: t_V) -> v'0)
+        = Some'0 v
       -> (exists k1: t_K. deep_model_K k1 = k /\ contains_tup2_K_V visited { f0 = k1; f1 = v })
-      \/ get_DeepModelTy (view_IntoIter_K_V_A o) k = Some v)
+      \/ map_Option_V (get_DeepModelTy (view_IntoIter_K_V_A o) k) (fun (v'0: t_V) -> v'0) = Some'0 v)
   /\ (forall i1: int, i2: int. 0 <= i1
       /\ i1 < Seq.length visited
       /\ 0 <= i2

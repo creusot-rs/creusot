@@ -120,7 +120,15 @@ function op_FMap_K_V (self: t_FMap_K_V) (other: t_FMap_K_V) : t_Option_FMap_K_V 
 
 type tup2_Option_FMap_K_V_Option_FMap_K_V = { f0'1: t_Option_FMap_K_V; f1'1: t_Option_FMap_K_V }
 
-predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
+type t_Option_ref_V = None'2 | Some'2 t_V
+
+function map_Option_V'0 (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
+    | None'0 -> None'2
+    | Some'0 x -> Some'2 (Map.get f x)
+    end
+
+predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) =
+  forall k: t_K. map_Option_V'0 (get_K self k) (fun (v: t_V) -> v) = map_Option_V'0 (get_K other k) (fun (v: t_V) -> v)
 
 axiom ext_eq_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V [self = other]. ext_eq_K self other = (self = other)
 
