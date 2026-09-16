@@ -580,17 +580,19 @@ module M_roundtrip_hashmap_into_iter
   
   function deep_model_K (self: t_K) : t_DeepModelTy
   
+  type t_Option_ref_V = None'0 | Some'0 t_V
+  
   predicate produces_IntoIter_K_V_Global [@inline:trivial] (self: t_IntoIter_K_V_Global) (visited: Seq.seq tup2_K_V) (o: t_IntoIter_K_V_Global) =
     len_DeepModelTy (view_IntoIter_K_V_Global self) = Seq.length visited + len_DeepModelTy (view_IntoIter_K_V_Global o)
     /\ (forall k: t_K, v: t_V. contains_tup2_K_V visited { f0 = k; f1 = v }
-        -> get_DeepModelTy (view_IntoIter_K_V_Global self) (deep_model_K k) = Some v
-        /\ get_DeepModelTy (view_IntoIter_K_V_Global o) (deep_model_K k) = None)
-    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_Global o) k = Some v
-        -> get_DeepModelTy (view_IntoIter_K_V_Global self) k = Some v
+        -> get_DeepModelTy (view_IntoIter_K_V_Global self) (deep_model_K k) = Some'0 v
+        /\ get_DeepModelTy (view_IntoIter_K_V_Global o) (deep_model_K k) = None'0)
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_Global o) k = Some'0 v
+        -> get_DeepModelTy (view_IntoIter_K_V_Global self) k = Some'0 v
         /\ not (exists k2: t_K, v2: t_V. deep_model_K k2 = k /\ contains_tup2_K_V visited { f0 = k2; f1 = v2 }))
-    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_Global self) k = Some v
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_Global self) k = Some'0 v
         -> (exists k1: t_K. deep_model_K k1 = k /\ contains_tup2_K_V visited { f0 = k1; f1 = v })
-        \/ get_DeepModelTy (view_IntoIter_K_V_Global o) k = Some v)
+        \/ get_DeepModelTy (view_IntoIter_K_V_Global o) k = Some'0 v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
         /\ 0 <= i2
@@ -649,7 +651,7 @@ module M_roundtrip_hashmap_into_iter
         /\ produces_IntoIter_K_V_Global into_iter prod done'.current
         /\ completed_IntoIter_K_V_Global done'
         /\ resolve_IntoIter_K_V_Global done'.final
-        /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy (view_HashMap_K_V_RandomState_Global result) k = Some v)
+        /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy (view_HashMap_K_V_RandomState_Global result) k = Some'0 v)
           = (exists i: int, k1: t_K. 0 <= i
             /\ i < Seq.length prod
             /\ deep_model_K k1 = k
@@ -663,7 +665,7 @@ module M_roundtrip_hashmap_into_iter
       /\ produces_IntoIter_K_V_Global into_iter prod done'.current
       /\ completed_IntoIter_K_V_Global done'
       /\ resolve_IntoIter_K_V_Global done'.final
-      /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy (view_HashMap_K_V_RandomState_Global result) k = Some v)
+      /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy (view_HashMap_K_V_RandomState_Global result) k = Some'0 v)
         = (exists i: int, k1: t_K. 0 <= i
           /\ i < Seq.length prod
           /\ deep_model_K k1 = k
@@ -719,7 +721,7 @@ module M_roundtrip_hashmap_into_iter
       | s4 =
         {[@expl:assertion] exists prod: Seq.seq tup2_K_V, it1: MutBorrow.t t_IntoIter_K_V_Global. completed_IntoIter_K_V_Global it1
           /\ produces_IntoIter_K_V_Global it0 prod it1.current
-          /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy (view_HashMap_K_V_RandomState_Global r) k = Some v)
+          /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy (view_HashMap_K_V_RandomState_Global r) k = Some'0 v)
             = (exists k1: t_K. deep_model_K k1 = k /\ contains_tup2_K_V prod { f0 = k1; f1 = v }))}
         s5
       | s5 = {[@expl:assertion] forall k: t_DeepModelTy. contains_DeepModelTy (view_HashMap_K_V_RandomState_Global r) k
@@ -847,18 +849,20 @@ module M_roundtrip_hashmap_iter
   
   meta "rewrite_def" function deep_model_ref_K
   
+  type t_Option_ref_V = None'0 | Some'0 t_V
+  
   predicate produces_Iter_K_V [@inline:trivial] (self: t_Iter_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (o: t_Iter_K_V) =
     len_DeepModelTy (view_Iter_K_V self) = Seq.length visited + len_DeepModelTy (view_Iter_K_V o)
     /\ (forall k: t_K, v: t_V. contains_tup2_ref_K_ref_V visited { f0 = k; f1 = v }
-        -> get_DeepModelTy (view_Iter_K_V self) (deep_model_ref_K k) = Some v
-        /\ get_DeepModelTy (view_Iter_K_V o) (deep_model_ref_K k) = None)
-    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_Iter_K_V o) k = Some v
-        -> get_DeepModelTy (view_Iter_K_V self) k = Some v
+        -> get_DeepModelTy (view_Iter_K_V self) (deep_model_ref_K k) = Some'0 v
+        /\ get_DeepModelTy (view_Iter_K_V o) (deep_model_ref_K k) = None'0)
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_Iter_K_V o) k = Some'0 v
+        -> get_DeepModelTy (view_Iter_K_V self) k = Some'0 v
         /\ not (exists k2: t_K, v2: t_V. deep_model_ref_K k2 = k
           /\ contains_tup2_ref_K_ref_V visited { f0 = k2; f1 = v2 }))
-    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_Iter_K_V self) k = Some v
+    /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_Iter_K_V self) k = Some'0 v
         -> (exists k2: t_K. deep_model_ref_K k2 = k /\ contains_tup2_ref_K_ref_V visited { f0 = k2; f1 = v })
-        \/ get_DeepModelTy (view_Iter_K_V o) k = Some v)
+        \/ get_DeepModelTy (view_Iter_K_V o) k = Some'0 v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
         /\ 0 <= i2
@@ -907,8 +911,6 @@ module M_roundtrip_hashmap_iter
   
   type t_FMap_DeepModelTy_ref_V
   
-  type t_Option_ref_V = None'0 | Some'0 t_V
-  
   function to_mapping_DeepModelTy'0 (self: t_FMap_DeepModelTy_ref_V) : Map.map t_DeepModelTy t_Option_ref_V
   
   function get_DeepModelTy'0 [@inline:trivial] (self: t_FMap_DeepModelTy_ref_V) (k: t_DeepModelTy) : t_Option_ref_V =
@@ -917,6 +919,8 @@ module M_roundtrip_hashmap_iter
   meta "rewrite_def" function get_DeepModelTy'0
   
   function view_HashMap_ref_K_ref_V_RandomState_Global (self: t_HashMap_ref_K_ref_V_RandomState_Global) : t_FMap_DeepModelTy_ref_V
+  
+  type t_Option_ref_ref_V = None'1 | Some'1 t_V
   
   let from_iter_HashMap_ref_K_ref_V_RandomState_Global (iter: t_Iter_K_V)
     (return (x: t_HashMap_ref_K_ref_V_RandomState_Global)) =
@@ -930,7 +934,7 @@ module M_roundtrip_hashmap_iter
         /\ completed_Iter_K_V done'
         /\ resolve_Iter_K_V done'.final
         /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState_Global result) k
-            = Some'0 v)
+            = Some'1 v)
           = (exists i: int, k1: t_K. 0 <= i
             /\ i < Seq.length prod
             /\ deep_model_ref_K k1 = k
@@ -945,7 +949,7 @@ module M_roundtrip_hashmap_iter
       /\ completed_Iter_K_V done'
       /\ resolve_Iter_K_V done'.final
       /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState_Global result) k
-          = Some'0 v)
+          = Some'1 v)
         = (exists i: int, k1: t_K. 0 <= i
           /\ i < Seq.length prod
           /\ deep_model_ref_K k1 = k
@@ -979,7 +983,7 @@ module M_roundtrip_hashmap_iter
         {[@expl:assertion] exists prod: Seq.seq tup2_ref_K_ref_V, it1: MutBorrow.t t_Iter_K_V. completed_Iter_K_V it1
           /\ produces_Iter_K_V it0 prod it1.current
           /\ (forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState_Global r) k
-              = Some'0 v)
+              = Some'1 v)
             = (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_ref_V prod { f0 = k1; f1 = v }))}
         s4
       | s4 = [ &_ret <- r ] s5
@@ -992,8 +996,8 @@ module M_roundtrip_hashmap_iter
     [ return (result: t_HashMap_ref_K_ref_V_RandomState_Global) ->
     {[@stop_split] [@expl:roundtrip_hashmap_iter_K ensures] ([@stop_split] [@expl:roundtrip_hashmap_iter result type invariant] inv_HashMap_ref_K_ref_V_RandomState_Global result)
       /\ ([@stop_split] [@expl:roundtrip_hashmap_iter ensures] forall k: t_DeepModelTy, v: t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_ref_V_RandomState_Global result) k
-          = Some'0 v)
-        = (get_DeepModelTy (view_HashMap_K_V_RandomState_Global xs) k = Some v))}
+          = Some'1 v)
+        = (get_DeepModelTy (view_HashMap_K_V_RandomState_Global xs) k = Some'0 v))}
       (! return {result}) ]
 end
 module M_roundtrip_hashmap_iter_mut
@@ -1156,6 +1160,8 @@ module M_roundtrip_hashmap_iter_mut
   
   function deep_model_K (self: t_K) : t_DeepModelTy
   
+  type t_Option_ref_refmut_V = None'1 | Some'1 (MutBorrow.t t_V)
+  
   function deep_model_ref_K [@inline:trivial] (self: t_K) : t_DeepModelTy = deep_model_K self
   
   meta "rewrite_def" function deep_model_ref_K
@@ -1163,15 +1169,15 @@ module M_roundtrip_hashmap_iter_mut
   predicate produces_IterMut_K_V [@inline:trivial] (self: t_IterMut_K_V) (visited: Seq.seq tup2_ref_K_refmut_V) (o: t_IterMut_K_V) =
     len_DeepModelTy (view_IterMut_K_V self) = Seq.length visited + len_DeepModelTy (view_IterMut_K_V o)
     /\ (forall k: t_K, v: MutBorrow.t t_V. contains_tup2_ref_K_refmut_V visited { f0 = k; f1 = v }
-        -> get_DeepModelTy'0 (view_IterMut_K_V self) (deep_model_K k) = Some'0 v
-        /\ get_DeepModelTy'0 (view_IterMut_K_V o) (deep_model_K k) = None'0)
-    /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy'0 (view_IterMut_K_V o) k = Some'0 v
-        -> get_DeepModelTy'0 (view_IterMut_K_V self) k = Some'0 v
+        -> get_DeepModelTy'0 (view_IterMut_K_V self) (deep_model_K k) = Some'1 v
+        /\ get_DeepModelTy'0 (view_IterMut_K_V o) (deep_model_K k) = None'1)
+    /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy'0 (view_IterMut_K_V o) k = Some'1 v
+        -> get_DeepModelTy'0 (view_IterMut_K_V self) k = Some'1 v
         /\ not (exists k2: t_K, v2: MutBorrow.t t_V. deep_model_ref_K k2 = k
           /\ contains_tup2_ref_K_refmut_V visited { f0 = k2; f1 = v2 }))
-    /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy'0 (view_IterMut_K_V self) k = Some'0 v
+    /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy'0 (view_IterMut_K_V self) k = Some'1 v
         -> (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_refmut_V visited { f0 = k1; f1 = v })
-        \/ get_DeepModelTy'0 (view_IterMut_K_V o) k = Some'0 v)
+        \/ get_DeepModelTy'0 (view_IterMut_K_V o) k = Some'1 v)
     /\ (forall i1: int, i2: int. 0 <= i1
         /\ i1 < Seq.length visited
         /\ 0 <= i2
@@ -1232,7 +1238,7 @@ module M_roundtrip_hashmap_iter_mut
         /\ completed_IterMut_K_V done'
         /\ resolve_IterMut_K_V done'.final
         /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState_Global result) k
-            = Some'0 v)
+            = Some'1 v)
           = (exists i: int, k1: t_K. 0 <= i
             /\ i < Seq.length prod
             /\ deep_model_ref_K k1 = k
@@ -1247,7 +1253,7 @@ module M_roundtrip_hashmap_iter_mut
       /\ completed_IterMut_K_V done'
       /\ resolve_IterMut_K_V done'.final
       /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState_Global result) k
-          = Some'0 v)
+          = Some'1 v)
         = (exists i: int, k1: t_K. 0 <= i
           /\ i < Seq.length prod
           /\ deep_model_ref_K k1 = k
@@ -1270,6 +1276,8 @@ module M_roundtrip_hashmap_iter_mut
   
   meta "rewrite_def" predicate resolve_refmut_HashMap_K_V_RandomState_Global
   
+  type t_Option_ref_V = None'2 | Some'2 t_V
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -1291,7 +1299,7 @@ module M_roundtrip_hashmap_iter_mut
         {[@expl:assertion] exists prod: Seq.seq tup2_ref_K_refmut_V, it1: MutBorrow.t t_IterMut_K_V. completed_IterMut_K_V it1
           /\ produces_IterMut_K_V it0 prod it1.current
           /\ (forall k: t_DeepModelTy, v: MutBorrow.t t_V. (get_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState_Global r) k
-              = Some'0 v)
+              = Some'1 v)
             = (exists k1: t_K. deep_model_ref_K k1 = k /\ contains_tup2_ref_K_refmut_V prod { f0 = k1; f1 = v }))}
         s5
       | s5 = [ &_ret <- r ] s6
@@ -1307,15 +1315,15 @@ module M_roundtrip_hashmap_iter_mut
     [ return (result: t_HashMap_ref_K_refmut_V_RandomState_Global) ->
     {[@stop_split] [@expl:roundtrip_hashmap_iter_mut_K ensures] ([@stop_split] [@expl:roundtrip_hashmap_iter_mut result type invariant] inv_HashMap_ref_K_refmut_V_RandomState_Global result)
       /\ ([@stop_split] [@expl:roundtrip_hashmap_iter_mut ensures #0] forall k: t_DeepModelTy, v: MutBorrow.t t_V. get_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState_Global result) k
-            = Some'0 v
-          -> get_DeepModelTy (view_HashMap_K_V_RandomState_Global xs.current) k = Some (v.current)
-          /\ get_DeepModelTy (view_HashMap_K_V_RandomState_Global xs.final) k = Some (v.final))
+            = Some'1 v
+          -> get_DeepModelTy (view_HashMap_K_V_RandomState_Global xs.current) k = Some'2 (v.current)
+          /\ get_DeepModelTy (view_HashMap_K_V_RandomState_Global xs.final) k = Some'2 (v.final))
       /\ ([@stop_split] [@expl:roundtrip_hashmap_iter_mut ensures #1] forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_HashMap_K_V_RandomState_Global xs.current) k
-            = Some v
+            = Some'2 v
           -> contains_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState_Global result) k
           /\ (index_FMap_DeepModelTy_refmut_V (view_HashMap_ref_K_refmut_V_RandomState_Global result) k).current = v)
       /\ ([@stop_split] [@expl:roundtrip_hashmap_iter_mut ensures #2] forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_HashMap_K_V_RandomState_Global xs.final) k
-          = Some v
+          = Some'2 v
         -> contains_DeepModelTy'0 (view_HashMap_ref_K_refmut_V_RandomState_Global result) k
         /\ (index_FMap_DeepModelTy_refmut_V (view_HashMap_ref_K_refmut_V_RandomState_Global result) k).final = v)}
       (! return {result}) ]

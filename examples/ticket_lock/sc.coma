@@ -1844,14 +1844,14 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_Excl_unit) (k: int) (v: t_Excl_unit) : t_FMap_Int_Excl_unit
+  function add_Int (self: t_FMap_Int_Excl_unit) (k: int) (v: t_Excl_unit) : t_FMap_Int_Excl_unit
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_Excl_unit, k: int, v: t_Excl_unit [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_Excl_unit, k: int, v: t_Excl_unit [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'1 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_Excl_unit, k: int, v: t_Excl_unit [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_Excl_unit, k: int, v: t_Excl_unit [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_Excl_unit
@@ -1860,7 +1860,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None'1)
   
-  function singleton_Int (k: int) (v: t_Excl_unit) : t_FMap_Int_Excl_unit = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: t_Excl_unit) : t_FMap_Int_Excl_unit = add_Int empty_Int k v
   
   predicate invariant_Authority_FMap_Int_Excl_unit (self: t_Authority_FMap_Int_Excl_unit)
   
@@ -3213,6 +3213,8 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       | None -> any_Fragment_FMap_Int_Excl_unit
       end
   
+  type t_Option_ref_Excl_unit = None'5 | Some'5 t_Excl_unit
+  
   predicate resolve_Ghost_Option_Fragment_FMap_Int_Excl_unit [@inline:trivial] (self: t_Option_Fragment_FMap_Int_Excl_unit) =
     resolve_Option_Fragment_FMap_Int_Excl_unit self
   
@@ -3316,7 +3318,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         {[@expl:loop invariant #2] id_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)
         = (public_TicketLockInv_T'0 self.inner_inv).f1'3}
         {[@expl:loop invariant #3] get_Int (view_Fragment_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)) (UInt32.t'int ticket)
-        = Some'1 { f0 = () }}
+        = Some'5 { f0 = () }}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Tokens> {tokens}
             (fun (_bor: MutBorrow.t t_Tokens) -> [ &_41 <- _bor ] [ &tokens <- _bor.final ] s1)

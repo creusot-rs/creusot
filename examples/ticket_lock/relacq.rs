@@ -68,13 +68,13 @@ impl<T> Protocol for TicketLockInv<T> {
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
-            (forall<ts: Timestamp> self.perm_next_ticket.val().contains(ts) ==>
-                self.perm_next_ticket.val().contains(ts+1) || ts == self.ts_next_ticket) &&
-            (forall<k: Int> self.auth_tickets@.contains(k) ==> k < self.next_ticket())&&
+            (forall<ts: Timestamp> self.perm_next_ticket.val().contains(&ts) ==>
+                self.perm_next_ticket.val().contains_logic(ts+1) || ts == self.ts_next_ticket) &&
+            (forall<k: Int> self.auth_tickets@.contains(&k) ==> k < self.next_ticket())&&
 
             (forall<ts: Timestamp> Some(ts) != self.ts_now_serving ==>
-                match self.perm_now_serving.val().get(ts) {
-                    Some((n, _)) => !self.auth_tickets@.contains(n@) && n@ < self.next_ticket(),
+                match self.perm_now_serving.val().get(&ts) {
+                    Some((n, _)) => !self.auth_tickets@.contains(&n@) && n@ < self.next_ticket(),
                     None => true
                 }) &&
             match (self.perm, self.ts_now_serving) {
@@ -203,7 +203,7 @@ impl<T> TicketLock<T> {
         #[invariant(tokens.contains(TICKET_LOCK()))]
         #[invariant(*ticket_own != None)]
         #[invariant(ticket_own.unwrap_logic().id() == self.inner_inv.public().1)]
-        #[invariant(ticket_own.unwrap_logic()@.get(ticket@) == Some(Excl(())))]
+        #[invariant(ticket_own.unwrap_logic()@.get(&ticket@) == Some(&Excl(())))]
         #[invariant(token.id() == self.inner_inv.public().2 )]
         while self.now_serving.load(ghost!(|c: &Committer<_, _, Acquire, _>| {
             self.inner_inv.open(tokens.reborrow(), |inv: &mut TicketLockInv<T>| {
@@ -215,8 +215,8 @@ impl<T> TicketLock<T> {
                 let auth_tickets_snap = snapshot!(inv.auth_tickets);
                 inv.auth_tickets.update(ticket_own.as_mut().unwrap(), CancelLocalUpdateUnit);
                 proof_assert!(exists<m> inv.auth_tickets@.op(m) == Some(auth_tickets_snap@));
-                proof_assert!(forall<k> inv.auth_tickets@.contains(k) ==> auth_tickets_snap@.contains(k) && k != ticket@);
-                proof_assert!(auth_tickets_snap@.contains(ticket@));
+                proof_assert!(forall<k> inv.auth_tickets@.contains(&k) ==> auth_tickets_snap@.contains(&k) && k != ticket@);
+                proof_assert!(auth_tickets_snap@.contains(&ticket@));
                 inv.ts_now_serving = None;
                 *perm = Some(inv.perm.take().unwrap().sync(*view));
                 std::mem::swap(&mut inv.token, &mut *token);

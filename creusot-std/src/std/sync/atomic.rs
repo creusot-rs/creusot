@@ -94,9 +94,9 @@ macro_rules! impl_atomic {
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::into_inner`].")]
             #[requires(self == *own.ward())]
-            #[ensures(match own.val().get(self.get_timestamp(*result.1)) { Some((v, _)) => result.0 == v, None => false })]
-            #[ensures(forall<t> match own.val().get(t) {
-                Some((_, view)) => t <= self.get_timestamp(*result.1) && view <= *result.1,
+            #[ensures(match own.val().get(&self.get_timestamp(*result.1)) { Some(&(v, _)) => result.0 == v, None => false })]
+            #[ensures(forall<t> match own.val().get(&t) {
+                Some(&(_, view)) => t <= self.get_timestamp(*result.1) && view <= *result.1,
                 None => true
             })]
             #[inline(always)]
@@ -111,12 +111,12 @@ macro_rules! impl_atomic {
             #[doc = "Clear the old unusable history, thanks to the full ownership of the atomic."]
             #[requires(*self == *own.ward())]
             #[ensures(**sync_view <= ^sync_view)]
-            #[ensures(match (*own).val().get(self.get_timestamp(^sync_view)) {
-                Some((v, _)) => (^own).val() == FMap::singleton(self.get_timestamp(^sync_view), (v, **sync_view)),
+            #[ensures(match (*own).val().get(&self.get_timestamp(^sync_view)) {
+                Some(&(v, _)) => (^own).val() == FMap::singleton(self.get_timestamp(^sync_view), (v, **sync_view)),
                 None => false
             })]
-            #[ensures(forall<t> match own.val().get(t) {
-                Some((_, view)) => t <= self.get_timestamp(^sync_view) && view <= ^sync_view,
+            #[ensures(forall<t> match own.val().get(&t) {
+                Some(&(_, view)) => t <= self.get_timestamp(^sync_view) && view <= ^sync_view,
                 None => true
             })]
             #[ensures(*self == ^self)]

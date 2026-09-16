@@ -19,7 +19,7 @@ impl Foo {
         Self(HashMap::new())
     }
 
-    #[ensures((^self)@.get(num@) == Some(bar))]
+    #[ensures((^self)@.get_logic(num@) == Some(bar))]
     pub fn add(&mut self, num: u64, bar: u8) {
         *self.0.entry(num).or_insert(bar) = bar;
     }

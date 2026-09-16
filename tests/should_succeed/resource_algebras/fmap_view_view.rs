@@ -26,8 +26,8 @@ impl<K, V> ViewRel for MapRelation<K, V> {
     fn rel(a: Option<Self::Auth>, f: Self::Frag) -> bool {
         pearlite! {
             match a {
-                Some(a) => forall<k: K> match f.get(k) {
-                    Some(Ag(v)) => a.get(k) == Some(v),
+                Some(a) => forall<k: &K> match f.get(k) {
+                    Some(&Ag(v)) => a.get(k) == Some(&v),
                     _ => true,
                 },
                 None => true
@@ -115,15 +115,15 @@ impl<K, V> Authority<K, V> {
 
     /// Insert a new element in the authoritative map and return the corresponding
     /// fragment.
-    #[requires(!self@.contains(*k))]
-    #[ensures((^self)@ == self@.insert(*k, *v))]
+    #[requires(!self@.contains(&k))]
+    #[ensures((^self)@ == self@.add(*k, *v))]
     #[ensures((^self).id() == self.id())]
     #[ensures(result@ == (*k, *v))]
     #[ensures(result.id() == self.id())]
     #[check(ghost)]
     #[allow(unused_variables)]
     pub fn insert(&mut self, k: Snapshot<K>, v: Snapshot<V>) -> Fragment<K, V> {
-        let auth = snapshot!(self@.insert(*k, *v));
+        let auth = snapshot!(self@.add(*k, *v));
         let frag = snapshot!(FMap::singleton(*k, Ag(*v)));
         self.0.update(ViewUpdateInsert(auth, frag));
         Fragment(
@@ -136,12 +136,12 @@ impl<K, V> Authority<K, V> {
 
     /// Asserts that the fragment represented by `frag` is contained in `self`.
     #[requires(self.id() == frag.id())]
-    #[ensures(self@.get(frag@.0) == Some(frag@.1))]
+    #[ensures(self@.get(&frag@.0) == Some(&frag@.1))]
     #[check(ghost)]
     #[allow(unused_variables)]
     pub fn contains(&self, frag: &Fragment<K, V>) {
         let new_resource = self.0.join_shared(&frag.0);
-        proof_assert!(new_resource@.frag().get(frag@.0) == Some(Ag(frag@.1)));
+        proof_assert!(new_resource@.frag().get(&frag@.0) == Some(&Ag(frag@.1)));
     }
 }
 impl<K, V> Fragment<K, V> {

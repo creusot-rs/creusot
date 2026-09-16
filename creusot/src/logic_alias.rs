@@ -74,6 +74,8 @@ where
         return None;
     }
 
+    trace!("subst_call({prog_id:#?})");
+
     let pre_sig = ctx.sig(prog_id);
     let Some(alias) = &pre_sig.contract.alias else {
         return None;
