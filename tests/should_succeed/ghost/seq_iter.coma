@@ -146,15 +146,15 @@ module M_reverse_ghost
   
   meta "rewrite_def" predicate inv_refmut_Seq_T
   
-  function push_front_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
+  function cons_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
   
-  meta "rewrite_def" function push_front_T
+  meta "rewrite_def" function cons_T
   
-  let push_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
-  {[@stop_split] [@expl:push_front_ghost_T requires] ([@stop_split] [@expl:push_front_ghost 'self' type invariant] inv_refmut_Seq_T self)
-    /\ ([@stop_split] [@expl:push_front_ghost 'x' type invariant] inv_T x)}
+  let push_front_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
+  {[@stop_split] [@expl:push_front_T requires] ([@stop_split] [@expl:push_front 'self' type invariant] inv_refmut_Seq_T self)
+    /\ ([@stop_split] [@expl:push_front 'x' type invariant] inv_T x)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:push_front_ghost ensures] self.final = push_front_T self.current x}
+    [ return (result: ()) -> {[@stop_split] [@expl:push_front ensures] self.final = cons_T self.current x}
       (! return {result}) ]
   
   predicate resolve_T (_1: t_T)
@@ -226,7 +226,7 @@ module M_reverse_ghost
               (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
                 [ &_47 <- _bor ] -{inv_Seq_T _bor.final}-
                 [ &result <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Seq_T result} any) ]
-          | s4 = push_front_ghost_T {_47} {x} (fun (_x: ()) -> [ &_46 <- _x ] s5)
+          | s4 = push_front_T {_47} {x} (fun (_x: ()) -> [ &_46 <- _x ] s5)
           | s5 = bb8 ] ] ]
     | bb13 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
@@ -444,16 +444,15 @@ module M_reverse_ghost_ref
   
   meta "rewrite_def" predicate inv_refmut_Seq_ref_T
   
-  function push_front_ref_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
+  function cons_ref_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
   
-  meta "rewrite_def" function push_front_ref_T
+  meta "rewrite_def" function cons_ref_T
   
-  let push_front_ghost_ref_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
-  {[@stop_split] [@expl:push_front_ghost_ref_T requires] ([@stop_split] [@expl:push_front_ghost 'self' type invariant] inv_refmut_Seq_ref_T self)
-    /\ ([@stop_split] [@expl:push_front_ghost 'x' type invariant] inv_ref_T x)}
+  let push_front_ref_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
+  {[@stop_split] [@expl:push_front_ref_T requires] ([@stop_split] [@expl:push_front 'self' type invariant] inv_refmut_Seq_ref_T self)
+    /\ ([@stop_split] [@expl:push_front 'x' type invariant] inv_ref_T x)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:push_front_ghost ensures] self.final
-      = push_front_ref_T self.current x}
+    [ return (result: ()) -> {[@stop_split] [@expl:push_front ensures] self.final = cons_ref_T self.current x}
       (! return {result}) ]
   
   let new_Seq_ref_T (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) =
@@ -509,7 +508,7 @@ module M_reverse_ghost_ref
               (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
                 [ &_47 <- _bor ] -{inv_Seq_ref_T _bor.final}-
                 [ &result <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Seq_ref_T result} any) ]
-          | s4 = push_front_ghost_ref_T {_47} {x} (fun (_x: ()) -> [ &_46 <- _x ] s5)
+          | s4 = push_front_ref_T {_47} {x} (fun (_x: ()) -> [ &_46 <- _x ] s5)
           | s5 = bb8 ] ] ]
     | bb13 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_ref_T iter} any) ]

@@ -150,17 +150,7 @@ function len_K (self: t_FMap_K_V) : int
 
 axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
 
-function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
-    | None -> None'0
-    | Some x -> Some'0 (Map.get f x)
-    end
-
 type t_Option_ref_ref_V = None'1 | Some'1 t_V
-
-function map_Option_ref_V (self: t_Option_ref_V) (f: Map.map t_V t_V) : t_Option_ref_ref_V = match self with
-    | None'0 -> None'1
-    | Some'0 x -> Some'1 (Map.get f x)
-    end
 
 let as_ref_K (self: t_FMap_K_V) (return (x: t_FMap_ref_K_ref_V)) =
 {[@stop_split] [@expl:as_ref 'self' type invariant] inv_ref_FMap_K_V self}
@@ -168,9 +158,8 @@ let as_ref_K (self: t_FMap_K_V) (return (x: t_FMap_ref_K_ref_V)) =
   [ return (result: t_FMap_ref_K_ref_V) ->
   {[@stop_split] [@expl:as_ref_K ensures] ([@stop_split] [@expl:as_ref result type invariant] inv_FMap_ref_K_ref_V result)
     /\ ([@stop_split] [@expl:as_ref ensures #0] len_ref_K result = len_K self)
-    /\ ([@stop_split] [@expl:as_ref ensures #1] forall k: t_K, v: t_V. (map_Option_V (get_K self k) (fun (v'0: t_V) -> v'0)
-        = Some'0 v)
-      = (map_Option_ref_V (get_ref_K result k) (fun (v'0: t_V) -> v'0) = Some'1 v))}
+    /\ ([@stop_split] [@expl:as_ref ensures #1] forall k: t_K, v: t_V. (get_K self k = Some'0 v)
+      = (get_ref_K result k = Some'1 v))}
     (! return {result}) ]
 
 type t_Iter_ref_K_ref_V = { f0: t_FMap_ref_K_ref_V }
@@ -197,7 +186,6 @@ let into_iter_ref_FMap_K_V (self: t_FMap_K_V) (return (x: t_Iter_ref_K_ref_V)) =
   [ return (result: t_Iter_ref_K_ref_V) ->
   {[@stop_split] [@expl:into_iter_ref_FMap_K_V ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_ref_K_ref_V result)
     /\ ([@stop_split] [@expl:into_iter ensures #0] len_ref_K (view_Iter_ref_K_ref_V result) = len_K self)
-    /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (map_Option_V (get_K self k) (fun (v'0: t_V) -> v'0)
-        = Some'0 v)
-      = (map_Option_ref_V (get_ref_K (view_Iter_ref_K_ref_V result) k) (fun (v'0: t_V) -> v'0) = Some'1 v))}
+    /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (get_K self k = Some'0 v)
+      = (get_ref_K (view_Iter_ref_K_ref_V result) k = Some'1 v))}
     (! return {result}) ]

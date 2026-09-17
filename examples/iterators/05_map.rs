@@ -118,10 +118,10 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     pub fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                #[trigger(iter.produces(s.push_back(e1).push_back(e2), i), (*f).postcondition_mut((e1,), ^f, b))]
+                #[trigger(iter.produces(s.snoc(e1).snoc(e2), i), (*f).postcondition_mut((e1,), ^f, b))]
                 func.hist_inv(*f) ==>
                 inv(s) && inv(e1) && inv(e2) && inv(f) ==>
-                iter.produces(s.push_back(e1).push_back(e2), i) ==>
+                iter.produces(s.snoc(e1).snoc(e2), i) ==>
                 (*f).postcondition_mut((e1,), ^f, b) ==>
                 (^f).precondition((e2, ))
         }
@@ -147,10 +147,10 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     fn produces_one_invariant(self, e: I::Item, r: B, f: &mut F, iter: I) {
         // for preservation
         proof_assert!(forall<s1: Seq<I::Item>, s2, e>
-            s1.concat(s2).push_back(e) == s1.concat(s2.push_back(e)));
+            s1.concat(s2).snoc(e) == s1.concat(s2.snoc(e)));
 
         // for next_precondition
-        proof_assert!(forall<e1: I::Item, e2> Seq::singleton(e1).concat(Seq::singleton(e2)) == Seq::empty().push_back(e1).push_back(e2));
+        proof_assert!(forall<e1: I::Item, e2> Seq::singleton(e1).concat(Seq::singleton(e2)) == Seq::empty().snoc(e1).snoc(e2));
         proof_assert! {
             forall<e2: I::Item, i: I>
                 inv(e2) && iter.produces(Seq::singleton(e2), i) ==>

@@ -53,21 +53,21 @@ function index_Seq_T'0 [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom
 
 meta "rewrite_def" function index_Seq_T'0
 
-let split_off_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (mid: int) (return (x: Seq.seq t_T)) =
-{[@stop_split] [@expl:split_off_ghost_T requires] ([@stop_split] [@expl:split_off_ghost 'self' type invariant] inv_refmut_Seq_T self)
-  /\ ([@stop_split] [@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current)}
+let split_off_T (self: MutBorrow.t (Seq.seq t_T)) (mid: int) (return (x: Seq.seq t_T)) =
+{[@stop_split] [@expl:split_off_T requires] ([@stop_split] [@expl:split_off 'self' type invariant] inv_refmut_Seq_T self)
+  /\ ([@stop_split] [@expl:split_off requires] 0 <= mid /\ mid <= Seq.length self.current)}
   any
   [ return (result: Seq.seq t_T) ->
-  {[@stop_split] [@expl:split_off_ghost_T ensures] ([@stop_split] [@expl:split_off_ghost result type invariant] inv_Seq_T result)
-    /\ ([@stop_split] [@expl:split_off_ghost ensures #0] self.final = index_Seq_T self.current { end' = mid })
-    /\ ([@stop_split] [@expl:split_off_ghost ensures #1] result = index_Seq_T'0 self.current { start = mid })}
+  {[@stop_split] [@expl:split_off_T ensures] ([@stop_split] [@expl:split_off result type invariant] inv_Seq_T result)
+    /\ ([@stop_split] [@expl:split_off ensures #0] self.final = index_Seq_T self.current { end' = mid })
+    /\ ([@stop_split] [@expl:split_off ensures #1] result = index_Seq_T'0 self.current { start = mid })}
     (! return {result}) ]
 
-let push_back_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
-{[@stop_split] [@expl:push_back_ghost_T requires] ([@stop_split] [@expl:push_back_ghost 'self' type invariant] inv_refmut_Seq_T self)
-  /\ ([@stop_split] [@expl:push_back_ghost 'x' type invariant] inv_T x)}
+let push_back_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
+{[@stop_split] [@expl:push_back_T requires] ([@stop_split] [@expl:push_back 'self' type invariant] inv_refmut_Seq_T self)
+  /\ ([@stop_split] [@expl:push_back 'x' type invariant] inv_T x)}
   any
-  [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
+  [ return (result: ()) -> {[@stop_split] [@expl:push_back ensures] self.final = Seq.snoc self.current x}
     (! return {result}) ]
 
 let extend_T (self: MutBorrow.t (Seq.seq t_T)) (rhs: Seq.seq t_T) (return (x: ())) =
@@ -81,38 +81,38 @@ predicate resolve_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T))
 
 meta "rewrite_def" predicate resolve_refmut_Seq_T
 
-function push_front_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
+function cons_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
 
-meta "rewrite_def" function push_front_T
+meta "rewrite_def" function cons_T
 
 function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
 
-function pop_front_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
+function pop_first_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
 
-function insert_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
+function add_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
 
-axiom insert_T_def: forall self: Seq.seq t_T, position: int, value: t_T [insert_T self position value]. 0 <= position
+axiom add_T_def: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
       /\ position <= Seq.length self
-    -> insert_T self position value
+    -> add_T self position value
     = (if position = 0 then
-      push_front_T self value
+      cons_T self value
     else
-      push_front_T (insert_T (pop_front_T self) (position - 1) value) (Seq.get self 0)
+      cons_T (add_T (pop_first_T self) (position - 1) value) (Seq.get self 0)
     )
 
-axiom insert_T_spec: forall self: Seq.seq t_T, position: int, value: t_T [insert_T self position value]. 0 <= position
-      /\ position <= Seq.length self -> Seq.length (insert_T self position value) = Seq.length self + 1
+axiom add_T_spec: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
+      /\ position <= Seq.length self -> Seq.length (add_T self position value) = Seq.length self + 1
 
-axiom insert_T_spec'0: forall self: Seq.seq t_T, position: int, value: t_T [insert_T self position value]. 0 <= position
+axiom add_T_spec'0: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
       /\ position <= Seq.length self
     -> (forall i: int. 0 <= i /\ i <= Seq.length self
       -> (if i < position then
-        Seq.get (insert_T self position value) i = Seq.get self i
+        Seq.get (add_T self position value) i = Seq.get self i
       else
         if i = position then
-          Seq.get (insert_T self position value) i = value
+          Seq.get (add_T self position value) i = value
         else
-          Seq.get (insert_T self position value) i = Seq.get self (i - 1)
+          Seq.get (add_T self position value) i = Seq.get self (i - 1)
       
       ))
 
@@ -133,10 +133,10 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let insert_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (position: int) (x: t_T) (return (x'0: ())) =
-{[@stop_split] [@expl:insert_ghost_T requires] ([@stop_split] [@expl:insert_ghost 'self' type invariant] inv_refmut_Seq_T self)
-  /\ ([@stop_split] [@expl:insert_ghost 'x' type invariant] inv_T x)
-  /\ ([@stop_split] [@expl:insert_ghost requires] 0 <= position /\ position <= Seq.length self.current)}
+let insert_T (self: MutBorrow.t (Seq.seq t_T)) (position: int) (x: t_T) (return (x'0: ())) =
+{[@stop_split] [@expl:insert_T requires] ([@stop_split] [@expl:insert 'self' type invariant] inv_refmut_Seq_T self)
+  /\ ([@stop_split] [@expl:insert 'x' type invariant] inv_T x)
+  /\ ([@stop_split] [@expl:insert requires] 0 <= position /\ position <= Seq.length self.current)}
   (! bb0
   [ bb0 = s0
     [ s0 = MutBorrow.borrow_mut <Seq.seq t_T> {self.current}
@@ -144,13 +144,13 @@ let insert_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (position: int) (x: t_T) (r
           [ &_14 <- _bor ] -{inv_Seq_T _bor.final}-
           [ &self <- { self with current = _bor.final } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
-    | s1 = split_off_ghost_T {_14} {position} (fun (_x: Seq.seq t_T) -> [ &after <- _x ] s2)
+    | s1 = split_off_T {_14} {position} (fun (_x: Seq.seq t_T) -> [ &after <- _x ] s2)
     | s2 = MutBorrow.borrow_mut <Seq.seq t_T> {self.current}
         (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
           [ &_17 <- _bor ] -{inv_Seq_T _bor.final}-
           [ &self <- { self with current = _bor.final } ] s3)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
-    | s3 = push_back_ghost_T {_17} {x} (fun (_x: ()) -> [ &_16 <- _x ] s4)
+    | s3 = push_back_T {_17} {x} (fun (_x: ()) -> [ &_16 <- _x ] s4)
     | s4 = MutBorrow.borrow_final <Seq.seq t_T> {self.current} {MutBorrow.get_id self}
         (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
           [ &_20 <- _bor ] -{inv_Seq_T _bor.final}-
@@ -170,5 +170,5 @@ let insert_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (position: int) (x: t_T) (r
   | & _17: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
   | & _19: () = Any.any_l ()
   | & _20: MutBorrow.t (Seq.seq t_T) = Any.any_l () ] [ function_variant: int = position ])
-  [ return (result: ()) -> {[@stop_split] [@expl:insert_ghost ensures] self.final = insert_T self.current position x}
+  [ return (result: ()) -> {[@stop_split] [@expl:insert ensures] self.final = add_T self.current position x}
     (! return {result}) ]

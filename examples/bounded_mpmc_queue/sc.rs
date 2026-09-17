@@ -626,11 +626,11 @@ impl<T> Queue<T> {
             let (status, status_own) = AtomicUsize::new(2 * i);
 
             ghost! {
-                cells_own.push_back_ghost(Some(item_own.into_inner()));
-                statuses_own.push_back_ghost(status_own.into_inner());
+                cells_own.push_back(Some(item_own.into_inner()));
+                statuses_own.push_back(status_own.into_inner());
 
                 let status = snapshot!(2 * i@);
-                statuses_mono_auth.push_back_ghost(statuses::Authority::alloc(status).into_inner());
+                statuses_mono_auth.push_back(statuses::Authority::alloc(status).into_inner());
             };
 
             cells.push(QueueCell { item, status })
@@ -697,12 +697,12 @@ impl<T> Queue<T> {
     // User committer
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        *c.new_seq == c.old_seq.push_back(*item) ==>
+        *c.new_seq == c.old_seq.snoc(*item) ==>
             f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
-        *c.new_seq == c.old_seq.push_back(*item) && f.postcondition_once((c,),())
+        *c.new_seq == c.old_seq.snoc(*item) && f.postcondition_once((c,),())
     )]
     fn try_enqueue_cas_inv<F>(
         &self,
@@ -731,7 +731,7 @@ impl<T> Queue<T> {
             proof_assert!(*head < inv.tail() + inv.len());
 
             let old_seq = snapshot!(inv.seq());
-            let new_seq = snapshot!(old_seq.push_back(*item));
+            let new_seq = snapshot!(old_seq.snoc(*item));
             let budget = *snapshot!(inv.values_auth.budget()).into_ghost();
             f.into_inner()(&mut QueueCommitter {
                 auth: &mut inv.values_auth,
@@ -794,12 +794,12 @@ impl<T> Queue<T> {
     #[requires(tokens.contains(BOUNDED_MPMC_QUEUE()))]
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        *c.new_seq == c.old_seq.push_back(item) ==>
+        *c.new_seq == c.old_seq.snoc(item) ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(result ==> exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
-        *c.new_seq == c.old_seq.push_back(item) && f.postcondition_once((c,),())
+        *c.new_seq == c.old_seq.snoc(item) && f.postcondition_once((c,),())
     )]
     #[ensures(!result ==> resolve(f))]
     pub fn try_enqueue<F>(&self, item: T, mut tokens: Ghost<Tokens>, f: Ghost<F>) -> bool
@@ -900,12 +900,12 @@ impl<T> Queue<T> {
     // User committer
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() ==>
+        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_first() ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
-        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() &&
+        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_first() &&
         f.postcondition_once((c,),()) &&
         result.1.val()@ == Some(c.old_seq[0])
     )]
@@ -938,7 +938,7 @@ impl<T> Queue<T> {
             proof_assert!(*tail < inv.head());
 
             let old_seq = snapshot!(inv.seq());
-            let new_seq = snapshot!(old_seq.pop_front());
+            let new_seq = snapshot!(old_seq.pop_first());
             let budget = *snapshot!(inv.values_auth.budget()).into_ghost();
             f.into_inner()(&mut QueueCommitter {
                 auth: &mut inv.values_auth,
@@ -999,13 +999,13 @@ impl<T> Queue<T> {
     #[requires(tokens.contains(BOUNDED_MPMC_QUEUE()))]
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() ==>
+        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_first() ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(match result {
         Some(result) => exists<c: &mut QueueCommitter<T>>
             !c.shot && *c.ward == *self &&
-            c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() &&
+            c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_first() &&
             f.postcondition_once((c,),()) &&
             result == c.old_seq[0],
         None => resolve(f)

@@ -924,10 +924,9 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
   
   meta "rewrite_def" predicate resolve_refmut_Memory
   
-  function push_front_usize [@inline:trivial] (self: Seq.seq UInt64.t) (x: UInt64.t) : Seq.seq UInt64.t =
-    Seq.cons x self
+  function cons_usize [@inline:trivial] (self: Seq.seq UInt64.t) (x: UInt64.t) : Seq.seq UInt64.t = Seq.cons x self
   
-  meta "rewrite_def" function push_front_usize
+  meta "rewrite_def" function cons_usize
   
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
@@ -983,7 +982,7 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
     | bb9 = s0
       [ s0 = -{resolve_refmut_Memory self}- s1
       | s1 = {[@expl:assertion] forall i: int. 0 <= i /\ i < Seq.length s
-          -> Seq.get (push_front_usize (Reverse.reverse (Seq.([..]) s 1 (Seq.length s))) (Seq.get s 0)) i
+          -> Seq.get (cons_usize (Reverse.reverse (Seq.([..]) s 1 (Seq.length s))) (Seq.get s 0)) i
           = (if i = 0 then Seq.get s 0 else Seq.get (Reverse.reverse s) (i - 1))}
         s2
       | s2 = [ &_ret <- r ] s3
@@ -1005,7 +1004,7 @@ module M_impl_Memory_0__list_reversal_loop (* Memory *)
     | & _54: MutBorrow.t UInt64.t = Any.any_l ()
     | & _old: t_Memory = Any.any_l () ])
     [ return (result: UInt64.t) ->
-    {[@stop_split] [@expl:list_reversal_loop ensures] loop_ self.final result (push_front_usize (Reverse.reverse (Seq.([..]) s 1 (Seq.length s))) (Seq.get s 0))}
+    {[@stop_split] [@expl:list_reversal_loop ensures] loop_ self.final result (cons_usize (Reverse.reverse (Seq.([..]) s 1 (Seq.length s))) (Seq.get s 0))}
       (! return {result}) ]
 end
 module M_impl_Memory_0__list_reversal_safe (* Memory *)

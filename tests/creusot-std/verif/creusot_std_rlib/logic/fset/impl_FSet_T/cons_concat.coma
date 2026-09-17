@@ -68,15 +68,15 @@ axiom unions_T_spec:
   forall self: Fset.fset t_T, f: Map.map t_T (Fset.fset (Seq.seq t_T)) [unions_T self f]. forall y: Seq.seq t_T. contains_Seq_T (unions_T self f) y
       = (exists x: t_T. contains_T self x /\ contains_Seq_T (Map.get f x) y)
 
-function push_front_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
+function cons_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
 
-meta "rewrite_def" function push_front_T
+meta "rewrite_def" function cons_T
 
-function cons_T (s: Fset.fset t_T) (ss: Fset.fset (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
-  unions_T s (fun (x: t_T) -> map_Seq_T ss (fun (xs: Seq.seq t_T) -> push_front_T xs x))
+function cons_T'0 (s: Fset.fset t_T) (ss: Fset.fset (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
+  unions_T s (fun (x: t_T) -> map_Seq_T ss (fun (xs: Seq.seq t_T) -> cons_T xs x))
 
 axiom cons_T_spec:
-  forall s: Fset.fset t_T, ss: Fset.fset (Seq.seq t_T) [cons_T s ss]. forall xs: Seq.seq t_T. contains_Seq_T (cons_T s ss) xs
+  forall s: Fset.fset t_T, ss: Fset.fset (Seq.seq t_T) [cons_T'0 s ss]. forall xs: Seq.seq t_T. contains_Seq_T (cons_T'0 s ss) xs
       = (0 < Seq.length xs /\ contains_T s (Seq.get xs 0) /\ contains_Seq_T ss (tail_T xs))
 
 meta "compute_max_steps" 1000000
@@ -91,10 +91,10 @@ constant u : Fset.fset (Seq.seq t_T)
 
 function cons_concat_T (self: Fset.fset t_T) (t: Fset.fset (Seq.seq t_T)) (u: Fset.fset (Seq.seq t_T)) : ()
 
-goal vc_cons_concat_T: (forall x: t_T, xs: Seq.seq t_T, ys: Seq.seq t_T. Seq.(++) (push_front_T xs x) ys
-      = push_front_T (Seq.(++) xs ys) x)
-  && (forall x: t_T, ys: Seq.seq t_T. tail_T (push_front_T ys x) = ys)
-  && (forall ys: Seq.seq t_T. 0 < Seq.length ys -> ys = push_front_T (tail_T ys) (Seq.get ys 0))
-  && (forall xs: Seq.seq t_T. contains_Seq_T (concat_T (cons_T self t) u) xs
-      = contains_Seq_T (cons_T self (concat_T t u)) xs)
-  && ([@stop_split] [@expl:cons_concat ensures] concat_T (cons_T self t) u = cons_T self (concat_T t u))
+goal vc_cons_concat_T: (forall x: t_T, xs: Seq.seq t_T, ys: Seq.seq t_T. Seq.(++) (cons_T xs x) ys
+      = cons_T (Seq.(++) xs ys) x)
+  && (forall x: t_T, ys: Seq.seq t_T. tail_T (cons_T ys x) = ys)
+  && (forall ys: Seq.seq t_T. 0 < Seq.length ys -> ys = cons_T (tail_T ys) (Seq.get ys 0))
+  && (forall xs: Seq.seq t_T. contains_Seq_T (concat_T (cons_T'0 self t) u) xs
+      = contains_Seq_T (cons_T'0 self (concat_T t u)) xs)
+  && ([@stop_split] [@expl:cons_concat ensures] concat_T (cons_T'0 self t) u = cons_T'0 self (concat_T t u))

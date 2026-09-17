@@ -40,7 +40,7 @@ function such_that_V (p: Map.map t_V bool) : t_V
 axiom such_that_V_spec: forall p: Map.map t_V bool [such_that_V p]. (exists x: t_V. index_Mapping_V_bool p x)
     -> index_Mapping_V_bool p (such_that_V p)
 
-constant any_V: t_V = such_that_V (fun (__0: t_V) -> true)
+constant any_V: t_V = such_that_V (fun (_0: t_V) -> true)
 
 function unwrap_Option_V (self: t_Option_V) : t_V = match self with
     | Some'0 x -> x
@@ -62,7 +62,7 @@ meta "rewrite_def" predicate invariant_FMap_K_V
 
 predicate inv_FMap_K_V (_1: t_FMap_K_V)
 
-axiom inv_axiom [@rewrite]: forall x: t_FMap_K_V [inv_FMap_K_V x]. inv_FMap_K_V x = invariant_FMap_K_V x
+axiom inv_axiom [@rewrite]: forall _1: t_FMap_K_V [inv_FMap_K_V _1]. inv_FMap_K_V _1 = invariant_FMap_K_V _1
 
 predicate invariant_ref_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) = inv_FMap_K_V self
 
@@ -90,16 +90,11 @@ meta "rewrite_def" predicate inv_ref_V
 
 predicate inv_Option_ref_V (_1: t_Option_ref_V)
 
-axiom inv_axiom'0 [@rewrite]: forall x: t_Option_ref_V [inv_Option_ref_V x]. inv_Option_ref_V x
-    = match x with
+axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_ref_V [inv_Option_ref_V _1]. inv_Option_ref_V _1
+    = match _1 with
       | None -> true
       | Some f0 -> inv_ref_V f0
       end
-
-function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
-    | None'0 -> None
-    | Some'0 x -> Some (Map.get f x)
-    end
 
 let get_K'0 (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
 {[@stop_split] [@expl:get_K requires] ([@stop_split] [@expl:get 'self' type invariant] inv_ref_FMap_K_V self)
@@ -107,7 +102,7 @@ let get_K'0 (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
   any
   [ return (result: t_Option_ref_V) ->
   {[@stop_split] [@expl:get_K ensures] ([@stop_split] [@expl:get result type invariant] inv_Option_ref_V result)
-    /\ ([@stop_split] [@expl:get ensures] result = map_Option_V (get_K self key) (fun (v: t_V) -> v))}
+    /\ ([@stop_split] [@expl:get ensures] result = get_K self key)}
     (! return {result}) ]
 
 predicate invariant_ref_Option_ref_V [@inline:trivial] (self: t_Option_ref_V) = inv_Option_ref_V self
@@ -118,9 +113,9 @@ predicate inv_ref_Option_ref_V [@inline:trivial] (_1: t_Option_ref_V) = invarian
 
 meta "rewrite_def" predicate inv_ref_Option_ref_V
 
-let is_some_ref_V (self_: t_Option_ref_V) (return (x: bool)) =
-{[@stop_split] [@expl:is_some 'self_' type invariant] inv_ref_Option_ref_V self_}
-  any [ return (result: bool) -> {[@stop_split] [@expl:is_some ensures] result = (self_ <> None)} (! return {result}) ]
+let is_some_ref_V (self: t_Option_ref_V) (return (x: bool)) =
+{[@stop_split] [@expl:is_some 'self' type invariant] inv_ref_Option_ref_V self}
+  any [ return (result: bool) -> {[@stop_split] [@expl:is_some ensures] result = (self <> None)} (! return {result}) ]
 
 meta "compute_max_steps" 1000000
 

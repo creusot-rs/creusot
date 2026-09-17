@@ -182,18 +182,7 @@ function view_Iter_ref_K_refmut_V (self: t_Iter_ref_K_refmut_V) : t_FMap_ref_K_r
 
 type t_Option_ref_V = None'1 | Some'1 t_V
 
-function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
-    | None -> None'1
-    | Some x -> Some'1 (Map.get f x)
-    end
-
 type t_Option_ref_refmut_V = None'2 | Some'2 (MutBorrow.t t_V)
-
-function map_Option_refmut_V (self: t_Option_refmut_V) (f: Map.map (MutBorrow.t t_V) (MutBorrow.t t_V)) : t_Option_ref_refmut_V
- = match self with
-    | None'0 -> None'2
-    | Some'0 x -> Some'2 (Map.get f x)
-    end
 
 meta "compute_max_steps" 1000000
 
@@ -221,13 +210,9 @@ let into_iter_refmut_FMap_K_V (self: MutBorrow.t t_FMap_K_V) (return (x: t_Iter_
   {[@stop_split] [@expl:into_iter_refmut_FMap_K_V ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_ref_K_refmut_V result)
     /\ ([@stop_split] [@expl:into_iter ensures #0] len_ref_K (view_Iter_ref_K_refmut_V result) = len_K self.current)
     /\ ([@stop_split] [@expl:into_iter ensures #1] len_K self.final = len_K self.current)
-    /\ ([@stop_split] [@expl:into_iter ensures #2] forall k: t_K, v: t_V. map_Option_V (get_K self.current k) (fun (v'0: t_V) -> v'0)
-          = Some'1 v
-        -> (exists w: MutBorrow.t t_V. map_Option_refmut_V (get_ref_K (view_Iter_ref_K_refmut_V result) k) (fun (v'0: MutBorrow.t t_V) -> v'0)
-            = Some'2 w
-          /\ v = w.current /\ map_Option_V (get_K self.final k) (fun (v'0: t_V) -> v'0) = Some'1 (w.final)))
-    /\ ([@stop_split] [@expl:into_iter ensures #3] forall k: t_K, w: MutBorrow.t t_V. map_Option_refmut_V (get_ref_K (view_Iter_ref_K_refmut_V result) k) (fun (v: MutBorrow.t t_V) -> v)
-        = Some'2 w
-      -> map_Option_V (get_K self.current k) (fun (v: t_V) -> v) = Some'1 (w.current)
-      /\ map_Option_V (get_K self.final k) (fun (v: t_V) -> v) = Some'1 (w.final))}
+    /\ ([@stop_split] [@expl:into_iter ensures #2] forall k: t_K, v: t_V. get_K self.current k = Some'1 v
+        -> (exists w: MutBorrow.t t_V. get_ref_K (view_Iter_ref_K_refmut_V result) k = Some'2 w
+          /\ v = w.current /\ get_K self.final k = Some'1 (w.final)))
+    /\ ([@stop_split] [@expl:into_iter ensures #3] forall k: t_K, w: MutBorrow.t t_V. get_ref_K (view_Iter_ref_K_refmut_V result) k
+        = Some'2 w -> get_K self.current k = Some'1 (w.current) /\ get_K self.final k = Some'1 (w.final))}
     (! return {result}) ]

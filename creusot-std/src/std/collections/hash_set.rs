@@ -100,7 +100,7 @@ pub fn set_produces_trans<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
     c: I,
 ) {
     Seq::<T>::concat_contains();
-    proof_assert! { forall<i, x: T> ab.len() <= i && ab.concat(bc).get(i) == Some(x) ==> bc.contains(x) };
+    proof_assert! { forall<i, x: T> ab.len() <= i && ab.concat(bc).get(i) == Some(&x) ==> bc.contains(x) };
     proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] };
 }
 

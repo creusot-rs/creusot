@@ -58,22 +58,22 @@ axiom unions_T_spec:
 function map_Seq_T (self: Fset.fset (Seq.seq t_T)) (f: Map.map (Seq.seq t_T) (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
   Fset.map f self
 
-function push_front_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
+function cons_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
 
-meta "rewrite_def" function push_front_T
+meta "rewrite_def" function cons_T
 
-function cons_T (s: Fset.fset t_T) (ss: Fset.fset (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
-  unions_T s (fun (x: t_T) -> map_Seq_T ss (fun (xs: Seq.seq t_T) -> push_front_T xs x))
+function cons_T'0 (s: Fset.fset t_T) (ss: Fset.fset (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
+  unions_T s (fun (x: t_T) -> map_Seq_T ss (fun (xs: Seq.seq t_T) -> cons_T xs x))
 
 axiom cons_T_spec:
-  forall s: Fset.fset t_T, ss: Fset.fset (Seq.seq t_T) [cons_T s ss]. forall xs: Seq.seq t_T. contains_Seq_T (cons_T s ss) xs
+  forall s: Fset.fset t_T, ss: Fset.fset (Seq.seq t_T) [cons_T'0 s ss]. forall xs: Seq.seq t_T. contains_Seq_T (cons_T'0 s ss) xs
       = (0 < Seq.length xs /\ contains_T'0 s (Seq.get xs 0) /\ contains_Seq_T ss (tail_T xs))
 
 function replicate_T (self: Fset.fset t_T) (n: int) : Fset.fset (Seq.seq t_T)
 
 axiom replicate_T_def: forall self: Fset.fset t_T, n: int [replicate_T self n]. ge_log_Int n 0
     -> replicate_T self n
-    = (if n = 0 then singleton_Seq_T (Seq.empty: Seq.seq t_T) else cons_T self (replicate_T self (n - 1)))
+    = (if n = 0 then singleton_Seq_T (Seq.empty: Seq.seq t_T) else cons_T'0 self (replicate_T self (n - 1)))
 
 axiom replicate_T_spec: forall self: Fset.fset t_T, n: int [replicate_T self n]. ge_log_Int n 0
     -> (forall xs: Seq.seq t_T. contains_Seq_T (replicate_T self n) xs
@@ -115,8 +115,8 @@ axiom concat_empty_T_spec'0: forall s: Fset.fset (Seq.seq t_T). concat_T s (sing
 function cons_concat_T (self: Fset.fset t_T) (t: Fset.fset (Seq.seq t_T)) (u: Fset.fset (Seq.seq t_T)) : () = ()
 
 axiom cons_concat_T_spec:
-  forall self: Fset.fset t_T, t: Fset.fset (Seq.seq t_T), u: Fset.fset (Seq.seq t_T). concat_T (cons_T self t) u
-    = cons_T self (concat_T t u)
+  forall self: Fset.fset t_T, t: Fset.fset (Seq.seq t_T), u: Fset.fset (Seq.seq t_T). concat_T (cons_T'0 self t) u
+    = cons_T'0 self (concat_T t u)
 
 predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
 
@@ -158,8 +158,9 @@ goal vc_concat_replicate_T: 0 <= n /\ 0 <= m
     -> ([@stop_split] [@expl:replicate requires] ge_log_Int m 0)
     /\ (([@stop_split] [@expl:replicate ensures] forall xs: Seq.seq t_T. contains_Seq_T (replicate_T self m) xs
         = (Seq.length xs = m /\ (forall x: t_T. contains_T xs x -> contains_T'0 self x)))
-    -> ([@stop_split] [@expl:cons_concat ensures] concat_T (cons_T self (replicate_T self (n - 1))) (replicate_T self m)
-      = cons_T self (concat_T (replicate_T self (n - 1)) (replicate_T self m)))
+    -> ([@stop_split] [@expl:cons_concat ensures] concat_T (cons_T'0 self (replicate_T self (n
+        - 1))) (replicate_T self m)
+      = cons_T'0 self (concat_T (replicate_T self (n - 1)) (replicate_T self m)))
     -> (let _ = cons_concat_T self (replicate_T self (n
     - 1)) (replicate_T self m) in (([@stop_split] [@expl:concat_replicate requires] 0 <= n - 1 /\ 0 <= m)
       /\ ([@expl:variant decreases] well_founded_relation_Int n (n - 1)))

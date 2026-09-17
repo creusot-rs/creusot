@@ -114,11 +114,11 @@ predicate inv_refmut_Seq_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_T)) = i
 
 meta "rewrite_def" predicate inv_refmut_Seq_T
 
-let push_back_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
-{[@stop_split] [@expl:push_back_ghost_T requires] ([@stop_split] [@expl:push_back_ghost 'self' type invariant] inv_refmut_Seq_T self)
-  /\ ([@stop_split] [@expl:push_back_ghost 'x' type invariant] inv_T x)}
+let push_back_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
+{[@stop_split] [@expl:push_back_T requires] ([@stop_split] [@expl:push_back 'self' type invariant] inv_refmut_Seq_T self)
+  /\ ([@stop_split] [@expl:push_back 'x' type invariant] inv_T x)}
   any
-  [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
+  [ return (result: ()) -> {[@stop_split] [@expl:push_back ensures] self.final = Seq.snoc self.current x}
     (! return {result}) ]
 
 let add_Int (self: int) (other: int) (return (x: int)) = any
@@ -164,7 +164,7 @@ let into_ghost_Seq_T (snap: Seq.seq t_T) (return (x: Seq.seq t_T)) =
             (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
               [ &_41 <- _bor ] -{inv_Seq_T _bor.final}-
               [ &res <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Seq_T res} any) ]
-        | s4 = push_back_ghost_T {_41} {_42} (fun (_x: ()) -> [ &_40 <- _x ] s5)
+        | s4 = push_back_T {_41} {_42} (fun (_x: ()) -> [ &_40 <- _x ] s5)
         | s5 = new {(1: Int128.t)} (fun (_x: int) -> [ &_48 <- _x ] s6)
         | s6 = into_inner_Int {_48} (fun (_x: int) -> [ &_47 <- _x ] s7)
         | s7 = add_Int {i} {_47} (fun (_x: int) -> [ &_45 <- _x ] s8)

@@ -57,26 +57,26 @@ axiom inv_axiom [@rewrite]: forall _1: t_Option_refmut_T [inv_Option_refmut_T _1
       | Some f0 -> inv_refmut_T f0
       end
 
-type t_Option_T = None'0 | Some'0 t_T
+type t_Option_ref_T = None'0 | Some'0 t_T
 
-function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
+function get_logic_ref_T (self: Seq.seq t_T) (ix: int) : t_Option_ref_T = if 0 <= ix /\ ix < Seq.length self then
     Some'0 (Seq.get self ix)
   else
     None'0
 
 
-let get_mut_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t_Option_refmut_T)) =
-{[@stop_split] [@expl:get_mut_ghost 'self' type invariant] inv_refmut_Seq_T self}
+let get_mut_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t_Option_refmut_T)) =
+{[@stop_split] [@expl:get_mut 'self' type invariant] inv_refmut_Seq_T self}
   any
   [ return (result: t_Option_refmut_T) ->
-  {[@stop_split] [@expl:get_mut_ghost_T ensures] ([@stop_split] [@expl:get_mut_ghost result type invariant] inv_Option_refmut_T result)
-    /\ ([@stop_split] [@expl:get_mut_ghost ensures #0] match result with
-        | None -> get_T self.current index = None'0 /\ self.current = self.final
-        | Some r -> get_T self.current index = Some'0 (r.current) /\ r.final = Seq.get self.final index
+  {[@stop_split] [@expl:get_mut_T ensures] ([@stop_split] [@expl:get_mut result type invariant] inv_Option_refmut_T result)
+    /\ ([@stop_split] [@expl:get_mut ensures #0] match result with
+        | None -> get_logic_ref_T self.current index = None'0 /\ self.current = self.final
+        | Some r -> get_logic_ref_T self.current index = Some'0 (r.current) /\ r.final = Seq.get self.final index
         end)
-    /\ ([@stop_split] [@expl:get_mut_ghost ensures #1] forall i: int. i <> index
-        -> get_T self.current i = get_T self.final i)
-    /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] Seq.length self.current = Seq.length self.final)}
+    /\ ([@stop_split] [@expl:get_mut ensures #1] forall i: int. i <> index
+        -> get_logic_ref_T self.current i = get_logic_ref_T self.final i)
+    /\ ([@stop_split] [@expl:get_mut ensures #2] Seq.length self.current = Seq.length self.final)}
     (! return {result}) ]
 
 let unwrap_refmut_T (self: t_Option_refmut_T) (return (x: MutBorrow.t t_T)) =
@@ -110,7 +110,7 @@ let index_mut_Seq_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: M
           [ &_17 <- _bor ] -{inv_Seq_T _bor.final}-
           [ &self <- { self with current = _bor.final } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
-    | s1 = get_mut_ghost_T {_17} {index} (fun (_x: t_Option_refmut_T) -> [ &_16 <- _x ] s2)
+    | s1 = get_mut_T {_17} {index} (fun (_x: t_Option_refmut_T) -> [ &_16 <- _x ] s2)
     | s2 = unwrap_refmut_T {_16} (fun (_x: MutBorrow.t t_T) -> [ &_15 <- _x ] s3)
     | s3 = MutBorrow.borrow_final <t_T> {_15.current} {MutBorrow.get_id _15}
         (fun (_bor: MutBorrow.t t_T) ->
