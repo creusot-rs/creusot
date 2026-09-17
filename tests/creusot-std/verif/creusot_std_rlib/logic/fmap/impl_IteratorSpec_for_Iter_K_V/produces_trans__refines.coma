@@ -26,7 +26,9 @@ function get_tup2_K_V (self: Seq.seq tup2_K_V) (ix: int) : t_Option_tup2_K_V = i
     None
 
 
-type t_Option_V = None'0 | Some'0 t_V
+type t_Option_ref_tup2_K_V = None'0 | Some'0 tup2_K_V
+
+type t_Option_V = None'1 | Some'1 t_V
 
 function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
 
@@ -34,17 +36,17 @@ function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.
 
 meta "rewrite_def" function get_K
 
-predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None'0
+predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None'1
 
 meta "rewrite_def" predicate contains_K
 
 function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V = self.f0
 
-type t_Option_ref_V = None'1 | Some'1 t_V
+type t_Option_ref_V = None'2 | Some'2 t_V
 
 function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
-    | None'0 -> None'1
-    | Some'0 x -> Some'1 (Map.get f x)
+    | None'1 -> None'2
+    | Some'1 x -> Some'2 (Map.get f x)
     end
 
 predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
@@ -58,9 +60,13 @@ axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 
 predicate produces_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_K_V) (o: t_Iter_K_V) =
   (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
       -> (Seq.get visited i).f0'0 <> (Seq.get visited j).f0'0)
-  /\ (forall k: t_K, v: t_V, i: int. get_tup2_K_V visited i = Some { f0'0 = k; f1'0 = v }
+  /\ (forall k: t_K, v: t_V, i: int. match get_tup2_K_V visited i with
+            | None -> None'0
+            | Some v'0 -> Some'0 v'0
+            end
+        = Some'0 { f0'0 = k; f1'0 = v }
       -> not contains_K (view_Iter_K_V o) k
-      /\ map_Option_V (get_K (view_Iter_K_V self) k) (fun (v'0: t_V) -> v'0) = Some'1 v)
+      /\ map_Option_V (get_K (view_Iter_K_V self) k) (fun (v'0: t_V) -> v'0) = Some'2 v)
   /\ len_K (view_Iter_K_V self) = Seq.length visited + len_K (view_Iter_K_V o)
   /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0'0 <> k)
     -> map_Option_V (get_K (view_Iter_K_V o) k) (fun (v: t_V) -> v)

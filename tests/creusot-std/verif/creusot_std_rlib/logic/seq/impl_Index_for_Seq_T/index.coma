@@ -55,14 +55,15 @@ function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < S
     None'0
 
 
-let get_ghost_T (self: Seq.seq t_T) (index: int) (return (x: t_Option_ref_T)) =
-{[@stop_split] [@expl:get_ghost 'self' type invariant] inv_ref_Seq_T self}
+let get_T'0 (self: Seq.seq t_T) (index: int) (return (x: t_Option_ref_T)) =
+{[@stop_split] [@expl:get 'self' type invariant] inv_ref_Seq_T self}
   any
   [ return (result: t_Option_ref_T) ->
-  {[@stop_split] [@expl:get_ghost_T ensures] ([@stop_split] [@expl:get_ghost result type invariant] inv_Option_ref_T result)
-    /\ ([@stop_split] [@expl:get_ghost ensures] match get_T self index with
-      | None'0 -> result = None
-      | Some'0 v -> result = Some v
+  {[@stop_split] [@expl:get_T ensures] ([@stop_split] [@expl:get result type invariant] inv_Option_ref_T result)
+    /\ ([@stop_split] [@expl:get ensures] result
+    = match get_T self index with
+      | None'0 -> None
+      | Some'0 v -> Some v
       end)}
     (! return {result}) ]
 
@@ -84,7 +85,7 @@ let index_Seq_T (self: Seq.seq t_T) (index: int) (return (x: t_T)) =
   /\ ([@stop_split] [@expl:index requires] 0 <= index /\ index < Seq.length self)}
   (! bb0
   [ bb0 = s0
-    [ s0 = get_ghost_T {self} {index} (fun (_x: t_Option_ref_T) -> [ &_10 <- _x ] s1)
+    [ s0 = get_T'0 {self} {index} (fun (_x: t_Option_ref_T) -> [ &_10 <- _x ] s1)
     | s1 = unwrap_ref_T {_10} (fun (_x: t_T) -> [ &_9 <- _x ] s2)
     | s2 = [ &_ret <- _9 ] s3
     | s3 = return {_ret} ] ]

@@ -38,15 +38,15 @@ module M_test_deque
   
   type t_Option_u32 = None | Some UInt32.t
   
-  function push_front_u32 [@inline:trivial] (self: Seq.seq UInt32.t) (x: UInt32.t) : Seq.seq UInt32.t = Seq.cons x self
+  function cons_u32 [@inline:trivial] (self: Seq.seq UInt32.t) (x: UInt32.t) : Seq.seq UInt32.t = Seq.cons x self
   
-  meta "rewrite_def" function push_front_u32
+  meta "rewrite_def" function cons_u32
   
   let pop_front_u32 (self_: MutBorrow.t t_VecDeque_u32_Global) (return (x: t_Option_u32)) = any
     [ return (result: t_Option_u32) -> {[@stop_split] [@expl:pop_front ensures] match result with
         | Some t -> view_VecDeque_u32_Global self_.final
           = Seq.([..]) (view_VecDeque_u32_Global self_.current) 1 (Seq.length (view_VecDeque_u32_Global self_.current))
-        /\ view_VecDeque_u32_Global self_.current = push_front_u32 (view_VecDeque_u32_Global self_.final) t
+        /\ view_VecDeque_u32_Global self_.current = cons_u32 (view_VecDeque_u32_Global self_.final) t
         | None -> self_.current = self_.final /\ Seq.length (view_VecDeque_u32_Global self_.current) = 0
         end}
       (! return {result}) ]
@@ -83,12 +83,12 @@ module M_test_deque
         end}
       (! return {result}) ]
   
-  let push_front_u32'0 (self_: MutBorrow.t t_VecDeque_u32_Global) (value: UInt32.t) (return (x: ())) = any
+  let push_front_u32 (self_: MutBorrow.t t_VecDeque_u32_Global) (value: UInt32.t) (return (x: ())) = any
     [ return (result: ()) ->
     {[@stop_split] [@expl:push_front_u32 ensures] ([@stop_split] [@expl:push_front ensures #0] Seq.length (view_VecDeque_u32_Global self_.final)
         = Seq.length (view_VecDeque_u32_Global self_.current) + 1)
       /\ ([@stop_split] [@expl:push_front ensures #1] view_VecDeque_u32_Global self_.final
-      = push_front_u32 (view_VecDeque_u32_Global self_.current) value)}
+      = cons_u32 (view_VecDeque_u32_Global self_.current) value)}
       (! return {result}) ]
   
   let push_back_u32 (self_: MutBorrow.t t_VecDeque_u32_Global) (value: UInt32.t) (return (x: ())) = any
@@ -144,10 +144,10 @@ module M_test_deque
     | bb21 = s0
       [ s0 = MutBorrow.borrow_mut <t_VecDeque_u32_Global> {deque'0}
           (fun (_bor: MutBorrow.t t_VecDeque_u32_Global) -> [ &_38 <- _bor ] [ &deque'0 <- _bor.final ] s1)
-      | s1 = push_front_u32'0 {_38} {(1: UInt32.t)} (fun (_x: ()) -> [ &_37 <- _x ] s2)
+      | s1 = push_front_u32 {_38} {(1: UInt32.t)} (fun (_x: ()) -> [ &_37 <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_VecDeque_u32_Global> {deque'0}
           (fun (_bor: MutBorrow.t t_VecDeque_u32_Global) -> [ &_40 <- _bor ] [ &deque'0 <- _bor.final ] s3)
-      | s3 = push_front_u32'0 {_40} {(2: UInt32.t)} (fun (_x: ()) -> [ &_39 <- _x ] s4)
+      | s3 = push_front_u32 {_40} {(2: UInt32.t)} (fun (_x: ()) -> [ &_39 <- _x ] s4)
       | s4 = MutBorrow.borrow_mut <t_VecDeque_u32_Global> {deque'0}
           (fun (_bor: MutBorrow.t t_VecDeque_u32_Global) -> [ &_42 <- _bor ] [ &deque'0 <- _bor.final ] s5)
       | s5 = push_back_u32 {_42} {(3: UInt32.t)} (fun (_x: ()) -> [ &_41 <- _x ] s6)

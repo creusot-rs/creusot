@@ -230,17 +230,16 @@ function index_Seq_refmut_Perm_ptr_T'0 [@inline:trivial] (self: Seq.seq (MutBorr
 
 meta "rewrite_def" function index_Seq_refmut_Perm_ptr_T'0
 
-let split_off_ghost_refmut_Perm_ptr_T (self: MutBorrow.t (Seq.seq (MutBorrow.t t_Perm_ptr_T))) (mid: int)
+let split_off_refmut_Perm_ptr_T (self: MutBorrow.t (Seq.seq (MutBorrow.t t_Perm_ptr_T))) (mid: int)
   (return (x: Seq.seq (MutBorrow.t t_Perm_ptr_T))) =
-{[@stop_split] [@expl:split_off_ghost_refmut_Perm_ptr_T requires] ([@stop_split] [@expl:split_off_ghost 'self' type invariant] inv_refmut_Seq_refmut_Perm_ptr_T self)
-  /\ ([@stop_split] [@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current)}
+{[@stop_split] [@expl:split_off_refmut_Perm_ptr_T requires] ([@stop_split] [@expl:split_off 'self' type invariant] inv_refmut_Seq_refmut_Perm_ptr_T self)
+  /\ ([@stop_split] [@expl:split_off requires] 0 <= mid /\ mid <= Seq.length self.current)}
   any
   [ return (result: Seq.seq (MutBorrow.t t_Perm_ptr_T)) ->
-  {[@stop_split] [@expl:split_off_ghost_refmut_Perm_ptr_T ensures] ([@stop_split] [@expl:split_off_ghost result type invariant] inv_Seq_refmut_Perm_ptr_T result)
-    /\ ([@stop_split] [@expl:split_off_ghost ensures #0] self.final
+  {[@stop_split] [@expl:split_off_refmut_Perm_ptr_T ensures] ([@stop_split] [@expl:split_off result type invariant] inv_Seq_refmut_Perm_ptr_T result)
+    /\ ([@stop_split] [@expl:split_off ensures #0] self.final
       = index_Seq_refmut_Perm_ptr_T'0 self.current { end' = mid })
-    /\ ([@stop_split] [@expl:split_off_ghost ensures #1] result
-    = index_Seq_refmut_Perm_ptr_T self.current { start = mid })}
+    /\ ([@stop_split] [@expl:split_off ensures #1] result = index_Seq_refmut_Perm_ptr_T self.current { start = mid })}
     (! return {result}) ]
 
 predicate resolve_refmut_Perm_ptr_T [@inline:trivial] (_1: MutBorrow.t t_Perm_ptr_T) = _1.final = _1.current
@@ -270,13 +269,13 @@ predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
 
 meta "rewrite_def" predicate gt_log_Int
 
-let pop_front_ghost_refmut_Perm_ptr_T (self: MutBorrow.t (Seq.seq (MutBorrow.t t_Perm_ptr_T)))
+let pop_front_refmut_Perm_ptr_T (self: MutBorrow.t (Seq.seq (MutBorrow.t t_Perm_ptr_T)))
   (return (x: t_Option_refmut_Perm_ptr_T)) =
-{[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_refmut_Perm_ptr_T self}
+{[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_Seq_refmut_Perm_ptr_T self}
   any
   [ return (result: t_Option_refmut_Perm_ptr_T) ->
-  {[@stop_split] [@expl:pop_front_ghost_refmut_Perm_ptr_T ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_refmut_Perm_ptr_T result)
-    /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
+  {[@stop_split] [@expl:pop_front_refmut_Perm_ptr_T ensures] ([@stop_split] [@expl:pop_front result type invariant] inv_Option_refmut_Perm_ptr_T result)
+    /\ ([@stop_split] [@expl:pop_front ensures] match result with
       | None -> self.current = (Seq.empty: Seq.seq (MutBorrow.t t_Perm_ptr_T)) /\ self.current = self.final
       | Some r -> gt_log_Int (Seq.length self.current) 0
       /\ r = Seq.get self.current 0 /\ self.final = tail_refmut_Perm_ptr_T self.current
@@ -321,15 +320,14 @@ let index_mut_T (self: MutBorrow.t t_Perm_ptr_slice_T) (index: int) (return (x: 
         (fun (_bor: MutBorrow.t (Seq.seq (MutBorrow.t t_Perm_ptr_T))) ->
           [ &_34 <- _bor ] -{inv_Seq_refmut_Perm_ptr_T _bor.final}-
           [ &r <- _bor.final ] s5) [ _ck -> (! {[@expl:type invariant] inv_Seq_refmut_Perm_ptr_T r} any) ]
-    | s5 = split_off_ghost_refmut_Perm_ptr_T {_34} {index}
-        (fun (_x: Seq.seq (MutBorrow.t t_Perm_ptr_T)) -> [ &_33 <- _x ] s6)
+    | s5 = split_off_refmut_Perm_ptr_T {_34} {index} (fun (_x: Seq.seq (MutBorrow.t t_Perm_ptr_T)) -> [ &_33 <- _x ] s6)
     | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Seq_refmut_Perm_ptr_T r} any) ]
     | s7 = -{resolve_Seq_refmut_Perm_ptr_T'0 r}- s8
     | s8 = MutBorrow.borrow_mut <Seq.seq (MutBorrow.t t_Perm_ptr_T)> {_33}
         (fun (_bor: MutBorrow.t (Seq.seq (MutBorrow.t t_Perm_ptr_T))) ->
           [ &_32 <- _bor ] -{inv_Seq_refmut_Perm_ptr_T _bor.final}-
           [ &_33 <- _bor.final ] s9) [ _ck -> (! {[@expl:type invariant] inv_Seq_refmut_Perm_ptr_T _33} any) ]
-    | s9 = pop_front_ghost_refmut_Perm_ptr_T {_32} (fun (_x: t_Option_refmut_Perm_ptr_T) -> [ &_31 <- _x ] s10)
+    | s9 = pop_front_refmut_Perm_ptr_T {_32} (fun (_x: t_Option_refmut_Perm_ptr_T) -> [ &_31 <- _x ] s10)
     | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_Seq_refmut_Perm_ptr_T _33} any) ]
     | s11 = -{resolve_Seq_refmut_Perm_ptr_T'0 _33}- s12
     | s12 = unwrap_refmut_Perm_ptr_T {_31} (fun (_x: MutBorrow.t t_Perm_ptr_T) -> [ &result <- _x ] s13)

@@ -57,12 +57,12 @@ meta "rewrite_def" predicate gt_log_Int
 
 function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
 
-let pop_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
-{[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_T self}
+let pop_front_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
+{[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_Seq_T self}
   any
   [ return (result: t_Option_T) ->
-  {[@stop_split] [@expl:pop_front_ghost_T ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_T result)
-    /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
+  {[@stop_split] [@expl:pop_front_T ensures] ([@stop_split] [@expl:pop_front result type invariant] inv_Option_T result)
+    /\ ([@stop_split] [@expl:pop_front ensures] match result with
       | None -> self.current = (Seq.empty: Seq.seq t_T) /\ self.current = self.final
       | Some r -> gt_log_Int (Seq.length self.current) 0
       /\ r = Seq.get self.current 0 /\ self.final = tail_T self.current
@@ -121,7 +121,7 @@ let next_Iter_T (self: MutBorrow.t t_Iter_T) (return (x: t_Option_T)) =
           [ &_4 <- _bor ] -{inv_Seq_T _bor.final}-
           [ &self <- { self with current = { f0 = _bor.final } } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current.f0} any) ]
-    | s1 = pop_front_ghost_T {_4} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
+    | s1 = pop_front_T {_4} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
     | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_T self} any) ]
     | s3 = -{resolve_refmut_Iter_T self}- s4
     | s4 = return {_ret} ] ]

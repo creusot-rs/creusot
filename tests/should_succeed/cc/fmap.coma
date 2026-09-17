@@ -145,11 +145,16 @@ module M_resolves
   function get_tup2_refmut_usize_refmut_usize (self: Seq.seq tup2_refmut_usize_refmut_usize) (ix: int) : t_Option_tup2_refmut_usize_refmut_usize
    = if 0 <= ix /\ ix < Seq.length self then Some'1 (Seq.get self ix) else None'1
   
+  type t_Option_ref_tup2_refmut_usize_refmut_usize = None'2 | Some'2 tup2_refmut_usize_refmut_usize
+  
   predicate produces_Iter_refmut_usize_refmut_usize (self: t_Iter_refmut_usize_refmut_usize) (visited: Seq.seq tup2_refmut_usize_refmut_usize) (o: t_Iter_refmut_usize_refmut_usize) =
     (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
         -> (Seq.get visited i).f0 <> (Seq.get visited j).f0)
-    /\ (forall k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t, i: int. get_tup2_refmut_usize_refmut_usize visited i
-          = Some'1 { f0 = k; f1 = v }
+    /\ (forall k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t, i: int. match get_tup2_refmut_usize_refmut_usize visited i with
+              | None'1 -> None'2
+              | Some'1 v'0 -> Some'2 v'0
+              end
+          = Some'2 { f0 = k; f1 = v }
         -> not contains_refmut_usize (view_Iter_refmut_usize_refmut_usize o) k
         /\ map_Option_refmut_usize (get_refmut_usize (view_Iter_refmut_usize_refmut_usize self) k) (fun (v'0: MutBorrow.t UInt64.t) -> v'0)
         = Some'0 v)

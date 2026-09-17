@@ -43,9 +43,8 @@ predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_
 
 meta "rewrite_def" predicate inv_ref_Seq_T
 
-let len_ghost_T (self: Seq.seq t_T) (return (x: int)) =
-{[@stop_split] [@expl:len_ghost 'self' type invariant] inv_ref_Seq_T self}
-  any [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
+let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+  any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
 
 let lt_Int (self: int) (other: int) (return (x: bool)) = any
   [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] result = (self < other)} (! return {result}) ]
@@ -112,15 +111,15 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let get_ghost_T (self: Seq.seq t_T) (index: int) (return (x: t_Option_ref_T)) =
-{[@stop_split] [@expl:get_ghost 'self' type invariant] inv_ref_Seq_T self}
+let get_T'0 (self: Seq.seq t_T) (index: int) (return (x: t_Option_ref_T)) =
+{[@stop_split] [@expl:get 'self' type invariant] inv_ref_Seq_T self}
   (! bb0
   [ bb0 = s0
     [ s0 = sub_Int {index} {index} (fun (_x: int) -> [ &_8 <- _x ] s1)
     | s1 = le_Int {_8} {index} (fun (_x: bool) -> [ &_6 <- _x ] s2)
     | s2 = any [ br0 -> {_6 = false} (! bb11) | br1 -> {_6} (! bb3) ] ]
   | bb3 = s0
-    [ s0 = len_ghost_T {self} (fun (_x: int) -> [ &_15 <- _x ] s1)
+    [ s0 = len_T {self} (fun (_x: int) -> [ &_15 <- _x ] s1)
     | s1 = lt_Int {index} {_15} (fun (_x: bool) -> [ &_12 <- _x ] s2)
     | s2 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb6) ] ]
   | bb6 = s0
@@ -139,9 +138,10 @@ let get_ghost_T (self: Seq.seq t_T) (index: int) (return (x: t_Option_ref_T)) =
   | & _18: t_T = Any.any_l ()
   | & _19: Seq.seq t_T = Any.any_l () ])
   [ return (result: t_Option_ref_T) ->
-  {[@stop_split] [@expl:get_ghost_T ensures] ([@stop_split] [@expl:get_ghost result type invariant] inv_Option_ref_T result)
-    /\ ([@stop_split] [@expl:get_ghost ensures] match get_T self index with
-      | None'0 -> result = None
-      | Some'0 v -> result = Some v
+  {[@stop_split] [@expl:get_T ensures] ([@stop_split] [@expl:get result type invariant] inv_Option_ref_T result)
+    /\ ([@stop_split] [@expl:get ensures] result
+    = match get_T self index with
+      | None'0 -> None
+      | Some'0 v -> Some v
       end)}
     (! return {result}) ]

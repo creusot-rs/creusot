@@ -67,15 +67,15 @@ axiom unions_T_spec:
 function map_Seq_T (self: Fset.fset (Seq.seq t_T)) (f: Map.map (Seq.seq t_T) (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
   Fset.map f self
 
-function push_front_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
+function cons_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
 
-meta "rewrite_def" function push_front_T
+meta "rewrite_def" function cons_T
 
-function cons_T (s: Fset.fset t_T) (ss: Fset.fset (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
-  unions_T s (fun (x: t_T) -> map_Seq_T ss (fun (xs: Seq.seq t_T) -> push_front_T xs x))
+function cons_T'0 (s: Fset.fset t_T) (ss: Fset.fset (Seq.seq t_T)) : Fset.fset (Seq.seq t_T) =
+  unions_T s (fun (x: t_T) -> map_Seq_T ss (fun (xs: Seq.seq t_T) -> cons_T xs x))
 
 axiom cons_T_spec:
-  forall s: Fset.fset t_T, ss: Fset.fset (Seq.seq t_T) [cons_T s ss]. forall xs: Seq.seq t_T. contains_Seq_T (cons_T s ss) xs
+  forall s: Fset.fset t_T, ss: Fset.fset (Seq.seq t_T) [cons_T'0 s ss]. forall xs: Seq.seq t_T. contains_Seq_T (cons_T'0 s ss) xs
       = (0 < Seq.length xs /\ contains_T'0 s (Seq.get xs 0) /\ contains_Seq_T ss (tail_T xs))
 
 meta "compute_max_steps" 1000000
@@ -101,11 +101,11 @@ goal vc_replicate_T: ge_log_Int n 0
       /\ ([@expl:variant decreases] well_founded_relation_Int n (n - 1)))
     /\ (([@stop_split] [@expl:replicate ensures] forall xs: Seq.seq t_T. contains_Seq_T (replicate_T self (n - 1)) xs
         = (Seq.length xs = n - 1 /\ (forall x: t_T. contains_T xs x -> contains_T'0 self x)))
-    -> ([@stop_split] [@expl:cons ensures] forall xs: Seq.seq t_T. contains_Seq_T (cons_T self (replicate_T self (n
+    -> ([@stop_split] [@expl:cons ensures] forall xs: Seq.seq t_T. contains_Seq_T (cons_T'0 self (replicate_T self (n
           - 1))) xs
         = (0 < Seq.length xs
         /\ contains_T'0 self (Seq.get xs 0) /\ contains_Seq_T (replicate_T self (n - 1)) (tail_T xs)))
-    -> ([@stop_split] [@expl:replicate ensures] forall xs: Seq.seq t_T. contains_Seq_T (cons_T self (replicate_T self (n
+    -> ([@stop_split] [@expl:replicate ensures] forall xs: Seq.seq t_T. contains_Seq_T (cons_T'0 self (replicate_T self (n
         - 1))) xs
       = (Seq.length xs = n /\ (forall x: t_T. contains_T xs x -> contains_T'0 self x))))
   )

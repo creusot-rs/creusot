@@ -53,14 +53,14 @@ function index_Seq_T'0 [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom
 
 meta "rewrite_def" function index_Seq_T'0
 
-let split_off_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (mid: int) (return (x: Seq.seq t_T)) =
-{[@stop_split] [@expl:split_off_ghost_T requires] ([@stop_split] [@expl:split_off_ghost 'self' type invariant] inv_refmut_Seq_T self)
-  /\ ([@stop_split] [@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current)}
+let split_off_T (self: MutBorrow.t (Seq.seq t_T)) (mid: int) (return (x: Seq.seq t_T)) =
+{[@stop_split] [@expl:split_off_T requires] ([@stop_split] [@expl:split_off 'self' type invariant] inv_refmut_Seq_T self)
+  /\ ([@stop_split] [@expl:split_off requires] 0 <= mid /\ mid <= Seq.length self.current)}
   any
   [ return (result: Seq.seq t_T) ->
-  {[@stop_split] [@expl:split_off_ghost_T ensures] ([@stop_split] [@expl:split_off_ghost result type invariant] inv_Seq_T result)
-    /\ ([@stop_split] [@expl:split_off_ghost ensures #0] self.final = index_Seq_T self.current { end' = mid })
-    /\ ([@stop_split] [@expl:split_off_ghost ensures #1] result = index_Seq_T'0 self.current { start = mid })}
+  {[@stop_split] [@expl:split_off_T ensures] ([@stop_split] [@expl:split_off result type invariant] inv_Seq_T result)
+    /\ ([@stop_split] [@expl:split_off ensures #0] self.final = index_Seq_T self.current { end' = mid })
+    /\ ([@stop_split] [@expl:split_off ensures #1] result = index_Seq_T'0 self.current { start = mid })}
     (! return {result}) ]
 
 type t_Option_T = None | Some t_T
@@ -79,12 +79,12 @@ meta "rewrite_def" predicate gt_log_Int
 
 function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
 
-let pop_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
-{[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_T self}
+let pop_front_T (self: MutBorrow.t (Seq.seq t_T)) (return (x: t_Option_T)) =
+{[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_Seq_T self}
   any
   [ return (result: t_Option_T) ->
-  {[@stop_split] [@expl:pop_front_ghost_T ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_T result)
-    /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
+  {[@stop_split] [@expl:pop_front_T ensures] ([@stop_split] [@expl:pop_front result type invariant] inv_Option_T result)
+    /\ ([@stop_split] [@expl:pop_front ensures] match result with
       | None -> self.current = (Seq.empty: Seq.seq t_T) /\ self.current = self.final
       | Some r -> gt_log_Int (Seq.length self.current) 0
       /\ r = Seq.get self.current 0 /\ self.final = tail_T self.current
@@ -128,11 +128,11 @@ let remove_T (self: MutBorrow.t (Seq.seq t_T)) (index: int) (return (x: t_T)) =
           [ &_13 <- _bor ] -{inv_Seq_T _bor.final}-
           [ &self <- { self with current = _bor.final } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T self.current} any) ]
-    | s1 = split_off_ghost_T {_13} {index} (fun (_x: Seq.seq t_T) -> [ &right <- _x ] s2)
+    | s1 = split_off_T {_13} {index} (fun (_x: Seq.seq t_T) -> [ &right <- _x ] s2)
     | s2 = MutBorrow.borrow_mut <Seq.seq t_T> {right}
         (fun (_bor: MutBorrow.t (Seq.seq t_T)) -> [ &_17 <- _bor ] -{inv_Seq_T _bor.final}- [ &right <- _bor.final ] s3)
       [ _ck -> (! {[@expl:type invariant] inv_Seq_T right} any) ]
-    | s3 = pop_front_ghost_T {_17} (fun (_x: t_Option_T) -> [ &_16 <- _x ] s4)
+    | s3 = pop_front_T {_17} (fun (_x: t_Option_T) -> [ &_16 <- _x ] s4)
     | s4 = unwrap_T {_16} (fun (_x: t_T) -> [ &result <- _x ] s5)
     | s5 = MutBorrow.borrow_final <Seq.seq t_T> {self.current} {MutBorrow.get_id self}
         (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->

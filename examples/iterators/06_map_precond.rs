@@ -59,7 +59,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v, self.produced)) };
-                let produced = snapshot! { self.produced.push_back(v) };
+                let produced = snapshot! { self.produced.snoc(v) };
                 let r = (self.func)(v, self.produced);
                 self.produced = produced;
                 snapshot! { Self::produces_one_invariant };
@@ -116,12 +116,12 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
     fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                #[trigger(iter.produces(s.push_back(e1).push_back(e2), i),(*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b))]
+                #[trigger(iter.produces(s.snoc(e1).snoc(e2), i),(*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b))]
                 inv(s) && inv(e1) && inv(e2) && inv(f) ==>
                 func.hist_inv(*f) ==>
-                iter.produces(s.push_back(e1).push_back(e2), i) ==>
+                iter.produces(s.snoc(e1).snoc(e2), i) ==>
                 (*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b) ==>
-                (^f).precondition((e2, Snapshot::new(produced.concat(s).push_back(e1))))
+                (^f).precondition((e2, Snapshot::new(produced.concat(s).snoc(e1))))
         }
     }
 
@@ -131,9 +131,9 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 inv(s) && inv(e1) && inv(e2) && inv(f) ==>
                 func.hist_inv(*f) ==>
-                iter.produces(s.push_back(e1).push_back(e2), i) ==>
+                iter.produces(s.snoc(e1).snoc(e2), i) ==>
                 (*f).postcondition_mut((e1, Snapshot::new(s)), ^f, b) ==>
-                (^f).precondition((e2, Snapshot::new(s.push_back(e1))))
+                (^f).precondition((e2, Snapshot::new(s.snoc(e1))))
         }
     }
 
@@ -153,13 +153,13 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
     #[requires(*f == self.func)]
     #[requires((*f).postcondition_mut((e, self.produced), ^f, r) )]
-    #[ensures(Self::preservation_inv(iter, ^f, self.produced.push_back(e)))]
-    #[ensures(Self::next_precondition(iter, ^f, self.produced.push_back(e)))]
+    #[ensures(Self::preservation_inv(iter, ^f, self.produced.snoc(e)))]
+    #[ensures(Self::next_precondition(iter, ^f, self.produced.snoc(e)))]
     fn produces_one_invariant(self, e: I::Item, r: B, f: &mut F, iter: I) {
         proof_assert! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, i: I>
-                iter.produces(s.push_back(e1).push_back(e2), i) ==>
-                self.iter.produces(Seq::singleton(e).concat(s).push_back(e1).push_back(e2), i)
+                iter.produces(s.snoc(e1).snoc(e2), i) ==>
+                self.iter.produces(Seq::singleton(e).concat(s).snoc(e1).snoc(e2), i)
         }
     }
 
@@ -171,7 +171,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
                 #[trigger((*f).postcondition_mut((e, self.produced), ^f, visited))]
                 *f == self.func && ^f == succ.func
                 && self.iter.produces(Seq::singleton(e), succ.iter)
-                && succ.produced.inner() == self.produced.push_back(e)
+                && succ.produced.inner() == self.produced.snoc(e)
                 && (*f).postcondition_mut((e, self.produced), ^f, visited)
         }
     }

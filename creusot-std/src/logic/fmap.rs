@@ -575,7 +575,7 @@ impl<K, V> IteratorSpec for Iter<K, V> {
             // We cannot visit the same key twice
             (forall<i, j> 0 <= i && i < j && j < visited.len() ==> visited[i].0 != visited[j].0) &&
             // If a key-value is visited, it was in `self` but not in `o`
-            (forall<k, v, i> visited.get(i) == Some((k, v)) ==> !o@.contains(&k) && self@.get(&k) == Some(&v)) &&
+            (forall<k, v, i> visited.get(i) == Some(&(k, v)) ==> !o@.contains(&k) && self@.get(&k) == Some(&v)) &&
             // Helper for the length
             self@.len() == visited.len() + o@.len() &&
             // else, the key-value is the same in `self` and `o`

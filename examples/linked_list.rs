@@ -52,7 +52,7 @@ impl<T> List<T> {
     }
 
     #[check(terminates)]
-    #[ensures((^self)@ == (*self)@.push_back(value))]
+    #[ensures((^self)@ == (*self)@.snoc(value))]
     pub fn push_back(&mut self, value: T) {
         let link = Box::new(Link { value, next: std::ptr::null() });
         let (link_ptr, link_own) = Perm::from_box(link);
@@ -64,38 +64,38 @@ impl<T> List<T> {
                 Perm::as_mut(
                     self.last as *mut Link<T>,
                     ghost! {
-                        let off = self.seq.len_ghost() - 1int;
-                        self.seq.get_mut_ghost(off).unwrap()
+                        let off = self.seq.len() - 1int;
+                        self.seq.get_mut(off).unwrap()
                     },
                 )
             };
             link_last.next = link_ptr;
             self.last = link_ptr;
         }
-        ghost! { self.seq.push_back_ghost(link_own.into_inner()) };
+        ghost! { self.seq.push_back(link_own.into_inner()) };
     }
 
     #[check(terminates)]
-    #[ensures((^self)@ == (*self)@.push_front(value))]
+    #[ensures((^self)@ == (*self)@.cons(value))]
     pub fn push_front(&mut self, value: T) {
         let (link_ptr, link_own) = Perm::new(Link { value, next: self.first });
         self.first = link_ptr;
         if self.last.is_null() {
             self.last = link_ptr;
         }
-        ghost! { self.seq.push_front_ghost(link_own.into_inner()) };
+        ghost! { self.seq.push_front(link_own.into_inner()) };
     }
 
     #[check(terminates)]
     #[ensures(match result {
         None => (*self)@ == Seq::empty() && (^self)@ == Seq::empty(),
-        Some(x) => (*self)@.len() > 0 && x == (*self)@[0] && (^self)@ == (*self)@.pop_front()
+        Some(x) => (*self)@.len() > 0 && x == (*self)@[0] && (^self)@ == (*self)@.pop_first()
     })]
     pub fn pop_front(&mut self) -> Option<T> {
         if self.first.is_null() {
             return None;
         }
-        let own = ghost! { self.seq.pop_front_ghost().unwrap() };
+        let own = ghost! { self.seq.pop_front().unwrap() };
         let link = unsafe { *Perm::to_box(self.first as *mut Link<T>, own) };
         self.first = link.next;
         if self.first.is_null() {

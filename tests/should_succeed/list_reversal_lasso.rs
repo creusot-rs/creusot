@@ -116,7 +116,7 @@ impl Memory {
 
     #[requires(s.len() > 0)]
     #[requires(self.loop_(l, *s))]
-    #[ensures((^self).loop_(result, s.subsequence(1, s.len()).reverse().push_front(s[0])))]
+    #[ensures((^self).loop_(result, s.subsequence(1, s.len()).reverse().cons(s[0])))]
     pub fn list_reversal_loop(&mut self, mut l: Ptr, s: Snapshot<Seq<Ptr>>) -> Ptr {
         let mut r = NULL;
         let mut n = snapshot! { 0 };
@@ -136,7 +136,7 @@ impl Memory {
         }
 
         proof_assert! { forall<i> 0 <= i && i < s.len() ==>
-            s.subsequence(1, s.len()).reverse().push_front(s[0])[i] ==
+            s.subsequence(1, s.len()).reverse().cons(s[0])[i] ==
         if i == 0 { s[0] } else { s.reverse()[i-1] } };
         return r;
     }
@@ -242,7 +242,7 @@ impl Memory {
                 match Self::find_ptr_in_seq(s, 0, last@) {
                     None => {
                         if Self::pigeon(s, self.0@.len()) {
-                            self.find_lasso_aux(first, self[last], s.push_back(last))
+                            self.find_lasso_aux(first, self[last], s.snoc(last))
                         } else {
                             (s, None) /* Dummy */
                         }

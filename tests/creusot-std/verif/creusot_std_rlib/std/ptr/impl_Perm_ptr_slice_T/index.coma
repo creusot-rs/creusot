@@ -218,17 +218,14 @@ function index_Seq_ref_Perm_ptr_T'0 [@inline:trivial] (self: Seq.seq t_Perm_ptr_
 
 meta "rewrite_def" function index_Seq_ref_Perm_ptr_T'0
 
-let split_off_ghost_ref_Perm_ptr_T (self: MutBorrow.t (Seq.seq t_Perm_ptr_T)) (mid: int)
-  (return (x: Seq.seq t_Perm_ptr_T)) =
-{[@stop_split] [@expl:split_off_ghost_ref_Perm_ptr_T requires] ([@stop_split] [@expl:split_off_ghost 'self' type invariant] inv_refmut_Seq_ref_Perm_ptr_T self)
-  /\ ([@stop_split] [@expl:split_off_ghost requires] 0 <= mid /\ mid <= Seq.length self.current)}
+let split_off_ref_Perm_ptr_T (self: MutBorrow.t (Seq.seq t_Perm_ptr_T)) (mid: int) (return (x: Seq.seq t_Perm_ptr_T)) =
+{[@stop_split] [@expl:split_off_ref_Perm_ptr_T requires] ([@stop_split] [@expl:split_off 'self' type invariant] inv_refmut_Seq_ref_Perm_ptr_T self)
+  /\ ([@stop_split] [@expl:split_off requires] 0 <= mid /\ mid <= Seq.length self.current)}
   any
   [ return (result: Seq.seq t_Perm_ptr_T) ->
-  {[@stop_split] [@expl:split_off_ghost_ref_Perm_ptr_T ensures] ([@stop_split] [@expl:split_off_ghost result type invariant] inv_Seq_ref_Perm_ptr_T result)
-    /\ ([@stop_split] [@expl:split_off_ghost ensures #0] self.final
-      = index_Seq_ref_Perm_ptr_T self.current { end' = mid })
-    /\ ([@stop_split] [@expl:split_off_ghost ensures #1] result
-    = index_Seq_ref_Perm_ptr_T'0 self.current { start = mid })}
+  {[@stop_split] [@expl:split_off_ref_Perm_ptr_T ensures] ([@stop_split] [@expl:split_off result type invariant] inv_Seq_ref_Perm_ptr_T result)
+    /\ ([@stop_split] [@expl:split_off ensures #0] self.final = index_Seq_ref_Perm_ptr_T self.current { end' = mid })
+    /\ ([@stop_split] [@expl:split_off ensures #1] result = index_Seq_ref_Perm_ptr_T'0 self.current { start = mid })}
     (! return {result}) ]
 
 type t_Option_ref_Perm_ptr_T = None | Some t_Perm_ptr_T
@@ -248,12 +245,12 @@ meta "rewrite_def" predicate gt_log_Int
 
 function tail_ref_Perm_ptr_T (self: Seq.seq t_Perm_ptr_T) : Seq.seq t_Perm_ptr_T = Seq.([..]) self 1 (Seq.length self)
 
-let pop_front_ghost_ref_Perm_ptr_T (self: MutBorrow.t (Seq.seq t_Perm_ptr_T)) (return (x: t_Option_ref_Perm_ptr_T)) =
-{[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_ref_Perm_ptr_T self}
+let pop_front_ref_Perm_ptr_T (self: MutBorrow.t (Seq.seq t_Perm_ptr_T)) (return (x: t_Option_ref_Perm_ptr_T)) =
+{[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_Seq_ref_Perm_ptr_T self}
   any
   [ return (result: t_Option_ref_Perm_ptr_T) ->
-  {[@stop_split] [@expl:pop_front_ghost_ref_Perm_ptr_T ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_ref_Perm_ptr_T result)
-    /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
+  {[@stop_split] [@expl:pop_front_ref_Perm_ptr_T ensures] ([@stop_split] [@expl:pop_front result type invariant] inv_Option_ref_Perm_ptr_T result)
+    /\ ([@stop_split] [@expl:pop_front ensures] match result with
       | None -> self.current = (Seq.empty: Seq.seq t_Perm_ptr_T) /\ self.current = self.final
       | Some r -> gt_log_Int (Seq.length self.current) 0
       /\ r = Seq.get self.current 0 /\ self.final = tail_ref_Perm_ptr_T self.current
@@ -283,12 +280,12 @@ let index_T (self: t_Perm_ptr_slice_T) (index: int) (return (x: t_Perm_ptr_T)) =
         (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_T)) ->
           [ &_18 <- _bor ] -{inv_Seq_ref_Perm_ptr_T _bor.final}-
           [ &r <- _bor.final ] s2) [ _ck -> (! {[@expl:type invariant] inv_Seq_ref_Perm_ptr_T r} any) ]
-    | s2 = split_off_ghost_ref_Perm_ptr_T {_18} {index} (fun (_x: Seq.seq t_Perm_ptr_T) -> [ &_17 <- _x ] s3)
+    | s2 = split_off_ref_Perm_ptr_T {_18} {index} (fun (_x: Seq.seq t_Perm_ptr_T) -> [ &_17 <- _x ] s3)
     | s3 = MutBorrow.borrow_mut <Seq.seq t_Perm_ptr_T> {_17}
         (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_T)) ->
           [ &_16 <- _bor ] -{inv_Seq_ref_Perm_ptr_T _bor.final}-
           [ &_17 <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Seq_ref_Perm_ptr_T _17} any) ]
-    | s4 = pop_front_ghost_ref_Perm_ptr_T {_16} (fun (_x: t_Option_ref_Perm_ptr_T) -> [ &_15 <- _x ] s5)
+    | s4 = pop_front_ref_Perm_ptr_T {_16} (fun (_x: t_Option_ref_Perm_ptr_T) -> [ &_15 <- _x ] s5)
     | s5 = unwrap_ref_Perm_ptr_T {_15} (fun (_x: t_Perm_ptr_T) -> [ &_14 <- _x ] s6)
     | s6 = [ &_ret <- _14 ] s7
     | s7 = return {_ret} ] ]

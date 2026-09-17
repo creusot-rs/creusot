@@ -147,7 +147,7 @@ mod imp {
                 &unsafe {
                     Perm::as_ref(
                         self.tail,
-                        ghost!(&*self.permissions[self.permissions.len_ghost() - 1int]),
+                        ghost!(&*self.permissions[self.permissions.len() - 1int]),
                     )
                 }
                 .data,
@@ -197,7 +197,7 @@ mod imp {
                     Perm::as_mut(
                         self.tail.cast_mut(),
                         ghost! {
-                            let last = self.permissions.len_ghost() - 1int;
+                            let last = self.permissions.len() - 1int;
                             &mut *self.permissions[last]
                         },
                     )
@@ -207,7 +207,7 @@ mod imp {
         }
 
         /// Add an element to the front of the list
-        #[ensures((^self)@ == (*self)@.push_front(value))]
+        #[ensures((^self)@ == (*self)@.cons(value))]
         pub fn push_front(&mut self, value: T) {
             let (new_head, perm) = Perm::new(Node { data: value, next: self.head, prev: null() });
             if self.head.is_null() {
@@ -222,12 +222,12 @@ mod imp {
                 }
             }
             ghost! {
-                self.permissions.push_front_ghost(perm.into_inner())
+                self.permissions.push_front(perm.into_inner())
             };
         }
 
         /// Add an element to the end of the list
-        #[ensures((^self)@ == (*self)@.push_back(value))]
+        #[ensures((^self)@ == (*self)@.snoc(value))]
         pub fn push_back(&mut self, value: T) {
             let (new_tail, perm) = Perm::new(Node { data: value, next: null(), prev: self.tail });
             if self.tail.is_null() {
@@ -238,7 +238,7 @@ mod imp {
                     let tail = Perm::as_mut(
                         self.tail.cast_mut(),
                         ghost! {
-                            let idx = self.permissions.len_ghost() - 1int;
+                            let idx = self.permissions.len() - 1int;
                             &mut self.permissions[idx]
                         },
                     );
@@ -247,7 +247,7 @@ mod imp {
                 }
             }
             ghost! {
-                self.permissions.push_back_ghost(perm.into_inner())
+                self.permissions.push_back(perm.into_inner())
             };
         }
 
@@ -255,13 +255,13 @@ mod imp {
         #[ensures(if self@.len() == 0 {
             result == None && ^self == *self
         } else {
-           result == Some(self@[0]) && (^self)@ == (*self)@.pop_front()
+           result == Some(self@[0]) && (^self)@ == (*self)@.pop_first()
         })]
         pub fn pop_front(&mut self) -> Option<T> {
             if self.head.is_null() {
                 return None;
             }
-            let head_perm = ghost!(self.permissions.pop_front_ghost().unwrap());
+            let head_perm = ghost!(self.permissions.pop_front().unwrap());
             let elem = self.head;
             self.head = unsafe { Perm::as_ref(elem, ghost!(&**head_perm)) }.next;
             if !self.head.is_null() {
@@ -279,13 +279,13 @@ mod imp {
         #[ensures(if self@.len() == 0 {
             result == None && ^self == *self
         } else {
-           result == Some(self@[self@.len() - 1]) && (^self)@ == (*self)@.pop_back()
+           result == Some(self@[self@.len() - 1]) && (^self)@ == (*self)@.pop_last()
         })]
         pub fn pop_back(&mut self) -> Option<T> {
             if self.tail.is_null() {
                 return None;
             }
-            let tail_perm = ghost!(self.permissions.pop_back_ghost().unwrap());
+            let tail_perm = ghost!(self.permissions.pop_back().unwrap());
             let elem = self.tail;
             self.tail = unsafe { Perm::as_ref(elem, ghost!(&**tail_perm)) }.prev;
             if !self.tail.is_null() {
@@ -315,11 +315,7 @@ mod imp {
         #[ensures(result.list() == self)]
         #[ensures(result.pos() == self@.len() - 1)]
         pub fn cursor_tail<'a>(&'a mut self) -> Cursor<'a, T> {
-            Cursor {
-                pos: ghost!(self.permissions.len_ghost() - 1int),
-                current: self.tail,
-                list: self,
-            }
+            Cursor { pos: ghost!(self.permissions.len() - 1int), current: self.tail, list: self }
         }
     }
 
@@ -358,7 +354,7 @@ mod imp {
         #[ensures(*self.pos == self.list.permissions.len() - 1)]
         fn ghost_current_at_last(&mut self) {
             ghost! {
-                let last = self.list.permissions.len_ghost() - 1int;
+                let last = self.list.permissions.len() - 1int;
                 if *self.pos != last {
                     let (perm_curr, perm_head) = &mut self.list.permissions[(*self.pos, last)];
                     perm_curr.disjoint_lemma(perm_head); // derive a contradiction
@@ -467,14 +463,14 @@ mod imp {
             (^self).list()@ == Seq::singleton(value)
         } else {
             (^self).pos() == self.pos() &&
-            (^self).list()@ == self.list()@.insert(self.pos(), value)
+            (^self).list()@ == self.list()@.add(self.pos(), value)
         })]
         #[ensures(^(^self).list() == ^(*self).list())]
         pub fn insert_before(&mut self, value: T) {
             if self.list.head.is_null() {
                 let (ptr, perm) = Perm::new(Node { data: value, next: null(), prev: null() });
                 ghost! {
-                    self.list.permissions.push_back_ghost(perm.into_inner());
+                    self.list.permissions.push_back(perm.into_inner());
                 };
                 self.list.head = ptr;
                 self.list.tail = ptr;
@@ -495,7 +491,7 @@ mod imp {
                     self.list.head = ptr;
                     self.current = ptr;
                     ghost! {
-                        self.list.permissions.push_front_ghost(perm.into_inner());
+                        self.list.permissions.push_front(perm.into_inner());
                     };
                 } else {
                     let current = unsafe {
@@ -519,7 +515,7 @@ mod imp {
                     .next = ptr;
 
                     ghost! {
-                        self.list.permissions.insert_ghost(*self.pos, perm.into_inner());
+                        self.list.permissions.insert(*self.pos, perm.into_inner());
                     };
                 }
             }
@@ -535,14 +531,14 @@ mod imp {
             (^self).list()@ == Seq::singleton(value)
         } else {
             (^self).pos() == self.pos() &&
-            (^self).list()@ == self.list()@.insert(self.pos() + 1, value)
+            (^self).list()@ == self.list()@.add(self.pos() + 1, value)
         })]
         #[ensures(^(^self).list() == ^(*self).list())]
         pub fn insert_after(&mut self, value: T) {
             if self.list.head.is_null() {
                 let (ptr, perm) = Perm::new(Node { data: value, next: null(), prev: null() });
                 ghost! {
-                    self.list.permissions.push_back_ghost(perm.into_inner());
+                    self.list.permissions.push_back(perm.into_inner());
                 };
                 self.list.head = ptr;
                 self.list.tail = ptr;
@@ -563,7 +559,7 @@ mod imp {
                     current.next = ptr;
                     self.list.tail = ptr;
                     ghost! {
-                        self.list.permissions.push_back_ghost(perm.into_inner());
+                        self.list.permissions.push_back(perm.into_inner());
                     };
                 } else {
                     let current = unsafe {
@@ -586,7 +582,7 @@ mod imp {
                     .prev = ptr;
 
                     ghost! {
-                        self.list.permissions.insert_ghost(*self.pos + 1int, perm.into_inner());
+                        self.list.permissions.insert(*self.pos + 1int, perm.into_inner());
                     };
                 }
             }

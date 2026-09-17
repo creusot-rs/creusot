@@ -772,7 +772,7 @@ impl<T> Perm<*const [T]> {
     #[ensures(*result.val() == self.val()@[index])]
     pub fn index(&self, index: Int) -> &Perm<*const T> {
         let mut r = self.elements();
-        r.split_off_ghost(index).pop_front_ghost().unwrap()
+        r.split_off(index).pop_front().unwrap()
     }
 
     /// Index a `&mut Perm<*const [T]>` into a `&mut Perm<*const T>`.
@@ -787,8 +787,8 @@ impl<T> Perm<*const [T]> {
         let mut r = self.elements_mut();
         proof_assert! { forall<k> index < k && k < r.len() ==> r[k].val() == r[index..].tail()[k-index-1].val() };
         let _r = snapshot! { r };
-        let result = r.split_off_ghost(index).pop_front_ghost().unwrap();
-        proof_assert! { forall<i> 0 <= i && i < index ==> r[i] == _r[i] }; // Unfolding of ensures of split_off_ghost r == _r[..index]
+        let result = r.split_off(index).pop_front().unwrap();
+        proof_assert! { forall<i> 0 <= i && i < index ==> r[i] == _r[i] }; // Unfolding of ensures of split_off r == _r[..index]
         result
     }
 

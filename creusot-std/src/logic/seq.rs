@@ -77,7 +77,7 @@ impl<T> Seq<T> {
     ///
     /// If `ix` is out of bounds, return `None`.
     #[logic(open)]
-    pub fn get(self, ix: Int) -> Option<T> {
+    pub fn get_logic(self, ix: Int) -> Option<T> {
         if 0 <= ix && ix < self.len() { Some(self.index_logic(ix)) } else { None }
     }
 
@@ -162,7 +162,7 @@ impl<T> Seq<T> {
 
     /// Alias for [`Self::tail`].
     #[logic(open)]
-    pub fn pop_front(self) -> Self {
+    pub fn pop_first(self) -> Self {
         self.tail()
     }
 
@@ -175,12 +175,12 @@ impl<T> Seq<T> {
     /// ```
     /// # use creusot_std::prelude::*;
     /// let s = snapshot!(seq![5, 10, 15]);
-    /// proof_assert!(s.pop_back() == seq![5, 10]);
-    /// proof_assert!(s.pop_back().pop_back() == Seq::singleton(5));
-    /// proof_assert!(s.pop_back().pop_back().pop_back() == Seq::empty());
+    /// proof_assert!(s.pop_last() == seq![5, 10]);
+    /// proof_assert!(s.pop_last().pop_last() == Seq::singleton(5));
+    /// proof_assert!(s.pop_last().pop_last().pop_last() == Seq::empty());
     /// ```
     #[logic(open)]
-    pub fn pop_back(self) -> Self {
+    pub fn pop_last(self) -> Self {
         self.subsequence(0, self.len() - 1)
     }
 
@@ -195,7 +195,7 @@ impl<T> Seq<T> {
     /// ```
     #[logic]
     #[builtin("seq.Seq.length")]
-    pub fn len(self) -> Int {
+    pub fn len_logic(self) -> Int {
         dead
     }
 
@@ -237,7 +237,7 @@ impl<T> Seq<T> {
     #[doc(hidden)]
     #[logic]
     #[builtin("seq.Seq.cons")]
-    pub fn cons(_: T, _: Self) -> Self {
+    pub fn cons2(_: T, _: Self) -> Self {
         dead
     }
 
@@ -247,13 +247,13 @@ impl<T> Seq<T> {
     ///
     /// ```
     /// let s = snapshot!(Seq::singleton(1));
-    /// let s2 = snapshot!(s.push_front(2));
+    /// let s2 = snapshot!(s.cons(2));
     /// proof_assert!(s2[0] == 2);
     /// proof_assert!(s2[1] == 1);
     /// ```
     #[logic(open, inline)]
-    pub fn push_front(self, x: T) -> Self {
-        Self::cons(x, self)
+    pub fn cons(self, x: T) -> Self {
+        Self::cons2(x, self)
     }
 
     /// Returns a new sequence, where `x` has been appended to `self`.
@@ -262,13 +262,13 @@ impl<T> Seq<T> {
     ///
     /// ```
     /// let s = snapshot!(Seq::singleton(1));
-    /// let s2 = snapshot!(s.push_back(2));
+    /// let s2 = snapshot!(s.snoc(2));
     /// proof_assert!(s2[0] == 1);
     /// proof_assert!(s2[1] == 2);
     /// ```
     #[logic]
     #[builtin("seq.Seq.snoc")]
-    pub fn push_back(self, x: T) -> Self {
+    pub fn snoc(self, x: T) -> Self {
         let _ = x;
         dead
     }
@@ -303,7 +303,7 @@ impl<T> Seq<T> {
         if self.len() == 0 {
             Seq::empty()
         } else {
-            self.tail().map(m).push_front(m.get(*self.index_logic_unsized(0)))
+            self.tail().map(m).cons(m.get(*self.index_logic_unsized(0)))
         }
     }
 
@@ -352,11 +352,11 @@ impl<T> Seq<T> {
         }
     )]
     #[variant(position)]
-    pub fn insert(self, position: Int, value: T) -> Self {
+    pub fn add(self, position: Int, value: T) -> Self {
         if position == 0 {
-            self.push_front(value)
+            self.cons(value)
         } else {
-            self.pop_front().insert(position - 1, value).push_front(self[0])
+            self.pop_first().add(position - 1, value).cons(self[0])
         }
     }
 
@@ -571,17 +571,17 @@ impl<T> Seq<T> {
     ///
     /// let mut s = Seq::new();
     /// ghost! {
-    ///     s.push_back_ghost(1);
-    ///     s.push_back_ghost(2);
-    ///     s.push_back_ghost(3);
-    ///     let len = s.len_ghost();
+    ///     s.push_back(1);
+    ///     s.push_back(2);
+    ///     s.push_back(3);
+    ///     let len = s.len();
     ///     proof_assert!(len == 3);
     /// };
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[logic_alias(Self::len(*self))]
-    pub fn len_ghost(&self) -> Int {
+    #[logic_alias(self.len_logic())]
+    pub fn len(&self) -> Int {
         panic!()
     }
 
@@ -594,9 +594,9 @@ impl<T> Seq<T> {
     /// #[check(ghost)]
     /// #[requires(s.len() == 0)]
     /// pub fn foo(mut s: Seq<i32>) {
-    ///     assert!(s.is_empty_ghost());
-    ///     s.push_back_ghost(1i32);
-    ///     assert!(!s.is_empty_ghost());
+    ///     assert!(s.is_empty());
+    ///     s.push_back(1i32);
+    ///     assert!(!s.is_empty());
     /// }
     /// ghost! {
     ///     foo(Seq::new().into_inner())
@@ -605,7 +605,7 @@ impl<T> Seq<T> {
     #[trusted]
     #[check(ghost)]
     #[ensures(result == (self.len() == 0))]
-    pub fn is_empty_ghost(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         panic!()
     }
 
@@ -617,16 +617,16 @@ impl<T> Seq<T> {
     ///
     /// let mut s = Seq::new();
     /// ghost! {
-    ///     s.push_front_ghost(1);
-    ///     s.push_front_ghost(2);
-    ///     s.push_front_ghost(3);
+    ///     s.push_front(1);
+    ///     s.push_front(2);
+    ///     s.push_front(3);
     ///     proof_assert!(s[0] == 3i32 && s[1] == 2i32 && s[2] == 1i32);
     /// };
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(^self == self.push_front(x))]
-    pub fn push_front_ghost(&mut self, x: T) {
+    #[ensures(^self == self.cons(x))]
+    pub fn push_front(&mut self, x: T) {
         let _ = x;
         panic!()
     }
@@ -639,16 +639,16 @@ impl<T> Seq<T> {
     ///
     /// let mut s = Seq::new();
     /// ghost! {
-    ///     s.push_back_ghost(1);
-    ///     s.push_back_ghost(2);
-    ///     s.push_back_ghost(3);
+    ///     s.push_back(1);
+    ///     s.push_back(2);
+    ///     s.push_back(3);
     ///     proof_assert!(s[0] == 1i32 && s[1] == 2i32 && s[2] == 3i32);
     /// };
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(^self == self.push_back(x))]
-    pub fn push_back_ghost(&mut self, x: T) {
+    #[ensures(^self == self.snoc(x))]
+    pub fn push_back(&mut self, x: T) {
         let _ = x;
         panic!()
     }
@@ -661,23 +661,23 @@ impl<T> Seq<T> {
     ///
     /// let mut s = Seq::new();
     /// ghost! {
-    ///     s.push_back_ghost(10);
-    ///     s.push_back_ghost(40);
-    ///     s.push_back_ghost(30);
-    ///     let get1 = s.get_ghost(1int);
-    ///     let get2 = s.get_ghost(3int);
+    ///     s.push_back(10);
+    ///     s.push_back(40);
+    ///     s.push_back(30);
+    ///     let get1 = s.get(1int);
+    ///     let get2 = s.get(3int);
     ///     proof_assert!(get1 == Some(&40i32));
     ///     proof_assert!(get2 == None);
     /// };
     /// ```
     #[check(ghost)]
-    #[ensures(match self.get(index) {
-        None => result == None,
-        Some(v) => result == Some(&v),
+    #[logic_alias(match self.get_logic(index) {
+        None => None,
+        Some(v) => Some(&v)
     })]
-    pub fn get_ghost(&self, index: Int) -> Option<&T> {
+    pub fn get(&self, index: Int) -> Option<&T> {
         // FIXME: we can't write 0 outside of a `ghost!` block
-        if index - index <= index && index < self.len_ghost() {
+        if index - index <= index && index < self.len() {
             Some(self.as_refs().extract(index))
         } else {
             None
@@ -693,10 +693,10 @@ impl<T> Seq<T> {
     /// let mut s = Seq::new();
     ///
     /// ghost! {
-    ///     s.push_back_ghost(0);
-    ///     s.push_back_ghost(1);
-    ///     s.push_back_ghost(2);
-    ///     if let Some(elem) = s.get_mut_ghost(1int) {
+    ///     s.push_back(0);
+    ///     s.push_back(1);
+    ///     s.push_back(2);
+    ///     if let Some(elem) = s.get_mut(1int) {
     ///         *elem = 42;
     ///     }
     ///     proof_assert!(s[0] == 0i32 && s[1] == 42i32 && s[2] == 2i32);
@@ -705,13 +705,13 @@ impl<T> Seq<T> {
     #[check(ghost)]
     #[ensures(match result {
         None => self.get(index) == None && *self == ^self,
-        Some(r) => self.get(index) == Some(*r) && ^r == (^self)[index],
+        Some(r) => self.get(index) == Some(&*r) && ^r == (^self)[index],
     })]
     #[ensures(forall<i> i != index ==> (*self).get(i) == (^self).get(i))]
     #[ensures((*self).len() == (^self).len())]
-    pub fn get_mut_ghost(&mut self, index: Int) -> Option<&mut T> {
+    pub fn get_mut(&mut self, index: Int) -> Option<&mut T> {
         // FIXME: we can't write 0 outside of a `ghost!` block
-        if index - index <= index && index < self.len_ghost() {
+        if index - index <= index && index < self.len() {
             Some(self.as_muts().extract(index))
         } else {
             None
@@ -729,26 +729,26 @@ impl<T> Seq<T> {
     ///
     /// let mut s = Seq::new();
     /// ghost! {
-    ///     s.push_back_ghost(0);
-    ///     s.push_back_ghost(1);
-    ///     s.push_back_ghost(2);
+    ///     s.push_back(0);
+    ///     s.push_back(1);
+    ///     s.push_back(2);
     ///     // s = [0, 1, 2]
     ///
-    ///     s.insert_ghost(0int, 10);
+    ///     s.insert(0int, 10);
     ///     // s = [10, 0, 1, 2]
-    ///     s.insert_ghost(2int, 11);
+    ///     s.insert(2int, 11);
     ///     // s = [10, 0, 11, 1, 2]
-    ///     s.insert_ghost(5int, 12);
+    ///     s.insert(5int, 12);
     ///     // s = [10, 0, 11, 1, 2, 12]
     /// };
     /// ```
     #[check(ghost)]
     #[requires(0 <= position && position <= self.len())]
-    #[ensures((^self) == self.insert(position, x))]
+    #[ensures((^self) == self.add(position, x))]
     #[variant(position)]
-    pub fn insert_ghost(&mut self, position: Int, x: T) {
-        let after = self.split_off_ghost(position);
-        self.push_back_ghost(x);
+    pub fn insert(&mut self, position: Int, x: T) {
+        let after = self.split_off(position);
+        self.push_back(x);
         self.extend(after);
     }
 
@@ -761,7 +761,7 @@ impl<T> Seq<T> {
     #[ensures(forall<i> 0 <= i && i < self.len() && i != index ==> resolve(self[i]))]
     pub fn extract(mut self, index: Int) -> T {
         proof_assert! { forall<i> index < i && i < self.len() ==> self[i] == self[index + 1..][i - index - 1] }
-        self.split_off_ghost(index).pop_front_ghost().unwrap()
+        self.split_off(index).pop_front().unwrap()
     }
 
     /// Remove an element from a sequence.
@@ -772,8 +772,8 @@ impl<T> Seq<T> {
     #[ensures(result == self[index])]
     #[ensures(^self == (*self).removed(index))]
     pub fn remove(&mut self, index: Int) -> T {
-        let mut right = self.split_off_ghost(index);
-        let result = right.pop_front_ghost().unwrap();
+        let mut right = self.split_off(index);
+        let result = right.pop_front().unwrap();
         self.extend(right);
         result
     }
@@ -794,8 +794,8 @@ impl<T> Seq<T> {
         let _final = snapshot! { self.concat(rhs) };
         #[variant(rhs.len())]
         #[invariant(self.concat(rhs) == *_final)]
-        while let Some(x) = rhs.pop_front_ghost() {
-            self.push_back_ghost(x)
+        while let Some(x) = rhs.pop_front() {
+            self.push_back(x)
         }
     }
 
@@ -807,10 +807,10 @@ impl<T> Seq<T> {
     ///
     /// let mut s = Seq::new();
     /// ghost! {
-    ///     s.push_back_ghost(1);
-    ///     s.push_back_ghost(2);
-    ///     s.push_back_ghost(3);
-    ///     let popped = s.pop_back_ghost();
+    ///     s.push_back(1);
+    ///     s.push_back(2);
+    ///     s.push_back(3);
+    ///     let popped = s.pop_back();
     ///     proof_assert!(popped == Some(3i32));
     ///     proof_assert!(s[0] == 1i32 && s[1] == 2i32);
     /// };
@@ -819,9 +819,9 @@ impl<T> Seq<T> {
     #[check(ghost)]
     #[ensures(match result {
         None => *self == Seq::empty() && *self == ^self,
-        Some(r) => *self == (^self).push_back(r)
+        Some(r) => *self == (^self).snoc(r)
     })]
-    pub fn pop_back_ghost(&mut self) -> Option<T> {
+    pub fn pop_back(&mut self) -> Option<T> {
         panic!()
     }
 
@@ -833,10 +833,10 @@ impl<T> Seq<T> {
     ///
     /// let mut s = Seq::new();
     /// ghost! {
-    ///     s.push_back_ghost(1);
-    ///     s.push_back_ghost(2);
-    ///     s.push_back_ghost(3);
-    ///     let popped = s.pop_front_ghost();
+    ///     s.push_back(1);
+    ///     s.push_back(2);
+    ///     s.push_back(3);
+    ///     let popped = s.pop_front();
     ///     proof_assert!(popped == Some(1i32));
     ///     proof_assert!(s[0] == 2i32 && s[1] == 3i32);
     /// };
@@ -847,7 +847,7 @@ impl<T> Seq<T> {
         None => *self == Seq::empty() && *self == ^self,
         Some(r) => (*self).len() > 0 && r == (*self)[0] && ^self == (*self).tail()
     })]
-    pub fn pop_front_ghost(&mut self) -> Option<T> {
+    pub fn pop_front(&mut self) -> Option<T> {
         panic!()
     }
 
@@ -859,17 +859,17 @@ impl<T> Seq<T> {
     ///
     /// let mut s = Seq::new();
     /// ghost! {
-    ///     s.push_back_ghost(1);
-    ///     s.push_back_ghost(2);
-    ///     s.push_back_ghost(3);
-    ///     s.clear_ghost();
+    ///     s.push_back(1);
+    ///     s.push_back(2);
+    ///     s.push_back(3);
+    ///     s.clear();
     ///     proof_assert!(s == Seq::empty());
     /// };
     /// ```
     #[trusted]
     #[check(ghost)]
     #[ensures(^self == Self::empty())]
-    pub fn clear_ghost(&mut self) {}
+    pub fn clear(&mut self) {}
 
     /// Split a sequence in two at the given index.
     #[trusted]
@@ -877,7 +877,7 @@ impl<T> Seq<T> {
     #[requires(0 <= mid && mid <= self.len())]
     #[ensures(^self == self[..mid])]
     #[ensures(result == self[mid..])]
-    pub fn split_off_ghost(&mut self, mid: Int) -> Self {
+    pub fn split_off(&mut self, mid: Int) -> Self {
         let _ = mid;
         panic!("ghost code")
     }
@@ -909,7 +909,7 @@ impl<T> core::ops::Index<Int> for Seq<T> {
     #[requires(0 <= index && index < self.len())]
     #[ensures(*result == self[index])]
     fn index(&self, index: Int) -> &Self::Output {
-        self.get_ghost(index).unwrap()
+        self.get(index).unwrap()
     }
 }
 impl<T> core::ops::IndexMut<Int> for Seq<T> {
@@ -919,7 +919,7 @@ impl<T> core::ops::IndexMut<Int> for Seq<T> {
     #[ensures(*result == (*self)[index] && ^result == (^self)[index])]
     #[ensures(forall<i> 0 <= i && i < self.len() && i != index ==> (*self)[i] == (^self)[i])]
     fn index_mut(&mut self, index: Int) -> &mut Self::Output {
-        self.get_mut_ghost(index).unwrap()
+        self.get_mut(index).unwrap()
     }
 }
 
@@ -979,7 +979,7 @@ impl<T: Plain> Plain for Seq<T> {
             #[invariant(forall<j> 0 <= j && j < i ==> res[j] == snap[j])]
             while i < len {
                 let elem: Snapshot<T> = snapshot!(snap[i]);
-                res.push_back_ghost(elem.into_ghost().into_inner());
+                res.push_back(elem.into_ghost().into_inner());
                 i = i + 1int;
             }
             res
@@ -1097,7 +1097,7 @@ impl<T> Iterator for Iter<T> {
         Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<T> {
-        self.0.pop_front_ghost()
+        self.0.pop_front()
     }
 }
 
@@ -1193,12 +1193,12 @@ impl<T> Seq<T> {
     pub fn flat_map_singleton<U>(x: T, f: Mapping<T, Seq<U>>) {}
 
     #[logic(open)]
-    #[ensures(self.push_back(x).flat_map(f) == self.flat_map(f).concat(f.get(x)))]
+    #[ensures(self.snoc(x).flat_map(f) == self.flat_map(f).concat(f.get(x)))]
     #[variant(self.len())]
     pub fn flat_map_push_back<U>(self, x: T, f: Mapping<T, Seq<U>>) {
         if self.len() > 0 {
             Self::flat_map_push_back::<U>(self.tail(), x, f);
-            proof_assert! { self.tail().push_back(x) == self.push_back(x).tail() }
+            proof_assert! { self.tail().snoc(x) == self.snoc(x).tail() }
         }
     }
 }

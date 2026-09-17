@@ -50,6 +50,8 @@ function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < S
     None
 
 
+type t_Option_ref_T = None'0 | Some'0 t_T
+
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
@@ -71,7 +73,19 @@ goal vc_set_produces_trans_T: set_produces_T a ab b
   -> ([@stop_split] [@expl:concat_contains ensures] forall a'0: Seq.seq t_T, b'0: Seq.seq t_T, x: t_T. contains_T (Seq.(++) a'0 b'0) x
         = contains_T a'0 x
       \/ contains_T b'0 x)
-  -> (let _ = concat_contains_T in (forall i: int, x: t_T. Seq.length ab <= i /\ get_T (Seq.(++) ab bc) i = Some x
-      -> contains_T bc x)
+  -> (let _ = concat_contains_T in (forall i: int, x: t_T. if Seq.length ab <= i then
+        match get_T (Seq.(++) ab bc) i with
+          | None -> true
+          | Some v -> true
+          end
+      else
+        true
+    )
+  /\ (forall i: int, x: t_T. Seq.length ab <= i
+        /\ match get_T (Seq.(++) ab bc) i with
+            | None -> None'0
+            | Some v -> Some'0 v
+            end
+        = Some'0 x -> contains_T bc x)
   && (forall i: int. 0 <= i /\ i < Seq.length bc -> Seq.get bc i = Seq.get (Seq.(++) ab bc) (Seq.length ab + i))
   && ([@stop_split] [@expl:set_produces_trans ensures] set_produces_T a (Seq.(++) ab bc) c))

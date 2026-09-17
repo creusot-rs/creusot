@@ -222,9 +222,9 @@ impl<T> FSet<T> {
     #[logic(open)]
     #[ensures(forall<xs: Seq<T>> result.contains(&xs) == (0 < xs.len() && s.contains(&xs[0]) && ss.contains(&xs.tail())))]
     pub fn cons(s: FSet<T>, ss: FSet<Seq<T>>) -> FSet<Seq<T>> {
-        proof_assert!(forall<x:T, xs: Seq<T>> xs.push_front(x).tail() == xs);
-        proof_assert!(forall<xs: Seq<T>> 0 < xs.len() ==> xs.tail().push_front(xs[0]) == xs);
-        s.unions(|x| ss.map(|xs: Seq<_>| xs.push_front(x)))
+        proof_assert!(forall<x:T, xs: Seq<T>> xs.cons(x).tail() == xs);
+        proof_assert!(forall<xs: Seq<T>> 0 < xs.len() ==> xs.tail().cons(xs[0]) == xs);
+        s.unions(|x| ss.map(|xs: Seq<_>| xs.cons(x)))
     }
 
     /// Returns the set of concatenations of a sequence in `s` and a sequence in `t`.
@@ -288,9 +288,9 @@ impl<T> FSet<T> {
     #[logic]
     #[ensures(FSet::concat(FSet::cons(self, t), u) == FSet::cons(self, FSet::concat(t, u)))]
     pub fn cons_concat(self, t: FSet<Seq<T>>, u: FSet<Seq<T>>) {
-        proof_assert!(forall<x: T, xs: Seq<T>, ys: Seq<T>> xs.push_front(x).concat(ys) == xs.concat(ys).push_front(x));
-        proof_assert!(forall<x: T, ys: Seq<T>> ys.push_front(x).tail() == ys);
-        proof_assert!(forall<ys: Seq<T>> 0 < ys.len() ==> ys == ys.tail().push_front(ys[0]));
+        proof_assert!(forall<x: T, xs: Seq<T>, ys: Seq<T>> xs.cons(x).concat(ys) == xs.concat(ys).cons(x));
+        proof_assert!(forall<x: T, ys: Seq<T>> ys.cons(x).tail() == ys);
+        proof_assert!(forall<ys: Seq<T>> 0 < ys.len() ==> ys == ys.tail().cons(ys[0]));
         proof_assert!(forall<xs> FSet::concat(FSet::cons(self, t), u).contains(xs) ==
                                  FSet::cons(self, FSet::concat(t, u)).contains(xs));
     }

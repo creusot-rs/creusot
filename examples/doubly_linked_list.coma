@@ -32,9 +32,9 @@ module M_example
   
   meta "rewrite_def" predicate inv_refmut_List_i32
   
-  function pop_back_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = Seq.([..]) self 0 (Seq.length self - 1)
+  function pop_last_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = Seq.([..]) self 0 (Seq.length self - 1)
   
-  let pop_back_i32'0 (self: MutBorrow.t t_List_i32) (return (x: t_Option_i32)) =
+  let pop_back_i32 (self: MutBorrow.t t_List_i32) (return (x: t_Option_i32)) =
   {[@stop_split] [@expl:pop_back 'self' type invariant] inv_refmut_List_i32 self}
     any
     [ return (result: t_Option_i32) ->
@@ -42,7 +42,7 @@ module M_example
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_i32 self.current) (Seq.length (view_List_i32 self.current) - 1))
-        /\ view_List_i32 self.final = pop_back_i32 (view_List_i32 self.current)
+        /\ view_List_i32 self.final = pop_last_i32 (view_List_i32 self.current)
       }
       (! return {result}) ]
   
@@ -70,9 +70,9 @@ module M_example
   
   function tail_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = Seq.([..]) self 1 (Seq.length self)
   
-  function pop_front_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = tail_i32 self
+  function pop_first_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = tail_i32 self
   
-  let pop_front_i32'0 (self: MutBorrow.t t_List_i32) (return (x: t_Option_i32)) =
+  let pop_front_i32 (self: MutBorrow.t t_List_i32) (return (x: t_Option_i32)) =
   {[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_List_i32 self}
     any
     [ return (result: t_Option_i32) ->
@@ -80,7 +80,7 @@ module M_example
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_i32 self.current) 0)
-        /\ view_List_i32 self.final = pop_front_i32 (view_List_i32 self.current)
+        /\ view_List_i32 self.final = pop_first_i32 (view_List_i32 self.current)
       }
       (! return {result}) ]
   
@@ -91,15 +91,15 @@ module M_example
       = Seq.snoc (view_List_i32 self.current) value}
       (! return {result}) ]
   
-  function push_front_i32 [@inline:trivial] (self: Seq.seq Int32.t) (x: Int32.t) : Seq.seq Int32.t = Seq.cons x self
+  function cons_i32 [@inline:trivial] (self: Seq.seq Int32.t) (x: Int32.t) : Seq.seq Int32.t = Seq.cons x self
   
-  meta "rewrite_def" function push_front_i32
+  meta "rewrite_def" function cons_i32
   
-  let push_front_i32'0 (self: MutBorrow.t t_List_i32) (value: Int32.t) (return (x: ())) =
+  let push_front_i32 (self: MutBorrow.t t_List_i32) (value: Int32.t) (return (x: ())) =
   {[@stop_split] [@expl:push_front 'self' type invariant] inv_refmut_List_i32 self}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:push_front ensures] view_List_i32 self.final
-      = push_front_i32 (view_List_i32 self.current) value}
+      = cons_i32 (view_List_i32 self.current) value}
       (! return {result}) ]
   
   type t_Cursor_i32
@@ -168,23 +168,23 @@ module M_example
   
   meta "rewrite_def" predicate inv_refmut_Cursor_i32
   
-  function insert_i32 (self: Seq.seq Int32.t) (position: int) (value: Int32.t) : Seq.seq Int32.t
+  function add_i32 (self: Seq.seq Int32.t) (position: int) (value: Int32.t) : Seq.seq Int32.t
   
-  axiom insert_i32_spec: forall self: Seq.seq Int32.t, position: int, value: Int32.t [insert_i32 self position value]. 0
+  axiom add_i32_spec: forall self: Seq.seq Int32.t, position: int, value: Int32.t [add_i32 self position value]. 0
           <= position
-        /\ position <= Seq.length self -> Seq.length (insert_i32 self position value) = Seq.length self + 1
+        /\ position <= Seq.length self -> Seq.length (add_i32 self position value) = Seq.length self + 1
   
-  axiom insert_i32_spec'0:
-    forall self: Seq.seq Int32.t, position: int, value: Int32.t [insert_i32 self position value]. 0 <= position
+  axiom add_i32_spec'0: forall self: Seq.seq Int32.t, position: int, value: Int32.t [add_i32 self position value]. 0
+          <= position
         /\ position <= Seq.length self
       -> (forall i: int. 0 <= i /\ i <= Seq.length self
         -> (if i < position then
-          Seq.get (insert_i32 self position value) i = Seq.get self i
+          Seq.get (add_i32 self position value) i = Seq.get self i
         else
           if i = position then
-            Seq.get (insert_i32 self position value) i = value
+            Seq.get (add_i32 self position value) i = value
           else
-            Seq.get (insert_i32 self position value) i = Seq.get self (i - 1)
+            Seq.get (add_i32 self position value) i = Seq.get self (i - 1)
         
         ))
   
@@ -198,7 +198,7 @@ module M_example
         else
           pos_i32 self.final = pos_i32 self.current
           /\ view_List_i32 (list_i32 self.final).current
-          = insert_i32 (view_List_i32 (list_i32 self.current).current) (pos_i32 self.current + 1) value
+          = add_i32 (view_List_i32 (list_i32 self.current).current) (pos_i32 self.current + 1) value
         )
       /\ ([@stop_split] [@expl:insert_after ensures #1] (list_i32 self.final).final = (list_i32 self.current).final)}
       (! return {result}) ]
@@ -233,7 +233,7 @@ module M_example
         else
           pos_i32 self.final = pos_i32 self.current
           /\ view_List_i32 (list_i32 self.final).current
-          = insert_i32 (view_List_i32 (list_i32 self.current).current) (pos_i32 self.current) value
+          = add_i32 (view_List_i32 (list_i32 self.current).current) (pos_i32 self.current) value
         )
       /\ ([@stop_split] [@expl:insert_before ensures #1] (list_i32 self.final).final = (list_i32 self.current).final)}
       (! return {result}) ]
@@ -280,7 +280,7 @@ module M_example
       | s1 = MutBorrow.borrow_mut <t_List_i32> {list}
           (fun (_bor: MutBorrow.t t_List_i32) -> [ &_6 <- _bor ] -{inv_List_i32 _bor.final}- [ &list <- _bor.final ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_List_i32 list} any) ]
-      | s2 = pop_back_i32'0 {_6} (fun (_x: t_Option_i32) -> [ &_5 <- _x ] s3)
+      | s2 = pop_back_i32 {_6} (fun (_x: t_Option_i32) -> [ &_5 <- _x ] s3)
       | s3 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- None ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: t_Option_i32 = Any.any_l () | & _1: t_Option_i32 = Any.any_l () ]
@@ -292,7 +292,7 @@ module M_example
           (fun (_bor: MutBorrow.t t_List_i32) ->
             [ &_14 <- _bor ] -{inv_List_i32 _bor.final}-
             [ &list <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_List_i32 list} any) ]
-      | s1 = pop_front_i32'0 {_14} (fun (_x: t_Option_i32) -> [ &_13 <- _x ] s2)
+      | s1 = pop_front_i32 {_14} (fun (_x: t_Option_i32) -> [ &_13 <- _x ] s2)
       | s2 = bb0'0
         [ bb0'0 = s0'0 [ s0'0 = [ &_1 <- None ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
         [ & _ret'0: t_Option_i32 = Any.any_l () | & _1: t_Option_i32 = Any.any_l () ]
@@ -309,7 +309,7 @@ module M_example
           (fun (_bor: MutBorrow.t t_List_i32) ->
             [ &_21 <- _bor ] -{inv_List_i32 _bor.final}-
             [ &list <- _bor.final ] s3) [ _ck -> (! {[@expl:type invariant] inv_List_i32 list} any) ]
-      | s3 = push_front_i32'0 {_21} {(1: Int32.t)} (fun (_x: ()) -> [ &_20 <- _x ] s4)
+      | s3 = push_front_i32 {_21} {(1: Int32.t)} (fun (_x: ()) -> [ &_20 <- _x ] s4)
       | s4 = {[@expl:assertion] view_List_i32 list = Seq.create 2 [|(1: Int32.t);(2: Int32.t)|]} s5
       | s5 = MutBorrow.borrow_mut <t_List_i32> {list}
           (fun (_bor: MutBorrow.t t_List_i32) ->
@@ -409,7 +409,7 @@ module M_example
           (fun (_bor: MutBorrow.t t_List_i32) ->
             [ &_97 <- _bor ] -{inv_List_i32 _bor.final}-
             [ &list <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_List_i32 list} any) ]
-      | s1 = pop_back_i32'0 {_97} (fun (_x: t_Option_i32) -> [ &_96 <- _x ] s2)
+      | s1 = pop_back_i32 {_97} (fun (_x: t_Option_i32) -> [ &_96 <- _x ] s2)
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- Some (3: Int32.t) ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
@@ -425,7 +425,7 @@ module M_example
           (fun (_bor: MutBorrow.t t_List_i32) ->
             [ &_118 <- _bor ] -{inv_List_i32 _bor.final}-
             [ &list <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_List_i32 list} any) ]
-      | s1 = pop_back_i32'0 {_118} (fun (_x: t_Option_i32) -> [ &_117 <- _x ] s2)
+      | s1 = pop_back_i32 {_118} (fun (_x: t_Option_i32) -> [ &_117 <- _x ] s2)
       | s2 = bb0'0
         [ bb0'0 = s0'0
           [ s0'0 = [ &_1 <- Some (2: Int32.t) ] s1'0 | s1'0 = [ &_ret'0 <- _1 ] s2'0 | s2'0 = _const_ret {_ret'0} ] ]
@@ -441,7 +441,7 @@ module M_example
           (fun (_bor: MutBorrow.t t_List_i32) ->
             [ &_139 <- _bor ] -{inv_List_i32 _bor.final}-
             [ &list <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_List_i32 list} any) ]
-      | s1 = pop_front_i32'0 {_139} (fun (_x: t_Option_i32) -> [ &_138 <- _x ] s2)
+      | s1 = pop_front_i32 {_139} (fun (_x: t_Option_i32) -> [ &_138 <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_List_i32 list} any) ]
       | s3 = -{resolve_List_i32 list}- s4
       | s4 = bb0'0
@@ -933,6 +933,8 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_first (* imp::Cursor<'_, T> *)
   function get_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (ix: int) : t_Option_Box_Perm_ptr_Node_T_Global
    = if 0 <= ix /\ ix < Seq.length self then Some (Seq.get self ix) else None
   
+  type t_Option_ref_Box_Perm_ptr_Node_T_Global = None'0 | Some'0 t_Perm_ptr_Node_T
+  
   let index_mut_Seq_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (index: tup2_Int_Int)
     (return (x: MutBorrow.t tup2_Box_Perm_ptr_Node_T_Global_Box_Perm_ptr_Node_T_Global)) =
   {[@stop_split] [@expl:index_mut_Seq_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:index_mut 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
@@ -946,7 +948,14 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_first (* imp::Cursor<'_, T> *)
         /\ result.current.f1'0 = Seq.get self.current index.f1
         /\ result.final.f0'0 = Seq.get self.final index.f0 /\ result.final.f1'0 = Seq.get self.final index.f1)
       /\ ([@stop_split] [@expl:index_mut ensures #1] forall i: int. i <> index.f0 /\ i <> index.f1
-          -> get_Box_Perm_ptr_Node_T_Global self.current i = get_Box_Perm_ptr_Node_T_Global self.final i)
+          -> match get_Box_Perm_ptr_Node_T_Global self.current i with
+              | None -> None'0
+              | Some v -> Some'0 v
+              end
+          = match get_Box_Perm_ptr_Node_T_Global self.final i with
+            | None -> None'0
+            | Some v -> Some'0 v
+            end)
       /\ ([@stop_split] [@expl:index_mut ensures #2] Seq.length self.current = Seq.length self.final)}
       (! return {result}) ]
   
@@ -1343,10 +1352,9 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_last (* imp::Cursor<'_, T> *)
       /\ ([@stop_split] [@expl:deref ensures] result = self)}
       (! return {result}) ]
   
-  let len_ghost_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len_ghost 'self' type invariant] inv_ref_Seq_Box_Perm_ptr_Node_T_Global self}
-    any
-    [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
+  let len_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Box_Perm_ptr_Node_T_Global self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   let new (value: Int128.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
@@ -1417,6 +1425,8 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_last (* imp::Cursor<'_, T> *)
   function get_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (ix: int) : t_Option_Box_Perm_ptr_Node_T_Global
    = if 0 <= ix /\ ix < Seq.length self then Some (Seq.get self ix) else None
   
+  type t_Option_ref_Box_Perm_ptr_Node_T_Global = None'0 | Some'0 t_Perm_ptr_Node_T
+  
   let index_mut_Seq_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (index: tup2_Int_Int)
     (return (x: MutBorrow.t tup2_Box_Perm_ptr_Node_T_Global_Box_Perm_ptr_Node_T_Global)) =
   {[@stop_split] [@expl:index_mut_Seq_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:index_mut 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
@@ -1430,7 +1440,14 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_last (* imp::Cursor<'_, T> *)
         /\ result.current.f1'0 = Seq.get self.current index.f1
         /\ result.final.f0'0 = Seq.get self.final index.f0 /\ result.final.f1'0 = Seq.get self.final index.f1)
       /\ ([@stop_split] [@expl:index_mut ensures #1] forall i: int. i <> index.f0 /\ i <> index.f1
-          -> get_Box_Perm_ptr_Node_T_Global self.current i = get_Box_Perm_ptr_Node_T_Global self.final i)
+          -> match get_Box_Perm_ptr_Node_T_Global self.current i with
+              | None -> None'0
+              | Some v -> Some'0 v
+              end
+          = match get_Box_Perm_ptr_Node_T_Global self.final i with
+            | None -> None'0
+            | Some v -> Some'0 v
+            end)
       /\ ([@stop_split] [@expl:index_mut ensures #2] Seq.length self.current = Seq.length self.final)}
       (! return {result}) ]
   
@@ -1605,7 +1622,7 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_last (* imp::Cursor<'_, T> *)
     [ bb0 = s0
       [ s0 = deref_Ghost_Seq_Box_Perm_ptr_Node_T_Global {self.current.list.current.permissions}
           (fun (_x: Seq.seq t_Perm_ptr_Node_T) -> [ &_17 <- _x ] s1)
-      | s1 = len_ghost_Box_Perm_ptr_Node_T_Global {_17} (fun (_x: int) -> [ &_15 <- _x ] s2)
+      | s1 = len_Box_Perm_ptr_Node_T_Global {_17} (fun (_x: int) -> [ &_15 <- _x ] s2)
       | s2 = new {(1: Int128.t)} (fun (_x: int) -> [ &_20 <- _x ] s3)
       | s3 = into_inner_Int {_20} (fun (_x: int) -> [ &_19 <- _x ] s4)
       | s4 = sub_Int {_15} {_19} (fun (_x: int) -> [ &last <- _x ] s5)
@@ -2647,12 +2664,12 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  let push_back_ghost_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (x: t_Perm_ptr_Node_T)
+  let push_back_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (x: t_Perm_ptr_Node_T)
     (return (x'0: ())) =
-  {[@stop_split] [@expl:push_back_ghost_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:push_back_ghost 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
-    /\ ([@stop_split] [@expl:push_back_ghost 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)}
+  {[@stop_split] [@expl:push_back_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:push_back 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
+    /\ ([@stop_split] [@expl:push_back 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
+    [ return (result: ()) -> {[@stop_split] [@expl:push_back ensures] self.final = Seq.snoc self.current x}
       (! return {result}) ]
   
   predicate resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) =
@@ -2877,37 +2894,37 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
   let add_Int (self: int) (other: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:add ensures] result = self + other} (! return {result}) ]
   
-  function insert_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (position: int) (value: t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T
+  function add_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (position: int) (value: t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T
   
-  axiom insert_Box_Perm_ptr_Node_T_Global_spec:
-    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [insert_Box_Perm_ptr_Node_T_Global self position value]. 0
+  axiom add_Box_Perm_ptr_Node_T_Global_spec:
+    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [add_Box_Perm_ptr_Node_T_Global self position value]. 0
           <= position
         /\ position <= Seq.length self
-      -> Seq.length (insert_Box_Perm_ptr_Node_T_Global self position value) = Seq.length self + 1
+      -> Seq.length (add_Box_Perm_ptr_Node_T_Global self position value) = Seq.length self + 1
   
-  axiom insert_Box_Perm_ptr_Node_T_Global_spec'0:
-    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [insert_Box_Perm_ptr_Node_T_Global self position value]. 0
+  axiom add_Box_Perm_ptr_Node_T_Global_spec'0:
+    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [add_Box_Perm_ptr_Node_T_Global self position value]. 0
           <= position
         /\ position <= Seq.length self
       -> (forall i: int. 0 <= i /\ i <= Seq.length self
         -> (if i < position then
-          Seq.get (insert_Box_Perm_ptr_Node_T_Global self position value) i = Seq.get self i
+          Seq.get (add_Box_Perm_ptr_Node_T_Global self position value) i = Seq.get self i
         else
           if i = position then
-            Seq.get (insert_Box_Perm_ptr_Node_T_Global self position value) i = value
+            Seq.get (add_Box_Perm_ptr_Node_T_Global self position value) i = value
           else
-            Seq.get (insert_Box_Perm_ptr_Node_T_Global self position value) i = Seq.get self (i - 1)
+            Seq.get (add_Box_Perm_ptr_Node_T_Global self position value) i = Seq.get self (i - 1)
         
         ))
   
-  let insert_ghost_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (position: int)
+  let insert_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (position: int)
     (x: t_Perm_ptr_Node_T) (return (x'0: ())) =
-  {[@stop_split] [@expl:insert_ghost_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:insert_ghost 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
-    /\ ([@stop_split] [@expl:insert_ghost 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)
-    /\ ([@stop_split] [@expl:insert_ghost requires] 0 <= position /\ position <= Seq.length self.current)}
+  {[@stop_split] [@expl:insert_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:insert 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
+    /\ ([@stop_split] [@expl:insert 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)
+    /\ ([@stop_split] [@expl:insert requires] 0 <= position /\ position <= Seq.length self.current)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:insert_ghost ensures] self.final
-      = insert_Box_Perm_ptr_Node_T_Global self.current position x}
+    [ return (result: ()) -> {[@stop_split] [@expl:insert ensures] self.final
+      = add_Box_Perm_ptr_Node_T_Global self.current position x}
       (! return {result}) ]
   
   function pos_T (self: t_Cursor_T) : int = self.pos
@@ -2916,22 +2933,21 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
       -> gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
       -> 0 <= pos_T self /\ pos_T self < Seq.length (view_List_T (list_T self).current)
   
-  function insert_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
+  function add_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
   
-  axiom insert_T_spec: forall self: Seq.seq t_T, position: int, value: t_T [insert_T self position value]. 0 <= position
-        /\ position <= Seq.length self -> Seq.length (insert_T self position value) = Seq.length self + 1
+  axiom add_T_spec: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
+        /\ position <= Seq.length self -> Seq.length (add_T self position value) = Seq.length self + 1
   
-  axiom insert_T_spec'0: forall self: Seq.seq t_T, position: int, value: t_T [insert_T self position value]. 0
-          <= position
+  axiom add_T_spec'0: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
         /\ position <= Seq.length self
       -> (forall i: int. 0 <= i /\ i <= Seq.length self
         -> (if i < position then
-          Seq.get (insert_T self position value) i = Seq.get self i
+          Seq.get (add_T self position value) i = Seq.get self i
         else
           if i = position then
-            Seq.get (insert_T self position value) i = value
+            Seq.get (add_T self position value) i = value
           else
-            Seq.get (insert_T self position value) i = Seq.get self (i - 1)
+            Seq.get (add_T self position value) i = Seq.get self (i - 1)
         
         ))
   
@@ -2969,7 +2985,7 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
             [ &_20 <- _bor ] -{inv_Seq_Box_Perm_ptr_Node_T_Global _bor.final}-
             [ &_21 <- { _21 with current = _bor.final } ] s10)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Box_Perm_ptr_Node_T_Global _21.current} any) ]
-      | s10 = push_back_ghost_Box_Perm_ptr_Node_T_Global {_20} {_23} (fun (_x: ()) -> [ &_19 <- _x ] s11)
+      | s10 = push_back_Box_Perm_ptr_Node_T_Global {_20} {_23} (fun (_x: ()) -> [ &_19 <- _x ] s11)
       | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global _21} any) ]
       | s12 = -{resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global _21}- s13
       | s13 = new_unit {_18} (fun (_x: ()) -> [ &_17 <- _x ] s14)
@@ -3084,7 +3100,7 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
             [ &_69 <- _bor ] -{inv_Seq_Box_Perm_ptr_Node_T_Global _bor.final}-
             [ &_70 <- { _70 with current = _bor.final } ] s42)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Box_Perm_ptr_Node_T_Global _70.current} any) ]
-      | s42 = push_back_ghost_Box_Perm_ptr_Node_T_Global {_69} {_72} (fun (_x: ()) -> [ &_68 <- _x ] s43)
+      | s42 = push_back_Box_Perm_ptr_Node_T_Global {_69} {_72} (fun (_x: ()) -> [ &_68 <- _x ] s43)
       | s43 = s44 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global _70} any) ]
       | s44 = -{resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global _70}- s45
       | s45 = s46 [ _ck -> (! {[@expl:type invariant] inv_refmut_Cursor_T self} any) ]
@@ -3235,7 +3251,7 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
             [ &_121 <- _bor ] -{inv_Seq_Box_Perm_ptr_Node_T_Global _bor.final}-
             [ &_122 <- { _122 with current = _bor.final } ] s69)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Box_Perm_ptr_Node_T_Global _122.current} any) ]
-      | s69 = insert_ghost_Box_Perm_ptr_Node_T_Global {_121} {_124} {_130} (fun (_x: ()) -> [ &_120 <- _x ] s70)
+      | s69 = insert_Box_Perm_ptr_Node_T_Global {_121} {_124} {_130} (fun (_x: ()) -> [ &_120 <- _x ] s70)
       | s70 = s71 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global _122} any) ]
       | s71 = -{resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global _122}- s72
       | s72 = s73 [ _ck -> (! {[@expl:type invariant] inv_refmut_Cursor_T self} any) ]
@@ -3343,7 +3359,7 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
         else
           pos_T self.final = pos_T self.current
           /\ view_List_T (list_T self.final).current
-          = insert_T (view_List_T (list_T self.current).current) (pos_T self.current + 1) value
+          = add_T (view_List_T (list_T self.current).current) (pos_T self.current + 1) value
         )
       /\ ([@stop_split] [@expl:insert_after ensures #1] (list_T self.final).final = (list_T self.current).final)}
       (! return {result}) ]
@@ -3512,12 +3528,12 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  let push_back_ghost_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (x: t_Perm_ptr_Node_T)
+  let push_back_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (x: t_Perm_ptr_Node_T)
     (return (x'0: ())) =
-  {[@stop_split] [@expl:push_back_ghost_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:push_back_ghost 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
-    /\ ([@stop_split] [@expl:push_back_ghost 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)}
+  {[@stop_split] [@expl:push_back_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:push_back 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
+    /\ ([@stop_split] [@expl:push_back 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
+    [ return (result: ()) -> {[@stop_split] [@expl:push_back ensures] self.final = Seq.snoc self.current x}
       (! return {result}) ]
   
   predicate resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) =
@@ -3728,18 +3744,18 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate resolve_refmut_Node_T
   
-  function push_front_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) (x: t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T
+  function cons_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) (x: t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T
    = Seq.cons x self
   
-  meta "rewrite_def" function push_front_Box_Perm_ptr_Node_T_Global
+  meta "rewrite_def" function cons_Box_Perm_ptr_Node_T_Global
   
-  let push_front_ghost_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (x: t_Perm_ptr_Node_T)
+  let push_front_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (x: t_Perm_ptr_Node_T)
     (return (x'0: ())) =
-  {[@stop_split] [@expl:push_front_ghost_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:push_front_ghost 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
-    /\ ([@stop_split] [@expl:push_front_ghost 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)}
+  {[@stop_split] [@expl:push_front_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:push_front 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
+    /\ ([@stop_split] [@expl:push_front 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:push_front_ghost ensures] self.final
-      = push_front_Box_Perm_ptr_Node_T_Global self.current x}
+    [ return (result: ()) -> {[@stop_split] [@expl:push_front ensures] self.final
+      = cons_Box_Perm_ptr_Node_T_Global self.current x}
       (! return {result}) ]
   
   let deref_Ghost_Int (self: int) (return (x: int)) = any
@@ -3748,37 +3764,37 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
   let sub_Int (self: int) (other: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:sub ensures] result = self - other} (! return {result}) ]
   
-  function insert_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (position: int) (value: t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T
+  function add_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (position: int) (value: t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T
   
-  axiom insert_Box_Perm_ptr_Node_T_Global_spec:
-    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [insert_Box_Perm_ptr_Node_T_Global self position value]. 0
+  axiom add_Box_Perm_ptr_Node_T_Global_spec:
+    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [add_Box_Perm_ptr_Node_T_Global self position value]. 0
           <= position
         /\ position <= Seq.length self
-      -> Seq.length (insert_Box_Perm_ptr_Node_T_Global self position value) = Seq.length self + 1
+      -> Seq.length (add_Box_Perm_ptr_Node_T_Global self position value) = Seq.length self + 1
   
-  axiom insert_Box_Perm_ptr_Node_T_Global_spec'0:
-    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [insert_Box_Perm_ptr_Node_T_Global self position value]. 0
+  axiom add_Box_Perm_ptr_Node_T_Global_spec'0:
+    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [add_Box_Perm_ptr_Node_T_Global self position value]. 0
           <= position
         /\ position <= Seq.length self
       -> (forall i: int. 0 <= i /\ i <= Seq.length self
         -> (if i < position then
-          Seq.get (insert_Box_Perm_ptr_Node_T_Global self position value) i = Seq.get self i
+          Seq.get (add_Box_Perm_ptr_Node_T_Global self position value) i = Seq.get self i
         else
           if i = position then
-            Seq.get (insert_Box_Perm_ptr_Node_T_Global self position value) i = value
+            Seq.get (add_Box_Perm_ptr_Node_T_Global self position value) i = value
           else
-            Seq.get (insert_Box_Perm_ptr_Node_T_Global self position value) i = Seq.get self (i - 1)
+            Seq.get (add_Box_Perm_ptr_Node_T_Global self position value) i = Seq.get self (i - 1)
         
         ))
   
-  let insert_ghost_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (position: int)
+  let insert_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (position: int)
     (x: t_Perm_ptr_Node_T) (return (x'0: ())) =
-  {[@stop_split] [@expl:insert_ghost_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:insert_ghost 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
-    /\ ([@stop_split] [@expl:insert_ghost 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)
-    /\ ([@stop_split] [@expl:insert_ghost requires] 0 <= position /\ position <= Seq.length self.current)}
+  {[@stop_split] [@expl:insert_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:insert 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
+    /\ ([@stop_split] [@expl:insert 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)
+    /\ ([@stop_split] [@expl:insert requires] 0 <= position /\ position <= Seq.length self.current)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:insert_ghost ensures] self.final
-      = insert_Box_Perm_ptr_Node_T_Global self.current position x}
+    [ return (result: ()) -> {[@stop_split] [@expl:insert ensures] self.final
+      = add_Box_Perm_ptr_Node_T_Global self.current position x}
       (! return {result}) ]
   
   function pos_T (self: t_Cursor_T) : int = self.pos
@@ -3787,22 +3803,21 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
       -> gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
       -> 0 <= pos_T self /\ pos_T self < Seq.length (view_List_T (list_T self).current)
   
-  function insert_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
+  function add_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
   
-  axiom insert_T_spec: forall self: Seq.seq t_T, position: int, value: t_T [insert_T self position value]. 0 <= position
-        /\ position <= Seq.length self -> Seq.length (insert_T self position value) = Seq.length self + 1
+  axiom add_T_spec: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
+        /\ position <= Seq.length self -> Seq.length (add_T self position value) = Seq.length self + 1
   
-  axiom insert_T_spec'0: forall self: Seq.seq t_T, position: int, value: t_T [insert_T self position value]. 0
-          <= position
+  axiom add_T_spec'0: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
         /\ position <= Seq.length self
       -> (forall i: int. 0 <= i /\ i <= Seq.length self
         -> (if i < position then
-          Seq.get (insert_T self position value) i = Seq.get self i
+          Seq.get (add_T self position value) i = Seq.get self i
         else
           if i = position then
-            Seq.get (insert_T self position value) i = value
+            Seq.get (add_T self position value) i = value
           else
-            Seq.get (insert_T self position value) i = Seq.get self (i - 1)
+            Seq.get (add_T self position value) i = Seq.get self (i - 1)
         
         ))
   
@@ -3840,7 +3855,7 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
             [ &_20 <- _bor ] -{inv_Seq_Box_Perm_ptr_Node_T_Global _bor.final}-
             [ &_21 <- { _21 with current = _bor.final } ] s10)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Box_Perm_ptr_Node_T_Global _21.current} any) ]
-      | s10 = push_back_ghost_Box_Perm_ptr_Node_T_Global {_20} {_23} (fun (_x: ()) -> [ &_19 <- _x ] s11)
+      | s10 = push_back_Box_Perm_ptr_Node_T_Global {_20} {_23} (fun (_x: ()) -> [ &_19 <- _x ] s11)
       | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global _21} any) ]
       | s12 = -{resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global _21}- s13
       | s13 = new_unit {_18} (fun (_x: ()) -> [ &_17 <- _x ] s14)
@@ -3955,7 +3970,7 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
             [ &_64 <- _bor ] -{inv_Seq_Box_Perm_ptr_Node_T_Global _bor.final}-
             [ &_65 <- { _65 with current = _bor.final } ] s42)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Box_Perm_ptr_Node_T_Global _65.current} any) ]
-      | s42 = push_front_ghost_Box_Perm_ptr_Node_T_Global {_64} {_67} (fun (_x: ()) -> [ &_63 <- _x ] s43)
+      | s42 = push_front_Box_Perm_ptr_Node_T_Global {_64} {_67} (fun (_x: ()) -> [ &_63 <- _x ] s43)
       | s43 = s44 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global _65} any) ]
       | s44 = -{resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global _65}- s45
       | s45 = s46 [ _ck -> (! {[@expl:type invariant] inv_refmut_Cursor_T self} any) ]
@@ -4104,7 +4119,7 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
             [ &_117 <- _bor ] -{inv_Seq_Box_Perm_ptr_Node_T_Global _bor.final}-
             [ &_118 <- { _118 with current = _bor.final } ] s67)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Box_Perm_ptr_Node_T_Global _118.current} any) ]
-      | s67 = insert_ghost_Box_Perm_ptr_Node_T_Global {_117} {_121} {_123} (fun (_x: ()) -> [ &_116 <- _x ] s68)
+      | s67 = insert_Box_Perm_ptr_Node_T_Global {_117} {_121} {_123} (fun (_x: ()) -> [ &_116 <- _x ] s68)
       | s68 = s69 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global _118} any) ]
       | s69 = -{resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global _118}- s70
       | s70 = s71 [ _ck -> (! {[@expl:type invariant] inv_refmut_Cursor_T self} any) ]
@@ -4208,7 +4223,7 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
         else
           pos_T self.final = pos_T self.current
           /\ view_List_T (list_T self.final).current
-          = insert_T (view_List_T (list_T self.current).current) (pos_T self.current) value
+          = add_T (view_List_T (list_T self.current).current) (pos_T self.current) value
         )
       /\ ([@stop_split] [@expl:insert_before ensures #1] (list_T self.final).final = (list_T self.current).final)}
       (! return {result}) ]
@@ -5103,9 +5118,9 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
   
   function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
-  function pop_front_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
+  function pop_first_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
   
-  let pop_front_T'0 (self: MutBorrow.t t_List_T) (return (x: t_Option_T)) =
+  let pop_front_T (self: MutBorrow.t t_List_T) (return (x: t_Option_T)) =
   {[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_List_T self}
     any
     [ return (result: t_Option_T) ->
@@ -5114,7 +5129,7 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_T self.current) 0)
-        /\ view_List_T self.final = pop_front_T (view_List_T self.current)
+        /\ view_List_T self.final = pop_first_T (view_List_T self.current)
       )}
       (! return {result}) ]
   
@@ -5152,7 +5167,7 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
                 [ &_6 <- _bor ] -{inv_List_T _bor.final}-
                 [ &self <- { self with current = _bor.final } ] s1)
             [ _ck -> (! {[@expl:type invariant] inv_List_T self.current} any) ]
-          | s1 = pop_front_T'0 {_6} (fun (_x: t_Option_T) -> [ &_5 <- _x ] s2)
+          | s1 = pop_front_T {_6} (fun (_x: t_Option_T) -> [ &_5 <- _x ] s2)
           | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Option_T _5} any) ]
           | s3 = -{resolve_Option_T _5}- s4
           | s4 = bb1 ] ] ]
@@ -5683,10 +5698,9 @@ module M_imp__impl_List_T__cursor_tail (* imp::List<T> *)
       /\ ([@stop_split] [@expl:deref ensures] result = self)}
       (! return {result}) ]
   
-  let len_ghost_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len_ghost 'self' type invariant] inv_ref_Seq_Box_Perm_ptr_Node_T_Global self}
-    any
-    [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
+  let len_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Box_Perm_ptr_Node_T_Global self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   let new (value: Int128.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
@@ -5795,7 +5809,7 @@ module M_imp__impl_List_T__cursor_tail (* imp::List<T> *)
     [ bb0 = s0
       [ s0 = deref_Ghost_Seq_Box_Perm_ptr_Node_T_Global {self.current.permissions}
           (fun (_x: Seq.seq t_Perm_ptr_Node_T) -> [ &_10 <- _x ] s1)
-      | s1 = len_ghost_Box_Perm_ptr_Node_T_Global {_10} (fun (_x: int) -> [ &_8 <- _x ] s2)
+      | s1 = len_Box_Perm_ptr_Node_T_Global {_10} (fun (_x: int) -> [ &_8 <- _x ] s2)
       | s2 = new {(1: Int128.t)} (fun (_x: int) -> [ &_13 <- _x ] s3)
       | s3 = into_inner_Int {_13} (fun (_x: int) -> [ &_12 <- _x ] s4)
       | s4 = sub_Int {_8} {_12} (fun (_x: int) -> [ &_7 <- _x ] s5)
@@ -6664,10 +6678,9 @@ module M_imp__impl_List_T__get_tail (* imp::List<T> *)
       /\ ([@stop_split] [@expl:deref ensures] result = self)}
       (! return {result}) ]
   
-  let len_ghost_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len_ghost 'self' type invariant] inv_ref_Seq_Box_Perm_ptr_Node_T_Global self}
-    any
-    [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
+  let len_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Box_Perm_ptr_Node_T_Global self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   let new (value: Int128.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
@@ -6804,7 +6817,7 @@ module M_imp__impl_List_T__get_tail (* imp::List<T> *)
           (fun (_x: Seq.seq t_Perm_ptr_Node_T) -> [ &_17 <- _x ] s1)
       | s1 = deref_Ghost_Seq_Box_Perm_ptr_Node_T_Global {self.permissions}
           (fun (_x: Seq.seq t_Perm_ptr_Node_T) -> [ &_22 <- _x ] s2)
-      | s2 = len_ghost_Box_Perm_ptr_Node_T_Global {_22} (fun (_x: int) -> [ &_20 <- _x ] s3)
+      | s2 = len_Box_Perm_ptr_Node_T_Global {_22} (fun (_x: int) -> [ &_20 <- _x ] s3)
       | s3 = new {(1: Int128.t)} (fun (_x: int) -> [ &_25 <- _x ] s4)
       | s4 = into_inner_Int {_25} (fun (_x: int) -> [ &_24 <- _x ] s5)
       | s5 = sub_Int {_20} {_24} (fun (_x: int) -> [ &_19 <- _x ] s6)
@@ -7001,10 +7014,9 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
       /\ ([@stop_split] [@expl:deref ensures] result = self)}
       (! return {result}) ]
   
-  let len_ghost_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len_ghost 'self' type invariant] inv_ref_Seq_Box_Perm_ptr_Node_T_Global self}
-    any
-    [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
+  let len_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Box_Perm_ptr_Node_T_Global self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   let new (value: Int128.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
@@ -7204,7 +7216,7 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
       [ s0 = cast_mut_Node_T {self.current.tail} (fun (_x: Opaque.ptr) -> [ &_11 <- _x ] s1)
       | s1 = deref_Ghost_Seq_Box_Perm_ptr_Node_T_Global {self.current.permissions}
           (fun (_x: Seq.seq t_Perm_ptr_Node_T) -> [ &_20 <- _x ] s2)
-      | s2 = len_ghost_Box_Perm_ptr_Node_T_Global {_20} (fun (_x: int) -> [ &_18 <- _x ] s3)
+      | s2 = len_Box_Perm_ptr_Node_T_Global {_20} (fun (_x: int) -> [ &_18 <- _x ] s3)
       | s3 = new {(1: Int128.t)} (fun (_x: int) -> [ &_23 <- _x ] s4)
       | s4 = into_inner_Int {_23} (fun (_x: int) -> [ &_22 <- _x ] s5)
       | s5 = sub_Int {_18} {_22} (fun (_x: int) -> [ &last <- _x ] s6)
@@ -7640,13 +7652,13 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
         | Some'0 f0 -> inv_Box_Perm_ptr_Node_T_Global f0
         end
   
-  let pop_back_ghost_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T))
+  let pop_back_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T))
     (return (x: t_Option_Box_Perm_ptr_Node_T_Global)) =
-  {[@stop_split] [@expl:pop_back_ghost 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self}
+  {[@stop_split] [@expl:pop_back 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self}
     any
     [ return (result: t_Option_Box_Perm_ptr_Node_T_Global) ->
-    {[@stop_split] [@expl:pop_back_ghost_Box_Perm_ptr_Node_T_Global ensures] ([@stop_split] [@expl:pop_back_ghost result type invariant] inv_Option_Box_Perm_ptr_Node_T_Global result)
-      /\ ([@stop_split] [@expl:pop_back_ghost ensures] match result with
+    {[@stop_split] [@expl:pop_back_Box_Perm_ptr_Node_T_Global ensures] ([@stop_split] [@expl:pop_back result type invariant] inv_Option_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@stop_split] [@expl:pop_back ensures] match result with
         | None'0 -> self.current = (Seq.empty: Seq.seq t_Perm_ptr_Node_T) /\ self.current = self.final
         | Some'0 r -> self.current = Seq.snoc self.final r
         end)}
@@ -7893,13 +7905,13 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
   function view_List_T (self: t_List_T) : Seq.seq t_T =
     map_Box_Perm_ptr_Node_T_Global self.permissions (fun (p: t_Perm_ptr_Node_T) -> (val_ptr_Node_T p).data)
   
-  function pop_back_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 0 (Seq.length self - 1)
+  function pop_last_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 0 (Seq.length self - 1)
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let pop_back_T'0 (self: MutBorrow.t t_List_T) (return (x: t_Option_T)) =
+  let pop_back_T (self: MutBorrow.t t_List_T) (return (x: t_Option_T)) =
   {[@stop_split] [@expl:pop_back 'self' type invariant] inv_refmut_List_T self}
     (! bb0
     [ bb0 = s0
@@ -7923,7 +7935,7 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
             [ &_11 <- _bor ] -{inv_Seq_Box_Perm_ptr_Node_T_Global _bor.final}-
             [ &_12 <- { _12 with current = _bor.final } ] s3)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Box_Perm_ptr_Node_T_Global _12.current} any) ]
-      | s3 = pop_back_ghost_Box_Perm_ptr_Node_T_Global {_11}
+      | s3 = pop_back_Box_Perm_ptr_Node_T_Global {_11}
           (fun (_x: t_Option_Box_Perm_ptr_Node_T_Global) -> [ &_10 <- _x ] s4)
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global _12} any) ]
       | s5 = -{resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global _12}- s6
@@ -8047,7 +8059,7 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_T self.current) (Seq.length (view_List_T self.current) - 1))
-        /\ view_List_T self.final = pop_back_T (view_List_T self.current)
+        /\ view_List_T self.final = pop_last_T (view_List_T self.current)
       )}
       (! return {result}) ]
 end
@@ -8229,13 +8241,13 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
   function tail_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T =
     Seq.([..]) self 1 (Seq.length self)
   
-  let pop_front_ghost_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T))
+  let pop_front_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T))
     (return (x: t_Option_Box_Perm_ptr_Node_T_Global)) =
-  {[@stop_split] [@expl:pop_front_ghost 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self}
+  {[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self}
     any
     [ return (result: t_Option_Box_Perm_ptr_Node_T_Global) ->
-    {[@stop_split] [@expl:pop_front_ghost_Box_Perm_ptr_Node_T_Global ensures] ([@stop_split] [@expl:pop_front_ghost result type invariant] inv_Option_Box_Perm_ptr_Node_T_Global result)
-      /\ ([@stop_split] [@expl:pop_front_ghost ensures] match result with
+    {[@stop_split] [@expl:pop_front_Box_Perm_ptr_Node_T_Global ensures] ([@stop_split] [@expl:pop_front result type invariant] inv_Option_Box_Perm_ptr_Node_T_Global result)
+      /\ ([@stop_split] [@expl:pop_front ensures] match result with
         | None'0 -> self.current = (Seq.empty: Seq.seq t_Perm_ptr_Node_T) /\ self.current = self.final
         | Some'0 r -> gt_log_Int (Seq.length self.current) 0
         /\ r = Seq.get self.current 0 /\ self.final = tail_Box_Perm_ptr_Node_T_Global self.current
@@ -8477,13 +8489,13 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
   
   function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
-  function pop_front_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
+  function pop_first_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let pop_front_T'0 (self: MutBorrow.t t_List_T) (return (x: t_Option_T)) =
+  let pop_front_T (self: MutBorrow.t t_List_T) (return (x: t_Option_T)) =
   {[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_List_T self}
     (! bb0
     [ bb0 = s0
@@ -8507,7 +8519,7 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
             [ &_11 <- _bor ] -{inv_Seq_Box_Perm_ptr_Node_T_Global _bor.final}-
             [ &_12 <- { _12 with current = _bor.final } ] s3)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Box_Perm_ptr_Node_T_Global _12.current} any) ]
-      | s3 = pop_front_ghost_Box_Perm_ptr_Node_T_Global {_11}
+      | s3 = pop_front_Box_Perm_ptr_Node_T_Global {_11}
           (fun (_x: t_Option_Box_Perm_ptr_Node_T_Global) -> [ &_10 <- _x ] s4)
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global _12} any) ]
       | s5 = -{resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global _12}- s6
@@ -8628,7 +8640,7 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_T self.current) 0)
-        /\ view_List_T self.final = pop_front_T (view_List_T self.current)
+        /\ view_List_T self.final = pop_first_T (view_List_T self.current)
       )}
       (! return {result}) ]
 end
@@ -8789,10 +8801,9 @@ module M_imp__impl_List_T__push_back (* imp::List<T> *)
       /\ ([@stop_split] [@expl:deref ensures] result = self)}
       (! return {result}) ]
   
-  let len_ghost_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len_ghost 'self' type invariant] inv_ref_Seq_Box_Perm_ptr_Node_T_Global self}
-    any
-    [ return (result: int) -> {[@stop_split] [@expl:len_ghost ensures] result = Seq.length self} (! return {result}) ]
+  let len_Box_Perm_ptr_Node_T_Global (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Box_Perm_ptr_Node_T_Global self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   let new (value: Int128.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
@@ -8936,12 +8947,12 @@ module M_imp__impl_List_T__push_back (* imp::List<T> *)
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  let push_back_ghost_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (x: t_Perm_ptr_Node_T)
+  let push_back_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (x: t_Perm_ptr_Node_T)
     (return (x'0: ())) =
-  {[@stop_split] [@expl:push_back_ghost_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:push_back_ghost 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
-    /\ ([@stop_split] [@expl:push_back_ghost 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)}
+  {[@stop_split] [@expl:push_back_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:push_back 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
+    /\ ([@stop_split] [@expl:push_back 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
+    [ return (result: ()) -> {[@stop_split] [@expl:push_back ensures] self.final = Seq.snoc self.current x}
       (! return {result}) ]
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
@@ -9025,7 +9036,7 @@ module M_imp__impl_List_T__push_back (* imp::List<T> *)
       [ s0 = cast_mut_Node_T {self.current.tail} (fun (_x: Opaque.ptr) -> [ &_19 <- _x ] s1)
       | s1 = deref_Ghost_Seq_Box_Perm_ptr_Node_T_Global {self.current.permissions}
           (fun (_x: Seq.seq t_Perm_ptr_Node_T) -> [ &_28 <- _x ] s2)
-      | s2 = len_ghost_Box_Perm_ptr_Node_T_Global {_28} (fun (_x: int) -> [ &_26 <- _x ] s3)
+      | s2 = len_Box_Perm_ptr_Node_T_Global {_28} (fun (_x: int) -> [ &_26 <- _x ] s3)
       | s3 = new {(1: Int128.t)} (fun (_x: int) -> [ &_31 <- _x ] s4)
       | s4 = into_inner_Int {_31} (fun (_x: int) -> [ &_30 <- _x ] s5)
       | s5 = sub_Int {_26} {_30} (fun (_x: int) -> [ &idx <- _x ] s6)
@@ -9095,7 +9106,7 @@ module M_imp__impl_List_T__push_back (* imp::List<T> *)
             [ &_42 <- _bor ] -{inv_Seq_Box_Perm_ptr_Node_T_Global _bor.final}-
             [ &_43 <- { _43 with current = _bor.final } ] s4)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Box_Perm_ptr_Node_T_Global _43.current} any) ]
-      | s4 = push_back_ghost_Box_Perm_ptr_Node_T_Global {_42} {_45} (fun (_x: ()) -> [ &_41 <- _x ] s5)
+      | s4 = push_back_Box_Perm_ptr_Node_T_Global {_42} {_45} (fun (_x: ()) -> [ &_41 <- _x ] s5)
       | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global _43} any) ]
       | s6 = -{resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global _43}- s7
       | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T self} any) ]
@@ -9404,18 +9415,18 @@ module M_imp__impl_List_T__push_front (* imp::List<T> *)
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  function push_front_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) (x: t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T
+  function cons_Box_Perm_ptr_Node_T_Global [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) (x: t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T
    = Seq.cons x self
   
-  meta "rewrite_def" function push_front_Box_Perm_ptr_Node_T_Global
+  meta "rewrite_def" function cons_Box_Perm_ptr_Node_T_Global
   
-  let push_front_ghost_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (x: t_Perm_ptr_Node_T)
+  let push_front_Box_Perm_ptr_Node_T_Global (self: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) (x: t_Perm_ptr_Node_T)
     (return (x'0: ())) =
-  {[@stop_split] [@expl:push_front_ghost_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:push_front_ghost 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
-    /\ ([@stop_split] [@expl:push_front_ghost 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)}
+  {[@stop_split] [@expl:push_front_Box_Perm_ptr_Node_T_Global requires] ([@stop_split] [@expl:push_front 'self' type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global self)
+    /\ ([@stop_split] [@expl:push_front 'x' type invariant] inv_Box_Perm_ptr_Node_T_Global x)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:push_front_ghost ensures] self.final
-      = push_front_Box_Perm_ptr_Node_T_Global self.current x}
+    [ return (result: ()) -> {[@stop_split] [@expl:push_front ensures] self.final
+      = cons_Box_Perm_ptr_Node_T_Global self.current x}
       (! return {result}) ]
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
@@ -9475,15 +9486,15 @@ module M_imp__impl_List_T__push_front (* imp::List<T> *)
   function view_List_T (self: t_List_T) : Seq.seq t_T =
     map_Box_Perm_ptr_Node_T_Global self.permissions (fun (p: t_Perm_ptr_Node_T) -> (val_ptr_Node_T p).data)
   
-  function push_front_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
+  function cons_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
   
-  meta "rewrite_def" function push_front_T
+  meta "rewrite_def" function cons_T
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let push_front_T'0 (self: MutBorrow.t t_List_T) (value: t_T) (return (x: ())) =
+  let push_front_T (self: MutBorrow.t t_List_T) (value: t_T) (return (x: ())) =
   {[@stop_split] [@expl:push_front_T requires] ([@stop_split] [@expl:push_front 'self' type invariant] inv_refmut_List_T self)
     /\ ([@stop_split] [@expl:push_front 'value' type invariant] inv_T value)}
     (! bb0
@@ -9569,7 +9580,7 @@ module M_imp__impl_List_T__push_front (* imp::List<T> *)
             [ &_36 <- _bor ] -{inv_Seq_Box_Perm_ptr_Node_T_Global _bor.final}-
             [ &_37 <- { _37 with current = _bor.final } ] s4)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Box_Perm_ptr_Node_T_Global _37.current} any) ]
-      | s4 = push_front_ghost_Box_Perm_ptr_Node_T_Global {_36} {_39} (fun (_x: ()) -> [ &_35 <- _x ] s5)
+      | s4 = push_front_Box_Perm_ptr_Node_T_Global {_36} {_39} (fun (_x: ()) -> [ &_35 <- _x ] s5)
       | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Box_Perm_ptr_Node_T_Global _37} any) ]
       | s6 = -{resolve_refmut_Seq_Box_Perm_ptr_Node_T_Global _37}- s7
       | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_List_T self} any) ]
@@ -9605,7 +9616,7 @@ module M_imp__impl_List_T__push_front (* imp::List<T> *)
     | & _38: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T) = Any.any_l ()
     | & _39: t_Perm_ptr_Node_T = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:push_front ensures] view_List_T self.final
-      = push_front_T (view_List_T self.current) value}
+      = cons_T (view_List_T self.current) value}
       (! return {result}) ]
 end
 module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence (* <imp::Cursor<'_, T> as creusot_std::resolve::Resolve> *)
