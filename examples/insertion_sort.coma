@@ -9,15 +9,15 @@ module M_insertion_sort
   use creusot.prelude.Any
   use int.Int
   
-  let len_i32 (self_: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self_)
+  let len_i32 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
       = UInt64.t'int result}
       (! return {result}) ]
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
-  let into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
-    [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
+  let into_iter_Range_usize (self: t_Range_usize) (return (x: t_Range_usize)) = any
+    [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
   
@@ -60,10 +60,10 @@ module M_insertion_sort
     resolve_refmut_Range_usize self
     /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
-  let next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+  let next_Range_usize (self: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Range_usize self_
-        | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
+        | None -> completed_Range_usize self
+        | Some v -> produces_Range_usize self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
@@ -95,13 +95,13 @@ module M_insertion_sort
   
   meta "rewrite_def" function index_slice_i32'0
   
-  let swap_i32 (self_: MutBorrow.t (Slice64.slice Int32.t)) (i: UInt64.t) (j: UInt64.t) (return (x: ())) =
-  {[@stop_split] [@expl:swap_i32 requires] ([@stop_split] [@expl:swap requires #0] UInt64.t'int i
-      < Seq.length (Slice64.view self_.current))
-    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int j < Seq.length (Slice64.view self_.current))}
+  let swap_i32 (self: MutBorrow.t (Slice64.slice Int32.t)) (a: UInt64.t) (b: UInt64.t) (return (x: ())) =
+  {[@stop_split] [@expl:swap_i32 requires] ([@stop_split] [@expl:swap requires #0] UInt64.t'int a
+      < Seq.length (Slice64.view self.current))
+    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < Seq.length (Slice64.view self.current))}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:swap ensures] Permut.exchange (Slice64.view self_.final) (Slice64.view self_.current) (UInt64.t'int i) (UInt64.t'int j)}
+    {[@stop_split] [@expl:swap ensures] Permut.exchange (Slice64.view self.final) (Slice64.view self.current) (UInt64.t'int a) (UInt64.t'int b)}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current

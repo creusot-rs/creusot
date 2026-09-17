@@ -16,9 +16,9 @@ module M_search
     forall self: t_Vec_u8_Global [view_Vec_u8_Global self]. Seq.length (view_Vec_u8_Global self)
       <= UInt64.t'int const_MAX
   
-  let len_u8 (self_: t_Vec_u8_Global) (return (x: UInt64.t)) = any
+  let len_u8 (self: t_Vec_u8_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_u8_Global self_)}
+      = Seq.length (view_Vec_u8_Global self)}
       (! return {result}) ]
   
   type t_RangeInclusive_usize
@@ -48,12 +48,12 @@ module M_search
       -> not is_empty_log_RangeInclusive_usize result)}
       (! return {result}) ]
   
-  let into_iter_RangeInclusive_usize (self_: t_RangeInclusive_usize) (return (x: t_RangeInclusive_usize)) =
-  {[@stop_split] [@expl:into_iter 'self_' type invariant] inv_RangeInclusive_usize self_}
+  let into_iter_RangeInclusive_usize (self: t_RangeInclusive_usize) (return (x: t_RangeInclusive_usize)) =
+  {[@stop_split] [@expl:into_iter 'self' type invariant] inv_RangeInclusive_usize self}
     any
     [ return (result: t_RangeInclusive_usize) ->
     {[@stop_split] [@expl:into_iter_RangeInclusive_usize ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_RangeInclusive_usize result)
-      /\ ([@stop_split] [@expl:into_iter ensures] result = self_)}
+      /\ ([@stop_split] [@expl:into_iter ensures] result = self)}
       (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
@@ -99,12 +99,12 @@ module M_search
   predicate completed_RangeInclusive_usize (self: MutBorrow.t t_RangeInclusive_usize) =
     is_empty_log_RangeInclusive_usize self.current /\ is_empty_log_RangeInclusive_usize self.final
   
-  let next_RangeInclusive_usize (self_: MutBorrow.t t_RangeInclusive_usize) (return (x: t_Option_usize)) =
-  {[@stop_split] [@expl:next 'self_' type invariant] inv_refmut_RangeInclusive_usize self_}
+  let next_RangeInclusive_usize (self: MutBorrow.t t_RangeInclusive_usize) (return (x: t_Option_usize)) =
+  {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_RangeInclusive_usize self}
     any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_RangeInclusive_usize self_
-        | Some v -> produces_RangeInclusive_usize self_.current (Seq.singleton v) self_.final
+        | None -> completed_RangeInclusive_usize self
+        | Some v -> produces_RangeInclusive_usize self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
@@ -137,8 +137,8 @@ module M_search
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
-  let into_iter_Range_usize (self_: t_Range_usize) (return (x: t_Range_usize)) = any
-    [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self_} (! return {result}) ]
+  let into_iter_Range_usize (self: t_Range_usize) (return (x: t_Range_usize)) = any
+    [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
@@ -175,10 +175,10 @@ module M_search
     resolve_refmut_Range_usize self
     /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
-  let next_Range_usize (self_: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+  let next_Range_usize (self: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
-        | None -> completed_Range_usize self_
-        | Some v -> produces_Range_usize self_.current (Seq.singleton v) self_.final
+        | None -> completed_Range_usize self
+        | Some v -> produces_Range_usize self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
   
@@ -192,11 +192,11 @@ module M_search
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_u8_Global'0 (self_: t_Vec_u8_Global) (ix: UInt64.t) (return (x: UInt8.t)) =
-  {[@stop_split] [@expl:index requires] in_bounds_usize ix (view_Vec_u8_Global self_)}
+  let index_Vec_u8_Global'0 (self: t_Vec_u8_Global) (index: UInt64.t) (return (x: UInt8.t)) =
+  {[@stop_split] [@expl:index requires] in_bounds_usize index (view_Vec_u8_Global self)}
     any
     [ return (result: UInt8.t) ->
-    {[@stop_split] [@expl:index ensures] has_value_usize ix (view_Vec_u8_Global self_) result}
+    {[@stop_split] [@expl:index ensures] has_value_usize index (view_Vec_u8_Global self) result}
       (! return {result}) ]
   
   predicate resolve_RangeInclusive_usize (_1: t_RangeInclusive_usize)

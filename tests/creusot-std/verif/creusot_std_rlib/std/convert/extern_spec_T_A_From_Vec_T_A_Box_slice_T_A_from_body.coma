@@ -42,7 +42,7 @@ predicate invariant_Vec_T_A (self: t_Vec_T_A) = inv_Seq_T (view_Vec_T_A self)
 
 predicate inv_Vec_T_A (_1: t_Vec_T_A)
 
-axiom inv_axiom: forall x: t_Vec_T_A [inv_Vec_T_A x]. inv_Vec_T_A x -> invariant_Vec_T_A x
+axiom inv_axiom: forall _1: t_Vec_T_A [inv_Vec_T_A _1]. inv_Vec_T_A _1 -> invariant_Vec_T_A _1
 
 predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
 
@@ -60,12 +60,12 @@ function view_Box_slice_T_A [@inline:trivial] (self: Slice64.slice t_T) : Seq.se
 
 meta "rewrite_def" function view_Box_slice_T_A
 
-let into_boxed_slice_T (self_: t_Vec_T_A) (return (x: Slice64.slice t_T)) =
-{[@stop_split] [@expl:into_boxed_slice 'self_' type invariant] inv_Vec_T_A self_}
+let into_boxed_slice_T (self: t_Vec_T_A) (return (x: Slice64.slice t_T)) =
+{[@stop_split] [@expl:into_boxed_slice 'self' type invariant] inv_Vec_T_A self}
   any
   [ return (result: Slice64.slice t_T) ->
   {[@stop_split] [@expl:into_boxed_slice_T ensures] ([@stop_split] [@expl:into_boxed_slice result type invariant] inv_Box_slice_T_A result)
-    /\ ([@stop_split] [@expl:into_boxed_slice ensures] view_Box_slice_T_A result = view_Vec_T_A self_)}
+    /\ ([@stop_split] [@expl:into_boxed_slice ensures] view_Box_slice_T_A result = view_Vec_T_A self)}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000

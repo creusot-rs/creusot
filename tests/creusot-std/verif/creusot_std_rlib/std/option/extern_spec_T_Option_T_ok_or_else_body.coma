@@ -32,29 +32,29 @@ predicate inv_E (_1: t_E)
 
 predicate postcondition_once_F (self: t_F) (args: ()) (result: t_E)
 
-let call_once_F (self_: t_F) (arg: ()) (return (x: t_E)) =
-{[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self_' type invariant] inv_F self_)
-  /\ ([@stop_split] [@expl:call_once requires] precondition_F self_ arg)}
+let call_once_F (self: t_F) (args: ()) (return (x: t_E)) =
+{[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_F self)
+  /\ ([@stop_split] [@expl:call_once requires] precondition_F self args)}
   any
   [ return (result: t_E) ->
   {[@stop_split] [@expl:call_once_F ensures] ([@stop_split] [@expl:call_once result type invariant] inv_E result)
-    /\ ([@stop_split] [@expl:call_once ensures] postcondition_once_F self_ arg result)}
+    /\ ([@stop_split] [@expl:call_once ensures] postcondition_once_F self args result)}
     (! return {result}) ]
 
 predicate inv_T (_1: t_T)
 
 predicate inv_Option_T (_1: t_Option_T)
 
-axiom inv_axiom [@rewrite]: forall x: t_Option_T [inv_Option_T x]. inv_Option_T x
-    = match x with
+axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+    = match _1 with
       | None -> true
       | Some f0 -> inv_T f0
       end
 
 predicate inv_Result_T_E (_1: t_Result_T_E)
 
-axiom inv_axiom'0 [@rewrite]: forall x: t_Result_T_E [inv_Result_T_E x]. inv_Result_T_E x
-    = match x with
+axiom inv_axiom'0 [@rewrite]: forall _1: t_Result_T_E [inv_Result_T_E _1]. inv_Result_T_E _1
+    = match _1 with
       | Ok f0 -> inv_T f0
       | Err f0 -> inv_E f0
       end
