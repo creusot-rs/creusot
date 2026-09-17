@@ -110,7 +110,7 @@ extern_spec! {
         #[ensures(match result {
             Some(t) =>
                 (^self)@ == self@.subsequence(1, self@.len()) &&
-                self@ == (^self)@.push_front(t),
+                self@ == (^self)@.cons(t),
             None => *self == ^self && self@.len() == 0
         })]
         fn pop_front(&mut self) -> Option<T>;
@@ -119,18 +119,18 @@ extern_spec! {
         #[ensures(match result {
             Some(t) =>
                 (^self)@ == self@.subsequence(0, self@.len() - 1) &&
-                self@ == (^self)@.push_back(t),
+                self@ == (^self)@.snoc(t),
             None => *self == ^self && self@.len() == 0
         })]
         fn pop_back(&mut self) -> Option<T>;
 
         #[check(terminates)] // can OOM
         #[ensures((^self)@.len() == self@.len() + 1)]
-        #[ensures((^self)@ == self@.push_front(value))]
+        #[ensures((^self)@ == self@.cons(value))]
         fn push_front(&mut self, value: T);
 
         #[check(terminates)] // can OOM
-        #[ensures((^self)@ == self@.push_back(value))]
+        #[ensures((^self)@ == self@.snoc(value))]
         fn push_back(&mut self, value: T);
     }
 

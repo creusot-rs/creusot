@@ -104,7 +104,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
         #[invariant(forall<i> 0 <= i && i < produced.len() ==> self.func.postcondition_mut((&produced[i],), self.func, false))]
         #[invariant(old_self.iter.produces(*produced, self.iter))]
         while let Some(n) = self.iter.next() {
-            produced = snapshot! { produced.push_back(n) };
+            produced = snapshot! { produced.snoc(n) };
             proof_assert!(old_self.iter.produces(*produced, self.iter));
             if (self.func)(&n) {
                 return Some(n);

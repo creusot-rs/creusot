@@ -38,13 +38,7 @@ axiom concat_contains_T_spec: forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. con
       = contains_T a x
     \/ contains_T b x
 
-type t_Option_T = None | Some t_T
-
-function get_T (self: Seq.seq t_T) (ix: int) : t_Option_T = if 0 <= ix /\ ix < Seq.length self then
-    Some (Seq.get self ix)
-  else
-    None
-
+type t_Option_ref_T = None | Some t_T
 
 meta "compute_max_steps" 1000000
 
@@ -67,6 +61,8 @@ goal vc_set_produces_trans_T: set_produces_T a ab b
   -> ([@stop_split] [@expl:concat_contains ensures] forall a'0: Seq.seq t_T, b'0: Seq.seq t_T, x: t_T. contains_T (Seq.(++) a'0 b'0) x
         = contains_T a'0 x
       \/ contains_T b'0 x)
-  -> (forall i: int, x: t_T. Seq.length ab <= i /\ get_T (Seq.(++) ab bc) i = Some x -> contains_T bc x)
+  -> (forall i: int, x: t_T. Seq.length ab <= i
+        /\ (if 0 <= i /\ i < Seq.length (Seq.(++) ab bc) then Some (Seq.get (Seq.(++) ab bc) i) else None) = Some x
+      -> contains_T bc x)
   && (forall i: int. 0 <= i /\ i < Seq.length bc -> Seq.get bc i = Seq.get (Seq.(++) ab bc) (Seq.length ab + i))
   && ([@stop_split] [@expl:set_produces_trans ensures] set_produces_T a (Seq.(++) ab bc) c)
