@@ -30,41 +30,48 @@
 let
   cvc5-cadical = cadical.override { version = "2.1.3"; };
 
-  cvc5-cocoalib = stdenv.mkDerivation {
-    name = "CoCoALib";
+  cvc5-cln = cln.override { gccStdenv = stdenv; };
 
-    src = fetchurl {
-      url = "https://cocoa.altervista.org/cocoalib/tgz/CoCoALib-0.99800.tgz";
-      sha256 = "sha256-+Lsifi4XKeFxz3rCAIr3HfJZFGB3EsNdt7y1oESpKMY=";
+  cvc5-cocoalib =
+    let
+      libraryPath = if stdenv.isDarwin then "DYLD_LIBRARY_PATH" else "LD_LIBRARY_PATH";
+      ext = stdenv.hostPlatform.extensions.sharedLibrary;
+    in
+    stdenv.mkDerivation {
+      name = "CoCoALib";
+
+      src = fetchurl {
+        url = "https://cocoa.altervista.org/cocoalib/tgz/CoCoALib-0.99800.tgz";
+        sha256 = "sha256-+Lsifi4XKeFxz3rCAIr3HfJZFGB3EsNdt7y1oESpKMY=";
+      };
+
+      nativeBuildInputs = [ which ];
+      buildInputs = [ gmp ];
+
+      patches = [
+        (fetchpatch {
+          name = "CoCoALib-0.99800-trace.patch";
+          url = "https://raw.githubusercontent.com/cvc5/cvc5/7de04e22fafc537d8c8f3188b32af64f3529e90c/cmake/deps-utils/CoCoALib-0.99800-trace.patch";
+          sha256 = "sha256-IW+phNt+Ce01QaBiqnnxxy1ai4rSCckOyGO+Ymjwt+o=";
+        })
+      ];
+
+      preConfigure = ''
+        find . -type f -exec sed -i -e 's|/usr/bin/||g' {} \;
+        find . -type f -exec sed -i -e 's|/bin/||g' {} \;
+        find . -name "*.sh" -exec sed -i -e 's|bash|${bash}/bin/bash|g' {} \;
+        sed -i -e '14s|.*|GMP_LIB="${gmp.dev}/lib/libgmp${ext}"|g' configuration/gmp-find-hdr.sh
+        sed -i -e '106iexport ${libraryPath}=${gmp}/lib' configuration/gmp-check-cxxflags.sh
+        sed -i -e '164s|.*||g' Makefile
+        sed -i -e '225s|.*||g' Makefile
+        touch doc/CoCoALib.pdf examples/index.html
+        mkdir $out $out/include $out/lib
+      '';
+
+      configureFlags = [
+        "--with-libgmp=${gmp}/lib/libgmp${ext}"
+      ];
     };
-
-    nativeBuildInputs = [ which ];
-    buildInputs = [ gmp ];
-
-    patches = [
-      (fetchpatch {
-        name = "CoCoALib-0.99800-trace.patch";
-        url = "https://raw.githubusercontent.com/cvc5/cvc5/7de04e22fafc537d8c8f3188b32af64f3529e90c/cmake/deps-utils/CoCoALib-0.99800-trace.patch";
-        sha256 = "sha256-IW+phNt+Ce01QaBiqnnxxy1ai4rSCckOyGO+Ymjwt+o=";
-      })
-    ];
-
-    preConfigure = ''
-      find . -type f -exec sed -i -e 's|/usr/bin/||g' {} \;
-      find . -type f -exec sed -i -e 's|/bin/||g' {} \;
-      find . -name "*.sh" -exec sed -i -e 's|bash|${bash}/bin/bash|g' {} \;
-      sed -i -e '14s|.*|GMP_LIB="${gmp.dev}/lib/libgmp.so"|g' configuration/gmp-find-hdr.sh
-      sed -i -e '106iexport LD_LIBRARY_PATH=${gmp}/lib' configuration/gmp-check-cxxflags.sh
-      sed -i -e '164s|.*||g' Makefile
-      sed -i -e '225s|.*||g' Makefile
-      touch doc/CoCoALib.pdf examples/index.html
-      mkdir $out $out/include $out/lib
-    '';
-
-    configureFlags = [
-      "--with-libgmp=${gmp}/lib/libgmp.so"
-    ];
-  };
 
   cvc5-glpk = stdenv.mkDerivation rec {
     inherit (glpk) meta;
@@ -129,8 +136,8 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
-    cln
     cvc5-cadical
+    cvc5-cln
     cvc5-cocoalib
     cvc5-glpk
     cvc5-libpoly
