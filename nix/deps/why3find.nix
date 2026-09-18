@@ -1,11 +1,14 @@
 {
   # Dependencies
   creusot,
+  darwin,
   ocamlPackages,
   zeromq,
 
   # Librairies
   fetchurl,
+  lib,
+  stdenv,
 
   # Pins
   sha256,
@@ -20,6 +23,10 @@ ocamlPackages.buildDunePackage {
     url = "https://github.com/creusot-rs/why3find/archive/${version}.tar.gz";
     hash = sha256;
   };
+
+  nativeBuildInputs = lib.optionals stdenv.isDarwin [
+    darwin.sigtool
+  ];
 
   buildInputs = [
     creusot.why3
