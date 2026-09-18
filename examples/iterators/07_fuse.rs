@@ -59,7 +59,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[ensures(match self.iter {
-        Some(s) => I::size_hint.postcondition((&s,), result),
+        Some(s) => I::size_hint.postcondition((&s,), result, mode!()),
         None => result == (0usize, Some(0usize))
     })]
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -72,7 +72,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
 
 impl<I: ExactSizeIterator> ExactSizeIterator for Fuse<I> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {

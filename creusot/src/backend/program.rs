@@ -26,13 +26,13 @@ use crate::{
         wto::{Component, weak_topological_order},
     },
     contracts_items::Intrinsic,
-    ctx::{BodyId, Dependencies, HasTyCtxt as _},
+    ctx::{BodyId, Dependencies, HasTyCtxt as _, TranslationCtx},
     naming::name,
     translated_item::FileModule,
     translation::{
         fmir::{
-            Block, Body, BorrowKind, Branches, LocalDecls, LocalKind, Operand, Place, RValue,
-            Statement, StatementKind, Terminator,
+            Block, Body, BorrowKind, Branches, CallMode, LocalDecls, LocalKind, Operand, Place,
+            RValue, Statement, StatementKind, Terminator,
         },
         pearlite::Term,
     },
@@ -90,9 +90,22 @@ pub(crate) fn translate_function<'tcx>(
     };
     let (body, sig) = to_why_body(ctx, &names, name, def_id);
 
+    let not_terminates = if !sig.terminates {
+        Some(
+            Exp::qvar(names.in_pre(PreMod::Mode, "terminates")).app([Exp::var(name::mode())]).not(),
+        )
+    } else {
+        None
+    };
+
     let (mut decls, setters) = names.provide_deps(ctx);
     let body = setters.call_setters(body);
     let mut defn = to_why_defn(ctx, def_id, body, sig, const_name);
+
+    if let Some(not_terminates) = not_terminates {
+        defn.body = Expr::Assert(not_terminates.into(), defn.body.into());
+    }
+
     // Refresh the name of the function. The previous name is already used for recursive calls,
     // which are translated to a separate abstract function.
     defn.prototype.name = defn.prototype.name.refresh();
@@ -168,8 +181,16 @@ pub(crate) fn to_why_body<'tcx>(
     let args = sig.inputs.iter().map(|(name, _, _)| name.0).collect::<Box<[_]>>();
     let body_id = BodyId::local(def_id.expect_local());
     let mut recursive_calls = RecursiveCalls::new();
-    let mut body =
-        why_body(ctx, names, body_id, None, &args, name::return_(), &mut recursive_calls);
+    let mut body = why_body(
+        ctx,
+        names,
+        body_id,
+        None,
+        &Exp::var(name::mode()),
+        &args,
+        name::return_(),
+        &mut recursive_calls,
+    );
     let (mut sig, variant) = {
         let mut sig = sig.clone();
         sig.inputs =
@@ -207,8 +228,11 @@ pub(crate) fn to_why_body<'tcx>(
                 subst,
                 [Term::var(variant_name, variant_expr.ty), variant_expr.spanned()],
             );
-            lower_pure(ctx, names, &variant_decreases)
-                .with_attr(Attribute::Attr("expl:function variant".to_string()))
+            let variant_decreases = lower_pure(ctx, names, &variant_decreases)
+                .with_attr(Attribute::Attr("expl:function variant".to_string()));
+            Exp::qvar(names.in_pre(PreMod::Mode, "terminates"))
+                .app([Exp::var(name::mode())])
+                .implies(variant_decreases)
         };
 
         for (def_id, (fun_name, params, ret_ty)) in recursive_calls {
@@ -218,9 +242,10 @@ pub(crate) fn to_why_body<'tcx>(
             );
             let params: Box<[_]> = params
                 .into_iter()
+                .chain(once(Type::qconstructor(names.in_pre(PreMod::Mode, "t"))))
                 .zip(&sig.prototype.params)
                 .map(|(ty, param)| Param::Term(param.as_term().0, ty))
-                .chain(std::iter::once(Param::Cont(
+                .chain(once(Param::Cont(
                     Ident::fresh_local("_k"),
                     [].into(),
                     [Param::Term(Ident::fresh_local("_ret"), ret_ty)].into(),
@@ -259,7 +284,7 @@ pub(crate) fn to_why_body<'tcx>(
     }
 
     if let Some((exp, ty)) = std::mem::take(&mut sig.variant) {
-        body = body.let_(std::iter::once(Var(variant_name.0, ty, exp, IsRef::NotRef)))
+        body = body.let_(once(Var(variant_name.0, ty, exp, IsRef::NotRef)))
     }
 
     (body, sig)
@@ -314,6 +339,7 @@ pub fn why_body<'tcx>(
     names: &impl Namer<'tcx>,
     body_id: BodyId,
     subst: Option<GenericArgsRef<'tcx>>,
+    mode: &Exp,
     params: &[Ident],
     inner_return: Ident,
     recursive_calls: &mut RecursiveCalls,
@@ -358,6 +384,7 @@ pub fn why_body<'tcx>(
                 names,
                 body_id.def_id,
                 &block_idents,
+                mode,
                 inner_return,
                 c,
             )
@@ -401,11 +428,19 @@ fn component_to_defn<'tcx>(
     names: &impl Namer<'tcx>,
     def_id: DefId,
     block_idents: &IndexMap<BasicBlock, Ident>,
+    mode: &Exp,
     return_ident: Ident,
     c: Component<BasicBlock>,
 ) -> Defn {
-    let lower =
-        LoweringState { ctx, names, locals: &body.locals, def_id, block_idents, return_ident };
+    let lower = LoweringState {
+        ctx,
+        names,
+        locals: &body.locals,
+        def_id,
+        block_idents,
+        mode,
+        return_ident,
+    };
     let (head, tl) = match c {
         Component::Simple(v) => {
             let block = body.blocks.swap_remove(&v).unwrap();
@@ -424,9 +459,15 @@ fn component_to_defn<'tcx>(
             subst,
             [Term::var(variant.old_name, variant.term.ty), variant.term.spanned()],
         );
-
-        lower_pure(ctx, lower.names, &variant_decreases)
-            .with_attr(Attribute::Attr("expl:loop variant".to_string()))
+        let variant_decreases = lower_pure(ctx, lower.names, &variant_decreases)
+            .with_attr(Attribute::Attr("expl:loop variant".to_string()));
+        if variant.in_ghost {
+            variant_decreases
+        } else {
+            Exp::qvar(names.in_pre(PreMod::Mode, "terminates"))
+                .app([Exp::var(name::mode())])
+                .implies(variant_decreases)
+        }
     });
     let mut block = block.into_why(&lower, recursive_calls, head);
 
@@ -440,6 +481,7 @@ fn component_to_defn<'tcx>(
                 names,
                 def_id,
                 block_idents,
+                mode,
                 return_ident,
                 id,
             )
@@ -496,6 +538,7 @@ struct LoweringState<'a, 'tcx, N: Namer<'tcx>> {
     /// Id of the function (or promoted) we are lowering.
     def_id: DefId,
     block_idents: &'a IndexMap<BasicBlock, Ident>,
+    mode: &'a Exp,
     return_ident: Ident,
 }
 
@@ -566,6 +609,7 @@ impl<'tcx> Operand<'tcx> {
                     lower.names,
                     body_id,
                     subst,
+                    &Exp::qvar(lower.names.in_pre(PreMod::Mode, "program_mode")),
                     &[],
                     ret,
                     &mut RecursiveCalls::new(),
@@ -844,7 +888,7 @@ impl<'tcx> RValue<'tcx> {
 
                 let record = Exp::var(id).boxed();
                 let label = Name::Global(lower.names.in_pre(PreMod::Slice, "elts"));
-                let arr_elts = Exp::RecField { record, label };
+                let arr_elts = record.field(label);
 
                 istmts.push(IntermediateStmt::Any(id, ty.clone()));
                 let mut assumptions = fields
@@ -1349,10 +1393,11 @@ impl<'tcx> Statement<'tcx> {
                     e.into_why(self.span, lower, lhs.ty(lower.ctx.tcx, lower.locals), &mut istmts);
                 lower.assignment(&lhs, rhs, &mut istmts, self.span);
             }
-            StatementKind::Call(dest, fun_id, subst, args, span) => {
+            StatementKind::Call(dest, fun_id, subst, args, call_mode, span) => {
                 let params =
                     args.iter().map(|a| lower.ty(a.ty(lower.ctx.tcx, lower.locals))).collect();
-                let (fun_qname, args) = func_call_to_why3(lower, fun_id, subst, args, &mut istmts);
+                let (fun_qname, args) =
+                    func_call_to_why3(lower, fun_id, subst, args, call_mode, &mut istmts);
                 let ty = dest.ty(lower.ctx.tcx, lower.locals);
                 let ty = lower.ty(ty);
                 if lower.ctx.should_check_variant_decreases(lower.def_id, fun_id) {
@@ -1393,11 +1438,17 @@ fn func_call_to_why3<'tcx>(
     id: DefId,
     subst: GenericArgsRef<'tcx>,
     args: Box<[Operand<'tcx>]>,
+    call_mode: CallMode,
     istmts: &mut Vec<IntermediateStmt>,
 ) -> (Name, Box<[Arg]>) {
     // TODO: Perform this simplification earlier
     // Eliminate "rust-call" ABI
     let span = lower.ctx.def_span(id);
+    let mode = Arg::Term(if call_mode.ghost {
+        Exp::qvar(lower.names.in_pre(PreMod::Mode, "into_ghost")).app([lower.mode.clone()])
+    } else {
+        lower.mode.clone()
+    });
     let args: Box<[_]> = if lower.ctx.is_closure_like(id) {
         assert!(args.len() == 2, "closures should only have two arguments (env, args)");
         let [arg, Operand::Place(pl)] = *args.into_array().unwrap() else { panic!() };
@@ -1415,11 +1466,14 @@ fn func_call_to_why3<'tcx>(
                     .collect();
                 Arg::Term(Operand::Place(Place { projection, ..pl }).into_why(lower, istmts, span))
             }))
+            .chain(once(mode))
             .collect()
     } else {
-        args.into_iter().map(|a| a.into_why(lower, istmts, span)).map(Arg::Term).collect()
+        args.into_iter()
+            .map(|a| Arg::Term(a.into_why(lower, istmts, span)))
+            .chain(once(mode))
+            .collect()
     };
-
     (lower.names.item(id, subst), args)
 }
 

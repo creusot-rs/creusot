@@ -1,5 +1,6 @@
 module M_impl_Clone_for_Expr__clone (* <Expr as std::clone::Clone> *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
@@ -20,14 +21,15 @@ module M_impl_Clone_for_Expr__clone (* <Expr as std::clone::Clone> *)
         end}
       any) ]
   
-  let clone_Expr (self: t_Expr) (return (x: t_Expr)) = any
+  let clone_Expr (self: t_Expr) (mode: Mode.t) (return (x: t_Expr)) = any
     [ return (result: t_Expr) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let clone_Expr'0 (self: t_Expr) (return (x: t_Expr)) = (! bb0
+  let clone_Expr'0 (self: t_Expr) (mode: Mode.t) (return (x: t_Expr)) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = any
       [ br0 (x0: t_Expr) (x1: t_Expr) (x2: t_Expr) -> {self = IfThenElse x0 x1 x2} (! bb8)
       | br1 (x0: UInt64.t) -> {self = Var x0} (! bb7)
@@ -42,11 +44,11 @@ module M_impl_Clone_for_Expr__clone (* <Expr as std::clone::Clone> *)
       | s1 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &t <- rt ] s2)
       | s2 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &e <- re ] s3)
       | s3 = [ &_11 <- c ] s4
-      | s4 = clone_Expr {_11} (fun (_x: t_Expr) -> [ &_9 <- _x ] s5)
+      | s4 = clone_Expr {_11} {mode} (fun (_x: t_Expr) -> [ &_9 <- _x ] s5)
       | s5 = [ &_15 <- t ] s6
-      | s6 = clone_Expr {_15} (fun (_x: t_Expr) -> [ &_13 <- _x ] s7)
+      | s6 = clone_Expr {_15} {mode} (fun (_x: t_Expr) -> [ &_13 <- _x ] s7)
       | s7 = [ &_19 <- e ] s8
-      | s8 = clone_Expr {_19} (fun (_x: t_Expr) -> [ &_17 <- _x ] s9)
+      | s8 = clone_Expr {_19} {mode} (fun (_x: t_Expr) -> [ &_17 <- _x ] s9)
       | s9 = [ &_ret <- IfThenElse _9 _13 _17 ] s10
       | s10 = return {_ret} ] ]
     [ & _ret: t_Expr = Any.any_l ()
@@ -66,6 +68,7 @@ end
 module M_impl_Expr__ite (* Expr *)
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
   
@@ -73,18 +76,20 @@ module M_impl_Expr__ite (* Expr *)
   
   meta "select_lsinst" "all"
   
-  let ite (c: t_Expr) (t: t_Expr) (e: t_Expr) (return (x: t_Expr)) = (! bb0
+  let ite (c: t_Expr) (t: t_Expr) (e: t_Expr) (mode: Mode.t) (return (x: t_Expr)) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- IfThenElse c t e ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Expr = Any.any_l () | & c: t_Expr = c | & t: t_Expr = t | & e: t_Expr = e ])
     [ return (result: t_Expr) -> {[@stop_split] [@expl:ite ensures] result = IfThenElse c t e} (! return {result}) ]
 end
 module M_impl_Expr__normalize (* Expr *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
   
-  let clone_Expr (self: t_Expr) (return (x: t_Expr)) = any
+  let clone_Expr (self: t_Expr) (mode: Mode.t) (return (x: t_Expr)) = any
     [ return (result: t_Expr) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
   
   let elim_IfThenElse (_x: t_Expr) (return (c: t_Expr) (t: t_Expr) (e: t_Expr)) = any
@@ -109,10 +114,10 @@ module M_impl_Expr__normalize (* Expr *)
       | False' -> true
       end
   
-  let normalize (self: t_Expr) (return (x: t_Expr)) = any
+  let normalize (self: t_Expr) (mode: Mode.t) (return (x: t_Expr)) = any
     [ return (result: t_Expr) -> {[@stop_split] [@expl:normalize ensures] is_normalized result} (! return {result}) ]
   
-  let transpose (self: t_Expr) (a: t_Expr) (b: t_Expr) (return (x: t_Expr)) =
+  let transpose (self: t_Expr) (a: t_Expr) (b: t_Expr) (mode: Mode.t) (return (x: t_Expr)) =
   {[@stop_split] [@expl:transpose requires] ([@stop_split] [@expl:transpose requires #0] is_normalized self)
     /\ ([@stop_split] [@expl:transpose requires #1] is_normalized a)
     /\ ([@stop_split] [@expl:transpose requires #2] is_normalized b)}
@@ -123,22 +128,25 @@ module M_impl_Expr__normalize (* Expr *)
   
   meta "select_lsinst" "all"
   
-  let normalize'0 (self: t_Expr) (return (x: t_Expr)) = (! bb0
+  let normalize'0 (self: t_Expr) (mode: Mode.t) (return (x: t_Expr)) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = any
       [ br0 (x0: t_Expr) (x1: t_Expr) (x2: t_Expr) -> {self = IfThenElse x0 x1 x2} (! bb3)
       | br1 (x0: UInt64.t) -> {self = Var x0} (! bb1)
       | br2 -> {self = True'} (! bb1)
       | br3 -> {self = False'} (! bb1) ]
     | bb1 = s0
-      [ s0 = [ &e'0 <- self ] s1 | s1 = clone_Expr {e'0} (fun (_x: t_Expr) -> [ &_ret <- _x ] s2) | s2 = return {_ret} ]
+      [ s0 = [ &e'0 <- self ] s1
+      | s1 = clone_Expr {e'0} {mode} (fun (_x: t_Expr) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ]
     | bb3 = s0
       [ s0 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &c <- rc ] s1)
       | s1 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &t <- rt ] s2)
       | s2 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &e <- re ] s3)
-      | s3 = normalize {c} (fun (_x: t_Expr) -> [ &cp <- _x ] s4)
-      | s4 = normalize {t} (fun (_x: t_Expr) -> [ &tp <- _x ] s5)
-      | s5 = normalize {e} (fun (_x: t_Expr) -> [ &ep <- _x ] s6)
-      | s6 = transpose {cp} {tp} {ep} (fun (_x: t_Expr) -> [ &_ret <- _x ] s7)
+      | s3 = normalize {c} {mode} (fun (_x: t_Expr) -> [ &cp <- _x ] s4)
+      | s4 = normalize {t} {mode} (fun (_x: t_Expr) -> [ &tp <- _x ] s5)
+      | s5 = normalize {e} {mode} (fun (_x: t_Expr) -> [ &ep <- _x ] s6)
+      | s6 = transpose {cp} {tp} {ep} {mode} (fun (_x: t_Expr) -> [ &_ret <- _x ] s7)
       | s7 = return {_ret} ] ]
     [ & _ret: t_Expr = Any.any_l ()
     | & self: t_Expr = self
@@ -152,13 +160,14 @@ module M_impl_Expr__normalize (* Expr *)
     [ return (result: t_Expr) -> {[@stop_split] [@expl:normalize ensures] is_normalized result} (! return {result}) ]
 end
 module M_impl_Expr__simplify (* Expr *)
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use map.Map
   use creusot.prelude.Any
   
   type t_BTreeMap_usize_bool
   
-  let new_usize (return (x: t_BTreeMap_usize_bool)) = any
+  let new_usize (mode: Mode.t) (return (x: t_BTreeMap_usize_bool)) = any
     [ return (result: t_BTreeMap_usize_bool) -> (! return {result}) ]
   
   type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
@@ -197,7 +206,7 @@ module M_impl_Expr__simplify (* Expr *)
       | _ -> true
       end
   
-  let simplify_helper (self: t_Expr) (state: t_BTreeMap_usize_bool) (return (x: t_Expr)) =
+  let simplify_helper (self: t_Expr) (state: t_BTreeMap_usize_bool) (mode: Mode.t) (return (x: t_Expr)) =
   {[@stop_split] [@expl:simplify_helper requires] is_normalized self}
     any
     [ return (result: t_Expr) ->
@@ -210,17 +219,19 @@ module M_impl_Expr__simplify (* Expr *)
   
   meta "select_lsinst" "all"
   
-  let simplify (self: t_Expr) (return (x: t_Expr)) = {[@stop_split] [@expl:simplify requires] is_normalized self}
+  let simplify (self: t_Expr) (mode: Mode.t) (return (x: t_Expr)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:simplify requires] is_normalized self}
     (! bb0
     [ bb0 = s0
-      [ s0 = new_usize (fun (_x: t_BTreeMap_usize_bool) -> [ &_6 <- _x ] s1)
-      | s1 = simplify_helper {self} {_6} (fun (_x: t_Expr) -> [ &_ret <- _x ] s2)
+      [ s0 = new_usize {mode} (fun (_x: t_BTreeMap_usize_bool) -> [ &_6 <- _x ] s1)
+      | s1 = simplify_helper {self} {_6} {mode} (fun (_x: t_Expr) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ]
     [ & _ret: t_Expr = Any.any_l () | & self: t_Expr = self | & _6: t_BTreeMap_usize_bool = Any.any_l () ])
     [ return (result: t_Expr) -> {[@stop_split] [@expl:simplify ensures] is_simplified result} (! return {result}) ]
 end
 module M_impl_Expr__simplify_helper (* Expr *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use map.Map
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -251,7 +262,7 @@ module M_impl_Expr__simplify_helper (* Expr *)
   
   meta "rewrite_def" function deep_model_ref_usize
   
-  let get_usize (self: t_BTreeMap_usize_bool) (key: UInt64.t) (return (x: t_Option_ref_bool)) = any
+  let get_usize (self: t_BTreeMap_usize_bool) (key: UInt64.t) (mode: Mode.t) (return (x: t_Option_ref_bool)) = any
     [ return (result: t_Option_ref_bool) ->
     {[@stop_split] [@expl:get_usize ensures] ([@stop_split] [@expl:get ensures #0] result = None
         -> Map.get (view_BTreeMap_usize_bool self) (deep_model_ref_usize key) = None'0)
@@ -305,7 +316,7 @@ module M_impl_Expr__simplify_helper (* Expr *)
       | _ -> true
       end
   
-  let simplify_helper (self: t_Expr) (state: t_BTreeMap_usize_bool) (return (x: t_Expr)) =
+  let simplify_helper (self: t_Expr) (state: t_BTreeMap_usize_bool) (mode: Mode.t) (return (x: t_Expr)) =
   {[@stop_split] [@expl:simplify_helper requires] is_normalized self}
     any
     [ return (result: t_Expr) ->
@@ -314,12 +325,12 @@ module M_impl_Expr__simplify_helper (* Expr *)
       /\ ([@stop_split] [@expl:simplify_helper ensures #1] is_simplified result)}
       (! return {result}) ]
   
-  let clone_BTreeMap_usize_bool (self: t_BTreeMap_usize_bool) (return (x: t_BTreeMap_usize_bool)) = any
+  let clone_BTreeMap_usize_bool (self: t_BTreeMap_usize_bool) (mode: Mode.t) (return (x: t_BTreeMap_usize_bool)) = any
     [ return (result: t_BTreeMap_usize_bool) -> {[@stop_split] [@expl:clone ensures] self = result}
       (! return {result}) ]
   
-  let insert_usize (self: MutBorrow.t t_BTreeMap_usize_bool) (key: UInt64.t) (value: bool) (return (x: t_Option_bool)) =
-  any
+  let insert_usize (self: MutBorrow.t t_BTreeMap_usize_bool) (key: UInt64.t) (value: bool) (mode: Mode.t)
+    (return (x: t_Option_bool)) = any
     [ return (result: t_Option_bool) ->
     {[@stop_split] [@expl:insert ensures] forall i: int. Map.get (view_BTreeMap_usize_bool self.final) i
         = (if i = deep_model_usize key then Some'0 value else Map.get (view_BTreeMap_usize_bool self.current) i)}
@@ -329,8 +340,9 @@ module M_impl_Expr__simplify_helper (* Expr *)
   
   meta "select_lsinst" "all"
   
-  let simplify_helper'0 (self: t_Expr) (state: t_BTreeMap_usize_bool) (return (x: t_Expr)) =
-  {[@stop_split] [@expl:simplify_helper requires] is_normalized self}
+  let simplify_helper'0 (self: t_Expr) (state: t_BTreeMap_usize_bool) (mode: Mode.t) (return (x: t_Expr)) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:simplify_helper requires] is_normalized self}
     (! bb0
     [ bb0 = any
       [ br0 (x0: t_Expr) (x1: t_Expr) (x2: t_Expr) -> {self = IfThenElse x0 x1 x2} (! bb5)
@@ -341,7 +353,7 @@ module M_impl_Expr__simplify_helper (* Expr *)
     | bb4 = s0
       [ s0 = elim_Var {self} (fun (rv: UInt64.t) -> [ &v'0 <- rv ] s1)
       | s1 = [ &_53 <- v'0 ] s2
-      | s2 = get_usize {state} {_53} (fun (_x: t_Option_ref_bool) -> [ &_50 <- _x ] s3)
+      | s2 = get_usize {state} {_53} {mode} (fun (_x: t_Option_ref_bool) -> [ &_50 <- _x ] s3)
       | s3 = any [ br0 -> {_50 = None} (! bb46) | br1 (x0: bool) -> {_50 = Some x0} (! bb42) ] ]
     | bb46 = s0 [ s0 = [ &_ret <- Var v'0 ] s1 | s1 = return {_ret} ]
     | bb42 = s0
@@ -360,31 +372,33 @@ module M_impl_Expr__simplify_helper (* Expr *)
         | br3 -> {c = False'} (! bb6) ] ]
     | bb6 = s0
       [ s0 = [ &c'0 <- c ] s1
-      | s1 = simplify_helper {c'0} {state} (fun (_x: t_Expr) -> [ &_ret <- _x ] s2)
+      | s1 = simplify_helper {c'0} {state} {mode} (fun (_x: t_Expr) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ]
     | bb8 = s0
       [ s0 = elim_Var {c} (fun (rv: UInt64.t) -> [ &v <- rv ] s1)
       | s1 = [ &_17 <- v ] s2
-      | s2 = get_usize {state} {_17} (fun (_x: t_Option_ref_bool) -> [ &_14 <- _x ] s3)
+      | s2 = get_usize {state} {_17} {mode} (fun (_x: t_Option_ref_bool) -> [ &_14 <- _x ] s3)
       | s3 = any [ br0 -> {_14 = None} (! bb17) | br1 (x0: bool) -> {_14 = Some x0} (! bb11) ] ]
     | bb17 = s0
-      [ s0 = clone_BTreeMap_usize_bool {state} (fun (_x: t_BTreeMap_usize_bool) -> [ &state_t <- _x ] s1)
+      [ s0 = clone_BTreeMap_usize_bool {state} {mode} (fun (_x: t_BTreeMap_usize_bool) -> [ &state_t <- _x ] s1)
       | s1 = MutBorrow.borrow_mut <t_BTreeMap_usize_bool> {state_t}
           (fun (_bor: MutBorrow.t t_BTreeMap_usize_bool) -> [ &_28 <- _bor ] [ &state_t <- _bor.final ] s2)
-      | s2 = insert_usize {_28} {v} {true} (fun (_x: t_Option_bool) -> [ &_27 <- _x ] s3)
-      | s3 = simplify_helper {t} {state_t} (fun (_x: t_Expr) -> [ &tp <- _x ] s4)
-      | s4 = clone_BTreeMap_usize_bool {state} (fun (_x: t_BTreeMap_usize_bool) -> [ &state_e <- _x ] s5)
+      | s2 = insert_usize {_28} {v} {true} {mode} (fun (_x: t_Option_bool) -> [ &_27 <- _x ] s3)
+      | s3 = simplify_helper {t} {state_t} {mode} (fun (_x: t_Expr) -> [ &tp <- _x ] s4)
+      | s4 = clone_BTreeMap_usize_bool {state} {mode} (fun (_x: t_BTreeMap_usize_bool) -> [ &state_e <- _x ] s5)
       | s5 = MutBorrow.borrow_mut <t_BTreeMap_usize_bool> {state_e}
           (fun (_bor: MutBorrow.t t_BTreeMap_usize_bool) -> [ &_36 <- _bor ] [ &state_e <- _bor.final ] s6)
-      | s6 = insert_usize {_36} {v} {false} (fun (_x: t_Option_bool) -> [ &_35 <- _x ] s7)
-      | s7 = simplify_helper {e} {state_e} (fun (_x: t_Expr) -> [ &ep <- _x ] s8)
+      | s6 = insert_usize {_36} {v} {false} {mode} (fun (_x: t_Option_bool) -> [ &_35 <- _x ] s7)
+      | s7 = simplify_helper {e} {state_e} {mode} (fun (_x: t_Expr) -> [ &ep <- _x ] s8)
       | s8 = [ &_ret <- IfThenElse c tp ep ] s9
       | s9 = return {_ret} ]
     | bb11 = s0
       [ s0 = elim_Some {_14} (fun (r0: bool) -> [ &b <- r0 ] s1)
       | s1 = any [ br0 -> {b = false} (! bb14) | br1 -> {b} (! bb12) ] ]
-    | bb12 = s0 [ s0 = simplify_helper {t} {state} (fun (_x: t_Expr) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ]
-    | bb14 = s0 [ s0 = simplify_helper {e} {state} (fun (_x: t_Expr) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    | bb12 = s0
+      [ s0 = simplify_helper {t} {state} {mode} (fun (_x: t_Expr) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ]
+    | bb14 = s0
+      [ s0 = simplify_helper {e} {state} {mode} (fun (_x: t_Expr) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_Expr = Any.any_l ()
     | & self: t_Expr = self
     | & state: t_BTreeMap_usize_bool = state
@@ -417,6 +431,7 @@ module M_impl_Expr__simplify_helper (* Expr *)
 end
 module M_impl_Expr__transpose (* Expr *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
@@ -429,7 +444,7 @@ module M_impl_Expr__transpose (* Expr *)
         end}
       any) ]
   
-  let clone_Expr (self: t_Expr) (return (x: t_Expr)) = any
+  let clone_Expr (self: t_Expr) (mode: Mode.t) (return (x: t_Expr)) = any
     [ return (result: t_Expr) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
   
   predicate is_normalized (self: t_Expr) =
@@ -446,7 +461,7 @@ module M_impl_Expr__transpose (* Expr *)
       | False' -> true
       end
   
-  let transpose (self: t_Expr) (a: t_Expr) (b: t_Expr) (return (x: t_Expr)) =
+  let transpose (self: t_Expr) (a: t_Expr) (b: t_Expr) (mode: Mode.t) (return (x: t_Expr)) =
   {[@stop_split] [@expl:transpose requires] ([@stop_split] [@expl:transpose requires #0] is_normalized self)
     /\ ([@stop_split] [@expl:transpose requires #1] is_normalized a)
     /\ ([@stop_split] [@expl:transpose requires #2] is_normalized b)}
@@ -457,8 +472,9 @@ module M_impl_Expr__transpose (* Expr *)
   
   meta "select_lsinst" "all"
   
-  let transpose'0 (self: t_Expr) (a: t_Expr) (b: t_Expr) (return (x: t_Expr)) =
-  {[@stop_split] [@expl:transpose requires] ([@stop_split] [@expl:transpose requires #0] is_normalized self)
+  let transpose'0 (self: t_Expr) (a: t_Expr) (b: t_Expr) (mode: Mode.t) (return (x: t_Expr)) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:transpose requires] ([@stop_split] [@expl:transpose requires #0] is_normalized self)
     /\ ([@stop_split] [@expl:transpose requires #1] is_normalized a)
     /\ ([@stop_split] [@expl:transpose requires #2] is_normalized b)}
     (! bb0
@@ -474,10 +490,10 @@ module M_impl_Expr__transpose (* Expr *)
       [ s0 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &c <- rc ] s1)
       | s1 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &t <- rt ] s2)
       | s2 = elim_IfThenElse {self} (fun (rc: t_Expr) (rt: t_Expr) (re: t_Expr) -> [ &e <- re ] s3)
-      | s3 = clone_Expr {a} (fun (_x: t_Expr) -> [ &_19 <- _x ] s4)
-      | s4 = clone_Expr {b} (fun (_x: t_Expr) -> [ &_21 <- _x ] s5)
-      | s5 = transpose {t} {_19} {_21} (fun (_x: t_Expr) -> [ &_17 <- _x ] s6)
-      | s6 = transpose {e} {a} {b} (fun (_x: t_Expr) -> [ &_24 <- _x ] s7)
+      | s3 = clone_Expr {a} {mode} (fun (_x: t_Expr) -> [ &_19 <- _x ] s4)
+      | s4 = clone_Expr {b} {mode} (fun (_x: t_Expr) -> [ &_21 <- _x ] s5)
+      | s5 = transpose {t} {_19} {_21} {mode} (fun (_x: t_Expr) -> [ &_17 <- _x ] s6)
+      | s6 = transpose {e} {a} {b} {mode} (fun (_x: t_Expr) -> [ &_24 <- _x ] s7)
       | s7 = [ &_ret <- IfThenElse c _17 _24 ] s8
       | s8 = return {_ret} ] ]
     [ & _ret: t_Expr = Any.any_l ()
@@ -496,6 +512,7 @@ end
 module M_impl_Expr__variable (* Expr *)
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
   
@@ -503,31 +520,33 @@ module M_impl_Expr__variable (* Expr *)
   
   meta "select_lsinst" "all"
   
-  let variable (v: UInt64.t) (return (x: t_Expr)) = (! bb0
+  let variable (v: UInt64.t) (mode: Mode.t) (return (x: t_Expr)) = (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- Var v ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Expr = Any.any_l () | & v: UInt64.t = v ])
     [ return (result: t_Expr) -> {[@stop_split] [@expl:variable ensures] result = Var v} (! return {result}) ]
 end
 module M_impl_From_for_Expr__from (* <Expr as std::convert::From<usize>> *)
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
   
-  let variable (v: UInt64.t) (return (x: t_Expr)) = any
+  let variable (v: UInt64.t) (mode: Mode.t) (return (x: t_Expr)) = any
     [ return (result: t_Expr) -> {[@stop_split] [@expl:variable ensures] result = Var v} (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let from_Expr (a: UInt64.t) (return (x: t_Expr)) = (! bb0
-    [ bb0 = s0 [ s0 = variable {a} (fun (_x: t_Expr) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  let from_Expr (a: UInt64.t) (mode: Mode.t) (return (x: t_Expr)) = (! bb0
+    [ bb0 = s0 [ s0 = variable {a} {mode} (fun (_x: t_Expr) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_Expr = Any.any_l () | & a: UInt64.t = a ]) [ return (result: t_Expr) -> (! return {result}) ]
 end
 module M_impl_From_for_Expr_0__from (* <Expr as std::convert::From<bool>> *)
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_Expr = IfThenElse t_Expr t_Expr t_Expr | Var UInt64.t | True' | False'
   
@@ -535,7 +554,7 @@ module M_impl_From_for_Expr_0__from (* <Expr as std::convert::From<bool>> *)
   
   meta "select_lsinst" "all"
   
-  let from_Expr (b: bool) (return (x: t_Expr)) = (! bb0
+  let from_Expr (b: bool) (mode: Mode.t) (return (x: t_Expr)) = (! bb0
     [ bb0 = any [ br0 -> {b = false} (! bb2) | br1 -> {b} (! bb1) ]
     | bb1 = s0 [ s0 = [ &_ret <- True' ] s1 | s1 = return {_ret} ]
     | bb2 = s0 [ s0 = [ &_ret <- False' ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Expr = Any.any_l () | & b: bool = b ])

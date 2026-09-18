@@ -1,5 +1,5 @@
 extern crate creusot_std;
-use creusot_std::prelude::*;
+use creusot_std::{mode::Mode, prelude::*};
 
 #[ensures(result == o.map_logic(|x| Some(x)))]
 pub fn g<A>(o: Option<A>) -> Option<Option<A>> {
@@ -31,5 +31,5 @@ pub fn i<A, B>(x: A, y: B) -> T2<A, B> {
 }
 
 #[logic]
-#[ensures(T2.precondition((x, x)) == inv(T2(x, x)))]
+#[ensures(forall<mode: Mode> T2.precondition((x, x), mode) == inv(T2(x, x)))]
 pub fn some_post<A>(x: A) {}

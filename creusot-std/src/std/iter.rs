@@ -1,5 +1,9 @@
+#[cfg(creusot)]
+use crate::mode::Mode;
 use crate::prelude::*;
 use core::iter::*;
+#[cfg(creusot)]
+use core::marker::Tuple;
 
 mod chain;
 mod cloned;
@@ -52,9 +56,10 @@ pub trait IteratorSpec: Iterator {
 
     #[check(ghost)]
     #[requires(forall<e, i2> self.produces(Seq::singleton(e), i2) && inv(e) ==>
-                    func.precondition((e, Snapshot::new(Seq::empty()))))]
+        forall<mode: Mode> func.precondition((e, Snapshot::new(Seq::empty())), mode))]
     #[requires(MapInv::<Self, F>::reinitialize())]
     #[requires(MapInv::<Self, F>::preservation(self, func))]
+    #[requires(modeless(func))]
     #[ensures(result == MapInv { iter: self, func, produced: Snapshot::new(Seq::empty())})]
     fn map_inv<B, F>(self, func: F) -> MapInv<Self, F>
     where
@@ -67,7 +72,7 @@ pub trait IteratorSpec: Iterator {
 
 pub trait ExactSizeIteratorSpec: ExactSizeIterator + IteratorSpec {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>));
@@ -75,9 +80,9 @@ pub trait ExactSizeIteratorSpec: ExactSizeIterator + IteratorSpec {
 
 extern_spec! {
     impl FromIterator<()> for () {
-        #[requires(T::into_iter.precondition((iter,)))]
+        #[requires(T::into_iter.precondition((iter,), mode!()))]
         #[ensures(exists<into_iter: T::IntoIter, prod: Seq<()>, done: &mut T::IntoIter>
-            T::into_iter.postcondition((iter,), into_iter) &&
+            T::into_iter.postcondition((iter,), into_iter, mode!()) &&
             into_iter.produces(prod, *done) && done.completed() && resolve(^done))]
         fn from_iter<T: IntoIterator<Item = (), IntoIter: IteratorSpec>>(iter: T);
     }
@@ -101,7 +106,7 @@ pub trait DoubleEndedIteratorSpec: DoubleEndedIterator + IteratorSpec {
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {
@@ -134,16 +139,17 @@ extern_spec! {
                     where Self: Sized;
 
                 #[check(ghost)]
-                #[requires(U::into_iter.precondition((other,)))]
+                #[requires(U::into_iter.precondition((other,), mode!()))]
                 #[ensures(result.iter_a() == Some(self))]
                 #[ensures(match result.iter_b() {
-                    Some(b) => U::into_iter.postcondition((other,), b),
+                    Some(b) => U::into_iter.postcondition((other,), b, mode!()),
                     None => false
                 })]
                 fn chain<U: IntoIterator<Item = Self::Item>>(self, other: U) -> Chain<Self, U::IntoIter>
                     where Self: Sized;
 
                 #[check(ghost)]
+                #[requires(modeless_clone::<T>())]
                 #[ensures(result.iter() == self)]
                 fn cloned<'a, T: 'a + Clone>(self) -> Cloned<Self>
                     where Self: Sized + Iterator<Item = &'a T>;
@@ -154,10 +160,12 @@ extern_spec! {
                     where Self: Sized + Iterator<Item = &'a T>;
 
                 #[check(ghost)]
-                #[requires(forall<e, i2> self.produces(Seq::singleton(e), i2) && inv(e) ==>
-                                f.precondition((e,)))]
+                #[requires(forall<mode: Mode, e, i2>
+                    !mode.terminates() && self.produces(Seq::singleton(e), i2) && inv(e)
+                    ==> f.precondition((e,), mode))]
                 #[requires(map::reinitialize::<Self, B, F>())]
                 #[requires(map::preservation::<Self, B, F>(self, f))]
+                #[requires(modeless(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn map<B, F: FnMut(Self::Item) -> B>(self, f: F) -> Map<Self, F>
                     where Self: Sized;
@@ -166,6 +174,7 @@ extern_spec! {
                 #[requires(filter::immutable(f))]
                 #[requires(filter::no_precondition(f))]
                 #[requires(filter::precise(f))]
+                #[requires(modeless(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn filter<P: for<'a> FnMut(&Self::Item) -> bool>(self, f: P) -> Filter<Self, P>
                     where Self: Sized;
@@ -174,6 +183,7 @@ extern_spec! {
                 #[requires(filter_map::immutable(f))]
                 #[requires(filter_map::no_precondition(f))]
                 #[requires(filter_map::precise(f))]
+                #[requires(modeless(f))]
                 #[ensures(result.iter() == self && result.func() == f)]
                 fn filter_map<B, F: for<'a> FnMut(Self::Item) -> Option<B>>(self, f: F) -> FilterMap<Self, F>
                     where Self: Sized;
@@ -192,14 +202,14 @@ extern_spec! {
                     where Self: Sized;
 
                 #[check(ghost)]
-                #[requires(U::into_iter.precondition((other,)))]
+                #[requires(U::into_iter.precondition((other,), mode!()))]
                 #[ensures(result.iter_a() == self)]
-                #[ensures(U::into_iter.postcondition((other,), result.iter_b()))]
+                #[ensures(U::into_iter.postcondition((other,), result.iter_b(), mode!()))]
                 fn zip<U: IntoIterator>(self, other: U) -> Zip<Self, U::IntoIter>
                     where Self: Sized;
 
-                #[requires(B::from_iter.precondition((self,)))]
-                #[ensures(B::from_iter.postcondition((self,), result))]
+                #[requires(B::from_iter.precondition((self,), mode!()))]
+                #[ensures(B::from_iter.postcondition((self,), result, mode!()))]
                 fn collect<B: FromIterator<Self::Item>>(self) -> B
                     where Self: Sized
                 {
@@ -225,13 +235,13 @@ extern_spec! {
             }
 
             trait FromIterator<A>: Sized {
-                #[requires(T::into_iter.precondition((iter,)))]
+                #[requires(T::into_iter.precondition((iter,), mode!()))]
                 fn from_iter<T>(iter: T) -> Self
                     where T: IntoIterator<Item = A>;
             }
 
             trait ExactSizeIterator: ExactSizeIteratorSpec {
-                #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
+                #[ensures(Self::size_hint.postcondition((self,), (result, Some(result)), mode!()))]
                 fn len(&self) -> usize {
                     snapshot!(Self::size_hint_exact);
                     let (lower, upper) = self.size_hint();
@@ -239,7 +249,7 @@ extern_spec! {
                     lower
                 }
 
-                #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l))) && result == (l == 0usize))]
+                #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l)), mode!()) && result == (l == 0usize))]
                 fn is_empty(&self) -> bool {
                     self.len() == 0
                 }
@@ -297,16 +307,38 @@ impl<I: IteratorSpec + ?Sized> IteratorSpec for &mut I {
 
 extern_spec! {
     impl<I: Iterator + ?Sized> Iterator for &mut I {
-        #[ensures(I::size_hint.postcondition((&*self,), result))]
+        #[ensures(I::size_hint.postcondition((&*self,), result, mode!()))]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }
 
 impl<I: ExactSizeIteratorSpec + ?Sized> ExactSizeIteratorSpec for &mut I {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         (**self).size_hint_exact(r)
+    }
+}
+
+/// Requirement for iterators that contain closures (`map`, `filter`, etc.):
+/// the postcondition should (mostly) not depend on the mode.
+#[logic(open, prophetic)]
+pub fn modeless<A: Tuple, F: FnMut<A>>(_: F) -> bool {
+    pearlite! { forall<f: F, args: A, f2: F, res: F::Output, mode: Mode>
+        f.postcondition_mut(args, f2, res, mode) ==>
+        f.postcondition_mut(args, f2, res, Mode::program_mode())
+    }
+}
+
+/// Requirement for `Iterator::cloned`:
+/// the postcondition of `clone` should (mostly) not depend on the mode.
+#[logic(open, prophetic)]
+pub fn modeless_clone<T: Clone>() -> bool {
+    pearlite! {
+        (forall<x, mode> T::clone.precondition((x,), mode))
+        && (forall<x, y, mode>
+            T::clone.postcondition((x,), y, mode) ==>
+            T::clone.postcondition((x,), y, Mode::program_mode()))
     }
 }
