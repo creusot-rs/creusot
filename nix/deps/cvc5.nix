@@ -187,5 +187,9 @@ stdenv.mkDerivation {
     "-DSKIP_COMPRESS_DEBUG=0"
     "-DSKIP_SET_RPATH=0"
     "-DUSE_DEFAULT_LINKER=1"
+
+    # NOTE: This skips testing patched version of CoCoALib
+    "-DCoCoA_INCLUDE_DIR=${cvc5-cocoalib}/include"
+    "-DCoCoA_LIBRARIES=${cvc5-cocoalib}/lib/libcocoa.a"
   ];
 }
