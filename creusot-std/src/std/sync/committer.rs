@@ -10,8 +10,7 @@ use crate::{
         view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
     },
 };
-use core::marker::PhantomData;
-use core::sync::atomic::{Ordering as OrderingTy};
+use core::{marker::PhantomData, sync::atomic::Ordering as OrderingTy};
 
 /// Wrapper around a single atomic operation, where multiple ghost steps can be performed.
 ///
@@ -75,11 +74,15 @@ pub mod atomic_specs {
     };
 
     #[logic(open, prophetic)]
-    pub fn load_timestamp_in_view<'a, C, T>(atomic : C, sync_view: &mut SyncView, t : Timestamp) -> bool
+    pub fn load_timestamp_in_view<'a, C, T>(
+        atomic: C,
+        sync_view: &mut SyncView,
+        t: Timestamp,
+    ) -> bool
     where
         C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
     {
-        pearlite!{
+        pearlite! {
             let old_t = atomic.get_timestamp(*sync_view);
             let new_t = atomic.get_timestamp(^sync_view);
             old_t <= t && t <= new_t
@@ -87,11 +90,16 @@ pub mod atomic_specs {
     }
 
     #[logic(open, prophetic)]
-    pub fn load_reads_from_history<'a, C, T>(own : &Perm<C>, thread_view : SyncView, val : T, t : Timestamp) -> bool 
+    pub fn load_reads_from_history<'a, C, T>(
+        own: &Perm<C>,
+        thread_view: SyncView,
+        val: T,
+        t: Timestamp,
+    ) -> bool
     where
         C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
     {
-        pearlite!{
+        pearlite! {
             match own.val().get(t) {
                 Some((v, v_view)) => v == val && v_view <= thread_view,
                 None => false
@@ -100,41 +108,56 @@ pub mod atomic_specs {
     }
 
     #[logic(open, prophetic)]
-    pub fn view_mono(sync_view: &mut SyncView) -> bool
-    {
-        pearlite!{
+    pub fn view_mono(sync_view: &mut SyncView) -> bool {
+        pearlite! {
             *sync_view <= ^sync_view
         }
     }
 
     #[logic(open, prophetic)]
-    pub fn load_acq_post<'a, C, T>(atomic: C, own : &Perm<C>, sync_view: &mut SyncView, val : T, t : Timestamp) -> bool
+    pub fn load_acq_post<'a, C, T>(
+        atomic: C,
+        own: &Perm<C>,
+        sync_view: &mut SyncView,
+        val: T,
+        t: Timestamp,
+    ) -> bool
     where
         C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
     {
-        pearlite!{
+        pearlite! {
             load_timestamp_in_view(atomic, sync_view, t) && load_reads_from_history(own, ^sync_view, val, t) && view_mono(sync_view)
         }
     }
 
     #[logic(open, prophetic)]
-    pub fn load_rlx_post<'a, C, T>(atomic : C, own : &Perm<C>, sync_view: &mut SyncView, val : T, t : Timestamp, acq_sync_view : AcquireSyncView) -> bool
+    pub fn load_rlx_post<'a, C, T>(
+        atomic: C,
+        own: &Perm<C>,
+        sync_view: &mut SyncView,
+        val: T,
+        t: Timestamp,
+        acq_sync_view: AcquireSyncView,
+    ) -> bool
     where
         C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
     {
-        pearlite!{
+        pearlite! {
             load_timestamp_in_view(atomic, sync_view, t) && load_reads_from_history(own, acq_sync_view@, val, t) && view_mono(sync_view)
         }
     }
 
     #[logic(open, prophetic)]
     // t here corresponds to self.timestamp() + 1 in the committer specs
-    pub fn store_timestamp_in_view<'a, C, T>(atomic : C, sync_view: &mut SyncView, t : Timestamp) -> bool
+    pub fn store_timestamp_in_view<'a, C, T>(
+        atomic: C,
+        sync_view: &mut SyncView,
+        t: Timestamp,
+    ) -> bool
     where
         C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
-
     {
-        pearlite!{
+        pearlite! {
             let old_t = atomic.get_timestamp(*sync_view);
             let new_t = atomic.get_timestamp(^sync_view);
             old_t < t && t <= new_t
@@ -142,11 +165,16 @@ pub mod atomic_specs {
     }
 
     #[logic(open, prophetic)]
-    pub fn store_inserts_in_history<'a, C,T>(own : &mut Perm<C>, thread_view : SyncView, val : T, t : Timestamp) -> bool
+    pub fn store_inserts_in_history<'a, C, T>(
+        own: &mut Perm<C>,
+        thread_view: SyncView,
+        val: T,
+        t: Timestamp,
+    ) -> bool
     where
         C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
     {
-        pearlite!{
+        pearlite! {
             (*own).val().get(t) == None &&
                 (^own).val() == (*own).val().insert(t, (val, thread_view)) &&
                 (*own).ward() == (^own).ward()
@@ -154,22 +182,36 @@ pub mod atomic_specs {
     }
 
     #[logic(open, prophetic)]
-    pub fn store_rel_post<'a, C, T>(atomic : C, own : &mut Perm<C>, sync_view: &mut SyncView, val : T, t : Timestamp) -> bool
+    pub fn store_rel_post<'a, C, T>(
+        atomic: C,
+        own: &mut Perm<C>,
+        sync_view: &mut SyncView,
+        val: T,
+        t: Timestamp,
+    ) -> bool
     where
         C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
     {
-        pearlite!{
+        pearlite! {
             store_timestamp_in_view(atomic, sync_view, t) &&
-                store_inserts_in_history(own, ^sync_view, val, t) &&
-                view_mono(sync_view) && (*own).ward() == (^own).ward()
+            store_inserts_in_history(own, ^sync_view, val, t) &&
+            view_mono(sync_view) && (*own).ward() == (^own).ward()
         }
     }
 
     #[logic(open, prophetic)]
-    pub fn store_rlx_post<'a, C, T>(atomic : C, own : &mut Perm<C>, sync_view: &mut SyncView, val : T, t : Timestamp, rel_view : ReleaseSyncView) -> bool
-        where C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
+    pub fn store_rlx_post<'a, C, T>(
+        atomic: C,
+        own: &mut Perm<C>,
+        sync_view: &mut SyncView,
+        val: T,
+        t: Timestamp,
+        rel_view: ReleaseSyncView,
+    ) -> bool
+    where
+        C: PermTarget<Value<'a> = FMap<Timestamp, (T, SyncView)>> + HasTimestamp + 'a,
     {
-        pearlite!{
+        pearlite! {
             store_timestamp_in_view(atomic, sync_view, t) &&
                 store_inserts_in_history(own, rel_view@, val, t) &&
                 view_mono(sync_view) && (*own).ward() == (^own).ward()
