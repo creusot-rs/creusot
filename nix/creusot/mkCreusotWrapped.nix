@@ -6,6 +6,7 @@
 
   # Librairies
   buildEnv,
+  lib,
 }:
 
 # Arguments
@@ -20,7 +21,7 @@ in
 buildEnv {
   name = "creusot-wrapped";
   paths = [
-    cargo
+    (lib.hiPrio cargo)
     creusot.prelude
     creusot.creusot
     why3Framework
