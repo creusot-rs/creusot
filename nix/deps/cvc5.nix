@@ -55,7 +55,8 @@ let
       find . -name "*.sh" -exec sed -i -e 's|bash|${bash}/bin/bash|g' {} \;
       sed -i -e '14s|.*|GMP_LIB="${gmp.dev}/lib/libgmp.so"|g' configuration/gmp-find-hdr.sh
       sed -i -e '106iexport LD_LIBRARY_PATH=${gmp}/lib' configuration/gmp-check-cxxflags.sh
-      sed -i -e '1s|.*|exit 0|g' src/tests/RunTests.sh
+      sed -i -e '164s|.*||g' Makefile
+      sed -i -e '225s|.*||g' Makefile
       touch doc/CoCoALib.pdf examples/index.html
       mkdir $out $out/include $out/lib
     '';
