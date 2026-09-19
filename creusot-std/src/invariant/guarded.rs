@@ -82,7 +82,8 @@ impl<'a, T: ?Sized> Guarded<&'a mut T> {
     /// Create a new guarded borrow.
     ///
     /// The borrow contained in the result is guaranteed to satisfy the
-    /// [`guard`](Guard::guard) at the end of its lifetime.
+    /// [`guard`](Guard::guard) at the end of its lifetime. Thus, we get the
+    /// guard for its prophecy.
     #[trusted]
     #[requires(guard[*borrow])]
     #[ensures(result.inner == borrow)]

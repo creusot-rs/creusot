@@ -5,9 +5,13 @@ use creusot_std::{
         lifetime_logic::{EndBorrow, FullBorrow, Lifetime, LifetimeToken},
         perm::Perm,
     },
+    invariant::Guarded,
     logic::{Mapping, real::PositiveReal},
     prelude::*,
-    std::sync::{atomic::Ordering, atomic_sc::AtomicBool, committer::Committer},
+    std::sync::{
+        atomic_sc::{AtomicBool, ordering::SeqCst},
+        committer::Committer,
+    },
 };
 
 declare_namespace! { SPIN_LOCK }
@@ -15,7 +19,7 @@ declare_namespace! { SPIN_LOCK }
 struct SpinLockInv<T> {
     cell: Snapshot<PermCell<T>>,
     lft: Snapshot<Lifetime>,
-    perm: Option<FullBorrow<Perm<PermCell<T>>>>,
+    perm: Option<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
     perm_atomic: Perm<AtomicBool>,
     inv: Snapshot<Mapping<T, bool>>,
 }
@@ -33,9 +37,9 @@ impl<T> Protocol for SpinLockInv<T> {
         match (self.perm_atomic.val(), self.perm) {
             (true, None) => true,
             (false, Some(bor)) => {
-                bor.lft() == *self.lft
-                    && *bor.cur().ward() == *self.cell
-                    && self.inv.get(*bor.cur().val())
+                bor.inner.lft() == *self.lft
+                    && bor.guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == *self.cell)
+                    && self.inv.get(bor.inner.cur().val())
             }
             _ => false,
         }
@@ -52,18 +56,21 @@ pub struct SpinLock<T> {
 }
 
 impl<T> Invariant for SpinLock<T> {
-    #[logic]
+    #[logic(prophetic)]
     fn invariant(self) -> bool {
-        self.inner_inv.public() == (self.data, self.atomic, self.lft_tok.lft(), *self.inv)
-            && self.lft_tok.frac() == PositiveReal::from_int(1)
-            && self.end.lft() == self.lft_tok.lft()
-            && self.inner_inv.namespace() == SPIN_LOCK()
+        pearlite! {
+            self.inner_inv.public() == (self.data, self.atomic, self.lft_tok.lft(), *self.inv)
+                && self.lft_tok.frac() == PositiveReal::from_int(1)
+                && self.end.lft() == self.lft_tok.lft()
+                && *(^self.end).ward() == self.data
+                && self.inner_inv.namespace() == SPIN_LOCK()
+        }
     }
 }
 
 pub struct SpinLockGuard<'a, T> {
     lock: &'a SpinLock<T>,
-    perm: Ghost<FullBorrow<Perm<PermCell<T>>>>,
+    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
 
@@ -72,15 +79,15 @@ impl<'a, T> View for SpinLockGuard<'a, T> {
 
     #[logic]
     fn view(self) -> T {
-        *self.perm.cur().val()
+        self.perm.inner.cur().val()
     }
 }
 
 impl<'a, T> Invariant for SpinLockGuard<'a, T> {
     #[logic]
     fn invariant(self) -> bool {
-        *self.perm.cur().ward() == self.lock.data
-            && self.perm.lft() == self.lock.lft_tok.lft()
+        self.perm.guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == self.lock.data)
+            && self.perm.inner.lft() == self.lock.lft_tok.lft()
             && self.inv == self.lock.inv
     }
 }
@@ -97,7 +104,7 @@ impl<T> SpinLock<T> {
             ghost!(SpinLockInv {
                 cell: snapshot!(data),
                 lft: snapshot!(lft_tok.lft()),
-                perm: Some(bor.into_inner()),
+                perm: Some(bor.into_inner().add_guard(snapshot!(|p: Perm<_>| *p.ward() == data))),
                 perm_atomic: perm_atomic.into_inner(),
                 inv
             }),
@@ -116,7 +123,7 @@ impl<T> SpinLock<T> {
         while let Err(_) = self.atomic.compare_exchange_weak(
             false,
             true,
-            ghost!(|c: Result<&mut Committer<_, _, Ordering::SeqCst, Ordering::SeqCst>, &_>| {
+            ghost!(|c: Result<&mut Committer<_, _, SeqCst, SeqCst>, &_>| {
                 if let Ok(c) = c {
                     self.inner_inv.open(tokens.reborrow(), |inv: &mut SpinLockInv<T>| {
                         c.shoot_load(&inv.perm_atomic);
@@ -142,13 +149,14 @@ impl<T> SpinLock<T> {
 impl<'a, T> SpinLockGuard<'a, T> {
     #[ensures(*result == self@)]
     pub fn deref(&self) -> &T {
-        unsafe { self.lock.data.borrow(ghost!((*self.perm).borrow(&self.lock.lft_tok))) }
+        unsafe { self.lock.data.borrow(ghost!(self.perm.inner.borrow(&self.lock.lft_tok))) }
     }
 
     #[ensures(*result == self@ && ^result == (^self)@)]
     #[ensures((*self).inv == (^self).inv)]
     pub fn deref_mut(&mut self) -> &mut T {
-        unsafe { self.lock.data.borrow_mut(ghost!((*self.perm).borrow_mut(&self.lock.lft_tok))) }
+        ghost_let!(p = &mut self.perm.inner);
+        unsafe { self.lock.data.borrow_mut(ghost!(p.into_inner().borrow_mut(&self.lock.lft_tok))) }
     }
 
     #[requires(tokens.contains(SPIN_LOCK()))]
@@ -156,7 +164,7 @@ impl<'a, T> SpinLockGuard<'a, T> {
     pub fn unlock(self, tokens: Ghost<Tokens>) {
         self.lock.atomic.store(
             false,
-            ghost!(|c: &mut Committer<_, _, Ordering::None, Ordering::SeqCst>| {
+            ghost!(|c: &mut Committer<_, _, _, SeqCst>| {
                 self.lock.inner_inv.open(tokens.into_inner(), |inv: &mut SpinLockInv<T>| {
                     c.shoot_store(&mut inv.perm_atomic);
                     inv.perm = Some(self.perm.into_inner());
