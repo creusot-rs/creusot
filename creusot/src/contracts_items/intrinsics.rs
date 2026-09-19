@@ -139,6 +139,7 @@ contracts_items! {
     "ghost_deref_mut"           GhostDerefMut
     "ghost_into_inner"          GhostIntoInner
     "ghost_new"                 GhostNew
+    "guarded"                   Guarded
     "hist_inv"                  HistInv
     "implication"               Implication
     "index_logic"               IndexLogic

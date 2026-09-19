@@ -487,9 +487,9 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     /// Determine if a _field_ of a struct is transparent in the scope of `scope`.
     ///
-    /// Use this instead of `field.vis.is_accessible_from`, to correctly handle the `#[logically_visible]` attribute.
+    /// Use this instead of `field.vis.is_accessible_from`, to correctly handle `Guarded`
     pub(crate) fn field_is_transparent_from(&self, field: &FieldDef, scope: DefId) -> bool {
-        crate::contracts_items::is_logically_visible(self.tcx, field.did)
+        self.is_descendant_of(field.did, Intrinsic::Guarded.get(self))
             || field.vis.is_accessible_from(scope, self.tcx)
     }
 
