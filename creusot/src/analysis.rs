@@ -1,5 +1,6 @@
 mod borrows;
 mod liveness_no_drop;
+mod no_guarded_move;
 mod not_final_places;
 mod resolve;
 
@@ -20,7 +21,7 @@ use rustc_hir::{
 use rustc_index::{Idx as _, bit_set::MixedBitSet};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
-    mir::{self, BasicBlock, Local, Location, Place, traversal},
+    mir::{self, BasicBlock, Local, Location, Place, traversal, visit::Visitor},
     ty::{self, TyCtxt, TypingEnv},
 };
 use rustc_mir_dataflow::{
@@ -33,7 +34,10 @@ use rustc_type_ir::{ClosureKind, TyKind};
 use why3::Ident;
 
 use crate::{
-    analysis::resolve::{HasMoveDataExt as _, Resolver},
+    analysis::{
+        no_guarded_move::GuardedMoveVisitor,
+        resolve::{HasMoveDataExt as _, Resolver},
+    },
     backend::closures::ClosSubst,
     callbacks,
     contracts_items::{is_erasure, is_snapshot_closure, is_spec},
@@ -646,6 +650,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
 
     /// Entry point of the analysis
     fn run(&mut self) {
+        GuardedMoveVisitor { ctx: self.resolver.ctx, body: self.body() }.visit_body(self.body());
         for (bb, bbd) in traversal::reverse_postorder(self.resolver.body) {
             if bbd.is_cleanup {
                 continue;

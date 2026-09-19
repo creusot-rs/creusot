@@ -70,7 +70,7 @@
 
 use crate::{
     ghost::{FnGhost, Plain},
-    invariant::GuardedBorrow,
+    invariant::Guarded,
     logic::Set,
     prelude::*,
 };
@@ -534,7 +534,6 @@ impl<T: Protocol> NonAtomicInvariant<T> {
     ///
     /// This will call the closure `f` with the inner data. You must restore the
     /// contained [`Protocol`] before returning from the closure.
-    #[trusted]
     #[requires(tokens.contains(this.namespace()))]
     #[requires(forall<t: Ghost<&mut T>> t.public() == this.public() && t.protocol() && inv(t) ==>
         f.precondition((t,)) &&
@@ -547,14 +546,15 @@ impl<T: Protocol> NonAtomicInvariant<T> {
         tokens: Ghost<Tokens<'a>>,
         f: impl FnOnce(Ghost<&'a mut T>) -> A,
     ) -> A {
-        f(Ghost::conjure())
+        ghost_let!(inv = &mut *this.open_guarded(tokens.into_inner()).inner);
+        f(inv)
     }
 
     #[trusted]
     #[requires(tokens.contains(self.namespace()))]
-    #[ensures(result.guard() == |b: &mut T| (*b).public() == self.public() && (*b).protocol() && (^b) == (^result.borrow))]
+    #[ensures(result.guard() == |b: &mut T| (*b).public() == self.public() && (*b).protocol())]
     #[check(ghost)]
-    pub fn open_guarded<'a>(&'a self, tokens: Tokens<'a>) -> GuardedBorrow<'a, T> {
+    pub fn open_guarded<'a>(&'a self, tokens: Tokens<'a>) -> Guarded<&'a mut T> {
         panic!("Should not be called outside ghost code")
     }
 

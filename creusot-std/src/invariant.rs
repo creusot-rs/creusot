@@ -6,7 +6,7 @@ mod guarded;
 mod subset;
 
 pub use self::{
-    guarded::{Guarded, GuardedBorrow},
+    guarded::{Guarded, GuardedRelation},
     subset::{InhabitedInvariant, Subset},
 };
 
