@@ -7,7 +7,7 @@ use rustc_span::Span;
 
 use crate::{
     backend::is_trusted_item,
-    contracts_items::{is_logic, is_logically_visible, is_opaque},
+    contracts_items::{Intrinsic, is_logic, is_opaque},
     ctx::{HasTyCtxt, ItemType, Opacity, TranslationCtx},
 };
 
@@ -61,7 +61,11 @@ impl<'a, 'tcx> OpacityVisitor<'a, 'tcx> {
     }
 
     fn assert_visible(&self, id: DefId, span: Span) {
-        if !self.is_visible(id) && !is_logically_visible(self.ctx.tcx, id) {
+        if self.ctx.is_descendant_of(id, Intrinsic::Guarded.get(&self.ctx)) {
+            // Fields of `Guarded` are always visible
+            return;
+        }
+        if !self.is_visible(id) {
             self.ctx.error(
                 span,
                 format!(
