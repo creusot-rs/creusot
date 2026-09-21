@@ -28,7 +28,7 @@ struct TicketLockInv<T> {
     perm_next_ticket: Perm<AtomicU32>,
     perm_now_serving: Perm<AtomicU32>,
     auth_tickets: Authority<FMap<Int, Excl<()>>>,
-    auth_now_serving: Authority<Option<Excl<Int>>>,
+    auth_now_serving: Authority<Option<Excl<()>>>,
     inv: Snapshot<Mapping<T, bool>>,
 }
 
@@ -60,8 +60,8 @@ impl<T> Protocol for TicketLockInv<T> {
                     bor.guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == *self.cell) &&
                     self.inv.get(bor.inner.cur().val())
                 }
-                (Some(Excl(n)), None) => {
-                    self.perm_now_serving.val()@ == n &&
+                (_, None) => {
+                    let n = self.perm_now_serving.val()@;
                     !self.auth_tickets@.contains(n) &&
                     n < self.perm_next_ticket.val()@
                 }
@@ -97,7 +97,7 @@ impl<T> Invariant for TicketLock<T> {
 pub struct TicketLockGuard<'a, T> {
     lock: &'a TicketLock<T>,
     perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
-    token: Ghost<Fragment<Option<Excl<Int>>>>,
+    token: Ghost<Fragment<Option<Excl<()>>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
 
@@ -185,8 +185,8 @@ impl<T> TicketLock<T> {
                 proof_assert!(exists<m> inv.auth_tickets@.op(m) == Some(auth_tickets_snap@));
                 proof_assert!(forall<k> inv.auth_tickets@.contains(k) ==> auth_tickets_snap@.contains(k) && k != ticket@);
                 *perm = inv.perm.take();
-                *token = Some(inv.auth_now_serving.add_fragment(snapshot!(Some(Excl(ticket@)))));
-                proof_assert!(inv.auth_now_serving@ == Some(Excl(ticket@)))
+                *token = Some(inv.auth_now_serving.add_fragment(snapshot!(Some(Excl(())))));
+                proof_assert!(inv.auth_now_serving@ == Some(Excl(())))
             })
         })) != ticket
         {}
@@ -224,11 +224,7 @@ impl<'a, T> TicketLockGuard<'a, T> {
     #[requires(tokens.contains(TICKET_LOCK()))]
     #[requires(self.inv.get(self@))]
     pub fn unlock(mut self, mut tokens: Ghost<Tokens>) {
-        let ticket = self.lock.now_serving.load(ghost!(|c: &Committer<_, _, SeqCst, _>| {
-            self.lock.inner_inv.open(tokens.reborrow(), |inv: &mut TicketLockInv<T>| {
-                c.shoot_load(&inv.perm_now_serving);
-            })
-        }));
+        let ticket = self.lock.now_serving.load(ghost!(|_: &_| {}));
         self.lock.now_serving.store(
             ticket.wrapping_add(1),
             ghost!(|c: &mut Committer<_, _, _, SeqCst>| {
