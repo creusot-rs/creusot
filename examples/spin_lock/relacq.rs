@@ -1,7 +1,7 @@
 use creusot_std::{
     cell::PermCell,
     ghost::{
-        invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
+        invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
         lifetime_logic::{EndBorrow, FullBorrow, Lifetime, LifetimeToken},
         perm::Perm,
         resource::Resource,
@@ -62,7 +62,7 @@ pub struct SpinLock<T> {
     data: PermCell<T>,
     lft_tok: Ghost<LifetimeToken>,
     end: Ghost<EndBorrow<Perm<PermCell<T>>>>,
-    inner_inv: Ghost<AtomicInvariantSC<SpinLockInv<T>>>,
+    inner_inv: Ghost<AtomicInvariant<SpinLockInv<T>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
 
@@ -116,7 +116,7 @@ impl<T> SpinLock<T> {
         let bor = ghost!(bor.into_inner().add_guard(snapshot!(|p: Perm<_>| *p.ward() == data)));
         let (mut view, perm) = AtView::new(bor).split();
         let (atomic, perm_atomic) = AtomicBool::new(false, ghost!(&mut *view));
-        let inner_inv = AtomicInvariantSC::new(
+        let inner_inv = AtomicInvariant::new(
             ghost!(SpinLockInv {
                 cell: snapshot!(data),
                 lft: snapshot!(lft_tok.lft()),
