@@ -1,108 +1,95 @@
-use crate::{logic::Mapping, prelude::*};
-use core::ops::Deref;
+use crate::{
+    logic::{Mapping, ops::Fin},
+    prelude::*,
+};
 
-/// A borrow _guarded_ by an invariant.
-///
-/// This is used to define [`GuardedBorrow`].
-/// This can also be used to define the equivalent of `GuardedBorrow` with
-/// smart pointers, like [`RefMut`](core::cell::RefMut).
-#[repr(transparent)]
-#[logically_visible]
-pub struct Guarded<T> {
-    /// Borrow contained in this guard.
-    ///
-    /// The `T` type parameter is meant to be a mutable borrow type (like
-    /// `&mut T`, or [`RefMut<T>`](core::cell::RefMut)).
-    pub borrow: T,
-    _guard: Snapshot<Mapping<T, bool>>,
+#[cfg(creusot)]
+use crate::logic::any;
+
+pub trait GuardedRelation {
+    #[logic(prophetic)]
+    fn rel(self, other: Self) -> bool;
 }
 
-impl<T> Guarded<T> {
-    /// The [`guard`](Guard::guard) associated with this borrow.
-    ///
-    /// The type invariant of the `Guarded` ensures that the current value
-    /// of [`borrow`](Self::borrow) satisfies this guard.
+impl<T: Fin> GuardedRelation for T {
+    #[logic(open, prophetic, inline)]
+    fn rel(self, other: Self) -> bool {
+        pearlite! { ^self == ^other }
+    }
+}
+
+/// `Guarded` is a wrapper around an object of type `T`, which makes sure that a
+/// guard (a predicate on `T`) is satisfied when the guarded object disappears.
+/// It works by making the guard part of the type invariant of `Guarded`,
+/// and uses some internal Creusot machinery to ensure that the guard
+/// never changes during the lifetime of the `Guarded` object.
+///
+/// As such, the guard can be broken locally, but it must be restored before the
+/// `Guarded` object is dropped, passed as a parameter, returned or when a
+/// borrow of the `Guarded` is resolved.
+///
+/// The type `T` must implement `GuardedRelation`, which is a way to guarantee
+/// that the guarded object is not replaced with another (it may be mutated, but
+/// not replaced with another) using e.g., [`std::mem::swap`].
+///
+/// `Guarded` is typically used with a `T` mutable borrow. In this case,
+/// `GuardedRelation` guarantees that the prophecies never change, and the
+/// guard typically guarantees that the final value of the borrow satisfies
+/// some property. Other uses include types that behave like mutable borrows,
+/// such as `FullBorrow`.
+///
+/// # Example
+///
+/// ```
+/// use creusot_std::prelude::*;
+/// use creusot_std::invariant::Guarded;
+///
+/// #[ensures(^b == 0i32)]
+/// fn breaks_inv(b: &mut i32) { *b = 0; }
+///
+/// let mut x = 1;
+/// let guarded = Guarded::new(&mut x, snapshot!(|x: i32| x == 1i32));
+/// // break the guard...
+/// breaks_inv(&mut *guarded.inner);
+/// // but restore it before we are done
+/// *guarded.inner = 1;
+/// ```
+#[repr(transparent)]
+#[intrinsic("guarded")]
+pub struct Guarded<T: GuardedRelation> {
+    /// Payload of this `Guarded` value.
+    pub inner: T,
+    _guard: Snapshot<Mapping<T, bool>>,
+    _initial: Snapshot<T>,
+}
+
+impl<T: GuardedRelation> Invariant for Guarded<T> {
+    #[logic(open, prophetic, inline)]
+    fn invariant(self) -> bool {
+        pearlite! { self.guard()[self.inner] && self.inner.rel(*self._initial) }
+    }
+}
+
+impl<T: GuardedRelation> Guarded<T> {
+    /// The [`guard`](Guard::guard) associated with this `Guarded` value.
     #[logic(open, inline)]
     pub fn guard(self) -> Mapping<T, bool> {
         *self._guard
     }
 }
 
-impl<'a, T: ?Sized> Invariant for GuardedBorrow<'a, T> {
-    #[logic(open, prophetic)]
-    fn invariant(self) -> bool {
-        pearlite! { self.guard()[self.borrow] }
-    }
-}
-
-impl<T> Deref for Guarded<T> {
-    type Target = T;
-    #[ensures(*result == self.borrow)]
-    #[check(ghost)]
-    fn deref(&self) -> &Self::Target {
-        &self.borrow
-    }
-}
-
-// Forbid destructuring of `Guarded`
-impl<T> Drop for Guarded<T> {
-    fn drop(&mut self) {}
-}
-
-/// A mutable borrow, that asserts an invariant called the **guard**.
-///
-/// The guard can be broken locally, by accessing the
-/// [`borrow`](Guarded::borrow) directly. However, it must be restored by the
-/// end of the `GuardedBorrow`'s lifetime.
-///
-/// # Example
-///
-/// ```
-/// use creusot_std::prelude::*;
-/// use creusot_std::invariant::GuardedBorrow;
-///
-/// #[ensures(^b == 0i32)]
-/// fn breaks_inv(b: &mut i32) { *b = 0; }
-///
-/// let mut x = 1;
-/// let guarded = GuardedBorrow::new(&mut x, snapshot!(|x: i32| x == 1i32));
-/// // break the guard...
-/// breaks_inv(&mut *guarded.borrow);
-/// // but restore it before we are done
-/// *guarded.borrow = 1;
-/// ```
-pub type GuardedBorrow<'a, T> = Guarded<&'a mut T>;
-
-impl<'a, T: ?Sized> GuardedBorrow<'a, T> {
+impl<'a, T: ?Sized> Guarded<&'a mut T> {
     /// Create a new guarded borrow.
     ///
     /// The borrow contained in the result is guaranteed to satisfy the
     /// [`guard`](Guard::guard) at the end of its lifetime.
-    ///
-    /// Note that the `borrow` field cannot have its final value changed,
-    /// ensuring that it will not get swapped for another borrow.
     #[trusted]
-    #[ensures(result.borrow == borrow)]
-    #[ensures(forall<bor: &mut T> result.guard()[bor] == (guard[*bor] && ^bor == ^borrow))]
+    #[requires(guard[*borrow])]
+    #[ensures(result.inner == borrow)]
+    #[ensures(forall<bor: &mut T> result.guard()[bor] == guard[*bor])]
     #[ensures(guard[^borrow])]
     #[check(ghost)]
     pub fn new(borrow: &'a mut T, #[allow(unused)] guard: Snapshot<Mapping<T, bool>>) -> Self {
-        Self { borrow, _guard: snapshot!(|_: &mut T| false /* placeholder */) }
-    }
-
-    /// Get a shared borrow out of this guarded borrow.
-    ///
-    /// It is not possible to break the guard anymore, since the returned borrow
-    /// is immutable.
-    #[trusted]
-    #[ensures(*result == *self.borrow)]
-    #[ensures(*self.borrow == ^self.borrow)]
-    #[check(ghost)]
-    pub fn into_shared(self) -> &'a T {
-        let ptr = self.borrow as *mut T;
-        core::mem::forget(self);
-        // SAFETY: we are bypassing the destructor of `self`, but it is ok since
-        // it does nothing anyways.
-        unsafe { &*ptr }
+        Self { inner: borrow, _guard: snapshot!(any()), _initial: snapshot!(any()) }
     }
 }
