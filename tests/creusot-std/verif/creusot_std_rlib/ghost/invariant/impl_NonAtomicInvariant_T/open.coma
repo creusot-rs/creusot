@@ -1,0 +1,189 @@
+(* ghost::invariant::NonAtomicInvariant<T> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use map.Map
+use set.Set
+use creusot.prelude.Any
+
+type t_NonAtomicInvariant_T
+
+let deref_Ghost_ref_NonAtomicInvariant_T (self: t_NonAtomicInvariant_T) (return (x: t_NonAtomicInvariant_T)) = any
+  [ return (result: t_NonAtomicInvariant_T) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
+
+type t_Tokens
+
+let into_inner_Tokens (self: t_Tokens) (return (x: t_Tokens)) = any
+  [ return (result: t_Tokens) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+
+type t_T
+
+type t_Guarded_refmut_T = { inner: MutBorrow.t t_T; _guard: Map.map (MutBorrow.t t_T) bool; _initial: MutBorrow.t t_T }
+
+predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
+
+meta "rewrite_def" predicate contains_Namespace
+
+function namespaces (self: t_Tokens) : Set.set t_Namespace
+
+predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
+
+function namespace_T (self: t_NonAtomicInvariant_T) : t_Namespace
+
+predicate index_Mapping_refmut_T_bool [@inline:trivial] (self: Map.map (MutBorrow.t t_T) bool) (a: MutBorrow.t t_T) =
+  Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_refmut_T_bool
+
+function guard_refmut_T [@inline:trivial] (self: t_Guarded_refmut_T) : Map.map (MutBorrow.t t_T) bool = self._guard
+
+meta "rewrite_def" function guard_refmut_T
+
+predicate rel_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) (other: MutBorrow.t t_T) = self.final = other.final
+
+meta "rewrite_def" predicate rel_refmut_T
+
+predicate invariant_Guarded_refmut_T [@inline:trivial] (self: t_Guarded_refmut_T) =
+  index_Mapping_refmut_T_bool (guard_refmut_T self) self.inner /\ rel_refmut_T self.inner self._initial
+
+meta "rewrite_def" predicate invariant_Guarded_refmut_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+predicate inv_Guarded_refmut_T (_1: t_Guarded_refmut_T)
+
+axiom inv_axiom [@rewrite]: forall _1: t_Guarded_refmut_T [inv_Guarded_refmut_T _1]. inv_Guarded_refmut_T _1
+    = (invariant_Guarded_refmut_T _1 /\ inv_refmut_T _1.inner)
+
+type t_Public
+
+function public_T (self: t_T) : t_Public
+
+function public_T'0 (self: t_NonAtomicInvariant_T) : t_Public
+
+predicate protocol_T (self: t_T)
+
+let open_guarded_T (self: t_NonAtomicInvariant_T) (tokens: t_Tokens) (return (x: t_Guarded_refmut_T)) =
+{[@stop_split] [@expl:open_guarded requires] contains tokens (namespace_T self)}
+  any
+  [ return (result: t_Guarded_refmut_T) ->
+  {[@stop_split] [@expl:open_guarded_T ensures] ([@stop_split] [@expl:open_guarded result type invariant] inv_Guarded_refmut_T result)
+    /\ ([@stop_split] [@expl:open_guarded ensures] guard_refmut_T result
+    = (fun (b: MutBorrow.t t_T) -> public_T b.current = public_T'0 self /\ protocol_T b.current))}
+    (! return {result}) ]
+
+predicate invariant_Ghost_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_refmut_T self
+
+meta "rewrite_def" predicate invariant_Ghost_refmut_T
+
+predicate inv_Ghost_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_Ghost_refmut_T _1
+
+meta "rewrite_def" predicate inv_Ghost_refmut_T
+
+let new_refmut_T (x: MutBorrow.t t_T) (return (x'0: MutBorrow.t t_T)) =
+{[@stop_split] [@expl:new 'x' type invariant] inv_refmut_T x}
+  any
+  [ return (result: MutBorrow.t t_T) ->
+  {[@stop_split] [@expl:new_refmut_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_refmut_T result)
+    /\ ([@stop_split] [@expl:new ensures] result = x)}
+    (! return {result}) ]
+
+type impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A
+
+type t_A
+
+predicate inv_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A (_1: impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A)
+
+predicate inv_tup1_Ghost_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = inv_Ghost_refmut_T _1
+
+meta "rewrite_def" predicate inv_tup1_Ghost_refmut_T
+
+predicate precondition_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A (self: impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A) (args: MutBorrow.t t_T)
+
+predicate inv_A (_1: t_A)
+
+predicate postcondition_once_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A (self: impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A) (args: MutBorrow.t t_T) (result: t_A)
+
+let call_once_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A
+  (self: impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A) (args: MutBorrow.t t_T)
+  (return (x: t_A)) =
+{[@stop_split] [@expl:call_once_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A self)
+  /\ ([@stop_split] [@expl:call_once 'args' type invariant] inv_tup1_Ghost_refmut_T args)
+  /\ ([@stop_split] [@expl:call_once requires] precondition_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A self args)}
+  any
+  [ return (result: t_A) ->
+  {[@stop_split] [@expl:call_once_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A ensures] ([@stop_split] [@expl:call_once result type invariant] inv_A result)
+    /\ ([@stop_split] [@expl:call_once ensures] postcondition_once_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A self args result)}
+    (! return {result}) ]
+
+predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_T
+
+predicate resolve_Guarded_refmut_T (_1: t_Guarded_refmut_T)
+
+axiom resolve_axiom [@rewrite]: forall _1: t_Guarded_refmut_T [resolve_Guarded_refmut_T _1]. resolve_Guarded_refmut_T _1
+    = resolve_refmut_T _1.inner
+
+function fin_Ghost_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) : t_T = self.final
+
+meta "rewrite_def" function fin_Ghost_refmut_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let open_T (this: t_NonAtomicInvariant_T) (tokens: t_Tokens)
+  (f: impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A) (return (x: t_A)) =
+{[@stop_split] [@expl:open_T requires] ([@stop_split] [@expl:open 'f' type invariant] inv_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A f)
+  /\ ([@stop_split] [@expl:open requires #0] contains tokens (namespace_T this))
+  /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_T. public_T t.current = public_T'0 this
+      /\ protocol_T t.current /\ inv_Ghost_refmut_T t
+    -> precondition_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A f t
+    /\ (forall res: t_A. postcondition_once_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A f t res
+      -> public_T (fin_Ghost_refmut_T t) = public_T'0 this /\ protocol_T (fin_Ghost_refmut_T t)))}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = deref_Ghost_ref_NonAtomicInvariant_T {this} (fun (_x: t_NonAtomicInvariant_T) -> [ &_16 <- _x ] s1)
+    | s1 = into_inner_Tokens {tokens} (fun (_x: t_Tokens) -> [ &_18 <- _x ] s2)
+    | s2 = open_guarded_T {_16} {_18} (fun (_x: t_Guarded_refmut_T) -> [ &_14 <- _x ] s3)
+    | s3 = MutBorrow.borrow_final <t_T> {_14.inner.current} {MutBorrow.get_id _14.inner}
+        (fun (_bor: MutBorrow.t t_T) ->
+          [ &__temp <- _bor ] -{inv_T _bor.final}-
+          [ &_14 <- { _14 with inner = { _14.inner with current = _bor.final } } ] s4)
+      [ _ck -> (! {[@expl:type invariant] inv_T _14.inner.current} any) ]
+    | s4 = new_refmut_T {__temp} (fun (_x: MutBorrow.t t_T) -> [ &inv <- _x ] s5)
+    | s5 = [ &_23 <- inv ] s6
+    | s6 = call_once_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A {f} {_23}
+        (fun (_x: t_A) -> [ &_ret <- _x ] s7)
+    | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_Guarded_refmut_T _14} any) ]
+    | s8 = -{resolve_Guarded_refmut_T _14}- s9
+    | s9 = return {_ret} ] ]
+  [ & _ret: t_A = Any.any_l ()
+  | & this: t_NonAtomicInvariant_T = this
+  | & tokens: t_Tokens = tokens
+  | & f: impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A = f
+  | & __temp: MutBorrow.t t_T = Any.any_l ()
+  | & _14: t_Guarded_refmut_T = Any.any_l ()
+  | & _16: t_NonAtomicInvariant_T = Any.any_l ()
+  | & _18: t_Tokens = Any.any_l ()
+  | & inv: MutBorrow.t t_T = Any.any_l ()
+  | & _23: MutBorrow.t t_T = Any.any_l () ])
+  [ return (result: t_A) ->
+  {[@stop_split] [@expl:open_T ensures] ([@stop_split] [@expl:open result type invariant] inv_A result)
+    /\ ([@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_T. public_T t.current = public_T'0 this
+      /\ protocol_T t.current
+      /\ inv_Ghost_refmut_T t
+      /\ postcondition_once_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A f t result)}
+    (! return {result}) ]

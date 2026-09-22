@@ -56,8 +56,9 @@ module M_zst_pointers_may_be_equal
   type t_Perm_ptr_unit
   
   type t_Guarded_refmut_Perm_ptr_unit = {
-    borrow: MutBorrow.t t_Perm_ptr_unit;
-    _guard: Map.map (MutBorrow.t t_Perm_ptr_unit) bool }
+    inner: MutBorrow.t t_Perm_ptr_unit;
+    _guard: Map.map (MutBorrow.t t_Perm_ptr_unit) bool;
+    _initial: MutBorrow.t t_Perm_ptr_unit }
   
   type tup2_ptr_unit_Ghost_Guarded_refmut_Perm_ptr_unit = { f0: Opaque.ptr; f1: t_Guarded_refmut_Perm_ptr_unit }
   
@@ -71,8 +72,16 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" function guard_refmut_Perm_ptr_unit
   
-  predicate invariant_Guarded_refmut_Perm_ptr_unit (self: t_Guarded_refmut_Perm_ptr_unit) =
-    index_Mapping_refmut_Perm_ptr_unit_bool (guard_refmut_Perm_ptr_unit self) self.borrow
+  predicate rel_refmut_Perm_ptr_unit [@inline:trivial] (self: MutBorrow.t t_Perm_ptr_unit) (other: MutBorrow.t t_Perm_ptr_unit) =
+    self.final = other.final
+  
+  meta "rewrite_def" predicate rel_refmut_Perm_ptr_unit
+  
+  predicate invariant_Guarded_refmut_Perm_ptr_unit [@inline:trivial] (self: t_Guarded_refmut_Perm_ptr_unit) =
+    index_Mapping_refmut_Perm_ptr_unit_bool (guard_refmut_Perm_ptr_unit self) self.inner
+    /\ rel_refmut_Perm_ptr_unit self.inner self._initial
+  
+  meta "rewrite_def" predicate invariant_Guarded_refmut_Perm_ptr_unit
   
   predicate is_null_ptr_unit (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
@@ -114,7 +123,7 @@ module M_zst_pointers_may_be_equal
   
   axiom inv_axiom'0 [@rewrite]:
     forall _1: t_Guarded_refmut_Perm_ptr_unit [inv_Guarded_refmut_Perm_ptr_unit _1]. inv_Guarded_refmut_Perm_ptr_unit _1
-      = (invariant_Guarded_refmut_Perm_ptr_unit _1 /\ inv_refmut_Perm_ptr_unit _1.borrow)
+      = (invariant_Guarded_refmut_Perm_ptr_unit _1 /\ inv_refmut_Perm_ptr_unit _1.inner)
   
   predicate invariant_Ghost_Guarded_refmut_Perm_ptr_unit [@inline:trivial] (self: t_Guarded_refmut_Perm_ptr_unit) =
     inv_Guarded_refmut_Perm_ptr_unit self
@@ -136,8 +145,8 @@ module M_zst_pointers_may_be_equal
     {[@stop_split] [@expl:from_mut_unit ensures] ([@stop_split] [@expl:from_mut result type invariant] inv_tup2_ptr_unit_Ghost_Guarded_refmut_Perm_ptr_unit result)
       /\ ([@stop_split] [@expl:from_mut ensures #0] guard_refmut_Perm_ptr_unit result.f1
         = (fun (p: MutBorrow.t t_Perm_ptr_unit) -> ward_ptr_unit p.current = result.f0))
-      /\ ([@stop_split] [@expl:from_mut ensures #1] val_unsized_ptr_unit result.f1.borrow.current = r.current)
-      /\ ([@stop_split] [@expl:from_mut ensures #2] val_unsized_ptr_unit result.f1.borrow.final = r.final)}
+      /\ ([@stop_split] [@expl:from_mut ensures #1] val_unsized_ptr_unit result.f1.inner.current = r.current)
+      /\ ([@stop_split] [@expl:from_mut ensures #2] val_unsized_ptr_unit result.f1.inner.final = r.final)}
       (! return {result}) ]
   
   predicate resolve_refmut_unit [@inline:trivial] (_1: MutBorrow.t ()) = _1.final = _1.current
@@ -284,7 +293,7 @@ module M_zst_pointers_may_be_equal
   
   axiom resolve_axiom [@rewrite]:
     forall _1: t_Guarded_refmut_Perm_ptr_unit [resolve_Guarded_refmut_Perm_ptr_unit _1]. resolve_Guarded_refmut_Perm_ptr_unit _1
-      = resolve_refmut_Perm_ptr_unit _1.borrow
+      = resolve_refmut_Perm_ptr_unit _1.inner
   
   predicate resolve_Ghost_Guarded_refmut_Perm_ptr_unit [@inline:trivial] (self: t_Guarded_refmut_Perm_ptr_unit) =
     resolve_Guarded_refmut_Perm_ptr_unit self
@@ -339,11 +348,11 @@ module M_zst_pointers_may_be_equal
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Guarded_refmut_Perm_ptr_unit own1} any) ]
       | s19 = deref_mut_Ghost_Guarded_refmut_Perm_ptr_unit {_27}
           (fun (_x: MutBorrow.t t_Guarded_refmut_Perm_ptr_unit) -> [ &_26 <- _x ] s20)
-      | s20 = MutBorrow.borrow_mut <t_Perm_ptr_unit> {_26.current.borrow.current}
+      | s20 = MutBorrow.borrow_mut <t_Perm_ptr_unit> {_26.current.inner.current}
           (fun (_bor: MutBorrow.t t_Perm_ptr_unit) ->
             [ &__temp <- _bor ] -{inv_Perm_ptr_unit _bor.final}-
-            [ &_26 <- { _26 with current = { _26.current with borrow = { _26.current.borrow with current = _bor.final } } } ]
-            s21) [ _ck -> (! {[@expl:type invariant] inv_Perm_ptr_unit _26.current.borrow.current} any) ]
+            [ &_26 <- { _26 with current = { _26.current with inner = { _26.current.inner with current = _bor.final } } } ]
+            s21) [ _ck -> (! {[@expl:type invariant] inv_Perm_ptr_unit _26.current.inner.current} any) ]
       | s21 = new_refmut_Perm_ptr_unit {__temp} (fun (_x: MutBorrow.t t_Perm_ptr_unit) -> [ &own1'0 <- _x ] s22)
       | s22 = into_inner_refmut_Perm_ptr_unit {own1'0} (fun (_x: MutBorrow.t t_Perm_ptr_unit) -> [ &_33 <- _x ] s23)
       | s23 = into_inner_ref_Perm_ptr_unit {own2} (fun (_x: t_Perm_ptr_unit) -> [ &_36 <- _x ] s24)

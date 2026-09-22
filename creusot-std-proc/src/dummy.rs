@@ -42,7 +42,7 @@ pub fn ghost_let(body: TS1) -> TS1 {
         ::creusot_std::ghost::Ghost::new(#body)
     } else {
         ::creusot_std::ghost::Ghost::conjure()
-    } }
+    }; }
     .into()
 }
 
@@ -113,11 +113,6 @@ pub fn bitwise_proof(_: TS1, tokens: TS1) -> TS1 {
 pub fn constant(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }
-
-pub fn logically_visible(_: TS1, tokens: TS1) -> TS1 {
-    tokens
-}
-
 pub fn derive_deep_model(_: TS1) -> TS1 {
     TS1::new()
 }
