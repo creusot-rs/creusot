@@ -4,12 +4,12 @@ use creusot_std::{
         invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
         lifetime_logic::{EndBorrow, FullBorrow, Lifetime, LifetimeToken},
         perm::Perm,
-        resource::{Authority, Fragment},
+        resource::Authority,
     },
     invariant::Guarded,
     logic::{
         FMap, Id, Mapping,
-        ra::{RA, auth::CancelLocalUpdateUnit, excl::Excl},
+        ra::{auth::CancelLocalUpdateUnit, excl::Excl},
         real::PositiveReal,
     },
     prelude::*,
@@ -28,12 +28,11 @@ struct TicketLockInv<T> {
     perm_next_ticket: Perm<AtomicU32>,
     perm_now_serving: Perm<AtomicU32>,
     auth_tickets: Authority<FMap<Int, Excl<()>>>,
-    auth_now_serving: Authority<Option<Excl<()>>>,
     inv: Snapshot<Mapping<T, bool>>,
 }
 
 impl<T> Protocol for TicketLockInv<T> {
-    type Public = ((PermCell<T>, AtomicU32, AtomicU32, Lifetime, Mapping<T, bool>), Id, Id);
+    type Public = ((PermCell<T>, AtomicU32, AtomicU32, Lifetime, Mapping<T, bool>), Id);
 
     #[logic]
     fn public(self) -> Self::Public {
@@ -46,7 +45,6 @@ impl<T> Protocol for TicketLockInv<T> {
                 *self.inv,
             ),
             self.auth_tickets.id(),
-            self.auth_now_serving.id(),
         )
     }
 
@@ -54,18 +52,16 @@ impl<T> Protocol for TicketLockInv<T> {
     fn protocol(self) -> bool {
         pearlite! {
             (forall<k: Int> self.auth_tickets@.contains(k) ==> k < self.perm_next_ticket.val()@) &&
-            match (self.auth_now_serving@, self.perm) {
-                (None, Some(bor)) => {
+            match self.perm {
+                Some(bor) => {
                     bor.inner.lft() == *self.lft &&
                     bor.guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == *self.cell) &&
                     self.inv.get(bor.inner.cur().val())
                 }
-                (_, None) => {
-                    let n = self.perm_now_serving.val()@;
-                    !self.auth_tickets@.contains(n) &&
-                    n < self.perm_next_ticket.val()@
+                None => {
+                    let n = self.perm_now_serving.val();
+                    !self.auth_tickets@.contains(n@) && n < self.perm_next_ticket.val()
                 }
-                _ => false,
             }
         }
     }
@@ -97,7 +93,6 @@ impl<T> Invariant for TicketLock<T> {
 pub struct TicketLockGuard<'a, T> {
     lock: &'a TicketLock<T>,
     perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
-    token: Ghost<Fragment<Option<Excl<()>>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
 
@@ -116,9 +111,7 @@ impl<'a, T> Invariant for TicketLockGuard<'a, T> {
         pearlite! {
             self.perm.guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == self.lock.data) &&
             self.perm.inner.lft() == self.lock.lft_tok.lft() &&
-            self.inv == self.lock.inv &&
-            self.token@ != None &&
-            self.token.id() == self.lock.inner_inv.public().2
+            self.inv == self.lock.inv
         }
     }
 }
@@ -140,7 +133,6 @@ impl<T> TicketLock<T> {
                 perm_next_ticket: perm_next_ticket.into_inner(),
                 perm_now_serving: perm_now_serving.into_inner(),
                 auth_tickets: Authority::alloc().into_inner(),
-                auth_now_serving: Authority::alloc().into_inner(),
                 inv
             }),
             snapshot!(TICKET_LOCK()),
@@ -168,7 +160,6 @@ impl<T> TicketLock<T> {
         );
 
         let mut perm = ghost!(None);
-        let mut token = ghost!(None);
 
         #[invariant(tokens.contains(TICKET_LOCK()))]
         #[invariant(*ticket_own != None)]
@@ -180,23 +171,13 @@ impl<T> TicketLock<T> {
                     return;
                 }
                 c.shoot_load(&inv.perm_now_serving);
-                let auth_tickets_snap = snapshot!(inv.auth_tickets);
                 inv.auth_tickets.update(ticket_own.as_mut().unwrap(), CancelLocalUpdateUnit);
-                proof_assert!(exists<m> inv.auth_tickets@.op(m) == Some(auth_tickets_snap@));
-                proof_assert!(forall<k> inv.auth_tickets@.contains(k) ==> auth_tickets_snap@.contains(k) && k != ticket@);
                 *perm = inv.perm.take();
-                *token = Some(inv.auth_now_serving.add_fragment(snapshot!(Some(Excl(())))));
-                proof_assert!(inv.auth_now_serving@ == Some(Excl(())))
             })
         })) != ticket
         {}
 
-        TicketLockGuard {
-            lock: self,
-            perm: ghost!(perm.into_inner().unwrap()),
-            token: ghost!(token.into_inner().unwrap()),
-            inv: self.inv,
-        }
+        TicketLockGuard { lock: self, perm: ghost!(perm.into_inner().unwrap()), inv: self.inv }
     }
 
     pub fn into_inner(self) -> T {
@@ -230,8 +211,7 @@ impl<'a, T> TicketLockGuard<'a, T> {
             ghost!(|c: &mut Committer<_, _, _, SeqCst>| {
                 self.lock.inner_inv.open(tokens.into_inner(), |inv: &mut TicketLockInv<T>| {
                     c.shoot_store(&mut inv.perm_now_serving);
-                    inv.perm = Some(self.perm.into_inner());
-                    inv.auth_now_serving.update(&mut *self.token, CancelLocalUpdateUnit);
+                    inv.perm = Some(self.perm.into_inner())
                 })
             }),
         );
