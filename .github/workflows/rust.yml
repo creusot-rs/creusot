@@ -75,11 +75,18 @@ jobs:
     - run: cargo test --test why3 dummy-dummy-dummy # make sure its deps are in the cargo cache
 
   build-nix:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
     env:
       NIXPKGS_ALLOW_UNFREE: 1 # Allow the use of unfree software (Alt-Ergo)
+
     permissions:
       actions: write # Allow to purge the cache
+
     steps:
     - uses: actions/checkout@v5
     - uses: nixbuild/nix-quick-install-action@v34

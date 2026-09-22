@@ -17,6 +17,7 @@
 
   # Librairies
   fetchFromGitHub,
+  lib,
   stdenv,
 
   # Pins
@@ -24,6 +25,8 @@
   version,
 }:
 let
+  cvc4-cln = cln.override { gccStdenv = stdenv; };
+
   cvc4-cryptominisat = cryptominisat.overrideAttrs {
     src = fetchFromGitHub {
       owner = "msoos";
@@ -76,7 +79,7 @@ stdenv.mkDerivation {
   buildInputs = [
     antlr3_4
     cadical
-    cln
+    cvc4-cln
     cvc4-cryptominisat
     cvc4-symfpu
     gmp
@@ -130,4 +133,15 @@ stdenv.mkDerivation {
     "-DBUILD_SWIG_BINDINGS_PYTHON=0"
     "-DBUILD_BINDINGS_PYTHON=0"
   ];
+
+  postPatch = ''
+    sed -i '/#pragma once/a\
+    #include <cstddef>' src/expr/emptyset.h
+
+    sed -i '/#define CVC4__EXPR__EXPR_IOMANIP_H/a\
+    #include <cstddef>' src/expr/expr_iomanip.h
+
+    sed -i '/#define CVC4__UTIL__REGEXP_H/a\
+    #include <cstddef>' src/util/regexp.h
+  '';
 }

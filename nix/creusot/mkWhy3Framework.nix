@@ -37,7 +37,10 @@ let
 in
 symlinkJoin {
   name = "creusot-why3";
-  paths = solvers ++ [ why3json creusotWhy3Conf ];
+  paths = solvers ++ [
+    why3json
+    creusotWhy3Conf
+  ];
   postBuild = "ln -s $out $out/creusot";
 
   passthru = builtins.listToAttrs (
