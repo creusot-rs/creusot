@@ -8,7 +8,8 @@
 use crate::{ghost::Objective, resolve::structural_resolve};
 use crate::{
     ghost::{FnGhost, NotObjective, Plain, resource::Resource},
-    logic::{Id, ops::Fin, real::PositiveReal},
+    invariant::Guarded,
+    logic::{Id, Mapping, ops::Fin, real::PositiveReal},
     prelude::*,
 };
 use core::marker::PhantomData;
@@ -266,6 +267,19 @@ impl<T> FullBorrow<T> {
     #[allow(unused_variables)]
     pub fn new(x: Ghost<T>, lft: Snapshot<Lifetime>) -> (Ghost<Self>, Ghost<EndBorrow<T>>) {
         (Ghost::conjure(), Ghost::conjure())
+    }
+
+    /// Adds a guard to a mutable borrow.
+    /// This is analoguous to `Guarded::<&mut T>::new`, but for `FullBorrow`.
+    #[trusted]
+    #[check(ghost)]
+    #[requires(guard[self.cur()])]
+    #[ensures(result.inner == self)]
+    #[ensures(forall<bor: FullBorrow<T>> result.guard()[bor] == guard[bor.cur()])]
+    #[ensures(guard[^self])]
+    #[allow(unused_variables)]
+    pub fn add_guard(self, guard: Snapshot<Mapping<T, bool>>) -> Guarded<Self> {
+        unreachable!("ghost code only")
     }
 
     /// Get an immutable borrow to read the value.

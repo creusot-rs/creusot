@@ -55,6 +55,22 @@ impl SyncView {
     pub fn meet(self, other: Self) -> Self {
         dead
     }
+
+    #[logic(opaque)]
+    #[ensures(self <= result)]
+    #[ensures(other <= result)]
+    #[ensures(forall<r> self <= r ==> other <= r ==> result <= r)]
+    #[trusted]
+    pub fn join(self, other: Self) -> Self {
+        dead
+    }
+
+    #[check(ghost)]
+    #[trusted]
+    #[ensures(^self == self.join(_other))]
+    pub fn join_in(&mut self, _other: Self) {
+        panic!("Should not be called outside ghost code")
+    }
 }
 
 impl PartialOrdLogic for SyncView {

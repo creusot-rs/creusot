@@ -102,8 +102,7 @@ pub trait RA: Sized {
 
     /// Factorizing elements of the RA
     ///
-    /// Given `a` and `c`, this returns an element `b` such that `a = b.c`,
-    /// or returns `None` if there does not exists such an element.
+    /// Given `a` and `c` such that `c.incl(a)`, this returns an element `b` such that `a = b.c`,
     #[logic]
     #[requires(factor.incl(self))]
     #[ensures(factor.op(result) == Some(self))]
