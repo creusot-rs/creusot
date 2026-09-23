@@ -8,21 +8,18 @@ use crate::{
     translation::{
         fmir::{self, *},
         pearlite::{Term, TermKind, UnOp},
-        traits,
     },
 };
 use itertools::Itertools;
-use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
     mir::{
         self, AssertKind, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
         StatementKind, SwitchTargets,
         TerminatorKind::{self, *},
     },
-    ty::{GenericArgKind, Ty, TyKind, TypingMode},
+    ty::{GenericArgKind, Ty, TyKind},
 };
 use rustc_span::sym;
-use rustc_trait_selection::error_reporting::InferCtxtErrorExt;
 use std::collections::{HashMap, HashSet};
 
 // Translate the terminator of a basic block.
@@ -72,25 +69,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         let [arg] = *func_args.into_array().unwrap();
                         self.emit_assignment(destination, RValue::Operand(arg), span);
                     } else {
-                        let predicates = self
-                            .ctx
-                            .extern_spec(fun_def_id)
-                            .map(|p| p.predicates_for(self.tcx(), subst))
-                            .unwrap_or_default();
-
-                        let infcx = self
-                            .ctx
-                            .infer_ctxt()
-                            .ignoring_regions()
-                            .build(TypingMode::non_body_analysis());
-                        let res = traits::evaluate_additional_predicates(
-                            &infcx,
-                            predicates,
+                        if let Err(err) = self.ctx.check_additional_predicates(
+                            fun_def_id,
+                            subst,
                             self.typing_env().param_env,
                             span,
-                        );
-                        if let Err(errs) = res {
-                            infcx.err_ctxt().report_fulfillment_errors(errs).raise_fatal();
+                        ) {
+                            err.raise_fatal();
                         }
 
                         let tr_res = TraitResolved::resolve_item(

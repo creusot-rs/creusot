@@ -481,14 +481,21 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         // impl. After instantiation, they will be implied by the bounds of the inheriting
         // impl.
         let typing_env_for_bounds = TypingEnv::new(impl_param_env, TypingMode::non_body_analysis());
-        let bounds = impl_param_env.caller_bounds().iter().chain(
-            item_bounds.iter().filter(|b| !defimpl_bounds.contains(b)).map(|b| {
-                ctx.tcx.normalize_erasing_regions(
+        let bounds =
+            impl_param_env.caller_bounds().iter().chain(item_bounds.iter().filter_map(|b| {
+                if defimpl_bounds.contains(&b) {
+                    return None;
+                }
+                if let Ok(res) = ctx.tcx.try_normalize_erasing_regions(
                     typing_env_for_bounds,
                     EarlyBinder::bind(ctx.tcx, b).instantiate(ctx.tcx, func_impl_args),
-                )
-            }),
-        );
+                ) {
+                    Some(res)
+                } else {
+                    ctx.dcx().delayed_bug("failed to normalize bounds");
+                    None
+                }
+            }));
 
         // data for when we call this function
         let param_env = ParamEnv::new(ctx.mk_clauses_from_iter(bounds));
@@ -916,10 +923,13 @@ pub(crate) fn proof_tree_nodes<'tcx>(
     let mut nodes = Vec::new();
     let mut predicates: Vec<_> = trait_refs_of_clauses(tcx, clauses).collect();
     while let Some(trait_ref) = predicates.pop() {
-        let trait_ref = tcx.normalize_erasing_regions(
+        let Ok(trait_ref) = tcx.try_normalize_erasing_regions(
             typing_env,
             EarlyBinder::bind(tcx, trait_ref).instantiate_identity(),
-        );
+        ) else {
+            tcx.dcx().delayed_bug("failed to normalize trait ref");
+            continue;
+        };
         let ImplSelection::Found(source) = select_trait_impl(tcx, typing_env, trait_ref) else {
             continue;
         };

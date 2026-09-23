@@ -9,17 +9,12 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use rustc_infer::{
-    infer::{InferCtxt, TyCtxtInferExt},
+    infer::TyCtxtInferExt,
     traits::{Obligation, ObligationCause, TraitEngine},
 };
-use rustc_middle::ty::{
-    EarlyBinder, GenericArgsRef, ParamEnv, Predicate, Ty, TypingEnv, TypingMode,
-};
-use rustc_span::Span;
-use rustc_trait_selection::{
-    error_reporting::InferCtxtErrorExt,
-    traits::{FulfillmentError, TraitEngineExt},
-};
+use rustc_middle::ty::{EarlyBinder, GenericArgsRef, ParamEnv, Ty, TypingEnv, TypingMode};
+use rustc_span::{ErrorGuaranteed, Span};
+use rustc_trait_selection::{error_reporting::InferCtxtErrorExt, traits::TraitEngineExt};
 use std::collections::HashMap;
 
 #[derive(Clone)]
@@ -65,28 +60,6 @@ impl<'tcx> TranslationCtx<'tcx> {
                 continue;
             }
 
-            let subst = erased_identity_for_item(self.tcx, impl_item);
-            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.args);
-
-            // TODO: Clean up and abstract
-            let predicates = self
-                .extern_spec(trait_item)
-                .map(|p| p.predicates_for(self.tcx, refn_subst))
-                .unwrap_or_else(Vec::new);
-
-            let infcx = self.infer_ctxt().ignoring_regions().build(TypingMode::non_body_analysis());
-
-            let res = evaluate_additional_predicates(
-                &infcx,
-                predicates,
-                self.param_env(impl_item),
-                self.def_span(impl_item),
-            );
-            if let Err(errs) = res {
-                infcx.err_ctxt().report_fulfillment_errors(errs);
-                continue;
-            }
-
             let Ok(mut ancestors) = self.trait_def(trait_ref.def_id).ancestors(self.tcx, impl_id)
             else {
                 continue;
@@ -108,11 +81,40 @@ impl<'tcx> TranslationCtx<'tcx> {
                 }
             }
 
-            let refn = logic_refinement_term(self, impl_item, trait_item, refn_subst);
+            let subst = erased_identity_for_item(self.tcx, impl_item).rebase_onto(
+                self.tcx,
+                impl_id,
+                trait_ref.args,
+            );
+            let refn = logic_refinement_term(self, impl_item, trait_item, subst);
             refinements.push(Refinement { impl_item, refn });
         }
 
         refinements
+    }
+
+    pub(crate) fn check_additional_predicates(
+        &self,
+        trait_item: DefId,
+        subst: GenericArgsRef<'tcx>,
+        param_env: ParamEnv<'tcx>,
+        sp: Span,
+    ) -> Result<(), ErrorGuaranteed> {
+        let Some(ext_spec) = self.extern_spec(trait_item) else { return Ok(()) };
+        let infcx = self.infer_ctxt().ignoring_regions().build(TypingMode::non_body_analysis());
+        let mut fulfill_cx = <dyn TraitEngine<'tcx, _>>::new(&infcx);
+        for predicate in ext_spec.predicates_for(self.tcx, subst) {
+            let predicate = self.erase_and_anonymize_regions(predicate);
+            let cause = ObligationCause::dummy_with_span(sp);
+            let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
+            fulfill_cx.register_predicate_obligation(&infcx, obligation);
+        }
+        let errors = fulfill_cx.evaluate_obligations_error_on_ambiguity(&infcx);
+        if !errors.is_empty() {
+            Err(infcx.err_ctxt().report_fulfillment_errors(errors))
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -159,21 +161,4 @@ fn logic_refinement_term<'tcx>(
     // refn = args.into_iter().rfold(refn, |acc, r| acc.forall(r).span(span));
 
     Refn { args, pre: trait_precond, post: impl_precond.conj(post_refn) }
-}
-
-pub(crate) fn evaluate_additional_predicates<'tcx>(
-    infcx: &InferCtxt<'tcx>,
-    p: Vec<Predicate<'tcx>>,
-    param_env: ParamEnv<'tcx>,
-    sp: Span,
-) -> Result<(), Vec<FulfillmentError<'tcx>>> {
-    let mut fulfill_cx = <dyn TraitEngine<'tcx, _>>::new(infcx);
-    for predicate in p {
-        let predicate = infcx.tcx.erase_and_anonymize_regions(predicate);
-        let cause = ObligationCause::dummy_with_span(sp);
-        let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
-        fulfill_cx.register_predicate_obligation(infcx, obligation);
-    }
-    let errors = fulfill_cx.evaluate_obligations_error_on_ambiguity(infcx);
-    if !errors.is_empty() { Err(errors) } else { Ok(()) }
 }

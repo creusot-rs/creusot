@@ -2,6 +2,7 @@ use crate::{
     backend::is_trusted_item,
     contracts_items::{Intrinsic, is_law, is_open_inv_result, is_trusted},
     ctx::{HasTyCtxt as _, TranslationCtx},
+    util::erased_identity_for_item,
 };
 use rustc_hir::def::DefKind;
 use rustc_span::sym;
@@ -45,6 +46,9 @@ pub(crate) fn validate_traits(ctx: &TranslationCtx) {
 ///     fn bar() {} // ! ERROR ! bar should be marked `#[check(terminates)]`
 /// }
 /// ```
+///
+/// Also validates that the impls has the needed additional predicates, it the trait item has an
+/// extern spec.
 pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
     for impl_id in ctx.all_local_trait_impls(()).values().flat_map(|i| i.iter()) {
         if !matches!(ctx.def_kind(*impl_id), DefKind::Impl { .. }) {
@@ -160,6 +164,19 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
                     .emit();
                 }
             }
+
+            let subst = erased_identity_for_item(ctx.tcx, impl_item).rebase_onto(
+                ctx.tcx,
+                impl_id.to_def_id(),
+                trait_ref.args,
+            );
+
+            let _ = ctx.check_additional_predicates(
+                trait_item,
+                subst,
+                ctx.param_env(impl_item),
+                ctx.def_span(impl_item),
+            );
         }
     }
 }

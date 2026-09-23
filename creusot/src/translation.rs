@@ -62,11 +62,10 @@ pub(crate) fn after_analysis<'tcx>(
     let mut ctx = TranslationCtx::new(tcx, opts.clone(), params_open_inv);
     ctx.load_specs();
     validate(&ctx);
+    ctx.dcx().abort_if_errors();
     force_translation(&ctx);
     debug!("after_analysis_validate: {:?}", start.elapsed());
-    if let Some(err) = tcx.dcx().has_errors_or_delayed_bugs() {
-        err.raise_fatal()
-    }
+    ctx.dcx().abort_if_errors();
 
     let start = Instant::now();
     let mut why3 = Why3Generator::new(ctx);
