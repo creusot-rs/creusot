@@ -220,9 +220,7 @@ impl Callbacks for WithoutContracts {
                 }
             })
             .collect();
-        if let Some(err) = c.sess.dcx().has_errors_or_delayed_bugs() {
-            err.raise_fatal()
-        }
+        c.sess.dcx().abort_if_errors();
         let metadata = BinaryMetadata::without_specs(erased_thir);
         crate::metadata::dump_exports(tcx, &Default::default(), metadata);
         Compilation::Continue

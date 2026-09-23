@@ -75,10 +75,10 @@ pub(crate) fn validate(ctx: &TranslationCtx) {
             validate_opacity(ctx, def_id);
         }
     }
+    validate_traits(ctx);
+    validate_impls(ctx);
     validate_recursive_types(ctx);
     let variant_calls = validate_terminates(ctx);
     *ctx.variant_calls.borrow_mut() = variant_calls;
-    validate_traits(ctx);
-    validate_impls(ctx);
     validate_erasures(ctx);
 }
