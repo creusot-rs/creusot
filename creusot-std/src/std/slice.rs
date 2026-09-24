@@ -766,22 +766,44 @@ impl<'a, T> DoubleEndedIteratorSpec for IterMut<'a, T> {
 }
 
 extern_spec! {
+    impl<'a, T> Iterator for Iter<'a, T> {
+        #[check(ghost)]
+        #[ensures(match result {
+            None => self.completed(),
+            Some(v) => (*self).produces(Seq::singleton(v), ^self)
+        })]
+        fn next(&mut self) -> Option<&'a T>;
+    }
+
     impl<'a, T> Iter<'a, T> {
+        #[check(ghost)]
         #[ensures(result@ == self@@)]
         fn as_slice(&self) -> &'a [T];
     }
 
     impl<'a, T> ExactSizeIterator for Iter<'a, T> {
+        #[check(ghost)]
         #[ensures(result@ == self@@.len())]
         fn len(&self) -> usize;
     }
 
+    impl<'a, T> Iterator for IterMut<'a, T> {
+        #[check(ghost)]
+        #[ensures(match result {
+            None => self.completed(),
+            Some(v) => (*self).produces(Seq::singleton(v), ^self)
+        })]
+        fn next(&mut self) -> Option<&'a mut T>;
+    }
+
     impl<'a, T> IterMut<'a, T> {
+        #[check(ghost)]
         #[ensures(result@ == self@@)]
         fn as_slice(&self) -> &'a [T];
     }
 
     impl<'a, T> ExactSizeIterator for IterMut<'a, T> {
+        #[check(ghost)]
         #[ensures(result@ == self@@.len())]
         fn len(&self) -> usize;
     }
