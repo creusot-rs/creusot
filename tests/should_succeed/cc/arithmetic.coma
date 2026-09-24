@@ -30,13 +30,21 @@ module M_shr_ref
   
   constant const_BITS: UInt32BW.t = (8: UInt32BW.t)
   
+  function shr_u8 [@inline:trivial] (self: UInt8BW.t) (rhs: Int32BW.t) : UInt8BW.t =
+    UInt8BW.shr self (UInt8BW.of_BV256 (Int32BW.to_BV256 rhs))
+  
+  meta "rewrite_def" function shr_u8
+  
   let shr_ref_u8 (self: UInt8BW.t) (other: Int32BW.t) (return (x: UInt8BW.t)) =
   {[@stop_split] [@expl:shr requires] Int32BW.le (Int32BW.of_BV256 (UInt64BW.to_BV256 (0: UInt64BW.t))) other
-    /\ Int32BW.lt other const_BITS}
+    /\ Int32BW.le other (UInt32BW.sub const_BITS (1: UInt32BW.t))}
     any
-    [ return (result: UInt8BW.t) -> {[@stop_split] [@expl:shr ensures] result
-      = UInt8BW.shr self (UInt8BW.of_BV256 (Int32BW.to_BV256 other))}
-      (! return {result}) ]
+    [ return (result: UInt8BW.t) -> {[@stop_split] [@expl:shr ensures] result = shr_u8 self other} (! return {result}) ]
+  
+  function shr_u8'0 [@inline:trivial] (self: UInt8BW.t) (rhs: UInt64BW.t) : UInt8BW.t =
+    UInt8BW.shr self (UInt8BW.of_BV256 (UInt64BW.to_BV256 rhs))
+  
+  meta "rewrite_def" function shr_u8'0
   
   meta "compute_max_steps" 1000000
   
@@ -46,8 +54,7 @@ module M_shr_ref
     [ bb0 = s0
       [ s0 = shr_ref_u8 {a} {(1: Int32BW.t)} (fun (_x: UInt8BW.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt8BW.t = Any.any_l () | & a: UInt8BW.t = a ])
-    [ return (result: UInt8BW.t) -> {[@stop_split] [@expl:shr_ref ensures] result
-      = UInt8BW.shr a (UInt8BW.of_BV256 (UInt64BW.to_BV256 (1: UInt64BW.t)))}
+    [ return (result: UInt8BW.t) -> {[@stop_split] [@expl:shr_ref ensures] result = shr_u8'0 a (1: UInt64BW.t)}
       (! return {result}) ]
 end
 module M_test

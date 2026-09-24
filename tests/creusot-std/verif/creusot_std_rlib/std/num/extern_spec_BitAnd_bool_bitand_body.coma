@@ -1,0 +1,21 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Bool
+use creusot.prelude.Any
+
+predicate bitand_bool [@inline:trivial] (self: bool) (other: bool) = self /\ other
+
+meta "rewrite_def" predicate bitand_bool
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_BitAnd_bool_bitand_body (self_: bool) (rhs: bool) (return (x: bool)) = (! bb0
+  [ bb0 = s0 [ s0 = [ &_ret <- Bool.bw_and self_ rhs ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: bool = Any.any_l () | & self_: bool = self_ | & rhs: bool = rhs ])
+  [ return (result: bool) -> {[@stop_split] [@expl:extern_spec_BitAnd_bool_bitand_body ensures] result
+    = bitand_bool self_ rhs}
+    (! return {result}) ]

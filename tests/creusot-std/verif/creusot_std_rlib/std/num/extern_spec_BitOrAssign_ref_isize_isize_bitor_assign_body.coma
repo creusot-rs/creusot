@@ -1,0 +1,27 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int64
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+
+predicate resolve_refmut_isize [@inline:trivial] (_1: MutBorrow.t Int64.t) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_isize
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_BitOrAssign__ref_isize_isize_bitor_assign_body (self_: MutBorrow.t Int64.t) (rhs: Int64.t)
+  (return (x: ())) = (! bb0
+  [ bb0 = s0
+    [ s0 = [ &self_ <- { self_ with current = Int64.bw_or self_.current rhs } ] s1
+    | s1 = -{resolve_refmut_isize self_}- s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l () | & self_: MutBorrow.t Int64.t = self_ | & rhs: Int64.t = rhs ])
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:extern_spec_BitOrAssign__ref_isize_isize_bitor_assign_body ensures] self_.final
+    = Int64.bw_or self_.current rhs}
+    (! return {result}) ]

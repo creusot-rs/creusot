@@ -13,6 +13,11 @@ module M_all_ldz
   
   constant const_BITS: UInt32BW.t = (64: UInt32BW.t)
   
+  function shr_u64 [@inline:trivial] (self: UInt64BW.t) (rhs: UInt32BW.t) : UInt64BW.t =
+    UInt64BW.shr self (UInt64BW.of_BV256 (UInt32BW.to_BV256 rhs))
+  
+  meta "rewrite_def" function shr_u64
+  
   function leading_zeros_u64 (self: UInt64BW.t) : UInt32BW.t
   
   axiom leading_zeros_u64_spec:
@@ -20,7 +25,7 @@ module M_all_ldz
   
   axiom leading_zeros_u64_spec'0: forall self: UInt64BW.t [leading_zeros_u64 self]. (leading_zeros_u64 self
         <> const_BITS)
-      = (UInt64BW.shr self (UInt64BW.of_BV256 (UInt32BW.to_BV256 (UInt32BW.sub (UInt32BW.sub const_BITS (leading_zeros_u64 self)) (1: UInt32BW.t))))
+      = (shr_u64 self (UInt32BW.sub (UInt32BW.sub const_BITS (leading_zeros_u64 self)) (1: UInt32BW.t))
       = (1: UInt64BW.t))
   
   axiom leading_zeros_u64_spec'1: forall self: UInt64BW.t [leading_zeros_u64 self]. (leading_zeros_u64 self

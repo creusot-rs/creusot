@@ -1,0 +1,30 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt32
+use creusot.int.Int64
+use creusot.prelude.Any
+use creusot.int.UInt64
+
+constant const_BITS: UInt32.t = (64: UInt32.t)
+
+function shl_isize [@inline:trivial] (self: Int64.t) (rhs: UInt32.t) : Int64.t =
+  Int64.shl self (Int64.of_int (UInt32.t'int rhs))
+
+meta "rewrite_def" function shl_isize
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Shl_u32__ref_isize_shl_body (self_: Int64.t) (rhs: UInt32.t) (return (x: Int64.t)) =
+{[@stop_split] [@expl:extern_spec_Shl_u32__ref_isize_shl_body requires] UInt32.le (UInt32.of_int (UInt64.t'int (0: UInt64.t))) rhs
+  /\ UInt32.le rhs (UInt32.sub const_BITS (1: UInt32.t))}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = Int64.shl {self_} {UInt32.t'int rhs} (fun (_x: Int64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: Int64.t = Any.any_l () | & self_: Int64.t = self_ | & rhs: UInt32.t = rhs ])
+  [ return (result: Int64.t) -> {[@stop_split] [@expl:extern_spec_Shl_u32__ref_isize_shl_body ensures] result
+    = shl_isize self_ rhs}
+    (! return {result}) ]

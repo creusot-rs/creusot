@@ -64,14 +64,15 @@ pub(crate) fn validate(ctx: &TranslationCtx) {
         if get_builtin(ctx.tcx, def_id).is_some() || ctx.intrinsic(def_id).synthetic() {
             continue;
         }
-        if is_spec(ctx.tcx, def_id) || !is_no_translate(ctx.tcx, def_id) {
+        if is_extern_spec(ctx.tcx, def_id)
+            || is_spec(ctx.tcx, def_id)
+            || !is_no_translate(ctx.tcx, def_id)
+        {
             validate_purity(ctx, def_id, thir);
             if !is_trusted_item(ctx.tcx, def_id) {
                 validate_tokens_new(ctx, def_id, thir);
             }
             validate_incorrect_attributes(ctx.tcx, def_id);
-        }
-        if is_extern_spec(ctx.tcx, def_id) || !is_no_translate(ctx.tcx, def_id) {
             validate_opacity(ctx, def_id);
         }
     }

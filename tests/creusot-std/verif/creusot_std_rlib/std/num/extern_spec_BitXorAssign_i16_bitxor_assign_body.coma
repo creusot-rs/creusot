@@ -1,0 +1,26 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.Int16
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+
+predicate resolve_refmut_i16 [@inline:trivial] (_1: MutBorrow.t Int16.t) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_i16
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_BitXorAssign_i16_bitxor_assign_body (self_: MutBorrow.t Int16.t) (rhs: Int16.t) (return (x: ())) =
+(! bb0
+  [ bb0 = s0
+    [ s0 = [ &self_ <- { self_ with current = Int16.bw_xor self_.current rhs } ] s1
+    | s1 = -{resolve_refmut_i16 self_}- s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l () | & self_: MutBorrow.t Int16.t = self_ | & rhs: Int16.t = rhs ])
+  [ return (result: ()) -> {[@stop_split] [@expl:extern_spec_BitXorAssign_i16_bitxor_assign_body ensures] self_.final
+    = Int16.bw_xor self_.current rhs}
+    (! return {result}) ]

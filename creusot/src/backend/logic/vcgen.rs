@@ -7,8 +7,8 @@ use crate::{
         projections::{borrow_generated_id, projections_term},
         signature::lower_contract,
         term::{
-            binop_function, binop_to_binop, cast_int, lower_literal, lower_pat, lower_pure,
-            tyconst_to_term_final, unsupported_cast,
+            binop_to_binop, cast_int, lower_literal, lower_pat, lower_pure, tyconst_to_term_final,
+            unsupported_cast,
         },
         ty::{constructor, translate_ty, ty_to_prelude},
     },
@@ -227,18 +227,6 @@ impl<'tcx> VCGen<'_, 'tcx> {
             TermKind::Binary { op, lhs, rhs } => match op {
                 And => self.build_wp(lhs, &|lhs| Exp::if_(lhs, self.build_wp(rhs, k), k(Exp::mk_false()))),
                 Or => self.build_wp(lhs, &|lhs| Exp::if_(lhs, k(Exp::mk_true()), self.build_wp(rhs, k))),
-                _ if let Some(fun) = binop_function(self.names, *op, t.ty) => {
-                    let rhs_ty = rhs.ty;
-                    let lhs_ty = lhs.ty;
-                    self.build_wp(lhs, &|lhs| {
-                        self.build_wp(rhs, &|mut rhs| {
-                            if  matches!(*op, Shl | Shr) {
-                                rhs = cast_int(self.names, rhs_ty, lhs_ty, rhs)
-                            }
-                            k(Exp::qvar(fun.clone()).app([lhs.clone(), rhs]))
-                        })
-                    })
-                }
                 _ => {
                     if matches!(op, Add | Sub | Mul | Le | Ge | Lt | Gt) {
                         self.names.import_prelude_module(PreMod::Int);
@@ -251,14 +239,15 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 }
             },
             // VC(OP A, Q) = VC(A |a| Q(OP a))
-            TermKind::Unary { op, arg } => self.build_wp(arg, &|arg| {
-                let op = match op {
-                    UnOp::Not => WUnOp::Not,
-                    UnOp::Neg => WUnOp::Neg,
-                };
-
-                k(Exp::UnaryOp(op, arg.boxed()))
+            TermKind::Unary { op:UnOp::Not, arg } => self.build_wp(arg, &|arg| {
+                k(Exp::UnaryOp(WUnOp::Not, arg.boxed()))
             }),
+            TermKind::Unary { op:UnOp::Neg, arg } => {
+                self.names.import_prelude_module(PreMod::Int);
+                self.build_wp(arg, &|arg| {
+                    k(Exp::UnaryOp(WUnOp::Neg, arg.boxed()))
+                })
+            }
             // VC(forall<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(forall<x>P(x))
             // VC(exists<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(exists<x>P(x))
             TermKind::Quant { binder, body, .. } => {
@@ -293,10 +282,12 @@ impl<'tcx> VCGen<'_, 'tcx> {
             }
             // VC( * T, Q) = VC(T, |t| Q(*t))
             TermKind::Cur { term } => {
+                self.names.import_prelude_module(PreMod::MutBor);
                 self.build_wp(term, &|term| k(term.field(Name::Global(name::current()))))
             }
             // VC( ^ T, Q) = VC(T, |t| Q(^t))
             TermKind::Fin { term } => {
+                self.names.import_prelude_module(PreMod::MutBor);
                 self.build_wp(term, &|term| k(term.field(Name::Global(name::final_()))))
             }
             // VC(A -> B, Q) = VC(A, VC(B, Q(A -> B)))

@@ -103,6 +103,10 @@ fn optimize_builtin<'tcx>(
             let [arg] = *args.into_array::<1>().unwrap();
             return Unary { op: Neg, arg: Box::new(arg) };
         }
+        Some("bool.Bool.notb") => {
+            let [arg] = *args.into_array::<1>().unwrap();
+            return Unary { op: Not, arg: Box::new(arg) };
+        }
         Some(
             "creusot.int.UInt8$BW$.t'int"
             | "creusot.int.UInt16$BW$.t'int"

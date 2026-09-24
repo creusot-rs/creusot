@@ -31,6 +31,11 @@ module M_empty
   
   constant const_BITS: UInt32BW.t = (64: UInt32BW.t)
   
+  function shr_usize [@inline:trivial] (self: UInt64BW.t) (rhs: UInt32BW.t) : UInt64BW.t =
+    UInt64BW.shr self (UInt64BW.of_BV256 (UInt32BW.to_BV256 rhs))
+  
+  meta "rewrite_def" function shr_usize
+  
   function leading_zeros_usize (self: UInt64BW.t) : UInt32BW.t
   
   axiom leading_zeros_usize_spec:
@@ -38,7 +43,7 @@ module M_empty
   
   axiom leading_zeros_usize_spec'0: forall self: UInt64BW.t [leading_zeros_usize self]. (leading_zeros_usize self
         <> const_BITS)
-      = (UInt64BW.shr self (UInt64BW.of_BV256 (UInt32BW.to_BV256 (UInt32BW.sub (UInt32BW.sub const_BITS (leading_zeros_usize self)) (1: UInt32BW.t))))
+      = (shr_usize self (UInt32BW.sub (UInt32BW.sub const_BITS (leading_zeros_usize self)) (1: UInt32BW.t))
       = (1: UInt64BW.t))
   
   axiom leading_zeros_usize_spec'1: forall self: UInt64BW.t [leading_zeros_usize self]. (leading_zeros_usize self
@@ -50,6 +55,11 @@ module M_empty
   
   let ffs'0 (val': UInt64BW.t) (return (x: UInt32BW.t)) = any
     [ return (result: UInt32BW.t) -> {[@stop_split] [@expl:ffs ensures] result = ffs val'} (! return {result}) ]
+  
+  function shl_usize [@inline:trivial] (self: UInt64BW.t) (rhs: UInt32BW.t) : UInt64BW.t =
+    UInt64BW.shl self (UInt64BW.of_BV256 (UInt32BW.to_BV256 rhs))
+  
+  meta "rewrite_def" function shl_usize
   
   meta "compute_max_steps" 1000000
   
@@ -81,7 +91,7 @@ module M_empty
           = (0: UInt64BW.t) -> result = val')
       /\ ([@stop_split] [@expl:empty ensures #1] val' <> (0: UInt64BW.t)
       -> result
-      = UInt64BW.bw_and val' (UInt64BW.bw_not (UInt64BW.shl (1: UInt64BW.t) (UInt64BW.of_BV256 (UInt32BW.to_BV256 (UInt32BW.sub (ffs val') (1: UInt32BW.t)))))))}
+      = UInt64BW.bw_and val' (UInt64BW.bw_not (shl_usize (1: UInt64BW.t) (UInt32BW.sub (ffs val') (1: UInt32BW.t)))))}
       (! return {result}) ]
 end
 module M_ffs
@@ -116,6 +126,11 @@ module M_ffs
   
   constant const_BITS: UInt32.t = (64: UInt32.t)
   
+  function shr_usize [@inline:trivial] (self: UInt64.t) (rhs: UInt32.t) : UInt64.t =
+    UInt64.shr self (UInt64.of_int (UInt32.t'int rhs))
+  
+  meta "rewrite_def" function shr_usize
+  
   function leading_zeros_usize (self: UInt64.t) : UInt32.t
   
   axiom leading_zeros_usize_spec:
@@ -123,8 +138,7 @@ module M_ffs
   
   axiom leading_zeros_usize_spec'0: forall self: UInt64.t [leading_zeros_usize self]. (leading_zeros_usize self
         <> const_BITS)
-      = (UInt64.shr self (UInt64.of_int (UInt32.t'int (UInt32.sub (UInt32.sub const_BITS (leading_zeros_usize self)) (1: UInt32.t))))
-      = (1: UInt64.t))
+      = (shr_usize self (UInt32.sub (UInt32.sub const_BITS (leading_zeros_usize self)) (1: UInt32.t)) = (1: UInt64.t))
   
   axiom leading_zeros_usize_spec'1: forall self: UInt64.t [leading_zeros_usize self]. (leading_zeros_usize self
         = const_BITS)
@@ -159,8 +173,13 @@ module M_merge_bvs
   use creusot.prelude.Any
   use creusot.int.UInt8BW
   
+  function shl_usize [@inline:trivial] (self: UInt64BW.t) (rhs: UInt8BW.t) : UInt64BW.t =
+    UInt64BW.shl self (UInt64BW.of_BV256 (UInt8BW.to_BV256 rhs))
+  
+  meta "rewrite_def" function shl_usize
+  
   predicate has_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) =
-    UInt64BW.bw_and bitvec (UInt64BW.shl (1: UInt64BW.t) (UInt64BW.of_BV256 (UInt8BW.to_BV256 bit))) <> (0: UInt64BW.t)
+    UInt64BW.bw_and bitvec (shl_usize (1: UInt64BW.t) bit) <> (0: UInt64BW.t)
   
   meta "compute_max_steps" 1000000
   
@@ -205,8 +224,13 @@ module M_set_bit
     [ & _ret: UInt64BW.t = Any.any_l () | & _1: UInt64BW.t = Any.any_l () | & _2: tup2_usize_bool = Any.any_l () ]
     [ return (_const: UInt64BW.t) -> -{const_USIZE_BITS = _const}- return ]
   
+  function shl_usize [@inline:trivial] (self: UInt64BW.t) (rhs: UInt8BW.t) : UInt64BW.t =
+    UInt64BW.shl self (UInt64BW.of_BV256 (UInt8BW.to_BV256 rhs))
+  
+  meta "rewrite_def" function shl_usize
+  
   predicate has_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) =
-    UInt64BW.bw_and bitvec (UInt64BW.shl (1: UInt64BW.t) (UInt64BW.of_BV256 (UInt8BW.to_BV256 bit))) <> (0: UInt64BW.t)
+    UInt64BW.bw_and bitvec (shl_usize (1: UInt64BW.t) bit) <> (0: UInt64BW.t)
   
   meta "compute_max_steps" 1000000
   
@@ -259,8 +283,13 @@ module M_unset_bit
     [ & _ret: UInt64BW.t = Any.any_l () | & _1: UInt64BW.t = Any.any_l () | & _2: tup2_usize_bool = Any.any_l () ]
     [ return (_const: UInt64BW.t) -> -{const_USIZE_BITS = _const}- return ]
   
+  function shl_usize [@inline:trivial] (self: UInt64BW.t) (rhs: UInt8BW.t) : UInt64BW.t =
+    UInt64BW.shl self (UInt64BW.of_BV256 (UInt8BW.to_BV256 rhs))
+  
+  meta "rewrite_def" function shl_usize
+  
   predicate has_bit (bitvec: UInt64BW.t) (bit: UInt8BW.t) =
-    UInt64BW.bw_and bitvec (UInt64BW.shl (1: UInt64BW.t) (UInt64BW.of_BV256 (UInt8BW.to_BV256 bit))) <> (0: UInt64BW.t)
+    UInt64BW.bw_and bitvec (shl_usize (1: UInt64BW.t) bit) <> (0: UInt64BW.t)
   
   meta "compute_max_steps" 1000000
   

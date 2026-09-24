@@ -159,15 +159,20 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                 op,
                 Eq(_)
                     | Ne(_)
-                    | Ge(_)
-                    | Le(_)
-                    | Gt(_)
                     | Lt(_)
+                    | Le(_)
+                    | Ge(_)
+                    | Gt(_)
                     | Add(_)
                     | Sub(_)
                     | Mul(_)
                     | Div(_)
                     | Rem(_)
+                    | BitAnd(_)
+                    | BitOr(_)
+                    | BitXor(_)
+                    | Shl(_)
+                    | Shr(_)
             ) {
                 left = match &**left {
                     Term::Paren(TermParen { expr, .. }) => expr,
@@ -222,6 +227,26 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                 ),
                 Rem(_) => Ok(
                     quote_spanned! {sp=> ::creusot_std::logic::ops::RemLogic::rem_logic(#left, #right) }
+                        .into(),
+                ),
+                BitAnd(_) => Ok(
+                    quote_spanned! {sp=> ::creusot_std::logic::ops::BitAndLogic::bitand_logic(#left, #right) }
+                        .into(),
+                ),
+                BitOr(_) => Ok(
+                    quote_spanned! {sp=> ::creusot_std::logic::ops::BitOrLogic::bitor_logic(#left, #right) }
+                        .into(),
+                ),
+                BitXor(_) => Ok(
+                    quote_spanned! {sp=> ::creusot_std::logic::ops::BitXorLogic::bitxor_logic(#left, #right) }
+                        .into(),
+                ),
+                Shl(_) => Ok(
+                    quote_spanned! {sp=> ::creusot_std::logic::ops::ShlLogic::shl_logic(#left, #right) }
+                        .into(),
+                ),
+                Shr(_) => Ok(
+                    quote_spanned! {sp=> ::creusot_std::logic::ops::ShrLogic::shr_logic(#left, #right) }
                         .into(),
                 ),
                 _ => Ok(quote_spanned! {sp=> #left #op #right }.into()),
@@ -403,21 +428,36 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
             Ok(quote_spanned! {sp=> (#(#elems),*,) }.into())
         }
         Term::Type(ty) => Ok(quote_spanned! {sp=> #ty }.into()),
-        Term::Unary(TermUnary { op, expr }) => match op {
-            UnOp::Neg(_) => {
-                let term = encode_term_(expr, locals)?.toks();
-                Ok(quote_spanned! {sp=> ::creusot_std::logic::ops::NegLogic::neg_logic(#term) }
-                    .into())
+        Term::Unary(TermUnary { op, expr }) => {
+            let mut expr = expr;
+            if matches!(op, UnOp::Neg(_) | UnOp::Not(_) | UnOp::Deref(_)) {
+                expr = match &**expr {
+                    Term::Paren(TermParen { expr, .. }) => expr,
+                    _ => expr,
+                };
             }
-            UnOp::Deref(_) => {
-                let EncodingResult { toks, deref_bor } = encode_term_(expr, locals)?;
-                Ok(EncodingResult { toks: quote_spanned! {sp=> #op #toks }, deref_bor })
+
+            match op {
+                UnOp::Neg(_) => {
+                    let term = encode_term_(expr, locals)?.toks();
+                    Ok(quote_spanned! {sp=> ::creusot_std::logic::ops::NegLogic::neg_logic(#term) }
+                        .into())
+                }
+                UnOp::Not(_) => {
+                    let term = encode_term_(expr, locals)?.toks();
+                    Ok(quote_spanned! {sp=> ::creusot_std::logic::ops::NotLogic::not_logic(#term) }
+                        .into())
+                }
+                UnOp::Deref(_) => {
+                    let EncodingResult { toks, deref_bor } = encode_term_(expr, locals)?;
+                    Ok(EncodingResult { toks: quote_spanned! {sp=> #op #toks }, deref_bor })
+                }
+                _ => {
+                    let term = encode_term_(expr, locals)?.toks();
+                    Ok(quote_spanned! {sp=> #op #term }.into())
+                }
             }
-            _ => {
-                let term = encode_term_(expr, locals)?.toks();
-                Ok(quote_spanned! {sp=> #op #term }.into())
-            }
-        },
+        }
         Term::Final(TermFinal { term, .. }) => {
             let term = encode_term_(term, locals)?.toks();
             Ok(quote_spanned! {sp=> (*::creusot_std::logic::ops::Fin::fin(#term))}.into())
