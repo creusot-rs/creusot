@@ -1,0 +1,30 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt32
+use creusot.int.Int32
+use creusot.prelude.Any
+use creusot.int.UInt64
+
+constant const_BITS: UInt32.t = (32: UInt32.t)
+
+function shr_i32 [@inline:trivial] (self: Int32.t) (rhs: UInt32.t) : Int32.t =
+  Int32.shr self (Int32.of_int (UInt32.t'int rhs))
+
+meta "rewrite_def" function shr_i32
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Shr__ref_u32_i32_shr_body (self_: Int32.t) (rhs: UInt32.t) (return (x: Int32.t)) =
+{[@stop_split] [@expl:extern_spec_Shr__ref_u32_i32_shr_body requires] UInt32.le (UInt32.of_int (UInt64.t'int (0: UInt64.t))) rhs
+  /\ UInt32.le rhs (UInt32.sub const_BITS (1: UInt32.t))}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = Int32.shr {self_} {UInt32.t'int rhs} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: Int32.t = Any.any_l () | & self_: Int32.t = self_ | & rhs: UInt32.t = rhs ])
+  [ return (result: Int32.t) -> {[@stop_split] [@expl:extern_spec_Shr__ref_u32_i32_shr_body ensures] result
+    = shr_i32 self_ rhs}
+    (! return {result}) ]

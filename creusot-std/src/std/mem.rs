@@ -100,6 +100,23 @@ extern_spec! {
         #[check(ghost)]
         const unsafe fn assume_init_mut(&mut self) -> &mut T;
     }
+
+     impl<T> [MaybeUninit<T>] {
+        #[check(ghost)]
+        #[requires(forall<i> 0 <= i && i < self@.len() ==> self[i]@ != None)]
+        #[ensures(self@.len() == result@.len())]
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==> self[i]@ == Some(result[i]))]
+        unsafe fn assume_init_ref(&self) -> &[T];
+
+        #[check(ghost)]
+        #[requires(forall<i> 0 <= i && i < self@.len() ==> (*self)[i]@ != None)]
+        #[ensures((*self)@.len() == (*result)@.len())]
+        #[ensures((^self)@.len() == (^result)@.len())]
+        #[ensures((*result)@.len() == (^result)@.len())]
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==> (*self)[i]@ == Some((*result)[i]))]
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==> (^self)[i]@ == Some((^result)[i]))]
+        unsafe fn assume_init_mut(&mut self) -> &mut [T];
+    }
 }
 
 /// [`size_of`] as a logic `Int` value.

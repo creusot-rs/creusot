@@ -261,38 +261,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Term::let_(pattern, term, inner, span)
                 }))
             }
-            ExprKind::Binary { op, lhs, rhs } => {
-                let lhs = self.expr_term(lhs)?;
-                let rhs = self.expr_term(rhs)?;
-
-                use rustc_middle::mir::BinOp::*;
-                let op = match op {
-                    Add | AddUnchecked => BinOp::Add,
-                    Sub | SubUnchecked => BinOp::Sub,
-                    Mul | MulUnchecked => BinOp::Mul,
-                    BitXor => BinOp::BitXor,
-                    BitAnd => BinOp::BitAnd,
-                    BitOr => BinOp::BitOr,
-                    Shl | ShlUnchecked => BinOp::Shl,
-                    Shr | ShrUnchecked => BinOp::Shr,
-                    Lt => BinOp::Lt,
-                    Le => BinOp::Le,
-                    Ge => BinOp::Ge,
-                    Gt => BinOp::Gt,
-                    Div | Rem | Ne | Eq => unreachable!(),
-                    Offset | Cmp | AddWithOverflow | SubWithOverflow | MulWithOverflow => {
-                        return Err(self
-                            .ctx
-                            .dcx()
-                            .span_err(span, "Unsupported binary operation {op}"));
-                    }
-                };
-                Ok(Term {
-                    ty,
-                    span,
-                    kind: TermKind::Binary { op, lhs: Box::new(lhs), rhs: Box::new(rhs) },
-                })
-            }
+            ExprKind::Binary { .. } => unreachable!(),
             ExprKind::LogicalOp { op, lhs, rhs } => {
                 let lhs = self.expr_term(lhs)?;
                 let rhs = self.expr_term(rhs)?;
@@ -308,11 +277,9 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             }
             ExprKind::Unary { op, arg } => {
                 let arg = self.expr_term(arg)?;
-                use rustc_middle::mir::UnOp::*;
                 let op = match op {
-                    Not => UnOp::Not,
-                    Neg => UnOp::Neg,
-                    PtrMetadata => {
+                    rustc_middle::mir::UnOp::Not => UnOp::Not,
+                    _ => {
                         return Err(self
                             .ctx
                             .dcx()

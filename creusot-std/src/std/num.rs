@@ -1,6 +1,9 @@
 use crate::{
     ghost::Plain,
-    logic::ops::{AddLogic, MulLogic, NegLogic, NthBitLogic, SubLogic},
+    logic::ops::{
+        AddLogic, BitAndLogic, BitOrLogic, BitXorLogic, MulLogic, NegLogic, NotLogic, NthBitLogic,
+        ShlLogic, ShrLogic, SubLogic,
+    },
     prelude::*,
 };
 #[cfg(creusot)]
@@ -104,6 +107,66 @@ macro_rules! mach_int {
             #[logic]
             #[builtin(concat!($ty_nm, ".neg"))]
             fn neg_logic(self) -> Self {
+                dead
+            }
+        }
+
+        impl ShlLogic for $t {
+            type Output = Self;
+            #[logic]
+            #[builtin(concat!($ty_nm, ".shl"))]
+            #[allow(unused_variables)]
+            fn shl_logic(self, other: Self) -> Self {
+                dead
+            }
+        }
+
+        impl ShrLogic for $t {
+            type Output = Self;
+            #[logic]
+            #[builtin(concat!($ty_nm, ".shr"))]
+            #[allow(unused_variables)]
+            fn shr_logic(self, other: Self) -> Self {
+                dead
+            }
+        }
+
+        impl BitAndLogic for $t {
+            type Output = Self;
+            #[logic]
+            #[builtin(concat!($ty_nm, ".bw_and"))]
+            #[allow(unused_variables)]
+            fn bitand_logic(self, other: Self) -> Self {
+                dead
+            }
+        }
+
+        impl BitOrLogic for $t {
+            type Output = Self;
+            #[logic]
+            #[builtin(concat!($ty_nm, ".bw_or"))]
+            #[allow(unused_variables)]
+            fn bitor_logic(self, other: Self) -> Self {
+                dead
+            }
+        }
+
+        impl BitXorLogic for $t {
+            type Output = Self;
+            #[logic]
+            #[builtin(concat!($ty_nm, ".bw_xor"))]
+            #[allow(unused_variables)]
+            fn bitxor_logic(self, other: Self) -> Self {
+                dead
+            }
+        }
+
+        impl NotLogic for $t {
+            type Output = Self;
+            #[logic]
+            #[builtin(concat!($ty_nm, ".bw_not"))]
+            #[allow(unused_variables)]
+            fn not_logic(self) -> Self {
                 dead
             }
         }
@@ -474,37 +537,49 @@ macro_rules! spec_bits {
             impl $tr for $type {
                 #[check(ghost)]
                 #[ensures(result == self $op rhs)]
-                fn $f(self, rhs: $type) -> $type;
+                fn $f(self, rhs: $type) -> $type {
+                    self $op rhs
+                }
             }
 
             impl $tr for &$type {
                 #[check(ghost)]
                 #[ensures(result == *self $op *rhs)]
-                fn $f(self, rhs: &$type) -> $type;
+                fn $f(self, rhs: &$type) -> $type {
+                    *self $op *rhs
+                }
             }
 
             impl $tr<&$type> for $type {
                 #[check(ghost)]
                 #[ensures(result == self $op *rhs)]
-                fn $f(self, rhs: &$type) -> $type;
+                fn $f(self, rhs: &$type) -> $type {
+                    self $op *rhs
+                }
             }
 
             impl $tr<$type> for &$type {
                 #[check(ghost)]
                 #[ensures(result == *self $op rhs)]
-                fn $f(self, rhs: $type) -> $type;
+                fn $f(self, rhs: $type) -> $type {
+                    *self $op rhs
+                }
             }
 
             impl $tr_assign for $type {
                 #[check(ghost)]
                 #[ensures(^self == *self $op rhs)]
-                fn $f_assign(&mut self, rhs: $type);
+                fn $f_assign(&mut self, rhs: $type) {
+                    *self = *self $op rhs
+                }
             }
 
             impl $tr_assign<&$type> for $type {
                 #[check(ghost)]
                 #[ensures(^self == *self $op *rhs)]
-                fn $f_assign(&mut self, rhs: &$type);
+                fn $f_assign(&mut self, rhs: &$type) {
+                    *self = *self $op *rhs
+                }
             }
         }
     };
@@ -521,39 +596,51 @@ macro_rules! spec_shifts {
     ($type:ty, $rhs:ty, $op:tt, $tr:ident, $f:ident, $tr_assign:ident, $f_assign:ident) => {
         extern_spec! {
             impl $tr<$rhs> for $type {
-                #[requires((0usize as $rhs) <= rhs && rhs < $type::BITS as $rhs)]
+                #[requires((0usize as $rhs) <= rhs && rhs <= ($type::BITS - 1u32) as $rhs)]
                 #[ensures(result == self $op rhs)]
-                fn $f(self, rhs: $rhs) -> $type;
+                fn $f(self, rhs: $rhs) -> $type {
+                    self $op rhs
+                }
             }
 
             impl $tr<&$rhs> for $type {
-                #[requires((0usize as $rhs) <= *rhs && *rhs < $type::BITS as $rhs)]
+                #[requires((0usize as $rhs) <= *rhs && *rhs <= ($type::BITS - 1u32) as $rhs)]
                 #[ensures(result == self $op *rhs)]
-                fn $f(self, rhs: &$rhs) -> $type;
+                fn $f(self, rhs: &$rhs) -> $type {
+                    self $op *rhs
+                }
             }
 
             impl $tr<$rhs> for &$type {
-                #[requires((0usize as $rhs) <= rhs && rhs < $type::BITS as $rhs)]
+                #[requires((0usize as $rhs) <= rhs && rhs <= ($type::BITS - 1u32) as $rhs)]
                 #[ensures(result == *self $op rhs)]
-                fn $f(self, rhs: $rhs) -> $type;
+                fn $f(self, rhs: $rhs) -> $type {
+                    *self $op rhs
+                }
             }
 
             impl $tr<&$rhs> for &$type {
-                #[requires((0usize as $rhs) <= *rhs && *rhs < $type::BITS as $rhs)]
+                #[requires((0usize as $rhs) <= *rhs && *rhs <= ($type::BITS - 1u32) as $rhs)]
                 #[ensures(result == *self $op *rhs)]
-                fn $f(self, rhs: &$rhs) -> $type;
+                fn $f(self, rhs: &$rhs) -> $type {
+                    *self $op *rhs
+                }
             }
 
             impl $tr_assign<$rhs> for $type {
-                #[requires((0usize as $rhs) <= rhs && rhs < $type::BITS as $rhs)]
+                #[requires((0usize as $rhs) <= rhs && rhs <= ($type::BITS - 1u32) as $rhs)]
                 #[ensures(^self == *self $op rhs)]
-                fn $f_assign(&mut self, rhs: $rhs);
+                fn $f_assign(&mut self, rhs: $rhs) {
+                    *self = *self $op rhs
+                }
             }
 
             impl $tr_assign<&$rhs> for $type {
-                #[requires((0usize as $rhs) <= *rhs && *rhs < $type::BITS as $rhs)]
-                #[ensures(^self == *self $op rhs)]
-                fn $f_assign(&mut self, rhs: &$rhs);
+                #[requires((0usize as $rhs) <= *rhs && *rhs <= ($type::BITS - 1u32) as $rhs)]
+                #[ensures(^self == *self $op *rhs)]
+                fn $f_assign(&mut self, rhs: &$rhs) {
+                    *self = *self $op *rhs
+                }
             }
         }
     };
@@ -603,6 +690,38 @@ spec_abs_diff!(u32, i32);
 spec_abs_diff!(u64, i64);
 spec_abs_diff!(u128, i128);
 spec_abs_diff!(usize, isize);
+
+macro_rules! spec_shifts_logic {
+    ($lhs:ty | $rhs:ty) => {
+        impl ShlLogic<$rhs> for $lhs {
+            type Output = $lhs;
+
+            #[logic(open, inline)]
+            fn shl_logic(self, rhs: $rhs) -> $lhs {
+                self << rhs as $lhs
+            }
+        }
+
+        impl ShrLogic<$rhs> for $lhs {
+            type Output = $lhs;
+
+            #[logic(open, inline)]
+            fn shr_logic(self, rhs: $rhs) -> $lhs {
+                self >> rhs as $lhs
+            }
+        }
+    };
+    ($($prev:ty,)* | $cur:ty | ) => { $(spec_shifts_logic!($cur | $prev);)* };
+    ($($prev:ty,)* | $cur:ty | $nexth:ty, $($nextq:ty,)*) => {
+        $(spec_shifts_logic!($cur | $prev);)*
+        spec_shifts_logic!($cur | $nexth);
+        $(spec_shifts_logic!($cur | $nextq);)*
+
+        spec_shifts_logic!($($prev,)* $cur, | $nexth | $($nextq,)*);
+    };
+}
+
+spec_shifts_logic!(|u8| u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize,);
 
 #[cfg(creusot)]
 use core::num::{NonZero, ZeroablePrimitive};

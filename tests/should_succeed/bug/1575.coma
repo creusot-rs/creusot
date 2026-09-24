@@ -3,6 +3,11 @@ module M_nth_bit_from_left_8
   use creusot.int.UInt64
   use int.Int
   
+  function shl_u8 [@inline:trivial] (self: UInt8.t) (rhs: UInt64.t) : UInt8.t =
+    UInt8.shl self (UInt8.of_int (UInt64.t'int rhs))
+  
+  meta "rewrite_def" function shl_u8
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -14,5 +19,5 @@ module M_nth_bit_from_left_8
   predicate nth_bit_from_left_8 (x: UInt8.t) (left: UInt64.t)
   
   goal vc_nth_bit_from_left_8: UInt64.t'int left < 8
-    -> (let mask = UInt8.shl (1: UInt8.t) (UInt8.of_int (UInt64.t'int (UInt64.sub (7: UInt64.t) left))) in true)
+    -> (let mask = shl_u8 (1: UInt8.t) (UInt64.sub (7: UInt64.t) left) in true)
 end
