@@ -422,15 +422,30 @@ extern_spec! {
         fn iter_mut(&mut self) -> IterMut<'_, T>;
 
         #[check(ghost)]
-        #[ensures(result == None ==> self@.len() == 0)]
+        #[ensures((result == None) == (self@.len() == 0))]
         #[ensures(forall<x> result == Some(x) ==> self[self@.len() - 1] == *x)]
         fn last(&self) -> Option<&T>;
 
         #[check(ghost)]
-        #[ensures(result == None ==> self@.len() == 0)]
+        #[ensures((result == None) == (self@.len() == 0))]
+        #[ensures(forall<x> result == Some(x) ==> self[self@.len() - 1] == *x)]
+        #[ensures(forall<x> result == Some(x) ==> (^self)[self@.len() - 1] == ^x)]
+        #[ensures((*self)@.len() == (^self)@.len())]
+        #[ensures(forall<i> 0 <= i && i < (*self)@.len() - 1 ==> (*self)[i] == (^self)[i])]
+        fn last_mut(&mut self) -> Option<&mut T>;
+
+        #[check(ghost)]
+        #[ensures((result == None) == (self@.len() == 0))]
         #[ensures(forall<x> result == Some(x) ==> self[0] == *x)]
         fn first(&self) -> Option<&T>;
 
+        #[check(ghost)]
+        #[ensures((result == None) == (self@.len() == 0))]
+        #[ensures(forall<x> result == Some(x) ==> self[0] == *x)]
+        #[ensures(forall<x> result == Some(x) ==> (^self)[0] == ^x)]
+        #[ensures((*self)@.len() == (^self)@.len())]
+        #[ensures(forall<i> 1 <= i && i < (*self)@.len() ==> (*self)[i] == (^self)[i])]
+        fn first_mut(&mut self) -> Option<&mut T>;
 
         #[requires(self.deep_model().sorted())]
         #[ensures(forall<i:usize> result == Ok(i) ==>
