@@ -358,6 +358,15 @@ extern_spec! {
         #[requires(mid@ <= self@.len())]
         #[ensures({
             let (l,r) = result;  let sl = self@.len();
+            self@.subsequence(0, mid@) == l@ &&
+            self@.subsequence(mid@, sl) == r@
+        })]
+        fn split_at(&self, mid: usize) -> (&[T], &[T]);
+
+        #[check(ghost)]
+        #[requires(mid@ <= self@.len())]
+        #[ensures({
+            let (l,r) = result;  let sl = self@.len();
             ((^self)@.len() == sl) &&
             self@.subsequence(0, mid@) == l@ &&
             self@.subsequence(mid@, sl) == r@ &&
