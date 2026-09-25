@@ -185,8 +185,9 @@ impl<T> FSet<T> {
     }
 
     /// Returns the union of sets `f(t)` over all `t: T`.
-    #[logic(open)]
-    #[ensures(forall<y: U> result.contains(y) == exists<x: T> self.contains(x) && f.get(x).contains(y))]
+    #[logic(opaque)]
+    #[ensures(forall<y: U> #[trigger(result.contains(y))]
+        result.contains(y) == exists<x: T> self.contains(x) && f.get(x).contains(y))]
     #[variant(self.len())]
     pub fn unions<U>(self, f: Mapping<T, FSet<U>>) -> FSet<U> {
         if self.len() == 0 {
