@@ -358,6 +358,15 @@ extern_spec! {
         #[requires(mid@ <= self@.len())]
         #[ensures({
             let (l,r) = result;  let sl = self@.len();
+            self@.subsequence(0, mid@) == l@ &&
+            self@.subsequence(mid@, sl) == r@
+        })]
+        fn split_at(&self, mid: usize) -> (&[T], &[T]);
+
+        #[check(ghost)]
+        #[requires(mid@ <= self@.len())]
+        #[ensures({
+            let (l,r) = result;  let sl = self@.len();
             ((^self)@.len() == sl) &&
             self@.subsequence(0, mid@) == l@ &&
             self@.subsequence(mid@, sl) == r@ &&
@@ -413,15 +422,30 @@ extern_spec! {
         fn iter_mut(&mut self) -> IterMut<'_, T>;
 
         #[check(ghost)]
-        #[ensures(result == None ==> self@.len() == 0)]
+        #[ensures((result == None) == (self@.len() == 0))]
         #[ensures(forall<x> result == Some(x) ==> self[self@.len() - 1] == *x)]
         fn last(&self) -> Option<&T>;
 
         #[check(ghost)]
-        #[ensures(result == None ==> self@.len() == 0)]
+        #[ensures((result == None) == (self@.len() == 0))]
+        #[ensures(forall<x> result == Some(x) ==> self[self@.len() - 1] == *x)]
+        #[ensures(forall<x> result == Some(x) ==> (^self)[self@.len() - 1] == ^x)]
+        #[ensures((*self)@.len() == (^self)@.len())]
+        #[ensures(forall<i> 0 <= i && i < (*self)@.len() - 1 ==> (*self)[i] == (^self)[i])]
+        fn last_mut(&mut self) -> Option<&mut T>;
+
+        #[check(ghost)]
+        #[ensures((result == None) == (self@.len() == 0))]
         #[ensures(forall<x> result == Some(x) ==> self[0] == *x)]
         fn first(&self) -> Option<&T>;
 
+        #[check(ghost)]
+        #[ensures((result == None) == (self@.len() == 0))]
+        #[ensures(forall<x> result == Some(x) ==> self[0] == *x)]
+        #[ensures(forall<x> result == Some(x) ==> (^self)[0] == ^x)]
+        #[ensures((*self)@.len() == (^self)@.len())]
+        #[ensures(forall<i> 1 <= i && i < (*self)@.len() ==> (*self)[i] == (^self)[i])]
+        fn first_mut(&mut self) -> Option<&mut T>;
 
         #[requires(self.deep_model().sorted())]
         #[ensures(forall<i:usize> result == Ok(i) ==>
@@ -742,22 +766,44 @@ impl<'a, T> DoubleEndedIteratorSpec for IterMut<'a, T> {
 }
 
 extern_spec! {
+    impl<'a, T> Iterator for Iter<'a, T> {
+        #[check(ghost)]
+        #[ensures(match result {
+            None => self.completed(),
+            Some(v) => (*self).produces(Seq::singleton(v), ^self)
+        })]
+        fn next(&mut self) -> Option<&'a T>;
+    }
+
     impl<'a, T> Iter<'a, T> {
+        #[check(ghost)]
         #[ensures(result@ == self@@)]
         fn as_slice(&self) -> &'a [T];
     }
 
     impl<'a, T> ExactSizeIterator for Iter<'a, T> {
+        #[check(ghost)]
         #[ensures(result@ == self@@.len())]
         fn len(&self) -> usize;
     }
 
+    impl<'a, T> Iterator for IterMut<'a, T> {
+        #[check(ghost)]
+        #[ensures(match result {
+            None => self.completed(),
+            Some(v) => (*self).produces(Seq::singleton(v), ^self)
+        })]
+        fn next(&mut self) -> Option<&'a mut T>;
+    }
+
     impl<'a, T> IterMut<'a, T> {
+        #[check(ghost)]
         #[ensures(result@ == self@@)]
         fn as_slice(&self) -> &'a [T];
     }
 
     impl<'a, T> ExactSizeIterator for IterMut<'a, T> {
+        #[check(ghost)]
         #[ensures(result@ == self@@.len())]
         fn len(&self) -> usize;
     }
