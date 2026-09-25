@@ -116,6 +116,15 @@ extern_spec! {
         #[ensures(forall<i> 0 <= i && i < self@.len() ==> (*self)[i]@ == Some((*result)[i]))]
         #[ensures(forall<i> 0 <= i && i < self@.len() ==> (^self)[i]@ == Some((^result)[i]))]
         unsafe fn assume_init_mut(&mut self) -> &mut [T];
+
+        #[check(ghost)]
+        #[requires(self@.len() == src@.len())]
+        #[ensures((*self)@.len() == (*result)@.len())]
+        #[ensures((^self)@.len() == (^result)@.len())]
+        #[ensures((*result)@.len() == (^result)@.len())]
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==> (^self)[i]@ == Some((^result)[i]))]
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==> src[i] == (*result)[i])]
+        fn write_copy_of_slice<'a>(&'a mut self, src: &[T]) -> &'a mut [T] where T: Copy;
     }
 }
 
