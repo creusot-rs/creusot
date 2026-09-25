@@ -185,8 +185,7 @@ fn main() {
             .env("WHY3CONFIG", paths.creusot_why3_conf())
             .env("DUNE_DIR_LOCATIONS", &format!("why3find:lib:{}", library.display()))
             .arg("prove")
-            .arg("--no-autodetect-provers")
-            .args(["-j", jobs]);
+            .args(["--summary", "--no-autodetect-provers", "-j", jobs]);
         if args.no_cache {
             why3find.arg("--no-cache");
         }
