@@ -1,0 +1,31 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.int.UInt64
+use creusot.prelude.Any
+
+type t_Wrapping_u64 = { f0: UInt64.t }
+
+let wrapping_mul (self: UInt64.t) (rhs: UInt64.t) (return (x: UInt64.t)) = any
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:wrapping_mul ensures] result = UInt64.mul self rhs}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_Mul_Wrapping_u64_Wrapping_u64_mul_body (self_: t_Wrapping_u64) (rhs: t_Wrapping_u64)
+  (return (x: t_Wrapping_u64)) = (! bb0
+  [ bb0 = s0
+    [ s0 = wrapping_mul {self_.f0} {rhs.f0} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1)
+    | s1 = [ &_ret <- { f0 = _6 } ] s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: t_Wrapping_u64 = Any.any_l ()
+  | & self_: t_Wrapping_u64 = self_
+  | & rhs: t_Wrapping_u64 = rhs
+  | & _6: UInt64.t = Any.any_l () ])
+  [ return (result: t_Wrapping_u64) ->
+  {[@stop_split] [@expl:extern_spec_Mul_Wrapping_u64_Wrapping_u64_mul_body ensures] result.f0
+    = UInt64.mul self_.f0 rhs.f0}
+    (! return {result}) ]

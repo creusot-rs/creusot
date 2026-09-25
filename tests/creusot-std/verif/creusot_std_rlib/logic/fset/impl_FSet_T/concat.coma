@@ -20,7 +20,7 @@ function map_Seq_T (self: Fset.fset (Seq.seq t_T)) (f: Map.map (Seq.seq t_T) (Se
 function unions_Seq_T (self: Fset.fset (Seq.seq t_T)) (f: Map.map (Seq.seq t_T) (Fset.fset (Seq.seq t_T))) : Fset.fset (Seq.seq t_T)
 
 axiom unions_Seq_T_spec:
-  forall self: Fset.fset (Seq.seq t_T), f: Map.map (Seq.seq t_T) (Fset.fset (Seq.seq t_T)) [unions_Seq_T self f]. forall y: Seq.seq t_T. contains_Seq_T (unions_Seq_T self f) y
+  forall self: Fset.fset (Seq.seq t_T), f: Map.map (Seq.seq t_T) (Fset.fset (Seq.seq t_T)) [unions_Seq_T self f]. forall y: Seq.seq t_T [contains_Seq_T (unions_Seq_T self f) y]. contains_Seq_T (unions_Seq_T self f) y
       = (exists x: Seq.seq t_T. contains_Seq_T self x /\ contains_Seq_T (Map.get f x) y)
 
 meta "compute_max_steps" 1000000
@@ -34,7 +34,7 @@ constant t : Fset.fset (Seq.seq t_T)
 function concat_T (s: Fset.fset (Seq.seq t_T)) (t: Fset.fset (Seq.seq t_T)) : Fset.fset (Seq.seq t_T)
 
 goal vc_concat_T:
-  ([@stop_split] [@expl:unions ensures] forall y: Seq.seq t_T. contains_Seq_T (unions_Seq_T s (fun (ys: Seq.seq t_T) -> map_Seq_T t (fun (zs: Seq.seq t_T) -> Seq.(++) ys zs))) y
+  ([@stop_split] [@expl:unions ensures] forall y: Seq.seq t_T [contains_Seq_T (unions_Seq_T s (fun (ys: Seq.seq t_T) -> map_Seq_T t (fun (zs: Seq.seq t_T) -> Seq.(++) ys zs))) y]. contains_Seq_T (unions_Seq_T s (fun (ys: Seq.seq t_T) -> map_Seq_T t (fun (zs: Seq.seq t_T) -> Seq.(++) ys zs))) y
       = (exists x: Seq.seq t_T. contains_Seq_T s x
         /\ contains_Seq_T (Map.get (fun (ys: Seq.seq t_T) -> map_Seq_T t (fun (zs: Seq.seq t_T) -> Seq.(++) ys zs)) x) y))
   -> ([@stop_split] [@expl:concat ensures] forall xs: Seq.seq t_T. contains_Seq_T (unions_Seq_T s (fun (ys: Seq.seq t_T) -> map_Seq_T t (fun (zs: Seq.seq t_T) -> Seq.(++) ys zs))) xs
