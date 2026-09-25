@@ -72,6 +72,8 @@ impl<'tcx> Why3Generator<'tcx> {
     pub(crate) fn translate(&mut self, def_id: DefId) {
         debug!("translating {:?}", def_id);
 
+        // reset the namespace type for this module
+        self.namespaces.get_mut().clear();
         let translated_item = match self.item_type(def_id) {
             ItemType::Impl if self.tcx.impl_opt_trait_ref(def_id).is_some() => {
                 let modls = traits::lower_impl(self, def_id);
