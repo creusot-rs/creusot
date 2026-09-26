@@ -2,6 +2,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_DeepModelTy
@@ -43,11 +44,11 @@ predicate inv_ref_Self_ [@inline:trivial] (_1: t_Self_) = invariant_ref_Self_ _1
 
 meta "rewrite_def" predicate inv_ref_Self_
 
-predicate precondition_le (self: ()) (args: tup2_ref_Self__ref_Self_)
+predicate precondition_le (self: ()) (args: tup2_ref_Self__ref_Self_) (mode: Mode.t)
 
 axiom precondition_fndef:
-  forall args: tup2_ref_Self__ref_Self_ [precondition_le () args]. (let {f0 = self; f1 = other} = args in inv_ref_Self_ self
-      /\ inv_ref_Self_ other) -> precondition_le () args
+  forall mode: Mode.t. forall args: tup2_ref_Self__ref_Self_ [precondition_le () args mode]. (let {f0 = self; f1 = other} = args in inv_ref_Self_ self
+        /\ inv_ref_Self_ other) -> precondition_le () args mode
 
 function deep_model_Self_ (self: t_Self_) : t_DeepModelTy
 
@@ -55,23 +56,23 @@ function deep_model_ref_Self_ [@inline:trivial] (self: t_Self_) : t_DeepModelTy 
 
 meta "rewrite_def" function deep_model_ref_Self_
 
-predicate postcondition_le (self: ()) (args: tup2_ref_Self__ref_Self_) (result: bool)
+predicate postcondition_le (self: ()) (args: tup2_ref_Self__ref_Self_) (result: bool) (mode: Mode.t)
 
 axiom postcondition_fndef:
-  forall args: tup2_ref_Self__ref_Self_, result: bool [postcondition_le () args result]. postcondition_le () args result
+  forall args: tup2_ref_Self__ref_Self_, result: bool, mode: Mode.t [postcondition_le () args result mode]. postcondition_le () args result mode
     -> (let {f0 = self; f1 = other} = args in result
     = le_log_DeepModelTy (deep_model_ref_Self_ self) (deep_model_ref_Self_ other))
 
-predicate postcondition_once_le (self: ()) (args: tup2_ref_Self__ref_Self_) (result: bool) =
-  postcondition_le self args result
+predicate postcondition_once_le (self: ()) (args: tup2_ref_Self__ref_Self_) (result: bool) (mode: Mode.t) =
+  postcondition_le self args result mode
 
 meta "rewrite_def" predicate postcondition_once_le
 
-let le_Self_ (self: t_Self_) (other: t_Self_) (return (x: bool)) =
-{[@stop_split] [@expl:le requires] precondition_le () { f0 = self; f1 = other }}
+let le_Self_ (self: t_Self_) (other: t_Self_) (mode: Mode.t) (return (x: bool)) =
+{[@stop_split] [@expl:le requires] precondition_le () { f0 = self; f1 = other } mode}
   any
   [ return (result: bool) -> {[@stop_split] [@expl:le ensures] postcondition_once_le () { f0 = self;
-                                                                                          f1 = other } result}
+                                                                                          f1 = other } result mode}
     (! return {result}) ]
 
 predicate resolve_Self_ (_1: t_Self_)
@@ -85,13 +86,14 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_core_cmp_Ord_max_body_Self_ (self_: t_Self_) (o: t_Self_) (return (x: t_Self_)) =
-{[@stop_split] [@expl:extern_spec_core_cmp_Ord_max_body_Self_ requires] ([@stop_split] [@expl:extern_spec_core_cmp_Ord_max_body 'self_' type invariant] inv_Self_ self_)
+let extern_spec_core_cmp_Ord_max_body_Self_ (self_: t_Self_) (o: t_Self_) (mode: Mode.t) (return (x: t_Self_)) =
+{not Mode.terminates mode}
+  {[@stop_split] [@expl:extern_spec_core_cmp_Ord_max_body_Self_ requires] ([@stop_split] [@expl:extern_spec_core_cmp_Ord_max_body 'self_' type invariant] inv_Self_ self_)
   /\ ([@stop_split] [@expl:extern_spec_core_cmp_Ord_max_body 'o' type invariant] inv_Self_ o)}
   (! bb0
   [ bb0 = s0
     [ s0 = [ &_16 <- () ] s1
-    | s1 = le_Self_ {self_} {o} (fun (_x: bool) -> [ &_18 <- _x ] s2)
+    | s1 = le_Self_ {self_} {o} {mode} (fun (_x: bool) -> [ &_18 <- _x ] s2)
     | s2 = any [ br0 -> {_18 = false} (! bb4) | br1 -> {_18} (! bb3) ] ]
   | bb3 = s0
     [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Self_ self_} any) ]

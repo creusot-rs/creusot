@@ -75,7 +75,7 @@ impl Iterator for Range {
 
 impl ExactSizeIterator for Range {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -108,7 +108,7 @@ impl DoubleEndedIterator for Range {
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {
@@ -244,7 +244,7 @@ impl Iterator for RangeInclusive {
 
 impl ExactSizeIterator for RangeInclusive {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -277,7 +277,7 @@ impl DoubleEndedIterator for RangeInclusive {
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {

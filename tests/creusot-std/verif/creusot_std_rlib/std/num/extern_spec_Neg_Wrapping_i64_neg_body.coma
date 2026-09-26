@@ -3,11 +3,12 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.int.Int64
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_Wrapping_i64 = { f0: Int64.t }
 
-let wrapping_neg (self: Int64.t) (return (x: Int64.t)) = any
+let wrapping_neg (self: Int64.t) (mode: Mode.t) (return (x: Int64.t)) = any
   [ return (result: Int64.t) -> {[@stop_split] [@expl:wrapping_neg ensures] result = Int64.neg self}
     (! return {result}) ]
 
@@ -15,9 +16,9 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_Neg_Wrapping_i64_neg_body (self_: t_Wrapping_i64) (return (x: t_Wrapping_i64)) = (! bb0
+let extern_spec_Neg_Wrapping_i64_neg_body (self_: t_Wrapping_i64) (mode: Mode.t) (return (x: t_Wrapping_i64)) = (! bb0
   [ bb0 = s0
-    [ s0 = wrapping_neg {self_.f0} (fun (_x: Int64.t) -> [ &_4 <- _x ] s1)
+    [ s0 = wrapping_neg {self_.f0} {mode} (fun (_x: Int64.t) -> [ &_4 <- _x ] s1)
     | s1 = [ &_ret <- { f0 = _4 } ] s2
     | s2 = return {_ret} ] ]
   [ & _ret: t_Wrapping_i64 = Any.any_l () | & self_: t_Wrapping_i64 = self_ | & _4: Int64.t = Any.any_l () ])

@@ -3,6 +3,7 @@ module M_f
   use creusot.int.Int32
   use map.Map
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   type t_Guarded_refmut_i32 = {
     inner: MutBorrow.t Int32.t;
@@ -48,8 +49,8 @@ module M_f
   
   meta "select_lsinst" "all"
   
-  let f (g: t_Guarded_refmut_i32) (return (x: MutBorrow.t Int32.t)) =
-  {[@stop_split] [@expl:f 'g' type invariant] inv_Guarded_refmut_i32 g}
+  let f (g: t_Guarded_refmut_i32) (mode: Mode.t) (return (x: MutBorrow.t Int32.t)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:f 'g' type invariant] inv_Guarded_refmut_i32 g}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <Int32.t> {g.inner.current} {MutBorrow.get_id g.inner}

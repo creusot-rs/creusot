@@ -1,7 +1,7 @@
 //! Defines all the internal creusot attributes.
 
 use rustc_ast::{
-    LitKind, MetaItemInner, Param,
+    AttrKind, LitKind, MetaItemInner, Param,
     token::TokenKind,
     tokenstream::{TokenStream, TokenTree},
 };
@@ -247,11 +247,10 @@ pub(crate) fn get_creusot_item(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
 pub(crate) fn is_open_inv_param(tcx: TyCtxt, p: &Param) -> bool {
     let mut found = false;
     for a in &p.attrs {
-        if a.is_doc_comment() {
+        let AttrKind::Normal(attr) = &a.kind else {
             continue;
-        }
-
-        let item = a.get_normal_item();
+        };
+        let item = &attr.item;
 
         if item.path.segments.len() != 2 {
             continue;
