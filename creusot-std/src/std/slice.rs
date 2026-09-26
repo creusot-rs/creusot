@@ -373,6 +373,8 @@ extern_spec! {
             (^self)@.subsequence(0, mid@) == (^l)@ &&
             (^self)@.subsequence(mid@, sl) == (^r)@
         })]
+        #[ensures(forall<i> 0 <= i && i < mid@ ==> self@[i] == result.0@[i])]
+        #[ensures(forall<i> mid@ <= i && i < self@.len() ==> self@[i] == result.1@[i - mid@])]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 
         #[check(ghost)]
