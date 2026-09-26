@@ -364,15 +364,11 @@ extern_spec! {
         fn split_at(&self, mid: usize) -> (&[T], &[T]);
 
         #[check(ghost)]
-        #[requires(mid@ <= self@.len())]
-        #[ensures({
-            let (l,r) = result;  let sl = self@.len();
-            ((^self)@.len() == sl) &&
-            self@.subsequence(0, mid@) == l@ &&
-            self@.subsequence(mid@, sl) == r@ &&
-            (^self)@.subsequence(0, mid@) == (^l)@ &&
-            (^self)@.subsequence(mid@, sl) == (^r)@
-        })]
+        #[ensures((^self)@.len() == self@.len())]
+        #[ensures(self@.subsequence(0, mid@) == result.0@)]
+        #[ensures(self@.subsequence(mid@, self@.len()) == result.1@)]
+        #[ensures((^self)@.subsequence(0, mid@) == (^result.0)@)]
+        #[ensures((^self)@.subsequence(mid@, self@.len()) == (^result.1)@)]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 
         #[check(ghost)]
