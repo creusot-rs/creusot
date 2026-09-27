@@ -105,6 +105,22 @@ extern_spec! {
             &mut **self
         }
     }
+
+    impl<T, const N: usize> TryFrom<Box<[T]>> for Box<[T; N]> {
+        #[ensures(match result {
+            Ok(arr) => slice@.len() == N@ && arr@ == slice@,
+            Err(orig) => slice@.len() != N@ && orig@ == slice@
+        })]
+        fn try_from(slice: Box<[T]>) -> Result<Self, Box<[T]>>;
+    }
+
+    impl<T, const N: usize> TryFrom<Vec<T>> for Box<[T; N]> {
+        #[ensures(match result {
+            Ok(arr) => slice@.len() == N@ && arr@ == slice@,
+            Err(orig) => slice@.len() != N@ && orig@ == slice@,
+        })]
+        fn try_from(slice: Vec<T>) -> Result<Self, Vec<T>>;
+    }
 }
 
 /// Dummy impls that don't use the unstable trait Allocator
