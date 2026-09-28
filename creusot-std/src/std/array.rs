@@ -188,4 +188,28 @@ extern_spec! {
             self
         }
     }
+
+    impl<T, const N: usize> TryFrom<&[T]> for &[T; N] {
+        #[ensures(match result {
+            Ok(arr) => slice@.len() == N@ && arr@ == slice@,
+            Err(_) => slice@.len() != N@
+        })]
+        fn try_from(slice: &[T]) -> Result<Self, TryFromSliceError>;
+    }
+
+    impl<T, const N: usize> TryFrom<&mut [T]> for &mut [T; N] {
+        #[ensures(match result {
+            Ok(arr) => slice@.len() == N@ && (*arr)@ == (*slice)@ && (^arr)@ == (^slice)@,
+            Err(_) => slice@.len() != N@
+        })]
+        fn try_from(slice: &mut [T]) -> Result<Self, TryFromSliceError>;
+    }
+
+    impl<T: Copy, const N: usize> TryFrom<&[T]> for [T; N] {
+        #[ensures(match result {
+            Ok(arr) => slice@.len() == N@ && arr@ == slice@,
+            Err(_) => slice@.len() != N@
+        })]
+        fn try_from(slice: &[T]) -> Result<Self, TryFromSliceError>;
+    }
 }
