@@ -1,7 +1,7 @@
 //! Attributes that can be put on program functions to specify their contract.
 
 use crate::{
-    common::ContractSubject,
+    common::{ContractSubject, FnOrMethod},
     creusot::{
         doc::{self, document_spec},
         pretyping,
@@ -83,6 +83,56 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             })
         }
     }
+}
+
+pub fn logic_alias(attr: TS1, tokens: TS1) -> TS1 {
+    let item = parse_macro_input!(tokens as FnOrMethod);
+    let alias_name =
+        crate::creusot::generate_unique_ident(&item.sig.ident.to_string(), Span::call_site());
+    let alias_tag = alias_name.to_string();
+
+    let mut sig = item.sig.clone();
+    sig.ident = alias_name;
+    let mut inputs = sig
+        .inputs
+        .iter()
+        .enumerate()
+        .map(|(i, _)| Ident::new(&format!("__arg_{i}__"), Span::mixed_site()))
+        .collect::<Vec<_>>();
+
+    for (idx, param) in sig.inputs.iter_mut().enumerate() {
+        match param {
+            syn::FnArg::Typed(pat_ty) => {
+                *pat_ty.pat = Pat::Ident(syn::PatIdent {
+                    attrs: vec![],
+                    by_ref: None,
+                    mutability: None,
+                    ident: inputs[idx].clone(),
+                    subpat: None,
+                });
+            }
+            _ => {
+                inputs[idx] = Ident::new("self", Span::mixed_site());
+            }
+        }
+    }
+
+    let attr = TokenStream::from(attr);
+
+    let unsafe_tok = sig.unsafety;
+
+    quote! {
+        #[creusot::item = #alias_tag]
+        #[creusot::decl::logic]
+        #[creusot::decl::logic::prophetic]
+        #sig {
+            #unsafe_tok { #attr (#(#inputs,)*) }
+        }
+
+        #[creusot::clause::logic_alias = #alias_tag]
+        #item
+    }
+    .into()
 }
 
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {

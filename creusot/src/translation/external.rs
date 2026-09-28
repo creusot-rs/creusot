@@ -1,6 +1,7 @@
 use crate::{
     contracts_items::{
-        ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_eval_constant, is_trusted,
+        ErasureKind, Intrinsic, creusot_clause_attrs, get_erasure, get_trusted_positive,
+        is_eval_constant, is_trusted,
     },
     ctx::*,
     resolution::TraitResolved,
@@ -12,6 +13,7 @@ use crate::{
     validate::is_ghost_or_snap,
 };
 use rustc_hir::{
+    AttrArgs,
     def::DefKind,
     def_id::{DefId, LocalDefId},
 };
@@ -36,6 +38,7 @@ pub(crate) struct ExternSpec<'tcx> {
     // Additional predicates we must verify to call this function
     pub(crate) additional_predicates: Vec<Predicate<'tcx>>,
     pub(crate) eval_constant: bool,
+    pub(crate) logic_alias: Option<(DefId, GenericArgsRef<'tcx>)>,
 }
 
 impl<'tcx> ExternSpec<'tcx> {
@@ -176,7 +179,18 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .get_pre(ctx, fn_name.as_str(), &inputs)
         .instantiate(ctx.tcx, subst)
         .skip_normalization();
-    (id, ExternSpec { contract, additional_predicates, inputs, output, eval_constant })
+
+    (
+        id,
+        ExternSpec {
+            contract,
+            additional_predicates,
+            inputs,
+            output,
+            eval_constant,
+            logic_alias: Some(ctx.logic_alias(def_id)),
+        },
+    )
 }
 
 /// Extract a target item for `extern_spec!` or `#[erasure]`.

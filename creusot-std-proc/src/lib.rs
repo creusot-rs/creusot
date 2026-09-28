@@ -50,6 +50,7 @@ macro_rules! proc_macro_attributes {
 }
 
 proc_macro_attributes! {
+    logic_alias
     requires
     ensures
     invariant

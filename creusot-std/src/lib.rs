@@ -98,6 +98,32 @@ pub mod macros {
     /// ```
     pub use base_macros::requires;
 
+    /// Path of the item that this program function should resolve to in a logic context.
+    ///
+    /// The target must have the same function signature, but otherwise does not need to have the
+    /// same contract.
+    ///
+    /// # Example
+    /// ```
+    /// # use creusot_std::prelude::*;
+    ///
+    /// #[logic]
+    /// fn logic_fn() -> bool {
+    ///     true
+    /// }
+    ///
+    /// #[logic_alias(logic_fn)]
+    /// fn program_fn() -> bool {
+    ///     false
+    /// }
+    ///
+    /// #[logic]
+    /// fn test() -> bool {
+    ///	    program_fn() // calls logic_fn() and returns true
+    /// }
+    /// ```
+    pub use base_macros::logic_alias;
+
     /// A post-condition of a function or trait item
     ///
     /// The post-condition can refer to the result of the function as

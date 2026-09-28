@@ -1,0 +1,33 @@
+module M_hybrid
+  use creusot.prelude.Any
+  use creusot.int.UInt32
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let hybrid (x: UInt32.t) (return (x'0: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () ])
+    [ return (result: bool) -> (! return {result}) ]
+end
+module M_uses_logic_alias
+  use creusot.float.Float64
+  use creusot.int.UInt32
+  
+  constant any_u32 : UInt32.t
+  
+  function logic_transmute_f64 (x: Float64.t) : UInt32.t = let _ = x in any_u32
+  
+  predicate logic1 (x: UInt32.t) = let _ = x in true
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : Float64.t
+  
+  predicate uses_logic_alias (x: Float64.t)
+  
+  goal vc_uses_logic_alias:
+    let x'0 = logic_transmute_f64 x in [@stop_split] [@expl:uses_logic_alias ensures] not logic1 x'0
+end

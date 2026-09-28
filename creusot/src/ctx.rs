@@ -36,6 +36,7 @@ use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_data_structures::steal::Steal;
 use rustc_errors::{Diag, DiagMessage, FatalAbort};
 use rustc_hir::{
+    AttrArgs,
     def::{CtorKind, DefKind},
     def_id::{CrateNum, DefId, LOCAL_CRATE, LocalDefId, ModId},
 };
@@ -46,7 +47,7 @@ use rustc_middle::{
     mir::Promoted,
     thir,
     ty::{
-        self, Clause, FieldDef, GenericArg, GenericArgsRef, ParamEnv, Predicate,
+        self, Clause, FieldDef, GenericArg, GenericArgs, GenericArgsRef, ParamEnv, Predicate,
         ResolverAstLowering, Ty, TyCtxt, TypingEnv, TypingMode, Visibility,
     },
 };
@@ -190,6 +191,7 @@ pub struct TranslationCtx<'tcx> {
     params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
     laws: OnceMap<DefId, Vec<DefId>>,
     fmir_body: OnceMap<BodyId, Box<fmir::Body<'tcx>>>,
+    logic_alias: OnceMap<DefId, Box<(DefId, GenericArgsRef<'tcx>)>>,
     terms: OnceMap<DefId, Box<Option<Term<'tcx>>>>,
     inputs_and_output: OnceMap<DefId, Box<(Box<[(PIdent, Span, Ty<'tcx>)]>, Ty<'tcx>)>>,
     trait_impl: OnceMap<DefId, Vec<Refinement<'tcx>>>,
@@ -287,6 +289,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             laws: Default::default(),
             externs,
             terms: Default::default(),
+            logic_alias: Default::default(),
             inputs_and_output: Default::default(),
             creusot_items,
             variant_calls: RefCell::new(IndexMap::new()),
@@ -403,6 +406,74 @@ impl<'tcx> TranslationCtx<'tcx> {
             return sig;
         }
         self.sig.insert(def_id, |&item| Box::new(pre_sig_of(self, item)))
+    }
+
+    pub(crate) fn logic_alias(&self, def_id: DefId) -> (DefId, GenericArgsRef<'tcx>) {
+        if !def_id.is_local() {
+            if let Some(alias) = self.externs.logic_alias(def_id) {
+                return alias;
+            }
+
+            if let Some(spec) = self.extern_spec(def_id)
+                && let Some(alias) = spec.logic_alias
+            {
+                return alias;
+            }
+
+            return (def_id, GenericArgs::identity_for_item(self.tcx, def_id));
+        }
+        *self.logic_alias.insert(def_id, |&item| {
+            Box::new({
+                let get_creusot_item = |arg: &AttrArgs| {
+                    let predicate_name = match arg {
+                        AttrArgs::Eq { expr: l, .. } => l.symbol,
+                        _ => panic!(),
+                    };
+                    self.creusot_item(predicate_name).unwrap()
+                };
+
+                let aliases = creusot_clause_attrs(self.tcx, item, "logic_alias")
+                    .map(get_creusot_item)
+                    .map(|creusot_item| {
+                        let (thir, mut body) = self.thir_body(creusot_item.expect_local());
+                        let thir = &*thir.borrow();
+                        loop {
+                            match &thir.exprs[body].kind {
+                                &thir::ExprKind::Scope { value, .. } => {
+                                    body = value;
+                                }
+                                &thir::ExprKind::Block { block } => {
+                                    assert!(thir.blocks[block].stmts.is_empty());
+                                    body = thir.blocks[block].expr.unwrap();
+                                }
+                                _ => break,
+                            }
+                        }
+
+                        match &thir.exprs[body].kind {
+                            &thir::ExprKind::Call { ty, .. }
+                                if let rustc_middle::ty::TyKind::FnDef(id, args) = *ty.kind() =>
+                            {
+                                (id, args.skip_binder())
+                            }
+                            _ => panic!(),
+                        }
+                    })
+                    .collect::<Vec<_>>();
+
+                if aliases.len() > 1 {
+                    self.crash_and_error(
+                        self.def_span(def_id),
+                        "at most one #[logic_alias(..)] attribute is allowed",
+                    );
+                }
+                if let &[alias] = &*aliases {
+                    alias
+                } else {
+                    (item, GenericArgs::identity_for_item(self.tcx, def_id))
+                }
+            })
+        })
     }
 
     pub(crate) fn body_with_facts(&self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
@@ -522,6 +593,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         BinaryMetadata::from_parts(
             self.terms,
             self.sig,
+            self.logic_alias,
             self.creusot_items,
             self.raw_intrinsics,
             self.extern_specs,
@@ -644,6 +716,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                     output: Ty::new_bool(self.tcx), // dummy
                     additional_predicates,
                     eval_constant: false,
+                    logic_alias: None,
                 },
             );
         }

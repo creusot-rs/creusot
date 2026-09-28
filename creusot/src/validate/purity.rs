@@ -162,6 +162,12 @@ enum ClosureKind {
 
 impl PurityVisitor<'_, '_> {
     fn purity(&self, func_did: DefId, args: &[ExprId]) -> Purity {
+        let func_did = if matches!(self.context, LocalPurity::Purity(Purity::Logic { .. })) {
+            self.ctx.logic_alias(func_did).0
+        } else {
+            func_did
+        };
+
         if is_logic(self.ctx.tcx, func_did) {
             Purity::Logic { prophetic: is_prophetic(self.ctx.tcx, func_did) }
         } else if let Intrinsic::GhostIntoInner

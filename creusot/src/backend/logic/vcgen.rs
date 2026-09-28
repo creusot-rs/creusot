@@ -162,6 +162,9 @@ impl<'tcx> VCGen<'_, 'tcx> {
             //  pre(f)(a0..an) /\ variant(f)(a0..an) /\ (post(f)(a0..an, F(a0..an)) -> Q(F a0..an))
             // ))
             &TermKind::Call { id, subst, ref args } => self.build_wp_slice(args, &|args| {
+                let (id, generics) = self.ctx.logic_alias(id);
+                let subst = EarlyBinder::bind(self.ctx.tcx, generics).instantiate(self.ctx.tcx, subst).skip_normalization();
+
                 let pre_sig = EarlyBinder::bind(self.ctx.tcx, self.ctx.sig(id).clone())
                     .instantiate(self.ctx.tcx, subst)
                     .skip_normalization().normalize_contract(self.ctx, self.typing_env);

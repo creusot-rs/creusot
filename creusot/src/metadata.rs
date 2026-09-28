@@ -13,7 +13,7 @@ use once_map::unsync::OnceMap;
 use rustc_hir::def_id::{CrateNum, DefId, DefPathHash, LOCAL_CRATE, LocalDefId};
 use rustc_index::bit_set::DenseBitSet;
 use rustc_macros::{TyDecodable, TyEncodable};
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{GenericArgsRef, TyCtxt};
 use rustc_session::config::OutputType;
 use rustc_span::Symbol;
 use std::{
@@ -48,6 +48,10 @@ impl<'tcx> Metadata<'tcx> {
 
     pub(crate) fn sig(&self, def_id: DefId) -> Option<&PreSignature<'tcx>> {
         self.get(def_id.krate)?.sig.get(&def_id)
+    }
+
+    pub(crate) fn logic_alias(&self, def_id: DefId) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+        self.get(def_id.krate)?.logic_alias.get(&def_id).copied()
     }
 
     pub(crate) fn params_open_inv(&self, def_id: DefId) -> Option<&DenseBitSet<usize>> {
@@ -122,6 +126,7 @@ impl<'tcx> Metadata<'tcx> {
 pub struct CrateMetadata<'tcx> {
     terms: IndexMap<DefId, Term<'tcx>>,
     sig: HashMap<DefId, PreSignature<'tcx>>,
+    logic_alias: HashMap<DefId, (DefId, GenericArgsRef<'tcx>)>,
     creusot_items: HashMap<Symbol, DefId>,
     intrinsics: HashMap<Symbol, DefId>,
     params_open_inv: HashMap<DefId, DenseBitSet<usize>>,
@@ -168,6 +173,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         let meta = CrateMetadata {
             terms: metadata.terms.into_iter().collect(),
             sig: metadata.sig.into_iter().collect(),
+            logic_alias: metadata.logic_alias.into_iter().collect(),
             creusot_items: metadata.creusot_items,
             intrinsics: metadata.intrinsics,
             params_open_inv: metadata.params_open_inv,
@@ -192,6 +198,7 @@ impl<'tcx> CrateMetadata<'tcx> {
 pub(crate) struct BinaryMetadata<'tcx> {
     terms: Vec<(DefId, Term<'tcx>)>,
     sig: Vec<(DefId, PreSignature<'tcx>)>,
+    logic_alias: Vec<(DefId, (DefId, GenericArgsRef<'tcx>))>,
     creusot_items: HashMap<Symbol, DefId>,
     intrinsics: HashMap<Symbol, DefId>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
@@ -206,6 +213,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
         terms: OnceMap<DefId, Box<Option<Term<'tcx>>>>,
         sig: OnceMap<DefId, Box<PreSignature<'tcx>>>,
+        logic_alias: OnceMap<DefId, Box<(DefId, GenericArgsRef<'tcx>)>>,
         creusot_items: HashMap<Symbol, DefId>,
         intrinsics: HashMap<Symbol, DefId>,
         extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
@@ -220,11 +228,17 @@ impl<'tcx> BinaryMetadata<'tcx> {
             .map(|(id, t)| (id, t.unwrap()))
             .collect();
         let sig = sig.into_iter().filter(|(id, _)| id.is_local()).map(|(id, s)| (id, *s)).collect();
+        let logic_alias = logic_alias
+            .into_iter()
+            .filter(|(id, _)| id.is_local())
+            .map(|(id, s)| (id, *s))
+            .collect();
         let erased_defid =
             erased_local_defid.into_iter().map(|(id, erased)| (id.to_def_id(), erased)).collect();
         BinaryMetadata {
             terms,
             sig,
+            logic_alias,
             creusot_items,
             intrinsics,
             extern_specs,
@@ -240,6 +254,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
         BinaryMetadata {
             terms: Vec::new(),
             sig: Vec::new(),
+            logic_alias: Vec::new(),
             creusot_items: HashMap::new(),
             intrinsics: HashMap::new(),
             extern_specs: HashMap::new(),
