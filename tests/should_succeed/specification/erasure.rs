@@ -198,3 +198,14 @@ pub fn apply_test() -> i32 {
 pub fn apply_test2() -> i32 {
     apply(foo3)
 }
+
+pub fn unsize<T, const N: usize>(t: &[T; N]) -> &[T] {
+    t
+}
+
+#[erasure(unsize)]
+pub fn unsize2<T, const N: usize>(t: &[T; N]) -> &[T] {
+    let mut _k = ghost! {0};
+    _k = ghost! {1};
+    t
+}
