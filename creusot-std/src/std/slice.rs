@@ -364,6 +364,7 @@ extern_spec! {
         fn split_at(&self, mid: usize) -> (&[T], &[T]);
 
         #[check(ghost)]
+        #[requires(mid@ <= self@.len())]
         #[ensures((^self)@.len() == self@.len())]
         #[ensures(self@.subsequence(0, mid@) == result.0@)]
         #[ensures(self@.subsequence(mid@, self@.len()) == result.1@)]
