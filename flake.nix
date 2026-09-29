@@ -115,7 +115,12 @@
                 });
             in
             {
-              inherit (pkgs.creusot) prelude creusot;
+              inherit (pkgs.creusot)
+                prelude
+                creusot
+                alt-ergo
+                why3find
+                ;
 
               default = mkCreusot { isFree = false; };
               free = mkCreusot { isFree = true; };
