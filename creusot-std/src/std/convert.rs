@@ -109,6 +109,14 @@ extern_spec! {
         #[ensures(result == Some(x))]
         fn from(x: T) -> Self;
     }
+
+    impl<T, U: TryFrom<T>> TryInto<U> for T {
+        #[requires(U::try_from.precondition((self,)))]
+        #[ensures(U::try_from.postcondition((self,), result))]
+        fn try_into(self) -> Result<U, U::Error> {
+            U::try_from(self)
+        }
+    }
 }
 
 #[cfg(feature = "std")]
