@@ -1,0 +1,65 @@
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.Any
+
+type t_T
+
+type t_U
+
+type t_Error
+
+type t_Result_U_Error = Ok t_U | Err t_Error
+
+predicate precondition_try_from (self: ()) (args: t_T)
+
+axiom precondition_fndef: forall args: t_T [precondition_try_from () args]. (let value = args in false)
+    -> precondition_try_from () args
+
+predicate inv_U (_1: t_U)
+
+predicate inv_Error (_1: t_Error)
+
+predicate inv_Result_U_Error (_1: t_Result_U_Error)
+
+axiom inv_axiom [@rewrite]: forall _1: t_Result_U_Error [inv_Result_U_Error _1]. inv_Result_U_Error _1
+    = match _1 with
+      | Ok f0 -> inv_U f0
+      | Err f0 -> inv_Error f0
+      end
+
+predicate postcondition_try_from (self: ()) (args: t_T) (result: t_Result_U_Error)
+
+axiom postcondition_fndef:
+  forall args: t_T, result: t_Result_U_Error [postcondition_try_from () args result]. postcondition_try_from () args result
+    -> (let value = args in inv_Result_U_Error result)
+
+predicate postcondition_once_try_from (self: ()) (args: t_T) (result: t_Result_U_Error) =
+  postcondition_try_from self args result
+
+meta "rewrite_def" predicate postcondition_once_try_from
+
+let try_from_U (value: t_T) (return (x: t_Result_U_Error)) =
+{[@stop_split] [@expl:try_from requires] precondition_try_from () value}
+  any
+  [ return (result: t_Result_U_Error) ->
+  {[@stop_split] [@expl:try_from ensures] postcondition_once_try_from () value result}
+    (! return {result}) ]
+
+predicate inv_T (_1: t_T)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_U_TryInto_U_T_try_into_body_T (self_: t_T) (return (x: t_Result_U_Error)) =
+{[@stop_split] [@expl:extern_spec_T_U_TryInto_U_T_try_into_body_T requires] ([@stop_split] [@expl:extern_spec_T_U_TryInto_U_T_try_into_body 'self_' type invariant] inv_T self_)
+  /\ ([@stop_split] [@expl:extern_spec_T_U_TryInto_U_T_try_into_body requires] precondition_try_from () self_)}
+  (! bb0
+  [ bb0 = s0 [ s0 = try_from_U {self_} (fun (_x: t_Result_U_Error) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+  [ & _ret: t_Result_U_Error = Any.any_l () | & self_: t_T = self_ ])
+  [ return (result: t_Result_U_Error) ->
+  {[@stop_split] [@expl:extern_spec_T_U_TryInto_U_T_try_into_body_T ensures] ([@stop_split] [@expl:extern_spec_T_U_TryInto_U_T_try_into_body result type invariant] inv_Result_U_Error result)
+    /\ ([@stop_split] [@expl:extern_spec_T_U_TryInto_U_T_try_into_body ensures] postcondition_try_from () self_ result)}
+    (! return {result}) ]
