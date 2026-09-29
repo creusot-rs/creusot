@@ -171,12 +171,14 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
                 trait_ref.args,
             );
 
-            let _ = ctx.check_additional_predicates(
-                trait_item,
-                subst,
-                ctx.param_env(impl_item),
-                ctx.def_span(impl_item),
-            );
+            if !is_trusted_item(ctx.tcx, impl_id.to_def_id()) {
+                let _ = ctx.check_additional_predicates(
+                    trait_item,
+                    subst,
+                    ctx.param_env(impl_item),
+                    ctx.def_span(impl_item),
+                );
+            }
         }
     }
 }
