@@ -1,0 +1,64 @@
+module M_move_ghost_in_ghost
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  let new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let move_ghost_in_ghost (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &a <- (1: Int32.t) ] s1
+      | s1 = [ &b <- a ] s2
+      | s2 = [ &_8 <- b = (1: Int32.t) ] s3
+      | s3 = any [ br0 -> {_8 = false} (! bb3) | br1 -> {_8} (! bb4) ] ]
+    | bb4 = s0
+      [ s0 = new_unit {_5} (fun (_x: ()) -> [ &_4 <- _x ] s1)
+      | s1 = new_unit {_2} (fun (_x: ()) -> [ &_1 <- _x ] s2)
+      | s2 = return {_ret} ]
+    | bb3 = {false} any ]
+    [ & _ret: () = Any.any_l ()
+    | & _1: () = Any.any_l ()
+    | & _2: () = Any.any_l ()
+    | & a: Int32.t = Any.any_l ()
+    | & _4: () = Any.any_l ()
+    | & _5: () = Any.any_l ()
+    | & b: Int32.t = Any.any_l ()
+    | & _8: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_mut_ghost_in_ghost
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  
+  let new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let mut_ghost_in_ghost (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &a <- (1: Int32.t) ] s1
+      | s1 = [ &_5 <- a = (1: Int32.t) ] s2
+      | s2 = any [ br0 -> {_5 = false} (! bb2) | br1 -> {_5} (! bb1) ] ]
+    | bb1 = s0
+      [ s0 = [ &a <- (2: Int32.t) ] s1
+      | s1 = new_unit {_9} (fun (_x: ()) -> [ &_8 <- _x ] s2)
+      | s2 = [ &_11 <- a = (2: Int32.t) ] s3
+      | s3 = any [ br0 -> {_11 = false} (! bb5) | br1 -> {_11} (! bb4) ] ]
+    | bb4 = s0 [ s0 = new_unit {_2} (fun (_x: ()) -> [ &_1 <- _x ] s1) | s1 = return {_ret} ]
+    | bb5 = {false} any
+    | bb2 = {false} any ]
+    [ & _ret: () = Any.any_l ()
+    | & _1: () = Any.any_l ()
+    | & _2: () = Any.any_l ()
+    | & a: Int32.t = Any.any_l ()
+    | & _5: bool = Any.any_l ()
+    | & _8: () = Any.any_l ()
+    | & _9: () = Any.any_l ()
+    | & _11: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end

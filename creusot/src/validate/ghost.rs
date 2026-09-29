@@ -17,7 +17,7 @@ use crate::{
 
 pub struct GhostValidate;
 
-impl<'tcx> LintPass for GhostValidate {
+impl LintPass for GhostValidate {
     fn name(&self) -> &'static str {
         ""
     }
@@ -31,6 +31,19 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
         if !is_ghost_block(cx.tcx, expr.hir_id) {
             return;
         }
+        if cx.tcx.hir_parent_id_iter(expr.hir_id).any(|id| is_ghost_block(cx.tcx, id)) {
+            // The parent `ghost` block will take care of doing the necessary checks.
+            // As a bonus, this kind of code is now allowed:
+            // ```
+            // ghost! {
+            //     let mut x = 1;
+            //     ghost! {
+            //         x = 2;
+            //     };
+            // }
+            // ```
+            return;
+        }
 
         let mut control_flow = GhostControlFlow { loop_labels: Vec::new(), errors: Vec::new() };
         control_flow.visit_expr(expr);
@@ -41,8 +54,7 @@ impl<'tcx> LateLintPass<'tcx> for GhostValidate {
         let mut places =
             GhostValidatePlaces { bound_variables: HashSet::new(), tcx, errors: Vec::new() };
         let visitor = ExprUseVisitor::for_clippy(cx, expr.hir_id.owner.def_id, &mut places);
-        // Error type is `!`
-        let _ = visitor.walk_expr(expr);
+        let Ok(()) = visitor.walk_expr(expr);
 
         for (span, msg) in control_flow.errors {
             tcx.dcx()
