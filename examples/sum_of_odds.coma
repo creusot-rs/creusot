@@ -1,5 +1,6 @@
 module M_compute_sum_of_odd
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -7,7 +8,7 @@ module M_compute_sum_of_odd
   
   type t_Range_u32 = { start: UInt32.t; end': UInt32.t }
   
-  let into_iter_Range_u32 (self: t_Range_u32) (return (x: t_Range_u32)) = any
+  let into_iter_Range_u32 (self: t_Range_u32) (mode: Mode.t) (return (x: t_Range_u32)) = any
     [ return (result: t_Range_u32) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_u32 = None | Some UInt32.t
@@ -50,7 +51,7 @@ module M_compute_sum_of_odd
   predicate completed_Range_u32 (self: MutBorrow.t t_Range_u32) =
     resolve_refmut_Range_u32 self /\ ge_log_Int (deep_model_u32 self.current.start) (deep_model_u32 self.current.end')
   
-  let next_Range_u32 (self: MutBorrow.t t_Range_u32) (return (x: t_Option_u32)) = any
+  let next_Range_u32 (self: MutBorrow.t t_Range_u32) (mode: Mode.t) (return (x: t_Option_u32)) = any
     [ return (result: t_Option_u32) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_u32 self
         | Some v -> produces_Range_u32 self.current (Seq.singleton v) self.final
@@ -87,13 +88,13 @@ module M_compute_sum_of_odd
   
   meta "select_lsinst" "all"
   
-  let compute_sum_of_odd (x: UInt32.t) (return (x'0: UInt32.t)) =
-  {[@stop_split] [@expl:compute_sum_of_odd requires] UInt32.t'int x < 65536}
+  let compute_sum_of_odd (x: UInt32.t) (mode: Mode.t) (return (x'0: UInt32.t)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:compute_sum_of_odd requires] UInt32.t'int x < 65536}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &s <- (0: UInt32.t) ] s1
       | s1 = [ &_10 <- { start = (0: UInt32.t); end' = x } ] s2
-      | s2 = into_iter_Range_u32 {_10} (fun (_x: t_Range_u32) -> [ &iter <- _x ] s3)
+      | s2 = into_iter_Range_u32 {_10} {mode} (fun (_x: t_Range_u32) -> [ &iter <- _x ] s3)
       | s3 = [ &iter_old <- iter ] s4
       | s4 = [ &produced <- Seq.empty: Seq.seq UInt32.t ] s5
       | s5 = bb4 ]
@@ -106,7 +107,7 @@ module M_compute_sum_of_odd
             (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_32 <- _bor ] [ &iter <- _bor.final ] s1)
         | s1 = MutBorrow.borrow_final <t_Range_u32> {_32.current} {MutBorrow.get_id _32}
             (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_31 <- _bor ] [ &_32 <- { _32 with current = _bor.final } ] s2)
-        | s2 = next_Range_u32 {_31} (fun (_x: t_Option_u32) -> [ &_30 <- _x ] s3)
+        | s2 = next_Range_u32 {_31} {mode} (fun (_x: t_Option_u32) -> [ &_30 <- _x ] s3)
         | s3 = -{resolve_refmut_Range_u32 _32}- s4
         | s4 = any [ br0 -> {_30 = None} (! bb9) | br1 (x0: UInt32.t) -> {_30 = Some x0} (! bb10) ] ]
         [ bb10 = s0
@@ -206,6 +207,7 @@ module M_sum_of_odd_is_sqr
 end
 module M_test
   use creusot.int.UInt32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -214,7 +216,7 @@ module M_test
   axiom sum_of_odd_def: forall x: int [sum_of_odd x]. sum_of_odd x
       = (if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1)
   
-  let compute_sum_of_odd (x: UInt32.t) (return (x'0: UInt32.t)) =
+  let compute_sum_of_odd (x: UInt32.t) (mode: Mode.t) (return (x'0: UInt32.t)) =
   {[@stop_split] [@expl:compute_sum_of_odd requires] UInt32.t'int x < 65536}
     any
     [ return (result: UInt32.t) -> {[@stop_split] [@expl:compute_sum_of_odd ensures] UInt32.t'int result
@@ -244,10 +246,11 @@ module M_test
   
   meta "select_lsinst" "all"
   
-  let test (x: UInt32.t) (return (x'0: ())) = {[@stop_split] [@expl:test requires] UInt32.t'int x < 65536}
+  let test (x: UInt32.t) (mode: Mode.t) (return (x'0: ())) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:test requires] UInt32.t'int x < 65536}
     (! bb0
     [ bb0 = s0
-      [ s0 = compute_sum_of_odd {x} (fun (_x: UInt32.t) -> [ &y <- _x ] s1)
+      [ s0 = compute_sum_of_odd {x} {mode} (fun (_x: UInt32.t) -> [ &y <- _x ] s1)
       | s1 = {[@expl:assertion] let _ = sum_of_odd_is_sqr (UInt32.t'int x) in is_square (UInt32.t'int y)} s2
       | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & x: UInt32.t = x | & y: UInt32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]

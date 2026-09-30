@@ -18,19 +18,19 @@ pub fn test_fnmut(mut x: u32) {
     proof_assert! { x@ == 100_002};
 }
 
-#[requires(f.precondition(()))]
-#[requires(forall<st1, r> f.postcondition_mut((), st1, r) ==> st1.precondition(()))]
+#[requires(f.precondition((), mode!()))]
+#[requires(forall<st1, r> f.postcondition_mut((), st1, r, mode!()) ==> st1.precondition((), mode!()))]
 #[ensures(exists<st1, st2, r>
-    f.postcondition_mut((), st1, r) &&
-    st1.postcondition_mut((), st2, result) &&
+    f.postcondition_mut((), st1, r, mode!()) &&
+    st1.postcondition_mut((), st2, result, mode!()) &&
     resolve(st2))]
 fn call_fnmut<F: FnMut() -> i32>(mut f: F) -> i32 {
     f();
     f()
 }
 
-#[requires(f.precondition(()))]
-#[ensures(f.postcondition_once((), result))]
+#[requires(f.precondition((), mode!()))]
+#[ensures(f.postcondition_once((), result, mode!()))]
 fn call_fnonce<F: FnOnce() -> i32>(f: F) -> i32 {
     f()
 }

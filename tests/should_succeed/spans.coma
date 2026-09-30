@@ -10,6 +10,7 @@ module M_bar [#"spans.rs" 24 0 24 33]
   let%span sord'0 = "../../creusot-std/src/logic/ord.rs" 22 8 22 20
   
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -30,11 +31,13 @@ module M_bar [#"spans.rs" 24 0 24 33]
   
   meta "select_lsinst" "all"
   
-  let bar [#"spans.rs" 24 0 24 33] (i: UInt64.t) (return (x: UInt64.t)) =
+  let bar [#"spans.rs" 24 0 24 33] (i: UInt64.t) (mode: Mode.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:bar requires] [%#sspans'4] UInt64.t'int i <= 0}
     (! bb0
     [ bb0 = bb0invariant
-      [ bb0 = {[@expl:loop variant] well_founded_relation_Int variant_old_bb1 ([%#sspans] UInt64.t'int i)} bb0invariant
+      [ bb0 = {Mode.terminates mode
+        -> ([@expl:loop variant] well_founded_relation_Int variant_old_bb1 ([%#sspans] UInt64.t'int i))}
+        bb0invariant
       | bb0invariant = {[@expl:loop invariant] [%#sspans'1] UInt64.t'int i <= 0}
         (! [ &variant_old_bb1 <- [%#sspans] UInt64.t'int i ] s0)
         [ s0 = [ &_11 <- UInt64.lt ([%#sspans'0] (0: UInt64.t)) i ] s1
@@ -100,6 +103,7 @@ module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
   
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.Int
   
   type t_NonNeg = { f0: UInt64.t }
@@ -114,7 +118,7 @@ module M_impl_NonNeg__decr [#"spans.rs" 60 4 60 29] (* NonNeg *)
   
   meta "select_lsinst" "all"
   
-  let decr [#"spans.rs" 60 4 60 29] (self: t_NonNeg) (return (x: t_NonNeg)) =
+  let decr [#"spans.rs" 60 4 60 29] (self: t_NonNeg) (mode: Mode.t) (return (x: t_NonNeg)) =
   {[@stop_split] [@expl:decr requires] ([@stop_split] [@expl:decr 'self' type invariant] [%#sspans'1] inv_NonNeg self)
     /\ ([@stop_split] [@expl:decr requires] [%#sspans'2] 0 < UInt64.t'int self.f0)}
     (! bb0
@@ -134,13 +138,14 @@ module M_impl_Tr_for_S__foo [#"spans.rs" 17 4 17 27] (* <S as Tr> *)
   let%span sspans'0 = "spans.rs" 16 14 16 30
   
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let foo_S [#"spans.rs" 17 4 17 27] (x: bool) (return (x'0: bool)) = {[@stop_split] [@expl:foo requires] [%#sspans] x
-    /\ x}
+  let foo_S [#"spans.rs" 17 4 17 27] (x: bool) (mode: Mode.t) (return (x'0: bool)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:foo requires] [%#sspans] x /\ x}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- x ] s1 | s1 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & x: bool = x ])
     [ return (result: bool) -> {[@stop_split] [@expl:foo ensures] [%#sspans'0] result \/ result} (! return {result}) ]
@@ -151,11 +156,13 @@ module M_impl_Tr_for_S__foo__refines [#"spans.rs" 17 4 17 27] (* <S as Tr> *)
   let%span sspans'1 = "spans.rs" 16 14 16 30
   let%span sspans'2 = "spans.rs" 8 14 8 20
   
+  use creusot.prelude.Mode
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  goal refines: forall x: bool. ([%#sspans] x)
+  goal refines: forall mode: Mode.t, x: bool. ([%#sspans] x)
       -> ([%#sspans'0] x /\ x) /\ (forall result: bool. ([%#sspans'1] result \/ result) -> ([%#sspans'2] result))
 end
 module M_quux [#"spans.rs" 68 0 68 32]
@@ -176,6 +183,7 @@ module M_quux [#"spans.rs" 68 0 68 32]
   let%span sord'0 = "../../creusot-std/src/logic/ord.rs" 22 8 22 20
   
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -187,7 +195,7 @@ module M_quux [#"spans.rs" 68 0 68 32]
   
   axiom inv_axiom [@rewrite]: forall _1: t_NonNeg [inv_NonNeg _1]. inv_NonNeg _1 = invariant_NonNeg _1
   
-  let decr (self: t_NonNeg) (return (x: t_NonNeg)) =
+  let decr (self: t_NonNeg) (mode: Mode.t) (return (x: t_NonNeg)) =
   {[@stop_split] [@expl:decr requires] ([@stop_split] [@expl:decr 'self' type invariant] [%#sspans'6] inv_NonNeg self)
     /\ ([@stop_split] [@expl:decr requires] [%#sspans'7] 0 < UInt64.t'int self.f0)}
     any
@@ -196,7 +204,7 @@ module M_quux [#"spans.rs" 68 0 68 32]
       /\ ([@stop_split] [@expl:decr ensures] [%#sspans'9] UInt64.t'int result.f0 = UInt64.t'int self.f0 - 1)}
       (! return {result}) ]
   
-  let quux (i: t_NonNeg) (return (x: t_NonNeg)) =
+  let quux (i: t_NonNeg) (mode: Mode.t) (return (x: t_NonNeg)) =
   {[@stop_split] [@expl:quux requires] ([@stop_split] [@expl:quux 'i' type invariant] [%#sspans'3] inv_NonNeg i)
     /\ ([@stop_split] [@expl:quux requires] [%#sspans'4] 0 <= UInt64.t'int i.f0)}
     any
@@ -220,7 +228,7 @@ module M_quux [#"spans.rs" 68 0 68 32]
   
   meta "select_lsinst" "all"
   
-  let quux'0 [#"spans.rs" 68 0 68 32] (i: t_NonNeg) (return (x: t_NonNeg)) =
+  let quux'0 [#"spans.rs" 68 0 68 32] (i: t_NonNeg) (mode: Mode.t) (return (x: t_NonNeg)) =
   {[@stop_split] [@expl:quux requires] ([@stop_split] [@expl:quux 'i' type invariant] [%#sspans'3] inv_NonNeg i)
     /\ ([@stop_split] [@expl:quux requires] [%#sspans'4] 0 <= UInt64.t'int i.f0)}
     (! bb0
@@ -229,13 +237,13 @@ module M_quux [#"spans.rs" 68 0 68 32]
       | s1 = any [ br0 -> {_6 = false} (! bb2) | br1 -> {_6} (! bb1) ] ]
     | bb1 = s0 [ s0 = [ &_ret <- i ] s1 | s1 = return {_ret} ]
     | bb2 = s0
-      [ s0 = decr [%#sspans'0] {i} (fun (_x: t_NonNeg) -> [ &_8 <- _x ] s1)
-      | s1 = quux [%#sspans'1] {_8} (fun (_x: t_NonNeg) -> [ &_ret <- _x ] s2)
+      [ s0 = decr [%#sspans'0] {i} {mode} (fun (_x: t_NonNeg) -> [ &_8 <- _x ] s1)
+      | s1 = quux [%#sspans'1] {_8} {mode} (fun (_x: t_NonNeg) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ]
     [ & _ret: t_NonNeg = Any.any_l () | & i: t_NonNeg = i | & _6: bool = Any.any_l () | & _8: t_NonNeg = Any.any_l () ]
-    [ quux (i: t_NonNeg) (_k (_ret: t_NonNeg)) ->
-    {[@expl:function variant] well_founded_relation_Int function_variant ([%#sspans'2] UInt64.t'int i.f0)}
-      quux {i} (_k) ] [ function_variant: int = [%#sspans'2] UInt64.t'int i.f0 ])
+    [ quux (i: t_NonNeg) (mode: Mode.t) (_k (_ret: t_NonNeg)) -> {Mode.terminates mode
+      -> ([@expl:function variant] well_founded_relation_Int function_variant ([%#sspans'2] UInt64.t'int i.f0))}
+      quux {i} {mode} (_k) ] [ function_variant: int = [%#sspans'2] UInt64.t'int i.f0 ])
     [ return (result: t_NonNeg) -> {[@stop_split] [@expl:quux result type invariant] [%#sspans'5] inv_NonNeg result}
       (! return {result}) ]
 end
@@ -249,15 +257,16 @@ module M_slices [#"spans.rs" 73 0 73 32]
   let%span sspans'5 = "spans.rs" 76 6 76 7
   let%span sspans'6 = "spans.rs" 76 4 76 8
   let%span sspans'7 = "spans.rs" 72 11 72 17
-  let%span sslice = "../../creusot-std/src/std/slice.rs" 334 18 334 22
+  let%span sslice = "../../creusot-std/src/std/slice.rs" 336 18 336 22
   
   use creusot.int.UInt64
   use creusot.slice.Slice64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
   
-  let len_usize (self: Slice64.slice UInt64.t) (return (x: UInt64.t)) = any
+  let len_usize (self: Slice64.slice UInt64.t) (mode: Mode.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] [%#sslice] Seq.length (Slice64.view self)
       = UInt64.t'int result}
       (! return {result}) ]
@@ -266,8 +275,8 @@ module M_slices [#"spans.rs" 73 0 73 32]
   
   meta "select_lsinst" "all"
   
-  let slices [#"spans.rs" 73 0 73 32] (i: UInt64.t) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:slices requires] [%#sspans'7] UInt64.t'int i < 3}
+  let slices [#"spans.rs" 73 0 73 32] (i: UInt64.t) (mode: Mode.t) (return (x: UInt64.t)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:slices requires] [%#sspans'7] UInt64.t'int i < 3}
     (! bb0
     [ bb0 = s0
       [ s0 = Slice64.create [%#sspans] <UInt64.t> {[%#sspans] (3: UInt64.t)}
@@ -276,7 +285,7 @@ module M_slices [#"spans.rs" 73 0 73 32]
       | s2 = [ &_7 <- UInt64.lt _6 ([%#sspans'1] (3: UInt64.t)) ] s3
       | s3 = {[@expl:index in bounds] [%#sspans'1] _7} s4
       | s4 = Slice64.get [%#sspans'1] <UInt64.t> {x} {_6} (fun (r: UInt64.t) -> [ &_5 <- r ] s5)
-      | s5 = len_usize [%#sspans'2] {x} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s6)
+      | s5 = len_usize [%#sspans'2] {x} {mode} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s6)
       | s6 = [ &_11 <- i ] s7
       | s7 = [ &_12 <- UInt64.lt _11 ([%#sspans'3] (3: UInt64.t)) ] s8
       | s8 = {[@expl:index in bounds] [%#sspans'3] _12} s9
@@ -303,16 +312,17 @@ end
 module M_unwrap [#"spans.rs" 80 0 80 34]
   let%span sspans = "spans.rs" 81 4 81 14
   let%span sspans'0 = "spans.rs" 79 11 79 20
-  let%span soption = "../../creusot-std/src/std/option.rs" 137 19 137 23
-  let%span soption'0 = "../../creusot-std/src/std/option.rs" 138 34 138 38
+  let%span soption = "../../creusot-std/src/std/option.rs" 139 19 139 23
+  let%span soption'0 = "../../creusot-std/src/std/option.rs" 140 34 140 38
   
   use creusot.int.UInt8
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Option_u8 = None | Some UInt8.t
   
-  let unwrap_u8 (self: t_Option_u8) (return (x: UInt8.t)) = {[@stop_split] [@expl:unwrap requires] [%#soption] self
-    <> None}
+  let unwrap_u8 (self: t_Option_u8) (mode: Mode.t) (return (x: UInt8.t)) =
+  {[@stop_split] [@expl:unwrap requires] [%#soption] self <> None}
     any
     [ return (result: UInt8.t) -> {[@stop_split] [@expl:unwrap ensures] [%#soption'0] Some result = self}
       (! return {result}) ]
@@ -321,9 +331,10 @@ module M_unwrap [#"spans.rs" 80 0 80 34]
   
   meta "select_lsinst" "all"
   
-  let unwrap [#"spans.rs" 80 0 80 34] (x: t_Option_u8) (return (x'0: UInt8.t)) =
-  {[@stop_split] [@expl:unwrap requires] [%#sspans'0] x <> None}
+  let unwrap [#"spans.rs" 80 0 80 34] (x: t_Option_u8) (mode: Mode.t) (return (x'0: UInt8.t)) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:unwrap requires] [%#sspans'0] x <> None}
     (! bb0
-    [ bb0 = s0 [ s0 = unwrap_u8 [%#sspans] {x} (fun (_x: UInt8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = unwrap_u8 [%#sspans] {x} {mode} (fun (_x: UInt8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt8.t = Any.any_l () | & x: t_Option_u8 = x ]) [ return (result: UInt8.t) -> (! return {result}) ]
 end

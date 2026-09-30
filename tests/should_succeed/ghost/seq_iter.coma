@@ -1,5 +1,6 @@
 module M_reverse_ghost
   use seq.Seq
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use seq.Reverse
   use creusot.prelude.Any
@@ -34,13 +35,13 @@ module M_reverse_ghost
   
   meta "rewrite_def" predicate inv_Ghost_Seq_T
   
-  let new_T (return (x: Seq.seq t_T)) = any
+  let new_T (mode: Mode.t) (return (x: Seq.seq t_T)) = any
     [ return (result: Seq.seq t_T) ->
     {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Seq_T result)
       /\ ([@stop_split] [@expl:new ensures] result = (Seq.empty: Seq.seq t_T))}
       (! return {result}) ]
   
-  let into_inner_Seq_T (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
+  let into_inner_Seq_T (self: Seq.seq t_T) (mode: Mode.t) (return (x: Seq.seq t_T)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Seq_T self}
     any
     [ return (result: Seq.seq t_T) ->
@@ -54,7 +55,7 @@ module M_reverse_ghost
   
   function view_Iter_T (self: t_Iter_T) : Seq.seq t_T
   
-  let into_iter_Seq_T (self: Seq.seq t_T) (return (x: t_Iter_T)) =
+  let into_iter_Seq_T (self: Seq.seq t_T) (mode: Mode.t) (return (x: t_Iter_T)) =
   {[@stop_split] [@expl:into_iter 'self' type invariant] inv_Seq_T self}
     any
     [ return (result: t_Iter_T) ->
@@ -114,7 +115,7 @@ module M_reverse_ghost
   
   meta "rewrite_def" predicate completed_Iter_T
   
-  let next_Iter_T (self: MutBorrow.t t_Iter_T) (return (x: t_Option_T)) =
+  let next_Iter_T (self: MutBorrow.t t_Iter_T) (mode: Mode.t) (return (x: t_Option_T)) =
   {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_T self}
     any
     [ return (result: t_Option_T) ->
@@ -150,7 +151,7 @@ module M_reverse_ghost
   
   meta "rewrite_def" function push_front_T
   
-  let push_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
+  let push_front_ghost_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (mode: Mode.t) (return (x'0: ())) =
   {[@stop_split] [@expl:push_front_ghost_T requires] ([@stop_split] [@expl:push_front_ghost 'self' type invariant] inv_refmut_Seq_T self)
     /\ ([@stop_split] [@expl:push_front_ghost 'x' type invariant] inv_T x)}
     any
@@ -174,7 +175,7 @@ module M_reverse_ghost
   
   axiom resolve_axiom: forall _1: t_Iter_T [resolve_Iter_T'0 _1]. resolve_Iter_T'0 _1 -> resolve_Iter_T _1
   
-  let new_Seq_T (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) =
+  let new_Seq_T (x: Seq.seq t_T) (mode: Mode.t) (return (x'0: Seq.seq t_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_Seq_T x}
     any
     [ return (result: Seq.seq t_T) ->
@@ -186,15 +187,15 @@ module M_reverse_ghost
   
   meta "select_lsinst" "all"
   
-  let reverse_ghost_T (s: Seq.seq t_T) (return (x: Seq.seq t_T)) =
-  {[@stop_split] [@expl:reverse_ghost 's' type invariant] inv_Ghost_Seq_T s}
+  let reverse_ghost_T (s: Seq.seq t_T) (mode: Mode.t) (return (x: Seq.seq t_T)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:reverse_ghost 's' type invariant] inv_Ghost_Seq_T s}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &len <- Seq.length s ] s1
-      | s1 = new_T (fun (_x: Seq.seq t_T) -> [ &_9 <- _x ] s2)
-      | s2 = into_inner_Seq_T {_9} (fun (_x: Seq.seq t_T) -> [ &result <- _x ] s3)
-      | s3 = into_inner_Seq_T {s} (fun (_x: Seq.seq t_T) -> [ &_12 <- _x ] s4)
-      | s4 = into_iter_Seq_T {_12} (fun (_x: t_Iter_T) -> [ &iter <- _x ] s5)
+      | s1 = new_T {Mode.into_ghost mode} (fun (_x: Seq.seq t_T) -> [ &_9 <- _x ] s2)
+      | s2 = into_inner_Seq_T {_9} {Mode.into_ghost mode} (fun (_x: Seq.seq t_T) -> [ &result <- _x ] s3)
+      | s3 = into_inner_Seq_T {s} {Mode.into_ghost mode} (fun (_x: Seq.seq t_T) -> [ &_12 <- _x ] s4)
+      | s4 = into_iter_Seq_T {_12} {Mode.into_ghost mode} (fun (_x: t_Iter_T) -> [ &iter <- _x ] s5)
       | s5 = [ &iter_old <- iter ] s6
       | s6 = [ &produced <- Seq.empty: Seq.seq t_T ] s7
       | s7 = bb8 ]
@@ -214,7 +215,7 @@ module M_reverse_ghost
               [ &_36 <- _bor ] -{inv_Iter_T _bor.final}-
               [ &_37 <- { _37 with current = _bor.final } ] s2)
           [ _ck -> (! {[@expl:type invariant] inv_Iter_T _37.current} any) ]
-        | s2 = next_Iter_T {_36} (fun (_x: t_Option_T) -> [ &_35 <- _x ] s3)
+        | s2 = next_Iter_T {_36} {Mode.into_ghost mode} (fun (_x: t_Option_T) -> [ &_35 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_T _37} any) ]
         | s4 = -{resolve_refmut_Iter_T _37}- s5
         | s5 = any [ br0 -> {_35 = None} (! bb13) | br1 (x0: t_T) -> {_35 = Some x0} (! bb14) ] ]
@@ -226,12 +227,12 @@ module M_reverse_ghost
               (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
                 [ &_47 <- _bor ] -{inv_Seq_T _bor.final}-
                 [ &result <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Seq_T result} any) ]
-          | s4 = push_front_ghost_T {_47} {x} (fun (_x: ()) -> [ &_46 <- _x ] s5)
+          | s4 = push_front_ghost_T {_47} {x} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_46 <- _x ] s5)
           | s5 = bb8 ] ] ]
     | bb13 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
       | s1 = -{resolve_Iter_T'0 iter}- s2
-      | s2 = new_Seq_T {result} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s3)
+      | s2 = new_Seq_T {result} {Mode.into_ghost mode} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: Seq.seq t_T = Any.any_l ()
     | & s: Seq.seq t_T = s
@@ -257,6 +258,7 @@ module M_reverse_ghost
 end
 module M_reverse_ghost_ref
   use seq.Seq
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use seq.Reverse
   use creusot.prelude.Any
@@ -299,13 +301,13 @@ module M_reverse_ghost_ref
   
   meta "rewrite_def" predicate inv_Ghost_Seq_ref_T
   
-  let new_ref_T (return (x: Seq.seq t_T)) = any
+  let new_ref_T (mode: Mode.t) (return (x: Seq.seq t_T)) = any
     [ return (result: Seq.seq t_T) ->
     {[@stop_split] [@expl:new_ref_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Seq_ref_T result)
       /\ ([@stop_split] [@expl:new ensures] result = (Seq.empty: Seq.seq t_T))}
       (! return {result}) ]
   
-  let into_inner_Seq_ref_T (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
+  let into_inner_Seq_ref_T (self: Seq.seq t_T) (mode: Mode.t) (return (x: Seq.seq t_T)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Seq_ref_T self}
     any
     [ return (result: Seq.seq t_T) ->
@@ -338,7 +340,7 @@ module M_reverse_ghost_ref
   
   meta "rewrite_def" predicate inv_Ghost_ref_Seq_T
   
-  let into_inner_ref_Seq_T (self: Seq.seq t_T) (return (x: Seq.seq t_T)) =
+  let into_inner_ref_Seq_T (self: Seq.seq t_T) (mode: Mode.t) (return (x: Seq.seq t_T)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_ref_Seq_T self}
     any
     [ return (result: Seq.seq t_T) ->
@@ -352,7 +354,7 @@ module M_reverse_ghost_ref
   
   function view_Iter_ref_T (self: t_Iter_ref_T) : Seq.seq t_T
   
-  let into_iter_ref_Seq_T (self: Seq.seq t_T) (return (x: t_Iter_ref_T)) =
+  let into_iter_ref_Seq_T (self: Seq.seq t_T) (mode: Mode.t) (return (x: t_Iter_ref_T)) =
   {[@stop_split] [@expl:into_iter 'self' type invariant] inv_ref_Seq_T self}
     any
     [ return (result: t_Iter_ref_T) ->
@@ -412,7 +414,7 @@ module M_reverse_ghost_ref
   
   meta "rewrite_def" predicate completed_Iter_ref_T
   
-  let next_Iter_ref_T (self: MutBorrow.t t_Iter_ref_T) (return (x: t_Option_ref_T)) =
+  let next_Iter_ref_T (self: MutBorrow.t t_Iter_ref_T) (mode: Mode.t) (return (x: t_Option_ref_T)) =
   {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Iter_ref_T self}
     any
     [ return (result: t_Option_ref_T) ->
@@ -448,7 +450,7 @@ module M_reverse_ghost_ref
   
   meta "rewrite_def" function push_front_ref_T
   
-  let push_front_ghost_ref_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (return (x'0: ())) =
+  let push_front_ghost_ref_T (self: MutBorrow.t (Seq.seq t_T)) (x: t_T) (mode: Mode.t) (return (x'0: ())) =
   {[@stop_split] [@expl:push_front_ghost_ref_T requires] ([@stop_split] [@expl:push_front_ghost 'self' type invariant] inv_refmut_Seq_ref_T self)
     /\ ([@stop_split] [@expl:push_front_ghost 'x' type invariant] inv_ref_T x)}
     any
@@ -456,7 +458,7 @@ module M_reverse_ghost_ref
       = push_front_ref_T self.current x}
       (! return {result}) ]
   
-  let new_Seq_ref_T (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) =
+  let new_Seq_ref_T (x: Seq.seq t_T) (mode: Mode.t) (return (x'0: Seq.seq t_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_Seq_ref_T x}
     any
     [ return (result: Seq.seq t_T) ->
@@ -468,15 +470,15 @@ module M_reverse_ghost_ref
   
   meta "select_lsinst" "all"
   
-  let reverse_ghost_ref_T (s: Seq.seq t_T) (return (x: Seq.seq t_T)) =
-  {[@stop_split] [@expl:reverse_ghost_ref 's' type invariant] inv_Ghost_ref_Seq_T s}
+  let reverse_ghost_ref_T (s: Seq.seq t_T) (mode: Mode.t) (return (x: Seq.seq t_T)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:reverse_ghost_ref 's' type invariant] inv_Ghost_ref_Seq_T s}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &len <- Seq.length s ] s1
-      | s1 = new_ref_T (fun (_x: Seq.seq t_T) -> [ &_9 <- _x ] s2)
-      | s2 = into_inner_Seq_ref_T {_9} (fun (_x: Seq.seq t_T) -> [ &result <- _x ] s3)
-      | s3 = into_inner_ref_Seq_T {s} (fun (_x: Seq.seq t_T) -> [ &_12 <- _x ] s4)
-      | s4 = into_iter_ref_Seq_T {_12} (fun (_x: t_Iter_ref_T) -> [ &iter <- _x ] s5)
+      | s1 = new_ref_T {Mode.into_ghost mode} (fun (_x: Seq.seq t_T) -> [ &_9 <- _x ] s2)
+      | s2 = into_inner_Seq_ref_T {_9} {Mode.into_ghost mode} (fun (_x: Seq.seq t_T) -> [ &result <- _x ] s3)
+      | s3 = into_inner_ref_Seq_T {s} {Mode.into_ghost mode} (fun (_x: Seq.seq t_T) -> [ &_12 <- _x ] s4)
+      | s4 = into_iter_ref_Seq_T {_12} {Mode.into_ghost mode} (fun (_x: t_Iter_ref_T) -> [ &iter <- _x ] s5)
       | s5 = [ &iter_old <- iter ] s6
       | s6 = [ &produced <- Seq.empty: Seq.seq t_T ] s7
       | s7 = bb8 ]
@@ -497,7 +499,7 @@ module M_reverse_ghost_ref
               [ &_36 <- _bor ] -{inv_Iter_ref_T _bor.final}-
               [ &_37 <- { _37 with current = _bor.final } ] s2)
           [ _ck -> (! {[@expl:type invariant] inv_Iter_ref_T _37.current} any) ]
-        | s2 = next_Iter_ref_T {_36} (fun (_x: t_Option_ref_T) -> [ &_35 <- _x ] s3)
+        | s2 = next_Iter_ref_T {_36} {Mode.into_ghost mode} (fun (_x: t_Option_ref_T) -> [ &_35 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_ref_T _37} any) ]
         | s4 = -{resolve_refmut_Iter_ref_T _37}- s5
         | s5 = any [ br0 -> {_35 = None} (! bb13) | br1 (x0: t_T) -> {_35 = Some x0} (! bb14) ] ]
@@ -509,11 +511,11 @@ module M_reverse_ghost_ref
               (fun (_bor: MutBorrow.t (Seq.seq t_T)) ->
                 [ &_47 <- _bor ] -{inv_Seq_ref_T _bor.final}-
                 [ &result <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Seq_ref_T result} any) ]
-          | s4 = push_front_ghost_ref_T {_47} {x} (fun (_x: ()) -> [ &_46 <- _x ] s5)
+          | s4 = push_front_ghost_ref_T {_47} {x} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_46 <- _x ] s5)
           | s5 = bb8 ] ] ]
     | bb13 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_ref_T iter} any) ]
-      | s1 = new_Seq_ref_T {result} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s2)
+      | s1 = new_Seq_ref_T {result} {Mode.into_ghost mode} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ]
     [ & _ret: Seq.seq t_T = Any.any_l ()
     | & s: Seq.seq t_T = s

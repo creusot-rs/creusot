@@ -9,11 +9,11 @@ use creusot_std::{
 
 #[requires(forall<c: &mut Committer<AtomicI32, i32, SeqCst, SeqCst>>
     !c.shot_store() ==> c.ward() == *at ==> c.val_store() == val + c.val_load() ==>
-    f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
+    f.precondition((c,), mode!().into_ghost()) && (f.postcondition_once((c,), (), mode!().into_ghost()) ==> (^c).shot_store())
 )]
 #[ensures(exists<c: &mut Committer<AtomicI32, i32, SeqCst, SeqCst>>
     !c.shot_store() && c.ward() == *at && c.val_store() == val + c.val_load() &&
-    c.val_load() == result && f.postcondition_once((c,), ())
+    c.val_load() == result && f.postcondition_once((c,), (), mode!().into_ghost())
 )]
 pub fn fetch_add<F>(at: &AtomicI32, val: i32, f: Ghost<F>) -> i32
 where
