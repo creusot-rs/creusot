@@ -1,5 +1,7 @@
 use core::marker::PhantomData;
 
+#[cfg(creusot)]
+use crate::logic::any;
 use crate::{
     logic::ra::{
         RA, UnitRA,
@@ -126,9 +128,12 @@ impl<R: UnitRA> LocalUpdate<R> for CancelLocalUpdateUnit {
         from_frag.cancelable()
     }
 
-    #[logic(open)]
+    #[logic]
+    #[ensures(result.1 == R::unit())]
+    #[ensures(from_frag.incl(from_auth) ==> result.0.op(from_frag) == Some(from_auth))]
     fn update(self, from_auth: R, from_frag: R) -> (R, R) {
-        (from_auth.factor(from_frag), R::unit())
+        let f = if from_frag.incl(from_auth) { from_auth.factor(from_frag) } else { any() };
+        (f, R::unit())
     }
 
     #[logic]
