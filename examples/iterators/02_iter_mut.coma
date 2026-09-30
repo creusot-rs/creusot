@@ -2,6 +2,7 @@ module M_all_zero
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
@@ -26,7 +27,7 @@ module M_all_zero
     forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
       <= UInt64.t'int const_MAX
   
-  let iter_mut_usize (v: MutBorrow.t t_Vec_usize_Global) (return (x: t_IterMut_usize)) = any
+  let iter_mut_usize (v: MutBorrow.t t_Vec_usize_Global) (mode: Mode.t) (return (x: t_IterMut_usize)) = any
     [ return (result: t_IterMut_usize) ->
     {[@stop_split] [@expl:iter_mut_usize ensures] ([@stop_split] [@expl:iter_mut result type invariant] inv_IterMut_usize result)
       /\ ([@stop_split] [@expl:iter_mut ensures #0] Slice64.view result.inner.current = view_Vec_usize_Global v.current)
@@ -35,7 +36,7 @@ module M_all_zero
       = Seq.length (view_Vec_usize_Global v.current))}
       (! return {result}) ]
   
-  let into_iter_usize (self: t_IterMut_usize) (return (x: t_IterMut_usize)) =
+  let into_iter_usize (self: t_IterMut_usize) (mode: Mode.t) (return (x: t_IterMut_usize)) =
   {[@stop_split] [@expl:into_iter 'self' type invariant] inv_IterMut_usize self}
     any
     [ return (result: t_IterMut_usize) ->
@@ -98,7 +99,7 @@ module M_all_zero
     resolve_refmut_slice_usize self.current.inner
     /\ Slice64.view self.current.inner.current = (Seq.empty: Seq.seq UInt64.t)
   
-  let next_IterMut_usize (self: MutBorrow.t t_IterMut_usize) (return (x: t_Option_refmut_usize)) =
+  let next_IterMut_usize (self: MutBorrow.t t_IterMut_usize) (mode: Mode.t) (return (x: t_Option_refmut_usize)) =
   {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_IterMut_usize self}
     any
     [ return (result: t_Option_refmut_usize) -> {[@stop_split] [@expl:next ensures] match result with
@@ -138,12 +139,13 @@ module M_all_zero
   
   meta "select_lsinst" "all"
   
-  let all_zero (v: MutBorrow.t t_Vec_usize_Global) (return (x: ())) = (! bb0
+  let all_zero (v: MutBorrow.t t_Vec_usize_Global) (mode: Mode.t) (return (x: ())) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_Vec_usize_Global> {v.current} {MutBorrow.get_id v}
           (fun (_bor: MutBorrow.t t_Vec_usize_Global) -> [ &_8 <- _bor ] [ &v <- { v with current = _bor.final } ] s1)
-      | s1 = iter_mut_usize {_8} (fun (_x: t_IterMut_usize) -> [ &_7 <- _x ] s2)
-      | s2 = into_iter_usize {_7} (fun (_x: t_IterMut_usize) -> [ &it <- _x ] s3)
+      | s1 = iter_mut_usize {_8} {mode} (fun (_x: t_IterMut_usize) -> [ &_7 <- _x ] s2)
+      | s2 = into_iter_usize {_7} {mode} (fun (_x: t_IterMut_usize) -> [ &it <- _x ] s3)
       | s3 = [ &iter_old <- it ] s4
       | s4 = [ &produced <- Seq.empty: Seq.seq (MutBorrow.t UInt64.t) ] s5
       | s5 = bb5 ]
@@ -157,7 +159,7 @@ module M_all_zero
             (fun (_bor: MutBorrow.t t_IterMut_usize) ->
               [ &_23 <- _bor ] -{inv_IterMut_usize _bor.final}-
               [ &it <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_IterMut_usize it} any) ]
-        | s1 = next_IterMut_usize {_23} (fun (_x: t_Option_refmut_usize) -> [ &_22 <- _x ] s2)
+        | s1 = next_IterMut_usize {_23} {mode} (fun (_x: t_Option_refmut_usize) -> [ &_22 <- _x ] s2)
         | s2 = any [ br0 -> {_22 = None} (! bb10) | br1 (x0: MutBorrow.t UInt64.t) -> {_22 = Some x0} (! bb11) ] ]
         [ bb11 = s0
           [ s0 = elim_Some {_22} (fun (r0: MutBorrow.t UInt64.t) -> [ &x <- r0 ] s1)
@@ -188,6 +190,7 @@ module M_all_zero
       (! return {result}) ]
 end
 module M_common__trait_ExactSizeIterator__is_empty
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use seq.Seq
   use creusot.prelude.MutBorrow
@@ -206,10 +209,11 @@ module M_common__trait_ExactSizeIterator__is_empty
   
   meta "rewrite_def" predicate inv_ref_Self
   
-  predicate precondition_len (self: ()) (args: t_Self)
+  predicate precondition_len (self: ()) (args: t_Self) (mode: Mode.t)
   
-  axiom precondition_fndef: forall args: t_Self [precondition_len () args]. (let self = args in inv_ref_Self self)
-      -> precondition_len () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_Self [precondition_len () args mode]. (let self = args in inv_ref_Self self)
+        -> precondition_len () args mode
   
   type t_Option_usize = None | Some UInt64.t
   
@@ -231,10 +235,10 @@ module M_common__trait_ExactSizeIterator__is_empty
   
   predicate completed_Self (self: MutBorrow.t t_Self)
   
-  predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
+  predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize) (mode: Mode.t)
   
   axiom postcondition_fndef:
-    forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
+    forall args: t_Self, result: tup2_usize_Option_usize, mode: Mode.t [postcondition_size_hint () args result mode]. postcondition_size_hint () args result mode
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
             /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
@@ -242,57 +246,61 @@ module M_common__trait_ExactSizeIterator__is_empty
         | None -> true
         end)
   
-  predicate precondition_size_hint (self: ()) (args: t_Self)
+  predicate precondition_size_hint (self: ()) (args: t_Self) (mode: Mode.t)
   
   axiom precondition_fndef'0:
-    forall args: t_Self [precondition_size_hint () args]. (let self = args in inv_ref_Self self)
-      -> precondition_size_hint () args
+    forall mode: Mode.t. forall args: t_Self [precondition_size_hint () args mode]. (let self = args in inv_ref_Self self)
+        -> precondition_size_hint () args mode
   
-  predicate postcondition_once_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize) =
-    postcondition_size_hint self args result
+  predicate postcondition_once_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize) (mode: Mode.t) =
+    postcondition_size_hint self args result mode
   
   meta "rewrite_def" predicate postcondition_once_size_hint
   
-  let size_hint_Self (self: t_Self) (return (x: tup2_usize_Option_usize)) =
-  {[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
+  let size_hint_Self (self: t_Self) (mode: Mode.t) (return (x: tup2_usize_Option_usize)) =
+  {[@stop_split] [@expl:size_hint requires] precondition_size_hint () self mode}
     any
     [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
+    {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result mode}
       (! return {result}) ]
   
-  predicate postcondition_len (self: ()) (args: t_Self) (result: UInt64.t)
+  predicate postcondition_len (self: ()) (args: t_Self) (result: UInt64.t) (mode: Mode.t)
   
   axiom postcondition_fndef'0:
-    forall args: t_Self, result: UInt64.t [postcondition_len () args result]. postcondition_len () args result
-      -> (let self = args in postcondition_size_hint () self { f0 = result; f1 = Some result })
+    forall args: t_Self, result: UInt64.t, mode: Mode.t [postcondition_len () args result mode]. postcondition_len () args result mode
+      -> (let self = args in postcondition_size_hint () self { f0 = result; f1 = Some result } mode)
   
-  predicate postcondition_once_len (self: ()) (args: t_Self) (result: UInt64.t) = postcondition_len self args result
+  predicate postcondition_once_len (self: ()) (args: t_Self) (result: UInt64.t) (mode: Mode.t) =
+    postcondition_len self args result mode
   
   meta "rewrite_def" predicate postcondition_once_len
   
-  let len_Self (self: t_Self) (return (x: UInt64.t)) = {[@stop_split] [@expl:len requires] precondition_len () self}
+  let len_Self (self: t_Self) (mode: Mode.t) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:len requires] precondition_len () self mode}
     any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] postcondition_once_len () self result}
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] postcondition_once_len () self result mode}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let is_empty_Self (self: t_Self) (return (x: bool)) =
-  {[@stop_split] [@expl:is_empty 'self' type invariant] inv_ref_Self self}
+  let is_empty_Self (self: t_Self) (mode: Mode.t) (return (x: bool)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:is_empty 'self' type invariant] inv_ref_Self self}
     (! bb0
     [ bb0 = s0
-      [ s0 = len_Self {self} (fun (_x: UInt64.t) -> [ &_4 <- _x ] s1)
+      [ s0 = len_Self {self} {mode} (fun (_x: UInt64.t) -> [ &_4 <- _x ] s1)
       | s1 = [ &_ret <- _4 = (0: UInt64.t) ] s2
       | s2 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & self: t_Self = self | & _4: UInt64.t = Any.any_l () ])
     [ return (result: bool) ->
-    {[@stop_split] [@expl:is_empty ensures] exists l: UInt64.t. postcondition_size_hint () self { f0 = l; f1 = Some l }
+    {[@stop_split] [@expl:is_empty ensures] exists l: UInt64.t. postcondition_size_hint () self { f0 = l;
+                                                                                                  f1 = Some l } mode
         /\ result = (l = (0: UInt64.t))}
       (! return {result}) ]
 end
 module M_common__trait_ExactSizeIterator__len
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -320,10 +328,10 @@ module M_common__trait_ExactSizeIterator__len
   
   predicate completed_Self (self: MutBorrow.t t_Self)
   
-  predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
+  predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize) (mode: Mode.t)
   
   axiom postcondition_fndef:
-    forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
+    forall args: t_Self, result: tup2_usize_Option_usize, mode: Mode.t [postcondition_size_hint () args result mode]. postcondition_size_hint () args result mode
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
             /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
@@ -341,26 +349,28 @@ module M_common__trait_ExactSizeIterator__len
   
   meta "rewrite_def" predicate inv_ref_Self
   
-  predicate precondition_size_hint (self: ()) (args: t_Self)
+  predicate precondition_size_hint (self: ()) (args: t_Self) (mode: Mode.t)
   
-  axiom precondition_fndef: forall args: t_Self [precondition_size_hint () args]. (let self = args in inv_ref_Self self)
-      -> precondition_size_hint () args
+  axiom precondition_fndef:
+    forall mode: Mode.t. forall args: t_Self [precondition_size_hint () args mode]. (let self = args in inv_ref_Self self)
+        -> precondition_size_hint () args mode
   
-  predicate postcondition_once_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize) =
-    postcondition_size_hint self args result
+  predicate postcondition_once_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize) (mode: Mode.t) =
+    postcondition_size_hint self args result mode
   
   meta "rewrite_def" predicate postcondition_once_size_hint
   
-  let size_hint_Self (self: t_Self) (return (x: tup2_usize_Option_usize)) =
-  {[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
+  let size_hint_Self (self: t_Self) (mode: Mode.t) (return (x: tup2_usize_Option_usize)) =
+  {[@stop_split] [@expl:size_hint requires] precondition_size_hint () self mode}
     any
     [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
+    {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result mode}
       (! return {result}) ]
   
   function size_hint_exact_Self (self: t_Self) (r: tup2_usize_Option_usize) : ()
   
-  axiom size_hint_exact_Self_spec: forall self: t_Self, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+  axiom size_hint_exact_Self_spec:
+    forall self: t_Self, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint () self r mode)
       -> r.f1 = Some (r.f0)
   
   type tup2_ref_Option_usize_ref_Option_usize = { f0'0: t_Option_usize; f1'0: t_Option_usize }
@@ -383,34 +393,65 @@ module M_common__trait_ExactSizeIterator__len
   
   meta "rewrite_def" function deep_model_ref_Option_usize
   
-  let eq_Option_usize (self: t_Option_usize) (other: t_Option_usize) (return (x: bool)) = any
+  let eq_Option_usize (self: t_Option_usize) (other: t_Option_usize) (mode: Mode.t) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
       = (deep_model_ref_Option_usize self = deep_model_ref_Option_usize other)}
       (! return {result}) ]
   
   type t_AssertKind = Eq | Ne | Match
   
+  type t_Arguments
+  
+  type t_Option_Arguments = None'1 | Some'1 t_Arguments
+  
+  predicate inv_Arguments (_1: t_Arguments)
+  
+  predicate inv_Option_Arguments (_1: t_Option_Arguments)
+  
+  axiom inv_axiom [@rewrite]: forall _1: t_Option_Arguments [inv_Option_Arguments _1]. inv_Option_Arguments _1
+      = match _1 with
+        | None'1 -> true
+        | Some'1 f0'1 -> inv_Arguments f0'1
+        end
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let assert_failed_Option_usize (kind: t_AssertKind) (left: t_Option_usize) (right: t_Option_usize)
+    (args: t_Option_Arguments) (mode: Mode.t) (return (x: ())) =
+  {[@stop_split] [@expl:assert_failed_Option_usize requires] ([@stop_split] [@expl:assert_failed 'args' type invariant] inv_Option_Arguments args)
+    /\ ([@stop_split] [@expl:assert_failed requires] not Mode.nopanic mode)}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:assert_failed result type invariant] inv_never result}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let len_Self (self: t_Self) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Self self}
+  let len_Self (self: t_Self) (mode: Mode.t) (return (x: UInt64.t)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Self self}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- () ] s1
-      | s1 = size_hint_Self {self} (fun (_x: tup2_usize_Option_usize) -> [ &_8 <- _x ] s2)
+      | s1 = size_hint_Self {self} {mode} (fun (_x: tup2_usize_Option_usize) -> [ &_8 <- _x ] s2)
       | s2 = [ &lower <- _8.f0 ] s3
       | s3 = [ &upper <- _8.f1 ] s4
       | s4 = [ &_14 <- Some lower ] s5
       | s5 = [ &_11 <- { f0'0 = upper; f1'0 = _14 } ] s6
       | s6 = [ &left_val <- _11.f0'0 ] s7
       | s7 = [ &right_val <- _11.f1'0 ] s8
-      | s8 = eq_Option_usize {left_val} {right_val} (fun (_x: bool) -> [ &_18 <- _x ] s9)
+      | s8 = eq_Option_usize {left_val} {right_val} {mode} (fun (_x: bool) -> [ &_18 <- _x ] s9)
       | s9 = any [ br0 -> {_18 = false} (! bb5) | br1 -> {_18} (! bb4) ] ]
     | bb4 = s0 [ s0 = [ &_ret <- lower ] s1 | s1 = return {_ret} ]
     | bb5 = s0
-      [ s0 = [ &kind <- Eq ] s1 | s1 = [ &_26 <- left_val ] s2 | s2 = [ &_28 <- right_val ] s3 | s3 = {false} any ] ]
+      [ s0 = [ &kind <- Eq ] s1
+      | s1 = [ &_26 <- left_val ] s2
+      | s2 = [ &_28 <- right_val ] s3
+      | s3 = [ &_29 <- None'1 ] s4
+      | s4 = assert_failed_Option_usize {kind} {_26} {_28} {_29} {mode} (fun (_x: ()) -> [ &_23 <- _x ] s5)
+      | s5 = {false} any ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & self: t_Self = self
     | & _4: () = Any.any_l ()
@@ -423,16 +464,19 @@ module M_common__trait_ExactSizeIterator__len
     | & right_val: t_Option_usize = Any.any_l ()
     | & _18: bool = Any.any_l ()
     | & kind: t_AssertKind = Any.any_l ()
+    | & _23: () = Any.any_l ()
     | & _26: t_Option_usize = Any.any_l ()
-    | & _28: t_Option_usize = Any.any_l () ])
+    | & _28: t_Option_usize = Any.any_l ()
+    | & _29: t_Option_Arguments = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] postcondition_size_hint () self { f0 = result;
-                                                                                                        f1 = Some result }}
+                                                                                                        f1 = Some result } mode}
       (! return {result}) ]
 end
 module M_impl_DoubleEndedIterator_for_IterMut_T__next_back (* <IterMut<'a, T> as common::DoubleEndedIterator> *)
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use seq.Seq
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use seq.Reverse
   use int.Int
@@ -528,7 +572,8 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__next_back (* <IterMut<'a, T> as
   
   meta "rewrite_def" predicate resolve_refmut_refmut_slice_T
   
-  let split_off_last_mut_T (self: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) (return (x: t_Option_refmut_T)) =
+  let split_off_last_mut_T (self: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) (mode: Mode.t)
+    (return (x: t_Option_refmut_T)) =
   {[@stop_split] [@expl:split_off_last_mut 'self' type invariant] inv_refmut_refmut_slice_T self}
     any
     [ return (result: t_Option_refmut_T) ->
@@ -608,8 +653,9 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__next_back (* <IterMut<'a, T> as
   
   meta "select_lsinst" "all"
   
-  let next_back_IterMut_T (self: MutBorrow.t t_IterMut_T) (return (x: t_Option_refmut_T)) =
-  {[@stop_split] [@expl:next_back 'self' type invariant] inv_refmut_IterMut_T self}
+  let next_back_IterMut_T (self: MutBorrow.t t_IterMut_T) (mode: Mode.t) (return (x: t_Option_refmut_T)) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:next_back 'self' type invariant] inv_refmut_IterMut_T self}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <MutBorrow.t (Slice64.slice t_T)> {self.current.inner}
@@ -618,7 +664,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__next_back (* <IterMut<'a, T> as
             [ &_4 <- _bor ] -{inv_refmut_slice_T _bor.final}-
             [ &self <- { self with current = { inner = _bor.final } } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T self.current.inner} any) ]
-      | s1 = split_off_last_mut_T {_4} (fun (_x: t_Option_refmut_T) -> [ &_ret <- _x ] s2)
+      | s1 = split_off_last_mut_T {_4} {mode} (fun (_x: t_Option_refmut_T) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_IterMut_T self} any) ]
       | s3 = -{resolve_refmut_IterMut_T self}- s4
       | s4 = return {_ret} ] ]
@@ -634,6 +680,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__next_back (* <IterMut<'a, T> as
       (! return {result}) ]
 end
 module M_impl_DoubleEndedIterator_for_IterMut_T__next_back__refines (* <IterMut<'a, T> as common::DoubleEndedIterator> *)
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use seq.Seq
@@ -764,7 +811,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__next_back__refines (* <IterMut<
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_IterMut_T. inv_refmut_IterMut_T self
+  goal refines: forall mode: Mode.t, self: MutBorrow.t t_IterMut_T. inv_refmut_IterMut_T self
       -> inv_refmut_IterMut_T self
       /\ (forall result: t_Option_refmut_T. inv_Option_refmut_T result
           /\ match result with
@@ -989,6 +1036,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__size_hint_back_spec (* <IterMut
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use seq.Reverse
   use int.Int
@@ -1001,7 +1049,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__size_hint_back_spec (* <IterMut
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
-  predicate postcondition_size_hint (self: ()) (args: t_IterMut_T) (result: tup2_usize_Option_usize) =
+  predicate postcondition_size_hint (self: ()) (args: t_IterMut_T) (result: tup2_usize_Option_usize) (mode: Mode.t) =
     let self'0 = args in UInt64.t'int result.f0 = Seq.length (Slice64.view self'0.inner.current)
     /\ result.f1 = Some (result.f0)
   
@@ -1090,7 +1138,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__size_hint_back_spec (* <IterMut
   
   meta "rewrite_def" predicate inv_ref_IterMut_T
   
-  let size_hint_IterMut_T (self: t_IterMut_T) (return (x: tup2_usize_Option_usize)) =
+  let size_hint_IterMut_T (self: t_IterMut_T) (mode: Mode.t) (return (x: tup2_usize_Option_usize)) =
   {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_IterMut_T self}
     any
     [ return (result: tup2_usize_Option_usize) ->
@@ -1123,7 +1171,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__size_hint_back_spec (* <IterMut
   
   function size_hint_back_spec_IterMut_T (self: t_IterMut_T) (r: tup2_usize_Option_usize) : ()
   
-  goal vc_size_hint_back_spec_IterMut_T: postcondition_size_hint () self r
+  goal vc_size_hint_back_spec_IterMut_T: (exists mode: Mode.t. postcondition_size_hint () self r mode)
     -> ([@stop_split] [@expl:size_hint_back_spec_IterMut_T ensures] ([@stop_split] [@expl:size_hint_back_spec ensures #0] forall s: Seq.seq (MutBorrow.t t_T), i: MutBorrow.t t_IterMut_T. produces_back_IterMut_T self s i.current
           /\ completed_back_IterMut_T i -> UInt64.t'int r.f0 <= Seq.length s)
     /\ ([@stop_split] [@expl:size_hint_back_spec ensures #1] match r.f1 with
@@ -1136,6 +1184,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__size_hint_back_spec__refines (*
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use seq.Reverse
   use int.Int
@@ -1148,7 +1197,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__size_hint_back_spec__refines (*
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
-  predicate postcondition_size_hint (self: ()) (args: t_IterMut_T) (result: tup2_usize_Option_usize) =
+  predicate postcondition_size_hint (self: ()) (args: t_IterMut_T) (result: tup2_usize_Option_usize) (mode: Mode.t) =
     let self'0 = args in UInt64.t'int result.f0 = Seq.length (Slice64.view self'0.inner.current)
     /\ result.f1 = Some (result.f0)
   
@@ -1237,7 +1286,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__size_hint_back_spec__refines (*
   
   meta "rewrite_def" predicate inv_ref_IterMut_T
   
-  let size_hint_IterMut_T (self: t_IterMut_T) (return (x: tup2_usize_Option_usize)) =
+  let size_hint_IterMut_T (self: t_IterMut_T) (mode: Mode.t) (return (x: tup2_usize_Option_usize)) =
   {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_IterMut_T self}
     any
     [ return (result: tup2_usize_Option_usize) ->
@@ -1264,8 +1313,9 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__size_hint_back_spec__refines (*
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_IterMut_T, r: tup2_usize_Option_usize. postcondition_size_hint () self r
-      -> postcondition_size_hint () self r
+  goal refines:
+    forall self: t_IterMut_T, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint () self r mode)
+      -> (exists mode: Mode.t. postcondition_size_hint () self r mode)
       /\ (forall result: (). (forall s: Seq.seq (MutBorrow.t t_T), i: MutBorrow.t t_IterMut_T. produces_back_IterMut_T self s i.current
                 /\ completed_back_IterMut_T i -> UInt64.t'int r.f0 <= Seq.length s)
           /\ match r.f1 with
@@ -1285,6 +1335,7 @@ module M_impl_ExactSizeIterator_for_IterMut_T__len (* <IterMut<'a, T> as common:
   use creusot.slice.Slice64
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
@@ -1326,7 +1377,7 @@ module M_impl_ExactSizeIterator_for_IterMut_T__len (* <IterMut<'a, T> as common:
   
   meta "rewrite_def" predicate inv_ref_slice_T
   
-  let len_T (self: Slice64.slice t_T) (return (x: UInt64.t)) =
+  let len_T (self: Slice64.slice t_T) (mode: Mode.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_slice_T self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
@@ -1362,16 +1413,18 @@ module M_impl_ExactSizeIterator_for_IterMut_T__len (* <IterMut<'a, T> as common:
   
   meta "select_lsinst" "all"
   
-  let len_IterMut_T (self: t_IterMut_T) (return (x: UInt64.t)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_IterMut_T self}
+  let len_IterMut_T (self: t_IterMut_T) (mode: Mode.t) (return (x: UInt64.t)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:len 'self' type invariant] inv_ref_IterMut_T self}
     (! bb0
-    [ bb0 = s0 [ s0 = len_T {self.inner.current} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = len_T {self.inner.current} {mode} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & self: t_IterMut_T = self ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
       = Seq.length (Slice64.view self.inner.current)}
       (! return {result}) ]
 end
 module M_impl_ExactSizeIterator_for_IterMut_T__len__refines (* <IterMut<'a, T> as common::ExactSizeIterator> *)
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use seq.Seq
@@ -1436,7 +1489,7 @@ module M_impl_ExactSizeIterator_for_IterMut_T__len__refines (* <IterMut<'a, T> a
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
-  predicate postcondition_size_hint (self: ()) (args: t_IterMut_T) (result: tup2_usize_Option_usize) =
+  predicate postcondition_size_hint (self: ()) (args: t_IterMut_T) (result: tup2_usize_Option_usize) (mode: Mode.t) =
     let self'0 = args in UInt64.t'int result.f0 = Seq.length (Slice64.view self'0.inner.current)
     /\ result.f1 = Some (result.f0)
   
@@ -1475,7 +1528,7 @@ module M_impl_ExactSizeIterator_for_IterMut_T__len__refines (* <IterMut<'a, T> a
   axiom produces_refl_IterMut_T_spec:
     forall self: t_IterMut_T. produces_IterMut_T self (Seq.empty: Seq.seq (MutBorrow.t t_T)) self
   
-  let size_hint_IterMut_T (self: t_IterMut_T) (return (x: tup2_usize_Option_usize)) =
+  let size_hint_IterMut_T (self: t_IterMut_T) (mode: Mode.t) (return (x: tup2_usize_Option_usize)) =
   {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_IterMut_T self}
     any
     [ return (result: tup2_usize_Option_usize) ->
@@ -1488,15 +1541,16 @@ module M_impl_ExactSizeIterator_for_IterMut_T__len__refines (* <IterMut<'a, T> a
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_IterMut_T. inv_ref_IterMut_T self
+  goal refines: forall mode: Mode.t, self: t_IterMut_T. inv_ref_IterMut_T self
       -> inv_ref_IterMut_T self
       /\ (forall result: UInt64.t. UInt64.t'int result = Seq.length (Slice64.view self.inner.current)
-        -> postcondition_size_hint () self { f0 = result; f1 = Some result })
+        -> postcondition_size_hint () self { f0 = result; f1 = Some result } mode)
 end
 module M_impl_ExactSizeIterator_for_IterMut_T__size_hint_exact (* <IterMut<'a, T> as common::ExactSizeIterator> *)
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use int.Int
   
@@ -1508,7 +1562,7 @@ module M_impl_ExactSizeIterator_for_IterMut_T__size_hint_exact (* <IterMut<'a, T
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
-  predicate postcondition_size_hint (self: ()) (args: t_IterMut_T) (result: tup2_usize_Option_usize) =
+  predicate postcondition_size_hint (self: ()) (args: t_IterMut_T) (result: tup2_usize_Option_usize) (mode: Mode.t) =
     let self'0 = args in UInt64.t'int result.f0 = Seq.length (Slice64.view self'0.inner.current)
     /\ result.f1 = Some (result.f0)
   
@@ -1597,7 +1651,7 @@ module M_impl_ExactSizeIterator_for_IterMut_T__size_hint_exact (* <IterMut<'a, T
   
   meta "rewrite_def" predicate inv_ref_IterMut_T
   
-  let size_hint_IterMut_T (self: t_IterMut_T) (return (x: tup2_usize_Option_usize)) =
+  let size_hint_IterMut_T (self: t_IterMut_T) (mode: Mode.t) (return (x: tup2_usize_Option_usize)) =
   {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_IterMut_T self}
     any
     [ return (result: tup2_usize_Option_usize) ->
@@ -1616,13 +1670,14 @@ module M_impl_ExactSizeIterator_for_IterMut_T__size_hint_exact (* <IterMut<'a, T
   
   function size_hint_exact_IterMut_T (self: t_IterMut_T) (r: tup2_usize_Option_usize) : ()
   
-  goal vc_size_hint_exact_IterMut_T: postcondition_size_hint () self r
+  goal vc_size_hint_exact_IterMut_T: (exists mode: Mode.t. postcondition_size_hint () self r mode)
     -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))
 end
 module M_impl_ExactSizeIterator_for_IterMut_T__size_hint_exact__refines (* <IterMut<'a, T> as common::ExactSizeIterator> *)
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use int.Int
   
@@ -1634,7 +1689,7 @@ module M_impl_ExactSizeIterator_for_IterMut_T__size_hint_exact__refines (* <Iter
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
-  predicate postcondition_size_hint (self: ()) (args: t_IterMut_T) (result: tup2_usize_Option_usize) =
+  predicate postcondition_size_hint (self: ()) (args: t_IterMut_T) (result: tup2_usize_Option_usize) (mode: Mode.t) =
     let self'0 = args in UInt64.t'int result.f0 = Seq.length (Slice64.view self'0.inner.current)
     /\ result.f1 = Some (result.f0)
   
@@ -1723,7 +1778,7 @@ module M_impl_ExactSizeIterator_for_IterMut_T__size_hint_exact__refines (* <Iter
   
   meta "rewrite_def" predicate inv_ref_IterMut_T
   
-  let size_hint_IterMut_T (self: t_IterMut_T) (return (x: tup2_usize_Option_usize)) =
+  let size_hint_IterMut_T (self: t_IterMut_T) (mode: Mode.t) (return (x: tup2_usize_Option_usize)) =
   {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_IterMut_T self}
     any
     [ return (result: tup2_usize_Option_usize) ->
@@ -1736,13 +1791,16 @@ module M_impl_ExactSizeIterator_for_IterMut_T__size_hint_exact__refines (* <Iter
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_IterMut_T, r: tup2_usize_Option_usize. postcondition_size_hint () self r
-      -> postcondition_size_hint () self r /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))
+  goal refines:
+    forall self: t_IterMut_T, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint () self r mode)
+      -> (exists mode: Mode.t. postcondition_size_hint () self r mode)
+      /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))
 end
 module M_impl_IterMut_T__into_iter (* IterMut<'a, T> *)
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use seq.Seq
   use int.Int
   
@@ -1796,8 +1854,8 @@ module M_impl_IterMut_T__into_iter (* IterMut<'a, T> *)
   
   meta "select_lsinst" "all"
   
-  let into_iter_T (self: t_IterMut_T) (return (x: t_IterMut_T)) =
-  {[@stop_split] [@expl:into_iter 'self' type invariant] inv_IterMut_T self}
+  let into_iter_T (self: t_IterMut_T) (mode: Mode.t) (return (x: t_IterMut_T)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:into_iter 'self' type invariant] inv_IterMut_T self}
     (! bb0
     [ bb0 = s0 [ s0 = [ &_ret <- self ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_IterMut_T = Any.any_l () | & self: t_IterMut_T = self ])
@@ -1810,6 +1868,7 @@ module M_impl_Iterator_for_IterMut_T__next (* <IterMut<'a, T> as common::Iterato
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use seq.Seq
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -1907,7 +1966,8 @@ module M_impl_Iterator_for_IterMut_T__next (* <IterMut<'a, T> as common::Iterato
   
   meta "rewrite_def" predicate resolve_refmut_refmut_slice_T
   
-  let split_off_first_mut_T (self: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) (return (x: t_Option_refmut_T)) =
+  let split_off_first_mut_T (self: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) (mode: Mode.t)
+    (return (x: t_Option_refmut_T)) =
   {[@stop_split] [@expl:split_off_first_mut 'self' type invariant] inv_refmut_refmut_slice_T self}
     any
     [ return (result: t_Option_refmut_T) ->
@@ -1964,8 +2024,9 @@ module M_impl_Iterator_for_IterMut_T__next (* <IterMut<'a, T> as common::Iterato
   
   meta "select_lsinst" "all"
   
-  let next_IterMut_T (self: MutBorrow.t t_IterMut_T) (return (x: t_Option_refmut_T)) =
-  {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_IterMut_T self}
+  let next_IterMut_T (self: MutBorrow.t t_IterMut_T) (mode: Mode.t) (return (x: t_Option_refmut_T)) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_IterMut_T self}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <MutBorrow.t (Slice64.slice t_T)> {self.current.inner}
@@ -1974,7 +2035,7 @@ module M_impl_Iterator_for_IterMut_T__next (* <IterMut<'a, T> as common::Iterato
             [ &_4 <- _bor ] -{inv_refmut_slice_T _bor.final}-
             [ &self <- { self with current = { inner = _bor.final } } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T self.current.inner} any) ]
-      | s1 = split_off_first_mut_T {_4} (fun (_x: t_Option_refmut_T) -> [ &_ret <- _x ] s2)
+      | s1 = split_off_first_mut_T {_4} {mode} (fun (_x: t_Option_refmut_T) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_IterMut_T self} any) ]
       | s3 = -{resolve_refmut_IterMut_T self}- s4
       | s4 = return {_ret} ] ]
@@ -1990,6 +2051,7 @@ module M_impl_Iterator_for_IterMut_T__next (* <IterMut<'a, T> as common::Iterato
       (! return {result}) ]
 end
 module M_impl_Iterator_for_IterMut_T__next__refines (* <IterMut<'a, T> as common::Iterator> *)
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use seq.Seq
@@ -2100,7 +2162,7 @@ module M_impl_Iterator_for_IterMut_T__next__refines (* <IterMut<'a, T> as common
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: MutBorrow.t t_IterMut_T. inv_refmut_IterMut_T self
+  goal refines: forall mode: Mode.t, self: MutBorrow.t t_IterMut_T. inv_refmut_IterMut_T self
       -> inv_refmut_IterMut_T self
       /\ (forall result: t_Option_refmut_T. inv_Option_refmut_T result
           /\ match result with
@@ -2305,6 +2367,7 @@ module M_impl_Iterator_for_IterMut_T__size_hint (* <IterMut<'a, T> as common::It
   use creusot.slice.Slice64
   use creusot.prelude.MutBorrow
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.Any
   use int.Int
@@ -2346,7 +2409,7 @@ module M_impl_Iterator_for_IterMut_T__size_hint (* <IterMut<'a, T> as common::It
   
   meta "rewrite_def" predicate inv_ref_slice_T
   
-  let len_T (self: Slice64.slice t_T) (return (x: UInt64.t)) =
+  let len_T (self: Slice64.slice t_T) (mode: Mode.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_slice_T self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
@@ -2386,11 +2449,12 @@ module M_impl_Iterator_for_IterMut_T__size_hint (* <IterMut<'a, T> as common::It
   
   meta "select_lsinst" "all"
   
-  let size_hint_IterMut_T (self: t_IterMut_T) (return (x: tup2_usize_Option_usize)) =
-  {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_IterMut_T self}
+  let size_hint_IterMut_T (self: t_IterMut_T) (mode: Mode.t) (return (x: tup2_usize_Option_usize)) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_IterMut_T self}
     (! bb0
     [ bb0 = s0
-      [ s0 = len_T {self.inner.current} (fun (_x: UInt64.t) -> [ &l <- _x ] s1)
+      [ s0 = len_T {self.inner.current} {mode} (fun (_x: UInt64.t) -> [ &l <- _x ] s1)
       | s1 = [ &_8 <- Some l ] s2
       | s2 = [ &_ret <- { f0 = l; f1 = _8 } ] s3
       | s3 = return {_ret} ] ]
@@ -2405,6 +2469,7 @@ module M_impl_Iterator_for_IterMut_T__size_hint (* <IterMut<'a, T> as common::It
       (! return {result}) ]
 end
 module M_impl_Iterator_for_IterMut_T__size_hint__refines (* <IterMut<'a, T> as common::Iterator> *)
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use creusot.slice.Slice64
   use seq.Seq
@@ -2501,7 +2566,7 @@ module M_impl_Iterator_for_IterMut_T__size_hint__refines (* <IterMut<'a, T> as c
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_IterMut_T. inv_ref_IterMut_T self
+  goal refines: forall mode: Mode.t, self: t_IterMut_T. inv_ref_IterMut_T self
       -> inv_ref_IterMut_T self
       /\ (forall result: tup2_usize_Option_usize. UInt64.t'int result.f0 = Seq.length (Slice64.view self.inner.current)
           /\ result.f1 = Some (result.f0)
@@ -2518,6 +2583,7 @@ module M_iter_mut
   use seq.Seq
   use creusot.int.UInt64
   use creusot.slice.Slice64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -2588,7 +2654,7 @@ module M_iter_mut
   
   predicate resolve_elswhere_RangeFull (self: ()) (_old: Seq.seq t_T) (_fin: Seq.seq t_T) = true
   
-  let index_mut_Vec_T_Global (self: MutBorrow.t t_Vec_T_Global) (index: ())
+  let index_mut_Vec_T_Global (self: MutBorrow.t t_Vec_T_Global) (index: ()) (mode: Mode.t)
     (return (x: MutBorrow.t (Slice64.slice t_T))) =
   {[@stop_split] [@expl:index_mut_Vec_T_Global requires] ([@stop_split] [@expl:index_mut 'self' type invariant] inv_refmut_Vec_T_Global self)
     /\ ([@stop_split] [@expl:index_mut requires] in_bounds_RangeFull index (view_Vec_T_Global self.current))}
@@ -2624,8 +2690,8 @@ module M_iter_mut
   
   meta "select_lsinst" "all"
   
-  let iter_mut_T (v: MutBorrow.t t_Vec_T_Global) (return (x: t_IterMut_T)) =
-  {[@stop_split] [@expl:iter_mut 'v' type invariant] inv_refmut_Vec_T_Global v}
+  let iter_mut_T (v: MutBorrow.t t_Vec_T_Global) (mode: Mode.t) (return (x: t_IterMut_T)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:iter_mut 'v' type invariant] inv_refmut_Vec_T_Global v}
     (! bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_Vec_T_Global> {v.current} {MutBorrow.get_id v}
@@ -2634,7 +2700,7 @@ module M_iter_mut
             [ &v <- { v with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global v.current} any) ]
       | s1 = [ &_12 <- () ] s2
-      | s2 = index_mut_Vec_T_Global {_11} {_12} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_10 <- _x ] s3)
+      | s2 = index_mut_Vec_T_Global {_11} {_12} {mode} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_10 <- _x ] s3)
       | s3 = MutBorrow.borrow_final <Slice64.slice t_T> {_10.current} {MutBorrow.get_id _10}
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
             [ &_9 <- _bor ] -{inv_slice_T _bor.final}-

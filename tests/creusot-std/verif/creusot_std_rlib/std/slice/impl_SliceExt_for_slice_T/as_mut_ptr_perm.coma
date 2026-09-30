@@ -9,6 +9,7 @@ use creusot.slice.Slice64
 use seq.Seq
 use creusot.prelude.Opaque
 use map.Map
+use creusot.prelude.Mode
 use creusot.prelude.Ptr
 use creusot.int.UInt64
 use creusot.prelude.Any
@@ -142,7 +143,7 @@ predicate inv_tup2_ptr_slice_T_Ghost_Guarded_refmut_Perm_ptr_slice_T [@inline:tr
 
 meta "rewrite_def" predicate inv_tup2_ptr_slice_T_Ghost_Guarded_refmut_Perm_ptr_slice_T
 
-let from_mut_slice_T (r: MutBorrow.t (Slice64.slice t_T))
+let from_mut_slice_T (r: MutBorrow.t (Slice64.slice t_T)) (mode: Mode.t)
   (return (x: tup2_ptr_slice_T_Ghost_Guarded_refmut_Perm_ptr_slice_T)) =
 {[@stop_split] [@expl:from_mut 'r' type invariant] inv_refmut_slice_T r}
   any
@@ -183,7 +184,7 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let as_mut_ptr_perm_slice_T (self: MutBorrow.t (Slice64.slice t_T))
+let as_mut_ptr_perm_slice_T (self: MutBorrow.t (Slice64.slice t_T)) (mode: Mode.t)
   (return (x: tup2_ptr_T_Ghost_Guarded_refmut_Perm_ptr_slice_T)) =
 {[@stop_split] [@expl:as_mut_ptr_perm 'self' type invariant] inv_refmut_slice_T self}
   (! bb0
@@ -193,7 +194,7 @@ let as_mut_ptr_perm_slice_T (self: MutBorrow.t (Slice64.slice t_T))
           [ &_13 <- _bor ] -{inv_slice_T _bor.final}-
           [ &self <- { self with current = _bor.final } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_slice_T self.current} any) ]
-    | s1 = from_mut_slice_T {_13}
+    | s1 = from_mut_slice_T {_13} {mode}
         (fun (_x: tup2_ptr_slice_T_Ghost_Guarded_refmut_Perm_ptr_slice_T) -> [ &_12 <- _x ] s2)
     | s2 = [ &ptr <- _12.f0 ] s3
     | s3 = [ &own <- _12.f1 ] s4

@@ -1,5 +1,6 @@
 module M_knapsack01_dyn
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.MutBorrow
   use int.MinMax
@@ -21,7 +22,7 @@ module M_knapsack01_dyn
   
   meta "rewrite_def" function index_Vec_usize_Global
   
-  let from_elem_usize (elem: UInt64.t) (n: UInt64.t) (return (x: t_Vec_usize_Global)) = any
+  let from_elem_usize (elem: UInt64.t) (n: UInt64.t) (mode: Mode.t) (return (x: t_Vec_usize_Global)) = any
     [ return (result: t_Vec_usize_Global) ->
     {[@stop_split] [@expl:from_elem_usize ensures] ([@stop_split] [@expl:from_elem ensures #0] Seq.length (view_Vec_usize_Global result)
         = UInt64.t'int n)
@@ -82,7 +83,7 @@ module M_knapsack01_dyn
   
   meta "rewrite_def" predicate inv_ref_Vec_Item_Name_Global
   
-  let len_Item_Name (self: t_Vec_Item_Name_Global) (return (x: UInt64.t)) =
+  let len_Item_Name (self: t_Vec_Item_Name_Global) (mode: Mode.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_Item_Name_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
@@ -102,8 +103,8 @@ module M_knapsack01_dyn
   
   meta "rewrite_def" function index_Vec_Vec_usize_Global_Global
   
-  let from_elem_Vec_usize_Global (elem: t_Vec_usize_Global) (n: UInt64.t) (return (x: t_Vec_Vec_usize_Global_Global)) =
-  any
+  let from_elem_Vec_usize_Global (elem: t_Vec_usize_Global) (n: UInt64.t) (mode: Mode.t)
+    (return (x: t_Vec_Vec_usize_Global_Global)) = any
     [ return (result: t_Vec_Vec_usize_Global_Global) ->
     {[@stop_split] [@expl:from_elem_Vec_usize_Global ensures] ([@stop_split] [@expl:from_elem ensures #0] Seq.length (view_Vec_Vec_usize_Global_Global result)
         = UInt64.t'int n)
@@ -113,7 +114,7 @@ module M_knapsack01_dyn
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
-  let into_iter_Range_usize (self: t_Range_usize) (return (x: t_Range_usize)) = any
+  let into_iter_Range_usize (self: t_Range_usize) (mode: Mode.t) (return (x: t_Range_usize)) = any
     [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
@@ -157,7 +158,7 @@ module M_knapsack01_dyn
     resolve_refmut_Range_usize self
     /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
-  let next_Range_usize (self: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+  let next_Range_usize (self: MutBorrow.t t_Range_usize) (mode: Mode.t) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_usize self
         | Some v -> produces_Range_usize self.current (Seq.singleton v) self.final
@@ -244,7 +245,8 @@ module M_knapsack01_dyn
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_Item_Name_Global (self: t_Vec_Item_Name_Global) (index: UInt64.t) (return (x: t_Item_Name)) =
+  let index_Vec_Item_Name_Global (self: t_Vec_Item_Name_Global) (index: UInt64.t) (mode: Mode.t)
+    (return (x: t_Item_Name)) =
   {[@stop_split] [@expl:index_Vec_Item_Name_Global requires] ([@stop_split] [@expl:index 'self' type invariant] inv_ref_Vec_Item_Name_Global self)
     /\ ([@stop_split] [@expl:index requires] in_bounds_usize index (view_Vec_Item_Name_Global self))}
     any
@@ -267,7 +269,7 @@ module M_knapsack01_dyn
     forall self: t_RangeInclusive_usize [is_empty_log_RangeInclusive_usize self]. not is_empty_log_RangeInclusive_usize self
       -> deep_model_usize (start_log_RangeInclusive_usize self) <= deep_model_usize (end_log_RangeInclusive_usize self)
   
-  let new_usize (start'0: UInt64.t) (end''0: UInt64.t) (return (x: t_RangeInclusive_usize)) = any
+  let new_usize (start'0: UInt64.t) (end''0: UInt64.t) (mode: Mode.t) (return (x: t_RangeInclusive_usize)) = any
     [ return (result: t_RangeInclusive_usize) ->
     {[@stop_split] [@expl:new_usize ensures] ([@stop_split] [@expl:new result type invariant] inv_RangeInclusive_usize result)
       /\ ([@stop_split] [@expl:new ensures #0] start_log_RangeInclusive_usize result = start'0)
@@ -276,7 +278,8 @@ module M_knapsack01_dyn
       -> not is_empty_log_RangeInclusive_usize result)}
       (! return {result}) ]
   
-  let into_iter_RangeInclusive_usize (self: t_RangeInclusive_usize) (return (x: t_RangeInclusive_usize)) =
+  let into_iter_RangeInclusive_usize (self: t_RangeInclusive_usize) (mode: Mode.t)
+    (return (x: t_RangeInclusive_usize)) =
   {[@stop_split] [@expl:into_iter 'self' type invariant] inv_RangeInclusive_usize self}
     any
     [ return (result: t_RangeInclusive_usize) ->
@@ -325,7 +328,7 @@ module M_knapsack01_dyn
   predicate completed_RangeInclusive_usize (self: MutBorrow.t t_RangeInclusive_usize) =
     is_empty_log_RangeInclusive_usize self.current /\ is_empty_log_RangeInclusive_usize self.final
   
-  let next_RangeInclusive_usize (self: MutBorrow.t t_RangeInclusive_usize) (return (x: t_Option_usize)) =
+  let next_RangeInclusive_usize (self: MutBorrow.t t_RangeInclusive_usize) (mode: Mode.t) (return (x: t_Option_usize)) =
   {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_RangeInclusive_usize self}
     any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
@@ -349,7 +352,7 @@ module M_knapsack01_dyn
   
   meta "rewrite_def" predicate has_value_usize'0
   
-  let index_Vec_Vec_usize_Global_Global'0 (self: t_Vec_Vec_usize_Global_Global) (index: UInt64.t)
+  let index_Vec_Vec_usize_Global_Global'0 (self: t_Vec_Vec_usize_Global_Global) (index: UInt64.t) (mode: Mode.t)
     (return (x: t_Vec_usize_Global)) =
   {[@stop_split] [@expl:index requires] in_bounds_usize'0 index (view_Vec_Vec_usize_Global_Global self)}
     any
@@ -367,14 +370,14 @@ module M_knapsack01_dyn
   
   meta "rewrite_def" predicate has_value_usize'1
   
-  let index_Vec_usize_Global'0 (self: t_Vec_usize_Global) (index: UInt64.t) (return (x: UInt64.t)) =
+  let index_Vec_usize_Global'0 (self: t_Vec_usize_Global) (index: UInt64.t) (mode: Mode.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:index requires] in_bounds_usize'1 index (view_Vec_usize_Global self)}
     any
     [ return (result: UInt64.t) ->
     {[@stop_split] [@expl:index ensures] has_value_usize'1 index (view_Vec_usize_Global self) result}
       (! return {result}) ]
   
-  let max (a: UInt64.t) (b: UInt64.t) (return (x: UInt64.t)) = any
+  let max (a: UInt64.t) (b: UInt64.t) (mode: Mode.t) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:max ensures] UInt64.t'int result
       = MinMax.max (UInt64.t'int a) (UInt64.t'int b)}
       (! return {result}) ]
@@ -385,7 +388,7 @@ module M_knapsack01_dyn
   meta "rewrite_def" predicate resolve_elswhere_usize
   
   let index_mut_Vec_Vec_usize_Global_Global (self: MutBorrow.t t_Vec_Vec_usize_Global_Global) (index: UInt64.t)
-    (return (x: MutBorrow.t t_Vec_usize_Global)) =
+    (mode: Mode.t) (return (x: MutBorrow.t t_Vec_usize_Global)) =
   {[@stop_split] [@expl:index_mut requires] in_bounds_usize'0 index (view_Vec_Vec_usize_Global_Global self.current)}
     any
     [ return (result: MutBorrow.t t_Vec_usize_Global) ->
@@ -401,7 +404,7 @@ module M_knapsack01_dyn
   
   meta "rewrite_def" predicate resolve_elswhere_usize'0
   
-  let index_mut_Vec_usize_Global (self: MutBorrow.t t_Vec_usize_Global) (index: UInt64.t)
+  let index_mut_Vec_usize_Global (self: MutBorrow.t t_Vec_usize_Global) (index: UInt64.t) (mode: Mode.t)
     (return (x: MutBorrow.t UInt64.t)) =
   {[@stop_split] [@expl:index_mut requires] in_bounds_usize'1 index (view_Vec_usize_Global self.current)}
     any
@@ -458,7 +461,7 @@ module M_knapsack01_dyn
     forall _1: t_Vec_ref_Item_Name_Global [inv_Vec_ref_Item_Name_Global _1]. inv_Vec_ref_Item_Name_Global _1
       -> invariant_Vec_ref_Item_Name_Global _1
   
-  let with_capacity_ref_Item_Name (capacity: UInt64.t) (return (x: t_Vec_ref_Item_Name_Global)) = any
+  let with_capacity_ref_Item_Name (capacity: UInt64.t) (mode: Mode.t) (return (x: t_Vec_ref_Item_Name_Global)) = any
     [ return (result: t_Vec_ref_Item_Name_Global) ->
     {[@stop_split] [@expl:with_capacity_ref_Item_Name ensures] ([@stop_split] [@expl:with_capacity result type invariant] inv_Vec_ref_Item_Name_Global result)
       /\ ([@stop_split] [@expl:with_capacity ensures] Seq.length (view_Vec_ref_Item_Name_Global result) = 0)}
@@ -479,7 +482,8 @@ module M_knapsack01_dyn
   
   meta "rewrite_def" predicate inv_refmut_Vec_ref_Item_Name_Global
   
-  let push_ref_Item_Name (self: MutBorrow.t t_Vec_ref_Item_Name_Global) (value'0: t_Item_Name) (return (x: ())) =
+  let push_ref_Item_Name (self: MutBorrow.t t_Vec_ref_Item_Name_Global) (value'0: t_Item_Name) (mode: Mode.t)
+    (return (x: ())) =
   {[@stop_split] [@expl:push_ref_Item_Name requires] ([@stop_split] [@expl:push 'self' type invariant] inv_refmut_Vec_ref_Item_Name_Global self)
     /\ ([@stop_split] [@expl:push 'value' type invariant] inv_ref_Item_Name value'0)}
     any
@@ -496,9 +500,9 @@ module M_knapsack01_dyn
   
   meta "select_lsinst" "all"
   
-  let knapsack01_dyn_Name (items: t_Vec_Item_Name_Global) (max_weight: UInt64.t)
-    (return (x: t_Vec_ref_Item_Name_Global)) =
-  {[@stop_split] [@expl:knapsack01_dyn_Name requires] ([@stop_split] [@expl:knapsack01_dyn 'items' type invariant] inv_ref_Vec_Item_Name_Global items)
+  let knapsack01_dyn_Name (items: t_Vec_Item_Name_Global) (max_weight: UInt64.t) (mode: Mode.t)
+    (return (x: t_Vec_ref_Item_Name_Global)) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:knapsack01_dyn_Name requires] ([@stop_split] [@expl:knapsack01_dyn 'items' type invariant] inv_ref_Vec_Item_Name_Global items)
     /\ ([@stop_split] [@expl:knapsack01_dyn requires #0] Seq.length (view_Vec_Item_Name_Global items) < 10000000)
     /\ ([@stop_split] [@expl:knapsack01_dyn requires #1] UInt64.t'int max_weight < 10000000)
     /\ ([@stop_split] [@expl:knapsack01_dyn requires #2] forall i: int. 0 <= i
@@ -507,14 +511,14 @@ module M_knapsack01_dyn
     (! bb0
     [ bb0 = s0
       [ s0 = UInt64.add {max_weight} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
-      | s1 = from_elem_usize {(0: UInt64.t)} {_18} (fun (_x: t_Vec_usize_Global) -> [ &_17 <- _x ] s2)
-      | s2 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_21 <- _x ] s3)
+      | s1 = from_elem_usize {(0: UInt64.t)} {_18} {mode} (fun (_x: t_Vec_usize_Global) -> [ &_17 <- _x ] s2)
+      | s2 = len_Item_Name {items} {mode} (fun (_x: UInt64.t) -> [ &_21 <- _x ] s3)
       | s3 = UInt64.add {_21} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s4)
-      | s4 = from_elem_Vec_usize_Global {_17} {_20}
+      | s4 = from_elem_Vec_usize_Global {_17} {_20} {mode}
           (fun (_x: t_Vec_Vec_usize_Global_Global) -> [ &best_value <- _x ] s5)
-      | s5 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_26 <- _x ] s6)
+      | s5 = len_Item_Name {items} {mode} (fun (_x: UInt64.t) -> [ &_26 <- _x ] s6)
       | s6 = [ &_25 <- { start = (0: UInt64.t); end' = _26 } ] s7
-      | s7 = into_iter_Range_usize {_25} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s8)
+      | s7 = into_iter_Range_usize {_25} {mode} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s8)
       | s8 = [ &iter_old <- iter ] s9
       | s9 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s10
       | s10 = bb8 ]
@@ -540,17 +544,17 @@ module M_knapsack01_dyn
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_60 <- _bor ] [ &iter <- _bor.final ] s1)
         | s1 = MutBorrow.borrow_final <t_Range_usize> {_60.current} {MutBorrow.get_id _60}
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_59 <- _bor ] [ &_60 <- { _60 with current = _bor.final } ] s2)
-        | s2 = next_Range_usize {_59} (fun (_x: t_Option_usize) -> [ &_58 <- _x ] s3)
+        | s2 = next_Range_usize {_59} {mode} (fun (_x: t_Option_usize) -> [ &_58 <- _x ] s3)
         | s3 = -{resolve_refmut_Range_usize _60}- s4
         | s4 = any [ br0 -> {_58 = None} (! bb13) | br1 (x0: UInt64.t) -> {_58 = Some x0} (! bb14) ] ]
         [ bb14 = s0
           [ s0 = elim_Some {_58} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &i <- __creusot_proc_iter_elem ] s3
-          | s3 = index_Vec_Item_Name_Global {items} {i} (fun (_x: t_Item_Name) -> [ &_70 <- _x ] s4)
+          | s3 = index_Vec_Item_Name_Global {items} {i} {mode} (fun (_x: t_Item_Name) -> [ &_70 <- _x ] s4)
           | s4 = [ &it <- _70 ] s5
-          | s5 = new_usize {(0: UInt64.t)} {max_weight} (fun (_x: t_RangeInclusive_usize) -> [ &_74 <- _x ] s6)
-          | s6 = into_iter_RangeInclusive_usize {_74} (fun (_x: t_RangeInclusive_usize) -> [ &iter'0 <- _x ] s7)
+          | s5 = new_usize {(0: UInt64.t)} {max_weight} {mode} (fun (_x: t_RangeInclusive_usize) -> [ &_74 <- _x ] s6)
+          | s6 = into_iter_RangeInclusive_usize {_74} {mode} (fun (_x: t_RangeInclusive_usize) -> [ &iter'0 <- _x ] s7)
           | s7 = [ &iter_old'0 <- iter'0 ] s8
           | s8 = [ &produced'0 <- Seq.empty: Seq.seq UInt64.t ] s9
           | s9 = bb21 ]
@@ -587,7 +591,7 @@ module M_knapsack01_dyn
                   [ &_111 <- _bor ] -{inv_RangeInclusive_usize _bor.final}-
                   [ &_112 <- { _112 with current = _bor.final } ] s2)
               [ _ck -> (! {[@expl:type invariant] inv_RangeInclusive_usize _112.current} any) ]
-            | s2 = next_RangeInclusive_usize {_111} (fun (_x: t_Option_usize) -> [ &_110 <- _x ] s3)
+            | s2 = next_RangeInclusive_usize {_111} {mode} (fun (_x: t_Option_usize) -> [ &_110 <- _x ] s3)
             | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_RangeInclusive_usize _112} any) ]
             | s4 = -{resolve_refmut_RangeInclusive_usize _112}- s5
             | s5 = any [ br0 -> {_110 = None} (! bb26) | br1 (x0: UInt64.t) -> {_110 = Some x0} (! bb27) ] ]
@@ -598,33 +602,33 @@ module M_knapsack01_dyn
               | s3 = [ &_122 <- UInt64.gt it.weight w ] s4
               | s4 = any [ br0 -> {_122 = false} (! bb32) | br1 -> {_122} (! bb29) ] ]
             | bb29 = s0
-              [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
+              [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i} {mode}
                   (fun (_x: t_Vec_usize_Global) -> [ &_127 <- _x ] s1)
-              | s1 = index_Vec_usize_Global'0 {_127} {w} (fun (_x: UInt64.t) -> [ &_125 <- _x ] s2)
+              | s1 = index_Vec_usize_Global'0 {_127} {w} {mode} (fun (_x: UInt64.t) -> [ &_125 <- _x ] s2)
               | s2 = [ &_121 <- _125 ] s3
               | s3 = bb38 ]
             | bb32 = s0
-              [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
+              [ s0 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i} {mode}
                   (fun (_x: t_Vec_usize_Global) -> [ &_134 <- _x ] s1)
-              | s1 = index_Vec_usize_Global'0 {_134} {w} (fun (_x: UInt64.t) -> [ &_132 <- _x ] s2)
-              | s2 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i}
+              | s1 = index_Vec_usize_Global'0 {_134} {w} {mode} (fun (_x: UInt64.t) -> [ &_132 <- _x ] s2)
+              | s2 = index_Vec_Vec_usize_Global_Global'0 {best_value} {i} {mode}
                   (fun (_x: t_Vec_usize_Global) -> [ &_142 <- _x ] s3)
               | s3 = UInt64.sub {w} {it.weight} (fun (_x: UInt64.t) -> [ &_145 <- _x ] s4)
-              | s4 = index_Vec_usize_Global'0 {_142} {_145} (fun (_x: UInt64.t) -> [ &_140 <- _x ] s5)
+              | s4 = index_Vec_usize_Global'0 {_142} {_145} {mode} (fun (_x: UInt64.t) -> [ &_140 <- _x ] s5)
               | s5 = UInt64.add {_140} {it.value} (fun (_x: UInt64.t) -> [ &_138 <- _x ] s6)
-              | s6 = max {_132} {_138} (fun (_x: UInt64.t) -> [ &_121 <- _x ] s7)
+              | s6 = max {_132} {_138} {mode} (fun (_x: UInt64.t) -> [ &_121 <- _x ] s7)
               | s7 = bb38 ]
             | bb38 = s0
               [ s0 = MutBorrow.borrow_mut <t_Vec_Vec_usize_Global_Global> {best_value}
                   (fun (_bor: MutBorrow.t t_Vec_Vec_usize_Global_Global) ->
                     [ &_152 <- _bor ] [ &best_value <- _bor.final ] s1)
               | s1 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_153 <- _x ] s2)
-              | s2 = index_mut_Vec_Vec_usize_Global_Global {_152} {_153}
+              | s2 = index_mut_Vec_Vec_usize_Global_Global {_152} {_153} {mode}
                   (fun (_x: MutBorrow.t t_Vec_usize_Global) -> [ &_151 <- _x ] s3)
               | s3 = MutBorrow.borrow_final <t_Vec_usize_Global> {_151.current} {MutBorrow.get_id _151}
                   (fun (_bor: MutBorrow.t t_Vec_usize_Global) ->
                     [ &_150 <- _bor ] [ &_151 <- { _151 with current = _bor.final } ] s4)
-              | s4 = index_mut_Vec_usize_Global {_150} {w} (fun (_x: MutBorrow.t UInt64.t) -> [ &_149 <- _x ] s5)
+              | s4 = index_mut_Vec_usize_Global {_150} {w} {mode} (fun (_x: MutBorrow.t UInt64.t) -> [ &_149 <- _x ] s5)
               | s5 = [ &_149 <- { _149 with current = _121 } ] s6
               | s6 = -{resolve_refmut_usize _149}- s7
               | s7 = -{resolve_refmut_Vec_usize_Global _151}- s8
@@ -634,10 +638,10 @@ module M_knapsack01_dyn
           | s1 = -{resolve_RangeInclusive_usize iter'0}- s2
           | s2 = bb8 ] ] ]
     | bb13 = s0
-      [ s0 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &_159 <- _x ] s1)
-      | s1 = with_capacity_ref_Item_Name {_159} (fun (_x: t_Vec_ref_Item_Name_Global) -> [ &result <- _x ] s2)
+      [ s0 = len_Item_Name {items} {mode} (fun (_x: UInt64.t) -> [ &_159 <- _x ] s1)
+      | s1 = with_capacity_ref_Item_Name {_159} {mode} (fun (_x: t_Vec_ref_Item_Name_Global) -> [ &result <- _x ] s2)
       | s2 = [ &left_weight <- max_weight ] s3
-      | s3 = len_Item_Name {items} (fun (_x: UInt64.t) -> [ &j <- _x ] s4)
+      | s3 = len_Item_Name {items} {mode} (fun (_x: UInt64.t) -> [ &j <- _x ] s4)
       | s4 = bb44 ]
     | bb44 = bb44
       [ bb44 = {[@expl:inferred invariant: type invariant] inv_Vec_ref_Item_Name_Global result}
@@ -668,15 +672,15 @@ module M_knapsack01_dyn
         | s1 = any [ br0 -> {_186 = false} (! bb56) | br1 -> {_186} (! bb46) ] ]
         [ bb46 = s0
           [ s0 = UInt64.sub {j} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &j <- _x ] s1)
-          | s1 = index_Vec_Item_Name_Global {items} {j} (fun (_x: t_Item_Name) -> [ &_189 <- _x ] s2)
+          | s1 = index_Vec_Item_Name_Global {items} {j} {mode} (fun (_x: t_Item_Name) -> [ &_189 <- _x ] s2)
           | s2 = [ &it'0 <- _189 ] s3
           | s3 = UInt64.add {j} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_198 <- _x ] s4)
-          | s4 = index_Vec_Vec_usize_Global_Global'0 {best_value} {_198}
+          | s4 = index_Vec_Vec_usize_Global_Global'0 {best_value} {_198} {mode}
               (fun (_x: t_Vec_usize_Global) -> [ &_196 <- _x ] s5)
-          | s5 = index_Vec_usize_Global'0 {_196} {left_weight} (fun (_x: UInt64.t) -> [ &_194 <- _x ] s6)
-          | s6 = index_Vec_Vec_usize_Global_Global'0 {best_value} {j}
+          | s5 = index_Vec_usize_Global'0 {_196} {left_weight} {mode} (fun (_x: UInt64.t) -> [ &_194 <- _x ] s6)
+          | s6 = index_Vec_Vec_usize_Global_Global'0 {best_value} {j} {mode}
               (fun (_x: t_Vec_usize_Global) -> [ &_204 <- _x ] s7)
-          | s7 = index_Vec_usize_Global'0 {_204} {left_weight} (fun (_x: UInt64.t) -> [ &_202 <- _x ] s8)
+          | s7 = index_Vec_usize_Global'0 {_204} {left_weight} {mode} (fun (_x: UInt64.t) -> [ &_202 <- _x ] s8)
           | s8 = [ &_192 <- _194 <> _202 ] s9
           | s9 = any [ br0 -> {_192 = false} (! bb44) | br1 -> {_192} (! bb52) ] ]
         | bb52 = s0
@@ -685,7 +689,7 @@ module M_knapsack01_dyn
                 [ &_209 <- _bor ] -{inv_Vec_ref_Item_Name_Global _bor.final}-
                 [ &result <- _bor.final ] s1)
             [ _ck -> (! {[@expl:type invariant] inv_Vec_ref_Item_Name_Global result} any) ]
-          | s1 = push_ref_Item_Name {_209} {it'0} (fun (_x: ()) -> [ &_208 <- _x ] s2)
+          | s1 = push_ref_Item_Name {_209} {it'0} {mode} (fun (_x: ()) -> [ &_208 <- _x ] s2)
           | s2 = UInt64.sub {left_weight} {it'0.weight} (fun (_x: UInt64.t) -> [ &left_weight <- _x ] s3)
           | s3 = bb44 ] ] ]
     | bb56 = s0 [ s0 = [ &_ret <- result ] s1 | s1 = return {_ret} ] ]
@@ -878,13 +882,15 @@ end
 module M_max
   use creusot.int.UInt64
   use creusot.prelude.Any
+  use creusot.prelude.Mode
   use int.MinMax
   
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let max (a: UInt64.t) (b: UInt64.t) (return (x: UInt64.t)) = (! bb0
+  let max (a: UInt64.t) (b: UInt64.t) (mode: Mode.t) (return (x: UInt64.t)) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = s0 [ s0 = [ &_6 <- UInt64.lt a b ] s1 | s1 = any [ br0 -> {_6 = false} (! bb2) | br1 -> {_6} (! bb1) ] ]
     | bb1 = s0 [ s0 = [ &_ret <- b ] s1 | s1 = return {_ret} ]
     | bb2 = s0 [ s0 = [ &_ret <- a ] s1 | s1 = return {_ret} ] ]

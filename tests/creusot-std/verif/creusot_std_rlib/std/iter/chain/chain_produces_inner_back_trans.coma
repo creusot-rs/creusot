@@ -4,6 +4,7 @@ type t_Namespace = Other namespace_other
 
 use seq.Seq
 use creusot.int.UInt64
+use creusot.prelude.Mode
 use creusot.prelude.MutBorrow
 use int.Int
 
@@ -34,10 +35,10 @@ axiom produces_refl_B_spec: forall self: t_B. produces_B self (Seq.empty: Seq.se
 
 predicate completed_B (self: MutBorrow.t t_B)
 
-predicate postcondition_size_hint (self: ()) (args: t_B) (result: tup2_usize_Option_usize)
+predicate postcondition_size_hint (self: ()) (args: t_B) (result: tup2_usize_Option_usize) (mode: Mode.t)
 
 axiom postcondition_fndef:
-  forall args: t_B, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
+  forall args: t_B, result: tup2_usize_Option_usize, mode: Mode.t [postcondition_size_hint () args result mode]. postcondition_size_hint () args result mode
     -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_B. produces_B self s i.current /\ completed_B i
         -> UInt64.t'int result.f0 <= Seq.length s)
     /\ match result.f1 with
@@ -55,21 +56,22 @@ predicate inv_ref_B [@inline:trivial] (_1: t_B) = invariant_ref_B _1
 
 meta "rewrite_def" predicate inv_ref_B
 
-predicate precondition_size_hint (self: ()) (args: t_B)
+predicate precondition_size_hint (self: ()) (args: t_B) (mode: Mode.t)
 
-axiom precondition_fndef: forall args: t_B [precondition_size_hint () args]. (let self = args in inv_ref_B self)
-    -> precondition_size_hint () args
+axiom precondition_fndef:
+  forall mode: Mode.t. forall args: t_B [precondition_size_hint () args mode]. (let self = args in inv_ref_B self)
+      -> precondition_size_hint () args mode
 
-predicate postcondition_once_size_hint (self: ()) (args: t_B) (result: tup2_usize_Option_usize) =
-  postcondition_size_hint self args result
+predicate postcondition_once_size_hint (self: ()) (args: t_B) (result: tup2_usize_Option_usize) (mode: Mode.t) =
+  postcondition_size_hint self args result mode
 
 meta "rewrite_def" predicate postcondition_once_size_hint
 
-let size_hint_B (self: t_B) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
+let size_hint_B (self: t_B) (mode: Mode.t) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint () self mode}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result mode}
     (! return {result}) ]
 
 predicate completed_back_B (self: MutBorrow.t t_B)
@@ -78,11 +80,13 @@ predicate produces_back_B (self: t_B) (visited: Seq.seq t_Item) (o: t_B)
 
 function size_hint_back_spec_B (self: t_B) (r: tup2_usize_Option_usize) : ()
 
-axiom size_hint_back_spec_B_spec: forall self: t_B, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+axiom size_hint_back_spec_B_spec:
+  forall self: t_B, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint () self r mode)
     -> (forall s: Seq.seq t_Item, i: MutBorrow.t t_B. produces_back_B self s i.current /\ completed_back_B i
       -> UInt64.t'int r.f0 <= Seq.length s)
 
-axiom size_hint_back_spec_B_spec'0: forall self: t_B, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+axiom size_hint_back_spec_B_spec'0:
+  forall self: t_B, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint () self r mode)
     -> match r.f1 with
       | Some'0 r'0 -> forall s: Seq.seq t_Item, i: t_B. produces_back_B self s i -> Seq.length s <= UInt64.t'int r'0
       | None'0 -> true
@@ -121,10 +125,10 @@ axiom produces_refl_A_spec: forall self: t_A. produces_A self (Seq.empty: Seq.se
 
 predicate completed_A (self: MutBorrow.t t_A)
 
-predicate postcondition_size_hint'0 (self: ()) (args: t_A) (result: tup2_usize_Option_usize)
+predicate postcondition_size_hint'0 (self: ()) (args: t_A) (result: tup2_usize_Option_usize) (mode: Mode.t)
 
 axiom postcondition_fndef'0:
-  forall args: t_A, result: tup2_usize_Option_usize [postcondition_size_hint'0 () args result]. postcondition_size_hint'0 () args result
+  forall args: t_A, result: tup2_usize_Option_usize, mode: Mode.t [postcondition_size_hint'0 () args result mode]. postcondition_size_hint'0 () args result mode
     -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_A self s i.current /\ completed_A i
         -> UInt64.t'int result.f0 <= Seq.length s)
     /\ match result.f1 with
@@ -142,21 +146,22 @@ predicate inv_ref_A [@inline:trivial] (_1: t_A) = invariant_ref_A _1
 
 meta "rewrite_def" predicate inv_ref_A
 
-predicate precondition_size_hint'0 (self: ()) (args: t_A)
+predicate precondition_size_hint'0 (self: ()) (args: t_A) (mode: Mode.t)
 
-axiom precondition_fndef'0: forall args: t_A [precondition_size_hint'0 () args]. (let self = args in inv_ref_A self)
-    -> precondition_size_hint'0 () args
+axiom precondition_fndef'0:
+  forall mode: Mode.t. forall args: t_A [precondition_size_hint'0 () args mode]. (let self = args in inv_ref_A self)
+      -> precondition_size_hint'0 () args mode
 
-predicate postcondition_once_size_hint'0 (self: ()) (args: t_A) (result: tup2_usize_Option_usize) =
-  postcondition_size_hint'0 self args result
+predicate postcondition_once_size_hint'0 (self: ()) (args: t_A) (result: tup2_usize_Option_usize) (mode: Mode.t) =
+  postcondition_size_hint'0 self args result mode
 
 meta "rewrite_def" predicate postcondition_once_size_hint'0
 
-let size_hint_A (self: t_A) (return (x: tup2_usize_Option_usize)) =
-{[@stop_split] [@expl:size_hint requires] precondition_size_hint'0 () self}
+let size_hint_A (self: t_A) (mode: Mode.t) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint requires] precondition_size_hint'0 () self mode}
   any
   [ return (result: tup2_usize_Option_usize) ->
-  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint'0 () self result}
+  {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint'0 () self result mode}
     (! return {result}) ]
 
 predicate completed_back_A (self: MutBorrow.t t_A)
@@ -165,11 +170,13 @@ predicate produces_back_A (self: t_A) (visited: Seq.seq t_Item) (o: t_A)
 
 function size_hint_back_spec_A (self: t_A) (r: tup2_usize_Option_usize) : ()
 
-axiom size_hint_back_spec_A_spec: forall self: t_A, r: tup2_usize_Option_usize. postcondition_size_hint'0 () self r
+axiom size_hint_back_spec_A_spec:
+  forall self: t_A, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint'0 () self r mode)
     -> (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_back_A self s i.current /\ completed_back_A i
       -> UInt64.t'int r.f0 <= Seq.length s)
 
-axiom size_hint_back_spec_A_spec'0: forall self: t_A, r: tup2_usize_Option_usize. postcondition_size_hint'0 () self r
+axiom size_hint_back_spec_A_spec'0:
+  forall self: t_A, r: tup2_usize_Option_usize. (exists mode: Mode.t. postcondition_size_hint'0 () self r mode)
     -> match r.f1 with
       | Some'0 r'0 -> forall s: Seq.seq t_Item, i: t_A. produces_back_A self s i -> Seq.length s <= UInt64.t'int r'0
       | None'0 -> true

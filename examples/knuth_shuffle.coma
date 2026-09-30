@@ -1,5 +1,6 @@
 module M_knuth_shuffle
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.MutBorrow
   use seq.Permut
@@ -51,7 +52,7 @@ module M_knuth_shuffle
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  let len_T (self: t_Vec_T_Global) (return (x: UInt64.t)) =
+  let len_T (self: t_Vec_T_Global) (mode: Mode.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_T_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
@@ -60,7 +61,7 @@ module M_knuth_shuffle
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
-  let into_iter_Range_usize (self: t_Range_usize) (return (x: t_Range_usize)) = any
+  let into_iter_Range_usize (self: t_Range_usize) (mode: Mode.t) (return (x: t_Range_usize)) = any
     [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
@@ -104,7 +105,7 @@ module M_knuth_shuffle
     resolve_refmut_Range_usize self
     /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
-  let next_Range_usize (self: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+  let next_Range_usize (self: MutBorrow.t t_Range_usize) (mode: Mode.t) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_usize self
         | Some v -> produces_Range_usize self.current (Seq.singleton v) self.final
@@ -135,7 +136,7 @@ module M_knuth_shuffle
         end}
       any) ]
   
-  let rand_in_range (l: UInt64.t) (u: UInt64.t) (return (x: UInt64.t)) =
+  let rand_in_range (l: UInt64.t) (u: UInt64.t) (mode: Mode.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:rand_in_range requires] UInt64.t'int l <= UInt64.t'int u}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:rand_in_range ensures] UInt64.t'int l <= UInt64.t'int result
@@ -157,7 +158,8 @@ module M_knuth_shuffle
   
   meta "rewrite_def" predicate inv_refmut_slice_T
   
-  let deref_mut_Vec_T_Global (self: MutBorrow.t t_Vec_T_Global) (return (x: MutBorrow.t (Slice64.slice t_T))) =
+  let deref_mut_Vec_T_Global (self: MutBorrow.t t_Vec_T_Global) (mode: Mode.t)
+    (return (x: MutBorrow.t (Slice64.slice t_T))) =
   {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Vec_T_Global self}
     any
     [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
@@ -168,7 +170,7 @@ module M_knuth_shuffle
       /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_T_Global self.final)}
       (! return {result}) ]
   
-  let swap_T (self: MutBorrow.t (Slice64.slice t_T)) (a: UInt64.t) (b: UInt64.t) (return (x: ())) =
+  let swap_T (self: MutBorrow.t (Slice64.slice t_T)) (a: UInt64.t) (b: UInt64.t) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:swap_T requires] ([@stop_split] [@expl:swap 'self' type invariant] inv_refmut_slice_T self)
     /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int a < Seq.length (Slice64.view self.current))
     /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < Seq.length (Slice64.view self.current))}
@@ -189,14 +191,14 @@ module M_knuth_shuffle
   
   meta "select_lsinst" "all"
   
-  let knuth_shuffle_T (v: MutBorrow.t t_Vec_T_Global) (return (x: ())) =
-  {[@stop_split] [@expl:knuth_shuffle 'v' type invariant] inv_refmut_Vec_T_Global v}
+  let knuth_shuffle_T (v: MutBorrow.t t_Vec_T_Global) (mode: Mode.t) (return (x: ())) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:knuth_shuffle 'v' type invariant] inv_refmut_Vec_T_Global v}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_v <- v ] s1
-      | s1 = len_T {v.current} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s2)
+      | s1 = len_T {v.current} {mode} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s2)
       | s2 = [ &_8 <- { start = (0: UInt64.t); end' = _9 } ] s3
-      | s3 = into_iter_Range_usize {_8} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s4)
+      | s3 = into_iter_Range_usize {_8} {mode} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s4)
       | s4 = [ &iter_old <- iter ] s5
       | s5 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s6
       | s6 = [ &_old <- v.final ] s7
@@ -212,29 +214,29 @@ module M_knuth_shuffle
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_31 <- _bor ] [ &iter <- _bor.final ] s1)
         | s1 = MutBorrow.borrow_final <t_Range_usize> {_31.current} {MutBorrow.get_id _31}
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_30 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s2)
-        | s2 = next_Range_usize {_30} (fun (_x: t_Option_usize) -> [ &_29 <- _x ] s3)
+        | s2 = next_Range_usize {_30} {mode} (fun (_x: t_Option_usize) -> [ &_29 <- _x ] s3)
         | s3 = -{resolve_refmut_Range_usize _31}- s4
         | s4 = any [ br0 -> {_29 = None} (! bb11) | br1 (x0: UInt64.t) -> {_29 = Some x0} (! bb12) ] ]
         [ bb12 = s0
           [ s0 = elim_Some {_29} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &n <- __creusot_proc_iter_elem ] s3
-          | s3 = len_T {v.current} (fun (_x: UInt64.t) -> [ &_41 <- _x ] s4)
+          | s3 = len_T {v.current} {mode} (fun (_x: UInt64.t) -> [ &_41 <- _x ] s4)
           | s4 = UInt64.sub {_41} {n} (fun (_x: UInt64.t) -> [ &upper <- _x ] s5)
-          | s5 = rand_in_range {(0: UInt64.t)} {upper} (fun (_x: UInt64.t) -> [ &i <- _x ] s6)
+          | s5 = rand_in_range {(0: UInt64.t)} {upper} {mode} (fun (_x: UInt64.t) -> [ &i <- _x ] s6)
           | s6 = MutBorrow.borrow_mut <t_Vec_T_Global> {v.current}
               (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
                 [ &_49 <- _bor ] -{inv_Vec_T_Global _bor.final}-
                 [ &v <- { v with current = _bor.final } ] s7)
             [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global v.current} any) ]
-          | s7 = deref_mut_Vec_T_Global {_49} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_48 <- _x ] s8)
+          | s7 = deref_mut_Vec_T_Global {_49} {mode} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_48 <- _x ] s8)
           | s8 = UInt64.sub {upper} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_51 <- _x ] s9)
           | s9 = MutBorrow.borrow_final <Slice64.slice t_T> {_48.current} {MutBorrow.get_id _48}
               (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
                 [ &_47 <- _bor ] -{inv_slice_T _bor.final}-
                 [ &_48 <- { _48 with current = _bor.final } ] s10)
             [ _ck -> (! {[@expl:type invariant] inv_slice_T _48.current} any) ]
-          | s10 = swap_T {_47} {i} {_51} (fun (_x: ()) -> [ &_46 <- _x ] s11)
+          | s10 = swap_T {_47} {i} {_51} {mode} (fun (_x: ()) -> [ &_46 <- _x ] s11)
           | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T _48} any) ]
           | s12 = -{resolve_refmut_slice_T _48}- s13
           | s13 = bb6 ] ] ]

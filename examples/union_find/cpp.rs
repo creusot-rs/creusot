@@ -200,6 +200,7 @@ mod implementation {
     }
 
     /// Find the representative element of `elem`.
+    #[allow(creusot::unchecked_unsafe)]
     #[requires(uf.in_domain(elem))]
     #[ensures(result == uf.root(elem))]
     #[ensures(uf.unchanged())]
@@ -222,6 +223,7 @@ mod implementation {
     /// Get the payload of `elem`, provided it is a root.
     ///
     /// To guarantee that `elem` is a root, call [`Self::find`] before.
+    #[allow(creusot::unchecked_unsafe)]
     #[requires(uf.in_domain(*elem))]
     #[requires(uf.root(*elem) == *elem)]
     #[ensures(*result == uf.payload(*elem))]
@@ -234,6 +236,7 @@ mod implementation {
     }
 
     /// If `x` and `y` are two roots, try to link them together.
+    #[allow(creusot::unchecked_unsafe)]
     #[requires(uf.in_domain(x) && uf.in_domain(y))]
     #[requires(uf.root(x) == x && uf.root(y) == y)]
     #[ensures(uf.domain_unchanged() && uf.payloads_unchanged())]

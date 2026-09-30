@@ -2,6 +2,7 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -26,18 +27,19 @@ predicate inv_tup1_T [@inline:trivial] (_1: t_T) = inv_T _1
 
 meta "rewrite_def" predicate inv_tup1_T
 
-predicate precondition_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct (self: impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct) (args: t_T)
+predicate precondition_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct (self: impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct) (args: t_T) (mode: Mode.t)
 
-predicate postcondition_once_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct (self: impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct) (args: t_T) (result: bool)
+predicate postcondition_once_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct (self: impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct) (args: t_T) (result: bool) (mode: Mode.t)
 
 let call_once_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct
-  (self: impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct) (args: t_T) (return (x: bool)) =
+  (self: impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct) (args: t_T) (mode: Mode.t)
+  (return (x: bool)) =
 {[@stop_split] [@expl:call_once_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct self)
   /\ ([@stop_split] [@expl:call_once 'args' type invariant] inv_tup1_T args)
-  /\ ([@stop_split] [@expl:call_once requires] precondition_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct self args)}
+  /\ ([@stop_split] [@expl:call_once requires] precondition_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct self args mode)}
   any
   [ return (result: bool) ->
-  {[@stop_split] [@expl:call_once ensures] postcondition_once_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct self args result}
+  {[@stop_split] [@expl:call_once ensures] postcondition_once_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct self args result mode}
     (! return {result}) ]
 
 predicate resolve_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct (_1: impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct)
@@ -55,19 +57,20 @@ meta "compute_max_steps" 1000000
 meta "select_lsinst" "all"
 
 let extern_spec_T_Option_T_is_some_and_body_T (self_: t_Option_T)
-  (f: impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct) (return (x: bool)) =
-{[@stop_split] [@expl:extern_spec_T_Option_T_is_some_and_body_T requires] ([@stop_split] [@expl:extern_spec_T_Option_T_is_some_and_body 'self_' type invariant] inv_Option_T self_)
+  (f: impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct) (mode: Mode.t) (return (x: bool)) =
+{not Mode.terminates mode}
+  {[@stop_split] [@expl:extern_spec_T_Option_T_is_some_and_body_T requires] ([@stop_split] [@expl:extern_spec_T_Option_T_is_some_and_body 'self_' type invariant] inv_Option_T self_)
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_is_some_and_body 'f' type invariant] inv_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct f)
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_is_some_and_body requires] match self_ with
     | None -> true
-    | Some t -> precondition_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct f t
+    | Some t -> precondition_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct f t mode
     end)}
   (! bb0
   [ bb0 = any [ br0 -> {self_ = None} (! bb3) | br1 (x0: t_T) -> {self_ = Some x0} (! bb4) ]
   | bb4 = s0
     [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1)
     | s1 = [ &_13 <- t ] s2
-    | s2 = call_once_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct {f} {_13}
+    | s2 = call_once_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct {f} {_13} {mode}
         (fun (_x: bool) -> [ &_ret <- _x ] s3)
     | s3 = return {_ret} ]
   | bb3 = s0
@@ -83,6 +86,6 @@ let extern_spec_T_Option_T_is_some_and_body_T (self_: t_Option_T)
   | & _13: t_T = Any.any_l () ])
   [ return (result: bool) -> {[@stop_split] [@expl:extern_spec_T_Option_T_is_some_and_body ensures] match self_ with
       | None -> resolve_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct f /\ result = false
-      | Some t -> postcondition_once_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct f t result
+      | Some t -> postcondition_once_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct f t result mode
       end}
     (! return {result}) ]

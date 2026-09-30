@@ -4,6 +4,7 @@ module M_impl_S__minimize (* S *)
   use creusot.prelude.Ptr
   use creusot.int.UInt64
   use creusot.int.Int32
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -77,7 +78,7 @@ module M_impl_S__minimize (* S *)
   
   meta "rewrite_def" predicate inv_ref_Perm_ptr_i32
   
-  let deref_Ghost_Perm_ptr_i32 (self: t_Perm_ptr_i32) (return (x: t_Perm_ptr_i32)) =
+  let deref_Ghost_Perm_ptr_i32 (self: t_Perm_ptr_i32) (mode: Mode.t) (return (x: t_Perm_ptr_i32)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_Perm_ptr_i32 self}
     any
     [ return (result: t_Perm_ptr_i32) ->
@@ -93,7 +94,7 @@ module M_impl_S__minimize (* S *)
   
   meta "rewrite_def" predicate inv_Ghost_ref_Perm_ptr_i32
   
-  let new_ref_Perm_ptr_i32 (x: t_Perm_ptr_i32) (return (x'0: t_Perm_ptr_i32)) =
+  let new_ref_Perm_ptr_i32 (x: t_Perm_ptr_i32) (mode: Mode.t) (return (x'0: t_Perm_ptr_i32)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_ref_Perm_ptr_i32 x}
     any
     [ return (result: t_Perm_ptr_i32) ->
@@ -101,7 +102,7 @@ module M_impl_S__minimize (* S *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  let as_ref_i32 (ptr'0: Opaque.ptr) (own: t_Perm_ptr_i32) (return (x: Int32.t)) =
+  let as_ref_i32 (ptr'0: Opaque.ptr) (own: t_Perm_ptr_i32) (mode: Mode.t) (return (x: Int32.t)) =
   {[@stop_split] [@expl:as_ref_i32 requires] ([@stop_split] [@expl:as_ref 'own' type invariant] inv_Ghost_ref_Perm_ptr_i32 own)
     /\ ([@stop_split] [@expl:as_ref requires] ptr'0 = ward_ptr_i32 own)}
     any
@@ -116,18 +117,19 @@ module M_impl_S__minimize (* S *)
   
   meta "select_lsinst" "all"
   
-  let minimize (self: MutBorrow.t t_S) (return (x: ())) =
-  {[@stop_split] [@expl:minimize requires] ([@stop_split] [@expl:minimize 'self' type invariant] inv_refmut_S self)
+  let minimize (self: MutBorrow.t t_S) (mode: Mode.t) (return (x: ())) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:minimize requires] ([@stop_split] [@expl:minimize 'self' type invariant] inv_refmut_S self)
     /\ ([@stop_split] [@expl:minimize requires #0] Int32.to_int (val_ptr_i32 self.current.perm) = 1)
     /\ ([@stop_split] [@expl:minimize requires #1] ward_ptr_i32 self.current.perm = self.current.ptr)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_S self} any) ]
       | s1 = -{resolve_refmut_S self}- s2
-      | s2 = deref_Ghost_Perm_ptr_i32 {self.current.perm} (fun (_x: t_Perm_ptr_i32) -> [ &_12 <- _x ] s3)
+      | s2 = deref_Ghost_Perm_ptr_i32 {self.current.perm} {Mode.into_ghost mode}
+          (fun (_x: t_Perm_ptr_i32) -> [ &_12 <- _x ] s3)
       | s3 = [ &_11 <- _12 ] s4
-      | s4 = new_ref_Perm_ptr_i32 {_11} (fun (_x: t_Perm_ptr_i32) -> [ &_9 <- _x ] s5)
-      | s5 = as_ref_i32 {self.current.ptr} {_9} (fun (_x: Int32.t) -> [ &r <- _x ] s6)
+      | s4 = new_ref_Perm_ptr_i32 {_11} {Mode.into_ghost mode} (fun (_x: t_Perm_ptr_i32) -> [ &_9 <- _x ] s5)
+      | s5 = as_ref_i32 {self.current.ptr} {_9} {mode} (fun (_x: Int32.t) -> [ &r <- _x ] s6)
       | s6 = bb4 ]
     | bb4 = bb4
       [ bb4 = {[@expl:loop invariant] 0 <= Int32.to_int (val_ptr_i32 self.current.perm)} (! s0) [ s0 = bb4 ] ] ]

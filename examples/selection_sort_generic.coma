@@ -1,5 +1,6 @@
 module M_selection_sort
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use seq.Seq
   use creusot.prelude.MutBorrow
   use seq.Permut
@@ -76,7 +77,7 @@ module M_selection_sort
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  let len_T (self: t_Vec_T_Global) (return (x: UInt64.t)) =
+  let len_T (self: t_Vec_T_Global) (mode: Mode.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_T_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
@@ -85,7 +86,7 @@ module M_selection_sort
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
-  let into_iter_Range_usize (self: t_Range_usize) (return (x: t_Range_usize)) = any
+  let into_iter_Range_usize (self: t_Range_usize) (mode: Mode.t) (return (x: t_Range_usize)) = any
     [ return (result: t_Range_usize) -> {[@stop_split] [@expl:into_iter ensures] result = self} (! return {result}) ]
   
   type t_Option_usize = None | Some UInt64.t
@@ -129,7 +130,7 @@ module M_selection_sort
     resolve_refmut_Range_usize self
     /\ ge_log_Int (deep_model_usize self.current.start) (deep_model_usize self.current.end')
   
-  let next_Range_usize (self: MutBorrow.t t_Range_usize) (return (x: t_Option_usize)) = any
+  let next_Range_usize (self: MutBorrow.t t_Range_usize) (mode: Mode.t) (return (x: t_Option_usize)) = any
     [ return (result: t_Option_usize) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range_usize self
         | Some v -> produces_Range_usize self.current (Seq.singleton v) self.final
@@ -199,7 +200,7 @@ module M_selection_sort
   
   meta "rewrite_def" predicate has_value_usize
   
-  let index_Vec_T_Global'0 (self: t_Vec_T_Global) (index: UInt64.t) (return (x: t_T)) =
+  let index_Vec_T_Global'0 (self: t_Vec_T_Global) (index: UInt64.t) (mode: Mode.t) (return (x: t_T)) =
   {[@stop_split] [@expl:index_Vec_T_Global requires] ([@stop_split] [@expl:index 'self' type invariant] inv_ref_Vec_T_Global self)
     /\ ([@stop_split] [@expl:index requires] in_bounds_usize index (view_Vec_T_Global self))}
     any
@@ -210,32 +211,33 @@ module M_selection_sort
   
   type tup2_ref_T_ref_T = { f0: t_T; f1: t_T }
   
-  predicate precondition_lt (self: ()) (args: tup2_ref_T_ref_T)
+  predicate precondition_lt (self: ()) (args: tup2_ref_T_ref_T) (mode: Mode.t)
   
   axiom precondition_fndef:
-    forall args: tup2_ref_T_ref_T [precondition_lt () args]. (let {f0 = self; f1 = other} = args in inv_ref_T self
-        /\ inv_ref_T other) -> precondition_lt () args
+    forall mode: Mode.t. forall args: tup2_ref_T_ref_T [precondition_lt () args mode]. (let {f0 = self; f1 = other} = args in inv_ref_T self
+          /\ inv_ref_T other) -> precondition_lt () args mode
   
   function deep_model_ref_T [@inline:trivial] (self: t_T) : t_DeepModelTy = deep_model_T self
   
   meta "rewrite_def" function deep_model_ref_T
   
-  predicate postcondition_lt (self: ()) (args: tup2_ref_T_ref_T) (result: bool)
+  predicate postcondition_lt (self: ()) (args: tup2_ref_T_ref_T) (result: bool) (mode: Mode.t)
   
   axiom postcondition_fndef:
-    forall args: tup2_ref_T_ref_T, result: bool [postcondition_lt () args result]. postcondition_lt () args result
+    forall args: tup2_ref_T_ref_T, result: bool, mode: Mode.t [postcondition_lt () args result mode]. postcondition_lt () args result mode
       -> (let {f0 = self; f1 = other} = args in result
       = lt_log_DeepModelTy (deep_model_ref_T self) (deep_model_ref_T other))
   
-  predicate postcondition_once_lt (self: ()) (args: tup2_ref_T_ref_T) (result: bool) = postcondition_lt self args result
+  predicate postcondition_once_lt (self: ()) (args: tup2_ref_T_ref_T) (result: bool) (mode: Mode.t) =
+    postcondition_lt self args result mode
   
   meta "rewrite_def" predicate postcondition_once_lt
   
-  let lt_T (self: t_T) (other: t_T) (return (x: bool)) =
-  {[@stop_split] [@expl:lt requires] precondition_lt () { f0 = self; f1 = other }}
+  let lt_T (self: t_T) (other: t_T) (mode: Mode.t) (return (x: bool)) =
+  {[@stop_split] [@expl:lt requires] precondition_lt () { f0 = self; f1 = other } mode}
     any
     [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] postcondition_once_lt () { f0 = self;
-                                                                                            f1 = other } result}
+                                                                                            f1 = other } result mode}
       (! return {result}) ]
   
   predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
@@ -253,7 +255,8 @@ module M_selection_sort
   
   meta "rewrite_def" predicate inv_refmut_slice_T
   
-  let deref_mut_Vec_T_Global (self: MutBorrow.t t_Vec_T_Global) (return (x: MutBorrow.t (Slice64.slice t_T))) =
+  let deref_mut_Vec_T_Global (self: MutBorrow.t t_Vec_T_Global) (mode: Mode.t)
+    (return (x: MutBorrow.t (Slice64.slice t_T))) =
   {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Vec_T_Global self}
     any
     [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
@@ -264,7 +267,7 @@ module M_selection_sort
       /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_T_Global self.final)}
       (! return {result}) ]
   
-  let swap_T (self: MutBorrow.t (Slice64.slice t_T)) (a: UInt64.t) (b: UInt64.t) (return (x: ())) =
+  let swap_T (self: MutBorrow.t (Slice64.slice t_T)) (a: UInt64.t) (b: UInt64.t) (mode: Mode.t) (return (x: ())) =
   {[@stop_split] [@expl:swap_T requires] ([@stop_split] [@expl:swap 'self' type invariant] inv_refmut_slice_T self)
     /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int a < Seq.length (Slice64.view self.current))
     /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < Seq.length (Slice64.view self.current))}
@@ -287,15 +290,15 @@ module M_selection_sort
   
   meta "select_lsinst" "all"
   
-  let selection_sort_T (v: MutBorrow.t t_Vec_T_Global) (return (x: ())) =
-  {[@stop_split] [@expl:selection_sort 'v' type invariant] inv_refmut_Vec_T_Global v}
+  let selection_sort_T (v: MutBorrow.t t_Vec_T_Global) (mode: Mode.t) (return (x: ())) = {not Mode.terminates mode}
+    {[@stop_split] [@expl:selection_sort 'v' type invariant] inv_refmut_Vec_T_Global v}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_6 <- () ] s1
       | s1 = [ &old_v <- v ] s2
-      | s2 = len_T {v.current} (fun (_x: UInt64.t) -> [ &_13 <- _x ] s3)
+      | s2 = len_T {v.current} {mode} (fun (_x: UInt64.t) -> [ &_13 <- _x ] s3)
       | s3 = [ &_12 <- { start = (0: UInt64.t); end' = _13 } ] s4
-      | s4 = into_iter_Range_usize {_12} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s5)
+      | s4 = into_iter_Range_usize {_12} {mode} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s5)
       | s5 = [ &iter_old <- iter ] s6
       | s6 = [ &produced <- Seq.empty: Seq.seq UInt64.t ] s7
       | s7 = [ &_old <- v.final ] s8
@@ -313,7 +316,7 @@ module M_selection_sort
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_41 <- _bor ] [ &iter <- _bor.final ] s1)
         | s1 = MutBorrow.borrow_final <t_Range_usize> {_41.current} {MutBorrow.get_id _41}
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_40 <- _bor ] [ &_41 <- { _41 with current = _bor.final } ] s2)
-        | s2 = next_Range_usize {_40} (fun (_x: t_Option_usize) -> [ &_39 <- _x ] s3)
+        | s2 = next_Range_usize {_40} {mode} (fun (_x: t_Option_usize) -> [ &_39 <- _x ] s3)
         | s3 = -{resolve_refmut_Range_usize _41}- s4
         | s4 = any [ br0 -> {_39 = None} (! bb12) | br1 (x0: UInt64.t) -> {_39 = Some x0} (! bb13) ] ]
         [ bb13 = s0
@@ -322,9 +325,9 @@ module M_selection_sort
           | s2 = [ &i <- __creusot_proc_iter_elem ] s3
           | s3 = [ &min <- i ] s4
           | s4 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_54 <- _x ] s5)
-          | s5 = len_T {v.current} (fun (_x: UInt64.t) -> [ &_56 <- _x ] s6)
+          | s5 = len_T {v.current} {mode} (fun (_x: UInt64.t) -> [ &_56 <- _x ] s6)
           | s6 = [ &_53 <- { start = _54; end' = _56 } ] s7
-          | s7 = into_iter_Range_usize {_53} (fun (_x: t_Range_usize) -> [ &iter'0 <- _x ] s8)
+          | s7 = into_iter_Range_usize {_53} {mode} (fun (_x: t_Range_usize) -> [ &iter'0 <- _x ] s8)
           | s8 = [ &iter_old'0 <- iter'0 ] s9
           | s9 = [ &produced'0 <- Seq.empty: Seq.seq UInt64.t ] s10
           | s10 = bb19 ]
@@ -342,16 +345,16 @@ module M_selection_sort
             | s1 = MutBorrow.borrow_final <t_Range_usize> {_83.current} {MutBorrow.get_id _83}
                 (fun (_bor: MutBorrow.t t_Range_usize) ->
                   [ &_82 <- _bor ] [ &_83 <- { _83 with current = _bor.final } ] s2)
-            | s2 = next_Range_usize {_82} (fun (_x: t_Option_usize) -> [ &_81 <- _x ] s3)
+            | s2 = next_Range_usize {_82} {mode} (fun (_x: t_Option_usize) -> [ &_81 <- _x ] s3)
             | s3 = -{resolve_refmut_Range_usize _83}- s4
             | s4 = any [ br0 -> {_81 = None} (! bb24) | br1 (x0: UInt64.t) -> {_81 = Some x0} (! bb25) ] ]
             [ bb25 = s0
               [ s0 = elim_Some {_81} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
               | s1 = [ &produced'0 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
               | s2 = [ &j <- __creusot_proc_iter_elem'0 ] s3
-              | s3 = index_Vec_T_Global'0 {v.current} {j} (fun (_x: t_T) -> [ &_94 <- _x ] s4)
-              | s4 = index_Vec_T_Global'0 {v.current} {min} (fun (_x: t_T) -> [ &_98 <- _x ] s5)
-              | s5 = lt_T {_94} {_98} (fun (_x: bool) -> [ &_92 <- _x ] s6)
+              | s3 = index_Vec_T_Global'0 {v.current} {j} {mode} (fun (_x: t_T) -> [ &_94 <- _x ] s4)
+              | s4 = index_Vec_T_Global'0 {v.current} {min} {mode} (fun (_x: t_T) -> [ &_98 <- _x ] s5)
+              | s5 = lt_T {_94} {_98} {mode} (fun (_x: bool) -> [ &_92 <- _x ] s6)
               | s6 = any [ br0 -> {_92 = false} (! bb19) | br1 -> {_92} (! bb30) ] ]
             | bb30 = s0 [ s0 = [ &min <- j ] s1 | s1 = bb19 ] ] ]
         | bb24 = s0
@@ -360,13 +363,13 @@ module M_selection_sort
                 [ &_106 <- _bor ] -{inv_Vec_T_Global _bor.final}-
                 [ &v <- { v with current = _bor.final } ] s1)
             [ _ck -> (! {[@expl:type invariant] inv_Vec_T_Global v.current} any) ]
-          | s1 = deref_mut_Vec_T_Global {_106} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_105 <- _x ] s2)
+          | s1 = deref_mut_Vec_T_Global {_106} {mode} (fun (_x: MutBorrow.t (Slice64.slice t_T)) -> [ &_105 <- _x ] s2)
           | s2 = MutBorrow.borrow_final <Slice64.slice t_T> {_105.current} {MutBorrow.get_id _105}
               (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
                 [ &_104 <- _bor ] -{inv_slice_T _bor.final}-
                 [ &_105 <- { _105 with current = _bor.final } ] s3)
             [ _ck -> (! {[@expl:type invariant] inv_slice_T _105.current} any) ]
-          | s3 = swap_T {_104} {i} {min} (fun (_x: ()) -> [ &_103 <- _x ] s4)
+          | s3 = swap_T {_104} {i} {min} {mode} (fun (_x: ()) -> [ &_103 <- _x ] s4)
           | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T _105} any) ]
           | s5 = -{resolve_refmut_slice_T _105}- s6
           | s6 = {[@expl:assertion] let i'0 = Seq.length produced in forall k1: int, k2: int. 0 <= k1

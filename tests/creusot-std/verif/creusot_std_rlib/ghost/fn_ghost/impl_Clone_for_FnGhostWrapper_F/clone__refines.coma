@@ -4,6 +4,8 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.Mode
+
 type t_F
 
 type t_FnGhostWrapper_F = { f0: t_F }
@@ -23,10 +25,10 @@ predicate inv_ref_FnGhostWrapper_F [@inline:trivial] (_1: t_FnGhostWrapper_F) = 
 
 meta "rewrite_def" predicate inv_ref_FnGhostWrapper_F
 
-predicate postcondition_clone (self: ()) (args: t_F) (result: t_F)
+predicate postcondition_clone (self: ()) (args: t_F) (result: t_F) (mode: Mode.t)
 
 axiom postcondition_fndef:
-  forall args: t_F, result: t_F [postcondition_clone () args result]. postcondition_clone () args result
+  forall args: t_F, result: t_F, mode: Mode.t [postcondition_clone () args result mode]. postcondition_clone () args result mode
     -> (let self = args in inv_F result)
 
 predicate invariant_ref_F [@inline:trivial] (self: t_F) = inv_F self
@@ -37,25 +39,28 @@ predicate inv_ref_F [@inline:trivial] (_1: t_F) = invariant_ref_F _1
 
 meta "rewrite_def" predicate inv_ref_F
 
-predicate precondition_clone (self: ()) (args: t_F)
+predicate precondition_clone (self: ()) (args: t_F) (mode: Mode.t)
 
-axiom precondition_fndef: forall args: t_F [precondition_clone () args]. (let self = args in inv_ref_F self)
-    -> precondition_clone () args
+axiom precondition_fndef:
+  forall mode: Mode.t. forall args: t_F [precondition_clone () args mode]. (let self = args in inv_ref_F self)
+      -> precondition_clone () args mode
 
-predicate postcondition_once_clone (self: ()) (args: t_F) (result: t_F) = postcondition_clone self args result
+predicate postcondition_once_clone (self: ()) (args: t_F) (result: t_F) (mode: Mode.t) =
+  postcondition_clone self args result mode
 
 meta "rewrite_def" predicate postcondition_once_clone
 
-let clone_F (self: t_F) (return (x: t_F)) = {[@stop_split] [@expl:clone requires] precondition_clone () self}
+let clone_F (self: t_F) (mode: Mode.t) (return (x: t_F)) =
+{[@stop_split] [@expl:clone requires] precondition_clone () self mode}
   any
-  [ return (result: t_F) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self result}
+  [ return (result: t_F) -> {[@stop_split] [@expl:clone ensures] postcondition_once_clone () self result mode}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-goal refines: forall self: t_FnGhostWrapper_F. inv_ref_FnGhostWrapper_F self
+goal refines: forall mode: Mode.t, self: t_FnGhostWrapper_F. inv_ref_FnGhostWrapper_F self
     -> inv_ref_FnGhostWrapper_F self
-    /\ (forall result: t_FnGhostWrapper_F. inv_FnGhostWrapper_F result /\ postcondition_clone () self.f0 result.f0
+    /\ (forall result: t_FnGhostWrapper_F. inv_FnGhostWrapper_F result /\ postcondition_clone () self.f0 result.f0 mode
       -> inv_FnGhostWrapper_F result)
