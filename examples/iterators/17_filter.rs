@@ -1,8 +1,7 @@
 // WHY3PROVE
 #![feature(unboxed_closures)]
 extern crate creusot_std;
-
-use creusot_std::{invariant::Invariant, logic::Mapping, prelude::*};
+use creusot_std::{invariant::Invariant, logic::Mapping, mode::Mode, prelude::*};
 
 pub mod common;
 use common::Iterator;
@@ -15,14 +14,17 @@ pub struct Filter<I: Iterator, F: FnMut(&I::Item) -> bool> {
 impl<I: Iterator, F: FnMut(&I::Item) -> bool> Invariant for Filter<I, F> {
     #[logic(prophetic)]
     fn invariant(self) -> bool {
-        no_precondition(self.func) && immutable(self.func) && precise(self.func)
+        no_precondition(self.func)
+            && immutable(self.func)
+            && precise(self.func)
+            && creusot_std::std::iter::modeless(self.func)
     }
 }
 
 /// trivial precondition: simplification for sake of proof complexity
 #[logic(open, prophetic)]
 pub fn no_precondition<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f: F, i: A> inv(f) && inv(i) ==> f.precondition((i,)) }
+    pearlite! { forall<f: F, i: A, mode> inv(f) && inv(i) ==> f.precondition((i,), mode) }
 }
 
 /// immutable state: simplification for sake of proof complexity
@@ -37,7 +39,7 @@ pub fn immutable<A, F: FnMut(A) -> bool>(_: F) -> bool {
 // says about it.
 #[logic(open, prophetic)]
 pub fn precise<A, F: FnMut(A) -> bool>(_: F) -> bool {
-    pearlite! { forall<f1: F, f2: F, i> !(f1.postcondition_mut((i,), f2, true) && f1.postcondition_mut((i,), f2, false)) }
+    pearlite! { forall<f1: F, f2: F, i> !(f1.postcondition_mut((i,), f2, true, Mode::program_mode()) && f1.postcondition_mut((i,), f2, false, Mode::program_mode())) }
 }
 
 #[logic]
@@ -59,7 +61,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
     fn completed(&mut self) -> bool {
         pearlite! {
             (exists<s: Seq<_>, e: &mut I > self.iter.produces(s, *e) && e.completed() &&
-                forall<i> 0 <= i && i < s.len() ==> (*self).func.postcondition_mut((&s[i],), (^self).func, false))
+                forall<i> 0 <= i && i < s.len() ==> (*self).func.postcondition_mut((&s[i],), (^self).func, false, Mode::program_mode()))
             && (*self).func == (^self).func
         }
     }
@@ -88,7 +90,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
                 (forall<i, j> 0 <= i && i < j && j < visited.len() ==> f.get(i) < f.get(j)) &&
                 (forall<i> 0 <= i && i < visited.len() ==> visited[i] == s[f.get(i)]) &&
                 (forall<i> 0 <= i &&  i < s.len() ==>
-                    (exists<j> 0 <= j && j < visited.len() && f.get(j) == i) == self.func.postcondition_mut((&s[i],), self.func, true))
+                    (exists<j> 0 <= j && j < visited.len() && f.get(j) == i) == self.func.postcondition_mut((&s[i],), self.func, true, Mode::program_mode()))
         }
     }
 
@@ -101,7 +103,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
         let mut produced = snapshot! { Seq::empty() };
 
         #[invariant(self.func == old_self.func)]
-        #[invariant(forall<i> 0 <= i && i < produced.len() ==> self.func.postcondition_mut((&produced[i],), self.func, false))]
+        #[invariant(forall<i> 0 <= i && i < produced.len() ==> self.func.postcondition_mut((&produced[i],), self.func, false, Mode::program_mode()))]
         #[invariant(old_self.iter.produces(*produced, self.iter))]
         while let Some(n) = self.iter.next() {
             produced = snapshot! { produced.push_back(n) };
@@ -133,6 +135,7 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
 #[requires(immutable(f))]
 #[requires(no_precondition(f))]
 #[requires(precise(f))]
+#[requires(creusot_std::std::iter::modeless(f))]
 #[ensures(result.iter == iter && result.func == f)]
 pub fn filter<I: Iterator, P>(iter: I, f: P) -> Filter<I, P>
 where

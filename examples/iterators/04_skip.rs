@@ -91,7 +91,7 @@ where
     }
 
     #[ensures(exists<r>
-        I::size_hint.postcondition((&self.iter,), r) &&
+        I::size_hint.postcondition((&self.iter,), r, mode!()) &&
         (r.0@ <= self.n@ ==> result.0 == 0usize) &&
         (r.0@ >= self.n@ ==> result.0 == r.0 - self.n) &&
         match r.1 {
@@ -114,7 +114,7 @@ where
 
 impl<I: ExactSizeIterator> ExactSizeIterator for Skip<I> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {

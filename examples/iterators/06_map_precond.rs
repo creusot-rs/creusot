@@ -1,7 +1,7 @@
 // WHY3PROVE
 #![feature(unboxed_closures)]
 extern crate creusot_std;
-use creusot_std::{invariant::Invariant, prelude::*};
+use creusot_std::{invariant::Invariant, mode::Mode, prelude::*};
 
 pub mod common;
 use common::{ExactSizeIterator, Iterator};
@@ -47,7 +47,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
             && forall<i> 0 <= i && i < visited.len() ==>
                  self.func.hist_inv(*fs[i])
-                 && (*fs[i]).postcondition_mut((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i])
+                 && (*fs[i]).postcondition_mut((s[i], Snapshot::new(self.produced.concat(s.subsequence(0, i)))), ^fs[i], visited[i], Mode::program_mode())
         }
     }
 
@@ -58,7 +58,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
             Some(v) => {
-                proof_assert! { self.func.precondition((v, self.produced)) };
+                proof_assert! { self.func.precondition((v, self.produced), mode!()) };
                 let produced = snapshot! { self.produced.push_back(v) };
                 let r = (self.func)(v, self.produced);
                 self.produced = produced;
@@ -72,7 +72,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Iterator fo
         }
     }
 
-    #[ensures(I::size_hint.postcondition((&self.iter,), result))]
+    #[ensures(I::size_hint.postcondition((&self.iter,), result, mode!()))]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
@@ -82,18 +82,18 @@ impl<I: ExactSizeIterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Ex
     for Map<I, F>
 {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         self.iter.size_hint_exact(r)
     }
 
-    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result))))]
+    #[ensures(Self::size_hint.postcondition((self,), (result, Some(result)), mode!()))]
     fn len(&self) -> usize {
         self.iter.len()
     }
 
-    #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l))) && result == (l == 0usize))]
+    #[ensures(exists<l> Self::size_hint.postcondition((self,), (l, Some(l)), mode!()) && result == (l == 0usize))]
     fn is_empty(&self) -> bool {
         proof_assert!(forall<s: Seq<I::Item>> s.len() == 0 ==> s == Seq::empty());
         self.iter.is_empty()
@@ -107,7 +107,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
             forall<e: I::Item, i: I>
                 #[trigger(iter.produces(Seq::singleton(e), i))]
                 inv(e) && iter.produces(Seq::singleton(e), i) ==>
-                func.precondition((e, Snapshot::new(produced)))
+                forall<mode> func.precondition((e, Snapshot::new(produced)), mode)
         }
     }
 
@@ -116,12 +116,11 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
     fn preservation_inv(iter: I, func: F, produced: Seq<I::Item>) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                #[trigger(iter.produces(s.push_back(e1).push_back(e2), i),(*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b))]
-                inv(s) && inv(e1) && inv(e2) && inv(f) ==>
-                func.hist_inv(*f) ==>
-                iter.produces(s.push_back(e1).push_back(e2), i) ==>
-                (*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b) ==>
-                (^f).precondition((e2, Snapshot::new(produced.concat(s).push_back(e1))))
+                #[trigger(iter.produces(s.push_back(e1).push_back(e2), i),(*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b, Mode::program_mode()))]
+                inv(s) && inv(e1) && inv(e2) && inv(f) && func.hist_inv(*f)
+                && iter.produces(s.push_back(e1).push_back(e2), i)
+                && (*f).postcondition_mut((e1, Snapshot::new(produced.concat(s))), ^f, b, Mode::program_mode())
+                ==> forall<mode> (^f).precondition((e2, Snapshot::new(produced.concat(s).push_back(e1))), mode)
         }
     }
 
@@ -129,11 +128,10 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
     pub fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                inv(s) && inv(e1) && inv(e2) && inv(f) ==>
-                func.hist_inv(*f) ==>
-                iter.produces(s.push_back(e1).push_back(e2), i) ==>
-                (*f).postcondition_mut((e1, Snapshot::new(s)), ^f, b) ==>
-                (^f).precondition((e2, Snapshot::new(s.push_back(e1))))
+                inv(s) && inv(e1) && inv(e2) && inv(f) && func.hist_inv(*f)
+                && iter.produces(s.push_back(e1).push_back(e2), i)
+                && (*f).postcondition_mut((e1, Snapshot::new(s)), ^f, b, Mode::program_mode())
+                ==> forall<mode> (^f).precondition((e2, Snapshot::new(s.push_back(e1))), mode)
         }
     }
 
@@ -152,7 +150,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
     #[requires(self.invariant())]
     #[requires(self.iter.produces(Seq::singleton(e), iter))]
     #[requires(*f == self.func)]
-    #[requires((*f).postcondition_mut((e, self.produced), ^f, r) )]
+    #[requires((*f).postcondition_mut((e, self.produced), ^f, r, Mode::program_mode()))]
     #[ensures(Self::preservation_inv(iter, ^f, self.produced.push_back(e)))]
     #[ensures(Self::next_precondition(iter, ^f, self.produced.push_back(e)))]
     fn produces_one_invariant(self, e: I::Item, r: B, f: &mut F, iter: I) {
@@ -168,11 +166,11 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Map<I, F> {
     pub fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
             exists<f: &mut F, e: I::Item>
-                #[trigger((*f).postcondition_mut((e, self.produced), ^f, visited))]
+                #[trigger((*f).postcondition_mut((e, self.produced), ^f, visited, Mode::program_mode()))]
                 *f == self.func && ^f == succ.func
                 && self.iter.produces(Seq::singleton(e), succ.iter)
                 && succ.produced.inner() == self.produced.push_back(e)
-                && (*f).postcondition_mut((e, self.produced), ^f, visited)
+                && (*f).postcondition_mut((e, self.produced), ^f, visited, Mode::program_mode())
         }
     }
 }
@@ -181,18 +179,20 @@ impl<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B> Invariant f
     #[logic(prophetic)]
     fn invariant(self) -> bool {
         pearlite! {
-            Self::reinitialize() &&
-            Self::preservation_inv(self.iter, self.func, *self.produced) &&
-            Self::next_precondition(self.iter, self.func, *self.produced)
+            Self::reinitialize()
+            && Self::preservation_inv(self.iter, self.func, *self.produced)
+            && Self::next_precondition(self.iter, self.func, *self.produced)
+            && creusot_std::std::iter::modeless(self.func)
         }
     }
 }
 
-#[requires(forall<e: I::Item, i2: I>
+#[requires(forall<e: I::Item, i2: I, mode>
                 iter.produces(Seq::singleton(e), i2) && inv(e) ==>
-                func.precondition((e, Snapshot::new(Seq::empty()))))]
+                func.precondition((e, Snapshot::new(Seq::empty())), mode))]
 #[requires(Map::<I, F>::reinitialize())]
 #[requires(Map::<I, F>::preservation(iter, func))]
+#[requires(creusot_std::std::iter::modeless(func))]
 #[ensures(result == Map { iter, func, produced: Snapshot::new(Seq::empty()) })]
 pub fn map<I: Iterator, B, F: FnMut(I::Item, Snapshot<Seq<I::Item>>) -> B>(
     iter: I,
