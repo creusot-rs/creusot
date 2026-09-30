@@ -23,7 +23,7 @@ pub struct Authority<R: UnitRA>(Resource<Auth<R>>);
 /// Wrapper around a [`Resource`], that contains a fragment.
 ///
 /// See [`Authority`].
-pub struct Fragment<R: UnitRA>(pub Resource<Auth<R>>);
+pub struct Fragment<R: UnitRA>(Resource<Auth<R>>);
 
 impl<R: UnitRA> Invariant for Authority<R> {
     #[logic]
@@ -46,7 +46,7 @@ impl<R: UnitRA> View for Fragment<R> {
     type ViewTy = R;
 
     /// Get the fragment value.
-    #[logic(open)]
+    #[logic]
     fn view(self) -> R {
         pearlite! { self.0@.frag() }
     }
@@ -119,7 +119,8 @@ impl<R: UnitRA> Authority<R> {
     #[ensures(self.id() == (^self).id())]
     #[ensures(frag.id() == (^frag).id())]
     #[ensures(frag@.incl(self@))]
-    #[ensures(((^self)@, (^frag)@) == upd.update(self@, frag@))]
+    #[ensures((^self)@ == upd.update(self@, frag@).0)]
+    #[ensures((^frag)@ == upd.update(self@, frag@).1)]
     #[allow(unused_variables)]
     pub fn update<U: LocalUpdate<R>>(&mut self, frag: &mut Fragment<R>, upd: U) {
         let from = snapshot!(Auth::new(Some(self@), frag@));
@@ -157,7 +158,7 @@ impl<R: UnitRA> Authority<R> {
 
 impl<R: UnitRA> Fragment<R> {
     /// Id of the underlying [`Resource`].
-    #[logic(open)]
+    #[logic]
     pub fn id(self) -> Id {
         self.0.id()
     }
@@ -248,5 +249,44 @@ impl<R: UnitRA> Fragment<R> {
     #[ensures(self@.op(other@) != None)]
     pub fn valid_op_lemma(&mut self, other: &Self) {
         self.0.valid_op_lemma(&other.0);
+    }
+
+    #[check(ghost)]
+    #[ensures((^self).id() == self.id() && result.id() == self.id())]
+    #[ensures((^self)@ == UnitRA::unit())]
+    #[ensures(result@ == self@)]
+    pub fn take(&mut self) -> Self {
+        let r = snapshot!(self@);
+        self.split_off(r, snapshot!(UnitRA::unit()))
+    }
+
+    #[check(ghost)]
+    #[ensures(result@ == r@.frag())]
+    #[ensures(result.id() == r.id())]
+    pub fn from_resource(r: Resource<Auth<R>>) -> Self {
+        Fragment(r)
+    }
+
+    #[check(ghost)]
+    #[ensures(self@ == result@.frag())]
+    #[ensures(self.id() == result.id())]
+    pub fn into_resource(self) -> Resource<Auth<R>> {
+        self.0
+    }
+
+    #[check(ghost)]
+    #[ensures(self@ == result@.frag())]
+    #[ensures(self.id() == result.id())]
+    pub fn get_resource(&self) -> &Resource<Auth<R>> {
+        &self.0
+    }
+
+    #[check(ghost)]
+    #[ensures(self@ == result@.frag())]
+    #[ensures(self.id() == result.id())]
+    #[ensures((^self)@ == (^result)@.frag())]
+    #[ensures((^self).id() == (^result).id())]
+    pub fn get_resource_mut(&mut self) -> &mut Resource<Auth<R>> {
+        &mut self.0
     }
 }

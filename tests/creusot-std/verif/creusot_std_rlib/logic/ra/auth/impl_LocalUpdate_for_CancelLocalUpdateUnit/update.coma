@@ -8,6 +8,8 @@ use map.Map
 
 type t_R
 
+type tup2_R_R = { f0: t_R; f1: t_R }
+
 type t_Option_R = None | Some t_R
 
 function op_R (self: t_R) (other: t_R) : t_Option_R
@@ -38,34 +40,6 @@ axiom commutative_R_spec: forall a: t_R, b: t_R. op_R a b = op_R b a
 function incl_op_R (self: t_R) (other: t_R) (comb: t_R) : ()
 
 axiom incl_op_R_spec: forall self: t_R, other: t_R, comb: t_R. op_R self other = Some comb -> incl_R self comb
-
-predicate cancelable_R (self: t_R)
-
-axiom cancelable_R_spec: forall self: t_R [cancelable_R self]. cancelable_R self
-    = (forall x: t_R, y: t_R. op_R self x <> None -> op_R self x = op_R self y -> x = y)
-
-predicate premise_CancelLocalUpdateUnit (self: ()) (_2: t_R) (from_frag: t_R) = cancelable_R from_frag
-
-type t_Option_Option_R = None'0 | Some'0 t_Option_R
-
-type tup2_Option_R_Option_R = { f0: t_Option_R; f1: t_Option_R }
-
-function map_Option_R (self: t_Option_R) (f: Map.map t_R t_Option_R) : t_Option_Option_R = match self with
-    | None -> None'0
-    | Some x -> Some'0 (Map.get f x)
-    end
-
-function op_Option_R (self: t_Option_R) (other: t_Option_R) : t_Option_Option_R = match { f0 = self; f1 = other } with
-    | {f0 = None} -> Some'0 other
-    | {f1 = None} -> Some'0 self
-    | {f0 = Some x; f1 = Some y} -> map_Option_R (op_R x y) (fun (z: t_R) -> Some z)
-    end
-
-function commutative_Option_R (a: t_Option_R) (b: t_Option_R) : ()
-
-axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_R a b = op_Option_R b a
-
-type tup2_R_R = { f0'0: t_R; f1'0: t_R }
 
 function core_R (self: t_R) : t_Option_R
 
@@ -101,17 +75,6 @@ axiom such_that_R_spec: forall p: Map.map t_R bool [such_that_R p]. (exists x: t
 
 constant any_R: t_R = such_that_R (fun (_0: t_R) -> true)
 
-function update_CancelLocalUpdateUnit (self: ()) (from_auth: t_R) (from_frag: t_R) : tup2_R_R =
-  let f = if incl_R from_frag from_auth then factor_R from_auth from_frag else any_R in { f0'0 = f; f1'0 = unit_R }
-
-axiom update_CancelLocalUpdateUnit_spec:
-  forall self: (), from_auth: t_R, from_frag: t_R [update_CancelLocalUpdateUnit self from_auth from_frag]. (update_CancelLocalUpdateUnit self from_auth from_frag).f1'0
-    = unit_R
-
-axiom update_CancelLocalUpdateUnit_spec'0:
-  forall self: (), from_auth: t_R, from_frag: t_R [update_CancelLocalUpdateUnit self from_auth from_frag]. incl_R from_frag from_auth
-    -> op_R (update_CancelLocalUpdateUnit self from_auth from_frag).f0'0 from_frag = Some from_auth
-
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
@@ -122,11 +85,25 @@ constant from_auth : t_R
 
 constant from_frag : t_R
 
-constant frame : t_Option_R
+function update_CancelLocalUpdateUnit (self: ()) (from_auth: t_R) (from_frag: t_R) : tup2_R_R
 
-function frame_preserving_CancelLocalUpdateUnit (self: ()) (from_auth: t_R) (from_frag: t_R) (frame: t_Option_R) : ()
-
-goal vc_frame_preserving_CancelLocalUpdateUnit: premise_CancelLocalUpdateUnit self from_auth from_frag
-  -> op_Option_R (Some from_frag) frame = Some'0 (Some from_auth)
-  -> ([@stop_split] [@expl:frame_preserving ensures] let {f0'0 = to_auth; f1'0 = to_frag} = update_CancelLocalUpdateUnit self from_auth from_frag in op_Option_R (Some to_frag) frame
-  = Some'0 (Some to_auth))
+goal vc_update_CancelLocalUpdateUnit: ([@stop_split] [@expl:incl ensures] incl_R from_frag from_auth
+    = (exists factor: t_R. op_R from_frag factor = Some from_auth))
+  -> (if incl_R from_frag from_auth then
+    ([@stop_split] [@expl:factor requires] incl_R from_frag from_auth)
+    /\ (([@stop_split] [@expl:factor ensures] op_R from_frag (factor_R from_auth from_frag) = Some from_auth)
+    -> (let f = factor_R from_auth from_frag in ([@stop_split] [@expl:unit ensures] forall x: t_R [op_R x unit_R]. op_R x unit_R
+        = Some x)
+    -> (let result = { f0 = f;
+                       f1 = unit_R } in [@stop_split] [@expl:update_CancelLocalUpdateUnit ensures] ([@stop_split] [@expl:update ensures #0] result.f1
+      = unit_R)
+    /\ ([@stop_split] [@expl:update ensures #1] incl_R from_frag from_auth
+    -> op_R result.f0 from_frag = Some from_auth))))
+  else
+    let f = any_R in ([@stop_split] [@expl:unit ensures] forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x)
+    -> (let result = { f0 = f;
+                       f1 = unit_R } in [@stop_split] [@expl:update_CancelLocalUpdateUnit ensures] ([@stop_split] [@expl:update ensures #0] result.f1
+      = unit_R)
+    /\ ([@stop_split] [@expl:update ensures #1] incl_R from_frag from_auth
+    -> op_R result.f0 from_frag = Some from_auth))
+  )

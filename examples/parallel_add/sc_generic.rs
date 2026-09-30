@@ -110,9 +110,10 @@ pub fn parallel_add(n: i32) {
                         })
                     }},
                 );
+                proof_assert!(frag@ == Some((fraction(1, n@), 1)));
                 frag
             });
-            handles.push(h)
+            handles.push(h);
         }
 
         let handles_ = snapshot!(handles);

@@ -172,9 +172,10 @@ let update_R (self: MutBorrow.t t_Authority_R) (frag: MutBorrow.t t_Fragment_R) 
   {[@stop_split] [@expl:update_R ensures] ([@stop_split] [@expl:update ensures #0] id_R self.current = id_R self.final)
     /\ ([@stop_split] [@expl:update ensures #1] id_R'0 frag.current = id_R'0 frag.final)
     /\ ([@stop_split] [@expl:update ensures #2] incl_R (view_Fragment_R frag.current) (view_Authority_R self.current))
-    /\ ([@stop_split] [@expl:update ensures #3] { f0'2 = view_Authority_R self.final;
-                                                  f1'2 = view_Fragment_R frag.final }
-    = update_OpLocalUpdate_R upd (view_Authority_R self.current) (view_Fragment_R frag.current))}
+    /\ ([@stop_split] [@expl:update ensures #3] view_Authority_R self.final
+      = (update_OpLocalUpdate_R upd (view_Authority_R self.current) (view_Fragment_R frag.current)).f0'2)
+    /\ ([@stop_split] [@expl:update ensures #4] view_Fragment_R frag.final
+    = (update_OpLocalUpdate_R upd (view_Authority_R self.current) (view_Fragment_R frag.current)).f1'2)}
     (! return {result}) ]
 
 predicate resolve_refmut_Fragment_R [@inline:trivial] (_1: MutBorrow.t t_Fragment_R) = _1.final = _1.current

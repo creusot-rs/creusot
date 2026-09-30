@@ -67,11 +67,6 @@ axiom commutative_Option_R_spec: forall a: t_Option_R, b: t_Option_R. op_Option_
 
 type tup2_R_R = { f0'0: t_R; f1'0: t_R }
 
-function factor_R (self: t_R) (factor: t_R) : t_R
-
-axiom factor_R_spec: forall self: t_R, factor: t_R [factor_R self factor]. incl_R factor self
-    -> op_R factor (factor_R self factor) = Some self
-
 function core_R (self: t_R) : t_Option_R
 
 function core_total_R (self: t_R) : t_R
@@ -90,8 +85,32 @@ constant incl_refl_R : ()
 
 axiom incl_refl_R_spec: forall x: t_R. incl_R x x
 
+function factor_R (self: t_R) (factor: t_R) : t_R
+
+axiom factor_R_spec: forall self: t_R, factor: t_R [factor_R self factor]. incl_R factor self
+    -> op_R factor (factor_R self factor) = Some self
+
+predicate index_Mapping_R_bool [@inline:trivial] (self: Map.map t_R bool) (a: t_R) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_R_bool
+
+function such_that_R (p: Map.map t_R bool) : t_R
+
+axiom such_that_R_spec: forall p: Map.map t_R bool [such_that_R p]. (exists x: t_R. index_Mapping_R_bool p x)
+    -> index_Mapping_R_bool p (such_that_R p)
+
+constant any_R: t_R = such_that_R (fun (_0: t_R) -> true)
+
 function update_CancelLocalUpdateUnit (self: ()) (from_auth: t_R) (from_frag: t_R) : tup2_R_R =
-  { f0'0 = factor_R from_auth from_frag; f1'0 = unit_R }
+  let f = if incl_R from_frag from_auth then factor_R from_auth from_frag else any_R in { f0'0 = f; f1'0 = unit_R }
+
+axiom update_CancelLocalUpdateUnit_spec:
+  forall self: (), from_auth: t_R, from_frag: t_R [update_CancelLocalUpdateUnit self from_auth from_frag]. (update_CancelLocalUpdateUnit self from_auth from_frag).f1'0
+    = unit_R
+
+axiom update_CancelLocalUpdateUnit_spec'0:
+  forall self: (), from_auth: t_R, from_frag: t_R [update_CancelLocalUpdateUnit self from_auth from_frag]. incl_R from_frag from_auth
+    -> op_R (update_CancelLocalUpdateUnit self from_auth from_frag).f0'0 from_frag = Some from_auth
 
 meta "compute_max_steps" 1000000
 
