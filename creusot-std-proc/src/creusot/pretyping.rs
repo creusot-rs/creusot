@@ -10,7 +10,7 @@ use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
 use quote::{ToTokens, quote, quote_spanned};
 use std::collections::HashSet;
 use syn::{
-    Ident, Lit, Pat, PatIdent, PatType, RangeLimits, UnOp,
+    Ident, Lit, LitInt, Pat, PatIdent, PatType, RangeLimits, UnOp,
     spanned::Spanned,
     visit::{Visit, visit_pat},
 };
@@ -95,10 +95,14 @@ impl<'a> PatEncoder<'a> {
 }
 
 fn add_use(toks: TokenStream, span: Span) -> TokenStream {
+    let use_ = quote_spanned! { Span::mixed_site() =>
+        #[allow(unused)]
+        use ::creusot_std::__stubs::{IndexLogicStub as _, ViewStub as _};
+    };
+
     quote_spanned! { span =>
         {
-            #[allow(unused)]
-            use ::creusot_std::__stubs::{IndexLogicStub as _, ViewStub as _};
+            #use_
             #toks
         }
     }
@@ -132,7 +136,7 @@ impl EncodingResult {
     fn toks(self) -> TokenStream {
         let EncodingResult { toks, deref_bor } = self;
         if deref_bor {
-            quote_spanned! { toks.span() => (*& #toks) }
+            quote_spanned! { span_before(toks.span()) => *& #toks }
         } else {
             toks
         }
@@ -145,9 +149,22 @@ impl From<TokenStream> for EncodingResult {
     }
 }
 
+fn span_before(sp: Span) -> Span {
+    if proc_macro::is_available() { sp.located_at(sp.unwrap().start().into()) } else { sp }
+}
+
+fn span_after(sp: Span) -> Span {
+    if proc_macro::is_available() { sp.located_at(sp.unwrap().end().into()) } else { sp }
+}
+
+fn span_join(a: Span, b: Span) -> Span {
+    a.join(b).unwrap_or(a)
+}
+
 // TODO: Rewrite this as a source to source transform and *then* call ToTokens on the result
 fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, EncodeError> {
     let sp = term.span();
+    let deref = quote_spanned! { span_before(sp) => * };
     match term {
         Term::Array(_) => Err(EncodeError::Unsupported(sp, "Array".into())),
         Term::Binary(TermBinary { left, op, right }) => {
@@ -186,71 +203,91 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
 
             let left = encode_term_(left, locals)?.toks();
             let right = encode_term_(right, locals)?.toks();
-            match op {
-                Eq(_) => {
-                    Ok(quote_spanned! {sp=> ::creusot_std::__stubs::equal(#left, #right) }.into())
-                }
-                Ne(_) => {
-                    Ok(quote_spanned! {sp=> ::creusot_std::__stubs::neq(#left, #right) }.into())
-                }
-                Lt(_) => {
-                    Ok(quote_spanned! {sp=> ::creusot_std::logic::PartialOrdLogic::lt_log(#left, #right) }
-                        .into())
-                }
-                Le(_) => {
-                    Ok(quote_spanned! {sp=> ::creusot_std::logic::PartialOrdLogic::le_log(#left, #right) }
-                        .into())
-                }
-                Ge(_) => {
-                    Ok(quote_spanned! {sp=> ::creusot_std::logic::PartialOrdLogic::ge_log(#left, #right) }
-                        .into())
-                }
-                Gt(_) => {
-                    Ok(quote_spanned! {sp=> ::creusot_std::logic::PartialOrdLogic::gt_log(#left, #right) }
-                        .into())
-                }
-                Add(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::AddLogic::add_logic(#left, #right) }
-                        .into(),
-                ),
-                Sub(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::SubLogic::sub_logic(#left, #right) }
-                        .into(),
-                ),
-                Mul(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::MulLogic::mul_logic(#left, #right) }
-                        .into(),
-                ),
-                Div(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::DivLogic::div_logic(#left, #right) }
-                        .into(),
-                ),
-                Rem(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::RemLogic::rem_logic(#left, #right) }
-                        .into(),
-                ),
-                BitAnd(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::BitAndLogic::bitand_logic(#left, #right) }
-                        .into(),
-                ),
-                BitOr(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::BitOrLogic::bitor_logic(#left, #right) }
-                        .into(),
-                ),
-                BitXor(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::BitXorLogic::bitxor_logic(#left, #right) }
-                        .into(),
-                ),
-                Shl(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::ShlLogic::shl_logic(#left, #right) }
-                        .into(),
-                ),
-                Shr(_) => Ok(
-                    quote_spanned! {sp=> ::creusot_std::logic::ops::ShrLogic::shr_logic(#left, #right) }
-                        .into(),
-                ),
-                _ => Ok(quote_spanned! {sp=> #left #op #right }.into()),
-            }
+
+            let stream = match op {
+                Eq(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::__stubs:: },
+                    quote_spanned! { op.span() => equal },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                Ne(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::__stubs:: },
+                    quote_spanned! { op.span() => neq },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                Lt(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::PartialOrdLogic:: },
+                    quote_spanned! { op.span() => lt_log },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                Le(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::PartialOrdLogic:: },
+                    quote_spanned! { op.span() => le_log },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                Gt(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::PartialOrdLogic:: },
+                    quote_spanned! { op.span() => gt_log },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                Ge(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::PartialOrdLogic:: },
+                    quote_spanned! { op.span() => ge_log },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                Add(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::ops::AddLogic:: },
+                    quote_spanned! { op.span() => add_logic },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                Sub(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::ops::SubLogic:: },
+                    quote_spanned! { op.span() => sub_logic },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                Mul(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::ops::MulLogic:: },
+                    quote_spanned! { op.span() => mul_logic },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                Div(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::ops::DivLogic:: },
+                    quote_spanned! { op.span() => div_logic },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                Rem(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::ops::RemLogic:: },
+                    quote_spanned! { op.span() => rem_logic },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                BitAnd(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::ops::BitAndLogic:: },
+                    quote_spanned! { op.span() => bitand_logic },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                BitOr(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::ops::BitOrLogic:: },
+                    quote_spanned! { op.span() => bitor_logic },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                BitXor(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::ops::BitXorLogic:: },
+                    quote_spanned! { op.span() => bitxor_logic },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                Shl(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::ops::ShlLogic:: },
+                    quote_spanned! { op.span() => shl_logic },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                Shr(_) => TokenStream::from_iter([
+                    quote_spanned! { span_before(op.span()) => ::creusot_std::logic::ops::ShrLogic:: },
+                    quote_spanned! { op.span() => shr_logic },
+                    quote_spanned! { sp => (#left, #right) },
+                ]),
+                _ => quote_spanned! { sp => (#left) #op (#right) },
+            };
+            Ok(stream.into())
         }
         Term::Block(block) => Ok(encode_block_(block, locals).into()),
         Term::Call(TermCall { func, args, .. }) => {
@@ -259,13 +296,18 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                 .map(|t| Ok(encode_term_(t, locals)?.toks()))
                 .collect::<Result<_, _>>()?;
             if let Term::Path(p) = &**func {
-                if p.inner.path.is_ident("old") {
-                    return Ok(
-                        quote_spanned! {sp=> (*::creusot_std::__stubs::old( #(#args),* )) }.into()
-                    );
-                }
-                // Don't wrap function calls in `*&`.
-                Ok(quote_spanned! {sp=> #func (#(#args),*)}.into())
+                let path = &p.inner.path;
+                let stream = if path.is_ident("old") {
+                    TokenStream::from_iter([
+                        quote_spanned! { span_before(path.span()) => #deref ::creusot_std::__stubs:: },
+                        quote_spanned! { path.span() => old },
+                        quote_spanned! { sp => ( #(#args,)* ) },
+                    ])
+                } else {
+                    // Don't wrap function calls in `*&`.
+                    quote_spanned! { sp => #func (#(#args,)*) }
+                };
+                Ok(stream.into())
             } else {
                 Err(EncodeError::Unsupported(
                     sp,
@@ -275,19 +317,21 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
         }
         Term::Cast(TermCast { expr, as_token, ty }) => {
             let expr_token = encode_term_(expr, locals)?.toks();
-            Ok(quote_spanned! {sp=> #expr_token #as_token  #ty}.into())
+            Ok(quote! { #expr_token #as_token #ty }.into())
         }
-        Term::Field(TermField { base, member, .. }) => {
+        Term::Field(TermField { base, member, dot_token }) => {
             let EncodingResult { toks, deref_bor } = encode_term_(base, locals)?;
-            Ok(EncodingResult { toks: quote_spanned!(sp => #toks . #member), deref_bor })
+            Ok(EncodingResult {
+                toks: quote_spanned! { toks.span() => (#toks) #dot_token #member },
+                deref_bor,
+            })
         }
         Term::Group(TermGroup { expr, .. }) => {
             let term = encode_term_(expr, locals)?.toks();
-            let mut res = TokenStream::new();
-            res.extend_one(TokenTree::Group(Group::new(Delimiter::None, term)));
-            Ok(res.into())
+
+            Ok(TokenStream::from_iter([TokenTree::Group(Group::new(Delimiter::None, term))]).into())
         }
-        Term::If(TermIf { cond, then_branch, else_branch, .. }) => {
+        Term::If(TermIf { cond, then_branch, else_branch, if_token }) => {
             let cond = if let Term::Paren(TermParen { expr, .. }) = &**cond
                 && matches!(&**expr, Term::Quant(_))
             {
@@ -296,52 +340,84 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                 cond
             };
             let cond = encode_term_(cond, locals)?.toks();
+            let then_span = then_branch.span();
             let then_branch: Vec<_> = then_branch
                 .stmts
                 .iter()
                 .map(|s| encode_stmt_(s, locals))
                 .collect::<Result<_, _>>()?;
             let else_branch = match else_branch {
-                Some((_, t)) => {
+                Some((else_token, t)) => {
                     let term = encode_term_(t, locals)?.toks();
-                    Some(quote_spanned! {sp=> else #term })
+                    Some(quote! { #else_token #term })
                 }
                 None => None,
             };
-            Ok(quote_spanned! {sp=> if #cond { #(#then_branch)* } #else_branch }.into())
+            Ok(quote_spanned! { then_span=> #if_token #cond { #(#then_branch)* } #else_branch }
+                .into())
         }
-        Term::Index(TermIndex { expr, index, .. }) => {
+        Term::Index(TermIndex { expr, index, bracket_token }) => {
             let expr =
                 if let Term::Paren(TermParen { expr, .. }) = &**expr { &**expr } else { expr };
 
             let expr = encode_term_(expr, locals)?.toks();
             let index = encode_term_(index, locals)?.toks();
 
-            Ok(quote_spanned! {sp=> (#expr).__creusot_index_logic_stub(#index)}.into())
+            let stream = TokenStream::from_iter([
+                quote_spanned! { expr.span() => (#expr) },
+                // making the span any larger makes it include the expr/index spans which messes
+                // with rust-analyzer span tracking
+                quote_spanned! { bracket_token.span.open() => .__creusot_index_logic_stub },
+                quote_spanned! { bracket_token.span => (#index) },
+            ]);
+            Ok(stream.into())
         }
         Term::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
-        Term::Lit(TermLit { lit: lit @ Lit::Int(int) }) if int.suffix() == "" => {
+        Term::Lit(TermLit { lit: lit @ Lit::Int(int) })
+            if int.suffix() == "" || int.suffix() == "int" =>
+        {
+            let tmp;
+            let int = if int.suffix() == "int" {
+                tmp = LitInt::new(int.base10_digits(), int.span());
+                &tmp
+            } else {
+                int
+            };
+
             // FIXME: allow unbounded integers
-            Ok(quote_spanned! {sp=> ::creusot_std::model::View::view(#lit as i128) }.into())
+            let inner = quote_spanned! { span_after(int.span()) => #int as i128 };
+            let stream = TokenStream::from_iter([
+                quote_spanned! { span_before(int.span()) => ::creusot_std::model::View::view },
+                quote_spanned! { int.span() => (#inner) },
+            ]);
+            Ok(stream.into())
         }
-        Term::Lit(TermLit { lit: Lit::Int(int) }) if int.suffix() == "int" => {
-            let lit = syn::LitInt::new(int.base10_digits(), int.span());
-            Ok(quote_spanned! {sp=> ::creusot_std::model::View::view(#lit as i128) }.into())
-        }
-        Term::Lit(TermLit { lit }) => Ok(quote_spanned! {sp=> #lit }.into()),
-        Term::Match(TermMatch { expr, arms, .. }) => {
+        Term::Lit(TermLit { lit }) => Ok(quote! { #lit }.into()),
+        Term::Match(TermMatch { expr, arms, match_token, brace_token }) => {
             let arms: Vec<_> =
                 arms.iter().map(|a| encode_arm_(a, locals)).collect::<Result<_, _>>()?;
             let expr = encode_term_(expr, locals)?.toks();
-            Ok(quote_spanned! {sp=> match #expr { #(#arms)* } }.into())
+            Ok(quote_spanned! { brace_token.span => #match_token #expr { #(#arms)* } }.into())
         }
-        Term::MethodCall(TermMethodCall { receiver, method, turbofish, args, .. }) => {
+        Term::MethodCall(TermMethodCall {
+            receiver,
+            method,
+            turbofish,
+            args,
+            dot_token,
+            paren_token,
+        }) => {
             let receiver = encode_term_(receiver, locals)?.toks();
+            let args_span = term.span();
             let args: Vec<_> = args
                 .into_iter()
                 .map(|t| Ok(encode_term_(t, locals)?.toks()))
                 .collect::<Result<_, _>>()?;
-            Ok(quote_spanned! {sp=> #receiver . #method #turbofish ( #(#args),*) }.into())
+            let stream = TokenStream::from_iter([
+                quote_spanned! { paren_token.span => (#receiver) },
+                quote_spanned! { args_span => #dot_token #method #turbofish (#(#args,)*) },
+            ]);
+            Ok(stream.into())
         }
         Term::Paren(TermParen { paren_token, expr }) => {
             let mut tokens = TokenStream::new();
@@ -353,23 +429,28 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
         }
         Term::Path(path) if let Some(ident) = path.inner.path.get_ident() => {
             Ok(if locals.is_ref_bound(ident) {
-                quote_spanned! { sp=> (*#ident) }.into()
+                quote! { #deref #ident }.into()
             } else {
-                EncodingResult { toks: quote_spanned! { sp=> #ident }, deref_bor: true }
+                EncodingResult { toks: quote! { #ident }, deref_bor: true }
             })
         }
-        Term::Path(path) => Ok(quote_spanned! { sp=> #path }.into()),
+        Term::Path(path) => Ok(quote! { #path }.into()),
         // Special case to desugar x..=y to RangeInclusive::new_log (instead of new, which is a program function)
         Term::Range(TermRange {
             from: Some(from),
-            limits: RangeLimits::Closed(_),
+            limits: RangeLimits::Closed(limits),
             to: Some(to),
         }) => {
             let from = encode_term_(from, locals)?.toks();
             let to = encode_term_(to, locals)?.toks();
-            Ok(quote_spanned! {sp=>
-                <::core::ops::RangeInclusive<_> as ::creusot_std::std::ops::RangeInclusiveExt<_>>::new_log(#from, #to)
-            }.into())
+            let stream = TokenStream::from_iter([
+                quote_spanned! { span_before(sp) =>
+                    <::core::ops::RangeInclusive<_> as ::creusot_std::std::ops::RangeInclusiveExt<_>>::
+                },
+                quote_spanned! { limits.span() => new_log },
+                quote_spanned! { sp => (#from, #to) },
+            ]);
+            Ok(stream.into())
         }
         Term::Range(TermRange { from, limits, to }) => {
             let from = match from {
@@ -380,11 +461,11 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                 None => TokenStream::new(),
                 Some(t) => encode_term_(t, locals)?.toks(),
             };
-            Ok(quote! { (#from #limits #to) }.into())
+            Ok(quote! { #from #limits #to }.into())
         }
-        Term::Reference(TermReference { mutability, expr, .. }) => {
+        Term::Reference(TermReference { mutability, expr, and_token }) => {
             let term = encode_term_(expr, locals)?.toks();
-            Ok(quote_spanned! {sp=> & #mutability #term}.into())
+            Ok(quote! { #and_token #mutability #term }.into())
         }
         Term::Repeat(_) => Err(EncodeError::Unsupported(term.span(), "Repeat".into())),
         Term::Struct(TermStruct { path, fields, rest, brace_token, dot2_token }) => {
@@ -418,16 +499,13 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
             Ok(ts.into())
         }
         Term::Tuple(TermTuple { elems, .. }) => {
-            if elems.is_empty() {
-                return Ok(quote_spanned! {sp=> () }.into());
-            }
             let elems: Vec<_> = elems
                 .into_iter()
                 .map(|t| Ok(encode_term_(t, locals)?.toks()))
                 .collect::<Result<_, _>>()?;
-            Ok(quote_spanned! {sp=> (#(#elems),*,) }.into())
+            Ok(quote_spanned! { sp => (#(#elems,)*) }.into())
         }
-        Term::Type(ty) => Ok(quote_spanned! {sp=> #ty }.into()),
+        Term::Type(ty) => Ok(quote! { #ty }.into()),
         Term::Unary(TermUnary { op, expr }) => {
             let mut expr = expr;
             if matches!(op, UnOp::Neg(_) | UnOp::Not(_) | UnOp::Deref(_)) {
@@ -439,38 +517,60 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
 
             match op {
                 UnOp::Neg(_) => {
-                    let term = encode_term_(expr, locals)?.toks();
-                    Ok(quote_spanned! {sp=> ::creusot_std::logic::ops::NegLogic::neg_logic(#term) }
-                        .into())
+                    let expr = encode_term_(expr, locals)?.toks();
+                    let stream = TokenStream::from_iter([
+                        quote_spanned! { span_before(op.span()) => ::creusot_std::logic::ops::NegLogic:: },
+                        quote_spanned! { op.span() => neg_logic },
+                        quote_spanned! { sp => (#expr) },
+                    ]);
+                    Ok(stream.into())
                 }
                 UnOp::Not(_) => {
-                    let term = encode_term_(expr, locals)?.toks();
-                    Ok(quote_spanned! {sp=> ::creusot_std::logic::ops::NotLogic::not_logic(#term) }
-                        .into())
+                    let expr = encode_term_(expr, locals)?.toks();
+                    let stream = TokenStream::from_iter([
+                        quote_spanned! { span_before(op.span()) => ::creusot_std::logic::ops::NotLogic:: },
+                        quote_spanned! { op.span() => not_logic },
+                        quote_spanned! { sp => (#expr) },
+                    ]);
+                    Ok(stream.into())
                 }
                 UnOp::Deref(_) => {
                     let EncodingResult { toks, deref_bor } = encode_term_(expr, locals)?;
-                    Ok(EncodingResult { toks: quote_spanned! {sp=> #op #toks }, deref_bor })
+                    Ok(EncodingResult {
+                        toks: quote_spanned! { expr.span() => #op (#toks) },
+                        deref_bor,
+                    })
                 }
                 _ => {
-                    let term = encode_term_(expr, locals)?.toks();
-                    Ok(quote_spanned! {sp=> #op #term }.into())
+                    let expr = encode_term_(expr, locals)?.toks();
+                    Ok(quote_spanned! { expr.span() => #op (#expr) }.into())
                 }
             }
         }
-        Term::Final(TermFinal { term, .. }) => {
+        Term::Final(TermFinal { term, final_token }) => {
             let term = encode_term_(term, locals)?.toks();
-            Ok(quote_spanned! {sp=> (*::creusot_std::logic::ops::Fin::fin(#term))}.into())
+            let stream = TokenStream::from_iter([
+                quote_spanned! { span_before(final_token.span()) => #deref ::creusot_std::logic::ops::Fin:: },
+                quote_spanned! { final_token.span() => fin },
+                quote_spanned! { sp => (#term) },
+            ]);
+            Ok(stream.into())
         }
-        Term::View(TermView { term, .. }) => {
+        Term::View(TermView { term, at_token }) => {
             let term = match &**term {
                 Term::Paren(TermParen { expr, .. }) => expr,
                 _ => term,
             };
             let term = encode_term_(term, locals)?.toks();
-            Ok(quote_spanned! {sp=> ((#term).__creusot_view_stub()) }.into())
+            let stream = TokenStream::from_iter([
+                quote_spanned! { sp => (#term) },
+                quote_spanned! { span_before(at_token.span()) => . },
+                quote_spanned! { at_token.span() => __creusot_view_stub },
+                quote_spanned! { span_after(at_token.span()) => () },
+            ]);
+            Ok(stream.into())
         }
-        Term::Impl(TermImpl { hyp, cons, .. }) => {
+        Term::Impl(TermImpl { hyp, cons, eqeq_token, gt_token }) => {
             let hyp = match &**hyp {
                 Term::Paren(TermParen { expr, .. }) => match &**expr {
                     Term::Quant(_) => expr,
@@ -480,39 +580,58 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
             };
             let hyp = encode_term_(hyp, locals)?.toks();
             let cons = encode_term_(cons, locals)?.toks();
-            Ok(quote_spanned! {sp=> ::creusot_std::__stubs::implication(#hyp, #cons)}.into())
+
+            let implication_sp = span_join(eqeq_token.span(), gt_token.span());
+            let stream = TokenStream::from_iter([
+                quote_spanned! { span_before(implication_sp) => ::creusot_std::__stubs:: },
+                quote_spanned! { implication_sp => implication },
+                quote_spanned! { sp => (#hyp, #cons) },
+            ]);
+            Ok(stream.into())
         }
-        Term::Quant(TermQuant { quant_token, args, term, .. }) => {
+        Term::Quant(TermQuant { quant_token, args, term, lt_token, gt_token }) => {
             locals.open();
             let args_ref = args
                 .iter()
                 .map(|qa @ QuantArg { ident, ty }| {
                     locals.bind_ref(ident.clone());
                     match ty {
-                        None => quote_spanned! {qa.span()=> #ident: &_ },
-                        Some((_, ty)) => quote_spanned! {qa.span()=> #ident: &#ty },
+                        None => quote_spanned! { span_after(qa.span()) => #ident: &_ },
+                        Some((_, ty)) => quote_spanned! { span_after(qa.span()) => #ident: &#ty },
                     }
                 })
                 .collect::<Vec<_>>();
             let ts = encode_term_with_triggers_(term, locals)?;
             locals.close();
-            Ok(quote_spanned! {sp=>
+            let open_token = quote_spanned! { lt_token.span() => | };
+            let close_token = quote_spanned! { gt_token.span() => | };
+            Ok(quote_spanned! { span_before(sp) =>
                 ::creusot_std::__stubs::#quant_token(
                     #[creusot::no_translate]
                     #[creusot::logic_closure]
-                    |#(#args_ref,)*| #ts
+                    #open_token #(#args_ref,)* #close_token #ts
                 )
             }
             .into())
         }
-        Term::Dead(_) => Ok(quote_spanned! {sp=> (*::creusot_std::__stubs::dead()) }.into()),
+        Term::Dead(_) => {
+            let stream = TokenStream::from_iter([
+                quote_spanned! { span_before(sp) => #deref ::creusot_std::__stubs::},
+                quote_spanned! { sp => dead },
+                quote_spanned! { span_after(sp) => () },
+            ]);
+            Ok(stream.into())
+        }
         Term::Pearlite(TermPearlite { block, .. }) => {
             let term = encode_block_(block, locals);
-            Ok(quote! { (#term) }.into())
+            let stream =
+                quote_spanned! { span_before(term.span()) => #[allow(unused_braces)] #term };
+            Ok(TokenStream::from_iter([TokenTree::Group(Group::new(Delimiter::None, stream))])
+                .into())
         }
         Term::ProofAssert(TermProofAssert { block, .. }) => {
             let assert_body = encode_block_(block, locals);
-            Ok(quote_spanned! {sp =>
+            Ok(quote_spanned! { span_before(sp) =>
                 {
                     #[allow(let_underscore_drop)]
                     let _ =
@@ -524,16 +643,27 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
             }
             .into())
         }
-        Term::Seq(TermSeq { terms, .. }) => {
+        Term::Seq(TermSeq { terms, seq_token, bang_token, .. }) => {
+            let seq_token = span_join(seq_token.span(), bang_token.span());
             if terms.is_empty() {
-                return Ok(quote_spanned! { sp=> ::creusot_std::logic::seq::Seq::empty() }.into());
+                let stream = TokenStream::from_iter([
+                    quote_spanned! { span_before(sp) => ::creusot_std::logic::seq::Seq:: },
+                    quote_spanned! { seq_token.span() => empty },
+                    quote_spanned! { span_after(sp) => () },
+                ]);
+                return Ok(stream.into());
             }
 
             let terms: Vec<_> = terms
                 .into_iter()
                 .map(|t| Ok(encode_term_(t, locals)?.toks()))
                 .collect::<Result<_, _>>()?;
-            Ok(quote_spanned! {sp=> creusot_std::__stubs::seq_literal(&[#(#terms),*]) }.into())
+            let stream = TokenStream::from_iter([
+                quote_spanned! { span_before(sp) => ::creusot_std::__stubs:: },
+                quote_spanned! { seq_token.span() => seq_literal },
+                quote_spanned! { span_after(sp) => (&[#(#terms,)*]) },
+            ]);
+            Ok(stream.into())
         }
         Term::Closure(clos) => {
             if clos.inputs.len() != 1 {
@@ -583,15 +713,15 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                             ..
                         }),
                     ty,
-                    ..
+                    colon_token,
                 }) => {
                     locals.bind_ref(ident.clone());
-                    quote_spanned! {sp=> #(#attrs)* #ident : &#ty }
+                    quote! { #(#attrs)* #ident #colon_token &#ty }
                 }
                 // |pat: ty|
-                Pat::Type(PatType { attrs, pat, ty, .. }) => {
+                Pat::Type(PatType { attrs, pat, ty, colon_token }) => {
                     pattern_bind(pat, locals, term.span())?;
-                    quote_spanned! {sp=> #(#attrs)* &#pat : &#ty }
+                    quote! { #(#attrs)* &#pat #colon_token &#ty }
                 }
                 // |x|
                 Pat::Ident(PatIdent {
@@ -602,17 +732,17 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                     ..
                 }) => {
                     locals.bind_ref(ident.clone());
-                    quote_spanned! {sp=> #ident : &_ }
+                    quote_spanned! { span_after(ident.span()) => #ident : &_ }
                 }
                 pat => {
                     pattern_bind(pat, locals, term.span())?;
-                    quote_spanned! {sp=> &#pat }
+                    quote_spanned! { span_before(pat.span()) => &#pat }
                 }
             };
             let retty = &clos.output;
             let clos = encode_term_(&clos.body, locals)?.toks();
             locals.close();
-            Ok(quote_spanned! {sp=>
+            Ok(quote_spanned! { span_before(sp)=>
                 ::creusot_std::__stubs::mapping_from_fn(
                     #[creusot::no_translate] #[creusot::logic_closure] |#input| #retty #clos)
             }
@@ -637,13 +767,17 @@ fn encode_trigger_(
 ) -> Result<TokenStream, EncodeError> {
     while let [rest @ .., last] = trigger {
         trigger = rest;
+        let terms_span = last.terms.span();
         let trigs = last
             .terms
             .iter()
             .map(|t| Ok(encode_term_(t, locals)?.toks()))
             .collect::<Result<Vec<_>, _>>()?;
-        let span = last.span();
-        ts = quote_spanned!(span=>::creusot_std::__stubs::trigger((#(#trigs,)*), #ts))
+        ts = TokenStream::from_iter([
+            quote_spanned! { span_before(last.span()) => ::creusot_std::__stubs:: },
+            quote_spanned! { last.trigger_token.span() => trigger },
+            quote_spanned! { terms_span => ((#(#trigs,)*), #ts) },
+        ])
     }
     Ok(ts)
 }
@@ -755,33 +889,30 @@ mod tests {
     fn encode_old() {
         let term: Term = syn::parse_str("old(x)").unwrap();
 
-        check_term(encode_term(&term), "(* :: creusot_std :: __stubs :: old ((* & x)))");
+        check_term(encode_term(&term), "* :: creusot_std :: __stubs :: old (* & x ,)");
     }
 
     #[test]
     fn encode_fin() {
         let term: Term = syn::parse_str("^ x").unwrap();
-        check_term(
-            encode_term(&term),
-            "(* :: creusot_std :: logic :: ops :: Fin :: fin ((* & x)))",
-        );
+        check_term(encode_term(&term), "* :: creusot_std :: logic :: ops :: Fin :: fin (* & x)");
 
         let term: Term = syn::parse_str("^ ^ x").unwrap();
         check_term(
             encode_term(&term),
-            "(* :: creusot_std :: logic :: ops :: Fin :: fin ((* :: creusot_std :: logic :: ops :: Fin :: fin ((* & x)))))",
+            "* :: creusot_std :: logic :: ops :: Fin :: fin (* :: creusot_std :: logic :: ops :: Fin :: fin (* & x))",
         );
     }
 
     #[test]
     fn encode_cur() {
         let term: Term = syn::parse_str("*x").unwrap();
-        check_term(encode_term(&term), "(* & * x)");
+        check_term(encode_term(&term), "* & * (x)");
         let term: Term = syn::parse_str("* ^ x").unwrap();
 
         check_term(
             encode_term(&term),
-            "* (* :: creusot_std :: logic :: ops :: Fin :: fin ((* & x)))",
+            "* (* :: creusot_std :: logic :: ops :: Fin :: fin (* & x))",
         );
     }
 
@@ -790,7 +921,7 @@ mod tests {
         let term: Term = syn::parse_str("forall<x: Int> x == x").unwrap();
         check_term(
             encode_term(&term),
-            ":: creusot_std :: __stubs :: forall (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | :: creusot_std :: __stubs :: equal ((* x) , (* x)))",
+            ":: creusot_std :: __stubs :: forall (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | :: creusot_std :: __stubs :: equal (* x , * x))",
         );
 
         let term: Term = syn::parse_str("forall<x: Int> forall<y: Int> true").unwrap();
@@ -805,7 +936,7 @@ mod tests {
         let term: Term = syn::parse_str("exists<x:Int> x == x").unwrap();
         check_term(
             encode_term(&term),
-            ":: creusot_std :: __stubs :: exists (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | :: creusot_std :: __stubs :: equal ((* x) , (* x)))",
+            ":: creusot_std :: __stubs :: exists (# [creusot :: no_translate] # [creusot :: logic_closure] | x : & Int , | :: creusot_std :: __stubs :: equal (* x , * x))",
         );
 
         let term: Term = syn::parse_str("exists<x:Int> exists<y:Int> true").unwrap();
