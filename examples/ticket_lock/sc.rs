@@ -24,7 +24,7 @@ declare_namespace! { TICKET_LOCK }
 struct TicketLockInv<T> {
     cell: Snapshot<PermCell<T>>,
     lft: Snapshot<Lifetime>,
-    perm: Option<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
+    perm: Option<Guarded<FullBorrow<Perm<PermCell<T>>>, PermCell<T>>>,
     perm_next_ticket: Perm<AtomicU32>,
     perm_now_serving: Perm<AtomicU32>,
     auth_tickets: Authority<FMap<Int, Excl<()>>>,
@@ -55,7 +55,7 @@ impl<T> Protocol for TicketLockInv<T> {
             match self.perm {
                 Some(bor) => {
                     bor.inner.lft() == *self.lft &&
-                    bor.guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == *self.cell) &&
+                    bor.guard() == *self.cell &&
                     self.inv.get(bor.inner.cur().val())
                 }
                 None => {
@@ -92,7 +92,7 @@ impl<T> Invariant for TicketLock<T> {
 
 pub struct TicketLockGuard<'a, T> {
     lock: &'a TicketLock<T>,
-    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
+    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>, PermCell<T>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
 
@@ -109,7 +109,7 @@ impl<'a, T> Invariant for TicketLockGuard<'a, T> {
     #[logic(inline)]
     fn invariant(self) -> bool {
         pearlite! {
-            self.perm.guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == self.lock.data) &&
+            self.perm.guard() == self.lock.data &&
             self.perm.inner.lft() == self.lock.lft_tok.lft() &&
             self.inv == self.lock.inv
         }
@@ -129,7 +129,7 @@ impl<T> TicketLock<T> {
             ghost!(TicketLockInv {
                 cell: snapshot!(data),
                 lft: snapshot!(lft_tok.lft()),
-                perm: Some(bor.into_inner().add_guard(snapshot!(|p: Perm<_>| *p.ward() == data))),
+                perm: Some(bor.into_inner().add_guard(snapshot!(data))),
                 perm_next_ticket: perm_next_ticket.into_inner(),
                 perm_now_serving: perm_now_serving.into_inner(),
                 auth_tickets: Authority::alloc().into_inner(),

@@ -8,8 +8,8 @@
 use crate::{ghost::Objective, resolve::structural_resolve};
 use crate::{
     ghost::{FnGhost, NotObjective, Plain, resource::Resource},
-    invariant::Guarded,
-    logic::{Id, Mapping, ops::Fin, real::PositiveReal},
+    invariant::{Guard, GuardRef, Guarded},
+    logic::{Id, ops::Fin, real::PositiveReal},
     prelude::*,
 };
 use core::marker::PhantomData;
@@ -229,6 +229,13 @@ impl<T> Invariant for FullBorrow<T> {
     }
 }
 
+impl<G: GuardRef<T>, T> Guard<FullBorrow<T>> for G {
+    #[logic(open, prophetic, inline)]
+    fn guards(self, initial: FullBorrow<T>, current: FullBorrow<T>) -> bool {
+        pearlite! { self.guards_ref(current.cur()) && ^initial == ^current }
+    }
+}
+
 impl<T> FullBorrow<T> {
     /// The lifetime of this borrow
     #[logic(opaque)]
@@ -273,12 +280,12 @@ impl<T> FullBorrow<T> {
     /// This is analoguous to `Guarded::<&mut T>::new`, but for `FullBorrow`.
     #[trusted]
     #[check(ghost)]
-    #[requires(guard[self.cur()])]
+    #[requires((*guard).guards_ref(self.cur()))]
     #[ensures(result.inner == self)]
-    #[ensures(forall<bor: FullBorrow<T>> result.guard()[bor] == guard[bor.cur()])]
-    #[ensures(guard[^self])]
+    #[ensures(result.guard() == *guard)]
+    #[ensures((*guard).guards_ref(^self))]
     #[allow(unused_variables)]
-    pub fn add_guard(self, guard: Snapshot<Mapping<T, bool>>) -> Guarded<Self> {
+    pub fn add_guard<G: GuardRef<T>>(self, guard: Snapshot<G>) -> Guarded<Self, G> {
         unreachable!("ghost code only")
     }
 

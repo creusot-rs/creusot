@@ -10,14 +10,14 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   
   type t_FullBorrow_Perm_PermCell_T
   
-  type t_Guarded_FullBorrow_Perm_PermCell_T = {
+  type t_PermCell_T
+  
+  type t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = {
     inner: t_FullBorrow_Perm_PermCell_T;
-    _guard: Map.map t_FullBorrow_Perm_PermCell_T bool;
+    _guard: t_PermCell_T;
     _initial: t_FullBorrow_Perm_PermCell_T }
   
   type t_AtomicU32
-  
-  type t_PermCell_T
   
   type t_LifetimeToken
   
@@ -40,77 +40,76 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   
   type t_TicketLockGuard_T = {
     lock'0: t_TicketLock_T;
-    perm'0: t_Guarded_FullBorrow_Perm_PermCell_T;
+    perm'0: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     token'0: t_Resource_Option_Excl_unit;
     inv'0: Map.map t_T bool }
   
-  predicate index_Mapping_FullBorrow_Perm_PermCell_T_bool [@inline:trivial] (self: Map.map t_FullBorrow_Perm_PermCell_T bool) (a: t_FullBorrow_Perm_PermCell_T) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_FullBorrow_Perm_PermCell_T_bool
-  
-  function guard_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) : Map.map t_FullBorrow_Perm_PermCell_T bool
-   = self._guard
-  
-  meta "rewrite_def" function guard_FullBorrow_Perm_PermCell_T
-  
   type t_Perm_PermCell_T
+  
+  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
+  
+  predicate guards_ref_PermCell_T [@inline:trivial] (self: t_PermCell_T) (c: t_Perm_PermCell_T) =
+    ward_PermCell_T c = self
+  
+  meta "rewrite_def" predicate guards_ref_PermCell_T
+  
+  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
   
   function fin_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
   
-  predicate rel_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_FullBorrow_Perm_PermCell_T) (other: t_FullBorrow_Perm_PermCell_T) =
-    fin_FullBorrow_Perm_PermCell_T self = fin_FullBorrow_Perm_PermCell_T other
+  predicate guards_PermCell_T [@inline:trivial] (self: t_PermCell_T) (initial: t_FullBorrow_Perm_PermCell_T) (current': t_FullBorrow_Perm_PermCell_T) =
+    guards_ref_PermCell_T self (cur_Perm_PermCell_T current')
+    /\ fin_FullBorrow_Perm_PermCell_T initial = fin_FullBorrow_Perm_PermCell_T current'
   
-  meta "rewrite_def" predicate rel_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate guards_PermCell_T
   
-  predicate invariant_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    index_Mapping_FullBorrow_Perm_PermCell_T_bool (guard_FullBorrow_Perm_PermCell_T self) self.inner
-    /\ rel_FullBorrow_Perm_PermCell_T self.inner self._initial
+  predicate invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    guards_PermCell_T self._guard self._initial self.inner
   
-  meta "rewrite_def" predicate invariant_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Guarded_FullBorrow_Perm_PermCell_T (_1: t_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
   axiom inv_axiom [@rewrite]:
-    forall _1: t_Guarded_FullBorrow_Perm_PermCell_T [inv_Guarded_FullBorrow_Perm_PermCell_T _1]. inv_Guarded_FullBorrow_Perm_PermCell_T _1
-      = invariant_Guarded_FullBorrow_Perm_PermCell_T _1
+    forall _1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1]. inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
+      = invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Guarded_FullBorrow_Perm_PermCell_T self
+  predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate invariant_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T self
+  predicate invariant_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self
   
-  meta "rewrite_def" predicate invariant_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate invariant_ref_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Guarded_FullBorrow_Perm_PermCell_T self
+  predicate invariant_ref_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self
   
-  meta "rewrite_def" predicate invariant_ref_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_ref_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_ref_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_ref_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_ref_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_ref_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_ref_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_ref_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  let deref_Ghost_Guarded_FullBorrow_Perm_PermCell_T (self: t_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: t_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T self}
+  let deref_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self}
     any
-    [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:deref_Ghost_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:deref_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:deref ensures] result = self)}
       (! return {result}) ]
   
@@ -154,8 +153,6 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   
   function lft (self: t_LifetimeToken) : t_Lifetime
   
-  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
-  
   let borrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) (token: t_LifetimeToken)
     (return (x: t_Perm_PermCell_T)) =
   {[@stop_split] [@expl:borrow_Perm_PermCell_T requires] ([@stop_split] [@expl:borrow 'token' type invariant] inv_ref_LifetimeToken token)
@@ -166,8 +163,6 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   
   let new_ref_Perm_PermCell_T (x: t_Perm_PermCell_T) (return (x'0: t_Perm_PermCell_T)) = any
     [ return (result: t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
-  
-  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
   
   predicate inv_T (_1: t_T)
   
@@ -188,6 +183,11 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
     {[@stop_split] [@expl:borrow_T ensures] ([@stop_split] [@expl:borrow result type invariant] inv_ref_T result)
       /\ ([@stop_split] [@expl:borrow ensures] result = val_unsized_PermCell_T perm)}
       (! return {result}) ]
+  
+  function guard_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) : t_PermCell_T
+   = self._guard
+  
+  meta "rewrite_def" function guard_FullBorrow_Perm_PermCell_T
   
   type t_Id
   
@@ -219,8 +219,7 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   meta "rewrite_def" function view_Resource_Option_Excl_unit
   
   predicate invariant_TicketLockGuard_T [@inline:trivial] (self: t_TicketLockGuard_T) =
-    guard_FullBorrow_Perm_PermCell_T self.perm'0
-      = (fun (b: t_FullBorrow_Perm_PermCell_T) -> ward_PermCell_T (cur_Perm_PermCell_T b) = self.lock'0.data)
+    guard_FullBorrow_Perm_PermCell_T self.perm'0 = self.lock'0.data
     /\ lft_Perm_PermCell_T self.perm'0.inner = lft self.lock'0.lft_tok
     /\ self.inv'0 = self.lock'0.inv
     /\ id_Option_Excl_unit self.token'0 = (public_TicketLockInv_T self.lock'0.inner_inv).f2'0
@@ -289,7 +288,7 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   
   axiom inv_axiom'1 [@rewrite]: forall _1: t_TicketLockGuard_T [inv_TicketLockGuard_T _1]. inv_TicketLockGuard_T _1
       = (invariant_TicketLockGuard_T _1
-      /\ inv_ref_TicketLock_T _1.lock'0 /\ inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T _1.perm'0)
+      /\ inv_ref_TicketLock_T _1.lock'0 /\ inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1.perm'0)
   
   predicate invariant_ref_TicketLockGuard_T [@inline:trivial] (self: t_TicketLockGuard_T) = inv_TicketLockGuard_T self
   
@@ -314,8 +313,8 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_TicketLockGuard_T self}
     (! bb0
     [ bb0 = s0
-      [ s0 = deref_Ghost_Guarded_FullBorrow_Perm_PermCell_T {self.perm'0}
-          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_10 <- _x ] s1)
+      [ s0 = deref_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {self.perm'0}
+          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_10 <- _x ] s1)
       | s1 = [ &_15 <- self.lock'0.lft_tok ] s2
       | s2 = deref_Ghost_LifetimeToken {_15} (fun (_x: t_LifetimeToken) -> [ &_13 <- _x ] s3)
       | s3 = borrow_Perm_PermCell_T {_10.inner} {_13} (fun (_x: t_Perm_PermCell_T) -> [ &_8 <- _x ] s4)
@@ -328,7 +327,7 @@ module M_impl_TicketLockGuard_T__deref (* TicketLockGuard<'a, T> *)
     | & _4: t_T = Any.any_l ()
     | & _6: t_Perm_PermCell_T = Any.any_l ()
     | & _8: t_Perm_PermCell_T = Any.any_l ()
-    | & _10: t_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _10: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
     | & _13: t_LifetimeToken = Any.any_l ()
     | & _15: t_LifetimeToken = Any.any_l () ])
     [ return (result: t_T) ->
@@ -370,86 +369,88 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   
   type t_FullBorrow_Perm_PermCell_T
   
-  type t_Guarded_FullBorrow_Perm_PermCell_T = {
+  type t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = {
     inner: t_FullBorrow_Perm_PermCell_T;
-    _guard: Map.map t_FullBorrow_Perm_PermCell_T bool;
+    _guard: t_PermCell_T;
     _initial: t_FullBorrow_Perm_PermCell_T }
   
   type t_Resource_Option_Excl_unit
   
   type t_TicketLockGuard_T = {
     lock'0: t_TicketLock_T;
-    perm'0: t_Guarded_FullBorrow_Perm_PermCell_T;
+    perm'0: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     token'0: t_Resource_Option_Excl_unit;
     inv'0: Map.map t_T bool }
   
-  predicate index_Mapping_FullBorrow_Perm_PermCell_T_bool [@inline:trivial] (self: Map.map t_FullBorrow_Perm_PermCell_T bool) (a: t_FullBorrow_Perm_PermCell_T) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_FullBorrow_Perm_PermCell_T_bool
-  
-  function guard_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) : Map.map t_FullBorrow_Perm_PermCell_T bool
-   = self._guard
-  
-  meta "rewrite_def" function guard_FullBorrow_Perm_PermCell_T
-  
   type t_Perm_PermCell_T
+  
+  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
+  
+  predicate guards_ref_PermCell_T [@inline:trivial] (self: t_PermCell_T) (c: t_Perm_PermCell_T) =
+    ward_PermCell_T c = self
+  
+  meta "rewrite_def" predicate guards_ref_PermCell_T
+  
+  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
   
   function fin_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
   
-  predicate rel_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_FullBorrow_Perm_PermCell_T) (other: t_FullBorrow_Perm_PermCell_T) =
-    fin_FullBorrow_Perm_PermCell_T self = fin_FullBorrow_Perm_PermCell_T other
+  predicate guards_PermCell_T [@inline:trivial] (self: t_PermCell_T) (initial: t_FullBorrow_Perm_PermCell_T) (current': t_FullBorrow_Perm_PermCell_T) =
+    guards_ref_PermCell_T self (cur_Perm_PermCell_T current')
+    /\ fin_FullBorrow_Perm_PermCell_T initial = fin_FullBorrow_Perm_PermCell_T current'
   
-  meta "rewrite_def" predicate rel_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate guards_PermCell_T
   
-  predicate invariant_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    index_Mapping_FullBorrow_Perm_PermCell_T_bool (guard_FullBorrow_Perm_PermCell_T self) self.inner
-    /\ rel_FullBorrow_Perm_PermCell_T self.inner self._initial
+  predicate invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    guards_PermCell_T self._guard self._initial self.inner
   
-  meta "rewrite_def" predicate invariant_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Guarded_FullBorrow_Perm_PermCell_T (_1: t_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
   axiom inv_axiom [@rewrite]:
-    forall _1: t_Guarded_FullBorrow_Perm_PermCell_T [inv_Guarded_FullBorrow_Perm_PermCell_T _1]. inv_Guarded_FullBorrow_Perm_PermCell_T _1
-      = invariant_Guarded_FullBorrow_Perm_PermCell_T _1
+    forall _1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1]. inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
+      = invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Guarded_FullBorrow_Perm_PermCell_T self
+  predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate invariant_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T self.current /\ inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T self.final
+  predicate invariant_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.current
+    /\ inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.final
   
-  meta "rewrite_def" predicate invariant_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate invariant_refmut_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Guarded_FullBorrow_Perm_PermCell_T self.current /\ inv_Guarded_FullBorrow_Perm_PermCell_T self.final
+  predicate invariant_refmut_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.current
+    /\ inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.final
   
-  meta "rewrite_def" predicate invariant_refmut_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_refmut_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_refmut_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_refmut_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_refmut_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_refmut_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_refmut_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_refmut_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  let deref_mut_Ghost_Guarded_FullBorrow_Perm_PermCell_T (self: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T self}
+  let deref_mut_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
+    (self: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self}
     any
-    [ return (result: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:deref_mut_Ghost_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:deref_mut_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
@@ -504,8 +505,6 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   
   function lft (self: t_LifetimeToken) : t_Lifetime
   
-  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
-  
   let borrow_mut_Perm_PermCell_T (self: MutBorrow.t t_FullBorrow_Perm_PermCell_T) (token: t_LifetimeToken)
     (return (x: MutBorrow.t t_Perm_PermCell_T)) =
   {[@stop_split] [@expl:borrow_mut_Perm_PermCell_T requires] ([@stop_split] [@expl:borrow_mut 'token' type invariant] inv_ref_LifetimeToken token)
@@ -532,8 +531,6 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   let new_refmut_Perm_PermCell_T (x: MutBorrow.t t_Perm_PermCell_T) (return (x'0: MutBorrow.t t_Perm_PermCell_T)) = any
     [ return (result: MutBorrow.t t_Perm_PermCell_T) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
-  
-  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
   
   predicate inv_T (_1: t_T)
   
@@ -567,10 +564,15 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   
   meta "rewrite_def" predicate resolve_refmut_T
   
-  predicate resolve_refmut_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T) =
+  predicate resolve_refmut_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate resolve_refmut_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
+  
+  function guard_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) : t_PermCell_T
+   = self._guard
+  
+  meta "rewrite_def" function guard_FullBorrow_Perm_PermCell_T
   
   type t_Id
   
@@ -602,8 +604,7 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   meta "rewrite_def" function view_Resource_Option_Excl_unit
   
   predicate invariant_TicketLockGuard_T [@inline:trivial] (self: t_TicketLockGuard_T) =
-    guard_FullBorrow_Perm_PermCell_T self.perm'0
-      = (fun (b: t_FullBorrow_Perm_PermCell_T) -> ward_PermCell_T (cur_Perm_PermCell_T b) = self.lock'0.data)
+    guard_FullBorrow_Perm_PermCell_T self.perm'0 = self.lock'0.data
     /\ lft_Perm_PermCell_T self.perm'0.inner = lft self.lock'0.lft_tok
     /\ self.inv'0 = self.lock'0.inv
     /\ id_Option_Excl_unit self.token'0 = (public_TicketLockInv_T self.lock'0.inner_inv).f2'0
@@ -672,7 +673,7 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   
   axiom inv_axiom'1 [@rewrite]: forall _1: t_TicketLockGuard_T [inv_TicketLockGuard_T _1]. inv_TicketLockGuard_T _1
       = (invariant_TicketLockGuard_T _1
-      /\ inv_ref_TicketLock_T _1.lock'0 /\ inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T _1.perm'0)
+      /\ inv_ref_TicketLock_T _1.lock'0 /\ inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1.perm'0)
   
   predicate invariant_refmut_TicketLockGuard_T [@inline:trivial] (self: MutBorrow.t t_TicketLockGuard_T) =
     inv_TicketLockGuard_T self.current /\ inv_TicketLockGuard_T self.final
@@ -704,14 +705,15 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
   {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_TicketLockGuard_T self}
     (! bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <t_Guarded_FullBorrow_Perm_PermCell_T> {self.current.perm'0}
+      [ s0 = MutBorrow.borrow_final <t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T> {self.current.perm'0}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
-          (fun (_bor: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T) ->
-            [ &_9 <- _bor ] -{inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T _bor.final}-
+          (fun (_bor: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+            [ &_9 <- _bor ] -{inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _bor.final}-
             [ &self <- { self with current = { self.current with perm'0 = _bor.final } } ] s1)
-        [ _ck -> (! {[@expl:type invariant] inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T self.current.perm'0} any) ]
-      | s1 = deref_mut_Ghost_Guarded_FullBorrow_Perm_PermCell_T {_9}
-          (fun (_x: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_8 <- _x ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.current.perm'0}
+          any) ]
+      | s1 = deref_mut_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_9}
+          (fun (_x: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_8 <- _x ] s2)
       | s2 = MutBorrow.borrow_final <t_FullBorrow_Perm_PermCell_T> {_8.current.inner}
           {MutBorrow.inherit_id (MutBorrow.get_id _8) 0}
           (fun (_bor: MutBorrow.t t_FullBorrow_Perm_PermCell_T) ->
@@ -755,8 +757,9 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
         [ _ck -> (! {[@expl:type invariant] inv_T _12.current} any) ]
       | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _12} any) ]
       | s23 = -{resolve_refmut_T _12}- s24
-      | s24 = s25 [ _ck -> (! {[@expl:type invariant] inv_refmut_Guarded_FullBorrow_Perm_PermCell_T _8} any) ]
-      | s25 = -{resolve_refmut_Guarded_FullBorrow_Perm_PermCell_T _8}- s26
+      | s24 = s25
+        [ _ck -> (! {[@expl:type invariant] inv_refmut_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _8} any) ]
+      | s25 = -{resolve_refmut_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _8}- s26
       | s26 = MutBorrow.borrow_final <t_T> {_2.current} {MutBorrow.get_id _2}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_ret <- _bor ] -{inv_T _bor.final}-
@@ -771,8 +774,8 @@ module M_impl_TicketLockGuard_T__deref_mut (* TicketLockGuard<'a, T> *)
     | & self: MutBorrow.t t_TicketLockGuard_T = self
     | & _2: MutBorrow.t t_T = Any.any_l ()
     | & __temp: MutBorrow.t t_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _8: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _9: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _8: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _9: MutBorrow.t t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
     | & p: MutBorrow.t t_FullBorrow_Perm_PermCell_T = Any.any_l ()
     | & _12: MutBorrow.t t_T = Any.any_l ()
     | & _13: MutBorrow.t t_T = Any.any_l ()
@@ -847,16 +850,16 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   type t_FullBorrow_Perm_PermCell_T
   
-  type t_Guarded_FullBorrow_Perm_PermCell_T = {
+  type t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = {
     inner: t_FullBorrow_Perm_PermCell_T;
-    _guard: Map.map t_FullBorrow_Perm_PermCell_T bool;
+    _guard: t_PermCell_T;
     _initial: t_FullBorrow_Perm_PermCell_T }
   
   type t_Resource_Option_Excl_unit
   
   type t_TicketLockGuard_T = {
     lock'0: t_TicketLock_T;
-    perm'0: t_Guarded_FullBorrow_Perm_PermCell_T;
+    perm'0: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     token'0: t_Resource_Option_Excl_unit;
     inv'0: Map.map t_T bool }
   
@@ -915,7 +918,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   type closure3 = {
     c0: t_TicketLock_T;
-    c1: t_Guarded_FullBorrow_Perm_PermCell_T;
+    c1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     c2: MutBorrow.t t_Resource_Option_Excl_unit;
     c3: t_Tokens }
   
@@ -930,103 +933,104 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   type t_Committer_AtomicU32_u32_None_Release
   
   type closure0 = {
-    c0'0: t_Guarded_FullBorrow_Perm_PermCell_T;
+    c0'0: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     c1'0: MutBorrow.t t_Resource_Option_Excl_unit;
     c2'0: MutBorrow.t (MutBorrow.t t_Committer_AtomicU32_u32_None_Release) }
   
   type t_SyncView
   
-  type t_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  type t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  type tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T = {
+  type tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = {
     f0'0: t_SyncView;
-    f1'0: t_AtView_Guarded_FullBorrow_Perm_PermCell_T }
-  
-  predicate index_Mapping_FullBorrow_Perm_PermCell_T_bool [@inline:trivial] (self: Map.map t_FullBorrow_Perm_PermCell_T bool) (a: t_FullBorrow_Perm_PermCell_T) =
-    Map.get self a
-  
-  meta "rewrite_def" predicate index_Mapping_FullBorrow_Perm_PermCell_T_bool
-  
-  function guard_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) : Map.map t_FullBorrow_Perm_PermCell_T bool
-   = self._guard
-  
-  meta "rewrite_def" function guard_FullBorrow_Perm_PermCell_T
+    f1'0: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T }
   
   type t_Perm_PermCell_T
   
+  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
+  
+  predicate guards_ref_PermCell_T [@inline:trivial] (self: t_PermCell_T) (c: t_Perm_PermCell_T) =
+    ward_PermCell_T c = self
+  
+  meta "rewrite_def" predicate guards_ref_PermCell_T
+  
+  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  
   function fin_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
   
-  predicate rel_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_FullBorrow_Perm_PermCell_T) (other: t_FullBorrow_Perm_PermCell_T) =
-    fin_FullBorrow_Perm_PermCell_T self = fin_FullBorrow_Perm_PermCell_T other
+  predicate guards_PermCell_T [@inline:trivial] (self: t_PermCell_T) (initial: t_FullBorrow_Perm_PermCell_T) (current': t_FullBorrow_Perm_PermCell_T) =
+    guards_ref_PermCell_T self (cur_Perm_PermCell_T current')
+    /\ fin_FullBorrow_Perm_PermCell_T initial = fin_FullBorrow_Perm_PermCell_T current'
   
-  meta "rewrite_def" predicate rel_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate guards_PermCell_T
   
-  predicate invariant_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    index_Mapping_FullBorrow_Perm_PermCell_T_bool (guard_FullBorrow_Perm_PermCell_T self) self.inner
-    /\ rel_FullBorrow_Perm_PermCell_T self.inner self._initial
+  predicate invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    guards_PermCell_T self._guard self._initial self.inner
   
-  meta "rewrite_def" predicate invariant_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Guarded_FullBorrow_Perm_PermCell_T (_1: t_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
   axiom inv_axiom [@rewrite]:
-    forall _1: t_Guarded_FullBorrow_Perm_PermCell_T [inv_Guarded_FullBorrow_Perm_PermCell_T _1]. inv_Guarded_FullBorrow_Perm_PermCell_T _1
-      = invariant_Guarded_FullBorrow_Perm_PermCell_T _1
+    forall _1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1]. inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
+      = invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Guarded_FullBorrow_Perm_PermCell_T self
+  predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_AtView_Guarded_FullBorrow_Perm_PermCell_T (_1: t_AtView_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate inv_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
-  predicate inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_AtView_Guarded_FullBorrow_Perm_PermCell_T _1.f1'0
+  predicate inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1.f1'0
   
-  meta "rewrite_def" predicate inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate invariant_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T self
+  predicate invariant_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  function view_Guarded_FullBorrow_Perm_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T) : t_SyncView
+  function view_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) : t_SyncView
   
-  function val_Guarded_FullBorrow_Perm_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T) : t_Guarded_FullBorrow_Perm_PermCell_T
+  function val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) : t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  let new_Guarded_FullBorrow_Perm_PermCell_T (val': t_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:new 'val' type invariant] inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T val'}
+  let new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (val': t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:new 'val' type invariant] inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T val'}
     any
-    [ return (result: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:new_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T result)
-      /\ ([@stop_split] [@expl:new ensures] result.f0'0 = view_Guarded_FullBorrow_Perm_PermCell_T result.f1'0
-      /\ val_Guarded_FullBorrow_Perm_PermCell_T result.f1'0 = val')}
+    [ return (result: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
+      /\ ([@stop_split] [@expl:new ensures] result.f0'0 = view_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result.f1'0
+      /\ val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result.f1'0 = val')}
       (! return {result}) ]
   
-  let into_inner_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T
-    (self: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T self}
+  let into_inner_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
+    (self: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self}
     any
-    [ return (result: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:into_inner_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:into_inner_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
   type t_Lifetime
   
-  type t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T = None | Some t_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  type t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T =
+    | None
+    | Some t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
   type t_Perm_AtomicU32
   
@@ -1037,7 +1041,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   type t_TicketLockInv_T = {
     cell'1: t_PermCell_T;
     lft'1: t_Lifetime;
-    perm'1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T;
+    perm'1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     perm_next_ticket'1: t_Perm_AtomicU32;
     perm_now_serving'1: t_Perm_AtomicU32;
     auth_tickets'1: t_Authority_FMap_Int_Excl_unit;
@@ -1254,24 +1258,24 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   meta "rewrite_def" predicate resolve_refmut_refmut_Committer_AtomicU32_u32_None_Release
   
-  predicate inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T (_1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
   axiom inv_axiom'0 [@rewrite]:
-    forall _1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T [inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _1]. inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _1
+    forall _1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1]. inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
       = match _1 with
         | None -> true
-        | Some f0'4 -> inv_AtView_Guarded_FullBorrow_Perm_PermCell_T f0'4
+        | Some f0'4 -> inv_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T f0'4
         end
   
-  predicate resolve_AtView_Guarded_FullBorrow_Perm_PermCell_T (_1: t_AtView_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate resolve_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
-  predicate resolve_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T (_1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate resolve_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
   axiom resolve_axiom [@rewrite]:
-    forall _1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T [resolve_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _1]. resolve_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _1
+    forall _1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [resolve_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1]. resolve_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
       = match _1 with
         | None -> true
-        | Some x0 -> resolve_AtView_Guarded_FullBorrow_Perm_PermCell_T x0
+        | Some x0 -> resolve_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T x0
         end
   
   predicate inv_Int [@inline:trivial] (_1: int) = true
@@ -1295,7 +1299,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   predicate inv_TicketLockInv_T (_1: t_TicketLockInv_T)
   
   axiom inv_axiom'2 [@rewrite]: forall _1: t_TicketLockInv_T [inv_TicketLockInv_T _1]. inv_TicketLockInv_T _1
-      = (inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _1.perm'1
+      = (inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1.perm'1
       /\ inv_Authority_FMap_Int_Excl_unit _1.auth_tickets'1)
   
   predicate invariant_refmut_TicketLockInv_T [@inline:trivial] (self: MutBorrow.t t_TicketLockInv_T) =
@@ -1313,7 +1317,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   meta "rewrite_def" predicate resolve_refmut_TicketLockInv_T
   
   predicate inv_closure0 [@inline:trivial] (_1: closure0) =
-    let {c0'0 = x0; c1'0 = x1; c2'0 = x2} = _1 in inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T x0
+    let {c0'0 = x0; c1'0 = x1; c2'0 = x2} = _1 in inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T x0
   
   meta "rewrite_def" predicate inv_closure0
   
@@ -1322,10 +1326,10 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     /\ ([@stop_split] [@expl:closure 'inv' type invariant] inv_refmut_TicketLockInv_T inv'2)}
     bb0
     [ bb0 = s0
-      [ s0 = new_Guarded_FullBorrow_Perm_PermCell_T {self.c0'0}
-          (fun (_x: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_6 <- _x ] s1)
-      | s1 = into_inner_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T {_6}
-          (fun (_x: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_5 <- _x ] s2)
+      [ s0 = new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {self.c0'0}
+          (fun (_x: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_6 <- _x ] s1)
+      | s1 = into_inner_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_6}
+          (fun (_x: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_5 <- _x ] s2)
       | s2 = [ &view <- _5.f0'0 ] s3
       | s3 = [ &perm <- _5.f1'0 ] s4
       | s4 = MutBorrow.borrow_final <t_Perm_AtomicU32> {inv'2.current.perm_now_serving'1}
@@ -1388,9 +1392,10 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
         s28
       | s28 = [ &_27 <- Some perm ] s29
       | s29 = s30
-        [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T inv'2.current.perm'1}
+        [ _ck ->
+        (! {[@expl:type invariant] inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T inv'2.current.perm'1}
           any) ]
-      | s30 = -{resolve_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T inv'2.current.perm'1}- s31
+      | s30 = -{resolve_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T inv'2.current.perm'1}- s31
       | s31 = [ &inv'2 <- { inv'2 with current = { inv'2.current with perm'1 = _27 } } ] s32
       | s32 = into_ghost_Int {timestamp_AtomicU32 self.c2'0.current.current + 1} (fun (_x: int) -> [ &_33 <- _x ] s33)
       | s33 = deref_Ghost_Int {_33} (fun (_x: int) -> [ &_31 <- _x ] s34)
@@ -1403,9 +1408,9 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     | & self: closure0 = self
     | & inv'2: MutBorrow.t t_TicketLockInv_T = inv'2
     | & view: t_SyncView = Any.any_l ()
-    | & perm: t_AtView_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _5: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _6: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & perm: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _5: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _6: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
     | & _8: () = Any.any_l ()
     | & _9: MutBorrow.t t_Committer_AtomicU32_u32_None_Release = Any.any_l ()
     | & _10: MutBorrow.t t_Perm_AtomicU32 = Any.any_l ()
@@ -1423,7 +1428,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     | & _24: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
     | & _25: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
     | & _26: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _27: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _27: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
     | & _29: t_Option_Int = Any.any_l ()
     | & _31: int = Any.any_l ()
     | & _33: int = Any.any_l () ] [ return (result: ()) -> return {result} ]
@@ -1518,15 +1523,16 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   function next_ticket_T (self: t_TicketLockInv_T) : int =
     UInt32.t'int (index_FMap_Int_tup2_u32_SyncView (val_AtomicU32 self.perm_next_ticket'1) self.ts_next_ticket'1).f0'1
   
-  type tup2_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_Option_Int = {
-    f0'7: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T;
+  type tup2_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T_Option_Int = {
+    f0'7: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     f1'7: t_Option_Int }
   
   function lft_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Lifetime
   
-  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
+  function guard_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) : t_PermCell_T
+   = self._guard
   
-  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
+  meta "rewrite_def" function guard_FullBorrow_Perm_PermCell_T
   
   function val_unsized_PermCell_T (self: t_Perm_PermCell_T) : t_T
   
@@ -1546,11 +1552,10 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
           | None'1 -> true
           end)
     /\ match { f0'7 = self.perm'1; f1'7 = self.ts_now_serving'1 } with
-      | {f0'7 = Some bor; f1'7 = Some'0 ts} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PermCell_T bor) (index_FMap_Int_tup2_u32_SyncView (val_AtomicU32 self.perm_now_serving'1) ts).f1'1
-      /\ lft_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T bor).inner = self.lft'1
-      /\ guard_FullBorrow_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T bor)
-        = (fun (b: t_FullBorrow_Perm_PermCell_T) -> ward_PermCell_T (cur_Perm_PermCell_T b) = self.cell'1)
-      /\ Map.get self.inv'1 (val_PermCell_T (cur_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T bor).inner))
+      | {f0'7 = Some bor; f1'7 = Some'0 ts} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T bor) (index_FMap_Int_tup2_u32_SyncView (val_AtomicU32 self.perm_now_serving'1) ts).f1'1
+      /\ lft_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T bor).inner = self.lft'1
+      /\ guard_FullBorrow_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T bor) = self.cell'1
+      /\ Map.get self.inv'1 (val_PermCell_T (cur_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T bor).inner))
       /\ view_Resource_Option_Excl_unit self.token'1 = Some'2 { f0'2 = () }
       | {f0'7 = None; f1'7 = None'0} -> true
       | _ -> false
@@ -1668,7 +1673,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   predicate inv_closure3 [@inline:trivial] (_1: closure3) =
     let {c0 = x0; c1 = x1; c2 = x2; c3 = x3} = _1 in inv_ref_TicketLock_T x0
-    /\ inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T x1
+    /\ inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T x1
   
   meta "rewrite_def" predicate inv_closure3
   
@@ -1781,8 +1786,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
       (! return {result}) ]
   
   predicate invariant_TicketLockGuard_T [@inline:trivial] (self: t_TicketLockGuard_T) =
-    guard_FullBorrow_Perm_PermCell_T self.perm'0
-      = (fun (b: t_FullBorrow_Perm_PermCell_T) -> ward_PermCell_T (cur_Perm_PermCell_T b) = self.lock'0.data)
+    guard_FullBorrow_Perm_PermCell_T self.perm'0 = self.lock'0.data
     /\ lft_Perm_PermCell_T self.perm'0.inner = lft self.lock'0.lft_tok
     /\ self.inv'0 = self.lock'0.inv
     /\ id_Option_Excl_unit self.token'0 = (public_TicketLockInv_T'0 self.lock'0.inner_inv).f2'6
@@ -1794,7 +1798,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   axiom inv_axiom'6 [@rewrite]: forall _1: t_TicketLockGuard_T [inv_TicketLockGuard_T _1]. inv_TicketLockGuard_T _1
       = (invariant_TicketLockGuard_T _1
-      /\ inv_ref_TicketLock_T _1.lock'0 /\ inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T _1.perm'0)
+      /\ inv_ref_TicketLock_T _1.lock'0 /\ inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1.perm'0)
   
   function view_TicketLockGuard_T (self: t_TicketLockGuard_T) : t_T =
     val_PermCell_T (cur_Perm_PermCell_T self.perm'0.inner)
@@ -2139,9 +2143,11 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   type t_Lifetime
   
-  type t_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  type t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  type t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T = None'0 | Some'0 t_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  type t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T =
+    | None'0
+    | Some'0 t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
   type t_Perm_AtomicU32
   
@@ -2154,7 +2160,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   type t_TicketLockInv_T = {
     cell'0: t_PermCell_T;
     lft'0: t_Lifetime;
-    perm'0: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T;
+    perm'0: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     perm_next_ticket'0: t_Perm_AtomicU32;
     perm_now_serving'0: t_Perm_AtomicU32;
     auth_tickets'0: t_Authority_FMap_Int_Excl_unit;
@@ -2472,21 +2478,21 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       /\ id_FMap_Int_Excl_unit'0 self.final = id_FMap_Int_Excl_unit'0 self.current)}
       (! return {result}) ]
   
-  predicate inv_AtView_Guarded_FullBorrow_Perm_PermCell_T (_1: t_AtView_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate inv_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
-  predicate inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T (_1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
   axiom inv_axiom'1 [@rewrite]:
-    forall _1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T [inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _1]. inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _1
+    forall _1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1]. inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
       = match _1 with
         | None'0 -> true
-        | Some'0 f0'2 -> inv_AtView_Guarded_FullBorrow_Perm_PermCell_T f0'2
+        | Some'0 f0'2 -> inv_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T f0'2
         end
   
   predicate inv_TicketLockInv_T (_1: t_TicketLockInv_T)
   
   axiom inv_axiom'2 [@rewrite]: forall _1: t_TicketLockInv_T [inv_TicketLockInv_T _1]. inv_TicketLockInv_T _1
-      = (inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _1.perm'0
+      = (inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1.perm'0
       /\ inv_Authority_FMap_Int_Excl_unit _1.auth_tickets'0)
   
   predicate invariant_refmut_TicketLockInv_T [@inline:trivial] (self: MutBorrow.t t_TicketLockInv_T) =
@@ -2761,39 +2767,37 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   function next_ticket_T (self: t_TicketLockInv_T) : int =
     UInt32.t'int (index_FMap_Int_tup2_u32_SyncView (val_AtomicU32 self.perm_next_ticket'0) self.ts_next_ticket'0).f0
   
-  type tup2_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_Option_Int = {
-    f0'5: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T;
+  type tup2_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T_Option_Int = {
+    f0'5: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     f1'5: t_Option_Int }
   
-  function view_Guarded_FullBorrow_Perm_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T) : t_SyncView
+  function view_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) : t_SyncView
   
   type t_FullBorrow_Perm_PermCell_T
   
   function lft_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Lifetime
   
-  type t_Guarded_FullBorrow_Perm_PermCell_T = {
+  type t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = {
     inner: t_FullBorrow_Perm_PermCell_T;
-    _guard: Map.map t_FullBorrow_Perm_PermCell_T bool;
+    _guard: t_PermCell_T;
     _initial: t_FullBorrow_Perm_PermCell_T }
   
-  function val_Guarded_FullBorrow_Perm_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T) : t_Guarded_FullBorrow_Perm_PermCell_T
+  function val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) : t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  function guard_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) : Map.map t_FullBorrow_Perm_PermCell_T bool
+  function guard_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) : t_PermCell_T
    = self._guard
   
   meta "rewrite_def" function guard_FullBorrow_Perm_PermCell_T
   
   type t_Perm_PermCell_T
   
-  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
-  
-  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
-  
   function val_unsized_PermCell_T (self: t_Perm_PermCell_T) : t_T
   
   function val_PermCell_T [@inline:trivial] (self: t_Perm_PermCell_T) : t_T = val_unsized_PermCell_T self
   
   meta "rewrite_def" function val_PermCell_T
+  
+  function cur_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
   
   function val_Option_Excl_unit (self: t_Resource_Option_Excl_unit) : t_Option_Excl_unit
   
@@ -2814,11 +2818,10 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
           | None'2 -> true
           end)
     /\ match { f0'5 = self.perm'0; f1'5 = self.ts_now_serving'0 } with
-      | {f0'5 = Some'0 bor; f1'5 = Some'1 ts} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PermCell_T bor) (index_FMap_Int_tup2_u32_SyncView (val_AtomicU32 self.perm_now_serving'0) ts).f1
-      /\ lft_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T bor).inner = self.lft'0
-      /\ guard_FullBorrow_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T bor)
-        = (fun (b: t_FullBorrow_Perm_PermCell_T) -> ward_PermCell_T (cur_Perm_PermCell_T b) = self.cell'0)
-      /\ Map.get self.inv'0 (val_PermCell_T (cur_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T bor).inner))
+      | {f0'5 = Some'0 bor; f1'5 = Some'1 ts} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T bor) (index_FMap_Int_tup2_u32_SyncView (val_AtomicU32 self.perm_now_serving'0) ts).f1
+      /\ lft_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T bor).inner = self.lft'0
+      /\ guard_FullBorrow_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T bor) = self.cell'0
+      /\ Map.get self.inv'0 (val_PermCell_T (cur_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T bor).inner))
       /\ view_Resource_Option_Excl_unit self.token'0 = Some'3 { f0'0 = () }
       | {f0'5 = None'0; f1'5 = None'1} -> true
       | _ -> false
@@ -2915,6 +2918,8 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   meta "rewrite_def" function from_int
   
   function lft_Perm_PermCell_T'0 (self: t_EndBorrow_Perm_PermCell_T) : t_Lifetime
+  
+  function ward_PermCell_T (self: t_Perm_PermCell_T) : t_PermCell_T
   
   function fin_EndBorrow_Perm_PermCell_T (self: t_EndBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
   
@@ -3124,57 +3129,60 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         /\ val_load_AtomicU32 c.current = result /\ postcondition_once_FnGhostWrapper_closure3 f c ()}
       (! return {result}) ]
   
-  type t_Option_Guarded_FullBorrow_Perm_PermCell_T = None'6 | Some'6 t_Guarded_FullBorrow_Perm_PermCell_T
+  type t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T =
+    | None'6
+    | Some'6 t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate index_Mapping_FullBorrow_Perm_PermCell_T_bool [@inline:trivial] (self: Map.map t_FullBorrow_Perm_PermCell_T bool) (a: t_FullBorrow_Perm_PermCell_T) =
-    Map.get self a
+  predicate guards_ref_PermCell_T [@inline:trivial] (self: t_PermCell_T) (c: t_Perm_PermCell_T) =
+    ward_PermCell_T c = self
   
-  meta "rewrite_def" predicate index_Mapping_FullBorrow_Perm_PermCell_T_bool
+  meta "rewrite_def" predicate guards_ref_PermCell_T
   
   function fin_FullBorrow_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) : t_Perm_PermCell_T
   
-  predicate rel_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_FullBorrow_Perm_PermCell_T) (other: t_FullBorrow_Perm_PermCell_T) =
-    fin_FullBorrow_Perm_PermCell_T self = fin_FullBorrow_Perm_PermCell_T other
+  predicate guards_PermCell_T [@inline:trivial] (self: t_PermCell_T) (initial: t_FullBorrow_Perm_PermCell_T) (current': t_FullBorrow_Perm_PermCell_T) =
+    guards_ref_PermCell_T self (cur_Perm_PermCell_T current')
+    /\ fin_FullBorrow_Perm_PermCell_T initial = fin_FullBorrow_Perm_PermCell_T current'
   
-  meta "rewrite_def" predicate rel_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate guards_PermCell_T
   
-  predicate invariant_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    index_Mapping_FullBorrow_Perm_PermCell_T_bool (guard_FullBorrow_Perm_PermCell_T self) self.inner
-    /\ rel_FullBorrow_Perm_PermCell_T self.inner self._initial
+  predicate invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    guards_PermCell_T self._guard self._initial self.inner
   
-  meta "rewrite_def" predicate invariant_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Guarded_FullBorrow_Perm_PermCell_T (_1: t_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
   axiom inv_axiom'6 [@rewrite]:
-    forall _1: t_Guarded_FullBorrow_Perm_PermCell_T [inv_Guarded_FullBorrow_Perm_PermCell_T _1]. inv_Guarded_FullBorrow_Perm_PermCell_T _1
-      = invariant_Guarded_FullBorrow_Perm_PermCell_T _1
+    forall _1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1]. inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
+      = invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  predicate inv_Option_Guarded_FullBorrow_Perm_PermCell_T (_1: t_Option_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate inv_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
   axiom inv_axiom'7 [@rewrite]:
-    forall _1: t_Option_Guarded_FullBorrow_Perm_PermCell_T [inv_Option_Guarded_FullBorrow_Perm_PermCell_T _1]. inv_Option_Guarded_FullBorrow_Perm_PermCell_T _1
+    forall _1: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [inv_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1]. inv_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
       = match _1 with
         | None'6 -> true
-        | Some'6 f0'7 -> inv_Guarded_FullBorrow_Perm_PermCell_T f0'7
+        | Some'6 f0'7 -> inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T f0'7
         end
   
-  predicate invariant_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Option_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Option_Guarded_FullBorrow_Perm_PermCell_T self
+  predicate invariant_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: t_Option_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  let new_Option_Guarded_FullBorrow_Perm_PermCell_T (x: t_Option_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x'0: t_Option_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:new 'x' type invariant] inv_Option_Guarded_FullBorrow_Perm_PermCell_T x}
+  let new_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
+    (x: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x'0: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:new 'x' type invariant] inv_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T x}
     any
-    [ return (result: t_Option_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:new_Option_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:new_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
@@ -3209,7 +3217,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     c1'1: MutBorrow.t t_Tokens;
     c2'1: UInt32.t;
     c3'1: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit;
-    c4'1: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T;
+    c4'1: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     c5'1: MutBorrow.t t_Resource_Option_Excl_unit }
   
   type t_Committer_AtomicU32_u32_Acquire_None
@@ -3220,7 +3228,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     c0'2: t_Committer_AtomicU32_u32_Acquire_None;
     c1'2: UInt32.t;
     c2'2: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit;
-    c3'2: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T;
+    c3'2: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     c4'2: MutBorrow.t t_Resource_Option_Excl_unit }
   
   predicate inv_bool [@inline:trivial] (_1: bool) = true
@@ -3233,20 +3241,20 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   let deref_Ghost_bool (self: bool) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
-  predicate invariant_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T self.current
-    /\ inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T self.final
+  predicate invariant_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.current
+    /\ inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.final
   
-  meta "rewrite_def" predicate invariant_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
   predicate inv_closure0 [@inline:trivial] (_1: closure0) =
     let {c0'2 = x0; c1'2 = x1; c2'2 = x2; c3'2 = x3; c4'2 = x4} = _1 in inv_refmut_Ghost_Option_Fragment_FMap_Int_Excl_unit x2
-    /\ inv_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T x3
+    /\ inv_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T x3
   
   meta "rewrite_def" predicate inv_closure0
   
@@ -3457,68 +3465,69 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate resolve_refmut_Fragment_FMap_Int_Excl_unit
   
-  predicate invariant_refmut_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T self.current
-    /\ inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T self.final
+  predicate invariant_refmut_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.current
+    /\ inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.final
   
-  meta "rewrite_def" predicate invariant_refmut_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_refmut_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_refmut_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_refmut_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_refmut_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_refmut_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_refmut_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_refmut_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  let take_AtView_Guarded_FullBorrow_Perm_PermCell_T
-    (self: MutBorrow.t t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:take 'self' type invariant] inv_refmut_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T self}
+  let take_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
+    (self: MutBorrow.t t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:take 'self' type invariant] inv_refmut_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self}
     any
-    [ return (result: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:take_AtView_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:take_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:take ensures] result = self.current /\ self.final = None'0)}
       (! return {result}) ]
   
-  let unwrap_AtView_Guarded_FullBorrow_Perm_PermCell_T (self: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: t_AtView_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:unwrap_AtView_Guarded_FullBorrow_Perm_PermCell_T requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T self)
+  let unwrap_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
+    (self: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:unwrap_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self)
     /\ ([@stop_split] [@expl:unwrap requires] self <> None'0)}
     any
-    [ return (result: t_AtView_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:unwrap_AtView_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_AtView_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:unwrap_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:unwrap ensures] Some'0 result = self)}
       (! return {result}) ]
   
   let deref_Ghost_SyncView (self: t_SyncView) (return (x: t_SyncView)) = any
     [ return (result: t_SyncView) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
-  let sync_Guarded_FullBorrow_Perm_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T)
-    (sync_view: t_SyncView) (return (x: t_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:sync_Guarded_FullBorrow_Perm_PermCell_T requires] ([@stop_split] [@expl:sync 'self' type invariant] inv_AtView_Guarded_FullBorrow_Perm_PermCell_T self)
-    /\ ([@stop_split] [@expl:sync requires] le_log_SyncView (view_Guarded_FullBorrow_Perm_PermCell_T self) sync_view)}
+  let sync_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (sync_view: t_SyncView) (return (x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:sync_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T requires] ([@stop_split] [@expl:sync 'self' type invariant] inv_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self)
+    /\ ([@stop_split] [@expl:sync requires] le_log_SyncView (view_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self) sync_view)}
     any
-    [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:sync_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:sync result type invariant] inv_Guarded_FullBorrow_Perm_PermCell_T result)
-      /\ ([@stop_split] [@expl:sync ensures] result = val_Guarded_FullBorrow_Perm_PermCell_T self)}
+    [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:sync_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:sync result type invariant] inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
+      /\ ([@stop_split] [@expl:sync ensures] result = val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self)}
       (! return {result}) ]
   
-  predicate invariant_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Option_Guarded_FullBorrow_Perm_PermCell_T self.current
-    /\ inv_Option_Guarded_FullBorrow_Perm_PermCell_T self.final
+  predicate invariant_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.current
+    /\ inv_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.final
   
-  meta "rewrite_def" predicate invariant_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  let deref_mut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T
-    (self: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T self}
+  let deref_mut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
+    (self: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self}
     any
-    [ return (result: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:deref_mut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:deref_mut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
@@ -3531,25 +3540,25 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     forall _1: t_FullBorrow_Perm_PermCell_T [resolve_FullBorrow_Perm_PermCell_T'0 _1]. resolve_FullBorrow_Perm_PermCell_T'0 _1
       = resolve_FullBorrow_Perm_PermCell_T _1
   
-  predicate resolve_Guarded_FullBorrow_Perm_PermCell_T (_1: t_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate resolve_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
   axiom resolve_axiom'1 [@rewrite]:
-    forall _1: t_Guarded_FullBorrow_Perm_PermCell_T [resolve_Guarded_FullBorrow_Perm_PermCell_T _1]. resolve_Guarded_FullBorrow_Perm_PermCell_T _1
+    forall _1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [resolve_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1]. resolve_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
       = resolve_FullBorrow_Perm_PermCell_T'0 _1.inner
   
-  predicate resolve_Option_Guarded_FullBorrow_Perm_PermCell_T (_1: t_Option_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate resolve_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
   axiom resolve_axiom'2 [@rewrite]:
-    forall _1: t_Option_Guarded_FullBorrow_Perm_PermCell_T [resolve_Option_Guarded_FullBorrow_Perm_PermCell_T _1]. resolve_Option_Guarded_FullBorrow_Perm_PermCell_T _1
+    forall _1: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [resolve_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1]. resolve_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
       = match _1 with
         | None'6 -> true
-        | Some'6 x0 -> resolve_Guarded_FullBorrow_Perm_PermCell_T x0
+        | Some'6 x0 -> resolve_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T x0
         end
   
-  predicate resolve_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) =
+  predicate resolve_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate resolve_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
   let deref_mut_Ghost_Resource_Option_Excl_unit (self: MutBorrow.t t_Resource_Option_Excl_unit)
     (return (x: MutBorrow.t t_Resource_Option_Excl_unit)) = any
@@ -3651,36 +3660,39 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         s25
       | s25 = [ &_43 <- None'1 ] s26
       | s26 = [ &inv'1 <- { inv'1 with current = { inv'1.current with ts_now_serving'0 = _43 } } ] s27
-      | s27 = MutBorrow.borrow_final <t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T> {inv'1.current.perm'0}
-          {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 2}
-          (fun (_bor: MutBorrow.t t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T) ->
-            [ &_48 <- _bor ] -{inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _bor.final}-
+      | s27 = MutBorrow.borrow_final <t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T>
+          {inv'1.current.perm'0} {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 2}
+          (fun (_bor: MutBorrow.t t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+            [ &_48 <- _bor ] -{inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _bor.final}-
             [ &inv'1 <- { inv'1 with current = { inv'1.current with perm'0 = _bor.final } } ] s28)
-        [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T inv'1.current.perm'0}
+        [ _ck ->
+        (! {[@expl:type invariant] inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T inv'1.current.perm'0}
           any) ]
-      | s28 = take_AtView_Guarded_FullBorrow_Perm_PermCell_T {_48}
-          (fun (_x: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_47 <- _x ] s29)
-      | s29 = unwrap_AtView_Guarded_FullBorrow_Perm_PermCell_T {_47}
-          (fun (_x: t_AtView_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_46 <- _x ] s30)
+      | s28 = take_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_48}
+          (fun (_x: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_47 <- _x ] s29)
+      | s29 = unwrap_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_47}
+          (fun (_x: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_46 <- _x ] s30)
       | s30 = deref_Ghost_SyncView {view} (fun (_x: t_SyncView) -> [ &_50 <- _x ] s31)
-      | s31 = sync_Guarded_FullBorrow_Perm_PermCell_T {_46} {_50}
-          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_45 <- _x ] s32)
+      | s31 = sync_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_46} {_50}
+          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_45 <- _x ] s32)
       | s32 = [ &_44 <- Some'6 _45 ] s33
-      | s33 = MutBorrow.borrow_mut <t_Option_Guarded_FullBorrow_Perm_PermCell_T> {self.current.c3'2.current}
-          (fun (_bor: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) ->
-            [ &_53 <- _bor ] -{inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T _bor.final}-
+      | s33 = MutBorrow.borrow_mut <t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T> {self.current.c3'2.current}
+          (fun (_bor: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+            [ &_53 <- _bor ] -{inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _bor.final}-
             [ &self <- { self with current = { self.current with c3'2 = { self.current.c3'2 with current = _bor.final } } } ]
             s34)
         [ _ck ->
-        (! {[@expl:type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T self.current.c3'2.current}
+        (! {[@expl:type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.current.c3'2.current}
           any) ]
-      | s34 = deref_mut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T {_53}
-          (fun (_x: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_52 <- _x ] s35)
-      | s35 = s36 [ _ck -> (! {[@expl:type invariant] inv_Option_Guarded_FullBorrow_Perm_PermCell_T _52.current} any) ]
-      | s36 = -{resolve_Option_Guarded_FullBorrow_Perm_PermCell_T _52.current}- s37
+      | s34 = deref_mut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_53}
+          (fun (_x: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_52 <- _x ] s35)
+      | s35 = s36
+        [ _ck -> (! {[@expl:type invariant] inv_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _52.current} any) ]
+      | s36 = -{resolve_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _52.current}- s37
       | s37 = [ &_52 <- { _52 with current = _44 } ] s38
-      | s38 = s39 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T _52} any) ]
-      | s39 = -{resolve_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T _52}- s40
+      | s38 = s39
+        [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _52} any) ]
+      | s39 = -{resolve_refmut_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _52}- s40
       | s40 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {inv'1.current.token'0}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 9}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
@@ -3733,14 +3745,14 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     | & _32: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
     | & _33: () = Any.any_l ()
     | & _43: t_Option_Int = Any.any_l ()
-    | & _44: t_Option_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _45: t_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _46: t_AtView_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _47: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _48: MutBorrow.t t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _44: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _45: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _46: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _47: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _48: MutBorrow.t t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
     | & _50: t_SyncView = Any.any_l ()
-    | & _52: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _53: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _52: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _53: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
     | & _54: () = Any.any_l ()
     | & _55: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
     | & _56: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
@@ -3787,14 +3799,14 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate resolve_refmut_Ghost_Resource_Option_Excl_unit
   
-  predicate resolve_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) =
+  predicate resolve_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
     _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate resolve_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
   predicate resolve_closure0 [@inline:trivial] (_1: closure0) =
     resolve_refmut_Ghost_Resource_Option_Excl_unit _1.c4'2
-    /\ resolve_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T _1.c3'2
+    /\ resolve_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1.c3'2
     /\ resolve_refmut_Ghost_Option_Fragment_FMap_Int_Excl_unit _1.c2'2
   
   meta "rewrite_def" predicate resolve_closure0
@@ -3832,7 +3844,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   predicate inv_closure11 [@inline:trivial] (_1: closure11) =
     let {c0'1 = x0; c1'1 = x1; c2'1 = x2; c3'1 = x3; c4'1 = x4; c5'1 = x5} = _1 in inv_ref_TicketLock_T x0
     /\ inv_refmut_Ghost_Option_Fragment_FMap_Int_Excl_unit x3
-    /\ inv_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T x4
+    /\ inv_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T x4
   
   meta "rewrite_def" predicate inv_closure11
   
@@ -3879,13 +3891,13 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
             s7)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit self.current.c3'1.current}
           any) ]
-      | s7 = MutBorrow.borrow_mut <t_Option_Guarded_FullBorrow_Perm_PermCell_T> {self.current.c4'1.current}
-          (fun (_bor: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) ->
-            [ &_15 <- _bor ] -{inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T _bor.final}-
+      | s7 = MutBorrow.borrow_mut <t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T> {self.current.c4'1.current}
+          (fun (_bor: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+            [ &_15 <- _bor ] -{inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _bor.final}-
             [ &self <- { self with current = { self.current with c4'1 = { self.current.c4'1 with current = _bor.final } } } ]
             s8)
         [ _ck ->
-        (! {[@expl:type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T self.current.c4'1.current}
+        (! {[@expl:type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self.current.c4'1.current}
           any) ]
       | s8 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {self.current.c5'1.current}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
@@ -3911,7 +3923,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     | & _11: closure0 = Any.any_l ()
     | & _13: UInt32.t = Any.any_l ()
     | & _14: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
-    | & _15: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _15: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
     | & _16: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l () ]
     [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure11 self.current self.final}
       return {result} ]
@@ -3967,7 +3979,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   predicate resolve_closure11 [@inline:trivial] (_1: closure11) =
     resolve_refmut_Ghost_Resource_Option_Excl_unit _1.c5'1
-    /\ resolve_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T _1.c4'1
+    /\ resolve_refmut_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1.c4'1
     /\ resolve_refmut_Ghost_Option_Fragment_FMap_Int_Excl_unit _1.c3'1 /\ resolve_refmut_Ghost_Tokens _1.c1'1
   
   meta "rewrite_def" predicate resolve_closure11
@@ -4014,53 +4026,54 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate resolve_Ghost_Option_Fragment_FMap_Int_Excl_unit'0
   
-  let into_inner_Option_Guarded_FullBorrow_Perm_PermCell_T (self: t_Option_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: t_Option_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T self}
+  let into_inner_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
+    (self: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self}
     any
-    [ return (result: t_Option_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:into_inner_Option_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_Option_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:into_inner_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  let unwrap_Guarded_FullBorrow_Perm_PermCell_T (self: t_Option_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: t_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:unwrap_Guarded_FullBorrow_Perm_PermCell_T requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_Guarded_FullBorrow_Perm_PermCell_T self)
+  let unwrap_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
+    (self: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:unwrap_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self)
     /\ ([@stop_split] [@expl:unwrap requires] self <> None'6)}
     any
-    [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:unwrap_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:unwrap_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:unwrap ensures] Some'6 result = self)}
       (! return {result}) ]
   
-  predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Guarded_FullBorrow_Perm_PermCell_T self
+  predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  let new_Guarded_FullBorrow_Perm_PermCell_T (x: t_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x'0: t_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:new 'x' type invariant] inv_Guarded_FullBorrow_Perm_PermCell_T x}
+  let new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x'0: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:new 'x' type invariant] inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T x}
     any
-    [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:new_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
   type t_TicketLockGuard_T = {
     lock'1: t_TicketLock_T;
-    perm'1: t_Guarded_FullBorrow_Perm_PermCell_T;
+    perm'1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     token'1: t_Resource_Option_Excl_unit;
     inv'1: Map.map t_T bool }
   
   predicate invariant_TicketLockGuard_T [@inline:trivial] (self: t_TicketLockGuard_T) =
-    guard_FullBorrow_Perm_PermCell_T self.perm'1
-      = (fun (b: t_FullBorrow_Perm_PermCell_T) -> ward_PermCell_T (cur_Perm_PermCell_T b) = self.lock'1.data)
+    guard_FullBorrow_Perm_PermCell_T self.perm'1 = self.lock'1.data
     /\ lft_Perm_PermCell_T self.perm'1.inner = lft self.lock'1.lft_tok
     /\ self.inv'1 = self.lock'1.inv
     /\ id_Option_Excl_unit self.token'1 = (public_TicketLockInv_T'0 self.lock'1.inner_inv).f2'4
@@ -4072,7 +4085,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   axiom inv_axiom'11 [@rewrite]: forall _1: t_TicketLockGuard_T [inv_TicketLockGuard_T _1]. inv_TicketLockGuard_T _1
       = (invariant_TicketLockGuard_T _1
-      /\ inv_ref_TicketLock_T _1.lock'1 /\ inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T _1.perm'1)
+      /\ inv_ref_TicketLock_T _1.lock'1 /\ inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1.perm'1)
   
   function view_TicketLockGuard_T (self: t_TicketLockGuard_T) : t_T =
     val_PermCell_T (cur_Perm_PermCell_T self.perm'1.inner)
@@ -4102,15 +4115,16 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       | s7 = fetch_add_FnGhostWrapper_closure3 {self.next_ticket} {(1: UInt32.t)} {_13}
           (fun (_x: UInt32.t) -> [ &ticket <- _x ] s8)
       | s8 = [ &_20 <- None'6 ] s9
-      | s9 = new_Option_Guarded_FullBorrow_Perm_PermCell_T {_20}
-          (fun (_x: t_Option_Guarded_FullBorrow_Perm_PermCell_T) -> [ &perm <- _x ] s10)
+      | s9 = new_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_20}
+          (fun (_x: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &perm <- _x ] s10)
       | s10 = into_ghost_Id {(public_TicketLockInv_T'0 self.inner_inv).f2'4} (fun (_x: t_Id) -> [ &_26 <- _x ] s11)
       | s11 = deref_Ghost_Id {_26} (fun (_x: t_Id) -> [ &_24 <- _x ] s12)
       | s12 = new_unit_Option_Excl_unit {_24} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_22 <- _x ] s13)
       | s13 = new_Resource_Option_Excl_unit {_22} (fun (_x: t_Resource_Option_Excl_unit) -> [ &token <- _x ] s14)
       | s14 = bb11 ]
     | bb11 = bb11
-      [ bb11 = {[@expl:inferred invariant: type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T perm}
+      [ bb11 =
+        {[@expl:inferred invariant: type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T perm}
         {[@expl:inferred invariant: type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit ticket_own}
         {[@expl:loop invariant #0] contains tokens (Namespace_TICKET_LOCK 0)}
         {[@expl:loop invariant #1] ticket_own <> None}
@@ -4127,11 +4141,12 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
               [ &_55 <- _bor ] -{inv_Ghost_Option_Fragment_FMap_Int_Excl_unit _bor.final}-
               [ &ticket_own <- _bor.final ] s2)
           [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit ticket_own} any) ]
-        | s2 = MutBorrow.borrow_mut <t_Option_Guarded_FullBorrow_Perm_PermCell_T> {perm}
-            (fun (_bor: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T) ->
-              [ &_56 <- _bor ] -{inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T _bor.final}-
+        | s2 = MutBorrow.borrow_mut <t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T> {perm}
+            (fun (_bor: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+              [ &_56 <- _bor ] -{inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _bor.final}-
               [ &perm <- _bor.final ] s3)
-          [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T perm} any) ]
+          [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T perm}
+            any) ]
         | s3 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {token}
             (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_57 <- _bor ] [ &token <- _bor.final ] s4)
         | s4 = [ &_51 <- { c0'1 = self; c1'1 = _53; c2'1 = ticket; c3'1 = _55; c4'1 = _56; c5'1 = _57 } ] s5
@@ -4143,12 +4158,12 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     | bb17 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit ticket_own} any) ]
       | s1 = -{resolve_Ghost_Option_Fragment_FMap_Int_Excl_unit'0 ticket_own}- s2
-      | s2 = into_inner_Option_Guarded_FullBorrow_Perm_PermCell_T {perm}
-          (fun (_x: t_Option_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_63 <- _x ] s3)
-      | s3 = unwrap_Guarded_FullBorrow_Perm_PermCell_T {_63}
-          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_62 <- _x ] s4)
-      | s4 = new_Guarded_FullBorrow_Perm_PermCell_T {_62}
-          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_61 <- _x ] s5)
+      | s2 = into_inner_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {perm}
+          (fun (_x: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_63 <- _x ] s3)
+      | s3 = unwrap_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_63}
+          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_62 <- _x ] s4)
+      | s4 = new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_62}
+          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_61 <- _x ] s5)
       | s5 = [ &_ret <- { lock'1 = self; perm'1 = _61; token'1 = token; inv'1 = self.inv } ] s6
       | s6 = return {_ret} ] ]
     [ & _ret: t_TicketLockGuard_T = Any.any_l ()
@@ -4162,8 +4177,8 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     | & _15: closure3 = Any.any_l ()
     | & _17: MutBorrow.t t_Tokens = Any.any_l ()
     | & _18: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
-    | & perm: t_Option_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _20: t_Option_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & perm: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _20: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
     | & token: t_Resource_Option_Excl_unit = Any.any_l ()
     | & _22: t_Resource_Option_Excl_unit = Any.any_l ()
     | & _24: t_Id = Any.any_l ()
@@ -4175,11 +4190,11 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     | & _51: closure11 = Any.any_l ()
     | & _53: MutBorrow.t t_Tokens = Any.any_l ()
     | & _55: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
-    | & _56: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _56: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
     | & _57: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _61: t_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _62: t_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _63: t_Option_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l () ])
+    | & _61: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _62: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _63: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l () ])
     [ return (result: t_TicketLockGuard_T) ->
     {[@stop_split] [@expl:lock_T ensures] ([@stop_split] [@expl:lock result type invariant] inv_TicketLockGuard_T result)
       /\ ([@stop_split] [@expl:lock ensures #0] Map.get self.inv (view_TicketLockGuard_T result))
@@ -4448,150 +4463,147 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
     [ return (result: t_FullBorrow_Perm_PermCell_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
-  type t_Guarded_FullBorrow_Perm_PermCell_T = {
+  type t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = {
     inner: t_FullBorrow_Perm_PermCell_T;
-    _guard: Map.map t_FullBorrow_Perm_PermCell_T bool;
+    _guard: t_PermCell_T;
     _initial: t_FullBorrow_Perm_PermCell_T }
   
-  predicate index_Mapping_Perm_PermCell_T_bool [@inline:trivial] (self: Map.map t_Perm_PermCell_T bool) (a: t_Perm_PermCell_T) =
-    Map.get self a
+  predicate guards_ref_PermCell_T [@inline:trivial] (self: t_PermCell_T) (c: t_Perm_PermCell_T) =
+    ward_PermCell_T c = self
   
-  meta "rewrite_def" predicate index_Mapping_Perm_PermCell_T_bool
+  meta "rewrite_def" predicate guards_ref_PermCell_T
   
-  predicate index_Mapping_FullBorrow_Perm_PermCell_T_bool [@inline:trivial] (self: Map.map t_FullBorrow_Perm_PermCell_T bool) (a: t_FullBorrow_Perm_PermCell_T) =
-    Map.get self a
+  predicate guards_PermCell_T [@inline:trivial] (self: t_PermCell_T) (initial: t_FullBorrow_Perm_PermCell_T) (current': t_FullBorrow_Perm_PermCell_T) =
+    guards_ref_PermCell_T self (cur_Perm_PermCell_T current')
+    /\ fin_FullBorrow_Perm_PermCell_T initial = fin_FullBorrow_Perm_PermCell_T current'
   
-  meta "rewrite_def" predicate index_Mapping_FullBorrow_Perm_PermCell_T_bool
+  meta "rewrite_def" predicate guards_PermCell_T
   
-  function guard_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) : Map.map t_FullBorrow_Perm_PermCell_T bool
+  predicate invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    guards_PermCell_T self._guard self._initial self.inner
+  
+  meta "rewrite_def" predicate invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
+  
+  predicate inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+  
+  axiom inv_axiom [@rewrite]:
+    forall _1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1]. inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
+      = invariant_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
+  
+  function guard_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) : t_PermCell_T
    = self._guard
   
   meta "rewrite_def" function guard_FullBorrow_Perm_PermCell_T
   
-  predicate rel_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_FullBorrow_Perm_PermCell_T) (other: t_FullBorrow_Perm_PermCell_T) =
-    fin_FullBorrow_Perm_PermCell_T self = fin_FullBorrow_Perm_PermCell_T other
-  
-  meta "rewrite_def" predicate rel_FullBorrow_Perm_PermCell_T
-  
-  predicate invariant_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    index_Mapping_FullBorrow_Perm_PermCell_T_bool (guard_FullBorrow_Perm_PermCell_T self) self.inner
-    /\ rel_FullBorrow_Perm_PermCell_T self.inner self._initial
-  
-  meta "rewrite_def" predicate invariant_Guarded_FullBorrow_Perm_PermCell_T
-  
-  predicate inv_Guarded_FullBorrow_Perm_PermCell_T (_1: t_Guarded_FullBorrow_Perm_PermCell_T)
-  
-  axiom inv_axiom [@rewrite]:
-    forall _1: t_Guarded_FullBorrow_Perm_PermCell_T [inv_Guarded_FullBorrow_Perm_PermCell_T _1]. inv_Guarded_FullBorrow_Perm_PermCell_T _1
-      = invariant_Guarded_FullBorrow_Perm_PermCell_T _1
-  
-  let add_guard_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) (guard: Map.map t_Perm_PermCell_T bool)
-    (return (x: t_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:add_guard requires] index_Mapping_Perm_PermCell_T_bool guard (cur_Perm_PermCell_T self)}
+  let add_guard_Perm_PermCell_T (self: t_FullBorrow_Perm_PermCell_T) (guard: t_PermCell_T)
+    (return (x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:add_guard requires] guards_ref_PermCell_T guard (cur_Perm_PermCell_T self)}
     any
-    [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:add_guard_Perm_PermCell_T ensures] ([@stop_split] [@expl:add_guard result type invariant] inv_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:add_guard_Perm_PermCell_T ensures] ([@stop_split] [@expl:add_guard result type invariant] inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:add_guard ensures #0] result.inner = self)
-      /\ ([@stop_split] [@expl:add_guard ensures #1] forall bor: t_FullBorrow_Perm_PermCell_T. index_Mapping_FullBorrow_Perm_PermCell_T_bool (guard_FullBorrow_Perm_PermCell_T result) bor
-          = index_Mapping_Perm_PermCell_T_bool guard (cur_Perm_PermCell_T bor))
-      /\ ([@stop_split] [@expl:add_guard ensures #2] index_Mapping_Perm_PermCell_T_bool guard (fin_FullBorrow_Perm_PermCell_T self))}
+      /\ ([@stop_split] [@expl:add_guard ensures #1] guard_FullBorrow_Perm_PermCell_T result = guard)
+      /\ ([@stop_split] [@expl:add_guard ensures #2] guards_ref_PermCell_T guard (fin_FullBorrow_Perm_PermCell_T self))}
       (! return {result}) ]
   
-  predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Guarded_FullBorrow_Perm_PermCell_T self
+  predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  let new_Guarded_FullBorrow_Perm_PermCell_T (x: t_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x'0: t_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:new 'x' type invariant] inv_Guarded_FullBorrow_Perm_PermCell_T x}
+  let new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x'0: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:new 'x' type invariant] inv_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T x}
     any
-    [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:new_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  type t_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  type t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  type tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T = {
+  type tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = {
     f0'3: t_SyncView;
-    f1'3: t_AtView_Guarded_FullBorrow_Perm_PermCell_T }
+    f1'3: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T }
   
-  predicate inv_AtView_Guarded_FullBorrow_Perm_PermCell_T (_1: t_AtView_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate inv_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
-  predicate inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_AtView_Guarded_FullBorrow_Perm_PermCell_T _1.f1'3
+  predicate inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1.f1'3
   
-  meta "rewrite_def" predicate inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate invariant_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T self
+  predicate invariant_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  function view_Guarded_FullBorrow_Perm_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T) : t_SyncView
+  function view_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) : t_SyncView
   
-  function val_Guarded_FullBorrow_Perm_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T) : t_Guarded_FullBorrow_Perm_PermCell_T
+  function val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) : t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  let new_Guarded_FullBorrow_Perm_PermCell_T'0 (val': t_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:new 'val' type invariant] inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T val'}
+  let new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T'0 (val': t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:new 'val' type invariant] inv_Ghost_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T val'}
     any
-    [ return (result: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:new_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T result)
-      /\ ([@stop_split] [@expl:new ensures] result.f0'3 = view_Guarded_FullBorrow_Perm_PermCell_T result.f1'3
-      /\ val_Guarded_FullBorrow_Perm_PermCell_T result.f1'3 = val')}
+    [ return (result: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
+      /\ ([@stop_split] [@expl:new ensures] result.f0'3 = view_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result.f1'3
+      /\ val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result.f1'3 = val')}
       (! return {result}) ]
   
-  type tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T = {
+  type tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = {
     f0'4: t_SyncView;
-    f1'4: t_AtView_Guarded_FullBorrow_Perm_PermCell_T }
+    f1'4: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T }
   
-  predicate invariant_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_AtView_Guarded_FullBorrow_Perm_PermCell_T self
+  predicate invariant_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self
   
-  meta "rewrite_def" predicate invariant_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate invariant_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: t_AtView_Guarded_FullBorrow_Perm_PermCell_T) =
-    invariant_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T _1
+  predicate inv_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    invariant_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
   
-  meta "rewrite_def" predicate inv_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  predicate inv_tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T [@inline:trivial] (_1: tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T) =
-    inv_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T _1.f1'4
+  predicate inv_tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [@inline:trivial] (_1: tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) =
+    inv_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1.f1'4
   
-  meta "rewrite_def" predicate inv_tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  meta "rewrite_def" predicate inv_tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
-  let split_SyncView (self: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:split 'self' type invariant] inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T self}
+  let split_SyncView (self: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x: tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:split 'self' type invariant] inv_Ghost_tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self}
     any
-    [ return (result: tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:split_SyncView ensures] ([@stop_split] [@expl:split result type invariant] inv_tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:split_SyncView ensures] ([@stop_split] [@expl:split result type invariant] inv_tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:split ensures #0] self.f0'3 = result.f0'4)
       /\ ([@stop_split] [@expl:split ensures #1] self.f1'3 = result.f1'4)}
       (! return {result}) ]
   
-  let into_inner_AtView_Guarded_FullBorrow_Perm_PermCell_T (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T)
-    (return (x: t_AtView_Guarded_FullBorrow_Perm_PermCell_T)) =
-  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T self}
+  let into_inner_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
+    (self: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
+    (return (x: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)) =
+  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T self}
     any
-    [ return (result: t_AtView_Guarded_FullBorrow_Perm_PermCell_T) ->
-    {[@stop_split] [@expl:into_inner_AtView_Guarded_FullBorrow_Perm_PermCell_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_AtView_Guarded_FullBorrow_Perm_PermCell_T result)
+    [ return (result: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+    {[@stop_split] [@expl:into_inner_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T result)
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  type t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T = None'0 | Some'0 t_AtView_Guarded_FullBorrow_Perm_PermCell_T
+  type t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T =
+    | None'0
+    | Some'0 t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T
   
   let into_inner_Perm_AtomicU32 (self: t_Perm_AtomicU32) (return (x: t_Perm_AtomicU32)) = any
     [ return (result: t_Perm_AtomicU32) -> {[@stop_split] [@expl:into_inner ensures] result = self}
@@ -4747,7 +4759,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   type t_TicketLockInv_T = {
     cell'0: t_PermCell_T;
     lft'0: t_Lifetime;
-    perm'0: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T;
+    perm'0: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     perm_next_ticket'0: t_Perm_AtomicU32;
     perm_now_serving'0: t_Perm_AtomicU32;
     auth_tickets'0: t_Authority_FMap_Int_Excl_unit;
@@ -4756,19 +4768,19 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
     ts_now_serving'0: t_Option_Int;
     token'0: t_Resource_Option_Excl_unit }
   
-  predicate inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T (_1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T)
+  predicate inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T (_1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T)
   
   axiom inv_axiom'1 [@rewrite]:
-    forall _1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T [inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _1]. inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _1
+    forall _1: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T [inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1]. inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1
       = match _1 with
         | None'0 -> true
-        | Some'0 f0'7 -> inv_AtView_Guarded_FullBorrow_Perm_PermCell_T f0'7
+        | Some'0 f0'7 -> inv_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T f0'7
         end
   
   predicate inv_TicketLockInv_T (_1: t_TicketLockInv_T)
   
   axiom inv_axiom'2 [@rewrite]: forall _1: t_TicketLockInv_T [inv_TicketLockInv_T _1]. inv_TicketLockInv_T _1
-      = (inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T _1.perm'0
+      = (inv_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _1.perm'0
       /\ inv_Authority_FMap_Int_Excl_unit _1.auth_tickets'0)
   
   predicate invariant_Ghost_TicketLockInv_T [@inline:trivial] (self: t_TicketLockInv_T) = inv_TicketLockInv_T self
@@ -4813,8 +4825,8 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   function next_ticket_T (self: t_TicketLockInv_T) : int =
     UInt32.t'int (index_FMap_Int_tup2_u32_SyncView (val_AtomicU32 self.perm_next_ticket'0) self.ts_next_ticket'0).f0'0
   
-  type tup2_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_Option_Int = {
-    f0'7: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T;
+  type tup2_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T_Option_Int = {
+    f0'7: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T;
     f1'7: t_Option_Int }
   
   predicate protocol_TicketLockInv_T [@inline:trivial] (self: t_TicketLockInv_T) =
@@ -4829,11 +4841,10 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
           | None -> true
           end)
     /\ match { f0'7 = self.perm'0; f1'7 = self.ts_now_serving'0 } with
-      | {f0'7 = Some'0 bor; f1'7 = Some'4 ts} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PermCell_T bor) (index_FMap_Int_tup2_u32_SyncView (val_AtomicU32 self.perm_now_serving'0) ts).f1'0
-      /\ lft_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T bor).inner = self.lft'0
-      /\ guard_FullBorrow_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T bor)
-        = (fun (b: t_FullBorrow_Perm_PermCell_T) -> ward_PermCell_T (cur_Perm_PermCell_T b) = self.cell'0)
-      /\ Map.get self.inv'0 (val_PermCell_T (cur_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T bor).inner))
+      | {f0'7 = Some'0 bor; f1'7 = Some'4 ts} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T bor) (index_FMap_Int_tup2_u32_SyncView (val_AtomicU32 self.perm_now_serving'0) ts).f1'0
+      /\ lft_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T bor).inner = self.lft'0
+      /\ guard_FullBorrow_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T bor) = self.cell'0
+      /\ Map.get self.inv'0 (val_PermCell_T (cur_Perm_PermCell_T (val_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T bor).inner))
       /\ view_Resource_Option_Excl_unit self.token'0 = Some'2 { f0'5 = () }
       | {f0'7 = None'0; f1'7 = None'4} -> true
       | _ -> false
@@ -4947,14 +4958,15 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
       | s21 = [ &bor <- _27.f0'2 ] s22
       | s22 = [ &end''0 <- _27.f1'2 ] s23
       | s23 = into_inner_FullBorrow_Perm_PermCell_T {bor} (fun (_x: t_FullBorrow_Perm_PermCell_T) -> [ &_34 <- _x ] s24)
-      | s24 = add_guard_Perm_PermCell_T {_34} {fun (p: t_Perm_PermCell_T) -> ward_PermCell_T p = data'1}
-          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_33 <- _x ] s25)
-      | s25 = new_Guarded_FullBorrow_Perm_PermCell_T {_33}
-          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T) -> [ &bor'0 <- _x ] s26)
-      | s26 = new_Guarded_FullBorrow_Perm_PermCell_T'0 {bor'0}
-          (fun (_x: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_42 <- _x ] s27)
+      | s24 = add_guard_Perm_PermCell_T {_34} {data'1}
+          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_33 <- _x ] s25)
+      | s25 = new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_33}
+          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &bor'0 <- _x ] s26)
+      | s26 = new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T'0 {bor'0}
+          (fun (_x: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_42 <- _x ] s27)
       | s27 = split_SyncView {_42}
-          (fun (_x: tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_41 <- _x ] s28)
+          (fun (_x: tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+            [ &_41 <- _x ] s28)
       | s28 = [ &view <- _41.f0'4 ] s29
       | s29 = [ &perm <- _41.f1'4 ] s30
       | s30 = MutBorrow.borrow_mut <t_SyncView> {view}
@@ -4976,8 +4988,8 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
       | s41 = new'0 {(0: UInt32.t)} {_47} (fun (_x: tup2_AtomicU32_Ghost_Perm_AtomicU32) -> [ &_46 <- _x ] s42)
       | s42 = [ &now_serving'0 <- _46.f0 ] s43
       | s43 = [ &perm_now_serving <- _46.f1 ] s44
-      | s44 = into_inner_AtView_Guarded_FullBorrow_Perm_PermCell_T {perm}
-          (fun (_x: t_AtView_Guarded_FullBorrow_Perm_PermCell_T) -> [ &_64 <- _x ] s45)
+      | s44 = into_inner_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {perm}
+          (fun (_x: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_64 <- _x ] s45)
       | s45 = [ &_63 <- Some'0 _64 ] s46
       | s46 = into_inner_Perm_AtomicU32 {perm_next_ticket} (fun (_x: t_Perm_AtomicU32) -> [ &_66 <- _x ] s47)
       | s47 = into_inner_Perm_AtomicU32 {perm_now_serving} (fun (_x: t_Perm_AtomicU32) -> [ &_68 <- _x ] s48)
@@ -5036,13 +5048,13 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
     | & bor: t_FullBorrow_Perm_PermCell_T = Any.any_l ()
     | & end''0: t_EndBorrow_Perm_PermCell_T = Any.any_l ()
     | & _27: tup2_Ghost_FullBorrow_Perm_PermCell_T_Ghost_EndBorrow_Perm_PermCell_T = Any.any_l ()
-    | & bor'0: t_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _33: t_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & bor'0: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _33: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
     | & _34: t_FullBorrow_Perm_PermCell_T = Any.any_l ()
     | & view: t_SyncView = Any.any_l ()
-    | & perm: t_AtView_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _41: tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _42: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & perm: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _41: tup2_Ghost_SyncView_Ghost_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _42: tup2_SyncView_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
     | & now_serving'0: t_AtomicU32 = Any.any_l ()
     | & perm_now_serving: t_Perm_AtomicU32 = Any.any_l ()
     | & _46: tup2_AtomicU32_Ghost_Perm_AtomicU32 = Any.any_l ()
@@ -5056,8 +5068,8 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
     | & inner_inv'0: t_AtomicInvariant_TicketLockInv_T = Any.any_l ()
     | & _55: t_TicketLockInv_T = Any.any_l ()
     | & _56: t_TicketLockInv_T = Any.any_l ()
-    | & _63: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
-    | & _64: t_AtView_Guarded_FullBorrow_Perm_PermCell_T = Any.any_l ()
+    | & _63: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _64: t_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
     | & _66: t_Perm_AtomicU32 = Any.any_l ()
     | & _68: t_Perm_AtomicU32 = Any.any_l ()
     | & _70: t_Authority_FMap_Int_Excl_unit = Any.any_l ()

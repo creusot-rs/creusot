@@ -19,7 +19,7 @@ declare_namespace! { SPIN_LOCK }
 struct SpinLockInv<T> {
     cell: Snapshot<PermCell<T>>,
     lft: Snapshot<Lifetime>,
-    perm: Option<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
+    perm: Option<Guarded<FullBorrow<Perm<PermCell<T>>>, PermCell<T>>>,
     perm_atomic: Perm<AtomicBool>,
     inv: Snapshot<Mapping<T, bool>>,
 }
@@ -38,7 +38,7 @@ impl<T> Protocol for SpinLockInv<T> {
             (true, None) => true,
             (false, Some(bor)) => {
                 bor.inner.lft() == *self.lft
-                    && bor.guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == *self.cell)
+                    && bor.guard() == *self.cell
                     && self.inv.get(bor.inner.cur().val())
             }
             _ => false,
@@ -70,7 +70,7 @@ impl<T> Invariant for SpinLock<T> {
 
 pub struct SpinLockGuard<'a, T> {
     lock: &'a SpinLock<T>,
-    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
+    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>, PermCell<T>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
 
@@ -86,7 +86,7 @@ impl<'a, T> View for SpinLockGuard<'a, T> {
 impl<'a, T> Invariant for SpinLockGuard<'a, T> {
     #[logic]
     fn invariant(self) -> bool {
-        self.perm.guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == self.lock.data)
+        self.perm.guard() == self.lock.data
             && self.perm.inner.lft() == self.lock.lft_tok.lft()
             && self.inv == self.lock.inv
     }
@@ -104,7 +104,7 @@ impl<T> SpinLock<T> {
             ghost!(SpinLockInv {
                 cell: snapshot!(data),
                 lft: snapshot!(lft_tok.lft()),
-                perm: Some(bor.into_inner().add_guard(snapshot!(|p: Perm<_>| *p.ward() == data))),
+                perm: Some(bor.into_inner().add_guard(snapshot!(data))),
                 perm_atomic: perm_atomic.into_inner(),
                 inv
             }),

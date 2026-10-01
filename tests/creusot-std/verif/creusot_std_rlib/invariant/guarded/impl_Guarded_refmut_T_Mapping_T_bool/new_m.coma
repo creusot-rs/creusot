@@ -1,0 +1,95 @@
+(* invariant::guarded::Guarded<&'a mut T, logic::mapping::Mapping<T, bool>> *)
+
+type namespace_other
+
+type t_Namespace = Other namespace_other
+
+use creusot.prelude.MutBorrow
+use map.Map
+use creusot.prelude.Any
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+type t_Guarded_refmut_T_Mapping_T_bool = { inner: MutBorrow.t t_T; _guard: Map.map t_T bool; _initial: MutBorrow.t t_T }
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+predicate index_Mapping_T_bool [@inline:trivial] (self: Map.map t_T bool) (a: t_T) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_T_bool
+
+predicate guards_ref_Mapping_T_bool [@inline:trivial] (self: Map.map t_T bool) (x: t_T) = index_Mapping_T_bool self x
+
+meta "rewrite_def" predicate guards_ref_Mapping_T_bool
+
+predicate guards_Mapping_T_bool [@inline:trivial] (self: Map.map t_T bool) (initial: MutBorrow.t t_T) (current': MutBorrow.t t_T) =
+  guards_ref_Mapping_T_bool self current'.current /\ initial.final = current'.final
+
+meta "rewrite_def" predicate guards_Mapping_T_bool
+
+predicate invariant_Guarded_refmut_T_Mapping_T_bool [@inline:trivial] (self: t_Guarded_refmut_T_Mapping_T_bool) =
+  guards_Mapping_T_bool self._guard self._initial self.inner
+
+meta "rewrite_def" predicate invariant_Guarded_refmut_T_Mapping_T_bool
+
+predicate inv_Guarded_refmut_T_Mapping_T_bool (_1: t_Guarded_refmut_T_Mapping_T_bool)
+
+axiom inv_axiom [@rewrite]:
+  forall _1: t_Guarded_refmut_T_Mapping_T_bool [inv_Guarded_refmut_T_Mapping_T_bool _1]. inv_Guarded_refmut_T_Mapping_T_bool _1
+    = (invariant_Guarded_refmut_T_Mapping_T_bool _1 /\ inv_refmut_T _1.inner)
+
+function guard_refmut_T [@inline:trivial] (self: t_Guarded_refmut_T_Mapping_T_bool) : Map.map t_T bool = self._guard
+
+meta "rewrite_def" function guard_refmut_T
+
+let new_T (borrow: MutBorrow.t t_T) (guard: Map.map t_T bool) (return (x: t_Guarded_refmut_T_Mapping_T_bool)) =
+{[@stop_split] [@expl:new_T requires] ([@stop_split] [@expl:new 'borrow' type invariant] inv_refmut_T borrow)
+  /\ ([@stop_split] [@expl:new requires] guards_ref_Mapping_T_bool guard borrow.current)}
+  any
+  [ return (result: t_Guarded_refmut_T_Mapping_T_bool) ->
+  {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Guarded_refmut_T_Mapping_T_bool result)
+    /\ ([@stop_split] [@expl:new ensures #0] result.inner = borrow)
+    /\ ([@stop_split] [@expl:new ensures #1] guard_refmut_T result = guard)
+    /\ ([@stop_split] [@expl:new ensures #2] guards_ref_Mapping_T_bool guard borrow.final)}
+    (! return {result}) ]
+
+predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let new_m_T (borrow: MutBorrow.t t_T) (guard: Map.map t_T bool) (return (x: t_Guarded_refmut_T_Mapping_T_bool)) =
+{[@stop_split] [@expl:new_m_T requires] ([@stop_split] [@expl:new_m 'borrow' type invariant] inv_refmut_T borrow)
+  /\ ([@stop_split] [@expl:new_m requires] guards_ref_Mapping_T_bool guard borrow.current)}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = MutBorrow.borrow_final <t_T> {borrow.current} {MutBorrow.get_id borrow}
+        (fun (_bor: MutBorrow.t t_T) ->
+          [ &_13 <- _bor ] -{inv_T _bor.final}-
+          [ &borrow <- { borrow with current = _bor.final } ] s1)
+      [ _ck -> (! {[@expl:type invariant] inv_T borrow.current} any) ]
+    | s1 = new_T {_13} {guard} (fun (_x: t_Guarded_refmut_T_Mapping_T_bool) -> [ &_ret <- _x ] s2)
+    | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_T borrow} any) ]
+    | s3 = -{resolve_refmut_T borrow}- s4
+    | s4 = return {_ret} ] ]
+  [ & _ret: t_Guarded_refmut_T_Mapping_T_bool = Any.any_l ()
+  | & borrow: MutBorrow.t t_T = borrow
+  | & guard: Map.map t_T bool = guard
+  | & _13: MutBorrow.t t_T = Any.any_l () ])
+  [ return (result: t_Guarded_refmut_T_Mapping_T_bool) ->
+  {[@stop_split] [@expl:new_m_T ensures] ([@stop_split] [@expl:new_m result type invariant] inv_Guarded_refmut_T_Mapping_T_bool result)
+    /\ ([@stop_split] [@expl:new_m ensures #0] result.inner = borrow)
+    /\ ([@stop_split] [@expl:new_m ensures #1] guard_refmut_T result = guard)
+    /\ ([@stop_split] [@expl:new_m ensures #2] guards_ref_Mapping_T_bool guard borrow.final)}
+    (! return {result}) ]

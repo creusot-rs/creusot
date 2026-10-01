@@ -88,7 +88,9 @@ pub trait SliceExt<T> {
     fn as_ptr_perm(&self) -> (*const T, Ghost<&Perm<*const [T]>>);
 
     #[check(terminates)]
-    fn as_mut_ptr_perm<'a>(&'a mut self) -> (*mut T, Ghost<Guarded<&'a mut Perm<*const [T]>>>);
+    fn as_mut_ptr_perm<'a>(
+        &'a mut self,
+    ) -> (*mut T, Ghost<Guarded<&'a mut Perm<*const [T]>, *const [T]>>);
 }
 
 impl<T> SliceExt<T> for [T] {
@@ -121,14 +123,13 @@ impl<T> SliceExt<T> for [T] {
 
     /// Convert `&mut [T]` to `*mut T` and a mutable ownership token.
     #[check(terminates)]
-    #[ensures(result.1.guard() == |b: &mut Perm<*const [T]>| {
-        *b.ward() as *const T == result.0 as *const T &&
-        b.ward().len_logic()@ == self@.len()
-     })]
+    #[ensures(result.1.guard().thin() == result.0 as *const T)]
     #[ensures(*self == *result.1.inner.val_unsized())]
     #[ensures(^self == *(^result.1.inner).val_unsized())]
     #[erasure(Self::as_mut_ptr)]
-    fn as_mut_ptr_perm<'a>(&'a mut self) -> (*mut T, Ghost<Guarded<&'a mut Perm<*const [T]>>>) {
+    fn as_mut_ptr_perm<'a>(
+        &'a mut self,
+    ) -> (*mut T, Ghost<Guarded<&'a mut Perm<*const [T]>, *const [T]>>) {
         let (ptr, own) = Perm::from_mut(self);
         (ptr as *mut T, own)
     }

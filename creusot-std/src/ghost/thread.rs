@@ -5,7 +5,6 @@
 
 use crate::{
     ghost::invariant::{Tokens, declare_namespace},
-    invariant::Guarded,
     prelude::*,
 };
 
@@ -41,11 +40,8 @@ impl ThreadToken {
     /// namespace.
     #[trusted]
     #[requires(tokens.contains(THREAD_TOKEN()))]
-    #[ensures(result.guard() == |tt: &mut Option<Self>| *tt != None)]
     #[check(ghost)]
-    pub fn get_thread_token<'a>(
-        #[allow(unused)] tokens: Tokens<'a>,
-    ) -> Guarded<&'a mut Option<Self>> {
+    pub fn get_thread_token<'a>(#[allow(unused)] tokens: Tokens<'a>) -> &'a mut Self {
         panic!("ghost only")
     }
 
