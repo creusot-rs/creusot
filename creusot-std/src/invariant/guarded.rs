@@ -126,11 +126,11 @@ impl<'a, T> Guarded<&'a mut T, Mapping<T, bool>> {
 impl<'a, T> Guarded<&'a mut Option<T>, IsSome> {
     #[trusted]
     #[check(ghost)]
-    #[ensures(*result.inner == Some(*borrow))]
+    #[ensures(*result.inner == Some(**borrow))]
     #[ensures(^result.inner == Some(^borrow))]
-    pub fn some(borrow: &'a mut T) -> Ghost<Self> {
+    pub fn some(borrow: Ghost<&'a mut T>) -> Ghost<Self> {
         let _ = borrow;
-        panic!("ghost only")
+        Ghost::conjure()
     }
 }
 
