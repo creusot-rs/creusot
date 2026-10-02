@@ -5,7 +5,7 @@ mod implementation {
     #[cfg(creusot)]
     use creusot_std::logic::any;
     use creusot_std::{
-        cell::PermCell,
+        cell::PCell,
         ghost::perm::Perm,
         logic::{FMap, FSet, Mapping},
         peano::PeanoInt,
@@ -14,7 +14,7 @@ mod implementation {
     };
     use std::rc::Rc;
 
-    pub struct Element<T>(Rc<PermCell<Node<T>>>);
+    pub struct Element<T>(Rc<PCell<Node<T>>>);
 
     impl<T> PartialEq for Element<T> {
         #[check(ghost)]
@@ -56,7 +56,7 @@ mod implementation {
         /// which "pointers" are involved
         domain: Snapshot<FSet<Element<T>>>,
         /// Maps an element to its logical content (represented by the permission to access it).
-        perms: FMap<Snapshot<Element<T>>, Perm<PermCell<Node<T>>>>,
+        perms: FMap<Snapshot<Element<T>>, Perm<PCell<Node<T>>>>,
         /// Map each element in [`Self::domain`] to its payload.
         // `img` in the why3 proof
         payloads: Snapshot<Mapping<Element<T>, T>>,
@@ -187,7 +187,7 @@ mod implementation {
     #[ensures((^uf).payloads_map() == uf.payloads_map().set(result, payload))]
     pub fn make<T>(mut uf: Ghost<&mut UnionFind<T>>, payload: T) -> Element<T> {
         let payload_snap = snapshot!(payload);
-        let (value, perm) = PermCell::new(Node::Root { rank: PeanoInt::new(), payload });
+        let (value, perm) = PCell::new(Node::Root { rank: PeanoInt::new(), payload });
         let elt = Element(Rc::new(value));
         ghost! {
             let (mut perm, uf) = (perm.into_inner(), uf.into_inner());

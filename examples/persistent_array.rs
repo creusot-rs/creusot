@@ -4,7 +4,7 @@ extern crate creusot_std;
 pub mod implementation {
     use ::std::rc::Rc;
     use creusot_std::{
-        cell::PermCell,
+        cell::PCell,
         ghost::{
             GhostShared,
             invariant::{NonAtomicInvariant, Protocol, Tokens, declare_namespace},
@@ -35,12 +35,12 @@ pub mod implementation {
     /// [`Self::get`] is dropped before doing any other operation on any array.
     pub struct PersistentArray<T> {
         /// Contains a pointer to the actual value
-        permcell: Rc<PermCell<Inner<T>>>,
+        permcell: Rc<PCell<Inner<T>>>,
         /// Fragment of the GMap resource.
         ///
         /// This contains a fragment of the map, with only `permcell` as key.
         /// The corresponding value is the logical value of the map.
-        frag: Ghost<Fragment<FMap<PermCell<Inner<T>>, Ag<Seq<T>>>>>,
+        frag: Ghost<Fragment<FMap<PCell<Inner<T>>, Ag<Seq<T>>>>>,
         /// The [`Id`] in the public part is the id of the whole `GMap`, **not** the individual keys !
         inv: Ghost<GhostShared<NonAtomicInvariant<PA<T>>>>,
     }
@@ -66,7 +66,7 @@ pub mod implementation {
 
     enum Inner<T> {
         Direct(Vec<T>),
-        Link { index: usize, value: T, next: Rc<PermCell<Inner<T>>> },
+        Link { index: usize, value: T, next: Rc<PCell<Inner<T>>> },
     }
 
     impl<T> View for PersistentArray<T> {
@@ -80,14 +80,14 @@ pub mod implementation {
     /// Structure describing the invariants respected by the pointers.
     struct PA<T> {
         /// Holds the permission for each pointer.
-        perms: FMap<Snapshot<PermCell<Inner<T>>>, Perm<PermCell<Inner<T>>>>,
+        perms: FMap<Snapshot<PCell<Inner<T>>>, Perm<PCell<Inner<T>>>>,
         /// Holds the 'authoritative' version of the map of logical values.
         ///
         /// When we open the invariant, we get (a mutable borrow to) this, and can learn
         /// that some persistent array is in the map with some value.
-        auth: Authority<FMap<PermCell<Inner<T>>, Ag<Seq<T>>>>,
+        auth: Authority<FMap<PCell<Inner<T>>, Ag<Seq<T>>>>,
         /// Rank: used to show that there is no cycle in our structure. Useful in `reroot`.
-        depth: Snapshot<Mapping<PermCell<Inner<T>>, Int>>,
+        depth: Snapshot<Mapping<PCell<Inner<T>>, Int>>,
     }
 
     impl<T> Protocol for PA<T> {
@@ -132,7 +132,7 @@ pub mod implementation {
         #[ensures(result@ == v@)]
         pub fn new(v: Vec<T>) -> Self {
             let new_ag = snapshot!(Ag(v@));
-            let (permcell, perm) = PermCell::new(Inner::Direct(v));
+            let (permcell, perm) = PCell::new(Inner::Direct(v));
             let mut auth = Authority::alloc();
             let mut frag = ghost!(Fragment::new_unit(auth.id_ghost()));
             ghost!(auth.update(&mut frag, FMapInsertLocalUpdate(snapshot!(*perm.ward()), new_ag)));
@@ -161,7 +161,7 @@ pub mod implementation {
         pub fn set(&self, index: usize, value: T, tokens: Ghost<Tokens>) -> Self {
             let new_ag = snapshot!(Ag(self@.set(index@, value)));
             let (permcell, perm) =
-                PermCell::new(Inner::Link { index, value, next: self.permcell.clone() });
+                PCell::new(Inner::Link { index, value, next: self.permcell.clone() });
             let frag = ghost! {
                 let pa = self.inv.open_guarded(tokens.into_inner());
                 let pa = &mut *pa.inner; // FIXME #824
@@ -211,7 +211,7 @@ pub mod implementation {
         #[requires(i@ < pa.auth@[*inner@].0.len())]
         #[ensures(*result == pa.auth@[*inner@].0[i@])]
         unsafe fn get_inner_immut<'a>(
-            inner: &'a Rc<PermCell<Inner<T>>>,
+            inner: &'a Rc<PCell<Inner<T>>>,
             i: usize,
             pa: Ghost<&'a PA<T>>,
         ) -> &'a T {
@@ -263,7 +263,7 @@ pub mod implementation {
             Inner::Direct(_) => true,
             Inner::Link { .. } => false,
         })]
-        fn reroot(cur: &Rc<PermCell<Inner<T>>>, mut pa: Ghost<&mut PA<T>>) {
+        fn reroot(cur: &Rc<PCell<Inner<T>>>, mut pa: Ghost<&mut PA<T>>) {
             // We take ownership of cur
             let mut perm_cur = ghost!(pa.perms.remove_ghost(&snapshot!(*cur@)).unwrap());
             let bor_cur = unsafe { cur.borrow_mut(ghost!(&mut perm_cur)) };

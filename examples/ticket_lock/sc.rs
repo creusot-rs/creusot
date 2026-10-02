@@ -1,5 +1,5 @@
 use creusot_std::{
-    cell::PermCell,
+    cell::PCell,
     ghost::{
         invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
         lifetime_logic::{EndBorrow, FullBorrow, Lifetime, LifetimeToken},
@@ -22,9 +22,9 @@ use creusot_std::{
 declare_namespace! { TICKET_LOCK }
 
 struct TicketLockInv<T> {
-    cell: Snapshot<PermCell<T>>,
+    cell: Snapshot<PCell<T>>,
     lft: Snapshot<Lifetime>,
-    perm: Option<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
+    perm: Option<Guarded<FullBorrow<Perm<PCell<T>>>>>,
     perm_next_ticket: Perm<AtomicU32>,
     perm_now_serving: Perm<AtomicU32>,
     auth_tickets: Authority<FMap<Int, Excl<()>>>,
@@ -32,7 +32,7 @@ struct TicketLockInv<T> {
 }
 
 impl<T> Protocol for TicketLockInv<T> {
-    type Public = ((PermCell<T>, AtomicU32, AtomicU32, Lifetime, Mapping<T, bool>), Id);
+    type Public = ((PCell<T>, AtomicU32, AtomicU32, Lifetime, Mapping<T, bool>), Id);
 
     #[logic]
     fn public(self) -> Self::Public {
@@ -70,9 +70,9 @@ impl<T> Protocol for TicketLockInv<T> {
 pub struct TicketLock<T> {
     next_ticket: AtomicU32,
     now_serving: AtomicU32,
-    data: PermCell<T>,
+    data: PCell<T>,
     lft_tok: Ghost<LifetimeToken>,
-    end: Ghost<EndBorrow<Perm<PermCell<T>>>>,
+    end: Ghost<EndBorrow<Perm<PCell<T>>>>,
     inner_inv: Ghost<AtomicInvariantSC<TicketLockInv<T>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
@@ -92,7 +92,7 @@ impl<T> Invariant for TicketLock<T> {
 
 pub struct TicketLockGuard<'a, T> {
     lock: &'a TicketLock<T>,
-    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
+    perm: Ghost<Guarded<FullBorrow<Perm<PCell<T>>>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
 
@@ -122,7 +122,7 @@ impl<T> TicketLock<T> {
     pub fn new(data: T, inv: Snapshot<Mapping<T, bool>>) -> Self {
         let (next_ticket, perm_next_ticket) = AtomicU32::new(0);
         let (now_serving, perm_now_serving) = AtomicU32::new(0);
-        let (data, perm_data) = PermCell::new(data);
+        let (data, perm_data) = PCell::new(data);
         let lft_tok = ghost!(LifetimeToken::new());
         let (bor, end) = FullBorrow::new(perm_data, snapshot!(lft_tok.lft()));
         let inner_inv = AtomicInvariantSC::new(
