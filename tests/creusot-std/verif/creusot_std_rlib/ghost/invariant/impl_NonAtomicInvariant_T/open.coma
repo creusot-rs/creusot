@@ -5,7 +5,6 @@ type namespace_other
 type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
-use map.Map
 use set.Set
 use creusot.prelude.Any
 
@@ -21,7 +20,11 @@ let into_inner_Tokens (self: t_Tokens) (return (x: t_Tokens)) = any
 
 type t_T
 
-type t_Guarded_refmut_T = { inner: MutBorrow.t t_T; _guard: Map.map (MutBorrow.t t_T) bool; _initial: MutBorrow.t t_T }
+type t_Public
+
+type t_Public_T = { f0: t_Public }
+
+type t_Guarded_refmut_T_Public_T = { inner: MutBorrow.t t_T; _guard: t_Public_T; _initial: MutBorrow.t t_T }
 
 predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
 
@@ -33,23 +36,23 @@ predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespac
 
 function namespace_T (self: t_NonAtomicInvariant_T) : t_Namespace
 
-predicate index_Mapping_refmut_T_bool [@inline:trivial] (self: Map.map (MutBorrow.t t_T) bool) (a: MutBorrow.t t_T) =
-  Map.get self a
+function public_T (self: t_T) : t_Public
 
-meta "rewrite_def" predicate index_Mapping_refmut_T_bool
+predicate protocol_T (self: t_T)
 
-function guard_refmut_T [@inline:trivial] (self: t_Guarded_refmut_T) : Map.map (MutBorrow.t t_T) bool = self._guard
+predicate guards_ref_Public_T [@inline:trivial] (self: t_Public_T) (b: t_T) = public_T b = self.f0 /\ protocol_T b
 
-meta "rewrite_def" function guard_refmut_T
+meta "rewrite_def" predicate guards_ref_Public_T
 
-predicate rel_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) (other: MutBorrow.t t_T) = self.final = other.final
+predicate guards_Public_T [@inline:trivial] (self: t_Public_T) (initial: MutBorrow.t t_T) (current': MutBorrow.t t_T) =
+  guards_ref_Public_T self current'.current /\ initial.final = current'.final
 
-meta "rewrite_def" predicate rel_refmut_T
+meta "rewrite_def" predicate guards_Public_T
 
-predicate invariant_Guarded_refmut_T [@inline:trivial] (self: t_Guarded_refmut_T) =
-  index_Mapping_refmut_T_bool (guard_refmut_T self) self.inner /\ rel_refmut_T self.inner self._initial
+predicate invariant_Guarded_refmut_T_Public_T [@inline:trivial] (self: t_Guarded_refmut_T_Public_T) =
+  guards_Public_T self._guard self._initial self.inner
 
-meta "rewrite_def" predicate invariant_Guarded_refmut_T
+meta "rewrite_def" predicate invariant_Guarded_refmut_T_Public_T
 
 predicate inv_T (_1: t_T)
 
@@ -61,26 +64,24 @@ predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmu
 
 meta "rewrite_def" predicate inv_refmut_T
 
-predicate inv_Guarded_refmut_T (_1: t_Guarded_refmut_T)
+predicate inv_Guarded_refmut_T_Public_T (_1: t_Guarded_refmut_T_Public_T)
 
-axiom inv_axiom [@rewrite]: forall _1: t_Guarded_refmut_T [inv_Guarded_refmut_T _1]. inv_Guarded_refmut_T _1
-    = (invariant_Guarded_refmut_T _1 /\ inv_refmut_T _1.inner)
+axiom inv_axiom [@rewrite]:
+  forall _1: t_Guarded_refmut_T_Public_T [inv_Guarded_refmut_T_Public_T _1]. inv_Guarded_refmut_T_Public_T _1
+    = (invariant_Guarded_refmut_T_Public_T _1 /\ inv_refmut_T _1.inner)
 
-type t_Public
+function guard_refmut_T [@inline:trivial] (self: t_Guarded_refmut_T_Public_T) : t_Public_T = self._guard
 
-function public_T (self: t_T) : t_Public
+meta "rewrite_def" function guard_refmut_T
 
 function public_T'0 (self: t_NonAtomicInvariant_T) : t_Public
 
-predicate protocol_T (self: t_T)
-
-let open_guarded_T (self: t_NonAtomicInvariant_T) (tokens: t_Tokens) (return (x: t_Guarded_refmut_T)) =
+let open_guarded_T (self: t_NonAtomicInvariant_T) (tokens: t_Tokens) (return (x: t_Guarded_refmut_T_Public_T)) =
 {[@stop_split] [@expl:open_guarded requires] contains tokens (namespace_T self)}
   any
-  [ return (result: t_Guarded_refmut_T) ->
-  {[@stop_split] [@expl:open_guarded_T ensures] ([@stop_split] [@expl:open_guarded result type invariant] inv_Guarded_refmut_T result)
-    /\ ([@stop_split] [@expl:open_guarded ensures] guard_refmut_T result
-    = (fun (b: MutBorrow.t t_T) -> public_T b.current = public_T'0 self /\ protocol_T b.current))}
+  [ return (result: t_Guarded_refmut_T_Public_T) ->
+  {[@stop_split] [@expl:open_guarded_T ensures] ([@stop_split] [@expl:open_guarded result type invariant] inv_Guarded_refmut_T_Public_T result)
+    /\ ([@stop_split] [@expl:open_guarded ensures] (guard_refmut_T result).f0 = public_T'0 self)}
     (! return {result}) ]
 
 predicate invariant_Ghost_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_refmut_T self
@@ -131,9 +132,10 @@ predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = 
 
 meta "rewrite_def" predicate resolve_refmut_T
 
-predicate resolve_Guarded_refmut_T (_1: t_Guarded_refmut_T)
+predicate resolve_Guarded_refmut_T_Public_T (_1: t_Guarded_refmut_T_Public_T)
 
-axiom resolve_axiom [@rewrite]: forall _1: t_Guarded_refmut_T [resolve_Guarded_refmut_T _1]. resolve_Guarded_refmut_T _1
+axiom resolve_axiom [@rewrite]:
+  forall _1: t_Guarded_refmut_T_Public_T [resolve_Guarded_refmut_T_Public_T _1]. resolve_Guarded_refmut_T_Public_T _1
     = resolve_refmut_T _1.inner
 
 function fin_Ghost_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) : t_T = self.final
@@ -157,7 +159,7 @@ let open_T (this: t_NonAtomicInvariant_T) (tokens: t_Tokens)
   [ bb0 = s0
     [ s0 = deref_Ghost_ref_NonAtomicInvariant_T {this} (fun (_x: t_NonAtomicInvariant_T) -> [ &_16 <- _x ] s1)
     | s1 = into_inner_Tokens {tokens} (fun (_x: t_Tokens) -> [ &_18 <- _x ] s2)
-    | s2 = open_guarded_T {_16} {_18} (fun (_x: t_Guarded_refmut_T) -> [ &_14 <- _x ] s3)
+    | s2 = open_guarded_T {_16} {_18} (fun (_x: t_Guarded_refmut_T_Public_T) -> [ &_14 <- _x ] s3)
     | s3 = MutBorrow.borrow_final <t_T> {_14.inner.current} {MutBorrow.get_id _14.inner}
         (fun (_bor: MutBorrow.t t_T) ->
           [ &__temp <- _bor ] -{inv_T _bor.final}-
@@ -167,15 +169,15 @@ let open_T (this: t_NonAtomicInvariant_T) (tokens: t_Tokens)
     | s5 = [ &_23 <- inv ] s6
     | s6 = call_once_impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A {f} {_23}
         (fun (_x: t_A) -> [ &_ret <- _x ] s7)
-    | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_Guarded_refmut_T _14} any) ]
-    | s8 = -{resolve_Guarded_refmut_T _14}- s9
+    | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_Guarded_refmut_T_Public_T _14} any) ]
+    | s8 = -{resolve_Guarded_refmut_T_Public_T _14}- s9
     | s9 = return {_ret} ] ]
   [ & _ret: t_A = Any.any_l ()
   | & this: t_NonAtomicInvariant_T = this
   | & tokens: t_Tokens = tokens
   | & f: impl_32_FnOnce_40_Ghost_60__38__39_a_32_mut_32_T_62__41__32__45__62__32_A = f
   | & __temp: MutBorrow.t t_T = Any.any_l ()
-  | & _14: t_Guarded_refmut_T = Any.any_l ()
+  | & _14: t_Guarded_refmut_T_Public_T = Any.any_l ()
   | & _16: t_NonAtomicInvariant_T = Any.any_l ()
   | & _18: t_Tokens = Any.any_l ()
   | & inv: MutBorrow.t t_T = Any.any_l ()

@@ -70,7 +70,7 @@
 
 use crate::{
     ghost::{FnGhost, Plain},
-    invariant::Guarded,
+    invariant::{GuardRef, Guarded},
     logic::Set,
     prelude::*,
 };
@@ -552,9 +552,9 @@ impl<T: Protocol> NonAtomicInvariant<T> {
 
     #[trusted]
     #[requires(tokens.contains(self.namespace()))]
-    #[ensures(result.guard() == |b: &mut T| (*b).public() == self.public() && (*b).protocol())]
+    #[ensures(result.guard().0 == self.public())]
     #[check(ghost)]
-    pub fn open_guarded<'a>(&'a self, tokens: Tokens<'a>) -> Guarded<&'a mut T> {
+    pub fn open_guarded<'a>(&'a self, tokens: Tokens<'a>) -> Guarded<&'a mut T, Public<T>> {
         panic!("Should not be called outside ghost code")
     }
 
@@ -584,5 +584,15 @@ impl<T: Protocol> NonAtomicInvariant<T> {
     #[ensures(this.namespace() == (^this).namespace())]
     pub fn open_mut<'a, A>(this: Ghost<&'a mut Self>, f: impl FnOnce(Ghost<&'a mut T>) -> A) -> A {
         unreachable!("ghost code only")
+    }
+}
+
+/// Guard for [`NonAtomicInvariant::open_guarded`].
+pub struct Public<T: Protocol>(pub T::Public);
+
+impl<T: Protocol> GuardRef<T> for Public<T> {
+    #[logic(open, prophetic, inline)]
+    fn guards_ref(self, b: T) -> bool {
+        b.public() == self.0 && b.protocol()
     }
 }

@@ -25,7 +25,7 @@ struct SpinLockInv<T> {
     cell: Snapshot<PermCell<T>>,
     lft: Snapshot<Lifetime>,
     perm_atomic: Perm<AtomicBool>,
-    perm: Option<AtView<Guarded<FullBorrow<Perm<PermCell<T>>>>>>,
+    perm: Option<AtView<Guarded<FullBorrow<Perm<PermCell<T>>>, PermCell<T>>>>,
     excl: Resource<Option<Excl<()>>>,
     ts: Option<Timestamp>,
     inv: Snapshot<Mapping<T, bool>>,
@@ -49,7 +49,7 @@ impl<T> Protocol for SpinLockInv<T> {
                 (Some(bor), Some(ts), Some(_)) =>
                     bor.view() <= self.perm_atomic.val()[ts].1 &&
                     bor.val().inner.lft() == *self.lft &&
-                    bor.val().guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == *self.cell) &&
+                    bor.val().guard() == *self.cell &&
                     self.inv.get(bor.val().inner.cur().val()),
                 _ => false
             }
@@ -81,7 +81,7 @@ impl<T> Invariant for SpinLock<T> {
 
 pub struct SpinLockGuard<'a, T> {
     lock: &'a SpinLock<T>,
-    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
+    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>, PermCell<T>>>,
     excl: Ghost<Resource<Option<Excl<()>>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
@@ -98,7 +98,7 @@ impl<'a, T> View for SpinLockGuard<'a, T> {
 impl<'a, T> Invariant for SpinLockGuard<'a, T> {
     #[logic]
     fn invariant(self) -> bool {
-        self.perm.guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == self.lock.data)
+        self.perm.guard() == self.lock.data
             && self.perm.inner.lft() == self.lock.lft_tok.lft()
             && self.excl.val() != None
             && self.excl.id() == self.lock.inner_inv.public().1
@@ -113,7 +113,7 @@ impl<T> SpinLock<T> {
         let (data, perm_data) = PermCell::new(data);
         let lft_tok = ghost!(LifetimeToken::new());
         let (bor, end) = FullBorrow::new(perm_data, snapshot!(lft_tok.lft()));
-        let bor = ghost!(bor.into_inner().add_guard(snapshot!(|p: Perm<_>| *p.ward() == data)));
+        let bor = ghost!(bor.into_inner().add_guard(snapshot!(data)));
         let (mut view, perm) = AtView::new(bor).split();
         let (atomic, perm_atomic) = AtomicBool::new(false, ghost!(&mut *view));
         let inner_inv = AtomicInvariant::new(

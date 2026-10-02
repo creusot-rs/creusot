@@ -1,9 +1,9 @@
 //! Generic permissions for accessing memory pointed to by pointers or within an interior mutable
 //! type.
 
-use crate::prelude::*;
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
+use crate::{invariant::GuardRef, prelude::*};
 
 /// Trait for the types that can be used in a [`Perm`].
 pub trait PermTarget {
@@ -168,4 +168,11 @@ impl<C: ?Sized + PermTarget> Resolve for Perm<C> {
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
+}
+
+impl<C: ?Sized + PermTarget> GuardRef<Perm<C>> for C {
+    #[logic(open, inline)]
+    fn guards_ref(self, c: Perm<C>) -> bool {
+        pearlite! { *c.ward() == self }
+    }
 }

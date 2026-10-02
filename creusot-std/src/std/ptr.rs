@@ -597,11 +597,13 @@ impl<T: ?Sized> Perm<*const T> {
     // can overflow the number of available pointer adresses
     #[check(terminates)]
     // Ensures that the permission is not stolen (via e.g. `std::mem::replace`)
-    #[ensures(result.1.guard() == |p: &mut Perm<*const T>| *p.ward() == result.0)]
+    #[ensures(result.1.guard() == result.0)]
     #[ensures(*result.1.inner.val_unsized() == *r)]
     #[ensures(*(^result.1.inner).val_unsized() == ^r)]
     #[intrinsic("perm_from_mut")]
-    pub fn from_mut<'a>(r: &'a mut T) -> (*mut T, Ghost<Guarded<&'a mut Perm<*const T>>>) {
+    pub fn from_mut<'a>(
+        r: &'a mut T,
+    ) -> (*mut T, Ghost<Guarded<&'a mut Perm<*const T>, *const T>>) {
         (r, Ghost::conjure())
     }
 
@@ -729,8 +731,8 @@ impl<T> Perm<*const [T]> {
     #[trusted]
     #[check(ghost)]
     #[requires(0 <= index && index <= self.len())]
-    #[ensures(result.0.guard() == |p: &mut Perm<*const [T]>| p.ward().thin() == self.ward().thin())]
-    #[ensures(result.1.guard() == |p: &mut Perm<*const [T]>| p.ward().thin() == self.ward().thin().offset_logic(index))]
+    #[ensures(result.0.guard().thin() == self.ward().thin())]
+    #[ensures(result.1.guard().thin() == self.ward().thin().offset_logic(index))]
     #[ensures(self.val_unsized()@[..index] == result.0.inner.val_unsized()@)]
     #[ensures(self.val_unsized()@[index..] == result.1.inner.val_unsized()@)]
     #[ensures((^self).ward() == self.ward())]
@@ -739,7 +741,10 @@ impl<T> Perm<*const [T]> {
     pub fn split_at_mut<'a>(
         &'a mut self,
         #[allow(unused)] index: Int,
-    ) -> (Guarded<&'a mut Perm<*const [T]>>, Guarded<&'a mut Perm<*const [T]>>) {
+    ) -> (
+        Guarded<&'a mut Perm<*const [T]>, *const [T]>,
+        Guarded<&'a mut Perm<*const [T]>, *const [T]>,
+    ) {
         panic!("called ghost function in normal code")
     }
 
@@ -760,11 +765,11 @@ impl<T> Perm<*const [T]> {
     #[ensures(result.len() == self.len())]
     #[ensures(forall<i> 0 <= i && i < self.len() ==>
         *result[i].inner.val_unsized() == self.val_unsized()@[i] &&
-        result[i].guard() == |p: &mut Perm<*const T>| *p.ward() == self.ward().thin().offset_logic(i)
+        result[i].guard() == self.ward().thin().offset_logic(i)
     )]
     #[ensures((^self).ward() == self.ward())]
     #[ensures(forall<i> 0 <= i && i < self.len() ==> *(^result[i].inner).val_unsized() == (^self).val_unsized()@[i])]
-    pub fn elements_mut<'a>(&'a mut self) -> Seq<Guarded<&'a mut Perm<*const T>>> {
+    pub fn elements_mut<'a>(&'a mut self) -> Seq<Guarded<&'a mut Perm<*const T>, *const T>> {
         panic!("called ghost function in normal code")
     }
 
@@ -781,12 +786,12 @@ impl<T> Perm<*const [T]> {
     /// Index a `&mut Perm<*const [T]>` into a `&mut Perm<*const T>`.
     #[check(ghost)]
     #[requires(0 <= index && index < self.len())]
-    #[ensures(result.guard() == |p: &mut Perm<*const T>| *p.ward() == self.ward().thin().offset_logic(index))]
+    #[ensures(result.guard() == self.ward().thin().offset_logic(index))]
     #[ensures(*result.inner.val_unsized() == self.val_unsized()@[index])]
     #[ensures((^self).ward() == self.ward())]
     #[ensures(*(^result.inner).val_unsized() == (^self).val_unsized()@[index])]
     #[ensures(forall<k: Int> 0 <= k && k < self.len() && k != index ==> (^self).val_unsized()@[k] == self.val_unsized()@[k])]
-    pub fn index_mut<'a>(&'a mut self, index: Int) -> Guarded<&'a mut Perm<*const T>> {
+    pub fn index_mut<'a>(&'a mut self, index: Int) -> Guarded<&'a mut Perm<*const T>, *const T> {
         let mut r = self.elements_mut();
         proof_assert! { forall<k> index < k && k < r.len() ==> r[k].inner.val_unsized() == r[index..].tail()[k-index-1].inner.val_unsized() };
         let _r = snapshot! { r };

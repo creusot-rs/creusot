@@ -30,7 +30,7 @@ declare_namespace! { TICKET_LOCK }
 struct TicketLockInv<T> {
     cell: Snapshot<PermCell<T>>,
     lft: Snapshot<Lifetime>,
-    perm: Option<AtView<Guarded<FullBorrow<Perm<PermCell<T>>>>>>,
+    perm: Option<AtView<Guarded<FullBorrow<Perm<PermCell<T>>>, PermCell<T>>>>,
     perm_next_ticket: Perm<AtomicU32>,
     perm_now_serving: Perm<AtomicU32>,
     auth_tickets: Authority<FMap<Int, Excl<()>>>,
@@ -81,7 +81,7 @@ impl<T> Protocol for TicketLockInv<T> {
                 (Some(bor), Some(ts)) => {
                     bor.view() <= self.perm_now_serving.val()[ts].1 &&
                     bor.val().inner.lft() == *self.lft &&
-                    bor.val().guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == *self.cell) &&
+                    bor.val().guard() == *self.cell &&
                     self.inv.get(bor.val().inner.cur().val()) &&
                     self.token@ == Some(Excl(()))
                 }
@@ -117,7 +117,7 @@ impl<T> Invariant for TicketLock<T> {
 
 pub struct TicketLockGuard<'a, T> {
     lock: &'a TicketLock<T>,
-    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
+    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>, PermCell<T>>>,
     token: Ghost<Resource<Option<Excl<()>>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
@@ -135,7 +135,7 @@ impl<'a, T> Invariant for TicketLockGuard<'a, T> {
     #[logic(inline)]
     fn invariant(self) -> bool {
         pearlite! {
-            self.perm.guard() == (|b: FullBorrow<Perm<_>>| *b.cur().ward() == self.lock.data) &&
+            self.perm.guard() == self.lock.data &&
             self.perm.inner.lft() == self.lock.lft_tok.lft() &&
             self.inv == self.lock.inv &&
             self.token.id() == self.lock.inner_inv.public().2 &&
@@ -153,7 +153,7 @@ impl<T> TicketLock<T> {
         let (data, perm_data) = PermCell::new(data);
         let lft_tok = ghost!(LifetimeToken::new());
         let (bor, end) = FullBorrow::new(perm_data, snapshot!(lft_tok.lft()));
-        let bor = ghost!(bor.into_inner().add_guard(snapshot!(|p: Perm<_>| *p.ward() == data)));
+        let bor = ghost!(bor.into_inner().add_guard(snapshot!(data)));
         let (mut view, perm) = AtView::new(bor).split();
         let (now_serving, perm_now_serving) = AtomicU32::new(0, ghost!(&mut *view));
         let inner_inv = AtomicInvariant::new(

@@ -181,7 +181,7 @@ pub fn slice_as_mut_ptr<T>(s: &mut [T]) -> *mut T {
 #[erasure(slice_as_mut_ptr)]
 pub fn slice_as_mut_ptr_perm<'a, T>(
     s: &'a mut [T],
-) -> (*mut T, Ghost<Guarded<&'a mut Perm<*const [T]>>>) {
+) -> (*mut T, Ghost<Guarded<&'a mut Perm<*const [T]>, *const [T]>>) {
     s.as_mut_ptr_perm()
 }
 
