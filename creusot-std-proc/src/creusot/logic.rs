@@ -49,6 +49,7 @@ struct LogicTags {
     prophetic: bool,
     sealed: bool,
     inline: bool,
+    indirect: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -59,6 +60,21 @@ enum LogicTag {
     Prophetic(Span),
     Sealed(Span),
     Inline(Span),
+    Indirect(Span),
+}
+
+impl LogicTag {
+    fn span(&self) -> Span {
+        match *self {
+            LogicTag::Open(_, span) => span,
+            LogicTag::Opaque(span) => span,
+            LogicTag::Law(span) => span,
+            LogicTag::Prophetic(span) => span,
+            LogicTag::Sealed(span) => span,
+            LogicTag::Inline(span) => span,
+            LogicTag::Indirect(span) => span,
+        }
+    }
 }
 
 pub fn logic(in_tags: TS1, tokens: TS1) -> TS1 {
@@ -212,6 +228,7 @@ impl Parse for LogicTag {
             "prophetic" => Ok(Self::Prophetic(ident.span())),
             "sealed" => Ok(Self::Sealed(ident.span())),
             "inline" => Ok(Self::Inline(ident.span())),
+            "indirect" => Ok(Self::Indirect(ident.span())),
             _ => Err(Error::new(
                 ident.span(),
                 "unsupported modifier. The only supported modifiers are `open`, `prophetic`, `law` and `sealed`",
@@ -302,10 +319,12 @@ impl_logic_tag!(
     prophetic => (#[creusot::decl::logic::prophetic])
     sealed =>    (#[creusot::decl::logic::sealed])
     inline =>    (#[creusot::decl::logic::inline])
+    indirect =>  (#[creusot::decl::logic::indirect])
 );
 
 impl LogicTags {
     fn add(&mut self, tag: LogicTag) -> Result<()> {
+        let span = tag.span();
         match tag {
             LogicTag::Open(vis, span) => self.open(span, vis)?,
             LogicTag::Opaque(span) => self.opaque(span)?,
@@ -313,6 +332,13 @@ impl LogicTags {
             LogicTag::Prophetic(span) => self.prophetic(span)?,
             LogicTag::Sealed(span) => self.sealed(span)?,
             LogicTag::Inline(span) => self.inline(span)?,
+            LogicTag::Indirect(span) => self.indirect(span)?,
+        }
+        if self.indirect && self.inline {
+            return Err(Error::new(
+                span,
+                concat!("functions cannot be both `indirect` and `inline`"),
+            ));
         }
         Ok(())
     }
