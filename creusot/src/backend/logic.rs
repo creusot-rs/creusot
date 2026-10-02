@@ -6,7 +6,7 @@ use crate::{
         term::lower_pure_weakdep,
         ty::{self, translate_ty},
     },
-    contracts_items::{Intrinsic, get_builtin, is_inline},
+    contracts_items::{Intrinsic, get_builtin, is_indirect, is_inline},
     ctx::*,
     naming::name,
     translated_item::FileModule,
@@ -124,12 +124,13 @@ pub(crate) fn lower_logical_defn<'tcx>(
 ) -> Vec<Decl> {
     let mut decls = vec![];
     let inline = is_inline(ctx.tcx, def_id);
+    let indirect = is_indirect(ctx.tcx, def_id);
 
     // We don't pull dependencies for FnDef items, because it may be more private than
     // the definition is transparent
     let body = lower_pure_weakdep(ctx, names, &body.spanned());
 
-    if sig.variant.is_none() {
+    if sig.variant.is_none() && !indirect {
         let mut sig = sig.why_sig.clone();
         let mut meta_decl = None;
 
