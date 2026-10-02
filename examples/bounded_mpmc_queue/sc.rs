@@ -5,7 +5,7 @@
 
 use core::mem::MaybeUninit;
 use creusot_std::{
-    cell::PermCell,
+    cell::PCell,
     ghost::{
         FnGhost,
         invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
@@ -350,7 +350,7 @@ mod tokens {
     }
 }
 
-type PermPermCell<T> = Perm<PermCell<MaybeUninit<T>>>;
+type PermPCell<T> = Perm<PCell<MaybeUninit<T>>>;
 
 pub struct PermQueue<T> {
     fragment: state::Fragment<T>,
@@ -388,8 +388,8 @@ impl<T> Invariant for PermQueue<T> {
 struct QueueInv<T> {
     head_own: Perm<AtomicUsize>,
     tail_own: Perm<AtomicUsize>,
-    cells_own: Seq<Option<PermPermCell<T>>>, // in [0; N]
-    statuses_own: Seq<Perm<AtomicUsize>>,    // in [0; N]
+    cells_own: Seq<Option<PermPCell<T>>>, // in [0; N]
+    statuses_own: Seq<Perm<AtomicUsize>>, // in [0; N]
 
     values_auth: state::Authority<T>,
     statuses_mono_auth: Seq<statuses::Authority>, // in [0; N]
@@ -522,7 +522,7 @@ pub struct Queue<T> {
 }
 
 struct QueueCell<T> {
-    item: PermCell<MaybeUninit<T>>,
+    item: PCell<MaybeUninit<T>>,
     status: AtomicUsize,
 }
 
@@ -598,7 +598,7 @@ impl<T> Queue<T> {
     pub fn new(length: usize) -> (Self, Ghost<PermQueue<T>>) {
         let tokens_auth: Ghost<tokens::Authority<T>> = tokens::Authority::alloc();
         let mut statuses_mono_auth: Ghost<Seq<statuses::Authority>> = Seq::new();
-        let mut cells_own: Ghost<Seq<Option<PermPermCell<T>>>> = Seq::new();
+        let mut cells_own: Ghost<Seq<Option<PermPCell<T>>>> = Seq::new();
         let mut statuses_own: Ghost<Seq<Perm<AtomicUsize>>> = Seq::new();
         let mut cells: Vec<QueueCell<T>> = Vec::new();
 
@@ -622,7 +622,7 @@ impl<T> Queue<T> {
                  statuses_mono_auth[i.rem_euclid(length@)].val() == 2 * i
         )]
         for i in 0..length {
-            let (item, item_own) = PermCell::new(MaybeUninit::uninit());
+            let (item, item_own) = PCell::new(MaybeUninit::uninit());
             let (status, status_own) = AtomicUsize::new(2 * i);
 
             ghost! {
@@ -711,7 +711,7 @@ impl<T> Queue<T> {
         item: Snapshot<T>,
         f: Ghost<F>,
         witness: statuses::Fragment,
-    ) -> Ghost<(tokens::TokenW<T>, PermPermCell<T>)>
+    ) -> Ghost<(tokens::TokenW<T>, PermPCell<T>)>
     where
         F: FnGhost + FnOnce(&mut QueueCommitter<T>),
     {
@@ -772,7 +772,7 @@ impl<T> Queue<T> {
         mut inv: Ghost<&mut QueueInv<T>>,
         mut c: Ghost<&mut Committer<AtomicUsize, usize, ordering::None, SeqCst>>,
         token: Ghost<tokens::TokenW<T>>,
-        cell_own: Ghost<PermPermCell<T>>,
+        cell_own: Ghost<PermPCell<T>>,
     ) {
         ghost! {
             let inv = &mut **inv;
@@ -833,7 +833,7 @@ impl<T> Queue<T> {
         }
 
         let mut token: Ghost<Option<tokens::TokenW<T>>> = ghost!(None);
-        let mut cell_own: Ghost<Option<PermPermCell<T>>> = ghost!(None);
+        let mut cell_own: Ghost<Option<PermPCell<T>>> = ghost!(None);
         let res = self.head.compare_exchange_weak::<_>(
             head,
             head + 1,
@@ -916,7 +916,7 @@ impl<T> Queue<T> {
         mut c: Ghost<&mut Committer<AtomicUsize, usize, SeqCst, SeqCst>>,
         f: Ghost<F>,
         witness: statuses::Fragment,
-    ) -> Ghost<(tokens::TokenR<T>, PermPermCell<T>)>
+    ) -> Ghost<(tokens::TokenR<T>, PermPCell<T>)>
     where
         F: FnGhost + FnOnce(&mut QueueCommitter<T>),
     {
@@ -977,7 +977,7 @@ impl<T> Queue<T> {
         mut inv: Ghost<&mut QueueInv<T>>,
         mut c: Ghost<&mut Committer<AtomicUsize, usize, ordering::None, SeqCst>>,
         token: Ghost<tokens::TokenR<T>>,
-        cell_own: Ghost<PermPermCell<T>>,
+        cell_own: Ghost<PermPCell<T>>,
     ) {
         ghost! {
             let inv = &mut **inv;
@@ -1041,7 +1041,7 @@ impl<T> Queue<T> {
         }
 
         let mut token: Ghost<Option<tokens::TokenR<T>>> = ghost!(None);
-        let mut cell_own: Ghost<Option<PermPermCell<T>>> = ghost!(None);
+        let mut cell_own: Ghost<Option<PermPCell<T>>> = ghost!(None);
         let res = self.tail.compare_exchange_weak::<_>(
             tail,
             tail + 1,

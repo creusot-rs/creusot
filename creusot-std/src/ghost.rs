@@ -326,7 +326,7 @@ define_objective! {}
 /// Some types, such as `Perm`, could hold a permission to access a value that
 /// depends on the view.
 ///
-/// This negative implementation primarily targets `Perm<PermCell<T>>` and
+/// This negative implementation primarily targets `Perm<PCell<T>>` and
 /// `Perm<*const T>`.
 #[derive(Copy)]
 pub struct NotObjective {}

@@ -1,5 +1,5 @@
 use creusot_std::{
-    cell::PermCell,
+    cell::PCell,
     ghost::{
         invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
         lifetime_logic::{EndBorrow, FullBorrow, Lifetime, LifetimeToken},
@@ -17,15 +17,15 @@ use creusot_std::{
 declare_namespace! { SPIN_LOCK }
 
 struct SpinLockInv<T> {
-    cell: Snapshot<PermCell<T>>,
+    cell: Snapshot<PCell<T>>,
     lft: Snapshot<Lifetime>,
-    perm: Option<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
+    perm: Option<Guarded<FullBorrow<Perm<PCell<T>>>>>,
     perm_atomic: Perm<AtomicBool>,
     inv: Snapshot<Mapping<T, bool>>,
 }
 
 impl<T> Protocol for SpinLockInv<T> {
-    type Public = (PermCell<T>, AtomicBool, Lifetime, Mapping<T, bool>);
+    type Public = (PCell<T>, AtomicBool, Lifetime, Mapping<T, bool>);
 
     #[logic]
     fn public(self) -> Self::Public {
@@ -48,9 +48,9 @@ impl<T> Protocol for SpinLockInv<T> {
 
 pub struct SpinLock<T> {
     atomic: AtomicBool,
-    data: PermCell<T>,
+    data: PCell<T>,
     lft_tok: Ghost<LifetimeToken>,
-    end: Ghost<EndBorrow<Perm<PermCell<T>>>>,
+    end: Ghost<EndBorrow<Perm<PCell<T>>>>,
     inner_inv: Ghost<AtomicInvariantSC<SpinLockInv<T>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
@@ -70,7 +70,7 @@ impl<T> Invariant for SpinLock<T> {
 
 pub struct SpinLockGuard<'a, T> {
     lock: &'a SpinLock<T>,
-    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>>>,
+    perm: Ghost<Guarded<FullBorrow<Perm<PCell<T>>>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
 
@@ -97,7 +97,7 @@ impl<T> SpinLock<T> {
     #[ensures(result.inv == inv)]
     pub fn new(data: T, inv: Snapshot<Mapping<T, bool>>) -> Self {
         let (atomic, perm_atomic) = AtomicBool::new(false);
-        let (data, perm_data) = PermCell::new(data);
+        let (data, perm_data) = PCell::new(data);
         let lft_tok = ghost!(LifetimeToken::new());
         let (bor, end) = FullBorrow::new(perm_data, snapshot!(lft_tok.lft()));
         let inner_inv = AtomicInvariantSC::new(
