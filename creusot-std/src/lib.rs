@@ -357,6 +357,13 @@ pub mod macros {
     ///     fn commutative();
     /// }
     /// ```
+    ///
+    /// # `indirect`
+    /// Translate the function indirectly using a function declaration paired with a definition
+    /// axiom.
+    ///
+    /// This can improve usage of such functions as triggers, when their body contains a logical
+    /// quantifier or interpreted function calls.
     pub use base_macros::logic;
 
     /// Inserts a *logical* assertion into the code
