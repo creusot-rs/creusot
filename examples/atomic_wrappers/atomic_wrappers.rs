@@ -3,7 +3,6 @@
 
 extern crate creusot_std;
 
-use core::sync::atomic::Ordering as OrderingTy;
 use creusot_std::{
     ghost::Perm,
     prelude::*,
@@ -11,10 +10,10 @@ use creusot_std::{
         atomic::{
             AtomicBool, AtomicI8, AtomicI16, AtomicI32, AtomicI64, AtomicPtr, AtomicU8, AtomicU16,
             AtomicU32, AtomicU64,
-            ordering::{LoadOrdering, Ordering, StoreOrdering, UpdateOrdering},
+            ordering::{LoadOrdering, StoreOrdering, UpdateOrdering},
         },
-        committer::{Committer, atomic_specs::*},
-        view::{AcquireSyncView, ReleaseSyncView, SyncView, Timestamp},
+        committer::Committer,
+        view::{SyncView, Timestamp},
     },
 };
 
@@ -26,25 +25,23 @@ macro_rules! wrap_atomic {
         impl $(< $T >)? $atomic_wrapper_type $(< $T >)? {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
             #[requires(self.0 == *own.ward())]
-            #[ensures(Load::ORDERING == OrderingTy::Acquire ==> load_acq_post(self.0, *own, *sync_view, result.0, *result.1))]
-            #[ensures(Load::ORDERING == OrderingTy::Relaxed ==> load_rlx_post(self.0, *own, *sync_view, result.0, *result.1, *result.2))]
-            fn wrap_load<Load: LoadOrdering>(&self, own: Ghost<&Perm<$atomic_type $(< $T >)?>>, mut sync_view: Ghost<&mut SyncView>) -> ($type, Snapshot<Timestamp>, Ghost<AcquireSyncView>)
+            #[ensures(Load::load_post(self.0, *own, *sync_view, result.0, *result.1, *result.2))]
+            fn wrap_load<Load: LoadOrdering>(&self, own: Ghost<&Perm<$atomic_type $(< $T >)?>>, mut sync_view: Ghost<&mut SyncView>) -> ($type, Snapshot<Timestamp>, Ghost<Load::Acq>)
             {
                 let mut ts: Snapshot<Timestamp> = snapshot!(0);
-                let mut acq_sync_view_opt = ghost!(None);
+                let mut acq_view_opt = ghost!(None);
                 let val = self.0.load(ghost! { |c: &Committer<_, $type, Load, _>| {
-                    let acq_sync_view = c.shoot_load(*own, *sync_view);
+                    let acq_view = c.shoot_load(*own, *sync_view);
                     ts = snapshot!(c.timestamp());
-                    acq_sync_view_opt = ghost!(Some(acq_sync_view));
+                    acq_view_opt = ghost!(Some(acq_view));
                 } });
-                (val, ts, ghost!(acq_sync_view_opt.unwrap()))
+                (val, ts, ghost!(acq_view_opt.unwrap()))
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
             #[requires(self.0 == *own.ward())]
-            #[ensures(Store::ORDERING == OrderingTy::Release ==> store_rel_post(self.0, *own, *sync_view, val, *result))]
-            #[ensures(Store::ORDERING == OrderingTy::Relaxed ==> store_rlx_post(self.0, *own, *sync_view, val, *result, *rel_view))]
-            fn wrap_store<Store: StoreOrdering>(&self, val: $type, mut own : Ghost<&mut Perm<$atomic_type $(< $T >)?>>, mut sync_view: Ghost<&mut SyncView>, rel_view : Ghost<ReleaseSyncView>) -> Snapshot<Timestamp>
+            #[ensures(Store::store_post(self.0, *own, *sync_view, val, *result, *rel_view))]
+            fn wrap_store<Store: StoreOrdering>(&self, val: $type, mut own : Ghost<&mut Perm<$atomic_type $(< $T >)?>>, mut sync_view: Ghost<&mut SyncView>, rel_view : Ghost<Store::Rel>) -> Snapshot<Timestamp>
             {
                 let mut ts: Snapshot<Timestamp> = snapshot!(0);
                 self.0.store(val, ghost!{ |c : &mut Committer<_, $type, _, Store> | {
@@ -60,96 +57,76 @@ macro_rules! wrap_atomic {
             #[doc = "The load and the store are always sequentially consistent."]
             #[requires(self.0 == *own.ward())]
             #[ensures(
-                match result.0 {
-                    Ok(v) => {
+                match (result.0, *result.2) {
+                    (Ok(v), Ok(acq_view)) =>
                         v.deep_model() == current.deep_model() &&
-                            Success::Load::ORDERING == OrderingTy::Acquire ==> load_acq_post(self.0, *own, *sync_view, v, *result.1) &&
-                            Success::Load::ORDERING == OrderingTy::Relaxed ==> load_rlx_post(self.0, *own, *sync_view, v, *result.1, *result.2) &&
-                            Success::Store::ORDERING == OrderingTy::Release ==> store_rel_post(self.0, *own, *sync_view, v, *result.1 + 1) &&
-                            Success::Store::ORDERING == OrderingTy::Relaxed ==> store_rlx_post(self.0, *own, *sync_view, v, *result.1 + 1, *rel_view)
-                    },
-                    Err(v) => {
+                        Success::Load::load_post(self.0, *own, *sync_view, v, *result.1, acq_view) &&
+                        Success::Store::store_post(self.0, *own, *sync_view, new, *result.1 + 1, *rel_view),
+                    (Err(v), Err(acq_view)) =>
                         v.deep_model() != current.deep_model() &&
-                            Success::Load::ORDERING == OrderingTy::Acquire ==> load_acq_post(self.0, *own, *sync_view, v, *result.1) &&
-                            Success::Load::ORDERING == OrderingTy::Relaxed ==> load_rlx_post(self.0, *own, *sync_view, v, *result.1, *result.2)
-                    }
+                        Failure::load_post(self.0, *own, *sync_view, v, *result.1, acq_view),
+                    _ => false,
                 }
             )]
-            fn wrap_compare_exchange<Success: UpdateOrdering, Failure: LoadOrdering>(&self, current: $type, new: $type, mut own : Ghost<&mut Perm<$atomic_type $(< $T >)?>>, mut sync_view: Ghost<&mut SyncView>, rel_view : Ghost<ReleaseSyncView>) -> (Result<$type, $type>, Snapshot<Timestamp>, Ghost<AcquireSyncView>)
+            fn wrap_compare_exchange<Success: UpdateOrdering, Failure: LoadOrdering>(&self, current: $type, new: $type, mut own : Ghost<&mut Perm<$atomic_type $(< $T >)?>>, mut sync_view: Ghost<&mut SyncView>, rel_view : Ghost<<Success::Store as StoreOrdering>::Rel>) -> (Result<$type, $type>, Snapshot<Timestamp>, Ghost<Result<<Success::Load as LoadOrdering>::Acq, Failure::Acq>>)
             {
                 let mut ts: Snapshot<Timestamp> = snapshot!(0);
-                let mut acq_sync_view_opt = ghost!(None);
+                let mut acq_view_opt = ghost!(None);
                 let f = ghost!(|c : Result<&mut Committer<_, $type, Success::Load, Success::Store>, &Committer<_, $type, Failure, _>>| {
                     match c {
                         Ok(c) => {
-                            let acq_sync_view = c.shoot_load(*own, *sync_view);
+                            let acq_view = c.shoot_load(*own, *sync_view);
                             ts = snapshot!(c.timestamp());
-                            acq_sync_view_opt = ghost!(Some(acq_sync_view));
+                            acq_view_opt = ghost!(Some(Ok(acq_view)));
                             c.shoot_store(*own, *sync_view, *rel_view);
                         },
                         Err(c) => {
-                            let acq_sync_view = c.shoot_load(*own, *sync_view);
+                            let acq_view = c.shoot_load(*own, *sync_view);
                             ts = snapshot!(c.timestamp());
-                            acq_sync_view_opt = ghost!(Some(acq_sync_view));
+                            acq_view_opt = ghost!(Some(Err(acq_view)));
                         }
                     }
                 });
-                match self.0.compare_exchange::<_, Success, Failure>(current, new, f) {
-                    Ok(v) => {
-                        return (Ok(v), ts, ghost!(acq_sync_view_opt.unwrap()));
-                    },
-                    Err(v) => {
-                        return (Err(v), ts, ghost!(acq_sync_view_opt.unwrap()));
-                    }
-                }
+                let res = self.0.compare_exchange::<_, Success, Failure>(current, new, f);
+                (res, ts, ghost!(acq_view_opt.unwrap()))
             }
 
-            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange`].")]
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange_weak`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
             #[requires(self.0 == *own.ward())]
             #[ensures(
-                match result.0 {
-                    Ok(v) => {
+                match (result.0, *result.2) {
+                    (Ok(v), Ok(acq_view)) =>
                         v.deep_model() == current.deep_model() &&
-                            Success::Load::ORDERING == OrderingTy::Acquire ==> load_acq_post(self.0, *own, *sync_view, v, *result.1) &&
-                            Success::Load::ORDERING == OrderingTy::Relaxed ==> load_rlx_post(self.0, *own, *sync_view, v, *result.1, *result.2) &&
-                            Success::Store::ORDERING == OrderingTy::Release ==> store_rel_post(self.0, *own, *sync_view, v, *result.1 + 1) &&
-                            Success::Store::ORDERING == OrderingTy::Relaxed ==> store_rlx_post(self.0, *own, *sync_view, v, *result.1 + 1, *rel_view)
-                    },
-                    Err(v) => {
-                        Success::Load::ORDERING == OrderingTy::Acquire ==> load_acq_post(self.0, *own, *sync_view, v, *result.1) &&
-                            Success::Load::ORDERING == OrderingTy::Relaxed ==> load_rlx_post(self.0, *own, *sync_view, v, *result.1, *result.2)
-                    }
+                        Success::Load::load_post(self.0, *own, *sync_view, v, *result.1, acq_view) &&
+                        Success::Store::store_post(self.0, *own, *sync_view, new, *result.1 + 1, *rel_view),
+                    (Err(v), Err(acq_view)) =>
+                        Failure::load_post(self.0, *own, *sync_view, v, *result.1, acq_view),
+                    _ => false,
                 }
             )]
-            fn wrap_compare_exchange_weak<Success: UpdateOrdering, Failure: LoadOrdering>(&self, current: $type, new: $type, mut own : Ghost<&mut Perm<$atomic_type $(< $T >)?>>, mut sync_view: Ghost<&mut SyncView>, rel_view : Ghost<ReleaseSyncView>) -> (Result<$type, $type>, Snapshot<Timestamp>, Ghost<AcquireSyncView>)
+            fn wrap_compare_exchange_weak<Success: UpdateOrdering, Failure: LoadOrdering>(&self, current: $type, new: $type, mut own : Ghost<&mut Perm<$atomic_type $(< $T >)?>>, mut sync_view: Ghost<&mut SyncView>, rel_view : Ghost<<Success::Store as StoreOrdering>::Rel>) -> (Result<$type, $type>, Snapshot<Timestamp>, Ghost<Result<<Success::Load as LoadOrdering>::Acq, Failure::Acq>>)
             {
                 let mut ts: Snapshot<Timestamp> = snapshot!(0);
-                let mut acq_sync_view_opt = ghost!(None);
+                let mut acq_view_opt = ghost!(None);
                 let f = ghost!(|c : Result<&mut Committer<_, $type, Success::Load, Success::Store>, &Committer<_, $type, Failure, _>>| {
                     match c {
                         Ok(c) => {
-                            let acq_sync_view = c.shoot_load(*own, *sync_view);
+                            let acq_view = c.shoot_load(*own, *sync_view);
                             ts = snapshot!(c.timestamp());
-                            acq_sync_view_opt = ghost!(Some(acq_sync_view));
+                            acq_view_opt = ghost!(Some(Ok(acq_view)));
                             c.shoot_store(*own, *sync_view, *rel_view);
                         },
                         Err(c) => {
-                            let acq_sync_view = c.shoot_load(*own, *sync_view);
+                            let acq_view = c.shoot_load(*own, *sync_view);
                             ts = snapshot!(c.timestamp());
-                            acq_sync_view_opt = ghost!(Some(acq_sync_view));
+                            acq_view_opt = ghost!(Some(Err(acq_view)));
                         }
                     }
                 });
-                match self.0.compare_exchange_weak::<_, Success, Failure>(current, new, f) {
-                    Ok(v) => {
-                        return (Ok(v), ts, ghost!(acq_sync_view_opt.unwrap()));
-                    },
-                    Err(v) => {
-                        return (Err(v), ts, ghost!(acq_sync_view_opt.unwrap()));
-                    }
-                }
+                let res = self.0.compare_exchange_weak::<_, Success, Failure>(current, new, f);
+                (res, ts, ghost!(acq_view_opt.unwrap()))
             }
 
         }

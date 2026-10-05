@@ -7,10 +7,10 @@ use crate::{
     prelude::*,
     std::sync::{
         atomic::ordering::{LoadOrdering, StoreOrdering},
-        view::{AcquireSyncView, HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
+        view::{HasTimestamp, SyncView, Timestamp},
     },
 };
-use core::{marker::PhantomData, sync::atomic::Ordering as OrderingTy};
+use core::marker::PhantomData;
 
 /// Wrapper around a single atomic operation, where multiple ghost steps can be performed.
 ///
@@ -217,7 +217,6 @@ pub mod atomic_specs {
         }
     }
 }
-use atomic_specs::*;
 
 // impl<C, T, Store> Committer<C, T, Relaxed, Store>
 impl<C, T, Load: LoadOrdering, Store> Committer<C, T, Load, Store>
@@ -229,12 +228,11 @@ where
     /// This does the read on the atomic in ghost code.
     #[requires(!self.shot_store())]
     #[requires(self.ward() == *(*own).ward())]
-    #[ensures(Load::ORDERING == OrderingTy::Acquire ==> load_acq_post(self.ward(), own, sync_view, self.val_load(), self.timestamp()))]
-    #[ensures(Load::ORDERING == OrderingTy::Relaxed ==> load_rlx_post(self.ward(), own, sync_view, self.val_load(), self.timestamp(), result))]
+    #[ensures(Load::load_post(self.ward(), own, sync_view, self.val_load(), self.timestamp(), result))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
-    pub fn shoot_load(&self, own: &Perm<C>, sync_view: &mut SyncView) -> AcquireSyncView {
+    pub fn shoot_load(&self, own: &Perm<C>, sync_view: &mut SyncView) -> Load::Acq {
         panic!("Should not be called outside ghost code")
     }
 }
@@ -271,8 +269,7 @@ where
     #[requires(self.ward() == *(*own).ward())]
     #[ensures((*self).hist_inv(^self))]
     #[ensures((^self).shot_store())]
-    #[ensures(Store::ORDERING == OrderingTy::Release ==> store_rel_post(self.ward(), own, sync_view, self.val_store(), self.timestamp() + 1))]
-    #[ensures(Store::ORDERING == OrderingTy::Relaxed ==> store_rlx_post(self.ward(), own, sync_view, self.val_store(), self.timestamp() + 1, rel_view))]
+    #[ensures(Store::store_post(self.ward(), own, sync_view, self.val_store(), self.timestamp() + 1, rel_view))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
@@ -280,7 +277,7 @@ where
         &mut self,
         own: &mut Perm<C>,
         sync_view: &mut SyncView,
-        rel_view: ReleaseSyncView,
+        rel_view: Store::Rel,
     ) {
         panic!("Should not be called outside ghost code")
     }

@@ -1038,13 +1038,6 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     ts_now_serving'1: t_Option_Int;
     token'1: t_Resource_Option_Excl_unit }
   
-  type t_ReleaseSyncView
-  
-  let new (return (x: t_ReleaseSyncView)) = any [ return (result: t_ReleaseSyncView) -> (! return {result}) ]
-  
-  let deref_Ghost_ReleaseSyncView (self: t_ReleaseSyncView) (return (x: t_ReleaseSyncView)) = any
-    [ return (result: t_ReleaseSyncView) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
-  
   predicate shot_store_AtomicU32'0 (self: t_Committer_AtomicU32_u32_None_Release)
   
   function ward_AtomicU32'0 (self: t_Committer_AtomicU32_u32_None_Release) : t_AtomicU32
@@ -1063,14 +1056,6 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     /\ val_store_AtomicU32 self = val_store_AtomicU32 other /\ timestamp_AtomicU32 self = timestamp_AtomicU32 other
   
   meta "rewrite_def" predicate hist_inv_AtomicU32
-  
-  type t_Ordering = Relaxed | Release | Acquire | AcqRel | SeqCst
-  
-  constant const_ORDERING : t_Ordering
-  
-  let set_ORDERING (return) = bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- Release ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
-    [ return (_const: t_Ordering) -> -{const_ORDERING = _const}- return ]
   
   predicate lt_log_SyncView (self: t_SyncView) (_2: t_SyncView)
   
@@ -1151,7 +1136,6 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   predicate store_inserts_in_history_AtomicU32 (own: MutBorrow.t t_Perm_AtomicU32) (thread_view: t_SyncView) (val': UInt32.t) (t: int) =
     get_Int (val_AtomicU32 own.current) t = None'1
     /\ val_AtomicU32 own.final = insert_Int (val_AtomicU32 own.current) t { f0'1 = val'; f1'1 = thread_view }
-    /\ ward_AtomicU32'1 own.current = ward_AtomicU32'1 own.final
   
   predicate view_mono (sync_view: MutBorrow.t t_SyncView) = le_log_SyncView sync_view.current sync_view.final
   
@@ -1160,27 +1144,18 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     /\ store_inserts_in_history_AtomicU32 own sync_view.final val' t
     /\ view_mono sync_view /\ ward_AtomicU32'1 own.current = ward_AtomicU32'1 own.final
   
-  function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
-  
-  predicate store_rlx_post_AtomicU32 (atomic: t_AtomicU32) (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) (rel_view: t_ReleaseSyncView) =
-    store_timestamp_in_view_AtomicU32 atomic sync_view t
-    /\ store_inserts_in_history_AtomicU32 own (view_ReleaseSyncView rel_view) val' t
-    /\ view_mono sync_view /\ ward_AtomicU32'1 own.current = ward_AtomicU32'1 own.final
+  predicate store_post_Release (atomic: t_AtomicU32) (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) (rel_view: ()) =
+    store_rel_post_AtomicU32 atomic own sync_view val' t
   
   let shoot_store_AtomicU32 (self: MutBorrow.t t_Committer_AtomicU32_u32_None_Release)
-    (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (rel_view: t_ReleaseSyncView)
-    (return (x: ())) =
+    (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (rel_view: ()) (return (x: ())) =
   {[@stop_split] [@expl:shoot_store_AtomicU32 requires] ([@stop_split] [@expl:shoot_store requires #0] not shot_store_AtomicU32'0 self.current)
     /\ ([@stop_split] [@expl:shoot_store requires #1] ward_AtomicU32'0 self.current = ward_AtomicU32'1 own.current)}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_store_AtomicU32 ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicU32 self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicU32'0 self.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #2] const_ORDERING = Release
-        -> store_rel_post_AtomicU32 (ward_AtomicU32'0 self.current) own sync_view (val_store_AtomicU32 self.current) (timestamp_AtomicU32 self.current
-        + 1))
-      /\ ([@stop_split] [@expl:shoot_store ensures #3] const_ORDERING = Relaxed
-      -> store_rlx_post_AtomicU32 (ward_AtomicU32'0 self.current) own sync_view (val_store_AtomicU32 self.current) (timestamp_AtomicU32 self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Release (ward_AtomicU32'0 self.current) own sync_view (val_store_AtomicU32 self.current) (timestamp_AtomicU32 self.current
       + 1) rel_view)}
       (! return {result}) ]
   
@@ -1361,73 +1336,71 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
             [ &inv'2 <- { inv'2 with current = { inv'2.current with perm_now_serving'1 = _bor.final } } ] s5)
       | s5 = MutBorrow.borrow_mut <t_SyncView> {view}
           (fun (_bor: MutBorrow.t t_SyncView) -> [ &_13 <- _bor ] [ &view <- _bor.final ] s6)
-      | s6 = new (fun (_x: t_ReleaseSyncView) -> [ &_17 <- _x ] s7)
-      | s7 = deref_Ghost_ReleaseSyncView {_17} (fun (_x: t_ReleaseSyncView) -> [ &_15 <- _x ] s8)
-      | s8 = MutBorrow.borrow_mut <t_Committer_AtomicU32_u32_None_Release> {self.c2'0.current.current}
+      | s6 = MutBorrow.borrow_mut <t_Committer_AtomicU32_u32_None_Release> {self.c2'0.current.current}
           (fun (_bor: MutBorrow.t t_Committer_AtomicU32_u32_None_Release) ->
             [ &_9 <- _bor ]
             [ &self <- { self with c2'0 = { self.c2'0 with current = { self.c2'0.current with current = _bor.final } } } ]
-            s9)
-      | s9 = MutBorrow.borrow_final <t_Perm_AtomicU32> {_11.current} {MutBorrow.get_id _11}
+            s7)
+      | s7 = MutBorrow.borrow_final <t_Perm_AtomicU32> {_11.current} {MutBorrow.get_id _11}
           (fun (_bor: MutBorrow.t t_Perm_AtomicU32) ->
-            [ &_10 <- _bor ] [ &_11 <- { _11 with current = _bor.final } ] s10)
-      | s10 = MutBorrow.borrow_final <t_SyncView> {_13.current} {MutBorrow.get_id _13}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_12 <- _bor ] [ &_13 <- { _13 with current = _bor.final } ] s11)
-      | s11 = shoot_store_AtomicU32 {_9} {_10} {_12} {_15} (fun (_x: ()) -> [ &_8 <- _x ] s12)
-      | s12 = -{resolve_refmut_SyncView _13}- s13
-      | s13 = -{resolve_refmut_Perm_AtomicU32 _11}- s14
-      | s14 = [ &_23 <- self.c1'0.current ] s15
-      | s15 = deref_Ghost_Resource_Option_Excl_unit {_23} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_21 <- _x ] s16)
-      | s16 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {inv'2.current.token'1}
+            [ &_10 <- _bor ] [ &_11 <- { _11 with current = _bor.final } ] s8)
+      | s8 = MutBorrow.borrow_final <t_SyncView> {_13.current} {MutBorrow.get_id _13}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_12 <- _bor ] [ &_13 <- { _13 with current = _bor.final } ] s9)
+      | s9 = shoot_store_AtomicU32 {_9} {_10} {_12} {_14} (fun (_x: ()) -> [ &_8 <- _x ] s10)
+      | s10 = -{resolve_refmut_SyncView _13}- s11
+      | s11 = -{resolve_refmut_Perm_AtomicU32 _11}- s12
+      | s12 = [ &_20 <- self.c1'0.current ] s13
+      | s13 = deref_Ghost_Resource_Option_Excl_unit {_20} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_18 <- _x ] s14)
+      | s14 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {inv'2.current.token'1}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_19 <- _bor ] [ &inv'2 <- { inv'2 with current = { inv'2.current with token'1 = _bor.final } } ] s17)
-      | s17 = valid_op_lemma_Option_Excl_unit {_19} {_21} (fun (_x: ()) -> [ &_18 <- _x ] s18)
-      | s18 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {inv'2.current.token'1}
+            [ &_16 <- _bor ] [ &inv'2 <- { inv'2 with current = { inv'2.current with token'1 = _bor.final } } ] s15)
+      | s15 = valid_op_lemma_Option_Excl_unit {_16} {_18} (fun (_x: ()) -> [ &_15 <- _x ] s16)
+      | s16 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {inv'2.current.token'1}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'2) 9}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_26 <- _bor ] [ &inv'2 <- { inv'2 with current = { inv'2.current with token'1 = _bor.final } } ] s19)
-      | s19 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {self.c1'0.current} {MutBorrow.get_id self.c1'0}
+            [ &_23 <- _bor ] [ &inv'2 <- { inv'2 with current = { inv'2.current with token'1 = _bor.final } } ] s17)
+      | s17 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {self.c1'0.current} {MutBorrow.get_id self.c1'0}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_30 <- _bor ] [ &self <- { self with c1'0 = { self.c1'0 with current = _bor.final } } ] s20)
-      | s20 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_30.current} {MutBorrow.get_id _30}
+            [ &_27 <- _bor ] [ &self <- { self with c1'0 = { self.c1'0 with current = _bor.final } } ] s18)
+      | s18 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_27.current} {MutBorrow.get_id _27}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_29 <- _bor ] [ &_30 <- { _30 with current = _bor.final } ] s21)
-      | s21 = deref_mut_Ghost_Resource_Option_Excl_unit {_29}
-          (fun (_x: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_28 <- _x ] s22)
-      | s22 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_26.current} {MutBorrow.get_id _26}
+            [ &_26 <- _bor ] [ &_27 <- { _27 with current = _bor.final } ] s19)
+      | s19 = deref_mut_Ghost_Resource_Option_Excl_unit {_26}
+          (fun (_x: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_25 <- _x ] s20)
+      | s20 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_23.current} {MutBorrow.get_id _23}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_25 <- _bor ] [ &_26 <- { _26 with current = _bor.final } ] s23)
-      | s23 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_28.current} {MutBorrow.get_id _28}
+            [ &_22 <- _bor ] [ &_23 <- { _23 with current = _bor.final } ] s21)
+      | s21 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_25.current} {MutBorrow.get_id _25}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_27 <- _bor ] [ &_28 <- { _28 with current = _bor.final } ] s24)
-      | s24 = swap_Resource_Option_Excl_unit {_25} {_27} (fun (_x: ()) -> [ &_24 <- _x ] s25)
-      | s25 = -{resolve_refmut_Ghost_Resource_Option_Excl_unit _30}- s26
-      | s26 = -{resolve_refmut_Resource_Option_Excl_unit _28}- s27
-      | s27 = -{resolve_refmut_Resource_Option_Excl_unit _26}- s28
-      | s28 = -{match self with
+            [ &_24 <- _bor ] [ &_25 <- { _25 with current = _bor.final } ] s22)
+      | s22 = swap_Resource_Option_Excl_unit {_22} {_24} (fun (_x: ()) -> [ &_21 <- _x ] s23)
+      | s23 = -{resolve_refmut_Ghost_Resource_Option_Excl_unit _27}- s24
+      | s24 = -{resolve_refmut_Resource_Option_Excl_unit _25}- s25
+      | s25 = -{resolve_refmut_Resource_Option_Excl_unit _23}- s26
+      | s26 = -{match self with
           | {c2'0 = x} -> resolve_refmut_refmut_Committer_AtomicU32_u32_None_Release x
           | _ -> true
           end}-
-        s29
-      | s29 = -{match self with
+        s27
+      | s27 = -{match self with
           | {c1'0 = x} -> resolve_refmut_Ghost_Resource_Option_Excl_unit x
           | _ -> true
           end}-
-        s30
-      | s30 = [ &_31 <- Some perm ] s31
-      | s31 = s32
+        s28
+      | s28 = [ &_28 <- Some perm ] s29
+      | s29 = s30
         [ _ck ->
         (! {[@expl:type invariant] inv_Option_AtView_Guarded_FullBorrow_Perm_PCell_T_PCell_T inv'2.current.perm'1}
           any) ]
-      | s32 = -{resolve_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T inv'2.current.perm'1}- s33
-      | s33 = [ &inv'2 <- { inv'2 with current = { inv'2.current with perm'1 = _31 } } ] s34
-      | s34 = into_ghost_Int {timestamp_AtomicU32 self.c2'0.current.current + 1} (fun (_x: int) -> [ &_37 <- _x ] s35)
-      | s35 = deref_Ghost_Int {_37} (fun (_x: int) -> [ &_35 <- _x ] s36)
-      | s36 = [ &_33 <- Some'0 _35 ] s37
-      | s37 = [ &inv'2 <- { inv'2 with current = { inv'2.current with ts_now_serving'1 = _33 } } ] s38
-      | s38 = s39 [ _ck -> (! {[@expl:type invariant] inv_refmut_TicketLockInv_T inv'2} any) ]
-      | s39 = -{resolve_refmut_TicketLockInv_T inv'2}- s40
-      | s40 = return {_ret} ] ]
+      | s30 = -{resolve_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T inv'2.current.perm'1}- s31
+      | s31 = [ &inv'2 <- { inv'2 with current = { inv'2.current with perm'1 = _28 } } ] s32
+      | s32 = into_ghost_Int {timestamp_AtomicU32 self.c2'0.current.current + 1} (fun (_x: int) -> [ &_34 <- _x ] s33)
+      | s33 = deref_Ghost_Int {_34} (fun (_x: int) -> [ &_32 <- _x ] s34)
+      | s34 = [ &_30 <- Some'0 _32 ] s35
+      | s35 = [ &inv'2 <- { inv'2 with current = { inv'2.current with ts_now_serving'1 = _30 } } ] s36
+      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_refmut_TicketLockInv_T inv'2} any) ]
+      | s37 = -{resolve_refmut_TicketLockInv_T inv'2}- s38
+      | s38 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: closure0 = self
     | & inv'2: MutBorrow.t t_TicketLockInv_T = inv'2
@@ -1441,23 +1414,22 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     | & _11: MutBorrow.t t_Perm_AtomicU32 = Any.any_l ()
     | & _12: MutBorrow.t t_SyncView = Any.any_l ()
     | & _13: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _15: t_ReleaseSyncView = Any.any_l ()
-    | & _17: t_ReleaseSyncView = Any.any_l ()
-    | & _18: () = Any.any_l ()
-    | & _19: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _21: t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _23: t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _24: () = Any.any_l ()
+    | & _14: () = Any.any_l ()
+    | & _15: () = Any.any_l ()
+    | & _16: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _18: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _20: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _21: () = Any.any_l ()
+    | & _22: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _23: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _24: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
     | & _25: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
     | & _26: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
     | & _27: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _28: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _29: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _30: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _31: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
-    | & _33: t_Option_Int = Any.any_l ()
-    | & _35: int = Any.any_l ()
-    | & _37: int = Any.any_l () ] [ return (result: ()) -> return {result} ]
+    | & _28: t_Option_AtView_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _30: t_Option_Int = Any.any_l ()
+    | & _32: int = Any.any_l ()
+    | & _34: int = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'pre
   
@@ -1646,11 +1618,11 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   axiom to_real_spec: forall self: t_PositiveReal [to_real self]. gt_log_Real (to_real self) (FromInt.from_int 0)
   
-  function new'0 (n: Real.real) : t_PositiveReal
+  function new (n: Real.real) : t_PositiveReal
   
-  axiom new_spec: forall n: Real.real [new'0 n]. gt_log_Real n (FromInt.from_int 0) -> to_real (new'0 n) = n
+  axiom new_spec: forall n: Real.real [new n]. gt_log_Real n (FromInt.from_int 0) -> to_real (new n) = n
   
-  function from_int [@inline:trivial] (i: int) : t_PositiveReal = new'0 (FromInt.from_int i)
+  function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
   
   meta "rewrite_def" function from_int
   
@@ -1836,39 +1808,38 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   {[@stop_split] [@expl:unlock_T requires] ([@stop_split] [@expl:unlock 'self' type invariant] inv_TicketLockGuard_T self)
     /\ ([@stop_split] [@expl:unlock requires #0] contains tokens (Namespace_TICKET_LOCK 0))
     /\ ([@stop_split] [@expl:unlock requires #1] Map.get self.inv'0 (view_TicketLockGuard_T self))}
-    (! set_ORDERING
-      (bb0
-      [ bb0 = s0
-        [ s0 = [ &_11 <- () ] s1
-        | s1 = __new_closure2 {_11} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_10 <- _x ] s2)
-        | s2 = new_FnGhostWrapper_closure2 {_10} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_9 <- _x ] s3)
-        | s3 = load_FnGhostWrapper_closure2 {self.lock'0.now_serving} {_9} (fun (_x: UInt32.t) -> [ &ticket <- _x ] s4)
-        | s4 = [ &_13 <- self.lock'0.now_serving ] s5
-        | s5 = wrapping_add {ticket} {(1: UInt32.t)} (fun (_x: UInt32.t) -> [ &_14 <- _x ] s6)
-        | s6 = [ &_19 <- self.lock'0 ] s7
-        | s7 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {self.token'0}
-            (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-              [ &_20 <- _bor ] [ &self <- { self with token'0 = _bor.final } ] s8)
-        | s8 = [ &_18 <- { c0 = _19; c1 = self.perm'0; c2 = _20; c3 = tokens } ] s9
-        | s9 = __new_closure3 {_18} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_17 <- _x ] s10)
-        | s10 = new_FnGhostWrapper_closure3 {_17} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_16 <- _x ] s11)
-        | s11 = store_FnGhostWrapper_closure3 {_13} {_14} {_16} (fun (_x: ()) -> [ &_12 <- _x ] s12)
-        | s12 = return {_ret} ] ]
-      [ & _ret: () = Any.any_l ()
-      | & self: t_TicketLockGuard_T = self
-      | & tokens: t_Tokens = tokens
-      | & ticket: UInt32.t = Any.any_l ()
-      | & _9: t_FnGhostWrapper_closure2 = Any.any_l ()
-      | & _10: t_FnGhostWrapper_closure2 = Any.any_l ()
-      | & _11: () = Any.any_l ()
-      | & _12: () = Any.any_l ()
-      | & _13: t_AtomicU32 = Any.any_l ()
-      | & _14: UInt32.t = Any.any_l ()
-      | & _16: t_FnGhostWrapper_closure3 = Any.any_l ()
-      | & _17: t_FnGhostWrapper_closure3 = Any.any_l ()
-      | & _18: closure3 = Any.any_l ()
-      | & _19: t_TicketLock_T = Any.any_l ()
-      | & _20: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l () ])) [ return (result: ()) -> (! return {result}) ]
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_11 <- () ] s1
+      | s1 = __new_closure2 {_11} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_10 <- _x ] s2)
+      | s2 = new_FnGhostWrapper_closure2 {_10} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_9 <- _x ] s3)
+      | s3 = load_FnGhostWrapper_closure2 {self.lock'0.now_serving} {_9} (fun (_x: UInt32.t) -> [ &ticket <- _x ] s4)
+      | s4 = [ &_13 <- self.lock'0.now_serving ] s5
+      | s5 = wrapping_add {ticket} {(1: UInt32.t)} (fun (_x: UInt32.t) -> [ &_14 <- _x ] s6)
+      | s6 = [ &_19 <- self.lock'0 ] s7
+      | s7 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {self.token'0}
+          (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
+            [ &_20 <- _bor ] [ &self <- { self with token'0 = _bor.final } ] s8)
+      | s8 = [ &_18 <- { c0 = _19; c1 = self.perm'0; c2 = _20; c3 = tokens } ] s9
+      | s9 = __new_closure3 {_18} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_17 <- _x ] s10)
+      | s10 = new_FnGhostWrapper_closure3 {_17} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_16 <- _x ] s11)
+      | s11 = store_FnGhostWrapper_closure3 {_13} {_14} {_16} (fun (_x: ()) -> [ &_12 <- _x ] s12)
+      | s12 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: t_TicketLockGuard_T = self
+    | & tokens: t_Tokens = tokens
+    | & ticket: UInt32.t = Any.any_l ()
+    | & _9: t_FnGhostWrapper_closure2 = Any.any_l ()
+    | & _10: t_FnGhostWrapper_closure2 = Any.any_l ()
+    | & _11: () = Any.any_l ()
+    | & _12: () = Any.any_l ()
+    | & _13: t_AtomicU32 = Any.any_l ()
+    | & _14: UInt32.t = Any.any_l ()
+    | & _16: t_FnGhostWrapper_closure3 = Any.any_l ()
+    | & _17: t_FnGhostWrapper_closure3 = Any.any_l ()
+    | & _18: closure3 = Any.any_l ()
+    | & _19: t_TicketLock_T = Any.any_l ()
+    | & _20: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_impl_TicketLock_T__into_inner (* TicketLock<T> *)
   type namespace_other
@@ -2076,9 +2047,9 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   use creusot.prelude.MutBorrow
   use creusot.int.UInt32
   use map.Map
-  use creusot.prelude.Any
   use creusot.int.Int128
   use map.Const
+  use creusot.prelude.Any
   use set.Set
   use real.Real
   use real.FromInt
@@ -2211,14 +2182,6 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   function ward_AtomicU32'0 (self: t_Perm_AtomicU32) : t_AtomicU32
   
-  type t_Ordering = Relaxed | Release | Acquire | AcqRel | SeqCst
-  
-  constant const_ORDERING : t_Ordering
-  
-  let set_ORDERING (return) = bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- Relaxed ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
-    [ return (_const: t_Ordering) -> -{const_ORDERING = _const}- return ]
-  
   predicate lt_log_SyncView (self: t_SyncView) (_2: t_SyncView)
   
   predicate le_log_SyncView [@inline:trivial] (self: t_SyncView) (other: t_SyncView) =
@@ -2279,19 +2242,18 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       | None'2 -> false
       end
   
-  predicate view_mono (sync_view: MutBorrow.t t_SyncView) = le_log_SyncView sync_view.current sync_view.final
-  
-  predicate load_acq_post_AtomicU32 (atomic: t_AtomicU32) (own: t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) =
-    load_timestamp_in_view_AtomicU32 atomic sync_view t
-    /\ load_reads_from_history_AtomicU32 own sync_view.final val' t /\ view_mono sync_view
-  
-  function timestamp_AtomicU32 (self: t_Committer_AtomicU32_u32_Relaxed_Relaxed) : int
-  
   function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
+  
+  predicate view_mono (sync_view: MutBorrow.t t_SyncView) = le_log_SyncView sync_view.current sync_view.final
   
   predicate load_rlx_post_AtomicU32 (atomic: t_AtomicU32) (own: t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) (acq_sync_view: t_AcquireSyncView) =
     load_timestamp_in_view_AtomicU32 atomic sync_view t
     /\ load_reads_from_history_AtomicU32 own (view_AcquireSyncView acq_sync_view) val' t /\ view_mono sync_view
+  
+  predicate load_post_Relaxed (atomic: t_AtomicU32) (own: t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) (acq_view: t_AcquireSyncView) =
+    load_rlx_post_AtomicU32 atomic own sync_view val' t acq_view
+  
+  function timestamp_AtomicU32 (self: t_Committer_AtomicU32_u32_Relaxed_Relaxed) : int
   
   let shoot_load_AtomicU32 (self: t_Committer_AtomicU32_u32_Relaxed_Relaxed) (own: t_Perm_AtomicU32)
     (sync_view: MutBorrow.t t_SyncView) (return (x: t_AcquireSyncView)) =
@@ -2299,11 +2261,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicU32 self = ward_AtomicU32'0 own)}
     any
     [ return (result: t_AcquireSyncView) ->
-    {[@stop_split] [@expl:shoot_load_AtomicU32 ensures] ([@stop_split] [@expl:shoot_load ensures #0] const_ORDERING
-          = Acquire
-        -> load_acq_post_AtomicU32 (ward_AtomicU32 self) own sync_view (val_load_AtomicU32 self) (timestamp_AtomicU32 self))
-      /\ ([@stop_split] [@expl:shoot_load ensures #1] const_ORDERING = Relaxed
-      -> load_rlx_post_AtomicU32 (ward_AtomicU32 self) own sync_view (val_load_AtomicU32 self) (timestamp_AtomicU32 self) result)}
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Relaxed (ward_AtomicU32 self) own sync_view (val_load_AtomicU32 self) (timestamp_AtomicU32 self) result}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -2356,12 +2314,6 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   predicate store_inserts_in_history_AtomicU32 (own: MutBorrow.t t_Perm_AtomicU32) (thread_view: t_SyncView) (val': UInt32.t) (t: int) =
     get_Int (val_AtomicU32 own.current) t = None'2
     /\ val_AtomicU32 own.final = insert_Int (val_AtomicU32 own.current) t { f0 = val'; f1 = thread_view }
-    /\ ward_AtomicU32'0 own.current = ward_AtomicU32'0 own.final
-  
-  predicate store_rel_post_AtomicU32 (atomic: t_AtomicU32) (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) =
-    store_timestamp_in_view_AtomicU32 atomic sync_view t
-    /\ store_inserts_in_history_AtomicU32 own sync_view.final val' t
-    /\ view_mono sync_view /\ ward_AtomicU32'0 own.current = ward_AtomicU32'0 own.final
   
   function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
   
@@ -2369,6 +2321,9 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     store_timestamp_in_view_AtomicU32 atomic sync_view t
     /\ store_inserts_in_history_AtomicU32 own (view_ReleaseSyncView rel_view) val' t
     /\ view_mono sync_view /\ ward_AtomicU32'0 own.current = ward_AtomicU32'0 own.final
+  
+  predicate store_post_Relaxed (atomic: t_AtomicU32) (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) (rel_view: t_ReleaseSyncView) =
+    store_rlx_post_AtomicU32 atomic own sync_view val' t rel_view
   
   let shoot_store_AtomicU32 (self: MutBorrow.t t_Committer_AtomicU32_u32_Relaxed_Relaxed)
     (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (rel_view: t_ReleaseSyncView)
@@ -2379,11 +2334,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_store_AtomicU32 ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicU32 self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicU32 self.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #2] const_ORDERING = Release
-        -> store_rel_post_AtomicU32 (ward_AtomicU32 self.current) own sync_view (val_store_AtomicU32 self.current) (timestamp_AtomicU32 self.current
-        + 1))
-      /\ ([@stop_split] [@expl:shoot_store ensures #3] const_ORDERING = Relaxed
-      -> store_rlx_post_AtomicU32 (ward_AtomicU32 self.current) own sync_view (val_store_AtomicU32 self.current) (timestamp_AtomicU32 self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Relaxed (ward_AtomicU32 self.current) own sync_view (val_store_AtomicU32 self.current) (timestamp_AtomicU32 self.current
       + 1) rel_view)}
       (! return {result}) ]
   
@@ -3337,25 +3288,22 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   function ward_AtomicU32'1 (self: t_Committer_AtomicU32_u32_Acquire_None) : t_AtomicU32
   
-  constant const_ORDERING'0 : t_Ordering
+  predicate load_acq_post_AtomicU32 (atomic: t_AtomicU32) (own: t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) =
+    load_timestamp_in_view_AtomicU32 atomic sync_view t
+    /\ load_reads_from_history_AtomicU32 own sync_view.final val' t /\ view_mono sync_view
   
-  let set_ORDERING'0 (return) = bb0
-    [ bb0 = s0 [ s0 = [ &_ret <- Acquire ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
-    [ return (_const: t_Ordering) -> -{const_ORDERING'0 = _const}- return ]
+  predicate load_post_Acquire (atomic: t_AtomicU32) (own: t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) (acq_view: ()) =
+    load_acq_post_AtomicU32 atomic own sync_view val' t
   
   function timestamp_AtomicU32'0 (self: t_Committer_AtomicU32_u32_Acquire_None) : int
   
   let shoot_load_AtomicU32'0 (self: t_Committer_AtomicU32_u32_Acquire_None) (own: t_Perm_AtomicU32)
-    (sync_view: MutBorrow.t t_SyncView) (return (x: t_AcquireSyncView)) =
+    (sync_view: MutBorrow.t t_SyncView) (return (x: ())) =
   {[@stop_split] [@expl:shoot_load_AtomicU32 requires] ([@stop_split] [@expl:shoot_load requires #0] not shot_store_AtomicU32'0 self)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicU32'1 self = ward_AtomicU32'0 own)}
     any
-    [ return (result: t_AcquireSyncView) ->
-    {[@stop_split] [@expl:shoot_load_AtomicU32 ensures] ([@stop_split] [@expl:shoot_load ensures #0] const_ORDERING'0
-          = Acquire
-        -> load_acq_post_AtomicU32 (ward_AtomicU32'1 self) own sync_view (val_load_AtomicU32'0 self) (timestamp_AtomicU32'0 self))
-      /\ ([@stop_split] [@expl:shoot_load ensures #1] const_ORDERING'0 = Relaxed
-      -> load_rlx_post_AtomicU32 (ward_AtomicU32'1 self) own sync_view (val_load_AtomicU32'0 self) (timestamp_AtomicU32'0 self) result)}
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Acquire (ward_AtomicU32'1 self) own sync_view (val_load_AtomicU32'0 self) (timestamp_AtomicU32'0 self) result}
       (! return {result}) ]
   
   type t_Option_refmut_Fragment_FMap_Int_Excl_unit = None'7 | Some'7 (MutBorrow.t t_Fragment_FMap_Int_Excl_unit)
@@ -3674,7 +3622,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
           (fun (_bor: MutBorrow.t t_SyncView) -> [ &_19 <- _bor ] [ &_20 <- { _20 with current = _bor.final } ] s5)
       | s5 = MutBorrow.borrow_final <t_SyncView> {_19.current} {MutBorrow.get_id _19}
           (fun (_bor: MutBorrow.t t_SyncView) -> [ &_18 <- _bor ] [ &_19 <- { _19 with current = _bor.final } ] s6)
-      | s6 = shoot_load_AtomicU32'0 {self.current.c0'2} {_17} {_18} (fun (_x: t_AcquireSyncView) -> [ &_14 <- _x ] s7)
+      | s6 = shoot_load_AtomicU32'0 {self.current.c0'2} {_17} {_18} (fun (_x: ()) -> [ &_14 <- _x ] s7)
       | s7 = -{resolve_refmut_SyncView _20}- s8
       | s8 = -{resolve_refmut_SyncView _19}- s9
       | s9 = [ &auth_tickets_snap <- inv'1.current.auth_tickets'0 ] s10
@@ -3793,7 +3741,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     | & _7: bool = Any.any_l ()
     | & _8: bool = Any.any_l ()
     | & view: t_SyncView = Any.any_l ()
-    | & _14: t_AcquireSyncView = Any.any_l ()
+    | & _14: () = Any.any_l ()
     | & _17: t_Perm_AtomicU32 = Any.any_l ()
     | & _18: MutBorrow.t t_SyncView = Any.any_l ()
     | & _19: MutBorrow.t t_SyncView = Any.any_l ()
@@ -4159,106 +4107,104 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   let lock_T (self: t_TicketLock_T) (tokens: t_Tokens) (return (x: t_TicketLockGuard_T)) =
   {[@stop_split] [@expl:lock_T requires] ([@stop_split] [@expl:lock 'self' type invariant] inv_ref_TicketLock_T self)
     /\ ([@stop_split] [@expl:lock requires] contains tokens (Namespace_TICKET_LOCK 0))}
-    (! set_ORDERING'0
-      (set_ORDERING
-        (bb0
-        [ bb0 = s0
-          [ s0 = [ &_10 <- None ] s1
-          | s1 = new_Option_Fragment_FMap_Int_Excl_unit {_10}
-              (fun (_x: t_Option_Fragment_FMap_Int_Excl_unit) -> [ &ticket_own <- _x ] s2)
-          | s2 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-              (fun (_bor: MutBorrow.t t_Tokens) -> [ &_17 <- _bor ] [ &tokens <- _bor.final ] s3)
-          | s3 = MutBorrow.borrow_mut <t_Option_Fragment_FMap_Int_Excl_unit> {ticket_own}
-              (fun (_bor: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) ->
-                [ &_18 <- _bor ] -{inv_Ghost_Option_Fragment_FMap_Int_Excl_unit _bor.final}-
-                [ &ticket_own <- _bor.final ] s4)
-            [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit ticket_own} any) ]
-          | s4 = [ &_15 <- { c0 = self; c1 = _17; c2 = _18 } ] s5
-          | s5 = __new_closure3 {_15} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_14 <- _x ] s6)
-          | s6 = new_FnGhostWrapper_closure3 {_14} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_13 <- _x ] s7)
-          | s7 = fetch_add_FnGhostWrapper_closure3 {self.next_ticket} {(1: UInt32.t)} {_13}
-              (fun (_x: UInt32.t) -> [ &ticket <- _x ] s8)
-          | s8 = [ &_20 <- None'6 ] s9
-          | s9 = new_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_20}
-              (fun (_x: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &perm <- _x ] s10)
-          | s10 = into_ghost_Id {(public_TicketLockInv_T'0 self.inner_inv).f2'4} (fun (_x: t_Id) -> [ &_26 <- _x ] s11)
-          | s11 = deref_Ghost_Id {_26} (fun (_x: t_Id) -> [ &_24 <- _x ] s12)
-          | s12 = new_unit_Option_Excl_unit {_24} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_22 <- _x ] s13)
-          | s13 = new_Resource_Option_Excl_unit {_22} (fun (_x: t_Resource_Option_Excl_unit) -> [ &token <- _x ] s14)
-          | s14 = bb11 ]
-        | bb11 = bb11
-          [ bb11 =
-            {[@expl:inferred invariant: type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T perm}
-            {[@expl:inferred invariant: type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit ticket_own}
-            {[@expl:loop invariant #0] contains tokens (Namespace_TICKET_LOCK 0)}
-            {[@expl:loop invariant #1] ticket_own <> None}
-            {[@expl:loop invariant #2] id_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)
-            = (public_TicketLockInv_T'0 self.inner_inv).f1'4}
-            {[@expl:loop invariant #3] get_Int'0 (view_Fragment_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)) (UInt32.t'int ticket)
-            = Some'3 { f0'0 = () }}
-            {[@expl:loop invariant #4] id_Option_Excl_unit token = (public_TicketLockInv_T'0 self.inner_inv).f2'4}
-            (! s0)
-            [ s0 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_53 <- _bor ] [ &tokens <- _bor.final ] s1)
-            | s1 = MutBorrow.borrow_mut <t_Option_Fragment_FMap_Int_Excl_unit> {ticket_own}
-                (fun (_bor: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) ->
-                  [ &_55 <- _bor ] -{inv_Ghost_Option_Fragment_FMap_Int_Excl_unit _bor.final}-
-                  [ &ticket_own <- _bor.final ] s2)
-              [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit ticket_own} any) ]
-            | s2 = MutBorrow.borrow_mut <t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T> {perm}
-                (fun (_bor: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
-                  [ &_56 <- _bor ] -{inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _bor.final}-
-                  [ &perm <- _bor.final ] s3)
-              [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T perm}
-                any) ]
-            | s3 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {token}
-                (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_57 <- _bor ] [ &token <- _bor.final ] s4)
-            | s4 = [ &_51 <- { c0'1 = self; c1'1 = _53; c2'1 = ticket; c3'1 = _55; c4'1 = _56; c5'1 = _57 } ] s5
-            | s5 = __new_closure11 {_51} (fun (_x: t_FnGhostWrapper_closure11) -> [ &_50 <- _x ] s6)
-            | s6 = new_FnGhostWrapper_closure11 {_50} (fun (_x: t_FnGhostWrapper_closure11) -> [ &_49 <- _x ] s7)
-            | s7 = load_FnGhostWrapper_closure11 {self.now_serving} {_49} (fun (_x: UInt32.t) -> [ &_47 <- _x ] s8)
-            | s8 = [ &_46 <- _47 <> ticket ] s9
-            | s9 = any [ br0 -> {_46 = false} (! bb17) | br1 -> {_46} (! bb11) ] ] ]
-        | bb17 = s0
-          [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit ticket_own} any) ]
-          | s1 = -{resolve_Ghost_Option_Fragment_FMap_Int_Excl_unit'0 ticket_own}- s2
-          | s2 = into_inner_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {perm}
-              (fun (_x: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_63 <- _x ] s3)
-          | s3 = unwrap_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_63}
-              (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_62 <- _x ] s4)
-          | s4 = new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_62}
-              (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_61 <- _x ] s5)
-          | s5 = [ &_ret <- { lock'1 = self; perm'1 = _61; token'1 = token; inv'1 = self.inv } ] s6
-          | s6 = return {_ret} ] ]
-        [ & _ret: t_TicketLockGuard_T = Any.any_l ()
-        | & self: t_TicketLock_T = self
-        | & tokens: t_Tokens = tokens
-        | & ticket_own: t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
-        | & _10: t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
-        | & ticket: UInt32.t = Any.any_l ()
-        | & _13: t_FnGhostWrapper_closure3 = Any.any_l ()
-        | & _14: t_FnGhostWrapper_closure3 = Any.any_l ()
-        | & _15: closure3 = Any.any_l ()
-        | & _17: MutBorrow.t t_Tokens = Any.any_l ()
-        | & _18: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
-        | & perm: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
-        | & _20: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
-        | & token: t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _22: t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _24: t_Id = Any.any_l ()
-        | & _26: t_Id = Any.any_l ()
-        | & _46: bool = Any.any_l ()
-        | & _47: UInt32.t = Any.any_l ()
-        | & _49: t_FnGhostWrapper_closure11 = Any.any_l ()
-        | & _50: t_FnGhostWrapper_closure11 = Any.any_l ()
-        | & _51: closure11 = Any.any_l ()
-        | & _53: MutBorrow.t t_Tokens = Any.any_l ()
-        | & _55: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
-        | & _56: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
-        | & _57: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _61: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
-        | & _62: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
-        | & _63: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l () ])))
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_10 <- None ] s1
+      | s1 = new_Option_Fragment_FMap_Int_Excl_unit {_10}
+          (fun (_x: t_Option_Fragment_FMap_Int_Excl_unit) -> [ &ticket_own <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_17 <- _bor ] [ &tokens <- _bor.final ] s3)
+      | s3 = MutBorrow.borrow_mut <t_Option_Fragment_FMap_Int_Excl_unit> {ticket_own}
+          (fun (_bor: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) ->
+            [ &_18 <- _bor ] -{inv_Ghost_Option_Fragment_FMap_Int_Excl_unit _bor.final}-
+            [ &ticket_own <- _bor.final ] s4)
+        [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit ticket_own} any) ]
+      | s4 = [ &_15 <- { c0 = self; c1 = _17; c2 = _18 } ] s5
+      | s5 = __new_closure3 {_15} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_14 <- _x ] s6)
+      | s6 = new_FnGhostWrapper_closure3 {_14} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_13 <- _x ] s7)
+      | s7 = fetch_add_FnGhostWrapper_closure3 {self.next_ticket} {(1: UInt32.t)} {_13}
+          (fun (_x: UInt32.t) -> [ &ticket <- _x ] s8)
+      | s8 = [ &_20 <- None'6 ] s9
+      | s9 = new_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_20}
+          (fun (_x: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &perm <- _x ] s10)
+      | s10 = into_ghost_Id {(public_TicketLockInv_T'0 self.inner_inv).f2'4} (fun (_x: t_Id) -> [ &_26 <- _x ] s11)
+      | s11 = deref_Ghost_Id {_26} (fun (_x: t_Id) -> [ &_24 <- _x ] s12)
+      | s12 = new_unit_Option_Excl_unit {_24} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_22 <- _x ] s13)
+      | s13 = new_Resource_Option_Excl_unit {_22} (fun (_x: t_Resource_Option_Excl_unit) -> [ &token <- _x ] s14)
+      | s14 = bb11 ]
+    | bb11 = bb11
+      [ bb11 =
+        {[@expl:inferred invariant: type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T perm}
+        {[@expl:inferred invariant: type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit ticket_own}
+        {[@expl:loop invariant #0] contains tokens (Namespace_TICKET_LOCK 0)}
+        {[@expl:loop invariant #1] ticket_own <> None}
+        {[@expl:loop invariant #2] id_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)
+        = (public_TicketLockInv_T'0 self.inner_inv).f1'4}
+        {[@expl:loop invariant #3] get_Int'0 (view_Fragment_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)) (UInt32.t'int ticket)
+        = Some'3 { f0'0 = () }}
+        {[@expl:loop invariant #4] id_Option_Excl_unit token = (public_TicketLockInv_T'0 self.inner_inv).f2'4}
+        (! s0)
+        [ s0 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+            (fun (_bor: MutBorrow.t t_Tokens) -> [ &_53 <- _bor ] [ &tokens <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_mut <t_Option_Fragment_FMap_Int_Excl_unit> {ticket_own}
+            (fun (_bor: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) ->
+              [ &_55 <- _bor ] -{inv_Ghost_Option_Fragment_FMap_Int_Excl_unit _bor.final}-
+              [ &ticket_own <- _bor.final ] s2)
+          [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit ticket_own} any) ]
+        | s2 = MutBorrow.borrow_mut <t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T> {perm}
+            (fun (_bor: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) ->
+              [ &_56 <- _bor ] -{inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T _bor.final}-
+              [ &perm <- _bor.final ] s3)
+          [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T perm}
+            any) ]
+        | s3 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {token}
+            (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_57 <- _bor ] [ &token <- _bor.final ] s4)
+        | s4 = [ &_51 <- { c0'1 = self; c1'1 = _53; c2'1 = ticket; c3'1 = _55; c4'1 = _56; c5'1 = _57 } ] s5
+        | s5 = __new_closure11 {_51} (fun (_x: t_FnGhostWrapper_closure11) -> [ &_50 <- _x ] s6)
+        | s6 = new_FnGhostWrapper_closure11 {_50} (fun (_x: t_FnGhostWrapper_closure11) -> [ &_49 <- _x ] s7)
+        | s7 = load_FnGhostWrapper_closure11 {self.now_serving} {_49} (fun (_x: UInt32.t) -> [ &_47 <- _x ] s8)
+        | s8 = [ &_46 <- _47 <> ticket ] s9
+        | s9 = any [ br0 -> {_46 = false} (! bb17) | br1 -> {_46} (! bb11) ] ] ]
+    | bb17 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit ticket_own} any) ]
+      | s1 = -{resolve_Ghost_Option_Fragment_FMap_Int_Excl_unit'0 ticket_own}- s2
+      | s2 = into_inner_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {perm}
+          (fun (_x: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_63 <- _x ] s3)
+      | s3 = unwrap_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_63}
+          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_62 <- _x ] s4)
+      | s4 = new_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T {_62}
+          (fun (_x: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T) -> [ &_61 <- _x ] s5)
+      | s5 = [ &_ret <- { lock'1 = self; perm'1 = _61; token'1 = token; inv'1 = self.inv } ] s6
+      | s6 = return {_ret} ] ]
+    [ & _ret: t_TicketLockGuard_T = Any.any_l ()
+    | & self: t_TicketLock_T = self
+    | & tokens: t_Tokens = tokens
+    | & ticket_own: t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
+    | & _10: t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
+    | & ticket: UInt32.t = Any.any_l ()
+    | & _13: t_FnGhostWrapper_closure3 = Any.any_l ()
+    | & _14: t_FnGhostWrapper_closure3 = Any.any_l ()
+    | & _15: closure3 = Any.any_l ()
+    | & _17: MutBorrow.t t_Tokens = Any.any_l ()
+    | & _18: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
+    | & perm: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _20: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & token: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _22: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _24: t_Id = Any.any_l ()
+    | & _26: t_Id = Any.any_l ()
+    | & _46: bool = Any.any_l ()
+    | & _47: UInt32.t = Any.any_l ()
+    | & _49: t_FnGhostWrapper_closure11 = Any.any_l ()
+    | & _50: t_FnGhostWrapper_closure11 = Any.any_l ()
+    | & _51: closure11 = Any.any_l ()
+    | & _53: MutBorrow.t t_Tokens = Any.any_l ()
+    | & _55: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
+    | & _56: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _57: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _61: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _62: t_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l ()
+    | & _63: t_Option_Guarded_FullBorrow_Perm_PermCell_T_PermCell_T = Any.any_l () ])
     [ return (result: t_TicketLockGuard_T) ->
     {[@stop_split] [@expl:lock_T ensures] ([@stop_split] [@expl:lock result type invariant] inv_TicketLockGuard_T result)
       /\ ([@stop_split] [@expl:lock ensures #0] Map.get self.inv (view_TicketLockGuard_T result))

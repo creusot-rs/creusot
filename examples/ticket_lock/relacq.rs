@@ -262,7 +262,7 @@ impl<'a, T> TicketLockGuard<'a, T> {
             ghost!(|c: &mut Committer<_, _, _, Release>| {
                 self.lock.inner_inv.open(tokens.into_inner(), |inv: &mut TicketLockInv<T>| {
                     let (mut view, perm) = AtView::new(self.perm).into_inner();
-                    c.shoot_store(&mut inv.perm_now_serving, &mut view, *ReleaseSyncView::new());
+                    c.shoot_store(&mut inv.perm_now_serving, &mut view, ());
                     inv.token.valid_op_lemma(&self.token);
                     std::mem::swap(&mut inv.token, &mut self.token);
 

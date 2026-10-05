@@ -11,14 +11,66 @@ use core::sync::atomic::{Ordering as OrderingTy, fence};
 
 /// Creusot type-level wrappers around [`std::sync::atomic::Ordering`].
 pub mod ordering {
+    use crate::{
+        prelude::*,
+        std::sync::view::{AcquireSyncView, ReleaseSyncView},
+    };
+    #[cfg(creusot)]
+    use crate::{
+        ghost::{Perm, perm::PermTarget},
+        logic::FMap,
+        std::sync::{
+            committer::atomic_specs::{load_acq_post, load_rlx_post, store_rel_post, store_rlx_post},
+            view::{HasTimestamp, SyncView, Timestamp},
+        },
+    };
     use core::sync::atomic::Ordering as OrderingTy;
 
-    pub trait Ordering {
+    mod sealed {
+        pub trait Sealed {}
+    }
+
+    /// This trait is sealed: it cannot be implemented outside of this crate.
+    pub trait Ordering: sealed::Sealed {
         const ORDERING: OrderingTy;
     }
 
-    pub trait LoadOrdering: Ordering {}
-    pub trait StoreOrdering: Ordering {}
+    pub trait LoadOrdering: Ordering {
+        /// The acquire view a load with this ordering depends on: `()` for acquire loads,
+        /// an [`AcquireSyncView`] for relaxed loads.
+        type Acq: Copy;
+
+        /// Postcondition of a load with this ordering, reading `val` at timestamp `t`.
+        #[logic(prophetic)]
+        fn load_post<C, T>(
+            atomic: C,
+            own: &Perm<C>,
+            sync_view: &mut SyncView,
+            val: T,
+            t: Timestamp,
+            acq_view: Self::Acq,
+        ) -> bool
+        where
+            C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp;
+    }
+    pub trait StoreOrdering: Ordering {
+        /// The release view a store with this ordering depends on: `()` for release stores,
+        /// a [`ReleaseSyncView`] for relaxed stores.
+        type Rel: Copy;
+
+        /// Postcondition of a store with this ordering, writing `val` at timestamp `t`.
+        #[logic(prophetic)]
+        fn store_post<C, T>(
+            atomic: C,
+            own: &mut Perm<C>,
+            sync_view: &mut SyncView,
+            val: T,
+            t: Timestamp,
+            rel_view: Self::Rel,
+        ) -> bool
+        where
+            C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp;
+    }
     pub trait UpdateOrdering: Ordering {
         type Load: LoadOrdering;
         type Store: StoreOrdering;
@@ -29,6 +81,8 @@ pub mod ordering {
     macro_rules! impl_ordering {
         ( $order:ident, load = $load:ident, store = $store:ident ) => {
             pub struct $order;
+
+            impl sealed::Sealed for $order {}
 
             impl Ordering for $order {
                 const ORDERING: OrderingTy = OrderingTy::$order;
@@ -46,10 +100,80 @@ pub mod ordering {
     impl_ordering!(Release, load = Relaxed, store = Release);
     impl_ordering!(AcqRel, load = Acquire, store = Release);
 
-    impl LoadOrdering for Relaxed {}
-    impl StoreOrdering for Relaxed {}
-    impl LoadOrdering for Acquire {}
-    impl StoreOrdering for Release {}
+    impl LoadOrdering for Relaxed {
+        type Acq = AcquireSyncView;
+
+        #[logic(open, prophetic)]
+        fn load_post<C, T>(
+            atomic: C,
+            own: &Perm<C>,
+            sync_view: &mut SyncView,
+            val: T,
+            t: Timestamp,
+            acq_view: AcquireSyncView,
+        ) -> bool
+        where
+            C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp,
+        {
+            load_rlx_post(atomic, own, sync_view, val, t, acq_view)
+        }
+    }
+    impl StoreOrdering for Relaxed {
+        type Rel = ReleaseSyncView;
+
+        #[logic(open, prophetic)]
+        fn store_post<C, T>(
+            atomic: C,
+            own: &mut Perm<C>,
+            sync_view: &mut SyncView,
+            val: T,
+            t: Timestamp,
+            rel_view: ReleaseSyncView,
+        ) -> bool
+        where
+            C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp,
+        {
+            store_rlx_post(atomic, own, sync_view, val, t, rel_view)
+        }
+    }
+    impl LoadOrdering for Acquire {
+        type Acq = ();
+
+        #[logic(open, prophetic)]
+        #[allow(unused_variables)]
+        fn load_post<C, T>(
+            atomic: C,
+            own: &Perm<C>,
+            sync_view: &mut SyncView,
+            val: T,
+            t: Timestamp,
+            acq_view: (),
+        ) -> bool
+        where
+            C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp,
+        {
+            load_acq_post(atomic, own, sync_view, val, t)
+        }
+    }
+    impl StoreOrdering for Release {
+        type Rel = ();
+
+        #[logic(open, prophetic)]
+        #[allow(unused_variables)]
+        fn store_post<C, T>(
+            atomic: C,
+            own: &mut Perm<C>,
+            sync_view: &mut SyncView,
+            val: T,
+            t: Timestamp,
+            rel_view: (),
+        ) -> bool
+        where
+            C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp,
+        {
+            store_rel_post(atomic, own, sync_view, val, t)
+        }
+    }
 }
 
 use ordering::{LoadOrdering, StoreOrdering, UpdateOrdering};
