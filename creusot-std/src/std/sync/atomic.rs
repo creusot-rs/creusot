@@ -56,10 +56,17 @@ use ordering::{LoadOrdering, StoreOrdering, UpdateOrdering};
 
 const SEQ_CST: OrderingTy = OrderingTy::SeqCst;
 
+/// `t` is the largest timestamp of the history `hist`.
+#[logic(open)]
+pub fn is_max_timestamp<V>(hist: FMap<Timestamp, V>, t: Timestamp) -> bool {
+    pearlite! { hist.contains(t) && forall<t2> hist.contains(t2) ==> t2 <= t }
+}
+
 macro_rules! impl_atomic {
     ($( ($type:ty, $atomic_type:ident $(< $T:ident >)?) ),+) => { $(
 
         #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
+        #[repr(transparent)]
         pub struct $atomic_type $(< $T >)?(::core::sync::atomic::$atomic_type $(< $T >)?);
 
         impl $(< $T >)? PermTarget for $atomic_type $(< $T >)? {
@@ -108,6 +115,35 @@ macro_rules! impl_atomic {
                 (self.0.into_inner(), Ghost::conjure())
             }
 
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::get_mut`].")]
+            #[doc = ""]
+            #[doc = "Returns a mutable reference to the value of the latest write, together with its message view and timestamp."]
+            #[requires(*self == *own.ward())]
+            #[ensures(^self == *self)]
+            #[ensures(^self == *(^own).ward())]
+            #[ensures(is_max_timestamp((*own).val(), *result.2))]
+            #[ensures((*own).val().get(*result.2) == Some((*result.0, *result.1)))]
+            #[ensures((^own).val().lookup(*result.2).0 == ^result.0)]
+            #[inline(always)]
+            #[trusted]
+            #[check(terminates)]
+            #[allow(unused_variables)]
+            pub fn get_mut<'a>(&'a mut self, own: Ghost<&'a mut Perm<$atomic_type $(< $T >)?>>) -> (&'a mut $type, Ghost<SyncView>, Ghost<Timestamp>) {
+                (self.0.get_mut(), Ghost::conjure(), Ghost::conjure())
+            }
+
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::from_mut`].")]
+            #[ensures(*result.0 == *result.1.ward())]
+            #[ensures(result.1.val() == FMap::singleton((*result.0).get_timestamp(*result.2), (*v, *result.2)))]
+            #[ensures(forall<t> is_max_timestamp((^result.1).val(), t) ==> ^result.0 == *(^result.1).ward() ==> (^result.1).val().lookup(t).0 == ^v)]
+            #[inline(always)]
+            #[trusted]
+            #[check(terminates)]
+            pub fn from_mut<'a>(v: &'a mut $type) -> (&'a mut Self, Ghost<&'a mut Perm<$atomic_type $(< $T >)?>>, Ghost<SyncView>) {
+                // const { assert!(core::mem::align_of::<$type>() == core::mem::align_of::<Self>()) };
+                let ato = unsafe { &mut *(v as *mut $type as *mut Self) };
+                (ato, Ghost::conjure(), Ghost::conjure())
+            }
 
             #[doc = "Clear the old unusable history, thanks to the full ownership of the atomic."]
             #[requires(*self == *own.ward())]
