@@ -66,9 +66,9 @@ type t_K
 
 function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
 
-function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
 
-meta "rewrite_def" function get_K
+meta "rewrite_def" function lookup_K
 
 type tup2_V_V = { f0'0: t_V; f1'0: t_V }
 
@@ -79,11 +79,11 @@ meta "rewrite_def" function index_Mapping_tup2_V_V_V
 function merge_K (self: t_FMap_K_V) (m: t_FMap_K_V) (f: Map.map tup2_V_V t_V) : t_FMap_K_V
 
 axiom merge_K_spec:
-  forall self: t_FMap_K_V, m: t_FMap_K_V, f: Map.map tup2_V_V t_V [merge_K self m f]. forall k: t_K [get_K (merge_K self m f) k]. match { f0 = get_K self k;
-                                                                                                                                          f1 = get_K m k } with
-        | {f0 = None'0; f1 = y} -> get_K (merge_K self m f) k = y
-        | {f0 = x; f1 = None'0} -> get_K (merge_K self m f) k = x
-        | {f0 = Some'0 x; f1 = Some'0 y} -> get_K (merge_K self m f) k
+  forall self: t_FMap_K_V, m: t_FMap_K_V, f: Map.map tup2_V_V t_V [merge_K self m f]. forall k: t_K [lookup_K (merge_K self m f) k]. match { f0 = lookup_K self k;
+                                                                                                                                             f1 = lookup_K m k } with
+        | {f0 = None'0; f1 = y} -> lookup_K (merge_K self m f) k = y
+        | {f0 = x; f1 = None'0} -> lookup_K (merge_K self m f) k = x
+        | {f0 = Some'0 x; f1 = Some'0 y} -> lookup_K (merge_K self m f) k
         = Some'0 (index_Mapping_tup2_V_V_V f { f0'0 = x; f1'0 = y })
         end
 
@@ -105,12 +105,16 @@ function total_op_K (self: t_FMap_K_V) (other: t_FMap_K_V) : t_FMap_K_V =
     end)
 
 axiom total_op_K_spec:
-  forall self: t_FMap_K_V, other: t_FMap_K_V [total_op_K self other]. (forall k: t_K. op_Option_V (get_K self k) (get_K other k)
+  forall self: t_FMap_K_V, other: t_FMap_K_V [total_op_K self other]. (forall k: t_K. op_Option_V (lookup_K self k) (lookup_K other k)
         <> None'1)
-    -> (forall k: t_K. Some'1 (get_K (total_op_K self other) k) = op_Option_V (get_K self k) (get_K other k))
+    -> (forall k: t_K. Some'1 (lookup_K (total_op_K self other) k) = op_Option_V (lookup_K self k) (lookup_K other k))
 
 function op_FMap_K_V (self: t_FMap_K_V) (other: t_FMap_K_V) : t_Option_FMap_K_V =
-  if forall k: t_K. op_Option_V (get_K self k) (get_K other k) <> None'1 then Some (total_op_K self other) else None
+  if forall k: t_K. op_Option_V (lookup_K self k) (lookup_K other k) <> None'1 then
+    Some (total_op_K self other)
+  else
+    None
+
 
 predicate eq_V (self: t_V) (other: t_V)
 
@@ -192,13 +196,13 @@ meta "rewrite_def" function index_Mapping_tup2_K_V_Option_V
 function filter_map_K (self: t_FMap_K_V) (f: Map.map tup2_K_V t_Option_V) : t_FMap_K_V
 
 axiom filter_map_K_spec:
-  forall self: t_FMap_K_V, f: Map.map tup2_K_V t_Option_V [filter_map_K self f]. forall k: t_K [get_K (filter_map_K self f) k]. get_K (filter_map_K self f) k
-      = match get_K self k with
+  forall self: t_FMap_K_V, f: Map.map tup2_K_V t_Option_V [filter_map_K self f]. forall k: t_K [lookup_K (filter_map_K self f) k]. lookup_K (filter_map_K self f) k
+      = match lookup_K self k with
         | None'0 -> None'0
         | Some'0 v -> index_Mapping_tup2_K_V_Option_V f { f0'1 = k; f1'1 = v }
         end
 
-predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
+predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. lookup_K self k = lookup_K other k
 
 axiom ext_eq_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V [self = other]. ext_eq_K self other = (self = other)
 
@@ -212,33 +216,33 @@ constant other : t_FMap_K_V
 
 predicate incl_FMap_K_V (self: t_FMap_K_V) (other: t_FMap_K_V)
 
-goal vc_incl_FMap_K_V: let r = forall k: t_K. incl_Option_V (get_K self k) (get_K other k) in if r then
-    (forall _0: tup2_K_V. let {f0'1 = k; f1'1 = vo} = _0 in ([@stop_split] [@expl:incl ensures] incl_Option_V (get_K self k) (Some'0 vo)
-          = (exists factor: t_Option_V. op_Option_V (get_K self k) factor = Some'1 (Some'0 vo)))
-        -> (if incl_Option_V (get_K self k) (Some'0 vo) then
-          [@stop_split] [@expl:factor requires] incl_Option_V (get_K self k) (Some'0 vo)
+goal vc_incl_FMap_K_V: let r = forall k: t_K. incl_Option_V (lookup_K self k) (lookup_K other k) in if r then
+    (forall _0: tup2_K_V. let {f0'1 = k; f1'1 = vo} = _0 in ([@stop_split] [@expl:incl ensures] incl_Option_V (lookup_K self k) (Some'0 vo)
+          = (exists factor: t_Option_V. op_Option_V (lookup_K self k) factor = Some'1 (Some'0 vo)))
+        -> (if incl_Option_V (lookup_K self k) (Some'0 vo) then
+          [@stop_split] [@expl:factor requires] incl_Option_V (lookup_K self k) (Some'0 vo)
         else
           true
         ))
-    /\ (([@stop_split] [@expl:filter_map ensures] forall k: t_K [get_K (filter_map_K other (fun (_0: tup2_K_V) -> let {f0'1 = k'0; f1'1 = vo} = _0 in if incl_Option_V (get_K self k'0) (Some'0 vo) then
-          factor_Option_V (Some'0 vo) (get_K self k'0)
+    /\ (([@stop_split] [@expl:filter_map ensures] forall k: t_K [lookup_K (filter_map_K other (fun (_0: tup2_K_V) -> let {f0'1 = k'0; f1'1 = vo} = _0 in if incl_Option_V (lookup_K self k'0) (Some'0 vo) then
+          factor_Option_V (Some'0 vo) (lookup_K self k'0)
         else
           None'0
-        )) k]. get_K (filter_map_K other (fun (_0: tup2_K_V) -> let {f0'1 = k'0; f1'1 = vo} = _0 in if incl_Option_V (get_K self k'0) (Some'0 vo) then
-            factor_Option_V (Some'0 vo) (get_K self k'0)
+        )) k]. lookup_K (filter_map_K other (fun (_0: tup2_K_V) -> let {f0'1 = k'0; f1'1 = vo} = _0 in if incl_Option_V (lookup_K self k'0) (Some'0 vo) then
+            factor_Option_V (Some'0 vo) (lookup_K self k'0)
           else
             None'0
           )) k
-        = match get_K other k with
+        = match lookup_K other k with
           | None'0 -> None'0
-          | Some'0 v -> index_Mapping_tup2_K_V_Option_V (fun (_0: tup2_K_V) -> let {f0'1 = k'0; f1'1 = vo} = _0 in if incl_Option_V (get_K self k'0) (Some'0 vo) then
-            factor_Option_V (Some'0 vo) (get_K self k'0)
+          | Some'0 v -> index_Mapping_tup2_K_V_Option_V (fun (_0: tup2_K_V) -> let {f0'1 = k'0; f1'1 = vo} = _0 in if incl_Option_V (lookup_K self k'0) (Some'0 vo) then
+            factor_Option_V (Some'0 vo) (lookup_K self k'0)
           else
             None'0
           ) { f0'1 = k; f1'1 = v }
           end)
-    -> (let factor = filter_map_K other (fun (_0: tup2_K_V) -> let {f0'1 = k; f1'1 = vo} = _0 in if incl_Option_V (get_K self k) (Some'0 vo) then
-      factor_Option_V (Some'0 vo) (get_K self k)
+    -> (let factor = filter_map_K other (fun (_0: tup2_K_V) -> let {f0'1 = k; f1'1 = vo} = _0 in if incl_Option_V (lookup_K self k) (Some'0 vo) then
+      factor_Option_V (Some'0 vo) (lookup_K self k)
     else
       None'0
     ) in match op_FMap_K_V self factor with

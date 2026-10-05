@@ -54,12 +54,12 @@ module M_message_passing
   
   axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = get_Int self k <> None
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = lookup_Int self k <> None
   
   meta "rewrite_def" predicate contains_Int
   
@@ -147,12 +147,10 @@ module M_message_passing
   
   type t_AtomicInvariant_MessagePassingAtomicInv
   
-  type t_Option_ref_tup2_bool_SyncView = None'0 | Some'0 tup2_bool_SyncView
-  
   predicate protocol_MessagePassingAtomicInv [@inline:trivial] (self: t_MessagePassingAtomicInv) =
-    forall t: int. match get_Int (val_AtomicBool self.atomic_own) t with
-        | Some'0 {f0'0 = False} -> self.t_initial = t
-        | Some'0 {f0'0 = True} -> self.t_initial < t
+    forall t: int. match lookup_Int (val_AtomicBool self.atomic_own) t with
+        | Some {f0'0 = False} -> self.t_initial = t
+        | Some {f0'0 = True} -> self.t_initial < t
         | _ -> true
         end
   
@@ -251,7 +249,7 @@ module M_message_passing
         <= timestamp_AtomicBool self.current)
       /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicBool self.current
         < get_timestamp_AtomicBool (ward_AtomicBool'0 self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #6] lookup_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
           + 1)
         = None)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicBool own.final
@@ -620,8 +618,8 @@ module M_message_passing
         <= timestamp_AtomicBool'0 self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicBool'0 self
         <= get_timestamp_AtomicBool (ward_AtomicBool'1 self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] get_Int (val_AtomicBool own) (timestamp_AtomicBool'0 self)
-      = Some'0 { f0'0 = val_load_AtomicBool'0 self; f1'0 = view_AcquireSyncView result })}
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] lookup_Int (val_AtomicBool own) (timestamp_AtomicBool'0 self)
+      = Some { f0'0 = val_load_AtomicBool'0 self; f1'0 = view_AcquireSyncView result })}
       (! return {result}) ]
   
   predicate resolve_refmut_closure0'0 [@inline:trivial] (_1: MutBorrow.t closure0'3) = _1.final = _1.current

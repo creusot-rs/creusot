@@ -96,16 +96,14 @@ module M_f
   
   type tup2_ptr_T_SyncView = { f0: Opaque.ptr; f1: t_SyncView }
   
-  type t_Option_ref_tup2_ptr_T_SyncView = None | Some tup2_ptr_T_SyncView
-  
-  type t_Option_tup2_ptr_T_SyncView = None'0 | Some'0 tup2_ptr_T_SyncView
+  type t_Option_tup2_ptr_T_SyncView = None | Some tup2_ptr_T_SyncView
   
   function to_mapping_Int (self: t_FMap_Int_tup2_ptr_T_SyncView) : Map.map int t_Option_tup2_ptr_T_SyncView
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_ptr_T_SyncView) (k: int) : t_Option_tup2_ptr_T_SyncView =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_ptr_T_SyncView) (k: int) : t_Option_tup2_ptr_T_SyncView =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
   function val_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView =
     val_unsized_AtomicPtr_T self
@@ -125,7 +123,7 @@ module M_f
         <= timestamp_AtomicPtr_T self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicPtr_T self
         <= get_timestamp_AtomicPtr_T (ward_AtomicPtr_T self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicPtr_T own) (timestamp_AtomicPtr_T self) with
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] match lookup_Int (val_AtomicPtr_T own) (timestamp_AtomicPtr_T self) with
         | Some {f0 = v; f1 = v_view} -> v = val_load_AtomicPtr_T self /\ le_log_SyncView v_view sync_view.final
         | None -> false
         end)}

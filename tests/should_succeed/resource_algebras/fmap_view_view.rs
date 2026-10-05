@@ -26,8 +26,8 @@ impl<K, V> ViewRel for MapRelation<K, V> {
     fn rel(a: Option<Self::Auth>, f: Self::Frag) -> bool {
         pearlite! {
             match a {
-                Some(a) => forall<k: &K> match f.get(k) {
-                    Some(&Ag(v)) => a.get(k) == Some(&v),
+                Some(a) => forall<k: K> match f.lookup(k) {
+                    Some(Ag(v)) => a.lookup(k) == Some(v),
                     _ => true,
                 },
                 None => true
@@ -136,12 +136,12 @@ impl<K, V> Authority<K, V> {
 
     /// Asserts that the fragment represented by `frag` is contained in `self`.
     #[requires(self.id() == frag.id())]
-    #[ensures(self@.get(&frag@.0) == Some(&frag@.1))]
+    #[ensures(self@.lookup(frag@.0) == Some(frag@.1))]
     #[check(ghost)]
     #[allow(unused_variables)]
     pub fn contains(&self, frag: &Fragment<K, V>) {
         let new_resource = self.0.join_shared(&frag.0);
-        proof_assert!(new_resource@.frag().get(&frag@.0) == Some(&Ag(frag@.1)));
+        proof_assert!(new_resource@.frag().lookup(frag@.0) == Some(Ag(frag@.1)));
     }
 }
 impl<K, V> Fragment<K, V> {

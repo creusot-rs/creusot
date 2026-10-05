@@ -16,11 +16,11 @@ module M_complicated_identity
   
   function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
-  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = lookup_K self k <> None
   
   meta "rewrite_def" predicate contains_K
   
@@ -35,11 +35,7 @@ module M_complicated_identity
       | None -> any_V
       end
   
-  function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_V = unwrap_Option_V (get_K self k)
-  
-  meta "rewrite_def" function lookup_K
-  
-  function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = lookup_K self key
+  function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = unwrap_Option_V (lookup_K self key)
   
   meta "rewrite_def" function index_FMap_K_V
   
@@ -68,7 +64,7 @@ module M_complicated_identity
   
   axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
   
-  predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
+  predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. lookup_K self k = lookup_K other k
   
   axiom ext_eq_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V [self = other]. ext_eq_K self other = (self = other)
   
@@ -102,16 +98,14 @@ module M_complicated_identity
   
   function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V
   
-  type t_Option_ref_V = None'0 | Some'0 t_V
-  
   let into_iter_FMap_K_V (self: t_FMap_K_V) (return (x: t_Iter_K_V)) =
   {[@stop_split] [@expl:into_iter 'self' type invariant] inv_FMap_K_V self}
     any
     [ return (result: t_Iter_K_V) ->
     {[@stop_split] [@expl:into_iter_FMap_K_V ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_K_V result)
       /\ ([@stop_split] [@expl:into_iter ensures #0] len_K (view_Iter_K_V result) = len_K self)
-      /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (get_K self k = Some'0 v)
-        = (get_K (view_Iter_K_V result) k = Some'0 v))}
+      /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (lookup_K self k = Some v)
+        = (lookup_K (view_Iter_K_V result) k = Some v))}
       (! return {result}) ]
   
   type tup2_K_V = { f0: t_K; f1: t_V }
@@ -125,7 +119,7 @@ module M_complicated_identity
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
-  type t_Option_tup2_K_V = None'1 | Some'1 tup2_K_V
+  type t_Option_tup2_K_V = None'0 | Some'0 tup2_K_V
   
   predicate invariant_refmut_Iter_K_V [@inline:trivial] (self: MutBorrow.t t_Iter_K_V) =
     inv_Iter_K_V self.current /\ inv_Iter_K_V self.final
@@ -144,27 +138,20 @@ module M_complicated_identity
   
   axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_tup2_K_V [inv_Option_tup2_K_V _1]. inv_Option_tup2_K_V _1
       = match _1 with
-        | None'1 -> true
-        | Some'1 f0'0 -> inv_tup2_K_V f0'0
+        | None'0 -> true
+        | Some'0 f0'0 -> inv_tup2_K_V f0'0
         end
   
-  type t_Option_ref_tup2_K_V = None'2 | Some'2 tup2_K_V
-  
-  function get_logic_ref_tup2_K_V (self: Seq.seq tup2_K_V) (ix: int) : t_Option_ref_tup2_K_V = if 0 <= ix
-    /\ ix < Seq.length self then
-      Some'2 (Seq.get self ix)
-    else
-      None'2
-  
+  type t_Option_ref_tup2_K_V = None'1 | Some'1 tup2_K_V
   
   predicate produces_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_K_V) (o: t_Iter_K_V) =
     (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
         -> (Seq.get visited i).f0 <> (Seq.get visited j).f0)
-    /\ (forall k: t_K, v: t_V, i: int. get_logic_ref_tup2_K_V visited i = Some'2 { f0 = k; f1 = v }
-        -> not contains_K (view_Iter_K_V o) k /\ get_K (view_Iter_K_V self) k = Some'0 v)
+    /\ (forall k: t_K, v: t_V, i: int. (if 0 <= i /\ i < Seq.length visited then Some'1 (Seq.get visited i) else None'1)
+          = Some'1 { f0 = k; f1 = v } -> not contains_K (view_Iter_K_V o) k /\ lookup_K (view_Iter_K_V self) k = Some v)
     /\ len_K (view_Iter_K_V self) = Seq.length visited + len_K (view_Iter_K_V o)
     /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0 <> k)
-      -> get_K (view_Iter_K_V o) k = get_K (view_Iter_K_V self) k)
+      -> lookup_K (view_Iter_K_V o) k = lookup_K (view_Iter_K_V self) k)
   
   function produces_trans_Iter_K_V (a: t_Iter_K_V) (ab: Seq.seq tup2_K_V) (b: t_Iter_K_V) (bc: Seq.seq tup2_K_V) (c: t_Iter_K_V) : ()
   
@@ -192,8 +179,8 @@ module M_complicated_identity
     [ return (result: t_Option_tup2_K_V) ->
     {[@stop_split] [@expl:next_Iter_K_V ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_tup2_K_V result)
       /\ ([@stop_split] [@expl:next ensures] match result with
-        | None'1 -> completed_Iter_K_V self
-        | Some'1 {f0 = k; f1 = v} -> produces_Iter_K_V self.current (Seq.singleton { f0 = k; f1 = v }) self.final
+        | None'0 -> completed_Iter_K_V self
+        | Some'0 {f0 = k; f1 = v} -> produces_Iter_K_V self.current (Seq.singleton { f0 = k; f1 = v }) self.final
         /\ view_Iter_K_V self.current = add_K (view_Iter_K_V self.final) k v
         end)}
       (! return {result}) ]
@@ -220,9 +207,9 @@ module M_complicated_identity
   meta "rewrite_def" predicate inv_Seq_tup2_K_V
   
   let elim_Some (_x: t_Option_tup2_K_V) (return (f0'0: tup2_K_V)) = any
-    [ _k (f0'0: tup2_K_V) -> {Some'1 f0'0 = _x} (! return {f0'0})
+    [ _k (f0'0: tup2_K_V) -> {Some'0 f0'0 = _x} (! return {f0'0})
     | _chk -> (! {[@expl:elim Some] match _x with
-        | Some'1 _ -> true
+        | Some'0 _ -> true
         | _ -> false
         end}
       any) ]
@@ -252,7 +239,7 @@ module M_complicated_identity
     [ return (result: t_Option_V) ->
     {[@stop_split] [@expl:insert_K ensures] ([@stop_split] [@expl:insert result type invariant] inv_Option_V result)
       /\ ([@stop_split] [@expl:insert ensures #0] self.final = add_K self.current key value)
-      /\ ([@stop_split] [@expl:insert ensures #1] result = get_K self.current key)}
+      /\ ([@stop_split] [@expl:insert ensures #1] result = lookup_K self.current key)}
       (! return {result}) ]
   
   predicate resolve_V (_1: t_V)
@@ -265,16 +252,10 @@ module M_complicated_identity
         | Some x0 -> resolve_V x0
         end
   
-  predicate resolve_ref_K [@inline:trivial] (_1: t_K) = true
-  
-  meta "rewrite_def" predicate resolve_ref_K
-  
-  predicate resolve_ref_V [@inline:trivial] (_1: t_V) = true
-  
-  meta "rewrite_def" predicate resolve_ref_V
+  predicate resolve_K (_1: t_K)
   
   predicate resolve_FMap_K_V (self: t_FMap_K_V) =
-    forall k: t_K, v: t_V. get_K self k = Some'0 v -> resolve_ref_K k /\ resolve_ref_V v
+    forall k: t_K, v: t_V. lookup_K self k = Some v -> resolve_K k /\ resolve_V v
   
   predicate resolve_FMap_K_V'0 (_1: t_FMap_K_V)
   
@@ -319,8 +300,8 @@ module M_complicated_identity
         {[@expl:inferred invariant: type invariant] inv_FMap_K_V result}
         {[@expl:for invariant] inv_Seq_tup2_K_V produced}
         {[@expl:for invariant] produces_Iter_K_V iter_old produced iter}
-        {[@expl:loop invariant] forall k'0: t_K, v'0: t_V. (get_K m_snap k'0 = Some'0 v'0)
-          = (get_K result k'0 = Some'0 v'0 \/ get_K (view_Iter_K_V iter) k'0 = Some'0 v'0)}
+        {[@expl:loop invariant] forall k'0: t_K, v'0: t_V. (lookup_K m_snap k'0 = Some v'0)
+          = (lookup_K result k'0 = Some v'0 \/ lookup_K (view_Iter_K_V iter) k'0 = Some v'0)}
         (! [ &variant_old_bb8 <- len_K (view_Iter_K_V iter) ] s0)
         [ s0 = MutBorrow.borrow_mut <t_Iter_K_V> {iter}
             (fun (_bor: MutBorrow.t t_Iter_K_V) ->
@@ -334,7 +315,7 @@ module M_complicated_identity
         | s2 = next_Iter_K_V {_36} (fun (_x: t_Option_tup2_K_V) -> [ &_35 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_K_V _37} any) ]
         | s4 = -{resolve_refmut_Iter_K_V _37}- s5
-        | s5 = any [ br0 -> {_35 = None'1} (! bb13) | br1 (x0: tup2_K_V) -> {_35 = Some'1 x0} (! bb14) ] ]
+        | s5 = any [ br0 -> {_35 = None'0} (! bb13) | br1 (x0: tup2_K_V) -> {_35 = Some'0 x0} (! bb14) ] ]
         [ bb14 = s0
           [ s0 = elim_Some {_35} (fun (r0: tup2_K_V) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
@@ -399,9 +380,9 @@ module M_merge_fmaps
   
   function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
   function index_Mapping_tup2_V_V_V [@inline:trivial] (self: Map.map tup2_V_V t_V) (a: tup2_V_V) : t_V = Map.get self a
   
@@ -410,15 +391,15 @@ module M_merge_fmaps
   function merge_K (self: t_FMap_K_V) (m: t_FMap_K_V) (f: Map.map tup2_V_V t_V) : t_FMap_K_V
   
   axiom merge_K_spec:
-    forall self: t_FMap_K_V, m: t_FMap_K_V, f: Map.map tup2_V_V t_V [merge_K self m f]. forall k: t_K [get_K (merge_K self m f) k]. match { f0'0 = get_K self k;
-                                                                                                                                            f1'0 = get_K m k } with
-          | {f0'0 = None; f1'0 = y} -> get_K (merge_K self m f) k = y
-          | {f0'0 = x; f1'0 = None} -> get_K (merge_K self m f) k = x
-          | {f0'0 = Some x; f1'0 = Some y} -> get_K (merge_K self m f) k
+    forall self: t_FMap_K_V, m: t_FMap_K_V, f: Map.map tup2_V_V t_V [merge_K self m f]. forall k: t_K [lookup_K (merge_K self m f) k]. match { f0'0 = lookup_K self k;
+                                                                                                                                               f1'0 = lookup_K m k } with
+          | {f0'0 = None; f1'0 = y} -> lookup_K (merge_K self m f) k = y
+          | {f0'0 = x; f1'0 = None} -> lookup_K (merge_K self m f) k = x
+          | {f0'0 = Some x; f1'0 = Some y} -> lookup_K (merge_K self m f) k
           = Some (index_Mapping_tup2_V_V_V f { f0 = x; f1 = y })
           end
   
-  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = lookup_K self k <> None
   
   meta "rewrite_def" predicate contains_K
   
@@ -433,11 +414,7 @@ module M_merge_fmaps
       | None -> any_V
       end
   
-  function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_V = unwrap_Option_V (get_K self k)
-  
-  meta "rewrite_def" function lookup_K
-  
-  function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = lookup_K self key
+  function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = unwrap_Option_V (lookup_K self key)
   
   meta "rewrite_def" function index_FMap_K_V
   
@@ -480,16 +457,14 @@ module M_merge_fmaps
   
   function view_Iter_K_V (self: t_Iter_K_V) : t_FMap_K_V
   
-  type t_Option_ref_V = None'0 | Some'0 t_V
-  
   let into_iter_FMap_K_V (self: t_FMap_K_V) (return (x: t_Iter_K_V)) =
   {[@stop_split] [@expl:into_iter 'self' type invariant] inv_FMap_K_V self}
     any
     [ return (result: t_Iter_K_V) ->
     {[@stop_split] [@expl:into_iter_FMap_K_V ensures] ([@stop_split] [@expl:into_iter result type invariant] inv_Iter_K_V result)
       /\ ([@stop_split] [@expl:into_iter ensures #0] len_K (view_Iter_K_V result) = len_K self)
-      /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (get_K self k = Some'0 v)
-        = (get_K (view_Iter_K_V result) k = Some'0 v))}
+      /\ ([@stop_split] [@expl:into_iter ensures #1] forall k: t_K, v: t_V. (lookup_K self k = Some v)
+        = (lookup_K (view_Iter_K_V result) k = Some v))}
       (! return {result}) ]
   
   type tup2_K_V = { f0'1: t_K; f1'1: t_V }
@@ -503,7 +478,7 @@ module M_merge_fmaps
   
   meta "rewrite_def" predicate well_founded_relation_Int
   
-  type t_Option_tup2_K_V = None'1 | Some'1 tup2_K_V
+  type t_Option_tup2_K_V = None'0 | Some'0 tup2_K_V
   
   predicate invariant_refmut_Iter_K_V [@inline:trivial] (self: MutBorrow.t t_Iter_K_V) =
     inv_Iter_K_V self.current /\ inv_Iter_K_V self.final
@@ -522,27 +497,21 @@ module M_merge_fmaps
   
   axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_tup2_K_V [inv_Option_tup2_K_V _1]. inv_Option_tup2_K_V _1
       = match _1 with
-        | None'1 -> true
-        | Some'1 f0'2 -> inv_tup2_K_V f0'2
+        | None'0 -> true
+        | Some'0 f0'2 -> inv_tup2_K_V f0'2
         end
   
-  type t_Option_ref_tup2_K_V = None'2 | Some'2 tup2_K_V
-  
-  function get_logic_ref_tup2_K_V (self: Seq.seq tup2_K_V) (ix: int) : t_Option_ref_tup2_K_V = if 0 <= ix
-    /\ ix < Seq.length self then
-      Some'2 (Seq.get self ix)
-    else
-      None'2
-  
+  type t_Option_ref_tup2_K_V = None'1 | Some'1 tup2_K_V
   
   predicate produces_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_K_V) (o: t_Iter_K_V) =
     (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited
         -> (Seq.get visited i).f0'1 <> (Seq.get visited j).f0'1)
-    /\ (forall k: t_K, v: t_V, i: int. get_logic_ref_tup2_K_V visited i = Some'2 { f0'1 = k; f1'1 = v }
-        -> not contains_K (view_Iter_K_V o) k /\ get_K (view_Iter_K_V self) k = Some'0 v)
+    /\ (forall k: t_K, v: t_V, i: int. (if 0 <= i /\ i < Seq.length visited then Some'1 (Seq.get visited i) else None'1)
+          = Some'1 { f0'1 = k; f1'1 = v }
+        -> not contains_K (view_Iter_K_V o) k /\ lookup_K (view_Iter_K_V self) k = Some v)
     /\ len_K (view_Iter_K_V self) = Seq.length visited + len_K (view_Iter_K_V o)
     /\ (forall k: t_K. (forall i: int. 0 <= i /\ i < Seq.length visited -> (Seq.get visited i).f0'1 <> k)
-      -> get_K (view_Iter_K_V o) k = get_K (view_Iter_K_V self) k)
+      -> lookup_K (view_Iter_K_V o) k = lookup_K (view_Iter_K_V self) k)
   
   function produces_trans_Iter_K_V (a: t_Iter_K_V) (ab: Seq.seq tup2_K_V) (b: t_Iter_K_V) (bc: Seq.seq tup2_K_V) (c: t_Iter_K_V) : ()
   
@@ -554,7 +523,7 @@ module M_merge_fmaps
   
   axiom produces_refl_Iter_K_V_spec: forall self: t_Iter_K_V. produces_Iter_K_V self (Seq.empty: Seq.seq tup2_K_V) self
   
-  predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
+  predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. lookup_K self k = lookup_K other k
   
   axiom ext_eq_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V [self = other]. ext_eq_K self other = (self = other)
   
@@ -584,8 +553,8 @@ module M_merge_fmaps
     [ return (result: t_Option_tup2_K_V) ->
     {[@stop_split] [@expl:next_Iter_K_V ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_tup2_K_V result)
       /\ ([@stop_split] [@expl:next ensures] match result with
-        | None'1 -> completed_Iter_K_V self
-        | Some'1 {f0'1 = k; f1'1 = v} -> produces_Iter_K_V self.current (Seq.singleton { f0'1 = k;
+        | None'0 -> completed_Iter_K_V self
+        | Some'0 {f0'1 = k; f1'1 = v} -> produces_Iter_K_V self.current (Seq.singleton { f0'1 = k;
                                                                                          f1'1 = v }) self.final
         /\ view_Iter_K_V self.current = add_K (view_Iter_K_V self.final) k v
         end)}
@@ -613,9 +582,9 @@ module M_merge_fmaps
   meta "rewrite_def" predicate inv_Seq_tup2_K_V
   
   let elim_Some (_x: t_Option_tup2_K_V) (return (f0'2: tup2_K_V)) = any
-    [ _k (f0'2: tup2_K_V) -> {Some'1 f0'2 = _x} (! return {f0'2})
+    [ _k (f0'2: tup2_K_V) -> {Some'0 f0'2 = _x} (! return {f0'2})
     | _chk -> (! {[@expl:elim Some] match _x with
-        | Some'1 _ -> true
+        | Some'0 _ -> true
         | _ -> false
         end}
       any) ]
@@ -645,7 +614,7 @@ module M_merge_fmaps
     [ return (result: t_Option_V) ->
     {[@stop_split] [@expl:insert_K ensures] ([@stop_split] [@expl:insert result type invariant] inv_Option_V result)
       /\ ([@stop_split] [@expl:insert ensures #0] self.final = add_K self.current key value)
-      /\ ([@stop_split] [@expl:insert ensures #1] result = get_K self.current key)}
+      /\ ([@stop_split] [@expl:insert ensures #1] result = lookup_K self.current key)}
       (! return {result}) ]
   
   predicate resolve_V (_1: t_V)
@@ -658,16 +627,10 @@ module M_merge_fmaps
         | Some x0 -> resolve_V x0
         end
   
-  predicate resolve_ref_K [@inline:trivial] (_1: t_K) = true
-  
-  meta "rewrite_def" predicate resolve_ref_K
-  
-  predicate resolve_ref_V [@inline:trivial] (_1: t_V) = true
-  
-  meta "rewrite_def" predicate resolve_ref_V
+  predicate resolve_K (_1: t_K)
   
   predicate resolve_FMap_K_V (self: t_FMap_K_V) =
-    forall k: t_K, v: t_V. get_K self k = Some'0 v -> resolve_ref_K k /\ resolve_ref_V v
+    forall k: t_K, v: t_V. lookup_K self k = Some v -> resolve_K k /\ resolve_V v
   
   predicate resolve_FMap_K_V'0 (_1: t_FMap_K_V)
   
@@ -726,7 +689,7 @@ module M_merge_fmaps
         | s2 = next_Iter_K_V {_39} (fun (_x: t_Option_tup2_K_V) -> [ &_38 <- _x ] s3)
         | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Iter_K_V _40} any) ]
         | s4 = -{resolve_refmut_Iter_K_V _40}- s5
-        | s5 = any [ br0 -> {_38 = None'1} (! bb12) | br1 (x0: tup2_K_V) -> {_38 = Some'1 x0} (! bb13) ] ]
+        | s5 = any [ br0 -> {_38 = None'0} (! bb12) | br1 (x0: tup2_K_V) -> {_38 = Some'0 x0} (! bb13) ] ]
         [ bb13 = s0
           [ s0 = elim_Some {_38} (fun (r0: tup2_K_V) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
           | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2

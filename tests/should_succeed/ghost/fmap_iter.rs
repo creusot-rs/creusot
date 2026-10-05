@@ -10,7 +10,7 @@ pub fn complicated_identity<K, V>(m: Ghost<FMap<K, V>>) -> Ghost<FMap<K, V>> {
         let m_snap = snapshot!(m);
 
         #[variant(iter@.len())]
-        #[invariant(forall<k, v> (m_snap.get(k) == Some(v)) == (result.get(k) == Some(v) || iter@.get(k) == Some(v)))]
+        #[invariant(forall<k, v> (m_snap.lookup(k) == Some(v)) == (result.lookup(k) == Some(v) || iter@.lookup(k) == Some(v)))]
         for (k, v) in m.into_inner() {
             result.insert(k, v);
         }

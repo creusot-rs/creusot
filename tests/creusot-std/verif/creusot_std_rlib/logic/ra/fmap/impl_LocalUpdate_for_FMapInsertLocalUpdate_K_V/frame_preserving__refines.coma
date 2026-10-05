@@ -21,34 +21,32 @@ type t_Option_V = None'0 | Some'0 t_V
 
 function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
 
-function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
 
-meta "rewrite_def" function get_K
-
-type t_Option_ref_V = None'1 | Some'1 t_V
+meta "rewrite_def" function lookup_K
 
 predicate premise_FMapInsertLocalUpdate_K_V [@inline:trivial] (self: t_FMapInsertLocalUpdate_K_V) (from_auth: t_FMap_K_V) (_3: t_FMap_K_V) =
-  get_K from_auth self.f0 = None'1
+  lookup_K from_auth self.f0 = None'0
 
 meta "rewrite_def" predicate premise_FMapInsertLocalUpdate_K_V
 
-type t_Option_Option_FMap_K_V = None'2 | Some'2 t_Option_FMap_K_V
+type t_Option_Option_FMap_K_V = None'1 | Some'1 t_Option_FMap_K_V
 
 type tup2_Option_FMap_K_V_Option_FMap_K_V = { f0'0: t_Option_FMap_K_V; f1'0: t_Option_FMap_K_V }
 
 function map_Option_FMap_K_V (self: t_Option_FMap_K_V) (f: Map.map t_FMap_K_V t_Option_FMap_K_V) : t_Option_Option_FMap_K_V
  = match self with
-    | None -> None'2
-    | Some x -> Some'2 (Map.get f x)
+    | None -> None'1
+    | Some x -> Some'1 (Map.get f x)
     end
 
-type t_Option_Option_V = None'3 | Some'3 t_Option_V
+type t_Option_Option_V = None'2 | Some'2 t_Option_V
 
 type tup2_Option_V_Option_V = { f0'1: t_Option_V; f1'1: t_Option_V }
 
 function map_Option_V (self: t_Option_V) (f: Map.map t_V t_Option_V) : t_Option_Option_V = match self with
-    | None'0 -> None'3
-    | Some'0 x -> Some'3 (Map.get f x)
+    | None'0 -> None'2
+    | Some'0 x -> Some'2 (Map.get f x)
     end
 
 function op_V (self: t_V) (other: t_V) : t_Option_V
@@ -82,8 +80,8 @@ axiom incl_op_V_spec: forall self: t_V, other: t_V, comb: t_V. op_V self other =
 
 function op_Option_V (self: t_Option_V) (other: t_Option_V) : t_Option_Option_V = match { f0'1 = self;
                                                                                           f1'1 = other } with
-    | {f0'1 = None'0} -> Some'3 other
-    | {f1'1 = None'0} -> Some'3 self
+    | {f0'1 = None'0} -> Some'2 other
+    | {f1'1 = None'0} -> Some'2 self
     | {f0'1 = Some'0 x; f1'1 = Some'0 y} -> map_Option_V (op_V x y) (fun (z: t_V) -> Some'0 z)
     end
 
@@ -100,11 +98,11 @@ meta "rewrite_def" function index_Mapping_tup2_V_V_V
 function merge_K (self: t_FMap_K_V) (m: t_FMap_K_V) (f: Map.map tup2_V_V t_V) : t_FMap_K_V
 
 axiom merge_K_spec:
-  forall self: t_FMap_K_V, m: t_FMap_K_V, f: Map.map tup2_V_V t_V [merge_K self m f]. forall k: t_K [get_K (merge_K self m f) k]. match { f0'1 = get_K self k;
-                                                                                                                                          f1'1 = get_K m k } with
-        | {f0'1 = None'0; f1'1 = y} -> get_K (merge_K self m f) k = y
-        | {f0'1 = x; f1'1 = None'0} -> get_K (merge_K self m f) k = x
-        | {f0'1 = Some'0 x; f1'1 = Some'0 y} -> get_K (merge_K self m f) k
+  forall self: t_FMap_K_V, m: t_FMap_K_V, f: Map.map tup2_V_V t_V [merge_K self m f]. forall k: t_K [lookup_K (merge_K self m f) k]. match { f0'1 = lookup_K self k;
+                                                                                                                                             f1'1 = lookup_K m k } with
+        | {f0'1 = None'0; f1'1 = y} -> lookup_K (merge_K self m f) k = y
+        | {f0'1 = x; f1'1 = None'0} -> lookup_K (merge_K self m f) k = x
+        | {f0'1 = Some'0 x; f1'1 = Some'0 y} -> lookup_K (merge_K self m f) k
         = Some'0 (index_Mapping_tup2_V_V_V f { f0'2 = x; f1'2 = y })
         end
 
@@ -126,12 +124,16 @@ function total_op_K (self: t_FMap_K_V) (other: t_FMap_K_V) : t_FMap_K_V =
     end)
 
 axiom total_op_K_spec:
-  forall self: t_FMap_K_V, other: t_FMap_K_V [total_op_K self other]. (forall k: t_K. op_Option_V (get_K self k) (get_K other k)
-        <> None'3)
-    -> (forall k: t_K. Some'3 (get_K (total_op_K self other) k) = op_Option_V (get_K self k) (get_K other k))
+  forall self: t_FMap_K_V, other: t_FMap_K_V [total_op_K self other]. (forall k: t_K. op_Option_V (lookup_K self k) (lookup_K other k)
+        <> None'2)
+    -> (forall k: t_K. Some'2 (lookup_K (total_op_K self other) k) = op_Option_V (lookup_K self k) (lookup_K other k))
 
 function op_FMap_K_V (self: t_FMap_K_V) (other: t_FMap_K_V) : t_Option_FMap_K_V =
-  if forall k: t_K. op_Option_V (get_K self k) (get_K other k) <> None'3 then Some (total_op_K self other) else None
+  if forall k: t_K. op_Option_V (lookup_K self k) (lookup_K other k) <> None'2 then
+    Some (total_op_K self other)
+  else
+    None
+
 
 function commutative_FMap_K_V (a: t_FMap_K_V) (b: t_FMap_K_V) : () = ()
 
@@ -139,8 +141,8 @@ axiom commutative_FMap_K_V_spec: forall a: t_FMap_K_V, b: t_FMap_K_V. op_FMap_K_
 
 function op_Option_FMap_K_V (self: t_Option_FMap_K_V) (other: t_Option_FMap_K_V) : t_Option_Option_FMap_K_V =
   match { f0'0 = self; f1'0 = other } with
-    | {f0'0 = None} -> Some'2 other
-    | {f1'0 = None} -> Some'2 self
+    | {f0'0 = None} -> Some'1 other
+    | {f1'0 = None} -> Some'1 self
     | {f0'0 = Some x; f1'0 = Some y} -> map_Option_FMap_K_V (op_FMap_K_V x y) (fun (z: t_FMap_K_V) -> Some z)
     end
 
@@ -159,7 +161,7 @@ function len_K (self: t_FMap_K_V) : int
 
 axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
 
-predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None'0
+predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = lookup_K self k <> None'0
 
 meta "rewrite_def" predicate contains_K
 
@@ -182,10 +184,10 @@ meta "select_lsinst" "all"
 
 goal refines:
   forall self: t_FMapInsertLocalUpdate_K_V, from_auth: t_FMap_K_V, from_frag: t_FMap_K_V, frame: t_Option_FMap_K_V. premise_FMapInsertLocalUpdate_K_V self from_auth from_frag
-    -> op_Option_FMap_K_V (Some from_frag) frame = Some'2 (Some from_auth)
+    -> op_Option_FMap_K_V (Some from_frag) frame = Some'1 (Some from_auth)
     -> premise_FMapInsertLocalUpdate_K_V self from_auth from_frag
-    /\ op_Option_FMap_K_V (Some from_frag) frame = Some'2 (Some from_auth)
+    /\ op_Option_FMap_K_V (Some from_frag) frame = Some'1 (Some from_auth)
     /\ (forall result: (). (let {f0'3 = to_auth; f1'3 = to_frag} = update_FMapInsertLocalUpdate_K_V self from_auth from_frag in op_Option_FMap_K_V (Some to_frag) frame
-        = Some'2 (Some to_auth))
+        = Some'1 (Some to_auth))
       -> (let {f0'3 = to_auth; f1'3 = to_frag} = update_FMapInsertLocalUpdate_K_V self from_auth from_frag in op_Option_FMap_K_V (Some to_frag) frame
-      = Some'2 (Some to_auth)))
+      = Some'1 (Some to_auth)))

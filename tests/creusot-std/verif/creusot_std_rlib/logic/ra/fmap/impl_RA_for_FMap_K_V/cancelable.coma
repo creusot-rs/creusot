@@ -68,9 +68,9 @@ type t_K
 
 function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
 
-function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
 
-meta "rewrite_def" function get_K
+meta "rewrite_def" function lookup_K
 
 type tup2_V_V = { f0'0: t_V; f1'0: t_V }
 
@@ -81,11 +81,11 @@ meta "rewrite_def" function index_Mapping_tup2_V_V_V
 function merge_K (self: t_FMap_K_V) (m: t_FMap_K_V) (f: Map.map tup2_V_V t_V) : t_FMap_K_V
 
 axiom merge_K_spec:
-  forall self: t_FMap_K_V, m: t_FMap_K_V, f: Map.map tup2_V_V t_V [merge_K self m f]. forall k: t_K [get_K (merge_K self m f) k]. match { f0 = get_K self k;
-                                                                                                                                          f1 = get_K m k } with
-        | {f0 = None'0; f1 = y} -> get_K (merge_K self m f) k = y
-        | {f0 = x; f1 = None'0} -> get_K (merge_K self m f) k = x
-        | {f0 = Some'0 x; f1 = Some'0 y} -> get_K (merge_K self m f) k
+  forall self: t_FMap_K_V, m: t_FMap_K_V, f: Map.map tup2_V_V t_V [merge_K self m f]. forall k: t_K [lookup_K (merge_K self m f) k]. match { f0 = lookup_K self k;
+                                                                                                                                             f1 = lookup_K m k } with
+        | {f0 = None'0; f1 = y} -> lookup_K (merge_K self m f) k = y
+        | {f0 = x; f1 = None'0} -> lookup_K (merge_K self m f) k = x
+        | {f0 = Some'0 x; f1 = Some'0 y} -> lookup_K (merge_K self m f) k
         = Some'0 (index_Mapping_tup2_V_V_V f { f0'0 = x; f1'0 = y })
         end
 
@@ -107,12 +107,16 @@ function total_op_K (self: t_FMap_K_V) (other: t_FMap_K_V) : t_FMap_K_V =
     end)
 
 axiom total_op_K_spec:
-  forall self: t_FMap_K_V, other: t_FMap_K_V [total_op_K self other]. (forall k: t_K. op_Option_V (get_K self k) (get_K other k)
+  forall self: t_FMap_K_V, other: t_FMap_K_V [total_op_K self other]. (forall k: t_K. op_Option_V (lookup_K self k) (lookup_K other k)
         <> None'1)
-    -> (forall k: t_K. Some'1 (get_K (total_op_K self other) k) = op_Option_V (get_K self k) (get_K other k))
+    -> (forall k: t_K. Some'1 (lookup_K (total_op_K self other) k) = op_Option_V (lookup_K self k) (lookup_K other k))
 
 function op_FMap_K_V (self: t_FMap_K_V) (other: t_FMap_K_V) : t_Option_FMap_K_V =
-  if forall k: t_K. op_Option_V (get_K self k) (get_K other k) <> None'1 then Some (total_op_K self other) else None
+  if forall k: t_K. op_Option_V (lookup_K self k) (lookup_K other k) <> None'1 then
+    Some (total_op_K self other)
+  else
+    None
+
 
 predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
 
@@ -145,11 +149,11 @@ function unwrap_Option_FMap_K_V (self: t_Option_FMap_K_V) : t_FMap_K_V = match s
     | None -> any_FMap_K_V
     end
 
-predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. get_K self k = get_K other k
+predicate ext_eq_K (self: t_FMap_K_V) (other: t_FMap_K_V) = forall k: t_K. lookup_K self k = lookup_K other k
 
 axiom ext_eq_K_spec: forall self: t_FMap_K_V, other: t_FMap_K_V [self = other]. ext_eq_K self other = (self = other)
 
-predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None'0
+predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = lookup_K self k <> None'0
 
 meta "rewrite_def" predicate contains_K
 
@@ -190,7 +194,7 @@ predicate cancelable_FMap_K_V (self: t_FMap_K_V)
 
 goal vc_cancelable_FMap_K_V: if forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
     -> op_FMap_K_V self x = op_FMap_K_V self y -> x = y then
-    (forall k: t_K. match get_K self k with
+    (forall k: t_K. match lookup_K self k with
           | None'0 -> true
           | Some'0 v -> forall x: t_Option_V, y: t_Option_V. if op_Option_V (Some'0 v) x <> None'1 then
               if op_Option_V (Some'0 v) x = op_Option_V (Some'0 v) y then
@@ -234,7 +238,7 @@ goal vc_cancelable_FMap_K_V: if forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V
               true
           
           end)
-    /\ (forall k: t_K. match get_K self k with
+    /\ (forall k: t_K. match lookup_K self k with
           | None'0 -> true
           | Some'0 v -> forall x: t_Option_V, y: t_Option_V. op_Option_V (Some'0 v) x <> None'1
             -> op_Option_V (Some'0 v) x = op_Option_V (Some'0 v) y
@@ -247,26 +251,26 @@ goal vc_cancelable_FMap_K_V: if forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V
               end in let opx = unwrap_Option_FMap_K_V (op_FMap_K_V self fx) in let opy = unwrap_Option_FMap_K_V (op_FMap_K_V self fy) in ext_eq_K opx opy
             /\ (opx = opy -> fx = fy))
           end)
-    && (if forall k: t_K. cancelable_Option_V (get_K self k) then
+    && (if forall k: t_K. cancelable_Option_V (lookup_K self k) then
       (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
           -> op_FMap_K_V self x = op_FMap_K_V self y -> ext_eq_K x y)
-      && ([@stop_split] [@expl:cancelable ensures] (forall k: t_K. cancelable_Option_V (get_K self k))
+      && ([@stop_split] [@expl:cancelable ensures] (forall k: t_K. cancelable_Option_V (lookup_K self k))
       = (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
         -> op_FMap_K_V self x = op_FMap_K_V self y -> x = y))
     else
-      [@stop_split] [@expl:cancelable ensures] (forall k: t_K. cancelable_Option_V (get_K self k))
+      [@stop_split] [@expl:cancelable ensures] (forall k: t_K. cancelable_Option_V (lookup_K self k))
       = (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
         -> op_FMap_K_V self x = op_FMap_K_V self y -> x = y)
     )
   else
-    if forall k: t_K. cancelable_Option_V (get_K self k) then
+    if forall k: t_K. cancelable_Option_V (lookup_K self k) then
       (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
           -> op_FMap_K_V self x = op_FMap_K_V self y -> ext_eq_K x y)
-      && ([@stop_split] [@expl:cancelable ensures] (forall k: t_K. cancelable_Option_V (get_K self k))
+      && ([@stop_split] [@expl:cancelable ensures] (forall k: t_K. cancelable_Option_V (lookup_K self k))
       = (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
         -> op_FMap_K_V self x = op_FMap_K_V self y -> x = y))
     else
-      [@stop_split] [@expl:cancelable ensures] (forall k: t_K. cancelable_Option_V (get_K self k))
+      [@stop_split] [@expl:cancelable ensures] (forall k: t_K. cancelable_Option_V (lookup_K self k))
       = (forall x: t_FMap_K_V, y: t_FMap_K_V. op_FMap_K_V self x <> None
         -> op_FMap_K_V self x = op_FMap_K_V self y -> x = y)
   

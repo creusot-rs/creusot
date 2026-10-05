@@ -58,7 +58,7 @@ pub mod implementation {
             pearlite! {
                 // We indeed have the corresponding fragment of the invariant
                 self.frag.id() == self.inv@.public()
-                && self.frag@.get_logic(*self.permcell@) != None
+                && self.frag@.lookup(*self.permcell@) != None
                 && self.inv@.namespace() == PARRAY()
             }
         }
@@ -73,7 +73,7 @@ pub mod implementation {
         type ViewTy = Seq<T>;
         #[logic(inline)]
         fn view(self) -> Seq<T> {
-            pearlite! { self.frag@.get_logic(*self.permcell@).unwrap_logic().0 }
+            pearlite! { self.frag@.lookup(*self.permcell@).unwrap_logic().0 }
         }
     }
 
@@ -255,7 +255,7 @@ pub mod implementation {
         #[ensures((^pa).partial_invariant())]
         #[ensures((^pa).auth == pa.auth)]
         #[ensures(forall<id: Snapshot<_>> pa.depth[*id] > pa.depth[*cur@] ==>
-            pa.perms.get(&id) == (^pa).perms.get(&id) && pa.depth[*id] == (^pa).depth[*id])]
+            pa.perms.lookup(id) == (^pa).perms.lookup(id) && pa.depth[*id] == (^pa).depth[*id])]
         #[ensures(forall<id> (^pa).perms.contains(id) == pa.perms.contains(id))]
         #[ensures(match (^pa).perms[Snapshot::new(*cur@)].val() {
             Inner::Direct(_) => true,

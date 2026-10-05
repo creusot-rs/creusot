@@ -19,11 +19,11 @@ type t_Option_V = None'0 | Some'0 t_V
 
 function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
 
-function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
 
-meta "rewrite_def" function get_K
+meta "rewrite_def" function lookup_K
 
-predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None'0
+predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = lookup_K self k <> None'0
 
 meta "rewrite_def" predicate contains_K
 
@@ -47,11 +47,7 @@ function unwrap_Option_V (self: t_Option_V) : t_V = match self with
     | None'0 -> any_V
     end
 
-function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_V = unwrap_Option_V (get_K self k)
-
-meta "rewrite_def" function lookup_K
-
-function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = lookup_K self key
+function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = unwrap_Option_V (lookup_K self key)
 
 meta "rewrite_def" function index_FMap_K_V
 
@@ -96,13 +92,13 @@ axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_ref_V [inv_Option_ref_V _1]. i
       | Some f0 -> inv_ref_V f0
       end
 
-let get_K'0 (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
+let get_K (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
 {[@stop_split] [@expl:get_K requires] ([@stop_split] [@expl:get 'self' type invariant] inv_ref_FMap_K_V self)
   /\ ([@stop_split] [@expl:get 'key' type invariant] inv_ref_K key)}
   any
   [ return (result: t_Option_ref_V) ->
   {[@stop_split] [@expl:get_K ensures] ([@stop_split] [@expl:get result type invariant] inv_Option_ref_V result)
-    /\ ([@stop_split] [@expl:get ensures] result = get_K self key)}
+    /\ ([@stop_split] [@expl:get ensures] result = lookup_K self key)}
     (! return {result}) ]
 
 let unwrap_ref_V (self: t_Option_ref_V) (return (x: t_V)) =
@@ -124,7 +120,7 @@ let index_FMap_K_V'0 (self: t_FMap_K_V) (key: t_K) (return (x: t_V)) =
   /\ ([@stop_split] [@expl:index requires] contains_K self key)}
   (! bb0
   [ bb0 = s0
-    [ s0 = get_K'0 {self} {key} (fun (_x: t_Option_ref_V) -> [ &_10 <- _x ] s1)
+    [ s0 = get_K {self} {key} (fun (_x: t_Option_ref_V) -> [ &_10 <- _x ] s1)
     | s1 = unwrap_ref_V {_10} (fun (_x: t_V) -> [ &_9 <- _x ] s2)
     | s2 = [ &_ret <- _9 ] s3
     | s3 = return {_ret} ] ]
@@ -135,5 +131,5 @@ let index_FMap_K_V'0 (self: t_FMap_K_V) (key: t_K) (return (x: t_V)) =
   | & _10: t_Option_ref_V = Any.any_l () ])
   [ return (result: t_V) ->
   {[@stop_split] [@expl:index_FMap_K_V ensures] ([@stop_split] [@expl:index result type invariant] inv_ref_V result)
-    /\ ([@stop_split] [@expl:index ensures] Some'0 result = get_K self key)}
+    /\ ([@stop_split] [@expl:index ensures] Some'0 result = lookup_K self key)}
     (! return {result}) ]

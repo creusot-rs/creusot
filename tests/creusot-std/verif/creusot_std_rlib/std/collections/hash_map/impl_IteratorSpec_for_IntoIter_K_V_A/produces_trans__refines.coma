@@ -38,26 +38,24 @@ type t_Option_V = None | Some t_V
 
 function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
 
-function get_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
+function lookup_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
   Map.get (to_mapping_DeepModelTy self) k
 
-meta "rewrite_def" function get_DeepModelTy
+meta "rewrite_def" function lookup_DeepModelTy
 
 function deep_model_K (self: t_K) : t_DeepModelTy
-
-type t_Option_ref_V = None'0 | Some'0 t_V
 
 predicate produces_IntoIter_K_V_A [@inline:trivial] (self: t_IntoIter_K_V_A) (visited: Seq.seq tup2_K_V) (o: t_IntoIter_K_V_A) =
   len_DeepModelTy (view_IntoIter_K_V_A self) = Seq.length visited + len_DeepModelTy (view_IntoIter_K_V_A o)
   /\ (forall k: t_K, v: t_V. contains_tup2_K_V visited { f0 = k; f1 = v }
-      -> get_DeepModelTy (view_IntoIter_K_V_A self) (deep_model_K k) = Some'0 v
-      /\ get_DeepModelTy (view_IntoIter_K_V_A o) (deep_model_K k) = None'0)
-  /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_A o) k = Some'0 v
-      -> get_DeepModelTy (view_IntoIter_K_V_A self) k = Some'0 v
+      -> lookup_DeepModelTy (view_IntoIter_K_V_A self) (deep_model_K k) = Some v
+      /\ lookup_DeepModelTy (view_IntoIter_K_V_A o) (deep_model_K k) = None)
+  /\ (forall k: t_DeepModelTy, v: t_V. lookup_DeepModelTy (view_IntoIter_K_V_A o) k = Some v
+      -> lookup_DeepModelTy (view_IntoIter_K_V_A self) k = Some v
       /\ not (exists k2: t_K, v2: t_V. deep_model_K k2 = k /\ contains_tup2_K_V visited { f0 = k2; f1 = v2 }))
-  /\ (forall k: t_DeepModelTy, v: t_V. get_DeepModelTy (view_IntoIter_K_V_A self) k = Some'0 v
+  /\ (forall k: t_DeepModelTy, v: t_V. lookup_DeepModelTy (view_IntoIter_K_V_A self) k = Some v
       -> (exists k1: t_K. deep_model_K k1 = k /\ contains_tup2_K_V visited { f0 = k1; f1 = v })
-      \/ get_DeepModelTy (view_IntoIter_K_V_A o) k = Some'0 v)
+      \/ lookup_DeepModelTy (view_IntoIter_K_V_A o) k = Some v)
   /\ (forall i1: int, i2: int. 0 <= i1
       /\ i1 < Seq.length visited
       /\ 0 <= i2

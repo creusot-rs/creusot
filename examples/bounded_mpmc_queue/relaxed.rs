@@ -286,10 +286,10 @@ mod tokens {
 
         #[logic]
         pub fn val(self, idx: Int) -> State<T> {
-            match self.0.view().get(&idx) {
+            match self.0.view().lookup(idx) {
                 None => State::None,
-                Some(&Excl(None)) => State::R,
-                Some(&Excl(Some(data))) => State::W(data),
+                Some(Excl(None)) => State::R,
+                Some(Excl(Some(data))) => State::W(data),
             }
         }
 
@@ -522,9 +522,9 @@ impl<T> Protocol for QueueInv<T> {
             (0 <= self.tail() && self.tail() <= self.head() && self.head() <= self.tail() + self.len()) &&
 
             // head ~> (h, H)
-            (forall<ts> #[trigger(self.head_own.val().get(&ts))]
-                match self.head_own.val().get(&ts) {
-                    Some(&(h, _)) =>
+            (forall<ts> #[trigger(self.head_own.val().lookup(ts))]
+                match self.head_own.val().lookup(ts) {
+                    Some((h, _)) =>
                         ts == self.head_last_ts ||
                         self.head_own.val().contains_logic(ts + 1) &&
                         h@ < self.head(),
@@ -533,9 +533,9 @@ impl<T> Protocol for QueueInv<T> {
             ) &&
 
             // tail ~> (t, T)
-            (forall<ts> #[trigger(self.tail_own.val().get(&ts))]
-                match self.tail_own.val().get(&ts) {
-                    Some(&(t, _)) =>
+            (forall<ts> #[trigger(self.tail_own.val().lookup(ts))]
+                match self.tail_own.val().lookup(ts) {
+                    Some((t, _)) =>
                         ts == self.tail_last_ts ||
                         self.tail_own.val().contains_logic(ts + 1) &&
                         t@ < self.tail(),
@@ -545,10 +545,10 @@ impl<T> Protocol for QueueInv<T> {
 
             // statuses ~>* [(s_0, S_0), ..., (s_len - 1, S_len - 1)]
             // { i -> •(s_i, S_i) | 0 <= i < len }
-            (forall<i: Int, ts: Int> #[trigger(self.statuses_own[i].val().get(&ts))]
+            (forall<i: Int, ts: Int> #[trigger(self.statuses_own[i].val().lookup(ts))]
                  0 <= i && i < self.len() ==>
-                 match self.statuses_own[i].val().get(&ts) {
-                     Some(&(status, view)) => StatusWithView { status: status@, view } <= self.statuses_mono_auth[i].val(),
+                 match self.statuses_own[i].val().lookup(ts) {
+                     Some((status, view)) => StatusWithView { status: status@, view } <= self.statuses_mono_auth[i].val(),
                      _ => true
                  }) &&
 
@@ -679,8 +679,8 @@ impl<T> Queue<T> {
         #[invariant(forall<i> 0 <= i && i < produced.len() ==> *statuses_own[i].ward() == cells@[i].status)]
         #[invariant(forall<i> 0 <= i && i < produced.len() ==>
              forall<ts>
-             match statuses_own[i].val().get(&ts) {
-                 Some(&(status, view)) => StatusWithView { status: status@, view } <= statuses_mono_auth[i].val(),
+             match statuses_own[i].val().lookup(ts) {
+                 Some((status, view)) => StatusWithView { status: status@, view } <= statuses_mono_auth[i].val(),
                  _ => true
              }
         )]

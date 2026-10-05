@@ -702,9 +702,6 @@ module M_impl_List_T__push_back (* List<T> *)
   
   type t_Option_ref_Perm_ptr_Link_T = None'0 | Some'0 t_Perm_ptr_Link_T
   
-  function get_logic_ref_Perm_ptr_Link_T (self: Seq.seq t_Perm_ptr_Link_T) (ix: int) : t_Option_ref_Perm_ptr_Link_T =
-    if 0 <= ix /\ ix < Seq.length self then Some'0 (Seq.get self ix) else None'0
-  
   let get_mut_Perm_ptr_Link_T (self: MutBorrow.t (Seq.seq t_Perm_ptr_Link_T)) (index: int)
     (return (x: t_Option_refmut_Perm_ptr_Link_T)) =
   {[@stop_split] [@expl:get_mut 'self' type invariant] inv_refmut_Seq_Perm_ptr_Link_T self}
@@ -712,12 +709,24 @@ module M_impl_List_T__push_back (* List<T> *)
     [ return (result: t_Option_refmut_Perm_ptr_Link_T) ->
     {[@stop_split] [@expl:get_mut_Perm_ptr_Link_T ensures] ([@stop_split] [@expl:get_mut result type invariant] inv_Option_refmut_Perm_ptr_Link_T result)
       /\ ([@stop_split] [@expl:get_mut ensures #0] match result with
-          | None -> get_logic_ref_Perm_ptr_Link_T self.current index = None'0 /\ self.current = self.final
-          | Some r -> get_logic_ref_Perm_ptr_Link_T self.current index = Some'0 (r.current)
+          | None -> (if 0 <= index /\ index < Seq.length self.current then
+                Some'0 (Seq.get self.current index)
+              else
+                None'0
+              )
+            = None'0
+          /\ self.current = self.final
+          | Some r -> (if 0 <= index /\ index < Seq.length self.current then
+                Some'0 (Seq.get self.current index)
+              else
+                None'0
+              )
+            = Some'0 (r.current)
           /\ r.final = Seq.get self.final index
           end)
       /\ ([@stop_split] [@expl:get_mut ensures #1] forall i: int. i <> index
-          -> get_logic_ref_Perm_ptr_Link_T self.current i = get_logic_ref_Perm_ptr_Link_T self.final i)
+          -> (if 0 <= i /\ i < Seq.length self.current then Some'0 (Seq.get self.current i) else None'0)
+          = (if 0 <= i /\ i < Seq.length self.final then Some'0 (Seq.get self.final i) else None'0))
       /\ ([@stop_split] [@expl:get_mut ensures #2] Seq.length self.current = Seq.length self.final)}
       (! return {result}) ]
   

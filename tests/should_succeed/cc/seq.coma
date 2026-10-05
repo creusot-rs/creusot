@@ -36,19 +36,28 @@ module M_f
   
   type t_Option_ref_refmut_usize = None'0 | Some'0 (MutBorrow.t UInt64.t)
   
-  function get_logic_ref_refmut_usize (self: Seq.seq (MutBorrow.t UInt64.t)) (ix: int) : t_Option_ref_refmut_usize =
-    if 0 <= ix /\ ix < Seq.length self then Some'0 (Seq.get self ix) else None'0
-  
   let get_mut_refmut_usize (self: MutBorrow.t (Seq.seq (MutBorrow.t UInt64.t))) (index: int)
     (return (x: t_Option_refmut_refmut_usize)) = any
     [ return (result: t_Option_refmut_refmut_usize) ->
     {[@stop_split] [@expl:get_mut_refmut_usize ensures] ([@stop_split] [@expl:get_mut ensures #0] match result with
-          | None -> get_logic_ref_refmut_usize self.current index = None'0 /\ self.current = self.final
-          | Some r -> get_logic_ref_refmut_usize self.current index = Some'0 (r.current)
+          | None -> (if 0 <= index /\ index < Seq.length self.current then
+                Some'0 (Seq.get self.current index)
+              else
+                None'0
+              )
+            = None'0
+          /\ self.current = self.final
+          | Some r -> (if 0 <= index /\ index < Seq.length self.current then
+                Some'0 (Seq.get self.current index)
+              else
+                None'0
+              )
+            = Some'0 (r.current)
           /\ r.final = Seq.get self.final index
           end)
       /\ ([@stop_split] [@expl:get_mut ensures #1] forall i: int. i <> index
-          -> get_logic_ref_refmut_usize self.current i = get_logic_ref_refmut_usize self.final i)
+          -> (if 0 <= i /\ i < Seq.length self.current then Some'0 (Seq.get self.current i) else None'0)
+          = (if 0 <= i /\ i < Seq.length self.final then Some'0 (Seq.get self.final i) else None'0))
       /\ ([@stop_split] [@expl:get_mut ensures #2] Seq.length self.current = Seq.length self.final)}
       (! return {result}) ]
   

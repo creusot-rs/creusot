@@ -44,12 +44,6 @@ axiom concat_contains_T_spec: forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. con
 
 type t_Option_ref_T = None | Some t_T
 
-function get_logic_ref_T (self: Seq.seq t_T) (ix: int) : t_Option_ref_T = if 0 <= ix /\ ix < Seq.length self then
-    Some (Seq.get self ix)
-  else
-    None
-
-
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
@@ -72,6 +66,7 @@ goal vc_set_produces_trans_T: set_produces_T a ab b
         = contains_T a'0 x
       \/ contains_T b'0 x)
   -> (let _ = concat_contains_T in (forall i: int, x: t_T. Seq.length ab <= i
-        /\ get_logic_ref_T (Seq.(++) ab bc) i = Some x -> contains_T bc x)
+        /\ (if 0 <= i /\ i < Seq.length (Seq.(++) ab bc) then Some (Seq.get (Seq.(++) ab bc) i) else None) = Some x
+      -> contains_T bc x)
   && (forall i: int. 0 <= i /\ i < Seq.length bc -> Seq.get bc i = Seq.get (Seq.(++) ab bc) (Seq.length ab + i))
   && ([@stop_split] [@expl:set_produces_trans ensures] set_produces_T a (Seq.(++) ab bc) c))

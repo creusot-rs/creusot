@@ -12,7 +12,7 @@ impl<K, V: RA> RA for FMap<K, V> {
     #[logic(open)]
     fn op(self, other: Self) -> Option<Self> {
         pearlite! {
-            if (forall<k: K> self.get_logic(k).op(other.get_logic(k)) != None) {
+            if (forall<k: K> self.lookup(k).op(other.lookup(k)) != None) {
                 Some(self.total_op(other))
             } else {
                 None
@@ -24,12 +24,12 @@ impl<K, V: RA> RA for FMap<K, V> {
     #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
     fn incl(self, other: Self) -> bool {
         pearlite! {
-            let r = forall<k: K> self.get_logic(k).incl(other.get_logic(k));
+            let r = forall<k: K> self.lookup(k).incl(other.lookup(k));
 
             proof_assert!(r ==> {
                 let factor = other.filter_map(|(k, vo): (K, V)|
-                    if self.get_logic(k).incl(Some(vo)) {
-                        Some(vo).factor(self.get_logic(k))
+                    if self.lookup(k).incl(Some(vo)) {
+                        Some(vo).factor(self.lookup(k))
                     } else { None }
                 );
 
@@ -48,7 +48,7 @@ impl<K, V: RA> RA for FMap<K, V> {
     fn eq(self, other: Self) -> bool {
         pearlite! {
             let _ = Self::ext_eq;
-            forall<k: K> self.get_logic(k).eq(other.get_logic(k))
+            forall<k: K> self.lookup(k).eq(other.lookup(k))
         }
     }
 
@@ -107,7 +107,7 @@ impl<K, V: RA> RA for FMap<K, V> {
     fn cancelable(self) -> bool {
         proof_assert!(
             (forall<x, y> self.op(x) != None ==> self.op(x) == self.op(y) ==> x == y) ==>
-            forall<k> match self.get_logic(k) {
+            forall<k> match self.lookup(k) {
                 None => true,
                 Some(v) => forall<x, y> Some(v).op(x) != None ==> Some(v).op(x) == Some(v).op(y) ==> {
                     let fx = match x {
@@ -124,11 +124,11 @@ impl<K, V: RA> RA for FMap<K, V> {
                 }
             }
         );
-        proof_assert!((forall<k> self.get_logic(k).cancelable()) ==>
+        proof_assert!((forall<k> self.lookup(k).cancelable()) ==>
             forall<x, y> self.op(x) != None ==> self.op(x) == self.op(y) ==>
             x.ext_eq(y)
         );
-        pearlite! { forall<k> self.get_logic(k).cancelable() }
+        pearlite! { forall<k> self.lookup(k).cancelable() }
     }
 }
 
@@ -159,8 +159,8 @@ impl<K, V: RA> UnitRA for FMap<K, V> {
 
 impl<K, V: RA> FMap<K, V> {
     #[logic]
-    #[requires(forall<k: K> self.get_logic(k).op(other.get_logic(k)) != None)]
-    #[ensures(forall<k: K> Some(result.get_logic(k)) == self.get_logic(k).op(other.get_logic(k)))]
+    #[requires(forall<k: K> self.lookup(k).op(other.lookup(k)) != None)]
+    #[ensures(forall<k: K> Some(result.lookup(k)) == self.lookup(k).op(other.lookup(k)))]
     pub fn total_op(self, other: Self) -> Self {
         self.merge(other, |(x, y): (V, V)| match x.op(y) {
             Some(r) => r,
@@ -177,7 +177,7 @@ pub struct FMapInsertLocalUpdate<K, V>(pub Snapshot<K>, pub Snapshot<V>);
 impl<K, V: RA> LocalUpdate<FMap<K, V>> for FMapInsertLocalUpdate<K, V> {
     #[logic(open, inline)]
     fn premise(self, from_auth: FMap<K, V>, _: FMap<K, V>) -> bool {
-        from_auth.get(&*self.0) == None
+        from_auth.lookup(*self.0) == None
     }
 
     #[logic(open, inline)]
@@ -216,8 +216,8 @@ impl<K, V: RA, U: LocalUpdate<V>> LocalUpdate<FMap<K, V>> for FMapKeyLocalUpdate
     #[logic(open, inline)]
     fn premise(self, from_auth: FMap<K, V>, from_frag: FMap<K, V>) -> bool {
         pearlite! {
-            match (from_auth.get(&*self.0), from_frag.get(&*self.0)) {
-                (Some(&auth_v), Some(&frag_v)) => self.1.premise(auth_v, frag_v),
+            match (from_auth.lookup(*self.0), from_frag.lookup(*self.0)) {
+                (Some(auth_v), Some(frag_v)) => self.1.premise(auth_v, frag_v),
                 (_, None) => false,
                 _ => true,
             }
@@ -244,13 +244,13 @@ impl<K, V: RA, U: LocalUpdate<V>> LocalUpdate<FMap<K, V>> for FMapKeyLocalUpdate
         from_frag: FMap<K, V>,
         frame: Option<FMap<K, V>>,
     ) {
-        match (from_auth.get(&*self.0), from_frag.get(&*self.0)) {
+        match (from_auth.lookup(*self.0), from_frag.lookup(*self.0)) {
             (Some(auth_v), Some(frag_v)) => {
                 let frame_k = match frame {
-                    Some(frame) => frame.get_logic(*self.0),
+                    Some(frame) => frame.lookup(*self.0),
                     None => None,
                 };
-                self.1.frame_preserving(*auth_v, *frag_v, frame_k);
+                self.1.frame_preserving(auth_v, frag_v, frame_k);
 
                 let (to_auth, to_frag) = self.update(from_auth, from_frag);
                 proof_assert!(match Some(to_frag).op(frame) {
