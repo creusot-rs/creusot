@@ -176,8 +176,7 @@ pub mod atomic_specs {
     {
         pearlite! {
             (*own).val().get(t) == None &&
-                (^own).val() == (*own).val().insert(t, (val, thread_view)) &&
-                (*own).ward() == (^own).ward()
+                (^own).val() == (*own).val().insert(t, (val, thread_view))
         }
     }
 
