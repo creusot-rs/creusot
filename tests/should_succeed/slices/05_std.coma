@@ -1,0 +1,83 @@
+module M_is_empty
+  use creusot.slice.Slice64
+  use creusot.int.Int32
+  use seq.Seq
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Vec_i32_Global
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_i32_Global (self: t_Vec_i32_Global) : Seq.seq Int32.t
+  
+  axiom view_Vec_i32_Global_spec:
+    forall self: t_Vec_i32_Global [view_Vec_i32_Global self]. Seq.length (view_Vec_i32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function view_Box_slice_i32_Global [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq Int32.t =
+    Slice64.view self
+  
+  meta "rewrite_def" function view_Box_slice_i32_Global
+  
+  let into_vec_i32 (self: Slice64.slice Int32.t) (return (x: t_Vec_i32_Global)) = any
+    [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:into_vec ensures] view_Vec_i32_Global result
+      = view_Box_slice_i32_Global self}
+      (! return {result}) ]
+  
+  type t_Range_usize = { start: UInt64.t; end': UInt64.t }
+  
+  predicate in_bounds_Range_usize (self: t_Range_usize) (seq: Seq.seq Int32.t) =
+    UInt64.t'int self.start <= UInt64.t'int self.end' /\ UInt64.t'int self.end' <= Seq.length seq
+  
+  predicate has_value_Range_usize (self: t_Range_usize) (seq: Seq.seq Int32.t) (out: Slice64.slice Int32.t) =
+    Seq.([..]) seq (UInt64.t'int self.start) (UInt64.t'int self.end') = Slice64.view out
+  
+  let index_Vec_i32_Global (self: t_Vec_i32_Global) (index: t_Range_usize) (return (x: Slice64.slice Int32.t)) =
+  {[@stop_split] [@expl:index requires] in_bounds_Range_usize index (view_Vec_i32_Global self)}
+    any
+    [ return (result: Slice64.slice Int32.t) ->
+    {[@stop_split] [@expl:index ensures] has_value_Range_usize index (view_Vec_i32_Global self) result}
+      (! return {result}) ]
+  
+  let is_empty_i32 (self: Slice64.slice Int32.t) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_empty ensures] result = (Seq.length (Slice64.view self) = 0)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let is_empty (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 3 = (4: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 4}-
+          [ &_4 <- __arr_temp ] s1) ]
+      | s1 = into_vec_i32 {_4} (fun (_x: t_Vec_i32_Global) -> [ &numbers <- _x ] s2)
+      | s2 = [ &_8 <- { start = (0: UInt64.t); end' = (0: UInt64.t) } ] s3
+      | s3 = index_Vec_i32_Global {numbers} {_8} (fun (_x: Slice64.slice Int32.t) -> [ &_6 <- _x ] s4)
+      | s4 = [ &slice1 <- _6 ] s5
+      | s5 = is_empty_i32 {slice1} (fun (_x: bool) -> [ &a <- _x ] s6)
+      | s6 = {[@expl:assertion] a = true} s7
+      | s7 = [ &_17 <- { start = (0: UInt64.t); end' = (2: UInt64.t) } ] s8
+      | s8 = index_Vec_i32_Global {numbers} {_17} (fun (_x: Slice64.slice Int32.t) -> [ &_15 <- _x ] s9)
+      | s9 = [ &slice2 <- _15 ] s10
+      | s10 = is_empty_i32 {slice2} (fun (_x: bool) -> [ &b <- _x ] s11)
+      | s11 = {[@expl:assertion] b = false} s12
+      | s12 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & numbers: t_Vec_i32_Global = Any.any_l ()
+    | & _4: Slice64.array Int32.t = Any.any_l ()
+    | & slice1: Slice64.slice Int32.t = Any.any_l ()
+    | & _6: Slice64.slice Int32.t = Any.any_l ()
+    | & _8: t_Range_usize = Any.any_l ()
+    | & a: bool = Any.any_l ()
+    | & slice2: Slice64.slice Int32.t = Any.any_l ()
+    | & _15: Slice64.slice Int32.t = Any.any_l ()
+    | & _17: t_Range_usize = Any.any_l ()
+    | & b: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end

@@ -336,6 +336,10 @@ extern_spec! {
         fn len(&self) -> usize;
 
         #[check(ghost)]
+        #[ensures(result == (self@.len() == 0))]
+        fn is_empty(&self) -> bool;
+
+        #[check(ghost)]
         #[requires(i@ < self@.len())]
         #[requires(j@ < self@.len())]
         #[ensures((^self)@.exchange(self@, i@, j@))]
