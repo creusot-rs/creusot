@@ -2344,16 +2344,18 @@ module M_implementation__impl_Plain_for_Element__into_ghost (* <implementation::
   
   let into_ghost_Element (snap: t_Element) (return (x: t_Element)) = (! bb0
     [ bb0 = s0
-      [ s0 = into_ghost_ptr_unit {snap.f0} (fun (_x: Opaque.ptr) -> [ &_8 <- _x ] s1)
-      | s1 = deref_Ghost_ptr_unit {_8} (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s2)
-      | s2 = [ &_4 <- { f0 = _6 } ] s3
-      | s3 = new_Element {_4} (fun (_x: t_Element) -> [ &_ret <- _x ] s4)
-      | s4 = return {_ret} ] ]
+      [ s0 = [ &_9 <- snap.f0 ] s1
+      | s1 = into_ghost_ptr_unit {_9} (fun (_x: Opaque.ptr) -> [ &_8 <- _x ] s2)
+      | s2 = deref_Ghost_ptr_unit {_8} (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s3)
+      | s3 = [ &_4 <- { f0 = _6 } ] s4
+      | s4 = new_Element {_4} (fun (_x: t_Element) -> [ &_ret <- _x ] s5)
+      | s5 = return {_ret} ] ]
     [ & _ret: t_Element = Any.any_l ()
     | & snap: t_Element = snap
     | & _4: t_Element = Any.any_l ()
     | & _6: Opaque.ptr = Any.any_l ()
-    | & _8: Opaque.ptr = Any.any_l () ])
+    | & _8: Opaque.ptr = Any.any_l ()
+    | & _9: Opaque.ptr = Any.any_l () ])
     [ return (result: t_Element) -> {[@stop_split] [@expl:into_ghost ensures] result = snap} (! return {result}) ]
 end
 module M_implementation__impl_Plain_for_Element__into_ghost__refines (* <implementation::Element as creusot_std::ghost::Plain> *)
@@ -4140,6 +4142,14 @@ module M_implementation__make
   
   type tup2_Perm_ptr_Node_T_refmut_UnionFind_T = { f0'3: t_Perm_ptr_Node_T; f1'3: MutBorrow.t t_UnionFind_T }
   
+  function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'2.domain
+  
+  axiom domain_T_spec: forall self: t_UnionFind_T [domain_T self]. inv_UnionFind_T self
+      -> (forall e1: t_Element, e2: t_Element. contains_Element (domain_T self) e1
+          /\ contains_Element (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+  
+  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
+  
   type t_Option_Element = None'0 | Some'0 t_Element
   
   predicate index_Mapping_Element_bool [@inline:trivial] (self: Map.map t_Element bool) (a: t_Element) = Map.get self a
@@ -4153,14 +4163,6 @@ module M_implementation__make
         | Some'0 v -> index_Mapping_Element_bool p v
         | None'0 -> forall x: t_Element. not index_Mapping_Element_bool p x
         end
-  
-  function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'2.domain
-  
-  axiom domain_T_spec: forall self: t_UnionFind_T [domain_T self]. inv_UnionFind_T self
-      -> (forall e1: t_Element, e2: t_Element. contains_Element (domain_T self) e1
-          /\ contains_Element (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
-  
-  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
   
   predicate inv_Option_Element [@inline:trivial] (_1: t_Option_Element) = true
   
@@ -4376,10 +4378,22 @@ module M_implementation__make
       | s10 = [ &_28 <- { f0'3 = _29; f1'3 = _31 } ] s11
       | s11 = [ &perm'0 <- _28.f0'3 ] s12
       | s12 = [ &uf'0 <- _28.f1'3 ] s13
-      | s13 = into_ghost_Option_Element {try_such_that_Element (fun (e: t_Element) -> in_domain_T uf'0.current e
-          /\ deep_model_Element e = deep_model_Element elt)} (fun (_x: t_Option_Element) -> [ &_34 <- _x ] s14)
-      | s14 = into_inner_Option_Element {_34} (fun (_x: t_Option_Element) -> [ &other_elt <- _x ] s15)
-      | s15 = any [ br0 -> {other_elt = None'0} (! bb16) | br1 (x0: t_Element) -> {other_elt = Some'0 x0} (! bb11) ] ]
+      | s13 = any
+        [ any_ (_dest: t_Option_Element) ->
+        (! -{([@stop_split] [@expl:try_such_that ensures] match try_such_that_Element (fun (e: t_Element) -> in_domain_T uf'0.current e
+            /\ deep_model_Element e = deep_model_Element elt) with
+              | Some'0 v -> index_Mapping_Element_bool (fun (e: t_Element) -> in_domain_T uf'0.current e
+              /\ deep_model_Element e = deep_model_Element elt) v
+              | None'0 -> forall x: t_Element. not index_Mapping_Element_bool (fun (e: t_Element) -> in_domain_T uf'0.current e
+                /\ deep_model_Element e = deep_model_Element elt) x
+              end)
+          /\ _dest
+          = try_such_that_Element (fun (e: t_Element) -> in_domain_T uf'0.current e
+          /\ deep_model_Element e = deep_model_Element elt)}-
+          [ &_35 <- _dest ] s14) ] [ _ck -> (! any) ]
+      | s14 = into_ghost_Option_Element {_35} (fun (_x: t_Option_Element) -> [ &_34 <- _x ] s15)
+      | s15 = into_inner_Option_Element {_34} (fun (_x: t_Option_Element) -> [ &other_elt <- _x ] s16)
+      | s16 = any [ br0 -> {other_elt = None'0} (! bb16) | br1 (x0: t_Element) -> {other_elt = Some'0 x0} (! bb11) ] ]
     | bb11 = s0
       [ s0 = elim_Some {other_elt} (fun (r0: t_Element) -> [ &other_elt'0 <- r0 ] s1)
       | s1 = MutBorrow.borrow_mut <t_Perm_ptr_Node_T> {perm'0}
@@ -4408,23 +4422,19 @@ module M_implementation__make
         [ _ck -> (! {[@expl:type invariant] inv_FMap_Element_Perm_ptr_Node_T uf'0.current.f0'2.perms} any) ]
       | s1 = insert_ghost_Element {_51} {elt} {perm'0} (fun (_x: t_Option_Perm_ptr_Node_T) -> [ &_50 <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Option_Perm_ptr_Node_T _50} any) ]
-      | s3 =
-        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with domain = insert_Element'0 uf'0.current.f0'2.domain elt } } } ]
-        s4
-      | s4 =
-        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with payloads = Map.set uf'0.current.f0'2.payloads elt payload_snap } } } ]
-        s5
-      | s5 =
-        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with depth = Map.set uf'0.current.f0'2.depth elt uf'0.current.f0'2.max_depth } } } ]
-        s6
-      | s6 =
-        [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with roots = Map.set uf'0.current.f0'2.roots elt elt } } } ]
-        s7
-      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T uf'0} any) ]
-      | s8 = -{resolve_refmut_UnionFind_T uf'0}- s9
-      | s9 = new_unit {_25} (fun (_x: ()) -> [ &_24 <- _x ] s10)
-      | s10 = [ &_ret <- elt ] s11
-      | s11 = return {_ret} ] ]
+      | s3 = [ &_54 <- insert_Element'0 uf'0.current.f0'2.domain elt ] s4
+      | s4 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with domain = _54 } } } ] s5
+      | s5 = [ &_58 <- Map.set uf'0.current.f0'2.payloads elt payload_snap ] s6
+      | s6 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with payloads = _58 } } } ] s7
+      | s7 = [ &_63 <- Map.set uf'0.current.f0'2.depth elt uf'0.current.f0'2.max_depth ] s8
+      | s8 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with depth = _63 } } } ] s9
+      | s9 = [ &_68 <- Map.set uf'0.current.f0'2.roots elt elt ] s10
+      | s10 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with roots = _68 } } } ] s11
+      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T uf'0} any) ]
+      | s12 = -{resolve_refmut_UnionFind_T uf'0}- s13
+      | s13 = new_unit {_25} (fun (_x: ()) -> [ &_24 <- _x ] s14)
+      | s14 = [ &_ret <- elt ] s15
+      | s15 = return {_ret} ] ]
     [ & _ret: t_Element = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf
     | & payload: t_T = payload
@@ -4445,6 +4455,7 @@ module M_implementation__make
     | & _31: MutBorrow.t t_UnionFind_T = Any.any_l ()
     | & other_elt: t_Option_Element = Any.any_l ()
     | & _34: t_Option_Element = Any.any_l ()
+    | & _35: t_Option_Element = Any.any_l ()
     | & _39: () = Any.any_l ()
     | & other_elt'0: t_Element = Any.any_l ()
     | & _42: MutBorrow.t t_Perm_ptr_Node_T = Any.any_l ()
@@ -4453,7 +4464,11 @@ module M_implementation__make
     | & _46: t_Option_ref_Perm_ptr_Node_T = Any.any_l ()
     | & _49: t_Element = Any.any_l ()
     | & _50: t_Option_Perm_ptr_Node_T = Any.any_l ()
-    | & _51: MutBorrow.t t_FMap_Element_Perm_ptr_Node_T = Any.any_l () ])
+    | & _51: MutBorrow.t t_FMap_Element_Perm_ptr_Node_T = Any.any_l ()
+    | & _54: Fset.fset t_Element = Any.any_l ()
+    | & _58: Map.map t_Element t_T = Any.any_l ()
+    | & _63: Map.map t_Element int = Any.any_l ()
+    | & _68: Map.map t_Element t_Element = Any.any_l () ])
     [ return (result: t_Element) ->
     {[@stop_split] [@expl:make_T ensures] ([@stop_split] [@expl:make ensures #0] not in_domain_T uf.current result)
       /\ ([@stop_split] [@expl:make ensures #1] domain_T (fin_Ghost_refmut_UnionFind_T uf)
@@ -4465,18 +4480,18 @@ module M_implementation__make
       (! return {result}) ]
 end
 module M_implementation__new
+  use set.Fset
   use creusot.prelude.Opaque
   use map.Map
   use creusot.prelude.Ptr
   use creusot.int.UInt64
   use map.Const
-  use set.Fset
   use creusot.prelude.Any
   use int.Int
   
-  type t_FMap_Element_Perm_ptr_Node_T
-  
   type t_Element = { f0: Opaque.ptr }
+  
+  type t_FMap_Element_Perm_ptr_Node_T
   
   type t_Perm_ptr_Node_T
   
@@ -4626,9 +4641,9 @@ module M_implementation__new
   
   constant any_Mapping_Element_T : Map.map t_Element t_T
   
-  constant any_Mapping_Element_Element : Map.map t_Element t_Element
-  
   constant any_Mapping_Element_Int : Map.map t_Element int
+  
+  constant any_Mapping_Element_Element : Map.map t_Element t_Element
   
   type t_UFInner_T = {
     domain: Fset.fset t_Element;
@@ -4728,22 +4743,27 @@ module M_implementation__new
   
   let new_T (return (x: t_UnionFind_T)) = (! bb0
     [ bb0 = s0
-      [ s0 = new_Element (fun (_x: t_FMap_Element_Perm_ptr_Node_T) -> [ &_7 <- _x ] s1)
-      | s1 = into_inner_FMap_Element_Perm_ptr_Node_T {_7} (fun (_x: t_FMap_Element_Perm_ptr_Node_T) -> [ &_6 <- _x ] s2)
-      | s2 = [ &_3 <- { domain = Fset.empty: Fset.fset t_Element;
-                        perms = _6;
-                        payloads = any_Mapping_Element_T;
-                        roots = any_Mapping_Element_Element;
-                        depth = any_Mapping_Element_Int;
-                        max_depth = 0 } ] s3
-      | s3 = [ &_2 <- { f0'1 = _3 } ] s4
-      | s4 = new_UnionFind_T {_2} (fun (_x: t_UnionFind_T) -> [ &_ret <- _x ] s5)
-      | s5 = return {_ret} ] ]
+      [ s0 = [ &_4 <- Fset.empty: Fset.fset t_Element ] s1
+      | s1 = new_Element (fun (_x: t_FMap_Element_Perm_ptr_Node_T) -> [ &_7 <- _x ] s2)
+      | s2 = into_inner_FMap_Element_Perm_ptr_Node_T {_7} (fun (_x: t_FMap_Element_Perm_ptr_Node_T) -> [ &_6 <- _x ] s3)
+      | s3 = [ &_8 <- any_Mapping_Element_T ] s4
+      | s4 = [ &_10 <- any_Mapping_Element_Int ] s5
+      | s5 = [ &_12 <- any_Mapping_Element_Element ] s6
+      | s6 = [ &_14 <- 0 ] s7
+      | s7 = [ &_3 <- { domain = _4; perms = _6; payloads = _8; roots = _12; depth = _10; max_depth = _14 } ] s8
+      | s8 = [ &_2 <- { f0'1 = _3 } ] s9
+      | s9 = new_UnionFind_T {_2} (fun (_x: t_UnionFind_T) -> [ &_ret <- _x ] s10)
+      | s10 = return {_ret} ] ]
     [ & _ret: t_UnionFind_T = Any.any_l ()
     | & _2: t_UnionFind_T = Any.any_l ()
     | & _3: t_UFInner_T = Any.any_l ()
+    | & _4: Fset.fset t_Element = Any.any_l ()
     | & _6: t_FMap_Element_Perm_ptr_Node_T = Any.any_l ()
-    | & _7: t_FMap_Element_Perm_ptr_Node_T = Any.any_l () ])
+    | & _7: t_FMap_Element_Perm_ptr_Node_T = Any.any_l ()
+    | & _8: Map.map t_Element t_T = Any.any_l ()
+    | & _10: Map.map t_Element int = Any.any_l ()
+    | & _12: Map.map t_Element t_Element = Any.any_l ()
+    | & _14: int = Any.any_l () ])
     [ return (result: t_UnionFind_T) ->
     {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_UnionFind_T result)
       /\ ([@stop_split] [@expl:new ensures] Fset.is_empty (domain_T result))}

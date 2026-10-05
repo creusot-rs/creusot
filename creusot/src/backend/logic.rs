@@ -1,9 +1,9 @@
 use crate::{
     backend::{
         Why3Generator, common_meta_decls,
-        logic::vcgen::wp,
+        logic::vcgen::{SelfCall, wp},
         signature::{LogicSignature, lower_logic_sig},
-        term::lower_pure_weakdep,
+        term::{lower_pure, lower_pure_weakdep},
         ty::{self, translate_ty},
     },
     contracts_items::{Intrinsic, get_builtin, is_indirect, is_inline},
@@ -19,7 +19,7 @@ use why3::{
     exp::{BinOp, Exp, Trigger},
 };
 
-mod vcgen;
+pub mod vcgen;
 
 pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<FileModule> {
     let names = Dependencies::new(ctx, def_id);
@@ -84,16 +84,23 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     let postcondition = sig.contract.ensures_conj(&name.name().to_string());
 
     let term = ctx.ctx.logic_term(def_id).unwrap();
-    let wp = wp(
+    let k = |exp| Exp::let_(name::result(), exp, postcondition.clone());
+    let wp = if let Some(wp) = wp(
         ctx,
         &names,
-        def_id,
-        args_names,
-        sig.variant.clone(),
+        Some(SelfCall { id: def_id, args: args_names, variant: sig.variant.clone() }),
         term,
-        name::result(),
-        postcondition.clone(),
-    );
+        true,
+        &k,
+    ) {
+        wp
+    } else {
+        k(lower_pure(ctx, &names, term))
+    };
+    if wp.is_true() {
+        return None;
+    }
+
     let vc_ident = sig.why_sig.name.refresh_with(|s| format!("vc_{s}"));
 
     let (mut decls, setters) = names.provide_deps(ctx);

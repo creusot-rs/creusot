@@ -151,8 +151,6 @@ module M_parallel_add
       /\ ([@stop_split] [@expl:new ensures #1] ward_AtomicI32 result.f1 = result.f0)}
       (! return {result}) ]
   
-  type tup2_fraction_1_fraction_add = { f0'0: (); f1'0: () }
-  
   type t_PositiveReal
   
   predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
@@ -197,6 +195,8 @@ module M_parallel_add
   
   axiom fraction_add_spec: forall a: int, b: int, n: int. gt_log_Int a 0 /\ gt_log_Int b 0
       -> add_PositiveReal (fraction a n) (fraction b n) = fraction (a + b) n
+  
+  type tup2_fraction_1_fraction_add = { f0'0: (); f1'0: () }
   
   type t_Authority_Option_tup2_PositiveReal_Int
   
@@ -1628,13 +1628,14 @@ module M_parallel_add
       | s3 = [ &_9 <- { start = (0: Int32.t); end' = self.c2 } ] s4
       | s4 = into_iter_Range_i32 {_9} (fun (_x: t_Range_i32) -> [ &iter <- _x ] s5)
       | s5 = [ &iter_old <- iter ] s6
-      | s6 = [ &produced <- Seq.empty: Seq.seq Int32.t ] s7
-      | s7 = [ &_old <- self.c0 ] s8
-      | s8 = [ &_old'0 <- self.c1 ] s9
-      | s9 = [ &_old'1 <- self.c2 ] s10
-      | s10 = [ &_old'2 <- self.c3.final ] s11
-      | s11 = [ &_old'3 <- s.final ] s12
-      | s12 = bb6 ]
+      | s6 = [ &_16 <- Seq.empty: Seq.seq Int32.t ] s7
+      | s7 = [ &produced <- _16 ] s8
+      | s8 = [ &_old <- self.c0 ] s9
+      | s9 = [ &_old'0 <- self.c1 ] s10
+      | s10 = [ &_old'1 <- self.c2 ] s11
+      | s11 = [ &_old'2 <- self.c3.final ] s12
+      | s12 = [ &_old'3 <- s.final ] s13
+      | s13 = bb6 ]
     | bb6 = bb6
       [ bb6 =
         {[@expl:inferred invariant: type invariant] inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global handles}
@@ -1669,49 +1670,50 @@ module M_parallel_add
         | s4 = any [ br0 -> {_41 = None'4} (! bb11) | br1 (x0: Int32.t) -> {_41 = Some'4 x0} (! bb12) ] ]
         [ bb12 = s0
           [ s0 = elim_Some {_41} (fun (r0: Int32.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = [ &f1'7 <- Some { f0'1 = fraction 1 (Int32.to_int self.c2); f1'1 = 0 } ] s3
-          | s3 = [ &f2 <- Some { f0'1 = fraction (Int32.to_int self.c2 + 1
+          | s1 = [ &_47 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &produced <- _47 ] s3
+          | s3 = [ &f1'7 <- Some { f0'1 = fraction 1 (Int32.to_int self.c2); f1'1 = 0 } ] s4
+          | s4 = [ &f2 <- Some { f0'1 = fraction (Int32.to_int self.c2 + 1
                                  - Seq.length produced) (Int32.to_int self.c2);
-                                 f1'1 = 0 } ] s4
-          | s4 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {self.c3.current}
+                                 f1'1 = 0 } ] s5
+          | s5 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {self.c3.current}
               (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
                 [ &_62 <- _bor ] -{inv_Ghost_Fragment_Option_tup2_PositiveReal_Int _bor.final}-
-                [ &self <- { self with c3 = { self.c3 with current = _bor.final } } ] s5)
+                [ &self <- { self with c3 = { self.c3 with current = _bor.final } } ] s6)
             [ _ck -> (! {[@expl:type invariant] inv_Ghost_Fragment_Option_tup2_PositiveReal_Int self.c3.current} any) ]
-          | s5 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_62}
-              (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_61 <- _x ] s6)
-          | s6 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_61.current} {MutBorrow.get_id _61}
+          | s6 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_62}
+              (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_61 <- _x ] s7)
+          | s7 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_61.current} {MutBorrow.get_id _61}
               (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
                 [ &_60 <- _bor ] -{inv_Fragment_Option_tup2_PositiveReal_Int _bor.final}-
-                [ &_61 <- { _61 with current = _bor.final } ] s7)
+                [ &_61 <- { _61 with current = _bor.final } ] s8)
             [ _ck -> (! {[@expl:type invariant] inv_Fragment_Option_tup2_PositiveReal_Int _61.current} any) ]
-          | s7 = split_off_Option_tup2_PositiveReal_Int {_60} {f1'7} {f2}
-              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_59 <- _x ] s8)
-          | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fragment_Option_tup2_PositiveReal_Int _61} any) ]
-          | s9 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _61}- s10
-          | s10 = new_Fragment_Option_tup2_PositiveReal_Int {_59}
-              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &frag <- _x ] s11)
-          | s11 = [ &_67 <- { c0'0 = atomic; c1'0 = inv; c2'0 = frag; c3'0 = self.c2 } ] s12
-          | s12 = MutBorrow.borrow_mut <t_Scope> {s.current}
+          | s8 = split_off_Option_tup2_PositiveReal_Int {_60} {f1'7} {f2}
+              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_59 <- _x ] s9)
+          | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fragment_Option_tup2_PositiveReal_Int _61} any) ]
+          | s10 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _61}- s11
+          | s11 = new_Fragment_Option_tup2_PositiveReal_Int {_59}
+              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &frag <- _x ] s12)
+          | s12 = [ &_67 <- { c0'0 = atomic; c1'0 = inv; c2'0 = frag; c3'0 = self.c2 } ] s13
+          | s13 = MutBorrow.borrow_mut <t_Scope> {s.current}
               (fun (_bor: MutBorrow.t t_Scope) ->
                 [ &_66 <- _bor ] -{inv_Scope _bor.final}-
-                [ &s <- { s with current = _bor.final } ] s13)
+                [ &s <- { s with current = _bor.final } ] s14)
             [ _ck -> (! {[@expl:type invariant] inv_Scope s.current} any) ]
-          | s13 = spawn_closure0 {_66} {_67}
-              (fun (_x: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) -> [ &h <- _x ] s14)
-          | s14 = MutBorrow.borrow_mut <t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global>
+          | s14 = spawn_closure0 {_66} {_67}
+              (fun (_x: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) -> [ &h <- _x ] s15)
+          | s15 = MutBorrow.borrow_mut <t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global>
               {handles}
               (fun (_bor: MutBorrow.t t_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) ->
                 [ &_69 <- _bor ]
                 -{inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global _bor.final}-
-                [ &handles <- _bor.final ] s15)
+                [ &handles <- _bor.final ] s16)
             [ _ck ->
             (! {[@expl:type invariant] inv_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global handles}
               any) ]
-          | s15 = push_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int {_69} {h}
-              (fun (_x: ()) -> [ &_68 <- _x ] s16)
-          | s16 = bb6 ] ] ]
+          | s16 = push_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int {_69} {h}
+              (fun (_x: ()) -> [ &_68 <- _x ] s17)
+          | s17 = bb6 ] ] ]
     | bb11 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Scope s} any) ]
       | s1 = -{resolve_refmut_Scope s}- s2
@@ -1720,12 +1722,13 @@ module M_parallel_add
           (fun (_x: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global) ->
             [ &iter'0 <- _x ] s4)
       | s4 = [ &iter_old'0 <- iter'0 ] s5
-      | s5 = [ &produced'0 <- Seq.empty: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int ] s6
-      | s6 = [ &_old'4 <- self.c0 ] s7
-      | s7 = [ &_old'5 <- self.c1 ] s8
-      | s8 = [ &_old'6 <- self.c2 ] s9
-      | s9 = [ &_old'7 <- self.c3.final ] s10
-      | s10 = bb26 ]
+      | s5 = [ &_83 <- Seq.empty: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int ] s6
+      | s6 = [ &produced'0 <- _83 ] s7
+      | s7 = [ &_old'4 <- self.c0 ] s8
+      | s8 = [ &_old'5 <- self.c1 ] s9
+      | s9 = [ &_old'6 <- self.c2 ] s10
+      | s10 = [ &_old'7 <- self.c3.final ] s11
+      | s11 = bb26 ]
     | bb26 = bb26
       [ bb26 =
         {[@expl:inferred invariant: type invariant] inv_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global iter'0}
@@ -1773,33 +1776,34 @@ module M_parallel_add
           [ s0 = elim_Some'0 {_99}
               (fun (r0: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int) ->
                 [ &__creusot_proc_iter_elem'0 <- r0 ] s1)
-          | s1 = [ &produced'0 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
-          | s2 = [ &h'0 <- __creusot_proc_iter_elem'0 ] s3
-          | s3 = {[@expl:assertion] h'0
+          | s1 = [ &_105 <- Seq.(++) produced'0 (Seq.singleton __creusot_proc_iter_elem'0) ] s2
+          | s2 = [ &produced'0 <- _105 ] s3
+          | s3 = [ &h'0 <- __creusot_proc_iter_elem'0 ] s4
+          | s4 = {[@expl:assertion] h'0
             = index_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global handles_ (Seq.length produced'0
             - 1)}
-            s4
-          | s4 = join_unwrap_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int {h'0}
-              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &f <- _x ] s5)
-          | s5 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {self.c3.current}
+            s5
+          | s5 = join_unwrap_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int {h'0}
+              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &f <- _x ] s6)
+          | s6 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {self.c3.current}
               (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
                 [ &_121 <- _bor ] -{inv_Ghost_Fragment_Option_tup2_PositiveReal_Int _bor.final}-
-                [ &self <- { self with c3 = { self.c3 with current = _bor.final } } ] s6)
+                [ &self <- { self with c3 = { self.c3 with current = _bor.final } } ] s7)
             [ _ck -> (! {[@expl:type invariant] inv_Ghost_Fragment_Option_tup2_PositiveReal_Int self.c3.current} any) ]
-          | s6 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_121}
-              (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_120 <- _x ] s7)
-          | s7 = into_inner_Fragment_Option_tup2_PositiveReal_Int {f}
-              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_122 <- _x ] s8)
-          | s8 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_120.current} {MutBorrow.get_id _120}
+          | s7 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_121}
+              (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_120 <- _x ] s8)
+          | s8 = into_inner_Fragment_Option_tup2_PositiveReal_Int {f}
+              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_122 <- _x ] s9)
+          | s9 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_120.current} {MutBorrow.get_id _120}
               (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
                 [ &_119 <- _bor ] -{inv_Fragment_Option_tup2_PositiveReal_Int _bor.final}-
-                [ &_120 <- { _120 with current = _bor.final } ] s9)
+                [ &_120 <- { _120 with current = _bor.final } ] s10)
             [ _ck -> (! {[@expl:type invariant] inv_Fragment_Option_tup2_PositiveReal_Int _120.current} any) ]
-          | s9 = join_in_Option_tup2_PositiveReal_Int {_119} {_122} (fun (_x: ()) -> [ &_118 <- _x ] s10)
-          | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fragment_Option_tup2_PositiveReal_Int _120} any) ]
-          | s11 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _120}- s12
-          | s12 = new_unit {_118} (fun (_x: ()) -> [ &_117 <- _x ] s13)
-          | s13 = bb26 ] ] ]
+          | s10 = join_in_Option_tup2_PositiveReal_Int {_119} {_122} (fun (_x: ()) -> [ &_118 <- _x ] s11)
+          | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fragment_Option_tup2_PositiveReal_Int _120} any) ]
+          | s12 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _120}- s13
+          | s13 = new_unit {_118} (fun (_x: ()) -> [ &_117 <- _x ] s14)
+          | s14 = bb26 ] ] ]
     | bb31 = s0
       [ s0 = s1
         [ _ck ->
@@ -1822,10 +1826,12 @@ module M_parallel_add
     | & _9: t_Range_i32 = Any.any_l ()
     | & iter_old: t_Range_i32 = Any.any_l ()
     | & produced: Seq.seq Int32.t = Any.any_l ()
+    | & _16: Seq.seq Int32.t = Any.any_l ()
     | & _41: t_Option_i32 = Any.any_l ()
     | & _42: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & _43: MutBorrow.t t_Range_i32 = Any.any_l ()
     | & __creusot_proc_iter_elem: Int32.t = Any.any_l ()
+    | & _47: Seq.seq Int32.t = Any.any_l ()
     | & f1'7: t_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & f2: t_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & frag: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
@@ -1842,10 +1848,12 @@ module M_parallel_add
     | & iter'0: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global = Any.any_l ()
     | & iter_old'0: t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global = Any.any_l ()
     | & produced'0: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _83: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & _99: t_Option_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & _100: MutBorrow.t t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global = Any.any_l ()
     | & _101: MutBorrow.t t_IntoIter_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global = Any.any_l ()
     | & __creusot_proc_iter_elem'0: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _105: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & h'0: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & f: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & _117: () = Any.any_l ()
@@ -2005,55 +2013,56 @@ module M_parallel_add
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Fragment_Option_tup2_PositiveReal_Int _25.current} any) ]
       | s13 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_24}
           (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_23 <- _x ] s14)
-      | s14 = MutBorrow.borrow_final <t_Authority_Option_tup2_PositiveReal_Int> {_20.current} {MutBorrow.get_id _20}
+      | s14 = [ &_26 <- { f0'2 = Some { f0'1 = from_int 1; f1'1 = 0 }; f1'2 = Some { f0'1 = from_int 1; f1'1 = 0 } } ]
+        s15
+      | s15 = MutBorrow.borrow_final <t_Authority_Option_tup2_PositiveReal_Int> {_20.current} {MutBorrow.get_id _20}
           (fun (_bor: MutBorrow.t t_Authority_Option_tup2_PositiveReal_Int) ->
             [ &_19 <- _bor ] -{inv_Authority_Option_tup2_PositiveReal_Int _bor.final}-
-            [ &_20 <- { _20 with current = _bor.final } ] s15)
+            [ &_20 <- { _20 with current = _bor.final } ] s16)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_tup2_PositiveReal_Int _20.current} any) ]
-      | s15 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_23.current} {MutBorrow.get_id _23}
+      | s16 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_23.current} {MutBorrow.get_id _23}
           (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
             [ &_22 <- _bor ] -{inv_Fragment_Option_tup2_PositiveReal_Int _bor.final}-
-            [ &_23 <- { _23 with current = _bor.final } ] s16)
+            [ &_23 <- { _23 with current = _bor.final } ] s17)
         [ _ck -> (! {[@expl:type invariant] inv_Fragment_Option_tup2_PositiveReal_Int _23.current} any) ]
-      | s16 = update_Option_tup2_PositiveReal_Int {_19} {_22} {{ f0'2 = Some { f0'1 = from_int 1; f1'1 = 0 };
-                                                                 f1'2 = Some { f0'1 = from_int 1; f1'1 = 0 } }}
-          (fun (_x: ()) -> [ &_18 <- _x ] s17)
-      | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int _25} any) ]
-      | s18 = -{resolve_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int _25}- s19
-      | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fragment_Option_tup2_PositiveReal_Int _23} any) ]
-      | s20 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _23}- s21
-      | s21 = s22 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Option_tup2_PositiveReal_Int _20} any) ]
-      | s22 = -{resolve_refmut_Authority_Option_tup2_PositiveReal_Int _20}- s23
-      | s23 = new_unit {_17} (fun (_x: ()) -> [ &_16 <- _x ] s24)
-      | s24 = into_inner_Perm_AtomicI32 {own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_31 <- _x ] s25)
-      | s25 = into_inner_Authority_Option_tup2_PositiveReal_Int {auth'0}
-          (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &_33 <- _x ] s26)
-      | s26 = [ &_30 <- { own = _31; auth = _33 } ] s27
-      | s27 = new_ParallelAddAtomicInv {_30} (fun (_x: t_ParallelAddAtomicInv) -> [ &_29 <- _x ] s28)
-      | s28 = new_ParallelAddAtomicInv'0 {_29} {Namespace_PARALLEL_ADD 0}
-          (fun (_x: t_AtomicInvariantSC_ParallelAddAtomicInv) -> [ &inv <- _x ] s29)
-      | s29 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {frag}
+      | s17 = update_Option_tup2_PositiveReal_Int {_19} {_22} {_26} (fun (_x: ()) -> [ &_18 <- _x ] s18)
+      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int _25} any) ]
+      | s19 = -{resolve_refmut_Ghost_Fragment_Option_tup2_PositiveReal_Int _25}- s20
+      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fragment_Option_tup2_PositiveReal_Int _23} any) ]
+      | s21 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _23}- s22
+      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Option_tup2_PositiveReal_Int _20} any) ]
+      | s23 = -{resolve_refmut_Authority_Option_tup2_PositiveReal_Int _20}- s24
+      | s24 = new_unit {_17} (fun (_x: ()) -> [ &_16 <- _x ] s25)
+      | s25 = into_inner_Perm_AtomicI32 {own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_31 <- _x ] s26)
+      | s26 = into_inner_Authority_Option_tup2_PositiveReal_Int {auth'0}
+          (fun (_x: t_Authority_Option_tup2_PositiveReal_Int) -> [ &_33 <- _x ] s27)
+      | s27 = [ &_30 <- { own = _31; auth = _33 } ] s28
+      | s28 = new_ParallelAddAtomicInv {_30} (fun (_x: t_ParallelAddAtomicInv) -> [ &_29 <- _x ] s29)
+      | s29 = [ &_35 <- Namespace_PARALLEL_ADD 0 ] s30
+      | s30 = new_ParallelAddAtomicInv'0 {_29} {_35}
+          (fun (_x: t_AtomicInvariantSC_ParallelAddAtomicInv) -> [ &inv <- _x ] s31)
+      | s31 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {frag}
           (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
             [ &_42 <- _bor ] -{inv_Ghost_Fragment_Option_tup2_PositiveReal_Int _bor.final}-
-            [ &frag <- _bor.final ] s30)
+            [ &frag <- _bor.final ] s32)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Fragment_Option_tup2_PositiveReal_Int frag} any) ]
-      | s30 = [ &_38 <- { c0 = inv; c1 = atomic; c2 = n; c3 = _42 } ] s31
-      | s31 = scope_closure0 {_38} (fun (_x: ()) -> [ &_37 <- _x ] s32)
-      | s32 = into_inner_AtomicInvariantSC_ParallelAddAtomicInv {inv}
-          (fun (_x: t_AtomicInvariantSC_ParallelAddAtomicInv) -> [ &_46 <- _x ] s33)
-      | s33 = into_inner_ParallelAddAtomicInv {_46} (fun (_x: t_ParallelAddAtomicInv) -> [ &inv'0 <- _x ] s34)
-      | s34 = s35 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_tup2_PositiveReal_Int inv'0.auth} any) ]
-      | s35 = -{resolve_Authority_Option_tup2_PositiveReal_Int inv'0.auth}- s36
-      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Fragment_Option_tup2_PositiveReal_Int frag} any) ]
-      | s37 = -{resolve_Ghost_Fragment_Option_tup2_PositiveReal_Int'0 frag}- s38
-      | s38 = [ &_53 <- frag ] s39
-      | s39 = deref_Ghost_Fragment_Option_tup2_PositiveReal_Int {_53}
-          (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_51 <- _x ] s40)
-      | s40 = frag_lemma_Option_tup2_PositiveReal_Int {inv'0.auth} {_51} (fun (_x: ()) -> [ &_48 <- _x ] s41)
-      | s41 = new_Perm_AtomicI32 {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s42)
-      | s42 = into_inner {atomic} {own'1} (fun (_x: Int32.t) -> [ &x <- _x ] s43)
-      | s43 = {[@expl:assertion] n = x} s44
-      | s44 = return {_ret} ] ]
+      | s32 = [ &_38 <- { c0 = inv; c1 = atomic; c2 = n; c3 = _42 } ] s33
+      | s33 = scope_closure0 {_38} (fun (_x: ()) -> [ &_37 <- _x ] s34)
+      | s34 = into_inner_AtomicInvariantSC_ParallelAddAtomicInv {inv}
+          (fun (_x: t_AtomicInvariantSC_ParallelAddAtomicInv) -> [ &_46 <- _x ] s35)
+      | s35 = into_inner_ParallelAddAtomicInv {_46} (fun (_x: t_ParallelAddAtomicInv) -> [ &inv'0 <- _x ] s36)
+      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_Authority_Option_tup2_PositiveReal_Int inv'0.auth} any) ]
+      | s37 = -{resolve_Authority_Option_tup2_PositiveReal_Int inv'0.auth}- s38
+      | s38 = s39 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Fragment_Option_tup2_PositiveReal_Int frag} any) ]
+      | s39 = -{resolve_Ghost_Fragment_Option_tup2_PositiveReal_Int'0 frag}- s40
+      | s40 = [ &_53 <- frag ] s41
+      | s41 = deref_Ghost_Fragment_Option_tup2_PositiveReal_Int {_53}
+          (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_51 <- _x ] s42)
+      | s42 = frag_lemma_Option_tup2_PositiveReal_Int {inv'0.auth} {_51} (fun (_x: ()) -> [ &_48 <- _x ] s43)
+      | s43 = new_Perm_AtomicI32 {inv'0.own} (fun (_x: t_Perm_AtomicI32) -> [ &own'1 <- _x ] s44)
+      | s44 = into_inner {atomic} {own'1} (fun (_x: Int32.t) -> [ &x <- _x ] s45)
+      | s45 = {[@expl:assertion] n = x} s46
+      | s46 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & n: Int32.t = n
     | & atomic: t_AtomicI32 = Any.any_l ()
@@ -2075,11 +2084,13 @@ module M_parallel_add
     | & _23: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & _24: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & _25: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _26: tup2_Option_tup2_PositiveReal_Int_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & inv: t_AtomicInvariantSC_ParallelAddAtomicInv = Any.any_l ()
     | & _29: t_ParallelAddAtomicInv = Any.any_l ()
     | & _30: t_ParallelAddAtomicInv = Any.any_l ()
     | & _31: t_Perm_AtomicI32 = Any.any_l ()
     | & _33: t_Authority_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _35: t_Namespace = Any.any_l ()
     | & _37: () = Any.any_l ()
     | & _38: closure0 = Any.any_l ()
     | & _42: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()

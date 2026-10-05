@@ -4,12 +4,20 @@ type namespace_other
 
 type t_Namespace = Other namespace_other
 
+use creusot.prelude.MutBorrow
 use real.Real
 use real.FromInt
-use creusot.prelude.MutBorrow
 use creusot.prelude.Any
 
+type t_Resource_PositiveReal
+
+type t_LifetimeToken = { f0: t_Resource_PositiveReal }
+
 type t_PositiveReal
+
+function val_PositiveReal (self: t_Resource_PositiveReal) : t_PositiveReal
+
+function frac (self: t_LifetimeToken) : t_PositiveReal = val_PositiveReal self.f0
 
 predicate gt_log_Real [@inline:trivial] (self: Real.real) (other: Real.real) = Real.(<) other self
 
@@ -19,20 +27,6 @@ function to_real (self: t_PositiveReal) : Real.real
 
 axiom to_real_spec: forall self: t_PositiveReal [to_real self]. gt_log_Real (to_real self) (FromInt.from_int 0)
 
-function div_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
-
-axiom div_PositiveReal_spec:
-  forall self: t_PositiveReal, other: t_PositiveReal [div_PositiveReal self other]. to_real (div_PositiveReal self other)
-    = Real.(/) (to_real self) (to_real other)
-
-type t_Resource_PositiveReal
-
-type t_LifetimeToken = { f0: t_Resource_PositiveReal }
-
-function val_PositiveReal (self: t_Resource_PositiveReal) : t_PositiveReal
-
-function frac (self: t_LifetimeToken) : t_PositiveReal = val_PositiveReal self.f0
-
 function new (n: Real.real) : t_PositiveReal
 
 axiom new_spec: forall n: Real.real [new n]. gt_log_Real n (FromInt.from_int 0) -> to_real (new n) = n
@@ -40,6 +34,12 @@ axiom new_spec: forall n: Real.real [new n]. gt_log_Real n (FromInt.from_int 0) 
 function from_int [@inline:trivial] (i: int) : t_PositiveReal = new (FromInt.from_int i)
 
 meta "rewrite_def" function from_int
+
+function div_PositiveReal (self: t_PositiveReal) (other: t_PositiveReal) : t_PositiveReal
+
+axiom div_PositiveReal_spec:
+  forall self: t_PositiveReal, other: t_PositiveReal [div_PositiveReal self other]. to_real (div_PositiveReal self other)
+    = Real.(/) (to_real self) (to_real other)
 
 let deref_mut_Ghost_Resource_PositiveReal (self: MutBorrow.t t_Resource_PositiveReal)
   (return (x: MutBorrow.t t_Resource_PositiveReal)) = any
@@ -158,7 +158,12 @@ meta "select_lsinst" "all"
 
 let split_off (self: MutBorrow.t t_LifetimeToken) (return (x: t_LifetimeToken)) = (! bb0
   [ bb0 = s0
-    [ s0 = [ &half <- div_PositiveReal (frac self.current) (from_int 2) ] s1
+    [ s0 = any
+      [ any_ (_dest: t_PositiveReal) ->
+      (! -{([@stop_split] [@expl:div_logic ensures] to_real (div_PositiveReal (frac self.current) (from_int 2))
+          = Real.(/) (to_real (frac self.current)) (to_real (from_int 2)))
+        /\ _dest = div_PositiveReal (frac self.current) (from_int 2)}-
+        [ &half <- _dest ] s1) ] [ _ck -> (! any) ]
     | s1 = MutBorrow.borrow_final <t_Resource_PositiveReal> {self.current.f0}
         {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
         (fun (_bor: MutBorrow.t t_Resource_PositiveReal) ->

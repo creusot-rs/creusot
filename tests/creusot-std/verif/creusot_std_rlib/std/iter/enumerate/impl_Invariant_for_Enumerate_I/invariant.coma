@@ -44,14 +44,8 @@ constant self : t_Enumerate_I
 
 predicate invariant_Enumerate_I (self: t_Enumerate_I)
 
-goal vc_invariant_Enumerate_I: if inv_I (iter_Enumerate_I self) then
-    if forall s: Seq.seq t_Item, i: t_I [produces_I (iter_Enumerate_I self) s i]. produces_I (iter_Enumerate_I self) s i
-      -> UInt64.t'int (n_Enumerate_I self) + Seq.length s < UInt64.t'int const_MAX then
-      [@stop_split] [@expl:invariant ensures] (forall i: MutBorrow.t t_I. completed_I i
-          -> produces_I i.current (Seq.empty: Seq.seq t_Item) i.final) -> inv_I (iter_Enumerate_I self)
-    else
-      [@stop_split] [@expl:invariant ensures] false -> inv_I (iter_Enumerate_I self)
-  
-  else
-    [@stop_split] [@expl:invariant ensures] false -> inv_I (iter_Enumerate_I self)
-  
+goal vc_invariant_Enumerate_I: [@stop_split] [@expl:invariant ensures] inv_I (iter_Enumerate_I self)
+    /\ (forall s: Seq.seq t_Item, i: t_I [produces_I (iter_Enumerate_I self) s i]. produces_I (iter_Enumerate_I self) s i
+        -> UInt64.t'int (n_Enumerate_I self) + Seq.length s < UInt64.t'int const_MAX)
+    /\ (forall i: MutBorrow.t t_I. completed_I i -> produces_I i.current (Seq.empty: Seq.seq t_Item) i.final)
+  -> inv_I (iter_Enumerate_I self)

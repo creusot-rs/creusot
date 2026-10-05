@@ -14,6 +14,7 @@ use crate::{
         clone_map::{Namer, PreMod},
         common_meta_decls,
         dependency::Dependency,
+        logic::vcgen::wp,
         optimization::optimizations,
         projections::{Focus, borrow_generated_id, projections_to_expr},
         signature::{Contract, ProgramSignature, lower_program_sig},
@@ -556,7 +557,29 @@ impl<'tcx> Operand<'tcx> {
         match self {
             Operand::Place(pl) => lower.rplace_to_expr(&pl, istmts, span),
             Operand::ShrBorrow(op) => op.into_why(lower, istmts, span),
-            Operand::Term(c, _) => lower_pure(lower.ctx, lower.names, &c.spanned()),
+            Operand::Term(c, false) => lower_pure(lower.ctx, lower.names, &c.spanned()),
+            Operand::Term(c, true) => {
+                if let Some(pre) =
+                    wp(lower.ctx, lower.names, None, &c.clone().spanned(), true, &|_| {
+                        Exp::mk_true()
+                    })
+                {
+                    istmts.push(IntermediateStmt::Check(pre))
+                }
+                let dest = Ident::fresh_local("_dest");
+                if let Some(mut post) =
+                    wp(lower.ctx, lower.names, None, &c.clone().spanned(), false, &|exp| {
+                        Exp::var(dest).neq(exp)
+                    })
+                {
+                    post.smart_not();
+                    istmts.push(IntermediateStmt::Any(dest, lower.ty(c.ty)));
+                    istmts.push(IntermediateStmt::Assume(post));
+                    Exp::var(dest)
+                } else {
+                    lower_pure(lower.ctx, lower.names, &c.spanned())
+                }
+            }
             Operand::InlineConst(def_id, promoted, subst, ty) => {
                 let ret = Ident::fresh_local("_const_ret");
                 let result = Ident::fresh_local("_const");

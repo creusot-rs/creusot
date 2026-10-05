@@ -161,10 +161,11 @@ module M_all_zero
         | s2 = any [ br0 -> {_22 = None} (! bb10) | br1 (x0: MutBorrow.t UInt64.t) -> {_22 = Some x0} (! bb11) ] ]
         [ bb11 = s0
           [ s0 = elim_Some {_22} (fun (r0: MutBorrow.t UInt64.t) -> [ &x <- r0 ] s1)
-          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton x) ] s2
-          | s2 = [ &x <- { x with current = (0: UInt64.t) } ] s3
-          | s3 = -{resolve_refmut_usize x}- s4
-          | s4 = bb5 ] ] ]
+          | s1 = [ &_26 <- Seq.(++) produced (Seq.singleton x) ] s2
+          | s2 = [ &produced <- _26 ] s3
+          | s3 = [ &x <- { x with current = (0: UInt64.t) } ] s4
+          | s4 = -{resolve_refmut_usize x}- s5
+          | s5 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_IterMut_usize it} any) ]
       | s1 = -{resolve_IterMut_usize it}- s2
@@ -179,7 +180,8 @@ module M_all_zero
     | & produced: Seq.seq (MutBorrow.t UInt64.t) = Any.any_l ()
     | & _22: t_Option_refmut_usize = Any.any_l ()
     | & _23: MutBorrow.t t_IterMut_usize = Any.any_l ()
-    | & x: MutBorrow.t UInt64.t = Any.any_l () ])
+    | & x: MutBorrow.t UInt64.t = Any.any_l ()
+    | & _26: Seq.seq (MutBorrow.t UInt64.t) = Any.any_l () ])
     [ return (result: ()) ->
     {[@stop_split] [@expl:all_zero ensures] ([@stop_split] [@expl:all_zero ensures #0] Seq.length (view_Vec_usize_Global v.final)
         = Seq.length (view_Vec_usize_Global v.current))

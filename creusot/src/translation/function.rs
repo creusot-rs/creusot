@@ -410,7 +410,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let ty =
             Ty::new_adt(self.tcx(), self.ctx.adt_def(Intrinsic::Snapshot.get(self.ctx)), subst);
 
-        let rvalue = fmir::RValue::Operand(fmir::Operand::term(rhs.coerce(ty)));
+        let rvalue = fmir::RValue::Operand(fmir::Operand::Term(rhs.coerce(ty), true));
         self.emit_assignment(lhs, rvalue, span)
     }
 

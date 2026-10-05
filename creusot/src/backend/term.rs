@@ -244,14 +244,14 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Unary { op: UnOp::Not, box arg } => {
                 Exp::UnaryOp(WUnOp::Not, self.lower_term(arg).boxed())
             }
-            TermKind::Call { id, subst, args, .. } => {
+            TermKind::Call { id, .. } if is_new_namespace(self.ctx.tcx, *id) => {
                 // Calling a function declared by `declare_namespace`: generate an identifier for it.
-                if is_new_namespace(self.ctx.tcx, *id) {
-                    return Exp::Constructor {
-                        ctor: Name::local(self.ctx.get_namespace_constructor(*id)),
-                        args: Box::new([Exp::int(0)]),
-                    };
+                Exp::Constructor {
+                    ctor: Name::local(self.ctx.get_namespace_constructor(*id)),
+                    args: Box::new([Exp::int(0)]),
                 }
+            }
+            TermKind::Call { id, subst, args, .. } => {
                 let e = Exp::Var(self.names.item(*id, subst))
                     .app(args.into_iter().map(|arg| self.lower_term(arg)));
                 if is_builtin_ascription(self.ctx.tcx, *id) {

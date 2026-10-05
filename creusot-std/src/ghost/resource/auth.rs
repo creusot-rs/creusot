@@ -123,6 +123,7 @@ impl<R: UnitRA> Authority<R> {
     #[ensures((^frag)@ == upd.update(self@, frag@).1)]
     #[allow(unused_variables)]
     pub fn update<U: LocalUpdate<R>>(&mut self, frag: &mut Fragment<R>, upd: U) {
+        self.0.valid_op_lemma(&frag.0);
         let from = snapshot!(Auth::new(Some(self@), frag@));
         self.0.join_in(frag.0.take());
         // Discard the spurious frag part of the auth

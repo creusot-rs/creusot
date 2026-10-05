@@ -63,13 +63,46 @@ module M_foo
   
   let foo (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &map <- empty_Int ] s1
-      | s1 = [ &map <- insert_Int map 1 3 ] s2
-      | s2 = {[@expl:assertion] index_FMap_Int_Int map 1 = 3} s3
-      | s3 = [ &map <- insert_Int map 2 42 ] s4
-      | s4 = {[@expl:assertion] index_FMap_Int_Int map 1 = 3 /\ index_FMap_Int_Int map 2 = 42} s5
-      | s5 = [ &map <- insert_Int map 1 4 ] s6
-      | s6 = {[@expl:assertion] index_FMap_Int_Int map 1 = 4 /\ index_FMap_Int_Int map 2 = 42} s7
-      | s7 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & map: t_FMap_Int_Int = Any.any_l () ])
-    [ return (result: ()) -> (! return {result}) ]
+      [ s0 = any
+        [ any_ (_dest: t_FMap_Int_Int) ->
+        (! -{([@stop_split] [@expl:empty ensures] ([@stop_split] [@expl:empty ensures #0] len_Int empty_Int = 0)
+            /\ ([@stop_split] [@expl:empty ensures #1] to_mapping_Int empty_Int = Const.const (None)))
+          /\ _dest = empty_Int}-
+          [ &map <- _dest ] s1) ] [ _ck -> (! any) ]
+      | s1 = any
+        [ any_ (_dest: t_FMap_Int_Int) ->
+        (! -{([@stop_split] [@expl:insert ensures] ([@stop_split] [@expl:insert ensures #0] to_mapping_Int (insert_Int map 1 3)
+              = Map.set (to_mapping_Int map) 1 (Some 3))
+            /\ ([@stop_split] [@expl:insert ensures #1] len_Int (insert_Int map 1 3)
+            = (if contains_Int map 1 then len_Int map else len_Int map + 1)))
+          /\ _dest = insert_Int map 1 3}-
+          [ &_3 <- _dest ] s2) ] [ _ck -> (! any) ]
+      | s2 = [ &map <- _3 ] s3
+      | s3 = {[@expl:assertion] index_FMap_Int_Int map 1 = 3} s4
+      | s4 = any
+        [ any_ (_dest: t_FMap_Int_Int) ->
+        (! -{([@stop_split] [@expl:insert ensures] ([@stop_split] [@expl:insert ensures #0] to_mapping_Int (insert_Int map 2 42)
+              = Map.set (to_mapping_Int map) 2 (Some 42))
+            /\ ([@stop_split] [@expl:insert ensures #1] len_Int (insert_Int map 2 42)
+            = (if contains_Int map 2 then len_Int map else len_Int map + 1)))
+          /\ _dest = insert_Int map 2 42}-
+          [ &_9 <- _dest ] s5) ] [ _ck -> (! any) ]
+      | s5 = [ &map <- _9 ] s6
+      | s6 = {[@expl:assertion] index_FMap_Int_Int map 1 = 3 /\ index_FMap_Int_Int map 2 = 42} s7
+      | s7 = any
+        [ any_ (_dest: t_FMap_Int_Int) ->
+        (! -{([@stop_split] [@expl:insert ensures] ([@stop_split] [@expl:insert ensures #0] to_mapping_Int (insert_Int map 1 4)
+              = Map.set (to_mapping_Int map) 1 (Some 4))
+            /\ ([@stop_split] [@expl:insert ensures #1] len_Int (insert_Int map 1 4)
+            = (if contains_Int map 1 then len_Int map else len_Int map + 1)))
+          /\ _dest = insert_Int map 1 4}-
+          [ &_15 <- _dest ] s8) ] [ _ck -> (! any) ]
+      | s8 = [ &map <- _15 ] s9
+      | s9 = {[@expl:assertion] index_FMap_Int_Int map 1 = 4 /\ index_FMap_Int_Int map 2 = 42} s10
+      | s10 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & map: t_FMap_Int_Int = Any.any_l ()
+    | & _3: t_FMap_Int_Int = Any.any_l ()
+    | & _9: t_FMap_Int_Int = Any.any_l ()
+    | & _15: t_FMap_Int_Int = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

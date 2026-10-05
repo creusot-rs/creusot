@@ -1,8 +1,6 @@
 use crate::{
     backend::{
         Why3Generator,
-        clone_map::Namer as _,
-        logic::Dependencies,
         program::{PtrCastKind, ptr_cast_kind},
         projections::{borrow_generated_id, projections_term},
         signature::lower_contract,
@@ -12,8 +10,8 @@ use crate::{
         },
         ty::{constructor, translate_ty, ty_to_prelude},
     },
-    contracts_items::is_builtin_ascription,
-    ctx::{HasTyCtxt, PreMod},
+    contracts_items::{is_builtin_ascription, is_new_namespace},
+    ctx::{HasTyCtxt, Namer, PreMod},
     naming::name,
     translation::pearlite::{BinOp, Literal, Pattern, Term, TermKind, UnOp},
     util::erased_identity_for_item,
@@ -21,10 +19,10 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{PlaceTy, ProjectionElem},
-    ty::{EarlyBinder, Ty, TyCtxt, TyKind, TypingEnv},
+    ty::{EarlyBinder, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Span;
-use std::{collections::HashMap, iter::repeat_n};
+use std::{cell::Cell, collections::HashMap, iter::repeat_n};
 use why3::{
     Exp, Ident, Name,
     declaration::Attribute,
@@ -48,36 +46,39 @@ use why3::{
 /// 1. Conjunction: 2. Exists & Forall: 3. Function calls:
 ///
 /// TODO: Finish doc
-struct VCGen<'a, 'tcx> {
+struct VCGen<'a, 'tcx, N> {
     ctx: &'a Why3Generator<'tcx>,
-    names: &'a Dependencies<'a, 'tcx>,
-    self_id: DefId,
-    args_names: Vec<Ident>,
-    variant: Option<Exp>,
-    typing_env: TypingEnv<'tcx>,
+    names: &'a N,
+    self_call: Option<SelfCall>,
+    trivial: Cell<bool>,
+    safety: bool,
 }
 
-/// Compute weakest precondition for the function `self_id`
-pub(super) fn wp<'tcx>(
-    ctx: &Why3Generator<'tcx>,
-    names: &Dependencies<'_, 'tcx>,
-    self_id: DefId,
-    args_names: Vec<Ident>,
-    variant: Option<Exp>,
-    t: &Term<'tcx>,
-    dest: Ident,
-    post: Exp,
-) -> Exp {
-    let vcgen =
-        VCGen { typing_env: ctx.typing_env(self_id), ctx, names, self_id, args_names, variant };
-    vcgen.build_wp(t, &|exp| Exp::let_(dest, exp, post.clone()))
+pub struct SelfCall {
+    pub id: DefId,
+    pub args: Vec<Ident>,
+    pub variant: Option<Exp>,
 }
 
 // We use Fn because some continuations may be called several times (in the case
 // the post condition appears several times).
-type PostCont<'a, 'tcx, A, R = Exp> = &'a dyn Fn(A) -> R;
+pub type PostCont<'a, 'tcx, A, R = Exp> = &'a dyn Fn(A) -> R;
 
-impl<'tcx> VCGen<'_, 'tcx> {
+/// Compute weakest precondition for the function `self_id`
+pub fn wp<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    names: &impl Namer<'tcx>,
+    self_call: Option<SelfCall>,
+    t: &Term<'tcx>,
+    safety: bool,
+    k: PostCont<'_, 'tcx, Exp>,
+) -> Option<Exp> {
+    let vcgen = VCGen { ctx, names, self_call, trivial: Cell::new(true), safety };
+    let res = vcgen.build_wp(t, k);
+    if vcgen.trivial.get() { None } else { Some(res) }
+}
+
+impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
     fn lower_literal(&self, lit: &Literal, ty: Ty<'tcx>) -> Exp {
         lower_literal(self.ctx, self.names, lit, ty)
     }
@@ -93,7 +94,8 @@ impl<'tcx> VCGen<'_, 'tcx> {
     fn build_wp(&self, t: &Term<'tcx>, k: PostCont<'_, 'tcx, Exp>) -> Exp {
         use BinOp::*;
         if let &TyKind::FnDef(id, _) = t.ty.kind()
-            && id == self.self_id
+            && let Some(sc) = &self.self_call
+            && id == sc.id
         {
             self.ctx.crash_and_error(t.span, "cannot refer to the function in its own definition.")
         }
@@ -152,26 +154,36 @@ impl<'tcx> VCGen<'_, 'tcx> {
                     t.ty,
                     self.names.source_id(),
                     self.ctx,
-                    self.typing_env,
+                    self.names.typing_env(),
                     t.span),
                 k,
             ),
-            // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
-            TermKind::Assert { cond } => self.build_wp(cond, &|exp| exp.lazy_and(k(Exp::unit()))),
+            TermKind::Call { id, .. } if is_new_namespace(self.ctx.tcx, *id) => {
+                // Calling a function declared by `declare_namespace`: generate an identifier for it.
+                k(Exp::Constructor {
+                    ctor: Name::local(self.ctx.get_namespace_constructor(*id)),
+                    args: Box::new([Exp::int(0)]),
+                })
+            }
             // VC(f As, Q) = VC(A0, |a0| ... VC(An, |an|
             //  pre(f)(a0..an) /\ variant(f)(a0..an) /\ (post(f)(a0..an, F(a0..an)) -> Q(F a0..an))
             // ))
             &TermKind::Call { id, subst, ref args } => self.build_wp_slice(args, &|args| {
                 let pre_sig = EarlyBinder::bind(self.ctx.tcx, self.ctx.sig(id).clone())
                     .instantiate(self.ctx.tcx, subst)
-                    .skip_normalization().normalize_contract(self.ctx, self.typing_env);
+                    .skip_normalization().normalize_contract(self.ctx, self.names.typing_env());
 
-                let variant = if self.ctx.should_check_variant_decreases(self.self_id, id) {
+                let mut variant = Exp::mk_true();
+
+                if self.safety
+                        && let Some(self_call) = &self.self_call
+                        && self.ctx.should_check_variant_decreases(self_call.id, id) {
+                    self.trivial.set(false);
                     let subst_id = erased_identity_for_item(self.ctx.tcx, id);
                     if subst != subst_id {
                         self.ctx.crash_and_error(t.span, "polymorphic recursion is not supported.")
                     }
-                    if self.self_id != id {
+                    if self_call.id != id {
                         self.ctx
                             .dcx()
                             .struct_span_fatal(
@@ -181,23 +193,20 @@ impl<'tcx> VCGen<'_, 'tcx> {
                             .with_note(format!(
                                 "calling {} from {}",
                                 self.ctx.def_path_str(id),
-                                self.ctx.def_path_str(self.self_id)
+                                self.ctx.def_path_str(self_call.id)
                             ))
                             .emit();
                     }
 
-                    let variant = pre_sig.contract.variant.clone();
-                    if let Some(variant) = variant {
-                        self.build_variant(&args, variant)
+                    if let Some(v) = pre_sig.contract.variant.clone() {
+                        variant = self.build_variant(&args, v)
                     } else {
                         self.ctx.crash_and_error(
-                            self.ctx.def_span(self.self_id),
+                            self.ctx.def_span(self_call.id),
                             "this function is recursive, but it does not use a variant and it not structurally recursive.",
                         )
                     }
-                } else {
-                    Exp::mk_true()
-                };
+                }
 
                 let mut call = Exp::Var(self.names.item(id, subst)).app(args.clone());
                 if is_builtin_ascription(self.ctx.tcx, id) {
@@ -213,14 +222,24 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 let mut contract = lower_contract(self.ctx, self.names, &pre_sig.contract);
                 contract.subst(&call_subst);
 
+                if !contract.requires.is_empty() || !contract.ensures.is_empty() {
+                    self.trivial.set(false);
+                }
+
                 let name = self.ctx.item_name(id);
                 let name = name.as_str();
-                contract
-                    .requires_conj(name)
-                    .log_and(variant)
-                    .log_and(contract.ensures_conj(name).implies(k(call)))
+                let req = if self.safety { contract.requires_conj(name) } else { Exp::mk_true() };
+                req.log_and(variant).log_and(contract.ensures_conj(name).implies(k(call)))
             }),
-
+            // VC(assert { C }, Q) => VC(C, |c| c && Q(()))
+            TermKind::Assert { cond } => {
+                self.trivial.set(false);
+                self.build_wp(cond,
+                    &|exp|
+                        if self.safety { exp.lazy_and(k(Exp::unit())) }
+                        else { exp.implies(k(Exp::unit())) }
+                )
+            },
             // VC(A && B, Q) = VC(A, |a| if a then VC(B, Q) else Q(false))
             // VC(A || B, Q) = VC(A, |a| if a then Q(true) else VC(B, Q))
             // VC(A OP B, Q) = VC(A, |a| VC(B, |b| Q(a OP B)))
@@ -251,9 +270,25 @@ impl<'tcx> VCGen<'_, 'tcx> {
             // VC(forall<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(forall<x>P(x))
             // VC(exists<x> P(x), Q) => (forall<x> VC(P, true)) /\ Q(exists<x>P(x))
             TermKind::Quant { binder, body, .. } => {
-                let body = self.build_wp(&body.term, &|_| Exp::mk_true());
-                Exp::forall(binder.iter().map(|(s, ty)| (s.0, self.ty(*ty, t.span))), body)
-                    .log_and(k(self.lower_pure(t)))
+                let safe =
+                    if self.safety {
+                        let body = self.build_wp(&body.term, &|_| Exp::mk_true());
+                        Exp::forall(binder.iter().map(|(s, ty)| (s.0, self.ty(*ty, t.span))), body)
+                    } else {
+                        Exp::mk_true()
+                    };
+                safe.log_and(k(self.lower_pure(t)))
+            }
+            // VC(|x| A(x), Q) = (forall<x>, VC(A(x), true)) /\ Q(|x| A(x))
+            &TermKind::Closure { arg, arg_ty, ref body } => {
+                let safe =
+                    if self.safety {
+                        let body = self.build_wp(body, &|_| Exp::mk_true());
+                        Exp::forall([(arg.0, self.ty(arg_ty, t.span))], body)
+                    } else {
+                        Exp::mk_true()
+                    };
+                safe.lazy_and(k(self.lower_pure(t)))
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
             TermKind::Tuple { fields } => {
@@ -290,7 +325,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
                 self.names.import_prelude_module(PreMod::MutBor);
                 self.build_wp(term, &|term| k(term.field(Name::Global(name::final_()))))
             }
-            // VC(A -> B, Q) = VC(A, VC(B, Q(A -> B)))
+            // VC(A -> B, Q) = VC(A, |a| if a then VC(B, Q) else Q(T))
             TermKind::Impl { lhs, rhs } => self.build_wp(lhs, &|lhs| {
                 Exp::if_(lhs, self.build_wp(rhs, k), k(Exp::mk_true()))
             }),
@@ -377,12 +412,6 @@ impl<'tcx> VCGen<'_, 'tcx> {
                             .app([cur, fin, borrow_id]))
                     })
                 })
-            }
-            // VC(|x| A(x), Q) = (forall<x>, VC(A(x), true)) /\ Q(|x| A(x))
-            &TermKind::Closure { arg, arg_ty, ref body } => {
-                let body = self.build_wp(body, &|_| Exp::mk_true());
-                Exp::forall([(arg.0, self.ty(arg_ty, t.span))], body)
-                    .lazy_and(k(self.lower_pure(t)))
             }
             TermKind::Old { .. } => self.ctx.crash_and_error(t.span, "`old` is not allowed here"),
             TermKind::Precondition { .. } | TermKind::Postcondition { .. } => {
@@ -479,20 +508,21 @@ impl<'tcx> VCGen<'_, 'tcx> {
     /// Note that this only generates a variant for a simply recursive,
     /// non-polymorphic call.
     fn build_variant(&self, call_args: &[Exp], variant_after: Term<'tcx>) -> Exp {
+        let self_call = self.self_call.as_ref().unwrap();
         let (wf_relation, variant_subst) =
-            self.ctx.resolve_wf_relation(self.typing_env, variant_after.ty);
+            self.ctx.resolve_wf_relation(self.names.typing_env(), variant_after.ty);
         let wf_relation = Exp::Var(self.names.item(wf_relation, variant_subst));
         let subst: HashMap<Ident, Exp> =
-            self.args_names.iter().cloned().zip(call_args.iter().cloned()).collect();
+            self_call.args.iter().cloned().zip(call_args.iter().cloned()).collect();
         let mut variant_after = self.lower_pure(&variant_after.spanned());
         variant_after.subst(&subst);
         wf_relation
-            .app([self.variant.clone().unwrap(), variant_after])
+            .app([self_call.variant.clone().unwrap(), variant_after])
             .with_attr(Attribute::Attr("expl:variant decreases".into()))
     }
 }
 
-impl<'a, 'tcx> HasTyCtxt<'tcx> for VCGen<'a, 'tcx> {
+impl<'a, 'tcx, N: Namer<'tcx>> HasTyCtxt<'tcx> for VCGen<'a, 'tcx, N> {
     fn tcx(&self) -> TyCtxt<'tcx> {
         self.ctx.tcx
     }

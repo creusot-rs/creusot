@@ -2,7 +2,10 @@ mod binder;
 
 use crate::{Ident, Name, QName, declaration::Attribute, name, ty::Type};
 use indexmap::IndexSet;
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    mem::replace,
+};
 
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
@@ -348,6 +351,63 @@ impl Exp {
 
     pub fn not(self) -> Self {
         Exp::UnaryOp(UnOp::Not, Box::new(self))
+    }
+
+    pub fn smart_not(&mut self) {
+        let take = |e: &mut Exp| replace(e, Exp::Const(Constant::Bool(false)));
+        match self {
+            Exp::UnaryOp(UnOp::Not, e) => *self = take(&mut **e),
+            Exp::BinaryOp(op @ BinOp::LogAnd, l, r) => {
+                *op = BinOp::LogOr;
+                l.smart_not();
+                r.smart_not();
+            }
+            Exp::BinaryOp(op @ BinOp::LogOr, l, r) => {
+                *op = BinOp::LogAnd;
+                l.smart_not();
+                r.smart_not();
+            }
+            Exp::BinaryOp(op @ BinOp::LazyAnd, l, r) => {
+                *op = BinOp::LazyOr;
+                l.smart_not();
+                r.smart_not();
+            }
+            Exp::BinaryOp(op @ BinOp::LazyOr, l, r) => {
+                *op = BinOp::LazyAnd;
+                l.smart_not();
+                r.smart_not();
+            }
+            Exp::BinaryOp(op @ BinOp::Eq, _, _) => *op = BinOp::Ne,
+            Exp::BinaryOp(op @ BinOp::Ne, _, _) => *op = BinOp::Eq,
+            Exp::BinaryOp(op @ BinOp::Lt, _, _) => *op = BinOp::Ge,
+            Exp::BinaryOp(op @ BinOp::Le, _, _) => *op = BinOp::Gt,
+            Exp::BinaryOp(op @ BinOp::Gt, _, _) => *op = BinOp::Le,
+            Exp::BinaryOp(op @ BinOp::Ge, _, _) => *op = BinOp::Lt,
+            Exp::Impl(l, r) => {
+                r.smart_not();
+                *self = Exp::BinaryOp(
+                    BinOp::LogAnd,
+                    Box::new(take(&mut **l)),
+                    Box::new(take(&mut **r)),
+                );
+            }
+            Exp::Let { body, .. } => body.smart_not(),
+            Exp::Const(Constant::Bool(b)) => *b = !*b,
+            Exp::Attr(_, e) => e.smart_not(),
+            Exp::Match(_, arms) => arms.iter_mut().map(|(_, b)| b.smart_not()).collect(),
+            Exp::IfThenElse(_, t, e) => {
+                t.smart_not();
+                e.smart_not();
+            }
+            Exp::Quant(quant, _, _, body) => {
+                *quant = match quant {
+                    Quant::Forall => Quant::Exists,
+                    Quant::Exists => Quant::Forall,
+                };
+                body.smart_not()
+            }
+            _ => *self = take(self).not(),
+        }
     }
 
     pub fn eq(self, rhs: Self) -> Self {

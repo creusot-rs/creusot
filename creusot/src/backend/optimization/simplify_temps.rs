@@ -1,7 +1,4 @@
-use rustc_middle::{
-    mir::{BasicBlock, START_BLOCK},
-    ty::TyKind,
-};
+use rustc_middle::mir::{BasicBlock, START_BLOCK};
 
 use crate::{
     backend::{
@@ -9,7 +6,6 @@ use crate::{
         program::node_graph,
         wto::{Component, weak_topological_order},
     },
-    contracts_items::Intrinsic,
     ctx::TranslationCtx,
     translation::{
         fmir::{
@@ -48,19 +44,6 @@ pub(crate) fn simplify_temporaries<'tcx>(ctx: &TranslationCtx<'tcx>, body: &mut 
     );
 
     for (bb, block) in &mut body.blocks {
-        for s in block.stmts.iter_mut() {
-            if let StatementKind::Assignment(ref lhs, RValue::Operand(Operand::Term(_, ref mut b))) =
-                s.kind
-                && let Some(Reads::Zero) = reads.get(&lhs.local)
-                && let TyKind::Adt(def, _) = body.locals[&lhs.local].ty.kind()
-                && Intrinsic::Snapshot.is(ctx, def.did())
-            {
-                // This snapshot is never read. Mark it so that we will keep it in the dead temps
-                // optimization.
-                *b = true
-            }
-        }
-
         if let Some(mut state) = states.remove(bb) {
             BlockPropagator { ctx, locals: &body.locals, state: &mut state, readonly: false }
                 .visit_mut_block(block);

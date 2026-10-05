@@ -11,8 +11,11 @@ module M_caller
   
   let caller (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = pearlite_closure {fun (_a: UInt32.t) -> true} (fun (_x: ()) -> [ &_1 <- _x ] s1) | s1 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+      [ s0 = [ &_2 <- fun (_a: UInt32.t) -> true ] s1
+      | s1 = pearlite_closure {_2} (fun (_x: ()) -> [ &_1 <- _x ] s2)
+      | s2 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () | & _2: Map.map UInt32.t bool = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
 end
 module M_ghost_closure
   use creusot.int.UInt32
@@ -27,21 +30,6 @@ module M_ghost_closure
     [ bb0 = s0 [ s0 = [ &_x <- fun (a: UInt32.t) -> a ] s1 | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & _x: Map.map UInt32.t UInt32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
-end
-module M_has_len_3
-  use creusot.slice.Slice64
-  use creusot.int.UInt32
-  use seq.Seq
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  constant v : Slice64.slice UInt32.t
-  
-  predicate has_len_3 (v: Slice64.slice UInt32.t)
-  
-  goal vc_has_len_3: true
 end
 module M_pearlite_closure
   use creusot.prelude.Any

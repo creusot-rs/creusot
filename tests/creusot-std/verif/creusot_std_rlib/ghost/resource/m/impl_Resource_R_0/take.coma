@@ -104,15 +104,21 @@ meta "select_lsinst" "all"
 let take_R (self: MutBorrow.t t_Resource_R) (return (x: t_Resource_R)) = (! bb0
   [ bb0 = s0
     [ s0 = [ &r <- view_Resource_R self.current ] s1
-    | s1 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
-        (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_11 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
-    | s2 = split_off_R {_11} {r} {unit_R} (fun (_x: t_Resource_R) -> [ &_ret <- _x ] s3)
-    | s3 = -{resolve_refmut_Resource_R self}- s4
-    | s4 = return {_ret} ] ]
+    | s1 = any
+      [ any_ (_dest: t_R) -> (! -{([@stop_split] [@expl:unit ensures] forall x: t_R [op_R x unit_R]. op_R x unit_R
+            = Some x)
+        /\ _dest = unit_R}-
+        [ &_13 <- _dest ] s2) ] [ _ck -> (! any) ]
+    | s2 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
+        (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_11 <- _bor ] [ &self <- { self with current = _bor.final } ] s3)
+    | s3 = split_off_R {_11} {r} {_13} (fun (_x: t_Resource_R) -> [ &_ret <- _x ] s4)
+    | s4 = -{resolve_refmut_Resource_R self}- s5
+    | s5 = return {_ret} ] ]
   [ & _ret: t_Resource_R = Any.any_l ()
   | & self: MutBorrow.t t_Resource_R = self
   | & r: t_R = Any.any_l ()
-  | & _11: MutBorrow.t t_Resource_R = Any.any_l () ])
+  | & _11: MutBorrow.t t_Resource_R = Any.any_l ()
+  | & _13: t_R = Any.any_l () ])
   [ return (result: t_Resource_R) ->
   {[@stop_split] [@expl:take_R ensures] ([@stop_split] [@expl:take ensures #0] id_R self.final = id_R self.current
       /\ id_R result = id_R self.current)

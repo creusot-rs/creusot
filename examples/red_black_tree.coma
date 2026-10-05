@@ -2798,23 +2798,9 @@ module M_impl_Node_K_V__has_mapping (* Node<K, V> *)
   
   predicate has_mapping_K'0 (self: t_Node_K_V) (k: t_DeepModelTy) (v: t_V)
   
-  goal vc_has_mapping_K: if has_mapping_K self.left k v then
-      [@stop_split] [@expl:has_mapping ensures] forall node'0: t_Node_K_V. self = node'0
-        -> true = has_mapping_K { node = Some node'0 } k v
-    else
-      if has_mapping_K self.right k v then
-        [@stop_split] [@expl:has_mapping ensures] forall node'0: t_Node_K_V. self = node'0
-          -> true = has_mapping_K { node = Some node'0 } k v
-      else
-        if k = deep_model_K self.key then
-          [@stop_split] [@expl:has_mapping ensures] forall node'0: t_Node_K_V. self = node'0
-            -> (v = self.val') = has_mapping_K { node = Some node'0 } k v
-        else
-          [@stop_split] [@expl:has_mapping ensures] forall node'0: t_Node_K_V. self = node'0
-            -> false = has_mapping_K { node = Some node'0 } k v
-      
-    
-
+  goal vc_has_mapping_K: [@stop_split] [@expl:has_mapping ensures] forall node'0: t_Node_K_V. self = node'0
+      -> (has_mapping_K self.left k v \/ has_mapping_K self.right k v \/ k = deep_model_K self.key /\ v = self.val')
+      = has_mapping_K { node = Some node'0 } k v
 end
 module M_impl_Node_K_V_2__height (* Node<K, V> *)
   use int.Int
