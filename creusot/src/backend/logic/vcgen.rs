@@ -382,7 +382,7 @@ impl<'tcx> VCGen<'_, 'tcx> {
             &TermKind::Closure { arg, arg_ty, ref body } => {
                 let body = self.build_wp(body, &|_| Exp::mk_true());
                 Exp::forall([(arg.0, self.ty(arg_ty, t.span))], body)
-                    .log_and(k(self.lower_pure(t)))
+                    .lazy_and(k(self.lower_pure(t)))
             }
             TermKind::Old { .. } => self.ctx.crash_and_error(t.span, "`old` is not allowed here"),
             TermKind::Precondition { .. } | TermKind::Postcondition { .. } => {
