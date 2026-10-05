@@ -1,9 +1,9 @@
 extern crate creusot_std;
 use ::std::rc::Rc;
-use creusot_std::{cell::PermCell, ghost::perm::Perm, prelude::*};
+use creusot_std::{cell::PCell, ghost::perm::Perm, prelude::*};
 
 pub struct Node<T> {
-    next: Rc<PermCell<List<T>>>,
+    next: Rc<PCell<List<T>>>,
 }
 pub struct List<T> {
     head: Option<Node<T>>,
@@ -11,7 +11,7 @@ pub struct List<T> {
 
 impl<T> List<T> {
     #[requires(false)]
-    pub fn foo(&mut self, mut perm: Ghost<Perm<PermCell<List<T>>>>) {
+    pub fn foo(&mut self, mut perm: Ghost<Perm<PCell<List<T>>>>) {
         let mut p = self;
         let mut next;
 

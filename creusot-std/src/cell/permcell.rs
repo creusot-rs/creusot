@@ -17,26 +17,26 @@ use core::cell::UnsafeCell;
 ///
 /// When using Creusot to verify the code, all methods should be safe to call. Indeed,
 /// Creusot ensures that every operation on the inner value uses the right [`Perm`] object
-/// created by [`PermCell::new`], ensuring safety in a manner similar to
+/// created by [`PCell::new`], ensuring safety in a manner similar to
 /// [ghost_cell](https://docs.rs/ghost-cell/latest/ghost_cell/).
 #[trusted(positive(T))]
 #[opaque]
 #[repr(transparent)]
-pub struct PermCell<T: ?Sized>(UnsafeCell<T>);
+pub struct PCell<T: ?Sized>(UnsafeCell<T>);
 
-impl<T: ?Sized> PermTarget for PermCell<T> {
+impl<T: ?Sized> PermTarget for PCell<T> {
     type Value = T;
-    /// A `Perm<PermCell<_>>` must not be objective, because its accesses are
+    /// A `Perm<PCell<_>>` must not be objective, because its accesses are
     /// not atomic.
     type Objectiveness = NotObjective;
 }
 
 #[trusted]
-unsafe impl<T: ?Sized> Send for PermCell<T> {}
+unsafe impl<T: ?Sized> Send for PCell<T> {}
 #[trusted]
-unsafe impl<T: ?Sized> Sync for PermCell<T> {}
+unsafe impl<T: ?Sized> Sync for PCell<T> {}
 
-impl<T: ?Sized> Invariant for Perm<PermCell<T>> {
+impl<T: ?Sized> Invariant for Perm<PCell<T>> {
     #[logic(open, prophetic, inline)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn invariant(self) -> bool {
@@ -44,13 +44,13 @@ impl<T: ?Sized> Invariant for Perm<PermCell<T>> {
     }
 }
 
-impl<T: ?Sized> PermCell<T> {
-    /// Creates a new `PermCell` containing the given value.
+impl<T: ?Sized> PCell<T> {
+    /// Creates a new `PCell` containing the given value.
     #[trusted]
     #[check(terminates)]
     #[ensures(result.0 == *result.1.ward())]
     #[ensures(result.1.val() == value)]
-    pub fn new(value: T) -> (Self, Ghost<Perm<PermCell<T>>>)
+    pub fn new(value: T) -> (Self, Ghost<Perm<PCell<T>>>)
     where
         T: Sized,
     {
@@ -67,14 +67,14 @@ impl<T: ?Sized> PermCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PermCell#safety).
+    /// [type documentation](PCell#safety).
     #[trusted]
     #[check(terminates)]
     #[requires(self == perm.ward())]
     #[ensures(val == (^perm).val())]
     #[ensures(resolve(perm.val()))]
     #[ensures(self == (^perm).ward())]
-    pub unsafe fn set(&self, perm: Ghost<&mut Perm<PermCell<T>>>, val: T)
+    pub unsafe fn set(&self, perm: Ghost<&mut Perm<PCell<T>>>, val: T)
     where
         T: Sized,
     {
@@ -92,14 +92,14 @@ impl<T: ?Sized> PermCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PermCell#safety).
+    /// [type documentation](PCell#safety).
     #[trusted]
     #[check(terminates)]
     #[requires(self == perm.ward())]
     #[ensures(val == (^perm).val())]
     #[ensures(result == perm.val())]
     #[ensures(self == (^perm).ward())]
-    pub unsafe fn replace(&self, perm: Ghost<&mut Perm<PermCell<T>>>, val: T) -> T
+    pub unsafe fn replace(&self, perm: Ghost<&mut Perm<PCell<T>>>, val: T) -> T
     where
         T: Sized,
     {
@@ -112,7 +112,7 @@ impl<T: ?Sized> PermCell<T> {
     #[check(terminates)]
     #[requires(self == *perm.ward())]
     #[ensures(result == perm.val())]
-    pub fn into_inner(self, perm: Ghost<Perm<PermCell<T>>>) -> T
+    pub fn into_inner(self, perm: Ghost<Perm<PCell<T>>>) -> T
     where
         T: Sized,
     {
@@ -131,12 +131,12 @@ impl<T: ?Sized> PermCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PermCell#safety).
+    /// [type documentation](PCell#safety).
     #[trusted]
     #[check(terminates)]
     #[requires(self == perm.ward())]
     #[ensures(*result == *perm.val_unsized())]
-    pub unsafe fn borrow<'a>(&'a self, perm: Ghost<&'a Perm<PermCell<T>>>) -> &'a T {
+    pub unsafe fn borrow<'a>(&'a self, perm: Ghost<&'a Perm<PCell<T>>>) -> &'a T {
         let _ = perm;
         unsafe { &*self.0.get() }
     }
@@ -152,14 +152,14 @@ impl<T: ?Sized> PermCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PermCell#safety).
+    /// [type documentation](PCell#safety).
     #[trusted]
     #[check(terminates)]
     #[requires(self == perm.ward())]
     #[ensures(self == (^perm).ward())]
     #[ensures(*result == *perm.val_unsized())]
     #[ensures(^result == *(^perm).val_unsized())]
-    pub unsafe fn borrow_mut<'a>(&'a self, perm: Ghost<&'a mut Perm<PermCell<T>>>) -> &'a mut T {
+    pub unsafe fn borrow_mut<'a>(&'a self, perm: Ghost<&'a mut Perm<PCell<T>>>) -> &'a mut T {
         let _ = perm;
         unsafe { &mut *self.0.get() }
     }
@@ -172,12 +172,12 @@ impl<T: ?Sized> PermCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PermCell#safety).
+    /// [type documentation](PCell#safety).
     #[trusted]
     #[check(terminates)]
     #[requires(self == perm.ward())]
     #[ensures(result == perm.val())]
-    pub unsafe fn get(&self, perm: Ghost<&Perm<PermCell<T>>>) -> T
+    pub unsafe fn get(&self, perm: Ghost<&Perm<PCell<T>>>) -> T
     where
         T: Copy + Sized,
     {
@@ -192,16 +192,16 @@ impl<T: ?Sized> PermCell<T> {
         self.0.get()
     }
 
-    /// Returns a `&PermCell<T>` from a `&mut T`
+    /// Returns a `&PCell<T>` from a `&mut T`
     #[trusted]
     #[check(terminates)]
     #[ensures(result.0 == result.1.ward())]
     #[ensures(^t == *(^result.1).val_unsized())]
     #[ensures(*t == *result.1.val_unsized())]
-    pub fn from_mut(t: &mut T) -> (&PermCell<T>, Ghost<&mut Perm<PermCell<T>>>) {
-        // SAFETY: `PermCell` is layout-compatible with `Cell` and `T` because it is `repr(transparent)`.
+    pub fn from_mut(t: &mut T) -> (&PCell<T>, Ghost<&mut Perm<PCell<T>>>) {
+        // SAFETY: `PCell` is layout-compatible with `Cell` and `T` because it is `repr(transparent)`.
         // SAFETY: `&mut` ensures unique access
-        let cell: &PermCell<T> = unsafe { &*(t as *mut T as *const Self) };
+        let cell: &PCell<T> = unsafe { &*(t as *mut T as *const Self) };
         let perm = Ghost::conjure();
         (cell, perm)
     }
@@ -214,12 +214,12 @@ impl<T: ?Sized> PermCell<T> {
     /// this function.
     ///
     /// Creusot will check that all calls to this function are indeed safe: see the
-    /// [type documentation](PermCell#safety).
+    /// [type documentation](PCell#safety).
     #[requires(self == perm.ward())]
     #[ensures(self == (^perm).ward())]
     #[ensures(result == *perm.val_unsized())]
     #[ensures(T::default.postcondition((), *(^perm).val_unsized()))]
-    pub unsafe fn take(&self, perm: Ghost<&mut Perm<PermCell<T>>>) -> T
+    pub unsafe fn take(&self, perm: Ghost<&mut Perm<PCell<T>>>) -> T
     where
         T: Default,
     {

@@ -1,9 +1,9 @@
 extern crate creusot_std;
-use creusot_std::{cell::PermCell, prelude::*};
+use creusot_std::{cell::PCell, prelude::*};
 
 #[ensures(result@ == 3)]
 pub fn foo() -> i32 {
-    let (p, mut own) = PermCell::new(1i32);
+    let (p, mut own) = PCell::new(1i32);
 
     assert!(unsafe { *p.borrow(ghost!(&*own)) } == 1);
 

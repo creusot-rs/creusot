@@ -1,7 +1,7 @@
 extern crate creusot_std;
 
 use creusot_std::{
-    cell::PermCell,
+    cell::PCell,
     ghost::{
         invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
         perm::Perm,
@@ -23,17 +23,17 @@ declare_namespace! { MESSAGE_PASSING }
 struct MessagePassingAtomicInv {
     atomic_own: Perm<AtomicBool>,
     state: State,
-    public_data: Snapshot<(PermCell<i32>, Id)>,
+    public_data: Snapshot<(PCell<i32>, Id)>,
 }
 
 enum State {
     NotWrittenYet,
-    Synchronisation(Perm<PermCell<i32>>),
+    Synchronisation(Perm<PCell<i32>>),
     Readable(Resource<Excl<()>>),
 }
 
 impl Protocol for MessagePassingAtomicInv {
-    type Public = (AtomicBool, PermCell<i32>, Id);
+    type Public = (AtomicBool, PCell<i32>, Id);
 
     #[logic(inline)]
     fn public(self) -> Self::Public {
@@ -55,7 +55,7 @@ impl Protocol for MessagePassingAtomicInv {
 
 pub fn message_passing() {
     let (atomic, atomic_own) = AtomicBool::new(false);
-    let (data, mut data_own) = PermCell::new(0i32);
+    let (data, mut data_own) = PCell::new(0i32);
     let excl = Resource::alloc(snapshot!(Excl(())));
 
     let inv = AtomicInvariantSC::new(

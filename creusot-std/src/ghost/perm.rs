@@ -16,8 +16,8 @@ pub trait PermTarget {
     ///
     /// This type is used to force the [`Objective`](crate::ghost::Objective)
     /// auto-trait to be implemented on the [`Perm`] object (or not!). See
-    /// [this trait implementation](crate::cell::PermCell::Objectiveness) for
-    /// `PermCell` for an example.
+    /// [this trait implementation](crate::cell::PCell::Objectiveness) for
+    /// `PCell` for an example.
     type Objectiveness;
 
     /// Logical function that describes the behavior of [`Perm::disjoint_lemma`].

@@ -18,7 +18,7 @@
 //! Building a simplified `Cell`, that only asserts its content's type invariant.
 //! ```
 //! # use creusot_std::{
-//! #     cell::PermCell,
+//! #     cell::PCell,
 //! #     ghost::{
 //! #         invariant::{NonAtomicInvariant, Protocol, Tokens, declare_namespace},
 //! #         perm::Perm,
@@ -30,8 +30,8 @@
 //!
 //! /// A cell that simply asserts its content's type invariant.
 //! pub struct CellInv<T: Invariant> {
-//!     data: PermCell<T>,
-//!     permission: Ghost<NonAtomicInvariant<PermCellNAInv<T>>>,
+//!     data: PCell<T>,
+//!     permission: Ghost<NonAtomicInvariant<PCellNAInv<T>>>,
 //! }
 //! impl<T: Invariant> Invariant for CellInv<T> {
 //!     #[logic]
@@ -40,8 +40,8 @@
 //!     }
 //! }
 //!
-//! struct PermCellNAInv<T>(Perm<PermCell<T>>);
-//! impl<T: Invariant> Protocol for PermCellNAInv<T> {
+//! struct PCellNAInv<T>(Perm<PCell<T>>);
+//! impl<T: Invariant> Protocol for PCellNAInv<T> {
 //!     type Public = Id;
 //!
 //!     #[logic]
