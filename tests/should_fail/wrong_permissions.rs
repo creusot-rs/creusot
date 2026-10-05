@@ -1,14 +1,14 @@
 // WHY3PROVE
 extern crate creusot_std;
-use creusot_std::{cell::PermCell, ghost::perm::Perm, prelude::*};
+use creusot_std::{cell::PCell, ghost::perm::Perm, prelude::*};
 
-pub fn unknown_permcell_permission(cell: &PermCell<i32>, perm: Ghost<&Perm<PermCell<i32>>>) {
+pub fn unknown_permcell_permission(cell: &PCell<i32>, perm: Ghost<&Perm<PCell<i32>>>) {
     // does not work: we don't know if cell and perm have the same id
     let _ = unsafe { cell.borrow(perm) };
 }
 pub fn wrong_permcell_permission() {
-    let (cell, _) = PermCell::new(1i32);
-    let (_, perm) = PermCell::new(1i32);
+    let (cell, _) = PCell::new(1i32);
+    let (_, perm) = PCell::new(1i32);
 
     // does not work: we know that `perm` is not `cell`'s permission
     let _ = unsafe { cell.borrow(ghost!(&*perm)) };

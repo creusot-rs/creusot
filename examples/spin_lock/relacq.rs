@@ -1,5 +1,5 @@
 use creusot_std::{
-    cell::PermCell,
+    cell::PCell,
     ghost::{
         invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
         lifetime_logic::{EndBorrow, FullBorrow, Lifetime, LifetimeToken},
@@ -22,17 +22,17 @@ use creusot_std::{
 declare_namespace! { SPIN_LOCK }
 
 struct SpinLockInv<T> {
-    cell: Snapshot<PermCell<T>>,
+    cell: Snapshot<PCell<T>>,
     lft: Snapshot<Lifetime>,
     perm_atomic: Perm<AtomicBool>,
-    perm: Option<AtView<Guarded<FullBorrow<Perm<PermCell<T>>>, PermCell<T>>>>,
+    perm: Option<AtView<Guarded<FullBorrow<Perm<PCell<T>>>, PCell<T>>>>,
     excl: Resource<Option<Excl<()>>>,
     ts: Option<Timestamp>,
     inv: Snapshot<Mapping<T, bool>>,
 }
 
 impl<T> Protocol for SpinLockInv<T> {
-    type Public = ((PermCell<T>, AtomicBool, Lifetime, Mapping<T, bool>), Id);
+    type Public = ((PCell<T>, AtomicBool, Lifetime, Mapping<T, bool>), Id);
 
     #[logic]
     fn public(self) -> Self::Public {
@@ -59,9 +59,9 @@ impl<T> Protocol for SpinLockInv<T> {
 
 pub struct SpinLock<T> {
     atomic: AtomicBool,
-    data: PermCell<T>,
+    data: PCell<T>,
     lft_tok: Ghost<LifetimeToken>,
-    end: Ghost<EndBorrow<Perm<PermCell<T>>>>,
+    end: Ghost<EndBorrow<Perm<PCell<T>>>>,
     inner_inv: Ghost<AtomicInvariant<SpinLockInv<T>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
@@ -81,7 +81,7 @@ impl<T> Invariant for SpinLock<T> {
 
 pub struct SpinLockGuard<'a, T> {
     lock: &'a SpinLock<T>,
-    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>, PermCell<T>>>,
+    perm: Ghost<Guarded<FullBorrow<Perm<PCell<T>>>, PCell<T>>>,
     excl: Ghost<Resource<Option<Excl<()>>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
@@ -110,7 +110,7 @@ impl<T> SpinLock<T> {
     #[requires(inv.get(data))]
     #[ensures(result.inv == inv)]
     pub fn new(data: T, inv: Snapshot<Mapping<T, bool>>) -> Self {
-        let (data, perm_data) = PermCell::new(data);
+        let (data, perm_data) = PCell::new(data);
         let lft_tok = ghost!(LifetimeToken::new());
         let (bor, end) = FullBorrow::new(perm_data, snapshot!(lft_tok.lft()));
         let bor = ghost!(bor.into_inner().add_guard(snapshot!(data)));

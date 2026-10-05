@@ -1,7 +1,7 @@
 // DEPTH 10
 
 use creusot_std::{
-    cell::PermCell,
+    cell::PCell,
     ghost::{
         invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
         lifetime_logic::{EndBorrow, FullBorrow, Lifetime, LifetimeToken},
@@ -28,9 +28,9 @@ use creusot_std::{
 declare_namespace! { TICKET_LOCK }
 
 struct TicketLockInv<T> {
-    cell: Snapshot<PermCell<T>>,
+    cell: Snapshot<PCell<T>>,
     lft: Snapshot<Lifetime>,
-    perm: Option<AtView<Guarded<FullBorrow<Perm<PermCell<T>>>, PermCell<T>>>>,
+    perm: Option<AtView<Guarded<FullBorrow<Perm<PCell<T>>>, PCell<T>>>>,
     perm_next_ticket: Perm<AtomicU32>,
     perm_now_serving: Perm<AtomicU32>,
     auth_tickets: Authority<FMap<Int, Excl<()>>>,
@@ -48,7 +48,7 @@ impl<T> TicketLockInv<T> {
 }
 
 impl<T> Protocol for TicketLockInv<T> {
-    type Public = ((PermCell<T>, AtomicU32, AtomicU32, Lifetime, Mapping<T, bool>), Id, Id);
+    type Public = ((PCell<T>, AtomicU32, AtomicU32, Lifetime, Mapping<T, bool>), Id, Id);
 
     #[logic]
     fn public(self) -> Self::Public {
@@ -95,9 +95,9 @@ impl<T> Protocol for TicketLockInv<T> {
 pub struct TicketLock<T> {
     next_ticket: AtomicU32,
     now_serving: AtomicU32,
-    data: PermCell<T>,
+    data: PCell<T>,
     lft_tok: Ghost<LifetimeToken>,
-    end: Ghost<EndBorrow<Perm<PermCell<T>>>>,
+    end: Ghost<EndBorrow<Perm<PCell<T>>>>,
     inner_inv: Ghost<AtomicInvariant<TicketLockInv<T>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
@@ -117,7 +117,7 @@ impl<T> Invariant for TicketLock<T> {
 
 pub struct TicketLockGuard<'a, T> {
     lock: &'a TicketLock<T>,
-    perm: Ghost<Guarded<FullBorrow<Perm<PermCell<T>>>, PermCell<T>>>,
+    perm: Ghost<Guarded<FullBorrow<Perm<PCell<T>>>, PCell<T>>>,
     token: Ghost<Resource<Option<Excl<()>>>>,
     pub inv: Snapshot<Mapping<T, bool>>,
 }
@@ -150,7 +150,7 @@ impl<T> TicketLock<T> {
     pub fn new(data: T, inv: Snapshot<Mapping<T, bool>>) -> Self {
         let mut view_next_ticket = SyncView::new();
         let (next_ticket, perm_next_ticket) = AtomicU32::new(0, ghost!(&mut view_next_ticket));
-        let (data, perm_data) = PermCell::new(data);
+        let (data, perm_data) = PCell::new(data);
         let lft_tok = ghost!(LifetimeToken::new());
         let (bor, end) = FullBorrow::new(perm_data, snapshot!(lft_tok.lft()));
         let bor = ghost!(bor.into_inner().add_guard(snapshot!(data)));
