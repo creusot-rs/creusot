@@ -867,7 +867,7 @@ impl<T> Queue<T> {
             let index_mod = *snapshot!(inv.mod_len(token.index())).into_ghost();
 
             let (mut view, at_view) = AtView::new(cell_own).into_inner();
-            c.shoot_store(&mut inv.statuses_own[index_mod], &mut view);
+            c.shoot_store(&mut inv.statuses_own[index_mod], &mut view, *ReleaseSyncView::new());
 
             tokens::TokenW::discard(token, Ghost::new(&mut inv.tokens_auth));
 
@@ -1081,7 +1081,7 @@ impl<T> Queue<T> {
             let index_mod = *snapshot!(inv.mod_len(token.index())).into_ghost();
 
             let (mut view, at_view) = AtView::new(cell_own).into_inner();
-            c.shoot_store(&mut inv.statuses_own[index_mod], &mut view);
+            c.shoot_store(&mut inv.statuses_own[index_mod], &mut view, *ReleaseSyncView::new());
 
             tokens::TokenR::discard(token, Ghost::new(&mut inv.tokens_auth));
 

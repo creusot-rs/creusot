@@ -3,16 +3,20 @@
 
 extern crate creusot_std;
 
+use core::sync::atomic::Ordering as OrderingTy;
 use creusot_std::{
     ghost::Perm,
     prelude::*,
     std::sync::{
+        atomic::{
+            AtomicBool, AtomicI8, AtomicI16, AtomicI32, AtomicI64, AtomicPtr, AtomicU8, AtomicU16,
+            AtomicU32, AtomicU64,
+            ordering::{LoadOrdering, Ordering, StoreOrdering, UpdateOrdering},
+        },
         committer::{Committer, atomic_specs::*},
         view::{AcquireSyncView, ReleaseSyncView, SyncView, Timestamp},
-        atomic::{ordering::{Ordering, LoadOrdering, StoreOrdering, UpdateOrdering}, AtomicBool, AtomicPtr, AtomicI8, AtomicU8, AtomicI16, AtomicI32, AtomicI64, AtomicU16, AtomicU32, AtomicU64},
     },
 };
-use core::sync::atomic::{Ordering as OrderingTy};
 
 macro_rules! wrap_atomic {
     ($( ($type:ty, $atomic_type:ident $(< $T:ident >)?, $atomic_wrapper_type:ident) ),+) => { $(

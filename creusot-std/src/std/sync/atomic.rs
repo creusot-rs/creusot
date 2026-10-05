@@ -88,7 +88,6 @@ macro_rules! impl_atomic {
         }
 
         impl $(< $T >)? $atomic_type $(< $T >)? {
-            #[ensures(*sync_view <= ^sync_view)]
             #[ensures(result.1.val() == FMap::singleton(result.0.get_timestamp(^sync_view), (val, ^sync_view)))]
             #[ensures(**sync_view <= ^sync_view)]
             #[ensures(*result.1.ward() == result.0)]

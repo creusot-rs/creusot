@@ -110,7 +110,12 @@ module M_impl_AtomicBoolWrapper__wrap_compare_exchange (* AtomicBoolWrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
+  function val_unsized_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
+  
+  function val_AtomicBool [@inline:trivial] (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView =
+    val_unsized_AtomicBool self
+  
+  meta "rewrite_def" function val_AtomicBool
   
   predicate load_reads_from_history_AtomicBool (own: t_Perm_AtomicBool) (thread_view: t_SyncView) (val': bool) (t: int) =
     match get_Int (val_AtomicBool own) t with
@@ -491,17 +496,16 @@ module M_impl_AtomicBoolWrapper__wrap_compare_exchange (* AtomicBoolWrapper *)
       -> deep_model_bool (val_load_AtomicBool c) <> deep_model_bool current'
       -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_bool_bool) -> {[@stop_split] [@expl:compare_exchange ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicBool_bool_Load_Store. not shot_store_AtomicBool'0 c.current
+    [ return (result: t_Result_bool_bool) ->
+    {[@stop_split] [@expl:compare_exchange ensures] (exists c: MutBorrow.t t_Committer_AtomicBool_bool_Load_Store. not shot_store_AtomicBool'0 c.current
           /\ ward_AtomicBool'1 c.current = self
           /\ deep_model_bool (val_load_AtomicBool'0 c.current) = deep_model_bool current'
           /\ val_store_AtomicBool c.current = new
-          /\ result'0 = val_load_AtomicBool'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicBool_bool_Failure_None. not shot_store_AtomicBool c
-          /\ ward_AtomicBool c = self
-          /\ deep_model_bool (val_load_AtomicBool c) <> deep_model_bool current'
-          /\ result'0 = val_load_AtomicBool c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicBool'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicBool_bool_Failure_None. not shot_store_AtomicBool c
+        /\ ward_AtomicBool c = self
+        /\ deep_model_bool (val_load_AtomicBool c) <> deep_model_bool current'
+        /\ result = Err'0 (val_load_AtomicBool c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -544,10 +548,10 @@ module M_impl_AtomicBoolWrapper__wrap_compare_exchange (* AtomicBoolWrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -568,8 +572,8 @@ module M_impl_AtomicBoolWrapper__wrap_compare_exchange (* AtomicBoolWrapper *)
   
   predicate inv_AtomicBoolWrapper (_1: t_AtomicBoolWrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicBoolWrapper [inv_AtomicBoolWrapper x]. inv_AtomicBoolWrapper x
-      = inv_AtomicBool x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicBoolWrapper [inv_AtomicBoolWrapper _1]. inv_AtomicBoolWrapper _1
+      = inv_AtomicBool _1.f0'1
   
   predicate invariant_ref_AtomicBoolWrapper [@inline:trivial] (self: t_AtomicBoolWrapper) = inv_AtomicBoolWrapper self
   
@@ -780,7 +784,12 @@ module M_impl_AtomicBoolWrapper__wrap_compare_exchange_weak (* AtomicBoolWrapper
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
+  function val_unsized_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
+  
+  function val_AtomicBool [@inline:trivial] (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView =
+    val_unsized_AtomicBool self
+  
+  meta "rewrite_def" function val_AtomicBool
   
   predicate load_reads_from_history_AtomicBool (own: t_Perm_AtomicBool) (thread_view: t_SyncView) (val': bool) (t: int) =
     match get_Int (val_AtomicBool own) t with
@@ -1159,16 +1168,15 @@ module M_impl_AtomicBoolWrapper__wrap_compare_exchange_weak (* AtomicBoolWrapper
     /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicBool_bool_Failure_None. not shot_store_AtomicBool c
       -> ward_AtomicBool c = self -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_bool_bool) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicBool_bool_Load_Store. not shot_store_AtomicBool'0 c.current
+    [ return (result: t_Result_bool_bool) ->
+    {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicBool_bool_Load_Store. not shot_store_AtomicBool'0 c.current
           /\ ward_AtomicBool'1 c.current = self
           /\ deep_model_bool (val_load_AtomicBool'0 c.current) = deep_model_bool current'
           /\ val_store_AtomicBool c.current = new
-          /\ result'0 = val_load_AtomicBool'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicBool_bool_Failure_None. not shot_store_AtomicBool c
-          /\ ward_AtomicBool c = self
-          /\ result'0 = val_load_AtomicBool c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicBool'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicBool_bool_Failure_None. not shot_store_AtomicBool c
+        /\ ward_AtomicBool c = self
+        /\ result = Err'0 (val_load_AtomicBool c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -1211,10 +1219,10 @@ module M_impl_AtomicBoolWrapper__wrap_compare_exchange_weak (* AtomicBoolWrapper
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -1235,8 +1243,8 @@ module M_impl_AtomicBoolWrapper__wrap_compare_exchange_weak (* AtomicBoolWrapper
   
   predicate inv_AtomicBoolWrapper (_1: t_AtomicBoolWrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicBoolWrapper [inv_AtomicBoolWrapper x]. inv_AtomicBoolWrapper x
-      = inv_AtomicBool x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicBoolWrapper [inv_AtomicBoolWrapper _1]. inv_AtomicBoolWrapper _1
+      = inv_AtomicBool _1.f0'1
   
   predicate invariant_ref_AtomicBoolWrapper [@inline:trivial] (self: t_AtomicBoolWrapper) = inv_AtomicBoolWrapper self
   
@@ -1427,7 +1435,12 @@ module M_impl_AtomicBoolWrapper__wrap_load (* AtomicBoolWrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
+  function val_unsized_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
+  
+  function val_AtomicBool [@inline:trivial] (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView =
+    val_unsized_AtomicBool self
+  
+  meta "rewrite_def" function val_AtomicBool
   
   predicate load_reads_from_history_AtomicBool (own: t_Perm_AtomicBool) (thread_view: t_SyncView) (val': bool) (t: int) =
     match get_Int (val_AtomicBool own) t with
@@ -1610,10 +1623,10 @@ module M_impl_AtomicBoolWrapper__wrap_load (* AtomicBoolWrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -1623,8 +1636,8 @@ module M_impl_AtomicBoolWrapper__wrap_load (* AtomicBoolWrapper *)
   
   predicate inv_AtomicBoolWrapper (_1: t_AtomicBoolWrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicBoolWrapper [inv_AtomicBoolWrapper x]. inv_AtomicBoolWrapper x
-      = inv_AtomicBool x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicBoolWrapper [inv_AtomicBoolWrapper _1]. inv_AtomicBoolWrapper _1
+      = inv_AtomicBool _1.f0'1
   
   predicate invariant_ref_AtomicBoolWrapper [@inline:trivial] (self: t_AtomicBoolWrapper) = inv_AtomicBoolWrapper self
   
@@ -1793,7 +1806,12 @@ module M_impl_AtomicBoolWrapper__wrap_store (* AtomicBoolWrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
+  function val_unsized_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
+  
+  function val_AtomicBool [@inline:trivial] (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView =
+    val_unsized_AtomicBool self
+  
+  meta "rewrite_def" function val_AtomicBool
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -2037,8 +2055,8 @@ module M_impl_AtomicBoolWrapper__wrap_store (* AtomicBoolWrapper *)
   
   predicate inv_AtomicBoolWrapper (_1: t_AtomicBoolWrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicBoolWrapper [inv_AtomicBoolWrapper x]. inv_AtomicBoolWrapper x
-      = inv_AtomicBool x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicBoolWrapper [inv_AtomicBoolWrapper _1]. inv_AtomicBoolWrapper _1
+      = inv_AtomicBool _1.f0'1
   
   predicate invariant_ref_AtomicBoolWrapper [@inline:trivial] (self: t_AtomicBoolWrapper) = inv_AtomicBoolWrapper self
   
@@ -2206,7 +2224,12 @@ module M_impl_AtomicI16Wrapper__wrap_compare_exchange (* AtomicI16Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI16 (self: t_Perm_AtomicI16) : t_FMap_Int_tup2_i16_SyncView
+  function val_unsized_AtomicI16 (self: t_Perm_AtomicI16) : t_FMap_Int_tup2_i16_SyncView
+  
+  function val_AtomicI16 [@inline:trivial] (self: t_Perm_AtomicI16) : t_FMap_Int_tup2_i16_SyncView =
+    val_unsized_AtomicI16 self
+  
+  meta "rewrite_def" function val_AtomicI16
   
   predicate load_reads_from_history_AtomicI16 (own: t_Perm_AtomicI16) (thread_view: t_SyncView) (val': Int16.t) (t: int) =
     match get_Int (val_AtomicI16 own) t with
@@ -2585,17 +2608,16 @@ module M_impl_AtomicI16Wrapper__wrap_compare_exchange (* AtomicI16Wrapper *)
       -> deep_model_i16 (val_load_AtomicI16 c) <> deep_model_i16 current'
       -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_i16_i16) -> {[@stop_split] [@expl:compare_exchange ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicI16_i16_Load_Store. not shot_store_AtomicI16'0 c.current
+    [ return (result: t_Result_i16_i16) ->
+    {[@stop_split] [@expl:compare_exchange ensures] (exists c: MutBorrow.t t_Committer_AtomicI16_i16_Load_Store. not shot_store_AtomicI16'0 c.current
           /\ ward_AtomicI16'1 c.current = self
           /\ deep_model_i16 (val_load_AtomicI16'0 c.current) = deep_model_i16 current'
           /\ val_store_AtomicI16 c.current = new
-          /\ result'0 = val_load_AtomicI16'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicI16_i16_Failure_None. not shot_store_AtomicI16 c
-          /\ ward_AtomicI16 c = self
-          /\ deep_model_i16 (val_load_AtomicI16 c) <> deep_model_i16 current'
-          /\ result'0 = val_load_AtomicI16 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicI16'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicI16_i16_Failure_None. not shot_store_AtomicI16 c
+        /\ ward_AtomicI16 c = self
+        /\ deep_model_i16 (val_load_AtomicI16 c) <> deep_model_i16 current'
+        /\ result = Err'0 (val_load_AtomicI16 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -2638,10 +2660,10 @@ module M_impl_AtomicI16Wrapper__wrap_compare_exchange (* AtomicI16Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -2662,8 +2684,8 @@ module M_impl_AtomicI16Wrapper__wrap_compare_exchange (* AtomicI16Wrapper *)
   
   predicate inv_AtomicI16Wrapper (_1: t_AtomicI16Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI16Wrapper [inv_AtomicI16Wrapper x]. inv_AtomicI16Wrapper x
-      = inv_AtomicI16 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI16Wrapper [inv_AtomicI16Wrapper _1]. inv_AtomicI16Wrapper _1
+      = inv_AtomicI16 _1.f0'1
   
   predicate invariant_ref_AtomicI16Wrapper [@inline:trivial] (self: t_AtomicI16Wrapper) = inv_AtomicI16Wrapper self
   
@@ -2875,7 +2897,12 @@ module M_impl_AtomicI16Wrapper__wrap_compare_exchange_weak (* AtomicI16Wrapper *
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI16 (self: t_Perm_AtomicI16) : t_FMap_Int_tup2_i16_SyncView
+  function val_unsized_AtomicI16 (self: t_Perm_AtomicI16) : t_FMap_Int_tup2_i16_SyncView
+  
+  function val_AtomicI16 [@inline:trivial] (self: t_Perm_AtomicI16) : t_FMap_Int_tup2_i16_SyncView =
+    val_unsized_AtomicI16 self
+  
+  meta "rewrite_def" function val_AtomicI16
   
   predicate load_reads_from_history_AtomicI16 (own: t_Perm_AtomicI16) (thread_view: t_SyncView) (val': Int16.t) (t: int) =
     match get_Int (val_AtomicI16 own) t with
@@ -3252,16 +3279,15 @@ module M_impl_AtomicI16Wrapper__wrap_compare_exchange_weak (* AtomicI16Wrapper *
     /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicI16_i16_Failure_None. not shot_store_AtomicI16 c
       -> ward_AtomicI16 c = self -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_i16_i16) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicI16_i16_Load_Store. not shot_store_AtomicI16'0 c.current
+    [ return (result: t_Result_i16_i16) ->
+    {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicI16_i16_Load_Store. not shot_store_AtomicI16'0 c.current
           /\ ward_AtomicI16'1 c.current = self
           /\ deep_model_i16 (val_load_AtomicI16'0 c.current) = deep_model_i16 current'
           /\ val_store_AtomicI16 c.current = new
-          /\ result'0 = val_load_AtomicI16'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicI16_i16_Failure_None. not shot_store_AtomicI16 c
-          /\ ward_AtomicI16 c = self
-          /\ result'0 = val_load_AtomicI16 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicI16'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicI16_i16_Failure_None. not shot_store_AtomicI16 c
+        /\ ward_AtomicI16 c = self
+        /\ result = Err'0 (val_load_AtomicI16 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -3304,10 +3330,10 @@ module M_impl_AtomicI16Wrapper__wrap_compare_exchange_weak (* AtomicI16Wrapper *
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -3328,8 +3354,8 @@ module M_impl_AtomicI16Wrapper__wrap_compare_exchange_weak (* AtomicI16Wrapper *
   
   predicate inv_AtomicI16Wrapper (_1: t_AtomicI16Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI16Wrapper [inv_AtomicI16Wrapper x]. inv_AtomicI16Wrapper x
-      = inv_AtomicI16 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI16Wrapper [inv_AtomicI16Wrapper _1]. inv_AtomicI16Wrapper _1
+      = inv_AtomicI16 _1.f0'1
   
   predicate invariant_ref_AtomicI16Wrapper [@inline:trivial] (self: t_AtomicI16Wrapper) = inv_AtomicI16Wrapper self
   
@@ -3521,7 +3547,12 @@ module M_impl_AtomicI16Wrapper__wrap_load (* AtomicI16Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI16 (self: t_Perm_AtomicI16) : t_FMap_Int_tup2_i16_SyncView
+  function val_unsized_AtomicI16 (self: t_Perm_AtomicI16) : t_FMap_Int_tup2_i16_SyncView
+  
+  function val_AtomicI16 [@inline:trivial] (self: t_Perm_AtomicI16) : t_FMap_Int_tup2_i16_SyncView =
+    val_unsized_AtomicI16 self
+  
+  meta "rewrite_def" function val_AtomicI16
   
   predicate load_reads_from_history_AtomicI16 (own: t_Perm_AtomicI16) (thread_view: t_SyncView) (val': Int16.t) (t: int) =
     match get_Int (val_AtomicI16 own) t with
@@ -3704,10 +3735,10 @@ module M_impl_AtomicI16Wrapper__wrap_load (* AtomicI16Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -3717,8 +3748,8 @@ module M_impl_AtomicI16Wrapper__wrap_load (* AtomicI16Wrapper *)
   
   predicate inv_AtomicI16Wrapper (_1: t_AtomicI16Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI16Wrapper [inv_AtomicI16Wrapper x]. inv_AtomicI16Wrapper x
-      = inv_AtomicI16 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI16Wrapper [inv_AtomicI16Wrapper _1]. inv_AtomicI16Wrapper _1
+      = inv_AtomicI16 _1.f0'1
   
   predicate invariant_ref_AtomicI16Wrapper [@inline:trivial] (self: t_AtomicI16Wrapper) = inv_AtomicI16Wrapper self
   
@@ -3888,7 +3919,12 @@ module M_impl_AtomicI16Wrapper__wrap_store (* AtomicI16Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI16 (self: t_Perm_AtomicI16) : t_FMap_Int_tup2_i16_SyncView
+  function val_unsized_AtomicI16 (self: t_Perm_AtomicI16) : t_FMap_Int_tup2_i16_SyncView
+  
+  function val_AtomicI16 [@inline:trivial] (self: t_Perm_AtomicI16) : t_FMap_Int_tup2_i16_SyncView =
+    val_unsized_AtomicI16 self
+  
+  meta "rewrite_def" function val_AtomicI16
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -4132,8 +4168,8 @@ module M_impl_AtomicI16Wrapper__wrap_store (* AtomicI16Wrapper *)
   
   predicate inv_AtomicI16Wrapper (_1: t_AtomicI16Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI16Wrapper [inv_AtomicI16Wrapper x]. inv_AtomicI16Wrapper x
-      = inv_AtomicI16 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI16Wrapper [inv_AtomicI16Wrapper _1]. inv_AtomicI16Wrapper _1
+      = inv_AtomicI16 _1.f0'1
   
   predicate invariant_ref_AtomicI16Wrapper [@inline:trivial] (self: t_AtomicI16Wrapper) = inv_AtomicI16Wrapper self
   
@@ -4301,7 +4337,12 @@ module M_impl_AtomicI32Wrapper__wrap_compare_exchange (* AtomicI32Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI32 (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView
+  function val_unsized_AtomicI32 (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView
+  
+  function val_AtomicI32 [@inline:trivial] (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView =
+    val_unsized_AtomicI32 self
+  
+  meta "rewrite_def" function val_AtomicI32
   
   predicate load_reads_from_history_AtomicI32 (own: t_Perm_AtomicI32) (thread_view: t_SyncView) (val': Int32.t) (t: int) =
     match get_Int (val_AtomicI32 own) t with
@@ -4680,17 +4721,16 @@ module M_impl_AtomicI32Wrapper__wrap_compare_exchange (* AtomicI32Wrapper *)
       -> deep_model_i32 (val_load_AtomicI32 c) <> deep_model_i32 current'
       -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_i32_i32) -> {[@stop_split] [@expl:compare_exchange ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicI32_i32_Load_Store. not shot_store_AtomicI32'0 c.current
+    [ return (result: t_Result_i32_i32) ->
+    {[@stop_split] [@expl:compare_exchange ensures] (exists c: MutBorrow.t t_Committer_AtomicI32_i32_Load_Store. not shot_store_AtomicI32'0 c.current
           /\ ward_AtomicI32'1 c.current = self
           /\ deep_model_i32 (val_load_AtomicI32'0 c.current) = deep_model_i32 current'
           /\ val_store_AtomicI32 c.current = new
-          /\ result'0 = val_load_AtomicI32'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicI32_i32_Failure_None. not shot_store_AtomicI32 c
-          /\ ward_AtomicI32 c = self
-          /\ deep_model_i32 (val_load_AtomicI32 c) <> deep_model_i32 current'
-          /\ result'0 = val_load_AtomicI32 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicI32'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicI32_i32_Failure_None. not shot_store_AtomicI32 c
+        /\ ward_AtomicI32 c = self
+        /\ deep_model_i32 (val_load_AtomicI32 c) <> deep_model_i32 current'
+        /\ result = Err'0 (val_load_AtomicI32 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -4733,10 +4773,10 @@ module M_impl_AtomicI32Wrapper__wrap_compare_exchange (* AtomicI32Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -4757,8 +4797,8 @@ module M_impl_AtomicI32Wrapper__wrap_compare_exchange (* AtomicI32Wrapper *)
   
   predicate inv_AtomicI32Wrapper (_1: t_AtomicI32Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI32Wrapper [inv_AtomicI32Wrapper x]. inv_AtomicI32Wrapper x
-      = inv_AtomicI32 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI32Wrapper [inv_AtomicI32Wrapper _1]. inv_AtomicI32Wrapper _1
+      = inv_AtomicI32 _1.f0'1
   
   predicate invariant_ref_AtomicI32Wrapper [@inline:trivial] (self: t_AtomicI32Wrapper) = inv_AtomicI32Wrapper self
   
@@ -4970,7 +5010,12 @@ module M_impl_AtomicI32Wrapper__wrap_compare_exchange_weak (* AtomicI32Wrapper *
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI32 (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView
+  function val_unsized_AtomicI32 (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView
+  
+  function val_AtomicI32 [@inline:trivial] (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView =
+    val_unsized_AtomicI32 self
+  
+  meta "rewrite_def" function val_AtomicI32
   
   predicate load_reads_from_history_AtomicI32 (own: t_Perm_AtomicI32) (thread_view: t_SyncView) (val': Int32.t) (t: int) =
     match get_Int (val_AtomicI32 own) t with
@@ -5347,16 +5392,15 @@ module M_impl_AtomicI32Wrapper__wrap_compare_exchange_weak (* AtomicI32Wrapper *
     /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicI32_i32_Failure_None. not shot_store_AtomicI32 c
       -> ward_AtomicI32 c = self -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_i32_i32) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicI32_i32_Load_Store. not shot_store_AtomicI32'0 c.current
+    [ return (result: t_Result_i32_i32) ->
+    {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicI32_i32_Load_Store. not shot_store_AtomicI32'0 c.current
           /\ ward_AtomicI32'1 c.current = self
           /\ deep_model_i32 (val_load_AtomicI32'0 c.current) = deep_model_i32 current'
           /\ val_store_AtomicI32 c.current = new
-          /\ result'0 = val_load_AtomicI32'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicI32_i32_Failure_None. not shot_store_AtomicI32 c
-          /\ ward_AtomicI32 c = self
-          /\ result'0 = val_load_AtomicI32 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicI32'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicI32_i32_Failure_None. not shot_store_AtomicI32 c
+        /\ ward_AtomicI32 c = self
+        /\ result = Err'0 (val_load_AtomicI32 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -5399,10 +5443,10 @@ module M_impl_AtomicI32Wrapper__wrap_compare_exchange_weak (* AtomicI32Wrapper *
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -5423,8 +5467,8 @@ module M_impl_AtomicI32Wrapper__wrap_compare_exchange_weak (* AtomicI32Wrapper *
   
   predicate inv_AtomicI32Wrapper (_1: t_AtomicI32Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI32Wrapper [inv_AtomicI32Wrapper x]. inv_AtomicI32Wrapper x
-      = inv_AtomicI32 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI32Wrapper [inv_AtomicI32Wrapper _1]. inv_AtomicI32Wrapper _1
+      = inv_AtomicI32 _1.f0'1
   
   predicate invariant_ref_AtomicI32Wrapper [@inline:trivial] (self: t_AtomicI32Wrapper) = inv_AtomicI32Wrapper self
   
@@ -5616,7 +5660,12 @@ module M_impl_AtomicI32Wrapper__wrap_load (* AtomicI32Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI32 (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView
+  function val_unsized_AtomicI32 (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView
+  
+  function val_AtomicI32 [@inline:trivial] (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView =
+    val_unsized_AtomicI32 self
+  
+  meta "rewrite_def" function val_AtomicI32
   
   predicate load_reads_from_history_AtomicI32 (own: t_Perm_AtomicI32) (thread_view: t_SyncView) (val': Int32.t) (t: int) =
     match get_Int (val_AtomicI32 own) t with
@@ -5799,10 +5848,10 @@ module M_impl_AtomicI32Wrapper__wrap_load (* AtomicI32Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -5812,8 +5861,8 @@ module M_impl_AtomicI32Wrapper__wrap_load (* AtomicI32Wrapper *)
   
   predicate inv_AtomicI32Wrapper (_1: t_AtomicI32Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI32Wrapper [inv_AtomicI32Wrapper x]. inv_AtomicI32Wrapper x
-      = inv_AtomicI32 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI32Wrapper [inv_AtomicI32Wrapper _1]. inv_AtomicI32Wrapper _1
+      = inv_AtomicI32 _1.f0'1
   
   predicate invariant_ref_AtomicI32Wrapper [@inline:trivial] (self: t_AtomicI32Wrapper) = inv_AtomicI32Wrapper self
   
@@ -5983,7 +6032,12 @@ module M_impl_AtomicI32Wrapper__wrap_store (* AtomicI32Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI32 (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView
+  function val_unsized_AtomicI32 (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView
+  
+  function val_AtomicI32 [@inline:trivial] (self: t_Perm_AtomicI32) : t_FMap_Int_tup2_i32_SyncView =
+    val_unsized_AtomicI32 self
+  
+  meta "rewrite_def" function val_AtomicI32
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -6227,8 +6281,8 @@ module M_impl_AtomicI32Wrapper__wrap_store (* AtomicI32Wrapper *)
   
   predicate inv_AtomicI32Wrapper (_1: t_AtomicI32Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI32Wrapper [inv_AtomicI32Wrapper x]. inv_AtomicI32Wrapper x
-      = inv_AtomicI32 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI32Wrapper [inv_AtomicI32Wrapper _1]. inv_AtomicI32Wrapper _1
+      = inv_AtomicI32 _1.f0'1
   
   predicate invariant_ref_AtomicI32Wrapper [@inline:trivial] (self: t_AtomicI32Wrapper) = inv_AtomicI32Wrapper self
   
@@ -6396,7 +6450,12 @@ module M_impl_AtomicI64Wrapper__wrap_compare_exchange (* AtomicI64Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI64 (self: t_Perm_AtomicI64) : t_FMap_Int_tup2_i64_SyncView
+  function val_unsized_AtomicI64 (self: t_Perm_AtomicI64) : t_FMap_Int_tup2_i64_SyncView
+  
+  function val_AtomicI64 [@inline:trivial] (self: t_Perm_AtomicI64) : t_FMap_Int_tup2_i64_SyncView =
+    val_unsized_AtomicI64 self
+  
+  meta "rewrite_def" function val_AtomicI64
   
   predicate load_reads_from_history_AtomicI64 (own: t_Perm_AtomicI64) (thread_view: t_SyncView) (val': Int64.t) (t: int) =
     match get_Int (val_AtomicI64 own) t with
@@ -6775,17 +6834,16 @@ module M_impl_AtomicI64Wrapper__wrap_compare_exchange (* AtomicI64Wrapper *)
       -> deep_model_i64 (val_load_AtomicI64 c) <> deep_model_i64 current'
       -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_i64_i64) -> {[@stop_split] [@expl:compare_exchange ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicI64_i64_Load_Store. not shot_store_AtomicI64'0 c.current
+    [ return (result: t_Result_i64_i64) ->
+    {[@stop_split] [@expl:compare_exchange ensures] (exists c: MutBorrow.t t_Committer_AtomicI64_i64_Load_Store. not shot_store_AtomicI64'0 c.current
           /\ ward_AtomicI64'1 c.current = self
           /\ deep_model_i64 (val_load_AtomicI64'0 c.current) = deep_model_i64 current'
           /\ val_store_AtomicI64 c.current = new
-          /\ result'0 = val_load_AtomicI64'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicI64_i64_Failure_None. not shot_store_AtomicI64 c
-          /\ ward_AtomicI64 c = self
-          /\ deep_model_i64 (val_load_AtomicI64 c) <> deep_model_i64 current'
-          /\ result'0 = val_load_AtomicI64 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicI64'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicI64_i64_Failure_None. not shot_store_AtomicI64 c
+        /\ ward_AtomicI64 c = self
+        /\ deep_model_i64 (val_load_AtomicI64 c) <> deep_model_i64 current'
+        /\ result = Err'0 (val_load_AtomicI64 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -6828,10 +6886,10 @@ module M_impl_AtomicI64Wrapper__wrap_compare_exchange (* AtomicI64Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -6852,8 +6910,8 @@ module M_impl_AtomicI64Wrapper__wrap_compare_exchange (* AtomicI64Wrapper *)
   
   predicate inv_AtomicI64Wrapper (_1: t_AtomicI64Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI64Wrapper [inv_AtomicI64Wrapper x]. inv_AtomicI64Wrapper x
-      = inv_AtomicI64 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI64Wrapper [inv_AtomicI64Wrapper _1]. inv_AtomicI64Wrapper _1
+      = inv_AtomicI64 _1.f0'1
   
   predicate invariant_ref_AtomicI64Wrapper [@inline:trivial] (self: t_AtomicI64Wrapper) = inv_AtomicI64Wrapper self
   
@@ -7065,7 +7123,12 @@ module M_impl_AtomicI64Wrapper__wrap_compare_exchange_weak (* AtomicI64Wrapper *
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI64 (self: t_Perm_AtomicI64) : t_FMap_Int_tup2_i64_SyncView
+  function val_unsized_AtomicI64 (self: t_Perm_AtomicI64) : t_FMap_Int_tup2_i64_SyncView
+  
+  function val_AtomicI64 [@inline:trivial] (self: t_Perm_AtomicI64) : t_FMap_Int_tup2_i64_SyncView =
+    val_unsized_AtomicI64 self
+  
+  meta "rewrite_def" function val_AtomicI64
   
   predicate load_reads_from_history_AtomicI64 (own: t_Perm_AtomicI64) (thread_view: t_SyncView) (val': Int64.t) (t: int) =
     match get_Int (val_AtomicI64 own) t with
@@ -7442,16 +7505,15 @@ module M_impl_AtomicI64Wrapper__wrap_compare_exchange_weak (* AtomicI64Wrapper *
     /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicI64_i64_Failure_None. not shot_store_AtomicI64 c
       -> ward_AtomicI64 c = self -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_i64_i64) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicI64_i64_Load_Store. not shot_store_AtomicI64'0 c.current
+    [ return (result: t_Result_i64_i64) ->
+    {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicI64_i64_Load_Store. not shot_store_AtomicI64'0 c.current
           /\ ward_AtomicI64'1 c.current = self
           /\ deep_model_i64 (val_load_AtomicI64'0 c.current) = deep_model_i64 current'
           /\ val_store_AtomicI64 c.current = new
-          /\ result'0 = val_load_AtomicI64'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicI64_i64_Failure_None. not shot_store_AtomicI64 c
-          /\ ward_AtomicI64 c = self
-          /\ result'0 = val_load_AtomicI64 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicI64'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicI64_i64_Failure_None. not shot_store_AtomicI64 c
+        /\ ward_AtomicI64 c = self
+        /\ result = Err'0 (val_load_AtomicI64 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -7494,10 +7556,10 @@ module M_impl_AtomicI64Wrapper__wrap_compare_exchange_weak (* AtomicI64Wrapper *
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -7518,8 +7580,8 @@ module M_impl_AtomicI64Wrapper__wrap_compare_exchange_weak (* AtomicI64Wrapper *
   
   predicate inv_AtomicI64Wrapper (_1: t_AtomicI64Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI64Wrapper [inv_AtomicI64Wrapper x]. inv_AtomicI64Wrapper x
-      = inv_AtomicI64 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI64Wrapper [inv_AtomicI64Wrapper _1]. inv_AtomicI64Wrapper _1
+      = inv_AtomicI64 _1.f0'1
   
   predicate invariant_ref_AtomicI64Wrapper [@inline:trivial] (self: t_AtomicI64Wrapper) = inv_AtomicI64Wrapper self
   
@@ -7711,7 +7773,12 @@ module M_impl_AtomicI64Wrapper__wrap_load (* AtomicI64Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI64 (self: t_Perm_AtomicI64) : t_FMap_Int_tup2_i64_SyncView
+  function val_unsized_AtomicI64 (self: t_Perm_AtomicI64) : t_FMap_Int_tup2_i64_SyncView
+  
+  function val_AtomicI64 [@inline:trivial] (self: t_Perm_AtomicI64) : t_FMap_Int_tup2_i64_SyncView =
+    val_unsized_AtomicI64 self
+  
+  meta "rewrite_def" function val_AtomicI64
   
   predicate load_reads_from_history_AtomicI64 (own: t_Perm_AtomicI64) (thread_view: t_SyncView) (val': Int64.t) (t: int) =
     match get_Int (val_AtomicI64 own) t with
@@ -7894,10 +7961,10 @@ module M_impl_AtomicI64Wrapper__wrap_load (* AtomicI64Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -7907,8 +7974,8 @@ module M_impl_AtomicI64Wrapper__wrap_load (* AtomicI64Wrapper *)
   
   predicate inv_AtomicI64Wrapper (_1: t_AtomicI64Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI64Wrapper [inv_AtomicI64Wrapper x]. inv_AtomicI64Wrapper x
-      = inv_AtomicI64 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI64Wrapper [inv_AtomicI64Wrapper _1]. inv_AtomicI64Wrapper _1
+      = inv_AtomicI64 _1.f0'1
   
   predicate invariant_ref_AtomicI64Wrapper [@inline:trivial] (self: t_AtomicI64Wrapper) = inv_AtomicI64Wrapper self
   
@@ -8078,7 +8145,12 @@ module M_impl_AtomicI64Wrapper__wrap_store (* AtomicI64Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI64 (self: t_Perm_AtomicI64) : t_FMap_Int_tup2_i64_SyncView
+  function val_unsized_AtomicI64 (self: t_Perm_AtomicI64) : t_FMap_Int_tup2_i64_SyncView
+  
+  function val_AtomicI64 [@inline:trivial] (self: t_Perm_AtomicI64) : t_FMap_Int_tup2_i64_SyncView =
+    val_unsized_AtomicI64 self
+  
+  meta "rewrite_def" function val_AtomicI64
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -8322,8 +8394,8 @@ module M_impl_AtomicI64Wrapper__wrap_store (* AtomicI64Wrapper *)
   
   predicate inv_AtomicI64Wrapper (_1: t_AtomicI64Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI64Wrapper [inv_AtomicI64Wrapper x]. inv_AtomicI64Wrapper x
-      = inv_AtomicI64 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI64Wrapper [inv_AtomicI64Wrapper _1]. inv_AtomicI64Wrapper _1
+      = inv_AtomicI64 _1.f0'1
   
   predicate invariant_ref_AtomicI64Wrapper [@inline:trivial] (self: t_AtomicI64Wrapper) = inv_AtomicI64Wrapper self
   
@@ -8491,7 +8563,12 @@ module M_impl_AtomicI8Wrapper__wrap_compare_exchange (* AtomicI8Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI8 (self: t_Perm_AtomicI8) : t_FMap_Int_tup2_i8_SyncView
+  function val_unsized_AtomicI8 (self: t_Perm_AtomicI8) : t_FMap_Int_tup2_i8_SyncView
+  
+  function val_AtomicI8 [@inline:trivial] (self: t_Perm_AtomicI8) : t_FMap_Int_tup2_i8_SyncView =
+    val_unsized_AtomicI8 self
+  
+  meta "rewrite_def" function val_AtomicI8
   
   predicate load_reads_from_history_AtomicI8 (own: t_Perm_AtomicI8) (thread_view: t_SyncView) (val': Int8.t) (t: int) =
     match get_Int (val_AtomicI8 own) t with
@@ -8869,17 +8946,16 @@ module M_impl_AtomicI8Wrapper__wrap_compare_exchange (* AtomicI8Wrapper *)
       -> deep_model_i8 (val_load_AtomicI8 c) <> deep_model_i8 current'
       -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_i8_i8) -> {[@stop_split] [@expl:compare_exchange ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicI8_i8_Load_Store. not shot_store_AtomicI8'0 c.current
+    [ return (result: t_Result_i8_i8) ->
+    {[@stop_split] [@expl:compare_exchange ensures] (exists c: MutBorrow.t t_Committer_AtomicI8_i8_Load_Store. not shot_store_AtomicI8'0 c.current
           /\ ward_AtomicI8'1 c.current = self
           /\ deep_model_i8 (val_load_AtomicI8'0 c.current) = deep_model_i8 current'
           /\ val_store_AtomicI8 c.current = new
-          /\ result'0 = val_load_AtomicI8'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicI8_i8_Failure_None. not shot_store_AtomicI8 c
-          /\ ward_AtomicI8 c = self
-          /\ deep_model_i8 (val_load_AtomicI8 c) <> deep_model_i8 current'
-          /\ result'0 = val_load_AtomicI8 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicI8'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicI8_i8_Failure_None. not shot_store_AtomicI8 c
+        /\ ward_AtomicI8 c = self
+        /\ deep_model_i8 (val_load_AtomicI8 c) <> deep_model_i8 current'
+        /\ result = Err'0 (val_load_AtomicI8 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -8922,10 +8998,10 @@ module M_impl_AtomicI8Wrapper__wrap_compare_exchange (* AtomicI8Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -8946,8 +9022,8 @@ module M_impl_AtomicI8Wrapper__wrap_compare_exchange (* AtomicI8Wrapper *)
   
   predicate inv_AtomicI8Wrapper (_1: t_AtomicI8Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI8Wrapper [inv_AtomicI8Wrapper x]. inv_AtomicI8Wrapper x
-      = inv_AtomicI8 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI8Wrapper [inv_AtomicI8Wrapper _1]. inv_AtomicI8Wrapper _1
+      = inv_AtomicI8 _1.f0'1
   
   predicate invariant_ref_AtomicI8Wrapper [@inline:trivial] (self: t_AtomicI8Wrapper) = inv_AtomicI8Wrapper self
   
@@ -9159,7 +9235,12 @@ module M_impl_AtomicI8Wrapper__wrap_compare_exchange_weak (* AtomicI8Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI8 (self: t_Perm_AtomicI8) : t_FMap_Int_tup2_i8_SyncView
+  function val_unsized_AtomicI8 (self: t_Perm_AtomicI8) : t_FMap_Int_tup2_i8_SyncView
+  
+  function val_AtomicI8 [@inline:trivial] (self: t_Perm_AtomicI8) : t_FMap_Int_tup2_i8_SyncView =
+    val_unsized_AtomicI8 self
+  
+  meta "rewrite_def" function val_AtomicI8
   
   predicate load_reads_from_history_AtomicI8 (own: t_Perm_AtomicI8) (thread_view: t_SyncView) (val': Int8.t) (t: int) =
     match get_Int (val_AtomicI8 own) t with
@@ -9535,16 +9616,15 @@ module M_impl_AtomicI8Wrapper__wrap_compare_exchange_weak (* AtomicI8Wrapper *)
     /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicI8_i8_Failure_None. not shot_store_AtomicI8 c
       -> ward_AtomicI8 c = self -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_i8_i8) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicI8_i8_Load_Store. not shot_store_AtomicI8'0 c.current
+    [ return (result: t_Result_i8_i8) ->
+    {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicI8_i8_Load_Store. not shot_store_AtomicI8'0 c.current
           /\ ward_AtomicI8'1 c.current = self
           /\ deep_model_i8 (val_load_AtomicI8'0 c.current) = deep_model_i8 current'
           /\ val_store_AtomicI8 c.current = new
-          /\ result'0 = val_load_AtomicI8'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicI8_i8_Failure_None. not shot_store_AtomicI8 c
-          /\ ward_AtomicI8 c = self
-          /\ result'0 = val_load_AtomicI8 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicI8'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicI8_i8_Failure_None. not shot_store_AtomicI8 c
+        /\ ward_AtomicI8 c = self
+        /\ result = Err'0 (val_load_AtomicI8 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -9587,10 +9667,10 @@ module M_impl_AtomicI8Wrapper__wrap_compare_exchange_weak (* AtomicI8Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -9611,8 +9691,8 @@ module M_impl_AtomicI8Wrapper__wrap_compare_exchange_weak (* AtomicI8Wrapper *)
   
   predicate inv_AtomicI8Wrapper (_1: t_AtomicI8Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI8Wrapper [inv_AtomicI8Wrapper x]. inv_AtomicI8Wrapper x
-      = inv_AtomicI8 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI8Wrapper [inv_AtomicI8Wrapper _1]. inv_AtomicI8Wrapper _1
+      = inv_AtomicI8 _1.f0'1
   
   predicate invariant_ref_AtomicI8Wrapper [@inline:trivial] (self: t_AtomicI8Wrapper) = inv_AtomicI8Wrapper self
   
@@ -9804,7 +9884,12 @@ module M_impl_AtomicI8Wrapper__wrap_load (* AtomicI8Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI8 (self: t_Perm_AtomicI8) : t_FMap_Int_tup2_i8_SyncView
+  function val_unsized_AtomicI8 (self: t_Perm_AtomicI8) : t_FMap_Int_tup2_i8_SyncView
+  
+  function val_AtomicI8 [@inline:trivial] (self: t_Perm_AtomicI8) : t_FMap_Int_tup2_i8_SyncView =
+    val_unsized_AtomicI8 self
+  
+  meta "rewrite_def" function val_AtomicI8
   
   predicate load_reads_from_history_AtomicI8 (own: t_Perm_AtomicI8) (thread_view: t_SyncView) (val': Int8.t) (t: int) =
     match get_Int (val_AtomicI8 own) t with
@@ -9986,10 +10071,10 @@ module M_impl_AtomicI8Wrapper__wrap_load (* AtomicI8Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -9999,8 +10084,8 @@ module M_impl_AtomicI8Wrapper__wrap_load (* AtomicI8Wrapper *)
   
   predicate inv_AtomicI8Wrapper (_1: t_AtomicI8Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI8Wrapper [inv_AtomicI8Wrapper x]. inv_AtomicI8Wrapper x
-      = inv_AtomicI8 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI8Wrapper [inv_AtomicI8Wrapper _1]. inv_AtomicI8Wrapper _1
+      = inv_AtomicI8 _1.f0'1
   
   predicate invariant_ref_AtomicI8Wrapper [@inline:trivial] (self: t_AtomicI8Wrapper) = inv_AtomicI8Wrapper self
   
@@ -10170,7 +10255,12 @@ module M_impl_AtomicI8Wrapper__wrap_store (* AtomicI8Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicI8 (self: t_Perm_AtomicI8) : t_FMap_Int_tup2_i8_SyncView
+  function val_unsized_AtomicI8 (self: t_Perm_AtomicI8) : t_FMap_Int_tup2_i8_SyncView
+  
+  function val_AtomicI8 [@inline:trivial] (self: t_Perm_AtomicI8) : t_FMap_Int_tup2_i8_SyncView =
+    val_unsized_AtomicI8 self
+  
+  meta "rewrite_def" function val_AtomicI8
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -10413,8 +10503,8 @@ module M_impl_AtomicI8Wrapper__wrap_store (* AtomicI8Wrapper *)
   
   predicate inv_AtomicI8Wrapper (_1: t_AtomicI8Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicI8Wrapper [inv_AtomicI8Wrapper x]. inv_AtomicI8Wrapper x
-      = inv_AtomicI8 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicI8Wrapper [inv_AtomicI8Wrapper _1]. inv_AtomicI8Wrapper _1
+      = inv_AtomicI8 _1.f0'1
   
   predicate invariant_ref_AtomicI8Wrapper [@inline:trivial] (self: t_AtomicI8Wrapper) = inv_AtomicI8Wrapper self
   
@@ -10584,7 +10674,12 @@ module M_impl_AtomicPtrWrapper_T__wrap_compare_exchange (* AtomicPtrWrapper<T> *
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
+  function val_unsized_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
+  
+  function val_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView =
+    val_unsized_AtomicPtr_T self
+  
+  meta "rewrite_def" function val_AtomicPtr_T
   
   predicate load_reads_from_history_AtomicPtr_T (own: t_Perm_AtomicPtr_T) (thread_view: t_SyncView) (val': Opaque.ptr) (t: int) =
     match get_Int (val_AtomicPtr_T own) t with
@@ -10970,17 +11065,16 @@ module M_impl_AtomicPtrWrapper_T__wrap_compare_exchange (* AtomicPtrWrapper<T> *
       -> deep_model_ptr_T (val_load_AtomicPtr_T c) <> deep_model_ptr_T current'
       -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_ptr_T_ptr_T) -> {[@stop_split] [@expl:compare_exchange ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_Load_Store. not shot_store_AtomicPtr_T'0 c.current
+    [ return (result: t_Result_ptr_T_ptr_T) ->
+    {[@stop_split] [@expl:compare_exchange ensures] (exists c: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_Load_Store. not shot_store_AtomicPtr_T'0 c.current
           /\ ward_AtomicPtr_T'1 c.current = self
           /\ deep_model_ptr_T (val_load_AtomicPtr_T'0 c.current) = deep_model_ptr_T current'
           /\ val_store_AtomicPtr_T c.current = new
-          /\ result'0 = val_load_AtomicPtr_T'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicPtr_T_ptr_T_Failure_None. not shot_store_AtomicPtr_T c
-          /\ ward_AtomicPtr_T c = self
-          /\ deep_model_ptr_T (val_load_AtomicPtr_T c) <> deep_model_ptr_T current'
-          /\ result'0 = val_load_AtomicPtr_T c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicPtr_T'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicPtr_T_ptr_T_Failure_None. not shot_store_AtomicPtr_T c
+        /\ ward_AtomicPtr_T c = self
+        /\ deep_model_ptr_T (val_load_AtomicPtr_T c) <> deep_model_ptr_T current'
+        /\ result = Err'0 (val_load_AtomicPtr_T c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -11024,10 +11118,10 @@ module M_impl_AtomicPtrWrapper_T__wrap_compare_exchange (* AtomicPtrWrapper<T> *
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -11048,8 +11142,8 @@ module M_impl_AtomicPtrWrapper_T__wrap_compare_exchange (* AtomicPtrWrapper<T> *
   
   predicate inv_AtomicPtrWrapper_T (_1: t_AtomicPtrWrapper_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicPtrWrapper_T [inv_AtomicPtrWrapper_T x]. inv_AtomicPtrWrapper_T x
-      = inv_AtomicPtr_T x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicPtrWrapper_T [inv_AtomicPtrWrapper_T _1]. inv_AtomicPtrWrapper_T _1
+      = inv_AtomicPtr_T _1.f0'1
   
   predicate invariant_ref_AtomicPtrWrapper_T [@inline:trivial] (self: t_AtomicPtrWrapper_T) =
     inv_AtomicPtrWrapper_T self
@@ -11265,7 +11359,12 @@ module M_impl_AtomicPtrWrapper_T__wrap_compare_exchange_weak (* AtomicPtrWrapper
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
+  function val_unsized_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
+  
+  function val_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView =
+    val_unsized_AtomicPtr_T self
+  
+  meta "rewrite_def" function val_AtomicPtr_T
   
   predicate load_reads_from_history_AtomicPtr_T (own: t_Perm_AtomicPtr_T) (thread_view: t_SyncView) (val': Opaque.ptr) (t: int) =
     match get_Int (val_AtomicPtr_T own) t with
@@ -11649,16 +11748,15 @@ module M_impl_AtomicPtrWrapper_T__wrap_compare_exchange_weak (* AtomicPtrWrapper
     /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicPtr_T_ptr_T_Failure_None. not shot_store_AtomicPtr_T c
       -> ward_AtomicPtr_T c = self -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_ptr_T_ptr_T) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_Load_Store. not shot_store_AtomicPtr_T'0 c.current
+    [ return (result: t_Result_ptr_T_ptr_T) ->
+    {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_Load_Store. not shot_store_AtomicPtr_T'0 c.current
           /\ ward_AtomicPtr_T'1 c.current = self
           /\ deep_model_ptr_T (val_load_AtomicPtr_T'0 c.current) = deep_model_ptr_T current'
           /\ val_store_AtomicPtr_T c.current = new
-          /\ result'0 = val_load_AtomicPtr_T'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicPtr_T_ptr_T_Failure_None. not shot_store_AtomicPtr_T c
-          /\ ward_AtomicPtr_T c = self
-          /\ result'0 = val_load_AtomicPtr_T c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicPtr_T'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicPtr_T_ptr_T_Failure_None. not shot_store_AtomicPtr_T c
+        /\ ward_AtomicPtr_T c = self
+        /\ result = Err'0 (val_load_AtomicPtr_T c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -11702,10 +11800,10 @@ module M_impl_AtomicPtrWrapper_T__wrap_compare_exchange_weak (* AtomicPtrWrapper
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -11726,8 +11824,8 @@ module M_impl_AtomicPtrWrapper_T__wrap_compare_exchange_weak (* AtomicPtrWrapper
   
   predicate inv_AtomicPtrWrapper_T (_1: t_AtomicPtrWrapper_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicPtrWrapper_T [inv_AtomicPtrWrapper_T x]. inv_AtomicPtrWrapper_T x
-      = inv_AtomicPtr_T x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicPtrWrapper_T [inv_AtomicPtrWrapper_T _1]. inv_AtomicPtrWrapper_T _1
+      = inv_AtomicPtr_T _1.f0'1
   
   predicate invariant_ref_AtomicPtrWrapper_T [@inline:trivial] (self: t_AtomicPtrWrapper_T) =
     inv_AtomicPtrWrapper_T self
@@ -11922,7 +12020,12 @@ module M_impl_AtomicPtrWrapper_T__wrap_load (* AtomicPtrWrapper<T> *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
+  function val_unsized_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
+  
+  function val_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView =
+    val_unsized_AtomicPtr_T self
+  
+  meta "rewrite_def" function val_AtomicPtr_T
   
   predicate load_reads_from_history_AtomicPtr_T (own: t_Perm_AtomicPtr_T) (thread_view: t_SyncView) (val': Opaque.ptr) (t: int) =
     match get_Int (val_AtomicPtr_T own) t with
@@ -12105,10 +12208,10 @@ module M_impl_AtomicPtrWrapper_T__wrap_load (* AtomicPtrWrapper<T> *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -12118,8 +12221,8 @@ module M_impl_AtomicPtrWrapper_T__wrap_load (* AtomicPtrWrapper<T> *)
   
   predicate inv_AtomicPtrWrapper_T (_1: t_AtomicPtrWrapper_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicPtrWrapper_T [inv_AtomicPtrWrapper_T x]. inv_AtomicPtrWrapper_T x
-      = inv_AtomicPtr_T x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicPtrWrapper_T [inv_AtomicPtrWrapper_T _1]. inv_AtomicPtrWrapper_T _1
+      = inv_AtomicPtr_T _1.f0'1
   
   predicate invariant_ref_AtomicPtrWrapper_T [@inline:trivial] (self: t_AtomicPtrWrapper_T) =
     inv_AtomicPtrWrapper_T self
@@ -12292,7 +12395,12 @@ module M_impl_AtomicPtrWrapper_T__wrap_store (* AtomicPtrWrapper<T> *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
+  function val_unsized_AtomicPtr_T (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView
+  
+  function val_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView =
+    val_unsized_AtomicPtr_T self
+  
+  meta "rewrite_def" function val_AtomicPtr_T
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -12537,8 +12645,8 @@ module M_impl_AtomicPtrWrapper_T__wrap_store (* AtomicPtrWrapper<T> *)
   
   predicate inv_AtomicPtrWrapper_T (_1: t_AtomicPtrWrapper_T)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicPtrWrapper_T [inv_AtomicPtrWrapper_T x]. inv_AtomicPtrWrapper_T x
-      = inv_AtomicPtr_T x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicPtrWrapper_T [inv_AtomicPtrWrapper_T _1]. inv_AtomicPtrWrapper_T _1
+      = inv_AtomicPtr_T _1.f0'1
   
   predicate invariant_ref_AtomicPtrWrapper_T [@inline:trivial] (self: t_AtomicPtrWrapper_T) =
     inv_AtomicPtrWrapper_T self
@@ -12708,7 +12816,12 @@ module M_impl_AtomicU16Wrapper__wrap_compare_exchange (* AtomicU16Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU16 (self: t_Perm_AtomicU16) : t_FMap_Int_tup2_u16_SyncView
+  function val_unsized_AtomicU16 (self: t_Perm_AtomicU16) : t_FMap_Int_tup2_u16_SyncView
+  
+  function val_AtomicU16 [@inline:trivial] (self: t_Perm_AtomicU16) : t_FMap_Int_tup2_u16_SyncView =
+    val_unsized_AtomicU16 self
+  
+  meta "rewrite_def" function val_AtomicU16
   
   predicate load_reads_from_history_AtomicU16 (own: t_Perm_AtomicU16) (thread_view: t_SyncView) (val': UInt16.t) (t: int) =
     match get_Int (val_AtomicU16 own) t with
@@ -13087,17 +13200,16 @@ module M_impl_AtomicU16Wrapper__wrap_compare_exchange (* AtomicU16Wrapper *)
       -> deep_model_u16 (val_load_AtomicU16 c) <> deep_model_u16 current'
       -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_u16_u16) -> {[@stop_split] [@expl:compare_exchange ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicU16_u16_Load_Store. not shot_store_AtomicU16'0 c.current
+    [ return (result: t_Result_u16_u16) ->
+    {[@stop_split] [@expl:compare_exchange ensures] (exists c: MutBorrow.t t_Committer_AtomicU16_u16_Load_Store. not shot_store_AtomicU16'0 c.current
           /\ ward_AtomicU16'1 c.current = self
           /\ deep_model_u16 (val_load_AtomicU16'0 c.current) = deep_model_u16 current'
           /\ val_store_AtomicU16 c.current = new
-          /\ result'0 = val_load_AtomicU16'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicU16_u16_Failure_None. not shot_store_AtomicU16 c
-          /\ ward_AtomicU16 c = self
-          /\ deep_model_u16 (val_load_AtomicU16 c) <> deep_model_u16 current'
-          /\ result'0 = val_load_AtomicU16 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicU16'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicU16_u16_Failure_None. not shot_store_AtomicU16 c
+        /\ ward_AtomicU16 c = self
+        /\ deep_model_u16 (val_load_AtomicU16 c) <> deep_model_u16 current'
+        /\ result = Err'0 (val_load_AtomicU16 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -13140,10 +13252,10 @@ module M_impl_AtomicU16Wrapper__wrap_compare_exchange (* AtomicU16Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -13164,8 +13276,8 @@ module M_impl_AtomicU16Wrapper__wrap_compare_exchange (* AtomicU16Wrapper *)
   
   predicate inv_AtomicU16Wrapper (_1: t_AtomicU16Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU16Wrapper [inv_AtomicU16Wrapper x]. inv_AtomicU16Wrapper x
-      = inv_AtomicU16 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU16Wrapper [inv_AtomicU16Wrapper _1]. inv_AtomicU16Wrapper _1
+      = inv_AtomicU16 _1.f0'1
   
   predicate invariant_ref_AtomicU16Wrapper [@inline:trivial] (self: t_AtomicU16Wrapper) = inv_AtomicU16Wrapper self
   
@@ -13377,7 +13489,12 @@ module M_impl_AtomicU16Wrapper__wrap_compare_exchange_weak (* AtomicU16Wrapper *
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU16 (self: t_Perm_AtomicU16) : t_FMap_Int_tup2_u16_SyncView
+  function val_unsized_AtomicU16 (self: t_Perm_AtomicU16) : t_FMap_Int_tup2_u16_SyncView
+  
+  function val_AtomicU16 [@inline:trivial] (self: t_Perm_AtomicU16) : t_FMap_Int_tup2_u16_SyncView =
+    val_unsized_AtomicU16 self
+  
+  meta "rewrite_def" function val_AtomicU16
   
   predicate load_reads_from_history_AtomicU16 (own: t_Perm_AtomicU16) (thread_view: t_SyncView) (val': UInt16.t) (t: int) =
     match get_Int (val_AtomicU16 own) t with
@@ -13754,16 +13871,15 @@ module M_impl_AtomicU16Wrapper__wrap_compare_exchange_weak (* AtomicU16Wrapper *
     /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicU16_u16_Failure_None. not shot_store_AtomicU16 c
       -> ward_AtomicU16 c = self -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_u16_u16) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicU16_u16_Load_Store. not shot_store_AtomicU16'0 c.current
+    [ return (result: t_Result_u16_u16) ->
+    {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicU16_u16_Load_Store. not shot_store_AtomicU16'0 c.current
           /\ ward_AtomicU16'1 c.current = self
           /\ deep_model_u16 (val_load_AtomicU16'0 c.current) = deep_model_u16 current'
           /\ val_store_AtomicU16 c.current = new
-          /\ result'0 = val_load_AtomicU16'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicU16_u16_Failure_None. not shot_store_AtomicU16 c
-          /\ ward_AtomicU16 c = self
-          /\ result'0 = val_load_AtomicU16 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicU16'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicU16_u16_Failure_None. not shot_store_AtomicU16 c
+        /\ ward_AtomicU16 c = self
+        /\ result = Err'0 (val_load_AtomicU16 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -13806,10 +13922,10 @@ module M_impl_AtomicU16Wrapper__wrap_compare_exchange_weak (* AtomicU16Wrapper *
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -13830,8 +13946,8 @@ module M_impl_AtomicU16Wrapper__wrap_compare_exchange_weak (* AtomicU16Wrapper *
   
   predicate inv_AtomicU16Wrapper (_1: t_AtomicU16Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU16Wrapper [inv_AtomicU16Wrapper x]. inv_AtomicU16Wrapper x
-      = inv_AtomicU16 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU16Wrapper [inv_AtomicU16Wrapper _1]. inv_AtomicU16Wrapper _1
+      = inv_AtomicU16 _1.f0'1
   
   predicate invariant_ref_AtomicU16Wrapper [@inline:trivial] (self: t_AtomicU16Wrapper) = inv_AtomicU16Wrapper self
   
@@ -14023,7 +14139,12 @@ module M_impl_AtomicU16Wrapper__wrap_load (* AtomicU16Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU16 (self: t_Perm_AtomicU16) : t_FMap_Int_tup2_u16_SyncView
+  function val_unsized_AtomicU16 (self: t_Perm_AtomicU16) : t_FMap_Int_tup2_u16_SyncView
+  
+  function val_AtomicU16 [@inline:trivial] (self: t_Perm_AtomicU16) : t_FMap_Int_tup2_u16_SyncView =
+    val_unsized_AtomicU16 self
+  
+  meta "rewrite_def" function val_AtomicU16
   
   predicate load_reads_from_history_AtomicU16 (own: t_Perm_AtomicU16) (thread_view: t_SyncView) (val': UInt16.t) (t: int) =
     match get_Int (val_AtomicU16 own) t with
@@ -14206,10 +14327,10 @@ module M_impl_AtomicU16Wrapper__wrap_load (* AtomicU16Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -14219,8 +14340,8 @@ module M_impl_AtomicU16Wrapper__wrap_load (* AtomicU16Wrapper *)
   
   predicate inv_AtomicU16Wrapper (_1: t_AtomicU16Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU16Wrapper [inv_AtomicU16Wrapper x]. inv_AtomicU16Wrapper x
-      = inv_AtomicU16 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU16Wrapper [inv_AtomicU16Wrapper _1]. inv_AtomicU16Wrapper _1
+      = inv_AtomicU16 _1.f0'1
   
   predicate invariant_ref_AtomicU16Wrapper [@inline:trivial] (self: t_AtomicU16Wrapper) = inv_AtomicU16Wrapper self
   
@@ -14390,7 +14511,12 @@ module M_impl_AtomicU16Wrapper__wrap_store (* AtomicU16Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU16 (self: t_Perm_AtomicU16) : t_FMap_Int_tup2_u16_SyncView
+  function val_unsized_AtomicU16 (self: t_Perm_AtomicU16) : t_FMap_Int_tup2_u16_SyncView
+  
+  function val_AtomicU16 [@inline:trivial] (self: t_Perm_AtomicU16) : t_FMap_Int_tup2_u16_SyncView =
+    val_unsized_AtomicU16 self
+  
+  meta "rewrite_def" function val_AtomicU16
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -14634,8 +14760,8 @@ module M_impl_AtomicU16Wrapper__wrap_store (* AtomicU16Wrapper *)
   
   predicate inv_AtomicU16Wrapper (_1: t_AtomicU16Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU16Wrapper [inv_AtomicU16Wrapper x]. inv_AtomicU16Wrapper x
-      = inv_AtomicU16 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU16Wrapper [inv_AtomicU16Wrapper _1]. inv_AtomicU16Wrapper _1
+      = inv_AtomicU16 _1.f0'1
   
   predicate invariant_ref_AtomicU16Wrapper [@inline:trivial] (self: t_AtomicU16Wrapper) = inv_AtomicU16Wrapper self
   
@@ -14803,7 +14929,12 @@ module M_impl_AtomicU32Wrapper__wrap_compare_exchange (* AtomicU32Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
+  function val_unsized_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
+  
+  function val_AtomicU32 [@inline:trivial] (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView =
+    val_unsized_AtomicU32 self
+  
+  meta "rewrite_def" function val_AtomicU32
   
   predicate load_reads_from_history_AtomicU32 (own: t_Perm_AtomicU32) (thread_view: t_SyncView) (val': UInt32.t) (t: int) =
     match get_Int (val_AtomicU32 own) t with
@@ -15182,17 +15313,16 @@ module M_impl_AtomicU32Wrapper__wrap_compare_exchange (* AtomicU32Wrapper *)
       -> deep_model_u32 (val_load_AtomicU32 c) <> deep_model_u32 current'
       -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_u32_u32) -> {[@stop_split] [@expl:compare_exchange ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicU32_u32_Load_Store. not shot_store_AtomicU32'0 c.current
+    [ return (result: t_Result_u32_u32) ->
+    {[@stop_split] [@expl:compare_exchange ensures] (exists c: MutBorrow.t t_Committer_AtomicU32_u32_Load_Store. not shot_store_AtomicU32'0 c.current
           /\ ward_AtomicU32'1 c.current = self
           /\ deep_model_u32 (val_load_AtomicU32'0 c.current) = deep_model_u32 current'
           /\ val_store_AtomicU32 c.current = new
-          /\ result'0 = val_load_AtomicU32'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicU32_u32_Failure_None. not shot_store_AtomicU32 c
-          /\ ward_AtomicU32 c = self
-          /\ deep_model_u32 (val_load_AtomicU32 c) <> deep_model_u32 current'
-          /\ result'0 = val_load_AtomicU32 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicU32'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicU32_u32_Failure_None. not shot_store_AtomicU32 c
+        /\ ward_AtomicU32 c = self
+        /\ deep_model_u32 (val_load_AtomicU32 c) <> deep_model_u32 current'
+        /\ result = Err'0 (val_load_AtomicU32 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -15235,10 +15365,10 @@ module M_impl_AtomicU32Wrapper__wrap_compare_exchange (* AtomicU32Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -15259,8 +15389,8 @@ module M_impl_AtomicU32Wrapper__wrap_compare_exchange (* AtomicU32Wrapper *)
   
   predicate inv_AtomicU32Wrapper (_1: t_AtomicU32Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU32Wrapper [inv_AtomicU32Wrapper x]. inv_AtomicU32Wrapper x
-      = inv_AtomicU32 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU32Wrapper [inv_AtomicU32Wrapper _1]. inv_AtomicU32Wrapper _1
+      = inv_AtomicU32 _1.f0'1
   
   predicate invariant_ref_AtomicU32Wrapper [@inline:trivial] (self: t_AtomicU32Wrapper) = inv_AtomicU32Wrapper self
   
@@ -15472,7 +15602,12 @@ module M_impl_AtomicU32Wrapper__wrap_compare_exchange_weak (* AtomicU32Wrapper *
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
+  function val_unsized_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
+  
+  function val_AtomicU32 [@inline:trivial] (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView =
+    val_unsized_AtomicU32 self
+  
+  meta "rewrite_def" function val_AtomicU32
   
   predicate load_reads_from_history_AtomicU32 (own: t_Perm_AtomicU32) (thread_view: t_SyncView) (val': UInt32.t) (t: int) =
     match get_Int (val_AtomicU32 own) t with
@@ -15849,16 +15984,15 @@ module M_impl_AtomicU32Wrapper__wrap_compare_exchange_weak (* AtomicU32Wrapper *
     /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicU32_u32_Failure_None. not shot_store_AtomicU32 c
       -> ward_AtomicU32 c = self -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_u32_u32) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicU32_u32_Load_Store. not shot_store_AtomicU32'0 c.current
+    [ return (result: t_Result_u32_u32) ->
+    {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicU32_u32_Load_Store. not shot_store_AtomicU32'0 c.current
           /\ ward_AtomicU32'1 c.current = self
           /\ deep_model_u32 (val_load_AtomicU32'0 c.current) = deep_model_u32 current'
           /\ val_store_AtomicU32 c.current = new
-          /\ result'0 = val_load_AtomicU32'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicU32_u32_Failure_None. not shot_store_AtomicU32 c
-          /\ ward_AtomicU32 c = self
-          /\ result'0 = val_load_AtomicU32 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicU32'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicU32_u32_Failure_None. not shot_store_AtomicU32 c
+        /\ ward_AtomicU32 c = self
+        /\ result = Err'0 (val_load_AtomicU32 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -15901,10 +16035,10 @@ module M_impl_AtomicU32Wrapper__wrap_compare_exchange_weak (* AtomicU32Wrapper *
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -15925,8 +16059,8 @@ module M_impl_AtomicU32Wrapper__wrap_compare_exchange_weak (* AtomicU32Wrapper *
   
   predicate inv_AtomicU32Wrapper (_1: t_AtomicU32Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU32Wrapper [inv_AtomicU32Wrapper x]. inv_AtomicU32Wrapper x
-      = inv_AtomicU32 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU32Wrapper [inv_AtomicU32Wrapper _1]. inv_AtomicU32Wrapper _1
+      = inv_AtomicU32 _1.f0'1
   
   predicate invariant_ref_AtomicU32Wrapper [@inline:trivial] (self: t_AtomicU32Wrapper) = inv_AtomicU32Wrapper self
   
@@ -16118,7 +16252,12 @@ module M_impl_AtomicU32Wrapper__wrap_load (* AtomicU32Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
+  function val_unsized_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
+  
+  function val_AtomicU32 [@inline:trivial] (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView =
+    val_unsized_AtomicU32 self
+  
+  meta "rewrite_def" function val_AtomicU32
   
   predicate load_reads_from_history_AtomicU32 (own: t_Perm_AtomicU32) (thread_view: t_SyncView) (val': UInt32.t) (t: int) =
     match get_Int (val_AtomicU32 own) t with
@@ -16301,10 +16440,10 @@ module M_impl_AtomicU32Wrapper__wrap_load (* AtomicU32Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -16314,8 +16453,8 @@ module M_impl_AtomicU32Wrapper__wrap_load (* AtomicU32Wrapper *)
   
   predicate inv_AtomicU32Wrapper (_1: t_AtomicU32Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU32Wrapper [inv_AtomicU32Wrapper x]. inv_AtomicU32Wrapper x
-      = inv_AtomicU32 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU32Wrapper [inv_AtomicU32Wrapper _1]. inv_AtomicU32Wrapper _1
+      = inv_AtomicU32 _1.f0'1
   
   predicate invariant_ref_AtomicU32Wrapper [@inline:trivial] (self: t_AtomicU32Wrapper) = inv_AtomicU32Wrapper self
   
@@ -16485,7 +16624,12 @@ module M_impl_AtomicU32Wrapper__wrap_store (* AtomicU32Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
+  function val_unsized_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
+  
+  function val_AtomicU32 [@inline:trivial] (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView =
+    val_unsized_AtomicU32 self
+  
+  meta "rewrite_def" function val_AtomicU32
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -16729,8 +16873,8 @@ module M_impl_AtomicU32Wrapper__wrap_store (* AtomicU32Wrapper *)
   
   predicate inv_AtomicU32Wrapper (_1: t_AtomicU32Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU32Wrapper [inv_AtomicU32Wrapper x]. inv_AtomicU32Wrapper x
-      = inv_AtomicU32 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU32Wrapper [inv_AtomicU32Wrapper _1]. inv_AtomicU32Wrapper _1
+      = inv_AtomicU32 _1.f0'1
   
   predicate invariant_ref_AtomicU32Wrapper [@inline:trivial] (self: t_AtomicU32Wrapper) = inv_AtomicU32Wrapper self
   
@@ -16898,7 +17042,12 @@ module M_impl_AtomicU64Wrapper__wrap_compare_exchange (* AtomicU64Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU64 (self: t_Perm_AtomicU64) : t_FMap_Int_tup2_u64_SyncView
+  function val_unsized_AtomicU64 (self: t_Perm_AtomicU64) : t_FMap_Int_tup2_u64_SyncView
+  
+  function val_AtomicU64 [@inline:trivial] (self: t_Perm_AtomicU64) : t_FMap_Int_tup2_u64_SyncView =
+    val_unsized_AtomicU64 self
+  
+  meta "rewrite_def" function val_AtomicU64
   
   predicate load_reads_from_history_AtomicU64 (own: t_Perm_AtomicU64) (thread_view: t_SyncView) (val': UInt64.t) (t: int) =
     match get_Int (val_AtomicU64 own) t with
@@ -17277,17 +17426,16 @@ module M_impl_AtomicU64Wrapper__wrap_compare_exchange (* AtomicU64Wrapper *)
       -> deep_model_u64 (val_load_AtomicU64 c) <> deep_model_u64 current'
       -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_u64_u64) -> {[@stop_split] [@expl:compare_exchange ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicU64_u64_Load_Store. not shot_store_AtomicU64'0 c.current
+    [ return (result: t_Result_u64_u64) ->
+    {[@stop_split] [@expl:compare_exchange ensures] (exists c: MutBorrow.t t_Committer_AtomicU64_u64_Load_Store. not shot_store_AtomicU64'0 c.current
           /\ ward_AtomicU64'1 c.current = self
           /\ deep_model_u64 (val_load_AtomicU64'0 c.current) = deep_model_u64 current'
           /\ val_store_AtomicU64 c.current = new
-          /\ result'0 = val_load_AtomicU64'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicU64_u64_Failure_None. not shot_store_AtomicU64 c
-          /\ ward_AtomicU64 c = self
-          /\ deep_model_u64 (val_load_AtomicU64 c) <> deep_model_u64 current'
-          /\ result'0 = val_load_AtomicU64 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicU64'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicU64_u64_Failure_None. not shot_store_AtomicU64 c
+        /\ ward_AtomicU64 c = self
+        /\ deep_model_u64 (val_load_AtomicU64 c) <> deep_model_u64 current'
+        /\ result = Err'0 (val_load_AtomicU64 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -17330,10 +17478,10 @@ module M_impl_AtomicU64Wrapper__wrap_compare_exchange (* AtomicU64Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -17354,8 +17502,8 @@ module M_impl_AtomicU64Wrapper__wrap_compare_exchange (* AtomicU64Wrapper *)
   
   predicate inv_AtomicU64Wrapper (_1: t_AtomicU64Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU64Wrapper [inv_AtomicU64Wrapper x]. inv_AtomicU64Wrapper x
-      = inv_AtomicU64 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU64Wrapper [inv_AtomicU64Wrapper _1]. inv_AtomicU64Wrapper _1
+      = inv_AtomicU64 _1.f0'1
   
   predicate invariant_ref_AtomicU64Wrapper [@inline:trivial] (self: t_AtomicU64Wrapper) = inv_AtomicU64Wrapper self
   
@@ -17567,7 +17715,12 @@ module M_impl_AtomicU64Wrapper__wrap_compare_exchange_weak (* AtomicU64Wrapper *
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU64 (self: t_Perm_AtomicU64) : t_FMap_Int_tup2_u64_SyncView
+  function val_unsized_AtomicU64 (self: t_Perm_AtomicU64) : t_FMap_Int_tup2_u64_SyncView
+  
+  function val_AtomicU64 [@inline:trivial] (self: t_Perm_AtomicU64) : t_FMap_Int_tup2_u64_SyncView =
+    val_unsized_AtomicU64 self
+  
+  meta "rewrite_def" function val_AtomicU64
   
   predicate load_reads_from_history_AtomicU64 (own: t_Perm_AtomicU64) (thread_view: t_SyncView) (val': UInt64.t) (t: int) =
     match get_Int (val_AtomicU64 own) t with
@@ -17944,16 +18097,15 @@ module M_impl_AtomicU64Wrapper__wrap_compare_exchange_weak (* AtomicU64Wrapper *
     /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicU64_u64_Failure_None. not shot_store_AtomicU64 c
       -> ward_AtomicU64 c = self -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_u64_u64) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicU64_u64_Load_Store. not shot_store_AtomicU64'0 c.current
+    [ return (result: t_Result_u64_u64) ->
+    {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicU64_u64_Load_Store. not shot_store_AtomicU64'0 c.current
           /\ ward_AtomicU64'1 c.current = self
           /\ deep_model_u64 (val_load_AtomicU64'0 c.current) = deep_model_u64 current'
           /\ val_store_AtomicU64 c.current = new
-          /\ result'0 = val_load_AtomicU64'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicU64_u64_Failure_None. not shot_store_AtomicU64 c
-          /\ ward_AtomicU64 c = self
-          /\ result'0 = val_load_AtomicU64 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicU64'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicU64_u64_Failure_None. not shot_store_AtomicU64 c
+        /\ ward_AtomicU64 c = self
+        /\ result = Err'0 (val_load_AtomicU64 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -17996,10 +18148,10 @@ module M_impl_AtomicU64Wrapper__wrap_compare_exchange_weak (* AtomicU64Wrapper *
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -18020,8 +18172,8 @@ module M_impl_AtomicU64Wrapper__wrap_compare_exchange_weak (* AtomicU64Wrapper *
   
   predicate inv_AtomicU64Wrapper (_1: t_AtomicU64Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU64Wrapper [inv_AtomicU64Wrapper x]. inv_AtomicU64Wrapper x
-      = inv_AtomicU64 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU64Wrapper [inv_AtomicU64Wrapper _1]. inv_AtomicU64Wrapper _1
+      = inv_AtomicU64 _1.f0'1
   
   predicate invariant_ref_AtomicU64Wrapper [@inline:trivial] (self: t_AtomicU64Wrapper) = inv_AtomicU64Wrapper self
   
@@ -18213,7 +18365,12 @@ module M_impl_AtomicU64Wrapper__wrap_load (* AtomicU64Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU64 (self: t_Perm_AtomicU64) : t_FMap_Int_tup2_u64_SyncView
+  function val_unsized_AtomicU64 (self: t_Perm_AtomicU64) : t_FMap_Int_tup2_u64_SyncView
+  
+  function val_AtomicU64 [@inline:trivial] (self: t_Perm_AtomicU64) : t_FMap_Int_tup2_u64_SyncView =
+    val_unsized_AtomicU64 self
+  
+  meta "rewrite_def" function val_AtomicU64
   
   predicate load_reads_from_history_AtomicU64 (own: t_Perm_AtomicU64) (thread_view: t_SyncView) (val': UInt64.t) (t: int) =
     match get_Int (val_AtomicU64 own) t with
@@ -18396,10 +18553,10 @@ module M_impl_AtomicU64Wrapper__wrap_load (* AtomicU64Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -18409,8 +18566,8 @@ module M_impl_AtomicU64Wrapper__wrap_load (* AtomicU64Wrapper *)
   
   predicate inv_AtomicU64Wrapper (_1: t_AtomicU64Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU64Wrapper [inv_AtomicU64Wrapper x]. inv_AtomicU64Wrapper x
-      = inv_AtomicU64 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU64Wrapper [inv_AtomicU64Wrapper _1]. inv_AtomicU64Wrapper _1
+      = inv_AtomicU64 _1.f0'1
   
   predicate invariant_ref_AtomicU64Wrapper [@inline:trivial] (self: t_AtomicU64Wrapper) = inv_AtomicU64Wrapper self
   
@@ -18580,7 +18737,12 @@ module M_impl_AtomicU64Wrapper__wrap_store (* AtomicU64Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU64 (self: t_Perm_AtomicU64) : t_FMap_Int_tup2_u64_SyncView
+  function val_unsized_AtomicU64 (self: t_Perm_AtomicU64) : t_FMap_Int_tup2_u64_SyncView
+  
+  function val_AtomicU64 [@inline:trivial] (self: t_Perm_AtomicU64) : t_FMap_Int_tup2_u64_SyncView =
+    val_unsized_AtomicU64 self
+  
+  meta "rewrite_def" function val_AtomicU64
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -18824,8 +18986,8 @@ module M_impl_AtomicU64Wrapper__wrap_store (* AtomicU64Wrapper *)
   
   predicate inv_AtomicU64Wrapper (_1: t_AtomicU64Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU64Wrapper [inv_AtomicU64Wrapper x]. inv_AtomicU64Wrapper x
-      = inv_AtomicU64 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU64Wrapper [inv_AtomicU64Wrapper _1]. inv_AtomicU64Wrapper _1
+      = inv_AtomicU64 _1.f0'1
   
   predicate invariant_ref_AtomicU64Wrapper [@inline:trivial] (self: t_AtomicU64Wrapper) = inv_AtomicU64Wrapper self
   
@@ -18993,7 +19155,12 @@ module M_impl_AtomicU8Wrapper__wrap_compare_exchange (* AtomicU8Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU8 (self: t_Perm_AtomicU8) : t_FMap_Int_tup2_u8_SyncView
+  function val_unsized_AtomicU8 (self: t_Perm_AtomicU8) : t_FMap_Int_tup2_u8_SyncView
+  
+  function val_AtomicU8 [@inline:trivial] (self: t_Perm_AtomicU8) : t_FMap_Int_tup2_u8_SyncView =
+    val_unsized_AtomicU8 self
+  
+  meta "rewrite_def" function val_AtomicU8
   
   predicate load_reads_from_history_AtomicU8 (own: t_Perm_AtomicU8) (thread_view: t_SyncView) (val': UInt8.t) (t: int) =
     match get_Int (val_AtomicU8 own) t with
@@ -19371,17 +19538,16 @@ module M_impl_AtomicU8Wrapper__wrap_compare_exchange (* AtomicU8Wrapper *)
       -> deep_model_u8 (val_load_AtomicU8 c) <> deep_model_u8 current'
       -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_u8_u8) -> {[@stop_split] [@expl:compare_exchange ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicU8_u8_Load_Store. not shot_store_AtomicU8'0 c.current
+    [ return (result: t_Result_u8_u8) ->
+    {[@stop_split] [@expl:compare_exchange ensures] (exists c: MutBorrow.t t_Committer_AtomicU8_u8_Load_Store. not shot_store_AtomicU8'0 c.current
           /\ ward_AtomicU8'1 c.current = self
           /\ deep_model_u8 (val_load_AtomicU8'0 c.current) = deep_model_u8 current'
           /\ val_store_AtomicU8 c.current = new
-          /\ result'0 = val_load_AtomicU8'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicU8_u8_Failure_None. not shot_store_AtomicU8 c
-          /\ ward_AtomicU8 c = self
-          /\ deep_model_u8 (val_load_AtomicU8 c) <> deep_model_u8 current'
-          /\ result'0 = val_load_AtomicU8 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicU8'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicU8_u8_Failure_None. not shot_store_AtomicU8 c
+        /\ ward_AtomicU8 c = self
+        /\ deep_model_u8 (val_load_AtomicU8 c) <> deep_model_u8 current'
+        /\ result = Err'0 (val_load_AtomicU8 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -19424,10 +19590,10 @@ module M_impl_AtomicU8Wrapper__wrap_compare_exchange (* AtomicU8Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -19448,8 +19614,8 @@ module M_impl_AtomicU8Wrapper__wrap_compare_exchange (* AtomicU8Wrapper *)
   
   predicate inv_AtomicU8Wrapper (_1: t_AtomicU8Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU8Wrapper [inv_AtomicU8Wrapper x]. inv_AtomicU8Wrapper x
-      = inv_AtomicU8 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU8Wrapper [inv_AtomicU8Wrapper _1]. inv_AtomicU8Wrapper _1
+      = inv_AtomicU8 _1.f0'1
   
   predicate invariant_ref_AtomicU8Wrapper [@inline:trivial] (self: t_AtomicU8Wrapper) = inv_AtomicU8Wrapper self
   
@@ -19661,7 +19827,12 @@ module M_impl_AtomicU8Wrapper__wrap_compare_exchange_weak (* AtomicU8Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU8 (self: t_Perm_AtomicU8) : t_FMap_Int_tup2_u8_SyncView
+  function val_unsized_AtomicU8 (self: t_Perm_AtomicU8) : t_FMap_Int_tup2_u8_SyncView
+  
+  function val_AtomicU8 [@inline:trivial] (self: t_Perm_AtomicU8) : t_FMap_Int_tup2_u8_SyncView =
+    val_unsized_AtomicU8 self
+  
+  meta "rewrite_def" function val_AtomicU8
   
   predicate load_reads_from_history_AtomicU8 (own: t_Perm_AtomicU8) (thread_view: t_SyncView) (val': UInt8.t) (t: int) =
     match get_Int (val_AtomicU8 own) t with
@@ -20037,16 +20208,15 @@ module M_impl_AtomicU8Wrapper__wrap_compare_exchange_weak (* AtomicU8Wrapper *)
     /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicU8_u8_Failure_None. not shot_store_AtomicU8 c
       -> ward_AtomicU8 c = self -> precondition_FnGhostWrapper_closure3 f (Err c))}
     any
-    [ return (result: t_Result_u8_u8) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicU8_u8_Load_Store. not shot_store_AtomicU8'0 c.current
+    [ return (result: t_Result_u8_u8) ->
+    {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicU8_u8_Load_Store. not shot_store_AtomicU8'0 c.current
           /\ ward_AtomicU8'1 c.current = self
           /\ deep_model_u8 (val_load_AtomicU8'0 c.current) = deep_model_u8 current'
           /\ val_store_AtomicU8 c.current = new
-          /\ result'0 = val_load_AtomicU8'0 c.current /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicU8_u8_Failure_None. not shot_store_AtomicU8 c
-          /\ ward_AtomicU8 c = self
-          /\ result'0 = val_load_AtomicU8 c /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicU8'0 c.current) /\ postcondition_once_FnGhostWrapper_closure3 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicU8_u8_Failure_None. not shot_store_AtomicU8 c
+        /\ ward_AtomicU8 c = self
+        /\ result = Err'0 (val_load_AtomicU8 c) /\ postcondition_once_FnGhostWrapper_closure3 f (Err c) ())}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -20089,10 +20259,10 @@ module M_impl_AtomicU8Wrapper__wrap_compare_exchange_weak (* AtomicU8Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -20113,8 +20283,8 @@ module M_impl_AtomicU8Wrapper__wrap_compare_exchange_weak (* AtomicU8Wrapper *)
   
   predicate inv_AtomicU8Wrapper (_1: t_AtomicU8Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU8Wrapper [inv_AtomicU8Wrapper x]. inv_AtomicU8Wrapper x
-      = inv_AtomicU8 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU8Wrapper [inv_AtomicU8Wrapper _1]. inv_AtomicU8Wrapper _1
+      = inv_AtomicU8 _1.f0'1
   
   predicate invariant_ref_AtomicU8Wrapper [@inline:trivial] (self: t_AtomicU8Wrapper) = inv_AtomicU8Wrapper self
   
@@ -20306,7 +20476,12 @@ module M_impl_AtomicU8Wrapper__wrap_load (* AtomicU8Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU8 (self: t_Perm_AtomicU8) : t_FMap_Int_tup2_u8_SyncView
+  function val_unsized_AtomicU8 (self: t_Perm_AtomicU8) : t_FMap_Int_tup2_u8_SyncView
+  
+  function val_AtomicU8 [@inline:trivial] (self: t_Perm_AtomicU8) : t_FMap_Int_tup2_u8_SyncView =
+    val_unsized_AtomicU8 self
+  
+  meta "rewrite_def" function val_AtomicU8
   
   predicate load_reads_from_history_AtomicU8 (own: t_Perm_AtomicU8) (thread_view: t_SyncView) (val': UInt8.t) (t: int) =
     match get_Int (val_AtomicU8 own) t with
@@ -20488,10 +20663,10 @@ module M_impl_AtomicU8Wrapper__wrap_load (* AtomicU8Wrapper *)
     [ return (result: t_Option_AcquireSyncView) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
-  let unwrap_AcquireSyncView (self_: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
-  {[@stop_split] [@expl:unwrap requires] self_ <> None}
+  let unwrap_AcquireSyncView (self: t_Option_AcquireSyncView) (return (x: t_AcquireSyncView)) =
+  {[@stop_split] [@expl:unwrap requires] self <> None}
     any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self_}
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:unwrap ensures] Some result = self}
       (! return {result}) ]
   
   let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
@@ -20501,8 +20676,8 @@ module M_impl_AtomicU8Wrapper__wrap_load (* AtomicU8Wrapper *)
   
   predicate inv_AtomicU8Wrapper (_1: t_AtomicU8Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU8Wrapper [inv_AtomicU8Wrapper x]. inv_AtomicU8Wrapper x
-      = inv_AtomicU8 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU8Wrapper [inv_AtomicU8Wrapper _1]. inv_AtomicU8Wrapper _1
+      = inv_AtomicU8 _1.f0'1
   
   predicate invariant_ref_AtomicU8Wrapper [@inline:trivial] (self: t_AtomicU8Wrapper) = inv_AtomicU8Wrapper self
   
@@ -20672,7 +20847,12 @@ module M_impl_AtomicU8Wrapper__wrap_store (* AtomicU8Wrapper *)
   
   meta "rewrite_def" function get_Int
   
-  function val_AtomicU8 (self: t_Perm_AtomicU8) : t_FMap_Int_tup2_u8_SyncView
+  function val_unsized_AtomicU8 (self: t_Perm_AtomicU8) : t_FMap_Int_tup2_u8_SyncView
+  
+  function val_AtomicU8 [@inline:trivial] (self: t_Perm_AtomicU8) : t_FMap_Int_tup2_u8_SyncView =
+    val_unsized_AtomicU8 self
+  
+  meta "rewrite_def" function val_AtomicU8
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -20915,8 +21095,8 @@ module M_impl_AtomicU8Wrapper__wrap_store (* AtomicU8Wrapper *)
   
   predicate inv_AtomicU8Wrapper (_1: t_AtomicU8Wrapper)
   
-  axiom inv_axiom [@rewrite]: forall x: t_AtomicU8Wrapper [inv_AtomicU8Wrapper x]. inv_AtomicU8Wrapper x
-      = inv_AtomicU8 x.f0'1
+  axiom inv_axiom [@rewrite]: forall _1: t_AtomicU8Wrapper [inv_AtomicU8Wrapper _1]. inv_AtomicU8Wrapper _1
+      = inv_AtomicU8 _1.f0'1
   
   predicate invariant_ref_AtomicU8Wrapper [@inline:trivial] (self: t_AtomicU8Wrapper) = inv_AtomicU8Wrapper self
   

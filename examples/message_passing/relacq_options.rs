@@ -18,7 +18,7 @@ use creusot_std::{
                 ordering::{Acquire, Release},
             },
             committer::Committer,
-            view::{AtView, SyncView, ReleaseSyncView},
+            view::{AtView, ReleaseSyncView, SyncView},
         },
         thread::{self, JoinHandleExt},
     },
