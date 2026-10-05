@@ -45,8 +45,8 @@ impl Protocol for MessagePassingAtomicInv {
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
-            forall<t> match self.atomic_own.val().get(t) {
-                Some(&(b, view)) =>
+            forall<t> match self.atomic_own.val().lookup(t) {
+                Some((b, view)) =>
                     !b ||
                     b &&
                     self.tok_write.val() == Some(Excl(())) &&

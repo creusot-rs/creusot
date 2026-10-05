@@ -76,7 +76,7 @@ where
     #[ensures(*sync_view <= ^sync_view)]
     #[ensures(self.ward().get_timestamp(*sync_view) <= self.timestamp())]
     #[ensures(self.timestamp() <= self.ward().get_timestamp(^sync_view))]
-    #[ensures(own.val().get(&self.timestamp()) == Some(&(self.val_load(), result@)))]
+    #[ensures(own.val().lookup(self.timestamp()) == Some((self.val_load(), result@)))]
     #[check(ghost)]
     #[trusted]
     #[allow(unused_variables)]
@@ -97,8 +97,8 @@ where
     #[ensures(*sync_view <= ^sync_view)]
     #[ensures(self.ward().get_timestamp(*sync_view) <= self.timestamp())]
     #[ensures(self.timestamp() <= self.ward().get_timestamp(^sync_view))]
-    #[ensures(match own.val().get(&self.timestamp()) {
-        Some(&(v, v_view)) => v == self.val_load() && v_view <= ^sync_view,
+    #[ensures(match own.val().lookup(self.timestamp()) {
+        Some((v, v_view)) => v == self.val_load() && v_view <= ^sync_view,
         None => false
     })]
     #[check(ghost)]
@@ -144,7 +144,7 @@ where
     #[ensures(*sync_view <= ^sync_view)]
     #[ensures((*self).ward().get_timestamp(*sync_view) <= self.timestamp())]
     #[ensures(self.timestamp() < (*self).ward().get_timestamp(^sync_view))]
-    #[ensures((*own).val().get_logic(self.timestamp() + 1) == None)]
+    #[ensures((*own).val().lookup(self.timestamp() + 1) == None)]
     #[ensures((^own).val() == (*own).val().add(self.timestamp() + 1, ((*self).val_store(), rel_view@)))]
     #[check(ghost)]
     #[trusted]
@@ -174,7 +174,7 @@ where
     #[ensures(*sync_view <= ^sync_view)]
     #[ensures((*self).ward().get_timestamp(*sync_view) <= self.timestamp())]
     #[ensures(self.timestamp() < (*self).ward().get_timestamp(^sync_view))]
-    #[ensures((*own).val().get_logic(self.timestamp() + 1) == None)]
+    #[ensures((*own).val().lookup(self.timestamp() + 1) == None)]
     #[ensures((^own).val() == (*own).val().add(self.timestamp() + 1, ((*self).val_store(), ^sync_view)))]
     #[check(ghost)]
     #[trusted]

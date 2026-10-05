@@ -1049,10 +1049,10 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
   
   function to_mapping_Int (self: t_FMap_Int_tup2_bool_SyncView) : Map.map int t_Option_tup2_bool_SyncView
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
   function val_unsized_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
   
@@ -1069,7 +1069,7 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = get_Int self k <> None'3
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = lookup_Int self k <> None'3
   
   meta "rewrite_def" predicate contains_Int
   
@@ -1097,7 +1097,7 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
         <= timestamp_AtomicBool self.current)
       /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicBool self.current
         < get_timestamp_AtomicBool (ward_AtomicBool self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #6] lookup_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
           + 1)
         = None'3)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicBool own.final
@@ -1304,8 +1304,6 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
   
   function public_SpinLockInv_T'0 (self: t_AtomicInvariant_SpinLockInv_T) : tup2_tup4_PCell_T_AtomicBool_Lifetime_Mapping_T_bool_Id
   
-  type t_Option_ref_tup2_bool_SyncView = None'4 | Some'4 tup2_bool_SyncView
-  
   type tup3_Option_AtView_Guarded_FullBorrow_Perm_PCell_T_PCell_T_Option_Int_Option_Excl_unit = {
     f0'6: t_Option_AtView_Guarded_FullBorrow_Perm_PCell_T_PCell_T;
     f1'6: t_Option_Int;
@@ -1318,13 +1316,8 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
       | None'3 -> any_tup2_bool_SyncView
       end
   
-  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : tup2_bool_SyncView =
-    unwrap_Option_tup2_bool_SyncView (get_Int self k)
-  
-  meta "rewrite_def" function lookup_Int
-  
   function index_FMap_Int_tup2_bool_SyncView [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (key: int) : tup2_bool_SyncView
-   = lookup_Int self key
+   = unwrap_Option_tup2_bool_SyncView (lookup_Int self key)
   
   meta "rewrite_def" function index_FMap_Int_tup2_bool_SyncView
   
@@ -1342,9 +1335,9 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
   meta "rewrite_def" function val_PCell_T
   
   predicate protocol_SpinLockInv_T (self: t_SpinLockInv_T) =
-    (forall t: int, view: t_SyncView. get_Int (val_AtomicBool self.perm_atomic'0) t
-          = Some'4 { f0'2 = false; f1'2 = view }
-        -> Some'0 t = self.ts'0 \/ get_Int (val_AtomicBool self.perm_atomic'0) (t + 1) <> None'3)
+    (forall t: int, view: t_SyncView. lookup_Int (val_AtomicBool self.perm_atomic'0) t
+          = Some'3 { f0'2 = false; f1'2 = view }
+        -> Some'0 t = self.ts'0 \/ lookup_Int (val_AtomicBool self.perm_atomic'0) (t + 1) <> None'3)
     /\ match { f0'6 = self.perm'0; f1'6 = self.ts'0; f2'6 = val_Option_Excl_unit self.excl'0 } with
       | {f0'6 = None; f1'6 = None'0; f2'6 = None'1} -> true
       | {f0'6 = Some bor; f1'6 = Some'0 ts; f2'6 = Some'1 _} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PCell_T_PCell_T bor) (index_FMap_Int_tup2_bool_SyncView (val_AtomicBool self.perm_atomic'0) ts).f1'2
@@ -2141,18 +2134,16 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   type tup2_bool_SyncView = { f0'1: bool; f1'1: t_SyncView }
   
-  type t_Option_ref_tup2_bool_SyncView = None'3 | Some'3 tup2_bool_SyncView
+  type t_Option_tup2_bool_SyncView = None'3 | Some'3 tup2_bool_SyncView
   
   type t_FMap_Int_tup2_bool_SyncView
   
-  type t_Option_tup2_bool_SyncView = None'4 | Some'4 tup2_bool_SyncView
-  
   function to_mapping_Int (self: t_FMap_Int_tup2_bool_SyncView) : Map.map int t_Option_tup2_bool_SyncView
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
   function val_unsized_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
   
@@ -2174,7 +2165,7 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
         <= timestamp_AtomicBool self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicBool self
         <= get_timestamp_AtomicBool (ward_AtomicBool self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicBool own) (timestamp_AtomicBool self) with
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] match lookup_Int (val_AtomicBool own) (timestamp_AtomicBool self) with
         | Some'3 {f0'1 = v; f1'1 = v_view} -> v = val_load_AtomicBool self /\ le_log_SyncView v_view sync_view.final
         | None'3 -> false
         end)}
@@ -2208,7 +2199,7 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = get_Int self k <> None'4
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = lookup_Int self k <> None'3
   
   meta "rewrite_def" predicate contains_Int
   
@@ -2216,7 +2207,7 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   axiom add_Int_spec:
     forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
-      = Map.set (to_mapping_Int self) k (Some'4 v)
+      = Map.set (to_mapping_Int self) k (Some'3 v)
   
   axiom add_Int_spec'0:
     forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [add_Int self k v]. len_Int (add_Int self k v)
@@ -2239,9 +2230,9 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
         <= timestamp_AtomicBool self.current)
       /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicBool self.current
         < get_timestamp_AtomicBool (ward_AtomicBool self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #6] lookup_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
           + 1)
-        = None'4)
+        = None'3)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicBool own.final
       = add_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
       + 1) { f0'1 = val_store_AtomicBool self.current; f1'1 = view_ReleaseSyncView rel_view })}
@@ -2360,19 +2351,19 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   type t_Excl_unit = { f0'2: () }
   
-  type t_Option_Excl_unit = None'5 | Some'5 t_Excl_unit
+  type t_Option_Excl_unit = None'4 | Some'4 t_Excl_unit
   
-  type t_Option_Option_Excl_unit = None'6 | Some'6 t_Option_Excl_unit
+  type t_Option_Option_Excl_unit = None'5 | Some'5 t_Option_Excl_unit
   
   type tup2_Option_Excl_unit_Option_Excl_unit = { f0'3: t_Option_Excl_unit; f1'3: t_Option_Excl_unit }
   
   function map_Option_Excl_unit (self: t_Option_Excl_unit) (f: Map.map t_Excl_unit t_Option_Excl_unit) : t_Option_Option_Excl_unit
    = match self with
-      | None'5 -> None'6
-      | Some'5 x -> Some'6 (Map.get f x)
+      | None'4 -> None'5
+      | Some'4 x -> Some'5 (Map.get f x)
       end
   
-  function op_Excl_unit (self: t_Excl_unit) (_other: t_Excl_unit) : t_Option_Excl_unit = None'5
+  function op_Excl_unit (self: t_Excl_unit) (_other: t_Excl_unit) : t_Option_Excl_unit = None'4
   
   function commutative_Excl_unit (a: t_Excl_unit) (b: t_Excl_unit) : ()
   
@@ -2380,9 +2371,9 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   function op_Option_Excl_unit (self: t_Option_Excl_unit) (other: t_Option_Excl_unit) : t_Option_Option_Excl_unit =
     match { f0'3 = self; f1'3 = other } with
-      | {f0'3 = None'5} -> Some'6 other
-      | {f1'3 = None'5} -> Some'6 self
-      | {f0'3 = Some'5 x; f1'3 = Some'5 y} -> map_Option_Excl_unit (op_Excl_unit x y) (fun (z: t_Excl_unit) -> Some'5 z)
+      | {f0'3 = None'4} -> Some'5 other
+      | {f1'3 = None'4} -> Some'5 self
+      | {f0'3 = Some'4 x; f1'3 = Some'4 y} -> map_Option_Excl_unit (op_Excl_unit x y) (fun (z: t_Excl_unit) -> Some'4 z)
       end
   
   function commutative_Option_Excl_unit (a: t_Option_Excl_unit) (b: t_Option_Excl_unit) : ()
@@ -2394,7 +2385,7 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   axiom incl_Excl_unit_spec:
     forall self: t_Excl_unit, other: t_Excl_unit [incl_Excl_unit self other]. incl_Excl_unit self other
-      = (exists factor: t_Excl_unit. op_Excl_unit self factor = Some'5 other)
+      = (exists factor: t_Excl_unit. op_Excl_unit self factor = Some'4 other)
   
   function incl_transitive_Excl_unit (a: t_Excl_unit) (b: t_Excl_unit) (c: t_Excl_unit) : ()
   
@@ -2405,18 +2396,18 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   axiom associative_some_Excl_unit_spec:
     forall a: t_Excl_unit, b: t_Excl_unit, c: t_Excl_unit, ab: t_Excl_unit, bc: t_Excl_unit. op_Excl_unit a b
-        = Some'5 ab -> op_Excl_unit b c = Some'5 bc -> op_Excl_unit a bc = op_Excl_unit ab c
+        = Some'4 ab -> op_Excl_unit b c = Some'4 bc -> op_Excl_unit a bc = op_Excl_unit ab c
   
   function associative_none_Excl_unit (a: t_Excl_unit) (b: t_Excl_unit) (c: t_Excl_unit) (bc: t_Excl_unit) : ()
   
   axiom associative_none_Excl_unit_spec:
-    forall a: t_Excl_unit, b: t_Excl_unit, c: t_Excl_unit, bc: t_Excl_unit. op_Excl_unit a b = None'5
-      -> op_Excl_unit b c = Some'5 bc -> op_Excl_unit a bc = None'5
+    forall a: t_Excl_unit, b: t_Excl_unit, c: t_Excl_unit, bc: t_Excl_unit. op_Excl_unit a b = None'4
+      -> op_Excl_unit b c = Some'4 bc -> op_Excl_unit a bc = None'4
   
   function incl_op_Excl_unit (self: t_Excl_unit) (other: t_Excl_unit) (comb: t_Excl_unit) : ()
   
   axiom incl_op_Excl_unit_spec: forall self: t_Excl_unit, other: t_Excl_unit, comb: t_Excl_unit. op_Excl_unit self other
-        = Some'5 comb -> incl_Excl_unit self comb
+        = Some'4 comb -> incl_Excl_unit self comb
   
   predicate eq_Excl_unit [@inline:trivial] (self: t_Excl_unit) (other: t_Excl_unit) = self = other
   
@@ -2430,14 +2421,14 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   predicate incl_Option_Excl_unit (self: t_Option_Excl_unit) (other: t_Option_Excl_unit) =
     match { f0'3 = self; f1'3 = other } with
-      | {f0'3 = None'5} -> true
-      | {f1'3 = None'5} -> false
-      | {f0'3 = Some'5 x; f1'3 = Some'5 y} -> incl_eq_Excl_unit x y
+      | {f0'3 = None'4} -> true
+      | {f1'3 = None'4} -> false
+      | {f0'3 = Some'4 x; f1'3 = Some'4 y} -> incl_eq_Excl_unit x y
       end
   
   axiom incl_Option_Excl_unit_spec:
     forall self: t_Option_Excl_unit, other: t_Option_Excl_unit [incl_Option_Excl_unit self other]. incl_Option_Excl_unit self other
-      = (exists factor: t_Option_Excl_unit. op_Option_Excl_unit self factor = Some'6 other)
+      = (exists factor: t_Option_Excl_unit. op_Option_Excl_unit self factor = Some'5 other)
   
   function incl_transitive_Option_Excl_unit (a: t_Option_Excl_unit) (b: t_Option_Excl_unit) (c: t_Option_Excl_unit) : ()
   
@@ -2449,24 +2440,24 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   axiom associative_some_Option_Excl_unit_spec:
     forall a: t_Option_Excl_unit, b: t_Option_Excl_unit, c: t_Option_Excl_unit, ab: t_Option_Excl_unit, bc: t_Option_Excl_unit. op_Option_Excl_unit a b
-        = Some'6 ab -> op_Option_Excl_unit b c = Some'6 bc -> op_Option_Excl_unit a bc = op_Option_Excl_unit ab c
+        = Some'5 ab -> op_Option_Excl_unit b c = Some'5 bc -> op_Option_Excl_unit a bc = op_Option_Excl_unit ab c
   
   function associative_none_Option_Excl_unit (a: t_Option_Excl_unit) (b: t_Option_Excl_unit) (c: t_Option_Excl_unit) (bc: t_Option_Excl_unit) : ()
   
   axiom associative_none_Option_Excl_unit_spec:
     forall a: t_Option_Excl_unit, b: t_Option_Excl_unit, c: t_Option_Excl_unit, bc: t_Option_Excl_unit. op_Option_Excl_unit a b
-        = None'6 -> op_Option_Excl_unit b c = Some'6 bc -> op_Option_Excl_unit a bc = None'6
+        = None'5 -> op_Option_Excl_unit b c = Some'5 bc -> op_Option_Excl_unit a bc = None'5
   
   function incl_op_Option_Excl_unit (self: t_Option_Excl_unit) (other: t_Option_Excl_unit) (comb: t_Option_Excl_unit) : ()
   
   axiom incl_op_Option_Excl_unit_spec:
     forall self: t_Option_Excl_unit, other: t_Option_Excl_unit, comb: t_Option_Excl_unit. op_Option_Excl_unit self other
-        = Some'6 comb -> incl_Option_Excl_unit self comb
+        = Some'5 comb -> incl_Option_Excl_unit self comb
   
   predicate eq_Option_Excl_unit [@inline:trivial] (self: t_Option_Excl_unit) (other: t_Option_Excl_unit) =
     match { f0'3 = self; f1'3 = other } with
-      | {f0'3 = Some'5 s; f1'3 = Some'5 o} -> eq_Excl_unit s o
-      | {f0'3 = None'5; f1'3 = None'5} -> true
+      | {f0'3 = Some'4 s; f1'3 = Some'4 o} -> eq_Excl_unit s o
+      | {f0'3 = None'4; f1'3 = None'4} -> true
       | _ -> false
       end
   
@@ -2480,8 +2471,8 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   predicate incl_eq_op_Option_Excl_unit (a: t_Option_Excl_unit) (b: t_Option_Excl_unit) (x: t_Option_Excl_unit) =
     match op_Option_Excl_unit a b with
-      | None'6 -> false
-      | Some'6 ab -> incl_eq_Option_Excl_unit ab x
+      | None'5 -> false
+      | Some'5 ab -> incl_eq_Option_Excl_unit ab x
       end
   
   function val_Option_Excl_unit (self: t_Resource_Option_Excl_unit) : t_Option_Excl_unit
@@ -2631,8 +2622,8 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
       | s29 = s30
         [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_Guarded_FullBorrow_Perm_PCell_T_PCell_T _33} any) ]
       | s30 = -{resolve_refmut_Option_Guarded_FullBorrow_Perm_PCell_T_PCell_T _33}- s31
-      | s31 = [ &_38 <- Some'5 { f0'2 = () } ] s32
-      | s32 = [ &_40 <- None'5 ] s33
+      | s31 = [ &_38 <- Some'4 { f0'2 = () } ] s32
+      | s32 = [ &_40 <- None'4 ] s33
       | s33 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {inner_inv'0.current.excl'0}
           {MutBorrow.inherit_id (MutBorrow.get_id inner_inv'0) 4}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
@@ -2732,17 +2723,12 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   constant any_tup2_bool_SyncView : tup2_bool_SyncView
   
   function unwrap_Option_tup2_bool_SyncView (self: t_Option_tup2_bool_SyncView) : tup2_bool_SyncView = match self with
-      | Some'4 x -> x
-      | None'4 -> any_tup2_bool_SyncView
+      | Some'3 x -> x
+      | None'3 -> any_tup2_bool_SyncView
       end
   
-  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : tup2_bool_SyncView =
-    unwrap_Option_tup2_bool_SyncView (get_Int self k)
-  
-  meta "rewrite_def" function lookup_Int
-  
   function index_FMap_Int_tup2_bool_SyncView [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (key: int) : tup2_bool_SyncView
-   = lookup_Int self key
+   = unwrap_Option_tup2_bool_SyncView (lookup_Int self key)
   
   meta "rewrite_def" function index_FMap_Int_tup2_bool_SyncView
   
@@ -2760,12 +2746,12 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   meta "rewrite_def" function val_PCell_T
   
   predicate protocol_SpinLockInv_T (self: t_SpinLockInv_T) =
-    (forall t: int, view: t_SyncView. get_Int (val_AtomicBool self.perm_atomic'0) t
+    (forall t: int, view: t_SyncView. lookup_Int (val_AtomicBool self.perm_atomic'0) t
           = Some'3 { f0'1 = false; f1'1 = view }
-        -> Some'2 t = self.ts'0 \/ get_Int (val_AtomicBool self.perm_atomic'0) (t + 1) <> None'4)
+        -> Some'2 t = self.ts'0 \/ lookup_Int (val_AtomicBool self.perm_atomic'0) (t + 1) <> None'3)
     /\ match { f0'5 = self.perm'0; f1'5 = self.ts'0; f2'5 = val_Option_Excl_unit self.excl'0 } with
-      | {f0'5 = None'1; f1'5 = None'2; f2'5 = None'5} -> true
-      | {f0'5 = Some'1 bor; f1'5 = Some'2 ts; f2'5 = Some'5 _} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PCell_T_PCell_T bor) (index_FMap_Int_tup2_bool_SyncView (val_AtomicBool self.perm_atomic'0) ts).f1'1
+      | {f0'5 = None'1; f1'5 = None'2; f2'5 = None'4} -> true
+      | {f0'5 = Some'1 bor; f1'5 = Some'2 ts; f2'5 = Some'4 _} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PCell_T_PCell_T bor) (index_FMap_Int_tup2_bool_SyncView (val_AtomicBool self.perm_atomic'0) ts).f1'1
       /\ lft_Perm_PCell_T'0 (val_Guarded_FullBorrow_Perm_PCell_T_PCell_T bor).inner = self.lft'0
       /\ guard_FullBorrow_Perm_PCell_T (val_Guarded_FullBorrow_Perm_PCell_T_PCell_T bor) = self.cell'0
       /\ Map.get self.inv'0 (val_PCell_T (cur_Perm_PCell_T (val_Guarded_FullBorrow_Perm_PCell_T_PCell_T bor).inner))
@@ -3091,7 +3077,7 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   predicate invariant_SpinLockGuard_T (self: t_SpinLockGuard_T) =
     guard_FullBorrow_Perm_PCell_T self.perm'1 = self.lock'1.data
     /\ lft_Perm_PCell_T'0 self.perm'1.inner = lft self.lock'1.lft_tok
-    /\ val_Option_Excl_unit self.excl'1 <> None'5
+    /\ val_Option_Excl_unit self.excl'1 <> None'4
     /\ id_Option_Excl_unit self.excl'1 = (public_SpinLockInv_T self.lock'1.inner_inv).f1'0
     /\ self.inv'1 = self.lock'1.inv
   
@@ -3485,12 +3471,12 @@ module M_impl_SpinLock_T__new (* SpinLock<T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = get_Int self k <> None
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = lookup_Int self k <> None
   
   meta "rewrite_def" predicate contains_Int
   
@@ -3650,8 +3636,6 @@ module M_impl_SpinLock_T__new (* SpinLock<T> *)
   
   type t_AtomicInvariant_SpinLockInv_T
   
-  type t_Option_ref_tup2_bool_SyncView = None'3 | Some'3 tup2_bool_SyncView
-  
   type tup3_Option_AtView_Guarded_FullBorrow_Perm_PCell_T_PCell_T_Option_Int_Option_Excl_unit = {
     f0'6: t_Option_AtView_Guarded_FullBorrow_Perm_PCell_T_PCell_T;
     f1'6: t_Option_Int;
@@ -3664,20 +3648,15 @@ module M_impl_SpinLock_T__new (* SpinLock<T> *)
       | None -> any_tup2_bool_SyncView
       end
   
-  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : tup2_bool_SyncView =
-    unwrap_Option_tup2_bool_SyncView (get_Int self k)
-  
-  meta "rewrite_def" function lookup_Int
-  
   function index_FMap_Int_tup2_bool_SyncView [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (key: int) : tup2_bool_SyncView
-   = lookup_Int self key
+   = unwrap_Option_tup2_bool_SyncView (lookup_Int self key)
   
   meta "rewrite_def" function index_FMap_Int_tup2_bool_SyncView
   
   predicate protocol_SpinLockInv_T (self: t_SpinLockInv_T) =
-    (forall t: int, view: t_SyncView. get_Int (val_AtomicBool self.perm_atomic'0) t
-          = Some'3 { f0'4 = false; f1'4 = view }
-        -> Some'2 t = self.ts'0 \/ get_Int (val_AtomicBool self.perm_atomic'0) (t + 1) <> None)
+    (forall t: int, view: t_SyncView. lookup_Int (val_AtomicBool self.perm_atomic'0) t
+          = Some { f0'4 = false; f1'4 = view }
+        -> Some'2 t = self.ts'0 \/ lookup_Int (val_AtomicBool self.perm_atomic'0) (t + 1) <> None)
     /\ match { f0'6 = self.perm'0; f1'6 = self.ts'0; f2'6 = val_Option_Excl_unit self.excl'0 } with
       | {f0'6 = None'0; f1'6 = None'2; f2'6 = None'1} -> true
       | {f0'6 = Some'0 bor; f1'6 = Some'2 ts; f2'6 = Some'1 _} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PCell_T_PCell_T bor) (index_FMap_Int_tup2_bool_SyncView (val_AtomicBool self.perm_atomic'0) ts).f1'4

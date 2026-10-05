@@ -434,13 +434,13 @@ module M_implementation__find
   
   function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PCell_Node_T
   
-  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
+  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
    = Map.get (to_mapping_Snapshot_Elem_T self) k
   
-  meta "rewrite_def" function get_Snapshot_Elem_T
+  meta "rewrite_def" function lookup_Snapshot_Elem_T
   
   predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) =
-    get_Snapshot_Elem_T self k <> None
+    lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
   
@@ -455,13 +455,8 @@ module M_implementation__find
       | None -> any_Perm_PCell_Node_T
       end
   
-  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Perm_PCell_Node_T
-   = unwrap_Option_Perm_PCell_Node_T (get_Snapshot_Elem_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_Elem_T
-  
   function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) : t_Perm_PCell_Node_T
-   = lookup_Snapshot_Elem_T self key
+   = unwrap_Option_Perm_PCell_Node_T (lookup_Snapshot_Elem_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T
   
@@ -551,10 +546,10 @@ module M_implementation__find
   
   type t_Option_ref_Perm_PCell_Node_T = None'0 | Some'0 t_Perm_PCell_Node_T
   
-  let get_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T)
+  let get_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T)
     (return (x: t_Option_ref_Perm_PCell_Node_T)) = any
     [ return (result: t_Option_ref_Perm_PCell_Node_T) -> {[@stop_split] [@expl:get ensures] result
-      = get_Snapshot_Elem_T self key}
+      = lookup_Snapshot_Elem_T self key}
       (! return {result}) ]
   
   let unwrap_ref_Perm_PCell_Node_T (self: t_Option_ref_Perm_PCell_Node_T) (return (x: t_Perm_PCell_Node_T)) =
@@ -745,7 +740,7 @@ module M_implementation__find
           result = None'1 /\ self.current = self.final
         )
       /\ ([@stop_split] [@expl:get_mut ensures #1] forall k: t_Elem_T. k <> key
-          -> get_Snapshot_Elem_T self.current k = get_Snapshot_Elem_T self.final k)
+          -> lookup_Snapshot_Elem_T self.current k = lookup_Snapshot_Elem_T self.final k)
       /\ ([@stop_split] [@expl:get_mut ensures #2] len_Snapshot_Elem_T self.current = len_Snapshot_Elem_T self.final)}
       (! return {result}) ]
   
@@ -848,7 +843,7 @@ module M_implementation__find
       [ s0 = deref_Ghost_refmut_UF_T {uf} (fun (_x: MutBorrow.t t_UF_T) -> [ &_14 <- _x ] s1)
       | s1 = [ &_19 <- elem ] s2
       | s2 = [ &_17 <- _19 ] s3
-      | s3 = get_Snapshot_Elem_T'0 {_14.current.f0'0.perms} {_17}
+      | s3 = get_Snapshot_Elem_T {_14.current.f0'0.perms} {_17}
           (fun (_x: t_Option_ref_Perm_PCell_Node_T) -> [ &_12 <- _x ] s4)
       | s4 = unwrap_ref_Perm_PCell_Node_T {_12} (fun (_x: t_Perm_PCell_Node_T) -> [ &__temp <- _x ] s5)
       | s5 = new_ref_Perm_PCell_Node_T {__temp} (fun (_x: t_Perm_PCell_Node_T) -> [ &perm <- _x ] s6)
@@ -1022,13 +1017,13 @@ module M_implementation__get
   
   function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PCell_Node_T
   
-  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
+  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
    = Map.get (to_mapping_Snapshot_Elem_T self) k
   
-  meta "rewrite_def" function get_Snapshot_Elem_T
+  meta "rewrite_def" function lookup_Snapshot_Elem_T
   
   predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) =
-    get_Snapshot_Elem_T self k <> None
+    lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
   
@@ -1043,13 +1038,8 @@ module M_implementation__get
       | None -> any_Perm_PCell_Node_T
       end
   
-  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Perm_PCell_Node_T
-   = unwrap_Option_Perm_PCell_Node_T (get_Snapshot_Elem_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_Elem_T
-  
   function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) : t_Perm_PCell_Node_T
-   = lookup_Snapshot_Elem_T self key
+   = unwrap_Option_Perm_PCell_Node_T (lookup_Snapshot_Elem_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T
   
@@ -1138,10 +1128,10 @@ module M_implementation__get
   
   type t_Option_ref_Perm_PCell_Node_T = None'0 | Some'0 t_Perm_PCell_Node_T
   
-  let get_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T)
+  let get_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T)
     (return (x: t_Option_ref_Perm_PCell_Node_T)) = any
     [ return (result: t_Option_ref_Perm_PCell_Node_T) -> {[@stop_split] [@expl:get ensures] result
-      = get_Snapshot_Elem_T self key}
+      = lookup_Snapshot_Elem_T self key}
       (! return {result}) ]
   
   let unwrap_ref_Perm_PCell_Node_T (self: t_Option_ref_Perm_PCell_Node_T) (return (x: t_Perm_PCell_Node_T)) =
@@ -1255,8 +1245,7 @@ module M_implementation__get
       [ s0 = deref_Ghost_ref_UF_T {uf} (fun (_x: t_UF_T) -> [ &_16 <- _x ] s1)
       | s1 = [ &_21 <- elem ] s2
       | s2 = [ &_19 <- _21 ] s3
-      | s3 = get_Snapshot_Elem_T'0 {_16.f0'0.perms} {_19}
-          (fun (_x: t_Option_ref_Perm_PCell_Node_T) -> [ &_14 <- _x ] s4)
+      | s3 = get_Snapshot_Elem_T {_16.f0'0.perms} {_19} (fun (_x: t_Option_ref_Perm_PCell_Node_T) -> [ &_14 <- _x ] s4)
       | s4 = unwrap_ref_Perm_PCell_Node_T {_14} (fun (_x: t_Perm_PCell_Node_T) -> [ &_13 <- _x ] s5)
       | s5 = new_ref_Perm_PCell_Node_T {_13} (fun (_x: t_Perm_PCell_Node_T) -> [ &perm <- _x ] s6)
       | s6 = deref_Rc_PCell_Node_T_Global {elem.f0} (fun (_x: t_PCell_Node_T) -> [ &_26 <- _x ] s7)
@@ -1525,13 +1514,13 @@ module M_implementation__impl_UF_T__roots_map (* implementation::UF<T> *)
   
   function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PCell_Node_T
   
-  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
+  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
    = Map.get (to_mapping_Snapshot_Elem_T self) k
   
-  meta "rewrite_def" function get_Snapshot_Elem_T
+  meta "rewrite_def" function lookup_Snapshot_Elem_T
   
   predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) =
-    get_Snapshot_Elem_T self k <> None
+    lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
   
@@ -1546,13 +1535,8 @@ module M_implementation__impl_UF_T__roots_map (* implementation::UF<T> *)
       | None -> any_Perm_PCell_Node_T
       end
   
-  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Perm_PCell_Node_T
-   = unwrap_Option_Perm_PCell_Node_T (get_Snapshot_Elem_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_Elem_T
-  
   function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) : t_Perm_PCell_Node_T
-   = lookup_Snapshot_Elem_T self key
+   = unwrap_Option_Perm_PCell_Node_T (lookup_Snapshot_Elem_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T
   
@@ -1653,13 +1637,13 @@ module M_implementation__link
   
   function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PCell_Node_T
   
-  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
+  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
    = Map.get (to_mapping_Snapshot_Elem_T self) k
   
-  meta "rewrite_def" function get_Snapshot_Elem_T
+  meta "rewrite_def" function lookup_Snapshot_Elem_T
   
   predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) =
-    get_Snapshot_Elem_T self k <> None
+    lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
   
@@ -1674,13 +1658,8 @@ module M_implementation__link
       | None -> any_Perm_PCell_Node_T
       end
   
-  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Perm_PCell_Node_T
-   = unwrap_Option_Perm_PCell_Node_T (get_Snapshot_Elem_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_Elem_T
-  
   function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) : t_Perm_PCell_Node_T
-   = lookup_Snapshot_Elem_T self key
+   = unwrap_Option_Perm_PCell_Node_T (lookup_Snapshot_Elem_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T
   
@@ -2022,7 +2001,7 @@ module M_implementation__link
           result = None'0 /\ self.current = self.final
         )
       /\ ([@stop_split] [@expl:get_mut ensures #1] forall k: t_Elem_T. k <> key
-          -> get_Snapshot_Elem_T self.current k = get_Snapshot_Elem_T self.final k)
+          -> lookup_Snapshot_Elem_T self.current k = lookup_Snapshot_Elem_T self.final k)
       /\ ([@stop_split] [@expl:get_mut ensures #2] len_Snapshot_Elem_T self.current = len_Snapshot_Elem_T self.final)}
       (! return {result}) ]
   
@@ -2579,13 +2558,13 @@ module M_implementation__make
   
   function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PCell_Node_T
   
-  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
+  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
    = Map.get (to_mapping_Snapshot_Elem_T self) k
   
-  meta "rewrite_def" function get_Snapshot_Elem_T
+  meta "rewrite_def" function lookup_Snapshot_Elem_T
   
   predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) =
-    get_Snapshot_Elem_T self k <> None
+    lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
   
@@ -2596,13 +2575,8 @@ module M_implementation__make
       | None -> any_Perm_PCell_Node_T
       end
   
-  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Perm_PCell_Node_T
-   = unwrap_Option_Perm_PCell_Node_T (get_Snapshot_Elem_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_Elem_T
-  
   function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) : t_Perm_PCell_Node_T
-   = lookup_Snapshot_Elem_T self key
+   = unwrap_Option_Perm_PCell_Node_T (lookup_Snapshot_Elem_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T
   
@@ -2666,10 +2640,10 @@ module M_implementation__make
   
   type t_Option_ref_Perm_PCell_Node_T = None'0 | Some'0 t_Perm_PCell_Node_T
   
-  let get_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T)
+  let get_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T)
     (return (x: t_Option_ref_Perm_PCell_Node_T)) = any
     [ return (result: t_Option_ref_Perm_PCell_Node_T) -> {[@stop_split] [@expl:get ensures] result
-      = get_Snapshot_Elem_T self key}
+      = lookup_Snapshot_Elem_T self key}
       (! return {result}) ]
   
   let elim_Some (_x: t_Option_ref_Perm_PCell_Node_T) (return (f0'4: t_Perm_PCell_Node_T)) = any
@@ -2725,7 +2699,7 @@ module M_implementation__make
     [ return (result: t_Option_Perm_PCell_Node_T) ->
     {[@stop_split] [@expl:insert_Snapshot_Elem_T ensures] ([@stop_split] [@expl:insert ensures #0] self.final
         = add_Snapshot_Elem_T self.current key value)
-      /\ ([@stop_split] [@expl:insert ensures #1] result = get_Snapshot_Elem_T self.current key)}
+      /\ ([@stop_split] [@expl:insert ensures #1] result = lookup_Snapshot_Elem_T self.current key)}
       (! return {result}) ]
   
   predicate resolve_refmut_UF_T [@inline:trivial] (_1: MutBorrow.t t_UF_T) = _1.final = _1.current
@@ -2775,7 +2749,7 @@ module M_implementation__make
       | s12 = [ &uf'0 <- _28.f1'3 ] s13
       | s13 = [ &_39 <- elt ] s14
       | s14 = [ &_37 <- _39 ] s15
-      | s15 = get_Snapshot_Elem_T'0 {uf'0.current.f0'2.perms} {_37}
+      | s15 = get_Snapshot_Elem_T {uf'0.current.f0'2.perms} {_37}
           (fun (_x: t_Option_ref_Perm_PCell_Node_T) -> [ &_34 <- _x ] s16)
       | s16 = any [ br0 -> {_34 = None'0} (! bb17) | br1 (x0: t_Perm_PCell_Node_T) -> {_34 = Some'0 x0} (! bb14) ] ]
     | bb14 = s0
@@ -2878,13 +2852,13 @@ module M_implementation__new
   
   function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PCell_Node_T
   
-  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
+  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
    = Map.get (to_mapping_Snapshot_Elem_T self) k
   
-  meta "rewrite_def" function get_Snapshot_Elem_T
+  meta "rewrite_def" function lookup_Snapshot_Elem_T
   
   predicate ext_eq_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (other: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) =
-    forall k: t_Elem_T. get_Snapshot_Elem_T self k = get_Snapshot_Elem_T other k
+    forall k: t_Elem_T. lookup_Snapshot_Elem_T self k = lookup_Snapshot_Elem_T other k
   
   axiom ext_eq_Snapshot_Elem_T_spec:
     forall self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T, other: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T [self
@@ -2935,7 +2909,7 @@ module M_implementation__new
   function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
   
   predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) =
-    get_Snapshot_Elem_T self k <> None
+    lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
   
@@ -2950,13 +2924,8 @@ module M_implementation__new
       | None -> any_Perm_PCell_Node_T
       end
   
-  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Perm_PCell_Node_T
-   = unwrap_Option_Perm_PCell_Node_T (get_Snapshot_Elem_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_Elem_T
-  
   function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) : t_Perm_PCell_Node_T
-   = lookup_Snapshot_Elem_T self key
+   = unwrap_Option_Perm_PCell_Node_T (lookup_Snapshot_Elem_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T
   
@@ -3082,13 +3051,13 @@ module M_implementation__union
   
   function to_mapping_Snapshot_Elem_T (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) : Map.map t_Elem_T t_Option_Perm_PCell_Node_T
   
-  function get_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
+  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Option_Perm_PCell_Node_T
    = Map.get (to_mapping_Snapshot_Elem_T self) k
   
-  meta "rewrite_def" function get_Snapshot_Elem_T
+  meta "rewrite_def" function lookup_Snapshot_Elem_T
   
   predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) =
-    get_Snapshot_Elem_T self k <> None
+    lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
   
@@ -3103,13 +3072,8 @@ module M_implementation__union
       | None -> any_Perm_PCell_Node_T
       end
   
-  function lookup_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) : t_Perm_PCell_Node_T
-   = unwrap_Option_Perm_PCell_Node_T (get_Snapshot_Elem_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_Elem_T
-  
   function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) : t_Perm_PCell_Node_T
-   = lookup_Snapshot_Elem_T self key
+   = unwrap_Option_Perm_PCell_Node_T (lookup_Snapshot_Elem_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T
   

@@ -84,22 +84,14 @@ impl<K, V> FMap<K, V> {
     ///
     /// If no value is present, returns [`None`].
     #[logic(open, inline)]
-    pub fn get_logic(self, k: K) -> Option<V> {
+    pub fn lookup(self, k: K) -> Option<V> {
         self.to_mapping().get(k)
-    }
-
-    /// Get the value associated with key `k` in the map.
-    ///
-    /// If no value is present, the returned value is meaningless.
-    #[logic(open, inline)]
-    pub fn lookup(self, k: K) -> V {
-        self.get_logic(k).unwrap_logic()
     }
 
     /// Returns `true` if the map contains a value for the specified key.
     #[logic(open, inline)]
     pub fn contains_logic(self, k: K) -> bool {
-        self.get_logic(k) != None
+        self.lookup(k) != None
     }
 
     /// Returns `true` if the map contains no elements.
@@ -120,7 +112,7 @@ impl<K, V> FMap<K, V> {
     #[logic(open)]
     pub fn subset(self, other: Self) -> bool {
         pearlite! {
-            forall<k: K> self.contains(&k) ==> other.get_logic(k) == self.get_logic(k)
+            forall<k: K> self.contains(&k) ==> other.lookup(k) == self.lookup(k)
         }
     }
 
@@ -130,8 +122,8 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[logic(opaque)]
     #[requires(self.disjoint(other))]
-    #[ensures(forall<k: K> #[trigger(result.get_logic(k))] !self.contains(&k) ==> result.get_logic(k) == other.get_logic(k))]
-    #[ensures(forall<k: K> #[trigger(result.get_logic(k))] !other.contains(&k) ==> result.get_logic(k) == self.get_logic(k))]
+    #[ensures(forall<k: K> #[trigger(result.lookup(k))] !self.contains(&k) ==> result.lookup(k) == other.lookup(k))]
+    #[ensures(forall<k: K> #[trigger(result.lookup(k))] !other.contains(&k) ==> result.lookup(k) == self.lookup(k))]
     #[ensures(result.len() == self.len() + other.len())]
     pub fn union(self, other: Self) -> Self {
         dead
@@ -143,11 +135,11 @@ impl<K, V> FMap<K, V> {
     #[logic(opaque)]
     #[ensures(result.disjoint(other))]
     #[ensures(other.subset(self) ==> other.union(result) == self)]
-    #[ensures(forall<k: K> #[trigger(result.get_logic(k))] result.get_logic(k) ==
+    #[ensures(forall<k: K> #[trigger(result.lookup(k))] result.lookup(k) ==
         if other.contains(&k) {
             None
         } else {
-            self.get_logic(k)
+            self.lookup(k)
         }
     )]
     pub fn subtract(self, other: Self) -> Self {
@@ -171,7 +163,7 @@ impl<K, V> FMap<K, V> {
     pub fn ext_eq(self, other: Self) -> bool {
         pearlite! {
             let _ = Self::to_mapping_inj;
-            forall<k: &K> self.get(k) == other.get(k)
+            forall<k: K> self.lookup(k) == other.lookup(k)
         }
     }
 
@@ -181,11 +173,11 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[logic(opaque)]
     #[ensures(
-        forall<k: K> #[trigger(result.get_logic(k))]
-            match (self.get_logic(k), m.get_logic(k)) {
-                (None, y) => result.get_logic(k) == y,
-                (x, None) => result.get_logic(k) == x,
-                (Some(x), Some(y)) => result.get_logic(k) == Some(f[(x, y)]),
+        forall<k: K> #[trigger(result.lookup(k))]
+            match (self.lookup(k), m.lookup(k)) {
+                (None, y) => result.lookup(k) == y,
+                (x, None) => result.lookup(k) == x,
+                (Some(x), Some(y)) => result.lookup(k) == Some(f[(x, y)]),
             }
     )]
     pub fn merge(self, m: FMap<K, V>, f: Mapping<(V, V), V>) -> FMap<K, V> {
@@ -195,7 +187,7 @@ impl<K, V> FMap<K, V> {
     /// Map every value in `self` according to `f`. Keys are unchanged.
     #[logic]
     #[trusted] // The ensures clause that says the lenght do not change is rather difficult
-    #[ensures(forall<k: K> #[trigger(result.get_logic(k))] result.get_logic(k) == match self.get_logic(k) {
+    #[ensures(forall<k: K> #[trigger(result.lookup(k))] result.lookup(k) == match self.lookup(k) {
         None => None,
         Some(v) => Some(f[(k, v)]),
     })]
@@ -209,7 +201,7 @@ impl<K, V> FMap<K, V> {
     /// A key-value pair will be in the result map if and only if it is in `self` and
     /// `p` returns `true` on this pair.
     #[logic]
-    #[ensures(forall<k: K> #[trigger(result.get_logic(k))] result.get_logic(k) == match self.get_logic(k) {
+    #[ensures(forall<k: K> #[trigger(result.lookup(k))] result.lookup(k) == match self.lookup(k) {
         None => None,
         Some(v) => if p[(k, v)] { Some(v) } else { None },
     })]
@@ -221,7 +213,7 @@ impl<K, V> FMap<K, V> {
     /// If `f` returns `false`, remove the key-value from the map.
     #[trusted]
     #[logic(opaque)]
-    #[ensures(forall<k: K> #[trigger(result.get_logic(k))] result.get_logic(k) == match self.get_logic(k) {
+    #[ensures(forall<k: K> #[trigger(result.lookup(k))] result.lookup(k) == match self.lookup(k) {
         None => None,
         Some(v) => f[(k, v)],
     })]
@@ -244,7 +236,7 @@ impl<K, V> IndexLogic<K> for FMap<K, V> {
 
     #[logic(open, inline)]
     fn index_logic(self, key: K) -> Self::Item {
-        self.lookup(key)
+        self.lookup(key).unwrap_logic()
     }
 }
 
@@ -329,7 +321,7 @@ impl<K, V> FMap<K, V> {
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[logic_alias(self.get_logic(*key).as_ref())]
+    #[ensures(result == self.lookup(*key).as_ref())]
     pub fn get(&self, key: &K) -> Option<&V> {
         let _ = key;
         panic!()
@@ -361,7 +353,7 @@ impl<K, V> FMap<K, V> {
         } else {
             result == None && *self == ^self
         })]
-    #[ensures(forall<k: K> k != *key ==> (*self).get_logic(k) == (^self).get_logic(k))]
+    #[ensures(forall<k: K> k != *key ==> (*self).lookup(k) == (^self).lookup(k))]
     #[ensures((*self).len() == (^self).len())]
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         let _ = key;
@@ -420,7 +412,7 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[check(ghost)]
     #[ensures(^self == (*self).add(key, value))]
-    #[ensures(result == (*self).get_logic(key))]
+    #[ensures(result == (*self).lookup(key))]
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         let _ = key;
         let _ = value;
@@ -445,7 +437,7 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[check(ghost)]
     #[ensures(^self == (*self).remove(*key))]
-    #[ensures(result == (*self).get_logic(*key))]
+    #[ensures(result == (*self).lookup(*key))]
     pub fn delete(&mut self, key: &K) -> Option<V> {
         let _ = key;
         panic!()
@@ -485,7 +477,7 @@ impl<K, V> FMap<K, V> {
     #[check(ghost)]
     #[ensures(result.len() == self.len())]
     #[ensures(forall<i, j> 0 <= i && i < self.len() && 0 <= j && j < self.len() && result[i].0 == result[j].0 ==> i == j)]
-    #[ensures(forall<k, v> (self.get(&k) == Some(&v)) == result.contains((k, v)))]
+    #[ensures(forall<k, v> (self.lookup(k) == Some(v)) == result.contains((k, v)))]
     pub fn to_seq(self) -> Seq<(K, V)> {
         panic!()
     }
@@ -493,7 +485,7 @@ impl<K, V> FMap<K, V> {
     #[trusted]
     #[check(ghost)]
     #[ensures(result.len() == self.len())]
-    #[ensures(forall<k, v> (self.get(k) == Some(v)) == (result.get(&k) == Some(&v)))]
+    #[ensures(forall<k, v> (self.lookup(k) == Some(v)) == (result.lookup(&k) == Some(&v)))]
     pub fn as_ref(&self) -> FMap<&K, &V> {
         panic!()
     }
@@ -502,9 +494,9 @@ impl<K, V> FMap<K, V> {
     #[check(ghost)]
     #[ensures(result.len() == self.len())]
     #[ensures((^self).len() == self.len())]
-    #[ensures(forall<k> match result.get_logic(&k) {
+    #[ensures(forall<k> match result.lookup(&k) {
         None => !(*self).contains(&k) && !(^self).contains(&k),
-        Some(v) => (*self).get_logic(k) == Some(*v) && (^self).get_logic(k) == Some(^v),
+        Some(v) => (*self).lookup(k) == Some(*v) && (^self).lookup(k) == Some(^v),
     })]
     pub fn as_mut(&mut self) -> FMap<&K, &mut V> {
         panic!()
@@ -516,7 +508,7 @@ impl<'a, K, V> core::ops::Index<&'a K> for FMap<K, V> {
 
     #[check(ghost)]
     #[requires(self.contains(key))]
-    #[ensures(Some(*result) == self.get_logic(*key))]
+    #[ensures(Some(*result) == self.lookup(*key))]
     fn index(&self, key: &'a K) -> &Self::Output {
         self.get(key).unwrap()
     }
@@ -574,11 +566,11 @@ impl<K, V> IteratorSpec for Iter<K, V> {
             // We cannot visit the same key twice
             (forall<i, j> 0 <= i && i < j && j < visited.len() ==> visited[i].0 != visited[j].0) &&
             // If a key-value is visited, it was in `self` but not in `o`
-            (forall<k, v, i> visited.get(i) == Some(&(k, v)) ==> !o@.contains(&k) && self@.get(&k) == Some(&v)) &&
+            (forall<k, v, i> visited.get(i) == Some(&(k, v)) ==> !o@.contains(&k) && self@.lookup(k) == Some(v)) &&
             // Helper for the length
             self@.len() == visited.len() + o@.len() &&
             // else, the key-value is the same in `self` and `o`
-            (forall<k> (forall<i> 0 <= i && i < visited.len() ==> visited[i].0 != k) ==> o@.get(&k) == self@.get(&k))
+            (forall<k> (forall<i> 0 <= i && i < visited.len() ==> visited[i].0 != k) ==> o@.lookup(k) == self@.lookup(k))
         }
     }
 
@@ -602,7 +594,7 @@ impl<K, V> IteratorSpec for Iter<K, V> {
         proof_assert!(forall<k> (forall<i> 0 <= i && i < ac.len() ==> ac[i].0 != k) ==> {
             (forall<i> 0 <= i && i < ab.len() ==> ab[i].0 != k) &&
             (forall<i> 0 <= i && i < bc.len() ==> bc[i].0 != k) &&
-            a@.get(&k) == b@.get(&k) && b@.get(&k) == c@.get(&k)
+            a@.lookup(k) == b@.lookup(k) && b@.lookup(k) == c@.lookup(k)
         });
     }
 }
@@ -613,7 +605,7 @@ impl<K, V> IntoIterator for FMap<K, V> {
 
     #[check(ghost)]
     #[ensures(result@.len() == self.len())]
-    #[ensures(forall<k, v> (self.get(k) == Some(v)) == (result@.get(k) == Some(v)))]
+    #[ensures(forall<k, v> (self.lookup(k) == Some(v)) == (result@.lookup(k) == Some(v)))]
     fn into_iter(self) -> Self::IntoIter {
         Iter(self)
     }
@@ -625,7 +617,7 @@ impl<'a, K, V> IntoIterator for &'a FMap<K, V> {
 
     #[check(ghost)]
     #[ensures(result@.len() == self.len())]
-    #[ensures(forall<k, v> (self.get(k) == Some(v)) == (result@.get(&k) == Some(&v)))]
+    #[ensures(forall<k, v> (self.lookup(k) == Some(v)) == (result@.lookup(&k) == Some(&v)))]
     fn into_iter(self) -> Self::IntoIter {
         Iter(self.as_ref())
     }
@@ -638,8 +630,8 @@ impl<'a, K, V> IntoIterator for &'a mut FMap<K, V> {
     #[check(ghost)]
     #[ensures(result@.len() == (*self).len())]
     #[ensures((^self).len() == (*self).len())]
-    #[ensures(forall<k, v> (*self).get(&k) == Some(&v) ==> exists<w> result@.get(&&k) == Some(&w) && v == *w && (^self).get(&k) == Some(&^w))]
-    #[ensures(forall<k, w> result@.get(&k) == Some(&w) ==> (*self).get(&&k) == Some(&*w) && (^self).get(&k) == Some(&^w))]
+    #[ensures(forall<k, v> (*self).lookup(k) == Some(v) ==> exists<w> result@.lookup(&k) == Some(w) && v == *w && (^self).lookup(k) == Some(^w))]
+    #[ensures(forall<k, w> result@.lookup(&k) == Some(w) ==> (*self).lookup(k) == Some(*w) && (^self).lookup(k) == Some(^w))]
     fn into_iter(self) -> Self::IntoIter {
         Iter(self.as_mut())
     }
@@ -649,7 +641,7 @@ impl<K, V> Resolve for FMap<K, V> {
     #[logic(open, prophetic)]
     #[creusot::trusted_trivial_if_param_trivial]
     fn resolve(self) -> bool {
-        pearlite! { forall<k: &K, v: &V> self.get(k) == Some(v) ==> resolve(k) && resolve(v) }
+        pearlite! { forall<k: K, v: V> self.lookup(k) == Some(v) ==> resolve(k) && resolve(v) }
     }
 
     #[trusted]

@@ -59,8 +59,8 @@ impl Protocol for ParallelAddAtomicInv {
     fn protocol(self) -> bool {
         pearlite! {
             (forall<t> self.own.val().contains(&t) ==> t == self.t_last || self.own.val().contains_logic(t + 1)) &&
-            match self.own.val().get(&self.t_last) {
-                Some(&(v, _)) =>
+            match self.own.val().lookup(self.t_last) {
+                Some((v, _)) =>
                   exists<k: Int>
                     self.auth@ == Some((PR::from_int(1), k * Int::pow2(32) + v@)),
                 None => false,

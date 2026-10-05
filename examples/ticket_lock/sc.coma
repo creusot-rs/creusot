@@ -1162,12 +1162,12 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   function to_mapping_Int (self: t_FMap_Int_Excl_unit) : Map.map int t_Option_Excl_unit
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) : t_Option_Excl_unit =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) : t_Option_Excl_unit =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) = get_Int self k <> None'0
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) = lookup_Int self k <> None'0
   
   meta "rewrite_def" predicate contains_Int
   
@@ -1835,12 +1835,12 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_Excl_unit [len_Int self]. ge_log_Int (len_Int self) 0
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) : t_Option_Excl_unit =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) : t_Option_Excl_unit =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) = get_Int self k <> None'1
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) = lookup_Int self k <> None'1
   
   meta "rewrite_def" predicate contains_Int
   
@@ -1913,13 +1913,13 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   function total_op_Int (self: t_FMap_Int_Excl_unit) (other: t_FMap_Int_Excl_unit) : t_FMap_Int_Excl_unit
   
   axiom total_op_Int_spec:
-    forall self: t_FMap_Int_Excl_unit, other: t_FMap_Int_Excl_unit [total_op_Int self other]. (forall k: int. op_Option_Excl_unit (get_Int self k) (get_Int other k)
+    forall self: t_FMap_Int_Excl_unit, other: t_FMap_Int_Excl_unit [total_op_Int self other]. (forall k: int. op_Option_Excl_unit (lookup_Int self k) (lookup_Int other k)
           <> None'3)
-      -> (forall k: int. Some'3 (get_Int (total_op_Int self other) k)
-        = op_Option_Excl_unit (get_Int self k) (get_Int other k))
+      -> (forall k: int. Some'3 (lookup_Int (total_op_Int self other) k)
+        = op_Option_Excl_unit (lookup_Int self k) (lookup_Int other k))
   
   function op_FMap_Int_Excl_unit (self: t_FMap_Int_Excl_unit) (other: t_FMap_Int_Excl_unit) : t_Option_FMap_Int_Excl_unit
-   = if forall k: int. op_Option_Excl_unit (get_Int self k) (get_Int other k) <> None'3 then
+   = if forall k: int. op_Option_Excl_unit (lookup_Int self k) (lookup_Int other k) <> None'3 then
       Some'2 (total_op_Int self other)
     else
       None'2
@@ -2680,7 +2680,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         -> op_Option_Excl_unit self x = op_Option_Excl_unit self y -> x = y)
   
   predicate cancelable_FMap_Int_Excl_unit (self: t_FMap_Int_Excl_unit) =
-    forall k: int. cancelable_Option_Excl_unit (get_Int self k)
+    forall k: int. cancelable_Option_Excl_unit (lookup_Int self k)
   
   axiom cancelable_FMap_Int_Excl_unit_spec:
     forall self: t_FMap_Int_Excl_unit [cancelable_FMap_Int_Excl_unit self]. cancelable_FMap_Int_Excl_unit self
@@ -2740,7 +2740,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       = (exists factor: t_Option_Excl_unit. op_Option_Excl_unit self factor = Some'3 other)
   
   predicate incl_FMap_Int_Excl_unit (self: t_FMap_Int_Excl_unit) (other: t_FMap_Int_Excl_unit) =
-    let r = forall k: int. incl_Option_Excl_unit (get_Int self k) (get_Int other k) in r
+    let r = forall k: int. incl_Option_Excl_unit (lookup_Int self k) (lookup_Int other k) in r
   
   axiom incl_FMap_Int_Excl_unit_spec:
     forall self: t_FMap_Int_Excl_unit, other: t_FMap_Int_Excl_unit [incl_FMap_Int_Excl_unit self other]. incl_FMap_Int_Excl_unit self other
@@ -3213,8 +3213,6 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       | None -> any_Fragment_FMap_Int_Excl_unit
       end
   
-  type t_Option_ref_Excl_unit = None'5 | Some'5 t_Excl_unit
-  
   predicate resolve_Ghost_Option_Fragment_FMap_Int_Excl_unit [@inline:trivial] (self: t_Option_Fragment_FMap_Int_Excl_unit) =
     resolve_Option_Fragment_FMap_Int_Excl_unit self
   
@@ -3317,8 +3315,8 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         {[@expl:loop invariant #1] ticket_own <> None}
         {[@expl:loop invariant #2] id_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)
         = (public_TicketLockInv_T'0 self.inner_inv).f1'3}
-        {[@expl:loop invariant #3] get_Int (view_Fragment_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)) (UInt32.t'int ticket)
-        = Some'5 { f0 = () }}
+        {[@expl:loop invariant #3] lookup_Int (view_Fragment_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)) (UInt32.t'int ticket)
+        = Some'1 { f0 = () }}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Tokens> {tokens}
             (fun (_bor: MutBorrow.t t_Tokens) -> [ &_41 <- _bor ] [ &tokens <- _bor.final ] s1)
@@ -3647,21 +3645,21 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   function to_mapping_Int (self: t_FMap_Int_Excl_unit) : Map.map int t_Option_Excl_unit
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) : t_Option_Excl_unit =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) : t_Option_Excl_unit =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
   function total_op_Int (self: t_FMap_Int_Excl_unit) (other: t_FMap_Int_Excl_unit) : t_FMap_Int_Excl_unit
   
   axiom total_op_Int_spec:
-    forall self: t_FMap_Int_Excl_unit, other: t_FMap_Int_Excl_unit [total_op_Int self other]. (forall k: int. op_Option_Excl_unit (get_Int self k) (get_Int other k)
+    forall self: t_FMap_Int_Excl_unit, other: t_FMap_Int_Excl_unit [total_op_Int self other]. (forall k: int. op_Option_Excl_unit (lookup_Int self k) (lookup_Int other k)
           <> None'2)
-      -> (forall k: int. Some'2 (get_Int (total_op_Int self other) k)
-        = op_Option_Excl_unit (get_Int self k) (get_Int other k))
+      -> (forall k: int. Some'2 (lookup_Int (total_op_Int self other) k)
+        = op_Option_Excl_unit (lookup_Int self k) (lookup_Int other k))
   
   function op_FMap_Int_Excl_unit (self: t_FMap_Int_Excl_unit) (other: t_FMap_Int_Excl_unit) : t_Option_FMap_Int_Excl_unit
-   = if forall k: int. op_Option_Excl_unit (get_Int self k) (get_Int other k) <> None'2 then
+   = if forall k: int. op_Option_Excl_unit (lookup_Int self k) (lookup_Int other k) <> None'2 then
       Some'0 (total_op_Int self other)
     else
       None'0
@@ -3749,7 +3747,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   type t_AtomicInvariantSC_TicketLockInv_T
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) = get_Int self k <> None'1
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) = lookup_Int self k <> None'1
   
   meta "rewrite_def" predicate contains_Int
   

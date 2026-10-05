@@ -73,7 +73,7 @@ impl<T> Protocol for TicketLockInv<T> {
             (forall<k: Int> self.auth_tickets@.contains(&k) ==> k < self.next_ticket())&&
 
             (forall<ts: Timestamp> Some(ts) != self.ts_now_serving ==>
-                match self.perm_now_serving.val().get(&ts) {
+                match self.perm_now_serving.val().lookup(ts) {
                     Some((n, _)) => !self.auth_tickets@.contains(&n@) && n@ < self.next_ticket(),
                     None => true
                 }) &&
@@ -203,7 +203,7 @@ impl<T> TicketLock<T> {
         #[invariant(tokens.contains(TICKET_LOCK()))]
         #[invariant(*ticket_own != None)]
         #[invariant(ticket_own.unwrap_logic().id() == self.inner_inv.public().1)]
-        #[invariant(ticket_own.unwrap_logic()@.get(&ticket@) == Some(&Excl(())))]
+        #[invariant(ticket_own.unwrap_logic()@.lookup(ticket@) == Some(Excl(())))]
         #[invariant(token.id() == self.inner_inv.public().2 )]
         while self.now_serving.load(ghost!(|c: &Committer<_, _, Acquire, _>| {
             self.inner_inv.open(tokens.reborrow(), |inv: &mut TicketLockInv<T>| {
