@@ -9,13 +9,19 @@
   sha256,
   version,
 }:
-z3.overrideAttrs {
-  inherit version;
 
-  src = fetchFromGitHub {
-    owner = "Z3Prover";
-    repo = "z3";
-    rev = "z3-${version}";
-    hash = sha256;
-  };
-}
+(z3.override {
+  javaBindings = false;
+  ocamlBindings = false;
+  pythonBindings = false;
+}).overrideAttrs
+  {
+    inherit version;
+
+    src = fetchFromGitHub {
+      owner = "Z3Prover";
+      repo = "z3";
+      rev = "z3-${version}";
+      hash = sha256;
+    };
+  }

@@ -69,8 +69,8 @@
             };
 
             z3 = {
-              version = "4.15.3";
-              sha256 = "sha256-Lw037Z0t0ySxkgMXkbjNW5CB4QQLRrrSEBsLJqiomZ4=";
+              version = "5.1.0";
+              sha256 = "sha256-F46bADHVe6ssQrj6oXPSi3KRGBaX//pXO3+4bMFi8Ag=";
             };
           };
         in
