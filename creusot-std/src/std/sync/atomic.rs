@@ -17,12 +17,8 @@ pub mod ordering {
     };
     #[cfg(creusot)]
     use crate::{
-        ghost::{Perm, perm::PermTarget},
         logic::FMap,
-        std::sync::{
-            committer::atomic_specs::{load_acq_post, load_rlx_post, store_rel_post, store_rlx_post},
-            view::{HasTimestamp, SyncView, Timestamp},
-        },
+        std::sync::view::{SyncView, Timestamp},
     };
     use core::sync::atomic::Ordering as OrderingTy;
 
@@ -42,34 +38,29 @@ pub mod ordering {
 
         /// Postcondition of a load with this ordering, reading `val` at timestamp `t`.
         #[logic(prophetic)]
-        fn load_post<C, T>(
-            atomic: C,
-            own: &Perm<C>,
-            sync_view: &mut SyncView,
+        fn view_acquired<T>(
+            hist: FMap<Timestamp, (T, SyncView)>,
+            sync_view: SyncView,
             val: T,
             t: Timestamp,
             acq_view: Self::Acq,
-        ) -> bool
-        where
-            C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp;
+        ) -> bool;
     }
     pub trait StoreOrdering: Ordering {
         /// The release view a store with this ordering depends on: `()` for release stores,
         /// a [`ReleaseSyncView`] for relaxed stores.
         type Rel: Copy;
 
-        /// Postcondition of a store with this ordering, writing `val` at timestamp `t`.
         #[logic(prophetic)]
-        fn store_post<C, T>(
-            atomic: C,
-            own: &mut Perm<C>,
-            sync_view: &mut SyncView,
+        #[allow(unused_variables)]
+        fn view_released<T>(
+            old_hist: FMap<Timestamp, (T, SyncView)>,
+            new_hist: FMap<Timestamp, (T, SyncView)>,
+            sync_view: SyncView,
             val: T,
             t: Timestamp,
             rel_view: Self::Rel,
-        ) -> bool
-        where
-            C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp;
+        ) -> bool;
     }
     pub trait UpdateOrdering: Ordering {
         type Load: LoadOrdering;
@@ -104,36 +95,40 @@ pub mod ordering {
         type Acq = AcquireSyncView;
 
         #[logic(open, prophetic)]
-        fn load_post<C, T>(
-            atomic: C,
-            own: &Perm<C>,
-            sync_view: &mut SyncView,
+        #[allow(unused_variables)]
+        fn view_acquired<T>(
+            hist: FMap<Timestamp, (T, SyncView)>,
+            sync_view: SyncView,
             val: T,
             t: Timestamp,
             acq_view: AcquireSyncView,
         ) -> bool
-        where
-            C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp,
         {
-            load_rlx_post(atomic, own, sync_view, val, t, acq_view)
+            pearlite! {
+                match hist.get(t) {
+                    Some((v, v_view)) => v == val && v_view <= acq_view@,
+                    Option::None => false
+                }
+            }
         }
     }
     impl StoreOrdering for Relaxed {
         type Rel = ReleaseSyncView;
 
         #[logic(open, prophetic)]
-        fn store_post<C, T>(
-            atomic: C,
-            own: &mut Perm<C>,
-            sync_view: &mut SyncView,
+        #[allow(unused_variables)]
+        fn view_released<T>(
+            old_hist: FMap<Timestamp, (T, SyncView)>,
+            new_hist: FMap<Timestamp, (T, SyncView)>,
+            sync_view: SyncView,
             val: T,
             t: Timestamp,
             rel_view: ReleaseSyncView,
         ) -> bool
-        where
-            C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp,
         {
-            store_rlx_post(atomic, own, sync_view, val, t, rel_view)
+            pearlite! {
+                old_hist.get(t) == Option::None && new_hist == old_hist.insert(t, (val, rel_view@))
+            }
         }
     }
     impl LoadOrdering for Acquire {
@@ -141,18 +136,20 @@ pub mod ordering {
 
         #[logic(open, prophetic)]
         #[allow(unused_variables)]
-        fn load_post<C, T>(
-            atomic: C,
-            own: &Perm<C>,
-            sync_view: &mut SyncView,
+        fn view_acquired<T>(
+            hist: FMap<Timestamp, (T, SyncView)>,
+            sync_view: SyncView,
             val: T,
             t: Timestamp,
             acq_view: (),
         ) -> bool
-        where
-            C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp,
         {
-            load_acq_post(atomic, own, sync_view, val, t)
+            pearlite! {
+                match hist.get(t) {
+                    Some((v, v_view)) => v == val && v_view <= sync_view,
+                    Option::None => false
+                }
+            }
         }
     }
     impl StoreOrdering for Release {
@@ -160,18 +157,18 @@ pub mod ordering {
 
         #[logic(open, prophetic)]
         #[allow(unused_variables)]
-        fn store_post<C, T>(
-            atomic: C,
-            own: &mut Perm<C>,
-            sync_view: &mut SyncView,
+        fn view_released<T>(
+            old_hist: FMap<Timestamp, (T, SyncView)>,
+            new_hist: FMap<Timestamp, (T, SyncView)>,
+            sync_view: SyncView,
             val: T,
             t: Timestamp,
             rel_view: (),
         ) -> bool
-        where
-            C: PermTarget<Value = FMap<Timestamp, (T, SyncView)>> + HasTimestamp,
         {
-            store_rel_post(atomic, own, sync_view, val, t)
+            pearlite! {
+                old_hist.get(t) == Option::None && new_hist == old_hist.insert(t, (val, sync_view))
+            }
         }
     }
 }

@@ -1041,11 +1041,6 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
     forall self: t_AtomicBool, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
       -> get_timestamp_AtomicBool self x <= get_timestamp_AtomicBool self y
   
-  predicate store_timestamp_in_view_AtomicBool (atomic'0: t_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (t: int) =
-    let old_t = get_timestamp_AtomicBool atomic'0 sync_view.current in let new_t = get_timestamp_AtomicBool atomic'0 sync_view.final in old_t
-      < t
-    /\ t <= new_t
-  
   type t_FMap_Int_tup2_bool_SyncView
   
   type tup2_bool_SyncView = { f0'2: bool; f1'2: t_SyncView }
@@ -1058,13 +1053,6 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
     Map.get (to_mapping_Int self) k
   
   meta "rewrite_def" function get_Int
-  
-  function val_unsized_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
-  
-  function val_AtomicBool [@inline:trivial] (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView =
-    val_unsized_AtomicBool self
-  
-  meta "rewrite_def" function val_AtomicBool
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -1088,19 +1076,22 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
     forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
-  predicate store_inserts_in_history_AtomicBool (own: MutBorrow.t t_Perm_AtomicBool) (thread_view: t_SyncView) (val': bool) (t: int) =
-    get_Int (val_AtomicBool own.current) t = None'3
-    /\ val_AtomicBool own.final = insert_Int (val_AtomicBool own.current) t { f0'2 = val'; f1'2 = thread_view }
+  predicate view_released_Release (old_hist: t_FMap_Int_tup2_bool_SyncView) (new_hist: t_FMap_Int_tup2_bool_SyncView) (sync_view: t_SyncView) (val': bool) (t: int) (rel_view: ()) =
+    get_Int old_hist t = None'3 /\ new_hist = insert_Int old_hist t { f0'2 = val'; f1'2 = sync_view }
   
-  predicate view_mono (sync_view: MutBorrow.t t_SyncView) = le_log_SyncView sync_view.current sync_view.final
+  function val_unsized_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
   
-  predicate store_rel_post_AtomicBool (atomic'0: t_AtomicBool) (own: MutBorrow.t t_Perm_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (val': bool) (t: int) =
-    store_timestamp_in_view_AtomicBool atomic'0 sync_view t
-    /\ store_inserts_in_history_AtomicBool own sync_view.final val' t
-    /\ view_mono sync_view /\ ward_AtomicBool'0 own.current = ward_AtomicBool'0 own.final
+  function val_AtomicBool [@inline:trivial] (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView =
+    val_unsized_AtomicBool self
   
-  predicate store_post_Release (atomic'0: t_AtomicBool) (own: MutBorrow.t t_Perm_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (val': bool) (t: int) (rel_view: ()) =
-    store_rel_post_AtomicBool atomic'0 own sync_view val' t
+  meta "rewrite_def" function val_AtomicBool
+  
+  predicate store_post_Release (atomic'0: t_AtomicBool) (own: MutBorrow.t t_Perm_AtomicBool) (old_view: t_SyncView) (new_view: t_SyncView) (val': bool) (t: int) (rel_view: ()) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicBool atomic'0 old_view < t
+    /\ t <= get_timestamp_AtomicBool atomic'0 new_view
+    /\ view_released_Release (val_AtomicBool own.current) (val_AtomicBool own.final) new_view val' t rel_view
+    /\ ward_AtomicBool'0 own.current = ward_AtomicBool'0 own.final
   
   let shoot_store_AtomicBool (self: MutBorrow.t t_Committer_AtomicBool_bool_None_Release)
     (own: MutBorrow.t t_Perm_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (rel_view: ()) (return (x: ())) =
@@ -1110,7 +1101,7 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_store_AtomicBool ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicBool self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicBool self.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Release (ward_AtomicBool self.current) own sync_view (val_store_AtomicBool self.current) (timestamp_AtomicBool self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Release (ward_AtomicBool self.current) own sync_view.current sync_view.final (val_store_AtomicBool self.current) (timestamp_AtomicBool self.current
       + 1) rel_view)}
       (! return {result}) ]
   
@@ -2143,16 +2134,11 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
     forall self: t_AtomicBool, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
       -> get_timestamp_AtomicBool self x <= get_timestamp_AtomicBool self y
   
-  predicate load_timestamp_in_view_AtomicBool (atomic'0: t_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (t: int) =
-    let old_t = get_timestamp_AtomicBool atomic'0 sync_view.current in let new_t = get_timestamp_AtomicBool atomic'0 sync_view.final in old_t
-      <= t
-    /\ t <= new_t
+  type t_FMap_Int_tup2_bool_SyncView
   
   type tup2_bool_SyncView = { f0'1: bool; f1'1: t_SyncView }
   
   type t_Option_tup2_bool_SyncView = None'3 | Some'3 tup2_bool_SyncView
-  
-  type t_FMap_Int_tup2_bool_SyncView
   
   function to_mapping_Int (self: t_FMap_Int_tup2_bool_SyncView) : Map.map int t_Option_tup2_bool_SyncView
   
@@ -2161,6 +2147,12 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   meta "rewrite_def" function get_Int
   
+  predicate view_acquired_Acquire (hist: t_FMap_Int_tup2_bool_SyncView) (sync_view: t_SyncView) (val': bool) (t: int) (acq_view: ()) =
+    match get_Int hist t with
+      | Some'3 {f0'1 = v; f1'1 = v_view} -> v = val' /\ le_log_SyncView v_view sync_view
+      | None'3 -> false
+      end
+  
   function val_unsized_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
   
   function val_AtomicBool [@inline:trivial] (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView =
@@ -2168,20 +2160,11 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   meta "rewrite_def" function val_AtomicBool
   
-  predicate load_reads_from_history_AtomicBool (own: t_Perm_AtomicBool) (thread_view: t_SyncView) (val': bool) (t: int) =
-    match get_Int (val_AtomicBool own) t with
-      | Some'3 {f0'1 = v; f1'1 = v_view} -> v = val' /\ le_log_SyncView v_view thread_view
-      | None'3 -> false
-      end
-  
-  predicate view_mono (sync_view: MutBorrow.t t_SyncView) = le_log_SyncView sync_view.current sync_view.final
-  
-  predicate load_acq_post_AtomicBool (atomic'0: t_AtomicBool) (own: t_Perm_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (val': bool) (t: int) =
-    load_timestamp_in_view_AtomicBool atomic'0 sync_view t
-    /\ load_reads_from_history_AtomicBool own sync_view.final val' t /\ view_mono sync_view
-  
-  predicate load_post_Acquire (atomic'0: t_AtomicBool) (own: t_Perm_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (val': bool) (t: int) (acq_view: ()) =
-    load_acq_post_AtomicBool atomic'0 own sync_view val' t
+  predicate load_post_Acquire (atomic'0: t_AtomicBool) (own: t_Perm_AtomicBool) (old_view: t_SyncView) (new_view: t_SyncView) (val': bool) (t: int) (acq_view: ()) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicBool atomic'0 old_view <= t
+    /\ t <= get_timestamp_AtomicBool atomic'0 new_view
+    /\ view_acquired_Acquire (val_AtomicBool own) new_view val' t acq_view
   
   predicate val_load_AtomicBool (self: t_Committer_AtomicBool_bool_Acquire_Relaxed)
   
@@ -2193,7 +2176,7 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicBool self = ward_AtomicBool'0 own)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:shoot_load ensures] load_post_Acquire (ward_AtomicBool self) own sync_view (val_load_AtomicBool self) (timestamp_AtomicBool self) result}
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Acquire (ward_AtomicBool self) own sync_view.current sync_view.final (val_load_AtomicBool self) (timestamp_AtomicBool self) result}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -2215,11 +2198,6 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
     /\ val_store_AtomicBool self = val_store_AtomicBool other /\ timestamp_AtomicBool self = timestamp_AtomicBool other
   
   meta "rewrite_def" predicate hist_inv_AtomicBool
-  
-  predicate store_timestamp_in_view_AtomicBool (atomic'0: t_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (t: int) =
-    let old_t = get_timestamp_AtomicBool atomic'0 sync_view.current in let new_t = get_timestamp_AtomicBool atomic'0 sync_view.final in old_t
-      < t
-    /\ t <= new_t
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -2243,19 +2221,18 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
     forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
-  predicate store_inserts_in_history_AtomicBool (own: MutBorrow.t t_Perm_AtomicBool) (thread_view: t_SyncView) (val': bool) (t: int) =
-    get_Int (val_AtomicBool own.current) t = None'3
-    /\ val_AtomicBool own.final = insert_Int (val_AtomicBool own.current) t { f0'1 = val'; f1'1 = thread_view }
-  
   function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
   
-  predicate store_rlx_post_AtomicBool (atomic'0: t_AtomicBool) (own: MutBorrow.t t_Perm_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (val': bool) (t: int) (rel_view: t_ReleaseSyncView) =
-    store_timestamp_in_view_AtomicBool atomic'0 sync_view t
-    /\ store_inserts_in_history_AtomicBool own (view_ReleaseSyncView rel_view) val' t
-    /\ view_mono sync_view /\ ward_AtomicBool'0 own.current = ward_AtomicBool'0 own.final
+  predicate view_released_Relaxed (old_hist: t_FMap_Int_tup2_bool_SyncView) (new_hist: t_FMap_Int_tup2_bool_SyncView) (sync_view: t_SyncView) (val': bool) (t: int) (rel_view: t_ReleaseSyncView) =
+    get_Int old_hist t = None'3
+    /\ new_hist = insert_Int old_hist t { f0'1 = val'; f1'1 = view_ReleaseSyncView rel_view }
   
-  predicate store_post_Relaxed (atomic'0: t_AtomicBool) (own: MutBorrow.t t_Perm_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (val': bool) (t: int) (rel_view: t_ReleaseSyncView) =
-    store_rlx_post_AtomicBool atomic'0 own sync_view val' t rel_view
+  predicate store_post_Relaxed (atomic'0: t_AtomicBool) (own: MutBorrow.t t_Perm_AtomicBool) (old_view: t_SyncView) (new_view: t_SyncView) (val': bool) (t: int) (rel_view: t_ReleaseSyncView) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicBool atomic'0 old_view < t
+    /\ t <= get_timestamp_AtomicBool atomic'0 new_view
+    /\ view_released_Relaxed (val_AtomicBool own.current) (val_AtomicBool own.final) new_view val' t rel_view
+    /\ ward_AtomicBool'0 own.current = ward_AtomicBool'0 own.final
   
   let shoot_store_AtomicBool (self: MutBorrow.t t_Committer_AtomicBool_bool_Acquire_Relaxed)
     (own: MutBorrow.t t_Perm_AtomicBool) (sync_view: MutBorrow.t t_SyncView) (rel_view: t_ReleaseSyncView)
@@ -2266,7 +2243,7 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_store_AtomicBool ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicBool self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicBool self.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Relaxed (ward_AtomicBool self.current) own sync_view (val_store_AtomicBool self.current) (timestamp_AtomicBool self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Relaxed (ward_AtomicBool self.current) own sync_view.current sync_view.final (val_store_AtomicBool self.current) (timestamp_AtomicBool self.current
       + 1) rel_view)}
       (! return {result}) ]
   

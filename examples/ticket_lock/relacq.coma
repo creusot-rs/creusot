@@ -1086,11 +1086,6 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     forall self: t_AtomicU32, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
       -> get_timestamp_AtomicU32 self x <= get_timestamp_AtomicU32 self y
   
-  predicate store_timestamp_in_view_AtomicU32 (atomic: t_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (t: int) =
-    let old_t = get_timestamp_AtomicU32 atomic sync_view.current in let new_t = get_timestamp_AtomicU32 atomic sync_view.final in old_t
-      < t
-    /\ t <= new_t
-  
   type t_FMap_Int_tup2_u32_SyncView
   
   type tup2_u32_SyncView = { f0'1: UInt32.t; f1'1: t_SyncView }
@@ -1103,13 +1098,6 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     Map.get (to_mapping_Int self) k
   
   meta "rewrite_def" function get_Int
-  
-  function val_unsized_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
-  
-  function val_AtomicU32 [@inline:trivial] (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView =
-    val_unsized_AtomicU32 self
-  
-  meta "rewrite_def" function val_AtomicU32
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -1133,19 +1121,22 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
-  predicate store_inserts_in_history_AtomicU32 (own: MutBorrow.t t_Perm_AtomicU32) (thread_view: t_SyncView) (val': UInt32.t) (t: int) =
-    get_Int (val_AtomicU32 own.current) t = None'1
-    /\ val_AtomicU32 own.final = insert_Int (val_AtomicU32 own.current) t { f0'1 = val'; f1'1 = thread_view }
+  predicate view_released_Release (old_hist: t_FMap_Int_tup2_u32_SyncView) (new_hist: t_FMap_Int_tup2_u32_SyncView) (sync_view: t_SyncView) (val': UInt32.t) (t: int) (rel_view: ()) =
+    get_Int old_hist t = None'1 /\ new_hist = insert_Int old_hist t { f0'1 = val'; f1'1 = sync_view }
   
-  predicate view_mono (sync_view: MutBorrow.t t_SyncView) = le_log_SyncView sync_view.current sync_view.final
+  function val_unsized_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
   
-  predicate store_rel_post_AtomicU32 (atomic: t_AtomicU32) (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) =
-    store_timestamp_in_view_AtomicU32 atomic sync_view t
-    /\ store_inserts_in_history_AtomicU32 own sync_view.final val' t
-    /\ view_mono sync_view /\ ward_AtomicU32'1 own.current = ward_AtomicU32'1 own.final
+  function val_AtomicU32 [@inline:trivial] (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView =
+    val_unsized_AtomicU32 self
   
-  predicate store_post_Release (atomic: t_AtomicU32) (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) (rel_view: ()) =
-    store_rel_post_AtomicU32 atomic own sync_view val' t
+  meta "rewrite_def" function val_AtomicU32
+  
+  predicate store_post_Release (atomic: t_AtomicU32) (own: MutBorrow.t t_Perm_AtomicU32) (old_view: t_SyncView) (new_view: t_SyncView) (val': UInt32.t) (t: int) (rel_view: ()) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicU32 atomic old_view < t
+    /\ t <= get_timestamp_AtomicU32 atomic new_view
+    /\ view_released_Release (val_AtomicU32 own.current) (val_AtomicU32 own.final) new_view val' t rel_view
+    /\ ward_AtomicU32'1 own.current = ward_AtomicU32'1 own.final
   
   let shoot_store_AtomicU32 (self: MutBorrow.t t_Committer_AtomicU32_u32_None_Release)
     (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (rel_view: ()) (return (x: ())) =
@@ -1155,7 +1146,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_store_AtomicU32 ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicU32 self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicU32'0 self.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Release (ward_AtomicU32'0 self.current) own sync_view (val_store_AtomicU32 self.current) (timestamp_AtomicU32 self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Release (ward_AtomicU32'0 self.current) own sync_view.current sync_view.final (val_store_AtomicU32 self.current) (timestamp_AtomicU32 self.current
       + 1) rel_view)}
       (! return {result}) ]
   
@@ -2211,16 +2202,11 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     forall self: t_AtomicU32, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
       -> get_timestamp_AtomicU32 self x <= get_timestamp_AtomicU32 self y
   
-  predicate load_timestamp_in_view_AtomicU32 (atomic: t_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (t: int) =
-    let old_t = get_timestamp_AtomicU32 atomic sync_view.current in let new_t = get_timestamp_AtomicU32 atomic sync_view.final in old_t
-      <= t
-    /\ t <= new_t
+  type t_FMap_Int_tup2_u32_SyncView
   
   type tup2_u32_SyncView = { f0: UInt32.t; f1: t_SyncView }
   
   type t_Option_tup2_u32_SyncView = None'2 | Some'2 tup2_u32_SyncView
-  
-  type t_FMap_Int_tup2_u32_SyncView
   
   function to_mapping_Int (self: t_FMap_Int_tup2_u32_SyncView) : Map.map int t_Option_tup2_u32_SyncView
   
@@ -2229,6 +2215,14 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" function get_Int
   
+  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
+  
+  predicate view_acquired_Relaxed (hist: t_FMap_Int_tup2_u32_SyncView) (sync_view: t_SyncView) (val': UInt32.t) (t: int) (acq_view: t_AcquireSyncView) =
+    match get_Int hist t with
+      | Some'2 {f0 = v; f1 = v_view} -> v = val' /\ le_log_SyncView v_view (view_AcquireSyncView acq_view)
+      | None'2 -> false
+      end
+  
   function val_unsized_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
   
   function val_AtomicU32 [@inline:trivial] (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView =
@@ -2236,22 +2230,11 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" function val_AtomicU32
   
-  predicate load_reads_from_history_AtomicU32 (own: t_Perm_AtomicU32) (thread_view: t_SyncView) (val': UInt32.t) (t: int) =
-    match get_Int (val_AtomicU32 own) t with
-      | Some'2 {f0 = v; f1 = v_view} -> v = val' /\ le_log_SyncView v_view thread_view
-      | None'2 -> false
-      end
-  
-  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
-  
-  predicate view_mono (sync_view: MutBorrow.t t_SyncView) = le_log_SyncView sync_view.current sync_view.final
-  
-  predicate load_rlx_post_AtomicU32 (atomic: t_AtomicU32) (own: t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) (acq_sync_view: t_AcquireSyncView) =
-    load_timestamp_in_view_AtomicU32 atomic sync_view t
-    /\ load_reads_from_history_AtomicU32 own (view_AcquireSyncView acq_sync_view) val' t /\ view_mono sync_view
-  
-  predicate load_post_Relaxed (atomic: t_AtomicU32) (own: t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) (acq_view: t_AcquireSyncView) =
-    load_rlx_post_AtomicU32 atomic own sync_view val' t acq_view
+  predicate load_post_Relaxed (atomic: t_AtomicU32) (own: t_Perm_AtomicU32) (old_view: t_SyncView) (new_view: t_SyncView) (val': UInt32.t) (t: int) (acq_view: t_AcquireSyncView) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicU32 atomic old_view <= t
+    /\ t <= get_timestamp_AtomicU32 atomic new_view
+    /\ view_acquired_Relaxed (val_AtomicU32 own) new_view val' t acq_view
   
   function timestamp_AtomicU32 (self: t_Committer_AtomicU32_u32_Relaxed_Relaxed) : int
   
@@ -2261,7 +2244,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicU32 self = ward_AtomicU32'0 own)}
     any
     [ return (result: t_AcquireSyncView) ->
-    {[@stop_split] [@expl:shoot_load ensures] load_post_Relaxed (ward_AtomicU32 self) own sync_view (val_load_AtomicU32 self) (timestamp_AtomicU32 self) result}
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Relaxed (ward_AtomicU32 self) own sync_view.current sync_view.final (val_load_AtomicU32 self) (timestamp_AtomicU32 self) result}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -2283,11 +2266,6 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     /\ val_store_AtomicU32 self = val_store_AtomicU32 other /\ timestamp_AtomicU32 self = timestamp_AtomicU32 other
   
   meta "rewrite_def" predicate hist_inv_AtomicU32
-  
-  predicate store_timestamp_in_view_AtomicU32 (atomic: t_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (t: int) =
-    let old_t = get_timestamp_AtomicU32 atomic sync_view.current in let new_t = get_timestamp_AtomicU32 atomic sync_view.final in old_t
-      < t
-    /\ t <= new_t
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -2311,19 +2289,17 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
-  predicate store_inserts_in_history_AtomicU32 (own: MutBorrow.t t_Perm_AtomicU32) (thread_view: t_SyncView) (val': UInt32.t) (t: int) =
-    get_Int (val_AtomicU32 own.current) t = None'2
-    /\ val_AtomicU32 own.final = insert_Int (val_AtomicU32 own.current) t { f0 = val'; f1 = thread_view }
-  
   function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
   
-  predicate store_rlx_post_AtomicU32 (atomic: t_AtomicU32) (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) (rel_view: t_ReleaseSyncView) =
-    store_timestamp_in_view_AtomicU32 atomic sync_view t
-    /\ store_inserts_in_history_AtomicU32 own (view_ReleaseSyncView rel_view) val' t
-    /\ view_mono sync_view /\ ward_AtomicU32'0 own.current = ward_AtomicU32'0 own.final
+  predicate view_released_Relaxed (old_hist: t_FMap_Int_tup2_u32_SyncView) (new_hist: t_FMap_Int_tup2_u32_SyncView) (sync_view: t_SyncView) (val': UInt32.t) (t: int) (rel_view: t_ReleaseSyncView) =
+    get_Int old_hist t = None'2 /\ new_hist = insert_Int old_hist t { f0 = val'; f1 = view_ReleaseSyncView rel_view }
   
-  predicate store_post_Relaxed (atomic: t_AtomicU32) (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) (rel_view: t_ReleaseSyncView) =
-    store_rlx_post_AtomicU32 atomic own sync_view val' t rel_view
+  predicate store_post_Relaxed (atomic: t_AtomicU32) (own: MutBorrow.t t_Perm_AtomicU32) (old_view: t_SyncView) (new_view: t_SyncView) (val': UInt32.t) (t: int) (rel_view: t_ReleaseSyncView) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicU32 atomic old_view < t
+    /\ t <= get_timestamp_AtomicU32 atomic new_view
+    /\ view_released_Relaxed (val_AtomicU32 own.current) (val_AtomicU32 own.final) new_view val' t rel_view
+    /\ ward_AtomicU32'0 own.current = ward_AtomicU32'0 own.final
   
   let shoot_store_AtomicU32 (self: MutBorrow.t t_Committer_AtomicU32_u32_Relaxed_Relaxed)
     (own: MutBorrow.t t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (rel_view: t_ReleaseSyncView)
@@ -2334,7 +2310,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_store_AtomicU32 ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicU32 self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicU32 self.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Relaxed (ward_AtomicU32 self.current) own sync_view (val_store_AtomicU32 self.current) (timestamp_AtomicU32 self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Relaxed (ward_AtomicU32 self.current) own sync_view.current sync_view.final (val_store_AtomicU32 self.current) (timestamp_AtomicU32 self.current
       + 1) rel_view)}
       (! return {result}) ]
   
@@ -3288,12 +3264,17 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   function ward_AtomicU32'1 (self: t_Committer_AtomicU32_u32_Acquire_None) : t_AtomicU32
   
-  predicate load_acq_post_AtomicU32 (atomic: t_AtomicU32) (own: t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) =
-    load_timestamp_in_view_AtomicU32 atomic sync_view t
-    /\ load_reads_from_history_AtomicU32 own sync_view.final val' t /\ view_mono sync_view
+  predicate view_acquired_Acquire (hist: t_FMap_Int_tup2_u32_SyncView) (sync_view: t_SyncView) (val': UInt32.t) (t: int) (acq_view: ()) =
+    match get_Int hist t with
+      | Some'2 {f0 = v; f1 = v_view} -> v = val' /\ le_log_SyncView v_view sync_view
+      | None'2 -> false
+      end
   
-  predicate load_post_Acquire (atomic: t_AtomicU32) (own: t_Perm_AtomicU32) (sync_view: MutBorrow.t t_SyncView) (val': UInt32.t) (t: int) (acq_view: ()) =
-    load_acq_post_AtomicU32 atomic own sync_view val' t
+  predicate load_post_Acquire (atomic: t_AtomicU32) (own: t_Perm_AtomicU32) (old_view: t_SyncView) (new_view: t_SyncView) (val': UInt32.t) (t: int) (acq_view: ()) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicU32 atomic old_view <= t
+    /\ t <= get_timestamp_AtomicU32 atomic new_view
+    /\ view_acquired_Acquire (val_AtomicU32 own) new_view val' t acq_view
   
   function timestamp_AtomicU32'0 (self: t_Committer_AtomicU32_u32_Acquire_None) : int
   
@@ -3303,7 +3284,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicU32'1 self = ward_AtomicU32'0 own)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:shoot_load ensures] load_post_Acquire (ward_AtomicU32'1 self) own sync_view (val_load_AtomicU32'0 self) (timestamp_AtomicU32'0 self) result}
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Acquire (ward_AtomicU32'1 self) own sync_view.current sync_view.final (val_load_AtomicU32'0 self) (timestamp_AtomicU32'0 self) result}
       (! return {result}) ]
   
   type t_Option_refmut_Fragment_FMap_Int_Excl_unit = None'7 | Some'7 (MutBorrow.t t_Fragment_FMap_Int_Excl_unit)

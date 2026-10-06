@@ -641,27 +641,19 @@ module M_parallel_add
   
   function ward_AtomicI32'0 (self: t_Committer_AtomicI32_i32_Relaxed_Relaxed) : t_AtomicI32
   
-  predicate load_timestamp_in_view_AtomicI32 (atomic: t_AtomicI32) (sync_view: MutBorrow.t t_SyncView) (t: int) =
-    let old_t = get_timestamp_AtomicI32 atomic sync_view.current in let new_t = get_timestamp_AtomicI32 atomic sync_view.final in old_t
-      <= t
-    /\ t <= new_t
+  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
   
-  predicate load_reads_from_history_AtomicI32 (own'0: t_Perm_AtomicI32) (thread_view: t_SyncView) (val': Int32.t) (t: int) =
-    match get_Int (val_AtomicI32 own'0) t with
-      | Some {f0'0 = v; f1'0 = v_view} -> v = val' /\ le_log_SyncView v_view thread_view
+  predicate view_acquired_Relaxed (hist: t_FMap_Int_tup2_i32_SyncView) (sync_view: t_SyncView) (val': Int32.t) (t: int) (acq_view: t_AcquireSyncView) =
+    match get_Int hist t with
+      | Some {f0'0 = v; f1'0 = v_view} -> v = val' /\ le_log_SyncView v_view (view_AcquireSyncView acq_view)
       | None -> false
       end
   
-  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
-  
-  predicate view_mono (sync_view: MutBorrow.t t_SyncView) = le_log_SyncView sync_view.current sync_view.final
-  
-  predicate load_rlx_post_AtomicI32 (atomic: t_AtomicI32) (own'0: t_Perm_AtomicI32) (sync_view: MutBorrow.t t_SyncView) (val': Int32.t) (t: int) (acq_sync_view: t_AcquireSyncView) =
-    load_timestamp_in_view_AtomicI32 atomic sync_view t
-    /\ load_reads_from_history_AtomicI32 own'0 (view_AcquireSyncView acq_sync_view) val' t /\ view_mono sync_view
-  
-  predicate load_post_Relaxed (atomic: t_AtomicI32) (own'0: t_Perm_AtomicI32) (sync_view: MutBorrow.t t_SyncView) (val': Int32.t) (t: int) (acq_view: t_AcquireSyncView) =
-    load_rlx_post_AtomicI32 atomic own'0 sync_view val' t acq_view
+  predicate load_post_Relaxed (atomic: t_AtomicI32) (own'0: t_Perm_AtomicI32) (old_view: t_SyncView) (new_view: t_SyncView) (val': Int32.t) (t: int) (acq_view: t_AcquireSyncView) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicI32 atomic old_view <= t
+    /\ t <= get_timestamp_AtomicI32 atomic new_view
+    /\ view_acquired_Relaxed (val_AtomicI32 own'0) new_view val' t acq_view
   
   function val_load_AtomicI32 (self: t_Committer_AtomicI32_i32_Relaxed_Relaxed) : Int32.t
   
@@ -673,7 +665,7 @@ module M_parallel_add
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicI32'0 self = ward_AtomicI32 own'0)}
     any
     [ return (result: t_AcquireSyncView) ->
-    {[@stop_split] [@expl:shoot_load ensures] load_post_Relaxed (ward_AtomicI32'0 self) own'0 sync_view (val_load_AtomicI32 self) (timestamp_AtomicI32 self) result}
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Relaxed (ward_AtomicI32'0 self) own'0 sync_view.current sync_view.final (val_load_AtomicI32 self) (timestamp_AtomicI32 self) result}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -696,24 +688,17 @@ module M_parallel_add
   
   meta "rewrite_def" predicate hist_inv_AtomicI32
   
-  predicate store_timestamp_in_view_AtomicI32 (atomic: t_AtomicI32) (sync_view: MutBorrow.t t_SyncView) (t: int) =
-    let old_t = get_timestamp_AtomicI32 atomic sync_view.current in let new_t = get_timestamp_AtomicI32 atomic sync_view.final in old_t
-      < t
-    /\ t <= new_t
-  
-  predicate store_inserts_in_history_AtomicI32 (own'0: MutBorrow.t t_Perm_AtomicI32) (thread_view: t_SyncView) (val': Int32.t) (t: int) =
-    get_Int (val_AtomicI32 own'0.current) t = None
-    /\ val_AtomicI32 own'0.final = insert_Int (val_AtomicI32 own'0.current) t { f0'0 = val'; f1'0 = thread_view }
-  
   function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
   
-  predicate store_rlx_post_AtomicI32 (atomic: t_AtomicI32) (own'0: MutBorrow.t t_Perm_AtomicI32) (sync_view: MutBorrow.t t_SyncView) (val': Int32.t) (t: int) (rel_view: t_ReleaseSyncView) =
-    store_timestamp_in_view_AtomicI32 atomic sync_view t
-    /\ store_inserts_in_history_AtomicI32 own'0 (view_ReleaseSyncView rel_view) val' t
-    /\ view_mono sync_view /\ ward_AtomicI32 own'0.current = ward_AtomicI32 own'0.final
+  predicate view_released_Relaxed (old_hist: t_FMap_Int_tup2_i32_SyncView) (new_hist: t_FMap_Int_tup2_i32_SyncView) (sync_view: t_SyncView) (val': Int32.t) (t: int) (rel_view: t_ReleaseSyncView) =
+    get_Int old_hist t = None /\ new_hist = insert_Int old_hist t { f0'0 = val'; f1'0 = view_ReleaseSyncView rel_view }
   
-  predicate store_post_Relaxed (atomic: t_AtomicI32) (own'0: MutBorrow.t t_Perm_AtomicI32) (sync_view: MutBorrow.t t_SyncView) (val': Int32.t) (t: int) (rel_view: t_ReleaseSyncView) =
-    store_rlx_post_AtomicI32 atomic own'0 sync_view val' t rel_view
+  predicate store_post_Relaxed (atomic: t_AtomicI32) (own'0: MutBorrow.t t_Perm_AtomicI32) (old_view: t_SyncView) (new_view: t_SyncView) (val': Int32.t) (t: int) (rel_view: t_ReleaseSyncView) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicI32 atomic old_view < t
+    /\ t <= get_timestamp_AtomicI32 atomic new_view
+    /\ view_released_Relaxed (val_AtomicI32 own'0.current) (val_AtomicI32 own'0.final) new_view val' t rel_view
+    /\ ward_AtomicI32 own'0.current = ward_AtomicI32 own'0.final
   
   let shoot_store_AtomicI32 (self: MutBorrow.t t_Committer_AtomicI32_i32_Relaxed_Relaxed)
     (own'0: MutBorrow.t t_Perm_AtomicI32) (sync_view: MutBorrow.t t_SyncView) (rel_view: t_ReleaseSyncView)
@@ -724,7 +709,7 @@ module M_parallel_add
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_store_AtomicI32 ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicI32 self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicI32 self.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Relaxed (ward_AtomicI32'0 self.current) own'0 sync_view (val_store_AtomicI32 self.current) (timestamp_AtomicI32 self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Relaxed (ward_AtomicI32'0 self.current) own'0 sync_view.current sync_view.final (val_store_AtomicI32 self.current) (timestamp_AtomicI32 self.current
       + 1) rel_view)}
       (! return {result}) ]
   
