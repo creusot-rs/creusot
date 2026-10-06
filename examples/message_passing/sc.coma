@@ -79,9 +79,9 @@ module M_message_passing
   
   type t_Id
   
-  type tup2_PCell_i32_Id = { f0'2: t_PCell_i32; f1'2: t_Id }
-  
   function id_Excl_unit (self: t_Resource_Excl_unit) : t_Id
+  
+  type tup2_PCell_i32_Id = { f0'2: t_PCell_i32; f1'2: t_Id }
   
   type t_MessagePassingAtomicInv = { atomic_own: t_Perm_AtomicBool; state: t_State; public_data: tup2_PCell_i32_Id }
   
@@ -549,12 +549,12 @@ module M_message_passing
   
   type t_Committer_AtomicBool_bool_SeqCst_None
   
-  predicate val_load_AtomicBool'0 (self: t_Committer_AtomicBool_bool_SeqCst_None)
-  
   type closure0'3 = {
     c0'5: t_Committer_AtomicBool_bool_SeqCst_None;
     c1'5: MutBorrow.t t_Option_Resource_Excl_unit;
     c2'5: MutBorrow.t t_Option_Perm_PCell_i32 }
+  
+  predicate val_load_AtomicBool'0 (self: t_Committer_AtomicBool_bool_SeqCst_None)
   
   predicate inv_bool [@inline:trivial] (_1: bool) = true
   
@@ -678,9 +678,10 @@ module M_message_passing
   let closure0'2 [@coma:extspec] (self: MutBorrow.t closure0'3) (inv: MutBorrow.t t_MessagePassingAtomicInv)
     (return (x: ())) = bb0
     [ bb0 = s0
-      [ s0 = into_ghost_bool {val_load_AtomicBool'0 self.current.c0'5} (fun (_x: bool) -> [ &_7 <- _x ] s1)
-      | s1 = deref_Ghost_bool {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
-      | s2 = any [ br0 -> {_5 = false} (! bb5) | br1 -> {_5} (! bb4) ] ]
+      [ s0 = [ &_8 <- val_load_AtomicBool'0 self.current.c0'5 ] s1
+      | s1 = into_ghost_bool {_8} (fun (_x: bool) -> [ &_7 <- _x ] s2)
+      | s2 = deref_Ghost_bool {_7} (fun (_x: bool) -> [ &_5 <- _x ] s3)
+      | s3 = any [ br0 -> {_5 = false} (! bb5) | br1 -> {_5} (! bb4) ] ]
     | bb4 = s0
       [ s0 = [ &_13 <- inv.current.state ] s1
       | s1 = any
@@ -755,6 +756,7 @@ module M_message_passing
     | & inv: MutBorrow.t t_MessagePassingAtomicInv = inv
     | & _5: bool = Any.any_l ()
     | & _7: bool = Any.any_l ()
+    | & _8: bool = Any.any_l ()
     | & _12: () = Any.any_l ()
     | & _13: t_State = Any.any_l ()
     | & excl_state: t_Resource_Excl_unit = Any.any_l ()
@@ -1166,18 +1168,21 @@ module M_message_passing
       | s3 = new_i32 {(0: Int32.t)} (fun (_x: tup2_PCell_i32_Ghost_Perm_PCell_i32) -> [ &_6 <- _x ] s4)
       | s4 = [ &data <- _6.f0'0 ] s5
       | s5 = [ &data_own <- _6.f1'0 ] s6
-      | s6 = alloc_Excl_unit {{ f0'1 = () }} (fun (_x: t_Resource_Excl_unit) -> [ &excl <- _x ] s7)
-      | s7 = into_inner_Perm_AtomicBool {atomic_own'0} (fun (_x: t_Perm_AtomicBool) -> [ &_13 <- _x ] s8)
-      | s8 = [ &_15 <- NotWrittenYet ] s9
-      | s9 = [ &_12 <- { atomic_own = _13; state = _15; public_data = { f0'2 = data; f1'2 = id_Excl_unit excl } } ] s10
-      | s10 = new_MessagePassingAtomicInv {_12} (fun (_x: t_MessagePassingAtomicInv) -> [ &_11 <- _x ] s11)
-      | s11 = new_MessagePassingAtomicInv'0 {_11} {Namespace_MESSAGE_PASSING 0}
-          (fun (_x: t_AtomicInvariantSC_MessagePassingAtomicInv) -> [ &inv <- _x ] s12)
-      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_AtomicBool atomic} any) ]
-      | s13 = -{resolve_AtomicBool atomic}- s14
-      | s14 = [ &_23 <- { c0 = inv; c1 = data; c2 = atomic; c3 = data_own; c4 = excl } ] s15
-      | s15 = scope_closure0 {_23} (fun (_x: ()) -> [ &_22 <- _x ] s16)
-      | s16 = return {_ret} ] ]
+      | s6 = [ &_8 <- { f0'1 = () } ] s7
+      | s7 = alloc_Excl_unit {_8} (fun (_x: t_Resource_Excl_unit) -> [ &excl <- _x ] s8)
+      | s8 = into_inner_Perm_AtomicBool {atomic_own'0} (fun (_x: t_Perm_AtomicBool) -> [ &_13 <- _x ] s9)
+      | s9 = [ &_15 <- NotWrittenYet ] s10
+      | s10 = [ &_16 <- { f0'2 = data; f1'2 = id_Excl_unit excl } ] s11
+      | s11 = [ &_12 <- { atomic_own = _13; state = _15; public_data = _16 } ] s12
+      | s12 = new_MessagePassingAtomicInv {_12} (fun (_x: t_MessagePassingAtomicInv) -> [ &_11 <- _x ] s13)
+      | s13 = [ &_20 <- Namespace_MESSAGE_PASSING 0 ] s14
+      | s14 = new_MessagePassingAtomicInv'0 {_11} {_20}
+          (fun (_x: t_AtomicInvariantSC_MessagePassingAtomicInv) -> [ &inv <- _x ] s15)
+      | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_AtomicBool atomic} any) ]
+      | s16 = -{resolve_AtomicBool atomic}- s17
+      | s17 = [ &_23 <- { c0 = inv; c1 = data; c2 = atomic; c3 = data_own; c4 = excl } ] s18
+      | s18 = scope_closure0 {_23} (fun (_x: ()) -> [ &_22 <- _x ] s19)
+      | s19 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & atomic: t_AtomicBool = Any.any_l ()
     | & atomic_own'0: t_Perm_AtomicBool = Any.any_l ()
@@ -1186,11 +1191,14 @@ module M_message_passing
     | & data_own: t_Perm_PCell_i32 = Any.any_l ()
     | & _6: tup2_PCell_i32_Ghost_Perm_PCell_i32 = Any.any_l ()
     | & excl: t_Resource_Excl_unit = Any.any_l ()
+    | & _8: t_Excl_unit = Any.any_l ()
     | & inv: t_AtomicInvariantSC_MessagePassingAtomicInv = Any.any_l ()
     | & _11: t_MessagePassingAtomicInv = Any.any_l ()
     | & _12: t_MessagePassingAtomicInv = Any.any_l ()
     | & _13: t_Perm_AtomicBool = Any.any_l ()
     | & _15: t_State = Any.any_l ()
+    | & _16: tup2_PCell_i32_Id = Any.any_l ()
+    | & _20: t_Namespace = Any.any_l ()
     | & _22: () = Any.any_l ()
     | & _23: closure0 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

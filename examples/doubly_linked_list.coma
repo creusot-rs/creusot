@@ -5089,24 +5089,12 @@ module M_imp__impl_Invariant_for_Cursor_T__invariant (* <imp::Cursor<'a, T> as c
   
   predicate invariant_Cursor_T (self: t_Cursor_T)
   
-  goal vc_invariant_Cursor_T: if inv_refmut_List_T self.list then
-      if gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0 then
-        if 0 <= self.pos then
-          if self.pos < Seq.length (view_List_T (list_T self).current) then
-            [@stop_split] [@expl:invariant ensures] self.current'
-              = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos) -> inv_refmut_List_T (list_T self)
-          else
-            [@stop_split] [@expl:invariant ensures] false -> inv_refmut_List_T (list_T self)
-        
-        else
-          [@stop_split] [@expl:invariant ensures] false -> inv_refmut_List_T (list_T self)
-      
-      else
-        [@stop_split] [@expl:invariant ensures] true -> inv_refmut_List_T (list_T self)
-    
-    else
-      [@stop_split] [@expl:invariant ensures] false -> inv_refmut_List_T (list_T self)
-
+  goal vc_invariant_Cursor_T: [@stop_split] [@expl:invariant ensures] inv_refmut_List_T self.list
+      /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
+      -> 0 <= self.pos
+      /\ self.pos < Seq.length (view_List_T (list_T self).current)
+      /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
+    -> inv_refmut_List_T (list_T self)
 end
 module M_imp__impl_List_T__cursor_front (* imp::List<T> *)
   use seq.Seq

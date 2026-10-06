@@ -42,13 +42,28 @@ module M_foo
   
   let foo (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &x <- such_that_Int (fun (x'1: int) -> x'1 + 1 = 42) ] s1
+      [ s0 = any
+        [ any_ (_dest: int) ->
+        (! -{([@stop_split] [@expl:such_that ensures] index_Mapping_Int_bool (fun (x'1: int) -> x'1 + 1
+            = 42) (such_that_Int (fun (x'1: int) -> x'1 + 1 = 42)))
+          /\ _dest = such_that_Int (fun (x'1: int) -> x'1 + 1 = 42)}-
+          [ &x <- _dest ] s1) ]
+        [ _ck ->
+        (! {[@stop_split] [@expl:such_that requires] exists x'1: int. index_Mapping_Int_bool (fun (x'2: int) -> x'2 + 1
+            = 42) x'1}
+          any) ]
       | s1 = {[@expl:assertion] x = 41} s2
       | s2 = even (fun (_x: Int32.t) -> [ &y <- _x ] s3)
       | s3 = [ &mapping <- fun (x'1: int) -> x'1 + Int32.to_int y ] s4
       | s4 = [ &predicate' <- fun (x'1: int) -> index_Mapping_Int_Int mapping x'1 + 1 = 0 ] s5
       | s5 = {[@expl:assertion] index_Mapping_Int_bool predicate' (- Int32.to_int y - 1)} s6
-      | s6 = [ &x'0 <- such_that_Int predicate' ] s7
+      | s6 = any
+        [ any_ (_dest: int) ->
+        (! -{([@stop_split] [@expl:such_that ensures] index_Mapping_Int_bool predicate' (such_that_Int predicate'))
+          /\ _dest = such_that_Int predicate'}-
+          [ &x'0 <- _dest ] s7) ]
+        [ _ck -> (! {[@stop_split] [@expl:such_that requires] exists x'1: int. index_Mapping_Int_bool predicate' x'1}
+          any) ]
       | s7 = {[@expl:assertion] x'0 + Int32.to_int y + 1 = 0} s8
       | s8 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

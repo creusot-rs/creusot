@@ -31,12 +31,13 @@ module M_unsound
           (fun (_bor: MutBorrow.t bool) -> [ &evil <- _bor ] [ &_14 <- { _14 with current = _bor.final } ] s12)
       | s12 = -{resolve_refmut_Snapshot_bool _14}- s13
       | s13 = {[@expl:assertion] (evil = bg) = (evil.final = true)} s14
-      | s14 = [ &evil <- { evil with current = (if evil = bg then false else true) } ] s15
-      | s15 = -{resolve_refmut_Snapshot_bool evil}- s16
-      | s16 = -{resolve_refmut_Snapshot_bool xm}- s17
-      | s17 = {[@expl:assertion] evil.current = (not evil.final)} s18
-      | s18 = {[@expl:assertion] evil.current = (not evil.current)} s19
-      | s19 = return {_ret} ] ]
+      | s14 = [ &_19 <- if evil = bg then false else true ] s15
+      | s15 = [ &evil <- { evil with current = _19 } ] s16
+      | s16 = -{resolve_refmut_Snapshot_bool evil}- s17
+      | s17 = -{resolve_refmut_Snapshot_bool xm}- s18
+      | s18 = {[@expl:assertion] evil.current = (not evil.final)} s19
+      | s19 = {[@expl:assertion] evil.current = (not evil.current)} s20
+      | s20 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: bool = Any.any_l ()
     | & xm: MutBorrow.t bool = Any.any_l ()
@@ -45,5 +46,6 @@ module M_unsound
     | & _6: MutBorrow.t bool = Any.any_l ()
     | & bg: MutBorrow.t bool = Any.any_l ()
     | & evil: MutBorrow.t bool = Any.any_l ()
-    | & _14: MutBorrow.t bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _14: MutBorrow.t bool = Any.any_l ()
+    | & _19: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

@@ -6,8 +6,6 @@ type t_Namespace = Other namespace_other
 
 use creusot.prelude.Any
 
-type t_View_AuthViewRel_R
-
 type t_R
 
 type t_Option_R = None | Some t_R
@@ -58,6 +56,8 @@ axiom unit_core_R_spec: core_total_R unit_R = unit_R
 constant incl_refl_R : ()
 
 axiom incl_refl_R_spec: forall x: t_R. incl_R x x
+
+type t_View_AuthViewRel_R
 
 predicate rel_AuthViewRel_R (a: t_Option_R) (f: t_R) =
   match a with
@@ -160,16 +160,21 @@ meta "select_lsinst" "all"
 
 let alloc_R (return (x: t_Authority_R)) = (! bb0
   [ bb0 = s0
-    [ s0 = alloc_View_AuthViewRel_R {new_auth_AuthViewRel_R unit_R}
-        (fun (_x: t_Resource_View_AuthViewRel_R) -> [ &_4 <- _x ] s1)
-    | s1 = into_inner_Resource_View_AuthViewRel_R {_4} (fun (_x: t_Resource_View_AuthViewRel_R) -> [ &_3 <- _x ] s2)
-    | s2 = [ &_2 <- { f0 = _3 } ] s3
-    | s3 = new_Authority_R {_2} (fun (_x: t_Authority_R) -> [ &_ret <- _x ] s4)
-    | s4 = return {_ret} ] ]
+    [ s0 = any
+      [ any_ (_dest: t_View_AuthViewRel_R) ->
+      (! -{([@stop_split] [@expl:unit ensures] forall x: t_R [op_R x unit_R]. op_R x unit_R = Some x)
+        /\ _dest = new_auth_AuthViewRel_R unit_R}-
+        [ &_5 <- _dest ] s1) ] [ _ck -> (! any) ]
+    | s1 = alloc_View_AuthViewRel_R {_5} (fun (_x: t_Resource_View_AuthViewRel_R) -> [ &_4 <- _x ] s2)
+    | s2 = into_inner_Resource_View_AuthViewRel_R {_4} (fun (_x: t_Resource_View_AuthViewRel_R) -> [ &_3 <- _x ] s3)
+    | s3 = [ &_2 <- { f0 = _3 } ] s4
+    | s4 = new_Authority_R {_2} (fun (_x: t_Authority_R) -> [ &_ret <- _x ] s5)
+    | s5 = return {_ret} ] ]
   [ & _ret: t_Authority_R = Any.any_l ()
   | & _2: t_Authority_R = Any.any_l ()
   | & _3: t_Resource_View_AuthViewRel_R = Any.any_l ()
-  | & _4: t_Resource_View_AuthViewRel_R = Any.any_l () ])
+  | & _4: t_Resource_View_AuthViewRel_R = Any.any_l ()
+  | & _5: t_View_AuthViewRel_R = Any.any_l () ])
   [ return (result: t_Authority_R) ->
   {[@stop_split] [@expl:alloc_R ensures] ([@stop_split] [@expl:alloc result type invariant] inv_Ghost_Authority_R result)
     /\ ([@stop_split] [@expl:alloc ensures] view_Authority_R result = unit_R)}

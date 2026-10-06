@@ -125,8 +125,7 @@ pub enum Operand<'tcx> {
     Place(Place<'tcx>),
     /// Only for typing: translated into identity.
     ShrBorrow(Box<Operand<'tcx>>),
-    /// The Boolean is true if optimization::simplify_temps has detected that this is never read.
-    /// In this case, we want to keep this term, because it may put in the context interesting facts.
+    /// The Boolean is true if we want to generate a VC for this term (for `snapshot!`).
     Term(Term<'tcx>, bool),
     /// Either:
     /// - Inline `const { ... }` expressions (`Option<Promoted>` is `None` and `Option<GenericArgsRef>` is `Some`)

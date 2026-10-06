@@ -7,7 +7,15 @@ type t_Namespace = Other namespace_other
 use creusot.prelude.MutBorrow
 use creusot.prelude.Any
 
+type t_Resource_R
+
 type t_R
+
+function val_R (self: t_Resource_R) : t_R
+
+function view_Resource_R [@inline:trivial] (self: t_Resource_R) : t_R = val_R self
+
+meta "rewrite_def" function view_Resource_R
 
 type t_Option_R = None | Some t_R
 
@@ -44,14 +52,6 @@ function factor_R (self: t_R) (factor: t_R) : t_R
 
 axiom factor_R_spec: forall self: t_R, factor: t_R [factor_R self factor]. incl_R factor self
     -> op_R factor (factor_R self factor) = Some self
-
-type t_Resource_R
-
-function val_R (self: t_Resource_R) : t_R
-
-function view_Resource_R [@inline:trivial] (self: t_Resource_R) : t_R = val_R self
-
-meta "rewrite_def" function view_Resource_R
 
 predicate eq_R (self: t_R) (other: t_R)
 
@@ -92,7 +92,13 @@ let weaken_R (self: MutBorrow.t t_Resource_R) (target: t_R) (return (x: ())) =
 {[@stop_split] [@expl:weaken requires] incl_R target (view_Resource_R self.current)}
   (! bb0
   [ bb0 = s0
-    [ s0 = [ &f <- factor_R (view_Resource_R self.current) target ] s1
+    [ s0 = any
+      [ any_ (_dest: t_R) ->
+      (! -{([@stop_split] [@expl:factor ensures] op_R target (factor_R (view_Resource_R self.current) target)
+          = Some (view_Resource_R self.current))
+        /\ _dest = factor_R (view_Resource_R self.current) target}-
+        [ &f <- _dest ] s1) ]
+      [ _ck -> (! {[@stop_split] [@expl:factor requires] incl_R target (view_Resource_R self.current)} any) ]
     | s1 = MutBorrow.borrow_final <t_Resource_R> {self.current} {MutBorrow.get_id self}
         (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_16 <- _bor ] [ &self <- { self with current = _bor.final } ] s2)
     | s2 = split_off_R {_16} {f} {target} (fun (_x: t_Resource_R) -> [ &_15 <- _x ] s3)

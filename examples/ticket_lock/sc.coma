@@ -1819,17 +1819,9 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   meta "rewrite_def" predicate resolve_refmut_Perm_AtomicU32
   
-  predicate invariant_Authority_FMap_Int_Excl_unit (self: t_Authority_FMap_Int_Excl_unit)
-  
-  predicate inv_Authority_FMap_Int_Excl_unit (_1: t_Authority_FMap_Int_Excl_unit)
-  
-  axiom inv_axiom'0:
-    forall _1: t_Authority_FMap_Int_Excl_unit [inv_Authority_FMap_Int_Excl_unit _1]. inv_Authority_FMap_Int_Excl_unit _1
-      -> invariant_Authority_FMap_Int_Excl_unit _1
+  type t_Excl_unit = { f0: () }
   
   type t_FMap_Int_Excl_unit
-  
-  type t_Excl_unit = { f0: () }
   
   type t_Option_Excl_unit = None'1 | Some'1 t_Excl_unit
   
@@ -1869,6 +1861,14 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None'1)
   
   function singleton_Int (k: int) (v: t_Excl_unit) : t_FMap_Int_Excl_unit = insert_Int empty_Int k v
+  
+  predicate invariant_Authority_FMap_Int_Excl_unit (self: t_Authority_FMap_Int_Excl_unit)
+  
+  predicate inv_Authority_FMap_Int_Excl_unit (_1: t_Authority_FMap_Int_Excl_unit)
+  
+  axiom inv_axiom'0:
+    forall _1: t_Authority_FMap_Int_Excl_unit [inv_Authority_FMap_Int_Excl_unit _1]. inv_Authority_FMap_Int_Excl_unit _1
+      -> invariant_Authority_FMap_Int_Excl_unit _1
   
   predicate invariant_refmut_Authority_FMap_Int_Excl_unit [@inline:trivial] (self: MutBorrow.t t_Authority_FMap_Int_Excl_unit) =
     inv_Authority_FMap_Int_Excl_unit self.current /\ inv_Authority_FMap_Int_Excl_unit self.final
@@ -2108,35 +2108,35 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
           (fun (_bor: MutBorrow.t t_Perm_AtomicU32) -> [ &_9 <- _bor ] [ &_10 <- { _10 with current = _bor.final } ] s5)
       | s5 = shoot_store_AtomicU32 {_8} {_9} (fun (_x: ()) -> [ &_7 <- _x ] s6)
       | s6 = -{resolve_refmut_Perm_AtomicU32 _10}- s7
-      | s7 = MutBorrow.borrow_final <t_Authority_FMap_Int_Excl_unit> {inv'1.current.auth_tickets'0}
+      | s7 = [ &_14 <- singleton_Int (UInt32.t'int (val_load_AtomicU32 self.current.c0'0.current.current)) { f0 = () } ]
+        s8
+      | s8 = MutBorrow.borrow_final <t_Authority_FMap_Int_Excl_unit> {inv'1.current.auth_tickets'0}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 5}
           (fun (_bor: MutBorrow.t t_Authority_FMap_Int_Excl_unit) ->
             [ &_13 <- _bor ] -{inv_Authority_FMap_Int_Excl_unit _bor.final}-
-            [ &inv'1 <- { inv'1 with current = { inv'1.current with auth_tickets'0 = _bor.final } } ] s8)
+            [ &inv'1 <- { inv'1 with current = { inv'1.current with auth_tickets'0 = _bor.final } } ] s9)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_FMap_Int_Excl_unit inv'1.current.auth_tickets'0} any) ]
-      | s8 = add_fragment_FMap_Int_Excl_unit {_13}
-          {singleton_Int (UInt32.t'int (val_load_AtomicU32 self.current.c0'0.current.current)) { f0 = () }}
-          (fun (_x: t_Fragment_FMap_Int_Excl_unit) -> [ &_12 <- _x ] s9)
-      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_TicketLockInv_T inv'1} any) ]
-      | s10 = -{resolve_refmut_TicketLockInv_T inv'1}- s11
-      | s11 = [ &_11 <- Some _12 ] s12
-      | s12 = MutBorrow.borrow_mut <t_Option_Fragment_FMap_Int_Excl_unit> {self.current.c1'0.current}
+      | s9 = add_fragment_FMap_Int_Excl_unit {_13} {_14} (fun (_x: t_Fragment_FMap_Int_Excl_unit) -> [ &_12 <- _x ] s10)
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_TicketLockInv_T inv'1} any) ]
+      | s11 = -{resolve_refmut_TicketLockInv_T inv'1}- s12
+      | s12 = [ &_11 <- Some _12 ] s13
+      | s13 = MutBorrow.borrow_mut <t_Option_Fragment_FMap_Int_Excl_unit> {self.current.c1'0.current}
           (fun (_bor: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) ->
             [ &_18 <- _bor ] -{inv_Ghost_Option_Fragment_FMap_Int_Excl_unit _bor.final}-
             [ &self <- { self with current = { self.current with c1'0 = { self.current.c1'0 with current = _bor.final } } } ]
-            s13)
+            s14)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit self.current.c1'0.current}
           any) ]
-      | s13 = deref_mut_Ghost_Option_Fragment_FMap_Int_Excl_unit {_18}
-          (fun (_x: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) -> [ &_17 <- _x ] s14)
-      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_Option_Fragment_FMap_Int_Excl_unit _17.current} any) ]
-      | s15 = -{resolve_Option_Fragment_FMap_Int_Excl_unit _17.current}- s16
-      | s16 = [ &_17 <- { _17 with current = _11 } ] s17
-      | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_Fragment_FMap_Int_Excl_unit _17} any) ]
-      | s18 = -{resolve_refmut_Option_Fragment_FMap_Int_Excl_unit _17}- s19
-      | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure1 self} any) ]
-      | s20 = -{resolve_refmut_closure1 self}- s21
-      | s21 = return {_ret} ] ]
+      | s14 = deref_mut_Ghost_Option_Fragment_FMap_Int_Excl_unit {_18}
+          (fun (_x: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit) -> [ &_17 <- _x ] s15)
+      | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_Option_Fragment_FMap_Int_Excl_unit _17.current} any) ]
+      | s16 = -{resolve_Option_Fragment_FMap_Int_Excl_unit _17.current}- s17
+      | s17 = [ &_17 <- { _17 with current = _11 } ] s18
+      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_Fragment_FMap_Int_Excl_unit _17} any) ]
+      | s19 = -{resolve_refmut_Option_Fragment_FMap_Int_Excl_unit _17}- s20
+      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure1 self} any) ]
+      | s21 = -{resolve_refmut_closure1 self}- s22
+      | s22 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure1 = self
     | & inv'1: MutBorrow.t t_TicketLockInv_T = inv'1
@@ -2149,6 +2149,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     | & _11: t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
     | & _12: t_Fragment_FMap_Int_Excl_unit = Any.any_l ()
     | & _13: MutBorrow.t t_Authority_FMap_Int_Excl_unit = Any.any_l ()
+    | & _14: t_FMap_Int_Excl_unit = Any.any_l ()
     | & _17: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l ()
     | & _18: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit = Any.any_l () ]
     [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure1 self.current self.final}
@@ -2557,13 +2558,13 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   type t_Committer_AtomicU32_u32_SeqCst_None
   
-  function val_load_AtomicU32'0 (self: t_Committer_AtomicU32_u32_SeqCst_None) : UInt32.t
-  
   type closure0 = {
     c0'2: t_Committer_AtomicU32_u32_SeqCst_None;
     c1'2: UInt32.t;
     c2'2: MutBorrow.t t_Option_Fragment_FMap_Int_Excl_unit;
     c3'2: MutBorrow.t t_Option_Guarded_FullBorrow_Perm_PCell_T_PCell_T }
+  
+  function val_load_AtomicU32'0 (self: t_Committer_AtomicU32_u32_SeqCst_None) : UInt32.t
   
   predicate inv_bool [@inline:trivial] (_1: bool) = true
   
@@ -2856,10 +2857,10 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     /\ ([@stop_split] [@expl:closure 'inv' type invariant] inv_refmut_TicketLockInv_T inv'1)}
     bb0
     [ bb0 = s0
-      [ s0 = into_ghost_bool {val_load_AtomicU32'0 self.current.c0'2 <> self.current.c1'2}
-          (fun (_x: bool) -> [ &_7 <- _x ] s1)
-      | s1 = deref_Ghost_bool {_7} (fun (_x: bool) -> [ &_5 <- _x ] s2)
-      | s2 = any [ br0 -> {_5 = false} (! bb5) | br1 -> {_5} (! bb4) ] ]
+      [ s0 = [ &_8 <- val_load_AtomicU32'0 self.current.c0'2 <> self.current.c1'2 ] s1
+      | s1 = into_ghost_bool {_8} (fun (_x: bool) -> [ &_7 <- _x ] s2)
+      | s2 = deref_Ghost_bool {_7} (fun (_x: bool) -> [ &_5 <- _x ] s3)
+      | s3 = any [ br0 -> {_5 = false} (! bb5) | br1 -> {_5} (! bb4) ] ]
     | bb4 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_TicketLockInv_T inv'1} any) ]
       | s1 = -{resolve_refmut_TicketLockInv_T inv'1}- s2
@@ -2940,6 +2941,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     | & inv'1: MutBorrow.t t_TicketLockInv_T = inv'1
     | & _5: bool = Any.any_l ()
     | & _7: bool = Any.any_l ()
+    | & _8: bool = Any.any_l ()
     | & _13: () = Any.any_l ()
     | & _16: t_Perm_AtomicU32 = Any.any_l ()
     | & _17: () = Any.any_l ()
@@ -3831,37 +3833,42 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
       | s8 = [ &perm_data <- _16.f1'0 ] s9
       | s9 = new'1 (fun (_x: t_LifetimeToken) -> [ &_19 <- _x ] s10)
       | s10 = new_LifetimeToken {_19} (fun (_x: t_LifetimeToken) -> [ &lft_tok'0 <- _x ] s11)
-      | s11 = new_Perm_PCell_T {perm_data} {lft lft_tok'0}
-          (fun (_x: tup2_Ghost_FullBorrow_Perm_PCell_T_Ghost_EndBorrow_Perm_PCell_T) -> [ &_22 <- _x ] s12)
-      | s12 = [ &bor <- _22.f0'1 ] s13
-      | s13 = [ &end''0 <- _22.f1'1 ] s14
-      | s14 = into_inner_FullBorrow_Perm_PCell_T {bor} (fun (_x: t_FullBorrow_Perm_PCell_T) -> [ &_38 <- _x ] s15)
-      | s15 = add_guard_Perm_PCell_T {_38} {data'1}
-          (fun (_x: t_Guarded_FullBorrow_Perm_PCell_T_PCell_T) -> [ &_37 <- _x ] s16)
-      | s16 = [ &_36 <- Some _37 ] s17
-      | s17 = into_inner_Perm_AtomicU32 {perm_next_ticket} (fun (_x: t_Perm_AtomicU32) -> [ &_43 <- _x ] s18)
-      | s18 = into_inner_Perm_AtomicU32 {perm_now_serving} (fun (_x: t_Perm_AtomicU32) -> [ &_45 <- _x ] s19)
-      | s19 = alloc_FMap_Int_Excl_unit (fun (_x: t_Authority_FMap_Int_Excl_unit) -> [ &_48 <- _x ] s20)
-      | s20 = into_inner_Authority_FMap_Int_Excl_unit {_48}
-          (fun (_x: t_Authority_FMap_Int_Excl_unit) -> [ &_47 <- _x ] s21)
-      | s21 = [ &_29 <- { cell'0 = data'1;
-                          lft'0 = lft lft_tok'0;
+      | s11 = [ &_24 <- lft lft_tok'0 ] s12
+      | s12 = new_Perm_PCell_T {perm_data} {_24}
+          (fun (_x: tup2_Ghost_FullBorrow_Perm_PCell_T_Ghost_EndBorrow_Perm_PCell_T) -> [ &_22 <- _x ] s13)
+      | s13 = [ &bor <- _22.f0'1 ] s14
+      | s14 = [ &end''0 <- _22.f1'1 ] s15
+      | s15 = [ &_30 <- data'1 ] s16
+      | s16 = [ &_33 <- lft lft_tok'0 ] s17
+      | s17 = into_inner_FullBorrow_Perm_PCell_T {bor} (fun (_x: t_FullBorrow_Perm_PCell_T) -> [ &_38 <- _x ] s18)
+      | s18 = [ &_40 <- data'1 ] s19
+      | s19 = add_guard_Perm_PCell_T {_38} {_40}
+          (fun (_x: t_Guarded_FullBorrow_Perm_PCell_T_PCell_T) -> [ &_37 <- _x ] s20)
+      | s20 = [ &_36 <- Some _37 ] s21
+      | s21 = into_inner_Perm_AtomicU32 {perm_next_ticket} (fun (_x: t_Perm_AtomicU32) -> [ &_43 <- _x ] s22)
+      | s22 = into_inner_Perm_AtomicU32 {perm_now_serving} (fun (_x: t_Perm_AtomicU32) -> [ &_45 <- _x ] s23)
+      | s23 = alloc_FMap_Int_Excl_unit (fun (_x: t_Authority_FMap_Int_Excl_unit) -> [ &_48 <- _x ] s24)
+      | s24 = into_inner_Authority_FMap_Int_Excl_unit {_48}
+          (fun (_x: t_Authority_FMap_Int_Excl_unit) -> [ &_47 <- _x ] s25)
+      | s25 = [ &_29 <- { cell'0 = _30;
+                          lft'0 = _33;
                           perm'0 = _36;
                           perm_next_ticket'0 = _43;
                           perm_now_serving'0 = _45;
                           auth_tickets'0 = _47;
-                          inv'0 = inv'1 } ] s22
-      | s22 = new_TicketLockInv_T {_29} (fun (_x: t_TicketLockInv_T) -> [ &_28 <- _x ] s23)
-      | s23 = new_TicketLockInv_T'0 {_28} {Namespace_TICKET_LOCK 0}
-          (fun (_x: t_AtomicInvariantSC_TicketLockInv_T) -> [ &inner_inv'0 <- _x ] s24)
-      | s24 = [ &_ret <- { next_ticket = next_ticket'0;
+                          inv'0 = inv'1 } ] s26
+      | s26 = new_TicketLockInv_T {_29} (fun (_x: t_TicketLockInv_T) -> [ &_28 <- _x ] s27)
+      | s27 = [ &_50 <- Namespace_TICKET_LOCK 0 ] s28
+      | s28 = new_TicketLockInv_T'0 {_28} {_50}
+          (fun (_x: t_AtomicInvariantSC_TicketLockInv_T) -> [ &inner_inv'0 <- _x ] s29)
+      | s29 = [ &_ret <- { next_ticket = next_ticket'0;
                            now_serving = now_serving'0;
                            data = data'1;
                            lft_tok = lft_tok'0;
                            end' = end''0;
                            inner_inv = inner_inv'0;
-                           inv = inv'1 } ] s25
-      | s25 = return {_ret} ] ]
+                           inv = inv'1 } ] s30
+      | s30 = return {_ret} ] ]
     [ & _ret: t_TicketLock_T = Any.any_l ()
     | & data'0: t_T = data'0
     | & inv'1: Map.map t_T bool = inv'1
@@ -3879,16 +3886,21 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
     | & bor: t_FullBorrow_Perm_PCell_T = Any.any_l ()
     | & end''0: t_EndBorrow_Perm_PCell_T = Any.any_l ()
     | & _22: tup2_Ghost_FullBorrow_Perm_PCell_T_Ghost_EndBorrow_Perm_PCell_T = Any.any_l ()
+    | & _24: t_Lifetime = Any.any_l ()
     | & inner_inv'0: t_AtomicInvariantSC_TicketLockInv_T = Any.any_l ()
     | & _28: t_TicketLockInv_T = Any.any_l ()
     | & _29: t_TicketLockInv_T = Any.any_l ()
+    | & _30: t_PCell_T = Any.any_l ()
+    | & _33: t_Lifetime = Any.any_l ()
     | & _36: t_Option_Guarded_FullBorrow_Perm_PCell_T_PCell_T = Any.any_l ()
     | & _37: t_Guarded_FullBorrow_Perm_PCell_T_PCell_T = Any.any_l ()
     | & _38: t_FullBorrow_Perm_PCell_T = Any.any_l ()
+    | & _40: t_PCell_T = Any.any_l ()
     | & _43: t_Perm_AtomicU32 = Any.any_l ()
     | & _45: t_Perm_AtomicU32 = Any.any_l ()
     | & _47: t_Authority_FMap_Int_Excl_unit = Any.any_l ()
-    | & _48: t_Authority_FMap_Int_Excl_unit = Any.any_l () ])
+    | & _48: t_Authority_FMap_Int_Excl_unit = Any.any_l ()
+    | & _50: t_Namespace = Any.any_l () ])
     [ return (result: t_TicketLock_T) ->
     {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_TicketLock_T result)
       /\ ([@stop_split] [@expl:new ensures] result.inv = inv'1)}

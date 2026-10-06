@@ -2336,7 +2336,7 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
             [ &self <- { self with current = { self.current with iter = _bor.final } } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_I self.current.iter} any) ]
       | s1 = next_I {_5} (fun (_x: t_Option_Item) -> [ &_4 <- _x ] s2)
-      | s2 = any [ br0 -> {_4 = None} (! bb13) | br1 (x0: t_Item) -> {_4 = Some x0} (! bb5) ] ]
+      | s2 = any [ br0 -> {_4 = None} (! bb4) | br1 (x0: t_Item) -> {_4 = Some x0} (! bb5) ] ]
     | bb5 = s0
       [ s0 = elim_Some {_4} (fun (r0: t_Item) -> [ &v <- r0 ] s1)
       | s1 = {[@expl:assertion] precondition_F self.current.func { f0 = v; f1 = self.current.produced }} s2
@@ -2354,12 +2354,13 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
       | s9 = [ &_23 <- () ] s10
       | s10 = [ &_ret <- Some'0 r ] s11
       | s11 = return {_ret} ]
-    | bb13 = s0
-      [ s0 = [ &self <- { self with current = { self.current with produced = Seq.empty: Seq.seq t_Item } } ] s1
-      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_Map_I_F self} any) ]
-      | s2 = -{resolve_refmut_Map_I_F self}- s3
-      | s3 = [ &_ret <- None'0 ] s4
-      | s4 = return {_ret} ] ]
+    | bb4 = s0
+      [ s0 = [ &_26 <- Seq.empty: Seq.seq t_Item ] s1
+      | s1 = [ &self <- { self with current = { self.current with produced = _26 } } ] s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Map_I_F self} any) ]
+      | s3 = -{resolve_refmut_Map_I_F self}- s4
+      | s4 = [ &_ret <- None'0 ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: t_Option_B = Any.any_l ()
     | & self: MutBorrow.t t_Map_I_F = self
     | & _4: t_Option_Item = Any.any_l ()
@@ -2369,7 +2370,8 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
     | & r: t_B = Any.any_l ()
     | & _18: MutBorrow.t t_F = Any.any_l ()
     | & _19: tup2_Item_Snapshot_Seq_Item = Any.any_l ()
-    | & _23: () = Any.any_l () ])
+    | & _23: () = Any.any_l ()
+    | & _26: Seq.seq t_Item = Any.any_l () ])
     [ return (result: t_Option_B) ->
     {[@stop_split] [@expl:next_Map_I_F ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_B result)
       /\ ([@stop_split] [@expl:next ensures] match result with
@@ -4064,8 +4066,13 @@ module M_map
     /\ ([@stop_split] [@expl:map requires #2] preservation_I iter'0 func'0)}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_ret <- { iter = iter'0; func = func'0; produced = Seq.empty: Seq.seq t_Item } ] s1
-      | s1 = return {_ret} ] ] [ & _ret: t_Map_I_F = Any.any_l () | & iter'0: t_I = iter'0 | & func'0: t_F = func'0 ])
+      [ s0 = [ &_13 <- Seq.empty: Seq.seq t_Item ] s1
+      | s1 = [ &_ret <- { iter = iter'0; func = func'0; produced = _13 } ] s2
+      | s2 = return {_ret} ] ]
+    [ & _ret: t_Map_I_F = Any.any_l ()
+    | & iter'0: t_I = iter'0
+    | & func'0: t_F = func'0
+    | & _13: Seq.seq t_Item = Any.any_l () ])
     [ return (result: t_Map_I_F) ->
     {[@stop_split] [@expl:map_I ensures] ([@stop_split] [@expl:map result type invariant] inv_Map_I_F result)
       /\ ([@stop_split] [@expl:map ensures] result

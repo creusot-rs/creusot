@@ -151,7 +151,10 @@ module M_impl_List__take_some_rest (* List *)
             MutBorrow.borrow_final <t_List> {r1} {MutBorrow.inherit_id (MutBorrow.get_id self) 1}
               (fun (_bor: MutBorrow.t t_List) ->
                 [ &ml <- _bor ] [ &self <- { self with current = Cons r0 _bor.final } ] s2))
-      | s2 = [ &_11 <- lemma_sum_nonneg ml.current ] s3
+      | s2 = any
+        [ any_ (_dest: ()) -> (! -{([@stop_split] [@expl:lemma_sum_nonneg ensures] ge_log_Int (sum ml.current) 0)
+          /\ _dest = lemma_sum_nonneg ml.current}-
+          [ &_11 <- _dest ] s3) ] [ _ck -> (! any) ]
       | s3 = random (fun (_x: bool) -> [ &_14 <- _x ] s4)
       | s4 = any [ br0 -> {_14 = false} (! bb8) | br1 -> {_14} (! bb7) ] ]
     | bb7 = s0

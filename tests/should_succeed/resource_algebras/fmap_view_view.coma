@@ -387,57 +387,25 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
       (! return {result}) ]
 end
 module M_impl_Authority_K_V__insert (* Authority<K, V> *)
-  use map.Map
   use creusot.prelude.MutBorrow
+  use map.Map
   use map.Const
   use creusot.prelude.Any
   use int.Int
-  
-  type t_FMap_K_V
-  
-  type t_K
-  
-  type t_V
-  
-  type t_Option_V = None | Some t_V
-  
-  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
-  
-  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
-  
-  meta "rewrite_def" predicate ge_log_Int
-  
-  function len_K (self: t_FMap_K_V) : int
-  
-  axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
-  
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
-  
-  meta "rewrite_def" function get_K
-  
-  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None
-  
-  meta "rewrite_def" predicate contains_K
-  
-  function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
-  
-  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V [insert_K self k v]. to_mapping_K (insert_K self k v)
-      = Map.set (to_mapping_K self) k (Some v)
-  
-  axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V [insert_K self k v]. len_K (insert_K self k v)
-      = (if contains_K self k then len_K self else len_K self + 1)
   
   type t_Resource_View_MapRelation_K_V
   
   type t_Authority_K_V = { f0: t_Resource_View_MapRelation_K_V }
   
-  type t_Option_FMap_K_V = None'0 | Some'0 t_FMap_K_V
+  type t_FMap_K_V
+  
+  type t_Option_FMap_K_V = None | Some t_FMap_K_V
   
   constant any_FMap_K_V : t_FMap_K_V
   
   function unwrap_Option_FMap_K_V (self: t_Option_FMap_K_V) : t_FMap_K_V = match self with
-      | Some'0 x -> x
-      | None'0 -> any_FMap_K_V
+      | Some x -> x
+      | None -> any_FMap_K_V
       end
   
   type t_View_MapRelation_K_V
@@ -453,6 +421,38 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   function view_Authority_K_V (self: t_Authority_K_V) : t_FMap_K_V =
     unwrap_Option_FMap_K_V (auth_MapRelation_K_V (view_Resource_View_MapRelation_K_V self.f0))
+  
+  type t_K
+  
+  type t_V
+  
+  type t_Option_V = None'0 | Some'0 t_V
+  
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_K (self: t_FMap_K_V) : int
+  
+  axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
+  
+  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  
+  meta "rewrite_def" function get_K
+  
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None'0
+  
+  meta "rewrite_def" predicate contains_K
+  
+  function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
+  
+  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V [insert_K self k v]. to_mapping_K (insert_K self k v)
+      = Map.set (to_mapping_K self) k (Some'0 v)
+  
+  axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V [insert_K self k v]. len_K (insert_K self k v)
+      = (if contains_K self k then len_K self else len_K self + 1)
   
   type t_Ag_V = { f0'0: t_V }
   
@@ -603,11 +603,11 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some'0 a'0 -> forall k: t_K. match get_K'0 f k with
-          | Some'1 {f0'0 = v} -> get_K a'0 k = Some v
+      | Some a'0 -> forall k: t_K. match get_K'0 f k with
+          | Some'1 {f0'0 = v} -> get_K a'0 k = Some'0 v
           | _ -> true
           end
-      | None'0 -> true
+      | None -> true
       end
   
   function rel_unit_MapRelation_K_V (a: t_Option_FMap_K_V) : () = ()
@@ -617,7 +617,7 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   function rel_none_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) : () = ()
   
   axiom rel_none_MapRelation_K_V_spec: forall a: t_Option_FMap_K_V, f: t_FMap_K_Ag_V. rel_MapRelation_K_V a f
-      -> rel_MapRelation_K_V (None'0) f
+      -> rel_MapRelation_K_V (None) f
   
   function rel_mono_MapRelation_K_V (a: t_Option_FMap_K_V) (f1: t_FMap_K_Ag_V) (f2: t_FMap_K_Ag_V) : () = ()
   
@@ -626,10 +626,10 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
       -> incl_FMap_K_Ag_V f2 f1 -> rel_MapRelation_K_V a f2
   
   predicate premise_ViewUpdateInsert_MapRelation_K_V [@inline:trivial] (self: t_ViewUpdateInsert_MapRelation_K_V) (from: t_View_MapRelation_K_V) =
-    auth_MapRelation_K_V from <> None'0
+    auth_MapRelation_K_V from <> None
     /\ (forall f: t_FMap_K_Ag_V. rel_MapRelation_K_V (auth_MapRelation_K_V from) f
       -> match op_FMap_K_Ag_V self.f1'1 f with
-        | Some'2 ff -> rel_MapRelation_K_V (Some'0 (self.f0'1)) ff
+        | Some'2 ff -> rel_MapRelation_K_V (Some (self.f0'1)) ff
         | None'2 -> false
         end)
   
@@ -655,13 +655,13 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
       -> frag_MapRelation_K_V (new_MapRelation_K_V auth frag) = frag
   
   function update_ViewUpdateInsert_MapRelation_K_V [@inline:trivial] (self: t_ViewUpdateInsert_MapRelation_K_V) (from: t_View_MapRelation_K_V) (_3: ()) : t_View_MapRelation_K_V
-   = new_MapRelation_K_V (Some'0 (self.f0'1)) self.f1'1
+   = new_MapRelation_K_V (Some (self.f0'1)) self.f1'1
   
   meta "rewrite_def" function update_ViewUpdateInsert_MapRelation_K_V
   
   axiom update_ViewUpdateInsert_MapRelation_K_V_spec:
     forall self: t_ViewUpdateInsert_MapRelation_K_V, from: t_View_MapRelation_K_V, _3: (). premise_ViewUpdateInsert_MapRelation_K_V self from
-      -> rel_MapRelation_K_V (Some'0 (self.f0'1)) self.f1'1
+      -> rel_MapRelation_K_V (Some (self.f0'1)) self.f1'1
   
   let update_View_MapRelation_K_V (self: MutBorrow.t t_Resource_View_MapRelation_K_V)
     (upd: t_ViewUpdateInsert_MapRelation_K_V) (return (x: ())) =
@@ -675,12 +675,12 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
       (! return {result}) ]
   
   function new_frag_MapRelation_K_V [@inline:trivial] (frag: t_FMap_K_Ag_V) : t_View_MapRelation_K_V =
-    new_MapRelation_K_V (None'0) frag
+    new_MapRelation_K_V (None) frag
   
   meta "rewrite_def" function new_frag_MapRelation_K_V
   
   function new_auth_MapRelation_K_V [@inline:trivial] (auth: t_FMap_K_V) : t_View_MapRelation_K_V =
-    new_MapRelation_K_V (Some'0 auth) unit_FMap_K_Ag_V
+    new_MapRelation_K_V (Some auth) unit_FMap_K_Ag_V
   
   meta "rewrite_def" function new_auth_MapRelation_K_V
   
@@ -691,8 +691,8 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   function op_View_MapRelation_K_V (self: t_View_MapRelation_K_V) (other: t_View_MapRelation_K_V) : t_Option_View_MapRelation_K_V
    = match op_FMap_K_Ag_V (frag_MapRelation_K_V self) (frag_MapRelation_K_V other) with
       | Some'2 f -> match { f0'3 = auth_MapRelation_K_V self; f1'3 = auth_MapRelation_K_V other } with
-        | {f0'3 = None'0; f1'3 = a} -> if rel_MapRelation_K_V a f then Some'4 (new_MapRelation_K_V a f) else None'4
-        | {f0'3 = a; f1'3 = None'0} -> if rel_MapRelation_K_V a f then Some'4 (new_MapRelation_K_V a f) else None'4
+        | {f0'3 = None; f1'3 = a} -> if rel_MapRelation_K_V a f then Some'4 (new_MapRelation_K_V a f) else None'4
+        | {f0'3 = a; f1'3 = None} -> if rel_MapRelation_K_V a f then Some'4 (new_MapRelation_K_V a f) else None'4
         | _ -> None'4
         end
       | None'2 -> None'4
@@ -706,7 +706,7 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   predicate incl_View_MapRelation_K_V (self: t_View_MapRelation_K_V) (other: t_View_MapRelation_K_V) =
     let r = incl_FMap_K_Ag_V (frag_MapRelation_K_V self) (frag_MapRelation_K_V other)
-    /\ (auth_MapRelation_K_V self = None'0 \/ auth_MapRelation_K_V self = auth_MapRelation_K_V other) in r
+    /\ (auth_MapRelation_K_V self = None \/ auth_MapRelation_K_V self = auth_MapRelation_K_V other) in r
   
   axiom incl_View_MapRelation_K_V_spec:
     forall self: t_View_MapRelation_K_V, other: t_View_MapRelation_K_V [incl_View_MapRelation_K_V self other]. incl_View_MapRelation_K_V self other
@@ -767,7 +767,7 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
       (! return {result}) ]
   
   predicate invariant_Authority_K_V (self: t_Authority_K_V) =
-    auth_MapRelation_K_V (view_Resource_View_MapRelation_K_V self.f0) <> None'0
+    auth_MapRelation_K_V (view_Resource_View_MapRelation_K_V self.f0) <> None
   
   predicate inv_Authority_K_V (_1: t_Authority_K_V)
   
@@ -815,23 +815,40 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
     /\ ([@stop_split] [@expl:insert requires] not contains_K (view_Authority_K_V self.current) k)}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &auth <- insert_K (view_Authority_K_V self.current) k v ] s1
+      [ s0 = any
+        [ any_ (_dest: t_FMap_K_V) ->
+        (! -{([@stop_split] [@expl:insert ensures] ([@stop_split] [@expl:insert ensures #0] to_mapping_K (insert_K (view_Authority_K_V self.current) k v)
+              = Map.set (to_mapping_K (view_Authority_K_V self.current)) k (Some'0 v))
+            /\ ([@stop_split] [@expl:insert ensures #1] len_K (insert_K (view_Authority_K_V self.current) k v)
+            = (if contains_K (view_Authority_K_V self.current) k then
+              len_K (view_Authority_K_V self.current)
+            else
+              len_K (view_Authority_K_V self.current) + 1
+            )))
+          /\ _dest = insert_K (view_Authority_K_V self.current) k v}-
+          [ &auth <- _dest ] s1) ] [ _ck -> (! any) ]
       | s1 = [ &frag <- singleton_K k { f0'0 = v } ] s2
       | s2 = [ &_29 <- { f0'1 = auth; f1'1 = frag } ] s3
       | s3 = MutBorrow.borrow_mut <t_Resource_View_MapRelation_K_V> {self.current.f0}
           (fun (_bor: MutBorrow.t t_Resource_View_MapRelation_K_V) ->
             [ &_28 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s4)
       | s4 = update_View_MapRelation_K_V {_28} {_29} (fun (_x: ()) -> [ &_27 <- _x ] s5)
-      | s5 = MutBorrow.borrow_final <t_Resource_View_MapRelation_K_V> {self.current.f0}
+      | s5 = any
+        [ any_ (_dest: t_View_MapRelation_K_V) -> (! -{_dest = new_frag_MapRelation_K_V frag}- [ &_34 <- _dest ] s6) ]
+        [ _ck -> (! {[@stop_split] [@expl:new_frag requires] rel_MapRelation_K_V (None) frag} any) ]
+      | s6 = [ &_37 <- new_auth_MapRelation_K_V auth ] s7
+      | s7 = MutBorrow.borrow_final <t_Resource_View_MapRelation_K_V> {self.current.f0}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
           (fun (_bor: MutBorrow.t t_Resource_View_MapRelation_K_V) ->
-            [ &_33 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s6)
-      | s6 = split_off_View_MapRelation_K_V {_33} {new_frag_MapRelation_K_V frag} {new_auth_MapRelation_K_V auth}
-          (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &_32 <- _x ] s7)
-      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_K_V self} any) ]
-      | s8 = -{resolve_refmut_Authority_K_V self}- s9
-      | s9 = [ &_ret <- { f0'4 = _32; f1'4 = k; f2'4 = v } ] s10
-      | s10 = return {_ret} ] ]
+            [ &_33 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s8)
+      | s8 = split_off_View_MapRelation_K_V {_33} {_34} {_37}
+          (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &_32 <- _x ] s9)
+      | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_K_V self} any) ]
+      | s10 = -{resolve_refmut_Authority_K_V self}- s11
+      | s11 = [ &_40 <- k ] s12
+      | s12 = [ &_43 <- v ] s13
+      | s13 = [ &_ret <- { f0'4 = _32; f1'4 = _40; f2'4 = _43 } ] s14
+      | s14 = return {_ret} ] ]
     [ & _ret: t_Fragment_K_V = Any.any_l ()
     | & self: MutBorrow.t t_Authority_K_V = self
     | & k: t_K = k
@@ -842,7 +859,11 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
     | & _28: MutBorrow.t t_Resource_View_MapRelation_K_V = Any.any_l ()
     | & _29: t_ViewUpdateInsert_MapRelation_K_V = Any.any_l ()
     | & _32: t_Resource_View_MapRelation_K_V = Any.any_l ()
-    | & _33: MutBorrow.t t_Resource_View_MapRelation_K_V = Any.any_l () ])
+    | & _33: MutBorrow.t t_Resource_View_MapRelation_K_V = Any.any_l ()
+    | & _34: t_View_MapRelation_K_V = Any.any_l ()
+    | & _37: t_View_MapRelation_K_V = Any.any_l ()
+    | & _40: t_K = Any.any_l ()
+    | & _43: t_V = Any.any_l () ])
     [ return (result: t_Fragment_K_V) ->
     {[@stop_split] [@expl:insert_K ensures] ([@stop_split] [@expl:insert result type invariant] inv_Fragment_K_V result)
       /\ ([@stop_split] [@expl:insert ensures #0] view_Authority_K_V self.final
@@ -858,33 +879,53 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   use creusot.prelude.Any
   use int.Int
   
-  type t_View_MapRelation_K_V
-  
   type t_FMap_K_V
   
-  type t_Option_FMap_K_V = None | Some t_FMap_K_V
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
-  type t_FMap_K_Ag_V
+  meta "rewrite_def" predicate ge_log_Int
   
-  type t_Option_FMap_K_Ag_V = None'0 | Some'0 t_FMap_K_Ag_V
+  function len_K (self: t_FMap_K_V) : int
+  
+  axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
+  
+  type t_K
   
   type t_V
   
+  type t_Option_V = None | Some t_V
+  
+  function to_mapping_K (self: t_FMap_K_V) : Map.map t_K t_Option_V
+  
+  constant empty_K : t_FMap_K_V
+  
+  axiom empty_K_spec: len_K empty_K = 0
+  
+  axiom empty_K_spec'0: to_mapping_K empty_K = Const.const (None)
+  
+  type t_View_MapRelation_K_V
+  
+  type t_Option_FMap_K_V = None'0 | Some'0 t_FMap_K_V
+  
+  type t_FMap_K_Ag_V
+  
+  type t_Option_FMap_K_Ag_V = None'1 | Some'1 t_FMap_K_Ag_V
+  
   type t_Ag_V = { f0: t_V }
   
-  type t_Option_Ag_V = None'1 | Some'1 t_Ag_V
+  type t_Option_Ag_V = None'2 | Some'2 t_Ag_V
   
-  type t_Option_Option_Ag_V = None'2 | Some'2 t_Option_Ag_V
+  type t_Option_Option_Ag_V = None'3 | Some'3 t_Option_Ag_V
   
   type tup2_Option_Ag_V_Option_Ag_V = { f0'0: t_Option_Ag_V; f1'0: t_Option_Ag_V }
   
   function map_Option_Ag_V (self: t_Option_Ag_V) (f: Map.map t_Ag_V t_Option_Ag_V) : t_Option_Option_Ag_V =
     match self with
-      | None'1 -> None'2
-      | Some'1 x -> Some'2 (Map.get f x)
+      | None'2 -> None'3
+      | Some'2 x -> Some'3 (Map.get f x)
       end
   
-  function op_Ag_V (self: t_Ag_V) (other: t_Ag_V) : t_Option_Ag_V = if self.f0 = other.f0 then Some'1 self else None'1
+  function op_Ag_V (self: t_Ag_V) (other: t_Ag_V) : t_Option_Ag_V = if self.f0 = other.f0 then Some'2 self else None'2
   
   function commutative_Ag_V (a: t_Ag_V) (b: t_Ag_V) : ()
   
@@ -892,20 +933,18 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   
   function op_Option_Ag_V (self: t_Option_Ag_V) (other: t_Option_Ag_V) : t_Option_Option_Ag_V = match { f0'0 = self;
                                                                                                         f1'0 = other } with
-      | {f0'0 = None'1} -> Some'2 other
-      | {f1'0 = None'1} -> Some'2 self
-      | {f0'0 = Some'1 x; f1'0 = Some'1 y} -> map_Option_Ag_V (op_Ag_V x y) (fun (z: t_Ag_V) -> Some'1 z)
+      | {f0'0 = None'2} -> Some'3 other
+      | {f1'0 = None'2} -> Some'3 self
+      | {f0'0 = Some'2 x; f1'0 = Some'2 y} -> map_Option_Ag_V (op_Ag_V x y) (fun (z: t_Ag_V) -> Some'2 z)
       end
   
   function commutative_Option_Ag_V (a: t_Option_Ag_V) (b: t_Option_Ag_V) : ()
   
   axiom commutative_Option_Ag_V_spec: forall a: t_Option_Ag_V, b: t_Option_Ag_V. op_Option_Ag_V a b = op_Option_Ag_V b a
   
-  type t_K
+  function to_mapping_K'0 (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
   
-  function to_mapping_K (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
-  
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
+  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K'0 self) k
   
   meta "rewrite_def" function get_K
   
@@ -913,43 +952,39 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   
   axiom total_op_K_spec:
     forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
-          <> None'2)
-      -> (forall k: t_K. Some'2 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
+          <> None'3)
+      -> (forall k: t_K. Some'3 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
   
   function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'2 then
-      Some'0 (total_op_K self other)
+    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'3 then
+      Some'1 (total_op_K self other)
     else
-      None'0
+      None'1
   
   
   function commutative_FMap_K_Ag_V (a: t_FMap_K_Ag_V) (b: t_FMap_K_Ag_V) : ()
   
   axiom commutative_FMap_K_Ag_V_spec: forall a: t_FMap_K_Ag_V, b: t_FMap_K_Ag_V. op_FMap_K_Ag_V a b = op_FMap_K_Ag_V b a
   
-  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  function len_K'0 (self: t_FMap_K_Ag_V) : int
   
-  meta "rewrite_def" predicate ge_log_Int
+  axiom len_K_spec'0: forall self: t_FMap_K_Ag_V [len_K'0 self]. ge_log_Int (len_K'0 self) 0
   
-  function len_K (self: t_FMap_K_Ag_V) : int
+  constant empty_K'0 : t_FMap_K_Ag_V
   
-  axiom len_K_spec: forall self: t_FMap_K_Ag_V [len_K self]. ge_log_Int (len_K self) 0
+  axiom empty_K_spec'1: len_K'0 empty_K'0 = 0
   
-  constant empty_K : t_FMap_K_Ag_V
+  axiom empty_K_spec'2: to_mapping_K'0 empty_K'0 = Const.const (None'2)
   
-  axiom empty_K_spec: len_K empty_K = 0
-  
-  axiom empty_K_spec'0: to_mapping_K empty_K = Const.const (None'1)
-  
-  constant unit_FMap_K_Ag_V: t_FMap_K_Ag_V = empty_K
+  constant unit_FMap_K_Ag_V: t_FMap_K_Ag_V = empty_K'0
   
   axiom unit_FMap_K_Ag_V_spec:
-    forall x: t_FMap_K_Ag_V [op_FMap_K_Ag_V x unit_FMap_K_Ag_V]. op_FMap_K_Ag_V x unit_FMap_K_Ag_V = Some'0 x
+    forall x: t_FMap_K_Ag_V [op_FMap_K_Ag_V x unit_FMap_K_Ag_V]. op_FMap_K_Ag_V x unit_FMap_K_Ag_V = Some'1 x
   
   predicate incl_Ag_V (self: t_Ag_V) (other: t_Ag_V) = self.f0 = other.f0
   
   axiom incl_Ag_V_spec: forall self: t_Ag_V, other: t_Ag_V [incl_Ag_V self other]. incl_Ag_V self other
-      = (exists factor: t_Ag_V. op_Ag_V self factor = Some'1 other)
+      = (exists factor: t_Ag_V. op_Ag_V self factor = Some'2 other)
   
   function incl_transitive_Ag_V (a: t_Ag_V) (b: t_Ag_V) (c: t_Ag_V) : ()
   
@@ -959,16 +994,16 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   function associative_some_Ag_V (a: t_Ag_V) (b: t_Ag_V) (c: t_Ag_V) (ab: t_Ag_V) (bc: t_Ag_V) : ()
   
   axiom associative_some_Ag_V_spec: forall a: t_Ag_V, b: t_Ag_V, c: t_Ag_V, ab: t_Ag_V, bc: t_Ag_V. op_Ag_V a b
-        = Some'1 ab -> op_Ag_V b c = Some'1 bc -> op_Ag_V a bc = op_Ag_V ab c
+        = Some'2 ab -> op_Ag_V b c = Some'2 bc -> op_Ag_V a bc = op_Ag_V ab c
   
   function associative_none_Ag_V (a: t_Ag_V) (b: t_Ag_V) (c: t_Ag_V) (bc: t_Ag_V) : ()
   
-  axiom associative_none_Ag_V_spec: forall a: t_Ag_V, b: t_Ag_V, c: t_Ag_V, bc: t_Ag_V. op_Ag_V a b = None'1
-      -> op_Ag_V b c = Some'1 bc -> op_Ag_V a bc = None'1
+  axiom associative_none_Ag_V_spec: forall a: t_Ag_V, b: t_Ag_V, c: t_Ag_V, bc: t_Ag_V. op_Ag_V a b = None'2
+      -> op_Ag_V b c = Some'2 bc -> op_Ag_V a bc = None'2
   
   function incl_op_Ag_V (self: t_Ag_V) (other: t_Ag_V) (comb: t_Ag_V) : ()
   
-  axiom incl_op_Ag_V_spec: forall self: t_Ag_V, other: t_Ag_V, comb: t_Ag_V. op_Ag_V self other = Some'1 comb
+  axiom incl_op_Ag_V_spec: forall self: t_Ag_V, other: t_Ag_V, comb: t_Ag_V. op_Ag_V self other = Some'2 comb
       -> incl_Ag_V self comb
   
   predicate eq_Ag_V [@inline:trivial] (self: t_Ag_V) (other: t_Ag_V) = self = other
@@ -981,37 +1016,33 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   
   predicate incl_Option_Ag_V (self: t_Option_Ag_V) (other: t_Option_Ag_V) =
     match { f0'0 = self; f1'0 = other } with
-      | {f0'0 = None'1} -> true
-      | {f1'0 = None'1} -> false
-      | {f0'0 = Some'1 x; f1'0 = Some'1 y} -> incl_eq_Ag_V x y
+      | {f0'0 = None'2} -> true
+      | {f1'0 = None'2} -> false
+      | {f0'0 = Some'2 x; f1'0 = Some'2 y} -> incl_eq_Ag_V x y
       end
   
   axiom incl_Option_Ag_V_spec:
     forall self: t_Option_Ag_V, other: t_Option_Ag_V [incl_Option_Ag_V self other]. incl_Option_Ag_V self other
-      = (exists factor: t_Option_Ag_V. op_Option_Ag_V self factor = Some'2 other)
+      = (exists factor: t_Option_Ag_V. op_Option_Ag_V self factor = Some'3 other)
   
   predicate incl_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) =
     let r = forall k: t_K. incl_Option_Ag_V (get_K self k) (get_K other k) in r
   
   axiom incl_FMap_K_Ag_V_spec:
     forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [incl_FMap_K_Ag_V self other]. incl_FMap_K_Ag_V self other
-      = (exists factor: t_FMap_K_Ag_V. op_FMap_K_Ag_V self factor = Some'0 other)
+      = (exists factor: t_FMap_K_Ag_V. op_FMap_K_Ag_V self factor = Some'1 other)
   
-  type t_Option_V = None'3 | Some'3 t_V
-  
-  function to_mapping_K'0 (self: t_FMap_K_V) : Map.map t_K t_Option_V
-  
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
+  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
   meta "rewrite_def" function get_K'0
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some a'0 -> forall k: t_K. match get_K f k with
-          | Some'1 {f0 = v} -> get_K'0 a'0 k = Some'3 v
+      | Some'0 a'0 -> forall k: t_K. match get_K f k with
+          | Some'2 {f0 = v} -> get_K'0 a'0 k = Some v
           | _ -> true
           end
-      | None -> true
+      | None'0 -> true
       end
   
   function rel_unit_MapRelation_K_V (a: t_Option_FMap_K_V) : () = ()
@@ -1021,7 +1052,7 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   function rel_none_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) : () = ()
   
   axiom rel_none_MapRelation_K_V_spec: forall a: t_Option_FMap_K_V, f: t_FMap_K_Ag_V. rel_MapRelation_K_V a f
-      -> rel_MapRelation_K_V (None) f
+      -> rel_MapRelation_K_V (None'0) f
   
   function rel_mono_MapRelation_K_V (a: t_Option_FMap_K_V) (f1: t_FMap_K_Ag_V) (f2: t_FMap_K_Ag_V) : () = ()
   
@@ -1047,19 +1078,9 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
       -> frag_MapRelation_K_V (new_MapRelation_K_V auth frag) = frag
   
   function new_auth_MapRelation_K_V [@inline:trivial] (auth: t_FMap_K_V) : t_View_MapRelation_K_V =
-    new_MapRelation_K_V (Some auth) unit_FMap_K_Ag_V
+    new_MapRelation_K_V (Some'0 auth) unit_FMap_K_Ag_V
   
   meta "rewrite_def" function new_auth_MapRelation_K_V
-  
-  function len_K'0 (self: t_FMap_K_V) : int
-  
-  axiom len_K_spec'0: forall self: t_FMap_K_V [len_K'0 self]. ge_log_Int (len_K'0 self) 0
-  
-  constant empty_K'0 : t_FMap_K_V
-  
-  axiom empty_K_spec'1: len_K'0 empty_K'0 = 0
-  
-  axiom empty_K_spec'2: to_mapping_K'0 empty_K'0 = Const.const (None'3)
   
   type t_Resource_View_MapRelation_K_V
   
@@ -1083,7 +1104,7 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   type t_Authority_K_V = { f0'1: t_Resource_View_MapRelation_K_V }
   
   predicate invariant_Authority_K_V (self: t_Authority_K_V) =
-    auth_MapRelation_K_V (view_Resource_View_MapRelation_K_V self.f0'1) <> None
+    auth_MapRelation_K_V (view_Resource_View_MapRelation_K_V self.f0'1) <> None'0
   
   predicate inv_Authority_K_V (_1: t_Authority_K_V)
   
@@ -1109,8 +1130,8 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   constant any_FMap_K_V : t_FMap_K_V
   
   function unwrap_Option_FMap_K_V (self: t_Option_FMap_K_V) : t_FMap_K_V = match self with
-      | Some x -> x
-      | None -> any_FMap_K_V
+      | Some'0 x -> x
+      | None'0 -> any_FMap_K_V
       end
   
   function view_Authority_K_V (self: t_Authority_K_V) : t_FMap_K_V =
@@ -1122,20 +1143,26 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   
   let new_K (return (x: t_Authority_K_V)) = (! bb0
     [ bb0 = s0
-      [ s0 = alloc_View_MapRelation_K_V {new_auth_MapRelation_K_V empty_K'0}
-          (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &resource <- _x ] s1)
-      | s1 = into_inner_Resource_View_MapRelation_K_V {resource}
-          (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &_6 <- _x ] s2)
-      | s2 = [ &_5 <- { f0'1 = _6 } ] s3
-      | s3 = new_Authority_K_V {_5} (fun (_x: t_Authority_K_V) -> [ &_ret <- _x ] s4)
-      | s4 = return {_ret} ] ]
+      [ s0 = any
+        [ any_ (_dest: t_View_MapRelation_K_V) ->
+        (! -{([@stop_split] [@expl:empty ensures] ([@stop_split] [@expl:empty ensures #0] len_K empty_K = 0)
+            /\ ([@stop_split] [@expl:empty ensures #1] to_mapping_K empty_K = Const.const (None)))
+          /\ _dest = new_auth_MapRelation_K_V empty_K}-
+          [ &_3 <- _dest ] s1) ] [ _ck -> (! any) ]
+      | s1 = alloc_View_MapRelation_K_V {_3} (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &resource <- _x ] s2)
+      | s2 = into_inner_Resource_View_MapRelation_K_V {resource}
+          (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &_6 <- _x ] s3)
+      | s3 = [ &_5 <- { f0'1 = _6 } ] s4
+      | s4 = new_Authority_K_V {_5} (fun (_x: t_Authority_K_V) -> [ &_ret <- _x ] s5)
+      | s5 = return {_ret} ] ]
     [ & _ret: t_Authority_K_V = Any.any_l ()
     | & resource: t_Resource_View_MapRelation_K_V = Any.any_l ()
+    | & _3: t_View_MapRelation_K_V = Any.any_l ()
     | & _5: t_Authority_K_V = Any.any_l ()
     | & _6: t_Resource_View_MapRelation_K_V = Any.any_l () ])
     [ return (result: t_Authority_K_V) ->
     {[@stop_split] [@expl:new_K ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Authority_K_V result)
-      /\ ([@stop_split] [@expl:new ensures] view_Authority_K_V result = empty_K'0)}
+      /\ ([@stop_split] [@expl:new ensures] view_Authority_K_V result = empty_K)}
       (! return {result}) ]
 end
 module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Clone> *)

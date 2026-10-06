@@ -7,13 +7,9 @@ type t_Namespace = Other namespace_other
 use creusot.prelude.MutBorrow
 use creusot.prelude.Any
 
-type t_Resource_View_AuthViewRel_R
-
-type t_Fragment_R = { f0: t_Resource_View_AuthViewRel_R }
+type t_R
 
 type t_View_AuthViewRel_R
-
-type t_R
 
 type t_Option_R = None | Some t_R
 
@@ -104,6 +100,10 @@ function new_frag_AuthViewRel_R [@inline:trivial] (frag: t_R) : t_View_AuthViewR
 
 meta "rewrite_def" function new_frag_AuthViewRel_R
 
+type t_Resource_View_AuthViewRel_R
+
+type t_Fragment_R = { f0: t_Resource_View_AuthViewRel_R }
+
 type t_Option_View_AuthViewRel_R = None'0 | Some'0 t_View_AuthViewRel_R
 
 type tup2_Option_R_Option_R = { f0'0: t_Option_R; f1'0: t_Option_R }
@@ -168,18 +168,22 @@ let weaken_R (self: MutBorrow.t t_Fragment_R) (target: t_R) (return (x: ())) =
 {[@stop_split] [@expl:weaken requires] incl_R target (view_Fragment_R self.current)}
   (! bb0
   [ bb0 = s0
-    [ s0 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_R> {self.current.f0}
+    [ s0 = any
+      [ any_ (_dest: t_View_AuthViewRel_R) -> (! -{_dest = new_frag_AuthViewRel_R target}- [ &_13 <- _dest ] s1) ]
+      [ _ck -> (! {[@stop_split] [@expl:new_frag requires] rel_AuthViewRel_R (None) target} any) ]
+    | s1 = MutBorrow.borrow_final <t_Resource_View_AuthViewRel_R> {self.current.f0}
         {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
         (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_R) ->
-          [ &_12 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s1)
-    | s1 = weaken_View_AuthViewRel_R {_12} {new_frag_AuthViewRel_R target} (fun (_x: ()) -> [ &_11 <- _x ] s2)
-    | s2 = -{resolve_refmut_Fragment_R self}- s3
-    | s3 = return {_ret} ] ]
+          [ &_12 <- _bor ] [ &self <- { self with current = { f0 = _bor.final } } ] s2)
+    | s2 = weaken_View_AuthViewRel_R {_12} {_13} (fun (_x: ()) -> [ &_11 <- _x ] s3)
+    | s3 = -{resolve_refmut_Fragment_R self}- s4
+    | s4 = return {_ret} ] ]
   [ & _ret: () = Any.any_l ()
   | & self: MutBorrow.t t_Fragment_R = self
   | & target: t_R = target
   | & _11: () = Any.any_l ()
-  | & _12: MutBorrow.t t_Resource_View_AuthViewRel_R = Any.any_l () ])
+  | & _12: MutBorrow.t t_Resource_View_AuthViewRel_R = Any.any_l ()
+  | & _13: t_View_AuthViewRel_R = Any.any_l () ])
   [ return (result: ()) ->
   {[@stop_split] [@expl:weaken_R ensures] ([@stop_split] [@expl:weaken ensures #0] id_R self.final = id_R self.current)
     /\ ([@stop_split] [@expl:weaken ensures #1] view_Fragment_R self.final = target)}

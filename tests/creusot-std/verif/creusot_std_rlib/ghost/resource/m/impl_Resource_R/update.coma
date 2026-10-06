@@ -135,6 +135,7 @@ let update_R (self: MutBorrow.t t_Resource_R) (upd: t_U) (return (x: t_Choice)) 
     | s1 = -{resolve_U upd}- s2
     | s2 = [ &v <- view_Resource_R self.current ] s3
     | s3 = [ &target_s <- fun (r'0: t_R) -> exists ch: t_Choice. update_U upd v ch = r'0 ] s4
+      [ _ck -> (! {forall r'0: t_R. forall ch: t_Choice. [@stop_split] [@expl:update requires] premise_U upd v} any) ]
     | s4 = {[@expl:assertion] contains_R target_s (update_U upd v any_Choice)} s5
     | s5 = {[@expl:assertion] forall f: t_R. op_R v f <> None
         -> op_R (update_U upd v (frame_preserving_U upd v f)) f <> None}
@@ -144,7 +145,16 @@ let update_R (self: MutBorrow.t t_Resource_R) (upd: t_U) (return (x: t_Choice)) 
         (fun (_bor: MutBorrow.t t_Resource_R) -> [ &_30 <- _bor ] [ &self <- { self with current = _bor.final } ] s8)
     | s8 = update_raw_R {_30} {target_s} (fun (_x: t_R) -> [ &r <- _x ] s9)
     | s9 = -{resolve_refmut_Resource_R self}- s10
-    | s10 = [ &_ret <- such_that_Choice (fun (ch: t_Choice) -> update_U upd v ch = r) ] s11
+    | s10 = any
+      [ any_ (_dest: t_Choice) ->
+      (! -{([@stop_split] [@expl:such_that ensures] index_Mapping_Choice_bool (fun (ch: t_Choice) -> update_U upd v ch
+          = r) (such_that_Choice (fun (ch: t_Choice) -> update_U upd v ch = r)))
+        /\ _dest = such_that_Choice (fun (ch: t_Choice) -> update_U upd v ch = r)}-
+        [ &_ret <- _dest ] s11) ]
+      [ _ck -> (! {(forall ch: t_Choice. [@stop_split] [@expl:update requires] premise_U upd v)
+        && ([@stop_split] [@expl:such_that requires] exists x: t_Choice. index_Mapping_Choice_bool (fun (ch: t_Choice) -> update_U upd v ch
+          = r) x)}
+        any) ]
     | s11 = return {_ret} ] ]
   [ & _ret: t_Choice = Any.any_l ()
   | & self: MutBorrow.t t_Resource_R = self

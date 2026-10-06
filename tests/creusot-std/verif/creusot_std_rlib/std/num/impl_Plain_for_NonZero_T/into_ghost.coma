@@ -92,16 +92,18 @@ meta "select_lsinst" "all"
 let into_ghost_NonZero_T (snap: t_T) (return (x: t_T)) = {[@stop_split] [@expl:into_ghost requires] inv_NonZero_T snap}
   (! bb0
   [ bb0 = s0
-    [ s0 = into_ghost_T {snap} (fun (_x: t_T) -> [ &_10 <- _x ] s1)
-    | s1 = deref_Ghost_T {_10} (fun (_x: t_T) -> [ &_8 <- _x ] s2)
-    | s2 = new_unchecked_T {_8} (fun (_x: t_T) -> [ &_6 <- _x ] s3)
-    | s3 = new_NonZero_T {_6} (fun (_x: t_T) -> [ &_ret <- _x ] s4)
-    | s4 = return {_ret} ] ]
+    [ s0 = [ &_11 <- snap ] s1
+    | s1 = into_ghost_T {_11} (fun (_x: t_T) -> [ &_10 <- _x ] s2)
+    | s2 = deref_Ghost_T {_10} (fun (_x: t_T) -> [ &_8 <- _x ] s3)
+    | s3 = new_unchecked_T {_8} (fun (_x: t_T) -> [ &_6 <- _x ] s4)
+    | s4 = new_NonZero_T {_6} (fun (_x: t_T) -> [ &_ret <- _x ] s5)
+    | s5 = return {_ret} ] ]
   [ & _ret: t_T = Any.any_l ()
   | & snap: t_T = snap
   | & _6: t_T = Any.any_l ()
   | & _8: t_T = Any.any_l ()
-  | & _10: t_T = Any.any_l () ])
+  | & _10: t_T = Any.any_l ()
+  | & _11: t_T = Any.any_l () ])
   [ return (result: t_T) ->
   {[@stop_split] [@expl:into_ghost_NonZero_T ensures] ([@stop_split] [@expl:into_ghost result type invariant] inv_Ghost_NonZero_T result)
     /\ ([@stop_split] [@expl:into_ghost ensures] result = snap)}

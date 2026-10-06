@@ -36,12 +36,10 @@ constant other : t_T
 
 function join_T (self: t_T) (other: t_T) : t_T
 
-goal vc_join_T: if lt_log_T self other then
-    let result = other in [@stop_split] [@expl:join_T ensures] ([@stop_split] [@expl:join ensures #0] le_log_T self result)
-    /\ ([@stop_split] [@expl:join ensures #1] le_log_T other result)
-    /\ ([@stop_split] [@expl:join ensures #2] forall r: t_T. le_log_T self r -> le_log_T other r -> le_log_T result r)
+goal vc_join_T: let result = if lt_log_T self other then
+    other
   else
-    let result = self in [@stop_split] [@expl:join_T ensures] ([@stop_split] [@expl:join ensures #0] le_log_T self result)
-    /\ ([@stop_split] [@expl:join ensures #1] le_log_T other result)
-    /\ ([@stop_split] [@expl:join ensures #2] forall r: t_T. le_log_T self r -> le_log_T other r -> le_log_T result r)
-  
+    self
+   in [@stop_split] [@expl:join_T ensures] ([@stop_split] [@expl:join ensures #0] le_log_T self result)
+  /\ ([@stop_split] [@expl:join ensures #1] le_log_T other result)
+  /\ ([@stop_split] [@expl:join ensures #2] forall r: t_T. le_log_T self r -> le_log_T other r -> le_log_T result r)

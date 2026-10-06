@@ -7,9 +7,18 @@ type t_Namespace = Other namespace_other
 use creusot.prelude.MutBorrow
 use creusot.prelude.Any
 
-type t_R
+type t_Resource_View_AuthViewRel_R
 
 type t_View_AuthViewRel_R
+
+function val_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_View_AuthViewRel_R
+
+function view_Resource_View_AuthViewRel_R [@inline:trivial] (self: t_Resource_View_AuthViewRel_R) : t_View_AuthViewRel_R
+ = val_View_AuthViewRel_R self
+
+meta "rewrite_def" function view_Resource_View_AuthViewRel_R
+
+type t_R
 
 type t_Option_R = None | Some t_R
 
@@ -100,26 +109,17 @@ function new_frag_AuthViewRel_R [@inline:trivial] (frag: t_R) : t_View_AuthViewR
 
 meta "rewrite_def" function new_frag_AuthViewRel_R
 
-type t_Resource_View_AuthViewRel_R
-
-function val_View_AuthViewRel_R (self: t_Resource_View_AuthViewRel_R) : t_View_AuthViewRel_R
-
-function view_Resource_View_AuthViewRel_R [@inline:trivial] (self: t_Resource_View_AuthViewRel_R) : t_View_AuthViewRel_R
- = val_View_AuthViewRel_R self
-
-meta "rewrite_def" function view_Resource_View_AuthViewRel_R
-
-function new_auth_AuthViewRel_R [@inline:trivial] (auth: t_R) : t_View_AuthViewRel_R =
-  new_AuthViewRel_R (Some auth) unit_R
-
-meta "rewrite_def" function new_auth_AuthViewRel_R
-
 constant any_R : t_R
 
 function unwrap_Option_R (self: t_Option_R) : t_R = match self with
     | Some x -> x
     | None -> any_R
     end
+
+function new_auth_AuthViewRel_R [@inline:trivial] (auth: t_R) : t_View_AuthViewRel_R =
+  new_AuthViewRel_R (Some auth) unit_R
+
+meta "rewrite_def" function new_auth_AuthViewRel_R
 
 type t_Option_View_AuthViewRel_R = None'0 | Some'0 t_View_AuthViewRel_R
 
@@ -239,10 +239,22 @@ let from_resource_R (r: t_Resource_View_AuthViewRel_R) (return (x: tup2_Authorit
 {[@stop_split] [@expl:from_resource requires] auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R r) <> None}
   (! bb0
   [ bb0 = s0
-    [ s0 = [ &fragment <- new_frag_AuthViewRel_R (frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R r)) ] s1
-    | s1 =
-      [ &authority <- new_auth_AuthViewRel_R (unwrap_Option_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R r))) ]
-      s2
+    [ s0 = any
+      [ any_ (_dest: t_View_AuthViewRel_R) ->
+      (! -{([@stop_split] [@expl:frag ensures] rel_AuthViewRel_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R r)) (frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R r)))
+        /\ _dest = new_frag_AuthViewRel_R (frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R r))}-
+        [ &fragment <- _dest ] s1) ]
+      [ _ck ->
+      (! {([@stop_split] [@expl:frag ensures] rel_AuthViewRel_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R r)) (frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R r)))
+        -> ([@stop_split] [@expl:new_frag requires] rel_AuthViewRel_R (None) (frag_AuthViewRel_R (view_Resource_View_AuthViewRel_R r)))}
+        any) ]
+    | s1 = any
+      [ any_ (_dest: t_View_AuthViewRel_R) -> (! -{_dest
+        = new_auth_AuthViewRel_R (unwrap_Option_R (auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R r)))}-
+        [ &authority <- _dest ] s2) ]
+      [ _ck -> (! {[@stop_split] [@expl:unwrap_logic requires] auth_AuthViewRel_R (view_Resource_View_AuthViewRel_R r)
+        <> None}
+        any) ]
     | s2 = MutBorrow.borrow_mut <t_Resource_View_AuthViewRel_R> {r}
         (fun (_bor: MutBorrow.t t_Resource_View_AuthViewRel_R) -> [ &_17 <- _bor ] [ &r <- _bor.final ] s3)
     | s3 = split_off_View_AuthViewRel_R {_17} {fragment} {authority}

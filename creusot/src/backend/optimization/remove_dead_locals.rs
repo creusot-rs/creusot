@@ -156,7 +156,7 @@ impl<'tcx> FmirVisitor<'tcx> for PurityVisitor<'_, 'tcx> {
     fn visit_operand(&mut self, op: &Operand<'tcx>) {
         super_visit_operand(self, op);
         match op {
-            Operand::Place(_) | Operand::ShrBorrow(_) | Operand::Term(..) => {}
+            Operand::Place(_) | Operand::ShrBorrow(_) | Operand::Term(_, false) => {}
             _ => self.pure = false,
         }
     }

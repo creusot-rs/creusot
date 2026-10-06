@@ -570,17 +570,18 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
         | s2 = any [ br0 -> {_22 = None} (! bb13) | br1 (x0: t_Item) -> {_22 = Some x0} (! bb7) ] ]
         [ bb7 = s0
           [ s0 = elim_Some {_22} (fun (r0: t_Item) -> [ &n <- r0 ] s1)
-          | s1 = [ &produced <- Seq.snoc produced n ] s2
-          | s2 = {[@expl:assertion] produces_I old_self.current.iter produced self.current.iter} s3
-          | s3 = MutBorrow.borrow_mut <t_F> {self.current.func}
+          | s1 = [ &_26 <- Seq.snoc produced n ] s2
+          | s2 = [ &produced <- _26 ] s3
+          | s3 = {[@expl:assertion] produces_I old_self.current.iter produced self.current.iter} s4
+          | s4 = MutBorrow.borrow_mut <t_F> {self.current.func}
               (fun (_bor: MutBorrow.t t_F) ->
                 [ &_36 <- _bor ] -{inv_F _bor.final}-
-                [ &self <- { self with current = { self.current with func = _bor.final } } ] s4)
+                [ &self <- { self with current = { self.current with func = _bor.final } } ] s5)
             [ _ck -> (! {[@expl:type invariant] inv_F self.current.func} any) ]
-          | s4 = [ &_39 <- n ] s5
-          | s5 = [ &_37 <- _39 ] s6
-          | s6 = call_mut_F {_36} {_37} (fun (_x: bool) -> [ &_35 <- _x ] s7)
-          | s7 = any [ br0 -> {_35 = false} (! bb12) | br1 -> {_35} (! bb10) ] ]
+          | s5 = [ &_39 <- n ] s6
+          | s6 = [ &_37 <- _39 ] s7
+          | s7 = call_mut_F {_36} {_37} (fun (_x: bool) -> [ &_35 <- _x ] s8)
+          | s8 = any [ br0 -> {_35 = false} (! bb12) | br1 -> {_35} (! bb10) ] ]
         | bb12 = s0
           [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Item n} any) ] | s1 = -{resolve_Item n}- s2 | s2 = bb3 ] ] ]
     | bb13 = s0
@@ -611,6 +612,7 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
     | & _22: t_Option_Item = Any.any_l ()
     | & _23: MutBorrow.t t_I = Any.any_l ()
     | & n: t_Item = Any.any_l ()
+    | & _26: Seq.seq t_Item = Any.any_l ()
     | & _35: bool = Any.any_l ()
     | & _36: MutBorrow.t t_F = Any.any_l ()
     | & _37: t_Item = Any.any_l ()

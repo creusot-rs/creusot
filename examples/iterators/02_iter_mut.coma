@@ -161,10 +161,11 @@ module M_all_zero
         | s2 = any [ br0 -> {_22 = None} (! bb10) | br1 (x0: MutBorrow.t UInt64.t) -> {_22 = Some x0} (! bb11) ] ]
         [ bb11 = s0
           [ s0 = elim_Some {_22} (fun (r0: MutBorrow.t UInt64.t) -> [ &x <- r0 ] s1)
-          | s1 = [ &produced <- Seq.(++) produced (Seq.singleton x) ] s2
-          | s2 = [ &x <- { x with current = (0: UInt64.t) } ] s3
-          | s3 = -{resolve_refmut_usize x}- s4
-          | s4 = bb5 ] ] ]
+          | s1 = [ &_26 <- Seq.(++) produced (Seq.singleton x) ] s2
+          | s2 = [ &produced <- _26 ] s3
+          | s3 = [ &x <- { x with current = (0: UInt64.t) } ] s4
+          | s4 = -{resolve_refmut_usize x}- s5
+          | s5 = bb5 ] ] ]
     | bb10 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_IterMut_usize it} any) ]
       | s1 = -{resolve_IterMut_usize it}- s2
@@ -179,7 +180,8 @@ module M_all_zero
     | & produced: Seq.seq (MutBorrow.t UInt64.t) = Any.any_l ()
     | & _22: t_Option_refmut_usize = Any.any_l ()
     | & _23: MutBorrow.t t_IterMut_usize = Any.any_l ()
-    | & x: MutBorrow.t UInt64.t = Any.any_l () ])
+    | & x: MutBorrow.t UInt64.t = Any.any_l ()
+    | & _26: Seq.seq (MutBorrow.t UInt64.t) = Any.any_l () ])
     [ return (result: ()) ->
     {[@stop_split] [@expl:all_zero ensures] ([@stop_split] [@expl:all_zero ensures #0] Seq.length (view_Vec_usize_Global v.final)
         = Seq.length (view_Vec_usize_Global v.current))
@@ -833,7 +835,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__produces_back_refl (* <IterMut<
   goal vc_produces_back_refl_IterMut_T:
     ([@stop_split] [@expl:reverse_empty ensures] Reverse.reverse (Seq.empty: Seq.seq (MutBorrow.t t_T))
       = (Seq.empty: Seq.seq (MutBorrow.t t_T)))
-    -> (let _ = reverse_empty_refmut_T in [@stop_split] [@expl:produces_back_refl ensures] produces_back_IterMut_T self (Seq.empty: Seq.seq (MutBorrow.t t_T)) self)
+    -> ([@stop_split] [@expl:produces_back_refl ensures] produces_back_IterMut_T self (Seq.empty: Seq.seq (MutBorrow.t t_T)) self)
 end
 module M_impl_DoubleEndedIterator_for_IterMut_T__produces_back_refl__refines (* <IterMut<'a, T> as common::DoubleEndedIterator> *)
   use creusot.prelude.MutBorrow
@@ -939,7 +941,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__produces_back_trans (* <IterMut
     -> produces_back_IterMut_T b bc c
     -> ([@stop_split] [@expl:reverse_concat ensures] Reverse.reverse (Seq.(++) ab bc)
       = Seq.(++) (Reverse.reverse bc) (Reverse.reverse ab))
-    -> (let _ = reverse_concat_refmut_T ab bc in [@stop_split] [@expl:produces_back_trans ensures] produces_back_IterMut_T a (Seq.(++) ab bc) c)
+    -> ([@stop_split] [@expl:produces_back_trans ensures] produces_back_IterMut_T a (Seq.(++) ab bc) c)
 end
 module M_impl_DoubleEndedIterator_for_IterMut_T__produces_back_trans__refines (* <IterMut<'a, T> as common::DoubleEndedIterator> *)
   use creusot.prelude.MutBorrow
